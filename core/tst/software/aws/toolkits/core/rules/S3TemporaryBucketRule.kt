@@ -7,7 +7,7 @@ import org.junit.rules.ExternalResource
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException
 import software.aws.toolkits.core.s3.deleteBucketAndContents
-import java.util.Random
+import software.aws.toolkits.core.utils.RuleUtils
 
 class S3TemporaryBucketRule(private val s3Client: S3Client) : ExternalResource() {
     private val buckets = mutableListOf<String>()
@@ -15,21 +15,11 @@ class S3TemporaryBucketRule(private val s3Client: S3Client) : ExternalResource()
     /**
      * Creates a temporary bucket with the optional prefix (or calling class if prefix is omitted)
      */
-    fun createBucket(prefix: String = prefixFromCallingClass()): String {
-        val bucketName: String = temporaryBucketName(prefix)
+    fun createBucket(prefix: String = RuleUtils.prefixFromCallingClass()): String {
+        val bucketName: String = RuleUtils.randomName(prefix)
         s3Client.createBucket { it.bucket(bucketName) }
         buckets.add(bucketName)
         return bucketName
-    }
-
-    private fun temporaryBucketName(prefix: String): String {
-        val userName = System.getProperty("user.name", "unknown")
-        return "${prefix.toLowerCase()}-${userName.toLowerCase()}-${Random().nextInt(10000)}".take(63)
-    }
-
-    private fun prefixFromCallingClass(): String {
-        val callingClass = Thread.currentThread().stackTrace[3].className
-        return callingClass.substringAfterLast(".")
     }
 
     override fun after() {

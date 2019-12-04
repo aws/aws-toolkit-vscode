@@ -5,6 +5,8 @@ package software.aws.toolkits.jetbrains.services.s3
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileSystem
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.Bucket
 import java.io.InputStream
 import java.io.OutputStream
 import java.time.Instant
@@ -73,15 +75,16 @@ class S3VirtualFile(s3Vfs: S3VirtualFileSystem, val file: S3Object, parent: Virt
     fun formatSize(): String = StringUtil.formatFileSize(file.size)
 }
 
-open class S3VirtualBucket(fileSystem: S3VirtualFileSystem, val s3Bucket: S3Bucket) :
-    BaseS3VirtualFile(fileSystem, parent = null, key = s3Bucket) {
+open class S3VirtualBucket(fileSystem: S3VirtualFileSystem, val s3Bucket: Bucket) :
+    BaseS3VirtualFile(fileSystem, parent = null, key = S3Directory(s3Bucket.name(), "", fileSystem.client)) {
 
-    override fun getTimeStamp(): Long = s3Bucket.creationDate.toEpochMilli()
+    val client: S3Client = fileSystem.client
+    override fun getTimeStamp(): Long = s3Bucket.creationDate().toEpochMilli()
 
-    fun getVirtualBucketName(): String = s3Bucket.bucket
+    fun getVirtualBucketName(): String = s3Bucket.name()
 
     override fun getChildren(): Array<VirtualFile> =
-        s3Bucket.children().sortedBy { it.bucket }
+        S3Directory(s3Bucket.name(), "", fileSystem.client).children().sortedBy { it.bucket }
             .map {
                 when (it) {
                     is S3Object -> S3VirtualFile(fileSystem, it, this)

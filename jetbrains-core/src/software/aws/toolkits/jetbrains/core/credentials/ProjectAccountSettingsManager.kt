@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.ServiceManager
@@ -57,13 +58,6 @@ interface ProjectAccountSettingsManager {
     val activeCredentialProvider: ToolkitCredentialsProvider
         @Throws(CredentialProviderNotFound::class) get
 
-    /**
-     * The underlying AWS account for current active credential provider. Return null if credential provider is not set.
-     * Calls of this member should be in non-UI thread since it makes network call using an STS client for retrieving the
-     * underlying AWS account.
-     */
-    val activeAwsAccount: String?
-
     fun hasActiveCredentials(): Boolean = try {
         activeCredentialProvider
         true
@@ -100,10 +94,10 @@ interface ProjectAccountSettingsManager {
         /***
          * [MessageBus] topic for when the active credential profile or region is changed
          */
-        val ACCOUNT_SETTINGS_CHANGED: Topic<ProjectAccountSettingsManager.AccountSettingsChangedNotifier> =
+        val ACCOUNT_SETTINGS_CHANGED: Topic<AccountSettingsChangedNotifier> =
             Topic.create(
                 "AWS Account setting changed",
-                ProjectAccountSettingsManager.AccountSettingsChangedNotifier::class.java
+                AccountSettingsChangedNotifier::class.java
             )
 
         fun getInstance(project: Project): ProjectAccountSettingsManager =
@@ -113,7 +107,12 @@ interface ProjectAccountSettingsManager {
 
 fun Project.activeRegion(): AwsRegion = ProjectAccountSettingsManager.getInstance(this).activeRegion
 fun Project.activeCredentialProvider(): ToolkitCredentialsProvider = ProjectAccountSettingsManager.getInstance(this).activeCredentialProvider
-fun Project.activeAwsAccount(): String? = ProjectAccountSettingsManager.getInstance(this).activeAwsAccount
+/**
+ * The underlying AWS account for current active credential provider of the project. Return null if credential provider is not set.
+ * Calls of this member should be in non-UI thread since it makes network call using an STS client for retrieving the
+ * underlying AWS account.
+ */
+fun Project.activeAwsAccount(): String? = tryOrNull { AwsResourceCache.getInstance(this).getResourceNow(StsResources.ACCOUNT) }
 
 data class AccountState(
     var activeProfile: String? = null,
@@ -124,6 +123,7 @@ data class AccountState(
 
 @State(name = "accountSettings", storages = [Storage("aws.xml")])
 class DefaultProjectAccountSettingsManager(private val project: Project) : ProjectAccountSettingsManager, PersistentStateComponent<AccountState> {
+    private val resourceCache = AwsResourceCache.getInstance(project)
     private val credentialManager = CredentialManager.getInstance()
     private val regionProvider = AwsRegionProvider.getInstance()
 
@@ -153,9 +153,6 @@ class DefaultProjectAccountSettingsManager(private val project: Project) : Proje
     override val activeCredentialProvider: ToolkitCredentialsProvider
         @Throws(CredentialProviderNotFound::class)
         get() = activeProfileInternal ?: throw CredentialProviderNotFound(message("credentials.profile.not_configured"))
-
-    override val activeAwsAccount: String?
-        get() = if (hasActiveCredentials()) AwsResourceCache.getInstance(project).getResourceNow(StsResources.ACCOUNT) else null
 
     override fun recentlyUsedRegions(): List<AwsRegion> = recentlyUsedRegions.elements()
 
@@ -200,7 +197,7 @@ class DefaultProjectAccountSettingsManager(private val project: Project) : Proje
         broadcastChangeEvent()
 
         ApplicationManager.getApplication().executeOnPooledThread {
-            AwsResourceCache.getInstance(project).getResource(
+            resourceCache.getResource(
                 StsResources.ACCOUNT,
                 region = activeRegion,
                 credentialProvider = credentialsProvider,
@@ -228,7 +225,7 @@ class DefaultProjectAccountSettingsManager(private val project: Project) : Proje
                         )
                     }
                 }
-                runInEdt {
+                runInEdt(ModalityState.any()) {
                     isLoading = false
                     broadcastChangeEvent()
                 }

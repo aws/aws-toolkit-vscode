@@ -18,7 +18,10 @@ import com.intellij.testFramework.fixtures.ModuleFixture
 import com.intellij.testFramework.fixtures.TestFixtureBuilder
 import com.intellij.testFramework.fixtures.impl.ModuleFixtureBuilderImpl
 import com.intellij.testFramework.fixtures.impl.ModuleFixtureImpl
+import com.intellij.testFramework.runInEdtAndWait
+import com.intellij.xdebugger.XDebuggerUtil
 import com.jetbrains.python.PythonModuleTypeBase
+import com.jetbrains.python.psi.PyFile
 import com.jetbrains.python.sdk.PythonSdkAdditionalData
 import com.jetbrains.python.sdk.PythonSdkType
 import com.jetbrains.python.sdk.flavors.CPythonSdkFlavor
@@ -71,7 +74,7 @@ internal class PlatformPythonModuleType : PythonModuleTypeBase<EmptyModuleBuilde
 
     companion object {
         val instance: PlatformPythonModuleType
-            get() = ModuleTypeManager.getInstance().findByID(PYTHON_MODULE) as PlatformPythonModuleType
+            get() = ModuleTypeManager.getInstance().findByID("PYTHON_MODULE") as PlatformPythonModuleType
     }
 }
 
@@ -86,4 +89,19 @@ class PyTestSdk(private val version: String) : ProjectJdkImpl("PySdk $version", 
 internal class FakeCPython : CPythonSdkFlavor() {
     @NotNull
     override fun getName(): String = "FakeCPython"
+}
+
+fun PythonCodeInsightTestFixtureRule.addBreakpoint() {
+    runInEdtAndWait {
+        val document = fixture.editor.document
+        val lambdaClass = fixture.file as PyFile
+        val lambdaBody = lambdaClass.topLevelFunctions[0].statementList.statements[0]
+        val lineNumber = document.getLineNumber(lambdaBody.textOffset)
+
+        XDebuggerUtil.getInstance().toggleLineBreakpoint(
+            project,
+            fixture.file.virtualFile,
+            lineNumber
+        )
+    }
 }

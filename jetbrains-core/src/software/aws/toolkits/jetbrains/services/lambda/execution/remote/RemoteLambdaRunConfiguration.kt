@@ -3,19 +3,23 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.remote
 
+import com.intellij.execution.ExecutionBundle
 import com.intellij.execution.ExecutionException
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.ConfigurationFactory
 import com.intellij.execution.configurations.RuntimeConfigurationError
 import com.intellij.execution.runners.ExecutionEnvironment
+import com.intellij.openapi.options.SettingsEditorGroup
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
-import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
+import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationType
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationBase
+import software.aws.toolkits.jetbrains.ui.connection.AwsConnectionSettingsEditor
+import software.aws.toolkits.jetbrains.ui.connection.addAwsConnectionEditor
 import software.aws.toolkits.resources.message
 
-class RemoteLambdaRunConfigurationFactory(configuration: LambdaRunConfiguration) : ConfigurationFactory(configuration) {
+class RemoteLambdaRunConfigurationFactory(configuration: LambdaRunConfigurationType) : ConfigurationFactory(configuration) {
     override fun createTemplateConfiguration(project: Project) = RemoteLambdaRunConfiguration(project, this)
 
     override fun getName(): String = "Remote"
@@ -24,15 +28,21 @@ class RemoteLambdaRunConfigurationFactory(configuration: LambdaRunConfiguration)
 class RemoteLambdaRunConfiguration(project: Project, factory: ConfigurationFactory) :
     LambdaRunConfigurationBase<RemoteLambdaOptions>(project, factory, "Remote") {
 
-    override val lambdaOptions = RemoteLambdaOptions()
+    override val serializableOptions = RemoteLambdaOptions()
 
-    override fun getConfigurationEditor() = RemoteLambdaRunSettingsEditor(project)
+    override fun getConfigurationEditor(): SettingsEditorGroup<RemoteLambdaRunConfiguration> {
+        val group = SettingsEditorGroup<RemoteLambdaRunConfiguration>()
+        val remoteLambdaSettings = RemoteLambdaRunSettingsEditor(project)
+        group.addEditor(ExecutionBundle.message("run.configuration.configuration.tab.title"), remoteLambdaSettings)
+        group.addAwsConnectionEditor(AwsConnectionSettingsEditor(project, remoteLambdaSettings::updateFunctions))
+        return group
+    }
 
     override fun checkConfiguration() {
         functionName() ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_function_specified"))
 
         resolveCredentials()
-        regionId() ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_region_specified"))
+        regionId() ?: throw RuntimeConfigurationError(message("configure.validate.no_region_specified"))
         checkInput()
     }
 
@@ -52,10 +62,10 @@ class RemoteLambdaRunConfiguration(project: Project, factory: ConfigurationFacto
 
     override fun suggestedName() = "[${message("lambda.run_configuration.remote")}] ${functionName()}"
 
-    fun functionName(): String? = lambdaOptions.functionOptions.functionName
+    fun functionName(): String? = serializableOptions.functionOptions.functionName
 
     fun functionName(name: String?) {
-        lambdaOptions.functionOptions.functionName = name
+        serializableOptions.functionOptions.functionName = name
     }
 }
 

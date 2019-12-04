@@ -72,7 +72,7 @@ class S3KeyNode(val virtualFile: VirtualFile) : SimpleNode() {
         /**
          * Page Limits
          */
-        const val UPDATE_LIMIT = 10
+        const val UPDATE_LIMIT = 30
         const val START_SIZE = 0
     }
 }

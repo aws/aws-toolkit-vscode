@@ -1,0 +1,8 @@
+{
+  "date" : "2019-12-02",
+  "version" : "1.9",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Added support for Amazon EventBridge schema registry, making it easy to discover and write code for events in EventBridge."
+  } ]
+}

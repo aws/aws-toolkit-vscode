@@ -1,3 +1,55 @@
+# _1.9_ (2019-12-02)
+- **(Feature)** Added support for Amazon EventBridge schema registry, making it easy to discover and write code for events in EventBridge.
+
+# _1.8-192_ (2019-11-25)
+- **(Breaking Change)** Now requires a minimum version of 2019.2 to run
+- **(Feature)** Enable Cloud Debugging of ECS Services (beta)
+- **(Feature)** Respect the default region in config file on first start of the IDE
+- **(Feature)** Allow credential_process commands (in aws/config) to produce up to 64KB, permitting longer session tokens
+- **(Feature)** Adding support for WebStorm
+- **(Feature)** Enabled pasting of key value pairs into the environment variable table of local AWS Lambda run configurations
+- **(Feature)** Adding support for Rider
+- **(Bug Fix)** Fix an IDE error showing up during "SAM local debug" caused by running "docker ps" on the wrong thread
+- **(Bug Fix)** Browsing for files in the Lambda run configuration is now rooted at the project directory
+- **(Bug Fix)** Add an error on empty CloudFormation template or template that lacks a "Resources" section
+- **(Bug Fix)** Rider: Fix unsupported Node runtime showing up in the "Create Serverless Applications" menu
+- **(Bug Fix)** Fix the IDE showing an error sometimes when the SAM template file is invalid
+- **(Bug Fix)** Resolve initialization errors on 2019.3 EAP
+- **(Bug Fix)** Fix getting SAM version timing out in some circumstances which caused SAM related commands to fail
+- **(Bug Fix)** Fix being able to run "SAM local run" configurations without Docker running
+- **(Bug Fix)** Fix IDE error caused by editor text field being requested at the wrong scope level
+- **(Bug Fix)** Rider: Fix the "Deploy Serverless" menu not appearing when right clicking on the project view
+
+# _1.7_ (2019-10-17)
+- **(Feature)** A notification is shown on startup indicating that JetBrains 2019.2 or greater will be required in an upcoming AWS Toolkit release
+- **(Feature)** Add --no-interactive to SAM init when running a version of SAM >= 0.30.0
+- **(Feature)** Bump minimum SAM CLI version from 0.14.1 to 0.16.0
+- **(Feature)** Adding support for JetBrains Platform version 2019.3.
+- **(Bug Fix)** Fix error thrown adding Lambda gutter icons and not having any active credentials
+- **(Bug Fix)** Fix validating a Lambda handler not under a ReadAction
+
+# _1.6_ (2019-09-23)
+- **(Feature)** Open Stack Status UI on CloudFormation stack deletion.
+- **(Feature)** Removed requirement of having to double-click to load more resources in AWS Explorer if there is more than one page returned
+- **(Feature)** Added a Copy Arn action to AWS Explorer
+- **(Feature)** Move AWS Connection details into a common Run Configuration tab for remote and local Lambda execution.
+- **(Feature)** Enable caching of describe calls to avoid repeated network calls for already known resources.
+- **(Feature)** Support timeout and memory size settings in run configuration
+- **(Feature)** Porting resource selector to use resource-cache so network won't be hit on each dialog load.
+- **(Feature)** Add support to link Gradle project.
+- **(Feature)** Additional SAM build and SAM local invocation args configurable from Run/Debug Configuration settings
+- **(Bug Fix)** Fix the bug that PyCharm pipenv doesn't create the project location folder
+- **(Bug Fix)** Fix the CloudFormation explorer node not showing Lambdas that belong to the stack
+- **(Bug Fix)** Log errors to idea.log when we fail to swtich the active AWS credential profile
+- **(Bug Fix)** Handle the "me-" region prefix Treat the "me-" region prefix as Middle East
+- **(Bug Fix)** Fixing issue where explorer does not load even with credentials/region selected.
+- **(Bug Fix)** Fixing random AssertionError exception caused by Guava cache.
+- **(Bug Fix)** Fix the bug that underscores in profile names are not shown in AWS settings panel
+- **(Bug Fix)** Fixed bug in Pycharm's New Project pane where VirtualEnv path is not changed as project path is changed after switching Runtime
+- **(Bug Fix)** Handle non-cloudformation yaml files gracefully
+- **(Bug Fix)** Fix thread issue in PyCharm new project wizard
+- **(Bug Fix)** Fix the bug that toolkit throws unhandled exception on startup when active credential is not configured
+
 # _1.5_ (2019-07-29)
 - **(Feature)** Support Globals configuration in SAM template for serverless functions.
 - **(Feature)** Enable searching for `requirements.txt` when determining if a python method is a handler to match SAM build

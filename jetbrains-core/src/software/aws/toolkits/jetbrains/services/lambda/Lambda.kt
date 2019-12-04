@@ -3,7 +3,13 @@
 
 package software.aws.toolkits.jetbrains.services.lambda
 
+import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.module.Module
+import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.roots.ModuleRootManager
+import com.intellij.openapi.vfs.VfsUtil
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.NavigatablePsiElement
 import com.intellij.psi.search.GlobalSearchScope
 import software.amazon.awssdk.services.lambda.model.CreateFunctionResponse
@@ -13,6 +19,8 @@ import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.lambda.model.TracingMode
 import software.amazon.awssdk.services.lambda.model.UpdateFunctionConfigurationResponse
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.core.utils.debug
+import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.services.iam.IamRole
 import software.aws.toolkits.jetbrains.services.lambda.LambdaLimits.DEFAULT_MEMORY_SIZE
 import software.aws.toolkits.jetbrains.services.lambda.LambdaLimits.DEFAULT_TIMEOUT
@@ -21,13 +29,52 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaLimits.MAX_TIMEOUT
 import software.aws.toolkits.jetbrains.services.lambda.LambdaLimits.MEMORY_INCREMENT
 import software.aws.toolkits.jetbrains.services.lambda.LambdaLimits.MIN_MEMORY
 import software.aws.toolkits.jetbrains.services.lambda.LambdaLimits.MIN_TIMEOUT
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.ui.SliderPanel
 import java.util.concurrent.TimeUnit
 
 object Lambda {
+    private val LOG = getLogger<Lambda>()
+
     fun findPsiElementsForHandler(project: Project, runtime: Runtime, handler: String): Array<NavigatablePsiElement> {
         val resolver = runtime.runtimeGroup?.let { LambdaHandlerResolver.getInstance(it) } ?: return emptyArray()
-        return resolver.findPsiElements(project, handler, GlobalSearchScope.allScope(project))
+
+        // Don't search through ".aws-sam" folders
+        val samBuildFileScopes = GlobalSearchScope.filesScope(project, findSamBuildContents(project))
+        val excludeSamBuildFileScopes = GlobalSearchScope.notScope(samBuildFileScopes)
+        val scope = GlobalSearchScope.allScope(project).intersectWith(excludeSamBuildFileScopes)
+
+        val elements = resolver.findPsiElements(project, handler, scope)
+
+        logHandlerPsiElements(handler, elements)
+
+        return elements
+    }
+
+    fun isHandlerValid(project: Project, runtime: Runtime, handler: String): Boolean = ReadAction.compute<Boolean, Throwable> {
+        runtime.runtimeGroup?.let {
+            LambdaHandlerResolver.getInstance(it)
+        }?.isHandlerValid(project, handler) == true
+    }
+
+    private fun findSamBuildContents(project: Project): Collection<VirtualFile> =
+        ModuleManager.getInstance(project).modules.flatMap { findSamBuildContents(it) }
+
+    private fun findSamBuildContents(module: Module): Collection<VirtualFile> =
+        ModuleRootManager.getInstance(module).contentRoots.map {
+            it.findChild(SamCommon.SAM_BUILD_DIR)
+        }.filterNotNull()
+            .flatMap {
+                VfsUtil.collectChildrenRecursively(it)
+            }
+
+    private fun logHandlerPsiElements(handler: String, elements: Array<NavigatablePsiElement>) {
+        LOG.debug {
+            elements.joinToString(
+                prefix = "Found ${elements.size} PsiElements for Handler: $handler\n",
+                separator = "\n"
+            ) { it.containingFile.virtualFile.path }
+        }
     }
 }
 
@@ -38,8 +85,10 @@ object LambdaLimits {
     const val MEMORY_INCREMENT = 64
     const val DEFAULT_MEMORY_SIZE = 128
     const val MIN_TIMEOUT = 1
-    @JvmField val MAX_TIMEOUT = TimeUnit.MINUTES.toSeconds(15).toInt()
-    @JvmField val DEFAULT_TIMEOUT = TimeUnit.MINUTES.toSeconds(5).toInt()
+    @JvmField
+    val MAX_TIMEOUT = TimeUnit.MINUTES.toSeconds(15).toInt()
+    @JvmField
+    val DEFAULT_TIMEOUT = TimeUnit.MINUTES.toSeconds(5).toInt()
 }
 
 object LambdaWidgets {

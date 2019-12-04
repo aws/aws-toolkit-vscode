@@ -1,0 +1,99 @@
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+buildscript {
+    if (resolveIdeProfileName() == "2019.2") {
+        ext.rd_version = "0.192.36"
+    } else if (resolveIdeProfileName() == "2019.3") {
+        ext.rd_version = "0.193.51"
+    } else {
+        throw new IllegalStateException("rdgen version not set for $resolveIdeProfileName()")
+    }
+
+    println("Using rd-gen: $rd_version")
+
+    repositories {
+        maven { url 'https://www.myget.org/F/rd-snapshots/maven/' }
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath "com.jetbrains.rd:rd-gen:$rd_version"
+    }
+}
+
+ext.resharperPluginPath = new File(projectDir, "ReSharper.AWS")
+
+try {
+    InetAddress.getByName("repo.labs.intellij.net")
+    ext.localEnv = false
+} catch (UnknownHostException ignored) {
+    println("Not running in JetBrains' network")
+    ext.localEnv = true
+}
+
+apply plugin: 'org.jetbrains.intellij'
+apply plugin: 'com.jetbrains.rdgen'
+
+apply from: 'protocol.gradle'
+apply from: 'backend.gradle'
+
+dependencies {
+    compile project(":jetbrains-core")
+    testCompile project(path: ":jetbrains-core", configuration: 'testArtifacts')
+}
+
+intellij {
+    def parentIntellijTask = project(':jetbrains-core').intellij
+    version ideSdkVersion("RD")
+    pluginName parentIntellijTask.pluginName
+    updateSinceUntilBuild parentIntellijTask.updateSinceUntilBuild
+
+    // Workaround for https://youtrack.jetbrains.com/issue/IDEA-179607
+    def extraPlugins = [ "rider-plugins-appender" ]
+    plugins = idePlugins("RD") + extraPlugins
+
+    // Disable downloading source to avoid issues related to Rider SDK naming that is missed in Idea
+    // snapshots repository. The task is failed because if is unable to find related IC sources.
+    downloadSources = false
+    instrumentCode = false
+}
+
+// Tasks:
+//
+// `buildPlugin` depends on `prepareSandbox` task and then zips up the sandbox dir and puts the file in rider/build/distributions
+// `runIde` depends on `prepareSandbox` task and then executes IJ inside the sandbox dir
+// `prepareSandbox` depends on the standard Java `jar` and then copies everything into the sandbox dir
+
+tasks.withType(prepareSandbox.class).all {
+    dependsOn buildReSharperPlugin
+
+    from(buildReSharperPlugin.outputs, {
+        into("${intellij.pluginName}/dotnet")
+    })
+}
+
+compileKotlin.dependsOn(generateModel)
+
+tasks.findByName("compileTestKotlin").onlyIf { resolveIdeProfileName() != "2019.2" /* Tests require 2019.3 to build and run */ }
+test {
+    systemProperty("log.dir", "${org.jetbrains.intellij.Utils.systemDir(intellij.sandboxDirectory, true)}/logs")
+
+    useTestNG()
+
+    environment("LOCAL_ENV_RUN", localEnv)
+}.onlyIf { resolveIdeProfileName() != "2019.2" /* Tests require 2019.3 to build and run */ }
+
+tasks.integrationTest {
+    useTestNG()
+
+    environment("LOCAL_ENV_RUN", localEnv)
+}.onlyIf { resolveIdeProfileName() != "2019.2" /* Tests require 2019.3 to build and run */ }
+
+runIde {
+    systemProperty("aws.toolkits.enableTelemetry", false)
+}
+
+jar {
+    archiveBaseName.set('aws-intellij-toolkit-rider')
+}

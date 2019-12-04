@@ -17,14 +17,13 @@ import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.psi.PsiElement
 import com.intellij.util.io.Compressor
-import com.intellij.util.text.SemVer
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
+import software.aws.toolkits.jetbrains.services.PathMapping
 import software.aws.toolkits.jetbrains.services.lambda.LambdaLimits.DEFAULT_MEMORY_SIZE
 import software.aws.toolkits.jetbrains.services.lambda.LambdaLimits.DEFAULT_TIMEOUT
-import software.aws.toolkits.jetbrains.services.lambda.execution.PathMapping
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
@@ -117,12 +116,13 @@ abstract class LambdaBuilder {
                 }
             }
 
-            // TODO: FIX_WHEN_SAM_MIN_IS_0.16
-            SemVer.parseFromText(SamCommon.getVersionString())?.let {
-                if (it.isGreaterOrEqualThan(0, 16, 0)) {
-                    commandLine.withParameters(logicalId)
+            samOptions.additionalBuildArgs?.let {
+                if (it.isNotBlank()) {
+                    commandLine.withParameters(*it.split(" ").toTypedArray())
                 }
             }
+
+            commandLine.withParameters(logicalId)
 
             val pathMappings = listOf(
                 PathMapping(templateLocation.parent.resolve(codeLocation).toString(), "/"),
@@ -200,9 +200,7 @@ abstract class LambdaBuilder {
         return buildFolder
     }
 
-    companion object : RuntimeGroupExtensionPointObject<LambdaBuilder>(
-        ExtensionPointName("aws.toolkit.lambda.builder")
-    ) {
+    companion object : RuntimeGroupExtensionPointObject<LambdaBuilder>(ExtensionPointName("aws.toolkit.lambda.builder")) {
         private val LOG = getLogger<LambdaBuilder>()
     }
 }

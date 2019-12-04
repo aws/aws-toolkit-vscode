@@ -103,7 +103,10 @@ abstract class ToolkitClientManager(private val sdkHttpClient: SdkHttpClient) {
         key: AwsClientKey,
         region: AwsRegion = key.region,
         credProvider: ToolkitCredentialsProvider = getCredentialsProvider()
-    ): T = createNewClient(key.serviceClass as KClass<T>, sdkHttpClient, Region.of(region.id), credProvider, userAgent)
+    ): T {
+        val sdkClass = key.serviceClass as KClass<T>
+        return createNewClient(sdkClass, sdkHttpClient, Region.of(region.id), credProvider, userAgent)
+    }
 
     companion object {
         private val GLOBAL_SERVICES = setOf("IamClient")

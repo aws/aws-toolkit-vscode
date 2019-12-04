@@ -4,6 +4,11 @@
 package software.aws.toolkits.jetbrains.ui;
 
 import com.intellij.openapi.ui.ValidationInfo;
+import com.intellij.uiDesigner.core.GridConstraints;
+import com.intellij.uiDesigner.core.GridLayoutManager;
+import java.awt.Dimension;
+import java.awt.Insets;
+import javax.swing.JComponent;
 import org.jetbrains.annotations.TestOnly;
 
 import javax.swing.JPanel;
@@ -43,13 +48,14 @@ public class SliderPanel {
         return slider.getValue();
     }
 
-    public ValidationInfo validate  () {
+    public ValidationInfo validate() {
         Integer value = null;
         try {
             value = Integer.parseInt(textField.getText());
-        } catch (Exception ignored) { }
+        } catch (Exception ignored) {
+        }
 
-        if (value == null || value  < min || value > max) {
+        if (value == null || value < min || value > max) {
             return new ValidationInfo(message("lambda.slider_validation", min, max), textField);
         }
         return null;
@@ -74,7 +80,7 @@ public class SliderPanel {
         slider.setSnapToTicks(snap);
         slider.setValue(defaultValue);
         slider.addChangeListener(e ->
-            textField.setText(Integer.toString(validValue(slider.getValue())))
+                                     textField.setText(Integer.toString(validValue(slider.getValue())))
         );
         textField.setText(Integer.toString(slider.getValue()));
         textField.addFocusListener(new FocusAdapter() {
@@ -105,4 +111,5 @@ public class SliderPanel {
             return originalValue;
         }
     }
+
 }

@@ -49,6 +49,7 @@ object PartitionParser {
 
 object ServiceEndpointResource : RemoteResource {
     override val urls: List<String> = listOf(
+        "https://idetoolkits.amazonwebservices.com/endpoints.json",
         "https://aws-toolkit-endpoints.s3.amazonaws.com/endpoints.json"
     )
     override val name: String = "service-endpoints.json"

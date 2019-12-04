@@ -5,18 +5,14 @@ package software.aws.toolkits.jetbrains.services.cloudformation
 
 import com.intellij.openapi.application.ApplicationManager
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
+import software.amazon.awssdk.services.cloudformation.model.ChangeSetStatus
 import software.amazon.awssdk.services.cloudformation.model.CloudFormationException
 import software.amazon.awssdk.services.cloudformation.model.DescribeStacksRequest
 import software.amazon.awssdk.services.cloudformation.model.Stack
 import software.amazon.awssdk.services.cloudformation.model.StackStatus
-import software.amazon.awssdk.services.cloudformation.model.StackSummary
 import software.aws.toolkits.core.utils.wait
 import software.aws.toolkits.resources.message
 import java.time.Duration
-import kotlin.streams.asSequence
-
-fun CloudFormationClient.listStackSummariesFilter(predicate: (StackSummary) -> Boolean): Sequence<StackSummary> =
-        this.listStacksPaginator().stackSummaries().stream().asSequence().filter(predicate)
 
 fun CloudFormationClient.executeChangeSetAndWait(stackName: String, changeSet: String) {
     val isCreate = try {
@@ -138,6 +134,32 @@ fun CloudFormationClient.waitForStackDeletionComplete(
         },
         successByException = { e -> e is CloudFormationException && e.awsErrorDetails().errorCode() == "ValidationError" },
         timeoutErrorMessage = message("cloudformation.delete_stack.timeout", stackName, maxAttempts * delay.seconds),
+        attempts = maxAttempts,
+        delay = delay
+    )
+}
+
+fun CloudFormationClient.waitForChangeSetCreateComplete(
+    stackName: String,
+    changeSetName: String,
+    maxAttempts: Int = 120,
+    delay: Duration = Duration.ofSeconds(2)
+) {
+    wait(
+        call = {
+            describeChangeSet {
+                it.stackName(stackName)
+                it.changeSetName(changeSetName)
+            }
+        },
+        success = { it.status() == ChangeSetStatus.CREATE_COMPLETE },
+        fail = {
+            if (it.status() == ChangeSetStatus.FAILED) {
+                it.statusReason()
+            } else {
+                null
+            }
+        },
         attempts = maxAttempts,
         delay = delay
     )

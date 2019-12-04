@@ -6,14 +6,17 @@ package software.aws.toolkits.jetbrains.services.lambda.execution.remote
 import com.intellij.execution.RunManager
 import com.intellij.execution.RunnerAndConfigurationSettings
 import com.intellij.execution.actions.ConfigurationContext
-import com.intellij.execution.actions.RunConfigurationProducer
+import com.intellij.execution.actions.LazyRunConfigurationProducer
 import com.intellij.execution.configurations.ConfigurationFactory
 import com.intellij.openapi.util.Ref
 import com.intellij.psi.PsiElement
-import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfiguration
+import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationType
 
-@Suppress("DEPRECATION") // LazyRunConfigurationProducer not added till 2019.1 FIX_WHEN_MIN_IS_192
-class RemoteLambdaRunConfigurationProducer : RunConfigurationProducer<RemoteLambdaRunConfiguration>(getFactory()) {
+class RemoteLambdaRunConfigurationProducer : LazyRunConfigurationProducer<RemoteLambdaRunConfiguration>() {
+    override fun getConfigurationFactory(): ConfigurationFactory = LambdaRunConfigurationType.getInstance()
+        .configurationFactories
+        .first { it is RemoteLambdaRunConfigurationFactory }
+
     // Filter all Lambda run configurations down to only ones that are Lambda remote for this run producer
     override fun getConfigurationSettingsList(runManager: RunManager): List<RunnerAndConfigurationSettings> =
         super.getConfigurationSettingsList(runManager).filter { it.configuration is RemoteLambdaRunConfiguration }
@@ -43,11 +46,5 @@ class RemoteLambdaRunConfigurationProducer : RunConfigurationProducer<RemoteLamb
         return configuration.functionName() == function.name &&
                 configuration.credentialProviderId() == function.credentialProviderId &&
                 configuration.regionId() == function.region.id
-    }
-
-    companion object {
-        private fun getFactory(): ConfigurationFactory = LambdaRunConfiguration.getInstance()
-            .configurationFactories
-            .first { it is RemoteLambdaRunConfigurationFactory }
     }
 }

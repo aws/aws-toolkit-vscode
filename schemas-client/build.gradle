@@ -1,0 +1,28 @@
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+import toolkits.gradle.sdk.GenerateSdk
+
+dependencies {
+    compile("software.amazon.awssdk:services:$awsSdkVersion")
+    compile("software.amazon.awssdk:aws-json-protocol:$awsSdkVersion")
+    runtime("software.amazon.awssdk:core:$awsSdkVersion")
+}
+
+def generatedSources = "$buildDir/generated-src"
+
+sourceSets {
+    main.java.srcDir generatedSources
+}
+
+idea {
+    module {
+        generatedSourceDirs.add(file(generatedSources))
+    }
+}
+
+task generateSchemasClient(type: GenerateSdk) {
+    c2jFolder = file("schemasC2J")
+    outputDir = file(generatedSources)
+}
+compileJava.dependsOn(generateSchemasClient)

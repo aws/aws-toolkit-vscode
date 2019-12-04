@@ -8,6 +8,7 @@ import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
+import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.roots.ModifiableRootModel
@@ -22,10 +23,13 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.local.LocalLamb
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.LocalLambdaRunConfigurationProducer
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
+import software.aws.toolkits.jetbrains.services.schemas.SchemaTemplateParameters
+import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources.AWS_EVENTS_REGISTRY
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.ui.wizard.AwsModuleType
 import software.aws.toolkits.jetbrains.ui.wizard.SamInitRunner
 import software.aws.toolkits.jetbrains.ui.wizard.SamProjectGenerator
+import software.aws.toolkits.jetbrains.ui.wizard.SchemaSelectionPanel
 import software.aws.toolkits.jetbrains.ui.wizard.SdkSelectionPanel
 
 /**
@@ -43,11 +47,19 @@ interface SamProjectWizard {
      */
     fun createSdkSelectionPanel(generator: SamProjectGenerator): SdkSelectionPanel
 
+    /**
+     * Return an instance of UI section for selecting Schema for the [RuntimeGroup]
+     */
+    fun createSchemaSelectionPanel(
+        generator: SamProjectGenerator
+    ): SchemaSelectionPanel
+
     companion object : RuntimeGroupExtensionPointObject<SamProjectWizard>(ExtensionPointName("aws.toolkit.lambda.sam.projectWizard"))
 }
 
 data class SamNewProjectSettings(
     val runtime: Runtime,
+    val schemaParameters: SchemaTemplateParameters?,
     val template: SamProjectTemplate,
     val sdkSettings: SdkSettings
 )
@@ -61,10 +73,17 @@ data class SdkBasedSdkSettings(
     val sdk: Sdk?
 ) : SdkSettings
 
+sealed class TemplateParameters {
+    data class LocationBasedTemplate(val location: String) : TemplateParameters()
+    data class AppBasedTemplate(val appTemplate: String, val dependencyManager: String) : TemplateParameters()
+}
+
 abstract class SamProjectTemplate {
     abstract fun getName(): String
 
     open fun getDescription(): String? = null
+
+    open fun functionName(): String = "HelloWorldFunction"
 
     override fun toString() = getName()
 
@@ -81,10 +100,17 @@ abstract class SamProjectTemplate {
         }
     }
 
-    open fun postCreationAction(settings: SamNewProjectSettings, contentRoot: VirtualFile, rootModel: ModifiableRootModel) {
+    open fun postCreationAction(
+        settings: SamNewProjectSettings,
+        contentRoot: VirtualFile,
+        rootModel: ModifiableRootModel,
+        sourceCreatingProject: Project,
+        indicator: ProgressIndicator
+    ) {
         SamCommon.excludeSamDirectory(contentRoot, rootModel)
-        openReadmeFile(contentRoot, rootModel.project)
-        createRunConfigurations(contentRoot, rootModel.project)
+        val project = rootModel.project
+        openReadmeFile(contentRoot, project)
+        createRunConfigurations(contentRoot, project)
     }
 
     private fun openReadmeFile(contentRoot: VirtualFile, project: Project) {
@@ -113,10 +139,10 @@ abstract class SamProjectTemplate {
 
     fun getIcon() = AwsIcons.Resources.SERVERLESS_APP
 
-    fun build(project: Project, runtime: Runtime, outputDir: VirtualFile) {
+    fun build(project: Project?, runtime: Runtime, schemaParameters: SchemaTemplateParameters?, outputDir: VirtualFile) {
         var hasException = false
         try {
-            doBuild(runtime, outputDir)
+            doBuild(runtime, schemaParameters, outputDir)
         } catch (e: Throwable) {
             hasException = true
             throw e
@@ -127,26 +153,35 @@ abstract class SamProjectTemplate {
                     metadata("runtime", runtime.name)
                     metadata("samVersion", SamCommon.getVersionString())
                     metadata("hasException", hasException)
+                    metadata("hasSchema", schemaParameters != null)
+                    metadata("template", this.javaClass.simpleName)
+                    schemaParameters?.let {
+                        if (it.schema.registryName == AWS_EVENTS_REGISTRY) {
+                            metadata("awsSchema", it.schema.name)
+                        }
+                    }
                 }
             }
         }
     }
 
-    private fun doBuild(runtime: Runtime, outputDir: VirtualFile) {
+    private fun doBuild(runtime: Runtime, schemaParameters: SchemaTemplateParameters?, outputDir: VirtualFile) {
         SamInitRunner.execute(
             AwsModuleType.ID,
             outputDir,
             runtime,
-            location(),
-            dependencyManager()
+            templateParameters(),
+            if (supportsDynamicSchemas()) schemaParameters else null
         )
     }
 
-    protected open fun location(): String? = null
-
-    protected open fun dependencyManager(): String? = null
+    protected abstract fun templateParameters(): TemplateParameters
 
     abstract fun supportedRuntimes(): Set<Runtime>
+
+    // Gradual opt-in for Schema support on a template by-template basis.
+    // All SAM templates should support schema selection, but for launch include only EventBridge for most optimal customer experience
+    open fun supportsDynamicSchemas(): Boolean = false
 
     companion object {
         private val LOG = getLogger<SamProjectTemplate>()

@@ -8,10 +8,10 @@ import com.intellij.idea.ActionsBundle
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.psi.NavigatablePsiElement
 import com.intellij.util.OpenSourceUtil
-import software.aws.toolkits.jetbrains.core.explorer.ResourceNodeAction
+import software.aws.toolkits.jetbrains.core.explorer.actions.ExplorerNodeAction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
 
-class GoToHandlerAction : ResourceNodeAction<LambdaFunctionNode>(ActionsBundle.actionText("EditSource"), description = ActionsBundle.actionText("EditSource")) {
+class GoToHandlerAction : ExplorerNodeAction<LambdaFunctionNode>(ActionsBundle.actionText("EditSource"), description = ActionsBundle.actionText("EditSource")) {
     override fun update(selected: List<LambdaFunctionNode>, e: AnActionEvent) {
         super.update(selected, e)
 

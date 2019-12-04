@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.lambda.java
 
 import com.intellij.lang.jvm.JvmModifier
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.module.ModuleUtilCore
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
@@ -34,18 +35,20 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
 
         val psiFacade = JavaPsiFacade.getInstance(project)
         return DumbService.getInstance(project).computeWithAlternativeResolveEnabled<Array<NavigatablePsiElement>, Exception> {
-            val classes = psiFacade.findClasses(className, searchScope).toList()
-            return@computeWithAlternativeResolveEnabled if (methodName.isNullOrEmpty()) {
-                classes.filterIsInstance<NavigatablePsiElement>().toTypedArray()
-            } else {
-                val handlerMethod = classes.asSequence()
-                    .map { it.findMethodsByName(methodName, true) }
-                    .flatMap { it.asSequence() }
-                    .filter { it.body != null } // Filter out interfaces
-                    .pickMostSpecificHandler()
-                handlerMethod?.let {
-                    arrayOf(it)
-                } ?: NavigatablePsiElement.EMPTY_NAVIGATABLE_ELEMENT_ARRAY
+            ApplicationManager.getApplication().runReadAction<Array<NavigatablePsiElement>> {
+                val classes = psiFacade.findClasses(className, searchScope).toList()
+                return@runReadAction if (methodName.isNullOrEmpty()) {
+                    classes.filterIsInstance<NavigatablePsiElement>().toTypedArray()
+                } else {
+                    val handlerMethod = classes.asSequence()
+                        .map { it.findMethodsByName(methodName, true) }
+                        .flatMap { it.asSequence() }
+                        .filter { it.body != null } // Filter out interfaces
+                        .pickMostSpecificHandler()
+                    handlerMethod?.let {
+                        arrayOf(it)
+                    } ?: NavigatablePsiElement.EMPTY_NAVIGATABLE_ELEMENT_ARRAY
+                }
             }
         }
     }

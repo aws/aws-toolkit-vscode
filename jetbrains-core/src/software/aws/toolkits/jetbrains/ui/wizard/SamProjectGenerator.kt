@@ -12,6 +12,7 @@ import com.intellij.ide.util.projectWizard.WebProjectTemplate
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.module.Module
+import com.intellij.openapi.project.DefaultProjectFactory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
@@ -23,6 +24,7 @@ import com.intellij.platform.HideableProjectGenerator
 import com.intellij.platform.ProjectGeneratorPeer
 import com.intellij.platform.ProjectTemplate
 import icons.AwsIcons
+import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.services.lambda.SamNewProjectSettings
 import software.aws.toolkits.resources.message
@@ -38,6 +40,12 @@ class SamProjectGenerator : ProjectTemplate,
     val builder = SamProjectBuilder(this)
     val step = SamProjectRuntimeSelectionStep(this)
     val peer = SamProjectGeneratorSettingsPeer(this)
+
+    // Stable source-creating project for creating new SAM application and making API calls safely,
+    // as AWSToolkit assumes across the board it's operating with an active project
+    // Independent of lastUsedProject because it may not be set,
+    // or could be disposed if the user chooses to create a new project in the same window as their previous
+    val defaultSourceCreatingProject = createDefaultSourceCreatingProject()
 
     override fun isHidden(): Boolean = false
 
@@ -64,6 +72,14 @@ class SamProjectGenerator : ProjectTemplate,
                 rootModel.commit()
             }
         }
+    }
+
+    private fun createDefaultSourceCreatingProject(): Project {
+        val newDefaultProject = DefaultProjectFactory.getInstance().defaultProject
+
+        // Explicitly eager load ProjectAccountSettingsManager for the project to subscribe to credential change events
+        ProjectAccountSettingsManager.getInstance(newDefaultProject)
+        return newDefaultProject
     }
 
     // the peer is in control of the first pane

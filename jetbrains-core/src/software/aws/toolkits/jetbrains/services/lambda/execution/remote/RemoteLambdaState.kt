@@ -1,15 +1,12 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-@file:Suppress("DEPRECATION") // TODO: Migrate to GlobalSearchScopes.executionScope when we drop < 192 FIX_WHEN_MIN_IS_192
-
 package software.aws.toolkits.jetbrains.services.lambda.execution.remote
 
 import com.intellij.execution.DefaultExecutionResult
 import com.intellij.execution.ExecutionResult
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.RunProfileState
-import com.intellij.execution.configurations.SearchScopeProvider
 import com.intellij.execution.filters.TextConsoleBuilder
 import com.intellij.execution.filters.TextConsoleBuilderFactory
 import com.intellij.execution.process.ProcessHandler
@@ -19,6 +16,7 @@ import com.intellij.execution.runners.ProgramRunner
 import com.intellij.json.JsonLanguage
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runInEdt
+import com.intellij.psi.search.GlobalSearchScopes
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.LogType
@@ -37,7 +35,7 @@ class RemoteLambdaState(
 
     init {
         val project = environment.project
-        val searchScope = SearchScopeProvider.createSearchScope(project, environment.runProfile)
+        val searchScope = GlobalSearchScopes.executionScope(project, environment.runProfile)
         consoleBuilder = TextConsoleBuilderFactory.getInstance().createBuilder(project, searchScope)
     }
 

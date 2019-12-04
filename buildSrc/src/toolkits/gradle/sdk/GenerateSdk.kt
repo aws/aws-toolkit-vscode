@@ -11,6 +11,7 @@ import org.gradle.api.tasks.TaskAction
 import software.amazon.awssdk.codegen.C2jModels
 import software.amazon.awssdk.codegen.CodeGenerator
 import software.amazon.awssdk.codegen.model.config.customization.CustomizationConfig
+import software.amazon.awssdk.codegen.model.service.Paginators
 import software.amazon.awssdk.codegen.model.service.ServiceModel
 import software.amazon.awssdk.codegen.utils.ModelLoaderUtils
 import java.io.File
@@ -30,6 +31,7 @@ open class GenerateSdk : DefaultTask() {
         LOG.info("Generating SDK from $c2jFolder")
         val models = C2jModels.builder()
             .serviceModel(loadServiceModel())
+            .paginatorsModel(loadPaginatorsModel())
             .customizationConfig(loadCustomizationConfig())
             .build()
 
@@ -43,6 +45,13 @@ open class GenerateSdk : DefaultTask() {
 
     private fun loadServiceModel(): ServiceModel? =
         ModelLoaderUtils.loadModel(ServiceModel::class.java, File(c2jFolder, "service-2.json"))
+
+    private fun loadPaginatorsModel(): Paginators? {
+        val paginatorsFile = File(c2jFolder, "paginators-1.json")
+        if (paginatorsFile.exists())
+            return ModelLoaderUtils.loadModel(Paginators::class.java, paginatorsFile)
+        return null
+    }
 
     private fun loadCustomizationConfig(): CustomizationConfig = ModelLoaderUtils.loadOptionalModel(
         CustomizationConfig::class.java,

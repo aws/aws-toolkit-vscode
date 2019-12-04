@@ -1,0 +1,15 @@
+using Amazon.Lambda.Core;
+using Amazon.Lambda.ApplicationLoadBalancerEvents;
+
+[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
+
+namespace HelloWorld
+{
+    public class Function
+    {
+        public ApplicationLoadBalancerResponse <AWS_LAMBDA_RUN_METHOD_GUTTER_MARK>FunctionHandler</AWS_LAMBDA_RUN_METHOD_GUTTER_MARK>(ApplicationLoadBalancerRequest appLoadBalancerEvent)
+        {
+            return new ApplicationLoadBalancerResponse();
+        }
+    }
+}

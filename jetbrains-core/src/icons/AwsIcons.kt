@@ -17,16 +17,27 @@ object AwsIcons {
         @JvmField val IAM_LARGE = IconLoader.getIcon("/icons/logos/IAM_large.svg") // 64x64
         @JvmField val S3_LARGE = IconLoader.getIcon("/icons/logos/S3_Large.svg") // 64x64
         @JvmField val CLOUD_FORMATION_TOOL = IconLoader.getIcon("/icons/logos/CloudFormationTool.svg") // 13x13
+        @JvmField val EVENT_BRIDGE = IconLoader.getIcon("/icons/logos/EventBridge.svg") // 13x13
     }
 
     object Resources {
         @JvmField val CLOUDFORMATION_STACK = IconLoader.getIcon("/icons/resources/CloudFormationStack.svg") // 16x16
         @JvmField val LAMBDA_FUNCTION = IconLoader.getIcon("/icons/resources/LambdaFunction.svg") // 16x16
+        @JvmField val SCHEMA_REGISTRY = IconLoader.getIcon("/icons/resources/SchemaRegistry.svg") // 16x16
+        @JvmField val SCHEMA = IconLoader.getIcon("/icons/resources/Schema.svg") // 16x16
         @JvmField val SERVERLESS_APP = IconLoader.getIcon("/icons/resources/ServerlessApp.svg") // 16x16
         @JvmField val S3_BUCKET = IconLoader.getIcon("/icons/resources/bucket.png")
+        object Ecs {
+            @JvmField val ECS_CLUSTER = IconLoader.getIcon("/icons/resources/ecs/EcsCluster.svg")
+            @JvmField val ECS_SERVICE = IconLoader.getIcon("/icons/resources/ecs/EcsService.svg")
+            @JvmField val ECS_TASK_DEFINITION = IconLoader.getIcon("/icons/resources/ecs/EcsTaskDefinition.svg")
+        }
     }
 
     object Actions {
         @JvmField val LAMBDA_FUNCTION_NEW: Icon = LayeredIcon.create(Resources.LAMBDA_FUNCTION, AllIcons.Actions.New)
+        @JvmField val SCHEMA_VIEW: Icon = AllIcons.Actions.Preview
+        @JvmField val SCHEMA_CODE_GEN: Icon = AllIcons.Actions.Download
+        @JvmField val SCHEMA_SEARCH: Icon = AllIcons.Actions.Search
     }
 }

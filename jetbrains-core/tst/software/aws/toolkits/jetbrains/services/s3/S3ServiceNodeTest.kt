@@ -34,7 +34,7 @@ class S3ServiceNodeTest {
     private val mockClient = delegateMock<S3Client>()
     private val mockSettingsManager by lazy {
         ProjectAccountSettingsManager.getInstance(projectRule.project)
-                as MockProjectAccountSettingsManager
+            as MockProjectAccountSettingsManager
     }
 
     @Before

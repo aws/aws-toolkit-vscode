@@ -17,10 +17,10 @@ class SamRunningState(
     environment: ExecutionEnvironment,
     val settings: LocalLambdaRunSettings
 ) : CommandLineState(environment) {
-    internal lateinit var builtLambda: BuiltLambda
+    lateinit var builtLambda: BuiltLambda
 
-    internal val runner = if (environment.executor.id == DefaultDebugExecutor.EXECUTOR_ID) {
-        SamDebugger()
+    val runner = if (environment.executor.id == DefaultDebugExecutor.EXECUTOR_ID) {
+        SamDebugger(settings.runtimeGroup)
     } else {
         SamRunner()
     }
@@ -53,7 +53,13 @@ class SamRunningState(
             }
         }
 
-        runner.patchCommandLine(this, commandLine)
+        samOptions.additionalLocalArgs?.let {
+            if (it.isNotBlank()) {
+                commandLine.withParameters(*it.split(" ").toTypedArray())
+            }
+        }
+
+        runner.patchCommandLine(commandLine)
 
         return ProcessHandlerFactory.getInstance().createColoredProcessHandler(commandLine)
     }

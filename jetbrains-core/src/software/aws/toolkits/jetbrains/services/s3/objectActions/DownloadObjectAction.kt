@@ -35,7 +35,7 @@ class DownloadObjectAction(
     @Suppress("unused")
     override fun doActionPerformed(e: AnActionEvent) {
         val project = e.getRequiredData(LangDataKeys.PROJECT)
-        val client = bucket.s3Bucket.client
+        val client = bucket.client
         val descriptor = FileSaverDescriptor(
             message("s3.download.object.action"), message("s3.download.object.description")
         )
@@ -72,7 +72,7 @@ class DownloadObjectAction(
     }
 
     override fun isEnabled(): Boolean = !(treeTable.isEmpty || (treeTable.selectedRow < 0) ||
-            (treeTable.getValueAt(treeTable.selectedRow, 1) == ""))
+        (treeTable.getValueAt(treeTable.selectedRow, 1) == ""))
 
     fun downloadObjectAction(project: Project, client: S3Client, file: VirtualFile, fileWrapper: VirtualFileWrapper) {
         val bucketName = bucket.getVirtualBucketName()
@@ -81,15 +81,15 @@ class DownloadObjectAction(
             .key(file.name)
             .build()
         ProgressManager.getInstance().run(object : Task.Backgroundable(project, message("s3.download.object.progress", file.name), true) {
-                override fun run(indicator: ProgressIndicator) {
-                    val fileOutputStream = fileWrapper.file.outputStream()
-                    val progressStream = ProgressOutputStream(
-                        fileOutputStream,
-                        file.length,
-                        indicator
-                    )
-                    client.getObject(request, ResponseTransformer.toOutputStream(progressStream))
-                }
-            })
+            override fun run(indicator: ProgressIndicator) {
+                val fileOutputStream = fileWrapper.file.outputStream()
+                val progressStream = ProgressOutputStream(
+                    fileOutputStream,
+                    file.length,
+                    indicator
+                )
+                client.getObject(request, ResponseTransformer.toOutputStream(progressStream))
+            }
+        })
     }
 }

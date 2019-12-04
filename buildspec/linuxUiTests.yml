@@ -1,23 +1,26 @@
 version: 0.2
 
-cache:
-  paths:
-    - '/root/.gradle/caches/**/*'
-    - '/root/.gradle/wrapper/**/*'
+#cache:
+#  paths:
+#    - 'gradle-home/caches/**/*'
+#    - 'gradle-home/wrapper/**/*'
 
 env:
   variables:
     CI: true
     RECORD_UI: true
+    LOCAL_ENV_RUN: true
+    GRADLE_USER_HOME: gradle-home
 
 phases:
   install:
     runtime-versions:
       java: openjdk8
+      dotnet: 2.2
 
     commands:
       - apt-get update
-      - apt-get install -y xvfb icewm procps ffmpeg libswt-gtk-3-java
+      - apt-get install -y xvfb icewm procps ffmpeg libswt-gtk-3-java msbuild
       - pip install --user aws-sam-cli
 
   build:
@@ -28,20 +31,20 @@ phases:
       - icewm &
       - export SAM_CLI_EXEC=$(python -m site --user-base)/bin/sam
       - chmod +x gradlew
-      - ./gradlew buildPlugin --console plain
+      - ./gradlew buildPlugin --console plain --info
       - >
         if [ "$RECORD_UI" ]; then
-        ffmpeg -f x11grab -video_size 1920x1080 -i :99 -codec:v libx264 -r 12 /tmp/screen_recording.mp4 &
+        ffmpeg -loglevel warning -f x11grab -video_size 1920x1080 -i :99 -codec:v libx264 -r 12 /tmp/screen_recording.mp4 &
         fi
-      - ./gradlew guiTest coverageReport --info --console plain
+      - ./gradlew guiTest coverageReport --console plain --info
 
   post_build:
     commands:
       - TEST_ARTIFACTS="/tmp/testArtifacts"
       - mkdir $TEST_ARTIFACTS
       - rsync -r guitest.log $TEST_ARTIFACTS/gui/ || true
-      - rsync -rmv --include='*/' --include '**/build/idea-sandbox/system*/log/**' --exclude='*' . $TEST_ARTIFACTS/ || true
-      - rsync -rmv --include='*/' --include '**/build/reports/**' --exclude='*' . $TEST_ARTIFACTS/ || true
+      - rsync -rmq --include='*/' --include '**/build/idea-sandbox/system*/log/**' --exclude='*' . $TEST_ARTIFACTS/ || true
+      - rsync -rmq --include='*/' --include '**/build/reports/**' --exclude='*' . $TEST_ARTIFACTS/ || true
 
       - if [ "$RECORD_UI" ]; then pkill -2 ffmpeg; while pgrep ffmpeg > /dev/null; do sleep 1; done; fi
       - if [ "$RECORD_UI" ]; then cp /tmp/screen_recording.mp4 $TEST_ARTIFACTS/gui/; fi
@@ -49,7 +52,7 @@ phases:
       - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
       - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site
       - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"
-      - curl -s https://codecov.io/bash > codecov.sh
+      - curl -s https://codecov.io/bash > codecov.sh || true # this sometimes times out but we don't want to fail the build
       - if [ "$CODEBUILD_BUILD_SUCCEEDING" ] && [ "$CODE_COV_TOKEN" ]; then bash ./codecov.sh -t $CODE_COV_TOKEN -F uitest || true; fi
 
 artifacts:

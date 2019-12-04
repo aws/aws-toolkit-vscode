@@ -47,3 +47,19 @@ fun setupSamSelectionElements(samExecutableField: JTextField, editButton: JButto
         }
     })
 }
+
+@JvmOverloads
+fun validateSamForSchemaSupport(samExecutableField: JTextField, editButton: JButton, label: JComponent) {
+    val samExe = samExecutableField.text
+
+    ProgressManager.getInstance().run(object : Task.Backgroundable(null, message("lambda.run_configuration.sam.validating_schema_version"), false) {
+        override fun run(indicator: ProgressIndicator) {
+            val validSamPath = (SamCommon.validateSchemasSupport(StringUtil.nullize(samExe)) == null)
+            runInEdt {
+                samExecutableField.isVisible = !validSamPath
+                editButton.isVisible = !validSamPath
+                label.isVisible = !validSamPath
+            }
+        }
+    })
+}

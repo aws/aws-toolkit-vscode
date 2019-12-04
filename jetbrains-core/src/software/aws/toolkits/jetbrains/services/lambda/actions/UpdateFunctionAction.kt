@@ -9,7 +9,7 @@ import com.intellij.openapi.application.ApplicationManager
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
-import software.aws.toolkits.jetbrains.core.explorer.SingleResourceNodeAction
+import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeAction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
@@ -43,7 +43,13 @@ abstract class UpdateFunctionAction(private val mode: EditFunctionMode, title: S
                 selectedFunction.region
             )
 
-            warnResourceOperationAgainstCodePipeline(project, selectedFunction.name, selectedFunction.arn, TaggingResourceType.LAMBDA_FUNCTION, Operation.UPDATE) {
+            warnResourceOperationAgainstCodePipeline(
+                project,
+                selectedFunction.name,
+                selectedFunction.arn,
+                TaggingResourceType.LAMBDA_FUNCTION,
+                Operation.UPDATE
+            ) {
                 EditFunctionDialog(project, lambdaFunction, mode = mode).show()
             }
         }

@@ -8,22 +8,19 @@ import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.xdebugger.XDebugProcess
 import com.intellij.xdebugger.XDebugProcessStarter
 import com.intellij.xdebugger.XDebugSession
-import com.intellij.xdebugger.XSourcePosition
 import com.jetbrains.python.PythonHelper
 import com.jetbrains.python.debugger.PyDebugProcess
-import com.jetbrains.python.debugger.PyLocalPositionConverter
-import com.jetbrains.python.debugger.PySourcePosition
-import software.aws.toolkits.jetbrains.services.lambda.execution.PathMapper
-import software.aws.toolkits.jetbrains.services.lambda.execution.PathMapping
+import software.aws.toolkits.jetbrains.services.PathMapper
+import software.aws.toolkits.jetbrains.services.PathMapping
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamDebugSupport
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamRunningState
 
 class PythonSamDebugSupport : SamDebugSupport {
-    override fun patchCommandLine(debugPort: Int, state: SamRunningState, commandLine: GeneralCommandLine) {
-        super.patchCommandLine(debugPort, state, commandLine)
+    override fun patchCommandLine(debugPorts: List<Int>, commandLine: GeneralCommandLine) {
+        super.patchCommandLine(debugPorts, commandLine)
 
         // Note: To debug pydevd, pass '--DEBUG'
-        val debugArgs = "-u $DEBUGGER_VOLUME_PATH/pydevd.py --multiprocess --port $debugPort --file"
+        val debugArgs = "-u $DEBUGGER_VOLUME_PATH/pydevd.py --multiprocess --port ${debugPorts.first()} --file"
 
         commandLine.withParameters("--debugger-path")
             .withParameters(PythonHelper.DEBUGGER.pythonPathEntry) // Mount pydevd from PyCharm into docker
@@ -34,7 +31,7 @@ class PythonSamDebugSupport : SamDebugSupport {
     override fun createDebugProcess(
         environment: ExecutionEnvironment,
         state: SamRunningState,
-        debugPort: Int
+        debugPorts: List<Int>
     ): XDebugProcessStarter? = object : XDebugProcessStarter() {
         override fun start(session: XDebugSession): XDebugProcess {
             val mappings = state.builtLambda.mappings.map {
@@ -57,9 +54,9 @@ class PythonSamDebugSupport : SamDebugSupport {
                 executionResult.executionConsole,
                 executionResult.processHandler,
                 "localhost",
-                debugPort
+                debugPorts.first()
             ).also {
-                it.positionConverter = PositionConverter(PathMapper(mappings))
+                it.positionConverter = PathMapper.PositionConverter(PathMapper(mappings))
             }
         }
     }
@@ -67,21 +64,5 @@ class PythonSamDebugSupport : SamDebugSupport {
     private companion object {
         const val TASK_PATH = "/var/task"
         const val DEBUGGER_VOLUME_PATH = "/tmp/lambci_debug_files"
-    }
-
-    /**
-     * Converts the IDE's view of the world into the  Docker image's view allowing for breakpoints and frames to work
-     */
-    internal class PositionConverter(private val pathMapper: PathMapper) : PyLocalPositionConverter() {
-        override fun convertToPython(filePath: String, line: Int): PySourcePosition {
-            val localSource = super.convertToPython(filePath, line)
-            val remoteFile = pathMapper.convertToRemote(localSource.file) ?: localSource.file
-            return PyRemoteSourcePosition(remoteFile, localSource.line)
-        }
-
-        override fun convertFromPython(position: PySourcePosition, frameName: String?): XSourcePosition? {
-            val localFile = pathMapper.convertToLocal(position.file) ?: position.file
-            return createXSourcePosition(getVirtualFile(localFile), position.line)
-        }
     }
 }

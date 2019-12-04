@@ -21,6 +21,7 @@ import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsMa
 import software.aws.toolkits.jetbrains.core.stack.StackWindowManager
 import software.aws.toolkits.jetbrains.services.cloudformation.describeStack
 import software.aws.toolkits.jetbrains.services.cloudformation.executeChangeSetAndWait
+import software.aws.toolkits.jetbrains.services.cloudformation.validateSamTemplateHasResources
 import software.aws.toolkits.jetbrains.services.cloudformation.validateSamTemplateLambdaRuntimes
 import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationDialog
 import software.aws.toolkits.jetbrains.services.lambda.deploy.SamDeployDialog
@@ -59,7 +60,7 @@ class DeployServerlessApplicationAction : AnActionWrapper(
         val templateFile = getSamTemplateFile(e)
         if (templateFile == null) {
             Exception(message("serverless.application.deploy.toast.template_file_failure"))
-                    .notifyError(message("aws.notification.title"), project)
+                .notifyError(message("aws.notification.title"), project)
             return
         }
 
@@ -172,5 +173,10 @@ class DeployServerlessApplicationAction : AnActionWrapper(
         }
     }
 
-    private fun validateTemplateFile(project: Project, templateFile: VirtualFile): String? = project.validateSamTemplateLambdaRuntimes(templateFile)
+    private fun validateTemplateFile(project: Project, templateFile: VirtualFile): String? =
+        try {
+            project.validateSamTemplateHasResources(templateFile) ?: project.validateSamTemplateLambdaRuntimes(templateFile)
+        } catch (e: Exception) {
+            message("serverless.application.deploy.error.bad_parse", templateFile.path, e)
+        }
 }

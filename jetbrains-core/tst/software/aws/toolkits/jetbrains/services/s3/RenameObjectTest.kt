@@ -11,6 +11,7 @@ import org.assertj.core.api.Assertions
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.Bucket
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest
 import software.amazon.awssdk.services.s3.model.CopyObjectResponse
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
@@ -19,7 +20,6 @@ import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.services.s3.bucketEditor.S3TreeTable
 import software.aws.toolkits.jetbrains.services.s3.objectActions.RenameObjectAction
 import software.aws.toolkits.jetbrains.utils.delegateMock
-import java.time.Instant
 
 class RenameObjectTest {
 
@@ -39,7 +39,7 @@ class RenameObjectTest {
 
         val fileSystemMock = S3VirtualFileSystem(s3Client)
         val treeTableMock = delegateMock<S3TreeTable>()
-        val virtualBucketMock = S3VirtualBucket(fileSystemMock, S3Bucket("TestBucket", s3Client, Instant.parse("1995-10-23T10:12:35Z")))
+        val virtualBucketMock = S3VirtualBucket(fileSystemMock, Bucket.builder().name("TestBucket").build())
         val renameObjectMock = RenameObjectAction(treeTableMock, virtualBucketMock)
 
         s3Client.stub {

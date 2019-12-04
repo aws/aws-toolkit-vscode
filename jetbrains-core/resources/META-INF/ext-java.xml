@@ -2,11 +2,18 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 <idea-plugin>
+    <extensions defaultExtensionNs="com.intellij">
+        <codeInsight.lineMarkerProvider language="JAVA" implementationClass="software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker"/>
+    </extensions>
+
     <extensions defaultExtensionNs="aws.toolkit.lambda">
         <runtimeGroup runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.java.JavaRuntimeGroup"/>
         <builder runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.java.JavaLambdaBuilder"/>
         <sam.debugSupport runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.java.JavaSamDebugSupport"/>
         <handlerResolver runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.java.JavaLambdaHandlerResolver"/>
         <sam.projectWizard runtimeGroup="JAVA" implementation="software.aws.toolkits.jetbrains.services.lambda.java.JavaSamProjectWizard"/>
+    </extensions>
+    <extensions defaultExtensionNs="aws.toolkit.clouddebug">
+        <debuggerSupport implementation="software.aws.toolkits.jetbrains.services.clouddebug.java.JvmDebuggerSupport"/>
     </extensions>
 </idea-plugin>

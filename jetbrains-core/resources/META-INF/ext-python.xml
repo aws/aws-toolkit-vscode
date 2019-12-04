@@ -2,11 +2,18 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 <idea-plugin>
+    <extensions defaultExtensionNs="com.intellij">
+        <codeInsight.lineMarkerProvider language="Python" implementationClass="software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker"/>
+    </extensions>
+
     <extensions defaultExtensionNs="aws.toolkit.lambda">
         <runtimeGroup runtimeGroup="PYTHON" implementation="software.aws.toolkits.jetbrains.services.lambda.python.PythonRuntimeGroup"/>
         <builder runtimeGroup="PYTHON" implementation="software.aws.toolkits.jetbrains.services.lambda.python.PythonLambdaBuilder"/>
         <handlerResolver runtimeGroup="PYTHON" implementation="software.aws.toolkits.jetbrains.services.lambda.python.PythonLambdaHandlerResolver"/>
         <sam.debugSupport runtimeGroup="PYTHON" implementation="software.aws.toolkits.jetbrains.services.lambda.python.PythonSamDebugSupport"/>
         <sam.projectWizard runtimeGroup="PYTHON" implementation="software.aws.toolkits.jetbrains.services.lambda.python.PythonSamProjectWizard"/>
+    </extensions>
+    <extensions defaultExtensionNs="aws.toolkit.clouddebug">
+        <debuggerSupport implementation="software.aws.toolkits.jetbrains.services.clouddebug.python.PythonDebuggerSupport"/>
     </extensions>
 </idea-plugin>

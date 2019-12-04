@@ -4,9 +4,20 @@
 // Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package software.aws.toolkits.jetbrains.ui.tree;
 
+import static com.intellij.diagnostic.ThreadDumper.dumpThreadsToString;
+import static com.intellij.util.ui.tree.TreeUtil.expandAll;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.progress.ProcessCanceledException;
 import com.intellij.openapi.util.Disposer;
+import com.intellij.testFramework.ProjectRule;
 import com.intellij.ui.tree.TreePathUtil;
 import com.intellij.ui.tree.TreeVisitor;
 import com.intellij.util.ArrayUtilRt;
@@ -14,9 +25,6 @@ import com.intellij.util.concurrency.Invoker;
 import com.intellij.util.concurrency.InvokerSupplier;
 import com.intellij.util.ui.tree.AbstractTreeModel;
 import com.intellij.util.ui.tree.TreeModelAdapter;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.concurrency.AsyncPromise;
-import org.junit.Test;
 
 import javax.swing.JTree;
 import javax.swing.SwingUtilities;
@@ -35,15 +43,10 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import static com.intellij.diagnostic.ThreadDumper.dumpThreadsToString;
-import static com.intellij.util.ui.tree.TreeUtil.expandAll;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.concurrency.AsyncPromise;
+import org.junit.Rule;
+import org.junit.Test;
 
 public final class AsyncTreeModelTest {
   /**
@@ -54,6 +57,9 @@ public final class AsyncTreeModelTest {
    * Set to true to print some debugging information.
    */
   private static final boolean PRINT = false;
+
+  @Rule
+  public ProjectRule projectRule = new ProjectRule();
 
   @Test
   public void testAggressiveUpdating() {

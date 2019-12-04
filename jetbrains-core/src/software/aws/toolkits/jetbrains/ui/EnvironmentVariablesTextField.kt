@@ -6,12 +6,14 @@ package software.aws.toolkits.jetbrains.ui
 import com.intellij.execution.configuration.EnvironmentVariablesData
 import com.intellij.execution.util.EnvVariablesTable
 import com.intellij.execution.util.EnvironmentVariable
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import software.aws.toolkits.jetbrains.components.telemetry.LoggingDialogWrapper
 import software.aws.toolkits.resources.message
 import java.awt.Component
 import java.util.LinkedHashMap
+import javax.swing.Icon
 import javax.swing.JComponent
 
 /**
@@ -41,6 +43,10 @@ class EnvironmentVariablesTextField(project: Project) : TextFieldWithBrowseButto
         }
     }
 
+    override fun getDefaultIcon(): Icon = AllIcons.General.InlineVariables
+
+    override fun getHoveredIcon(): Icon = AllIcons.General.InlineVariablesHover
+
     private fun stringify(envVars: Map<String, String>): String {
         if (envVars.isEmpty()) {
             return ""
@@ -60,6 +66,7 @@ class EnvironmentVariablesTextField(project: Project) : TextFieldWithBrowseButto
     private inner class EnvironmentVariablesDialog(project: Project, parent: Component) : LoggingDialogWrapper(project, parent, true) {
         private val envVarTable = EnvVariablesTable().apply {
             setValues(convertToVariables(data.envs, false))
+            setPasteActionEnabled(true)
         }
 
         init {

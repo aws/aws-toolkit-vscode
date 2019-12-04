@@ -4,11 +4,11 @@ package software.aws.toolkits.jetbrains.services.s3
 
 import com.intellij.codeHighlighting.BackgroundEditorHighlighter
 import com.intellij.openapi.fileEditor.FileEditor
-import com.intellij.openapi.fileEditor.FileEditorProvider
 import com.intellij.openapi.fileEditor.FileEditorLocation
+import com.intellij.openapi.fileEditor.FileEditorPolicy
+import com.intellij.openapi.fileEditor.FileEditorProvider
 import com.intellij.openapi.fileEditor.FileEditorState
 import com.intellij.openapi.fileEditor.FileEditorStateLevel
-import com.intellij.openapi.fileEditor.FileEditorPolicy
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
@@ -49,21 +49,21 @@ class S3ViewerEditor(bucket: S3VirtualBucket) : FileEditor, UserDataHolderBase()
 
     override fun isModified(): Boolean = false
 
-    override fun dispose() { }
+    override fun dispose() {}
 
-    override fun addPropertyChangeListener(listener: PropertyChangeListener) { }
+    override fun addPropertyChangeListener(listener: PropertyChangeListener) {}
 
-    override fun deselectNotify() { }
+    override fun deselectNotify() {}
 
     override fun getBackgroundHighlighter(): BackgroundEditorHighlighter? = null
 
-    override fun selectNotify() { }
+    override fun selectNotify() {}
 
-    override fun removePropertyChangeListener(listener: PropertyChangeListener) { }
+    override fun removePropertyChangeListener(listener: PropertyChangeListener) {}
 
     override fun setState(state: FileEditorState) {}
 
     override fun <T : Any?> getUserData(key: Key<T>): T? = null
 
-    override fun <T : Any?> putUserData(key: Key<T>, value: T?) { }
+    override fun <T : Any?> putUserData(key: Key<T>, value: T?) {}
 }

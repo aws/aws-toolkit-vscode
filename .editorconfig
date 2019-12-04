@@ -1,0 +1,46 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_size = 4
+indent_style = space
+insert_final_newline = true
+max_line_length = 160
+tab_width = 4
+ij_continuation_indent_size = 4
+
+[*.java]
+ij_java_align_multiline_array_initializer_expression = true
+ij_java_align_multiline_assignment = true
+ij_java_align_multiline_binary_operation = true
+ij_java_align_multiline_chained_methods = true
+ij_java_align_multiline_extends_list = true
+ij_java_align_multiline_parameters_in_calls = true
+ij_java_align_multiline_ternary_operation = true
+ij_java_align_multiline_throws_list = true
+ij_java_binary_operation_sign_on_next_line = true
+ij_java_class_count_to_use_import_on_demand = 2147483647
+ij_java_do_while_brace_force = always
+ij_java_for_brace_force = always
+ij_java_generate_final_locals = false
+ij_java_if_brace_force = always
+# | = \n, $* = static imports, * = all other imports
+ij_java_imports_layout = $*,|,*,|
+ij_java_keep_first_column_comment = false
+ij_java_names_count_to_use_import_on_demand = 2147483647
+ij_java_packages_to_use_import_on_demand = unset
+ij_java_place_assignment_sign_on_next_line = true
+ij_java_space_before_annotation_array_initializer_left_brace = true
+ij_java_space_before_array_initializer_left_brace = true
+ij_java_ternary_operation_signs_on_next_line = true
+ij_java_use_single_class_imports = true
+ij_java_while_brace_force = always
+
+[{*.kts,*.kt}]
+ij_kotlin_code_style_defaults = KOTLIN_OFFICIAL
+ij_kotlin_name_count_to_use_star_import = 2147483647
+ij_kotlin_name_count_to_use_star_import_for_members = 2147483647
+
+[{*.yml,*.yaml}]
+indent_size = 2

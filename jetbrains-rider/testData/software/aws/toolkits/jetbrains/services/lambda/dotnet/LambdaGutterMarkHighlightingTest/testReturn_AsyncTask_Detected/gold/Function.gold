@@ -1,0 +1,16 @@
+using Amazon.Lambda.Core;
+using Amazon.Lambda.APIGatewayEvents;
+using Task = System.Threading.Tasks.Task;
+
+[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
+
+namespace HelloWorld
+{
+    public class Function
+    {
+        public async Task <AWS_LAMBDA_RUN_METHOD_GUTTER_MARK>FunctionHandler</AWS_LAMBDA_RUN_METHOD_GUTTER_MARK>(APIGatewayProxyRequest apigProxyEvent, ILambdaContext context)
+        {
+            await Task.Delay(100);
+        }
+    }
+}

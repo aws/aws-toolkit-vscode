@@ -1,17 +1,14 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-@file:Suppress("DEPRECATION") // TODO: Migrate to SimpleListCellRenderer when we drop < 192 FIX_WHEN_MIN_IS_192
-
 package software.aws.toolkits.jetbrains.ui
 
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.ui.CollectionComboBoxModel
-import com.intellij.ui.ListCellRendererWrapper
+import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.util.containers.OrderedSet
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.jetbrains.utils.ui.selected
-import javax.swing.JList
 
 /**
  * Combo box used to select a credential provider
@@ -21,7 +18,7 @@ class CredentialProviderSelector : ComboBox<Any>() {
 
     init {
         model = comboBoxModel
-        setRenderer(Renderer())
+        setRenderer(RENDERER)
     }
 
     fun setCredentialsProviders(providers: List<ToolkitCredentialsProvider>) {
@@ -65,17 +62,12 @@ class CredentialProviderSelector : ComboBox<Any>() {
         }
     }
 
-    private inner class Renderer : ListCellRendererWrapper<Any>() {
-        override fun customize(
-            list: JList<*>,
-            value: Any?,
-            index: Int,
-            selected: Boolean,
-            hasFocus: Boolean
-        ) {
-            when (value) {
-                is String -> setText("$value (Not valid)")
-                is ToolkitCredentialsProvider -> setText(value.displayName)
+    private companion object {
+        val RENDERER = SimpleListCellRenderer.create<Any>("") {
+            when (it) {
+                is String -> "$it (Not valid)"
+                is ToolkitCredentialsProvider -> it.displayName
+                else -> ""
             }
         }
     }

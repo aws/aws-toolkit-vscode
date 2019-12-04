@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.ApplicationLoadBalancerEvents" Version="1.0.0" />
+    <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="1.2.0" />
+    <PackageReference Include="Amazon.Lambda.CloudWatchEvents" Version="1.0.0" />
+    <PackageReference Include="Amazon.Lambda.CloudWatchLogsEvents" Version="1.1.0" />
+    <PackageReference Include="Amazon.Lambda.CognitoEvents" Version="1.1.0" />
+    <PackageReference Include="Amazon.Lambda.ConfigEvents" Version="1.1.0" />
+    <PackageReference Include="Amazon.Lambda.Core" Version="1.1.0" />
+    <PackageReference Include="Amazon.Lambda.DynamoDBEvents" Version="1.1.0" />
+    <PackageReference Include="Amazon.Lambda.KinesisAnalyticsEvents" Version="1.1.0" />
+    <PackageReference Include="Amazon.Lambda.KinesisEvents" Version="1.1.0" />
+    <PackageReference Include="Amazon.Lambda.KinesisFirehoseEvents" Version="1.1.0" />
+    <PackageReference Include="Amazon.Lambda.LexEvents" Version="1.1.0" />
+    <PackageReference Include="Amazon.Lambda.S3Events" Version="1.1.0" />
+    <PackageReference Include="Amazon.Lambda.Serialization.Json" Version="1.5.0" />
+    <PackageReference Include="Amazon.Lambda.SimpleEmailEvents" Version="1.1.0" />
+    <PackageReference Include="Amazon.Lambda.SNSEvents" Version="1.1.0" />
+    <PackageReference Include="Amazon.Lambda.SQSEvents" Version="1.1.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+  </ItemGroup>
+  
+</Project>
+
