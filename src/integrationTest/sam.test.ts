@@ -12,14 +12,8 @@ import { getDependencyManager } from '../../src/lambda/models/samLambdaRuntime'
 import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
 import { assertThrowsError } from '../../src/test/shared/utilities/assertUtils'
-import {
-    activateExtension,
-    EXTENSION_NAME_AWS_TOOLKIT,
-    getCodeLenses,
-    getTestWorkspaceFolder,
-    sleep,
-    TIMEOUT
-} from './integrationTestsUtilities'
+import { VSCODE_EXTENSION_ID } from '../shared/extensions'
+import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep, TIMEOUT } from './integrationTestsUtilities'
 
 const projectFolder = getTestWorkspaceFolder()
 // Retry tests because CodeLenses do not reliably get produced in the tests
@@ -128,7 +122,7 @@ for (const runtime of runtimes) {
             debugDisposable = vscode.debug.onDidChangeActiveDebugSession(async session =>
                 onDebugChanged(session, debuggerType)
             )
-            await activateExtension(EXTENSION_NAME_AWS_TOOLKIT)
+            await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
             console.log(`Using SDK ${projectSDK} with project in path ${projectPath}`)
             tryRemoveProjectFolder()
             mkdirpSync(projectFolder)

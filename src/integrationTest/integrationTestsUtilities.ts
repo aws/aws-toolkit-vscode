@@ -6,8 +6,6 @@
 import * as assert from 'assert'
 import * as vscode from 'vscode'
 
-export const EXTENSION_NAME_AWS_TOOLKIT = 'amazonwebservices.aws-toolkit-vscode'
-
 const SECOND = 1000
 export const TIMEOUT = 30 * SECOND
 
