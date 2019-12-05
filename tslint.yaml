@@ -50,7 +50,6 @@ rules:
               - vscode-test
               - del
               - sinon
-              - glob
     no-inferred-empty-object-type: true
     no-invalid-template-strings: true
     no-invalid-this:
