@@ -5,7 +5,8 @@
 
 import { join, resolve } from 'path'
 import { runTests } from 'vscode-test'
-import { installVSCodeExtension, setupVSCodeTestInstance, VSCODE_EXTENSION_ID } from './launchTestUtilities'
+import { VSCODE_EXTENSION_ID } from '../src/shared/extensions'
+import { installVSCodeExtension, setupVSCodeTestInstance } from './launchTestUtilities'
 
 async function setupVSCode(): Promise<string> {
     console.log('Setting up VS Code Test instance...')

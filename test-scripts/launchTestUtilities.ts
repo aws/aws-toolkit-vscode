@@ -8,10 +8,6 @@ import { downloadAndUnzipVSCode, resolveCliPathFromVSCodeExecutablePath } from '
 
 const ENVVAR_VSCODE_TEST_VERSION = 'VSCODE_TEST_VERSION'
 
-export const VSCODE_EXTENSION_ID = {
-    python: 'ms-python.python'
-}
-
 /**
  * Downloads and unzips a copy of VS Code to run tests against.
  *
