@@ -34,9 +34,10 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 
+import software.aws.toolkits.jetbrains.services.s3.S3RowSorter;
 import software.aws.toolkits.jetbrains.services.s3.S3TreeCellRenderer;
 import software.aws.toolkits.jetbrains.services.s3.S3VirtualBucket;
-import software.aws.toolkits.jetbrains.services.s3.S3VirtualFile;
+import software.aws.toolkits.jetbrains.services.s3.S3VirtualObject;
 import software.aws.toolkits.jetbrains.services.s3.objectActions.CopyPathAction;
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DeleteObjectAction;
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction;
@@ -99,7 +100,7 @@ public class S3ViewerPanel {
 
             ColumnInfo key = new S3KeyColumnInfo(virtualFile -> virtualFile.getFile().getKey());
 
-            ColumnInfo size = new S3ColumnInfo(message("s3.size"), S3VirtualFile::formatSize);
+            ColumnInfo size = new S3ColumnInfo(message("s3.size"), S3VirtualObject::formatSize);
 
             ColumnInfo modified = new S3ColumnInfo(message("s3.last_modified"),
                                                    virtualFile -> virtualFile.formatDate(virtualFile.getFile().getLastModified()));
@@ -199,7 +200,7 @@ public class S3ViewerPanel {
      * Search and sort TreeTable(top-level) rows based on text in TextField
      */
     private void searchAndSortTable() {
-        TableRowSorter<TableModel> sorter = new TableRowSorter<TableModel>(treeTable.getModel());
+        TableRowSorter<TableModel> sorter = new S3RowSorter(treeTable.getModel());
         treeTable.setRowSorter(sorter);
         searchButton.addActionListener(e -> search(sorter));
         searchTextField.addActionListener(e -> search(sorter));

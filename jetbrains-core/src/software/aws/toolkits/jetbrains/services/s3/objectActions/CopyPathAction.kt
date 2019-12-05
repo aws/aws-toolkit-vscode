@@ -20,7 +20,7 @@ class CopyPathAction(
 
     override fun doActionPerformed(e: AnActionEvent) {
         treeTable.getSelectedAsVirtualFiles().firstOrNull()?.let {
-            CopyPasteManager.getInstance().setContents(StringSelection(it.path.substringAfter('/')))
+            CopyPasteManager.getInstance().setContents(StringSelection(it.path))
         }
     }
 }

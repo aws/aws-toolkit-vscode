@@ -6,16 +6,16 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.treeStructure.treetable.TreeTableModel
 import com.intellij.util.ui.ColumnInfo
 import software.aws.toolkits.jetbrains.services.s3.S3VirtualDirectory
-import software.aws.toolkits.jetbrains.services.s3.S3VirtualFile
+import software.aws.toolkits.jetbrains.services.s3.S3VirtualObject
 import javax.swing.tree.DefaultMutableTreeNode
 
-open class S3ColumnInfo(columnTitle: String, val valueGetter: (S3VirtualFile) -> String?) :
+open class S3ColumnInfo(columnTitle: String, val valueGetter: (S3VirtualObject) -> String?) :
     ColumnInfo<Any, String>(columnTitle) {
 
     override fun valueOf(obj: Any): String? {
         val file = getVirtualFileFromNode(obj)
         return when (file) {
-            is S3VirtualFile -> valueGetter.invoke(file)
+            is S3VirtualObject -> valueGetter.invoke(file)
             else -> ""
         }
     }
@@ -28,13 +28,13 @@ open class S3ColumnInfo(columnTitle: String, val valueGetter: (S3VirtualFile) ->
     }
 }
 
-class S3KeyColumnInfo(valueGetter: (S3VirtualFile) -> String?) :
+class S3KeyColumnInfo(valueGetter: (S3VirtualObject) -> String?) :
     S3ColumnInfo("Name", valueGetter) {
 
     override fun valueOf(obj: Any): String? {
         val file = super.getVirtualFileFromNode(obj)
         return when (file) {
-            is S3VirtualFile -> valueGetter.invoke(file)
+            is S3VirtualObject -> valueGetter.invoke(file)
             is S3VirtualDirectory -> file.name
             else -> ""
         }

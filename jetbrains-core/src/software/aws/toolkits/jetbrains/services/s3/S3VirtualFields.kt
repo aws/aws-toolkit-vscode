@@ -17,7 +17,7 @@ import java.time.format.DateTimeFormatter
 /**
  * BaseS3VirtualFile is a base class to represent a virtual file
  */
-abstract class BaseS3VirtualFile(val fileSystem: S3VirtualFileSystem, private val parent: VirtualFile?, open val key: S3Key) :
+abstract class S3VirtualFile(val fileSystem: S3VirtualFileSystem, private val parent: VirtualFile?, open val key: S3Item) :
     VirtualFile() {
 
     fun formatDate(date: Instant): String {
@@ -26,11 +26,11 @@ abstract class BaseS3VirtualFile(val fileSystem: S3VirtualFileSystem, private va
             .format(DateTimeFormatter.ofPattern("MMM d YYYY hh:mm:ss a z"))
     }
 
-    override fun getName(): String = key.key
+    override fun getName(): String = key.name
 
     override fun isWritable(): Boolean = false
 
-    override fun getPath(): String = "${key.bucket}/${key.key}"
+    override fun getPath(): String = key.key
 
     override fun isValid(): Boolean = true
 
@@ -59,8 +59,8 @@ abstract class BaseS3VirtualFile(val fileSystem: S3VirtualFileSystem, private va
     override fun refresh(asynchronous: Boolean, recursive: Boolean, postRunnable: Runnable?) {}
 }
 
-class S3VirtualFile(s3Vfs: S3VirtualFileSystem, val file: S3Object, parent: VirtualFile) :
-    BaseS3VirtualFile(s3Vfs, parent, file) {
+class S3VirtualObject(s3Vfs: S3VirtualFileSystem, val file: S3Object, parent: VirtualFile) :
+    S3VirtualFile(s3Vfs, parent, file) {
 
     override fun getName(): String = if (file.name.contains("/")) file.name.substringAfterLast("/") else file.name
 
@@ -76,7 +76,7 @@ class S3VirtualFile(s3Vfs: S3VirtualFileSystem, val file: S3Object, parent: Virt
 }
 
 open class S3VirtualBucket(fileSystem: S3VirtualFileSystem, val s3Bucket: Bucket) :
-    BaseS3VirtualFile(fileSystem, parent = null, key = S3Directory(s3Bucket.name(), "", fileSystem.client)) {
+    S3VirtualFile(fileSystem, parent = null, key = S3Directory(s3Bucket.name(), "", fileSystem.client)) {
 
     val client: S3Client = fileSystem.client
     override fun getTimeStamp(): Long = s3Bucket.creationDate().toEpochMilli()
@@ -84,10 +84,10 @@ open class S3VirtualBucket(fileSystem: S3VirtualFileSystem, val s3Bucket: Bucket
     fun getVirtualBucketName(): String = s3Bucket.name()
 
     override fun getChildren(): Array<VirtualFile> =
-        S3Directory(s3Bucket.name(), "", fileSystem.client).children().sortedBy { it.bucket }
+        S3Directory(s3Bucket.name(), "", fileSystem.client).children().sortedBy { it.key }
             .map {
                 when (it) {
-                    is S3Object -> S3VirtualFile(fileSystem, it, this)
+                    is S3Object -> S3VirtualObject(fileSystem, it, this)
                     is S3Directory -> S3VirtualDirectory(fileSystem, it, this)
                 }
             }.toTypedArray()
@@ -98,13 +98,13 @@ open class S3VirtualBucket(fileSystem: S3VirtualFileSystem, val s3Bucket: Bucket
 }
 
 class S3VirtualDirectory(s3filesystem: S3VirtualFileSystem, private val directory: S3Directory, parent: VirtualFile) :
-    BaseS3VirtualFile(s3filesystem, parent, directory) {
+    S3VirtualFile(s3filesystem, parent, directory) {
 
     override fun getChildren(): Array<VirtualFile> =
-        directory.children().sortedBy { it.bucket }.filterNot { it.key == directory.key }
+        directory.children().sortedBy { it.key }.filterNot { it.key == directory.key }
             .map {
                 when (it) {
-                    is S3Object -> S3VirtualFile(fileSystem, it, this)
+                    is S3Object -> S3VirtualObject(fileSystem, it, this)
                     is S3Directory -> S3VirtualDirectory(fileSystem, it, this)
                 }
             }.toTypedArray()

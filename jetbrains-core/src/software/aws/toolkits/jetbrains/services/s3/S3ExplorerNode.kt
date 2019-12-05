@@ -9,8 +9,8 @@ import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import icons.AwsIcons
 import software.amazon.awssdk.services.s3.S3Client
-import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.amazon.awssdk.services.s3.model.Bucket
+import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerService
@@ -25,9 +25,9 @@ class S3ServiceNode(project: Project) : AwsExplorerServiceRootNode(project, AwsE
 
     override fun getChildrenInternal(): List<AwsExplorerNode<*>> =
         AwsResourceCache.getInstance(nodeProject).getResourceNow(S3Resources.LIST_BUCKETS)
-        .filter { AwsResourceCache.getInstance(nodeProject).getResourceNow(S3Resources.bucketRegion(it.name())) == activeRegionId }
-        .map { S3BucketNode(nodeProject, it) }
-        .toList()
+            .filter { AwsResourceCache.getInstance(nodeProject).getResourceNow(S3Resources.bucketRegion(it.name())) == activeRegionId }
+            .map { S3BucketNode(nodeProject, it) }
+            .toList()
 }
 
 class S3BucketNode(project: Project, val bucket: Bucket) :
@@ -45,8 +45,8 @@ class S3BucketNode(project: Project, val bucket: Bucket) :
             val client: S3Client = AwsClientManager.getInstance(nodeProject).getClient()
             val virtualBucket = S3VirtualBucket(S3VirtualFileSystem(client), bucket)
             editorManager.openTextEditor(OpenFileDescriptor(nodeProject, virtualBucket), true)
-            TelemetryService.getInstance().record(nodeProject, "s3") {
-                datum("openeditor") {
+            TelemetryService.getInstance().record(nodeProject) {
+                datum("s3_openeditor") {
                     count()
                 }
             }
