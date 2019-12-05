@@ -305,3 +305,7 @@ class CoverageRunner {
         });
     }
 }
+
+// 2019-12-05: Amazon addition. (export declarations)
+export const runTests = (testsRoot: string, clb: (err: any, failedTests: number) => void ): void => run(testsRoot, clb)
+// END 2019-12-05: Amazon addition. (export declarations)

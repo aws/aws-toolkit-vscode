@@ -195,3 +195,7 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
     ext.iconPaths.dark.schema = context.asAbsolutePath('resources/dark/schema.svg')
     ext.iconPaths.light.schema = context.asAbsolutePath('resources/light/schema.svg')
 }
+
+// Unique extension entrypoint names, so that they can be obtained from the webpack bundle
+export const awsToolkitActivate = activate
+export const awsToolkitDeactivate = deactivate
