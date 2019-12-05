@@ -3,6 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as testRunner from '../../third-party/test/index'
+import { runTests } from '../test/testRunner'
 
-module.exports = testRunner
+export async function run(): Promise<void> {
+    await runTests({
+        rootTestsPath: __dirname
+    })
+}

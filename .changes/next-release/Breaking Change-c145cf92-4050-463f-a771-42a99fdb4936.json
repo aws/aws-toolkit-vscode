@@ -1,0 +1,4 @@
+{
+    "type": "Breaking Change",
+    "description": "Minimum version of SAM CLI has been adjusted from 0.16.0 to 0.32.0 to accommodate new runtime support"
+}

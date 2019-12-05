@@ -5,8 +5,8 @@
 
 import * as assert from 'assert'
 import * as del from 'del'
+import { writeFile } from 'fs-extra'
 import * as path from 'path'
-import { writeFile } from '../../../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import {
     SamCliLocalInvokeInvocation,

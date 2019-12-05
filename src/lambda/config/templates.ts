@@ -5,12 +5,13 @@
 
 // Use jsonc-parser.parse instead of JSON.parse, as JSONC can handle comments. VS Code uses jsonc-parser
 // under the hood to provide symbols for JSON documents, so this will keep us consistent with VS code.
+import { access, writeFile } from 'fs-extra'
 import * as jsonParser from 'jsonc-parser'
 import * as os from 'os'
 import * as _path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { access, mkdir, writeFile } from '../../shared/filesystem'
+import { mkdir } from '../../shared/filesystem'
 import * as fsUtils from '../../shared/filesystemUtilities'
 import { getLogger, Logger } from '../../shared/logger'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
