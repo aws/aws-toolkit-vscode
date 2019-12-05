@@ -15,20 +15,18 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileWrapper
-import com.intellij.ui.treeStructure.treetable.TreeTable
 import software.amazon.awssdk.core.sync.ResponseTransformer
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.aws.toolkits.jetbrains.components.telemetry.ActionButtonWrapper
 import software.aws.toolkits.jetbrains.services.s3.S3VirtualBucket
-import software.aws.toolkits.jetbrains.services.s3.bucketEditor.S3KeyNode
+import software.aws.toolkits.jetbrains.services.s3.bucketEditor.S3TreeTable
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import java.io.File
-import javax.swing.tree.DefaultMutableTreeNode
 
 class DownloadObjectAction(
-    private val treeTable: TreeTable,
+    private val treeTable: S3TreeTable,
     val bucket: S3VirtualBucket
 ) : ActionButtonWrapper(message("s3.download.object.action"), null, AllIcons.Actions.Download) {
 
@@ -41,28 +39,24 @@ class DownloadObjectAction(
         )
         val saveFileDialog = FileChooserFactory.getInstance().createSaveFileDialog(descriptor, project)
         val baseDir = VfsUtil.getUserHomeDir()
-        val rows = treeTable.selectedRows
         var baseFilePath: String? = ""
 
-        for (row in rows) {
-            val path = treeTable.tree.getPathForRow(treeTable.convertRowIndexToModel(row))
-            val node = (path.lastPathComponent as DefaultMutableTreeNode).userObject as S3KeyNode
-            val fileSelected = node.virtualFile
-            val fileWrapper: VirtualFileWrapper?
+        var fileWrapper: VirtualFileWrapper? = null
+        treeTable.getSelectedAsVirtualFiles().forEach {
+            if (fileWrapper == null) {
+                fileWrapper = saveFileDialog.save(baseDir, it.name)
+                baseFilePath = fileWrapper?.file?.toString()?.substringBefore(it.name)
+            } else {
+                fileWrapper = VirtualFileWrapper(File("$baseFilePath${it.name}"))
+            }
             /**
              * A single file saver dialog appears for first selection. All other objects
              * are saved in the same root location selected with the dialog.
              */
-            if (row == rows.first()) {
-                fileWrapper = saveFileDialog.save(baseDir, fileSelected.name)
-                baseFilePath = fileWrapper?.file?.toString()?.substringBefore(fileSelected.name)
-            } else {
-                fileWrapper = VirtualFileWrapper(File("$baseFilePath${fileSelected.name}"))
-            }
-            if (fileWrapper != null) {
+            fileWrapper?.let { fileWrapper ->
                 ApplicationManager.getApplication().executeOnPooledThread {
                     try {
-                        downloadObjectAction(project, client, fileSelected, fileWrapper)
+                        downloadObjectAction(project, client, it, fileWrapper)
                     } catch (e: Exception) {
                         notifyError(message("s3.download.object.failed"))
                     }
