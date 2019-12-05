@@ -21,9 +21,9 @@ import { setupVSCodeTestInstance } from './launchTestUtilities'
 
         const result = await runTests({
             vscodeExecutablePath: vsCodeExecutablePath,
-            extensionPath: cwd,
-            testRunnerPath: testEntrypoint,
-            testWorkspace: workspacePath
+            extensionDevelopmentPath: cwd,
+            extensionTestsPath: testEntrypoint,
+            launchArgs: [workspacePath]
         })
 
         console.log(`Finished running Integration test suite with result code: ${result}`)

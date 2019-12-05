@@ -18,8 +18,8 @@ import { setupVSCodeTestInstance } from './launchTestUtilities'
 
         const result = await runTests({
             vscodeExecutablePath: vsCodeExecutablePath,
-            extensionPath: cwd,
-            testRunnerPath: testEntrypoint
+            extensionDevelopmentPath: cwd,
+            extensionTestsPath: testEntrypoint
         })
 
         console.log(`Finished running Main test suite with result code: ${result}`)
