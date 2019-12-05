@@ -55,7 +55,9 @@ If you prefer, you can also run tests from the command line:
 
     npm run test
 
-Note: If you want to run tests from the command line, you must first close all instances of Visual Studio Code.
+There are also some integration tests, which can be run from the Debug pane, or from the command line:
+
+    npm run integrationTest
 
 #### Checking coverage report
 

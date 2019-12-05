@@ -3,30 +3,26 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { join, resolve } from 'path'
+import { resolve } from 'path'
 import { runTests } from 'vscode-test'
 import { setupVSCodeTestInstance } from './launchTestUtilities'
 
 // tslint:disable-next-line: no-floating-promises
 ;(async () => {
     try {
-        console.log('Running Integration test suite...')
+        console.log('Running Main test suite...')
         const vsCodeExecutablePath = await setupVSCodeTestInstance()
         const cwd = process.cwd()
-        const testEntrypoint = resolve(cwd, 'dist', 'src', 'integrationTest', 'index.js')
-        const workspacePath = join(cwd, 'dist', 'src', 'integrationTest-samples')
+        const testEntrypoint = resolve(cwd, 'dist', 'src', 'test', 'index.js')
         console.log(`Starting tests: ${testEntrypoint}`)
-
-        process.env.AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE = 'true'
 
         const result = await runTests({
             vscodeExecutablePath: vsCodeExecutablePath,
             extensionDevelopmentPath: cwd,
-            extensionTestsPath: testEntrypoint,
-            launchArgs: [workspacePath]
+            extensionTestsPath: testEntrypoint
         })
 
-        console.log(`Finished running Integration test suite with result code: ${result}`)
+        console.log(`Finished running Main test suite with result code: ${result}`)
         process.exit(result)
     } catch (err) {
         console.error('Failed to run tests')
