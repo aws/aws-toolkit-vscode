@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { access, readdir, stat } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { access, readdir, stat } from '../../shared/filesystem'
 
 export async function* detectLocalTemplates({
     workspaceUris
