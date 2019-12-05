@@ -5,6 +5,8 @@
 
 ;('use strict')
 
+import { join } from 'path'
+
 /**
  * This file serves as the extension's entrypoint.
  * It loads the actual entrypoints from a webpack bundle or from
@@ -15,7 +17,10 @@
 
 Object.defineProperty(exports, '__esModule', { value: true })
 
-const extensionEntryPath = useBundledEntrypoint() ? './dist/extension' : './dist/src/extension'
+const extensionEntryPath = useBundledEntrypoint()
+    ? join('.', 'dist', 'extension')
+    : join('.', 'dist', 'src', 'extension')
+
 const extension = require(extensionEntryPath)
 
 async function activate(context) {
