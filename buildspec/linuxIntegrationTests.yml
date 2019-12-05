@@ -13,7 +13,6 @@ phases:
             - dpkg -i packages-microsoft-prod.deb
             - add-apt-repository universe
             - apt-get install -y apt-transport-https
-            - add-apt-repository "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main"
             - apt-get update
             # Install .NET Core 2.1
             - apt-get install -y dotnet-sdk-2.1
