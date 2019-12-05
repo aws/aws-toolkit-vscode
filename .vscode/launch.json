@@ -36,6 +36,9 @@
                 "--extensionDevelopmentPath=${workspaceFolder}",
                 "--extensionTestsPath=${workspaceFolder}/dist/src/integrationTest/index.js"
             ],
+            "env": {
+                "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true"
+            },
             "outFiles": ["${workspaceFolder}/dist/src/integrationTest/**/*.js"],
             "preLaunchTask": "npm: testCompile"
         }

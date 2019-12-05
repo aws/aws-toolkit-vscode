@@ -50,7 +50,7 @@
         "onView:aws.cdk.explorer",
         "onCommand:aws.refreshCdkExplorer"
     ],
-    "main": "./dist/extension",
+    "main": "./extensionMain",
     "contributes": {
         "configuration": {
             "type": "object",

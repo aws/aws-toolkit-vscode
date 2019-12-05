@@ -17,6 +17,8 @@ import { setupVSCodeTestInstance } from './launchTestUtilities'
         const workspacePath = join(cwd, 'dist', 'src', 'integrationTest-samples')
         console.log(`Starting tests: ${testEntrypoint}`)
 
+        process.env.AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE = 'true'
+
         const result = await runTests({
             vscodeExecutablePath: vsCodeExecutablePath,
             extensionDevelopmentPath: cwd,
