@@ -5,13 +5,23 @@
 
 import { join, resolve } from 'path'
 import { runTests } from 'vscode-test'
-import { setupVSCodeTestInstance } from './launchTestUtilities'
+import { installVSCodeExtension, setupVSCodeTestInstance, VSCODE_EXTENSION_ID } from './launchTestUtilities'
+
+async function setupVSCode(): Promise<string> {
+    console.log('Setting up VS Code Test instance...')
+    const vsCodeExecutablePath = await setupVSCodeTestInstance()
+    installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.python)
+    console.log('VS Code Test instance has been set up')
+
+    return vsCodeExecutablePath
+}
 
 // tslint:disable-next-line: no-floating-promises
 ;(async () => {
     try {
         console.log('Running Integration test suite...')
-        const vsCodeExecutablePath = await setupVSCodeTestInstance()
+        const vsCodeExecutablePath = await setupVSCode()
+
         const cwd = process.cwd()
         const testEntrypoint = resolve(cwd, 'dist', 'src', 'integrationTest', 'index.js')
         const workspacePath = join(cwd, 'dist', 'src', 'integrationTest-samples')

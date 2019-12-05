@@ -3,9 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { downloadAndUnzipVSCode } from 'vscode-test'
+import * as child_process from 'child_process'
+import { downloadAndUnzipVSCode, resolveCliPathFromVSCodeExecutablePath } from 'vscode-test'
 
 const ENVVAR_VSCODE_TEST_VERSION = 'VSCODE_TEST_VERSION'
+
+export const VSCODE_EXTENSION_ID = {
+    python: 'ms-python.python'
+}
 
 /**
  * Downloads and unzips a copy of VS Code to run tests against.
@@ -23,4 +28,18 @@ export async function setupVSCodeTestInstance(): Promise<string> {
     console.log(`VS Code test instance location: ${vsCodeExecutablePath}`)
 
     return vsCodeExecutablePath
+}
+
+export async function installVSCodeExtension(vsCodeExecutablePath: string, extensionIdentifier: string): Promise<void> {
+    console.log(`Installing VS Code Extension: ${extensionIdentifier}`)
+    const vsCodeCliPath = resolveCliPathFromVSCodeExecutablePath(vsCodeExecutablePath)
+
+    const spawnResult = child_process.spawnSync(vsCodeCliPath, ['--install-extension', extensionIdentifier], {
+        encoding: 'utf-8',
+        stdio: 'inherit'
+    })
+
+    if (spawnResult.stdout) {
+        console.log(spawnResult.stdout)
+    }
 }
