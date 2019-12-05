@@ -5,7 +5,7 @@
 
 ;('use strict')
 
-import { join } from 'path'
+const join = require('path').join
 
 /**
  * This file serves as the extension's entrypoint.
@@ -18,8 +18,8 @@ import { join } from 'path'
 Object.defineProperty(exports, '__esModule', { value: true })
 
 const extensionEntryPath = useBundledEntrypoint()
-    ? join('.', 'dist', 'extension')
-    : join('.', 'dist', 'src', 'extension')
+    ? join(__dirname, 'dist', 'extension')
+    : join(__dirname, 'dist', 'src', 'extension')
 
 const extension = require(extensionEntryPath)
 
@@ -32,8 +32,7 @@ async function deactivate() {
 }
 
 function useBundledEntrypoint() {
-    const ignoreWebpackBundle = /true/i.test(process.env.AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE || 'false')
-    return !ignoreWebpackBundle
+    return (process.env.AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE || 'false').toLowerCase() !== 'true'
 }
 
 exports.activate = activate
