@@ -282,13 +282,14 @@
         </group>
 
         <group id="aws.toolkit.explorer.s3.bucket" popup="true" compact="false">
-            <action id="s3.delete.bucket"
-                    class="software.aws.toolkits.jetbrains.services.s3.bucketActions.DeleteBucketAction"/>
-            <separator/>
             <action id="s3.open.bucket.viewer"
                     class="software.aws.toolkits.jetbrains.services.s3.bucketActions.OpenBucketViewerAction"/>
+            <separator/>
             <action id="s3.copy.bucketname.check"
                     class="software.aws.toolkits.jetbrains.services.s3.bucketActions.CopyBucketNameAction"/>
+            <separator/>
+            <action id="s3.delete.bucket"
+                    class="software.aws.toolkits.jetbrains.services.s3.bucketActions.DeleteBucketAction"/>
         </group>
 
         <group id="aws.toolkit.explorer.schemas" popup="true" compact="false">
