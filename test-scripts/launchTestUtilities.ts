@@ -19,7 +19,7 @@ export async function setupVSCodeTestInstance(): Promise<string> {
     const vsCodeVersion = process.env[ENVVAR_VSCODE_TEST_VERSION] || 'stable'
 
     console.log(`About to set up test instance of VS Code, version ${vsCodeVersion}...`)
-    const vsCodeExecutablePath = await downloadAndUnzipVSCode('stable')
+    const vsCodeExecutablePath = await downloadAndUnzipVSCode(vsCodeVersion)
     console.log(`VS Code test instance location: ${vsCodeExecutablePath}`)
 
     return vsCodeExecutablePath
