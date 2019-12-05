@@ -7,8 +7,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { Credentials } from 'aws-sdk'
-import opn = require('opn')
-import { Uri, ViewColumn, window, workspace } from 'vscode'
+import { env, Uri, ViewColumn, window, workspace } from 'vscode'
 import { AwsContext } from './awsContext'
 import { AwsContextTreeCollection } from './awsContextTreeCollection'
 import * as extensionConstants from './constants'
@@ -286,7 +285,7 @@ export class DefaultAWSContextCommands {
         )
 
         if (response && response === responseYes) {
-            await opn(extensionConstants.aboutCredentialsFileUrl)
+            await env.openExternal(Uri.parse(extensionConstants.aboutCredentialsFileUrl))
         }
     }
 
