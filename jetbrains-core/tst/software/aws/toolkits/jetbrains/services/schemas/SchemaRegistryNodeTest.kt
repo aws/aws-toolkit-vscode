@@ -1,7 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.cloudformation
+package software.aws.toolkits.jetbrains.services.schemas
 
 import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
@@ -12,8 +12,6 @@ import software.amazon.awssdk.services.schemas.model.RegistrySummary
 import software.amazon.awssdk.services.schemas.model.SchemaSummary
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.MockResourceCache
-import software.aws.toolkits.jetbrains.services.schemas.SchemaNode
-import software.aws.toolkits.jetbrains.services.schemas.SchemaRegistryNode
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
 import java.util.concurrent.CompletableFuture
 
@@ -50,8 +48,7 @@ class SchemaRegistryNodeTest {
         assertThat(node.children).hasSize(2)
         assertThat(node.children).hasOnlyElementsOfType(SchemaNode::class.java)
 
-        assertThat(node.children.filter { it.displayName().equals(schema1) }.count()).isEqualTo(1)
-        assertThat(node.children.filter { it.displayName().equals(schema2) }.count()).isEqualTo(1)
+        assertThat(node.children.map { it.displayName() }).contains(schema1, schema2)
     }
 
     private fun aSchemaRegistryNode(registry: String) = SchemaRegistryNode(projectRule.project, RegistrySummary.builder().registryName(registry).build())

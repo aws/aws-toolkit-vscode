@@ -33,7 +33,7 @@ import java.util.concurrent.CompletionStage
 import javax.swing.Action
 import javax.swing.JComponent
 
-open class SamDeployDialog(
+class SamDeployDialog(
     private val project: Project,
     private val stackName: String,
     private val template: VirtualFile,
@@ -225,7 +225,7 @@ open class SamDeployDialog(
         }
     }
 
-    protected open fun createProcess(command: GeneralCommandLine): OSProcessHandler =
+    private fun createProcess(command: GeneralCommandLine): OSProcessHandler =
         ProcessHandlerFactory.getInstance().createColoredProcessHandler(command)
 
     private companion object {
