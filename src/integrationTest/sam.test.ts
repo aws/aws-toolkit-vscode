@@ -70,6 +70,7 @@ async function getDebugLocalCodeLens(documentUri: vscode.Uri, language: Language
             await sleep(200)
             let codeLenses = await getCodeLenses(documentUri)
             if (!codeLenses || codeLenses.length === 0) {
+                console.log('**** CL Found: 0')
                 continue
             }
 
@@ -88,6 +89,7 @@ async function getDebugLocalCodeLens(documentUri: vscode.Uri, language: Language
 
                 return false
             })
+            console.log('**** CL Filtered: ', codeLenses.length)
             if (codeLenses.length === 1) {
                 return codeLenses[0]
             }
@@ -274,6 +276,8 @@ describe('SAM Integration Tests', async () => {
                     assert.ok(codeLens, 'expected to find a CodeLens')
                 })
 
+                // TODO : CC : Thought: Open file, loop to get symbols up here first
+                // TODO : CC : Thought: Can we get/see the output status/logs for the local invokes?
                 it('produces a Debug Local CodeLens', async () => {
                     const codeLens = await getDebugLocalCodeLens(samAppCodeUri, scenario.language)
                     assert.ok(codeLens)
