@@ -68,26 +68,30 @@ async function getLambdaHandlerCandidates({
     let symbols: vscode.DocumentSymbol[] =
         (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', uri)) ||
         []
+    console.log(`*** Symbols count: ${symbols.length}`)
 
-    // A recent regression in vscode-python stops codelenses from rendering if we first return an empty array
-    // (because symbols have not yet been loaded), then a non-empty array (when our codelens provider is re-invoked
-    // upon symbols loading). To work around this, we attempt to wait for symbols to load before returning. We cannot
-    // distinguish between "the document does not contain any symbols" and "the symbols have not yet been loaded", so
-    // we stop retrying if we are still getting an empty result after several retries.
-    //
-    // This issue only surfaces when the setting `python.jediEnabled` is not set to false.
-    // TODO: When the above issue is resolved, remove this workaround AND bump the minimum
-    //       required VS Code version and/or add a minimum supported version for the Python
-    //       extension.
-    const jediEnabled = pythonSettings.readSetting<boolean>(PYTHON_JEDI_ENABLED_KEY, true)
-    if (jediEnabled) {
-        for (let i = 0; i < MAX_RETRIES && !symbols.length; i++) {
-            await new Promise<void>(resolve => setTimeout(resolve, RETRY_INTERVAL_MS))
-            symbols =
-                (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
-                    'vscode.executeDocumentSymbolProvider',
-                    uri
-                )) || []
+    // TODO : CC : Temp: clean up
+    if (false) {
+        // A recent regression in vscode-python stops codelenses from rendering if we first return an empty array
+        // (because symbols have not yet been loaded), then a non-empty array (when our codelens provider is re-invoked
+        // upon symbols loading). To work around this, we attempt to wait for symbols to load before returning. We cannot
+        // distinguish between "the document does not contain any symbols" and "the symbols have not yet been loaded", so
+        // we stop retrying if we are still getting an empty result after several retries.
+        //
+        // This issue only surfaces when the setting `python.jediEnabled` is not set to false.
+        // TODO: When the above issue is resolved, remove this workaround AND bump the minimum
+        //       required VS Code version and/or add a minimum supported version for the Python
+        //       extension.
+        const jediEnabled = pythonSettings.readSetting<boolean>(PYTHON_JEDI_ENABLED_KEY, true)
+        if (jediEnabled) {
+            for (let i = 0; i < MAX_RETRIES && !symbols.length; i++) {
+                await new Promise<void>(resolve => setTimeout(resolve, RETRY_INTERVAL_MS))
+                symbols =
+                    (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
+                        'vscode.executeDocumentSymbolProvider',
+                        uri
+                    )) || []
+            }
         }
     }
 
