@@ -129,6 +129,8 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
     private emitMessage(text: string): void {
         // From VS Code API: If no debug session is active, output sent to the debug console is not shown.
         // We send text to output channel and debug console to ensure no text is lost.
+        // TODO : CC : Temp
+        console.log(`!!! ${text}`)
         this.channelLogger.channel.append(removeAnsi(text))
         vscode.debug.activeDebugConsole.append(text)
     }
