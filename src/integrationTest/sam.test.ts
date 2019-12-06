@@ -277,7 +277,7 @@ describe('SAM Integration Tests', async () => {
                 it('produces a Debug Local CodeLens', async () => {
                     const codeLens = await getDebugLocalCodeLens(samAppCodeUri, scenario.language)
                     assert.ok(codeLens)
-                })
+                }).timeout(300000)
 
                 it('invokes the Run Local CodeLens', async () => {
                     const codeLens = await getRunLocalCodeLens(samAppCodeUri, scenario.language)
