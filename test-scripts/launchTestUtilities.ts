@@ -40,6 +40,13 @@ export async function installVSCodeExtension(vsCodeExecutablePath: string, exten
         stdio: 'inherit'
     })
 
+    // TODO : CC : See if we can exit out in failure situations
+    console.log('*** result code: ', spawnResult.status)
+
+    if (spawnResult.error) {
+        throw spawnResult.error
+    }
+
     if (spawnResult.stdout) {
         console.log(spawnResult.stdout)
     }
