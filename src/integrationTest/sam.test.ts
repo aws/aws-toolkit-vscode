@@ -34,10 +34,10 @@ const runtimes: X[] = [
     // rename name -> runtime, debuggerType -> DebugSessionType
     { name: 'nodejs8.10', path: 'testProject/hello-world/app.js', debuggerType: 'node2', language: 'javascript' },
     { name: 'nodejs10.x', path: 'testProject/hello-world/app.js', debuggerType: 'node2', language: 'javascript' },
-    { name: 'nodejs12.x', path: 'testProject/hello-world/app.js', debuggerType: 'node2', language: 'javascript' }
-    // { name: 'python2.7', path: 'testProject/hello_world/app.py', debuggerType: 'python' },
-    // { name: 'python3.6', path: 'testProject/hello_world/app.py', debuggerType: 'python' },
-    // { name: 'python3.7', path: 'testProject/hello_world/app.py', debuggerType: 'python' },
+    { name: 'nodejs12.x', path: 'testProject/hello-world/app.js', debuggerType: 'node2', language: 'javascript' },
+    { name: 'python2.7', path: 'testProject/hello_world/app.py', debuggerType: 'python', language: 'python' },
+    { name: 'python3.6', path: 'testProject/hello_world/app.py', debuggerType: 'python', language: 'python' },
+    { name: 'python3.7', path: 'testProject/hello_world/app.py', debuggerType: 'python', language: 'python' }
     // { name: 'python3.8', path: 'testProject/hello_world/app.py', debuggerType: 'python' }
     // { name: 'dotnetcore2.1', path: 'testProject/src/HelloWorld/Function.cs', debuggerType: 'coreclr' }
 ]
@@ -188,12 +188,12 @@ function validateLocalInvokeResult(
 
 async function activateExtensions(): Promise<void> {
     console.log('Activating extensions...')
-    // await activateExtension(VSCODE_EXTENSION_ID.python)
+    await activateExtension(VSCODE_EXTENSION_ID.python)
     await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
     console.log('Extensions activated')
 }
 
-describe.only('SAM Integration Tests', async () => {
+describe('SAM Integration Tests', async () => {
     const samApplicationName = 'testProject'
     let testDisposables: vscode.Disposable[]
 
@@ -298,7 +298,7 @@ describe.only('SAM Integration Tests', async () => {
                     })
                 }).timeout(TIMEOUT)
 
-                it.only('invokes the Debug Local CodeLens', async () => {
+                it('invokes the Debug Local CodeLens', async () => {
                     assert.strictEqual(
                         vscode.debug.activeDebugSession,
                         undefined,
