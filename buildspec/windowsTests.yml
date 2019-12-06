@@ -10,7 +10,6 @@ phases:
 
     build:
         commands:
-            # max-old-space is so that v8 does not run out of memory due to webpack
             - npm run testCompile
             - npm run test
             - |
