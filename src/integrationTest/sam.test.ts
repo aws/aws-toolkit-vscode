@@ -79,9 +79,11 @@ async function getDebugLocalCodeLens(documentUri: vscode.Uri, language: Language
             // not shown to the user and do not affect how our extension is working
             codeLenses = codeLenses.filter(codeLens => {
                 if (codeLens.command && codeLens.command.arguments && codeLens.command.arguments.length === 1) {
+                    // tslint:disable: no-unsafe-any
                     return (
                         codeLens.command.command === getInvokeCmdKey(language) && codeLens.command.arguments[0].isDebug
                     )
+                    // tslint:enable: no-unsafe-any
                 }
 
                 return false
@@ -107,9 +109,11 @@ async function getRunLocalCodeLens(documentUri: vscode.Uri, language: Language):
             // not shown to the user and do not affect how our extension is working
             codeLenses = codeLenses.filter(codeLens => {
                 if (codeLens.command && codeLens.command.arguments && codeLens.command.arguments.length === 1) {
+                    // tslint:disable: no-unsafe-any
                     return (
                         codeLens.command.command === getInvokeCmdKey(language) && !codeLens.command.arguments[0].isDebug
                     )
+                    // tslint:enable: no-unsafe-any
                 }
 
                 return false
@@ -205,6 +209,7 @@ describe.only('SAM Integration Tests', async () => {
     })
 
     afterEach(async function() {
+        // tslint:disable-next-line: no-unsafe-any
         testDisposables.forEach(d => d.dispose())
     })
 
@@ -309,7 +314,7 @@ describe.only('SAM Integration Tests', async () => {
                                 const sessionValidation = validateSamDebugSession(startedSession, scenario.debuggerType)
 
                                 if (sessionValidation) {
-                                    stopDebugger()
+                                    await stopDebugger()
                                     throw new Error(sessionValidation)
                                 }
 

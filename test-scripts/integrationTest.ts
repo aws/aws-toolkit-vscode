@@ -11,7 +11,7 @@ import { installVSCodeExtension, setupVSCodeTestInstance } from './launchTestUti
 async function setupVSCode(): Promise<string> {
     console.log('Setting up VS Code Test instance...')
     const vsCodeExecutablePath = await setupVSCodeTestInstance()
-    installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.python)
+    await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.python)
     console.log('VS Code Test instance has been set up')
 
     return vsCodeExecutablePath
