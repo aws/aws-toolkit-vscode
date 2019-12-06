@@ -279,7 +279,7 @@ describe('SAM Integration Tests', async () => {
                     assert.ok(codeLens)
                 })
 
-                it.skip('invokes the Run Local CodeLens', async () => {
+                it('invokes the Run Local CodeLens', async () => {
                     const codeLens = await getRunLocalCodeLens(samAppCodeUri, scenario.language)
                     assert.ok(codeLens, 'expected to find a CodeLens')
 
