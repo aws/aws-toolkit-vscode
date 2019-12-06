@@ -37,6 +37,17 @@ class NodeJsDebugEndToEndTest : CloudDebugTestCase("node") {
     private var previousRegistryValue: Boolean = true
     private val WEB_CONSOLE_JB_REGISTRY_KEY = "js.debugger.webconsole"
 
+    private val fileContents =
+        """
+        function abc() {
+            return 'Hello World'
+        }
+        
+        exports.lambdaHandler = async (event, context) => {
+            return abc()
+        };
+        """.trimIndent()
+
     @Before
     override fun setUp() {
         assumeTrue(ApplicationInfo.getInstance().let { info -> info.majorVersion == "2019" && info.minorVersionMainPart == "2" })
@@ -63,7 +74,7 @@ class NodeJsDebugEndToEndTest : CloudDebugTestCase("node") {
         setUpMocks()
 
         // set breakpoint
-        addBreakpoint(2)
+        projectRule.addBreakpoint()
 
         // run a run configuration
         val configuration = EcsCloudDebugRunConfiguration(
@@ -97,14 +108,7 @@ class NodeJsDebugEndToEndTest : CloudDebugTestCase("node") {
     private fun addNodeFile(): String {
         val fixture = projectRule.fixture
 
-        val psiFile = fixture.addFileToProject(
-            "hello_world/app.js",
-            """
-            exports.lambdaHandler = async (event, context) => {
-                return 'Hello World'
-            };
-            """.trimIndent()
-        )
+        val psiFile = fixture.addFileToProject("hello_world/app.js", fileContents)
 
         runInEdtAndWait {
             fixture.openFileInEditor(psiFile.virtualFile)
