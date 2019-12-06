@@ -214,8 +214,6 @@ async function configurePythonExtension(): Promise<void> {
     const lintingEnabled2 = config.get('python.linting.enabled')
     console.log(`pylintEnabled: ${pylintEnabled2}, lintingEnabled: ${lintingEnabled2}`)
     console.log('************************************************************')
-
-    throw new Error('bee')
 }
 
 describe('SAM Integration Tests', async () => {
