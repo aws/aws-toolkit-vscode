@@ -195,6 +195,29 @@ async function activateExtensions(): Promise<void> {
     console.log('Extensions activated')
 }
 
+async function configurePythonExtension(): Promise<void> {
+    console.log('************************************************************')
+    // tslint:disable-next-line:no-null-keyword
+    let config = vscode.workspace.getConfiguration(undefined, null)
+    const pylintEnabled = config.get('python.linting.pylintEnabled')
+    const lintingEnabled = config.get('python.linting.enabled')
+
+    const configPy = vscode.workspace.getConfiguration('python')
+    await configPy.update('linting.pylintEnabled', false, false)
+    await configPy.update('linting.enabled', false, false)
+
+    console.log(`pylintEnabled: ${pylintEnabled}, lintingEnabled: ${lintingEnabled}`)
+
+    // tslint:disable-next-line:no-null-keyword
+    config = vscode.workspace.getConfiguration(undefined, null)
+    const pylintEnabled2 = config.get('python.linting.pylintEnabled')
+    const lintingEnabled2 = config.get('python.linting.enabled')
+    console.log(`pylintEnabled: ${pylintEnabled2}, lintingEnabled: ${lintingEnabled2}`)
+    console.log('************************************************************')
+
+    throw new Error('bee')
+}
+
 describe('SAM Integration Tests', async () => {
     const samApplicationName = 'testProject'
     let testDisposables: vscode.Disposable[]
@@ -204,6 +227,7 @@ describe('SAM Integration Tests', async () => {
         this.timeout(600000)
 
         await activateExtensions()
+        await configurePythonExtension()
     })
 
     beforeEach(async function() {
@@ -256,6 +280,10 @@ describe('SAM Integration Tests', async () => {
                     samAppCodeUri = await openSamProject(scenario.path)
                 })
 
+                beforeEach(async function() {
+                    await closeAllEditors()
+                })
+
                 after(async function() {
                     tryRemoveProjectFolder()
                 })
@@ -276,6 +304,7 @@ describe('SAM Integration Tests', async () => {
                     assert.ok(codeLens, 'expected to find a CodeLens')
                 })
 
+                // TODO : CC : Thought: What if each test uses a distinct test folder
                 // TODO : CC : Thought: Open file, loop to get symbols up here first
                 // TODO : CC : Thought: Can we get/see the output status/logs for the local invokes?
                 it('produces a Debug Local CodeLens', async () => {
@@ -383,6 +412,10 @@ describe('SAM Integration Tests', async () => {
 
         async function stopDebugger(): Promise<void> {
             await vscode.commands.executeCommand('workbench.action.debug.stop')
+        }
+
+        async function closeAllEditors(): Promise<void> {
+            await vscode.commands.executeCommand('workbench.action.closeAllEditors')
         }
 
         /**
