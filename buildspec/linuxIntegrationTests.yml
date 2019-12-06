@@ -36,6 +36,7 @@ phases:
             - docker pull lambci/lambda:python2.7
             - docker pull lambci/lambda:python3.6
             - docker pull lambci/lambda:python3.7
+            - docker pull lambci/lambda:python3.8
 
     build:
         commands:
