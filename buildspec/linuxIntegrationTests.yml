@@ -35,5 +35,6 @@ phases:
 
     build:
         commands:
+            - export AWS_TOOLKIT_TEST_USER_DIR=/tmp/
             - npm install --unsafe-perm
             - xvfb-run npm run integrationTest
