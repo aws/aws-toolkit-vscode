@@ -265,8 +265,8 @@
                     "group": "0@5"
                 },
                 {
-                    "command": "aws.viewSchemaItem",
-                    "when": "view == aws.explorer && viewItem == awsSchemaItemNode",
+                    "command": "aws.searchSchema",
+                    "when": "view == aws.explorer && viewItem == awsSchemasNode",
                     "group": "0@1"
                 },
                 {
@@ -275,14 +275,14 @@
                     "group": "0@1"
                 },
                 {
-                    "command": "aws.searchSchema",
-                    "when": "view == aws.explorer && viewItem == awsSchemasNode",
+                    "command": "aws.viewSchemaItem",
+                    "when": "view == aws.explorer && viewItem == awsSchemaItemNode",
                     "group": "0@1"
                 },
                 {
                     "command": "aws.downloadSchemaItemCode",
                     "when": "view == aws.explorer && viewItem == awsSchemaItemNode",
-                    "group": "0@1"
+                    "group": "1@1"
                 },
                 {
                     "command": "aws.showErrorDetails",
