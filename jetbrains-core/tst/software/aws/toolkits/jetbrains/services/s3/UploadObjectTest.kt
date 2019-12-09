@@ -22,8 +22,6 @@ import software.aws.toolkits.jetbrains.services.s3.objectActions.UploadObjectAct
 import software.aws.toolkits.jetbrains.utils.delegateMock
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import java.io.ByteArrayInputStream
-import javax.swing.JButton
-import javax.swing.JTextField
 
 class UploadObjectTest {
 
@@ -51,14 +49,12 @@ class UploadObjectTest {
         val virtualBucket =
             S3VirtualBucket(fileSystemMock, Bucket.builder().name("TestBucket").build())
         val treeTableMock = delegateMock<S3TreeTable>()
-        val mockButton = delegateMock<JButton>()
-        val mockTextField = delegateMock<JTextField>()
 
         val testFile = delegateMock<VirtualFile> { on { name } doReturn "TestFile" }
         testFile.stub { on { length } doReturn 341 }
         testFile.stub { on { inputStream } doReturn ByteArrayInputStream("Hello".toByteArray()) }
 
-        val uploadObjectMock = UploadObjectAction(virtualBucket, treeTableMock, mockButton, mockTextField)
+        val uploadObjectMock = UploadObjectAction(virtualBucket, treeTableMock)
 
         uploadObjectMock.uploadObjectAction(s3Client, projectRule.project, testFile, null)
         verify(s3Client).putObject(any<PutObjectRequest>(), any<RequestBody>())

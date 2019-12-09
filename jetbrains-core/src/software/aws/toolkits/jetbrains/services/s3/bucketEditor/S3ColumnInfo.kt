@@ -7,18 +7,17 @@ import com.intellij.ui.treeStructure.treetable.TreeTableModel
 import com.intellij.util.ui.ColumnInfo
 import software.aws.toolkits.jetbrains.services.s3.S3VirtualDirectory
 import software.aws.toolkits.jetbrains.services.s3.S3VirtualObject
+import software.aws.toolkits.resources.message
 import javax.swing.tree.DefaultMutableTreeNode
 
 open class S3ColumnInfo(columnTitle: String, val valueGetter: (S3VirtualObject) -> String?) :
     ColumnInfo<Any, String>(columnTitle) {
 
-    override fun valueOf(obj: Any): String? {
-        val file = getVirtualFileFromNode(obj)
-        return when (file) {
+    override fun valueOf(obj: Any): String? =
+        when (val file = getVirtualFileFromNode(obj)) {
             is S3VirtualObject -> valueGetter.invoke(file)
             else -> ""
         }
-    }
 
     override fun isCellEditable(item: Any?): Boolean = true
 
@@ -29,7 +28,7 @@ open class S3ColumnInfo(columnTitle: String, val valueGetter: (S3VirtualObject) 
 }
 
 class S3KeyColumnInfo(valueGetter: (S3VirtualObject) -> String?) :
-    S3ColumnInfo("Name", valueGetter) {
+    S3ColumnInfo(message("s3.name"), valueGetter) {
 
     override fun valueOf(obj: Any): String? {
         val file = super.getVirtualFileFromNode(obj)

@@ -23,15 +23,11 @@ import software.aws.toolkits.jetbrains.services.s3.bucketEditor.S3KeyNode
 import software.aws.toolkits.jetbrains.services.s3.bucketEditor.S3TreeTable
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
-import javax.swing.JButton
-import javax.swing.JTextField
 import javax.swing.tree.DefaultMutableTreeNode
 
 class UploadObjectAction(
     val bucket: S3VirtualBucket,
-    private val treeTable: S3TreeTable,
-    private val searchButton: JButton,
-    private val searchTextField: JTextField
+    private val treeTable: S3TreeTable
 ) : ActionButtonWrapper(message("s3.upload.object.action", bucket.s3Bucket.name()), null, AllIcons.Actions.Upload) {
 
     @Suppress("unused")
@@ -55,10 +51,6 @@ class UploadObjectAction(
                 try {
                     uploadObjectAction(client, project, fileChosen, nodeFile)
                     treeTable.refresh()
-                    if (searchTextField.text.isNotEmpty()) {
-                        searchButton.doClick()
-                        treeTable.refresh()
-                    }
                 } catch (e: Exception) {
                     notifyError(message("s3.upload.object.failed"))
                 }
@@ -75,14 +67,14 @@ class UploadObjectAction(
         nodeFile: VirtualFile?
     ) {
         val bucketName = bucket.getVirtualBucketName()
-        var key: String
-        if (nodeFile is S3VirtualDirectory) {
-            key = "${nodeFile.name}/${fileChosen.name}"
+        val key = if (nodeFile is S3VirtualDirectory) {
+            "${nodeFile.name}/${fileChosen.name}"
         } else if (nodeFile?.parent is S3VirtualDirectory) {
-            key = "${nodeFile.parent.name}/${fileChosen.name}"
+            "${nodeFile.parent.name}/${fileChosen.name}"
         } else {
-            key = fileChosen.name
+            fileChosen.name
         }
+
         val request = PutObjectRequest.builder()
             .bucket(bucketName)
             .key(key)

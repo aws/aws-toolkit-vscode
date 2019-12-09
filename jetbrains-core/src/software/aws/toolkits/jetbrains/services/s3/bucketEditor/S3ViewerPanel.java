@@ -1,5 +1,7 @@
 package software.aws.toolkits.jetbrains.services.s3.bucketEditor;
 
+import static software.aws.toolkits.resources.Localization.message;
+
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.actionSystem.ActionPlaces;
@@ -28,11 +30,8 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
-import javax.swing.RowFilter;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableModel;
-import javax.swing.table.TableRowSorter;
 
 import software.aws.toolkits.jetbrains.services.s3.S3RowSorter;
 import software.aws.toolkits.jetbrains.services.s3.S3TreeCellRenderer;
@@ -46,8 +45,6 @@ import software.aws.toolkits.jetbrains.services.s3.objectActions.UploadObjectAct
 import software.aws.toolkits.jetbrains.ui.tree.AsyncTreeModel;
 import software.aws.toolkits.jetbrains.ui.tree.StructureTreeModel;
 
-import static software.aws.toolkits.resources.Localization.message;
-
 @SuppressWarnings("unchecked")
 public class S3ViewerPanel {
     private final int SCROLLPANE_SIZE = 11;
@@ -58,10 +55,6 @@ public class S3ViewerPanel {
     private JPanel mainPanel;
     private JTextField arnText;
     private JLabel bucketArn;
-    private JPanel searchPanel;
-    private JPanel paginationPanel;
-    private JButton searchButton;
-    private JTextField searchTextField;
     private JLabel bucketName;
     private S3VirtualBucket bucketVirtual;
     private S3TreeTable treeTable;
@@ -72,9 +65,6 @@ public class S3ViewerPanel {
         this.bucketVirtual = bucketVirtual;
         this.name.setText(bucketVirtual.getVirtualBucketName());
         this.date.setText(bucketVirtual.formatDate(bucketVirtual.getS3Bucket().creationDate()));
-
-        this.searchButton.setText("Search");
-        this.searchTextField.setText("");
 
         this.arnText.setText("arn:aws:s3:::" + bucketVirtual.getVirtualBucketName());
         this.bucketArn.setText("Bucket ARN:");
@@ -108,7 +98,6 @@ public class S3ViewerPanel {
             final ColumnInfo[] COLUMNS = new ColumnInfo[] {key, size, modified};
             createTreeTable(COLUMNS);
 
-            DefaultActionGroup actionGroup = new DefaultActionGroup();
             S3TreeCellRenderer treeRenderer = new S3TreeCellRenderer();
             DefaultTableCellRenderer tableRenderer = new DefaultTableCellRenderer();
             tableRenderer.setHorizontalAlignment(SwingConstants.LEFT);
@@ -117,33 +106,28 @@ public class S3ViewerPanel {
              */
             JButton next = new JButton(">");
             JButton previous = new JButton("<");
-            ActionListener listener = new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    next.setEnabled(true);
-                    previous.setEnabled(true);
+            ActionListener listener = e -> {
+                next.setEnabled(true);
+                previous.setEnabled(true);
 
-                    if (e.getSource() == next) {
-                        s3Node.updateLimitsOnButtonClick(true);
-                        if (s3Node.getNext() == s3Node.getCurrSize()) {
-                            next.setEnabled(false);
-                        }
-
-                    } else if (e.getSource() == previous) {
-                        s3Node.updateLimitsOnButtonClick(false);
-                        if (s3Node.getPrev() == 0) {
-                            previous.setEnabled(false);
-                        }
+                if (e.getSource() == next) {
+                    s3Node.updateLimitsOnButtonClick(true);
+                    if (s3Node.getNext() == s3Node.getCurrSize()) {
+                        next.setEnabled(false);
                     }
-                    treeTable.refresh();
+
+                } else if (e.getSource() == previous) {
+                    s3Node.updateLimitsOnButtonClick(false);
+                    if (s3Node.getPrev() == 0) {
+                        previous.setEnabled(false);
+                    }
                 }
+                treeTable.refresh();
             };
 
             ApplicationManager.getApplication().invokeLater(() -> {
                 next.addActionListener(listener);
                 previous.addActionListener(listener);
-                paginationPanel.add(previous);
-                paginationPanel.add(next);
 
                 treeTable = new S3TreeTable(model);
                 treeTable.setRootVisible(false);
@@ -158,16 +142,9 @@ public class S3ViewerPanel {
                 scrollPane.setPreferredSize(new Dimension(width, treeTable.getRowHeight() * SCROLLPANE_SIZE));
 
                 treeTable.setAutoCreateRowSorter(true);
-                searchAndSortTable();
+                treeTable.setRowSorter(new S3RowSorter(treeTable.getModel()));
+                addTreeActions();
 
-                actionGroup.add(new DownloadObjectAction(treeTable, bucketVirtual));
-                actionGroup.add(new UploadObjectAction(bucketVirtual, treeTable, searchButton, searchTextField));
-                actionGroup.add(new Separator());
-                actionGroup.add(new RenameObjectAction(treeTable, bucketVirtual));
-                actionGroup.add(new CopyPathAction(treeTable, bucketVirtual));
-                actionGroup.add(new Separator());
-                actionGroup.add(new DeleteObjectAction(treeTable, bucketVirtual, searchButton, searchTextField));
-                PopupHandler.installPopupHandler(treeTable, actionGroup, ActionPlaces.EDITOR_POPUP, ActionManager.getInstance());
                 treeTable.getColumnModel().getColumn(1).setMaxWidth(120);
 
                 mainPanel.add(scrollPane, BorderLayout.CENTER);
@@ -196,30 +173,16 @@ public class S3ViewerPanel {
             , myTreeModelDisposable), columns, myTreeModel);
     }
 
-    /**
-     * Search and sort TreeTable(top-level) rows based on text in TextField
-     */
-    private void searchAndSortTable() {
-        TableRowSorter<TableModel> sorter = new S3RowSorter(treeTable.getModel());
-        treeTable.setRowSorter(sorter);
-        searchButton.addActionListener(e -> search(sorter));
-        searchTextField.addActionListener(e -> search(sorter));
-    }
-
-    private void search(TableRowSorter<TableModel> sorter) {
-        String text = searchTextField.getText();
-        if (text.isEmpty()) {
-            s3Node.setPrev(S3KeyNode.START_SIZE);
-            s3Node.setNext(Math.min(S3KeyNode.UPDATE_LIMIT, s3Node.getCurrSize()));
-            sorter.setRowFilter(null);
-        } else {
-            ApplicationManager.getApplication().executeOnPooledThread(() -> {
-                s3Node.resetLimitsForSearch();
-            });
-            sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
-        }
-        sorter.setSortKeys(null);
-        treeTable.refresh();
+    private void addTreeActions() {
+        DefaultActionGroup actionGroup = new DefaultActionGroup();
+        actionGroup.add(new DownloadObjectAction(treeTable, bucketVirtual));
+        actionGroup.add(new UploadObjectAction(bucketVirtual, treeTable));
+        actionGroup.add(new Separator());
+        actionGroup.add(new RenameObjectAction(treeTable, bucketVirtual));
+        actionGroup.add(new CopyPathAction(treeTable, bucketVirtual));
+        actionGroup.add(new Separator());
+        actionGroup.add(new DeleteObjectAction(treeTable, bucketVirtual));
+        PopupHandler.installPopupHandler(treeTable, actionGroup, ActionPlaces.EDITOR_POPUP, ActionManager.getInstance());
     }
 
     private void clearSelectionOnWhiteSpace() {

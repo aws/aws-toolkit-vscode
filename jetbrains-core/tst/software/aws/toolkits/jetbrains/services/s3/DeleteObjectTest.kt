@@ -21,8 +21,6 @@ import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.services.s3.bucketEditor.S3TreeTable
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DeleteObjectAction
 import software.aws.toolkits.jetbrains.utils.delegateMock
-import javax.swing.JButton
-import javax.swing.JTextField
 
 class DeleteObjectTest {
 
@@ -40,11 +38,9 @@ class DeleteObjectTest {
         val deleteCaptor = argumentCaptor<DeleteObjectsRequest>()
         val mockFileSystem = S3VirtualFileSystem(s3Client)
         val mockTreeTable = delegateMock<S3TreeTable>()
-        val mockButton = delegateMock<JButton>()
-        val mockTextField = delegateMock<JTextField>()
         val mockVirtualBucket = S3VirtualBucket(mockFileSystem, Bucket.builder().name("TestBucket").build())
 
-        val mockDeleteObject = DeleteObjectAction(mockTreeTable, mockVirtualBucket, mockButton, mockTextField)
+        val mockDeleteObject = DeleteObjectAction(mockTreeTable, mockVirtualBucket)
 
         val objectsToDelete = mutableListOf<ObjectIdentifier>()
         objectsToDelete.add(ObjectIdentifier.builder().key("testKey").build())
