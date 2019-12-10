@@ -12,6 +12,4 @@ quickStart.html
 media/libs/lodash.min.js
 
 # Auto generated Service Clients
-#TODO: remove-when-schema-sdk-launched 
-src/shared/schemas/clientschemas.d.ts*
 src/shared/telemetry/clienttelemetry.d.ts

@@ -6,11 +6,8 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
+import { Schemas } from 'aws-sdk'
 import * as vscode from 'vscode'
-
-//TODO: change the import to aws-sdk-js once Schemas SDK is launched
-import * as Schemas from '../shared/schemas/clientschemas'
-
 import { SchemaClient } from '../shared/clients/schemaClient'
 
 export async function* listRegistryItems(client: SchemaClient): AsyncIterableIterator<Schemas.RegistrySummary> {

@@ -512,7 +512,7 @@
     "dependencies": {
         "adm-zip": "^0.4.13",
         "async-lock": "^1.1.3",
-        "aws-sdk": "^2.429.0",
+        "aws-sdk": "^2.581.0",
         "cloudformation-schema-js-yaml": "^1.0.1",
         "cross-spawn": "^6.0.5",
         "del": "^3.0.0",
