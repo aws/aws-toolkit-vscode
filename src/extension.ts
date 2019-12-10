@@ -6,10 +6,9 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import { AwsExplorer } from './awsexplorer/awsExplorer'
-import { RegionNode } from './awsexplorer/regionNode'
 import { activate as activateCdk } from './cdk/activation'
 import { activate as activateSchemas } from './eventSchemas/activation'
+import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
@@ -21,7 +20,7 @@ import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
 import { DefaultResourceFetcher } from './shared/defaultResourceFetcher'
 import { DefaultAWSStatusBar } from './shared/defaultStatusBar'
 import { ext } from './shared/extensionGlobals'
-import { safeGet, showQuickStartWebview, toastNewUser } from './shared/extensionUtilities'
+import { showQuickStartWebview, toastNewUser } from './shared/extensionUtilities'
 import { getLogger } from './shared/logger'
 import { activate as activateLogger } from './shared/logger/activation'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
@@ -100,18 +99,6 @@ export async function activate(context: vscode.ExtensionContext) {
             }
         })
 
-        registerCommand({
-            command: 'aws.showRegion',
-            callback: async () => await ext.awsContextCommands.onCommandShowRegion()
-        })
-
-        registerCommand({
-            command: 'aws.hideRegion',
-            callback: async (node?: RegionNode) => {
-                await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
-            }
-        })
-
         // register URLs in extension menu
         registerCommand({
             command: 'aws.help',
@@ -142,12 +129,7 @@ export async function activate(context: vscode.ExtensionContext) {
             extensionContext: context
         })
 
-        const providers = [new AwsExplorer(awsContext, awsContextTrees, regionProvider, resourceFetcher)]
-
-        providers.forEach(p => {
-            p.initialize(context)
-            context.subscriptions.push(vscode.window.registerTreeDataProvider(p.viewProviderId, p))
-        })
+        await activateAwsExplorer({ awsContext, context, awsContextTrees, regionProvider, resourceFetcher })
 
         await activateSchemas()
 
