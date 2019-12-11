@@ -5,25 +5,25 @@
 
 import * as vscode from 'vscode'
 
-import { AwsExplorer } from './awsExplorer'
+import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
+import { deleteLambda } from '../lambda/commands/deleteLambda'
+import { invokeLambda } from '../lambda/commands/invokeLambda'
+import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
+import { LambdaFunctionNode } from '../lambda/explorer/lambdaFunctionNode'
+import { configureLocalLambda } from '../lambda/local/configureLocalLambda'
 import { AwsContext } from '../shared/awsContext'
 import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
+import { ext } from '../shared/extensionGlobals'
+import { safeGet } from '../shared/extensionUtilities'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { ResourceFetcher } from '../shared/resourceFetcher'
-import { ext } from '../shared/extensionGlobals'
-import { registerCommand } from '../shared/telemetry/telemetryUtils'
-import { RegionNode } from './regionNode'
-import { safeGet } from '../shared/extensionUtilities'
-import { LambdaFunctionNode } from '../lambda/explorer/lambdaFunctionNode'
-import { deleteLambda } from '../lambda/commands/deleteLambda'
 import { TelemetryNamespace } from '../shared/telemetry/telemetryTypes'
-import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
-import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
+import { registerCommand } from '../shared/telemetry/telemetryUtils'
+import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../shared/treeview/nodes/errorNode'
 import { showErrorDetails } from '../shared/treeview/webviews/showErrorDetails'
-import { invokeLambda } from '../lambda/commands/invokeLambda'
-import { configureLocalLambda } from '../lambda/local/configureLocalLambda'
-import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
+import { AwsExplorer } from './awsExplorer'
+import { RegionNode } from './regionNode'
 
 /**
  * Activate AWS Explorer related functionality for the extension.
@@ -42,7 +42,7 @@ export async function activate(activateArguments: {
         vscode.window.registerTreeDataProvider(awsExplorer.viewProviderId, awsExplorer)
     )
 
-    registerAwsExplorerCommands(awsExplorer, activateArguments.awsContext, activateArguments.resourceFetcher)
+    await registerAwsExplorerCommands(awsExplorer, activateArguments.awsContext, activateArguments.resourceFetcher)
 
     activateArguments.awsContextTrees.addTree(awsExplorer)
 }
@@ -126,8 +126,8 @@ async function registerAwsExplorerCommands(
 
     registerCommand({
         command: 'aws.refreshAwsExplorerNode',
-        callback: async (awsExplorer: AwsExplorer, element: AWSTreeNodeBase) => {
-            awsExplorer.refresh(element)
+        callback: async (awsexplorer: AwsExplorer, element: AWSTreeNodeBase) => {
+            awsexplorer.refresh(element)
         }
     })
 }

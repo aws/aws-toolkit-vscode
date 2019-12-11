@@ -6,9 +6,9 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
+import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCdk } from './cdk/activation'
 import { activate as activateSchemas } from './eventSchemas/activation'
-import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
