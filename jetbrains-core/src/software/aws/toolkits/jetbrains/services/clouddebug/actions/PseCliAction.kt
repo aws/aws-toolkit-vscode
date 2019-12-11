@@ -80,8 +80,7 @@ abstract class PseCliAction(val project: Project, val actionName: String, privat
                         System.currentTimeMillis()
                     )
                     val messageEmitter = DefaultMessageEmitter.createRoot(buildViewManager, actionName)
-                    @Suppress("DEPRECATION") // TODO: switch to BuildProgressListener(Object, Event)  FIX_WHEN_MIN_IS_192
-                    buildViewManager.onEvent(StartBuildEventImpl(descriptor, ""))
+                    buildViewManager.onEvent(actionName, StartBuildEventImpl(descriptor, ""))
 
                     val toolWindowManager = ToolWindowManager.getInstance(project)
 
@@ -147,8 +146,7 @@ abstract class PseCliAction(val project: Project, val actionName: String, privat
                                 }
                                 FailureResultImpl()
                             }
-                            @Suppress("DEPRECATION") // TODO: switch to BuildProgressListener(Object, Event)  FIX_WHEN_MIN_IS_192
-                            buildViewManager.onEvent(FinishBuildEventImpl(actionName, null, System.currentTimeMillis(), "", result))
+                            buildViewManager.onEvent(actionName, FinishBuildEventImpl(actionName, null, System.currentTimeMillis(), "", result))
                         }
                     })
 

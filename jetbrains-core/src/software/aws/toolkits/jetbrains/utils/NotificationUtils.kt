@@ -14,6 +14,9 @@ import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogBuilder
 import com.intellij.ui.ScrollPaneFactory
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.components.telemetry.AnActionWrapper
 import software.aws.toolkits.jetbrains.core.SettingsSelectorAction
 import software.aws.toolkits.jetbrains.core.help.HelpIds
@@ -23,19 +26,19 @@ import javax.swing.JLabel
 import javax.swing.JTextArea
 
 private const val GROUP_DISPLAY_ID = "AWS Toolkit"
+private val LOG = getLogger<AwsToolkit>()
 
-fun Exception.notifyError(title: String = "", project: Project? = null) =
+fun Exception.notifyError(title: String = "", project: Project? = null) {
+    val message = this.message ?: "${this::class.java.name}${this.stackTrace?.joinToString("\n", prefix = "\n")}"
+    LOG.warn(this) { title.takeIf { it.isNotBlank() }?.let { "$it ($message)" } ?: message }
     notify(
         Notification(
             GROUP_DISPLAY_ID,
             title,
-            this.message ?: "${this::class.java.name}${this.stackTrace?.joinToString("\n", prefix = "\n")}",
+            message,
             NotificationType.ERROR
         ), project
     )
-
-private fun notify(type: NotificationType, title: String, content: String = "", project: Project? = null, notificationAction: AnAction) {
-    notify(type, title, content, project, listOf(notificationAction))
 }
 
 private fun notify(type: NotificationType, title: String, content: String = "", project: Project? = null, notificationActions: Collection<AnAction>) {
@@ -61,7 +64,7 @@ fun notifyWarn(title: String, content: String = "", project: Project? = null, li
     notify(Notification(GROUP_DISPLAY_ID, title, content, NotificationType.WARNING, listener), project)
 
 fun notifyError(title: String, content: String = "", project: Project? = null, action: AnAction) =
-    notify(NotificationType.ERROR, title, content, project, action)
+    notify(NotificationType.ERROR, title, content, project, listOf(action))
 
 fun notifyError(title: String = message("aws.notification.title"), content: String = "", project: Project? = null, listener: NotificationListener? = null) =
     notify(Notification(GROUP_DISPLAY_ID, title, content, NotificationType.ERROR, listener), project)

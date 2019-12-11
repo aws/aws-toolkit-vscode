@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.services.lambda.nodejs
 
 import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.testFramework.runInEdtAndWait
-import com.intellij.xdebugger.XDebuggerUtil
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -25,7 +24,6 @@ import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
 import software.aws.toolkits.jetbrains.utils.executeRunConfiguration
 import software.aws.toolkits.jetbrains.utils.rules.NodeJsCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addPackageJsonFile
-import java.util.concurrent.atomic.AtomicReference
 
 @RunWith(Parameterized::class)
 class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runtime) {
@@ -45,7 +43,16 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
 
     private val mockId = "MockCredsId"
     private val mockCreds = AwsBasicCredentials.create("Access", "ItsASecret")
-    private val serverStarted = AtomicReference<Boolean>(false)
+    private val fileContents =
+        """
+        function abc() {
+            return 'Hello World'
+        }
+        
+        exports.lambdaHandler = async (event, context) => {
+            return abc()
+        };
+        """.trimIndent()
 
     @Before
     fun setUp() {
@@ -53,14 +60,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
 
         val fixture = projectRule.fixture
 
-        val psiFile = fixture.addFileToProject(
-            "hello_world/app.js",
-            """
-            exports.lambdaHandler = async (event, context) => {
-                return 'Hello World'
-            };
-            """.trimIndent()
-        )
+        val psiFile = fixture.addFileToProject("hello_world/app.js", fileContents)
 
         runInEdtAndWait {
             fixture.openFileInEditor(psiFile.virtualFile)
@@ -167,7 +167,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
 
         assertThat(runConfiguration).isNotNull
 
-        addBreakpoint(2)
+        projectRule.addBreakpoint()
 
         val debuggerIsHit = checkBreakPointHit(projectRule.project)
         val executeLambda = executeRunConfiguration(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
@@ -182,14 +182,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
     fun samIsExecutedWithDebugger_sameFileNames() {
         projectRule.fixture.addPackageJsonFile()
 
-        val psiFile = projectRule.fixture.addFileToProject(
-            "hello_world/subfolder/app.js",
-            """
-            exports.lambdaHandler = async (event, context) => {
-                return 'Hello World'
-            };
-            """.trimIndent()
-        )
+        val psiFile = projectRule.fixture.addFileToProject("hello_world/subfolder/app.js", fileContents)
 
         runInEdtAndWait {
             projectRule.fixture.openFileInEditor(psiFile.virtualFile)
@@ -205,7 +198,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
 
         assertThat(runConfiguration).isNotNull
 
-        addBreakpoint(2)
+        projectRule.addBreakpoint()
 
         val debuggerIsHit = checkBreakPointHit(projectRule.project)
         val executeLambda = executeRunConfiguration(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
@@ -214,15 +207,5 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         assertThat(executeLambda.stdout).contains("Hello World")
 
         assertThat(debuggerIsHit.get()).isTrue()
-    }
-
-    private fun addBreakpoint(lineNumber: Int) {
-        runInEdtAndWait {
-            XDebuggerUtil.getInstance().toggleLineBreakpoint(
-                projectRule.project,
-                projectRule.fixture.file.virtualFile,
-                lineNumber
-            )
-        }
     }
 }

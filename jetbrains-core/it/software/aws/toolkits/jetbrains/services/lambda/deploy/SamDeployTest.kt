@@ -3,12 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.deploy
 
-import com.intellij.execution.OutputListener
-import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.execution.process.OSProcessHandler
-import com.intellij.execution.process.ProcessEvent
 import com.intellij.openapi.util.Disposer
-import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.util.ExceptionUtil
@@ -146,7 +141,7 @@ class SamDeployTest {
     private fun createChangeSet(templateFile: VirtualFile, stackName: String, parameters: Map<String, String> = emptyMap()): String? {
         val deployDialog = runInEdtAndGet {
             runUnderRealCredentials(projectRule.project) {
-                object : SamDeployDialog(
+                SamDeployDialog(
                     projectRule.project,
                     stackName,
                     templateFile,
@@ -154,18 +149,7 @@ class SamDeployTest {
                     bucketRule.createBucket(stackName),
                     false,
                     true
-                ) {
-                    override fun createProcess(command: GeneralCommandLine): OSProcessHandler =
-                        super.createProcess(command).also {
-                            it.addProcessListener(
-                                object : OutputListener() {
-                                    override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
-                                        super.onTextAvailable(event, outputType)
-                                        println("SAM CLI: ${event.text}")
-                                    }
-                                })
-                        }
-                }.also {
+                ).also {
                     Disposer.register(projectRule.fixture.testRootDisposable, it.disposable)
                 }
             }

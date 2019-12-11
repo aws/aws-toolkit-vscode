@@ -9,6 +9,7 @@ import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
+import kotlin.test.assertNotNull
 
 class NotificationUtilsTest {
 
@@ -29,9 +30,10 @@ class NotificationUtilsTest {
 
         NullPointerException().notifyError("ooops", project = project)
 
-        assertThat(notification).isNotNull
-        assertThat(notification?.content)
-            .startsWith("java.lang.NullPointerException")
-            .contains("NotificationUtilsTest.kt")
+        assertNotNull(notification) {
+            assertThat(it.content)
+                .startsWith("java.lang.NullPointerException")
+                .contains("NotificationUtilsTest.kt")
+        }
     }
 }
