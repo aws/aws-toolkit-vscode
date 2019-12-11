@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.lambda.upload
 
 import com.intellij.openapi.util.io.FileUtil
+import com.nhaarman.mockitokotlin2.KArgumentCaptor
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
@@ -12,6 +13,7 @@ import com.nhaarman.mockitokotlin2.stub
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
+import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.CreateFunctionRequest
 import software.amazon.awssdk.services.lambda.model.CreateFunctionResponse
@@ -30,7 +32,6 @@ import software.aws.toolkits.jetbrains.services.iam.IamRole
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.utils.delegateMock
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
-import java.nio.file.Path
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
@@ -48,12 +49,7 @@ abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUpload
     fun testCreation() {
         val s3Bucket = "TestBucket"
 
-        val uploadCaptor = argumentCaptor<PutObjectRequest>()
-        mockClientManager.create<S3Client>().stub {
-            on { putObject(uploadCaptor.capture(), any<Path>()) } doReturn PutObjectResponse.builder()
-                .versionId("VersionFoo")
-                .build()
-        }
+        val uploadCaptor = uploadCaptor()
 
         val createCaptor = argumentCaptor<CreateFunctionRequest>()
         mockClientManager.create<LambdaClient>().stub {
@@ -119,12 +115,7 @@ abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUpload
     fun testUpdateCodeAndSettings() {
         val s3Bucket = "TestBucket"
 
-        val uploadCaptor = argumentCaptor<PutObjectRequest>()
-        mockClientManager.create<S3Client>().stub {
-            on { putObject(uploadCaptor.capture(), any<Path>()) } doReturn PutObjectResponse.builder()
-                .versionId("VersionFoo")
-                .build()
-        }
+        val uploadCaptor = uploadCaptor()
 
         val updateConfigCaptor = argumentCaptor<UpdateFunctionConfigurationRequest>()
         val updateCodeCaptor = argumentCaptor<UpdateFunctionCodeRequest>()
@@ -180,6 +171,16 @@ abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUpload
         assertThat(codeRequest.s3Bucket()).isEqualTo(s3Bucket)
         assertThat(codeRequest.s3Key()).isEqualTo("${functionDetails.name}.zip")
         assertThat(codeRequest.s3ObjectVersion()).isEqualTo("VersionFoo")
+    }
+
+    private fun uploadCaptor(): KArgumentCaptor<PutObjectRequest> {
+        val uploadCaptor = argumentCaptor<PutObjectRequest>()
+        mockClientManager.create<S3Client>().stub {
+            on { putObject(uploadCaptor.capture(), any<RequestBody>()) } doReturn PutObjectResponse.builder()
+                .versionId("VersionFoo")
+                .build()
+        }
+        return uploadCaptor
     }
 
     @Test
