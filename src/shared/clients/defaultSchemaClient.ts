@@ -3,12 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Service } from 'aws-sdk'
-//TODO: change the import to aws-sdk-js once Schemas SDK is launched
-import * as Schemas from '../schemas/clientschemas'
+import { Schemas } from 'aws-sdk'
 
 import { ext } from '../extensionGlobals'
-import apiConfig = require('../schemas/service-2.json')
 import '../utilities/asyncIteratorShim'
 import { SchemaClient } from './schemaClient'
 
@@ -163,14 +160,10 @@ export class DefaultSchemaClient implements SchemaClient {
     }
 
     private async createSdkClient(): Promise<Schemas> {
-        // TODO: remove-when-schema-sdk-launched and rewrite this method similiar to other tree node clients
-
-        return await ext.sdkClientBuilder.createAndConfigureServiceClient(opts => new Service(opts), {
-            // @ts-ignore: apiConfig is internal and not in the TS declaration file
-            apiConfig: apiConfig,
-            region: this.regionCode,
-            credentials: undefined,
-            correctClockSkew: true
-        })
+        return await ext.sdkClientBuilder.createAndConfigureServiceClient(
+            options => new Schemas(options),
+            undefined,
+            this.regionCode
+        )
     }
 }
