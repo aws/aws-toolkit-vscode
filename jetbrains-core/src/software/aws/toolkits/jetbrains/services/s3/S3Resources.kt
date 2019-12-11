@@ -9,6 +9,10 @@ import software.aws.toolkits.core.utils.listBucketsByRegion
 import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
 import software.aws.toolkits.jetbrains.core.Resource
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 object S3Resources {
     @JvmStatic
@@ -17,5 +21,12 @@ object S3Resources {
         return ClientBackedCachedResource(S3Client::class, "s3.list_buckets(${activeRegion.id})") {
             listBucketsByRegion(activeRegion.id).map { it.name() }.toList()
         }
+    }
+
+    @JvmStatic
+    fun formatDate(date: Instant): String {
+        val datetime = LocalDateTime.ofInstant(date, ZoneId.systemDefault())
+        return datetime.atZone(ZoneId.systemDefault())
+            .format(DateTimeFormatter.ofPattern("MMM d YYYY hh:mm:ss a z"))
     }
 }

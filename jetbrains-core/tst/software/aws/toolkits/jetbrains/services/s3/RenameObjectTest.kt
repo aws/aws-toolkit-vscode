@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 package software.aws.toolkits.jetbrains.services.s3
 
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.ProjectRule
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
@@ -17,9 +16,11 @@ import software.amazon.awssdk.services.s3.model.CopyObjectResponse
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
 import software.amazon.awssdk.services.s3.model.DeleteObjectResponse
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
+import software.aws.toolkits.jetbrains.services.s3.bucketEditor.S3TreeObjectNode
 import software.aws.toolkits.jetbrains.services.s3.bucketEditor.S3TreeTable
 import software.aws.toolkits.jetbrains.services.s3.objectActions.RenameObjectAction
 import software.aws.toolkits.jetbrains.utils.delegateMock
+import java.time.Instant
 
 class RenameObjectTest {
 
@@ -37,9 +38,8 @@ class RenameObjectTest {
         val deleteCaptor = argumentCaptor<DeleteObjectRequest>()
         val copyCaptor = argumentCaptor<CopyObjectRequest>()
 
-        val fileSystemMock = S3VirtualFileSystem(s3Client)
         val treeTableMock = delegateMock<S3TreeTable>()
-        val virtualBucketMock = S3VirtualBucket(fileSystemMock, Bucket.builder().name("TestBucket").build())
+        val virtualBucketMock = S3VirtualBucket(Bucket.builder().name("TestBucket").build())
         val renameObjectMock = RenameObjectAction(treeTableMock, virtualBucketMock)
 
         s3Client.stub {
@@ -58,17 +58,18 @@ class RenameObjectTest {
                 .requestCharged("yes")
                 .build()
         }
-        val testFile = delegateMock<VirtualFile> { on { name } doReturn "testKey" }
         mockClientManagerRule.manager().register(S3Client::class, s3Client)
+
+        val testFile = S3TreeObjectNode("TestBucket", null, "key", 42, Instant.ofEpochSecond(0))
 
         renameObjectMock.renameObjectAction(TEST_RENAME_KEY, testFile, s3Client)
         val copyRequestCapture = copyCaptor.firstValue
         Assertions.assertThat(copyRequestCapture.bucket()).isEqualTo("TestBucket")
-        Assertions.assertThat(copyRequestCapture.copySource()).isEqualTo("TestBucket/testKey")
+        Assertions.assertThat(copyRequestCapture.copySource()).isEqualTo("TestBucket/key")
 
         val deleteRequestCapture = deleteCaptor.firstValue
         Assertions.assertThat(deleteRequestCapture.bucket()).isEqualTo("TestBucket")
-        Assertions.assertThat(deleteRequestCapture.key()).isEqualTo("testKey")
+        Assertions.assertThat(deleteRequestCapture.key()).isEqualTo("key")
     }
 
     companion object {

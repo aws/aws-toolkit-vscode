@@ -5,14 +5,10 @@ package software.aws.toolkits.jetbrains.services.s3
 
 import javax.swing.table.TableModel
 import javax.swing.table.TableRowSorter
-import javax.swing.table.TableStringConverter
 
+// Class that makes the rows unsortable. TODO we should figure out how we want sort to work.
 class S3RowSorter(model: TableModel) : TableRowSorter<TableModel>(model) {
     init {
-        stringConverter = object : TableStringConverter() {
-            override fun toString(model: TableModel?, row: Int, column: Int): String? = model?.getValueAt(row, column)?.toString()
-        }
-
         setSortable(0, false)
         setSortable(1, false)
         setSortable(2, false)

@@ -10,7 +10,6 @@ import com.intellij.openapi.project.Project
 import icons.AwsIcons
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.Bucket
-import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerService
@@ -42,14 +41,17 @@ class S3BucketNode(project: Project, val bucket: Bucket) :
     override fun onDoubleClick() {
         if (!DumbService.getInstance(nodeProject).isDumb) {
             val editorManager = FileEditorManager.getInstance(nodeProject)
-            val client: S3Client = AwsClientManager.getInstance(nodeProject).getClient()
-            val virtualBucket = S3VirtualBucket(S3VirtualFileSystem(client), bucket)
-            editorManager.openTextEditor(OpenFileDescriptor(nodeProject, virtualBucket), true)
-            TelemetryService.getInstance().record(nodeProject) {
-                datum("s3_openeditor") {
-                    count()
-                }
-            }
+            // See if there is already an open editor, otherwise make a new one
+            val virtualFile =
+                editorManager.openFiles.firstOrNull { (it as? S3VirtualBucket)?.s3Bucket?.equals(bucket) == true } ?: S3VirtualBucket(bucket)
+            editorManager.openTextEditor(OpenFileDescriptor(nodeProject, virtualFile), true)
+            recordOpenTelemetry()
+        }
+    }
+
+    private fun recordOpenTelemetry() = TelemetryService.getInstance().record(nodeProject) {
+        datum("s3_openeditor") {
+            count()
         }
     }
 

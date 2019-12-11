@@ -10,12 +10,9 @@ import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import icons.AwsIcons
-import software.amazon.awssdk.services.s3.S3Client
-import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeAction
 import software.aws.toolkits.jetbrains.services.s3.S3BucketNode
 import software.aws.toolkits.jetbrains.services.s3.S3VirtualBucket
-import software.aws.toolkits.jetbrains.services.s3.S3VirtualFileSystem
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 
@@ -24,9 +21,8 @@ class OpenBucketViewerAction : SingleResourceNodeAction<S3BucketNode>(message("s
 
     override fun actionPerformed(selected: S3BucketNode, e: AnActionEvent) {
         val project = e.getRequiredData(LangDataKeys.PROJECT)
-        val client: S3Client = AwsClientManager.getInstance(project).getClient()
         try {
-            openEditor(selected, client, project)
+            openEditor(selected, project)
         } catch (e: Exception) {
             e.notifyError(message("s3.open.viewer.bucket.failed"))
         }
@@ -39,9 +35,8 @@ class OpenBucketViewerAction : SingleResourceNodeAction<S3BucketNode>(message("s
         e.presentation.isEnabled = !DumbService.getInstance(project).isDumb
     }
 
-    private fun openEditor(selected: S3BucketNode, client: S3Client, project: Project) {
+    private fun openEditor(selected: S3BucketNode, project: Project) {
         val editorManager = FileEditorManager.getInstance(project)
-        val virtualBucket = S3VirtualBucket(S3VirtualFileSystem(client), selected.bucket)
-        editorManager.openTextEditor(OpenFileDescriptor(project, virtualBucket), true)
+        editorManager.openTextEditor(OpenFileDescriptor(project, S3VirtualBucket(selected.bucket)), true)
     }
 }

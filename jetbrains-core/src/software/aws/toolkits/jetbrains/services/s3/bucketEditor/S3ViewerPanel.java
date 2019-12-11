@@ -1,7 +1,5 @@
 package software.aws.toolkits.jetbrains.services.s3.bucketEditor;
 
-import static software.aws.toolkits.resources.Localization.message;
-
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.actionSystem.ActionPlaces;
@@ -18,12 +16,10 @@ import com.intellij.util.ui.ColumnInfo;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
-import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -33,10 +29,11 @@ import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableCellRenderer;
 
+import software.amazon.awssdk.services.s3.S3Client;
+import software.aws.toolkits.jetbrains.services.s3.S3Resources;
 import software.aws.toolkits.jetbrains.services.s3.S3RowSorter;
 import software.aws.toolkits.jetbrains.services.s3.S3TreeCellRenderer;
 import software.aws.toolkits.jetbrains.services.s3.S3VirtualBucket;
-import software.aws.toolkits.jetbrains.services.s3.S3VirtualObject;
 import software.aws.toolkits.jetbrains.services.s3.objectActions.CopyPathAction;
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DeleteObjectAction;
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction;
@@ -47,6 +44,7 @@ import software.aws.toolkits.jetbrains.ui.tree.StructureTreeModel;
 
 @SuppressWarnings("unchecked")
 public class S3ViewerPanel {
+    public S3VirtualBucket bucketVirtual;
     private final int SCROLLPANE_SIZE = 11;
     private JPanel content;
     private JTextField name;
@@ -56,17 +54,16 @@ public class S3ViewerPanel {
     private JTextField arnText;
     private JLabel bucketArn;
     private JLabel bucketName;
-    private S3VirtualBucket bucketVirtual;
     private S3TreeTable treeTable;
-    private S3KeyNode s3Node;
+    private S3TreeNode s3TreeNode;
     private S3TreeTableModel model;
 
-    public S3ViewerPanel(S3VirtualBucket bucketVirtual) {
+    public S3ViewerPanel(S3Client client, S3VirtualBucket bucketVirtual) {
         this.bucketVirtual = bucketVirtual;
-        this.name.setText(bucketVirtual.getVirtualBucketName());
-        this.date.setText(bucketVirtual.formatDate(bucketVirtual.getS3Bucket().creationDate()));
+        this.name.setText(bucketVirtual.getName());
+        this.date.setText(S3Resources.formatDate(bucketVirtual.getS3Bucket().creationDate()));
 
-        this.arnText.setText("arn:aws:s3:::" + bucketVirtual.getVirtualBucketName());
+        this.arnText.setText("arn:aws:s3:::" + bucketVirtual.getName());
         this.bucketArn.setText("Bucket ARN:");
         this.bucketName.setText("Bucket Name:");
         this.creationDate.setText("Creation Date:");
@@ -86,15 +83,11 @@ public class S3ViewerPanel {
         arnText.setComponentPopupMenu(menu);
 
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
-            s3Node = new S3KeyNode(bucketVirtual);
+            s3TreeNode = new S3TreeDirectoryNode(client, bucketVirtual.getName(), null, "");
 
-            ColumnInfo key = new S3KeyColumnInfo(virtualFile -> virtualFile.getFile().getKey());
-
-            ColumnInfo size = new S3ColumnInfo(message("s3.size"), S3VirtualObject::formatSize);
-
-            ColumnInfo modified = new S3ColumnInfo(message("s3.last_modified"),
-                                                   virtualFile -> virtualFile.formatDate(virtualFile.getFile().getLastModified()));
-
+            ColumnInfo key = new S3Column(S3ColumnType.NAME);
+            ColumnInfo size = new S3Column(S3ColumnType.SIZE);
+            ColumnInfo modified = new S3Column(S3ColumnType.LAST_MODIFIED);
             final ColumnInfo[] COLUMNS = new ColumnInfo[] {key, size, modified};
             createTreeTable(COLUMNS);
 
@@ -104,31 +97,8 @@ public class S3ViewerPanel {
             /**
              *  Navigation buttons for pages
              */
-            JButton next = new JButton(">");
-            JButton previous = new JButton("<");
-            ActionListener listener = e -> {
-                next.setEnabled(true);
-                previous.setEnabled(true);
-
-                if (e.getSource() == next) {
-                    s3Node.updateLimitsOnButtonClick(true);
-                    if (s3Node.getNext() == s3Node.getCurrSize()) {
-                        next.setEnabled(false);
-                    }
-
-                } else if (e.getSource() == previous) {
-                    s3Node.updateLimitsOnButtonClick(false);
-                    if (s3Node.getPrev() == 0) {
-                        previous.setEnabled(false);
-                    }
-                }
-                treeTable.refresh();
-            };
 
             ApplicationManager.getApplication().invokeLater(() -> {
-                next.addActionListener(listener);
-                previous.addActionListener(listener);
-
                 treeTable = new S3TreeTable(model);
                 treeTable.setRootVisible(false);
                 treeTable.setDefaultRenderer(Object.class, tableRenderer);
@@ -167,10 +137,9 @@ public class S3ViewerPanel {
 
     private void createTreeTable(ColumnInfo[] columns) {
         Disposable myTreeModelDisposable = Disposer.newDisposable();
-        SimpleTreeStructure treeStructure = new SimpleTreeStructure.Impl(s3Node);
+        SimpleTreeStructure treeStructure = new SimpleTreeStructure.Impl(s3TreeNode);
         StructureTreeModel<SimpleTreeStructure> myTreeModel = new StructureTreeModel(treeStructure, myTreeModelDisposable);
-        model = new S3TreeTableModel(new AsyncTreeModel(myTreeModel, true
-            , myTreeModelDisposable), columns, myTreeModel);
+        model = new S3TreeTableModel(new AsyncTreeModel(myTreeModel, true, myTreeModelDisposable), columns, myTreeModel);
     }
 
     private void addTreeActions() {

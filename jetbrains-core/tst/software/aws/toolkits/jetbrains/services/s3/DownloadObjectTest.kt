@@ -3,7 +3,6 @@
 package software.aws.toolkits.jetbrains.services.s3
 
 import com.intellij.openapi.util.io.FileUtil
-import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFileWrapper
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -17,6 +16,7 @@ import software.amazon.awssdk.services.s3.model.Bucket
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.amazon.awssdk.services.s3.model.GetObjectResponse
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
+import software.aws.toolkits.jetbrains.services.s3.bucketEditor.S3TreeObjectNode
 import software.aws.toolkits.jetbrains.services.s3.bucketEditor.S3TreeTable
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction
 import software.aws.toolkits.jetbrains.utils.delegateMock
@@ -46,18 +46,17 @@ class DownloadObjectTest {
         }
         mockClientManagerRule.manager().register(S3Client::class, s3Client)
 
-        val fileSystemMock = S3VirtualFileSystem(s3Client)
         val treeTableMock = delegateMock<S3TreeTable>()
-        val virtualBucketMock = S3VirtualBucket(fileSystemMock, Bucket.builder().name("TestBucket").build())
+        val virtualBucketMock = S3VirtualBucket(Bucket.builder().name("TestBucket").build())
 
         val testFile = FileUtil.createTempFile("myfile", ".txt")
-        val testVirtualFile = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(testFile)
+        val objectToDownload = S3TreeObjectNode("TestBucket", null, "key", 42, Instant.ofEpochSecond(0))
 
         val downloadObjectMock = DownloadObjectAction(treeTableMock, virtualBucketMock)
 
-        downloadObjectMock.downloadObjectAction(projectRule.project, s3Client, testVirtualFile!!, VirtualFileWrapper(testFile))
+        downloadObjectMock.downloadObjectAction(projectRule.project, s3Client, objectToDownload, VirtualFileWrapper(testFile))
         val downloadRequestCapture = downloadCaptor.firstValue
         Assertions.assertThat(downloadRequestCapture.bucket()).isEqualTo("TestBucket")
-        Assertions.assertThat(downloadRequestCapture.key()).contains("myfile")
+        Assertions.assertThat(downloadRequestCapture.key()).contains("key")
     }
 }

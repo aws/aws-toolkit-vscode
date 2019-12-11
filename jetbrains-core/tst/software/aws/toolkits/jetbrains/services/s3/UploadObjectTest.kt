@@ -1,5 +1,6 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
+
 package software.aws.toolkits.jetbrains.services.s3
 
 import com.intellij.openapi.vfs.VirtualFile
@@ -17,6 +18,7 @@ import software.amazon.awssdk.services.s3.model.Bucket
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.amazon.awssdk.services.s3.model.PutObjectResponse
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
+import software.aws.toolkits.jetbrains.services.s3.bucketEditor.S3TreeDirectoryNode
 import software.aws.toolkits.jetbrains.services.s3.bucketEditor.S3TreeTable
 import software.aws.toolkits.jetbrains.services.s3.objectActions.UploadObjectAction
 import software.aws.toolkits.jetbrains.utils.delegateMock
@@ -24,7 +26,6 @@ import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRul
 import java.io.ByteArrayInputStream
 
 class UploadObjectTest {
-
     @Rule
     @JvmField
     val projectRule = JavaCodeInsightTestFixtureRule()
@@ -45,9 +46,7 @@ class UploadObjectTest {
         }
         mockClientManager.manager().register(S3Client::class, s3Client)
 
-        val fileSystemMock = S3VirtualFileSystem(s3Client)
-        val virtualBucket =
-            S3VirtualBucket(fileSystemMock, Bucket.builder().name("TestBucket").build())
+        val virtualBucket = S3VirtualBucket(Bucket.builder().name("TestBucket").build())
         val treeTableMock = delegateMock<S3TreeTable>()
 
         val testFile = delegateMock<VirtualFile> { on { name } doReturn "TestFile" }
@@ -55,8 +54,9 @@ class UploadObjectTest {
         testFile.stub { on { inputStream } doReturn ByteArrayInputStream("Hello".toByteArray()) }
 
         val uploadObjectMock = UploadObjectAction(virtualBucket, treeTableMock)
+        val folder = S3TreeDirectoryNode(s3Client, "TestBucket", null, "")
 
-        uploadObjectMock.uploadObjectAction(s3Client, projectRule.project, testFile, null)
+        uploadObjectMock.uploadObjectAction(s3Client, projectRule.project, testFile, folder)
         verify(s3Client).putObject(any<PutObjectRequest>(), any<RequestBody>())
 
         val uploadRequestCapture = uploadCaptor.firstValue

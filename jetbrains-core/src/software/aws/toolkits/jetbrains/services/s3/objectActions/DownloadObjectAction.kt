@@ -13,13 +13,14 @@ import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VfsUtil
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileWrapper
 import software.amazon.awssdk.core.sync.ResponseTransformer
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.aws.toolkits.jetbrains.components.telemetry.ActionButtonWrapper
+import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.services.s3.S3VirtualBucket
+import software.aws.toolkits.jetbrains.services.s3.bucketEditor.S3TreeObjectNode
 import software.aws.toolkits.jetbrains.services.s3.bucketEditor.S3TreeTable
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
@@ -33,7 +34,7 @@ class DownloadObjectAction(
     @Suppress("unused")
     override fun doActionPerformed(e: AnActionEvent) {
         val project = e.getRequiredData(LangDataKeys.PROJECT)
-        val client = bucket.client
+        val client: S3Client = AwsClientManager.getInstance(project).getClient()
         val descriptor = FileSaverDescriptor(
             message("s3.download.object.action"), message("s3.download.object.description")
         )
@@ -42,7 +43,10 @@ class DownloadObjectAction(
         var baseFilePath: String? = ""
 
         var fileWrapper: VirtualFileWrapper? = null
-        treeTable.getSelectedAsVirtualFiles().forEach {
+        treeTable.getSelectedNodes().forEach {
+            if (it !is S3TreeObjectNode) {
+                return@forEach
+            }
             if (fileWrapper == null) {
                 fileWrapper = saveFileDialog.save(baseDir, it.name)
                 baseFilePath = fileWrapper?.file?.toString()?.substringBefore(it.name)
@@ -65,21 +69,19 @@ class DownloadObjectAction(
         }
     }
 
-    override fun isEnabled(): Boolean = !(treeTable.isEmpty || (treeTable.selectedRow < 0) ||
-        (treeTable.getValueAt(treeTable.selectedRow, 1) == ""))
+    override fun isEnabled(): Boolean = !(treeTable.isEmpty || (treeTable.selectedRow < 0) || (treeTable.getValueAt(treeTable.selectedRow, 1) == ""))
 
-    fun downloadObjectAction(project: Project, client: S3Client, file: VirtualFile, fileWrapper: VirtualFileWrapper) {
-        val bucketName = bucket.getVirtualBucketName()
+    fun downloadObjectAction(project: Project, client: S3Client, s3TreeObject: S3TreeObjectNode, fileWrapper: VirtualFileWrapper) {
         val request = GetObjectRequest.builder()
-            .bucket(bucketName)
-            .key(file.name)
+            .bucket(s3TreeObject.bucketName)
+            .key(s3TreeObject.key)
             .build()
-        ProgressManager.getInstance().run(object : Task.Backgroundable(project, message("s3.download.object.progress", file.name), true) {
+        ProgressManager.getInstance().run(object : Task.Backgroundable(project, message("s3.download.object.progress", s3TreeObject.name), true) {
             override fun run(indicator: ProgressIndicator) {
                 val fileOutputStream = fileWrapper.file.outputStream()
                 val progressStream = ProgressOutputStream(
                     fileOutputStream,
-                    file.length,
+                    s3TreeObject.size,
                     indicator
                 )
                 client.getObject(request, ResponseTransformer.toOutputStream(progressStream))

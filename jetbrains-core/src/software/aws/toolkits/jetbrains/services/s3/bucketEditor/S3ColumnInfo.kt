@@ -2,42 +2,36 @@
 // SPDX-License-Identifier: Apache-2.0
 package software.aws.toolkits.jetbrains.services.s3.bucketEditor
 
-import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.util.text.StringUtil
 import com.intellij.ui.treeStructure.treetable.TreeTableModel
 import com.intellij.util.ui.ColumnInfo
-import software.aws.toolkits.jetbrains.services.s3.S3VirtualDirectory
-import software.aws.toolkits.jetbrains.services.s3.S3VirtualObject
+import software.aws.toolkits.jetbrains.services.s3.S3Resources
 import software.aws.toolkits.resources.message
 import javax.swing.tree.DefaultMutableTreeNode
 
-open class S3ColumnInfo(columnTitle: String, val valueGetter: (S3VirtualObject) -> String?) :
-    ColumnInfo<Any, String>(columnTitle) {
-
-    override fun valueOf(obj: Any): String? =
-        when (val file = getVirtualFileFromNode(obj)) {
-            is S3VirtualObject -> valueGetter.invoke(file)
-            else -> ""
-        }
-
-    override fun isCellEditable(item: Any?): Boolean = true
-
-    fun getVirtualFileFromNode(obj: Any): VirtualFile? {
-        val userObject = (obj as? DefaultMutableTreeNode)?.userObject
-        return (userObject as? S3KeyNode)?.virtualFile
+class S3Column(private val type: S3ColumnType) : ColumnInfo<Any, String>(type.title) {
+    override fun valueOf(item: Any?): String? {
+        val userObject = (item as DefaultMutableTreeNode).userObject ?: return ""
+        return getValue(userObject)
     }
+
+    override fun isCellEditable(item: Any?): Boolean = false
+    override fun getColumnClass(): Class<*> = if (type == S3ColumnType.NAME) TreeTableModel::class.java else super.getColumnClass()
+
+    private fun getValue(userObject: Any): String =
+        if (userObject is S3TreeObjectNode) {
+            when (type) {
+                S3ColumnType.NAME -> userObject.key
+                S3ColumnType.SIZE -> StringUtil.formatFileSize(userObject.size)
+                S3ColumnType.LAST_MODIFIED -> S3Resources.formatDate(userObject.lastModified)
+            }
+        } else {
+            ""
+        }
 }
 
-class S3KeyColumnInfo(valueGetter: (S3VirtualObject) -> String?) :
-    S3ColumnInfo(message("s3.name"), valueGetter) {
-
-    override fun valueOf(obj: Any): String? {
-        val file = super.getVirtualFileFromNode(obj)
-        return when (file) {
-            is S3VirtualObject -> valueGetter.invoke(file)
-            is S3VirtualDirectory -> file.name
-            else -> ""
-        }
-    }
-
-    override fun getColumnClass(): Class<*> = TreeTableModel::class.java
+enum class S3ColumnType(val title: String) {
+    NAME(message("s3.name")),
+    SIZE(message("s3.size")),
+    LAST_MODIFIED(message("s3.last_modified"));
 }
