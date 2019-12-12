@@ -3,4 +3,3 @@ ignore:
   - "resources/**/*"
   - "telemetry-client/**/*"
   - "jetbrains-rider/**/*.Generated.kt"
-  - "schemas-client/**/*"

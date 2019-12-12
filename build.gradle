@@ -62,7 +62,7 @@ allprojects {
 }
 
 // Kotlin plugin seems to be bugging out when there are no kotlin sources
-configure(subprojects - project(":telemetry-client") - project(":schemas-client")) {
+configure(subprojects - project(":telemetry-client")) {
     apply plugin: 'kotlin'
 
     sourceSets {
