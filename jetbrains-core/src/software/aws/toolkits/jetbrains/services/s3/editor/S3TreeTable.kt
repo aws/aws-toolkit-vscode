@@ -4,25 +4,69 @@ package software.aws.toolkits.jetbrains.services.s3.editor
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runInEdt
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.ui.treeStructure.treetable.TreeTable
+import software.amazon.awssdk.services.s3.S3Client
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.info
+import software.aws.toolkits.jetbrains.services.s3.objectActions.UploadObjectAction
+import software.aws.toolkits.jetbrains.utils.notifyError
+import software.aws.toolkits.resources.message
+import java.awt.datatransfer.DataFlavor
+import java.awt.datatransfer.UnsupportedFlavorException
+import java.awt.dnd.DnDConstants
+import java.awt.dnd.DropTarget
+import java.awt.dnd.DropTargetAdapter
+import java.awt.dnd.DropTargetDropEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
+import java.io.File
 import javax.swing.tree.DefaultMutableTreeNode
 
-open class S3TreeTable(private val treeTableModel: S3TreeTableModel) : TreeTable(treeTableModel) {
-    fun refresh() {
-        runInEdt {
-            clearSelection()
-            treeTableModel.structureTreeModel.invalidate()
+class S3TreeTable(
+    private val treeTableModel: S3TreeTableModel,
+    private val bucketVirtual: S3VirtualBucket,
+    private val project: Project,
+    private val s3Client: S3Client
+) : TreeTable(treeTableModel) {
+
+    private val dropTargetListener = object : DropTargetAdapter() {
+        override fun drop(dropEvent: DropTargetDropEvent) {
+            val row = rowAtPoint(dropEvent.location).takeIf { it >= 0 } ?: return
+            val node = getNodeForRow(row) ?: return
+            val data = try {
+                dropEvent.acceptDrop(DnDConstants.ACTION_COPY_OR_MOVE)
+                dropEvent.transferable.getTransferData(DataFlavor.javaFileListFlavor) as List<File>
+            } catch (e: UnsupportedFlavorException) {
+                // When the drag and drop data is not what we expect (like when it is text) this is thrown and can be safey ignored
+                LOG.info(e) { "Unsupported flavor attempted to be dragged and dropped" }
+                return
+            }
+
+            val lfs = LocalFileSystem.getInstance()
+            val virtualFiles = data.mapNotNull {
+                lfs.findFileByIoFile(it)
+            }
+
+            ApplicationManager.getApplication().executeOnPooledThread {
+                val action = UploadObjectAction(bucketVirtual, this@S3TreeTable)
+                virtualFiles.forEach {
+                    try {
+                        action.uploadObjectAction(s3Client, project, it, node)
+                        invalidateLevel(node)
+                        refresh()
+                    } catch (e: Exception) {
+                        e.notifyError(message("s3.upload.object.failed"))
+                    }
+                }
+            }
         }
     }
 
     private val mouseListener = object : MouseAdapter() {
         override fun mouseClicked(e: MouseEvent) {
-            val row = rowAtPoint(e.point)
-            if (row < 0) {
-                return
-            }
+            val row = rowAtPoint(e.point).takeIf { it >= 0 } ?: return
             handleLoadingMore(row, e)
         }
     }
@@ -37,6 +81,18 @@ open class S3TreeTable(private val treeTableModel: S3TreeTableModel) : TreeTable
         ApplicationManager.getApplication().executeOnPooledThread {
             parent.loadMore(continuationNode.token)
             refresh()
+        }
+    }
+
+    init {
+        // Associate the drop target listener with this instance which will allow uploading by drag and drop
+        DropTarget(this, dropTargetListener)
+    }
+
+    fun refresh() {
+        runInEdt {
+            clearSelection()
+            treeTableModel.structureTreeModel.invalidate()
         }
     }
 
@@ -64,5 +120,9 @@ open class S3TreeTable(private val treeTableModel: S3TreeTableModel) : TreeTable
 
     fun invalidateLevel(node: S3TreeNode) {
         node.parent?.removeAllChildren()
+    }
+
+    companion object {
+        private val LOG = getLogger<S3TreeTable>()
     }
 }

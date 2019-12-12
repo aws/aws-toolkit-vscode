@@ -9,6 +9,7 @@ import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.stub
 import com.nhaarman.mockitokotlin2.verify
+import io.mockk.mockk
 import org.assertj.core.api.Assertions
 import org.junit.Rule
 import org.junit.Test
@@ -48,7 +49,7 @@ class UploadObjectTest {
         mockClientManager.manager().register(S3Client::class, s3Client)
 
         val virtualBucket = S3VirtualBucket(Bucket.builder().name("TestBucket").build())
-        val treeTableMock = delegateMock<S3TreeTable>()
+        val treeTableMock = mockk<S3TreeTable>()
 
         val testFile = delegateMock<VirtualFile> { on { name } doReturn "TestFile" }
         testFile.stub { on { length } doReturn 341 }

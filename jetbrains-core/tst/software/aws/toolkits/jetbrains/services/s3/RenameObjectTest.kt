@@ -6,6 +6,7 @@ import com.intellij.testFramework.ProjectRule
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.stub
+import io.mockk.mockk
 import org.assertj.core.api.Assertions
 import org.junit.Rule
 import org.junit.Test
@@ -39,7 +40,7 @@ class RenameObjectTest {
         val deleteCaptor = argumentCaptor<DeleteObjectRequest>()
         val copyCaptor = argumentCaptor<CopyObjectRequest>()
 
-        val treeTableMock = delegateMock<S3TreeTable>()
+        val treeTableMock = mockk<S3TreeTable>()
         val virtualBucketMock = S3VirtualBucket(Bucket.builder().name("TestBucket").build())
         val renameObjectMock = RenameObjectAction(treeTableMock, virtualBucketMock)
 

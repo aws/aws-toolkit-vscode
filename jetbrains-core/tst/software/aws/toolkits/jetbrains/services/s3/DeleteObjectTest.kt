@@ -8,6 +8,7 @@ import com.intellij.testFramework.ProjectRule
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.stub
+import io.mockk.mockk
 import org.assertj.core.api.Assertions
 import org.junit.Rule
 import org.junit.Test
@@ -37,7 +38,7 @@ class DeleteObjectTest {
     fun deleteObjectsTest() {
         val s3Client = delegateMock<S3Client>()
         val deleteCaptor = argumentCaptor<DeleteObjectsRequest>()
-        val mockTreeTable = delegateMock<S3TreeTable>()
+        val mockTreeTable = mockk<S3TreeTable>()
         val mockVirtualBucket = S3VirtualBucket(Bucket.builder().name("TestBucket").build())
 
         val mockDeleteObject = DeleteObjectAction(mockTreeTable, mockVirtualBucket)

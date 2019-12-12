@@ -7,6 +7,7 @@ import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.actionSystem.Separator;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Disposer;
 import com.intellij.ui.PopupHandler;
 import com.intellij.ui.components.JBScrollPane;
@@ -56,7 +57,7 @@ public class S3ViewerPanel {
     private S3TreeNode s3TreeNode;
     private S3TreeTableModel model;
 
-    public S3ViewerPanel(S3Client client, S3VirtualBucket bucketVirtual) {
+    public S3ViewerPanel(Project project, S3Client s3client, S3VirtualBucket bucketVirtual) {
         this.bucketVirtual = bucketVirtual;
         this.name.setText(bucketVirtual.getName());
         this.date.setText(S3Resources.formatDate(bucketVirtual.getS3Bucket().creationDate()));
@@ -81,13 +82,13 @@ public class S3ViewerPanel {
         arnText.setComponentPopupMenu(menu);
 
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
-            s3TreeNode = new S3TreeDirectoryNode(client, bucketVirtual.getName(), null, "");
+            s3TreeNode = new S3TreeDirectoryNode(s3client, bucketVirtual.getName(), null, "");
 
             ColumnInfo key = new S3Column(S3ColumnType.NAME);
             ColumnInfo size = new S3Column(S3ColumnType.SIZE);
             ColumnInfo modified = new S3Column(S3ColumnType.LAST_MODIFIED);
             final ColumnInfo[] COLUMNS = new ColumnInfo[] {key, size, modified};
-            createTreeTable(COLUMNS);
+            model = createTreeTableModel(COLUMNS);
 
             S3TreeCellRenderer treeRenderer = new S3TreeCellRenderer();
             DefaultTableCellRenderer tableRenderer = new DefaultTableCellRenderer();
@@ -97,7 +98,7 @@ public class S3ViewerPanel {
              */
 
             ApplicationManager.getApplication().invokeLater(() -> {
-                treeTable = new S3TreeTable(model);
+                treeTable = new S3TreeTable(model, bucketVirtual, project, s3client);
                 treeTable.setRootVisible(false);
                 treeTable.setDefaultRenderer(Object.class, tableRenderer);
                 treeTable.setTreeCellRenderer(treeRenderer);
@@ -133,11 +134,11 @@ public class S3ViewerPanel {
         return name;
     }
 
-    private void createTreeTable(ColumnInfo[] columns) {
+    private S3TreeTableModel createTreeTableModel(ColumnInfo[] columns) {
         Disposable myTreeModelDisposable = Disposer.newDisposable();
         SimpleTreeStructure treeStructure = new SimpleTreeStructure.Impl(s3TreeNode);
         StructureTreeModel<SimpleTreeStructure> myTreeModel = new StructureTreeModel(treeStructure, myTreeModelDisposable);
-        model = new S3TreeTableModel(new AsyncTreeModel(myTreeModel, true, myTreeModelDisposable), columns, myTreeModel);
+        return new S3TreeTableModel(new AsyncTreeModel(myTreeModel, true, myTreeModelDisposable), columns, myTreeModel);
     }
 
     private void addTreeActions() {
