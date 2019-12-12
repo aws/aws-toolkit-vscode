@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-//TODO: change the import to aws-sdk-js once Schemas SDK is launched
 import * as assert from 'assert'
 
+import { Schemas } from 'aws-sdk'
 import * as sinon from 'sinon'
 import {
     CommandMessage,
@@ -17,7 +17,6 @@ import {
 } from '../../../eventSchemas/commands/searchSchemas'
 import { RegistryItemNode } from '../../../eventSchemas/explorer/registryItemNode'
 import { SchemasNode } from '../../../eventSchemas/explorer/schemasNode'
-import * as Schemas from '../../../shared/schemas/clientschemas'
 import { TelemetryService } from '../../../shared/telemetry/telemetryService'
 import { getTabSizeSetting } from '../../../shared/utilities/editorUtilities'
 import { assertThrowsError } from '../../../test/shared/utilities/assertUtils'

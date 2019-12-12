@@ -12,6 +12,7 @@ import {
 } from '../../lambda/commands/createNewSamApp'
 import { deploySamApplication } from '../../lambda/commands/deploySamApplication'
 import { SamParameterCompletionItemProvider } from '../../lambda/config/samParameterCompletionItemProvider'
+import { configureLocalLambda } from '../../lambda/local/configureLocalLambda'
 import { AwsContext } from '../awsContext'
 import { CodeLensProviderParams } from '../codelens/codeLensUtils'
 import * as csLensProvider from '../codelens/csharpCodeLensProvider'
@@ -129,6 +130,17 @@ async function registerServerlessCommands(params: {
             telemetryName: {
                 namespace: TelemetryNamespace.Lambda,
                 name: 'deploy'
+            }
+        })
+    )
+
+    params.extensionContext.subscriptions.push(
+        registerCommand({
+            command: 'aws.configureLambda',
+            callback: configureLocalLambda,
+            telemetryName: {
+                namespace: TelemetryNamespace.Lambda,
+                name: 'configurelocal'
             }
         })
     )

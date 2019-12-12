@@ -3,14 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CloudFormation, Lambda, STS } from 'aws-sdk'
+import { CloudFormation, Lambda, Schemas, STS } from 'aws-sdk'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { EcsClient } from '../../../shared/clients/ecsClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
-
-//TODO: change the import to aws-sdk-js once Schemas SDK is launched
-import * as Schemas from '../../../shared/schemas/clientschemas'
-
 import { SchemaClient } from '../../../shared/clients/schemaClient'
 import { StsClient } from '../../../shared/clients/stsClient'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
