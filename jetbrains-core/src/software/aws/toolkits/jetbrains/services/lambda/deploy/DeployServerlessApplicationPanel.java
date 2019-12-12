@@ -27,7 +27,7 @@ import javax.swing.JTextField;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.aws.toolkits.jetbrains.services.cloudformation.Parameter;
-import software.aws.toolkits.jetbrains.services.s3.S3Resources;
+import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources;
 import software.aws.toolkits.jetbrains.ui.ResourceSelector;
 
 @SuppressWarnings("NullableProblems")

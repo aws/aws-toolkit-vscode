@@ -24,7 +24,7 @@ import software.amazon.awssdk.services.lambda.model.Runtime;
 import software.aws.toolkits.jetbrains.services.iam.IamResources;
 import software.aws.toolkits.jetbrains.services.iam.IamRole;
 import software.aws.toolkits.jetbrains.services.lambda.LambdaWidgets;
-import software.aws.toolkits.jetbrains.services.s3.S3Resources;
+import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources;
 import software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField;
 import software.aws.toolkits.jetbrains.ui.HandlerPanel;
 import software.aws.toolkits.jetbrains.ui.ResourceSelector;

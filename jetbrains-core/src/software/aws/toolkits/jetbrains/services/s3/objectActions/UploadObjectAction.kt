@@ -18,10 +18,10 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.aws.toolkits.jetbrains.components.telemetry.ActionButtonWrapper
 import software.aws.toolkits.jetbrains.core.AwsClientManager
-import software.aws.toolkits.jetbrains.services.s3.S3VirtualBucket
-import software.aws.toolkits.jetbrains.services.s3.bucketEditor.S3TreeContinuationNode
-import software.aws.toolkits.jetbrains.services.s3.bucketEditor.S3TreeNode
-import software.aws.toolkits.jetbrains.services.s3.bucketEditor.S3TreeTable
+import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeContinuationNode
+import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeNode
+import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
+import software.aws.toolkits.jetbrains.services.s3.editor.S3VirtualBucket
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 
@@ -73,12 +73,10 @@ class UploadObjectAction(
             .key(key)
             .build()
 
-        val fileChosenSize = fileChosen.inputStream.readBytes().size
-
         ProgressManager.getInstance()
             .run(object : Task.Modal(project, message("s3.upload.object.progress", fileChosen.name), false) {
                 override fun run(indicator: ProgressIndicator) {
-                    val pStream = ProgressInputStream(fileChosen.inputStream, fileChosenSize, indicator)
+                    val pStream = ProgressInputStream(fileChosen.inputStream, fileChosen.length.toInt(), indicator)
                     client.putObject(request, RequestBody.fromInputStream(pStream, fileChosen.length))
                 }
             })

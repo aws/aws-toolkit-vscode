@@ -1,11 +1,11 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
-package software.aws.toolkits.jetbrains.services.s3.bucketEditor
+package software.aws.toolkits.jetbrains.services.s3.editor
 
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.ui.treeStructure.treetable.TreeTableModel
 import com.intellij.util.ui.ColumnInfo
-import software.aws.toolkits.jetbrains.services.s3.S3Resources
+import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
 import software.aws.toolkits.resources.message
 import javax.swing.tree.DefaultMutableTreeNode
 

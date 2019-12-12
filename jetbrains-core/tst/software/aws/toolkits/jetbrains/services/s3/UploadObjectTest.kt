@@ -18,8 +18,9 @@ import software.amazon.awssdk.services.s3.model.Bucket
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.amazon.awssdk.services.s3.model.PutObjectResponse
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.services.s3.bucketEditor.S3TreeDirectoryNode
-import software.aws.toolkits.jetbrains.services.s3.bucketEditor.S3TreeTable
+import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeDirectoryNode
+import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
+import software.aws.toolkits.jetbrains.services.s3.editor.S3VirtualBucket
 import software.aws.toolkits.jetbrains.services.s3.objectActions.UploadObjectAction
 import software.aws.toolkits.jetbrains.utils.delegateMock
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule

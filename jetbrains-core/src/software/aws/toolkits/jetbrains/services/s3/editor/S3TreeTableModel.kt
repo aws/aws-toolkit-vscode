@@ -1,7 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
-package software.aws.toolkits.jetbrains.services.s3.bucketEditor
+package software.aws.toolkits.jetbrains.services.s3.editor
 
 import com.intellij.ui.tree.TreeVisitor
 import com.intellij.ui.treeStructure.SimpleTreeStructure

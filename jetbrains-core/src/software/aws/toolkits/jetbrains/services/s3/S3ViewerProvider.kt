@@ -16,7 +16,8 @@ import com.intellij.openapi.util.UserDataHolderBase
 import com.intellij.openapi.vfs.VirtualFile
 import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.jetbrains.core.AwsClientManager
-import software.aws.toolkits.jetbrains.services.s3.bucketEditor.S3ViewerPanel
+import software.aws.toolkits.jetbrains.services.s3.editor.S3ViewerPanel
+import software.aws.toolkits.jetbrains.services.s3.editor.S3VirtualBucket
 import java.beans.PropertyChangeListener
 import javax.swing.JComponent
 

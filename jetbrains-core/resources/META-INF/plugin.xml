@@ -278,7 +278,7 @@
 
         <group id="aws.toolkit.explorer.s3" popup="false" compact="false">
         <action id="s3.create.bucket"
-                class="software.aws.toolkits.jetbrains.services.s3.CreateBucketAction"/>
+                class="software.aws.toolkits.jetbrains.services.s3.bucketActions.CreateBucketAction"/>
         </group>
 
         <group id="aws.toolkit.explorer.s3.bucket" popup="true" compact="false">
