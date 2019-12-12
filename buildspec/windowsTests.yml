@@ -11,6 +11,7 @@ phases:
     build:
         commands:
             - npm run testCompile
+            - npm run lint
             - npm run test
             - |
                 if(-Not($Env:CODEBUILD_BUILD_SUCCEEDING -eq "0" -Or $Env:CODE_COV_TOKEN -eq $null)) {
