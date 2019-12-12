@@ -30,10 +30,22 @@ export async function installVSCodeExtension(vsCodeExecutablePath: string, exten
     console.log(`Installing VS Code Extension: ${extensionIdentifier}`)
     const vsCodeCliPath = resolveCliPathFromVSCodeExecutablePath(vsCodeExecutablePath)
 
-    const spawnResult = child_process.spawnSync(vsCodeCliPath, ['--install-extension', extensionIdentifier], {
+    const cmdArgs = ['--install-extension', extensionIdentifier]
+    if (process.env.AWS_TOOLKIT_TEST_USER_DIR) {
+        cmdArgs.push('--user-data-dir', process.env.AWS_TOOLKIT_TEST_USER_DIR)
+    }
+    const spawnResult = child_process.spawnSync(vsCodeCliPath, cmdArgs, {
         encoding: 'utf-8',
         stdio: 'inherit'
     })
+
+    if (spawnResult.status !== 0) {
+        throw new Error(`Installing VS Code extension ${extensionIdentifier} had exit code ${spawnResult.status}`)
+    }
+
+    if (spawnResult.error) {
+        throw spawnResult.error
+    }
 
     if (spawnResult.stdout) {
         console.log(spawnResult.stdout)
