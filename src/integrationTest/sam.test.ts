@@ -193,7 +193,7 @@ async function activateExtensions(): Promise<void> {
     console.log('Extensions activated')
 }
 
-describe.only('SAM Integration Tests', async () => {
+describe('SAM Integration Tests', async () => {
     const samApplicationName = 'testProject'
     let testDisposables: vscode.Disposable[]
 
@@ -279,7 +279,7 @@ describe.only('SAM Integration Tests', async () => {
                     assert.ok(codeLens)
                 })
 
-                it.skip('invokes the Run Local CodeLens', async () => {
+                it('invokes the Run Local CodeLens', async () => {
                     const codeLens = await getRunLocalCodeLens(samAppCodeUri, scenario.language)
                     assert.ok(codeLens, 'expected to find a CodeLens')
 
@@ -298,7 +298,7 @@ describe.only('SAM Integration Tests', async () => {
                     })
                 }).timeout(TIMEOUT)
 
-                it.only('invokes the Debug Local CodeLens', async () => {
+                it('invokes the Debug Local CodeLens', async () => {
                     assert.strictEqual(
                         vscode.debug.activeDebugSession,
                         undefined,
