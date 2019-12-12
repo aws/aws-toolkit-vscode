@@ -3,12 +3,14 @@
 
 package software.aws.toolkits.jetbrains.services.s3.bucketEditor
 
+import com.intellij.openapi.fileTypes.FileTypeRegistry
+import com.intellij.openapi.fileTypes.UnknownFileType
 import com.intellij.ui.treeStructure.SimpleNode
 import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.resources.message
 import java.time.Instant
 
-abstract class S3TreeNode(val bucketName: String, val parent: S3TreeDirectoryNode?, val key: String) : SimpleNode() {
+sealed class S3TreeNode(val bucketName: String, val parent: S3TreeDirectoryNode?, val key: String) : SimpleNode() {
     open val isDirectory = false
     override fun getChildren(): Array<S3TreeNode> = arrayOf()
     override fun getName(): String = key.substringAfterLast('/')
@@ -77,7 +79,14 @@ class S3TreeDirectoryNode(private val client: S3Client, bucketName: String, pare
     }
 }
 
+private val fileTypeRegistry = FileTypeRegistry.getInstance()
+
 class S3TreeObjectNode(bucketName: String, parent: S3TreeDirectoryNode?, key: String, val size: Long, val lastModified: Instant) :
-    S3TreeNode(bucketName, parent, key)
+    S3TreeNode(bucketName, parent, key) {
+    val fileType = fileTypeRegistry.getFileTypeByFileName(name)
+    init {
+        fileType.takeIf { it !is UnknownFileType }?.icon.let { icon = it }
+    }
+}
 
 class S3TreeContinuationNode(bucketName: String, parent: S3TreeDirectoryNode?, key: String, val token: String) : S3TreeNode(bucketName, parent, key)

@@ -31,7 +31,7 @@ class S3TreeCellRenderer : DefaultTreeCellRenderer() {
             component.foreground = SimpleTextAttributes.LINK_ATTRIBUTES.fgColor
             null
         } else {
-            leafIcon
+            node?.icon ?: leafIcon
         }
         return component
     }
