@@ -4,10 +4,7 @@
  */
 
 import * as assert from 'assert'
-
-//TODO: change the import to aws-sdk-js once Schemas SDK is launched
-import * as Schemas from '../../../shared/schemas/clientschemas'
-
+import { Schemas } from 'aws-sdk'
 import * as os from 'os'
 import { RegistryItemNode } from '../../../eventSchemas/explorer/registryItemNode'
 import { SchemaItemNode } from '../../../eventSchemas/explorer/schemaItemNode'

@@ -3,12 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-//TODO: change the import to aws-sdk-js once Schemas SDK is launched
 import * as assert from 'assert'
 import * as del from 'del'
 
+import { Schemas } from 'aws-sdk'
 import * as sinon from 'sinon'
-import * as Schemas from '../../../shared/schemas/clientschemas'
 import { assertThrowsError } from '../../../test/shared/utilities/assertUtils'
 
 import {
