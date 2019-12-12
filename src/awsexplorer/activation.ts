@@ -10,7 +10,6 @@ import { deleteLambda } from '../lambda/commands/deleteLambda'
 import { invokeLambda } from '../lambda/commands/invokeLambda'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
 import { LambdaFunctionNode } from '../lambda/explorer/lambdaFunctionNode'
-import { configureLocalLambda } from '../lambda/local/configureLocalLambda'
 import { AwsContext } from '../shared/awsContext'
 import { AwsContextTreeCollection } from '../shared/awsContextTreeCollection'
 import { ext } from '../shared/extensionGlobals'
@@ -112,15 +111,6 @@ async function registerAwsExplorerCommands(
         telemetryName: {
             namespace: TelemetryNamespace.Lambda,
             name: 'invokeremote'
-        }
-    })
-
-    registerCommand({
-        command: 'aws.configureLambda',
-        callback: configureLocalLambda,
-        telemetryName: {
-            namespace: TelemetryNamespace.Lambda,
-            name: 'configurelocal'
         }
     })
 
