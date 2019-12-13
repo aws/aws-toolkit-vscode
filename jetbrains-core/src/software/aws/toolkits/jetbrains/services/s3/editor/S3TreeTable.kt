@@ -90,7 +90,9 @@ class S3TreeTable(
         }
         val fileWrapper = VirtualFileWrapper(File("${FileUtil.getTempDirectory()}${File.separator}${objectNode.key.replace('/', '_')}"))
         // set the file to not be read only so that the S3Client can write to the file
-        fileWrapper.virtualFile?.isWritable = true
+        ApplicationManager.getApplication().runWriteAction {
+            fileWrapper.virtualFile?.isWritable = true
+        }
         val getObjectRequest = GetObjectRequest.builder()
             .bucket(objectNode.bucketName)
             .key(objectNode.key)
@@ -98,14 +100,16 @@ class S3TreeTable(
         // TODO refactor the download file action to refactor out the common parts and add progress to this
         ApplicationManager.getApplication().executeOnPooledThread {
             s3Client.getObject(getObjectRequest, ResponseTransformer.toOutputStream(fileWrapper.file.outputStream()))
+            // If the file type is not associated, prompt user to associate. Returns null on cancel
             runInEdt {
                 fileWrapper.virtualFile?.let {
-                    // If the file type is not associated, prompt user to associate. Returns null on cancel
+                    ApplicationManager.getApplication().runWriteAction {
+                        it.isWritable = false
+                    }
                     FileTypeChooser.getKnownFileTypeOrAssociate(it, project) ?: return@runInEdt
                     // set virtual file to read only
-                    it.isWritable = false
                     FileEditorManager.getInstance(project).openFile(it, true, true).ifEmpty {
-                        notifyError(message("s3.open.viewer.bucket.failed"))
+                        notifyError(message("s3.open.viewer.failed"))
                     }
                 }
             }

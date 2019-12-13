@@ -3,9 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.s3
 
-import com.intellij.openapi.fileEditor.FileEditorManager
-import com.intellij.openapi.fileEditor.OpenFileDescriptor
-import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import icons.AwsIcons
 import software.amazon.awssdk.services.s3.S3Client
@@ -16,9 +13,7 @@ import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerService
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRootNode
-import software.aws.toolkits.jetbrains.services.s3.editor.S3VirtualBucket
 import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 
 class S3ServiceNode(project: Project) : AwsExplorerServiceRootNode(project, AwsExplorerService.S3) {
     private val activeRegionId = ProjectAccountSettingsManager.getInstance(nodeProject).activeRegion.id
@@ -40,19 +35,7 @@ class S3BucketNode(project: Project, val bucket: Bucket) :
     override fun isAlwaysShowPlus(): Boolean = false
 
     override fun onDoubleClick() {
-        if (!DumbService.getInstance(nodeProject).isDumb) {
-            val editorManager = FileEditorManager.getInstance(nodeProject)
-            // See if there is already an open editor, otherwise make a new one
-            val virtualFile = editorManager.openFiles.firstOrNull { (it as? S3VirtualBucket)?.s3Bucket?.equals(bucket) == true } ?: S3VirtualBucket(bucket)
-            editorManager.openTextEditor(OpenFileDescriptor(nodeProject, virtualFile), true)
-            recordOpenTelemetry()
-        }
-    }
-
-    private fun recordOpenTelemetry() = TelemetryService.getInstance().record(nodeProject) {
-        datum("s3_openeditor") {
-            count()
-        }
+        openEditor(nodeProject, bucket)
     }
 
     override fun displayName(): String = bucket.name()
