@@ -19,9 +19,6 @@ import { Datum } from '../shared/telemetry/telemetryTypes'
 import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep, TIMEOUT } from './integrationTestsUtilities'
 
 const projectFolder = getTestWorkspaceFolder()
-// Retry tests because CodeLenses do not reliably get produced in the tests
-// TODO : Remove retries in future - https://github.com/aws/aws-toolkit-vscode/issues/737
-// const maxCodeLensTestAttempts = 3
 
 interface TestScenario {
     name: Runtime
