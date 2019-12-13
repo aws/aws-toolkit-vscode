@@ -23,14 +23,14 @@ const projectFolder = getTestWorkspaceFolder()
 // TODO : Remove retries in future - https://github.com/aws/aws-toolkit-vscode/issues/737
 // const maxCodeLensTestAttempts = 3
 
-interface X {
+interface TestScenario {
     name: Runtime
     path: string
     debuggerType: string
     language: Language
 }
 
-const runtimes: X[] = [
+const runtimes: TestScenario[] = [
     // rename name -> runtime, debuggerType -> DebugSessionType
     { name: 'nodejs8.10', path: 'testProject/hello-world/app.js', debuggerType: 'node2', language: 'javascript' },
     { name: 'nodejs10.x', path: 'testProject/hello-world/app.js', debuggerType: 'node2', language: 'javascript' },
@@ -56,46 +56,19 @@ function setupProjectFolder() {
 
 function tryRemoveProjectFolder() {
     try {
-        console.log(
-            '--------------------------------- remove project folder ------------------------------------------------'
-        )
         removeSync(path.join(projectFolder, 'testProject'))
     } catch (e) {}
 }
 
 async function getDebugLocalCodeLens(documentUri: vscode.Uri, language: Language): Promise<vscode.CodeLens> {
-    while (true) {
-        try {
-            // this works without a sleep locally, but not on CodeBuild
-            await sleep(200)
-            let codeLenses = await getCodeLenses(documentUri)
-            if (!codeLenses || codeLenses.length === 0) {
-                continue
-            }
-
-            // command: getInvokeCmdKey(params.language), / .isDebug
-
-            // omnisharp spits out some undefined code lenses for some reason, we filter them because they are
-            // not shown to the user and do not affect how our extension is working
-            codeLenses = codeLenses.filter(codeLens => {
-                if (codeLens.command && codeLens.command.arguments && codeLens.command.arguments.length === 1) {
-                    // tslint:disable: no-unsafe-any
-                    return (
-                        codeLens.command.command === getInvokeCmdKey(language) && codeLens.command.arguments[0].isDebug
-                    )
-                    // tslint:enable: no-unsafe-any
-                }
-
-                return false
-            })
-            if (codeLenses.length === 1) {
-                return codeLenses[0]
-            }
-        } catch (e) {}
-    }
+    return getLocalCodeLens(documentUri, language, true)
 }
 
 async function getRunLocalCodeLens(documentUri: vscode.Uri, language: Language): Promise<vscode.CodeLens> {
+    return getLocalCodeLens(documentUri, language, false)
+}
+
+async function getLocalCodeLens(documentUri: vscode.Uri, language: Language, debug: boolean): Promise<vscode.CodeLens> {
     while (true) {
         try {
             // this works without a sleep locally, but not on CodeBuild
@@ -111,7 +84,8 @@ async function getRunLocalCodeLens(documentUri: vscode.Uri, language: Language):
                 if (codeLens.command && codeLens.command.arguments && codeLens.command.arguments.length === 1) {
                     // tslint:disable: no-unsafe-any
                     return (
-                        codeLens.command.command === getInvokeCmdKey(language) && !codeLens.command.arguments[0].isDebug
+                        codeLens.command.command === getInvokeCmdKey(language) &&
+                        codeLens.command.arguments[0].isDebug === debug
                     )
                     // tslint:enable: no-unsafe-any
                 }
@@ -124,50 +98,6 @@ async function getRunLocalCodeLens(documentUri: vscode.Uri, language: Language):
         } catch (e) {}
     }
 }
-
-// async function getSamCodeLenses(documentUri: vscode.Uri): Promise<vscode.CodeLens[]> {
-//     while (true) {
-//         try {
-//             // this works without a sleep locally, but not on CodeBuild
-//             await sleep(200)
-//             let codeLenses = await getCodeLenses(documentUri)
-//             if (!codeLenses || codeLenses.length === 0) {
-//                 continue
-//             }
-//             // omnisharp spits out some undefined code lenses for some reason, we filter them because they are
-//             // not shown to the user and do not affect how our extension is working
-//             codeLenses = codeLenses.filter(lens => lens !== undefined && lens.command !== undefined)
-//             if (codeLenses.length === 3) {
-//                 return codeLenses as vscode.CodeLens[]
-//             }
-//         } catch (e) {}
-//     }
-// }
-
-// async function getCodeLensesOrFail(documentUri: vscode.Uri): Promise<vscode.CodeLens[]> {
-//     const codeLensPromise = getSamCodeLenses(documentUri)
-//     const timeout = new Promise(resolve => {
-//         setTimeout(resolve, 10000, undefined)
-//     })
-//     const result = await Promise.race([codeLensPromise, timeout])
-
-//     assert.ok(result, 'Codelenses took too long to show up!')
-
-//     return result as vscode.CodeLens[]
-// }
-
-// async function onDebugChanged(e: vscode.DebugSession | undefined, debuggerType: string) {
-//     if (!e) {
-//         return
-//     }
-//     assert.strictEqual(e.configuration.name, 'SamLocalDebug')
-//     assert.strictEqual(e.configuration.type, debuggerType)
-//     // wait for it to actually start (which we do not get an event for). 800 is
-//     // short enough to finish before the next test is run and long enough to
-//     // actually act after it pauses
-//     await sleep(800)
-//     await vscode.commands.executeCommand('workbench.action.debug.continue')
-// }
 
 interface LocalInvokeCodeLensCommandResult {
     datum: Datum
@@ -219,15 +149,6 @@ describe('SAM Integration Tests', async () => {
 
     for (const scenario of runtimes) {
         describe(`SAM Application Runtime: ${scenario.name}`, async () => {
-            beforeEach(async function() {
-                // set up debug config
-                // testDisposables.push(
-                //     vscode.debug.onDidChangeActiveDebugSession(async session =>
-                //         onDebugChanged(session, scenario.debuggerType)
-                //     )
-                // )
-            })
-
             it('creates a new SAM Application (happy path)', async function() {
                 // tslint:disable-next-line: no-invalid-this
                 this.timeout(TIMEOUT)
