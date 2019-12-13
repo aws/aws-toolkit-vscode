@@ -25,7 +25,6 @@ const projectFolder = getTestWorkspaceFolder()
 
 interface X {
     name: Runtime
-    samAppName: string
     path: string
     debuggerType: string
     language: Language
@@ -33,49 +32,13 @@ interface X {
 
 const runtimes: X[] = [
     // rename name -> runtime, debuggerType -> DebugSessionType
-    {
-        name: 'nodejs8.10',
-        samAppName: 'n8',
-        path: 'n8/hello-world/app.js',
-        debuggerType: 'node2',
-        language: 'javascript'
-    },
-    {
-        name: 'nodejs10.x',
-        samAppName: 'n10',
-        path: 'n10/hello-world/app.js',
-        debuggerType: 'node2',
-        language: 'javascript'
-    },
-    {
-        name: 'nodejs12.x',
-        samAppName: 'n12',
-        path: 'n12/hello-world/app.js',
-        debuggerType: 'node2',
-        language: 'javascript'
-    },
-    {
-        name: 'python2.7',
-        samAppName: 'p27',
-        path: 'p27/hello_world/app.py',
-        debuggerType: 'python',
-        language: 'python'
-    },
-    {
-        name: 'python3.6',
-        samAppName: 'p36',
-        path: 'p36/hello_world/app.py',
-        debuggerType: 'python',
-        language: 'python'
-    },
-    {
-        name: 'python3.7',
-        samAppName: 'p37',
-        path: 'p37/hello_world/app.py',
-        debuggerType: 'python',
-        language: 'python'
-    },
-    { name: 'python3.8', samAppName: 'p38', path: 'p38/hello_world/app.py', debuggerType: 'python', language: 'python' }
+    { name: 'nodejs8.10', path: 'testProject/hello-world/app.js', debuggerType: 'node2', language: 'javascript' },
+    { name: 'nodejs10.x', path: 'testProject/hello-world/app.js', debuggerType: 'node2', language: 'javascript' },
+    { name: 'nodejs12.x', path: 'testProject/hello-world/app.js', debuggerType: 'node2', language: 'javascript' },
+    { name: 'python2.7', path: 'testProject/hello_world/app.py', debuggerType: 'python', language: 'python' },
+    { name: 'python3.6', path: 'testProject/hello_world/app.py', debuggerType: 'python', language: 'python' },
+    { name: 'python3.7', path: 'testProject/hello_world/app.py', debuggerType: 'python', language: 'python' },
+    { name: 'python3.8', path: 'testProject/hello_world/app.py', debuggerType: 'python', language: 'python' }
     // { name: 'dotnetcore2.1', path: 'testProject/src/HelloWorld/Function.cs', debuggerType: 'coreclr' }
 ]
 
@@ -86,17 +49,17 @@ async function openSamProject(projectPath: string): Promise<vscode.Uri> {
     return document.uri
 }
 
-function setupProjectFolder(samAppName: string) {
-    tryRemoveProjectFolder(samAppName)
+function setupProjectFolder() {
+    tryRemoveProjectFolder()
     mkdirpSync(projectFolder)
 }
 
-function tryRemoveProjectFolder(samAppName: string) {
+function tryRemoveProjectFolder() {
     try {
         console.log(
             '--------------------------------- remove project folder ------------------------------------------------'
         )
-        removeSync(path.join(projectFolder, samAppName))
+        removeSync(path.join(projectFolder, 'testProject'))
     } catch (e) {}
 }
 
@@ -254,6 +217,7 @@ async function configurePythonExtension(): Promise<void> {
 }
 
 describe('SAM Integration Tests', async () => {
+    const samApplicationName = 'testProject'
     let testDisposables: vscode.Disposable[]
 
     before(async function() {
@@ -274,11 +238,10 @@ describe('SAM Integration Tests', async () => {
     })
 
     after(async () => {
-        // tryRemoveProjectFolder(scenario.samAppName)
+        tryRemoveProjectFolder()
     })
 
     for (const scenario of runtimes) {
-        // const samApplicationName = 'testProject'
         describe(`SAM Application Runtime: ${scenario.name}`, async () => {
             beforeEach(async function() {
                 // set up debug config
@@ -293,12 +256,12 @@ describe('SAM Integration Tests', async () => {
                 // tslint:disable-next-line: no-invalid-this
                 this.timeout(TIMEOUT)
 
-                setupProjectFolder(scenario.samAppName)
+                setupProjectFolder()
 
-                await createSamApplication(scenario.samAppName)
+                await createSamApplication()
 
                 // Check for readme file
-                const readmePath = path.join(projectFolder, scenario.samAppName, 'README.md')
+                const readmePath = path.join(projectFolder, samApplicationName, 'README.md')
                 assert.ok(await fileExists(readmePath), `Expected SAM App readme to exist at ${readmePath}`)
             })
 
@@ -309,9 +272,9 @@ describe('SAM Integration Tests', async () => {
                     // tslint:disable-next-line: no-invalid-this
                     this.timeout(TIMEOUT)
 
-                    setupProjectFolder(scenario.samAppName)
+                    setupProjectFolder()
 
-                    await createSamApplication(scenario.samAppName)
+                    await createSamApplication()
                     samAppCodeUri = await openSamProject(scenario.path)
                 })
 
@@ -320,19 +283,17 @@ describe('SAM Integration Tests', async () => {
                 })
 
                 after(async function() {
-                    tryRemoveProjectFolder(scenario.samAppName)
+                    tryRemoveProjectFolder()
                 })
 
                 it('the SAM Template contains the expected runtime', async () => {
-                    const fileContents = readFileSync(
-                        `${projectFolder}/${scenario.samAppName}/template.yaml`
-                    ).toString()
+                    const fileContents = readFileSync(`${projectFolder}/${samApplicationName}/template.yaml`).toString()
                     assert.ok(fileContents.includes(`Runtime: ${scenario.name}`))
                 })
 
                 it('produces an error when creating a SAM Application to the same location', async () => {
                     // await createSamApplication()
-                    const err = await assertThrowsError(async () => await createSamApplication(scenario.samAppName))
+                    const err = await assertThrowsError(async () => await createSamApplication())
                     assert(err.message.includes('directory already exists'))
                 }).timeout(TIMEOUT)
 
@@ -438,9 +399,9 @@ describe('SAM Integration Tests', async () => {
             })
         })
 
-        async function createSamApplication(name: string): Promise<void> {
+        async function createSamApplication(): Promise<void> {
             const initArguments: SamCliInitArgs = {
-                name: name,
+                name: samApplicationName,
                 location: projectFolder,
                 runtime: scenario.name,
                 dependencyManager: getDependencyManager(scenario.name)
