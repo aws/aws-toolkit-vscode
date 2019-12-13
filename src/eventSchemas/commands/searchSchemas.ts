@@ -5,10 +5,10 @@
 
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
+import { Schemas } from 'aws-sdk'
 import _ = require('lodash')
 import path = require('path')
 import * as vscode from 'vscode'
-import * as Schemas from '../../../src/shared/schemas/clientschemas'
 import { downloadSchemaItemCode } from '../../eventSchemas/commands/downloadSchemaItemCode'
 import { RegistryItemNode } from '../../eventSchemas/explorer/registryItemNode'
 import { SchemaItemNode } from '../../eventSchemas/explorer/schemaItemNode'
