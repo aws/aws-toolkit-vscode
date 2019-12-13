@@ -46,4 +46,15 @@ object DotNetRuntimeUtils {
             ?: DEFAULT_DOTNET_CORE_RUNTIME
     }
     val DEBUGGER_BIN_DIR = File("${PathManager.getTempPath()}/ReSharperHost")
+
+    const val RUNTIME_CONFIG_JSON_21 = """{
+  "runtimeOptions": {
+    "tfm": "netcoreapp2.1",
+    "framework": {
+      "name": "Microsoft.NETCore.App",
+      "version": "2.1.0"
+    },
+    "rollForward": "Major"
+  }
+}"""
 }
