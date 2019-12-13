@@ -83,9 +83,15 @@ private val fileTypeRegistry = FileTypeRegistry.getInstance()
 
 class S3TreeObjectNode(bucketName: String, parent: S3TreeDirectoryNode?, key: String, val size: Long, val lastModified: Instant) :
     S3TreeNode(bucketName, parent, key) {
-    val fileType = fileTypeRegistry.getFileTypeByFileName(name)
+
+    private val fileType = fileTypeRegistry.getFileTypeByFileName(name)
+
     init {
         fileType.takeIf { it !is UnknownFileType }?.icon.let { icon = it }
+    }
+
+    companion object {
+        val MAX_FILE_SIZE_TO_OPEN_IN_IDE = 5_000_000
     }
 }
 

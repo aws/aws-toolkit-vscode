@@ -4,10 +4,17 @@ package software.aws.toolkits.jetbrains.services.s3.editor
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runInEdt
+import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.fileTypes.ex.FileTypeChooser
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.io.FileUtil
+import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VirtualFileWrapper
 import com.intellij.ui.treeStructure.treetable.TreeTable
+import software.amazon.awssdk.core.sync.ResponseTransformer
 import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.services.s3.objectActions.UploadObjectAction
@@ -67,12 +74,46 @@ class S3TreeTable(
     private val mouseListener = object : MouseAdapter() {
         override fun mouseClicked(e: MouseEvent) {
             val row = rowAtPoint(e.point).takeIf { it >= 0 } ?: return
+            handleOpeningFile(row, e)
             handleLoadingMore(row, e)
         }
     }
 
+    private fun handleOpeningFile(row: Int, e: MouseEvent) {
+        if (e.clickCount < 2) {
+            return
+        }
+        val objectNode = (tree.getPathForRow(row).lastPathComponent as? DefaultMutableTreeNode)?.userObject as? S3TreeObjectNode ?: return
+        if (objectNode.size > S3TreeObjectNode.MAX_FILE_SIZE_TO_OPEN_IN_IDE) {
+            notifyError(message("s3.open.file_too_big", StringUtil.formatFileSize(S3TreeObjectNode.MAX_FILE_SIZE_TO_OPEN_IN_IDE.toLong())))
+            return
+        }
+        val fileWrapper = VirtualFileWrapper(File("${FileUtil.getTempDirectory()}${File.separator}${objectNode.key.replace('/', '_')}"))
+        // set the file to not be read only so that the S3Client can write to the file
+        fileWrapper.virtualFile?.isWritable = true
+        val getObjectRequest = GetObjectRequest.builder()
+            .bucket(objectNode.bucketName)
+            .key(objectNode.key)
+            .build()
+        // TODO refactor the download file action to refactor out the common parts and add progress to this
+        ApplicationManager.getApplication().executeOnPooledThread {
+            s3Client.getObject(getObjectRequest, ResponseTransformer.toOutputStream(fileWrapper.file.outputStream()))
+            runInEdt {
+                fileWrapper.virtualFile?.let {
+                    // If the file type is not associated, prompt user to associate. Returns null on cancel
+                    FileTypeChooser.getKnownFileTypeOrAssociate(it, project) ?: return@runInEdt
+                    // set virtual file to read only
+                    it.isWritable = false
+                    FileEditorManager.getInstance(project).openFile(it, true, true).ifEmpty {
+                        notifyError(message("s3.open.viewer.bucket.failed"))
+                    }
+                }
+            }
+        }
+    }
+
     private fun handleLoadingMore(row: Int, e: MouseEvent) {
-        if (e.clickCount != 2) {
+        if (e.clickCount < 2) {
             return
         }
         val continuationNode = (tree.getPathForRow(row).lastPathComponent as? DefaultMutableTreeNode)?.userObject as? S3TreeContinuationNode ?: return
