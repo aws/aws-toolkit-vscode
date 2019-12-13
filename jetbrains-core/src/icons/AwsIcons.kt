@@ -15,7 +15,6 @@ object AwsIcons {
     object Logos {
         @JvmField val AWS = IconLoader.getIcon("/icons/logos/AWS.svg") // 13x13
         @JvmField val IAM_LARGE = IconLoader.getIcon("/icons/logos/IAM_large.svg") // 64x64
-        @JvmField val S3_LARGE = IconLoader.getIcon("/icons/logos/S3_Large.svg") // 64x64
         @JvmField val CLOUD_FORMATION_TOOL = IconLoader.getIcon("/icons/logos/CloudFormationTool.svg") // 13x13
         @JvmField val EVENT_BRIDGE = IconLoader.getIcon("/icons/logos/EventBridge.svg") // 13x13
     }
@@ -26,7 +25,7 @@ object AwsIcons {
         @JvmField val SCHEMA_REGISTRY = IconLoader.getIcon("/icons/resources/SchemaRegistry.svg") // 16x16
         @JvmField val SCHEMA = IconLoader.getIcon("/icons/resources/Schema.svg") // 16x16
         @JvmField val SERVERLESS_APP = IconLoader.getIcon("/icons/resources/ServerlessApp.svg") // 16x16
-        @JvmField val S3_BUCKET = IconLoader.getIcon("/icons/resources/bucket.png")
+        @JvmField val S3_BUCKET = IconLoader.getIcon("/icons/resources/S3Bucket.svg") // 16x16
         object Ecs {
             @JvmField val ECS_CLUSTER = IconLoader.getIcon("/icons/resources/ecs/EcsCluster.svg")
             @JvmField val ECS_SERVICE = IconLoader.getIcon("/icons/resources/ecs/EcsService.svg")
