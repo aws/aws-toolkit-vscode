@@ -80,6 +80,8 @@ class SamDynamoDBCookieCutter : PythonSamProjectTemplate() {
 }
 
 class SamEventBridgeHelloWorld : PythonSamProjectTemplate() {
+    override fun supportedRuntimes() = setOf(Runtime.PYTHON3_6, Runtime.PYTHON3_7, Runtime.PYTHON3_8)
+
     override fun getName() = message("sam.init.template.eventBridge_helloWorld.name")
 
     override fun getDescription() = message("sam.init.template.eventBridge_helloWorld.description")
@@ -88,6 +90,8 @@ class SamEventBridgeHelloWorld : PythonSamProjectTemplate() {
 }
 
 class SamEventBridgeStarterApp : PythonSamProjectTemplate() {
+    override fun supportedRuntimes() = setOf(Runtime.PYTHON3_6, Runtime.PYTHON3_7, Runtime.PYTHON3_8)
+
     override fun getName() = message("sam.init.template.eventBridge_starterApp.name")
 
     override fun getDescription() = message("sam.init.template.eventBridge_starterApp.description")
