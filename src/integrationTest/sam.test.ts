@@ -19,27 +19,38 @@ import { Datum } from '../shared/telemetry/telemetryTypes'
 import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep, TIMEOUT } from './integrationTestsUtilities'
 
 const projectFolder = getTestWorkspaceFolder()
-// Retry tests because CodeLenses do not reliably get produced in the tests
-// TODO : Remove retries in future - https://github.com/aws/aws-toolkit-vscode/issues/737
-// const maxCodeLensTestAttempts = 3
 
-interface X {
-    name: Runtime
+interface TestScenario {
+    runtime: Runtime
     path: string
-    debuggerType: string
+    debugSessionType: string
     language: Language
 }
 
-const runtimes: X[] = [
-    // rename name -> runtime, debuggerType -> DebugSessionType
-    { name: 'nodejs8.10', path: 'testProject/hello-world/app.js', debuggerType: 'node2', language: 'javascript' },
-    { name: 'nodejs10.x', path: 'testProject/hello-world/app.js', debuggerType: 'node2', language: 'javascript' },
-    { name: 'nodejs12.x', path: 'testProject/hello-world/app.js', debuggerType: 'node2', language: 'javascript' },
-    { name: 'python2.7', path: 'testProject/hello_world/app.py', debuggerType: 'python', language: 'python' },
-    { name: 'python3.6', path: 'testProject/hello_world/app.py', debuggerType: 'python', language: 'python' },
-    { name: 'python3.7', path: 'testProject/hello_world/app.py', debuggerType: 'python', language: 'python' },
-    { name: 'python3.8', path: 'testProject/hello_world/app.py', debuggerType: 'python', language: 'python' }
-    // { name: 'dotnetcore2.1', path: 'testProject/src/HelloWorld/Function.cs', debuggerType: 'coreclr' }
+const runtimes: TestScenario[] = [
+    {
+        runtime: 'nodejs8.10',
+        path: 'testProject/hello-world/app.js',
+        debugSessionType: 'node2',
+        language: 'javascript'
+    },
+    {
+        runtime: 'nodejs10.x',
+        path: 'testProject/hello-world/app.js',
+        debugSessionType: 'node2',
+        language: 'javascript'
+    },
+    {
+        runtime: 'nodejs12.x',
+        path: 'testProject/hello-world/app.js',
+        debugSessionType: 'node2',
+        language: 'javascript'
+    },
+    { runtime: 'python2.7', path: 'testProject/hello_world/app.py', debugSessionType: 'python', language: 'python' },
+    { runtime: 'python3.6', path: 'testProject/hello_world/app.py', debugSessionType: 'python', language: 'python' },
+    { runtime: 'python3.7', path: 'testProject/hello_world/app.py', debugSessionType: 'python', language: 'python' },
+    { runtime: 'python3.8', path: 'testProject/hello_world/app.py', debugSessionType: 'python', language: 'python' }
+    // { runtime: 'dotnetcore2.1', path: 'testProject/src/HelloWorld/Function.cs', debugSessionType: 'coreclr' }
 ]
 
 async function openSamProject(projectPath: string): Promise<vscode.Uri> {
@@ -56,48 +67,19 @@ function setupProjectFolder() {
 
 function tryRemoveProjectFolder() {
     try {
-        console.log(
-            '--------------------------------- remove project folder ------------------------------------------------'
-        )
         removeSync(path.join(projectFolder, 'testProject'))
     } catch (e) {}
 }
 
 async function getDebugLocalCodeLens(documentUri: vscode.Uri, language: Language): Promise<vscode.CodeLens> {
-    while (true) {
-        try {
-            // this works without a sleep locally, but not on CodeBuild
-            await sleep(200)
-            let codeLenses = await getCodeLenses(documentUri)
-            if (!codeLenses || codeLenses.length === 0) {
-                console.log('**** CL Found: 0')
-                continue
-            }
-
-            // command: getInvokeCmdKey(params.language), / .isDebug
-
-            // omnisharp spits out some undefined code lenses for some reason, we filter them because they are
-            // not shown to the user and do not affect how our extension is working
-            codeLenses = codeLenses.filter(codeLens => {
-                if (codeLens.command && codeLens.command.arguments && codeLens.command.arguments.length === 1) {
-                    // tslint:disable: no-unsafe-any
-                    return (
-                        codeLens.command.command === getInvokeCmdKey(language) && codeLens.command.arguments[0].isDebug
-                    )
-                    // tslint:enable: no-unsafe-any
-                }
-
-                return false
-            })
-            console.log('**** CL Filtered: ', codeLenses.length)
-            if (codeLenses.length === 1) {
-                return codeLenses[0]
-            }
-        } catch (e) {}
-    }
+    return getLocalCodeLens(documentUri, language, true)
 }
 
 async function getRunLocalCodeLens(documentUri: vscode.Uri, language: Language): Promise<vscode.CodeLens> {
+    return getLocalCodeLens(documentUri, language, false)
+}
+
+async function getLocalCodeLens(documentUri: vscode.Uri, language: Language, debug: boolean): Promise<vscode.CodeLens> {
     while (true) {
         try {
             // this works without a sleep locally, but not on CodeBuild
@@ -113,7 +95,8 @@ async function getRunLocalCodeLens(documentUri: vscode.Uri, language: Language):
                 if (codeLens.command && codeLens.command.arguments && codeLens.command.arguments.length === 1) {
                     // tslint:disable: no-unsafe-any
                     return (
-                        codeLens.command.command === getInvokeCmdKey(language) && !codeLens.command.arguments[0].isDebug
+                        codeLens.command.command === getInvokeCmdKey(language) &&
+                        codeLens.command.arguments[0].isDebug === debug
                     )
                     // tslint:enable: no-unsafe-any
                 }
@@ -126,50 +109,6 @@ async function getRunLocalCodeLens(documentUri: vscode.Uri, language: Language):
         } catch (e) {}
     }
 }
-
-// async function getSamCodeLenses(documentUri: vscode.Uri): Promise<vscode.CodeLens[]> {
-//     while (true) {
-//         try {
-//             // this works without a sleep locally, but not on CodeBuild
-//             await sleep(200)
-//             let codeLenses = await getCodeLenses(documentUri)
-//             if (!codeLenses || codeLenses.length === 0) {
-//                 continue
-//             }
-//             // omnisharp spits out some undefined code lenses for some reason, we filter them because they are
-//             // not shown to the user and do not affect how our extension is working
-//             codeLenses = codeLenses.filter(lens => lens !== undefined && lens.command !== undefined)
-//             if (codeLenses.length === 3) {
-//                 return codeLenses as vscode.CodeLens[]
-//             }
-//         } catch (e) {}
-//     }
-// }
-
-// async function getCodeLensesOrFail(documentUri: vscode.Uri): Promise<vscode.CodeLens[]> {
-//     const codeLensPromise = getSamCodeLenses(documentUri)
-//     const timeout = new Promise(resolve => {
-//         setTimeout(resolve, 10000, undefined)
-//     })
-//     const result = await Promise.race([codeLensPromise, timeout])
-
-//     assert.ok(result, 'Codelenses took too long to show up!')
-
-//     return result as vscode.CodeLens[]
-// }
-
-// async function onDebugChanged(e: vscode.DebugSession | undefined, debuggerType: string) {
-//     if (!e) {
-//         return
-//     }
-//     assert.strictEqual(e.configuration.name, 'SamLocalDebug')
-//     assert.strictEqual(e.configuration.type, debuggerType)
-//     // wait for it to actually start (which we do not get an event for). 800 is
-//     // short enough to finish before the next test is run and long enough to
-//     // actually act after it pauses
-//     await sleep(800)
-//     await vscode.commands.executeCommand('workbench.action.debug.continue')
-// }
 
 interface LocalInvokeCodeLensCommandResult {
     datum: Datum
@@ -242,16 +181,7 @@ describe('SAM Integration Tests', async () => {
     })
 
     for (const scenario of runtimes) {
-        describe(`SAM Application Runtime: ${scenario.name}`, async () => {
-            beforeEach(async function() {
-                // set up debug config
-                // testDisposables.push(
-                //     vscode.debug.onDidChangeActiveDebugSession(async session =>
-                //         onDebugChanged(session, scenario.debuggerType)
-                //     )
-                // )
-            })
-
+        describe(`SAM Application Runtime: ${scenario.runtime}`, async () => {
             it('creates a new SAM Application (happy path)', async function() {
                 // tslint:disable-next-line: no-invalid-this
                 this.timeout(TIMEOUT)
@@ -265,7 +195,7 @@ describe('SAM Integration Tests', async () => {
                 assert.ok(await fileExists(readmePath), `Expected SAM App readme to exist at ${readmePath}`)
             })
 
-            describe(`Starting with a newly created ${scenario.name} SAM Application...`, async () => {
+            describe(`Starting with a newly created ${scenario.runtime} SAM Application...`, async () => {
                 let samAppCodeUri: vscode.Uri
 
                 before(async function() {
@@ -288,7 +218,7 @@ describe('SAM Integration Tests', async () => {
 
                 it('the SAM Template contains the expected runtime', async () => {
                     const fileContents = readFileSync(`${projectFolder}/${samApplicationName}/template.yaml`).toString()
-                    assert.ok(fileContents.includes(`Runtime: ${scenario.name}`))
+                    assert.ok(fileContents.includes(`Runtime: ${scenario.runtime}`))
                 })
 
                 it('produces an error when creating a SAM Application to the same location', async () => {
@@ -324,7 +254,11 @@ describe('SAM Integration Tests', async () => {
                             name: 'invokelocal',
                             value: 1,
                             unit: 'Count',
-                            metadata: new Map([['runtime', scenario.name], ['debug', 'false'], ['result', 'Succeeded']])
+                            metadata: new Map([
+                                ['runtime', scenario.runtime],
+                                ['debug', 'false'],
+                                ['result', 'Succeeded']
+                            ])
                         }
                     })
                 }).timeout(TIMEOUT)
@@ -342,7 +276,10 @@ describe('SAM Integration Tests', async () => {
                     const debugSessionStartedAndStoppedPromise = new Promise<void>((resolve, reject) => {
                         testDisposables.push(
                             vscode.debug.onDidStartDebugSession(async startedSession => {
-                                const sessionValidation = validateSamDebugSession(startedSession, scenario.debuggerType)
+                                const sessionValidation = validateSamDebugSession(
+                                    startedSession,
+                                    scenario.debugSessionType
+                                )
 
                                 if (sessionValidation) {
                                     await stopDebugger()
@@ -354,7 +291,7 @@ describe('SAM Integration Tests', async () => {
                                     vscode.debug.onDidTerminateDebugSession(async endedSession => {
                                         const endSessionValidation = validateSamDebugSession(
                                             endedSession,
-                                            scenario.debuggerType
+                                            scenario.debugSessionType
                                         )
 
                                         if (endSessionValidation) {
@@ -388,7 +325,11 @@ describe('SAM Integration Tests', async () => {
                             name: 'invokelocal',
                             value: 1,
                             unit: 'Count',
-                            metadata: new Map([['runtime', scenario.name], ['debug', 'true'], ['result', 'Succeeded']])
+                            metadata: new Map([
+                                ['runtime', scenario.runtime],
+                                ['debug', 'true'],
+                                ['result', 'Succeeded']
+                            ])
                         }
                     })
 
@@ -403,8 +344,8 @@ describe('SAM Integration Tests', async () => {
             const initArguments: SamCliInitArgs = {
                 name: samApplicationName,
                 location: projectFolder,
-                runtime: scenario.name,
-                dependencyManager: getDependencyManager(scenario.name)
+                runtime: scenario.runtime,
+                dependencyManager: getDependencyManager(scenario.runtime)
             }
             const samCliContext = getSamCliContext()
             await runSamCliInit(initArguments, samCliContext)

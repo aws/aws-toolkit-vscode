@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-//TODO: change the import to aws-sdk-js once Schemas SDK is launched
-import * as Schemas from '../schemas/clientschemas'
+import { Schemas } from 'aws-sdk'
 
 export interface SchemaClient {
     readonly regionCode: string

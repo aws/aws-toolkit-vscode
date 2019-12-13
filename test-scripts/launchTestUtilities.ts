@@ -30,7 +30,6 @@ export async function installVSCodeExtension(vsCodeExecutablePath: string, exten
     console.log(`Installing VS Code Extension: ${extensionIdentifier}`)
     const vsCodeCliPath = resolveCliPathFromVSCodeExecutablePath(vsCodeExecutablePath)
 
-    // TODO : CC : Find out if this is necessary for local development on Mac/Linux
     const cmdArgs = ['--install-extension', extensionIdentifier]
     if (process.env.AWS_TOOLKIT_TEST_USER_DIR) {
         cmdArgs.push('--user-data-dir', process.env.AWS_TOOLKIT_TEST_USER_DIR)
@@ -40,8 +39,6 @@ export async function installVSCodeExtension(vsCodeExecutablePath: string, exten
         stdio: 'inherit'
     })
 
-    // TODO : CC : See if we can exit out in failure situations
-    console.log('*** result code: ', spawnResult.status)
     if (spawnResult.status !== 0) {
         throw new Error(`Installing VS Code extension ${extensionIdentifier} had exit code ${spawnResult.status}`)
     }

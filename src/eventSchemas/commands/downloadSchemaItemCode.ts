@@ -5,15 +5,13 @@
 
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
+import { Schemas } from 'aws-sdk'
 import fs = require('fs')
 import path = require('path')
-
 import * as vscode from 'vscode'
 import { SchemaClient } from '../../shared/clients/schemaClient'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { getLogger, Logger } from '../../shared/logger'
-//TODO: change the import to aws-sdk-js once Schemas SDK is launched - remove-when-schema-sdk-launched
-import * as Schemas from '../../shared/schemas/clientschemas'
 import { ExtensionDisposableFiles } from '../../shared/utilities/disposableFiles'
 import { SchemaItemNode } from '../explorer/schemaItemNode'
 import { getLanguageDetails } from '../models/schemaCodeLangs'
