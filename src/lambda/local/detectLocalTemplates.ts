@@ -7,27 +7,34 @@ import { access, readdir, stat } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 
+const DEFAULT_FOLDER_DEPTH = 4
+
 export async function* detectLocalTemplates({
-    workspaceUris
+    workspaceUris,
+    folderDepth = getFolderDepth()
 }: {
     workspaceUris: vscode.Uri[]
+    folderDepth?: number
 }): AsyncIterableIterator<vscode.Uri> {
     for (const workspaceFolder of workspaceUris) {
-        for await (const folder of getFolderCandidates(workspaceFolder)) {
+        for await (const folder of getFolderCandidates(workspaceFolder, folderDepth)) {
             yield* detectTemplatesInFolder(folder)
         }
     }
 }
 
-async function* getFolderCandidates(uri: vscode.Uri): AsyncIterableIterator<string> {
+async function* getFolderCandidates(uri: vscode.Uri, folderDepth: number): AsyncIterableIterator<string> {
     // Search the root and first level of children only.
     yield uri.fsPath
 
     const entries = await readdir(uri.fsPath)
-    for (const entry of entries.map(p => path.join(uri.fsPath, p))) {
+    for (const entry of entries.filter(p => !p.startsWith('.')).map(p => path.join(uri.fsPath, p))) {
         const stats = await stat(entry)
         if (stats.isDirectory()) {
-            yield entry
+            if (folderDepth > 0) {
+                const nextUri = vscode.Uri.file(path.join(entry))
+                yield* getFolderCandidates(nextUri, folderDepth - 1)
+            }
         }
     }
 }
@@ -42,4 +49,8 @@ async function* detectTemplatesInFolder(folder: string): AsyncIterableIterator<v
             // TODO: Log at most verbose (i.e. 'silly') logging level.
         }
     }
+}
+
+function getFolderDepth(): number {
+    return vscode.workspace.getConfiguration('aws').get<number>('sam.template.depth', DEFAULT_FOLDER_DEPTH)
 }
