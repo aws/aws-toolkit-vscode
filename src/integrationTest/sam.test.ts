@@ -338,9 +338,8 @@ describe('SAM Integration Tests', async () => {
                     })
 
                     await debugSessionStartedAndStoppedPromise
-                })
-                    .timeout(TIMEOUT * 3)
-                    .retries(3)
+                }).timeout(TIMEOUT * 2)
+                // .retries(3)
             })
         })
 
