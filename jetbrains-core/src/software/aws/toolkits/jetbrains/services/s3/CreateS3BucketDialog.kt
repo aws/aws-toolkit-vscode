@@ -10,6 +10,8 @@ import com.intellij.openapi.ui.ValidationInfo
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.jetbrains.components.telemetry.LoggingDialogWrapper
+import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerService
+import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
 import software.aws.toolkits.resources.message
 import java.awt.Component
 import javax.swing.JComponent
@@ -20,7 +22,7 @@ class CreateS3BucketDialog(
     private val parent: Component? = null
 ) : LoggingDialogWrapper(project, parent, false, IdeModalityType.PROJECT) {
 
-    private val view = CreateBucketPanel()
+    val view = CreateBucketPanel()
 
     init {
         title = message("s3.create.bucket.title")
@@ -46,6 +48,7 @@ class CreateS3BucketDialog(
                     ApplicationManager.getApplication().invokeLater({
                         close(OK_EXIT_CODE)
                     }, ModalityState.stateForComponent(view.component))
+                    AwsExplorerService.refreshAwsTree(project, S3Resources.LIST_BUCKETS)
                 } catch (e: Exception) {
                     setErrorText(e.message)
                     setOKButtonText(message("s3.create.bucket.create"))
@@ -64,7 +67,4 @@ class CreateS3BucketDialog(
 
     @TestOnly
     fun validateBucketName(): String? = if (bucketName().isEmpty()) message("s3.create.bucket.missing.bucket.name") else null
-
-    @TestOnly
-    fun getViewForTesting(): CreateBucketPanel = view
 }

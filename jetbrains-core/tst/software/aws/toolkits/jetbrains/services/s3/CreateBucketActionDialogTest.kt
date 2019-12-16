@@ -31,8 +31,7 @@ class CreateBucketActionDialogTest {
     fun validateBucketName_emptyBucketName() {
         runInEdtAndWait {
             val dialog = CreateS3BucketDialog(project = projectRule.project, s3Client = s3Mock)
-            val view = dialog.getViewForTesting()
-            view.bucketName.text = "  "
+            dialog.view.bucketName.text = "  "
 
             val validationInfo = dialog.validateBucketName()
             assertThat(validationInfo).isNotNull()
@@ -52,8 +51,7 @@ class CreateBucketActionDialogTest {
                 project = projectRule.project,
                 s3Client = s3Mock
             )
-            val bucketPanel = dialog.getViewForTesting()
-            bucketPanel.bucketName.text = TEST_BUCKET_NAME
+            dialog.view.bucketName.text = TEST_BUCKET_NAME
 
             dialog.createBucket()
 
@@ -75,8 +73,7 @@ class CreateBucketActionDialogTest {
 
         runInEdtAndWait {
             val dialog = CreateS3BucketDialog(project = projectRule.project, s3Client = s3Mock)
-            val view = dialog.getViewForTesting()
-            view.bucketName.text = TEST_BUCKET_NAME
+            dialog.view.bucketName.text = TEST_BUCKET_NAME
 
             assertThatThrownBy { dialog.createBucket() }.hasMessage(TEST_ERROR_MESSAGE)
         }

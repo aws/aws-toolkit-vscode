@@ -3,12 +3,15 @@
 
 package software.aws.toolkits.jetbrains.core.explorer
 
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.amazon.awssdk.services.ecs.EcsClient
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.schemas.SchemasClient
+import software.aws.toolkits.jetbrains.core.AwsResourceCache
+import software.aws.toolkits.jetbrains.core.Resource
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationServiceNode
 import software.aws.toolkits.jetbrains.services.ecs.EcsParentNode
@@ -36,4 +39,19 @@ enum class AwsExplorerService(val serviceId: String, val displayName: String) {
     ;
 
     abstract fun buildServiceRootNode(project: Project): AwsExplorerServiceRootNode
+
+    companion object {
+        fun refreshAwsTree(project: Project, resource: Resource<*>? = null) {
+            val cache = AwsResourceCache.getInstance(project)
+            if (resource == null) {
+                cache.clear()
+            } else {
+                cache.clear(resource)
+            }
+            runInEdt {
+                // redraw explorer
+                ExplorerToolWindow.getInstance(project).invalidateTree()
+            }
+        }
+    }
 }
