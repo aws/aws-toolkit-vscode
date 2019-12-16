@@ -28,24 +28,24 @@ interface TestScenario {
 }
 
 const runtimes: TestScenario[] = [
-    {
-        runtime: 'nodejs8.10',
-        path: 'testProject/hello-world/app.js',
-        debugSessionType: 'node2',
-        language: 'javascript'
-    },
-    {
-        runtime: 'nodejs10.x',
-        path: 'testProject/hello-world/app.js',
-        debugSessionType: 'node2',
-        language: 'javascript'
-    },
-    {
-        runtime: 'nodejs12.x',
-        path: 'testProject/hello-world/app.js',
-        debugSessionType: 'node2',
-        language: 'javascript'
-    },
+    // {
+    //     runtime: 'nodejs8.10',
+    //     path: 'testProject/hello-world/app.js',
+    //     debugSessionType: 'node2',
+    //     language: 'javascript'
+    // },
+    // {
+    //     runtime: 'nodejs10.x',
+    //     path: 'testProject/hello-world/app.js',
+    //     debugSessionType: 'node2',
+    //     language: 'javascript'
+    // },
+    // {
+    //     runtime: 'nodejs12.x',
+    //     path: 'testProject/hello-world/app.js',
+    //     debugSessionType: 'node2',
+    //     language: 'javascript'
+    // },
     { runtime: 'python2.7', path: 'testProject/hello_world/app.py', debugSessionType: 'python', language: 'python' },
     { runtime: 'python3.6', path: 'testProject/hello_world/app.py', debugSessionType: 'python', language: 'python' },
     { runtime: 'python3.7', path: 'testProject/hello_world/app.py', debugSessionType: 'python', language: 'python' },
