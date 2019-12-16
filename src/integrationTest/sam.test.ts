@@ -14,8 +14,9 @@ import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliIn
 import { assertThrowsError } from '../../src/test/shared/utilities/assertUtils'
 import { getInvokeCmdKey, Language } from '../shared/codelens/codeLensUtils'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
-import { fileExists, readFileAsString } from '../shared/filesystemUtilities'
-import { LOG_PATH } from '../shared/logger/activation'
+import { fileExists } from '../shared/filesystemUtilities'
+import { getLogger } from '../shared/logger'
+import { WinstonToolkitLogger } from '../shared/logger/winstonToolkitLogger'
 import { Datum } from '../shared/telemetry/telemetryTypes'
 import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep, TIMEOUT } from './integrationTestsUtilities'
 
@@ -156,6 +157,15 @@ async function configurePythonExtension(): Promise<void> {
     console.log('************************************************************')
 }
 
+async function configureAwsToolkitExtension(): Promise<void> {
+    console.log('************************************************************')
+    // tslint:disable-next-line:no-null-keyword
+    const configPy = vscode.workspace.getConfiguration('aws')
+    await configPy.update('logLevel', 'verbose', false)
+
+    console.log('************************************************************')
+}
+
 describe('SAM Integration Tests', async () => {
     const samApplicationName = 'testProject'
     let testDisposables: vscode.Disposable[]
@@ -165,7 +175,15 @@ describe('SAM Integration Tests', async () => {
         this.timeout(600000)
 
         await activateExtensions()
+        await configureAwsToolkitExtension()
         await configurePythonExtension()
+
+        const l = getLogger()
+        if (l instanceof WinstonToolkitLogger) {
+            console.log('its a logger')
+            l.logToConsole()
+        }
+        // WinstonToolkitLogger
     })
 
     beforeEach(async function() {
@@ -180,8 +198,8 @@ describe('SAM Integration Tests', async () => {
     after(async () => {
         tryRemoveProjectFolder()
 
-        const logs = await readFileAsString(LOG_PATH)
-        console.log(logs)
+        // const logs = await readFileAsString(LOG_PATH)
+        // console.log(logs)
     })
 
     for (const scenario of runtimes) {
