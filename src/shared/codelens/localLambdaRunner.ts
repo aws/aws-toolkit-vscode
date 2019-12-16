@@ -25,11 +25,12 @@ import { writeFile } from 'fs-extra'
 import { generateDefaultHandlerConfig, HandlerConfig } from '../../lambda/config/templates'
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
-import { Logger } from '../logger'
+import { getLogger, Logger } from '../logger'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { Timeout } from '../utilities/timeoutUtils'
 import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
+import { DebugConnectionTester } from './debugConnectionTester'
 
 export interface LambdaLocalInvokeParams {
     document: vscode.TextDocument
@@ -425,22 +426,23 @@ export async function invokeLambdaFunction(
     await command.execute(timer)
 
     if (debugArgs) {
-        const isPortOpen = await waitForDebugPort({
-            debugPort: debugArgs.debugPort,
-            configuration,
-            channelLogger,
-            timeoutDuration: timer.remainingTime
-        })
+        // const isPortOpen = await waitForDebugPort({
+        //     debugPort: debugArgs.debugPort,
+        //     configuration,
+        //     channelLogger,
+        //     timeoutDuration: timer.remainingTime
+        // })
 
-        if (!isPortOpen) {
-            channelLogger.warn(
-                'AWS.samcli.local.invoke.port.not.open',
-                // tslint:disable-next-line:max-line-length
-                "The debug port doesn't appear to be open. The debugger might not succeed when attaching to your SAM Application."
-            )
-        }
+        // if (!isPortOpen) {
+        //     channelLogger.warn(
+        //         'AWS.samcli.local.invoke.port.not.open',
+        //         // tslint:disable-next-line:max-line-length
+        //         "The debug port doesn't appear to be open. The debugger might not succeed when attaching to your SAM Application."
+        //     )
+        // }
 
         const attachResults = await attachDebugger({
+            debugPort: debugArgs.debugPort,
             debugConfig: debugArgs.debugConfig,
             maxRetries,
             retryDelayMillis: ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
@@ -505,6 +507,38 @@ export interface AttachDebuggerContext {
     onWillRetry?(): Promise<void>
 }
 
+export async function waitForDebugServer(debugPort: number) {
+    const logger = getLogger()
+
+    logger.verbose(`Testing debug adapter connection on port ${debugPort}`)
+
+    let debugServerAvailable: boolean = false
+
+    while (!debugServerAvailable) {
+        const tester = new DebugConnectionTester(debugPort)
+
+        try {
+            if (await tester.connect()) {
+                if (await tester.isDebugServerUp()) {
+                    logger.verbose('Debug Adapter is available')
+                    debugServerAvailable = true
+                }
+            }
+        } catch (err) {
+            logger.verbose('Error while testing', err as Error)
+        } finally {
+            await tester.disconnect()
+        }
+
+        if (!debugServerAvailable) {
+            logger.verbose('Debug Adapter not ready, retrying...')
+            await new Promise<void>(resolve => {
+                setTimeout(resolve, 1000)
+            })
+        }
+    }
+}
+
 export async function attachDebugger({
     retryDelayMillis = ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
     onStartDebugging = vscode.debug.startDebugging,
@@ -514,7 +548,13 @@ export async function attachDebugger({
         })
     },
     ...params
-}: AttachDebuggerContext): Promise<{ success: boolean }> {
+}: AttachDebuggerContext & {
+    debugPort?: number
+}): Promise<{ success: boolean }> {
+    if (params.debugPort) {
+        await waitForDebugServer(params.debugPort)
+    }
+
     const channelLogger = params.channelLogger
     const logger = params.channelLogger.logger
     logger.debug(

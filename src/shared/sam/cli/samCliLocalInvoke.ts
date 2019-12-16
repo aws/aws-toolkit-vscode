@@ -54,7 +54,12 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
         const childProcess = new ChildProcess(params.command, options, ...params.args)
         let debuggerPromiseClosed: boolean = false
         const debuggerPromise = new Promise<void>(async (resolve, reject) => {
-            let checkForDebuggerAttachCue: boolean = params.isDebug
+            let checkForDebuggerAttachCue: boolean = params.isDebug && this.debuggerAttachCues.length !== 0
+
+            if (this.debuggerAttachCues.length === 0) {
+                console.log('************************************* skip text check *****************************')
+                this.emitMessage('************************************* skip text check *****************************')
+            }
 
             await childProcess.start({
                 onStdout: (text: string): void => {
@@ -76,6 +81,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                 },
                 onClose: (code: number, signal: string): void => {
                     this.channelLogger.logger.verbose(`The child process for sam local invoke closed with code ${code}`)
+                    this.channelLogger.channel.appendLine(`CODE WAS ${code}`)
                     this.channelLogger.channel.appendLine(
                         localize('AWS.samcli.local.invoke.ended', 'Local invoke of SAM Application has ended.')
                     )
@@ -99,8 +105,9 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                 }
             })
 
-            if (!params.isDebug) {
-                this.channelLogger.logger.verbose('Local SAM App does not expect a debugger to attach.')
+            if (!params.isDebug || this.debuggerAttachCues.length === 0) {
+                this.channelLogger.logger.verbose('Local SAM App does not expect a debugger to attach. (or skipping)')
+                this.emitMessage('Local SAM App does not expect a debugger to attach. (or skipping)')
                 debuggerPromiseClosed = true
                 resolve()
             }

@@ -239,7 +239,7 @@ export async function initialize({
     const channelLogger = getChannelLogger(toolkitOutputChannel)
 
     if (!localInvokeCommand) {
-        localInvokeCommand = new DefaultSamLocalInvokeCommand(channelLogger, [WAIT_FOR_DEBUGGER_MESSAGES.PYTHON])
+        localInvokeCommand = new DefaultSamLocalInvokeCommand(channelLogger, [])
     }
 
     const invokeLambda = async (args: LambdaLocalInvokeParams & { runtime: string }) => {
