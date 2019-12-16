@@ -14,7 +14,8 @@ import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliIn
 import { assertThrowsError } from '../../src/test/shared/utilities/assertUtils'
 import { getInvokeCmdKey, Language } from '../shared/codelens/codeLensUtils'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
-import { fileExists } from '../shared/filesystemUtilities'
+import { fileExists, readFileAsString } from '../shared/filesystemUtilities'
+import { LOG_PATH } from '../shared/logger/activation'
 import { Datum } from '../shared/telemetry/telemetryTypes'
 import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep, TIMEOUT } from './integrationTestsUtilities'
 
@@ -178,6 +179,9 @@ describe('SAM Integration Tests', async () => {
 
     after(async () => {
         tryRemoveProjectFolder()
+
+        const logs = await readFileAsString(LOG_PATH)
+        console.log(logs)
     })
 
     for (const scenario of runtimes) {
