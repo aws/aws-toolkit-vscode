@@ -35,7 +35,8 @@ import {
     InvokeLambdaFunctionContext,
     LambdaLocalInvokeParams,
     makeBuildDir,
-    makeInputTemplate
+    makeInputTemplate,
+    waitForDebugPort
 } from './localLambdaRunner'
 
 export const CSHARP_LANGUAGE = 'csharp'
@@ -235,7 +236,8 @@ async function onLocalInvokeCommand(
                     channelLogger,
                     configuration,
                     samLocalInvokeCommand: localInvokeCommand,
-                    telemetryService
+                    telemetryService,
+                    onWillAttachDebugger: waitForDebugPort
                 }
             )
         }
