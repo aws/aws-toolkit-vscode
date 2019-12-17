@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Add support for Java 11 SAM/Lambda"
+}

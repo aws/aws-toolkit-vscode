@@ -27,12 +27,12 @@ import software.aws.toolkits.jetbrains.services.ecs.execution.ContainerOptions
 import software.aws.toolkits.jetbrains.services.ecs.execution.EcsCloudDebugRunConfiguration
 import software.aws.toolkits.jetbrains.services.ecs.execution.EcsCloudDebugRunConfigurationProducer
 import software.aws.toolkits.jetbrains.utils.addBreakpoint
-import software.aws.toolkits.jetbrains.utils.setUpGradleProject
 import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
 import software.aws.toolkits.jetbrains.utils.executeRunConfiguration
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addClass
 import software.aws.toolkits.jetbrains.utils.rules.addModule
+import software.aws.toolkits.jetbrains.utils.setUpGradleProject
 import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 

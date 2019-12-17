@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.lambda.java
 
 import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.roots.ModuleRootModificationUtil
+import com.intellij.pom.java.LanguageLevel
 import com.intellij.testFramework.IdeaTestUtil
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
@@ -44,7 +45,10 @@ class JavaRuntimeGroupTest(
         fun parameters(): Collection<Array<*>> = listOf(
             arrayOf<Any?>("Java 7", { IdeaTestUtil.getMockJdk17() }, Runtime.JAVA8),
             arrayOf<Any?>("Java 8", { IdeaTestUtil.getMockJdk18() }, Runtime.JAVA8),
-            arrayOf<Any?>("Java 9", { IdeaTestUtil.getMockJdk9() }, null)
+            arrayOf<Any?>("Java 9", { IdeaTestUtil.getMockJdk9() }, Runtime.JAVA11),
+            arrayOf<Any?>("Java 10", { IdeaTestUtil.getMockJdk(LanguageLevel.JDK_10.toJavaVersion()) }, Runtime.JAVA11),
+            arrayOf<Any?>("Java 11", { IdeaTestUtil.getMockJdk(LanguageLevel.JDK_11.toJavaVersion()) }, Runtime.JAVA11),
+            arrayOf<Any?>("Java 12", { IdeaTestUtil.getMockJdk(LanguageLevel.JDK_12.toJavaVersion()) }, null)
         )
     }
 }
