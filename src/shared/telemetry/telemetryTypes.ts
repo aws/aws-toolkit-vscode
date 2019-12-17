@@ -27,7 +27,8 @@ export enum TelemetryNamespace {
     Lambda = 'lambda',
     Project = 'project',
     Schema = 'schemas',
-    Session = 'session'
+    Session = 'session',
+    VSCode = 'vscode'
 }
 
 export enum AccountStatus {
