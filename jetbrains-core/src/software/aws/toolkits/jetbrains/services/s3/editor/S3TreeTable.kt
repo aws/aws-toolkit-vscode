@@ -64,7 +64,7 @@ class S3TreeTable(
                         invalidateLevel(node)
                         refresh()
                     } catch (e: Exception) {
-                        e.notifyError(message("s3.upload.object.failed"))
+                        e.notifyError(message("s3.upload.object.failed", it.path))
                     }
                 }
             }

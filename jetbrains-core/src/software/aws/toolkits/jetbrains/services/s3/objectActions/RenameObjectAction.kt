@@ -15,6 +15,8 @@ import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
 import software.aws.toolkits.jetbrains.services.s3.editor.S3VirtualBucket
+import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.TelemetryResult
+import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 
@@ -27,7 +29,8 @@ class RenameObjectAction(private val treeTable: S3TreeTable, val bucket: S3Virtu
         val client: S3Client = AwsClientManager.getInstance(project).getClient()
         val node = treeTable.getSelectedNodes().firstOrNull() as? S3TreeObjectNode ?: return
 
-        val response = Messages.showInputDialog(project,
+        val response = Messages.showInputDialog(
+            project,
             message("s3.rename.object.title", node.name),
             message("s3.rename.object.action"),
             null,
@@ -38,14 +41,18 @@ class RenameObjectAction(private val treeTable: S3TreeTable, val bucket: S3Virtu
                 override fun canClose(inputString: String?): Boolean = checkInput(inputString)
             }
         )
-        if (response != null) {
+        if (response == null) {
+            TelemetryService.recordSimpleTelemetry(project, TELEMETRY_NAME, TelemetryResult.Cancelled)
+        } else {
             ApplicationManager.getApplication().executeOnPooledThread {
                 try {
                     renameObjectAction(response, node, client)
                     treeTable.invalidateLevel(node)
                     treeTable.refresh()
+                    TelemetryService.recordSimpleTelemetry(project, TELEMETRY_NAME, TelemetryResult.Succeeded)
                 } catch (e: Exception) {
                     e.notifyError(message("s3.rename.object.failed"))
+                    TelemetryService.recordSimpleTelemetry(project, TELEMETRY_NAME, TelemetryResult.Failed)
                 }
             }
         }
@@ -70,5 +77,9 @@ class RenameObjectAction(private val treeTable: S3TreeTable, val bucket: S3Virtu
             .key(file.key)
             .build()
         client.deleteObject(deleteObjectRequest)
+    }
+
+    companion object {
+        private const val TELEMETRY_NAME = "s3_renameObject"
     }
 }

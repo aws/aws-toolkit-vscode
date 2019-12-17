@@ -22,6 +22,8 @@ import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeContinuationNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
 import software.aws.toolkits.jetbrains.services.s3.editor.S3VirtualBucket
+import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants
+import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 
@@ -37,6 +39,7 @@ class UploadObjectAction(
         val descriptor = FileChooserDescriptorFactory.createMultipleFilesNoJarsDescriptor().withDescription(message("s3.upload.object.action", bucket.name))
         val chooserDialog = FileChooserFactory.getInstance().createFileChooser(descriptor, project, null)
         val filesChosen = chooserDialog.choose(project, null)
+        var allSucceeded = true
         for (fileChosen in filesChosen) {
             ApplicationManager.getApplication().executeOnPooledThread {
                 try {
@@ -44,10 +47,17 @@ class UploadObjectAction(
                     treeTable.invalidateLevel(node)
                     treeTable.refresh()
                 } catch (e: Exception) {
-                    notifyError(message("s3.upload.object.failed"))
+                    notifyError(message("s3.upload.object.failed", fileChosen.path))
+                    allSucceeded = false
                 }
             }
         }
+        TelemetryService.recordSimpleTelemetry(
+            project,
+            TELEMETRY_NAME,
+            if (allSucceeded) TelemetryConstants.TelemetryResult.Succeeded else TelemetryConstants.TelemetryResult.Failed,
+            filesChosen.size.toDouble()
+        )
     }
 
     override fun isEnabled(): Boolean =
@@ -80,5 +90,9 @@ class UploadObjectAction(
                     client.putObject(request, RequestBody.fromInputStream(pStream, fileChosen.length))
                 }
             })
+    }
+
+    companion object {
+        private const val TELEMETRY_NAME = "s3_uploadobject"
     }
 }

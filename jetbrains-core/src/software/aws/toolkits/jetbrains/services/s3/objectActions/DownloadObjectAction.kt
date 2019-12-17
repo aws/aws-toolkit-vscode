@@ -19,9 +19,11 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.aws.toolkits.jetbrains.components.telemetry.ActionButtonWrapper
 import software.aws.toolkits.jetbrains.core.AwsClientManager
-import software.aws.toolkits.jetbrains.services.s3.editor.S3VirtualBucket
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
+import software.aws.toolkits.jetbrains.services.s3.editor.S3VirtualBucket
+import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.TelemetryResult
+import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import java.io.File
@@ -43,6 +45,7 @@ class DownloadObjectAction(
         var baseFilePath: String? = ""
 
         var fileWrapper: VirtualFileWrapper? = null
+        var allSucceeded = true
         treeTable.getSelectedNodes().forEach {
             if (it !is S3TreeObjectNode) {
                 return@forEach
@@ -61,12 +64,20 @@ class DownloadObjectAction(
                 ApplicationManager.getApplication().executeOnPooledThread {
                     try {
                         downloadObjectAction(project, client, it, fileWrapper)
+                        TelemetryService.recordSimpleTelemetry(project, TELEMETRY_NAME, TelemetryResult.Succeeded)
                     } catch (e: Exception) {
                         notifyError(message("s3.download.object.failed"))
+                        allSucceeded = false
                     }
                 }
             }
         }
+        TelemetryService.recordSimpleTelemetry(
+            project,
+            TELEMETRY_NAME,
+            if (allSucceeded) TelemetryResult.Succeeded else TelemetryResult.Failed,
+            treeTable.selectedRows.size.toDouble()
+        )
     }
 
     override fun isEnabled(): Boolean = !(treeTable.isEmpty || (treeTable.selectedRow < 0) || (treeTable.getValueAt(treeTable.selectedRow, 1) == ""))
@@ -87,5 +98,9 @@ class DownloadObjectAction(
                 client.getObject(request, ResponseTransformer.toOutputStream(progressStream))
             }
         })
+    }
+
+    companion object {
+        private const val TELEMETRY_NAME = "s3_downloadobject"
     }
 }

@@ -14,8 +14,10 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier
 import software.aws.toolkits.jetbrains.components.telemetry.ActionButtonWrapper
 import software.aws.toolkits.jetbrains.core.AwsClientManager
-import software.aws.toolkits.jetbrains.services.s3.editor.S3VirtualBucket
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
+import software.aws.toolkits.jetbrains.services.s3.editor.S3VirtualBucket
+import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.TelemetryResult
+import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 
@@ -44,14 +46,18 @@ class DeleteObjectAction(
             message("s3.delete.object.cancel"), Messages.getWarningIcon()
         )
 
-        if (response == Messages.OK) {
+        if (response != Messages.OK) {
+            TelemetryService.recordSimpleTelemetry(project, TELEMETRY_NAME, TelemetryResult.Cancelled)
+        } else {
             ApplicationManager.getApplication().executeOnPooledThread {
                 try {
                     deleteObjectAction(client, objectsToDelete)
                     treeTable.removeRows(rows)
                     treeTable.refresh()
+                    TelemetryService.recordSimpleTelemetry(project, TELEMETRY_NAME, TelemetryResult.Succeeded)
                 } catch (e: Exception) {
                     notifyInfo(message("s3.delete.object.failed"))
+                    TelemetryService.recordSimpleTelemetry(project, TELEMETRY_NAME, TelemetryResult.Failed)
                 }
             }
         }
@@ -66,5 +72,9 @@ class DeleteObjectAction(
             .delete(Delete.builder().objects(objectsToDelete).build())
             .build()
         client.deleteObjects(deleteObjectsRequest)
+    }
+
+    companion object {
+        private const val TELEMETRY_NAME = "s3_deleteobject"
     }
 }

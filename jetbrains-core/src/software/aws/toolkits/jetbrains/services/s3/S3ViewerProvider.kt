@@ -19,7 +19,10 @@ import software.amazon.awssdk.services.s3.model.Bucket
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.services.s3.editor.S3ViewerPanel
 import software.aws.toolkits.jetbrains.services.s3.editor.S3VirtualBucket
+import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
+import software.aws.toolkits.jetbrains.utils.notifyError
+import software.aws.toolkits.resources.message
 import java.beans.PropertyChangeListener
 import javax.swing.JComponent
 
@@ -71,15 +74,14 @@ class S3ViewerEditor(project: Project, bucket: S3VirtualBucket) : UserDataHolder
     override fun setState(state: FileEditorState) {}
 }
 
-fun openEditor(project: Project, bucket: Bucket) {
-    val virtualFile =
-        FileEditorManager.getInstance(project).openFiles.firstOrNull { (it as? S3VirtualBucket)?.s3Bucket?.equals(bucket) == true } ?: S3VirtualBucket(bucket)
-    FileEditorManager.getInstance(project).openTextEditor(OpenFileDescriptor(project, virtualFile), true)
-    recordOpenTelemetry(project)
-}
+private const val TELEMETRY_NAME = "s3_openeditor"
 
-private fun recordOpenTelemetry(project: Project) = TelemetryService.getInstance().record(project) {
-    datum("s3_openeditor") {
-        count()
+fun openEditor(project: Project, bucket: Bucket) {
+    try {
+        FileEditorManager.getInstance(project).openTextEditor(OpenFileDescriptor(project, S3VirtualBucket(bucket)), true)
+        TelemetryService.recordSimpleTelemetry(project, TELEMETRY_NAME, TelemetryConstants.TelemetryResult.Succeeded)
+    } catch (e: Exception) {
+        e.notifyError(message("s3.open.viewer.bucket.failed"))
+        TelemetryService.recordSimpleTelemetry(project, TELEMETRY_NAME, TelemetryConstants.TelemetryResult.Failed)
     }
 }

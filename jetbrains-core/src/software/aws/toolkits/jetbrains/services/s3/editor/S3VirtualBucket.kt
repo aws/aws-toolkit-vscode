@@ -15,4 +15,12 @@ class S3VirtualBucket(val s3Bucket: Bucket) : LightVirtualFile() {
     override fun getParent(): VirtualFile? = null
     override fun toString(): String = s3Bucket.name()
     override fun isDirectory(): Boolean = true
+
+    override fun equals(other: Any?): Boolean {
+        if (other !is S3VirtualBucket) {
+            return false
+        }
+        return s3Bucket.name() == (other as? S3VirtualBucket)?.s3Bucket?.name()
+    }
+    override fun hashCode(): Int = s3Bucket.name().hashCode()
 }

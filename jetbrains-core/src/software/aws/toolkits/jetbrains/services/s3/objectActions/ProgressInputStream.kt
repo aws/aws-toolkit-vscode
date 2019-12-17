@@ -30,8 +30,9 @@ class ProgressInputStream(private val inputStream: InputStream, val size: Int, p
 
     override fun read(b: ByteArray, off: Int, len: Int): Int {
         val count = inputStream.read(b, off, len)
-        if (count > 0)
+        if (count > 0) {
             progress += count
+        }
         updateDisplay(progress, size)
         return count
     }
