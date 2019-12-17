@@ -18,7 +18,7 @@ import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { Datum, TelemetryNamespace } from '../telemetry/telemetryTypes'
 import { registerCommand } from '../telemetry/telemetryUtils'
-import { getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
+import { ChannelLogger, getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
 import {
     CodeLensProviderParams,
     DRIVE_LETTER_REGEX,
@@ -26,6 +26,7 @@ import {
     getMetricDatum,
     makeCodeLenses
 } from './codeLensUtils'
+import { DebugConnectionTester } from './debugConnectionTester'
 import {
     executeSamBuild,
     getHandlerRelativePath,
@@ -35,10 +36,10 @@ import {
     InvokeLambdaFunctionArguments,
     LambdaLocalInvokeParams,
     makeBuildDir,
-    makeInputTemplate,
-    waitForDebugPort
+    makeInputTemplate
 } from './localLambdaRunner'
 
+const PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MILLIS = 1000
 export const PYTHON_LANGUAGE = 'python'
 export const PYTHON_ALLFILES: vscode.DocumentFilter[] = [
     {
@@ -345,7 +346,7 @@ export async function initialize({
                 configuration,
                 samLocalInvokeCommand: localInvokeCommand!,
                 telemetryService,
-                onWillAttachDebugger: waitForDebugPort
+                onWillAttachDebugger: waitForPythonDebugAdapter
             })
         } catch (err) {
             const error = err as Error
@@ -386,6 +387,47 @@ export async function initialize({
             name: 'invokelocal'
         }
     })
+}
+
+export async function waitForPythonDebugAdapter(
+    debugPort: number,
+    timeoutDurationMillis: number,
+    channelLogger: ChannelLogger
+) {
+    const logger = getLogger()
+
+    logger.verbose(`Testing debug adapter connection on port ${debugPort}`)
+
+    let debugServerAvailable: boolean = false
+
+    // TODO : Timeout support
+    while (!debugServerAvailable) {
+        const tester = new DebugConnectionTester(debugPort)
+
+        try {
+            if (await tester.connect()) {
+                if (await tester.isDebugServerUp()) {
+                    logger.verbose('Debug Adapter is available')
+                    debugServerAvailable = true
+                }
+            }
+        } catch (err) {
+            logger.verbose('Error while testing', err as Error)
+        } finally {
+            await tester.disconnect()
+        }
+
+        if (!debugServerAvailable) {
+            logger.verbose('Debug Adapter not ready, retrying...')
+            await new Promise<void>(resolve => {
+                setTimeout(resolve, PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MILLIS)
+            })
+        }
+    }
+
+    if (!debugServerAvailable) {
+        // TODO : Message user
+    }
 }
 
 // Convenience method to swallow any errors

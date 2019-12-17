@@ -30,7 +30,6 @@ import { TelemetryService } from '../telemetry/telemetryService'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { Timeout } from '../utilities/timeoutUtils'
 import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
-import { DebugConnectionTester } from './debugConnectionTester'
 
 export interface LambdaLocalInvokeParams {
     document: vscode.TextDocument
@@ -427,7 +426,6 @@ export async function invokeLambdaFunction(
         }
 
         const attachResults = await attachDebugger({
-            debugPort: debugArgs.debugPort,
             debugConfig: debugArgs.debugConfig,
             maxRetries,
             retryDelayMillis: ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
@@ -492,38 +490,6 @@ export interface AttachDebuggerContext {
     onWillRetry?(): Promise<void>
 }
 
-export async function waitForDebugServer(debugPort: number) {
-    const logger = getLogger()
-
-    logger.verbose(`Testing debug adapter connection on port ${debugPort}`)
-
-    let debugServerAvailable: boolean = false
-
-    while (!debugServerAvailable) {
-        const tester = new DebugConnectionTester(debugPort)
-
-        try {
-            if (await tester.connect()) {
-                if (await tester.isDebugServerUp()) {
-                    logger.verbose('Debug Adapter is available')
-                    debugServerAvailable = true
-                }
-            }
-        } catch (err) {
-            logger.verbose('Error while testing', err as Error)
-        } finally {
-            await tester.disconnect()
-        }
-
-        if (!debugServerAvailable) {
-            logger.verbose('Debug Adapter not ready, retrying...')
-            await new Promise<void>(resolve => {
-                setTimeout(resolve, 1000)
-            })
-        }
-    }
-}
-
 export async function attachDebugger({
     retryDelayMillis = ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
     onStartDebugging = vscode.debug.startDebugging,
@@ -533,13 +499,7 @@ export async function attachDebugger({
         })
     },
     ...params
-}: AttachDebuggerContext & {
-    debugPort?: number
-}): Promise<{ success: boolean }> {
-    if (params.debugPort) {
-        await waitForDebugServer(params.debugPort)
-    }
-
+}: AttachDebuggerContext): Promise<{ success: boolean }> {
     const channelLogger = params.channelLogger
     const logger = params.channelLogger.logger
     logger.debug(
