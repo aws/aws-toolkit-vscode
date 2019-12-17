@@ -43,6 +43,8 @@ export async function activate(activateArguments: {
 
     await registerAwsExplorerCommands(awsExplorer, activateArguments.awsContext, activateArguments.resourceFetcher)
 
+    await recordNumberOfActiveRegionsMetric(awsExplorer)
+
     activateArguments.awsContextTrees.addTree(awsExplorer)
 }
 
@@ -54,13 +56,17 @@ async function registerAwsExplorerCommands(
 ): Promise<void> {
     registerCommand({
         command: 'aws.showRegion',
-        callback: async () => await ext.awsContextCommands.onCommandShowRegion()
+        callback: async () => {
+            await ext.awsContextCommands.onCommandShowRegion()
+            await recordNumberOfActiveRegionsMetric(awsExplorer)
+        }
     })
 
     registerCommand({
         command: 'aws.hideRegion',
         callback: async (node?: RegionNode) => {
             await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
+            await recordNumberOfActiveRegionsMetric(awsExplorer)
         }
     })
 
@@ -119,5 +125,16 @@ async function registerAwsExplorerCommands(
         callback: async (awsexplorer: AwsExplorer, element: AWSTreeNodeBase) => {
             awsexplorer.refresh(element)
         }
+    })
+}
+
+async function recordNumberOfActiveRegionsMetric(awsExplorer: AwsExplorer) {
+    const numOfActiveRegions = awsExplorer.getRegionNodesSize()
+    const currTime = new Date()
+
+    ext.telemetry.record({
+        namespace: TelemetryNamespace.VSCode,
+        createTime: currTime,
+        data: [{ name: 'activeregions', value: numOfActiveRegions, unit: 'Count' }]
     })
 }
