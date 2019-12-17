@@ -111,6 +111,21 @@ describe('WinstonToolkitLogger', () => {
             assert.ok(await isTextInLogFile(tempLogPath, 'The quick brown fox'), 'Expected error message to be logged')
         })
 
+        it('supports updating the log type', async () => {
+            const nonLoggedVerboseEntry = 'verbose entry should not be logged'
+            const loggedVerboseEntry = 'verbose entry should be logged'
+
+            testLogger = new WinstonToolkitLogger('info')
+            testLogger.logToFile(tempLogPath)
+
+            testLogger.verbose(nonLoggedVerboseEntry)
+            testLogger.setLogLevel('verbose')
+            testLogger.verbose(loggedVerboseEntry)
+
+            assert.ok(!(await isTextInLogFile(tempLogPath, nonLoggedVerboseEntry)), 'unexpected message in log')
+            assert.ok(await isTextInLogFile(tempLogPath, loggedVerboseEntry), 'Expected error message to be logged')
+        })
+
         happyLogScenarios.forEach(scenario => {
             it(scenario.name, async () => {
                 const message = `message for ${scenario.name}`
@@ -190,6 +205,22 @@ describe('WinstonToolkitLogger', () => {
             testLogger.info('The', 'quick', 'brown', 'fox')
 
             assert.ok((await waitForMessage).includes('The quick brown fox'), 'Expected error message to be logged')
+        })
+
+        it('supports updating the log type', async () => {
+            const nonLoggedVerboseEntry = 'verbose entry should not be logged'
+            const loggedVerboseEntry = 'verbose entry should be logged'
+
+            testLogger = new WinstonToolkitLogger('info')
+            testLogger.logToOutputChannel(outputChannel)
+
+            testLogger.verbose(nonLoggedVerboseEntry)
+            testLogger.setLogLevel('verbose')
+            testLogger.verbose(loggedVerboseEntry)
+
+            const waitForMessage = waitForLoggedTextByContents(loggedVerboseEntry)
+            assert.ok((await waitForMessage).includes(loggedVerboseEntry), 'Expected error message to be logged')
+            assert.ok(!(await waitForMessage).includes(nonLoggedVerboseEntry), 'unexpected message in log')
         })
 
         happyLogScenarios.forEach(scenario => {
