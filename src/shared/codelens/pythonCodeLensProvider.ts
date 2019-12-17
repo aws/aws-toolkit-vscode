@@ -395,12 +395,12 @@ export async function waitForPythonDebugAdapter(
     channelLogger: ChannelLogger
 ) {
     const logger = getLogger()
+    const stopMillis = Date.now() + timeoutDurationMillis
 
     logger.verbose(`Testing debug adapter connection on port ${debugPort}`)
 
     let debugServerAvailable: boolean = false
 
-    // TODO : Timeout support
     while (!debugServerAvailable) {
         const tester = new DebugConnectionTester(debugPort)
 
@@ -418,6 +418,10 @@ export async function waitForPythonDebugAdapter(
         }
 
         if (!debugServerAvailable) {
+            if (Date.now() > stopMillis) {
+                break
+            }
+
             logger.verbose('Debug Adapter not ready, retrying...')
             await new Promise<void>(resolve => {
                 setTimeout(resolve, PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MILLIS)
@@ -426,7 +430,11 @@ export async function waitForPythonDebugAdapter(
     }
 
     if (!debugServerAvailable) {
-        // TODO : Message user
+        channelLogger.warn(
+            'AWS.sam.local.invoke.python.server.not.available',
+            // tslint:disable-next-line:max-line-length
+            'Unable to communicate with the Python Debug Adapter. The debugger might not succeed when attaching to your SAM Application.'
+        )
     }
 }
 

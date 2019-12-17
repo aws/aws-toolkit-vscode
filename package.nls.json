@@ -154,6 +154,7 @@
     "AWS.placeHolder.selectProfile": "Select a credential profile",
     "AWS.profile.recentlyUsed": "recently used",
     "AWS.running.command": "Running command: {0}",
+    "AWS.sam.local.invoke.python.server.not.available": "Unable to communicate with the Python Debug Adapter. The debugger might not succeed when attaching to your SAM Application.",
     "AWS.samcli.detect.settings.updated": "Settings updated.",
     "AWS.samcli.detect.settings.not.updated": "No settings changes necessary.",
     "AWS.samcli.deploy.general.error": "An error occurred while deploying a SAM Application. {0}",
