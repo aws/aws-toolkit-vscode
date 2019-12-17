@@ -42,7 +42,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
-internal fun HeavyJavaCodeInsightTestFixtureRule.setUpGradleProject(): PsiClass {
+internal fun HeavyJavaCodeInsightTestFixtureRule.setUpGradleProject(compatibility: String = "1.8"): PsiClass {
     val fixture = this.fixture
     val buildFile = fixture.addFileToModule(
         this.module,
@@ -56,8 +56,8 @@ internal fun HeavyJavaCodeInsightTestFixtureRule.setUpGradleProject(): PsiClass 
                 mavenCentral()
             }
             
-            sourceCompatibility = '1.8'
-            targetCompatibility = '1.8'
+            sourceCompatibility = '$compatibility'
+            targetCompatibility = '$compatibility'
 
             dependencies {
                 compile 'com.amazonaws:aws-lambda-java-core:1.2.0'

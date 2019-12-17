@@ -11,17 +11,24 @@ import com.intellij.openapi.projectRoots.JavaSdkType
 import com.intellij.openapi.projectRoots.JavaSdkVersion
 import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.projectRoots.SdkType
-import com.intellij.pom.java.LanguageLevel
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.SdkBasedRuntimeGroupInformation
 
 class JavaRuntimeGroup : SdkBasedRuntimeGroupInformation() {
-    override val runtimes = setOf(Runtime.JAVA8)
+    override val runtimes = setOf(Runtime.JAVA8, Runtime.JAVA11)
     override val languageIds = setOf(JavaLanguage.INSTANCE.id)
 
-    override fun runtimeForSdk(sdk: Sdk): Runtime? = when {
-        sdk.sdkType is JavaSdkType && JavaSdk.getInstance().getVersion(sdk)
-            ?.let { it == JavaSdkVersion.JDK_1_8 || it.maxLanguageLevel.isLessThan(LanguageLevel.JDK_1_8) } == true -> Runtime.JAVA8
+    override fun runtimeForSdk(sdk: Sdk): Runtime? {
+        if (sdk.sdkType is JavaSdkType) {
+            val javaSdkVersion = JavaSdk.getInstance().getVersion(sdk) ?: return null
+            return determineRuntimeForSdk(javaSdkVersion)
+        }
+        return null
+    }
+
+    private fun determineRuntimeForSdk(sdk: JavaSdkVersion) = when {
+        sdk <= JavaSdkVersion.JDK_1_8 -> Runtime.JAVA8
+        sdk <= JavaSdkVersion.JDK_11 -> Runtime.JAVA11
         else -> null
     }
 

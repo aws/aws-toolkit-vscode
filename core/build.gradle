@@ -10,11 +10,6 @@ dependencies {
     compile("software.amazon.awssdk:ecs:$awsSdkVersion")
     compile("software.amazon.awssdk:s3:$awsSdkVersion")
     compile("software.amazon.awssdk:sts:$awsSdkVersion")
-
-    // TODO: remove after Schemas service is launched and the customization in ToolkitClientManager is no longer needed
-    compile(project(":schemas-client")) {
-        exclude group: 'org.slf4j'
-    }
 }
 
 configurations {

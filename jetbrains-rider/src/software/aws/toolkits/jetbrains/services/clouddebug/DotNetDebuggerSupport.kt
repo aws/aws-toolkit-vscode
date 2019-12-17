@@ -16,7 +16,9 @@ import com.intellij.ide.plugins.PluginManagerCore
 import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.rd.defineNestedLifetime
+import com.intellij.openapi.util.BuildNumber
 import com.intellij.openapi.util.io.FileUtil
+import com.intellij.openapi.util.registry.Registry
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.util.execution.ParametersListUtil
 import com.intellij.xdebugger.XDebugProcessStarter
@@ -54,6 +56,7 @@ import software.aws.toolkits.jetbrains.services.clouddebug.execution.steps.Resou
 import software.aws.toolkits.jetbrains.services.ecs.execution.ImmutableContainerOptions
 import software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetSamDebugSupport
 import software.aws.toolkits.jetbrains.utils.DotNetDebuggerUtils
+import software.aws.toolkits.jetbrains.utils.DotNetRuntimeUtils
 import software.aws.toolkits.resources.message
 import java.io.File
 import java.io.FileNotFoundException
@@ -65,9 +68,14 @@ import kotlin.concurrent.schedule
 class DotNetDebuggerSupport : DebuggerSupport() {
 
     companion object {
+        private const val USE_DOTNET_CORE_RUNTIME_FLAG_NAME = "software.aws.toolkits.jetbrains.rider.debugger.useDotnetCoreRuntime"
         private const val DOTNET_EXECUTABLE = "dotnet"
         private const val DEBUGGER_MODE = "server"
         private const val BUSYBOX_PATH = "/aws/cloud-debug/common/busybox"
+
+        val useDotnetCoreRuntime
+            get() = Registry.`is`(USE_DOTNET_CORE_RUNTIME_FLAG_NAME) && isRider20193OrLater
+        val isRider20193OrLater = ApplicationInfo.getInstance().build >= BuildNumber.fromString("193.0")
     }
 
     private val logger = getLogger<DotNetSamDebugSupport>()
@@ -107,7 +115,8 @@ class DotNetDebuggerSupport : DebuggerSupport() {
         val applicationInfo = ApplicationInfo.getInstance()
         val dbgshimPath =
             // Run custom dbgshim detection logic on Rider 2019.2 only. Further versions has correct autodetection logic.
-            if (applicationInfo.majorVersion == "2019" && applicationInfo.minorVersionMainPart == "2") {
+            if (!isRider20193OrLater) {
+                logger.info { "Rider build is ${applicationInfo.build}. Using dbgdhim detecting tool." }
                 val dbgshimTool =
                     "${debuggerPath.getRemoteDebuggerPath()}/${DotNetDebuggerUtils.cloudDebuggerTempDirName}/${DotNetDebuggerUtils.cloudDebuggerToolsName}.exe"
 
@@ -119,6 +128,7 @@ class DotNetDebuggerSupport : DebuggerSupport() {
                     target = ResourceInstrumenter.getTargetForContainer(context, containerName)
                 )
             } else {
+                logger.info { "Rider build is ${applicationInfo.build}. DbgShim will be detected automatically by debugger." }
                 null
             }
 
@@ -181,19 +191,21 @@ class DotNetDebuggerSupport : DebuggerSupport() {
         )
     }
 
-    override fun augmentStatement(input: String, ports: List<Int>, debuggerPath: String): String {
-        // Rsync on Windows drops the 'executable' flag when copy files into a remote container. Set the flag explicitly.
-        val runtimeSh = "${this.debuggerPath.getRemoteDebuggerPath()}/${DotNetDebuggerUtils.cloudDebuggerTempDirName}/runtime.sh"
-        val monoSgen = "${this.debuggerPath.getRemoteDebuggerPath()}/${DotNetDebuggerUtils.cloudDebuggerTempDirName}/linux-x64/mono/bin/mono-sgen"
-        val chmodCommand = ParametersListUtil.join(BUSYBOX_PATH, "chmod", "+x", runtimeSh, monoSgen)
-
-        return ParametersListUtil.join(
-            BUSYBOX_PATH,
-            "sh",
-            "-c",
-            "$chmodCommand && ${super.augmentStatement(input, ports, debuggerPath)}"
-        )
-    }
+    override fun augmentStatement(input: String, ports: List<Int>, debuggerPath: String): String =
+        if (useDotnetCoreRuntime)
+            super.augmentStatement(input, ports, debuggerPath)
+        else {
+            // Rsync on Windows drops the 'executable' flag when copy files into a remote container. Set the flag explicitly.
+            val runtimeSh = "${this.debuggerPath.getRemoteDebuggerPath()}/${DotNetDebuggerUtils.cloudDebuggerTempDirName}/runtime.sh"
+            val monoSgen = "${this.debuggerPath.getRemoteDebuggerPath()}/${DotNetDebuggerUtils.cloudDebuggerTempDirName}/linux-x64/mono/bin/mono-sgen"
+            val chmodCommand = ParametersListUtil.join(BUSYBOX_PATH, "chmod", "+x", runtimeSh, monoSgen)
+            ParametersListUtil.join(
+                BUSYBOX_PATH,
+                "sh",
+                "-c",
+                "$chmodCommand && ${super.augmentStatement(input, ports, debuggerPath)}"
+            )
+        }
 
     override fun automaticallyAugmentable(input: List<String>): Boolean {
         if (input.first().trim() != DOTNET_EXECUTABLE) {
@@ -216,7 +228,7 @@ class DotNetDebuggerSupport : DebuggerSupport() {
 
         val debugArgs = StringBuilder()
             .append("RESHARPER_HOST_LOG_DIR=$remoteDebuggerLogPath ")
-            .append("$remoteDebuggerRuntimeShPath ")
+            .append(if (useDotnetCoreRuntime) "dotnet " else "$remoteDebuggerRuntimeShPath ")
             .append("$debuggerPath ")
             .append("--mode=$DEBUGGER_MODE ")
             .append("--frontend-port=$frontendPort ")
@@ -440,8 +452,9 @@ class DotNetDebuggerSupport : DebuggerSupport() {
             val runtimeFileName = "$assemblyName.runtimeconfig.json"
             try {
                 val runtimeFile = RiderEnvironment.getBundledFile(runtimeFileName)
-                FileUtil.copy(runtimeFile, File(targetPath, runtimeFile.name))
-                logger.trace { "Copy '${runtimeFile.canonicalPath}'" }
+                // overwrite runtimeconfig of Rider assemblies with own ones which target netcoreapp2.1 instead of 3.0
+                FileUtil.writeToFile(File(targetPath, runtimeFile.name), DotNetRuntimeUtils.RUNTIME_CONFIG_JSON_21, false)
+                logger.trace { "Write '${runtimeFile.canonicalPath}'" }
             } catch (e: FileNotFoundException) {
                 logger.trace { "Cannot find '$runtimeFileName'" }
             }
@@ -460,13 +473,27 @@ class DotNetDebuggerSupport : DebuggerSupport() {
         if (assemblyFileErrors.isNotEmpty())
             throw IllegalStateException("Unable to find necessary assembly with names: '${assemblyFileErrors.joinToString(", ")}'")
 
-        // Copy runtime.sh
-        val runtimeSh = RiderEnvironment.getBundledFile("runtime.sh")
-        FileUtil.copy(runtimeSh, File(targetPath, runtimeSh.name))
+        val linuxSubdirectoryName = "linux-x64"
 
-        // Copy mono
-        val linuxMono = RiderEnvironment.getBundledFile("linux-x64", allowDir = true)
-        FileUtil.copyDir(linuxMono, File(targetPath, linuxMono.name))
+        if (!useDotnetCoreRuntime) {
+            // Copy runtime.sh
+            val runtimeSh = RiderEnvironment.getBundledFile("runtime.sh")
+            FileUtil.copy(runtimeSh, File(targetPath, runtimeSh.name))
+
+            // Copy mono
+            val linuxMono = RiderEnvironment.getBundledFile(linuxSubdirectoryName, allowDir = true)
+            FileUtil.copyDir(linuxMono, File(targetPath, linuxMono.name))
+        } else {
+            val linuxMonoSubdirectory = File(targetPath, linuxSubdirectoryName)
+            if (linuxMonoSubdirectory.isDirectory) {
+                try {
+                    // remove existing linux Mono distribution since we run debugger on container .net core
+                    linuxMonoSubdirectory.deleteRecursively()
+                } catch (e: Throwable) {
+                    logger.trace(e) { "Error while trying to delete unused linux Mono directory ${linuxMonoSubdirectory.absolutePath}" }
+                }
+            }
+        }
 
         // Copy tool to detect dbgshim 'AWS.DebuggerTools'
         val pluginId = PluginManagerCore.getPluginByClassName(this.javaClass.name)

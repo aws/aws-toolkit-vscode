@@ -11,7 +11,10 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.junit.runners.Parameterized
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
+import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createHandlerBasedRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createTemplateRunConfiguration
@@ -24,7 +27,17 @@ import software.aws.toolkits.jetbrains.utils.rules.addClass
 import software.aws.toolkits.jetbrains.utils.rules.addModule
 import software.aws.toolkits.jetbrains.utils.setUpGradleProject
 
-class JavaLocalLambdaRunConfigurationIntegrationTest {
+@RunWith(Parameterized::class)
+class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runtime) {
+    companion object {
+        @JvmStatic
+        @Parameterized.Parameters(name = "{0}")
+        fun data(): Collection<Array<Runtime>> = listOf(
+            arrayOf(Runtime.JAVA8),
+            arrayOf(Runtime.JAVA11)
+        )
+    }
+
     @Rule
     @JvmField
     val projectRule = HeavyJavaCodeInsightTestFixtureRule()
@@ -51,7 +64,13 @@ class JavaLocalLambdaRunConfigurationIntegrationTest {
             """
         )
 
-        projectRule.setUpGradleProject()
+        val compatibility = when (runtime) {
+            Runtime.JAVA8 -> "1.8"
+            Runtime.JAVA11 -> "11"
+            else -> throw NotImplementedError()
+        }
+
+        projectRule.setUpGradleProject(compatibility)
 
         runInEdtAndWait {
             fixture.openFileInEditor(psiClass.containingFile.virtualFile)
@@ -70,6 +89,7 @@ class JavaLocalLambdaRunConfigurationIntegrationTest {
     fun samIsExecuted() {
         val runConfiguration = createHandlerBasedRunConfiguration(
             project = projectRule.project,
+            runtime = runtime,
             input = "\"Hello World\"",
             credentialsProviderId = mockId
         )
@@ -91,7 +111,7 @@ class JavaLocalLambdaRunConfigurationIntegrationTest {
                 Properties:
                   Handler: com.example.LambdaHandler::handleRequest
                   CodeUri: main
-                  Runtime: java8
+                  Runtime: $runtime
                   Timeout: 900
         """.trimIndent()
         )
@@ -122,7 +142,7 @@ class JavaLocalLambdaRunConfigurationIntegrationTest {
                 Properties:
                   Handler: com.example.LambdaHandler::handleRequest
                   Code: main
-                  Runtime: java8
+                  Runtime: $runtime
                   Timeout: 900
         """.trimIndent()
         )
@@ -149,6 +169,7 @@ class JavaLocalLambdaRunConfigurationIntegrationTest {
 
         val runConfiguration = createHandlerBasedRunConfiguration(
             project = projectRule.project,
+            runtime = runtime,
             input = "\"Hello World\"",
             credentialsProviderId = mockId
         )

@@ -13,7 +13,7 @@ env:
 phases:
   install:
     runtime-versions:
-      java: openjdk8
+      java: openjdk11
       dotnet: 2.2
 
     commands:
