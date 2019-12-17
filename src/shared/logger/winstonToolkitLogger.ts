@@ -61,6 +61,14 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         )
     }
 
+    public logToConsole(): void {
+        this.logger.add(
+            new winston.transports.Console({
+                format: winston.format.simple()
+            })
+        )
+    }
+
     public debug(...message: Loggable[]): void {
         this.writeToLogs(message, 'debug')
     }

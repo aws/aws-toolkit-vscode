@@ -17,6 +17,8 @@ import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { fileExists } from '../shared/filesystemUtilities'
 import { Datum } from '../shared/telemetry/telemetryTypes'
 import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep, TIMEOUT } from './integrationTestsUtilities'
+import { getLogger } from '../shared/logger'
+import { WinstonToolkitLogger } from '../shared/logger/winstonToolkitLogger'
 
 const projectFolder = getTestWorkspaceFolder()
 
@@ -129,6 +131,17 @@ async function activateExtensions(): Promise<void> {
     console.log('Extensions activated')
 }
 
+function configureToolkitLogging() {
+    const logger = getLogger()
+
+    if (logger instanceof WinstonToolkitLogger) {
+        logger.setLogLevel('debug')
+        logger.logToConsole()
+    } else {
+        assert.fail('Unexpected extension logger')
+    }
+}
+
 describe('SAM Integration Tests', async () => {
     const samApplicationName = 'testProject'
     let testDisposables: vscode.Disposable[]
@@ -138,6 +151,7 @@ describe('SAM Integration Tests', async () => {
         this.timeout(600000)
 
         await activateExtensions()
+        configureToolkitLogging()
     })
 
     beforeEach(async function() {
