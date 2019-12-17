@@ -140,8 +140,9 @@ async function configurePythonExtension(): Promise<void> {
 async function configureAwsToolkitExtension(): Promise<void> {
     console.log('************************************************************')
     // tslint:disable-next-line:no-null-keyword
-    const configPy = vscode.workspace.getConfiguration('aws')
-    await configPy.update('logLevel', 'verbose', false)
+    const configAws = vscode.workspace.getConfiguration('aws')
+    await configAws.update('logLevel', 'verbose', false)
+    await configAws.update('samcli.debug.attach.timeout.millis', '90000', false)
     console.log('************************************************************')
 }
 
