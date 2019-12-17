@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "The folder depth within a workspace that SAM Template files are searched for is now configurable. Previously, this was fixed at 2."
+}

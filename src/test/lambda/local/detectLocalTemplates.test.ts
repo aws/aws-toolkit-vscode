@@ -66,12 +66,11 @@ describe('detectLocalTemplates', async () => {
         assert.strictEqual(templates[0].fsPath, normalizePath(workspaceFolderChildPath, 'template.yaml'))
     })
 
-    // TODO delete this test when this check is fixed
-    it('Does not recursively descend past the direct children of each workspace folder', async () => {
-        const workspaceFolderChildPath = normalizePath(workspaceFolderPath, 'child', 'child2')
+    it('does not detect templates deeper than the specified folder depth', async () => {
+        const workspaceFolderChildPath = normalizePath(workspaceFolderPath, 'child', 'child2', 'child3', 'child4')
         await mkdirp(workspaceFolderChildPath)
         await writeFile(normalizePath(workspaceFolderChildPath, 'template.yaml'), '')
-        const result = detectLocalTemplates({ workspaceUris: [vscode.Uri.file(workspaceFolderPath)] })
+        const result = detectLocalTemplates({ workspaceUris: [vscode.Uri.file(workspaceFolderPath)], folderDepth: 3 })
         const templates: vscode.Uri[] = []
         for await (const template of result) {
             templates.push(template)
