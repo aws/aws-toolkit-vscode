@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import { Runtime } from 'aws-sdk/clients/lambda'
-import { mkdirpSync, readFileSync, removeSync } from 'fs-extra'
+import { mkdirpSync, mkdtemp, readFileSync, removeSync } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { getDependencyManager } from '../../src/lambda/models/samLambdaRuntime'
@@ -15,10 +15,10 @@ import { assertThrowsError } from '../../src/test/shared/utilities/assertUtils'
 import { getInvokeCmdKey, Language } from '../shared/codelens/codeLensUtils'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { fileExists } from '../shared/filesystemUtilities'
-import { Datum } from '../shared/telemetry/telemetryTypes'
-import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep, TIMEOUT } from './integrationTestsUtilities'
 import { getLogger } from '../shared/logger'
 import { WinstonToolkitLogger } from '../shared/logger/winstonToolkitLogger'
+import { Datum } from '../shared/telemetry/telemetryTypes'
+import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep, TIMEOUT } from './integrationTestsUtilities'
 
 const projectFolder = getTestWorkspaceFolder()
 
@@ -29,43 +29,39 @@ interface TestScenario {
     language: Language
 }
 
-const runtimes: TestScenario[] = [
+const scenarios: TestScenario[] = [
     {
         runtime: 'nodejs8.10',
-        path: 'testProject/hello-world/app.js',
+        path: 'hello-world/app.js',
         debugSessionType: 'node2',
         language: 'javascript'
     },
     {
         runtime: 'nodejs10.x',
-        path: 'testProject/hello-world/app.js',
+        path: 'hello-world/app.js',
         debugSessionType: 'node2',
         language: 'javascript'
     },
-    { runtime: 'nodejs12.x', path: 'testProject/hello-world/app.js', debugSessionType: 'node2', language: 'javascript' }
-    // { runtime: 'python2.7', path: 'testProject/hello_world/app.py', debugSessionType: 'python' },
-    // { runtime: 'python3.6', path: 'testProject/hello_world/app.py', debugSessionType: 'python' },
-    // { runtime: 'python3.7', path: 'testProject/hello_world/app.py', debugSessionType: 'python' },
-    // { runtime: 'python3.8', path: 'testProject/hello_world/app.py', debugSessionType: 'python' }
-    // { runtime: 'dotnetcore2.1', path: 'testProject/src/HelloWorld/Function.cs', debugSessionType: 'coreclr' }
+    { runtime: 'nodejs12.x', path: 'hello-world/app.js', debugSessionType: 'node2', language: 'javascript' }
+    // { runtime: 'python2.7', path: 'hello_world/app.py', debugSessionType: 'python' },
+    // { runtime: 'python3.6', path: 'hello_world/app.py', debugSessionType: 'python' },
+    // { runtime: 'python3.7', path: 'hello_world/app.py', debugSessionType: 'python' },
+    // { runtime: 'python3.8', path: 'hello_world/app.py', debugSessionType: 'python' }
+    // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr' }
 ]
 
-async function openSamProject(projectPath: string): Promise<vscode.Uri> {
-    const documentPath = path.join(projectFolder, projectPath)
-    const document = await vscode.workspace.openTextDocument(documentPath)
+async function openSamAppFile(applicationPath: string): Promise<vscode.Uri> {
+    const document = await vscode.workspace.openTextDocument(applicationPath)
 
     return document.uri
 }
 
-function setupProjectFolder() {
-    tryRemoveProjectFolder()
-    mkdirpSync(projectFolder)
-}
-
-function tryRemoveProjectFolder() {
+function tryRemoveFolder(fullPath: string) {
     try {
-        removeSync(path.join(projectFolder, 'testProject'))
-    } catch (e) {}
+        removeSync(fullPath)
+    } catch (e) {
+        console.error(`Failed to remove path ${fullPath}`, e)
+    }
 }
 
 async function getDebugLocalCodeLens(documentUri: vscode.Uri, language: Language): Promise<vscode.CodeLens> {
@@ -142,9 +138,9 @@ function configureToolkitLogging() {
     }
 }
 
-describe('SAM Integration Tests', async () => {
+describe.only('SAM Integration Tests', async () => {
     const samApplicationName = 'testProject'
-    let testDisposables: vscode.Disposable[]
+    let testSuiteRoot: string
 
     before(async function() {
         // tslint:disable-next-line:no-invalid-this
@@ -152,72 +148,115 @@ describe('SAM Integration Tests', async () => {
 
         await activateExtensions()
         configureToolkitLogging()
-    })
 
-    beforeEach(async function() {
-        testDisposables = []
-    })
-
-    afterEach(async function() {
-        // tslint:disable-next-line: no-unsafe-any
-        testDisposables.forEach(d => d.dispose())
+        testSuiteRoot = await mkdtemp(path.join(projectFolder, 'inttest'))
+        console.log('testSuiteRoot: ', testSuiteRoot)
+        mkdirpSync(testSuiteRoot)
     })
 
     after(async () => {
-        tryRemoveProjectFolder()
+        tryRemoveFolder(testSuiteRoot)
     })
 
-    for (const scenario of runtimes) {
+    for (const scenario of scenarios) {
         describe(`SAM Application Runtime: ${scenario.runtime}`, async () => {
-            it('creates a new SAM Application (happy path)', async function() {
-                // tslint:disable-next-line: no-invalid-this
-                this.timeout(TIMEOUT)
+            let runtimeTestRoot: string
 
-                setupProjectFolder()
-
-                await createSamApplication()
-
-                // Check for readme file
-                const readmePath = path.join(projectFolder, samApplicationName, 'README.md')
-                assert.ok(await fileExists(readmePath), `Expected SAM App readme to exist at ${readmePath}`)
+            before(async function() {
+                runtimeTestRoot = path.join(testSuiteRoot, scenario.runtime)
+                console.log('runtimeTestRoot: ', runtimeTestRoot)
+                mkdirpSync(runtimeTestRoot)
             })
 
+            after(async function() {
+                tryRemoveFolder(runtimeTestRoot)
+            })
+
+            /**
+             * This suite cleans up at the end of each test.
+             */
+            describe('Starting from scratch', async () => {
+                let subSuiteTestLocation: string
+
+                beforeEach(async function() {
+                    subSuiteTestLocation = await mkdtemp(path.join(runtimeTestRoot, 'test-'))
+                    console.log(`subSuiteTestLocation: ${subSuiteTestLocation}`)
+                })
+
+                afterEach(async function() {
+                    tryRemoveFolder(subSuiteTestLocation)
+                })
+
+                it('creates a new SAM Application (happy path)', async function() {
+                    // tslint:disable-next-line: no-invalid-this
+                    this.timeout(TIMEOUT)
+
+                    await createSamApplication(subSuiteTestLocation)
+
+                    // Check for readme file
+                    const readmePath = path.join(subSuiteTestLocation, samApplicationName, 'README.md')
+                    assert.ok(await fileExists(readmePath), `Expected SAM App readme to exist at ${readmePath}`)
+                })
+            })
+
+            /**
+             * This suite makes a sam app that all tests operate on.
+             * Cleanup happens at the end of the suite.
+             */
             describe(`Starting with a newly created ${scenario.runtime} SAM Application...`, async () => {
+                let testDisposables: vscode.Disposable[]
+                let subSuiteTestLocation: string
+
                 let samAppCodeUri: vscode.Uri
+                let samTemplatePath: string
 
                 before(async function() {
                     // tslint:disable-next-line: no-invalid-this
                     this.timeout(TIMEOUT)
 
-                    setupProjectFolder()
+                    subSuiteTestLocation = await mkdtemp(path.join(runtimeTestRoot, 'samapp-'))
+                    console.log(`subSuiteTestLocation: ${subSuiteTestLocation}`)
 
-                    await createSamApplication()
-                    samAppCodeUri = await openSamProject(scenario.path)
+                    await createSamApplication(subSuiteTestLocation)
+                    const appPath = path.join(subSuiteTestLocation, samApplicationName, scenario.path)
+                    samTemplatePath = path.join(subSuiteTestLocation, samApplicationName, 'template.yaml')
+                    samAppCodeUri = await openSamAppFile(appPath)
+                })
+
+                beforeEach(async function() {
+                    testDisposables = []
+                })
+
+                afterEach(async function() {
+                    // tslint:disable-next-line: no-unsafe-any
+                    testDisposables.forEach(d => d.dispose())
                 })
 
                 after(async function() {
-                    tryRemoveProjectFolder()
+                    tryRemoveFolder(subSuiteTestLocation)
                 })
 
                 it('the SAM Template contains the expected runtime', async () => {
-                    const fileContents = readFileSync(`${projectFolder}/${samApplicationName}/template.yaml`).toString()
+                    const fileContents = readFileSync(samTemplatePath).toString()
                     assert.ok(fileContents.includes(`Runtime: ${scenario.runtime}`))
                 })
 
                 it('produces an error when creating a SAM Application to the same location', async () => {
                     // await createSamApplication()
-                    const err = await assertThrowsError(async () => await createSamApplication())
+                    const err = await assertThrowsError(async () => await createSamApplication(subSuiteTestLocation))
                     assert(err.message.includes('directory already exists'))
                 }).timeout(TIMEOUT)
 
                 it('produces a Run Local CodeLens', async () => {
                     const codeLens = await getRunLocalCodeLens(samAppCodeUri, scenario.language)
                     assert.ok(codeLens, 'expected to find a CodeLens')
+                    assertCodeLensReferencesSamTemplate(codeLens, samTemplatePath)
                 })
 
                 it('produces a Debug Local CodeLens', async () => {
                     const codeLens = await getDebugLocalCodeLens(samAppCodeUri, scenario.language)
                     assert.ok(codeLens)
+                    assertCodeLensReferencesSamTemplate(codeLens, samTemplatePath)
                 })
 
                 it('invokes the Run Local CodeLens', async () => {
@@ -318,10 +357,10 @@ describe('SAM Integration Tests', async () => {
             })
         })
 
-        async function createSamApplication(): Promise<void> {
+        async function createSamApplication(location: string): Promise<void> {
             const initArguments: SamCliInitArgs = {
                 name: samApplicationName,
-                location: projectFolder,
+                location: location,
                 runtime: scenario.runtime,
                 dependencyManager: getDependencyManager(scenario.runtime)
             }
@@ -347,6 +386,25 @@ describe('SAM Integration Tests', async () => {
             if (debugSession.type !== expectedSessionType) {
                 return `Unexpected Session Type ${debugSession}`
             }
+        }
+
+        function assertCodeLensReferencesSamTemplate(codeLens: vscode.CodeLens, expectedSamTemplatePath: string) {
+            assert.ok(codeLens.command, 'CodeLens did not have a command')
+            const command = codeLens.command!
+
+            assert.ok(command.arguments, 'CodeLens command had no arguments')
+            const commandArguments = command.arguments!
+
+            assert.strictEqual(commandArguments.length, 1, 'CodeLens command had unexpected arg count')
+            const params = commandArguments[0]
+            assert.ok(params, 'unexpected non-defined command argument')
+
+            const samTemplateUri = params.samTemplate as vscode.Uri
+            assert.strictEqual(
+                samTemplateUri.fsPath,
+                vscode.Uri.file(expectedSamTemplatePath).fsPath,
+                'CodeLens not referencing expected SAM Template'
+            )
         }
     }
 })
