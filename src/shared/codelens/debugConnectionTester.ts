@@ -17,23 +17,25 @@ export class DebugConnectionTester {
         this.logger.verbose(`Attempting to connect to port ${this.port}`)
 
         return new Promise<boolean>((resolve, reject) => {
-            this.socket.once('connect', () => {
-                this.logger.verbose('Made connection')
-                resolve(true)
-            })
-            this.socket.once('error', (err: Error) => {
-                this.logger.verbose('Error while connecting', err)
-                // todo : only interested in ECONNREFUSED
-                resolve(false)
-            })
-            this.socket.connect(this.port)
-            // this.socket.setTimeout() ???
-            setTimeout(() => {
+            const timeout = setTimeout(() => {
                 // TODO : CC : Cancel this if other exit routes (also same for other timeouts in file)
                 this.logger.verbose(`Timeout before connecting to port ${this.port}`)
                 // We never got a response yet/at all
                 resolve(false)
             }, 1500)
+
+            this.socket.once('connect', () => {
+                clearTimeout(timeout)
+                this.logger.verbose('Made connection')
+                resolve(true)
+            })
+            this.socket.once('error', (err: Error) => {
+                clearTimeout(timeout)
+                this.logger.verbose('Error while connecting', err)
+                // todo : only interested in ECONNREFUSED
+                resolve(false)
+            })
+            this.socket.connect(this.port)
         })
     }
 
@@ -41,8 +43,15 @@ export class DebugConnectionTester {
         this.logger.verbose('Checking if Debug Adapter responds')
 
         return new Promise<boolean>((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                // We never got a response yet/at all
+                this.logger.verbose('Timeout waiting for response from Debug Adapter')
+                resolve(false)
+            }, 1500)
+
             // TODO : CC : on / once ?
             this.socket.once('data', data => {
+                clearTimeout(timeout)
                 this.logger.verbose('Data received from Debug Adapter', data.toString())
                 // TODO : check data returned
                 resolve(true)
@@ -52,17 +61,13 @@ export class DebugConnectionTester {
             // So, let's connect + disconnect each cycle
             // Consider using this.socket.once('') calls
             this.socket.once('error', (err: Error) => {
+                clearTimeout(timeout)
                 this.logger.verbose('Error writing to Debug Adapter', err)
                 resolve(false)
             })
             const r = this.socket.write('Content-Length: 2\r\n\r\n{}')
             this.logger.verbose(`Data written to Debug Adapter, write result: ${r}`)
 
-            setTimeout(() => {
-                // We never got a response yet/at all
-                this.logger.verbose('Timeout waiting for response from Debug Adapter')
-                resolve(false)
-            }, 1500)
             // TODO : custom message
             // socket.write('Content-Length: 41\r\n\r\n', 'ASCII', () => {
             //     socket.write('{"type": "request","command": "christou"}', 'utf-8')
