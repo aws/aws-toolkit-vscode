@@ -26,7 +26,6 @@ import {
     getMetricDatum,
     makeCodeLenses
 } from './codeLensUtils'
-import { DebugConnectionTester } from './debugConnectionTester'
 import {
     executeSamBuild,
     getHandlerRelativePath,
@@ -38,6 +37,7 @@ import {
     makeBuildDir,
     makeInputTemplate
 } from './localLambdaRunner'
+import { PythonDebugAdapterHeartbeat } from './PythonDebugAdapterHeartbeat'
 
 const PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MILLIS = 1000
 export const PYTHON_LANGUAGE = 'python'
@@ -402,11 +402,11 @@ export async function waitForPythonDebugAdapter(
     let debugServerAvailable: boolean = false
 
     while (!debugServerAvailable) {
-        const tester = new DebugConnectionTester(debugPort)
+        const pythonDebugAdapter = new PythonDebugAdapterHeartbeat(debugPort)
 
         try {
-            if (await tester.connect()) {
-                if (await tester.isDebugServerUp()) {
+            if (await pythonDebugAdapter.connect()) {
+                if (await pythonDebugAdapter.isDebugServerUp()) {
                     logger.verbose('Debug Adapter is available')
                     debugServerAvailable = true
                 }
@@ -414,7 +414,7 @@ export async function waitForPythonDebugAdapter(
         } catch (err) {
             logger.verbose('Error while testing', err as Error)
         } finally {
-            await tester.disconnect()
+            await pythonDebugAdapter.disconnect()
         }
 
         if (!debugServerAvailable) {
