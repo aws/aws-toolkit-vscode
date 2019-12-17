@@ -278,9 +278,6 @@ describe.only('SAM Integration Tests', async () => {
                     assertCodeLensReferencesSamTemplate(codeLens, samTemplatePath)
                 })
 
-                // TODO : CC : Thought: What if each test uses a distinct test folder
-                // TODO : CC : Thought: Open file, loop to get symbols up here first
-                // TODO : CC : Thought: Can we get/see the output status/logs for the local invokes?
                 it('produces a Debug Local CodeLens', async () => {
                     const codeLens = await getDebugLocalCodeLens(samAppCodeUri, scenario.language)
                     assert.ok(codeLens)

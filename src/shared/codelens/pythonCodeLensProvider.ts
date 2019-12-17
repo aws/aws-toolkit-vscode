@@ -65,7 +65,6 @@ async function getLambdaHandlerCandidates({
     const logger = getLogger()
     const filename = uri.fsPath
 
-    console.log('*** Symbols GET...')
     let symbols: vscode.DocumentSymbol[] =
         (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', uri)) ||
         []
