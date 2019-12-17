@@ -215,15 +215,7 @@ public class SamInitSelectionPanel implements ValidatablePanel {
 
         this.schemaSelectionUi = SchemaSelectionPanel.create(selectedRuntime, selectedTemplate, generator);
 
-        if (this.schemaSelectionUi == null) {
-            addSchemaPanel(new NoOpSchemaSelectionPanel());
-            return Unit.INSTANCE;
-        }
-
         addSchemaPanel(schemaSelectionUi);
-        if (!(this.schemaSelectionUi instanceof NoOpSchemaSelectionPanel)) {
-            SamInitProjectBuilderCommon.validateSamForSchemaSupport(samExecutableField, editSamExecutableButton, samLabel);
-        }
 
         this.schemaSelectionUi.reloadSchemas(new Pair<>(awsRegion, credentialProvider));
 
@@ -362,16 +354,6 @@ public class SamInitSelectionPanel implements ValidatablePanel {
 
         if (schemaSelectionUi == null) {
             return null;
-        }
-
-        // Validate SAM support for Schema selection
-        SamProjectTemplate selectedTemplate = (SamProjectTemplate) templateComboBox.getSelectedItem();
-        if (selectedTemplate.supportsDynamicSchemas()) {
-            // validate sam version supports schemas
-            String samSchemaSupportValidationMessage = SamCommon.Companion.validateSchemasSupport();
-            if (samSchemaSupportValidationMessage != null) {
-                return new ValidationInfo(samSchemaSupportValidationMessage, samExecutableField);
-            }
         }
 
         // Validate Schemas selection

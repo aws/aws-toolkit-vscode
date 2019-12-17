@@ -12,7 +12,6 @@ import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.rd.defineNestedLifetime
 import com.intellij.util.net.NetUtils
-import com.intellij.util.text.SemVer
 import com.intellij.xdebugger.XDebugProcessStarter
 import com.jetbrains.rd.framework.IdKind
 import com.jetbrains.rd.framework.Identities
@@ -39,7 +38,6 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.trace
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamDebugSupport
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamRunningState
-import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.utils.DotNetDebuggerUtils
 import software.aws.toolkits.resources.message
 import java.io.File
@@ -78,17 +76,10 @@ class DotNetSamDebugSupport : SamDebugSupport {
         private const val REMOTE_DEBUGGER_DIR = "/tmp/lambci_debug_files"
         private const val REMOTE_NETCORE_CLI_PATH = "/var/lang/bin/dotnet"
         private const val REMOTE_LAMBDA_COMPILED_PATH = "/var/runtime/MockBootstraps.dll"
+        private const val NUMBER_OF_DEBUG_PORTS = 2
     }
 
-    override fun getDebugPorts(): List<Int> {
-        // TODO: Switch to always use 2 ports FIX_WHEN_SAM_MIN_IS_0_30
-        val useSeparatePorts = SemVer.parseFromText(SamCommon.getVersionString())
-            ?.isGreaterOrEqualThan(0, 30, 0) ?: false
-
-        val numberOfPorts = if (useSeparatePorts) 2 else 1
-
-        return NetUtils.findAvailableSocketPorts(numberOfPorts).toList()
-    }
+    override fun getDebugPorts(): List<Int> = NetUtils.findAvailableSocketPorts(NUMBER_OF_DEBUG_PORTS).toList()
 
     /**
      * Check whether the JatBrains.Rider.Worker.Launcher app (that is required to run Debugger) is downloaded into Rider SDK.
@@ -104,9 +95,8 @@ class DotNetSamDebugSupport : SamDebugSupport {
     }
 
     override fun patchCommandLine(debugPorts: List<Int>, commandLine: GeneralCommandLine) {
-        // TODO: Switch to always use 2 ports FIX_WHEN_SAM_MIN_IS_0_30
-        val frontendPort = debugPorts.first()
-        val backendPort = debugPorts.getOrNull(1) ?: debugPorts.first()
+        val frontendPort = debugPorts[0]
+        val backendPort = debugPorts[1]
 
         val debugArgs = StringBuilder()
             .append("$REMOTE_DEBUGGER_DIR/${DotNetDebuggerUtils.dotnetCoreDebuggerLauncherName}.dll ")
@@ -138,9 +128,8 @@ class DotNetSamDebugSupport : SamDebugSupport {
         state: SamRunningState,
         debugPorts: List<Int>
     ): Promise<XDebugProcessStarter?> {
-        // TODO: Switch to always use 2 ports FIX_WHEN_SAM_MIN_IS_0_30
-        val frontendPort = debugPorts.first()
-        val backendPort = debugPorts.getOrNull(1) ?: debugPorts.first()
+        val frontendPort = debugPorts[0]
+        val backendPort = debugPorts[1]
 
         val promise = AsyncPromise<XDebugProcessStarter?>()
         val project = environment.project
