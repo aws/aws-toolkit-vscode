@@ -10,6 +10,7 @@ import { SamCliInfoInvocation, SamCliInfoResponse } from './samCliInfo'
 import { SamCliProcessInvoker } from './samCliInvokerUtils'
 
 export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE = '0.32.0'
+export const MINIMUM_SAM_CLI_VERSION_SCHEMAS_SUPPORT = '0.35.0'
 export const MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE = '0.50.0'
 
 // Errors

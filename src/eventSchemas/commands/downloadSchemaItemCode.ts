@@ -95,7 +95,7 @@ function getCoreFileName(schemaName: string, fileExtension: string) {
     return parsedName[parsedName.length - 1].concat(fileExtension)
 }
 
-function createSchemaCodeDownloaderObject(client: SchemaClient): SchemaCodeDownloader {
+export function createSchemaCodeDownloaderObject(client: SchemaClient): SchemaCodeDownloader {
     const downloader = new CodeDownloader(client)
     const generator = new CodeGenerator(client)
     const poller = new CodeGenerationStatusPoller(client)

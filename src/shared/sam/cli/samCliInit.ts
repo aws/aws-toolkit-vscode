@@ -4,15 +4,23 @@
  */
 
 import { Runtime } from 'aws-sdk/clients/lambda'
+import { SchemaTemplateExtraContext } from '../../../eventSchemas/templates/schemasAppTemplateUtils'
 import { DependencyManager } from '../../../lambda/models/samLambdaRuntime'
+import {
+    eventBridgeStarterAppTemplate,
+    getSamCliTemplateParameter,
+    SamTemplate
+} from '../../../lambda/models/samTemplates'
 import { SamCliContext } from './samCliContext'
 import { logAndThrowIfUnexpectedExitCode } from './samCliInvokerUtils'
 
 export interface SamCliInitArgs {
     runtime: Runtime
+    template: SamTemplate
     location: string
     name: string
     dependencyManager: DependencyManager
+    extraContent?: SchemaTemplateExtraContext
 }
 
 export async function runSamCliInit(initArguments: SamCliInitArgs, context: SamCliContext): Promise<void> {
@@ -24,10 +32,14 @@ export async function runSamCliInit(initArguments: SamCliInitArgs, context: SamC
         initArguments.runtime,
         '--no-interactive',
         '--app-template',
-        'hello-world',
+        getSamCliTemplateParameter(initArguments.template),
         '--dependency-manager',
         initArguments.dependencyManager
     ]
+
+    if (initArguments.template === eventBridgeStarterAppTemplate) {
+        args.push('--extra-context', JSON.stringify(initArguments.extraContent!))
+    }
 
     const childProcessResult = await context.invoker.invoke({
         spawnOptions: { cwd: initArguments.location },

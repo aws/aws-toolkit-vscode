@@ -5,6 +5,11 @@
 
 import * as assert from 'assert'
 import { SpawnOptions } from 'child_process'
+import {
+    eventBridgeStarterAppTemplate,
+    getSamCliTemplateParameter,
+    helloWorldTemplate
+} from '../../../../lambda/models/samTemplates'
 import { SamCliContext } from '../../../../shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../../../shared/sam/cli/samCliInit'
 import { SamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvokerUtils'
@@ -17,7 +22,7 @@ import {
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
 import { getTestLogger } from '../../../globalSetup.test'
 import { assertThrowsError } from '../../utilities/assertUtils'
-import { assertArgIsPresent, assertArgsContainArgument } from './samCliTestUtils'
+import { assertArgIsPresent, assertArgNotPresent, assertArgsContainArgument } from './samCliTestUtils'
 import {
     assertErrorContainsBadExitMessage,
     assertLogContainsBadExitInformation,
@@ -25,7 +30,9 @@ import {
     TestSamCliProcessInvoker
 } from './testSamCliProcessInvoker'
 
-describe('runSamCliInit', async () => {
+import { SchemaTemplateExtraContext } from '../../../../eventSchemas/templates/schemasAppTemplateUtils'
+
+describe('runSamCliInit with HelloWorld template', async () => {
     class FakeChildProcessResult implements ChildProcessResult {
         public exitCode: number = 0
         public error = undefined
@@ -68,6 +75,7 @@ describe('runSamCliInit', async () => {
         name: 'qwerty',
         location: '/some/path/to/code.js',
         runtime: 'nodejs8.10',
+        template: helloWorldTemplate,
         dependencyManager: sampleDependencyManager
     }
 
@@ -169,7 +177,8 @@ describe('runSamCliInit', async () => {
     it('Passes --app-template', async () => {
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker(
             (spawnOptions: SpawnOptions, args: any[]) => {
-                assertArgsContainArgument(args, '--app-template', 'hello-world')
+                assertArgsContainArgument(args, '--app-template', getSamCliTemplateParameter(helloWorldTemplate))
+                assertArgNotPresent(args, '--extra-content')
             }
         )
 
@@ -194,5 +203,45 @@ describe('runSamCliInit', async () => {
         }
 
         await runSamCliInit(sampleSamInitArgs, context)
+    })
+
+    describe('runSamCliInit With EventBridgeStartAppTemplate', async () => {
+        const extraContent: SchemaTemplateExtraContext = {
+            AWS_Schema_registry: 'testRegistry',
+            AWS_Schema_name: 'testSchema',
+            AWS_Schema_root: 'test',
+            AWS_Schema_source: 'AWS',
+            AWS_Schema_detail_type: 'ec2',
+            user_agent: 'testAgent'
+        }
+
+        const samInitArgsWithExtraContent: SamCliInitArgs = {
+            name: 'qwerty',
+            location: '/some/path/to/code.js',
+            runtime: 'python3.6',
+            template: eventBridgeStarterAppTemplate,
+            extraContent: extraContent,
+            dependencyManager: sampleDependencyManager
+        }
+
+        it('Passes --extra-context for eventBridgeStarterAppTemplate', async () => {
+            const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker(
+                (spawnOptions: SpawnOptions, args: any[]) => {
+                    assertArgsContainArgument(
+                        args,
+                        '--app-template',
+                        getSamCliTemplateParameter(eventBridgeStarterAppTemplate)
+                    )
+                    assertArgsContainArgument(args, '--extra-context', JSON.stringify(extraContent))
+                }
+            )
+
+            const context: SamCliContext = {
+                validator: new FakeSamCliValidator(),
+                invoker: processInvoker
+            }
+
+            await runSamCliInit(samInitArgsWithExtraContent, context)
+        })
     })
 })

@@ -8,6 +8,12 @@ import { Runtime } from 'aws-sdk/clients/lambda'
 import { Set } from 'immutable'
 import * as path from 'path'
 import * as vscode from 'vscode'
+import {
+    eventBridgeHelloWorldTemplate,
+    eventBridgeStarterAppTemplate,
+    helloWorldTemplate,
+    SamTemplate
+} from '../../../lambda/models/samTemplates'
 import { CreateNewSamAppWizard, CreateNewSamAppWizardContext } from '../../../lambda/wizards/samInitWizard'
 
 function isMultiDimensionalArray(array: any[] | any[][] | undefined): boolean {
@@ -37,6 +43,18 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
         return (this._lambdaRuntimes as Set<Runtime>) || Set()
     }
 
+    public get samTemplates(): Set<SamTemplate> {
+        if (Array.isArray(this._samTemplates)) {
+            if (this._samTemplates!.length <= 0) {
+                throw new Error('samTemplates was called more times than expected') // bunu belke rename ele
+            }
+
+            return (this._samTemplates as Set<SamTemplate>[]).pop() || Set()
+        }
+
+        return (this._samTemplates as Set<SamTemplate>) || Set()
+    }
+
     public get workspaceFolders(): vscode.WorkspaceFolder[] {
         if (isMultiDimensionalArray(this._workspaceFolders)) {
             if (this._workspaceFolders!.length <= 0) {
@@ -58,6 +76,14 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
      *         The value to return from context.showInputBox.
      * @param  {(vscode.Uri[] | undefined) | (vscode.Uri[] | undefined)[]} openDialogResult
      *         The value to return from context.showOpenDialog.
+     * @param  {(immutable.Set<SamTemplate> | undefined) | (immutable.Set<SamTemplate> | undefined)[]} _samTemplates
+     *         The value to return from context.samTemplates.
+     * @param  {(string | undefined) | (string | undefined)[]} currRegion
+     *         The value to return from context.currRegion.
+     * @param  {(string | undefined) | (string | undefined)[]} currRegistry
+     *         The value to return from context.currRegistry.
+     * @param  {(string | undefined) | (string | undefined)[]} currSchema
+     *         The value to return from context.currSchema.
      *
      * Each parameter may be a single value (in which case that value is always returned),
      * or an array of values (in which case each invocation will return the next item from the array).
@@ -66,7 +92,11 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
         private readonly _workspaceFolders: vscode.WorkspaceFolder[] | vscode.WorkspaceFolder[][],
         private readonly _lambdaRuntimes: Set<Runtime> | Set<Runtime>[],
         private readonly inputBoxResult: string | string[],
-        private readonly openDialogResult: (vscode.Uri[] | undefined) | (vscode.Uri[] | undefined)[]
+        private readonly openDialogResult: (vscode.Uri[] | undefined) | (vscode.Uri[] | undefined)[],
+        private readonly _samTemplates: (Set<SamTemplate> | undefined) | (Set<SamTemplate> | undefined)[],
+        private readonly currRegion: (string | undefined) | (string | undefined)[],
+        private readonly currRegistry: (string | undefined) | (string | undefined)[],
+        private readonly currSchema: (string | undefined) | (string | undefined)[]
     ) {
         if (isMultiDimensionalArray(this._workspaceFolders)) {
             this._workspaceFolders = (_workspaceFolders as vscode.WorkspaceFolder[][]).reverse()
@@ -79,6 +109,18 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
         }
         if (isMultiDimensionalArray(this.openDialogResult)) {
             this.openDialogResult = (openDialogResult as vscode.Uri[][]).reverse()
+        }
+        if (Array.isArray(this._samTemplates)) {
+            this._samTemplates = (_samTemplates as Set<SamTemplate>[]).reverse()
+        }
+        if (Array.isArray(this.currRegion)) {
+            this.currRegion = (currRegion as string[]).reverse()
+        }
+        if (Array.isArray(this.currRegistry)) {
+            this.currRegistry = (currRegistry as string[]).reverse()
+        }
+        if (Array.isArray(this.currSchema)) {
+            this.currSchema = (currSchema as string[]).reverse()
         }
     }
 
@@ -98,6 +140,29 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
         return this.lambdaRuntimes.toArray().pop()
     }
 
+    public async promptUserForTemplate(
+        currRuntime: Runtime,
+        currTemplate?: SamTemplate
+    ): Promise<SamTemplate | undefined> {
+        return this.samTemplates.toArray().pop()
+    }
+
+    public async promptUserForRegion(currRegion?: string): Promise<string | undefined> {
+        return this.getUserInput(this.currRegion, 'region')
+    }
+
+    public async promptUserForRegistry(currRegion: string, currRegistry?: string): Promise<string | undefined> {
+        return this.getUserInput(this.currRegistry, 'registry')
+    }
+
+    public async promptUserForSchema(
+        currRegion: string,
+        currRegistry: string,
+        currSchema?: string
+    ): Promise<string | undefined> {
+        return this.getUserInput(this.currSchema, 'schema')
+    }
+
     public async promptUserForLocation(): Promise<vscode.Uri | undefined> {
         if (this.workspaceFolders && this.workspaceFolders.length > 0) {
             const temp = this.workspaceFolders[0]
@@ -111,15 +176,22 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
     }
 
     public async promptUserForName(): Promise<string | undefined> {
-        if (typeof this.inputBoxResult === 'string') {
-            return this.inputBoxResult
+        return this.getUserInput(this.inputBoxResult, 'inputBoxResult')
+    }
+
+    public getUserInput(
+        helperValue: string | (string | undefined)[] | undefined,
+        description: string
+    ): string | undefined {
+        if (!helperValue || typeof helperValue === 'string') {
+            return helperValue
         }
 
-        if (this.inputBoxResult.length <= 0) {
-            throw new Error('inputBoxResult was called more times than expected')
+        if (helperValue.length <= 0) {
+            throw new Error(`${description} was called more times than expected`)
         }
 
-        return this.inputBoxResult.pop()
+        return helperValue.pop()
     }
 }
 
@@ -130,7 +202,11 @@ describe('CreateNewSamAppWizard', async () => {
                 [],
                 Set<Runtime>(['nodejs8.10']),
                 'myName',
-                [vscode.Uri.file(path.join('my', 'workspace', 'folder'))]
+                [vscode.Uri.file(path.join('my', 'workspace', 'folder'))],
+                Set<SamTemplate>([helloWorldTemplate]),
+                [],
+                [],
+                []
             )
             const wizard = new CreateNewSamAppWizard(context)
             const args = await wizard.run()
@@ -144,12 +220,177 @@ describe('CreateNewSamAppWizard', async () => {
                 [],
                 Set<Runtime>(),
                 'myName',
-                [vscode.Uri.file(path.join('my', 'workspace', 'folder'))]
+                [vscode.Uri.file(path.join('my', 'workspace', 'folder'))],
+                [],
+                [],
+                [],
+                []
             )
             const wizard = new CreateNewSamAppWizard(context)
             const args = await wizard.run()
 
             assert.ok(!args)
+        })
+    })
+
+    describe('template', async () => {
+        it('uses user response as template', async () => {
+            const locationPath = path.join('my', 'quick', 'pick', 'result')
+            const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
+                [],
+                Set<Runtime>(['nodejs8.10']),
+                'myName',
+                [vscode.Uri.file(locationPath)],
+                Set<SamTemplate>([helloWorldTemplate]),
+                [],
+                [],
+                []
+            )
+            const wizard = new CreateNewSamAppWizard(context)
+            const args = await wizard.run()
+
+            assert.ok(args)
+            assert.strictEqual(args!.template, helloWorldTemplate)
+        })
+
+        it('backtracks when cancelled', async () => {
+            const locationPath = path.join('my', 'quick', 'pick', 'result')
+            const context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
+                [],
+                [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs8.10'])],
+                'myName',
+                [vscode.Uri.file(locationPath)],
+                [undefined, Set<SamTemplate>([helloWorldTemplate])],
+                [],
+                [],
+                []
+            )
+            const wizard = new CreateNewSamAppWizard(context)
+            const args = await wizard.run()
+
+            assert.ok(args)
+            assert.strictEqual(args!.runtime, 'nodejs8.10')
+            assert.strictEqual(args!.template, helloWorldTemplate)
+        })
+
+        describe('eventBridge-schema-app template', async () => {
+            const locationPath = path.join('my', 'quick', 'pick', 'result')
+            let context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
+                [],
+                Set<Runtime>(['nodejs8.10']),
+                'myName',
+                [vscode.Uri.file(locationPath)],
+                Set<SamTemplate>([eventBridgeStarterAppTemplate]),
+                'us-west-2',
+                'aws.events',
+                'AWSAPICallViaCloudTrail'
+            )
+            let wizard = new CreateNewSamAppWizard(context)
+            let args = await wizard.run()
+
+            describe('region', async () => {
+                it('uses user response as region', async () => {
+                    assert.ok(args)
+                    assert.strictEqual(args!.region, 'us-west-2')
+                })
+
+                it('backtracks when cancelled', async () => {
+                    context = new MockCreateNewSamAppWizardContext(
+                        [],
+                        [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs8.10'])],
+                        'myName',
+                        [vscode.Uri.file(locationPath)],
+                        Set<SamTemplate>([eventBridgeStarterAppTemplate]),
+                        [undefined, 'us-west-2'],
+                        'aws.events',
+                        'AWSAPICallViaCloudTrail'
+                    )
+                    wizard = new CreateNewSamAppWizard(context)
+                    args = await wizard.run()
+
+                    assert.ok(args)
+                    assert.strictEqual(args!.template, eventBridgeStarterAppTemplate)
+                    assert.strictEqual(args!.region, 'us-west-2')
+                })
+            })
+
+            describe('registry', async () => {
+                it('uses user response as registry', async () => {
+                    assert.ok(args)
+                    assert.strictEqual(args!.registryName, 'aws.events')
+                })
+
+                it('backtracks when cancelled', async () => {
+                    context = new MockCreateNewSamAppWizardContext(
+                        [],
+                        [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs8.10'])],
+                        'myName',
+                        [vscode.Uri.file(locationPath)],
+                        Set<SamTemplate>([eventBridgeStarterAppTemplate]),
+                        ['us-west-2', 'us-east-1'],
+                        [undefined, 'aws.events'],
+                        'AWSAPICallViaCloudTrail'
+                    )
+                    wizard = new CreateNewSamAppWizard(context)
+                    args = await wizard.run()
+
+                    assert.ok(args)
+                    assert.strictEqual(args!.region, 'us-east-1')
+                    assert.strictEqual(args!.registryName, 'aws.events')
+                })
+            })
+
+            describe('schema', async () => {
+                it('uses user response as schema', async () => {
+                    assert.ok(args)
+                    assert.strictEqual(args!.schemaName, 'AWSAPICallViaCloudTrail')
+                })
+
+                it('backtracks when cancelled', async () => {
+                    context = new MockCreateNewSamAppWizardContext(
+                        [],
+                        [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs8.10'])],
+                        'myName',
+                        [vscode.Uri.file(locationPath)],
+                        Set<SamTemplate>([eventBridgeStarterAppTemplate]),
+                        ['us-west-2', 'us-east-1'],
+                        ['aws.events', 'custom-events'],
+                        [undefined, 'AWSAPICallViaCloudTrail']
+                    )
+                    wizard = new CreateNewSamAppWizard(context)
+                    args = await wizard.run()
+
+                    assert.ok(args)
+                    assert.strictEqual(args!.registryName, 'custom-events')
+                    assert.strictEqual(args!.schemaName, 'AWSAPICallViaCloudTrail')
+                })
+            })
+
+            describe('location', async () => {
+                it('uses user response as schema', async () => {
+                    assert.ok(args)
+                    assert.strictEqual(args!.location.fsPath, `${path.sep}${locationPath}`)
+                })
+
+                it('backtracks when cancelled', async () => {
+                    context = new MockCreateNewSamAppWizardContext(
+                        [],
+                        [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs8.10'])],
+                        'myName',
+                        [undefined, [vscode.Uri.file(locationPath)]],
+                        Set<SamTemplate>([eventBridgeStarterAppTemplate]),
+                        ['us-west-2', 'us-east-1'],
+                        ['aws.events', 'custom-events'],
+                        ['AWSAPICallViaCloudTrail', 'AWSBatchJobStateChange']
+                    )
+                    wizard = new CreateNewSamAppWizard(context)
+                    args = await wizard.run()
+
+                    assert.ok(args)
+                    assert.strictEqual(args!.schemaName, 'AWSBatchJobStateChange')
+                    assert.strictEqual(args!.location.fsPath, `${path.sep}${locationPath}`)
+                })
+            })
         })
     })
 
@@ -160,7 +401,11 @@ describe('CreateNewSamAppWizard', async () => {
                 [],
                 Set<Runtime>(['nodejs8.10']),
                 'myName',
-                [vscode.Uri.file(locationPath)]
+                [vscode.Uri.file(locationPath)],
+                Set<SamTemplate>([helloWorldTemplate]),
+                [],
+                [],
+                []
             )
             const wizard = new CreateNewSamAppWizard(context)
             const args = await wizard.run()
@@ -175,13 +420,17 @@ describe('CreateNewSamAppWizard', async () => {
                 [],
                 [Set<Runtime>(['python3.6']), Set<Runtime>(['nodejs8.10'])],
                 'myName',
-                [undefined, [vscode.Uri.file(locationPath)]]
+                [undefined, [vscode.Uri.file(locationPath)]],
+                [Set<SamTemplate>([helloWorldTemplate]), Set<SamTemplate>([eventBridgeHelloWorldTemplate])],
+                [],
+                [],
+                []
             )
             const wizard = new CreateNewSamAppWizard(context)
             const args = await wizard.run()
 
             assert.ok(args)
-            assert.strictEqual(args!.runtime, 'nodejs8.10')
+            assert.strictEqual(args!.template, eventBridgeHelloWorldTemplate)
             assert.strictEqual(args!.location.fsPath, `${path.sep}${locationPath}`)
         })
 
@@ -193,7 +442,11 @@ describe('CreateNewSamAppWizard', async () => {
                 [],
                 Set<Runtime>(['nodejs8.10']),
                 name,
-                [vscode.Uri.file(locationPath)]
+                [vscode.Uri.file(locationPath)],
+                Set<SamTemplate>([helloWorldTemplate]),
+                [],
+                [],
+                []
             )
             const wizard = new CreateNewSamAppWizard(context)
             const args = await wizard.run()
@@ -214,6 +467,10 @@ describe('CreateNewSamAppWizard', async () => {
                 })),
                 Set<Runtime>(['nodejs8.10']),
                 'myName',
+                [],
+                Set<SamTemplate>([helloWorldTemplate]),
+                [],
+                [],
                 []
             )
             const wizard = new CreateNewSamAppWizard(context)
@@ -230,7 +487,11 @@ describe('CreateNewSamAppWizard', async () => {
                 [],
                 Set<Runtime>(['nodejs8.10']),
                 'myName',
-                [vscode.Uri.file(path.join('my', 'quick', 'pick', 'result'))]
+                [vscode.Uri.file(path.join('my', 'quick', 'pick', 'result'))],
+                Set<SamTemplate>([helloWorldTemplate]),
+                [],
+                [],
+                []
             )
             const wizard = new CreateNewSamAppWizard(context)
             const args = await wizard.run()
@@ -247,7 +508,11 @@ describe('CreateNewSamAppWizard', async () => {
                 [
                     [vscode.Uri.file(path.join('my', 'quick', 'pick', 'result', '1'))],
                     [vscode.Uri.file(path.join('my', 'quick', 'pick', 'result', '2'))]
-                ]
+                ],
+                Set<SamTemplate>([helloWorldTemplate]),
+                [],
+                [],
+                []
             )
             const wizard = new CreateNewSamAppWizard(context)
             const args = await wizard.run()
