@@ -86,6 +86,10 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
         }
     }
 
+    public getRegionNodesSize() {
+        return this.regionNodes.size
+    }
+
     public refresh(node?: AWSTreeNodeBase) {
         this._onDidChangeTreeData.fire(node)
     }
