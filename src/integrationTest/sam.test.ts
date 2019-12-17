@@ -399,6 +399,7 @@ describe.only('SAM Integration Tests', async () => {
             const params = commandArguments[0]
             assert.ok(params, 'unexpected non-defined command argument')
 
+            // tslint:disable-next-line:no-unsafe-any
             const samTemplateUri = params.samTemplate as vscode.Uri
             assert.strictEqual(
                 samTemplateUri.fsPath,
