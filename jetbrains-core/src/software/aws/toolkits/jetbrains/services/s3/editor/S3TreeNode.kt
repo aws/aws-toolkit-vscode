@@ -16,6 +16,12 @@ sealed class S3TreeNode(val bucketName: String, val parent: S3TreeDirectoryNode?
     override fun getName(): String = key.substringAfterLast('/')
 }
 
+fun S3TreeNode.getDirectoryKey() = if (isDirectory) {
+    key
+} else {
+    parent?.key ?: throw IllegalStateException("$key claimed it was not a directory but has no parent!")
+}
+
 class S3TreeDirectoryNode(private val client: S3Client, bucketName: String, parent: S3TreeDirectoryNode?, key: String) : S3TreeNode(bucketName, parent, key) {
     override val isDirectory = true
     private val childrenLock = Object()

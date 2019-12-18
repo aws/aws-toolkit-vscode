@@ -10,7 +10,7 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.stub
 import com.nhaarman.mockitokotlin2.verify
 import io.mockk.mockk
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.core.sync.RequestBody
@@ -25,6 +25,7 @@ import software.aws.toolkits.jetbrains.services.s3.editor.S3VirtualBucket
 import software.aws.toolkits.jetbrains.services.s3.objectActions.UploadObjectAction
 import software.aws.toolkits.jetbrains.utils.delegateMock
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.value
 import java.io.ByteArrayInputStream
 
 class UploadObjectTest {
@@ -58,11 +59,11 @@ class UploadObjectTest {
         val uploadObjectMock = UploadObjectAction(virtualBucket, treeTableMock)
         val folder = S3TreeDirectoryNode(s3Client, "TestBucket", null, "")
 
-        uploadObjectMock.uploadObjectAction(s3Client, projectRule.project, testFile, folder)
+        uploadObjectMock.uploadObjectAction(s3Client, projectRule.project, testFile, folder).value
         verify(s3Client).putObject(any<PutObjectRequest>(), any<RequestBody>())
 
         val uploadRequestCapture = uploadCaptor.firstValue
-        Assertions.assertThat(uploadRequestCapture.bucket()).isEqualTo("TestBucket")
-        Assertions.assertThat(uploadRequestCapture.key()).isEqualTo("TestFile")
+        assertThat(uploadRequestCapture.bucket()).isEqualTo("TestBucket")
+        assertThat(uploadRequestCapture.key()).isEqualTo("TestFile")
     }
 }

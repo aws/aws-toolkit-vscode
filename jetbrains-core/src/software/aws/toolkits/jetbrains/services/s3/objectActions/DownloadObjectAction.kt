@@ -5,20 +5,16 @@ package software.aws.toolkits.jetbrains.services.s3.objectActions
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileChooser.FileChooserFactory
 import com.intellij.openapi.fileChooser.FileSaverDescriptor
-import com.intellij.openapi.progress.ProgressIndicator
-import com.intellij.openapi.progress.ProgressManager
-import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFileWrapper
-import software.amazon.awssdk.core.sync.ResponseTransformer
 import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.s3.model.GetObjectRequest
+import software.aws.toolkits.core.utils.allOf
 import software.aws.toolkits.jetbrains.components.telemetry.ActionButtonWrapper
 import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.jetbrains.services.s3.download
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
 import software.aws.toolkits.jetbrains.services.s3.editor.S3VirtualBucket
@@ -45,10 +41,9 @@ class DownloadObjectAction(
         var baseFilePath: String? = ""
 
         var fileWrapper: VirtualFileWrapper? = null
-        var allSucceeded = true
-        treeTable.getSelectedNodes().forEach {
+        treeTable.getSelectedNodes().mapNotNull {
             if (it !is S3TreeObjectNode) {
-                return@forEach
+                return@mapNotNull null
             }
             if (fileWrapper == null) {
                 fileWrapper = saveFileDialog.save(baseDir, it.name)
@@ -61,46 +56,35 @@ class DownloadObjectAction(
              * are saved in the same root location selected with the dialog.
              */
             fileWrapper?.let { fileWrapper ->
-                ApplicationManager.getApplication().executeOnPooledThread {
-                    try {
-                        downloadObjectAction(project, client, it, fileWrapper)
-                        TelemetryService.recordSimpleTelemetry(project, TELEMETRY_NAME, TelemetryResult.Succeeded)
-                    } catch (e: Exception) {
-                        notifyError(message("s3.download.object.failed"))
-                        allSucceeded = false
-                    }
+                downloadObjectAction(project, client, it, fileWrapper).whenComplete { _, error ->
+                    error?.let {
+                        error.notifyError(message("s3.download.object.failed"))
+                        TelemetryService.recordSimpleTelemetry(project, SINGLE_OBJECT, TelemetryResult.Failed)
+                    } ?: TelemetryService.recordSimpleTelemetry(project, SINGLE_OBJECT, TelemetryResult.Succeeded)
                 }
             }
+        }.allOf().whenComplete { _, error ->
+            TelemetryService.recordSimpleTelemetry(
+                project,
+                ALL_OBJECTS,
+                if (error == null) TelemetryResult.Succeeded else TelemetryResult.Failed,
+                treeTable.selectedRows.size.toDouble()
+            )
         }
-        TelemetryService.recordSimpleTelemetry(
-            project,
-            TELEMETRY_NAME,
-            if (allSucceeded) TelemetryResult.Succeeded else TelemetryResult.Failed,
-            treeTable.selectedRows.size.toDouble()
-        )
     }
 
     override fun isEnabled(): Boolean = !(treeTable.isEmpty || (treeTable.selectedRow < 0) || (treeTable.getValueAt(treeTable.selectedRow, 1) == ""))
 
-    fun downloadObjectAction(project: Project, client: S3Client, s3TreeObject: S3TreeObjectNode, fileWrapper: VirtualFileWrapper) {
-        val request = GetObjectRequest.builder()
-            .bucket(s3TreeObject.bucketName)
-            .key(s3TreeObject.key)
-            .build()
-        ProgressManager.getInstance().run(object : Task.Backgroundable(project, message("s3.download.object.progress", s3TreeObject.name), true) {
-            override fun run(indicator: ProgressIndicator) {
-                val fileOutputStream = fileWrapper.file.outputStream()
-                val progressStream = ProgressOutputStream(
-                    fileOutputStream,
-                    s3TreeObject.size,
-                    indicator
-                )
-                client.getObject(request, ResponseTransformer.toOutputStream(progressStream))
-            }
-        })
-    }
+    fun downloadObjectAction(project: Project, client: S3Client, s3TreeObject: S3TreeObjectNode, fileWrapper: VirtualFileWrapper) = client.download(
+        project,
+        s3TreeObject.bucketName,
+        s3TreeObject.key,
+        fileWrapper.file.toPath(),
+        message("s3.download.object.progress", s3TreeObject.name)
+    )
 
     companion object {
-        private const val TELEMETRY_NAME = "s3_downloadobject"
+        private const val SINGLE_OBJECT = "s3_downloadobject"
+        private const val ALL_OBJECTS = "s3_downloadobjects"
     }
 }

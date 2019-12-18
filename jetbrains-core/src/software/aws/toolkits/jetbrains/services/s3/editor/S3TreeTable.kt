@@ -17,7 +17,7 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
-import software.aws.toolkits.jetbrains.services.s3.objectActions.UploadObjectAction
+import software.aws.toolkits.jetbrains.services.s3.upload
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import java.awt.datatransfer.DataFlavor
@@ -40,8 +40,7 @@ class S3TreeTable(
 
     private val dropTargetListener = object : DropTargetAdapter() {
         override fun drop(dropEvent: DropTargetDropEvent) {
-            val row = rowAtPoint(dropEvent.location).takeIf { it >= 0 } ?: return
-            val node = getNodeForRow(row) ?: return
+            val node = rowAtPoint(dropEvent.location).takeIf { it >= 0 }?.let { getNodeForRow(it) } ?: return
             val data = try {
                 dropEvent.acceptDrop(DnDConstants.ACTION_COPY_OR_MOVE)
                 dropEvent.transferable.getTransferData(DataFlavor.javaFileListFlavor) as List<File>
@@ -56,15 +55,16 @@ class S3TreeTable(
                 lfs.findFileByIoFile(it)
             }
 
-            ApplicationManager.getApplication().executeOnPooledThread {
-                val action = UploadObjectAction(bucketVirtual, this@S3TreeTable)
-                virtualFiles.forEach {
-                    try {
-                        action.uploadObjectAction(s3Client, project, it, node)
-                        invalidateLevel(node)
-                        refresh()
-                    } catch (e: Exception) {
-                        e.notifyError(message("s3.upload.object.failed", it.path))
+            val directoryKey = node.getDirectoryKey()
+
+            virtualFiles.map {
+                s3Client.upload(project, it.inputStream, it.length, bucketVirtual.name, directoryKey + it.name).whenComplete { _, error ->
+                    when (error) {
+                        is Throwable -> error.notifyError(message("s3.upload.object.failed"))
+                        else -> {
+                            invalidateLevel(node)
+                            refresh()
+                        }
                     }
                 }
             }

@@ -28,7 +28,7 @@ import javax.swing.JTextArea
 private const val GROUP_DISPLAY_ID = "AWS Toolkit"
 private val LOG = getLogger<AwsToolkit>()
 
-fun Exception.notifyError(title: String = "", project: Project? = null) {
+fun Throwable.notifyError(title: String = "", project: Project? = null) {
     val message = this.message ?: "${this::class.java.name}${this.stackTrace?.joinToString("\n", prefix = "\n")}"
     LOG.warn(this) { title.takeIf { it.isNotBlank() }?.let { "$it ($message)" } ?: message }
     notify(
