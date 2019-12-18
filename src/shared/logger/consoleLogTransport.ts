@@ -10,6 +10,10 @@ interface LogEntry {
     message: string
 }
 
+/**
+ * This transport sends log statements to console.log
+ * It is primarily intended for testing, where having the log output could assist in diagnosing issues.
+ */
 export class ConsoleLogTransport extends Transport {
     public constructor(options: Transport.TransportStreamOptions) {
         super(options)

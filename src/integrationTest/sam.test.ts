@@ -33,6 +33,8 @@ interface LocalInvokeCodeLensCommandResult {
     datum: Datum
 }
 
+// When testing additional runtimes, consider pulling the docker container in buildspec\linuxIntegrationTests.yml
+// to reduce the chance of automated tests timing out.
 const scenarios: TestScenario[] = [
     {
         runtime: 'nodejs8.10',
@@ -90,12 +92,11 @@ async function getLocalCodeLens(documentUri: vscode.Uri, language: Language, deb
             // not shown to the user and do not affect how our extension is working
             codeLenses = codeLenses.filter(codeLens => {
                 if (codeLens.command && codeLens.command.arguments && codeLens.command.arguments.length === 1) {
-                    // tslint:disable: no-unsafe-any
                     return (
                         codeLens.command.command === getInvokeCmdKey(language) &&
+                        // tslint:disable-next-line:no-unsafe-any
                         codeLens.command.arguments[0].isDebug === debug
                     )
-                    // tslint:enable: no-unsafe-any
                 }
 
                 return false
@@ -141,7 +142,6 @@ async function activateExtensions(): Promise<void> {
 
 async function configureAwsToolkitExtension(): Promise<void> {
     console.log('************************************************************')
-    // tslint:disable-next-line:no-null-keyword
     const configAws = vscode.workspace.getConfiguration('aws')
     await configAws.update('logLevel', 'verbose', false)
     // Prevent the extension from preemptively cancelling a 'sam local' run
