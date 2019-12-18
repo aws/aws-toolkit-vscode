@@ -127,6 +127,15 @@ async function activateExtensions(): Promise<void> {
     console.log('Extensions activated')
 }
 
+async function configureAwsToolkitExtension(): Promise<void> {
+    console.log('************************************************************')
+    // tslint:disable-next-line:no-null-keyword
+    const configAws = vscode.workspace.getConfiguration('aws')
+    await configAws.update('logLevel', 'verbose', false)
+    await configAws.update('samcli.debug.attach.timeout.millis', '90000', false)
+    console.log('************************************************************')
+}
+
 function configureToolkitLogging() {
     const logger = getLogger()
 
@@ -147,6 +156,8 @@ describe('SAM Integration Tests', async () => {
         this.timeout(600000)
 
         await activateExtensions()
+        await configureAwsToolkitExtension()
+
         configureToolkitLogging()
 
         testSuiteRoot = await mkdtemp(path.join(projectFolder, 'inttest'))
@@ -225,6 +236,7 @@ describe('SAM Integration Tests', async () => {
 
                 beforeEach(async function() {
                     testDisposables = []
+                    await closeAllEditors()
                 })
 
                 afterEach(async function() {
@@ -251,13 +263,13 @@ describe('SAM Integration Tests', async () => {
                     const codeLens = await getRunLocalCodeLens(samAppCodeUri, scenario.language)
                     assert.ok(codeLens, 'expected to find a CodeLens')
                     assertCodeLensReferencesSamTemplate(codeLens, samTemplatePath)
-                })
+                }).timeout(TIMEOUT)
 
                 it('produces a Debug Local CodeLens', async () => {
                     const codeLens = await getDebugLocalCodeLens(samAppCodeUri, scenario.language)
                     assert.ok(codeLens)
                     assertCodeLensReferencesSamTemplate(codeLens, samTemplatePath)
-                })
+                }).timeout(TIMEOUT)
 
                 it('invokes the Run Local CodeLens', async () => {
                     const codeLens = await getRunLocalCodeLens(samAppCodeUri, scenario.language)
@@ -370,6 +382,10 @@ describe('SAM Integration Tests', async () => {
 
         async function stopDebugger(): Promise<void> {
             await vscode.commands.executeCommand('workbench.action.debug.stop')
+        }
+
+        async function closeAllEditors(): Promise<void> {
+            await vscode.commands.executeCommand('workbench.action.closeAllEditors')
         }
 
         /**
