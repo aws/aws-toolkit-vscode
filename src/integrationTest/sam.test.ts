@@ -247,15 +247,12 @@ describe('SAM Integration Tests', async () => {
 
                 beforeEach(async function() {
                     testDisposables = []
+                    await closeAllEditors()
                 })
 
                 afterEach(async function() {
                     // tslint:disable-next-line: no-unsafe-any
                     testDisposables.forEach(d => d.dispose())
-                })
-
-                beforeEach(async function() {
-                    await closeAllEditors()
                 })
 
                 after(async function() {
@@ -277,13 +274,13 @@ describe('SAM Integration Tests', async () => {
                     const codeLens = await getRunLocalCodeLens(samAppCodeUri, scenario.language)
                     assert.ok(codeLens, 'expected to find a CodeLens')
                     assertCodeLensReferencesSamTemplate(codeLens, samTemplatePath)
-                }).timeout(30000)
+                }).timeout(TIMEOUT)
 
                 it('produces a Debug Local CodeLens', async () => {
                     const codeLens = await getDebugLocalCodeLens(samAppCodeUri, scenario.language)
                     assert.ok(codeLens)
                     assertCodeLensReferencesSamTemplate(codeLens, samTemplatePath)
-                }).timeout(30000)
+                }).timeout(TIMEOUT)
 
                 it('invokes the Run Local CodeLens', async () => {
                     const codeLens = await getRunLocalCodeLens(samAppCodeUri, scenario.language)
