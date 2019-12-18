@@ -134,7 +134,7 @@ Resources:
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: "Internet Group"
+      GroupName: "Full Internet Group"
       GroupDescription: "All traffic IN/OUT."
       VpcId: !Ref VPC
       SecurityGroupIngress:
