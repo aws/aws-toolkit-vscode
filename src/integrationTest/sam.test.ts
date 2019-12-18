@@ -29,6 +29,10 @@ interface TestScenario {
     language: Language
 }
 
+interface LocalInvokeCodeLensCommandResult {
+    datum: Datum
+}
+
 const scenarios: TestScenario[] = [
     {
         runtime: 'nodejs8.10',
@@ -103,8 +107,16 @@ async function getLocalCodeLens(documentUri: vscode.Uri, language: Language, deb
     }
 }
 
-interface LocalInvokeCodeLensCommandResult {
-    datum: Datum
+async function continueDebugger(): Promise<void> {
+    await vscode.commands.executeCommand('workbench.action.debug.continue')
+}
+
+async function stopDebugger(): Promise<void> {
+    await vscode.commands.executeCommand('workbench.action.debug.stop')
+}
+
+async function closeAllEditors(): Promise<void> {
+    await vscode.commands.executeCommand('workbench.action.closeAllEditors')
 }
 
 function validateLocalInvokeResult(
@@ -143,6 +155,7 @@ async function configureAwsToolkitExtension(): Promise<void> {
     // tslint:disable-next-line:no-null-keyword
     const configAws = vscode.workspace.getConfiguration('aws')
     await configAws.update('logLevel', 'verbose', false)
+    // Prevent the extension from preemptively cancelling a 'sam local' run
     await configAws.update('samcli.debug.attach.timeout.millis', '90000', false)
     console.log('************************************************************')
 }
@@ -151,7 +164,9 @@ function configureToolkitLogging() {
     const logger = getLogger()
 
     if (logger instanceof WinstonToolkitLogger) {
+        // Ensure we're logging everything possible
         logger.setLogLevel('debug')
+        // The logs help to diagnose SAM integration test failures
         logger.logToConsole()
     } else {
         assert.fail('Unexpected extension logger')
@@ -266,7 +281,6 @@ describe('SAM Integration Tests', async () => {
                 })
 
                 it('produces an error when creating a SAM Application to the same location', async () => {
-                    // await createSamApplication()
                     const err = await assertThrowsError(async () => await createSamApplication(subSuiteTestLocation))
                     assert(err.message.includes('directory already exists'))
                 }).timeout(TIMEOUT)
@@ -353,7 +367,7 @@ describe('SAM Integration Tests', async () => {
                                 // short enough to finish before the next test is run and long enough to
                                 // actually act after it pauses
                                 await sleep(800)
-                                await vscode.commands.executeCommand('workbench.action.debug.continue')
+                                await continueDebugger()
                             })
                         )
                     })
@@ -390,14 +404,6 @@ describe('SAM Integration Tests', async () => {
             }
             const samCliContext = getSamCliContext()
             await runSamCliInit(initArguments, samCliContext)
-        }
-
-        async function stopDebugger(): Promise<void> {
-            await vscode.commands.executeCommand('workbench.action.debug.stop')
-        }
-
-        async function closeAllEditors(): Promise<void> {
-            await vscode.commands.executeCommand('workbench.action.closeAllEditors')
         }
 
         /**

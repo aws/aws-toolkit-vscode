@@ -22,7 +22,6 @@ async function setupVSCode(): Promise<string> {
     try {
         console.log('Running Integration test suite...')
         const vsCodeExecutablePath = await setupVSCode()
-
         const cwd = process.cwd()
         const testEntrypoint = resolve(cwd, 'dist', 'src', 'integrationTest', 'index.js')
         const workspacePath = join(cwd, 'dist', 'src', 'integrationTest-samples')
