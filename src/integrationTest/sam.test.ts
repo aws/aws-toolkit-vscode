@@ -254,7 +254,6 @@ describe('SAM Integration Tests', async () => {
                 })
 
                 it('produces an error when creating a SAM Application to the same location', async () => {
-                    // await createSamApplication()
                     const err = await assertThrowsError(async () => await createSamApplication(subSuiteTestLocation))
                     assert(err.message.includes('directory already exists'))
                 }).timeout(TIMEOUT)
