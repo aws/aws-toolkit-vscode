@@ -62,10 +62,13 @@ export class PythonDebugAdapterHeartbeat {
                 resolve(false)
             })
 
-            // Send an empty message, serving as a no-op.
+            // Send a blank request message, serving as a no-op.
             // If we get a response, we know the Adapter is up and running.
             // See Base protocol: https://microsoft.github.io/debug-adapter-protocol/overview
-            const writeResult = this.socket.write('Content-Length: 2\r\n\r\n{}')
+            const json = JSON.stringify({
+                type: 'request'
+            })
+            const writeResult = this.socket.write(`Content-Length: ${json.length}\r\n\r\n${json}`)
             this.logger.verbose(`Data written to Debug Adapter, write result: ${writeResult}`)
         })
     }
