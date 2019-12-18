@@ -131,6 +131,7 @@ async function configurePythonExtension(): Promise<void> {
     console.log('************************************************************')
     // tslint:disable-next-line:no-null-keyword
     const configPy = vscode.workspace.getConfiguration('python')
+    // Disable linting to silence some of the Python extension's log spam
     await configPy.update('linting.pylintEnabled', false, false)
     await configPy.update('linting.enabled', false, false)
     // tslint:disable-next-line:no-null-keyword
