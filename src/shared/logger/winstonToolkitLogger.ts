@@ -6,9 +6,10 @@
 import * as moment from 'moment'
 import * as vscode from 'vscode'
 import * as winston from 'winston'
+import { ConsoleLogTransport } from './consoleLogTransport'
 import { Loggable } from './loggableType'
 import { Logger, LogLevel } from './logger'
-import { ConsoleTransport, OutputChannelTransport } from './outputChannelTransport'
+import { OutputChannelTransport } from './outputChannelTransport'
 
 function formatMessage(level: LogLevel, message: Loggable[]): string {
     // TODO : Look into winston custom formats - https://github.com/winstonjs/winston#creating-custom-formats
@@ -62,13 +63,7 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
     }
 
     public logToConsole(): void {
-        // TODO : CC : Left off -- does this output in the tests?
-        this.logger.add(new ConsoleTransport({}))
-        this.logger.add(
-            new winston.transports.Console({
-                format: winston.format.simple()
-            })
-        )
+        this.logger.add(new ConsoleLogTransport({}))
     }
 
     public debug(...message: Loggable[]): void {
