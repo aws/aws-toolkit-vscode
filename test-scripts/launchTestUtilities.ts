@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { downloadAndUnzipVSCode } from 'vscode-test'
+import * as child_process from 'child_process'
+import { downloadAndUnzipVSCode, resolveCliPathFromVSCodeExecutablePath } from 'vscode-test'
 
 const ENVVAR_VSCODE_TEST_VERSION = 'VSCODE_TEST_VERSION'
 
@@ -23,4 +24,30 @@ export async function setupVSCodeTestInstance(): Promise<string> {
     console.log(`VS Code test instance location: ${vsCodeExecutablePath}`)
 
     return vsCodeExecutablePath
+}
+
+export async function installVSCodeExtension(vsCodeExecutablePath: string, extensionIdentifier: string): Promise<void> {
+    console.log(`Installing VS Code Extension: ${extensionIdentifier}`)
+    const vsCodeCliPath = resolveCliPathFromVSCodeExecutablePath(vsCodeExecutablePath)
+
+    const cmdArgs = ['--install-extension', extensionIdentifier]
+    if (process.env.AWS_TOOLKIT_TEST_USER_DIR) {
+        cmdArgs.push('--user-data-dir', process.env.AWS_TOOLKIT_TEST_USER_DIR)
+    }
+    const spawnResult = child_process.spawnSync(vsCodeCliPath, cmdArgs, {
+        encoding: 'utf-8',
+        stdio: 'inherit'
+    })
+
+    if (spawnResult.status !== 0) {
+        throw new Error(`Installing VS Code extension ${extensionIdentifier} had exit code ${spawnResult.status}`)
+    }
+
+    if (spawnResult.error) {
+        throw spawnResult.error
+    }
+
+    if (spawnResult.stdout) {
+        console.log(spawnResult.stdout)
+    }
 }
