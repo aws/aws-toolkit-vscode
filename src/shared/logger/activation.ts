@@ -19,8 +19,7 @@ import { WinstonToolkitLogger } from './winstonToolkitLogger'
 
 const localize = nls.loadMessageBundle()
 
-// TODO : CC : TEMP
-export const LOG_PATH = path.join(getLogBasePath(), 'Code', 'logs', 'aws_toolkit', makeLogFilename())
+const LOG_PATH = path.join(getLogBasePath(), 'Code', 'logs', 'aws_toolkit', makeLogFilename())
 const DEFAULT_LOG_LEVEL: LogLevel = 'info'
 const LOG_OUTPUT_CHANNEL: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Toolkit Logs')
 
