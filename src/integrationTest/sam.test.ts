@@ -132,6 +132,7 @@ async function configureAwsToolkitExtension(): Promise<void> {
     // tslint:disable-next-line:no-null-keyword
     const configAws = vscode.workspace.getConfiguration('aws')
     await configAws.update('logLevel', 'verbose', false)
+    // Prevent the extension from preemptively cancelling a 'sam local' run
     await configAws.update('samcli.debug.attach.timeout.millis', '90000', false)
     console.log('************************************************************')
 }
@@ -140,7 +141,9 @@ function configureToolkitLogging() {
     const logger = getLogger()
 
     if (logger instanceof WinstonToolkitLogger) {
+        // Ensure we're logging everything possible
         logger.setLogLevel('debug')
+        // The logs help to diagnose SAM integration test failures
         logger.logToConsole()
     } else {
         assert.fail('Unexpected extension logger')
