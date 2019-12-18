@@ -24,7 +24,6 @@ import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.AwsSdkClient
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import kotlin.streams.toList
-import software.amazon.awssdk.services.toolkittelemetry.model.Unit as MetricUnit
 
 class DefaultTelemetryPublisher(
     private val productName: AWSProduct = AWSProduct.AWS_TOOLKIT_FOR_JET_BRAINS,
@@ -58,9 +57,7 @@ class DefaultTelemetryPublisher(
     private fun Collection<MetricEvent>.toMetricData(): Collection<MetricDatum> = this
         .flatMap { metricEvent ->
             metricEvent.data.map { datum ->
-                val metricName = metricEvent.namespace?.let {
-                    "$it.${datum.name}"
-                } ?: datum.name
+                val metricName = datum.name
                 MetricDatum.builder()
                     .epochTimestamp(metricEvent.createTime.toEpochMilli())
                     .metricName(metricName)
@@ -81,28 +78,9 @@ class DefaultTelemetryPublisher(
                                 .key(METADATA_AWS_REGION)
                                 .value(metricEvent.awsRegion)
                                 .build()
-                        ))
-                    .build()
-            }.ifEmpty {
-                // built a metric event with no data
-                listOf(
-                    MetricDatum.builder()
-                        .epochTimestamp(metricEvent.createTime.toEpochMilli())
-                        .metricName(metricEvent.namespace)
-                        .unit(MetricUnit.NONE)
-                        .value(0.0)
-                        .metadata(
-                            MetadataEntry.builder()
-                                .key(METADATA_AWS_ACCOUNT)
-                                .value(metricEvent.awsAccount)
-                                .build(),
-                            MetadataEntry.builder()
-                                .key(METADATA_AWS_REGION)
-                                .value(metricEvent.awsRegion)
-                                .build()
                         )
-                        .build()
-                )
+                    )
+                    .build()
             }
         }
 
@@ -124,7 +102,8 @@ class DefaultTelemetryPublisher(
                         .credentialsProvider(AnonymousCredentialsProvider.create())
                         .region(Region.US_EAST_1)
                         .httpClient(sdkClient.sdkHttpClient)
-                        .build()),
+                        .build()
+                ),
                 AwsClientManager.userAgent,
                 "https://client-telemetry.us-east-1.amazonaws.com"
             )

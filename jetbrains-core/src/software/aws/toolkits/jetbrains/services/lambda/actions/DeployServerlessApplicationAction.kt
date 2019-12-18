@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.actions
 
+import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.actionSystem.PlatformDataKeys
@@ -15,7 +16,6 @@ import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.vfs.VirtualFile
 import icons.AwsIcons
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
-import software.aws.toolkits.jetbrains.components.telemetry.AnActionWrapper
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.stack.StackWindowManager
@@ -26,25 +26,27 @@ import software.aws.toolkits.jetbrains.services.cloudformation.validateSamTempla
 import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationDialog
 import software.aws.toolkits.jetbrains.services.lambda.deploy.SamDeployDialog
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
+import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.TelemetryResult
+import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.settings.DeploySettings
 import software.aws.toolkits.jetbrains.settings.relativeSamPath
+import software.aws.toolkits.jetbrains.utils.Operation
+import software.aws.toolkits.jetbrains.utils.TaggingResourceType
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.jetbrains.utils.notifyNoActiveCredentialsError
 import software.aws.toolkits.jetbrains.utils.notifySamCliNotValidError
-import software.aws.toolkits.jetbrains.utils.Operation
-import software.aws.toolkits.jetbrains.utils.TaggingResourceType
 import software.aws.toolkits.jetbrains.utils.warnResourceOperationAgainstCodePipeline
 import software.aws.toolkits.resources.message
 
-class DeployServerlessApplicationAction : AnActionWrapper(
+class DeployServerlessApplicationAction : AnAction(
     message("serverless.application.deploy"),
     null,
     AwsIcons.Resources.SERVERLESS_APP
 ) {
     private val templateYamlRegex = Regex("template\\.y[a]?ml", RegexOption.IGNORE_CASE)
 
-    override fun doActionPerformed(e: AnActionEvent) {
+    override fun actionPerformed(e: AnActionEvent) {
         val project = e.getRequiredData(PlatformDataKeys.PROJECT)
 
         if (!ProjectAccountSettingsManager.getInstance(project).hasActiveCredentials()) {
@@ -74,7 +76,10 @@ class DeployServerlessApplicationAction : AnActionWrapper(
 
         val stackDialog = DeployServerlessApplicationDialog(project, templateFile)
         stackDialog.show()
-        if (!stackDialog.isOK) return
+        if (!stackDialog.isOK) {
+            TelemetryService.recordSimpleTelemetry(project, TELEMETRY_NAME, TelemetryResult.Cancelled)
+            return
+        }
 
         saveSettings(project, templateFile, stackDialog)
 
@@ -121,8 +126,10 @@ class DeployServerlessApplicationAction : AnActionWrapper(
                     message("cloudformation.execute_change_set.success", stackName),
                     project
                 )
+                TelemetryService.recordSimpleTelemetry(project, TELEMETRY_NAME, TelemetryResult.Succeeded)
             } catch (e: Exception) {
                 e.notifyError(message("cloudformation.execute_change_set.failed", stackName), project)
+                TelemetryService.recordSimpleTelemetry(project, TELEMETRY_NAME, TelemetryResult.Failed)
             }
         }
     }
@@ -179,4 +186,8 @@ class DeployServerlessApplicationAction : AnActionWrapper(
         } catch (e: Exception) {
             message("serverless.application.deploy.error.bad_parse", templateFile.path, e)
         }
+
+    companion object {
+        private const val TELEMETRY_NAME = "lambda_deploy"
+    }
 }

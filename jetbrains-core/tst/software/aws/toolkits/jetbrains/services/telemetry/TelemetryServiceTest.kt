@@ -112,7 +112,9 @@ class TelemetryServiceTest {
             it.batcher = batcher
         }
 
-        telemetryService.record(projectRule.project, "Foo").join()
+        telemetryService.record(projectRule.project) {
+            datum("Foo")
+        }.join()
         telemetryService.dispose()
 
         verify(batcher, times(3)).enqueue(eventCaptor.capture())
@@ -144,7 +146,9 @@ class TelemetryServiceTest {
             it.batcher = batcher
         }
 
-        telemetryService.record(projectRule.project, "Foo").join()
+        telemetryService.record(projectRule.project) {
+            datum("Foo")
+        }.join()
         telemetryService.dispose()
 
         verify(batcher, times(3)).enqueue(eventCaptor.capture())
@@ -171,21 +175,25 @@ class TelemetryServiceTest {
             it.batcher = batcher
         }
 
-        telemetryService.record("Foo", TelemetryService.MetricEventMetadata(
-            awsAccount = "222222222222",
-            awsRegion = "bar-region"
-        ))
+        telemetryService.record(
+            TelemetryService.MetricEventMetadata(
+                awsAccount = "222222222222",
+                awsRegion = "bar-region"
+            )
+        ) {
+            datum("Foo")
+        }
         telemetryService.dispose()
 
         verify(batcher, times(3)).enqueue(eventCaptor.capture())
         assertMetricEventsContains(eventCaptor.allValues.flatten(), "Foo", "222222222222", "bar-region")
     }
 
-    private fun assertMetricEventsContains(events: Collection<MetricEvent>, namespace: String, awsAccount: String, awsRegion: String) {
-        val event = events.find {
-            it.namespace == namespace && it.awsAccount == awsAccount && it.awsRegion == awsRegion
+    private fun assertMetricEventsContains(events: Collection<MetricEvent>, event: String, awsAccount: String, awsRegion: String) {
+        val metricEvent = events.find {
+            it.data.find { it.name == event } != null && it.awsAccount == awsAccount && it.awsRegion == awsRegion
         }
 
-        assertThat(event).isNotNull
+        assertThat(metricEvent).isNotNull
     }
 }

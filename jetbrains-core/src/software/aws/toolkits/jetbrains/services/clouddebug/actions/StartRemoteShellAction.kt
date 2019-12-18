@@ -44,7 +44,8 @@ import java.time.Instant
 
 class StartRemoteShellAction(private val project: Project, private val container: ContainerDetails) : AnActionWrapper(
     message("cloud_debug.ecs.remote_shell.start"),
-    icon = TerminalIcons.OpenTerminal_13x13
+    null,
+    TerminalIcons.OpenTerminal_13x13
 ) {
 
     private val disabled by lazy {
@@ -73,8 +74,12 @@ class StartRemoteShellAction(private val project: Project, private val container
             ProgressManager.getInstance().run(object : Task.Backgroundable(project, title, false) {
                 override fun run(indicator: ProgressIndicator) {
                     if (cloudDebugExecutable !is ExecutableInstance.Executable) {
+                        val error = (cloudDebugExecutable as? ExecutableInstance.InvalidExecutable)?.validationError
+                            ?: (cloudDebugExecutable as? ExecutableInstance.UnresolvedExecutable)?.resolutionError
+                            ?: message("general.unknown_error")
+
                         runInEdt {
-                            notifyError(message("cloud_debug.step.clouddebug.install.fail"))
+                            notifyError(message("cloud_debug.step.clouddebug.install.fail", error))
                         }
                         throw Exception("cloud debug executable not found")
                     }

@@ -7,9 +7,8 @@ import com.intellij.execution.configuration.EnvironmentVariablesData
 import com.intellij.execution.util.EnvVariablesTable
 import com.intellij.execution.util.EnvironmentVariable
 import com.intellij.icons.AllIcons
-import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
-import software.aws.toolkits.jetbrains.components.telemetry.LoggingDialogWrapper
 import software.aws.toolkits.resources.message
 import java.awt.Component
 import java.util.LinkedHashMap
@@ -21,7 +20,7 @@ import javax.swing.JComponent
  * needs but with same UX so users are used to it. Namely we do not support inheriting system env vars, but rest
  * of UX is the same
  */
-class EnvironmentVariablesTextField(project: Project) : TextFieldWithBrowseButton() {
+class EnvironmentVariablesTextField : TextFieldWithBrowseButton() {
     private var data = EnvironmentVariablesData.create(emptyMap(), false)
     var envVars: Map<String, String>
         get() = data.envs
@@ -33,7 +32,7 @@ class EnvironmentVariablesTextField(project: Project) : TextFieldWithBrowseButto
     init {
         isEditable = false
         addActionListener {
-            EnvironmentVariablesDialog(project, this).show()
+            EnvironmentVariablesDialog(this).show()
         }
     }
 
@@ -63,7 +62,7 @@ class EnvironmentVariablesTextField(project: Project) : TextFieldWithBrowseButto
         return buf.toString()
     }
 
-    private inner class EnvironmentVariablesDialog(project: Project, parent: Component) : LoggingDialogWrapper(project, parent, true) {
+    private inner class EnvironmentVariablesDialog(parent: Component) : DialogWrapper(parent, true) {
         private val envVarTable = EnvVariablesTable().apply {
             setValues(convertToVariables(data.envs, false))
             setPasteActionEnabled(true)

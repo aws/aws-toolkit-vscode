@@ -42,7 +42,7 @@ class DialogModalityRuleTest {
     fun callsThatSpecifyWrongModalityAreNotFine() {
         assertExpected(
                 """
-            class Blah : LoggingDialogWrapper() {
+            class Blah : DialogWrapper() {
               fun blah() {
                 runInEdt(ModalityState.current()) { }
               }

@@ -170,7 +170,6 @@ class MessageEmitterTest {
 
     @Test
     fun parentIdIsCorrect() {
-        val parentId = "ParentStep"
         val childId1 = "ChildStep1"
         val childId2 = "ChildStep2"
 

@@ -7,12 +7,12 @@ import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.module.ModuleUtilCore.findModuleForFile
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.text.nullize
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.amazon.awssdk.services.s3.S3Client
-import software.aws.toolkits.jetbrains.components.telemetry.LoggingDialogWrapper
 import software.aws.toolkits.jetbrains.core.Resource
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.help.HelpIds
@@ -32,7 +32,7 @@ import javax.swing.JComponent
 class DeployServerlessApplicationDialog(
     private val project: Project,
     private val templateFile: VirtualFile
-) : LoggingDialogWrapper(project) {
+) : DialogWrapper(project) {
 
     private val module = findModuleForFile(templateFile, project)
     private val settings: DeploySettings? = module?.let { DeploySettings.getInstance(it) }
@@ -167,6 +167,7 @@ class DeployServerlessApplicationDialog(
             }
         }
     }
+
     companion object {
         @JvmField
         internal val ACTIVE_STACKS: Resource<List<Stack>> = CloudFormationResources.ACTIVE_STACKS.map { Stack(it.stackName(), it.stackId()) }

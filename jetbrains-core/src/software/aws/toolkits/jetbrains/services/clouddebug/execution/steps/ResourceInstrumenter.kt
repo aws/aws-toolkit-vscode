@@ -54,6 +54,7 @@ class ResourceInstrumenter(private val settings: EcsServiceCloudDebuggingRunSett
         */
         private val TARGET_MAPPING = AttributeBagKey.create<String>("targetMapping")
 
+        @Suppress("UNUSED_PARAMETER")
         fun getTargetForContainer(context: Context, containerName: String): String = context.getRequiredAttribute(TARGET_MAPPING)
         /* TODO uncomment this when the cli conforms to the contract
         fun getTargetForContainer(context: Context, containerName: String): String = context.getRequiredAttribute(TARGET_MAPPING)

@@ -44,11 +44,11 @@ class AwsConnectionSettingsSelector(
     fun resetAwsConnectionOptions(regionId: String?, credentialProviderId: String?) {
         regionId?.let { view.region.selectedRegion = regionProvider.lookupRegionById(it) }
 
-        credentialProviderId?.let { credentialProviderId ->
+        credentialProviderId?.let { providerId ->
             try {
-                view.credentialProvider.setSelectedCredentialsProvider(credentialManager.getCredentialProvider(credentialProviderId))
+                view.credentialProvider.setSelectedCredentialsProvider(credentialManager.getCredentialProvider(providerId))
             } catch (_: Exception) {
-                view.credentialProvider.setSelectedInvalidCredentialsProvider(credentialProviderId)
+                view.credentialProvider.setSelectedInvalidCredentialsProvider(providerId)
             }
         }
     }
