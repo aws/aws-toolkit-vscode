@@ -26,6 +26,7 @@ class S3TreeCellRenderer : DefaultTreeCellRenderer() {
         val selected = value as? DefaultMutableTreeNode
         val node = selected?.userObject as? S3TreeNode
         component.icon = if (node?.isDirectory == true) {
+            component.text = component.text.trimEnd('/')
             if (expanded) openIcon else closedIcon
         } else if (node is S3TreeContinuationNode) {
             component.foreground = SimpleTextAttributes.LINK_ATTRIBUTES.fgColor
