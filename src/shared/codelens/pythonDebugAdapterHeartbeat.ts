@@ -6,7 +6,7 @@
 import * as net from 'net'
 import { getLogger, Logger } from '../logger'
 
-export class DebugConnectionTester {
+export class PythonDebugAdapterHeartbeat {
     private readonly socket: net.Socket
     private readonly logger: Logger = getLogger()
     public constructor(private readonly port: number) {

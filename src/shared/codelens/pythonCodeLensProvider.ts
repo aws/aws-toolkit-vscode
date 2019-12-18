@@ -26,7 +26,6 @@ import {
     getMetricDatum,
     makeCodeLenses
 } from './codeLensUtils'
-import { DebugConnectionTester } from './debugConnectionTester'
 import {
     executeSamBuild,
     getHandlerRelativePath,
@@ -38,6 +37,7 @@ import {
     makeBuildDir,
     makeInputTemplate
 } from './localLambdaRunner'
+import { PythonDebugAdapterHeartbeat } from './pythonDebugAdapterHeartbeat'
 
 const PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MILLIS = 1000
 export const PYTHON_LANGUAGE = 'python'
@@ -402,7 +402,7 @@ export async function waitForPythonDebugAdapter(
     let debugServerAvailable: boolean = false
 
     while (!debugServerAvailable) {
-        const tester = new DebugConnectionTester(debugPort)
+        const tester = new PythonDebugAdapterHeartbeat(debugPort)
 
         try {
             if (await tester.connect()) {
