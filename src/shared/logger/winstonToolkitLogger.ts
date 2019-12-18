@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import * as winston from 'winston'
 import { Loggable } from './loggableType'
 import { Logger, LogLevel } from './logger'
-import { OutputChannelTransport } from './outputChannelTransport'
+import { OutputChannelTransport, ConsoleTransport } from './outputChannelTransport'
 
 function formatMessage(level: LogLevel, message: Loggable[]): string {
     // TODO : Look into winston custom formats - https://github.com/winstonjs/winston#creating-custom-formats
@@ -62,6 +62,7 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
     }
 
     public logToConsole(): void {
+        this.logger.add(new ConsoleTransport({}))
         this.logger.add(
             new winston.transports.Console({
                 format: winston.format.simple()

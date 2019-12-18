@@ -32,3 +32,17 @@ export class OutputChannelTransport extends Transport {
         next()
     }
 }
+
+export class ConsoleTransport extends Transport {
+    public constructor(options: Transport.TransportStreamOptions) {
+        super(options)
+    }
+
+    public log(info: LogEntry, next: () => void): void {
+        setImmediate(() => {
+            console.log(`QQQ ${info.message}`)
+        })
+
+        next()
+    }
+}
