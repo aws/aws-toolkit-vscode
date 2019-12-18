@@ -9,6 +9,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { PythonDebugConfiguration, PythonPathMapping } from '../../lambda/local/debugConfiguration'
 import { CloudFormation } from '../cloudformation/cloudformation'
+import { VSCODE_EXTENSION_ID } from '../extensions'
 import { fileExists, readFileAsString } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
@@ -392,6 +393,16 @@ async function deleteFile(filePath: string): Promise<void> {
     }
 }
 
+async function activatePythonExtensionIfInstalled() {
+    const extension = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.python)
+
+    // If the extension is not installed, it is not a failure. There may be reduced functionality.
+    if (extension && !extension.isActive) {
+        getLogger().info('Python CodeLens Provider is activating the python extension')
+        await extension.activate()
+    }
+}
+
 export async function makePythonCodeLensProvider(
     pythonSettings: SettingsConfiguration
 ): Promise<vscode.CodeLensProvider> {
@@ -403,6 +414,12 @@ export async function makePythonCodeLensProvider(
             document: vscode.TextDocument,
             token: vscode.CancellationToken
         ): Promise<vscode.CodeLens[]> => {
+            // Try to activate the Python Extension before requesting symbols from a python file
+            await activatePythonExtensionIfInstalled()
+            if (token.isCancellationRequested) {
+                return []
+            }
+
             const handlers: LambdaHandlerCandidate[] = await getLambdaHandlerCandidates({
                 uri: document.uri,
                 pythonSettings
