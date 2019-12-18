@@ -29,6 +29,10 @@ interface TestScenario {
     language: Language
 }
 
+interface LocalInvokeCodeLensCommandResult {
+    datum: Datum
+}
+
 const scenarios: TestScenario[] = [
     {
         runtime: 'nodejs8.10',
@@ -103,8 +107,16 @@ async function getLocalCodeLens(documentUri: vscode.Uri, language: Language, deb
     }
 }
 
-interface LocalInvokeCodeLensCommandResult {
-    datum: Datum
+async function continueDebugger(): Promise<void> {
+    await vscode.commands.executeCommand('workbench.action.debug.continue')
+}
+
+async function stopDebugger(): Promise<void> {
+    await vscode.commands.executeCommand('workbench.action.debug.stop')
+}
+
+async function closeAllEditors(): Promise<void> {
+    await vscode.commands.executeCommand('workbench.action.closeAllEditors')
 }
 
 function validateLocalInvokeResult(
@@ -343,7 +355,7 @@ describe('SAM Integration Tests', async () => {
                                 // short enough to finish before the next test is run and long enough to
                                 // actually act after it pauses
                                 await sleep(800)
-                                await vscode.commands.executeCommand('workbench.action.debug.continue')
+                                await continueDebugger()
                             })
                         )
                     })
@@ -380,14 +392,6 @@ describe('SAM Integration Tests', async () => {
             }
             const samCliContext = getSamCliContext()
             await runSamCliInit(initArguments, samCliContext)
-        }
-
-        async function stopDebugger(): Promise<void> {
-            await vscode.commands.executeCommand('workbench.action.debug.stop')
-        }
-
-        async function closeAllEditors(): Promise<void> {
-            await vscode.commands.executeCommand('workbench.action.closeAllEditors')
         }
 
         /**
