@@ -44,6 +44,11 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         })
     }
 
+    public setLogLevel(logLevel: LogLevel) {
+        this.logger.info(`Setting log level to: ${logLevel}`)
+        this.logger.level = logLevel
+    }
+
     public logToFile(logPath: string): void {
         this.logger.add(new winston.transports.File({ filename: logPath }))
     }

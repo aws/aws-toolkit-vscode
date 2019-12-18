@@ -34,7 +34,8 @@ import {
     InvokeLambdaFunctionArguments,
     LambdaLocalInvokeParams,
     makeBuildDir,
-    makeInputTemplate
+    makeInputTemplate,
+    waitForDebugPort
 } from './localLambdaRunner'
 
 export const PYTHON_LANGUAGE = 'python'
@@ -338,7 +339,8 @@ export async function initialize({
                 channelLogger,
                 configuration,
                 samLocalInvokeCommand: localInvokeCommand!,
-                telemetryService
+                telemetryService,
+                onWillAttachDebugger: waitForDebugPort
             })
         } catch (err) {
             const error = err as Error
