@@ -6,6 +6,7 @@
 import * as moment from 'moment'
 import * as vscode from 'vscode'
 import * as winston from 'winston'
+import { ConsoleLogTransport } from './consoleLogTransport'
 import { Loggable } from './loggableType'
 import { Logger, LogLevel } from './logger'
 import { OutputChannelTransport } from './outputChannelTransport'
@@ -59,6 +60,10 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
                 outputChannel
             })
         )
+    }
+
+    public logToConsole(): void {
+        this.logger.add(new ConsoleLogTransport({}))
     }
 
     public debug(...message: Loggable[]): void {

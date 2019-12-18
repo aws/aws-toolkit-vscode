@@ -53,12 +53,12 @@ async function cloneJsSdk(destinationPath: string): Promise<void> {
             }
         )
 
-        exec.stderr.on('data', (data: any) => {
+        exec.stderr?.on('data', (data: any) => {
             console.log(data)
         })
 
         exec.once('close', (code, signal) => {
-            exec.stdout.removeAllListeners()
+            exec.stdout?.removeAllListeners()
             resolve()
         })
     })
@@ -81,7 +81,10 @@ async function insertServiceClientsIntoJsSdk(
     })
 
     const apiMetadataPath = path.join(jsSdkPath, 'apis', 'metadata.json')
-    await patchServicesIntoApiMetadata(apiMetadataPath, serviceClientDefinitions.map(x => x.serviceName))
+    await patchServicesIntoApiMetadata(
+        apiMetadataPath,
+        serviceClientDefinitions.map(x => x.serviceName)
+    )
 }
 
 interface ServiceJsonSchema {

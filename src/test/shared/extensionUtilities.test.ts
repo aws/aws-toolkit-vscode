@@ -31,9 +31,18 @@ describe('extensionUtilities', () => {
         }
 
         it('can access sub-property', () => {
-            assert.strictEqual(safeGet(new Blah('hello!'), x => x.someProp), 'hello!')
-            assert.strictEqual(safeGet(new Blah(), x => x.someProp), undefined)
-            assert.strictEqual(safeGet(undefined as Blah | undefined, x => x.someProp), undefined)
+            assert.strictEqual(
+                safeGet(new Blah('hello!'), x => x.someProp),
+                'hello!'
+            )
+            assert.strictEqual(
+                safeGet(new Blah(), x => x.someProp),
+                undefined
+            )
+            assert.strictEqual(
+                safeGet(undefined as Blah | undefined, x => x.someProp),
+                undefined
+            )
         })
     })
 
