@@ -3,16 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as net from 'net'
+import { Socket } from 'net'
 import { getLogger, Logger } from '../logger'
 
 const DEBUG_ADAPTER_RESPONSE_TIMEOUT_MILLIS = 1500
 
 export class PythonDebugAdapterHeartbeat {
-    private readonly socket: net.Socket
+    private readonly socket: Socket
     private readonly logger: Logger = getLogger()
     public constructor(private readonly port: number) {
-        this.socket = new net.Socket()
+        this.socket = new Socket()
     }
 
     public async connect(): Promise<boolean> {
@@ -21,7 +21,7 @@ export class PythonDebugAdapterHeartbeat {
         return new Promise<boolean>((resolve, reject) => {
             const timeout = setTimeout(() => {
                 this.logger.verbose(`Timeout before connecting to port ${this.port}`)
-                // We never got a response yet/at all
+                // We never got a response
                 resolve(false)
             }, DEBUG_ADAPTER_RESPONSE_TIMEOUT_MILLIS)
 
