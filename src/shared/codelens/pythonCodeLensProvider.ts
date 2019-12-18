@@ -38,7 +38,7 @@ import {
 } from './localLambdaRunner'
 import { PythonDebugAdapterHeartbeat } from './pythonDebugAdapterHeartbeat'
 
-const PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MILLIS = 1000
+const PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MS = 1000
 export const PYTHON_LANGUAGE = 'python'
 export const PYTHON_ALLFILES: vscode.DocumentFilter[] = [
     {
@@ -419,7 +419,7 @@ export async function waitForPythonDebugAdapter(
 
             logger.verbose('Debug Adapter not ready, retrying...')
             await new Promise<void>(resolve => {
-                setTimeout(resolve, PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MILLIS)
+                setTimeout(resolve, PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MS)
             })
         }
     }

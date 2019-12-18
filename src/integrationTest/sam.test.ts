@@ -141,22 +141,26 @@ async function activateExtensions(): Promise<void> {
 }
 
 async function configurePythonExtension(): Promise<void> {
-    console.log('************************************************************')
+    logSeparator()
     // tslint:disable-next-line:no-null-keyword
     const configPy = vscode.workspace.getConfiguration('python')
     // Disable linting to silence some of the Python extension's log spam
     await configPy.update('linting.pylintEnabled', false, false)
     await configPy.update('linting.enabled', false, false)
     // tslint:disable-next-line:no-null-keyword
-    console.log('************************************************************')
+    logSeparator()
 }
 
 async function configureAwsToolkitExtension(): Promise<void> {
-    console.log('************************************************************')
+    logSeparator()
     const configAws = vscode.workspace.getConfiguration('aws')
     await configAws.update('logLevel', 'verbose', false)
     // Prevent the extension from preemptively cancelling a 'sam local' run
     await configAws.update('samcli.debug.attach.timeout.millis', '90000', false)
+    logSeparator()
+}
+
+function logSeparator() {
     console.log('************************************************************')
 }
 
