@@ -43,23 +43,23 @@ static def ideProfiles() {
             "untilVersion": "193.*",
             "products": [
                 "IC": [
-                    sdkVersion: "IC-193.5233-EAP-CANDIDATE-SNAPSHOT", // Update to actual version when it gets released
+                    sdkVersion: "IC-2019.3",
                     plugins: [
                         "terminal",
                         "yaml",
-                        "PythonCore:193.5233.18",
+                        "PythonCore:193.5233.139",
                         "java",
                         "gradle",
                         "maven",
                         "properties", // Used by Maven
-                        "Docker:193.5233.57"
+                        "Docker:193.5233.140"
                     ]
                 ],
                 "IU": [
-                    sdkVersion: "IU-193.5233-EAP-CANDIDATE-SNAPSHOT",
+                    sdkVersion: "IU-2019.3",
                     plugins: [
                         "terminal",
-                        "Pythonid:193.5233.12",
+                        "Pythonid:193.5233.109",
                         "yaml",
                         "stats-collector", // Transitive, used by JavaScriptLanguage
                         "JavaScriptLanguage",
@@ -68,7 +68,7 @@ static def ideProfiles() {
                     ]
                 ],
                 "RD": [
-                    sdkVersion: "RD-2019.3-SNAPSHOT",
+                    sdkVersion: "RD-2019.3",
                     plugins: [
                         "yaml"
                     ]

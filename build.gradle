@@ -145,15 +145,6 @@ subprojects {
         }
     }
 
-    if (gradle.startParameter.taskNames.contains("check")) {
-        tasks.withType(JavaCompile).all {
-            options.compilerArgs << "-Werror"
-        }
-        tasks.withType(KotlinCompile).all {
-            kotlinOptions.allWarningsAsErrors = true
-        }
-    }
-
     task integrationTest(type: Test) {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Runs the integration tests."
