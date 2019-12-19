@@ -13,6 +13,7 @@ import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.actionSystem.Separator
+import com.intellij.openapi.actionSystem.ToggleAction
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.JBPopupFactory
@@ -28,11 +29,11 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.components.telemetry.AnActionWrapper
 import software.aws.toolkits.jetbrains.components.telemetry.ComboBoxActionWrapper
-import software.aws.toolkits.jetbrains.components.telemetry.ToggleActionWrapper
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
+import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.utils.actions.ComputableActionGroup
 import software.aws.toolkits.resources.message
 import java.awt.Component
@@ -195,25 +196,35 @@ class ChangeAccountSettingsAction(
     }
 }
 
-private class ChangeRegionAction(val region: AwsRegion) : ToggleActionWrapper(region.displayName), DumbAware {
+private class ChangeRegionAction(val region: AwsRegion) : ToggleAction(region.displayName), DumbAware {
+    init {
+        // Disable mnemonic check to avoid filtering '_'
+        this.templatePresentation.setText(region.displayName, false)
+    }
 
-    override fun doIsSelected(e: AnActionEvent): Boolean = getAccountSetting(e).activeRegion == region
+    override fun isSelected(e: AnActionEvent): Boolean = getAccountSetting(e).activeRegion == region
 
-    override fun doSetSelected(e: AnActionEvent, state: Boolean) {
+    override fun setSelected(e: AnActionEvent, state: Boolean) {
         if (state) {
             getAccountSetting(e).changeRegion(region)
+            TelemetryService.recordSimpleTelemetry(e.project, "aws_region_change")
         }
     }
 }
 
-private class ChangeCredentialsAction(val credentialsProvider: ToolkitCredentialsProvider) : ToggleActionWrapper(credentialsProvider.displayName), DumbAware {
+private class ChangeCredentialsAction(val credentialsProvider: ToolkitCredentialsProvider) : ToggleAction(credentialsProvider.displayName), DumbAware {
+    init {
+        // Disable mnemonic check to avoid filtering '_'
+        this.templatePresentation.setText(credentialsProvider.displayName, false)
+    }
 
-    override fun doIsSelected(e: AnActionEvent): Boolean =
+    override fun isSelected(e: AnActionEvent): Boolean =
         tryOrNull { getAccountSetting(e).activeCredentialProvider == credentialsProvider } ?: false
 
-    override fun doSetSelected(e: AnActionEvent, state: Boolean) {
+    override fun setSelected(e: AnActionEvent, state: Boolean) {
         if (state) {
             getAccountSetting(e).changeCredentialProvider(credentialsProvider)
+            TelemetryService.recordSimpleTelemetry(e.project, "aws_credentials_change")
         }
     }
 }

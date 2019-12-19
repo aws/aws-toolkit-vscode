@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.components.telemetry
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.ToggleAction
 import com.intellij.openapi.actionSystem.ex.ComboBoxAction
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import javax.swing.Icon
@@ -60,31 +59,4 @@ abstract class ComboBoxActionWrapper : ComboBoxAction(), TelemetryNamespace {
     }
 
     open fun doActionPerformed(e: AnActionEvent) = super.actionPerformed(e)
-}
-
-abstract class ToggleActionWrapper(text: String? = null, description: String? = null, icon: Icon? = null) :
-    ToggleAction(text, description, icon),
-    TelemetryNamespace {
-
-    init {
-        // Disable mnemonic check to avoid filtering '_'
-        this.templatePresentation.setText(text, false)
-    }
-
-    // this will be repeatedly called by the IDE, so we likely do not want telemetry on this,
-    // but keeping this to maintain API consistency
-    final override fun isSelected(e: AnActionEvent): Boolean = doIsSelected(e)
-
-    final override fun setSelected(e: AnActionEvent, state: Boolean) {
-        doSetSelected(e, state)
-        TelemetryService.getInstance().record(e.project) {
-            datum("${getNamespace()}.${e.place}") {
-                count()
-            }
-        }
-    }
-
-    abstract fun doIsSelected(e: AnActionEvent): Boolean
-
-    abstract fun doSetSelected(e: AnActionEvent, state: Boolean)
 }
