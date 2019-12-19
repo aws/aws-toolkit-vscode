@@ -48,11 +48,11 @@ const scenarios: TestScenario[] = [
         debugSessionType: 'node2',
         language: 'javascript'
     },
-    { runtime: 'nodejs12.x', path: 'hello-world/app.js', debugSessionType: 'node2', language: 'javascript' }
-    // { runtime: 'python2.7', path: 'hello_world/app.py', debugSessionType: 'python' },
-    // { runtime: 'python3.6', path: 'hello_world/app.py', debugSessionType: 'python' },
-    // { runtime: 'python3.7', path: 'hello_world/app.py', debugSessionType: 'python' },
-    // { runtime: 'python3.8', path: 'hello_world/app.py', debugSessionType: 'python' }
+    { runtime: 'nodejs12.x', path: 'hello-world/app.js', debugSessionType: 'node2', language: 'javascript' },
+    { runtime: 'python2.7', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
+    { runtime: 'python3.6', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
+    { runtime: 'python3.7', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
+    { runtime: 'python3.8', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' }
     // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr' }
 ]
 
@@ -135,17 +135,30 @@ function validateLocalInvokeResult(
 
 async function activateExtensions(): Promise<void> {
     console.log('Activating extensions...')
-    // await activateExtension(VSCODE_EXTENSION_ID.python)
+    await activateExtension(VSCODE_EXTENSION_ID.python)
     await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
     console.log('Extensions activated')
 }
 
+async function configurePythonExtension(): Promise<void> {
+    logSeparator()
+    const configPy = vscode.workspace.getConfiguration('python')
+    // Disable linting to silence some of the Python extension's log spam
+    await configPy.update('linting.pylintEnabled', false, false)
+    await configPy.update('linting.enabled', false, false)
+    logSeparator()
+}
+
 async function configureAwsToolkitExtension(): Promise<void> {
-    console.log('************************************************************')
+    logSeparator()
     const configAws = vscode.workspace.getConfiguration('aws')
     await configAws.update('logLevel', 'verbose', false)
     // Prevent the extension from preemptively cancelling a 'sam local' run
     await configAws.update('samcli.debug.attach.timeout.millis', '90000', false)
+    logSeparator()
+}
+
+function logSeparator() {
     console.log('************************************************************')
 }
 
@@ -172,6 +185,7 @@ describe('SAM Integration Tests', async () => {
 
         await activateExtensions()
         await configureAwsToolkitExtension()
+        await configurePythonExtension()
 
         configureToolkitLogging()
 

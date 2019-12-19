@@ -54,7 +54,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
         const childProcess = new ChildProcess(params.command, options, ...params.args)
         let debuggerPromiseClosed: boolean = false
         const debuggerPromise = new Promise<void>(async (resolve, reject) => {
-            let checkForDebuggerAttachCue: boolean = params.isDebug
+            let checkForDebuggerAttachCue: boolean = params.isDebug && this.debuggerAttachCues.length !== 0
 
             await childProcess.start({
                 onStdout: (text: string): void => {
@@ -99,8 +99,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                 }
             })
 
-            if (!params.isDebug) {
-                this.channelLogger.logger.verbose('Local SAM App does not expect a debugger to attach.')
+            if (!params.isDebug || this.debuggerAttachCues.length === 0) {
                 debuggerPromiseClosed = true
                 resolve()
             }
