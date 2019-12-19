@@ -108,12 +108,12 @@ class CreateIamRoleDialog(
     }
 
     @TestOnly
-    fun createIamRoleForTesting() {
+    internal fun createIamRoleForTesting() {
         createIamRole(roleName(), policyDocument(), assumeRolePolicy())
     }
 
     @TestOnly
-    fun getViewForTesting(): CreateRolePanel = view
+    internal fun getViewForTesting(): CreateRolePanel = view
 
     private companion object {
         val LOG = getLogger<CreateIamRoleDialog>()
