@@ -55,7 +55,7 @@ async function getLambdaHandlerCandidates(uri: vscode.Uri): Promise<LambdaHandle
     const filename = uri.fsPath
 
     const symbols: vscode.DocumentSymbol[] =
-        (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', uri)) ||
+        (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', uri)) ??
         []
 
     return symbols
