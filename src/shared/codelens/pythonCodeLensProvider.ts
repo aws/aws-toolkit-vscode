@@ -17,7 +17,7 @@ import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { Datum, TelemetryNamespace } from '../telemetry/telemetryTypes'
 import { registerCommand } from '../telemetry/telemetryUtils'
-import { getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
+import { ChannelLogger, getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
 import {
     CodeLensProviderParams,
     DRIVE_LETTER_REGEX,
@@ -34,10 +34,11 @@ import {
     InvokeLambdaFunctionArguments,
     LambdaLocalInvokeParams,
     makeBuildDir,
-    makeInputTemplate,
-    waitForDebugPort
+    makeInputTemplate
 } from './localLambdaRunner'
+import { PythonDebugAdapterHeartbeat } from './pythonDebugAdapterHeartbeat'
 
+const PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MS = 1000
 export const PYTHON_LANGUAGE = 'python'
 export const PYTHON_ALLFILES: vscode.DocumentFilter[] = [
     {
@@ -194,7 +195,7 @@ export async function initialize({
     const channelLogger = getChannelLogger(toolkitOutputChannel)
 
     if (!localInvokeCommand) {
-        localInvokeCommand = new DefaultSamLocalInvokeCommand(channelLogger, [WAIT_FOR_DEBUGGER_MESSAGES.PYTHON])
+        localInvokeCommand = new DefaultSamLocalInvokeCommand(channelLogger, [])
     }
 
     const invokeLambda = async (args: LambdaLocalInvokeParams & { runtime: string }) => {
@@ -300,7 +301,7 @@ export async function initialize({
                 configuration,
                 samLocalInvokeCommand: localInvokeCommand!,
                 telemetryService,
-                onWillAttachDebugger: waitForDebugPort
+                onWillAttachDebugger: waitForPythonDebugAdapter
             })
         } catch (err) {
             const error = err as Error
@@ -341,6 +342,55 @@ export async function initialize({
             name: 'invokelocal'
         }
     })
+}
+
+export async function waitForPythonDebugAdapter(
+    debugPort: number,
+    timeoutDurationMillis: number,
+    channelLogger: ChannelLogger
+) {
+    const logger = getLogger()
+    const stopMillis = Date.now() + timeoutDurationMillis
+
+    logger.verbose(`Testing debug adapter connection on port ${debugPort}`)
+
+    let debugServerAvailable: boolean = false
+
+    while (!debugServerAvailable) {
+        const tester = new PythonDebugAdapterHeartbeat(debugPort)
+
+        try {
+            if (await tester.connect()) {
+                if (await tester.isDebugServerUp()) {
+                    logger.verbose('Debug Adapter is available')
+                    debugServerAvailable = true
+                }
+            }
+        } catch (err) {
+            logger.verbose('Error while testing', err as Error)
+        } finally {
+            await tester.disconnect()
+        }
+
+        if (!debugServerAvailable) {
+            if (Date.now() > stopMillis) {
+                break
+            }
+
+            logger.verbose('Debug Adapter not ready, retrying...')
+            await new Promise<void>(resolve => {
+                setTimeout(resolve, PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MS)
+            })
+        }
+    }
+
+    if (!debugServerAvailable) {
+        channelLogger.warn(
+            'AWS.sam.local.invoke.python.server.not.available',
+            // tslint:disable-next-line:max-line-length
+            'Unable to communicate with the Python Debug Adapter. The debugger might not succeed when attaching to your SAM Application.'
+        )
+    }
 }
 
 // Convenience method to swallow any errors
