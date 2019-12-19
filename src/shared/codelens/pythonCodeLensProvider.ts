@@ -9,6 +9,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { PythonDebugConfiguration, PythonPathMapping } from '../../lambda/local/debugConfiguration'
 import { CloudFormation } from '../cloudformation/cloudformation'
+import { VSCODE_EXTENSION_ID } from '../extensions'
 import { fileExists, readFileAsString } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
@@ -52,56 +53,16 @@ const getSamProjectDirPathForFile = async (filepath: string): Promise<string> =>
     return path.dirname(filepath)
 }
 
-async function getLambdaHandlerCandidates({
-    uri,
-    pythonSettings
-}: {
-    uri: vscode.Uri
-    pythonSettings: SettingsConfiguration
-}): Promise<LambdaHandlerCandidate[]> {
-    const PYTHON_JEDI_ENABLED_KEY = 'jediEnabled'
-    const RETRY_INTERVAL_MS = 1000
-    const MAX_RETRIES = 10
-
-    const logger = getLogger()
+async function getLambdaHandlerCandidates(uri: vscode.Uri): Promise<LambdaHandlerCandidate[]> {
     const filename = uri.fsPath
 
-    let symbols: vscode.DocumentSymbol[] =
-        (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', uri)) ||
+    const symbols: vscode.DocumentSymbol[] =
+        (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', uri)) ??
         []
-
-    // A recent regression in vscode-python stops codelenses from rendering if we first return an empty array
-    // (because symbols have not yet been loaded), then a non-empty array (when our codelens provider is re-invoked
-    // upon symbols loading). To work around this, we attempt to wait for symbols to load before returning. We cannot
-    // distinguish between "the document does not contain any symbols" and "the symbols have not yet been loaded", so
-    // we stop retrying if we are still getting an empty result after several retries.
-    //
-    // This issue only surfaces when the setting `python.jediEnabled` is not set to false.
-    // TODO: When the above issue is resolved, remove this workaround AND bump the minimum
-    //       required VS Code version and/or add a minimum supported version for the Python
-    //       extension.
-    const jediEnabled = pythonSettings.readSetting<boolean>(PYTHON_JEDI_ENABLED_KEY, true)
-    if (jediEnabled) {
-        for (let i = 0; i < MAX_RETRIES && !symbols.length; i++) {
-            await new Promise<void>(resolve => setTimeout(resolve, RETRY_INTERVAL_MS))
-            symbols =
-                (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
-                    'vscode.executeDocumentSymbolProvider',
-                    uri
-                )) || []
-        }
-    }
 
     return symbols
         .filter(sym => sym.kind === vscode.SymbolKind.Function)
-        .map(symbol => {
-            logger.debug(
-                `pythonCodeLensProviderFound.getLambdaHandlerCandidates: ${JSON.stringify({
-                    filePath: uri.fsPath,
-                    handlerName: `${path.parse(filename).name}.${symbol.name}`
-                })}`
-            )
-
+        .map<LambdaHandlerCandidate>(symbol => {
             return {
                 filename,
                 handlerName: `${path.parse(filename).name}.${symbol.name}`,
@@ -442,6 +403,16 @@ async function deleteFile(filePath: string): Promise<void> {
     }
 }
 
+async function activatePythonExtensionIfInstalled() {
+    const extension = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.python)
+
+    // If the extension is not installed, it is not a failure. There may be reduced functionality.
+    if (extension && !extension.isActive) {
+        getLogger().info('Python CodeLens Provider is activating the python extension')
+        await extension.activate()
+    }
+}
+
 export async function makePythonCodeLensProvider(
     pythonSettings: SettingsConfiguration
 ): Promise<vscode.CodeLensProvider> {
@@ -453,10 +424,13 @@ export async function makePythonCodeLensProvider(
             document: vscode.TextDocument,
             token: vscode.CancellationToken
         ): Promise<vscode.CodeLens[]> => {
-            const handlers: LambdaHandlerCandidate[] = await getLambdaHandlerCandidates({
-                uri: document.uri,
-                pythonSettings
-            })
+            // Try to activate the Python Extension before requesting symbols from a python file
+            await activatePythonExtensionIfInstalled()
+            if (token.isCancellationRequested) {
+                return []
+            }
+
+            const handlers: LambdaHandlerCandidate[] = await getLambdaHandlerCandidates(document.uri)
             logger.debug(
                 'pythonCodeLensProvider.makePythonCodeLensProvider handlers:',
                 JSON.stringify(handlers, undefined, 2)
