@@ -40,7 +40,7 @@ class S3TreeTable(
 
     private val dropTargetListener = object : DropTargetAdapter() {
         override fun drop(dropEvent: DropTargetDropEvent) {
-            val node = rowAtPoint(dropEvent.location).takeIf { it >= 0 }?.let { getNodeForRow(it) } ?: return
+            val node = rowAtPoint(dropEvent.location).takeIf { it >= 0 }?.let { getNodeForRow(it) } ?: getRootNode()
             val data = try {
                 dropEvent.acceptDrop(DnDConstants.ACTION_COPY_OR_MOVE)
                 dropEvent.transferable.getTransferData(DataFlavor.javaFileListFlavor) as List<File>
