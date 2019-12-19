@@ -12,12 +12,11 @@ import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFileWrapper
 import com.intellij.ui.treeStructure.treetable.TreeTable
-import software.amazon.awssdk.core.sync.ResponseTransformer
-import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.s3.model.GetObjectRequest
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
-import software.aws.toolkits.jetbrains.services.s3.upload
+import software.aws.toolkits.jetbrains.services.s3.objectActions.deleteSelectedObjects
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import java.awt.datatransfer.DataFlavor
@@ -26,6 +25,7 @@ import java.awt.dnd.DnDConstants
 import java.awt.dnd.DropTarget
 import java.awt.dnd.DropTargetAdapter
 import java.awt.dnd.DropTargetDropEvent
+import java.awt.event.KeyEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.io.File
@@ -33,9 +33,8 @@ import javax.swing.tree.DefaultMutableTreeNode
 
 class S3TreeTable(
     private val treeTableModel: S3TreeTableModel,
-    private val bucketVirtual: S3VirtualBucket,
-    private val project: Project,
-    private val s3Client: S3Client
+    val bucket: S3VirtualBucket,
+    private val project: Project
 ) : TreeTable(treeTableModel) {
 
     private val dropTargetListener = object : DropTargetAdapter() {
@@ -57,14 +56,14 @@ class S3TreeTable(
 
             val directoryKey = node.getDirectoryKey()
 
-            virtualFiles.map {
-                s3Client.upload(project, it.inputStream, it.length, bucketVirtual.name, directoryKey + it.name).whenComplete { _, error ->
-                    when (error) {
-                        is Throwable -> error.notifyError(message("s3.upload.object.failed", it.name))
-                        else -> {
-                            invalidateLevel(node)
-                            refresh()
-                        }
+            GlobalScope.launch {
+                virtualFiles.forEach {
+                    try {
+                        bucket.upload(project, it.inputStream, it.length, directoryKey + it.name)
+                        invalidateLevel(node)
+                        refresh()
+                    } catch (e: Exception) {
+                        e.notifyError(message("s3.upload.object.failed", it.name))
                     }
                 }
             }
@@ -77,6 +76,14 @@ class S3TreeTable(
             handleOpeningFile(row, e)
             handleLoadingMore(row, e)
         }
+    }
+
+    override fun processKeyEvent(e: KeyEvent?) {
+        if (e?.keyCode == KeyEvent.VK_DELETE || e?.keyCode == KeyEvent.VK_BACK_SPACE) {
+            e.consume()
+            deleteSelectedObjects(project, this@S3TreeTable)
+        }
+        super.processKeyEvent(e)
     }
 
     private fun handleOpeningFile(row: Int, e: MouseEvent) {
@@ -93,15 +100,11 @@ class S3TreeTable(
         ApplicationManager.getApplication().runWriteAction {
             fileWrapper.virtualFile?.isWritable = true
         }
-        val getObjectRequest = GetObjectRequest.builder()
-            .bucket(objectNode.bucketName)
-            .key(objectNode.key)
-            .build()
-        // TODO refactor the download file action to refactor out the common parts and add progress to this
-        ApplicationManager.getApplication().executeOnPooledThread {
-            s3Client.getObject(getObjectRequest, ResponseTransformer.toOutputStream(fileWrapper.file.outputStream()))
-            // If the file type is not associated, prompt user to associate. Returns null on cancel
+
+        GlobalScope.launch {
+            bucket.download(project, objectNode.key, fileWrapper.file.outputStream())
             runInEdt {
+                // If the file type is not associated, prompt user to associate. Returns null on cancel
                 fileWrapper.virtualFile?.let {
                     ApplicationManager.getApplication().runWriteAction {
                         it.isWritable = false

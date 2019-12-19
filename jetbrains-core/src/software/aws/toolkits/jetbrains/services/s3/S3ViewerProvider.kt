@@ -16,7 +16,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.UserDataHolderBase
 import com.intellij.openapi.vfs.VirtualFile
 import software.amazon.awssdk.services.s3.model.Bucket
-import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.services.s3.editor.S3ViewerPanel
 import software.aws.toolkits.jetbrains.services.s3.editor.S3VirtualBucket
@@ -44,7 +43,7 @@ class S3ViewerEditorProvider : FileEditorProvider, PossiblyDumbAware {
 }
 
 class S3ViewerEditor(project: Project, bucket: S3VirtualBucket) : UserDataHolderBase(), FileEditor {
-    private val s3Panel: S3ViewerPanel = S3ViewerPanel(project, AwsClientManager.getInstance(project).getClient(), bucket)
+    private val s3Panel: S3ViewerPanel = S3ViewerPanel(project, bucket)
 
     override fun getComponent(): JComponent = s3Panel.component
 

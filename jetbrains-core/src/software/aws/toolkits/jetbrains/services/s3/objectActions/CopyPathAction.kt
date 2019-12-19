@@ -10,16 +10,12 @@ import com.intellij.openapi.ide.CopyPasteManager
 import software.aws.toolkits.jetbrains.components.telemetry.ActionButtonWrapper
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeContinuationNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
-import software.aws.toolkits.jetbrains.services.s3.editor.S3VirtualBucket
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.TelemetryResult
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.resources.message
 import java.awt.datatransfer.StringSelection
 
-class CopyPathAction(
-    private val treeTable: S3TreeTable,
-    val bucket: S3VirtualBucket
-) : ActionButtonWrapper(message("s3.copy.path"), null, AllIcons.Actions.Copy) {
+class CopyPathAction(private val treeTable: S3TreeTable) : ActionButtonWrapper(message("s3.copy.path"), null, AllIcons.Actions.Copy) {
     override fun isEnabled(): Boolean = treeTable.selectedRows.size == 1 && !treeTable.getSelectedNodes().any { it is S3TreeContinuationNode }
 
     override fun doActionPerformed(e: AnActionEvent) {

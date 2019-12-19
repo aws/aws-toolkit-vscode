@@ -21,6 +21,7 @@ import software.aws.toolkits.jetbrains.utils.ProgressMonitorInputStream
 import software.aws.toolkits.jetbrains.utils.ProgressMonitorOutputStream
 import software.aws.toolkits.resources.message
 import java.io.InputStream
+import java.io.OutputStream
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
@@ -72,6 +73,15 @@ fun S3Client.download(
     destination: Path,
     message: String = message("s3.download.object.progress", key),
     startInBackground: Boolean = true
+): CompletionStage<GetObjectResponse> = download(project, bucket, key, destination.outputStream(), message, startInBackground)
+
+fun S3Client.download(
+    project: Project,
+    bucket: String,
+    key: String,
+    destination: OutputStream,
+    message: String = message("s3.download.object.progress", key),
+    startInBackground: Boolean = true
 ): CompletionStage<GetObjectResponse> {
     val future = CompletableFuture<GetObjectResponse>()
     val request = GetObjectRequest.builder().bucket(bucket).key(key).build()
@@ -86,7 +96,7 @@ fun S3Client.download(
                 this@download.getObject(request) { response, inputStream ->
                     indicator.isIndeterminate = false
                     inputStream.use { input ->
-                        ProgressMonitorOutputStream(indicator, destination.outputStream(), response.contentLength()).use { output ->
+                        ProgressMonitorOutputStream(indicator, destination, response.contentLength()).use { output ->
                             IoUtils.copy(input, output)
                         }
                     }
