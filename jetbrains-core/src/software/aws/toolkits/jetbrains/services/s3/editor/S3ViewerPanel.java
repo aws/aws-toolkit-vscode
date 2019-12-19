@@ -1,3 +1,6 @@
+// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 package software.aws.toolkits.jetbrains.services.s3.editor;
 
 import com.intellij.openapi.Disposable;
@@ -33,6 +36,7 @@ import software.aws.toolkits.jetbrains.services.s3.S3TreeCellRenderer;
 import software.aws.toolkits.jetbrains.services.s3.objectActions.CopyPathAction;
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DeleteObjectAction;
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction;
+import software.aws.toolkits.jetbrains.services.s3.objectActions.NewFolderAction;
 import software.aws.toolkits.jetbrains.services.s3.objectActions.RenameObjectAction;
 import software.aws.toolkits.jetbrains.services.s3.objectActions.UploadObjectAction;
 import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources;
@@ -142,8 +146,9 @@ public class S3ViewerPanel {
     private void addTreeActions() {
         DefaultActionGroup actionGroup = new DefaultActionGroup();
         actionGroup.add(new DownloadObjectAction(treeTable, bucketVirtual));
-        actionGroup.add(new UploadObjectAction(bucketVirtual, treeTable));
+        actionGroup.add(new UploadObjectAction(treeTable, bucketVirtual));
         actionGroup.add(new Separator());
+        actionGroup.add(new NewFolderAction(treeTable, bucketVirtual));
         actionGroup.add(new RenameObjectAction(treeTable, bucketVirtual));
         actionGroup.add(new CopyPathAction(treeTable, bucketVirtual));
         actionGroup.add(new Separator());

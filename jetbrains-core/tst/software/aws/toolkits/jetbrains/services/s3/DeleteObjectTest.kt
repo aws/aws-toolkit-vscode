@@ -39,7 +39,7 @@ class DeleteObjectTest {
         val s3Client = delegateMock<S3Client>()
         val deleteCaptor = argumentCaptor<DeleteObjectsRequest>()
         val mockTreeTable = mockk<S3TreeTable>()
-        val mockVirtualBucket = S3VirtualBucket(Bucket.builder().name("TestBucket").build())
+        val mockVirtualBucket = S3VirtualBucket(Bucket.builder().name("TestBucket").build(), s3Client)
 
         val mockDeleteObject = DeleteObjectAction(mockTreeTable, mockVirtualBucket)
 

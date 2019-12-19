@@ -8,7 +8,7 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import io.mockk.mockk
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.core.sync.ResponseTransformer
@@ -49,7 +49,7 @@ class DownloadObjectTest {
         mockClientManagerRule.manager().register(S3Client::class, s3Client)
 
         val treeTableMock = mockk<S3TreeTable>()
-        val virtualBucketMock = S3VirtualBucket(Bucket.builder().name("TestBucket").build())
+        val virtualBucketMock = S3VirtualBucket(Bucket.builder().name("TestBucket").build(), s3Client)
 
         val testFile = FileUtil.createTempFile("myfile", ".txt")
         val objectToDownload = S3TreeObjectNode("TestBucket", null, "key", 42, Instant.ofEpochSecond(0))
@@ -58,7 +58,7 @@ class DownloadObjectTest {
 
         downloadObjectMock.downloadObjectAction(projectRule.project, s3Client, objectToDownload, VirtualFileWrapper(testFile))
         val downloadRequestCapture = downloadCaptor.firstValue
-        Assertions.assertThat(downloadRequestCapture.bucket()).isEqualTo("TestBucket")
-        Assertions.assertThat(downloadRequestCapture.key()).contains("key")
+        assertThat(downloadRequestCapture.bucket()).isEqualTo("TestBucket")
+        assertThat(downloadRequestCapture.key()).contains("key")
     }
 }

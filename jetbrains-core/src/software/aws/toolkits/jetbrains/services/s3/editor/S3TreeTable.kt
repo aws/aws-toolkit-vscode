@@ -60,7 +60,7 @@ class S3TreeTable(
             virtualFiles.map {
                 s3Client.upload(project, it.inputStream, it.length, bucketVirtual.name, directoryKey + it.name).whenComplete { _, error ->
                     when (error) {
-                        is Throwable -> error.notifyError(message("s3.upload.object.failed"))
+                        is Throwable -> error.notifyError(message("s3.upload.object.failed", it.name))
                         else -> {
                             invalidateLevel(node)
                             refresh()
@@ -150,6 +150,8 @@ class S3TreeTable(
         return (path.lastPathComponent as DefaultMutableTreeNode).userObject as? S3TreeNode
     }
 
+    fun getRootNode(): S3TreeDirectoryNode = (tableModel.root as DefaultMutableTreeNode).userObject as S3TreeDirectoryNode
+
     fun getSelectedNodes(): List<S3TreeNode> = selectedRows.map { getNodeForRow(it) }.filterNotNull()
 
     fun removeRows(rows: List<Int>) =
@@ -164,7 +166,10 @@ class S3TreeTable(
         }
 
     fun invalidateLevel(node: S3TreeNode) {
-        node.parent?.removeAllChildren()
+        when (node) {
+            is S3TreeDirectoryNode -> node.removeAllChildren()
+            else -> node.parent?.removeAllChildren()
+        }
     }
 
     companion object {

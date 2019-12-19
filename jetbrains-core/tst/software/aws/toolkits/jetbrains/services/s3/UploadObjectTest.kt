@@ -49,14 +49,14 @@ class UploadObjectTest {
         }
         mockClientManager.manager().register(S3Client::class, s3Client)
 
-        val virtualBucket = S3VirtualBucket(Bucket.builder().name("TestBucket").build())
+        val virtualBucket = S3VirtualBucket(Bucket.builder().name("TestBucket").build(), s3Client)
         val treeTableMock = mockk<S3TreeTable>()
 
         val testFile = delegateMock<VirtualFile> { on { name } doReturn "TestFile" }
         testFile.stub { on { length } doReturn 341 }
         testFile.stub { on { inputStream } doReturn ByteArrayInputStream("Hello".toByteArray()) }
 
-        val uploadObjectMock = UploadObjectAction(virtualBucket, treeTableMock)
+        val uploadObjectMock = UploadObjectAction(treeTableMock, virtualBucket)
         val folder = S3TreeDirectoryNode(s3Client, "TestBucket", null, "")
 
         uploadObjectMock.uploadObjectAction(s3Client, projectRule.project, testFile, folder).value

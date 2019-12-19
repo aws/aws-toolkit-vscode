@@ -41,7 +41,7 @@ class RenameObjectTest {
         val copyCaptor = argumentCaptor<CopyObjectRequest>()
 
         val treeTableMock = mockk<S3TreeTable>()
-        val virtualBucketMock = S3VirtualBucket(Bucket.builder().name("TestBucket").build())
+        val virtualBucketMock = S3VirtualBucket(Bucket.builder().name("TestBucket").build(), s3Client)
         val renameObjectMock = RenameObjectAction(treeTableMock, virtualBucketMock)
 
         s3Client.stub {

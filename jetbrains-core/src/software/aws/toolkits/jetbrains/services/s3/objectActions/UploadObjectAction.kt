@@ -27,8 +27,8 @@ import software.aws.toolkits.resources.message
 import java.util.concurrent.CompletionStage
 
 class UploadObjectAction(
-    val bucket: S3VirtualBucket,
-    private val treeTable: S3TreeTable
+    private val treeTable: S3TreeTable,
+    val bucket: S3VirtualBucket
 ) : ActionButtonWrapper(message("s3.upload.object.action", bucket.name), null, AllIcons.Actions.Upload) {
     override fun doActionPerformed(e: AnActionEvent) {
         val project = e.getRequiredData(LangDataKeys.PROJECT)
