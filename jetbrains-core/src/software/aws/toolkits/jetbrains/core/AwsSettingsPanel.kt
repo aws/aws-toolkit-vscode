@@ -27,7 +27,6 @@ import software.aws.toolkits.core.credentials.CredentialProviderNotFound
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.tryOrNull
-import software.aws.toolkits.jetbrains.components.telemetry.AnActionWrapper
 import software.aws.toolkits.jetbrains.components.telemetry.ComboBoxActionWrapper
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
@@ -91,8 +90,8 @@ private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
     override fun dispose() {}
 }
 
-class SettingsSelectorAction(private val showRegions: Boolean = true) : AnActionWrapper(message("configure.toolkit")), DumbAware {
-    override fun doActionPerformed(e: AnActionEvent) {
+class SettingsSelectorAction(private val showRegions: Boolean = true) : AnAction(message("configure.toolkit")), DumbAware {
+    override fun actionPerformed(e: AnActionEvent) {
         val project = e.getRequiredData(PlatformDataKeys.PROJECT)
         val settingsSelector = SettingsSelector(project)
         settingsSelector.settingsPopup(e.dataContext, showRegions = showRegions).showCenteredInCurrentWindow(project)

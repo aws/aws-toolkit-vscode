@@ -27,6 +27,7 @@ import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsMa
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileToolkitCredentialsProviderFactory
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.services.sts.StsResources
+import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.utils.MRUList
 import software.aws.toolkits.jetbrains.utils.createNotificationExpiringAction
 import software.aws.toolkits.jetbrains.utils.createShowMoreInfoDialogAction
@@ -205,7 +206,10 @@ class DefaultProjectAccountSettingsManager(private val project: Project) : Proje
                 forceFetch = true
             ).whenComplete { _, exception ->
                 when (exception) {
-                    null -> activeProfileInternal = credentialsProvider
+                    null -> {
+                        activeProfileInternal = credentialsProvider
+                        TelemetryService.recordSimpleTelemetry(project, "aws_credentials_validate", true)
+                    }
                     else -> {
                         val title = message("credentials.invalid.title")
                         val message = message("credentials.profile.validation_error", credentialsProvider.displayName)
@@ -223,6 +227,7 @@ class DefaultProjectAccountSettingsManager(private val project: Project) : Proje
                                 createNotificationExpiringAction(ActionManager.getInstance().getAction("aws.settings.upsertCredentials"))
                             )
                         )
+                        TelemetryService.recordSimpleTelemetry(project, "aws_credentials_validate", false)
                     }
                 }
                 runInEdt(ModalityState.any()) {

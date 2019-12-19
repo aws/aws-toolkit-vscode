@@ -17,7 +17,6 @@ import com.intellij.ui.ScrollPaneFactory
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.AwsToolkit
-import software.aws.toolkits.jetbrains.components.telemetry.AnActionWrapper
 import software.aws.toolkits.jetbrains.core.SettingsSelectorAction
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable
@@ -122,10 +121,10 @@ fun createNotificationExpiringAction(action: AnAction): NotificationAction = Not
 }
 
 fun createShowMoreInfoDialogAction(actionName: String?, title: String?, message: String?, moreInfo: String?) =
-    object : AnActionWrapper(actionName) {
+    object : AnAction(actionName) {
         override fun isDumbAware() = true
 
-        override fun doActionPerformed(e: AnActionEvent) {
+        override fun actionPerformed(e: AnActionEvent) {
             val dialogTitle = title ?: ""
 
             val textArea = JTextArea(moreInfo).apply {

@@ -61,6 +61,12 @@ interface TelemetryService : Disposable {
         }
 
         @JvmStatic
+        fun recordSimpleTelemetry(project: Project?, name: String) =
+            getInstance().record(project) {
+                datum(name)
+            }
+
+        @JvmStatic
         fun recordSimpleTelemetry(project: Project?, name: String, success: Boolean = true, count: Double = 1.0) =
             getInstance().record(project) {
                 datum(name) {
