@@ -13,7 +13,7 @@ fun createRunConfiguration(
     project: Project,
     input: String? = "",
     inputIsFile: Boolean = false,
-    regionId: AwsRegion? = MockRegionProvider.US_EAST_1,
+    regionId: AwsRegion? = MockRegionProvider.getInstance().defaultRegion(),
     credentialId: String? = "MockCredentials",
     functionName: String? = "DummyFunction"
 ): RemoteLambdaRunConfiguration {

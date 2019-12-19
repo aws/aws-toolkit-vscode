@@ -432,7 +432,7 @@ class AwsResourceCacheTest {
             override val displayName: String get() = id
 
             override fun resolveCredentials(): AwsCredentials {
-                TODO("not implemented")
+                throw NotImplementedError()
             }
         }
 

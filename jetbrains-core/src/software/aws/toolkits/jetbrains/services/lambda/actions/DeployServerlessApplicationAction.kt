@@ -49,7 +49,7 @@ class DeployServerlessApplicationAction : AnAction(
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.getRequiredData(PlatformDataKeys.PROJECT)
 
-        if (!ProjectAccountSettingsManager.getInstance(project).hasActiveCredentials()) {
+        if (!ProjectAccountSettingsManager.getInstance(project).isValidConnectionSettings()) {
             notifyNoActiveCredentialsError(project = project)
             return
         }

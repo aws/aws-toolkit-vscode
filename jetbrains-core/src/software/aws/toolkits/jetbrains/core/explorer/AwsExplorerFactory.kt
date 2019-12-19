@@ -13,8 +13,7 @@ import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.openapi.wm.ex.ToolWindowEx
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
-import software.aws.toolkits.jetbrains.core.ChangeAccountSettingsAction
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.ChangeAccountSettingsActionGroup
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.utils.actions.OpenBrowserAction
 import software.aws.toolkits.resources.message
@@ -35,7 +34,11 @@ class AwsExplorerFactory : ToolWindowFactory, DumbAware {
                 })
             toolWindow.setAdditionalGearActions(
                 DefaultActionGroup().apply {
-                    add(AwsSettingsMenu(project))
+                    add(
+                        DefaultActionGroup(message("settings.title"), true).also {
+                            it.add(ChangeAccountSettingsActionGroup(project, true))
+                        }
+                    )
                     add(
                         OpenBrowserAction(
                             title = message("explorer.view_documentation"),
@@ -63,18 +66,5 @@ class AwsExplorerFactory : ToolWindowFactory, DumbAware {
 
     override fun init(toolWindow: ToolWindow) {
         toolWindow.stripeTitle = message("explorer.label")
-    }
-}
-
-class AwsSettingsMenu(private val project: Project) : DefaultActionGroup(message("settings.title"), true),
-    ProjectAccountSettingsManager.AccountSettingsChangedNotifier {
-    init {
-        project.messageBus.connect().subscribe(ProjectAccountSettingsManager.ACCOUNT_SETTINGS_CHANGED, this)
-        add(ChangeAccountSettingsAction(project).createPopupActionGroup())
-    }
-
-    override fun settingsChanged(event: ProjectAccountSettingsManager.AccountSettingsChangedNotifier.AccountSettingsEvent) {
-        removeAll()
-        add(ChangeAccountSettingsAction(project).createPopupActionGroup())
     }
 }

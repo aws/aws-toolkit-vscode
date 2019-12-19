@@ -49,12 +49,12 @@ class SamSchemaDownloadPostCreationAction {
 
     private fun initializeNewProjectCredentialsFromSourceCreatingProjet(newApplicationProject: Project, sourceCreatingProject: Project) {
         val newApplicationProjectSettings = ProjectAccountSettingsManager.getInstance(newApplicationProject)
-        if (newApplicationProjectSettings.hasActiveCredentials()) {
+        if (newApplicationProjectSettings.isValidConnectionSettings()) {
             return
         }
 
         val sourceCreatingProjectSettings = ProjectAccountSettingsManager.getInstance(sourceCreatingProject)
-        if (!sourceCreatingProjectSettings.hasActiveCredentials()) {
+        if (!sourceCreatingProjectSettings.isValidConnectionSettings()) {
             return
         }
 

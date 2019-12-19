@@ -114,7 +114,7 @@ class ExecutableBackedCacheResourceTest {
             assertionBlock.invoke(this)
         }
 
-        return cacheResource.fetch(projectRule.project, MockRegionProvider.US_EAST_1, mockCredentials)
+        return cacheResource.fetch(projectRule.project, MockRegionProvider.getInstance().defaultRegion(), mockCredentials)
     }
 
     private object MockExecutable : ExecutableType<String>, Validatable {

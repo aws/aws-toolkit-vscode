@@ -10,6 +10,7 @@ import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.utils.CompletableFutureUtils
 import software.aws.toolkits.jetbrains.core.MockResourceCache
+import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerErrorNode
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
@@ -24,6 +25,7 @@ class EcsTaskDefinitionParentNodeTest {
     @Before
     fun setUp() {
         resourceCache().clear()
+        MockProjectAccountSettingsManager.getInstance(projectRule.project).reset()
     }
 
     @Test

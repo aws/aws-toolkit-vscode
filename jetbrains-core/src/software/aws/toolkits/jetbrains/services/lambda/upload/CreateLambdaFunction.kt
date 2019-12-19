@@ -41,7 +41,7 @@ class CreateLambdaFunction(
         val project = e.getRequiredData(LangDataKeys.PROJECT)
         val runtime = e.runtime()
 
-        if (!ProjectAccountSettingsManager.getInstance(project).hasActiveCredentials()) {
+        if (!ProjectAccountSettingsManager.getInstance(project).isValidConnectionSettings()) {
             notifyNoActiveCredentialsError(project = project)
             return
         }

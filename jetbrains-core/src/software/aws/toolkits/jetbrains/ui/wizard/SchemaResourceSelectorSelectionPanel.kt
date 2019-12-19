@@ -59,7 +59,7 @@ class SchemaResourceSelectorSelectionPanel(
 
     private fun initializeAwsConnection(): AwsConnection {
         val settings = ProjectAccountSettingsManager.getInstance(project)
-        if (settings.hasActiveCredentials()) {
+        if (settings.isValidConnectionSettings()) {
             return settings.activeRegion to settings.activeCredentialProvider
         } else {
             return settings.activeRegion to LateBoundToolkitCredentialsProvider()

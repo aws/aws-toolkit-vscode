@@ -167,7 +167,7 @@ class PythonLocalLamdaRunConfigurationIntegrationTest(private val runtime: Runti
 
         assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(jsonToMap(executeLambda.stdout))
-            .containsEntry("AWS_REGION", MockRegionProvider.US_EAST_1.id)
+            .containsEntry("AWS_REGION", MockRegionProvider.getInstance().defaultRegion().id)
     }
 
     @Test

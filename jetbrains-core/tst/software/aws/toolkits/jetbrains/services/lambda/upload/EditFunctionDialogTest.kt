@@ -52,7 +52,7 @@ class EditFunctionDialogTest {
     fun setup() {
         s3Client = mockClientManager.create()
         iamClient = mockClientManager.create()
-        mockSettingsManager.activeRegion = AwsRegion("us-west-1", "US West 1")
+        mockSettingsManager.changeRegion(AwsRegion("us-west-1", "US West 1"))
 
         val sdk = IdeaTestUtil.getMockJdk18()
         runInEdtAndWait {
