@@ -86,7 +86,7 @@ internal class TreeViewImpl(private val project: Project, stackName: String) : T
     }
 
     init {
-        val descriptor = StackNodeDescriptor(project, stackName, StatusType.UNKNOWN, message("cloudformation.stack.loading"))
+        val descriptor = StackNodeDescriptor(project, stackName, StatusType.UNKNOWN, message("loading_resource.loading"))
         val rootNode = DefaultMutableTreeNode(descriptor, true)
         model = DefaultTreeModel(rootNode)
         tree = Tree(model)

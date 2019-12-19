@@ -9,8 +9,6 @@ import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.ui.Messages
 import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.s3.model.Delete
-import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier
 import software.aws.toolkits.jetbrains.components.telemetry.ActionButtonWrapper
 import software.aws.toolkits.jetbrains.core.AwsClientManager
@@ -66,12 +64,7 @@ class DeleteObjectAction(
     override fun isEnabled(): Boolean = (!(treeTable.isEmpty || (treeTable.selectedRow < 0) || (treeTable.getValueAt(treeTable.selectedRow, 1) == "")))
 
     fun deleteObjectAction(client: S3Client, objectsToDelete: MutableList<ObjectIdentifier>) {
-        val bucketName = bucket.name
-        val deleteObjectsRequest = DeleteObjectsRequest.builder()
-            .bucket(bucketName)
-            .delete(Delete.builder().objects(objectsToDelete).build())
-            .build()
-        client.deleteObjects(deleteObjectsRequest)
+        client.deleteObjects { it.bucket(bucket.name).delete { del -> del.objects(objectsToDelete) } }
     }
 
     companion object {

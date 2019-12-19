@@ -1,5 +1,5 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-// SPDX-License-Identifier: Apache-2.0package software.aws.toolkits.jetbrains.services.s3.BucketActions
+// SPDX-License-Identifier: Apache-2.0
 package software.aws.toolkits.jetbrains.services.s3.bucketActions
 
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -17,7 +17,7 @@ class CreateBucketAction : AnActionWrapper(message("s3.create.bucket.title"), nu
     override fun doActionPerformed(e: AnActionEvent) {
         val project = e.getRequiredData(LangDataKeys.PROJECT)
         val client: S3Client = AwsClientManager.getInstance(project).getClient()
-        val dialog = CreateS3BucketDialog(project, client, null)
+        val dialog = CreateS3BucketDialog(project, client)
         dialog.show()
     }
 }
