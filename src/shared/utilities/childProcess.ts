@@ -5,6 +5,7 @@
 
 import * as child_process from 'child_process'
 import * as crossSpawn from 'cross-spawn'
+import { getLogger } from '../logger'
 
 export interface ChildProcessStartArguments {
     onStdout?(text: string): void
@@ -71,6 +72,7 @@ export class ChildProcess {
             throw new Error('process already started')
         }
 
+        getLogger().info(`Running command: ${this.process} ${this.args.join(' ')}`)
         this.childProcess = crossSpawn(this.process, this.args, this.options)
 
         this.childProcess.stdout?.on('data', (data: { toString(): string }) => {
