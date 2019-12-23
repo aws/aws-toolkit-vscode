@@ -8,14 +8,13 @@ import * as nls from 'vscode-nls'
 
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCdk } from './cdk/activation'
+import { initialize as initializeCredentials } from './credentials/activation'
 import { initializeAwsCredentialsStatusBarItem } from './credentials/awsCredentialsStatusBarItem'
 import { activate as activateSchemas } from './eventSchemas/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
-import { AwsContext } from './shared/awsContext'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
 import { documentationUrl, extensionSettingsPrefix, githubUrl, reportIssueUrl } from './shared/constants'
-import { CredentialsProfileMru } from './shared/credentials/credentialsProfileMru'
 import { DefaultCredentialsFileReaderWriter } from './shared/credentials/defaultCredentialsFileReaderWriter'
 import { UserCredentialsUtils } from './shared/credentials/userCredentialsUtils'
 import { DefaultAwsContext } from './shared/defaultAwsContext'
@@ -57,7 +56,10 @@ export async function activate(context: vscode.ExtensionContext) {
         ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         ext.toolkitClientBuilder = new DefaultToolkitClientBuilder()
 
-        updateMruWhenAwsContextChanges(awsContext, context)
+        initializeCredentials({
+            extensionContext: context,
+            awsContext: awsContext
+        })
 
         // check to see if current user is valid
         const currentProfile = awsContext.getCredentialProfileName()
@@ -178,19 +180,6 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
 
     ext.iconPaths.dark.schema = context.asAbsolutePath('resources/dark/schema.svg')
     ext.iconPaths.light.schema = context.asAbsolutePath('resources/light/schema.svg')
-}
-
-function updateMruWhenAwsContextChanges(awsContext: AwsContext, extensionContext: vscode.ExtensionContext) {
-    extensionContext.subscriptions.push(
-        awsContext.onDidChangeContext(async awsContextChangedEvent => {
-            if (!awsContextChangedEvent.profileName) {
-                return
-            }
-
-            const mru = new CredentialsProfileMru(extensionContext)
-            await mru.setMostRecentlyUsedProfile(awsContextChangedEvent.profileName)
-        })
-    )
 }
 
 // Unique extension entrypoint names, so that they can be obtained from the webpack bundle
