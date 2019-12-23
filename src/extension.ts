@@ -8,6 +8,7 @@ import * as nls from 'vscode-nls'
 
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCdk } from './cdk/activation'
+import { initialize as initializeCredentials } from './credentials/activation'
 import { initializeAwsCredentialsStatusBarItem } from './credentials/awsCredentialsStatusBarItem'
 import { activate as activateSchemas } from './eventSchemas/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
@@ -54,6 +55,11 @@ export async function activate(context: vscode.ExtensionContext) {
         ext.awsContextCommands = new DefaultAWSContextCommands(awsContext, awsContextTrees, regionProvider)
         ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         ext.toolkitClientBuilder = new DefaultToolkitClientBuilder()
+
+        await initializeCredentials({
+            extensionContext: context,
+            awsContext: awsContext
+        })
 
         // check to see if current user is valid
         const currentProfile = awsContext.getCredentialProfileName()
