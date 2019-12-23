@@ -8,6 +8,7 @@ import * as nls from 'vscode-nls'
 
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCdk } from './cdk/activation'
+import { initializeAwsCredentialsStatusBarItem } from './credentials/awsCredentialsStatusBarItem'
 import { activate as activateSchemas } from './eventSchemas/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContext } from './shared/awsContext'
@@ -20,7 +21,6 @@ import { UserCredentialsUtils } from './shared/credentials/userCredentialsUtils'
 import { DefaultAwsContext } from './shared/defaultAwsContext'
 import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
 import { DefaultResourceFetcher } from './shared/defaultResourceFetcher'
-import { DefaultAWSStatusBar } from './shared/defaultStatusBar'
 import { ext } from './shared/extensionGlobals'
 import { showQuickStartWebview, toastNewUser } from './shared/extensionUtilities'
 import { getLogger } from './shared/logger'
@@ -52,6 +52,7 @@ export async function activate(context: vscode.ExtensionContext) {
         const resourceFetcher = new DefaultResourceFetcher()
         const regionProvider = new DefaultRegionProvider(context, resourceFetcher)
 
+        await initializeAwsCredentialsStatusBarItem(awsContext, context)
         ext.awsContextCommands = new DefaultAWSContextCommands(awsContext, awsContextTrees, regionProvider)
         ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         ext.toolkitClientBuilder = new DefaultToolkitClientBuilder()
@@ -69,7 +70,6 @@ export async function activate(context: vscode.ExtensionContext) {
             }
         }
 
-        ext.statusBar = new DefaultAWSStatusBar(awsContext, context)
         ext.telemetry = new DefaultTelemetryService(context, awsContext)
         new AwsTelemetryOptOut(ext.telemetry, toolkitSettings).ensureUserNotified().catch(err => {
             console.warn(`Exception while displaying opt-out message: ${err}`)
@@ -136,8 +136,6 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateAwsExplorer({ awsContext, context, awsContextTrees, regionProvider, resourceFetcher })
 
         await activateSchemas()
-
-        await ext.statusBar.updateContext(undefined)
 
         await ExtensionDisposableFiles.initialize(context)
 

@@ -7,7 +7,6 @@ import { ExtensionContext, OutputChannel } from 'vscode'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AWSContextCommands } from './awsContextCommands'
 import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
-import { AWSStatusBar } from './statusBar'
 import { TelemetryService } from './telemetry/telemetryService'
 
 /**
@@ -21,7 +20,6 @@ export namespace ext {
     export let awsContextCommands: AWSContextCommands
     export let sdkClientBuilder: AWSClientBuilder
     export let toolkitClientBuilder: ToolkitClientBuilder
-    export let statusBar: AWSStatusBar
     export let telemetry: TelemetryService
 
     export namespace iconPaths {

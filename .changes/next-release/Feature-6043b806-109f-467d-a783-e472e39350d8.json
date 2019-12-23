@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "The StatusBar item displaying the current credentials used by the toolkit now shows when no credentials are being used. It can also be clicked to change the Toolkit's active credentials."
+}
