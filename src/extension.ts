@@ -56,7 +56,7 @@ export async function activate(context: vscode.ExtensionContext) {
         ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         ext.toolkitClientBuilder = new DefaultToolkitClientBuilder()
 
-        initializeCredentials({
+        await initializeCredentials({
             extensionContext: context,
             awsContext: awsContext
         })
