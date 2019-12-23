@@ -6,12 +6,9 @@
 import * as vscode from 'vscode'
 
 // Carries the current context data on events
-export class ContextChangeEventsArgs {
-    public constructor(
-        public readonly profileName: string | undefined,
-        public readonly accountId: string | undefined,
-        public readonly regions: string[]
-    ) {}
+export interface ContextChangeEventsArgs {
+    readonly profileName?: string
+    readonly accountId?: string
 }
 
 // Represents a credential profile and zero or more regions.
