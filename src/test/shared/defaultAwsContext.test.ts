@@ -6,13 +6,10 @@
 import * as assert from 'assert'
 import * as AWS from 'aws-sdk'
 import * as sinon from 'sinon'
-import { ConfigurationTarget } from 'vscode'
-import { profileSettingKey, regionSettingKey } from '../../shared/constants'
+import { regionSettingKey } from '../../shared/constants'
 import { CredentialsManager } from '../../shared/credentialsManager'
 import { DefaultAwsContext } from '../../shared/defaultAwsContext'
-import { SettingsConfiguration } from '../../shared/settingsConfiguration'
 import { FakeExtensionContext, FakeMementoStorage } from '../fakeExtensionContext'
-import { TestSettingsConfiguration } from '../utilities/testSettingsConfiguration'
 import { assertThrowsError } from './utilities/assertUtils'
 
 describe('DefaultAwsContext', () => {
@@ -22,18 +19,6 @@ describe('DefaultAwsContext', () => {
     const testAccountIdValue: string = '123456789012'
     const testAccessKey: string = 'opensesame'
     const testSecretKey: string = 'itsasecrettoeverybody'
-
-    class ContextTestsSettingsConfigurationBase implements SettingsConfiguration {
-        public readSetting<T>(settingKey: string, defaultValue?: T): T | undefined {
-            return undefined
-        }
-
-        public async writeSetting<T>(
-            settingKey: string,
-            value: T | undefined,
-            target: ConfigurationTarget
-        ): Promise<void> {}
-    }
 
     class TestCredentialsManager extends CredentialsManager {
         public constructor(
@@ -60,28 +45,19 @@ describe('DefaultAwsContext', () => {
         sandbox.restore()
     })
 
-    it('gets credentials if a profile exists with credentials', async () => {
-        const settingsConfig = new TestSettingsConfiguration()
-        await settingsConfig.writeSetting<string>(profileSettingKey, testProfileValue)
-        const reportedCredentials = new AWS.Credentials(testAccessKey, testSecretKey)
+    it('instantiates with no credentials', async () => {
+        const testContext = new DefaultAwsContext(new FakeExtensionContext(), new TestCredentialsManager())
 
-        const testContext = new DefaultAwsContext(
-            settingsConfig,
-            new FakeExtensionContext(),
-            new TestCredentialsManager(testProfileValue, reportedCredentials)
-        )
-        const creds = await testContext.getCredentials()
-        assert.strictEqual(creds, reportedCredentials)
+        assert.strictEqual(testContext.getCredentialProfileName(), undefined)
+        assert.strictEqual(testContext.getCredentialAccountId(), undefined)
+        assert.strictEqual(await testContext.getCredentials(), undefined)
     })
 
     it('gets credentials if a profile exists with credentials', async () => {
         const overrideProfile = 'asdf'
-        const settingsConfig = new TestSettingsConfiguration()
-        await settingsConfig.writeSetting<string>(profileSettingKey, overrideProfile)
         const reportedCredentials = new AWS.Credentials(testAccessKey, testSecretKey)
 
         const testContext = new DefaultAwsContext(
-            settingsConfig,
             new FakeExtensionContext(),
             new TestCredentialsManager(overrideProfile, reportedCredentials)
         )
@@ -91,11 +67,8 @@ describe('DefaultAwsContext', () => {
 
     it('throws an error if a profile does not exist', async () => {
         const overrideProfile = 'asdf'
-        const settingsConfig = new TestSettingsConfiguration()
-        await settingsConfig.writeSetting<string>(profileSettingKey, overrideProfile)
 
         const testContext = new DefaultAwsContext(
-            settingsConfig,
             new FakeExtensionContext(),
             new TestCredentialsManager(overrideProfile)
         )
@@ -104,40 +77,22 @@ describe('DefaultAwsContext', () => {
         })
     })
 
-    it('returns undefined if no profile is provided and no profile was previously saved to settings', async () => {
-        const settingsConfig = new TestSettingsConfiguration()
-
-        const testContext = new DefaultAwsContext(settingsConfig, new FakeExtensionContext())
-        const creds = await testContext.getCredentials()
-        assert.strictEqual(creds, undefined)
-    })
-
     it('returns ini crendentials if available', async () => {
-        const settingsConfig = new TestSettingsConfiguration()
         const credentials = new AWS.Credentials(testAccessKey, testSecretKey)
         sandbox.stub(AWS, 'SharedIniFileCredentials').returns(credentials)
 
-        const testContext = new DefaultAwsContext(settingsConfig, new FakeExtensionContext())
+        const testContext = new DefaultAwsContext(new FakeExtensionContext())
         const actual = await testContext.getCredentials('ini-credentials')
         assert.strictEqual(actual, credentials)
     })
 
     it('returns process crendentials if available', async () => {
-        const settingsConfig = new TestSettingsConfiguration()
         const credentials = new AWS.Credentials(testAccessKey, testSecretKey)
         sandbox.stub(AWS, 'ProcessCredentials').returns(credentials)
 
-        const testContext = new DefaultAwsContext(settingsConfig, new FakeExtensionContext())
+        const testContext = new DefaultAwsContext(new FakeExtensionContext())
         const actual = await testContext.getCredentials('proc-credentials')
         assert.strictEqual(actual, credentials)
-    })
-
-    it('reads profile from config on startup', async () => {
-        const settingsConfig = new TestSettingsConfiguration()
-        await settingsConfig.writeSetting<string>(profileSettingKey, testProfileValue)
-
-        const testContext = new DefaultAwsContext(settingsConfig, new FakeExtensionContext())
-        assert.strictEqual(testContext.getCredentialProfileName(), testProfileValue)
     })
 
     it('gets single region from config on startup', async () => {
@@ -148,7 +103,7 @@ describe('DefaultAwsContext', () => {
             globalState: fakeMementoStorage
         })
 
-        const testContext = new DefaultAwsContext(new ContextTestsSettingsConfigurationBase(), fakeExtensionContext)
+        const testContext = new DefaultAwsContext(fakeExtensionContext)
         const regions = await testContext.getExplorerRegions()
         assert.strictEqual(regions.length, 1)
         assert.strictEqual(regions[0], testRegion1Value)
@@ -162,7 +117,7 @@ describe('DefaultAwsContext', () => {
             globalState: fakeMementoStorage
         })
 
-        const testContext = new DefaultAwsContext(new ContextTestsSettingsConfigurationBase(), fakeExtensionContext)
+        const testContext = new DefaultAwsContext(fakeExtensionContext)
         const regions = await testContext.getExplorerRegions()
         assert.strictEqual(regions.length, 2)
         assert.strictEqual(regions[0], testRegion1Value)
@@ -171,7 +126,7 @@ describe('DefaultAwsContext', () => {
 
     it('updates globalState on single region change', async () => {
         const extensionContext = new FakeExtensionContext()
-        const testContext = new DefaultAwsContext(new ContextTestsSettingsConfigurationBase(), extensionContext)
+        const testContext = new DefaultAwsContext(extensionContext)
         await testContext.addExplorerRegion(testRegion1Value)
 
         const persistedRegions = extensionContext.globalState.get<string[]>(regionSettingKey)
@@ -182,7 +137,7 @@ describe('DefaultAwsContext', () => {
 
     it('updates globalState on multiple region change', async () => {
         const extensionContext = new FakeExtensionContext()
-        const testContext = new DefaultAwsContext(new ContextTestsSettingsConfigurationBase(), extensionContext)
+        const testContext = new DefaultAwsContext(extensionContext)
         await testContext.addExplorerRegion(testRegion1Value, testRegion2Value)
 
         const persistedRegions = extensionContext.globalState.get<string[]>(regionSettingKey)
@@ -194,7 +149,7 @@ describe('DefaultAwsContext', () => {
 
     it('updates globalState on region removal', async () => {
         const extensionContext = new FakeExtensionContext()
-        const testContext = new DefaultAwsContext(new ContextTestsSettingsConfigurationBase(), extensionContext)
+        const testContext = new DefaultAwsContext(extensionContext)
         await testContext.addExplorerRegion(testRegion1Value, testRegion2Value)
         await testContext.removeExplorerRegion(testRegion2Value)
 
@@ -204,33 +159,8 @@ describe('DefaultAwsContext', () => {
         assert.strictEqual(persistedRegions![0], testRegion1Value)
     })
 
-    it('updates config on profile change', async () => {
-        class TestConfiguration extends ContextTestsSettingsConfigurationBase {
-            public async writeSetting<T>(settingKey: string, value: T, target: ConfigurationTarget): Promise<void> {
-                assert.strictEqual(settingKey, profileSettingKey)
-                assert.strictEqual(value, testProfileValue)
-                assert.strictEqual(target, ConfigurationTarget.Global)
-            }
-        }
-
-        const testContext = new DefaultAwsContext(new TestConfiguration(), new FakeExtensionContext())
-        await testContext.setCredentialProfileName(testProfileValue)
-    })
-
-    it('updates config on account ID change', async () => {
-        const testContext = new DefaultAwsContext(
-            new ContextTestsSettingsConfigurationBase(),
-            new FakeExtensionContext()
-        )
-        await testContext.setCredentialAccountId(testAccountIdValue)
-        assert.strictEqual(testContext.getCredentialAccountId(), testAccountIdValue)
-    })
-
     it('fires event on profile change', async () => {
-        const testContext = new DefaultAwsContext(
-            new ContextTestsSettingsConfigurationBase(),
-            new FakeExtensionContext()
-        )
+        const testContext = new DefaultAwsContext(new FakeExtensionContext())
 
         let invocationCount = 0
         testContext.onDidChangeContext(c => {
@@ -244,10 +174,7 @@ describe('DefaultAwsContext', () => {
     })
 
     it('fires event on accountId change', async () => {
-        const testContext = new DefaultAwsContext(
-            new ContextTestsSettingsConfigurationBase(),
-            new FakeExtensionContext()
-        )
+        const testContext = new DefaultAwsContext(new FakeExtensionContext())
 
         let invocationCount = 0
         testContext.onDidChangeContext(c => {

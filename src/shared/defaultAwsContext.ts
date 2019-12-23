@@ -7,9 +7,8 @@ import * as AWS from 'aws-sdk'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { AwsContext, ContextChangeEventsArgs } from './awsContext'
-import { profileSettingKey, regionSettingKey } from './constants'
+import { regionSettingKey } from './constants'
 import { CredentialsManager } from './credentialsManager'
-import { SettingsConfiguration } from './settingsConfiguration'
 
 const localize = nls.loadMessageBundle()
 
@@ -29,14 +28,12 @@ export class DefaultAwsContext implements AwsContext {
     private accountId: string | undefined
 
     public constructor(
-        public settingsConfiguration: SettingsConfiguration,
         public context: vscode.ExtensionContext,
         private readonly credentialsManager: CredentialsManager = new CredentialsManager()
     ) {
         this._onDidChangeContext = new vscode.EventEmitter<ContextChangeEventsArgs>()
         this.onDidChangeContext = this._onDidChangeContext.event
 
-        this.profileName = settingsConfiguration.readSetting(profileSettingKey, '')
         const persistedRegions = context.globalState.get<string[]>(regionSettingKey)
         this.explorerRegions = persistedRegions || []
     }
@@ -82,7 +79,6 @@ export class DefaultAwsContext implements AwsContext {
     // resets the context to the indicated profile, saving it into settings
     public async setCredentialProfileName(profileName?: string): Promise<void> {
         this.profileName = profileName
-        await this.settingsConfiguration.writeSetting(profileSettingKey, profileName, vscode.ConfigurationTarget.Global)
 
         this.emitEvent()
     }
