@@ -8,7 +8,6 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { AwsContext, ContextChangeEventsArgs } from './awsContext'
 import { profileSettingKey, regionSettingKey } from './constants'
-import { CredentialsProfileMru } from './credentials/credentialsProfileMru'
 import { CredentialsManager } from './credentialsManager'
 import { SettingsConfiguration } from './settingsConfiguration'
 
@@ -18,7 +17,6 @@ const localize = nls.loadMessageBundle()
 // context listens for configuration updates and resets the context accordingly.
 export class DefaultAwsContext implements AwsContext {
     public readonly onDidChangeContext: vscode.Event<ContextChangeEventsArgs>
-    private readonly credentialsMru: CredentialsProfileMru
     private readonly _onDidChangeContext: vscode.EventEmitter<ContextChangeEventsArgs>
 
     // the collection of regions the user has expressed an interest in working with in
@@ -41,7 +39,6 @@ export class DefaultAwsContext implements AwsContext {
         this.profileName = settingsConfiguration.readSetting(profileSettingKey, '')
         const persistedRegions = context.globalState.get<string[]>(regionSettingKey)
         this.explorerRegions = persistedRegions || []
-        this.credentialsMru = new CredentialsProfileMru(context)
     }
 
     /**
@@ -86,10 +83,6 @@ export class DefaultAwsContext implements AwsContext {
     public async setCredentialProfileName(profileName?: string): Promise<void> {
         this.profileName = profileName
         await this.settingsConfiguration.writeSetting(profileSettingKey, profileName, vscode.ConfigurationTarget.Global)
-
-        if (this.profileName) {
-            await this.credentialsMru.setMostRecentlyUsedProfile(this.profileName)
-        }
 
         this.emitEvent()
     }
