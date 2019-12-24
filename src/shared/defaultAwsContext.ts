@@ -5,12 +5,8 @@
 
 import * as AWS from 'aws-sdk'
 import * as vscode from 'vscode'
-import * as nls from 'vscode-nls'
 import { AwsContext, AwsContextCredentials, ContextChangeEventsArgs } from './awsContext'
 import { regionSettingKey } from './constants'
-import { CredentialsManager } from './credentialsManager'
-
-const localize = nls.loadMessageBundle()
 
 // Wraps an AWS context in terms of credential profile and zero or more regions. The
 // context listens for configuration updates and resets the context accordingly.
@@ -24,10 +20,7 @@ export class DefaultAwsContext implements AwsContext {
 
     private currentCredentials: AwsContextCredentials | undefined
 
-    public constructor(
-        public context: vscode.ExtensionContext,
-        private readonly credentialsManager: CredentialsManager = new CredentialsManager()
-    ) {
+    public constructor(public context: vscode.ExtensionContext) {
         this._onDidChangeContext = new vscode.EventEmitter<ContextChangeEventsArgs>()
         this.onDidChangeContext = this._onDidChangeContext.event
 
@@ -45,41 +38,10 @@ export class DefaultAwsContext implements AwsContext {
     }
 
     /**
-     * @description Gets the Credentials for the current specified profile.
-     * If a profile name is provided, overrides existing profile.
-     * If no profile is attached to the context and no profile was specified, returns undefined.
-     * If an error is encountered, or the profile cannot be found, an Error is thrown.
-     *
-     * @param profileName (optional): override profile name to pull credentials for (useful for validation)
+     * @description Gets the Credentials currently used by the Toolkit.
      */
-    public async getCredentials(profileName?: string): Promise<AWS.Credentials | undefined> {
-        if (!profileName) {
-            return this.currentCredentials?.credentials
-        }
-
-        // TODO : Remove Credentials Loading from DefaultAwsContext -- this should only return the "current" Credentials
-        const profile = profileName || this.currentCredentials?.credentialsId
-
-        if (!profile) {
-            return undefined
-        }
-
-        try {
-            return await this.credentialsManager.getCredentials(profile)
-        } catch (err) {
-            const error = err as Error
-
-            vscode.window.showErrorMessage(
-                localize(
-                    'AWS.message.credentials.error',
-                    'There was an issue trying to use credentials profile {0}: {1}',
-                    profile,
-                    error.message
-                )
-            )
-
-            throw error
-        }
+    public async getCredentials(): Promise<AWS.Credentials | undefined> {
+        return this.currentCredentials?.credentials
     }
 
     // returns the configured profile, if any

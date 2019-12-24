@@ -23,8 +23,7 @@ export interface AwsContext {
 
     setCredentials(credentials?: AwsContextCredentials): Promise<void>
 
-    // optionally accepts a profile to validate a profile that hasn't logged in yet
-    getCredentials(profileName?: string): Promise<AWS.Credentials | undefined>
+    getCredentials(): Promise<AWS.Credentials | undefined>
 
     // returns the configured profile, if any
     getCredentialProfileName(): string | undefined
