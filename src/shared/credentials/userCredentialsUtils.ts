@@ -187,12 +187,17 @@ export class UserCredentialsUtils {
         let credentials: Credentials | undefined
         try {
             credentials = await awsContext.getCredentials(profileName)
-            const account = credentials ? await this.validateCredentials(credentials, sts) : undefined
-            if (account && account.isValid) {
-                await awsContext.setCredentialProfileName(profileName)
-                await awsContext.setCredentialAccountId(account.account)
+            if (credentials) {
+                const account = await this.validateCredentials(credentials, sts)
+                if (account.isValid) {
+                    await awsContext.setCredentials({
+                        credentials: credentials,
+                        credentialsId: profileName,
+                        accountId: account.account
+                    })
 
-                return true
+                    return true
+                }
             }
         } catch (err) {
             // swallow any errors--anything that isn't a success should be handled as a failure by the caller
@@ -207,8 +212,7 @@ export class UserCredentialsUtils {
      * @param awsContext Current AWS Context
      */
     public static async removeUserDataFromContext(awsContext: AwsContext) {
-        await awsContext.setCredentialProfileName()
-        await awsContext.setCredentialAccountId()
+        await awsContext.setCredentials(undefined)
     }
 
     public static async notifyUserCredentialsAreBad(profileName: string) {

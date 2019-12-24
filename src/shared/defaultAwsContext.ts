@@ -6,7 +6,7 @@
 import * as AWS from 'aws-sdk'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { AwsContext, ContextChangeEventsArgs } from './awsContext'
+import { AwsContext, AwsContextCredentials, ContextChangeEventsArgs } from './awsContext'
 import { regionSettingKey } from './constants'
 import { CredentialsManager } from './credentialsManager'
 
@@ -22,10 +22,7 @@ export class DefaultAwsContext implements AwsContext {
     // the current workspace
     private readonly explorerRegions: string[]
 
-    // the user's credential context (currently this maps to an sdk/cli credential profile)
-    private profileName: string | undefined
-
-    private accountId: string | undefined
+    private currentCredentials: AwsContextCredentials | undefined
 
     public constructor(
         public context: vscode.ExtensionContext,
@@ -39,6 +36,15 @@ export class DefaultAwsContext implements AwsContext {
     }
 
     /**
+     * Sets the credentials to be used by the Toolkit.
+     * Passing in undefined represents that there are no active credentials.
+     */
+    public async setCredentials(credentials?: AwsContextCredentials): Promise<void> {
+        this.currentCredentials = credentials
+        this.emitEvent()
+    }
+
+    /**
      * @description Gets the Credentials for the current specified profile.
      * If a profile name is provided, overrides existing profile.
      * If no profile is attached to the context and no profile was specified, returns undefined.
@@ -47,7 +53,12 @@ export class DefaultAwsContext implements AwsContext {
      * @param profileName (optional): override profile name to pull credentials for (useful for validation)
      */
     public async getCredentials(profileName?: string): Promise<AWS.Credentials | undefined> {
-        const profile = profileName || this.profileName
+        if (!profileName) {
+            return this.currentCredentials?.credentials
+        }
+
+        // TODO : Remove Credentials Loading from DefaultAwsContext -- this should only return the "current" Credentials
+        const profile = profileName || this.currentCredentials?.credentialsId
 
         if (!profile) {
             return undefined
@@ -73,27 +84,12 @@ export class DefaultAwsContext implements AwsContext {
 
     // returns the configured profile, if any
     public getCredentialProfileName(): string | undefined {
-        return this.profileName
-    }
-
-    // resets the context to the indicated profile, saving it into settings
-    public async setCredentialProfileName(profileName?: string): Promise<void> {
-        this.profileName = profileName
-
-        this.emitEvent()
+        return this.currentCredentials?.credentialsId
     }
 
     // returns the configured profile's account ID, if any
     public getCredentialAccountId(): string | undefined {
-        return this.accountId
-    }
-
-    // resets the context to the indicated profile, saving it into settings
-    public async setCredentialAccountId(accountId?: string): Promise<void> {
-        this.accountId = accountId
-
-        // nothing using this even at this time...is this necessary?
-        this.emitEvent()
+        return this.currentCredentials?.accountId
     }
 
     // async so that we could *potentially* support other ways of obtaining
@@ -129,6 +125,9 @@ export class DefaultAwsContext implements AwsContext {
     }
 
     private emitEvent() {
-        this._onDidChangeContext.fire({ profileName: this.profileName, accountId: this.accountId })
+        this._onDidChangeContext.fire({
+            profileName: this.currentCredentials?.credentialsId,
+            accountId: this.currentCredentials?.accountId
+        })
     }
 }

@@ -9,26 +9,26 @@ import { RegionNode } from '../../awsexplorer/regionNode'
 import {
     DEFAULT_TEST_REGION_CODE,
     DEFAULT_TEST_REGION_NAME,
-    FakeAwsContext,
-    FakeRegionProvider
+    FakeRegionProvider,
+    makeFakeAwsContextWithPlaceholderIds
 } from '../utilities/fakeAwsContext'
 
 describe('AwsExplorer', () => {
     it('displays region nodes with user-friendly region names', async () => {
-        const awsContext = new FakeAwsContext()
+        const awsContext = makeFakeAwsContextWithPlaceholderIds(({} as any) as AWS.Credentials)
         const regionProvider = new FakeRegionProvider()
 
         const awsExplorer = new AwsExplorer(awsContext, regionProvider)
 
-        const treeNodesPromise = awsExplorer.getChildren()
+        const treeNodes = await awsExplorer.getChildren()
+        assert.ok(treeNodes)
+        assert.strictEqual(treeNodes.length, 1, 'Expected Explorer to have one node')
 
-        assert(treeNodesPromise)
-        const treeNodes = await treeNodesPromise
-        assert(treeNodes)
-        assert.strictEqual(treeNodes.length, 1)
-
+        assert.ok(
+            treeNodes[0] instanceof RegionNode,
+            `Expected Explorer node to be RegionNode - node contents: ${JSON.stringify(treeNodes[0], undefined, 4)}`
+        )
         const regionNode = treeNodes[0] as RegionNode
-        assert(regionNode)
         assert.strictEqual(regionNode.regionCode, DEFAULT_TEST_REGION_CODE)
         assert.strictEqual(regionNode.regionName, DEFAULT_TEST_REGION_NAME)
     })

@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { AwsContext, ContextChangeEventsArgs } from '../../shared/awsContext'
+import { AwsContext, AwsContextCredentials, ContextChangeEventsArgs } from '../../shared/awsContext'
 import { RegionInfo } from '../../shared/regions/regionInfo'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { ResourceFetcher } from '../../shared/resourceFetcher'
@@ -23,51 +23,33 @@ export class FakeRegionProvider implements RegionProvider {
 }
 
 export interface FakeAwsContextParams {
-    credentials?: AWS.Credentials
-    profileName?: string
-    accountId?: string
-    allowUndefined?: boolean
+    contextCredentials?: AwsContextCredentials
 }
 
 export class FakeAwsContext implements AwsContext {
     public onDidChangeContext: vscode.Event<ContextChangeEventsArgs> = new vscode.EventEmitter<
         ContextChangeEventsArgs
     >().event
-    private readonly credentials: AWS.Credentials | undefined
-    private accountId: string | undefined
-    private profileName: string | undefined
+    private awsContextCredentials: AwsContextCredentials | undefined
 
     public constructor(params?: FakeAwsContextParams) {
-        if (params && params.allowUndefined) {
-            this.credentials = params.credentials ? params.credentials : undefined
-            this.accountId = params.accountId ? params.accountId : undefined
-            this.profileName = params.profileName ? params.profileName : undefined
-        } else {
-            this.credentials = params && params.credentials ? params.credentials : undefined
-            this.accountId = params && params.accountId ? params.accountId : DEFAULT_TEST_ACCOUNT_ID
-            this.profileName = params && params.profileName ? params.profileName : DEFAULT_TEST_PROFILE_NAME
-        }
+        this.awsContextCredentials = params?.contextCredentials
+    }
+
+    public async setCredentials(credentials?: AwsContextCredentials): Promise<void> {
+        this.awsContextCredentials = credentials
     }
 
     public async getCredentials(): Promise<AWS.Credentials | undefined> {
-        return this.credentials
+        return this.awsContextCredentials?.credentials
     }
 
     public getCredentialProfileName(): string | undefined {
-        return this.profileName
-    }
-
-    public async setCredentialProfileName(profileName?: string | undefined): Promise<void> {
-        this.profileName = profileName
+        return this.awsContextCredentials?.credentialsId
     }
 
     public getCredentialAccountId(): string | undefined {
-        return this.accountId
-    }
-
-    // resets the context to the indicated profile, saving it into settings
-    public async setCredentialAccountId(accountId?: string): Promise<void> {
-        this.accountId = accountId
+        return this.awsContextCredentials?.accountId
     }
 
     public async getExplorerRegions(): Promise<string[]> {
@@ -87,4 +69,14 @@ export class FakeResourceFetcher implements ResourceFetcher {
     public async getResource(resourceLocations: ResourceLocation[]): Promise<string> {
         throw new Error('Method not implemented.')
     }
+}
+
+export function makeFakeAwsContextWithPlaceholderIds(credentials: AWS.Credentials): FakeAwsContext {
+    return new FakeAwsContext({
+        contextCredentials: {
+            credentials: credentials,
+            credentialsId: DEFAULT_TEST_PROFILE_NAME,
+            accountId: DEFAULT_TEST_ACCOUNT_ID
+        }
+    })
 }

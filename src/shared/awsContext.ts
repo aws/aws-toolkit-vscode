@@ -5,6 +5,12 @@
 
 import * as vscode from 'vscode'
 
+export interface AwsContextCredentials {
+    readonly credentials: AWS.Credentials
+    readonly credentialsId: string
+    readonly accountId?: string
+}
+
 // Carries the current context data on events
 export interface ContextChangeEventsArgs {
     readonly profileName?: string
@@ -15,16 +21,15 @@ export interface ContextChangeEventsArgs {
 export interface AwsContext {
     onDidChangeContext: vscode.Event<ContextChangeEventsArgs>
 
+    setCredentials(credentials?: AwsContextCredentials): Promise<void>
+
     // optionally accepts a profile to validate a profile that hasn't logged in yet
     getCredentials(profileName?: string): Promise<AWS.Credentials | undefined>
 
     // returns the configured profile, if any
     getCredentialProfileName(): string | undefined
-    // resets the context to the indicated profile, saving it into settings
-    setCredentialProfileName(profileName?: string): Promise<void>
 
     getCredentialAccountId(): string | undefined
-    setCredentialAccountId(accountId?: string): Promise<void>
 
     getExplorerRegions(): Promise<string[]>
 
