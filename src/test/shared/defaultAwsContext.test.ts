@@ -228,43 +228,6 @@ describe('DefaultAwsContext', () => {
         assert.strictEqual(testContext.getCredentialAccountId(), testAccountIdValue)
     })
 
-    it('fires event on single region change', async () => {
-        const testContext = new DefaultAwsContext(
-            new ContextTestsSettingsConfigurationBase(),
-            new FakeExtensionContext()
-        )
-
-        let invocationCount = 0
-        testContext.onDidChangeContext(c => {
-            assert.strictEqual(c.regions.length, 1)
-            assert.strictEqual(c.regions[0], testRegion1Value)
-            invocationCount++
-        })
-
-        await testContext.addExplorerRegion(testRegion1Value)
-
-        assert.strictEqual(invocationCount, 1)
-    })
-
-    it('fires event on multi region change', async () => {
-        const testContext = new DefaultAwsContext(
-            new ContextTestsSettingsConfigurationBase(),
-            new FakeExtensionContext()
-        )
-
-        let invocationCount = 0
-        testContext.onDidChangeContext(c => {
-            assert.strictEqual(c.regions.length, 2)
-            assert.strictEqual(c.regions[0], testRegion1Value)
-            assert.strictEqual(c.regions[1], testRegion2Value)
-            invocationCount++
-        })
-
-        await testContext.addExplorerRegion(testRegion1Value, testRegion2Value)
-
-        assert.strictEqual(invocationCount, 1)
-    })
-
     it('fires event on profile change', async () => {
         const testContext = new DefaultAwsContext(
             new ContextTestsSettingsConfigurationBase(),

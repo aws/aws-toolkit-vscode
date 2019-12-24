@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { Credentials } from 'aws-sdk'
-import { env, Uri, ViewColumn, window, workspace } from 'vscode'
+import { env, Uri, ViewColumn, window } from 'vscode'
 import { AwsContext } from './awsContext'
 import { AwsContextTreeCollection } from './awsContextTreeCollection'
 import * as extensionConstants from './constants'
@@ -22,40 +22,6 @@ import { CredentialsValidationResult, UserCredentialsUtils } from './credentials
 import { ext } from './extensionGlobals'
 import { RegionInfo } from './regions/regionInfo'
 import { RegionProvider } from './regions/regionProvider'
-
-/**
- * The actions that can be taken when we discover that a profile's default region is not
- * showing in the Explorer.
- *
- * Keep this in sync with the onDefaultRegionMissing configuration defined in package.json.
- */
-enum OnDefaultRegionMissingOperation {
-    /**
-     * Ask the user what they would like to happen
-     */
-    Prompt = 'prompt',
-    /**
-     * Automatically add the region to the Explorer
-     */
-    Add = 'add',
-    /**
-     * Do nothing
-     */
-    Ignore = 'ignore'
-}
-
-class DefaultRegionMissingPromptItems {
-    public static readonly add: string = localize('AWS.message.prompt.defaultRegionHidden.add', 'Yes')
-    public static readonly alwaysAdd: string = localize(
-        'AWS.message.prompt.defaultRegionHidden.alwaysAdd',
-        "Yes, and don't ask again"
-    )
-    public static readonly ignore: string = localize('AWS.message.prompt.defaultRegionHidden.ignore', 'No')
-    public static readonly alwaysIgnore: string = localize(
-        'AWS.message.prompt.defaultRegionHidden.alwaysIgnore',
-        "No, and don't ask again"
-    )
-}
 
 export class DefaultAWSContextCommands {
     private readonly _awsContext: AwsContext
@@ -79,10 +45,7 @@ export class DefaultAWSContextCommands {
             return
         }
         const successfulLogin = await UserCredentialsUtils.addUserDataToContext(profileName, this._awsContext)
-        if (successfulLogin) {
-            this.refresh()
-            await this.checkExplorerForDefaultRegion(profileName)
-        } else {
+        if (!successfulLogin) {
             await this.onCommandLogout()
             await UserCredentialsUtils.notifyUserCredentialsAreBad(profileName)
         }
@@ -111,7 +74,6 @@ export class DefaultAWSContextCommands {
 
     public async onCommandLogout() {
         await UserCredentialsUtils.removeUserDataFromContext(this._awsContext)
-        this.refresh()
     }
 
     public async onCommandShowRegion() {
@@ -329,91 +291,5 @@ export class DefaultAWSContextCommands {
         })
 
         return input ? input.detail : undefined
-    }
-
-    private async checkExplorerForDefaultRegion(profileName: string): Promise<void> {
-        const credentialReaderWriter = new DefaultCredentialsFileReaderWriter()
-
-        const profileRegion = await credentialReaderWriter.getDefaultRegion(profileName)
-        if (!profileRegion) {
-            return
-        }
-
-        const explorerRegions = new Set(await this._awsContext.getExplorerRegions())
-        if (explorerRegions.has(profileRegion)) {
-            return
-        }
-
-        // Explorer does not contain the default region. See if we should add it.
-        const config = workspace.getConfiguration(extensionConstants.extensionSettingsPrefix)
-
-        const defaultAction = config.get<OnDefaultRegionMissingOperation>(
-            'onDefaultRegionMissing',
-            OnDefaultRegionMissingOperation.Prompt
-        )
-
-        // Bypass prompt if user has requested to suppress it.
-        if (defaultAction === OnDefaultRegionMissingOperation.Add) {
-            await this.addRegion(profileRegion)
-
-            return
-        } else if (defaultAction === OnDefaultRegionMissingOperation.Ignore) {
-            return
-        }
-
-        // Ask user what to do
-        const regionHiddenResponse = await window.showQuickPick(
-            [
-                DefaultRegionMissingPromptItems.add,
-                DefaultRegionMissingPromptItems.alwaysAdd,
-                DefaultRegionMissingPromptItems.ignore,
-                DefaultRegionMissingPromptItems.alwaysIgnore
-            ],
-            {
-                placeHolder: localize(
-                    'AWS.message.prompt.defaultRegionHidden',
-                    // prettier-ignore
-                    "This profile's default region ({0}) is currently hidden. Would you like to show it in the Explorer?",
-                    profileRegion
-                )
-            }
-        )
-
-        // User Cancelled
-        if (!regionHiddenResponse) {
-            return
-        }
-
-        switch (regionHiddenResponse) {
-            case DefaultRegionMissingPromptItems.add:
-            case DefaultRegionMissingPromptItems.alwaysAdd:
-                await this.addRegion(profileRegion)
-                break
-        }
-
-        switch (regionHiddenResponse) {
-            case DefaultRegionMissingPromptItems.alwaysAdd:
-            case DefaultRegionMissingPromptItems.alwaysIgnore:
-                // User does not want to be prompted anymore
-                const action =
-                    regionHiddenResponse === DefaultRegionMissingPromptItems.alwaysAdd
-                        ? OnDefaultRegionMissingOperation.Add
-                        : OnDefaultRegionMissingOperation.Ignore
-                await config.update('onDefaultRegionMissing', action, !workspace.name)
-                window.showInformationMessage(
-                    localize(
-                        'AWS.message.prompt.defaultRegionHidden.suppressed',
-                        // prettier-ignore
-                        "You will no longer be asked what to do when the current profile's default region is hidden from the Explorer. This behavior can be changed by modifying the '{0}' setting.",
-                        'aws.onDefaultRegionMissing'
-                    )
-                )
-                break
-        }
-    }
-
-    private async addRegion(profileRegion: string): Promise<void> {
-        await this._awsContext.addExplorerRegion(profileRegion)
-        this.refresh()
     }
 }

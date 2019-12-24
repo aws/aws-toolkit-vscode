@@ -117,7 +117,6 @@ export class DefaultAwsContext implements AwsContext {
             }
         })
         await this.context.globalState.update(regionSettingKey, this.explorerRegions)
-        this.emitEvent()
     }
 
     // removes one or more regions from the user's preferred set, persisting the set afterwards as a
@@ -131,12 +130,9 @@ export class DefaultAwsContext implements AwsContext {
         })
 
         await this.context.globalState.update(regionSettingKey, this.explorerRegions)
-        this.emitEvent()
     }
 
     private emitEvent() {
-        this._onDidChangeContext.fire(
-            new ContextChangeEventsArgs(this.profileName, this.accountId, this.explorerRegions)
-        )
+        this._onDidChangeContext.fire({ profileName: this.profileName, accountId: this.accountId })
     }
 }
