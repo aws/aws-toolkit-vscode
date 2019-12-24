@@ -14,7 +14,11 @@ import { loadSharedConfigFiles, SharedConfigFiles } from '../../../shared/creden
 import { CredentialsValidationResult, UserCredentialsUtils } from '../../../shared/credentials/userCredentialsUtils'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-import { DEFAULT_TEST_ACCOUNT_ID, DEFAULT_TEST_PROFILE_NAME, FakeAwsContext } from '../../utilities/fakeAwsContext'
+import {
+    DEFAULT_TEST_ACCOUNT_ID,
+    DEFAULT_TEST_PROFILE_NAME,
+    makeFakeAwsContextWithPlaceholderIds
+} from '../../utilities/fakeAwsContext'
 import { MockStsClient } from '../clients/mockClients'
 import { assertThrowsError } from '../utilities/assertUtils'
 
@@ -314,9 +318,7 @@ describe('UserCredentialsUtils', () => {
                     }
                 }
             })
-            const mockAws = new FakeAwsContext({
-                credentials: new AWS.Credentials('access', 'secret')
-            })
+            const mockAws = makeFakeAwsContextWithPlaceholderIds(new AWS.Credentials('access', 'secret'))
 
             assert.strictEqual(mockAws.getCredentialProfileName(), DEFAULT_TEST_PROFILE_NAME)
             assert.strictEqual(mockAws.getCredentialAccountId(), DEFAULT_TEST_ACCOUNT_ID)
@@ -338,9 +340,7 @@ describe('UserCredentialsUtils', () => {
                     }
                 }
             })
-            const mockAws = new FakeAwsContext({
-                credentials: new AWS.Credentials('access', 'secret', 'token')
-            })
+            const mockAws = makeFakeAwsContextWithPlaceholderIds(new AWS.Credentials('access', 'secret', 'token'))
 
             assert.strictEqual(mockAws.getCredentialProfileName(), DEFAULT_TEST_PROFILE_NAME)
             assert.strictEqual(mockAws.getCredentialAccountId(), DEFAULT_TEST_ACCOUNT_ID)
@@ -357,9 +357,7 @@ describe('UserCredentialsUtils', () => {
                     throw new AWS.AWSError()
                 }
             })
-            const mockAws = new FakeAwsContext({
-                credentials: new AWS.Credentials('access', 'secret')
-            })
+            const mockAws = makeFakeAwsContextWithPlaceholderIds(new AWS.Credentials('access', 'secret'))
 
             const returnValue = await UserCredentialsUtils.addUserDataToContext(testProfile, mockAws, mockSts)
             assert.strictEqual(returnValue, false)
@@ -372,9 +370,7 @@ describe('UserCredentialsUtils', () => {
                     throw new AWS.AWSError()
                 }
             })
-            const mockAws = new FakeAwsContext({
-                credentials: new AWS.Credentials('access', 'secret', 'token')
-            })
+            const mockAws = makeFakeAwsContextWithPlaceholderIds(new AWS.Credentials('access', 'secret', 'token'))
 
             const returnValue = await UserCredentialsUtils.addUserDataToContext(testProfile, mockAws, mockSts)
             assert.strictEqual(returnValue, false)
@@ -383,10 +379,12 @@ describe('UserCredentialsUtils', () => {
 
     describe('removeUserDataFromContext', async () => {
         it('removes user data', async () => {
-            const mockAws = new FakeAwsContext()
+            const mockAws = makeFakeAwsContextWithPlaceholderIds(({} as any) as AWS.Credentials)
+            assert.notStrictEqual(await mockAws.getCredentials(), undefined)
             assert.strictEqual(mockAws.getCredentialProfileName(), DEFAULT_TEST_PROFILE_NAME)
             assert.strictEqual(mockAws.getCredentialAccountId(), DEFAULT_TEST_ACCOUNT_ID)
             await UserCredentialsUtils.removeUserDataFromContext(mockAws)
+            assert.strictEqual(await mockAws.getCredentials(), undefined)
             assert.strictEqual(mockAws.getCredentialAccountId(), undefined)
             assert.strictEqual(mockAws.getCredentialProfileName(), undefined)
         })

@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import * as AWS from 'aws-sdk'
 import * as sinon from 'sinon'
+import { AwsContextCredentials } from '../../shared/awsContext'
 import { regionSettingKey } from '../../shared/constants'
 import { CredentialsManager } from '../../shared/credentialsManager'
 import { DefaultAwsContext } from '../../shared/defaultAwsContext'
@@ -50,6 +51,54 @@ describe('DefaultAwsContext', () => {
 
         assert.strictEqual(testContext.getCredentialProfileName(), undefined)
         assert.strictEqual(testContext.getCredentialAccountId(), undefined)
+        assert.strictEqual(await testContext.getCredentials(), undefined)
+    })
+
+    it('sets credentials and gets credentialsId', async () => {
+        const awsCredentials = makeSampleAwsContextCredentials()
+
+        const testContext = new DefaultAwsContext(new FakeExtensionContext())
+
+        await testContext.setCredentials(awsCredentials)
+        assert.strictEqual(testContext.getCredentialProfileName(), awsCredentials.credentialsId)
+    })
+
+    it('sets undefined credentials and gets credentialsId', async () => {
+        const testContext = new DefaultAwsContext(new FakeExtensionContext())
+
+        await testContext.setCredentials(undefined)
+        assert.strictEqual(testContext.getCredentialProfileName(), undefined)
+    })
+
+    it('sets credentials and gets accountId', async () => {
+        const awsCredentials = makeSampleAwsContextCredentials()
+
+        const testContext = new DefaultAwsContext(new FakeExtensionContext())
+
+        await testContext.setCredentials(awsCredentials)
+        assert.strictEqual(testContext.getCredentialAccountId(), awsCredentials.accountId)
+    })
+
+    it('sets undefined credentials and gets accountId', async () => {
+        const testContext = new DefaultAwsContext(new FakeExtensionContext())
+
+        await testContext.setCredentials(undefined)
+        assert.strictEqual(testContext.getCredentialAccountId(), undefined)
+    })
+
+    it('sets credentials and gets credentials', async () => {
+        const awsCredentials = makeSampleAwsContextCredentials()
+
+        const testContext = new DefaultAwsContext(new FakeExtensionContext())
+
+        await testContext.setCredentials(awsCredentials)
+        assert.strictEqual(await testContext.getCredentials(), awsCredentials.credentials)
+    })
+
+    it('sets undefined credentials and gets credentials', async () => {
+        const testContext = new DefaultAwsContext(new FakeExtensionContext())
+
+        await testContext.setCredentials(undefined)
         assert.strictEqual(await testContext.getCredentials(), undefined)
     })
 
@@ -159,31 +208,27 @@ describe('DefaultAwsContext', () => {
         assert.strictEqual(persistedRegions![0], testRegion1Value)
     })
 
-    it('fires event on profile change', async () => {
+    it('fires event on credentials change', async () => {
         const testContext = new DefaultAwsContext(new FakeExtensionContext())
 
-        let invocationCount = 0
-        testContext.onDidChangeContext(c => {
-            assert.strictEqual(c.profileName, testProfileValue)
-            invocationCount++
+        const awsCredentials = makeSampleAwsContextCredentials()
+
+        await new Promise<void>(async resolve => {
+            testContext.onDidChangeContext(awsContextChangedEvent => {
+                assert.strictEqual(awsContextChangedEvent.profileName, awsCredentials.credentialsId)
+                assert.strictEqual(awsContextChangedEvent.accountId, awsCredentials.accountId)
+                resolve()
+            })
+
+            await testContext.setCredentials(awsCredentials)
         })
-
-        await testContext.setCredentialProfileName(testProfileValue)
-
-        assert.strictEqual(invocationCount, 1)
     })
 
-    it('fires event on accountId change', async () => {
-        const testContext = new DefaultAwsContext(new FakeExtensionContext())
-
-        let invocationCount = 0
-        testContext.onDidChangeContext(c => {
-            assert.strictEqual(c.accountId, testAccountIdValue)
-            invocationCount++
-        })
-
-        await testContext.setCredentialAccountId(testAccountIdValue)
-
-        assert.strictEqual(invocationCount, 1)
-    })
+    function makeSampleAwsContextCredentials(): AwsContextCredentials {
+        return {
+            credentials: ({} as any) as AWS.Credentials,
+            credentialsId: 'qwerty',
+            accountId: testAccountIdValue
+        }
+    }
 })

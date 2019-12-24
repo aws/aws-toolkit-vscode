@@ -6,11 +6,17 @@
 import * as assert from 'assert'
 // tslint:disable-next-line:no-implicit-dependencies
 import * as lolex from 'lolex'
+import * as sinon from 'sinon'
+import { AwsContext } from '../../../shared/awsContext'
 import { DefaultTelemetryService } from '../../../shared/telemetry/defaultTelemetryService'
 import { TelemetryPublisher } from '../../../shared/telemetry/telemetryPublisher'
 import { AccountStatus } from '../../../shared/telemetry/telemetryTypes'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
-import { DEFAULT_TEST_ACCOUNT_ID, FakeAwsContext } from '../../utilities/fakeAwsContext'
+import {
+    DEFAULT_TEST_ACCOUNT_ID,
+    FakeAwsContext,
+    makeFakeAwsContextWithPlaceholderIds
+} from '../../utilities/fakeAwsContext'
 
 class MockTelemetryPublisher implements TelemetryPublisher {
     public flushCount = 0
@@ -32,13 +38,16 @@ class MockTelemetryPublisher implements TelemetryPublisher {
 describe('DefaultTelemetryService', () => {
     const testFlushPeriod = 10
     let clock: lolex.InstalledClock
+    let sandbox: sinon.SinonSandbox
 
     before(() => {
+        sandbox = sinon.createSandbox()
         clock = lolex.install()
     })
 
     after(() => {
         clock.uninstall()
+        sandbox.restore()
     })
 
     it('publishes periodically if user has said ok', async () => {
@@ -96,7 +105,7 @@ describe('DefaultTelemetryService', () => {
 
     it('events automatically inject the active account id into the metadata', async () => {
         const mockContext = new FakeExtensionContext()
-        const mockAws = new FakeAwsContext()
+        const mockAws = makeFakeAwsContextWithPlaceholderIds(({} as any) as AWS.Credentials)
         const mockPublisher = new MockTelemetryPublisher()
         const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
         service.clearRecords()
@@ -155,7 +164,9 @@ describe('DefaultTelemetryService', () => {
 
     it('events created with a bad active account produce metadata mentioning the bad account', async () => {
         const mockContext = new FakeExtensionContext()
-        const mockAws = new FakeAwsContext({ accountId: 'this is bad!' })
+        const mockAws: AwsContext = ({
+            getCredentialAccountId: () => 'this is bad!'
+        } as any) as AwsContext
         const mockPublisher = new MockTelemetryPublisher()
         const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
         service.clearRecords()
@@ -183,7 +194,7 @@ describe('DefaultTelemetryService', () => {
 
     it('events created prior to signing in do not have an account attached', async () => {
         const mockContext = new FakeExtensionContext()
-        const mockAws = new FakeAwsContext({ allowUndefined: true })
+        const mockAws = new FakeAwsContext(undefined)
         const mockPublisher = new MockTelemetryPublisher()
         const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
         service.clearRecords()
