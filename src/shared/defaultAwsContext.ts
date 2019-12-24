@@ -35,6 +35,10 @@ export class DefaultAwsContext implements AwsContext {
         this.explorerRegions = persistedRegions || []
     }
 
+    /**
+     * Sets the credentials to be used by the Toolkit.
+     * Passing in undefined represents that there are no active credentials.
+     */
     public async setCredentials(credentials?: AwsContextCredentials): Promise<void> {
         this.currentCredentials = credentials
         this.emitEvent()
