@@ -18,6 +18,7 @@ import { assertThrowsError } from './utilities/assertUtils'
 describe('DefaultAwsContext', () => {
     const testRegion1Value: string = 're-gion-1'
     const testRegion2Value: string = 're-gion-2'
+    const testRegion3Value: string = 're-gion-3'
     const testProfileValue: string = 'profile1'
     const testAccountIdValue: string = '123456789012'
     const testAccessKey: string = 'opensesame'
@@ -169,55 +170,40 @@ describe('DefaultAwsContext', () => {
         assert.strictEqual(regions[1], testRegion2Value)
     })
 
-    it('updates config on single region change', async () => {
-        class TestConfiguration extends ContextTestsSettingsConfigurationBase {
-            public async writeSetting<T>(settingKey: string, value: T, target: ConfigurationTarget): Promise<void> {
-                const array: string[] = value as any
-                assert.strictEqual(settingKey, regionSettingKey)
-                assert.strictEqual(array.length, 1)
-                assert.strictEqual(array[0], testRegion1Value)
-                assert.strictEqual(target, ConfigurationTarget.Global)
-            }
-        }
-
-        const testContext = new DefaultAwsContext(new TestConfiguration(), new FakeExtensionContext())
+    it('updates globalState on single region change', async () => {
+        const extensionContext = new FakeExtensionContext()
+        const testContext = new DefaultAwsContext(new ContextTestsSettingsConfigurationBase(), extensionContext)
         await testContext.addExplorerRegion(testRegion1Value)
+
+        const persistedRegions = extensionContext.globalState.get<string[]>(regionSettingKey)
+        assert.ok(persistedRegions, 'Expected region data to be stored in globalState')
+        assert.strictEqual(persistedRegions!.length, 1)
+        assert.strictEqual(persistedRegions![0], testRegion1Value)
     })
 
-    it('updates config on multiple region change', async () => {
-        class TestConfiguration extends ContextTestsSettingsConfigurationBase {
-            public async writeSetting<T>(settingKey: string, value: T, target: ConfigurationTarget): Promise<void> {
-                assert.strictEqual(settingKey, regionSettingKey)
-                assert(value instanceof Array)
-                const values = (value as any) as string[]
-                assert.strictEqual(values[0], testRegion1Value)
-                assert.strictEqual(values[1], testRegion2Value)
-                assert.strictEqual(target, ConfigurationTarget.Global)
-            }
-        }
-
-        const testContext = new DefaultAwsContext(new TestConfiguration(), new FakeExtensionContext())
+    it('updates globalState on multiple region change', async () => {
+        const extensionContext = new FakeExtensionContext()
+        const testContext = new DefaultAwsContext(new ContextTestsSettingsConfigurationBase(), extensionContext)
         await testContext.addExplorerRegion(testRegion1Value, testRegion2Value)
+
+        const persistedRegions = extensionContext.globalState.get<string[]>(regionSettingKey)
+        assert.ok(persistedRegions, 'Expected region data to be stored in globalState')
+        assert.strictEqual(persistedRegions!.length, 2)
+        assert.strictEqual(persistedRegions![0], testRegion1Value)
+        assert.strictEqual(persistedRegions![1], testRegion2Value)
     })
 
-    it('updates on region removal', async () => {
-        class TestConfiguration extends ContextTestsSettingsConfigurationBase {
-            public readSetting<T>(settingKey: string, defaultValue?: T): T | undefined {
-                if (settingKey === regionSettingKey) {
-                    return ([testRegion1Value, testRegion2Value] as any) as T
-                }
-
-                return super.readSetting<T>(settingKey, defaultValue)
-            }
-            public async writeSetting<T>(settingKey: string, value: T, target: ConfigurationTarget): Promise<void> {
-                assert.strictEqual(settingKey, regionSettingKey)
-                assert.deepStrictEqual(value, [testRegion1Value])
-                assert.strictEqual(target, ConfigurationTarget.Global)
-            }
-        }
-
-        const testContext = new DefaultAwsContext(new TestConfiguration(), new FakeExtensionContext())
+    it('updates globalState on region removal', async () => {
+        const extensionContext = new FakeExtensionContext()
+        const testContext = new DefaultAwsContext(new ContextTestsSettingsConfigurationBase(), extensionContext)
+        await testContext.addExplorerRegion(testRegion1Value, testRegion2Value, testRegion3Value)
         await testContext.removeExplorerRegion(testRegion2Value)
+
+        const persistedRegions = extensionContext.globalState.get<string[]>(regionSettingKey)
+        assert.ok(persistedRegions, 'Expected region data to be stored in globalState')
+        assert.strictEqual(persistedRegions!.length, 2)
+        assert.strictEqual(persistedRegions![0], testRegion1Value)
+        assert.strictEqual(persistedRegions![1], testRegion3Value)
     })
 
     it('updates config on profile change', async () => {
