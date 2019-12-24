@@ -15,6 +15,7 @@ import { assertThrowsError } from './utilities/assertUtils'
 describe('DefaultAwsContext', () => {
     const testRegion1Value: string = 're-gion-1'
     const testRegion2Value: string = 're-gion-2'
+    const testRegion3Value: string = 're-gion-3'
     const testProfileValue: string = 'profile1'
     const testAccountIdValue: string = '123456789012'
     const testAccessKey: string = 'opensesame'
@@ -150,13 +151,14 @@ describe('DefaultAwsContext', () => {
     it('updates globalState on region removal', async () => {
         const extensionContext = new FakeExtensionContext()
         const testContext = new DefaultAwsContext(extensionContext)
-        await testContext.addExplorerRegion(testRegion1Value, testRegion2Value)
+        await testContext.addExplorerRegion(testRegion1Value, testRegion2Value, testRegion3Value)
         await testContext.removeExplorerRegion(testRegion2Value)
 
         const persistedRegions = extensionContext.globalState.get<string[]>(regionSettingKey)
         assert.ok(persistedRegions, 'Expected region data to be stored in globalState')
-        assert.strictEqual(persistedRegions!.length, 1)
+        assert.strictEqual(persistedRegions!.length, 2)
         assert.strictEqual(persistedRegions![0], testRegion1Value)
+        assert.strictEqual(persistedRegions![1], testRegion3Value)
     })
 
     it('fires event on profile change', async () => {
