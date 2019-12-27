@@ -54,7 +54,7 @@ abstract class CloudDebugTestCase(private val taskDefName: String) {
     @Before
     open fun setUp() {
         // does not validate that a SSM session is successfully created
-        val region = AwsRegion("us-west-2", "US West 2")
+        val region = AwsRegion("us-west-2", "US West 2", "aws")
         MockRegionProvider.getInstance().addRegion(region)
         ProjectAccountSettingsManager.getInstance(getProject()).changeRegion(region)
         instrumentationRole = cfnRule.outputs["TaskRole"] ?: throw RuntimeException("Could not find instrumentation role in CloudFormation outputs")

@@ -16,15 +16,15 @@ class AwsRegionTest(private val region: AwsRegion, private val expectedCategory:
         @JvmStatic
         @Parameterized.Parameters(name = "{2}")
         fun data(): Collection<Array<Any>> = listOf(
-            arrayOf(AwsRegion("ap-northeast-1", "Asia Pacific (Tokyo)"), "Asia Pacific", "Tokyo (ap-northeast-1)"),
-            arrayOf(AwsRegion("ca-central-1", "Canada (Central)"), "North America", "Canada Central (ca-central-1)"),
-            arrayOf(AwsRegion("eu-central-1", "EU (Frankfurt)"), "Europe", "Frankfurt (eu-central-1)"),
-            arrayOf(AwsRegion("sa-east-1", "South America (Sao Paulo)"), "South America", "Sao Paulo (sa-east-1)"),
-            arrayOf(AwsRegion("us-east-1", "US East (N. Virginia)"), "North America", "N. Virginia (us-east-1)"),
-            arrayOf(AwsRegion("us-west-1", "US West (N. California)"), "North America", "N. California (us-west-1)"),
-            arrayOf(AwsRegion("cn-north-1", "China (Beijing)"), "China", "Beijing (cn-north-1)"),
-            arrayOf(AwsRegion("us-gov-west-1", "AWS GovCloud (US)"), "North America", "AWS GovCloud US (us-gov-west-1)"),
-            arrayOf(AwsRegion("me-south-1", "Middle East (Bahrain)"), "Middle East", "Bahrain (me-south-1)")
+            arrayOf(AwsRegion("ap-northeast-1", "Asia Pacific (Tokyo)", "aws"), "Asia Pacific", "Tokyo (ap-northeast-1)"),
+            arrayOf(AwsRegion("ca-central-1", "Canada (Central)", "aws"), "North America", "Canada Central (ca-central-1)"),
+            arrayOf(AwsRegion("eu-central-1", "EU (Frankfurt)", "aws"), "Europe", "Frankfurt (eu-central-1)"),
+            arrayOf(AwsRegion("sa-east-1", "South America (Sao Paulo)", "aws"), "South America", "Sao Paulo (sa-east-1)"),
+            arrayOf(AwsRegion("us-east-1", "US East (N. Virginia)", "aws"), "North America", "N. Virginia (us-east-1)"),
+            arrayOf(AwsRegion("us-west-1", "US West (N. California)", "aws"), "North America", "N. California (us-west-1)"),
+            arrayOf(AwsRegion("cn-north-1", "China (Beijing)", "aws"), "China", "Beijing (cn-north-1)"),
+            arrayOf(AwsRegion("us-gov-west-1", "AWS GovCloud (US)", "aws"), "North America", "AWS GovCloud US (us-gov-west-1)"),
+            arrayOf(AwsRegion("me-south-1", "Middle East (Bahrain)", "aws"), "Middle East", "Bahrain (me-south-1)")
         )
     }
 

@@ -100,8 +100,8 @@ class DefaultProjectAccountSettingsManagerTest {
     @Test
     fun testMakingRegionActive() {
         val mockRegionProvider = MockRegionProvider.getInstance()
-        val mockRegion1 = mockRegionProvider.addRegion(AwsRegion("MockRegion-1", "MockRegion-1"))
-        val mockRegion2 = mockRegionProvider.addRegion(AwsRegion("MockRegion-2", "MockRegion-2"))
+        val mockRegion1 = mockRegionProvider.addRegion(AwsRegion("MockRegion-1", "MockRegion-1", "aws"))
+        val mockRegion2 = mockRegionProvider.addRegion(AwsRegion("MockRegion-2", "MockRegion-2", "aws"))
 
         assertThat(manager.recentlyUsedRegions()).isEmpty()
 
@@ -130,7 +130,7 @@ class DefaultProjectAccountSettingsManagerTest {
             }
         })
 
-        changeRegion(mockRegionManager.lookupRegionById("MockRegion-1"))
+        changeRegion(AwsRegionProvider.getInstance().defaultRegion())
 
         assertThat(gotNotification).isTrue()
     }

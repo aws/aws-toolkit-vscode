@@ -48,7 +48,7 @@ class SamDeployTest {
     @Before
     fun setUp() {
         SamSettings.getInstance().savedExecutablePath = System.getenv().getOrDefault("SAM_CLI_EXEC", "sam")
-        MockProjectAccountSettingsManager.getInstance(projectRule.project).changeRegion(AwsRegion(Region.US_WEST_2.id(), "us-west-2"))
+        MockProjectAccountSettingsManager.getInstance(projectRule.project).changeRegion(AwsRegion(Region.US_WEST_2.id(), "us-west-2", "aws"))
     }
 
     @Test

@@ -5,7 +5,7 @@ package software.aws.toolkits.core.region
 
 import software.amazon.awssdk.regions.Region
 
-data class AwsRegion(val id: String, val name: String) {
+data class AwsRegion(val id: String, val name: String, val partitionId: String) {
     val category: String? = when {
         id.startsWith("us") -> "North America"
         id.startsWith("ca") -> "North America"
@@ -30,7 +30,7 @@ data class AwsRegion(val id: String, val name: String) {
     )
 
     companion object {
-        val GLOBAL = AwsRegion(Region.AWS_GLOBAL.id(), "Global")
+        val GLOBAL = AwsRegion(Region.AWS_GLOBAL.id(), "Global", "Global")
         private fun String.trimPrefixAndRemoveBrackets(prefix: String) = this.removePrefix(prefix).replace("(", "").replace(")", "").trim()
     }
 }

@@ -15,7 +15,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Rule
 import org.junit.Test
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADATA_NA
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADATA_NOT_SET
@@ -130,10 +129,10 @@ class TelemetryServiceTest {
         MockResourceCache.getInstance(projectRule.project).addValidAwsCredential(accountSettings.activeRegion.id, "profile:admin", "111111111111")
 
         accountSettings.changeCredentialProvider(
-            MockCredentialsManager.getInstance().addCredentials("profile:admin", AwsBasicCredentials.create("Access", "Secret"))
+            MockCredentialsManager.getInstance().addCredentials("profile:admin")
         )
 
-        val mockRegion = AwsRegion("foo-region", "foo-region")
+        val mockRegion = AwsRegion("foo-region", "foo-region", "aws")
         MockRegionProvider.getInstance().addRegion(mockRegion)
         accountSettings.changeRegion(mockRegion)
 
@@ -161,10 +160,10 @@ class TelemetryServiceTest {
         MockResourceCache.getInstance(projectRule.project).addValidAwsCredential(accountSettings.activeRegion.id, "profile:admin", "111111111111")
 
         accountSettings.changeCredentialProvider(
-            MockCredentialsManager.getInstance().addCredentials("profile:admin", AwsBasicCredentials.create("Access", "Secret"))
+            MockCredentialsManager.getInstance().addCredentials("profile:admin")
         )
 
-        val mockRegion = AwsRegion("foo-region", "foo-region")
+        val mockRegion = AwsRegion("foo-region", "foo-region", "aws")
         MockRegionProvider.getInstance().addRegion(mockRegion)
         accountSettings.changeRegion(mockRegion)
 

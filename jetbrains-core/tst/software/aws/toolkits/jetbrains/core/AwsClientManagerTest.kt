@@ -142,7 +142,7 @@ class AwsClientManagerTest {
         val first = sut.getClient<DummyServiceClient>()
 
         val testSettings = ProjectAccountSettingsManager.getInstance(projectRule.project)
-        testSettings.changeRegion(AwsRegion("us-west-2", "us-west-2"))
+        testSettings.changeRegion(AwsRegion("us-west-2", "us-west-2", "aws"))
 
         val afterRegionUpdate = sut.getClient<DummyServiceClient>()
 
