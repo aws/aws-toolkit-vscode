@@ -14,6 +14,10 @@ class MRUList<T>(private val maxSize: Int) {
 
     fun elements(): List<T> = internalList.toList()
 
+    fun clear() {
+        internalList.clear()
+    }
+
     private fun trimToSize() {
         while (internalList.size > maxSize) {
             internalList.removeAt(internalList.size - 1)

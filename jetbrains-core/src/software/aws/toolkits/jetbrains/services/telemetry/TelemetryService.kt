@@ -15,7 +15,6 @@ import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADAT
 import software.aws.toolkits.core.telemetry.DefaultTelemetryBatcher
 import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryBatcher
-import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.credentials.activeAwsAccount
 import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.TelemetryResult
@@ -31,14 +30,9 @@ interface TelemetryService : Disposable {
         val awsRegion: String = METADATA_NA
     )
 
-    fun record(project: Project?, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}) = record(project, null, buildEvent)
+    fun record(metricEventMetadata: MetricEventMetadata, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}): MetricEvent
 
-    // TODO consider using DataProvider for the metricEventMetadata.
-    @Deprecated("Record should not be called with a namespace")
-    fun record(namespace: String?, metricEventMetadata: MetricEventMetadata, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}): MetricEvent
-
-    @Deprecated("Record should not be called with a namespace")
-    fun record(project: Project?, namespace: String?, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}): CompletableFuture<MetricEvent> {
+    fun record(project: Project?, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}): CompletableFuture<MetricEvent> {
         val metricEvent = CompletableFuture<MetricEvent>()
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
@@ -46,7 +40,7 @@ interface TelemetryService : Disposable {
                     awsAccount = project.activeAwsAccount() ?: METADATA_NOT_SET,
                     awsRegion = project.activeRegion().id
                 )
-                metricEvent.complete(record(namespace, metricEventMetadata, buildEvent))
+                metricEvent.complete(record(metricEventMetadata, buildEvent))
             } catch (e: Exception) {
                 metricEvent.completeExceptionally(e)
             }
@@ -67,7 +61,13 @@ interface TelemetryService : Disposable {
         }
 
         @JvmStatic
-        fun recordSimpleTelemetry(project: Project?, name: String, success: Boolean, count: Double = 1.0) =
+        fun recordSimpleTelemetry(project: Project?, name: String) =
+            getInstance().record(project) {
+                datum(name)
+            }
+
+        @JvmStatic
+        fun recordSimpleTelemetry(project: Project?, name: String, success: Boolean = true, count: Double = 1.0) =
             getInstance().record(project) {
                 datum(name) {
                     count(count)
@@ -128,9 +128,9 @@ class DefaultTelemetryService(settings: AwsSettings) :
         }
 
         val endTime = Instant.now()
-        record("ToolkitEnd") {
+        record {
             createTime(endTime)
-            datum("duration") {
+            datum("ToolkitEnd") {
                 value(Duration.between(startTime, endTime).toMillis().toDouble())
                 unit(Unit.MILLISECONDS)
             }
@@ -140,11 +140,10 @@ class DefaultTelemetryService(settings: AwsSettings) :
     }
 
     override fun record(
-        namespace: String?,
         metricEventMetadata: TelemetryService.MetricEventMetadata,
         buildEvent: MetricEvent.Builder.() -> kotlin.Unit
     ): MetricEvent {
-        val builder = DefaultMetricEvent.builder(namespace)
+        val builder = DefaultMetricEvent.builder()
         buildEvent(builder)
         builder.awsAccount(metricEventMetadata.awsAccount)
         builder.awsRegion(metricEventMetadata.awsRegion)
@@ -153,10 +152,9 @@ class DefaultTelemetryService(settings: AwsSettings) :
         return event
     }
 
-    private fun record(namespace: String, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}): MetricEvent =
-        record(namespace, TelemetryService.MetricEventMetadata(), buildEvent)
+    private fun record(event: MetricEvent.Builder.() -> kotlin.Unit): MetricEvent = record(TelemetryService.MetricEventMetadata(), event)
 
-    companion object {
-        private val LOG = getLogger<TelemetryService>()
+    private fun record(metricName: String): MetricEvent = record(TelemetryService.MetricEventMetadata()) {
+        this.datum(metricName)
     }
 }

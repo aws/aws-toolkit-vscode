@@ -7,27 +7,37 @@ import com.intellij.openapi.components.ServiceManager
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.region.ToolkitRegionProvider
 
-class MockRegionProvider : ToolkitRegionProvider {
-    private val overrideRegions: MutableMap<String, AwsRegion> = mutableMapOf("us-east-1" to US_EAST_1)
+class MockRegionProvider : ToolkitRegionProvider() {
+    private val overrideRegions: MutableMap<String, AwsRegion> = mutableMapOf()
 
-    fun addRegion(region: AwsRegion) {
+    fun addRegion(region: AwsRegion): AwsRegion {
         overrideRegions[region.id] = region
+        return region
     }
 
     fun reset() {
         overrideRegions.clear()
     }
 
-    override fun defaultRegion(): AwsRegion = regions.getValue(defaultRegionKey)
-
-    override fun regions(): Map<String, AwsRegion> = regions + overrideRegions
+    override fun partitionData(): Map<String, PartitionData> {
+        val combinedRegions = regions + overrideRegions
+        return combinedRegions.asSequence()
+            .associate {
+                it.value.partitionId to PartitionData(
+                    "MockPartition",
+                    emptyMap(),
+                    combinedRegions.filterValues { regions -> regions.partitionId == it.value.partitionId }
+                )
+            }
+    }
 
     override fun isServiceSupported(region: AwsRegion, serviceName: String): Boolean = true
 
+    override fun defaultRegion(): AwsRegion = US_EAST_1
+
     companion object {
-        val US_EAST_1 = AwsRegion("us-east-1", "US East (N. Virginia)")
-        private var defaultRegionKey = "us-east-1"
-        private val regions = mapOf("us-east-1" to US_EAST_1)
+        private val US_EAST_1 = AwsRegion("us-east-1", "US East (N. Virginia)", "aws")
+        private val regions = mapOf(US_EAST_1.id to US_EAST_1)
         fun getInstance(): MockRegionProvider = ServiceManager.getService(ToolkitRegionProvider::class.java) as MockRegionProvider
     }
 }

@@ -127,7 +127,7 @@ class RemoteLambdaExecutionTest {
             inputIsFile = inputFile,
             credentialId = CREDENTIAL_ID,
             functionName = FUNCTION_NAME,
-            regionId = MockRegionProvider.US_EAST_1
+            regionId = MockRegionProvider.getInstance().defaultRegion()
         )
 
         val executor = ExecutorRegistry.getInstance().getExecutorById(DefaultRunExecutor.EXECUTOR_ID)

@@ -19,6 +19,7 @@ import org.junit.Test
 import software.amazon.awssdk.services.schemas.model.DescribeSchemaResponse
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.MockResourceCache
+import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
 import java.io.File
@@ -38,16 +39,16 @@ class SchemasViewerTest {
 
     private val fileEditorManager = FileEditorManager.getInstance(projectRule.project)
 
-    val CREDENTIAL_IDENTIFIER = MockProjectAccountSettingsManager.MOCK_CREDENTIALS_NAME
-    val REGION = MockProjectAccountSettingsManager.getInstance(projectRule.project).activeRegion.id
-    val REGISTRY = "registry"
-    val SCHEMA = "schema"
-    val VERSION = "2"
+    private val CREDENTIAL_IDENTIFIER = MockCredentialsManager.DUMMY_PROVIDER_ID
+    private val REGION = MockProjectAccountSettingsManager.getInstance(projectRule.project).activeRegion.id
+    private val REGISTRY = "registry"
+    private val SCHEMA = "schema"
+    private val VERSION = "2"
 
-    val SCHEMA_FILE_NAME = "$CREDENTIAL_IDENTIFIER.$REGION.$REGISTRY.$SCHEMA.$VERSION.json"
+    private val SCHEMA_FILE_NAME = "$CREDENTIAL_IDENTIFIER.$REGION.$REGISTRY.$SCHEMA.$VERSION.json"
 
-    val AWS_EVENT_SCHEMA_RAW = File(javaClass.getResource("/awsEventSchemaRaw.json.txt").toURI()).readText(Charsets.UTF_8)
-    val AWS_EVENT_SCHEMA_PRETTY = File(javaClass.getResource("/awsEventSchemaPretty.json.txt").toURI()).readText(Charsets.UTF_8)
+    private val AWS_EVENT_SCHEMA_RAW = File(javaClass.getResource("/awsEventSchemaRaw.json.txt").toURI()).readText(Charsets.UTF_8)
+    private val AWS_EVENT_SCHEMA_PRETTY = File(javaClass.getResource("/awsEventSchemaPretty.json.txt").toURI()).readText(Charsets.UTF_8)
 
     @Before
     fun setUp() {

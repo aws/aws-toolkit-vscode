@@ -27,7 +27,8 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.CountDownLatch
 
-class PythonDebugEndToEndTest : CloudDebugTestCase() {
+// We use the corretto image for Python too, that is why we use the Java Task Def
+class PythonDebugEndToEndTest : CloudDebugTestCase("CloudDebugTestECSClusterTaskDefinitionWithJava") {
     @JvmField
     @Rule
     val projectRule = PythonCodeInsightTestFixtureRule()

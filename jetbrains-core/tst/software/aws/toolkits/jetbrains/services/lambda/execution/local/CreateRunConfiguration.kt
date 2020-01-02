@@ -24,7 +24,7 @@ fun createTemplateRunConfiguration(
     logicalId: String? = null,
     inputIsFile: Boolean = false,
     credentialsProviderId: String? = null,
-    region: AwsRegion? = MockRegionProvider.US_EAST_1,
+    region: AwsRegion? = MockRegionProvider.getInstance().defaultRegion(),
     environmentVariables: MutableMap<String, String> = mutableMapOf(),
     samOptions: SamOptions = SamOptions()
 ): LocalLambdaRunConfiguration {
@@ -51,7 +51,7 @@ fun createHandlerBasedRunConfiguration(
     input: String? = "inputText",
     inputIsFile: Boolean = false,
     credentialsProviderId: String? = null,
-    region: AwsRegion? = MockRegionProvider.US_EAST_1,
+    region: AwsRegion? = MockRegionProvider.getInstance().defaultRegion(),
     environmentVariables: MutableMap<String, String> = mutableMapOf(),
     samOptions: SamOptions = SamOptions()
 ): LocalLambdaRunConfiguration {

@@ -24,7 +24,7 @@ class AwsConnectionSettingsSelector(
 
         val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
         view.region.selectedRegion = accountSettingsManager.activeRegion
-        if (accountSettingsManager.hasActiveCredentials()) {
+        if (accountSettingsManager.isValidConnectionSettings()) {
             view.credentialProvider.setSelectedCredentialsProvider(accountSettingsManager.activeCredentialProvider)
         }
         view.region.addActionListener {
@@ -44,11 +44,11 @@ class AwsConnectionSettingsSelector(
     fun resetAwsConnectionOptions(regionId: String?, credentialProviderId: String?) {
         regionId?.let { view.region.selectedRegion = regionProvider.lookupRegionById(it) }
 
-        credentialProviderId?.let { credentialProviderId ->
+        credentialProviderId?.let { providerId ->
             try {
-                view.credentialProvider.setSelectedCredentialsProvider(credentialManager.getCredentialProvider(credentialProviderId))
+                view.credentialProvider.setSelectedCredentialsProvider(credentialManager.getCredentialProvider(providerId))
             } catch (_: Exception) {
-                view.credentialProvider.setSelectedInvalidCredentialsProvider(credentialProviderId)
+                view.credentialProvider.setSelectedInvalidCredentialsProvider(providerId)
             }
         }
     }

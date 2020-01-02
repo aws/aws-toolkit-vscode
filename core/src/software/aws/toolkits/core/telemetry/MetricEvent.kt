@@ -10,17 +10,12 @@ import java.time.Instant
 import software.amazon.awssdk.services.toolkittelemetry.model.Unit as MetricUnit
 
 interface MetricEvent {
-    @Deprecated("namespace should not be used")
-    val namespace: String?
     val createTime: Instant
     val awsAccount: String
     val awsRegion: String
     val data: Iterable<Datum>
 
     interface Builder {
-        @Deprecated("MetricEvent should not have a namespace")
-        fun namespace(namespace: String): Builder
-
         fun createTime(createTime: Instant): Builder
 
         fun awsAccount(awsAccount: String): Builder
@@ -67,7 +62,6 @@ interface MetricEvent {
 fun String.replaceIllegal(replacement: String = "") = this.replace(illegalCharsRegex, replacement)
 
 class DefaultMetricEvent internal constructor(
-    override val namespace: String?,
     override val createTime: Instant,
     override val awsAccount: String,
     override val awsRegion: String,
@@ -75,23 +69,10 @@ class DefaultMetricEvent internal constructor(
 ) : MetricEvent {
 
     class BuilderImpl : MetricEvent.Builder {
-        @Deprecated("namespace should not be used")
-        private var namespace: String?
-
-        @Deprecated("MetricEvent should not have a namespace")
-        constructor(namespace: String?) {
-            this.namespace = namespace
-        }
-
         private var createTime: Instant = Instant.now()
         private var awsAccount: String = METADATA_NA
         private var awsRegion: String = METADATA_NA
         private var data: MutableCollection<MetricEvent.Datum> = mutableListOf()
-
-        override fun namespace(namespace: String): MetricEvent.Builder {
-            this.namespace = namespace
-            return this
-        }
 
         override fun createTime(createTime: Instant): MetricEvent.Builder {
             this.createTime = createTime
@@ -115,14 +96,11 @@ class DefaultMetricEvent internal constructor(
             return this
         }
 
-        override fun build(): MetricEvent = DefaultMetricEvent(namespace?.replaceIllegal(), createTime, awsAccount, awsRegion, data)
+        override fun build(): MetricEvent = DefaultMetricEvent(createTime, awsAccount, awsRegion, data)
     }
 
     companion object {
-        fun builder() = builder(null)
-
-        @Deprecated("MetricEvent should not have a namespace")
-        fun builder(namespace: String?): MetricEvent.Builder = BuilderImpl(namespace)
+        fun builder() = BuilderImpl()
 
         const val METADATA_NA = "n/a"
         const val METADATA_NOT_SET = "not-set"

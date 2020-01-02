@@ -95,7 +95,7 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
 
     // Handler defined in remote Lambda with the same runtime group is valid
     private fun handlerInRemote(psiFile: PsiFile, handler: String, runtimeGroup: RuntimeGroup): Boolean {
-        if (!ProjectAccountSettingsManager.getInstance(psiFile.project).hasActiveCredentials()) {
+        if (!ProjectAccountSettingsManager.getInstance(psiFile.project).isValidConnectionSettings()) {
             return false
         }
 

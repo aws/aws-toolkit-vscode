@@ -8,13 +8,13 @@ import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.JBSplitter
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBList
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.Alarm
-import software.aws.toolkits.jetbrains.components.telemetry.LoggingDialogWrapper
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.services.schemas.SchemaViewer
 import software.aws.toolkits.jetbrains.services.schemas.code.DownloadCodeForSchemaDialog
@@ -49,7 +49,7 @@ abstract class SchemasSearchDialogBase<T : SchemaSearchResultBase, U : SchemaSea
     private val onCancelCallback: (U) -> Unit,
     private val alarmThreadToUse: Alarm.ThreadToUse = Alarm.ThreadToUse.SWING_THREAD
 ) :
-    SchemaSearchDialog<T, U>, LoggingDialogWrapper(project), Disposable {
+    SchemaSearchDialog<T, U>, DialogWrapper(project), Disposable {
 
     private val DEFAULT_PADDING = 10
     private val HIGHLIGHT_COLOR = Color.YELLOW
@@ -195,7 +195,6 @@ abstract class SchemasSearchDialogBase<T : SchemaSearchResultBase, U : SchemaSea
     private fun previewSchema(selectedSchema: T) {
         val selectedSchemaVersion = selectedSchemaVersion()
         selectedSchemaVersion?.let {
-            emitTelemetry("PreviewSchemaDuringSearch")
             downloadSchemaContent(selectedSchema, selectedSchemaVersion.version)
                 .thenApply { schemaText ->
                     runInEdt(ModalityState.any()) {
@@ -336,8 +335,6 @@ abstract class SchemasSearchDialogBase<T : SchemaSearchResultBase, U : SchemaSea
 
     fun getDownloadButton(): JButton? = getButton(openDownloadDialogAction)
 
-    override fun getNamespace(): String = "SchemasSearchDialog"
-
     override fun dispose() {
         super.dispose()
     }
@@ -352,9 +349,6 @@ abstract class SchemasSearchDialogBase<T : SchemaSearchResultBase, U : SchemaSea
             val currentSchemaRegistry = selectedSchemaRegistry()
 
             if (currentSchema != null && currentSchemaRegistry != null) {
-
-                emitTelemetry("DownloadCodeAction")
-
                 DownloadCodeForSchemaDialog(
                     project,
                     currentSchema,

@@ -169,7 +169,7 @@ class ResourceSelectorTest {
         mockResourceCache.addEntry(mockResource, "region1", "credential1", listOf("foo"))
         val comboBox = ResourceSelector.builder(projectRule.project)
             .resource(mockResource)
-            .awsConnection(AwsRegion("region1", "") to mockCred("credential1"))
+            .awsConnection(AwsRegion("region1", "", "aws") to mockCred("credential1"))
             .build()
 
         retryableAssert {

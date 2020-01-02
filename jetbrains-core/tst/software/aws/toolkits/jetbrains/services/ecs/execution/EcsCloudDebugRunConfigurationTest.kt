@@ -383,9 +383,6 @@ class EcsCloudDebugRunConfigurationTest {
 
     @Test
     fun validateErrorWhenServiceDoesntExist() {
-        val container = makeFakeContainerOptions().apply {
-            artifactMappings = listOf(ArtifactMapping("doesn't matter", "/"))
-        }
         val config = buildDefaultConfiguration().also { configuration ->
             configuration.serviceArn("notarealservice")
         }

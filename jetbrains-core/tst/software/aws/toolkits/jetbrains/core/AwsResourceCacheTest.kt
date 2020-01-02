@@ -423,8 +423,8 @@ class AwsResourceCacheTest {
     companion object {
         private val CRED1 = DummyToolkitCredentialsProvider("cred1")
         private val CRED2 = DummyToolkitCredentialsProvider("cred2")
-        private val US_WEST_1 = AwsRegion("us-west-1", "USW1")
-        private val US_WEST_2 = AwsRegion("us-west-2", "USW2")
+        private val US_WEST_1 = AwsRegion("us-west-1", "USW1", "aws")
+        private val US_WEST_2 = AwsRegion("us-west-2", "USW2", "aws")
 
         private val DEFAULT_EXPIRY = Duration.ofMinutes(10)
 
@@ -432,7 +432,7 @@ class AwsResourceCacheTest {
             override val displayName: String get() = id
 
             override fun resolveCredentials(): AwsCredentials {
-                TODO("not implemented")
+                throw NotImplementedError()
             }
         }
 

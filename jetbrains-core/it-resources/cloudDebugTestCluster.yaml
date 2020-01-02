@@ -1,10 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: An ECS cluster for running integration tests for Cloud Debug
 
-Parameters:
-  ContainerImageParameter:
-    Type: 'String'
-
 Resources:
   Cluster:
     Type: AWS::ECS::Cluster
@@ -25,7 +21,36 @@ Resources:
       TaskRoleArn: !Ref TaskRole
       ContainerDefinitions:
         - Name: 'ContainerName'
-          Image: !Ref ContainerImageParameter
+          Image: "amazoncorretto"
+          Command:
+            - 'tail -f /dev/null'
+          EntryPoint:
+            - 'sh'
+            - '-c'
+          PortMappings:
+            - ContainerPort: 80
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Ref AWS::Region
+              awslogs-group: !Ref LogGroup
+              awslogs-stream-prefix: ecs
+  TaskDefinitionWithNode:
+    Type: AWS::ECS::TaskDefinition
+    DependsOn: LogGroup
+    Properties:
+      Family: !Join ['', [!Ref Cluster, TaskDefinitionWithNode]]
+      # awsvpc is required for Fargate
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: 1024
+      Memory: 2GB
+      ExecutionRoleArn: !Ref ExecutionRole
+      TaskRoleArn: !Ref TaskRole
+      ContainerDefinitions:
+        - Name: 'ContainerName'
+          Image: "node"
           Command:
             - 'tail -f /dev/null'
           EntryPoint:
@@ -42,7 +67,7 @@ Resources:
   LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Join ['', [/ecs/, !Ref Cluster, TaskDefinitionWithJava]]
+      LogGroupName: !Join ['', [/ecs/, !Ref Cluster]]
   ExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -109,8 +134,8 @@ Resources:
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: "Internet Group"
-      GroupDescription: "All traffic IN/OUT. This needs to include at least the LoadBalancer and health check port"
+      GroupName: "Full Internet Group"
+      GroupDescription: "All traffic IN/OUT."
       VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: -1

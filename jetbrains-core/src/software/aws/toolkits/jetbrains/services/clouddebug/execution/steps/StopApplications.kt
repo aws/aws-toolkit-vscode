@@ -24,7 +24,7 @@ class StopApplications(
     }
     override val hidden = false
 
-    override fun buildChildSteps(context: Context): List<Step> = settings.containerOptions.map { (containerName, options) ->
+    override fun buildChildSteps(context: Context): List<Step> = settings.containerOptions.map { (containerName, _) ->
         StopApplication(settings, containerName, isCleanup)
     }
 }

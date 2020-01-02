@@ -29,6 +29,6 @@ class DialogModalityRule : Rule("run-in-edt-wo-modality-in-dialog") {
     }
 
     companion object {
-        private val KNOWN_DIALOG_SUPER_TYPES = setOf("DialogWrapper", "LoggingDialogWrapper")
+        private val KNOWN_DIALOG_SUPER_TYPES = setOf("DialogWrapper")
     }
 }

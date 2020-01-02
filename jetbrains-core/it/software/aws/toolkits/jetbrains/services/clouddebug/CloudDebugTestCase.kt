@@ -12,7 +12,6 @@ import org.junit.Rule
 import software.amazon.awssdk.http.apache.ApacheHttpClient
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
-import software.amazon.awssdk.services.cloudformation.model.Parameter
 import software.amazon.awssdk.services.ecs.EcsClient
 import software.amazon.awssdk.services.ecs.model.AssignPublicIp
 import software.amazon.awssdk.services.ecs.model.LaunchType
@@ -34,21 +33,19 @@ import software.aws.toolkits.jetbrains.utils.rules.CloudFormationLazyInitRule
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-abstract class CloudDebugTestCase(containerImage: String = "amazoncorretto") {
-    lateinit var service: Service
-    lateinit var instrumentationRole: String
-    lateinit var instrumentedService: Service
+abstract class CloudDebugTestCase(private val taskDefName: String) {
+    protected lateinit var service: Service
+    private lateinit var instrumentationRole: String
+    private lateinit var instrumentedService: Service
 
-    val cfnRule = CloudFormationLazyInitRule(
+    private val cfnRule = CloudFormationLazyInitRule(
         "CloudDebugTestCluster",
         CloudDebugTestCase::class.java.getResource("/cloudDebugTestCluster.yaml").readText(),
-        listOf(Parameter.builder().parameterKey("ContainerImageParameter").parameterValue(containerImage).build()),
+        emptyList(),
         cloudFormationClient
     )
 
-    val ecsRule = ECSTemporaryServiceRule(
-        ecsClient
-    )
+    private val ecsRule = ECSTemporaryServiceRule(ecsClient)
 
     @Rule
     @JvmField
@@ -57,7 +54,7 @@ abstract class CloudDebugTestCase(containerImage: String = "amazoncorretto") {
     @Before
     open fun setUp() {
         // does not validate that a SSM session is successfully created
-        val region = AwsRegion("us-west-2", "US West 2")
+        val region = AwsRegion("us-west-2", "US West 2", "aws")
         MockRegionProvider.getInstance().addRegion(region)
         ProjectAccountSettingsManager.getInstance(getProject()).changeRegion(region)
         instrumentationRole = cfnRule.outputs["TaskRole"] ?: throw RuntimeException("Could not find instrumentation role in CloudFormation outputs")
@@ -91,11 +88,11 @@ abstract class CloudDebugTestCase(containerImage: String = "amazoncorretto") {
         }
     }
 
-    fun createService(): Service {
+    private fun createService(): Service {
         val cfnOutputs = cfnRule.outputs
         val service = ecsRule.createService {
             it.desiredCount(1)
-            it.taskDefinition("CloudDebugTestECSClusterTaskDefinitionWithJava")
+            it.taskDefinition(taskDefName)
             it.cluster("CloudDebugTestECSCluster")
             it.launchType(LaunchType.FARGATE)
             it.networkConfiguration { networkConfig ->

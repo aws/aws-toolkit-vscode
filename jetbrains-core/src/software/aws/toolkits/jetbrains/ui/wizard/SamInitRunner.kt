@@ -8,7 +8,6 @@ import com.intellij.execution.process.CapturingProcessHandler
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.util.text.SemVer
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
@@ -28,11 +27,6 @@ object SamInitRunner {
         templateParameters: TemplateParameters,
         schemaParameters: SchemaTemplateParameters?
     ) {
-        val isSamGte30 = SemVer.parseFromText(SamCommon.getVersionString())
-            ?.isGreaterOrEqualThan(0, 30, 0) ?: false
-
-        val isSamSupportSchemasExtraContext = SamCommon.validateSchemasSupport() == null
-
         // set output to a temp dir
         val tempDir = createTempDir()
 
@@ -41,6 +35,7 @@ object SamInitRunner {
             .withParameters("--no-input")
             .withParameters("--output-dir")
             .withParameters(tempDir.path)
+            .withParameters("--no-interactive")
             .apply {
                 when (templateParameters) {
                     is TemplateParameters.AppBasedTemplate -> {
@@ -50,11 +45,8 @@ object SamInitRunner {
                             .withParameters(runtime.toString())
                             .withParameters("--dependency-manager")
                             .withParameters(templateParameters.dependencyManager)
-
-                        if (isSamGte30) {
-                            this.withParameters("--app-template")
-                                .withParameters(templateParameters.appTemplate)
-                        }
+                            .withParameters("--app-template")
+                            .withParameters(templateParameters.appTemplate)
                     }
                     is TemplateParameters.LocationBasedTemplate -> {
                         this.withParameters("--location")
@@ -62,17 +54,11 @@ object SamInitRunner {
                     }
                 }
 
-                if (isSamGte30) {
-                    this.withParameters("--no-interactive")
-                }
+                schemaParameters?.let { params ->
+                    val extraContextAsJson = mapper.writeValueAsString(params.templateExtraContext)
 
-                if (isSamSupportSchemasExtraContext) {
-                    schemaParameters?.let { params ->
-                        val extraContextAsJson = mapper.writeValueAsString(params.templateExtraContext)
-
-                        this.withParameters("--extra-context")
-                            .withParameters(extraContextAsJson)
-                    }
+                    this.withParameters("--extra-context")
+                        .withParameters(extraContextAsJson)
                 }
             }
 
@@ -85,13 +71,13 @@ object SamInitRunner {
             LOG.info { "SAM output: ${process.stdout}" }
         }
 
-        val subFolders = tempDir.listFiles()
+        val subFolders = tempDir.listFiles()?.toList() ?: emptyList()
 
-        assert(subFolders != null && subFolders.size == 1 && subFolders[0].isDirectory) {
+        assert(subFolders.size == 1 && subFolders.first().isDirectory) {
             message("sam.init.error.subfolder_not_one", tempDir.name)
         }
 
-        FileUtil.copyDirContent(subFolders[0], VfsUtil.virtualToIoFile(outputDir))
+        FileUtil.copyDirContent(subFolders.first(), VfsUtil.virtualToIoFile(outputDir))
         FileUtil.delete(tempDir)
     }
 }

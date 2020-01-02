@@ -38,7 +38,58 @@ class AwsRegionProviderTest {
     }
 
     @Test
-    fun nonAwsPartitionIsIgnored() {
+    fun correctRegionDataIsFiltered() {
+        val regionProvider = createRegionDataProvider(
+            """
+            {
+                "partitions": [
+                    {
+                        "defaults": {
+                            "hostname": "{service}.{region}.{dnsSuffix}",
+                            "protocols": ["https"],
+                            "signatureVersions": ["v4"]
+                        },
+                        "dnsSuffix": "amazonaws.com",
+                        "partition": "aws",
+                        "partitionName": "AWS Standard",
+                        "regionRegex": "^(us|eu|ap|sa|ca|me)\\-\\w+\\-\\d+$",
+                        "regions": {
+                            "us-west-2": {
+                                "description": "US West (Oregon)"
+                            }
+                        },
+                        "services": {}
+                    },
+                    {
+                        "defaults": {
+                            "hostname": "{service}.{region}.{dnsSuffix}",
+                            "protocols": ["https"],
+                            "signatureVersions": ["v4"]
+                        },
+                        "dnsSuffix": "amazonaws.com.cn",
+                        "partition": "aws-cn",
+                        "partitionName": "AWS China",
+                        "regionRegex": "^cn\\-\\w+\\-\\d+$",
+                        "regions": {
+                            "cn-north-1": {
+                                "description": "China (Beijing)"
+                            }
+                        },
+                        "services": {}
+                    }
+                ],
+                "version": 3
+            }
+            """.trimIndent()
+        )
+
+        val awsRegionProvider = AwsRegionProvider(regionProvider)
+        assertThat(awsRegionProvider.regions("aws")).doesNotContainKey("cn-north-1").containsKey("us-west-2")
+    }
+
+    @Test
+    // TODO: Remove when regions() method is removed
+    fun backwardsCompatibilityIsNotLost() {
         val regionProvider = createRegionDataProvider(
             """
             {
@@ -125,7 +176,7 @@ class AwsRegionProviderTest {
         val regionProvider = createRegionDataProvider("")
 
         val awsRegionProvider = AwsRegionProvider(regionProvider)
-        assertThatThrownBy { awsRegionProvider.defaultRegion() }.isInstanceOf(IllegalStateException::class.java)
+        assertThatThrownBy { awsRegionProvider.defaultRegion() }.isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test

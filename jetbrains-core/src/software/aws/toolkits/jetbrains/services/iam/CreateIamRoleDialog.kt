@@ -7,13 +7,13 @@ import com.intellij.json.JsonLanguage
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
 import org.intellij.lang.annotations.Language
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.iam.IamClient
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
-import software.aws.toolkits.jetbrains.components.telemetry.LoggingDialogWrapper
 import software.aws.toolkits.jetbrains.utils.ui.formatAndSet
 import software.aws.toolkits.resources.message
 import java.awt.Component
@@ -25,7 +25,7 @@ class CreateIamRoleDialog(
     private val parent: Component? = null,
     @Language("JSON") defaultPolicyDocument: String,
     @Language("JSON") defaultAssumeRolePolicyDocument: String
-) : LoggingDialogWrapper(project, parent, false, IdeModalityType.PROJECT) {
+) : DialogWrapper(project, parent, false, IdeModalityType.PROJECT) {
 
     private val view = CreateRolePanel(project)
 
@@ -108,12 +108,12 @@ class CreateIamRoleDialog(
     }
 
     @TestOnly
-    fun createIamRoleForTesting() {
+    internal fun createIamRoleForTesting() {
         createIamRole(roleName(), policyDocument(), assumeRolePolicy())
     }
 
     @TestOnly
-    fun getViewForTesting(): CreateRolePanel = view
+    internal fun getViewForTesting(): CreateRolePanel = view
 
     private companion object {
         val LOG = getLogger<CreateIamRoleDialog>()

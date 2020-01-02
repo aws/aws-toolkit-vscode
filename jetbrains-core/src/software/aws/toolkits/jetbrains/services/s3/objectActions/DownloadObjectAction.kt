@@ -11,10 +11,10 @@ import com.intellij.openapi.fileChooser.FileChooserFactory
 import com.intellij.openapi.fileChooser.FileSaverDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VfsUtil
+import com.intellij.ui.AnActionButton
 import com.intellij.util.io.outputStream
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import software.aws.toolkits.jetbrains.components.telemetry.ActionButtonWrapper
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.TelemetryResult
@@ -26,11 +26,11 @@ import java.nio.file.Paths
 
 class DownloadObjectAction(
     private val treeTable: S3TreeTable
-) : ActionButtonWrapper(message("s3.download.object.action"), null, AllIcons.Actions.Download) {
+) : AnActionButton(message("s3.download.object.action"), null, AllIcons.Actions.Download) {
 
     private val bucket = treeTable.bucket
     @Suppress("unused")
-    override fun doActionPerformed(e: AnActionEvent) {
+    override fun actionPerformed(e: AnActionEvent) {
         val project = e.getRequiredData(LangDataKeys.PROJECT)
 
         val files = treeTable.getSelectedNodes().filterIsInstance<S3TreeObjectNode>()

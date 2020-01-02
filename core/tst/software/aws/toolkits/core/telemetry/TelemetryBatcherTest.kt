@@ -41,9 +41,7 @@ class TelemetryBatcherTest {
                 .doAnswer(createPublishAnswer(publishCountDown, true))
         }
 
-        batcher.enqueue(DefaultMetricEvent.builder(EVENT_NAME)
-                .build()
-        )
+        batcher.enqueue(DefaultMetricEvent.builder().build())
         batcher.flush(false)
 
         waitForPublish(publishCountDown)
@@ -142,7 +140,7 @@ class TelemetryBatcherTest {
         assertThat(publishCaptor.firstValue.toList()).hasSize(1)
     }
 
-    private fun createEmptyMetricEvent(): MetricEvent = DefaultMetricEvent.builder(EVENT_NAME).build()
+    private fun createEmptyMetricEvent(): MetricEvent = DefaultMetricEvent.builder().build()
 
     private fun waitForPublish(publishCountDown: CountDownLatch) {
         // Wait for maximum of 5 secs before thread continues, may not reach final count though
@@ -155,7 +153,6 @@ class TelemetryBatcherTest {
     }
 
     companion object {
-        private const val EVENT_NAME = "Event"
         private const val MAX_BATCH_SIZE = 5
         private const val MAX_QUEUE_SIZE = 10
     }

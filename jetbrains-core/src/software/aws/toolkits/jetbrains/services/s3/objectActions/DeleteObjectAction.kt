@@ -8,19 +8,19 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
+import com.intellij.ui.AnActionButton
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import software.aws.toolkits.jetbrains.components.telemetry.ActionButtonWrapper
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.TelemetryResult
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 
-class DeleteObjectAction(private val treeTable: S3TreeTable) : ActionButtonWrapper(message("s3.delete.object.action"), null, AllIcons.Actions.Cancel) {
+class DeleteObjectAction(private val treeTable: S3TreeTable) : AnActionButton(message("s3.delete.object.action"), null, AllIcons.Actions.Cancel) {
 
     @Suppress("unused")
-    override fun doActionPerformed(e: AnActionEvent) {
+    override fun actionPerformed(e: AnActionEvent) {
         deleteSelectedObjects(e.getRequiredData(LangDataKeys.PROJECT), treeTable)
     }
 

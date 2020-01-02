@@ -25,10 +25,11 @@ import com.intellij.ui.TreeUIHelper
 import com.intellij.ui.components.panels.Wrapper
 import com.intellij.ui.treeStructure.Tree
 import software.aws.toolkits.jetbrains.components.telemetry.ToolkitActionPlaces
-import software.aws.toolkits.jetbrains.core.SettingsSelector
+import software.aws.toolkits.jetbrains.core.credentials.SettingsSelector
+import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsChangeEvent
+import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsChangeNotifier
+import software.aws.toolkits.jetbrains.core.credentials.ConnectionState
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager.AccountSettingsChangedNotifier.AccountSettingsEvent
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_NODES
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_RESOURCE_NODES
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_SERVICE_NODE
@@ -48,10 +49,8 @@ import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.TreeModel
 
-class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(true, true), AccountSettingsChangedNotifier {
+class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(true, true), ConnectionSettingsChangeNotifier {
     private val actionManager = ActionManagerEx.getInstanceEx()
-    private val projectAccountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
-
     private val treePanelWrapper: Wrapper = Wrapper()
     private val errorPanel: JPanel
     private val awsTreeModel = AwsExplorerTreeStructure(project)
@@ -71,24 +70,19 @@ class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(t
 
         setContent(treePanelWrapper)
 
-        project.messageBus.connect().subscribe(ProjectAccountSettingsManager.ACCOUNT_SETTINGS_CHANGED, this)
-
-        load()
+        project.messageBus.connect().subscribe(ProjectAccountSettingsManager.CONNECTION_SETTINGS_CHANGED, this)
     }
 
-    override fun settingsChanged(event: AccountSettingsEvent) {
-        if (!event.isLoading) {
-            load()
-        }
-    }
-
-    private fun load() {
+    override fun settingsChanged(event: ConnectionSettingsChangeEvent) {
         runInEdt {
-            if (!projectAccountSettingsManager.hasActiveCredentials()) {
-                treePanelWrapper.setContent(errorPanel)
-            } else {
-                invalidateTree()
-                treePanelWrapper.setContent(awsTreePanel)
+            when (event.state) {
+                ConnectionState.VALID -> {
+                    invalidateTree()
+                    treePanelWrapper.setContent(awsTreePanel)
+                }
+                else -> {
+                    treePanelWrapper.setContent(errorPanel)
+                }
             }
         }
     }

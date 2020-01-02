@@ -4,10 +4,10 @@
 package software.aws.toolkits.jetbrains.services.clouddebug.actions
 
 import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.project.Project
-import software.aws.toolkits.jetbrains.components.telemetry.AnActionWrapper
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeAction
 import software.aws.toolkits.jetbrains.services.ecs.EcsServiceNode
 import software.aws.toolkits.jetbrains.services.ecs.EcsUtils
@@ -38,8 +38,8 @@ class InstrumentResourceAction(
     private val clusterArn: String? = null,
     private val serviceArn: String? = null,
     private val selected: EcsServiceNode? = null
-) : AnActionWrapper() {
-    override fun doActionPerformed(e: AnActionEvent) {
+) : AnAction() {
+    override fun actionPerformed(e: AnActionEvent) {
         val project = e.getRequiredData(PlatformDataKeys.PROJECT)
         performAction(project)
     }

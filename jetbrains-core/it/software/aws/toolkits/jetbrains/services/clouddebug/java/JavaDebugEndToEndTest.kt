@@ -36,7 +36,7 @@ import software.aws.toolkits.jetbrains.utils.setUpGradleProject
 import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 
-class JavaDebugEndToEndTest : CloudDebugTestCase() {
+class JavaDebugEndToEndTest : CloudDebugTestCase("CloudDebugTestECSClusterTaskDefinitionWithJava") {
     @JvmField
     @Rule
     val projectRule = HeavyJavaCodeInsightTestFixtureRule()

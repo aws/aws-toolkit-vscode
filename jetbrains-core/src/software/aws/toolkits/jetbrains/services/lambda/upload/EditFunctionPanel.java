@@ -81,7 +81,7 @@ public class EditFunctionPanel {
         handlerPanel = new HandlerPanel(project);
         runtimeModel = new SortedComboBoxModel<>(Comparator.comparing(Runtime::toString, Comparator.naturalOrder()));
         runtime = new ComboBox<>(runtimeModel);
-        envVars = new EnvironmentVariablesTextField(project);
+        envVars = new EnvironmentVariablesTextField();
         memorySlider = LambdaWidgets.lambdaMemory();
         timeoutSlider = LambdaWidgets.lambdaTimeout();
         iamRole = ResourceSelector.builder(project).resource(IamResources.LIST_LAMBDA_ROLES).build();

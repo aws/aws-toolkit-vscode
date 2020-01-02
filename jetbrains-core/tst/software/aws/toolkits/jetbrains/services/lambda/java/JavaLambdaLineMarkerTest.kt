@@ -7,6 +7,7 @@ import com.intellij.psi.PsiIdentifier
 import com.intellij.testFramework.fixtures.CodeInsightTestFixture
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -64,6 +65,11 @@ class JavaLambdaLineMarkerTest {
             }
             """
         )
+    }
+
+    @After
+    fun tearDown() {
+        MockProjectAccountSettingsManager.getInstance(projectRule.project).reset()
     }
 
     @Test

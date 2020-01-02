@@ -5,7 +5,7 @@ package software.aws.toolkits.jetbrains.core
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
-import com.intellij.testFramework.PlatformTestCase
+import com.intellij.openapi.project.ex.ProjectManagerEx
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
@@ -46,7 +46,9 @@ class AwsClientManagerTest {
 
     @Before
     fun setUp() {
+        MockProjectAccountSettingsManager.getInstance(projectRule.project).reset()
         mockCredentialManager = MockCredentialsManager.getInstance()
+        mockCredentialManager.reset()
     }
 
     @After
@@ -100,11 +102,17 @@ class AwsClientManagerTest {
     @Test
     fun clientsAreClosedWhenProjectIsDisposed() {
         val project = createProject(temporaryDirectory.newFolder().toPath())
+        val projectManager = ProjectManagerEx.getInstanceEx()
+
+        runInEdtAndWait {
+            projectManager.openTestProject(project)
+        }
+
         val sut = getClientManager(project)
         val client = sut.getClient<DummyServiceClient>()
 
         runInEdtAndWait {
-            PlatformTestCase.closeAndDisposeProjectAndCheckThatNoOpenProjects(project)
+            projectManager.closeAndDispose(project)
         }
 
         assertThat(client.closed).isTrue()
@@ -134,7 +142,7 @@ class AwsClientManagerTest {
         val first = sut.getClient<DummyServiceClient>()
 
         val testSettings = ProjectAccountSettingsManager.getInstance(projectRule.project)
-        testSettings.changeRegion(AwsRegion("us-west-2", "us-west-2"))
+        testSettings.changeRegion(AwsRegion("us-west-2", "us-west-2", "aws"))
 
         val afterRegionUpdate = sut.getClient<DummyServiceClient>()
 

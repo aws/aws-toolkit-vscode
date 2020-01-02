@@ -6,9 +6,9 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.ui.InputValidator
 import com.intellij.openapi.ui.Messages
+import com.intellij.ui.AnActionButton
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import software.aws.toolkits.jetbrains.components.telemetry.ActionButtonWrapper
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.TelemetryResult
@@ -17,10 +17,10 @@ import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 
 class RenameObjectAction(private val treeTable: S3TreeTable) :
-    ActionButtonWrapper(message("s3.rename.object.action"), null, null) {
+    AnActionButton(message("s3.rename.object.action"), null, null) {
 
     @Suppress("unused")
-    override fun doActionPerformed(e: AnActionEvent) {
+    override fun actionPerformed(e: AnActionEvent) {
         val project = e.getRequiredData(LangDataKeys.PROJECT)
         val node = treeTable.getSelectedNodes().firstOrNull() as? S3TreeObjectNode ?: return
 

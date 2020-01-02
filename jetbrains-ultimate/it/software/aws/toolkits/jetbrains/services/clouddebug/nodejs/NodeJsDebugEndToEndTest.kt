@@ -29,7 +29,7 @@ import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
 import software.aws.toolkits.jetbrains.utils.executeRunConfiguration
 import software.aws.toolkits.jetbrains.utils.rules.HeavyNodeJsCodeInsightTestFixtureRule
 
-class NodeJsDebugEndToEndTest : CloudDebugTestCase("node") {
+class NodeJsDebugEndToEndTest : CloudDebugTestCase("CloudDebugTestECSClusterTaskDefinitionWithNode") {
     @Rule
     @JvmField
     val projectRule = HeavyNodeJsCodeInsightTestFixtureRule()
