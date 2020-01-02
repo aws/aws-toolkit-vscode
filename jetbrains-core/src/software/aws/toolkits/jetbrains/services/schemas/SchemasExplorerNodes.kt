@@ -32,24 +32,19 @@ open class SchemaRegistryNode(
     registry,
     AwsIcons.Resources.SCHEMA_REGISTRY
 ), ResourceParentNode {
-    companion object {
-        private val RESERVED_AWS_REGISTRY_PREFIX = "aws."
-    }
-
     override fun resourceType() = "registry"
 
-    override fun resourceArn() = value.registryArn() ?: value.registryName()
+    override fun resourceArn(): String = value.registryArn() ?: value.registryName()
 
     override fun toString(): String = value.registryName()
 
-    override fun displayName() = value.registryName()
+    override fun displayName(): String = value.registryName()
 
     override fun isAlwaysLeaf(): Boolean = false
 
     override fun isAlwaysShowPlus(): Boolean = true
 
-    override fun getChildren(): List<AwsExplorerNode<*>> =
-        super<ResourceParentNode>.getChildren()
+    override fun getChildren(): List<AwsExplorerNode<*>> = super<ResourceParentNode>.getChildren()
 
     override fun getChildrenInternal(): List<AwsExplorerNode<*>> {
         val resourceCache = AwsResourceCache.getInstance(nodeProject)
@@ -68,14 +63,12 @@ open class SchemaRegistryNode(
 
 open class SchemaNode(
     project: Project,
-    val schema: Schema,
-    immutable: Boolean = false
+    val schema: Schema
 ) : AwsExplorerResourceNode<Schema>(
     project,
     SchemasClient.SERVICE_NAME,
     schema,
-    AwsIcons.Resources.SCHEMA,
-    immutable
+    AwsIcons.Resources.SCHEMA
 ) {
     override fun resourceType() = "schema"
 

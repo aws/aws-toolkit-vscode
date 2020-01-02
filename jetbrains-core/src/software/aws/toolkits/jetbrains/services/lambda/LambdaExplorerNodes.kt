@@ -23,14 +23,12 @@ class LambdaServiceNode(project: Project) :
 
 open class LambdaFunctionNode(
     project: Project,
-    function: LambdaFunction,
-    immutable: Boolean = false
+    function: LambdaFunction
 ) : AwsExplorerResourceNode<LambdaFunction>(
     project,
     LambdaClient.SERVICE_NAME,
     function,
-    AwsIcons.Resources.LAMBDA_FUNCTION,
-    immutable
+    AwsIcons.Resources.LAMBDA_FUNCTION
 ), ResourceLocationNode {
 
     override fun resourceType() = "function"
