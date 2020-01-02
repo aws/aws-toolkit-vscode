@@ -23,7 +23,7 @@ export class LoginManager {
         try {
             const credentials = await this.credentialsStore.getCredentialsOrCreate(credentialsId, createCredentials)
             if (!credentials) {
-                throw new Error('No credentials were created')
+                throw new Error(`No credentials found for id ${credentialsId}`)
             }
 
             // TODO : Get a region relevant to the partition for these credentials -- https://github.com/aws/aws-toolkit-vscode/issues/188
