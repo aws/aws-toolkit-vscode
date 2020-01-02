@@ -26,12 +26,6 @@ import com.intellij.util.concurrency.InvokerSupplier;
 import com.intellij.util.ui.tree.AbstractTreeModel;
 import com.intellij.util.ui.tree.TreeModelAdapter;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Objects;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 import javax.swing.JTree;
 import javax.swing.SwingUtilities;
 import javax.swing.event.TreeModelEvent;
@@ -42,6 +36,12 @@ import javax.swing.tree.MutableTreeNode;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Objects;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.concurrency.AsyncPromise;

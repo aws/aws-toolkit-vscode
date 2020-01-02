@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.components.telemetry
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.ex.ComboBoxAction
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import javax.swing.Icon
 
@@ -43,20 +42,4 @@ abstract class AnActionWrapper(text: String? = null, description: String? = null
     }
 
     abstract fun doActionPerformed(e: AnActionEvent)
-}
-
-abstract class ComboBoxActionWrapper : ComboBoxAction(), TelemetryNamespace {
-    /**
-     * Consumers should use doActionPerformed(e: AnActionEvent)
-     */
-    final override fun actionPerformed(e: AnActionEvent) {
-        doActionPerformed(e)
-        TelemetryService.getInstance().record(e.project) {
-            datum("${getNamespace()}.${e.place}") {
-                count()
-            }
-        }
-    }
-
-    open fun doActionPerformed(e: AnActionEvent) = super.actionPerformed(e)
 }

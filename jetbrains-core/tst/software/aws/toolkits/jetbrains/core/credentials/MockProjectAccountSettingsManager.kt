@@ -28,7 +28,7 @@ class MockProjectAccountSettingsManager(project: Project) : ProjectAccountSettin
         spinUntil(Duration.ofSeconds(10)) { connectionState == ConnectionState.VALID }
     }
 
-    override suspend fun validate(credentialsProvider: ToolkitCredentialsProvider, region: AwsRegion) = withContext(Dispatchers.Default) {
+    override suspend fun validate(credentialsProvider: ToolkitCredentialsProvider, region: AwsRegion): Boolean = withContext(Dispatchers.IO) {
         true
     }
 

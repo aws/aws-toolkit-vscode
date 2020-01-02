@@ -179,7 +179,7 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
     /**
      * Internal method that executes the actual validation of credentials
      */
-    protected open suspend fun validate(credentialsProvider: ToolkitCredentialsProvider, region: AwsRegion) = withContext(Dispatchers.IO) {
+    protected open suspend fun validate(credentialsProvider: ToolkitCredentialsProvider, region: AwsRegion): Boolean = withContext(Dispatchers.IO) {
         // TODO: Convert the cache over to suspend methods
         resourceCache.getResourceNow(
             StsResources.ACCOUNT,
@@ -241,10 +241,12 @@ class ValidConnectionSettings(val credentialsProvider: ToolkitCredentialsProvide
  * Legacy method, should be considered deprecated and avoided since it loads defaults out of band
  */
 fun Project.activeRegion(): AwsRegion = ProjectAccountSettingsManager.getInstance(this).activeRegion
+
 /**
  * Legacy method, should be considered deprecated and avoided since it loads defaults out of band
  */
 fun Project.activeCredentialProvider(): ToolkitCredentialsProvider = ProjectAccountSettingsManager.getInstance(this).activeCredentialProvider
+
 /**
  * The underlying AWS account for current active credential provider of the project. Return null if credential provider is not set.
  * Calls of this member should be in non-UI thread since it makes network call using an STS client for retrieving the

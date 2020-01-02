@@ -4,6 +4,7 @@
 package software.aws.toolkits.core.utils
 
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionStage
 import java.util.concurrent.Executors
 import java.util.concurrent.RunnableFuture
 import java.util.function.Supplier
@@ -18,3 +19,5 @@ fun <T> RunnableFuture<T>.toCompletableFuture(): CompletableFuture<T> {
 
     return CompletableFuture.supplyAsync(Supplier { get() }, pool)
 }
+
+fun <T> Iterable<CompletionStage<T>>.allOf(): CompletionStage<Void> = CompletableFuture.allOf(*this.map { it.toCompletableFuture() }.toTypedArray())

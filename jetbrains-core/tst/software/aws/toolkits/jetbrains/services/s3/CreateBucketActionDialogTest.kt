@@ -20,7 +20,7 @@ import software.amazon.awssdk.services.s3.model.CreateBucketRequest
 import software.amazon.awssdk.services.s3.model.CreateBucketResponse
 import software.aws.toolkits.jetbrains.utils.DelegateSdkConsumers
 
-class CreateS3BucketDialogTest {
+class CreateBucketActionDialogTest {
     @Rule
     @JvmField
     val projectRule = ProjectRule()
@@ -31,8 +31,7 @@ class CreateS3BucketDialogTest {
     fun validateBucketName_emptyBucketName() {
         runInEdtAndWait {
             val dialog = CreateS3BucketDialog(project = projectRule.project, s3Client = s3Mock)
-            val view = dialog.getViewForTesting()
-            view.bucketName.text = "  "
+            dialog.view.bucketName.text = "  "
 
             val validationInfo = dialog.validateBucketName()
             assertThat(validationInfo).isNotNull()
@@ -52,8 +51,7 @@ class CreateS3BucketDialogTest {
                 project = projectRule.project,
                 s3Client = s3Mock
             )
-            val bucketPanel = dialog.getViewForTesting()
-            bucketPanel.bucketName.text = TEST_BUCKET_NAME
+            dialog.view.bucketName.text = TEST_BUCKET_NAME
 
             dialog.createBucket()
 
@@ -68,13 +66,14 @@ class CreateS3BucketDialogTest {
         val createBucketCaptor = argumentCaptor<CreateBucketRequest>()
 
         s3Mock.stub {
-            on { createBucket(createBucketCaptor.capture()) } doThrow BucketAlreadyExistsException.builder().message(TEST_ERROR_MESSAGE).build()
+            on { createBucket(createBucketCaptor.capture()) } doThrow BucketAlreadyExistsException.builder().message(
+                TEST_ERROR_MESSAGE
+            ).build()
         }
 
         runInEdtAndWait {
             val dialog = CreateS3BucketDialog(project = projectRule.project, s3Client = s3Mock)
-            val view = dialog.getViewForTesting()
-            view.bucketName.text = TEST_BUCKET_NAME
+            dialog.view.bucketName.text = TEST_BUCKET_NAME
 
             assertThatThrownBy { dialog.createBucket() }.hasMessage(TEST_ERROR_MESSAGE)
         }

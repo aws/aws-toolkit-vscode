@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.core.explorer
 
 import com.intellij.ide.projectView.PresentationData
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.util.Ref
 import com.intellij.testFramework.ProjectRule
 import com.intellij.ui.treeStructure.Tree
@@ -50,8 +51,10 @@ class AwsExplorerNodeProcessorTest {
 
         val countDownLatch = CountDownLatch(1)
 
-        TreeUtil.expand(Tree(createTreeModel()), 1) {
-            countDownLatch.countDown()
+        runInEdt {
+            TreeUtil.expand(Tree(createTreeModel()), 1) {
+                countDownLatch.countDown()
+            }
         }
 
         countDownLatch.await(1, TimeUnit.SECONDS)
@@ -77,8 +80,10 @@ class AwsExplorerNodeProcessorTest {
 
         val countDownLatch = CountDownLatch(1)
 
-        TreeUtil.expand(Tree(createTreeModel()), 1) {
-            countDownLatch.countDown()
+        runInEdt {
+            TreeUtil.expand(Tree(createTreeModel()), 1) {
+                countDownLatch.countDown()
+            }
         }
 
         countDownLatch.await(1, TimeUnit.SECONDS)
