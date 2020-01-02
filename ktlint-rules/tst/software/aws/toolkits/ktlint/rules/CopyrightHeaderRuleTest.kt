@@ -7,17 +7,15 @@ import com.pinterest.ktlint.core.LintError
 import com.pinterest.ktlint.test.lint
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
-import java.time.Clock
-import java.time.Instant
-import java.time.ZoneOffset
 
 class CopyrightHeaderRuleTest {
-    private val rule = CopyrightHeaderRule(Clock.fixed(Instant.EPOCH, ZoneOffset.UTC))
+    private val rule = CopyrightHeaderRule()
 
     @Test
     fun noHeaderPresent() {
         assertThat(
-            rule.lint("""
+            rule.lint(
+                """
         import a.b.c
         """.trimIndent()
             )
@@ -29,7 +27,8 @@ class CopyrightHeaderRuleTest {
     @Test
     fun headerPresent() {
         assertThat(
-            rule.lint("""
+            rule.lint(
+                """
         // Copyright 1970 Amazon.com, Inc. or its affiliates. All Rights Reserved.
         // SPDX-License-Identifier: Apache-2.0
 
