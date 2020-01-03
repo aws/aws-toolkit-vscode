@@ -10,6 +10,7 @@ import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.actionSystem.Separator;
 import com.intellij.openapi.project.Project;
 import com.intellij.ui.PopupHandler;
+import com.intellij.ui.TableSpeedSearch;
 import com.intellij.ui.ScrollPaneFactory;
 import com.intellij.ui.treeStructure.SimpleTreeStructure;
 import com.intellij.util.ui.ColumnInfo;
@@ -87,6 +88,19 @@ public class S3ViewerPanel {
         addTreeActions();
 
         treeTable.getColumnModel().getColumn(1).setMaxWidth(120);
+
+        new TableSpeedSearch(treeTable, (object, cell) -> {
+            // Only search the name column
+            if (cell.column != 0) {
+                return null;
+            }
+
+            if (object == null) {
+                return "";
+            }
+
+            return object.toString();
+        });
 
         mainPanel.add(ScrollPaneFactory.createScrollPane(treeTable), BorderLayout.CENTER);
 
