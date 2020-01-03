@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "The Toolkit now applies configuration changes to the log level when it changes instead of the next time the toolkit is started (#860)"
+}
