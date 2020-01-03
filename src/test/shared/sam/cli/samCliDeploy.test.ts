@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { runSamCliDeploy } from '../../../../shared/sam/cli/samCliDeploy'
+import { runSamCliDeploy, SamCliDeployParameters } from '../../../../shared/sam/cli/samCliDeploy'
 import { getTestLogger } from '../../../globalSetup.test'
 import { assertThrowsError } from '../../utilities/assertUtils'
 import {
@@ -20,7 +20,6 @@ import {
 } from './testSamCliProcessInvoker'
 
 describe('runSamCliDeploy', async () => {
-    const fakeProfile = 'profile'
     const fakeRegion = 'region'
     const fakeStackName = 'stackName'
     const fakeTemplateFile = 'template'
@@ -36,16 +35,7 @@ describe('runSamCliDeploy', async () => {
             assertArgNotPresent(args, '--parameter-overrides')
         })
 
-        await runSamCliDeploy(
-            {
-                profile: fakeProfile,
-                parameterOverrides: new Map<string, string>(),
-                region: fakeRegion,
-                stackName: fakeStackName,
-                templateFile: fakeTemplateFile
-            },
-            invoker
-        )
+        await runSamCliDeploy(makeSampleSamCliDeployParameters(new Map<string, string>()), invoker)
 
         assert.strictEqual(invokeCount, 1, 'Unexpected invoke count')
     })
@@ -62,38 +52,27 @@ describe('runSamCliDeploy', async () => {
         })
 
         await runSamCliDeploy(
-            {
-                profile: fakeProfile,
-                parameterOverrides: new Map<string, string>([['key1', 'value1'], ['key2', 'value2']]),
-                region: fakeRegion,
-                stackName: fakeStackName,
-                templateFile: fakeTemplateFile
-            },
+            makeSampleSamCliDeployParameters(
+                new Map<string, string>([
+                    ['key1', 'value1'],
+                    ['key2', 'value2']
+                ])
+            ),
             invoker
         )
 
         assert.strictEqual(invokeCount, 1, 'Unexpected invoke count')
     })
 
-    it('includes a template, stack name, region, and profile ', async () => {
+    it('includes a template, stack name, and region', async () => {
         const invoker = new MockSamCliProcessInvoker(args => {
             invokeCount++
             assertArgsContainArgument(args, '--template-file', fakeTemplateFile)
             assertArgsContainArgument(args, '--stack-name', fakeStackName)
             assertArgsContainArgument(args, '--region', fakeRegion)
-            assertArgsContainArgument(args, '--profile', fakeProfile)
         })
 
-        await runSamCliDeploy(
-            {
-                profile: fakeProfile,
-                parameterOverrides: new Map<string, string>(),
-                region: fakeRegion,
-                stackName: fakeStackName,
-                templateFile: fakeTemplateFile
-            },
-            invoker
-        )
+        await runSamCliDeploy(makeSampleSamCliDeployParameters(new Map<string, string>()), invoker)
 
         assert.strictEqual(invokeCount, 1, 'Unexpected invoke count')
     })
@@ -103,13 +82,7 @@ describe('runSamCliDeploy', async () => {
 
         const error = await assertThrowsError(async () => {
             await runSamCliDeploy(
-                {
-                    profile: fakeProfile,
-                    parameterOverrides: new Map<string, string>(),
-                    region: fakeRegion,
-                    stackName: fakeStackName,
-                    templateFile: fakeTemplateFile
-                },
+                makeSampleSamCliDeployParameters(new Map<string, string>()),
                 badExitCodeProcessInvoker
             )
         }, 'Expected an error to be thrown')
@@ -121,4 +94,14 @@ describe('runSamCliDeploy', async () => {
             0
         )
     })
+
+    function makeSampleSamCliDeployParameters(parameterOverrides: Map<string, string>): SamCliDeployParameters {
+        return {
+            environmentVariables: {},
+            parameterOverrides: parameterOverrides,
+            region: fakeRegion,
+            stackName: fakeStackName,
+            templateFile: fakeTemplateFile
+        }
+    }
 })
