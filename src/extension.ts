@@ -97,28 +97,28 @@ export async function activate(context: vscode.ExtensionContext) {
             callback: async () => {
                 vscode.env.openExternal(vscode.Uri.parse(documentationUrl))
             },
-            telemetryName: 'Command.aws.help'
+            telemetryName: 'Command.awshelp'
         })
         registerCommand({
             command: 'aws.github',
             callback: async () => {
                 vscode.env.openExternal(vscode.Uri.parse(githubUrl))
             },
-            telemetryName: 'Command.aws.github'
+            telemetryName: 'Command.awsgithub'
         })
         registerCommand({
             command: 'aws.reportIssue',
             callback: async () => {
                 vscode.env.openExternal(vscode.Uri.parse(reportIssueUrl))
             },
-            telemetryName: 'Command.aws.reportIssue'
+            telemetryName: 'Command.awsreportIssue'
         })
         registerCommand({
             command: 'aws.quickStart',
             callback: async () => {
                 await showQuickStartWebview(context)
             },
-            telemetryName: 'Command.aws.quickStart'
+            telemetryName: 'Command.awsquickStart'
         })
 
         await activateCdk({

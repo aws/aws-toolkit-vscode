@@ -81,18 +81,18 @@ async function registerCdkCommands(explorer: AwsCdkExplorer): Promise<void> {
         callback: async () => {
             vscode.env.openExternal(vscode.Uri.parse(cdkProvideFeedbackUrl))
         },
-        telemetryName: 'Command.aws.cdk.provideFeedback'
+        telemetryName: 'Command.awscdkprovideFeedback'
     })
     registerCommand({
         command: 'aws.cdk.help',
         callback: async () => {
             vscode.env.openExternal(vscode.Uri.parse(cdkDocumentationUrl))
         },
-        telemetryName: 'Command.aws.cdk.help'
+        telemetryName: 'Command.awscdkhelp'
     })
     registerCommand({
         command: 'aws.refreshCdkExplorer',
         callback: async () => explorer.refresh(),
-        telemetryName: 'Command.aws.refreshCdkExplorer'
+        telemetryName: 'Command.awsrefreshCdkExplorer'
     })
 }

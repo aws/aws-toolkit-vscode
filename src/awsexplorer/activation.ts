@@ -67,7 +67,7 @@ async function registerAwsExplorerCommands(
             await ext.awsContextCommands.onCommandShowRegion()
             await recordNumberOfActiveRegionsMetric(awsExplorer)
         },
-        telemetryName: 'Command.aws.showRegion'
+        telemetryName: 'Command.awsshowRegion'
     })
 
     registerCommand({
@@ -76,13 +76,13 @@ async function registerAwsExplorerCommands(
             await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
             await recordNumberOfActiveRegionsMetric(awsExplorer)
         },
-        telemetryName: 'COmmand.aws.hideRegion'
+        telemetryName: 'Command.awshideRegion'
     })
 
     registerCommand({
         command: 'aws.refreshAwsExplorer',
         callback: async () => awsExplorer.refresh(),
-        telemetryName: 'Command.aws.refreshAwsExplorer'
+        telemetryName: 'Command.awsrefreshAwsExplorer'
     })
 
     registerCommand({
@@ -94,20 +94,20 @@ async function registerAwsExplorerCommands(
                 outputChannel: lambdaOutputChannel,
                 onRefresh: () => awsExplorer.refresh(node.parent)
             }),
-        telemetryName: 'lambda_delete'
+        telemetryName: 'Command.awsdeleteLambda'
     })
 
     registerCommand({
         command: 'aws.deleteCloudFormation',
         callback: async (node: CloudFormationStackNode) =>
             await deleteCloudFormation(() => awsExplorer.refresh(node.parent), node),
-        telemetryName: 'cloudformation_delete'
+        telemetryName: 'Command.awsdeleteCloudFormation'
     })
 
     registerCommand({
         command: 'aws.showErrorDetails',
         callback: async (node: ErrorNode) => await showErrorDetails(node),
-        telemetryName: 'Command.aws.showErrorDetails'
+        telemetryName: 'Command.awsshowErrorDetails'
     })
 
     registerCommand({

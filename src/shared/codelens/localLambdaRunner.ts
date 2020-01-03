@@ -588,17 +588,16 @@ function recordAttachDebuggerMetric(params: RecordAttachDebuggerMetricContext) {
     const metadata = new Map([['runtime', params.runtime]])
 
     params.telemetryService.record({
-        namespace: namespace,
         createTime: currTime,
         data: [
             {
-                name: 'attempts',
+                name: `${namespace}.attempts`,
                 value: params.attempts,
                 unit: 'Count',
                 metadata
             },
             {
-                name: 'duration',
+                name: `${namespace}.duration`,
                 value: params.durationMillis,
                 unit: 'Milliseconds',
                 metadata
