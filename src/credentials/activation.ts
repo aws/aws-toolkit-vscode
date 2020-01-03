@@ -7,8 +7,8 @@ import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
 import { profileSettingKey } from '../shared/constants'
 import { CredentialsProfileMru } from '../shared/credentials/credentialsProfileMru'
-import { UserCredentialsUtils } from '../shared/credentials/userCredentialsUtils'
 import { SettingsConfiguration } from '../shared/settingsConfiguration'
+import { LoginManager } from './loginManager'
 
 export interface CredentialsInitializeParameters {
     extensionContext: vscode.ExtensionContext
@@ -26,20 +26,14 @@ export async function initialize(parameters: CredentialsInitializeParameters): P
 }
 
 export async function loginWithMostRecentCredentials(
-    awsContext: AwsContext,
-    toolkitSettings: SettingsConfiguration
+    toolkitSettings: SettingsConfiguration,
+    loginManager: LoginManager
 ): Promise<void> {
-    const currentProfile = toolkitSettings.readSetting(profileSettingKey, '')
-    if (currentProfile) {
-        // check to see if current user is valid
-        const successfulLogin = await UserCredentialsUtils.addUserDataToContext(currentProfile, awsContext)
-        if (!successfulLogin) {
-            await UserCredentialsUtils.removeUserDataFromContext(awsContext)
-            // tslint:disable-next-line: no-floating-promises
-            UserCredentialsUtils.notifyUserCredentialsAreBad(currentProfile)
-        }
+    const previousCredentialsId = toolkitSettings.readSetting(profileSettingKey, '')
+    if (previousCredentialsId) {
+        await loginManager.login(previousCredentialsId)
     } else {
-        await UserCredentialsUtils.removeUserDataFromContext(awsContext)
+        await loginManager.logout()
     }
 }
 
