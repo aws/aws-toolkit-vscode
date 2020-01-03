@@ -119,9 +119,10 @@ describe('deploySamApplication', async () => {
         }
     }
 
-    let testProfileName: string | undefined
-    const awsContext: Pick<AwsContext, 'getCredentialProfileName'> = {
-        getCredentialProfileName: () => testProfileName
+    const placeholderCredentials = ({} as any) as AWS.Credentials
+    let testCredentials: AWS.Credentials | undefined
+    const awsContext: Pick<AwsContext, 'getCredentials'> = {
+        getCredentials: async () => testCredentials
     }
 
     let channelLogger: FakeChannelLogger
@@ -143,7 +144,7 @@ describe('deploySamApplication', async () => {
         const templatePath = path.join(tempToolkitFolder, 'template.yaml')
         writeFile(templatePath)
 
-        testProfileName = 'profile'
+        testCredentials = placeholderCredentials
         invokerCalledCount = 0
         samDeployWizardResponse = {
             parameterOverrides: new Map<string, string>(),
@@ -180,7 +181,7 @@ describe('deploySamApplication', async () => {
     })
 
     it('informs user of error when user is not logged in', async () => {
-        testProfileName = undefined
+        testCredentials = undefined
 
         await deploySamApplication(
             {
