@@ -220,7 +220,7 @@ export class DefaultTelemetryService implements TelemetryService {
     private injectAccountMetadata(event: TelemetryEvent, awsContext: AwsContext): TelemetryEvent {
         let accountValue: string | AccountStatus
         // The AWS account ID is not set on session start. This matches JetBrains' functionality.
-        if (event.data.every(item => item.name.startsWith('session'))) {
+        if (event.data.every(item => item.name === 'session_end' || item.name === 'session_start')) {
             accountValue = AccountStatus.NotApplicable
         } else {
             const account = awsContext.getCredentialAccountId()
