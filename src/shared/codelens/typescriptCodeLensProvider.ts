@@ -10,7 +10,7 @@ import { CloudFormation } from '../cloudformation/cloudformation'
 import { findFileInParentPaths } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
-import { Datum, TelemetryNamespace } from '../telemetry/telemetryTypes'
+import { Datum } from '../telemetry/telemetryTypes'
 import { registerCommand } from '../telemetry/telemetryUtils'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { getChannelLogger, getDebugPort, localize } from '../utilities/vsCodeUtils'
@@ -121,10 +121,7 @@ export function initialize({
                 runtime
             })
         },
-        telemetryName: {
-            namespace: TelemetryNamespace.Lambda,
-            name: 'invokelocal'
-        }
+        telemetryName: 'lambda.invokelocal'
     })
 }
 

@@ -9,7 +9,6 @@ import { viewSchemaItem } from '../eventSchemas/commands/viewSchemaItem'
 import { RegistryItemNode } from '../eventSchemas/explorer/registryItemNode'
 import { SchemaItemNode } from '../eventSchemas/explorer/schemaItemNode'
 import { SchemasNode } from '../eventSchemas/explorer/schemasNode'
-import { TelemetryNamespace } from '../shared/telemetry/telemetryTypes'
 import { registerCommand } from '../shared/telemetry/telemetryUtils'
 
 /**
@@ -23,19 +22,13 @@ async function registerSchemasCommands(): Promise<void> {
     registerCommand({
         command: 'aws.viewSchemaItem',
         callback: async (node: SchemaItemNode) => await viewSchemaItem(node),
-        telemetryName: {
-            namespace: TelemetryNamespace.Schema,
-            name: 'view'
-        }
+        telemetryName: 'schemas.view'
     })
 
     registerCommand({
         command: 'aws.downloadSchemaItemCode',
         callback: async (node: SchemaItemNode) => await downloadSchemaItemCode(node),
-        telemetryName: {
-            namespace: TelemetryNamespace.Schema,
-            name: 'download'
-        }
+        telemetryName: 'schemas.download'
     })
 
     registerCommand({
@@ -44,10 +37,7 @@ async function registerSchemasCommands(): Promise<void> {
             await createSearchSchemasWebView({
                 node: node
             }),
-        telemetryName: {
-            namespace: TelemetryNamespace.Schema,
-            name: 'search'
-        }
+        telemetryName: 'schemas.search'
     })
 
     registerCommand({
@@ -56,9 +46,6 @@ async function registerSchemasCommands(): Promise<void> {
             await createSearchSchemasWebView({
                 node: node
             }),
-        telemetryName: {
-            namespace: TelemetryNamespace.Schema,
-            name: 'search'
-        }
+        telemetryName: 'schemas.search'
     })
 }

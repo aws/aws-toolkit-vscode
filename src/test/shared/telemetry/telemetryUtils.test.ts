@@ -8,12 +8,7 @@ import { Disposable } from 'vscode'
 import { ext } from '../../../shared/extensionGlobals'
 import { TelemetryEvent } from '../../../shared/telemetry/telemetryEvent'
 import { TelemetryService } from '../../../shared/telemetry/telemetryService'
-import {
-    Datum,
-    METADATA_FIELD_NAME,
-    MetadataResult,
-    TelemetryNamespace
-} from '../../../shared/telemetry/telemetryTypes'
+import { Datum, METADATA_FIELD_NAME, MetadataResult } from '../../../shared/telemetry/telemetryTypes'
 import { defaultMetricDatum, registerCommand } from '../../../shared/telemetry/telemetryUtils'
 
 class MockTelemetryService implements TelemetryService {
@@ -62,8 +57,7 @@ describe('telemetryUtils', () => {
                                 mockService.lastEvent!.data![0].metadata!.get(METADATA_FIELD_NAME.RESULT),
                                 MetadataResult.Pass
                             )
-                            assert.strictEqual(mockService.lastEvent!.namespace, 'Command')
-                            assert.strictEqual(mockService.lastEvent!.data![0].name, 'command')
+                            assert.strictEqual(mockService.lastEvent!.data![0].name, 'Command.command')
 
                             done()
                         })
@@ -74,7 +68,8 @@ describe('telemetryUtils', () => {
                     return Disposable.from()
                 },
                 command: 'command',
-                callback: async () => {}
+                callback: async () => {},
+                telemetryName: 'Command.command'
             })
         })
 
@@ -98,7 +93,6 @@ describe('telemetryUtils', () => {
                             assert.strictEqual(metadata.get('foo'), 'bar')
                             assert.strictEqual(metadata.get('hitcount'), '5')
 
-                            assert.strictEqual(mockService.lastEvent!.namespace, 'Command')
                             assert.strictEqual(data.name, 'somemetric')
                             done()
                         })
@@ -111,12 +105,16 @@ describe('telemetryUtils', () => {
                 command: 'command',
                 callback: async () => {
                     const datum: Datum = defaultMetricDatum('somemetric')
-                    datum.metadata = new Map([['foo', 'bar'], ['hitcount', '5']])
+                    datum.metadata = new Map([
+                        ['foo', 'bar'],
+                        ['hitcount', '5']
+                    ])
 
                     return {
                         datum
                     }
-                }
+                },
+                telemetryName: 'Command.somemetric'
             })
         })
 
@@ -151,12 +149,16 @@ describe('telemetryUtils', () => {
                 command: 'command',
                 callback: async () => {
                     const datum: Datum = defaultMetricDatum('somemetric')
-                    datum.metadata = new Map([[METADATA_FIELD_NAME.RESULT, 'bananas'], ['duration', '999999']])
+                    datum.metadata = new Map([
+                        [METADATA_FIELD_NAME.RESULT, 'bananas'],
+                        ['duration', '999999']
+                    ])
 
                     return {
                         datum
                     }
-                }
+                },
+                telemetryName: 'Command.command'
             })
         })
 
@@ -176,8 +178,7 @@ describe('telemetryUtils', () => {
                                 mockService.lastEvent!.data![0].metadata!.get(METADATA_FIELD_NAME.RESULT),
                                 MetadataResult.Pass
                             )
-                            assert.strictEqual(mockService.lastEvent!.namespace, TelemetryNamespace.Aws)
-                            assert.strictEqual(mockService.lastEvent!.data![0].name, 'thisAintYourFathersNameField')
+                            assert.strictEqual(mockService.lastEvent!.data![0].name, 'abc')
                             done()
                         })
                         .catch(err => {
@@ -188,10 +189,7 @@ describe('telemetryUtils', () => {
                 },
                 command: 'command',
                 callback: async () => {},
-                telemetryName: {
-                    namespace: TelemetryNamespace.Aws,
-                    name: 'thisAintYourFathersNameField'
-                }
+                telemetryName: 'aws.abc'
             })
         })
 
@@ -216,8 +214,7 @@ describe('telemetryUtils', () => {
                                 mockService.lastEvent!.data![0].metadata!.get(METADATA_FIELD_NAME.RESULT),
                                 MetadataResult.Fail
                             )
-                            assert.strictEqual(mockService.lastEvent!.namespace, 'Command')
-                            assert.strictEqual(mockService.lastEvent!.data![0].name, 'command')
+                            assert.strictEqual(mockService.lastEvent!.data![0].name, 'Command.command')
                             done()
                         })
 
@@ -226,7 +223,8 @@ describe('telemetryUtils', () => {
                 command: 'command',
                 callback: async () => {
                     throw new Error("we're all gonna die!")
-                }
+                },
+                telemetryName: 'Command.command'
             })
         })
     })

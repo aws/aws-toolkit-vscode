@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import { cdkDocumentationUrl, cdkProvideFeedbackUrl } from '../shared/constants'
 import { ext } from '../shared/extensionGlobals'
 import { TelemetryEvent } from '../shared/telemetry/telemetryEvent'
-import { TelemetryNamespace } from '../shared/telemetry/telemetryTypes'
 import { defaultMetricDatum, registerCommand } from '../shared/telemetry/telemetryUtils'
 import { AwsCdkExplorer } from './explorer/awsCdkExplorer'
 import { AppNode } from './explorer/nodes/appNode'
@@ -19,9 +18,9 @@ const EXPLORER_ENABLED_CONFIG_KEY = 'aws.cdk.explorer.enabled'
  * Telemetry event names for recorded metrics
  */
 enum TelemetryEventTypes {
-    APP_EXPANDED = 'appExpanded',
-    EXPLORER_RE_ENABLED = 'explorerEnabled',
-    EXPLORER_DISABLED = 'explorerDisabled'
+    APP_EXPANDED = 'cdk.appExpanded',
+    EXPLORER_RE_ENABLED = 'cdk.explorerEnabled',
+    EXPLORER_DISABLED = 'cdk.explorerDisabled'
 }
 
 /**
@@ -63,7 +62,6 @@ export async function activate(activateArguments: { extensionContext: vscode.Ext
 
 function getTelemetryEvent(eventName: TelemetryEventTypes): TelemetryEvent {
     return {
-        namespace: TelemetryNamespace.Cdk,
         createTime: new Date(),
         data: [defaultMetricDatum(eventName)]
     }
@@ -82,16 +80,19 @@ async function registerCdkCommands(explorer: AwsCdkExplorer): Promise<void> {
         command: 'aws.cdk.provideFeedback',
         callback: async () => {
             vscode.env.openExternal(vscode.Uri.parse(cdkProvideFeedbackUrl))
-        }
+        },
+        telemetryName: 'Command.aws.cdk.provideFeedback'
     })
     registerCommand({
         command: 'aws.cdk.help',
         callback: async () => {
             vscode.env.openExternal(vscode.Uri.parse(cdkDocumentationUrl))
-        }
+        },
+        telemetryName: 'Command.aws.cdk.help'
     })
     registerCommand({
         command: 'aws.refreshCdkExplorer',
-        callback: async () => explorer.refresh()
+        callback: async () => explorer.refresh(),
+        telemetryName: 'Command.aws.refreshCdkExplorer'
     })
 }
