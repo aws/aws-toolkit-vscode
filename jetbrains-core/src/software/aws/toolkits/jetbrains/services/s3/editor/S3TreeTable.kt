@@ -87,7 +87,7 @@ class S3TreeTable(
     }
 
     private fun handleOpeningFile(row: Int, e: MouseEvent) {
-        if (e.clickCount < 2) {
+        if (e.clickCount < 2 || e.button != MouseEvent.BUTTON1) {
             return
         }
         val objectNode = (tree.getPathForRow(row).lastPathComponent as? DefaultMutableTreeNode)?.userObject as? S3TreeObjectNode ?: return
@@ -120,7 +120,7 @@ class S3TreeTable(
     }
 
     private fun handleLoadingMore(row: Int, e: MouseEvent) {
-        if (e.clickCount < 2) {
+        if (e.clickCount < 2 || e.button != MouseEvent.BUTTON1) {
             return
         }
         val continuationNode = (tree.getPathForRow(row).lastPathComponent as? DefaultMutableTreeNode)?.userObject as? S3TreeContinuationNode ?: return
