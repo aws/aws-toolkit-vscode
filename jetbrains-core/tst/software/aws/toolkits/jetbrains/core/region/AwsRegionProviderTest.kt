@@ -223,6 +223,78 @@ class AwsRegionProviderTest {
         assertThat(awsRegionProvider.defaultRegion().id).isEqualTo("us-west-2001")
     }
 
+    @Test
+    fun testGlobalServices() {
+        val regionProvider = createRegionDataProvider(
+            """
+            {
+                "partitions": [
+                    {
+                        "defaults": {
+                            "hostname": "{service}.{region}.{dnsSuffix}",
+                            "protocols": [
+                                "https"
+                            ],
+                            "signatureVersions": [
+                                "v4"
+                            ]
+                        },
+                        "dnsSuffix": "amazonaws.com",
+                        "partition": "aws",
+                        "partitionName": "AWS Standard",
+                        "regionRegex": "^(us|eu|ap|sa|ca|me)\\-\\w+\\-\\d+$",
+                        "regions": {
+                            "us-east-1" : {
+                                "description" : "US East (N. Virginia)"
+                            }
+                        },
+                        "services": {
+                            "dynamodb": {
+                                "defaults": {
+                                    "protocols": [
+                                        "http",
+                                        "https"
+                                    ]
+                                },
+                                "endpoints": {
+                                    "us-east-1": {},
+                                    "us-east-1-fips": {
+                                        "credentialScope": {
+                                            "region": "us-east-1"
+                                        },
+                                        "hostname": "dynamodb-fips.us-east-1.amazonaws.com"
+                                    }
+                                }
+                            },
+                            "iam": {
+                                "endpoints": {
+                                    "aws-global": {
+                                        "credentialScope": {
+                                            "region": "us-east-1"
+                                        },
+                                        "hostname": "iam.amazonaws.com"
+                                    }
+                                },
+                                "isRegionalized": false,
+                                "partitionEndpoint": "aws-global"
+                            }
+                        }
+                    }
+                ],
+                "version": 3
+            }
+            """.trimIndent()
+        )
+
+        val awsRegionProvider = AwsRegionProvider(regionProvider)
+        val usEast1 = awsRegionProvider.regions("aws")["us-east-1"] ?: throw IllegalStateException("Bad test data")
+
+        assertThat(awsRegionProvider.isServiceGlobal(usEast1, "dynamodb")).isFalse()
+
+        assertThat(awsRegionProvider.isServiceGlobal(usEast1, "iam")).isTrue()
+        assertThat(awsRegionProvider.getGlobalRegionForService(usEast1, "iam").id).isEqualTo("aws-global")
+    }
+
     private fun createRegionDataProvider(endpointsData: String) = object : RemoteResourceResolverProvider {
         override fun get() = object : RemoteResourceResolver {
             override fun resolve(resource: RemoteResource): CompletionStage<Path> = CompletableFuture<Path>().apply {
