@@ -43,13 +43,13 @@ class S3ViewerEditorProvider : FileEditorProvider, PossiblyDumbAware {
 }
 
 class S3ViewerEditor(project: Project, bucket: S3VirtualBucket) : UserDataHolderBase(), FileEditor {
-    private val s3Panel: S3ViewerPanel = S3ViewerPanel(project, bucket)
+    private val s3Panel: S3ViewerPanel = S3ViewerPanel(this, project, bucket)
 
     override fun getComponent(): JComponent = s3Panel.component
 
     override fun getName(): String = "S3 Bucket Panel"
 
-    override fun getPreferredFocusedComponent(): JComponent = s3Panel.component
+    override fun getPreferredFocusedComponent(): JComponent = s3Panel.focusComponent
 
     override fun isValid(): Boolean = true
 
