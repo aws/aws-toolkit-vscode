@@ -21,7 +21,7 @@ import * as tsLensProvider from '../codelens/typescriptCodeLensProvider'
 import { RegionProvider } from '../regions/regionProvider'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
 import { TelemetryService } from '../telemetry/telemetryService'
-import { Datum, TelemetryNamespace } from '../telemetry/telemetryTypes'
+import { Datum } from '../telemetry/telemetryTypes'
 import { defaultMetricDatum, registerCommand } from '../telemetry/telemetryUtils'
 import { PromiseSharer } from '../utilities/promiseUtilities'
 import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
@@ -86,6 +86,7 @@ async function registerServerlessCommands(params: {
     params.extensionContext.subscriptions.push(
         registerCommand({
             command: 'aws.samcli.detect',
+            telemetryName: 'Command.awssamclidetect',
             callback: async () =>
                 await PromiseSharer.getExistingPromiseOrCreate('samcli.detect', async () => await detectSamCli(true))
         })
@@ -106,10 +107,7 @@ async function registerServerlessCommands(params: {
                     datum
                 }
             },
-            telemetryName: {
-                namespace: TelemetryNamespace.Project,
-                name: 'new'
-            }
+            telemetryName: 'project.new'
         })
     )
 
@@ -127,10 +125,7 @@ async function registerServerlessCommands(params: {
                         awsContext: params.awsContext
                     }
                 ),
-            telemetryName: {
-                namespace: TelemetryNamespace.Lambda,
-                name: 'deploy'
-            }
+            telemetryName: 'lambda.deploy'
         })
     )
 
@@ -138,10 +133,7 @@ async function registerServerlessCommands(params: {
         registerCommand({
             command: 'aws.configureLambda',
             callback: configureLocalLambda,
-            telemetryName: {
-                namespace: TelemetryNamespace.Lambda,
-                name: 'configurelocal'
-            }
+            telemetryName: 'lambda.configurelocal'
         })
     )
 
