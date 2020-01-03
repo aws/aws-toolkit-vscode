@@ -55,6 +55,8 @@ class UploadObjectAction(
         }
     }
 
+    override fun isDumbAware(): Boolean = true
+    override fun updateButton(e: AnActionEvent) {}
     override fun isEnabled(): Boolean =
         (treeTable.isEmpty || treeTable.selectedRows.size <= 1) && !treeTable.getSelectedNodes().any { it is S3TreeContinuationNode }
 

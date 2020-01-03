@@ -73,6 +73,8 @@ class DownloadObjectAction(
         }
     }
 
+    override fun isDumbAware(): Boolean = true
+    override fun updateButton(e: AnActionEvent) {}
     override fun isEnabled(): Boolean = !(treeTable.isEmpty || (treeTable.selectedRow < 0) || (treeTable.getValueAt(treeTable.selectedRow, 1) == ""))
 
     companion object {

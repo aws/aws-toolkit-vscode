@@ -15,6 +15,8 @@ import software.aws.toolkits.resources.message
 
 class NewFolderAction(private val treeTable: S3TreeTable) : AnActionButton(message("s3.new.folder"), null, null) {
 
+    override fun isDumbAware(): Boolean = true
+    override fun updateButton(e: AnActionEvent) {}
     override fun isEnabled(): Boolean = treeTable.selectedRows.size <= 1
 
     override fun actionPerformed(e: AnActionEvent) {
@@ -32,9 +34,5 @@ class NewFolderAction(private val treeTable: S3TreeTable) : AnActionButton(messa
                 }
             }
         }
-    }
-
-    companion object {
-        private const val TELEMETRY_NAME = "s3_newfolder"
     }
 }

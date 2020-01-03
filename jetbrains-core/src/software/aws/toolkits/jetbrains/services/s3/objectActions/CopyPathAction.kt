@@ -25,6 +25,9 @@ class CopyPathAction(private val treeTable: S3TreeTable) : AnActionButton(messag
         }
     }
 
+    override fun isDumbAware(): Boolean = true
+    override fun updateButton(e: AnActionEvent) {}
+
     companion object {
         private const val TELEMETRY_NAME = "s3_copypath"
     }

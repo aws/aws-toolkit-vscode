@@ -24,6 +24,8 @@ class DeleteObjectAction(private val treeTable: S3TreeTable) : AnActionButton(me
         deleteSelectedObjects(e.getRequiredData(LangDataKeys.PROJECT), treeTable)
     }
 
+    override fun isDumbAware(): Boolean = true
+    override fun updateButton(e: AnActionEvent) {}
     override fun isEnabled(): Boolean = (!(treeTable.isEmpty || (treeTable.selectedRow < 0) || (treeTable.getValueAt(treeTable.selectedRow, 1) == "")))
 }
 
