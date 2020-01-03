@@ -25,11 +25,11 @@ import com.intellij.ui.TreeUIHelper
 import com.intellij.ui.components.panels.Wrapper
 import com.intellij.ui.treeStructure.Tree
 import software.aws.toolkits.jetbrains.components.telemetry.ToolkitActionPlaces
-import software.aws.toolkits.jetbrains.core.credentials.SettingsSelector
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsChangeEvent
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsChangeNotifier
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionState
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.SettingsSelector
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_NODES
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_RESOURCE_NODES
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_SERVICE_NODE
@@ -69,6 +69,12 @@ class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(t
         errorPanel.add(select)
 
         setContent(treePanelWrapper)
+
+        if (ProjectAccountSettingsManager.getInstance(project).isValidConnectionSettings()) {
+            treePanelWrapper.setContent(awsTreePanel)
+        } else {
+            treePanelWrapper.setContent(errorPanel)
+        }
 
         project.messageBus.connect().subscribe(ProjectAccountSettingsManager.CONNECTION_SETTINGS_CHANGED, this)
     }
