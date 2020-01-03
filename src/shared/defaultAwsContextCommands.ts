@@ -8,9 +8,11 @@ const localize = nls.loadMessageBundle()
 
 import { Credentials } from 'aws-sdk'
 import { env, Uri, ViewColumn, window } from 'vscode'
+import { LoginManager } from '../credentials/loginManager'
 import { AwsContext } from './awsContext'
 import { AwsContextTreeCollection } from './awsContextTreeCollection'
 import * as extensionConstants from './constants'
+import { getAccountId } from './credentials/accountId'
 import { CredentialSelectionState } from './credentials/credentialSelectionState'
 import {
     credentialProfileSelector,
@@ -18,7 +20,7 @@ import {
     promptToDefineCredentialsProfile
 } from './credentials/defaultCredentialSelectionDataProvider'
 import { DefaultCredentialsFileReaderWriter } from './credentials/defaultCredentialsFileReaderWriter'
-import { CredentialsValidationResult, UserCredentialsUtils } from './credentials/userCredentialsUtils'
+import { UserCredentialsUtils } from './credentials/userCredentialsUtils'
 import { ext } from './extensionGlobals'
 import { RegionInfo } from './regions/regionInfo'
 import { RegionProvider } from './regions/regionProvider'
@@ -31,7 +33,8 @@ export class DefaultAWSContextCommands {
     public constructor(
         awsContext: AwsContext,
         awsContextTrees: AwsContextTreeCollection,
-        regionProvider: RegionProvider
+        regionProvider: RegionProvider,
+        private readonly loginManager: LoginManager
     ) {
         this._awsContext = awsContext
         this._awsContextTrees = awsContextTrees
@@ -44,11 +47,8 @@ export class DefaultAWSContextCommands {
             // user clicked away from quick pick or entered nothing
             return
         }
-        const successfulLogin = await UserCredentialsUtils.addUserDataToContext(profileName, this._awsContext)
-        if (!successfulLogin) {
-            await this.onCommandLogout()
-            await UserCredentialsUtils.notifyUserCredentialsAreBad(profileName)
-        }
+
+        await this.loginManager.login(profileName)
     }
 
     public async onCommandCreateCredentialsProfile(): Promise<void> {
@@ -59,12 +59,7 @@ export class DefaultAWSContextCommands {
             const profileName: string | undefined = await this.promptAndCreateNewCredentialsFile()
 
             if (profileName) {
-                const successfulLogin = await UserCredentialsUtils.addUserDataToContext(profileName, this._awsContext)
-                if (!successfulLogin) {
-                    // credentials are invalid. Prompt user and log out
-                    await this.onCommandLogout()
-                    await UserCredentialsUtils.notifyUserCredentialsAreBad(profileName)
-                }
+                await this.loginManager.login(profileName)
             }
         } else {
             // Get the editor set up and turn things over to the user
@@ -73,7 +68,7 @@ export class DefaultAWSContextCommands {
     }
 
     public async onCommandLogout() {
-        await UserCredentialsUtils.removeUserDataFromContext(this._awsContext)
+        await this.loginManager.logout()
     }
 
     public async onCommandShowRegion() {
@@ -115,11 +110,10 @@ export class DefaultAWSContextCommands {
                 return undefined
             }
 
-            const validationResult: CredentialsValidationResult = await UserCredentialsUtils.validateCredentials(
-                new Credentials(state.accesskey, state.secretKey)
-            )
+            // TODO : Get a region relevant to the partition for these credentials -- https://github.com/aws/aws-toolkit-vscode/issues/188
+            const accountId = await getAccountId(new Credentials(state.accesskey, state.secretKey), 'us-east-1')
 
-            if (validationResult.isValid) {
+            if (accountId) {
                 await UserCredentialsUtils.generateCredentialDirectoryIfNonexistent()
                 await UserCredentialsUtils.generateCredentialsFile(ext.context.extensionPath, {
                     profileName: state.profileName,
@@ -136,8 +130,7 @@ export class DefaultAWSContextCommands {
             const response = await window.showWarningMessage(
                 localize(
                     'AWS.message.prompt.credentials.definition.tryAgain',
-                    'The credentials do not appear to be valid ({0}). Would you like to try again?',
-                    validationResult.invalidMessage!
+                    'The credentials do not appear to be valid. Check the AWS Toolkit Logs for details. Would you like to try again?'
                 ),
                 responseYes,
                 responseNo

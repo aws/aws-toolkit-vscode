@@ -10,6 +10,7 @@ import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCdk } from './cdk/activation'
 import { initialize as initializeCredentials, loginWithMostRecentCredentials } from './credentials/activation'
 import { initializeAwsCredentialsStatusBarItem } from './credentials/awsCredentialsStatusBarItem'
+import { LoginManager } from './credentials/loginManager'
 import { activate as activateSchemas } from './eventSchemas/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
@@ -49,9 +50,15 @@ export async function activate(context: vscode.ExtensionContext) {
         const awsContextTrees = new AwsContextTreeCollection()
         const resourceFetcher = new DefaultResourceFetcher()
         const regionProvider = new DefaultRegionProvider(context, resourceFetcher)
+        const loginManager = new LoginManager(awsContext)
 
         await initializeAwsCredentialsStatusBarItem(awsContext, context)
-        ext.awsContextCommands = new DefaultAWSContextCommands(awsContext, awsContextTrees, regionProvider)
+        ext.awsContextCommands = new DefaultAWSContextCommands(
+            awsContext,
+            awsContextTrees,
+            regionProvider,
+            loginManager
+        )
         ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         ext.toolkitClientBuilder = new DefaultToolkitClientBuilder()
 
@@ -141,7 +148,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         toastNewUser(context, getLogger())
 
-        await loginWithMostRecentCredentials(awsContext, toolkitSettings)
+        await loginWithMostRecentCredentials(toolkitSettings, loginManager)
     } catch (error) {
         const channelLogger = getChannelLogger(toolkitOutputChannel)
         channelLogger.error('AWS.channel.aws.toolkit.activation.error', 'Error Activating AWS Toolkit', error as Error)

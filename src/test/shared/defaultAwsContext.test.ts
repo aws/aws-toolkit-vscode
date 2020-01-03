@@ -5,50 +5,19 @@
 
 import * as assert from 'assert'
 import * as AWS from 'aws-sdk'
-import * as sinon from 'sinon'
 import { AwsContextCredentials } from '../../shared/awsContext'
 import { regionSettingKey } from '../../shared/constants'
-import { CredentialsManager } from '../../shared/credentialsManager'
 import { DefaultAwsContext } from '../../shared/defaultAwsContext'
 import { FakeExtensionContext, FakeMementoStorage } from '../fakeExtensionContext'
-import { assertThrowsError } from './utilities/assertUtils'
 
 describe('DefaultAwsContext', () => {
     const testRegion1Value: string = 're-gion-1'
     const testRegion2Value: string = 're-gion-2'
     const testRegion3Value: string = 're-gion-3'
-    const testProfileValue: string = 'profile1'
     const testAccountIdValue: string = '123456789012'
-    const testAccessKey: string = 'opensesame'
-    const testSecretKey: string = 'itsasecrettoeverybody'
-
-    class TestCredentialsManager extends CredentialsManager {
-        public constructor(
-            private readonly expectedName?: string,
-            private readonly reportedCredentials?: AWS.Credentials
-        ) {
-            super()
-        }
-
-        public async getCredentials(profileName: string): Promise<AWS.Credentials> {
-            if (this.reportedCredentials && this.expectedName === profileName) {
-                return this.reportedCredentials
-            }
-            throw new Error()
-        }
-    }
-
-    let sandbox: sinon.SinonSandbox
-    beforeEach(() => {
-        sandbox = sinon.createSandbox()
-    })
-
-    afterEach(() => {
-        sandbox.restore()
-    })
 
     it('instantiates with no credentials', async () => {
-        const testContext = new DefaultAwsContext(new FakeExtensionContext(), new TestCredentialsManager())
+        const testContext = new DefaultAwsContext(new FakeExtensionContext())
 
         assert.strictEqual(testContext.getCredentialProfileName(), undefined)
         assert.strictEqual(testContext.getCredentialAccountId(), undefined)
@@ -101,48 +70,6 @@ describe('DefaultAwsContext', () => {
 
         await testContext.setCredentials(undefined)
         assert.strictEqual(await testContext.getCredentials(), undefined)
-    })
-
-    it('gets credentials if a profile exists with credentials', async () => {
-        const overrideProfile = 'asdf'
-        const reportedCredentials = new AWS.Credentials(testAccessKey, testSecretKey)
-
-        const testContext = new DefaultAwsContext(
-            new FakeExtensionContext(),
-            new TestCredentialsManager(overrideProfile, reportedCredentials)
-        )
-        const creds = await testContext.getCredentials(overrideProfile)
-        assert.strictEqual(creds, reportedCredentials)
-    })
-
-    it('throws an error if a profile does not exist', async () => {
-        const overrideProfile = 'asdf'
-
-        const testContext = new DefaultAwsContext(
-            new FakeExtensionContext(),
-            new TestCredentialsManager(overrideProfile)
-        )
-        await assertThrowsError(async () => {
-            await testContext.getCredentials(testProfileValue)
-        })
-    })
-
-    it('returns ini crendentials if available', async () => {
-        const credentials = new AWS.Credentials(testAccessKey, testSecretKey)
-        sandbox.stub(AWS, 'SharedIniFileCredentials').returns(credentials)
-
-        const testContext = new DefaultAwsContext(new FakeExtensionContext())
-        const actual = await testContext.getCredentials('ini-credentials')
-        assert.strictEqual(actual, credentials)
-    })
-
-    it('returns process crendentials if available', async () => {
-        const credentials = new AWS.Credentials(testAccessKey, testSecretKey)
-        sandbox.stub(AWS, 'ProcessCredentials').returns(credentials)
-
-        const testContext = new DefaultAwsContext(new FakeExtensionContext())
-        const actual = await testContext.getCredentials('proc-credentials')
-        assert.strictEqual(actual, credentials)
     })
 
     it('gets single region from config on startup', async () => {
