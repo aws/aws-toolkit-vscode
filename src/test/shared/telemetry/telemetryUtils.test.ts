@@ -178,7 +178,7 @@ describe('telemetryUtils', () => {
                                 mockService.lastEvent!.data![0].metadata!.get(METADATA_FIELD_NAME.RESULT),
                                 MetadataResult.Pass
                             )
-                            assert.strictEqual(mockService.lastEvent!.data![0].name, 'abc')
+                            assert.strictEqual(mockService.lastEvent!.data![0].name, 'Command_command')
                             done()
                         })
                         .catch(err => {
@@ -189,7 +189,7 @@ describe('telemetryUtils', () => {
                 },
                 command: 'command',
                 callback: async () => {},
-                telemetryName: 'aws.abc'
+                telemetryName: 'Command_command'
             })
         })
 

@@ -80,7 +80,7 @@ describe('DefaultTelemetryService', () => {
         service.clearRecords()
         service.telemetryEnabled = false
         service.flushPeriod = testFlushPeriod
-        service.record({ createTime: new Date(), data: [{ name: 'namespace', value: 1 }] })
+        service.record({ createTime: new Date(), data: [{ name: 'name', value: 1 }] })
 
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
@@ -97,8 +97,8 @@ describe('DefaultTelemetryService', () => {
         // events are, in order, the dummy test event, the start event, and the shutdown event
         // test event is first since we record it before starting the service
         assert.strictEqual(service.records[0].data![0].name, 'name')
-        assert.strictEqual(service.records[1].data![0].name, 'session.start')
-        assert.strictEqual(service.records[2].data![0].name, 'session.end')
+        assert.strictEqual(service.records[1].data![0].name, 'session_start')
+        assert.strictEqual(service.records[2].data![0].name, 'session_end')
     })
 
     it('events automatically inject the active account id into the metadata', async () => {
@@ -109,7 +109,7 @@ describe('DefaultTelemetryService', () => {
         service.clearRecords()
         service.telemetryEnabled = false
         service.flushPeriod = testFlushPeriod
-        service.record({ createTime: new Date(), data: [{ name: 'namespace', value: 1 }] })
+        service.record({ createTime: new Date(), data: [{ name: 'name', value: 1 }] })
 
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
@@ -152,9 +152,9 @@ describe('DefaultTelemetryService', () => {
         assert.strictEqual(service.records.length, 2)
         // events are, in order, the dummy test event, the start event, and the shutdown event
         // test event is first since we record it before starting the service
-        assert.strictEqual(service.records[0].data![0].name, 'session.start')
+        assert.strictEqual(service.records[0].data![0].name, 'session_start')
         assert.strictEqual(service.records[0].data![0].metadata!.get('awsAccount'), AccountStatus.NotApplicable)
-        assert.strictEqual(service.records[1].data![0].name, 'session.end')
+        assert.strictEqual(service.records[1].data![0].name, 'session_end')
         assert.strictEqual(service.records[1].data![0].metadata!.get('awsAccount'), AccountStatus.NotApplicable)
     })
 

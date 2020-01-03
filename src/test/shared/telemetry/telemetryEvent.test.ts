@@ -19,11 +19,11 @@ describe('TelemetryEventArray', () => {
                             value: 1
                         },
                         {
-                            name: 'namespace.even#t1',
+                            name: 'namespace_even#t1',
                             value: 1
                         },
                         {
-                            name: 'namespace.event:2',
+                            name: 'namespace_event:2',
                             value: 0.5,
                             unit: 'Percent',
                             metadata: new Map([
@@ -62,15 +62,14 @@ describe('TelemetryEventArray', () => {
         it('maps TelemetryEvent with data to a multiple MetricDatum', () => {
             const eventArray: TelemetryEvent[] = []
             const metricEvent = {
-                namespace: 'namespace',
                 createTime: new Date(),
                 data: [
                     {
-                        name: 'event1',
+                        name: 'namespace_event1',
                         value: 1
                     },
                     {
-                        name: 'event2',
+                        name: 'namespace_event2',
                         value: 0.5,
                         unit: 'Percent',
                         metadata: new Map([
@@ -79,7 +78,7 @@ describe('TelemetryEventArray', () => {
                         ])
                     },
                     {
-                        name: 'event3',
+                        name: 'namespace_event3',
                         value: 0.333,
                         unit: 'Percent',
                         metadata: new Map([['key3', 'value3']])
@@ -112,40 +111,6 @@ describe('TelemetryEventArray', () => {
 
             assert.deepStrictEqual(data[1].Metadata, expectedMetadata1)
             assert.deepStrictEqual(data[2].Metadata, expectedMetadata2)
-        })
-
-        it('always contains exactly one underscore in the metric name, separating the namespace and the name', () => {
-            const properNamespace = 'namespace'
-            const malformedNamespace = 'name_space'
-            const properName = 'metricname'
-            const malformedName = 'metric_name'
-            const eventArray = [
-                {
-                    namespace: properNamespace,
-                    createTime: new Date(),
-                    data: [
-                        {
-                            name: properName,
-                            value: 0
-                        }
-                    ]
-                },
-                {
-                    namespace: malformedNamespace,
-                    createTime: new Date(),
-                    data: [
-                        {
-                            name: malformedName,
-                            value: 0
-                        }
-                    ]
-                }
-            ]
-
-            const data = toMetricData(eventArray)
-            assert.strictEqual(data.length, 2)
-            assert.strictEqual(data[0].MetricName, `${properNamespace}_${properName}`)
-            assert.strictEqual(data[1].MetricName, `${properNamespace}_${properName}`)
         })
     })
 })
