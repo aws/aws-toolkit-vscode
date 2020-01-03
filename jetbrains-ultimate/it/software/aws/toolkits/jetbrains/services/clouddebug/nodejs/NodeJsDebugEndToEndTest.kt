@@ -88,8 +88,6 @@ class NodeJsDebugEndToEndTest : CloudDebugTestCase("CloudDebugTestECSClusterTask
                 val instrumentedServiceName = "cloud-debug-${EcsUtils.serviceArnToName(service.serviceArn())}"
                 it.replace(EcsUtils.serviceArnToName(it), instrumentedServiceName)
             })
-            regionId(projectRule.project.activeRegion().id)
-            credentialProviderId(projectRule.project.activeCredentialProvider().id)
             containerOptions(mapOf("ContainerName" to ContainerOptions().apply {
                 platform = CloudDebuggingPlatform.NODE
                 startCommand = "node /app.js"
@@ -99,6 +97,8 @@ class NodeJsDebugEndToEndTest : CloudDebugTestCase("CloudDebugTestECSClusterTask
 
         val debuggerIsHit = checkBreakPointHit(projectRule.project)
         runUnderRealCredentials(projectRule.project) {
+            configuration.regionId(projectRule.project.activeRegion().id)
+            configuration.credentialProviderId(projectRule.project.activeCredentialProvider().id)
             configuration.checkConfiguration()
             executeRunConfiguration(configuration, DefaultDebugExecutor.EXECUTOR_ID)
         }

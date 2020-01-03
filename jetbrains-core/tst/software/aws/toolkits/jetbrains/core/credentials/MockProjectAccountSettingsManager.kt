@@ -52,8 +52,8 @@ fun <T> runUnderRealCredentials(project: Project, block: () -> T): T {
     val oldActive = manager.connectionSettings()?.credentials
     try {
         println("Running using real credentials")
-        manager.changeCredentialProvider(realCredentials)
         credentialsManager.addCredentials("RealCredentials", credentials)
+        manager.changeCredentialProvider(realCredentials)
         return block.invoke()
     } finally {
         credentialsManager.reset()

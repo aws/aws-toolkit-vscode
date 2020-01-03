@@ -63,7 +63,7 @@ abstract class CloudDebugTestCase(private val taskDefName: String) {
             println("Instrumenting service")
             instrumentService()
             val instrumentedServiceName = "cloud-debug-${EcsUtils.serviceArnToName(service.serviceArn())}"
-            println("Waiting for $instrumentedServiceName to stablize")
+            println("Waiting for $instrumentedServiceName to stabilize")
             ecsRule.ecsClient.waitForServicesStable(service.clusterArn(), instrumentedServiceName, waitForMissingServices = true)
             instrumentedService = ecsRule.ecsClient.describeServices {
                 it.cluster(service.clusterArn())
@@ -111,16 +111,18 @@ abstract class CloudDebugTestCase(private val taskDefName: String) {
 
     // TODO: delete these horrible mocks once we have a sane implementation...
     fun setUpMocks() {
-        MockResourceCache.getInstance(getProject()).let {
-            val mockInstrumentedResources = mock<Resource.Cached<Map<String, String>>> {
-                on { id }.thenReturn("cdb.list_resources")
+        runUnderRealCredentials(getProject()) {
+            MockResourceCache.getInstance(getProject()).let {
+                val mockInstrumentedResources = mock<Resource.Cached<Map<String, String>>> {
+                    on { id }.thenReturn("cdb.list_resources")
+                }
+                it.addEntry(EcsResources.describeService(instrumentedService.clusterArn(), instrumentedService.serviceArn()), instrumentedService)
+                it.addEntry(mockInstrumentedResources, mapOf(service.serviceArn() to instrumentationRole))
+                it.addEntry(
+                    EcsResources.describeTaskDefinition(instrumentedService.taskDefinition()),
+                    ecsClient.describeTaskDefinition { builder -> builder.taskDefinition(instrumentedService.taskDefinition()) }.taskDefinition()
+                )
             }
-            it.addEntry(EcsResources.describeService(instrumentedService.clusterArn(), instrumentedService.serviceArn()), instrumentedService)
-            it.addEntry(mockInstrumentedResources, mapOf(service.serviceArn() to instrumentationRole))
-            it.addEntry(
-                EcsResources.describeTaskDefinition(instrumentedService.taskDefinition()),
-                ecsClient.describeTaskDefinition { builder -> builder.taskDefinition(instrumentedService.taskDefinition()) }.taskDefinition()
-            )
         }
     }
 

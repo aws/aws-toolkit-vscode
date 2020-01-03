@@ -73,8 +73,6 @@ class PythonDebugEndToEndTest : CloudDebugTestCase("CloudDebugTestECSClusterTask
                 val instrumentedServiceName = "cloud-debug-${EcsUtils.serviceArnToName(service.serviceArn())}"
                 it.replace(EcsUtils.serviceArnToName(it), instrumentedServiceName)
             })
-            regionId(projectRule.project.activeRegion().id)
-            credentialProviderId(projectRule.project.activeCredentialProvider().id)
             containerOptions(mapOf("ContainerName" to ContainerOptions().apply {
                 platform = CloudDebuggingPlatform.PYTHON
                 startCommand = "python /${testScript.fileName}"
@@ -89,6 +87,8 @@ class PythonDebugEndToEndTest : CloudDebugTestCase("CloudDebugTestECSClusterTask
 
         runUnderRealCredentials(projectRule.project) {
             try {
+                configuration.regionId(projectRule.project.activeRegion().id)
+                configuration.credentialProviderId(projectRule.project.activeCredentialProvider().id)
                 configuration.checkConfiguration()
             } catch (_: RuntimeConfigurationWarning) {
                 // ignore warnings because we know what we're doing
