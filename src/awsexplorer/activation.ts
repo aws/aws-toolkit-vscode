@@ -67,7 +67,7 @@ async function registerAwsExplorerCommands(
             await ext.awsContextCommands.onCommandShowRegion()
             await recordNumberOfActiveRegionsMetric(awsExplorer)
         },
-        telemetryName: 'Command.awsshowRegion'
+        telemetryName: 'Command_aws.showRegion'
     })
 
     registerCommand({
@@ -76,13 +76,13 @@ async function registerAwsExplorerCommands(
             await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
             await recordNumberOfActiveRegionsMetric(awsExplorer)
         },
-        telemetryName: 'Command.awshideRegion'
+        telemetryName: 'Command_aws.hideRegion'
     })
 
     registerCommand({
         command: 'aws.refreshAwsExplorer',
         callback: async () => awsExplorer.refresh(),
-        telemetryName: 'Command.awsrefreshAwsExplorer'
+        telemetryName: 'Command_aws.refreshAwsExplorer'
     })
 
     registerCommand({
@@ -94,20 +94,20 @@ async function registerAwsExplorerCommands(
                 outputChannel: lambdaOutputChannel,
                 onRefresh: () => awsExplorer.refresh(node.parent)
             }),
-        telemetryName: 'Command.awsdeleteLambda'
+        telemetryName: 'Command_aws.deleteLambda'
     })
 
     registerCommand({
         command: 'aws.deleteCloudFormation',
         callback: async (node: CloudFormationStackNode) =>
             await deleteCloudFormation(() => awsExplorer.refresh(node.parent), node),
-        telemetryName: 'Command.awsdeleteCloudFormation'
+        telemetryName: 'Command_aws.deleteCloudFormation'
     })
 
     registerCommand({
         command: 'aws.showErrorDetails',
         callback: async (node: ErrorNode) => await showErrorDetails(node),
-        telemetryName: 'Command.awsshowErrorDetails'
+        telemetryName: 'Command_aws.showErrorDetails'
     })
 
     registerCommand({
@@ -119,7 +119,7 @@ async function registerAwsExplorerCommands(
                 outputChannel: lambdaOutputChannel,
                 resourceFetcher: resourceFetcher
             }),
-        telemetryName: 'lambda.invokeremote'
+        telemetryName: 'lambda_invokeremote'
     })
 
     registerCommand({
@@ -127,7 +127,7 @@ async function registerAwsExplorerCommands(
         callback: async (awsexplorer: AwsExplorer, element: AWSTreeNodeBase) => {
             awsexplorer.refresh(element)
         },
-        telemetryName: 'Command.aws.refreshAwsExplorerNode'
+        telemetryName: 'Command_aws.refreshAwsExplorerNode'
     })
 }
 

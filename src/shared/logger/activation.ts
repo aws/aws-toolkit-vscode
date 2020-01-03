@@ -102,6 +102,6 @@ async function registerLoggerCommands(): Promise<void> {
     registerCommand({
         command: 'aws.viewLogs',
         callback: async () => await vscode.window.showTextDocument(vscode.Uri.file(path.normalize(LOG_PATH))),
-        telemetryName: 'Command.awsviewLogs'
+        telemetryName: 'Command_aws.viewLogs'
     })
 }

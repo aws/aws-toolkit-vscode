@@ -80,7 +80,7 @@ export async function initialize({
                 telemetryService
             })
         },
-        telemetryName: 'lambda.invokelocal'
+        telemetryName: 'lambda_invokelocal'
     })
 }
 

@@ -57,7 +57,7 @@ describe('telemetryUtils', () => {
                                 mockService.lastEvent!.data![0].metadata!.get(METADATA_FIELD_NAME.RESULT),
                                 MetadataResult.Pass
                             )
-                            assert.strictEqual(mockService.lastEvent!.data![0].name, 'Command.command')
+                            assert.strictEqual(mockService.lastEvent!.data![0].name, 'Command_command')
 
                             done()
                         })
@@ -69,7 +69,7 @@ describe('telemetryUtils', () => {
                 },
                 command: 'command',
                 callback: async () => {},
-                telemetryName: 'Command.command'
+                telemetryName: 'Command_command'
             })
         })
 

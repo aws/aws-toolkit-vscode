@@ -22,13 +22,13 @@ async function registerSchemasCommands(): Promise<void> {
     registerCommand({
         command: 'aws.viewSchemaItem',
         callback: async (node: SchemaItemNode) => await viewSchemaItem(node),
-        telemetryName: 'schemas.view'
+        telemetryName: 'schemas_view'
     })
 
     registerCommand({
         command: 'aws.downloadSchemaItemCode',
         callback: async (node: SchemaItemNode) => await downloadSchemaItemCode(node),
-        telemetryName: 'schemas.download'
+        telemetryName: 'schemas_download'
     })
 
     registerCommand({
@@ -37,7 +37,7 @@ async function registerSchemasCommands(): Promise<void> {
             await createSearchSchemasWebView({
                 node: node
             }),
-        telemetryName: 'schemas.search'
+        telemetryName: 'schemas_search'
     })
 
     registerCommand({
@@ -46,6 +46,6 @@ async function registerSchemasCommands(): Promise<void> {
             await createSearchSchemasWebView({
                 node: node
             }),
-        telemetryName: 'schemas.search'
+        telemetryName: 'schemas_search'
     })
 }

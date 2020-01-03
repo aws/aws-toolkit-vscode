@@ -86,7 +86,7 @@ async function registerServerlessCommands(params: {
     params.extensionContext.subscriptions.push(
         registerCommand({
             command: 'aws.samcli.detect',
-            telemetryName: 'Command.awssamclidetect',
+            telemetryName: 'Command_aws.samcli.detect',
             callback: async () =>
                 await PromiseSharer.getExistingPromiseOrCreate('samcli.detect', async () => await detectSamCli(true))
         })
@@ -107,7 +107,7 @@ async function registerServerlessCommands(params: {
                     datum
                 }
             },
-            telemetryName: 'project.new'
+            telemetryName: 'project_new'
         })
     )
 
@@ -125,7 +125,7 @@ async function registerServerlessCommands(params: {
                         awsContext: params.awsContext
                     }
                 ),
-            telemetryName: 'lambda.deploy'
+            telemetryName: 'lambda_deploy'
         })
     )
 
@@ -133,7 +133,7 @@ async function registerServerlessCommands(params: {
         registerCommand({
             command: 'aws.configureLambda',
             callback: configureLocalLambda,
-            telemetryName: 'lambda.configurelocal'
+            telemetryName: 'lambda_configurelocal'
         })
     )
 

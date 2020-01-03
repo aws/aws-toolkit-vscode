@@ -76,19 +76,19 @@ export async function activate(context: vscode.ExtensionContext) {
         registerCommand({
             command: 'aws.login',
             callback: async () => await ext.awsContextCommands.onCommandLogin(),
-            telemetryName: 'aws.credentialslogin'
+            telemetryName: 'aws_credentialslogin'
         })
 
         registerCommand({
             command: 'aws.credential.profile.create',
             callback: async () => await ext.awsContextCommands.onCommandCreateCredentialsProfile(),
-            telemetryName: 'aws.credentialscreate'
+            telemetryName: 'aws_credentialscreate'
         })
 
         registerCommand({
             command: 'aws.logout',
             callback: async () => await ext.awsContextCommands.onCommandLogout(),
-            telemetryName: 'aws.credentialslogout'
+            telemetryName: 'aws_credentialslogout'
         })
 
         // register URLs in extension menu
@@ -97,28 +97,28 @@ export async function activate(context: vscode.ExtensionContext) {
             callback: async () => {
                 vscode.env.openExternal(vscode.Uri.parse(documentationUrl))
             },
-            telemetryName: 'Command.awshelp'
+            telemetryName: 'Command_aws.help'
         })
         registerCommand({
             command: 'aws.github',
             callback: async () => {
                 vscode.env.openExternal(vscode.Uri.parse(githubUrl))
             },
-            telemetryName: 'Command.awsgithub'
+            telemetryName: 'Command_aws.github'
         })
         registerCommand({
             command: 'aws.reportIssue',
             callback: async () => {
                 vscode.env.openExternal(vscode.Uri.parse(reportIssueUrl))
             },
-            telemetryName: 'Command.awsreportIssue'
+            telemetryName: 'Command_aws.reportIssue'
         })
         registerCommand({
             command: 'aws.quickStart',
             callback: async () => {
                 await showQuickStartWebview(context)
             },
-            telemetryName: 'Command.awsquickStart'
+            telemetryName: 'Command_aws.quickStart'
         })
 
         await activateCdk({

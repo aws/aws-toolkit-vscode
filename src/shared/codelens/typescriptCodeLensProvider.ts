@@ -121,7 +121,7 @@ export function initialize({
                 runtime
             })
         },
-        telemetryName: 'lambda.invokelocal'
+        telemetryName: 'lambda_invokelocal'
     })
 }
 
