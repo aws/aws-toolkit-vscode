@@ -14,18 +14,6 @@ export interface Datum {
 
 export const ACCOUNT_METADATA_KEY = 'awsAccount'
 
-export enum TelemetryNamespace {
-    Command = 'Command',
-    Aws = 'aws',
-    Cdk = 'cdk',
-    Cloudformation = 'cloudformation',
-    Lambda = 'lambda',
-    Project = 'project',
-    Schema = 'schemas',
-    Session = 'session',
-    VSCode = 'vscode'
-}
-
 export enum AccountStatus {
     NotApplicable = 'n/a',
     NotSet = 'not-set',
