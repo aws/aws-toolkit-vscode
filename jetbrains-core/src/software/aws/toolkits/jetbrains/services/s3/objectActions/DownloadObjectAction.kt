@@ -9,9 +9,9 @@ import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptor
 import com.intellij.openapi.fileChooser.FileChooserFactory
 import com.intellij.openapi.fileChooser.FileSaverDescriptor
+import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VfsUtil
-import com.intellij.ui.AnActionButton
 import com.intellij.util.io.outputStream
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -26,7 +26,7 @@ import java.nio.file.Paths
 
 class DownloadObjectAction(
     private val treeTable: S3TreeTable
-) : AnActionButton(message("s3.download.object.action"), null, AllIcons.Actions.Download) {
+) : DumbAwareAction(message("s3.download.object.action"), null, AllIcons.Actions.Download) {
 
     private val bucket = treeTable.bucket
     @Suppress("unused")
@@ -34,8 +34,8 @@ class DownloadObjectAction(
         val project = e.getRequiredData(LangDataKeys.PROJECT)
 
         val files = treeTable.getSelectedNodes().filterIsInstance<S3TreeObjectNode>()
-        when {
-            files.size == 1 -> downloadSingle(project, files.first())
+        when (files.size) {
+            1 -> downloadSingle(project, files.first())
             else -> downloadMultiple(project, files)
         }
     }
@@ -73,9 +73,9 @@ class DownloadObjectAction(
         }
     }
 
-    override fun isDumbAware(): Boolean = true
-    override fun updateButton(e: AnActionEvent) {}
-    override fun isEnabled(): Boolean = !(treeTable.isEmpty || (treeTable.selectedRow < 0) || (treeTable.getValueAt(treeTable.selectedRow, 1) == ""))
+    override fun update(e: AnActionEvent) {
+        e.presentation.isEnabled = !(treeTable.isEmpty || (treeTable.selectedRow < 0) || (treeTable.getValueAt(treeTable.selectedRow, 1) == ""))
+    }
 
     companion object {
         private const val SINGLE_OBJECT = "s3_downloadobject"

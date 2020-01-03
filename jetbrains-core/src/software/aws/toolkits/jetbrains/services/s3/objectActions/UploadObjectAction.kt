@@ -7,7 +7,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.fileChooser.FileChooserFactory
-import com.intellij.ui.AnActionButton
+import com.intellij.openapi.project.DumbAwareAction
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeContinuationNode
@@ -20,7 +20,7 @@ import software.aws.toolkits.resources.message
 
 class UploadObjectAction(
     private val treeTable: S3TreeTable
-) : AnActionButton(message("s3.upload.object.action", treeTable.bucket.name), null, AllIcons.Actions.Upload) {
+) : DumbAwareAction(message("s3.upload.object.action"), null, AllIcons.Actions.Upload) {
     private val bucket = treeTable.bucket
 
     override fun actionPerformed(e: AnActionEvent) {
@@ -55,10 +55,9 @@ class UploadObjectAction(
         }
     }
 
-    override fun isDumbAware(): Boolean = true
-    override fun updateButton(e: AnActionEvent) {}
-    override fun isEnabled(): Boolean =
-        (treeTable.isEmpty || treeTable.selectedRows.size <= 1) && !treeTable.getSelectedNodes().any { it is S3TreeContinuationNode }
+    override fun update(e: AnActionEvent) {
+        e.presentation.isEnabled = (treeTable.isEmpty || treeTable.selectedRows.size <= 1) && !treeTable.getSelectedNodes().any { it is S3TreeContinuationNode }
+    }
 
     companion object {
         private const val SINGLE_OBJECT = "s3_uploadobject"

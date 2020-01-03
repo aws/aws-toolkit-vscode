@@ -17,7 +17,6 @@ import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 
 class DeleteBucketAction : DeleteResourceAction<S3BucketNode>(message("s3.delete.bucket.action"), TaggingResourceType.S3_BUCKET) {
-
     override fun performDelete(selected: S3BucketNode) {
         try {
             val client: S3Client = AwsClientManager.getInstance(selected.nodeProject).getClient()

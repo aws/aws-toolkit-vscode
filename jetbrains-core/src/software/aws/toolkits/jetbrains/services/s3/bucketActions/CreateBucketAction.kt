@@ -12,8 +12,6 @@ import software.aws.toolkits.jetbrains.services.s3.CreateS3BucketDialog
 import software.aws.toolkits.resources.message
 
 class CreateBucketAction : AnActionWrapper(message("s3.create.bucket.title"), null, AwsIcons.Resources.S3_BUCKET) {
-
-    @Suppress("unused")
     override fun doActionPerformed(e: AnActionEvent) {
         val project = e.getRequiredData(LangDataKeys.PROJECT)
         val client: S3Client = AwsClientManager.getInstance(project).getClient()

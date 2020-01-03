@@ -6,9 +6,9 @@ package software.aws.toolkits.jetbrains.services.s3.objectActions
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
+import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
-import com.intellij.ui.AnActionButton
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
@@ -17,16 +17,14 @@ import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 
-class DeleteObjectAction(private val treeTable: S3TreeTable) : AnActionButton(message("s3.delete.object.action"), null, AllIcons.Actions.Cancel) {
-
-    @Suppress("unused")
+class DeleteObjectAction(private val treeTable: S3TreeTable) : DumbAwareAction(message("s3.delete.object.action"), null, AllIcons.Actions.Cancel) {
     override fun actionPerformed(e: AnActionEvent) {
         deleteSelectedObjects(e.getRequiredData(LangDataKeys.PROJECT), treeTable)
     }
 
-    override fun isDumbAware(): Boolean = true
-    override fun updateButton(e: AnActionEvent) {}
-    override fun isEnabled(): Boolean = (!(treeTable.isEmpty || (treeTable.selectedRow < 0) || (treeTable.getValueAt(treeTable.selectedRow, 1) == "")))
+    override fun update(e: AnActionEvent) {
+        e.presentation.isEnabled = !(treeTable.isEmpty || (treeTable.selectedRow < 0) || (treeTable.getValueAt(treeTable.selectedRow, 1) == ""))
+    }
 }
 
 private const val TELEMETRY_NAME = "s3_deleteobject"
