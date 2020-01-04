@@ -27,38 +27,6 @@ describe('UserCredentialsUtils', () => {
         del.sync([tempFolder], { force: true })
     })
 
-    describe('getCredentialsFilename', () => {
-        it('falls back on default if AWS_SHARED_CREDENTIALS_FILE is not set', async () => {
-            const filename = UserCredentialsUtils.getCredentialsFilename()
-            assert.strictEqual(filename.length > 0, true)
-        })
-
-        it('gets AWS_SHARED_CREDENTIALS_FILE if set', async () => {
-            const expectedFilename = path.join(tempFolder, 'credentials-custom-name-test')
-            const env = process.env as EnvironmentVariables
-            env.AWS_SHARED_CREDENTIALS_FILE = expectedFilename
-
-            const filename = UserCredentialsUtils.getCredentialsFilename()
-            assert.strictEqual(filename, expectedFilename)
-        })
-    })
-
-    describe('getConfigFilename', () => {
-        it('falls back on default if AWS_CONFIG_FILE is not set', async () => {
-            const filename = UserCredentialsUtils.getConfigFilename()
-            assert.strictEqual(filename.length > 0, true)
-        })
-
-        it('gets AWS_CONFIG_FILE if set', async () => {
-            const expectedFilename = path.join(tempFolder, 'config-custom-name-test')
-            const env = process.env as EnvironmentVariables
-            env.AWS_CONFIG_FILE = expectedFilename
-
-            const filename = UserCredentialsUtils.getConfigFilename()
-            assert.strictEqual(filename, expectedFilename)
-        })
-    })
-
     describe('findExistingCredentialsFilenames', () => {
         it('returns both filenames if both files exist', async () => {
             const credentialsFilename = path.join(tempFolder, 'credentials-both-exist-test')
