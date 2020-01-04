@@ -21,6 +21,7 @@ export class LoginManager {
      */
     public async login(credentialsId: string): Promise<void> {
         try {
+            // TODO : CC : Invalidate credentials when their hash changes
             const credentials = await this.credentialsStore.getCredentialsOrCreate(credentialsId, createCredentials)
             if (!credentials) {
                 throw new Error(`No credentials found for id ${credentialsId}`)
@@ -39,7 +40,10 @@ export class LoginManager {
                 accountId: accountId
             })
         } catch (err) {
-            getLogger().error('Error logging in', err as Error)
+            getLogger().error(
+                `Error trying to connect to AWS with Credentials Provider ${credentialsId}. Toolkit will now disconnect from AWS.`,
+                err as Error
+            )
             this.credentialsStore.invalidateCredentials(credentialsId)
 
             await this.logout()

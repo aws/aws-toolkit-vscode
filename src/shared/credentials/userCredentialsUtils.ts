@@ -50,6 +50,7 @@ export class UserCredentialsUtils {
         return candidateFiles.filter((filename, index) => existsResults[index])
     }
 
+    // TODO : CC : move to sharedCredentials.ts
     /**
      * @returns Filename for the credentials file
      */
@@ -59,6 +60,7 @@ export class UserCredentialsUtils {
         return env.AWS_SHARED_CREDENTIALS_FILE || path.join(SystemUtilities.getHomeDirectory(), '.aws', 'credentials')
     }
 
+    // TODO : CC : move to sharedCredentials.ts
     /**
      * @returns Filename for the config file
      */

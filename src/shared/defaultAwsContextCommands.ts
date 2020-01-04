@@ -9,6 +9,7 @@ const localize = nls.loadMessageBundle()
 import { Credentials } from 'aws-sdk'
 import { env, Uri, ViewColumn, window } from 'vscode'
 import { LoginManager } from '../credentials/loginManager'
+import { getCredentialsProviderManagerInstance } from '../credentials/providers/credentialsProviderManager'
 import { AwsContext } from './awsContext'
 import { AwsContextTreeCollection } from './awsContextTreeCollection'
 import * as extensionConstants from './constants'
@@ -19,7 +20,6 @@ import {
     DefaultCredentialSelectionDataProvider,
     promptToDefineCredentialsProfile
 } from './credentials/defaultCredentialSelectionDataProvider'
-import { DefaultCredentialsFileReaderWriter } from './credentials/defaultCredentialsFileReaderWriter'
 import { UserCredentialsUtils } from './credentials/userCredentialsUtils'
 import { ext } from './extensionGlobals'
 import { RegionInfo } from './regions/regionInfo'
@@ -151,8 +151,6 @@ export class DefaultAWSContextCommands {
      * editing their credentials file.
      */
     private async getProfileNameFromUser(): Promise<string | undefined> {
-        await new DefaultCredentialsFileReaderWriter().setCanUseConfigFileIfExists()
-
         const responseYes: string = localize('AWS.generic.response.yes', 'Yes')
         const responseNo: string = localize('AWS.generic.response.no', 'No')
 
@@ -174,8 +172,9 @@ export class DefaultAWSContextCommands {
 
             return await this.promptAndCreateNewCredentialsFile()
         } else {
-            const credentialReaderWriter = new DefaultCredentialsFileReaderWriter()
-            const profileNames = await credentialReaderWriter.getProfileNames()
+            const profileNames = (
+                await getCredentialsProviderManagerInstance().getAllCredentialsProviders()
+            ).map(provider => provider.getCredentialsProviderId())
 
             // If no credentials were found, the user should be
             // encouraged to define some.

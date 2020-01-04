@@ -9,7 +9,6 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
 import { extensionSettingsPrefix } from '../shared/constants'
-import { DefaultCredentialsFileReaderWriter } from '../shared/credentials/defaultCredentialsFileReaderWriter'
 import { AwsExplorer } from './awsExplorer'
 
 /**
@@ -51,9 +50,9 @@ export async function checkExplorerForDefaultRegion(
     awsContext: AwsContext,
     awsExplorer: AwsExplorer
 ): Promise<void> {
-    const credentialReaderWriter = new DefaultCredentialsFileReaderWriter()
-
-    const profileRegion = await credentialReaderWriter.getDefaultRegion(profileName)
+    // TODO : CC : find a way to get a default region for the credentials
+    // TODO : CC : Or just cut this functionality
+    const profileRegion = 'us-east-1'
     if (!profileRegion) {
         return
     }

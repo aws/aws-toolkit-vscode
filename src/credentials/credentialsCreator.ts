@@ -8,6 +8,7 @@ const localize = nls.loadMessageBundle()
 
 import * as AWS from 'aws-sdk'
 import * as vscode from 'vscode'
+import { getCredentialsProviderManagerInstance } from './providers/credentialsProviderManager'
 
 const ERROR_MESSAGE_USER_CANCELLED = localize(
     'AWS.error.mfa.userCancelled',
@@ -15,16 +16,13 @@ const ERROR_MESSAGE_USER_CANCELLED = localize(
 )
 
 export async function createCredentials(profileName: string): Promise<AWS.Credentials> {
-    const provider = new AWS.CredentialProviderChain([
-        () => new AWS.ProcessCredentials({ profile: profileName }),
-        () =>
-            new AWS.SharedIniFileCredentials({
-                profile: profileName,
-                tokenCodeFn: async (mfaSerial, callback) => await getMfaTokenFromUser(mfaSerial, profileName, callback)
-            })
-    ])
+    const provider = await getCredentialsProviderManagerInstance().getCredentialsProvider(profileName)
+    if (!provider) {
+        throw new Error(`Could not find Credentials Provider for ${profileName}`)
+    }
 
-    return provider.resolvePromise()
+    // TODO : CC : Return provider chain + metadata instead of credentials?
+    return (await provider.getCredentialProviderChain()).resolvePromise()
 }
 
 /**
