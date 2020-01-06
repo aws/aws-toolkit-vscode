@@ -18,9 +18,9 @@ const EXPLORER_ENABLED_CONFIG_KEY = 'aws.cdk.explorer.enabled'
  * Telemetry event names for recorded metrics
  */
 enum TelemetryEventTypes {
-    APP_EXPANDED = 'cdk.appExpanded',
-    EXPLORER_RE_ENABLED = 'cdk.explorerEnabled',
-    EXPLORER_DISABLED = 'cdk.explorerDisabled'
+    APP_EXPANDED = 'cdk_appExpanded',
+    EXPLORER_RE_ENABLED = 'cdk_explorerEnabled',
+    EXPLORER_DISABLED = 'cdk_explorerDisabled'
 }
 
 /**
