@@ -73,14 +73,13 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
         profileName: string,
         provider: SharedCredentialsProviderChainProvider
     ): Promise<void> {
-        try {
-            await provider.validate()
-            this.addProvider(provider)
-        } catch (err) {
-            const error = err as Error
+        const validationMessage = provider.validate()
+        if (validationMessage) {
             this.logger.warn(
-                `Shared Credentials Profile ${profileName} is not valid. It will not be used by the toolkit. ${error.message}`
+                `Shared Credentials Profile ${profileName} is not valid. It will not be used by the toolkit. ${validationMessage}`
             )
+        } else {
+            this.addProvider(provider)
         }
     }
 

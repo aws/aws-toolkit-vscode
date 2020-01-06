@@ -48,25 +48,39 @@ export class SharedCredentialsProviderChainProvider implements CredentialProvide
     }
 
     /**
-     * Throws an Error if the profile is not valid
+     * Returns undefined if the Profile is valid, else a string indicating what is invalid
      */
-    public async validate(): Promise<void> {
+    public validate(): string | undefined {
+        const expectedProperties: string[] = []
+
         if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.ROLE_ARN)) {
-            this.validateSourceProfileChain()
+            return this.validateSourceProfileChain()
         } else if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_PROCESS)) {
             // No validation. Don't check anything else.
+
+            return undefined
         } else if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.AWS_SESSION_TOKEN)) {
-            this.verifyProfilePropertiesExist(
+            expectedProperties.push(
                 SHARED_CREDENTIAL_PROPERTIES.AWS_ACCESS_KEY_ID,
                 SHARED_CREDENTIAL_PROPERTIES.AWS_SECRET_ACCESS_KEY
             )
         } else if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.AWS_ACCESS_KEY_ID)) {
-            this.verifyProfilePropertiesExist(SHARED_CREDENTIAL_PROPERTIES.AWS_SECRET_ACCESS_KEY)
+            expectedProperties.push(SHARED_CREDENTIAL_PROPERTIES.AWS_SECRET_ACCESS_KEY)
         }
+
+        const missingProperties = this.getMissingProperties(expectedProperties)
+        if (missingProperties.length !== 0) {
+            return `Profile ${this.profileName} is missing properties: ${missingProperties.join(', ')}`
+        }
+
+        return undefined
     }
 
     public async getCredentialProviderChain(): Promise<AWS.CredentialProviderChain> {
-        await this.validate()
+        const validationMessage = this.validate()
+        if (validationMessage) {
+            throw new Error(`Profile ${this.profileName} is not a valid Credential Profile: ${validationMessage}`)
+        }
 
         const provider = new AWS.CredentialProviderChain([this.makeCredentialsProvider()])
 
@@ -77,18 +91,14 @@ export class SharedCredentialsProviderChainProvider implements CredentialProvide
         return !!this.profile[propertyName]
     }
 
-    /**
-     * Throws an error indicating which properties are missing
-     */
-    private verifyProfilePropertiesExist(...propertyNames: string[]) {
-        const missingProperties = propertyNames.filter(propertyName => !this.profile[propertyName])
-
-        if (missingProperties.length > 0) {
-            throw new Error(`Profile ${this.profileName} is missing properties: ${missingProperties.join(', ')}`)
-        }
+    private getMissingProperties(propertyNames: string[]): string[] {
+        return propertyNames.filter(propertyName => !this.profile[propertyName])
     }
 
-    private validateSourceProfileChain() {
+    /**
+     * Returns undefined if the Profile Chain is valid, else a string indicating what is invalid
+     */
+    private validateSourceProfileChain(): string | undefined {
         const profilesTraversed: string[] = [this.profileName]
 
         let profileName = this.profileName
@@ -100,22 +110,19 @@ export class SharedCredentialsProviderChainProvider implements CredentialProvide
             // Cycle
             if (profilesTraversed.indexOf(profileName) !== -1) {
                 profilesTraversed.push(profileName)
-                throw new Error(
-                    `Cycle detected within Shared Credentials Profiles. Reference chain: ${profilesTraversed.join(
-                        ' -> '
-                    )}`
-                )
+
+                return `Cycle detected within Shared Credentials Profiles. Reference chain: ${profilesTraversed.join(
+                    ' -> '
+                )}`
             }
 
             profilesTraversed.push(profileName)
 
             // Missing reference
             if (!this.allSharedCredentialProfiles.has(profileName)) {
-                throw new Error(
-                    `Shared Credentials Profile ${profileName} not found. Reference chain: ${profilesTraversed.join(
-                        ' -> '
-                    )}`
-                )
+                return `Shared Credentials Profile ${profileName} not found. Reference chain: ${profilesTraversed.join(
+                    ' -> '
+                )}`
             }
 
             profile = this.allSharedCredentialProfiles.get(profileName)!
