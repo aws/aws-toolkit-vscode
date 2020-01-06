@@ -591,13 +591,13 @@ function recordAttachDebuggerMetric(params: RecordAttachDebuggerMetricContext) {
         createTime: currTime,
         data: [
             {
-                name: `${namespace}.attempts`,
+                name: `${namespace}_attempts`,
                 value: params.attempts,
                 unit: 'Count',
                 metadata
             },
             {
-                name: `${namespace}.duration`,
+                name: `${namespace}_duration`,
                 value: params.durationMillis,
                 unit: 'Milliseconds',
                 metadata

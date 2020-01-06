@@ -209,7 +209,7 @@ export function createMessageReceivedFunc({
 function recordSchemaSearchTelemetry(telemetryService: TelemetryService, action: string) {
     telemetryService.record({
         createTime: new Date(),
-        data: [defaultMetricDatum(`schemas.${action}`)]
+        data: [defaultMetricDatum(`schemas_${action}`)]
     })
 }
 

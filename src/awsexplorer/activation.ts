@@ -137,7 +137,7 @@ async function recordNumberOfActiveRegionsMetric(awsExplorer: AwsExplorer) {
 
     ext.telemetry.record({
         createTime: currTime,
-        data: [{ name: 'vscode.activeregions', value: numOfActiveRegions, unit: 'Count' }]
+        data: [{ name: 'vscode_activeregions', value: numOfActiveRegions, unit: 'Count' }]
     })
 }
 
