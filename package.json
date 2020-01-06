@@ -170,6 +170,14 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.searchSchema",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.searchSchemaPerRegistry",
+                    "when": "false"
+                },
+                {
                     "command": "aws.refreshAwsExplorer",
                     "when": "false"
                 },
