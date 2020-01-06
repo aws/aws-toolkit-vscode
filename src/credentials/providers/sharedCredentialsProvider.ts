@@ -11,10 +11,11 @@ import { CredentialsProvider } from './credentialsProvider'
 import { makeCredentialsProviderId } from './credentialsProviderId'
 
 const SHARED_CREDENTIAL_PROPERTIES = {
-    AWS_SESSION_TOKEN: 'aws_session_token',
     AWS_ACCESS_KEY_ID: 'aws_access_key_id',
     AWS_SECRET_ACCESS_KEY: 'aws_secret_access_key',
+    AWS_SESSION_TOKEN: 'aws_session_token',
     CREDENTIAL_PROCESS: 'credential_process',
+    REGION: 'region',
     ROLE_ARN: 'role_arn',
     SOURCE_PROFILE: 'source_profile'
 }
@@ -50,6 +51,10 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     public getHashCode(): number {
         // TODO : CC : Implement this
         return 0
+    }
+
+    public getDefaultRegion(): string | undefined {
+        return this.profile[SHARED_CREDENTIAL_PROPERTIES.REGION]
     }
 
     /**

@@ -37,7 +37,8 @@ export class LoginManager {
             await this.awsContext.setCredentials({
                 credentials: credentials,
                 credentialsId: credentialsId,
-                accountId: accountId
+                accountId: accountId,
+                defaultRegion: 'us-east-1' // TODO : CC : Get CredentialProvider DefaultRegion
             })
         } catch (err) {
             getLogger().error(

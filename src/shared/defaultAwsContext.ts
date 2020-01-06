@@ -54,6 +54,10 @@ export class DefaultAwsContext implements AwsContext {
         return this.currentCredentials?.accountId
     }
 
+    public getCredentialDefaultRegion(): string | undefined {
+        return this.currentCredentials?.defaultRegion
+    }
+
     // async so that we could *potentially* support other ways of obtaining
     // region in future - for example from instance metadata if the
     // user was running Code on an EC2 instance.

@@ -9,6 +9,7 @@ export interface AwsContextCredentials {
     readonly credentials: AWS.Credentials
     readonly credentialsId: string
     readonly accountId?: string
+    readonly defaultRegion?: string
 }
 
 // Carries the current context data on events
@@ -29,6 +30,8 @@ export interface AwsContext {
     getCredentialProfileName(): string | undefined
 
     getCredentialAccountId(): string | undefined
+
+    getCredentialDefaultRegion(): string | undefined
 
     getExplorerRegions(): Promise<string[]>
 

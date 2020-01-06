@@ -50,9 +50,7 @@ export async function checkExplorerForDefaultRegion(
     awsContext: AwsContext,
     awsExplorer: AwsExplorer
 ): Promise<void> {
-    // TODO : CC : find a way to get a default region for the credentials
-    // TODO : CC : Or just cut this functionality
-    const profileRegion = 'us-east-1'
+    const profileRegion = awsContext.getCredentialDefaultRegion()
     if (!profileRegion) {
         return
     }

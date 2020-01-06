@@ -5,6 +5,7 @@
 
 export interface CredentialsProvider {
     getCredentialsProviderId(): string
+    getDefaultRegion(): string | undefined
     getHashCode(): number
     getCredentials(): Promise<AWS.Credentials>
 }
