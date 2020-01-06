@@ -7,7 +7,7 @@ import * as AWS from 'aws-sdk'
 import { Profile } from '../../shared/credentials/credentialsFile'
 import { getLogger } from '../../shared/logger'
 import { getMfaTokenFromUser } from '../credentialsCreator'
-import { CredentialProviderChainProvider } from './credentialProviderChainProvider'
+import { CredentialsProvider } from './credentialsProvider'
 import { makeCredentialsProviderId } from './credentialsProviderId'
 
 const SHARED_CREDENTIAL_PROPERTIES = {
@@ -20,9 +20,9 @@ const SHARED_CREDENTIAL_PROPERTIES = {
 }
 
 /**
- * Represents one profile from the AWS Shared Credentials files, and produces CredentialProviderChain objects for this profile.
+ * Represents one profile from the AWS Shared Credentials files, and produces Credentials from this profile.
  */
-export class SharedCredentialsProviderChainProvider implements CredentialProviderChainProvider {
+export class SharedCredentialsProvider implements CredentialsProvider {
     public static readonly CREDENTIALS_TYPE = 'profile'
 
     private readonly profile: Profile
@@ -42,9 +42,14 @@ export class SharedCredentialsProviderChainProvider implements CredentialProvide
 
     public getCredentialsProviderId(): string {
         return makeCredentialsProviderId({
-            credentialType: SharedCredentialsProviderChainProvider.CREDENTIALS_TYPE,
+            credentialType: SharedCredentialsProvider.CREDENTIALS_TYPE,
             providerId: this.profileName
         })
+    }
+
+    public getHashCode(): number {
+        // TODO : CC : Implement this
+        return 0
     }
 
     /**
@@ -76,7 +81,7 @@ export class SharedCredentialsProviderChainProvider implements CredentialProvide
         return undefined
     }
 
-    public async getCredentialProviderChain(): Promise<AWS.CredentialProviderChain> {
+    public async getCredentials(): Promise<AWS.Credentials> {
         const validationMessage = this.validate()
         if (validationMessage) {
             throw new Error(`Profile ${this.profileName} is not a valid Credential Profile: ${validationMessage}`)
@@ -84,7 +89,7 @@ export class SharedCredentialsProviderChainProvider implements CredentialProvide
 
         const provider = new AWS.CredentialProviderChain([this.makeCredentialsProvider()])
 
-        return provider
+        return provider.resolvePromise()
     }
 
     private hasProfileProperty(propertyName: string): boolean {

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CredentialProviderChainProvider } from './credentialProviderChainProvider'
+import { CredentialsProvider } from './credentialsProvider'
 import { CredentialsProviderFactory } from './credentialsProviderFactory'
 import { makeCredentialsProviderIdComponents } from './credentialsProviderId'
 
@@ -23,8 +23,8 @@ export function getCredentialsProviderManagerInstance(): CredentialsProviderMana
 export class CredentialsProviderManager {
     private readonly providerFactories: CredentialsProviderFactory[] = []
 
-    public async getAllCredentialsProviders(): Promise<CredentialProviderChainProvider[]> {
-        const providers: CredentialProviderChainProvider[] = []
+    public async getAllCredentialsProviders(): Promise<CredentialsProvider[]> {
+        const providers: CredentialsProvider[] = []
 
         for (const factory of this.providerFactories) {
             await factory.refresh()
@@ -35,9 +35,7 @@ export class CredentialsProviderManager {
         return providers
     }
 
-    public async getCredentialsProvider(
-        credentialsProviderId: string
-    ): Promise<CredentialProviderChainProvider | undefined> {
+    public async getCredentialsProvider(credentialsProviderId: string): Promise<CredentialsProvider | undefined> {
         const credentialsType = makeCredentialsProviderIdComponents(credentialsProviderId).credentialType
 
         const factories = this.getFactories(credentialsType)

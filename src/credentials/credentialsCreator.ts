@@ -22,7 +22,7 @@ export async function createCredentials(profileName: string): Promise<AWS.Creden
     }
 
     // TODO : CC : Return provider chain + metadata instead of credentials?
-    return (await provider.getCredentialProviderChain()).resolvePromise()
+    return provider.getCredentials()
 }
 
 /**

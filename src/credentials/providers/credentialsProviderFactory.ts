@@ -3,19 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CredentialProviderChainProvider } from './credentialProviderChainProvider'
+import { CredentialsProvider } from './credentialsProvider'
 
 /**
- * Responsible for producing CredentialProviderChainProviders for a Credential Type
+ * Responsible for producing CredentialsProvider objects for a Credential Type
  */
 export interface CredentialsProviderFactory {
     getCredentialType(): string
-    listProviders(): CredentialProviderChainProvider[]
-    getProvider(credentialsProviderId: string): CredentialProviderChainProvider | undefined
+    listProviders(): CredentialsProvider[]
+    getProvider(credentialsProviderId: string): CredentialsProvider | undefined
     refresh(): Promise<void>
 }
 
-export abstract class BaseCredentialsProviderFactory<T extends CredentialProviderChainProvider>
+export abstract class BaseCredentialsProviderFactory<T extends CredentialsProvider>
     implements CredentialsProviderFactory {
     protected providers: T[] = []
     public abstract getCredentialType(): string
@@ -24,7 +24,7 @@ export abstract class BaseCredentialsProviderFactory<T extends CredentialProvide
         return [...this.providers]
     }
 
-    public getProvider(credentialsProviderId: string): CredentialProviderChainProvider | undefined {
+    public getProvider(credentialsProviderId: string): CredentialsProvider | undefined {
         for (const provider of this.providers) {
             if (provider.getCredentialsProviderId() === credentialsProviderId) {
                 return provider

@@ -12,11 +12,9 @@ import {
     updateAwsSdkLoadConfigEnvironmentVariable
 } from '../sharedCredentials'
 import { BaseCredentialsProviderFactory } from './credentialsProviderFactory'
-import { SharedCredentialsProviderChainProvider } from './sharedCredentialsProviderChainProvider'
+import { SharedCredentialsProvider } from './sharedCredentialsProvider'
 
-export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFactory<
-    SharedCredentialsProviderChainProvider
-> {
+export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFactory<SharedCredentialsProvider> {
     public static readonly CREDENTIAL_TYPE = 'profile'
 
     private readonly logger: Logger = getLogger()
@@ -64,15 +62,12 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
         await updateAwsSdkLoadConfigEnvironmentVariable()
 
         for (const profileName of allCredentialProfiles.keys()) {
-            const provider = new SharedCredentialsProviderChainProvider(profileName, allCredentialProfiles)
+            const provider = new SharedCredentialsProvider(profileName, allCredentialProfiles)
             await this.addProviderIfValid(profileName, provider)
         }
     }
 
-    private async addProviderIfValid(
-        profileName: string,
-        provider: SharedCredentialsProviderChainProvider
-    ): Promise<void> {
+    private async addProviderIfValid(profileName: string, provider: SharedCredentialsProvider): Promise<void> {
         const validationMessage = provider.validate()
         if (validationMessage) {
             this.logger.warn(
