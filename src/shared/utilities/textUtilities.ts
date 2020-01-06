@@ -16,3 +16,25 @@ export function removeAnsi(text: string): string {
         return text
     }
 }
+
+/**
+ * Hashes are not guaranteed to be stable across toolkit versions.
+ */
+export function getStringHash(text: string): number {
+    // Source: https://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript
+    if (text.length === 0) {
+        return 0
+    }
+
+    let hash: number = 0
+
+    for (let i = 0; i < text.length; i++) {
+        const charCode = text.charCodeAt(i)
+        // tslint:disable-next-line:no-bitwise
+        hash = (hash << 5) - hash + charCode
+        // tslint:disable-next-line:no-bitwise
+        hash |= 0 // Convert to 32bit integer
+    }
+
+    return hash
+}
