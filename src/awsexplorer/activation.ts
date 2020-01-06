@@ -94,14 +94,14 @@ async function registerAwsExplorerCommands(
                 outputChannel: lambdaOutputChannel,
                 onRefresh: () => awsExplorer.refresh(node.parent)
             }),
-        telemetryName: 'Command_aws.deleteLambda'
+        telemetryName: 'lambda_aws.deleteLambda'
     })
 
     registerCommand({
         command: 'aws.deleteCloudFormation',
         callback: async (node: CloudFormationStackNode) =>
             await deleteCloudFormation(() => awsExplorer.refresh(node.parent), node),
-        telemetryName: 'Command_aws.deleteCloudFormation'
+        telemetryName: 'cloudformation_aws.deleteCloudFormation'
     })
 
     registerCommand({
