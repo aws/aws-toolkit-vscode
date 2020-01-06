@@ -14,7 +14,7 @@ import { DefaultTelemetryPublisher } from './defaultTelemetryPublisher'
 import { TelemetryEvent } from './telemetryEvent'
 import { TelemetryPublisher } from './telemetryPublisher'
 import { TelemetryService } from './telemetryService'
-import { ACCOUNT_METADATA_KEY, AccountStatus, TelemetryNamespace } from './telemetryTypes'
+import { ACCOUNT_METADATA_KEY, AccountStatus } from './telemetryTypes'
 
 export class DefaultTelemetryService implements TelemetryService {
     public static readonly TELEMETRY_COGNITO_ID_KEY = 'telemetryId'
@@ -63,11 +63,10 @@ export class DefaultTelemetryService implements TelemetryService {
     public async start(): Promise<void> {
         this.record(
             {
-                namespace: TelemetryNamespace.Session,
                 createTime: this.startTime,
                 data: [
                     {
-                        name: 'start',
+                        name: 'session_start',
                         value: 0,
                         unit: 'None'
                     }
@@ -86,11 +85,10 @@ export class DefaultTelemetryService implements TelemetryService {
         const currTime = new Date()
         this.record(
             {
-                namespace: TelemetryNamespace.Session,
                 createTime: currTime,
                 data: [
                     {
-                        name: 'end',
+                        name: 'session_end',
                         value: currTime.getTime() - this.startTime.getTime(),
                         unit: 'Milliseconds'
                     }
@@ -221,8 +219,8 @@ export class DefaultTelemetryService implements TelemetryService {
 
     private injectAccountMetadata(event: TelemetryEvent, awsContext: AwsContext): TelemetryEvent {
         let accountValue: string | AccountStatus
-        if (event.namespace === TelemetryNamespace.Session) {
-            // this matches JetBrains' functionality: the AWS account ID is not set on session start.
+        // The AWS account ID is not set on session start. This matches JetBrains' functionality.
+        if (event.data.every(item => item.name === 'session_end' || item.name === 'session_start')) {
             accountValue = AccountStatus.NotApplicable
         } else {
             const account = awsContext.getCredentialAccountId()

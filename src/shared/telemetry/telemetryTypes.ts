@@ -5,11 +5,6 @@
 
 import { Unit } from './clienttelemetry'
 
-export interface TelemetryName {
-    namespace: TelemetryNamespace | OldTelemetryNamespace
-    name: string
-}
-
 export interface Datum {
     name: string
     value: number
@@ -17,19 +12,7 @@ export interface Datum {
     metadata?: Map<string, string>
 }
 
-type OldTelemetryNamespace = 'Command'
 export const ACCOUNT_METADATA_KEY = 'awsAccount'
-
-export enum TelemetryNamespace {
-    Aws = 'aws',
-    Cdk = 'cdk',
-    Cloudformation = 'cloudformation',
-    Lambda = 'lambda',
-    Project = 'project',
-    Schema = 'schemas',
-    Session = 'session',
-    VSCode = 'vscode'
-}
 
 export enum AccountStatus {
     NotApplicable = 'n/a',

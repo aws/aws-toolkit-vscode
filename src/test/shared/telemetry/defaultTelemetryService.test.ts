@@ -59,7 +59,7 @@ describe('DefaultTelemetryService', () => {
         service.telemetryEnabled = true
         service.notifyOptOutOptionMade()
         service.flushPeriod = testFlushPeriod
-        service.record({ namespace: 'name', createTime: new Date() })
+        service.record({ createTime: new Date(), data: [{ name: 'namespace', value: 1 }] })
 
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
@@ -80,7 +80,7 @@ describe('DefaultTelemetryService', () => {
         service.clearRecords()
         service.telemetryEnabled = false
         service.flushPeriod = testFlushPeriod
-        service.record({ namespace: 'name', createTime: new Date() })
+        service.record({ createTime: new Date(), data: [{ name: 'name', value: 1 }] })
 
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
@@ -96,11 +96,9 @@ describe('DefaultTelemetryService', () => {
         assert.strictEqual(service.records.length, 3)
         // events are, in order, the dummy test event, the start event, and the shutdown event
         // test event is first since we record it before starting the service
-        assert.strictEqual(service.records[0].namespace, 'name')
-        assert.strictEqual(service.records[1].namespace, 'session')
-        assert.strictEqual(service.records[1].data![0].name, 'start')
-        assert.strictEqual(service.records[2].namespace, 'session')
-        assert.strictEqual(service.records[2].data![0].name, 'end')
+        assert.strictEqual(service.records[0].data![0].name, 'name')
+        assert.strictEqual(service.records[1].data![0].name, 'session_start')
+        assert.strictEqual(service.records[2].data![0].name, 'session_end')
     })
 
     it('events automatically inject the active account id into the metadata', async () => {
@@ -111,7 +109,7 @@ describe('DefaultTelemetryService', () => {
         service.clearRecords()
         service.telemetryEnabled = false
         service.flushPeriod = testFlushPeriod
-        service.record({ namespace: 'name', createTime: new Date() })
+        service.record({ createTime: new Date(), data: [{ name: 'name', value: 1 }] })
 
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
@@ -127,7 +125,7 @@ describe('DefaultTelemetryService', () => {
         assert.strictEqual(service.records.length, 3)
         // events are, in order, the dummy test event, the start event, and the shutdown event
         // test event is first since we record it before starting the service
-        assert.strictEqual(service.records[0].namespace, 'name')
+        assert.strictEqual(service.records[0].data![0].name, 'name')
         assert.strictEqual(service.records[0].data![0].metadata!.get('awsAccount'), DEFAULT_TEST_ACCOUNT_ID)
     })
 
@@ -154,11 +152,9 @@ describe('DefaultTelemetryService', () => {
         assert.strictEqual(service.records.length, 2)
         // events are, in order, the dummy test event, the start event, and the shutdown event
         // test event is first since we record it before starting the service
-        assert.strictEqual(service.records[0].namespace, 'session')
-        assert.strictEqual(service.records[0].data![0].name, 'start')
+        assert.strictEqual(service.records[0].data![0].name, 'session_start')
         assert.strictEqual(service.records[0].data![0].metadata!.get('awsAccount'), AccountStatus.NotApplicable)
-        assert.strictEqual(service.records[1].namespace, 'session')
-        assert.strictEqual(service.records[1].data![0].name, 'end')
+        assert.strictEqual(service.records[1].data![0].name, 'session_end')
         assert.strictEqual(service.records[1].data![0].metadata!.get('awsAccount'), AccountStatus.NotApplicable)
     })
 
@@ -172,7 +168,7 @@ describe('DefaultTelemetryService', () => {
         service.clearRecords()
         service.telemetryEnabled = false
         service.flushPeriod = testFlushPeriod
-        service.record({ namespace: 'name', createTime: new Date() })
+        service.record({ createTime: new Date(), data: [{ name: 'name', value: 1 }] })
 
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
@@ -188,7 +184,7 @@ describe('DefaultTelemetryService', () => {
         assert.strictEqual(service.records.length, 3)
         // events are, in order, the dummy test event, the start event, and the shutdown event
         // test event is first since we record it before starting the service
-        assert.strictEqual(service.records[0].namespace, 'name')
+        assert.strictEqual(service.records[0].data![0].name, 'name')
         assert.strictEqual(service.records[0].data![0].metadata!.get('awsAccount'), AccountStatus.Invalid)
     })
 
@@ -200,7 +196,7 @@ describe('DefaultTelemetryService', () => {
         service.clearRecords()
         service.telemetryEnabled = false
         service.flushPeriod = testFlushPeriod
-        service.record({ namespace: 'name', createTime: new Date() })
+        service.record({ createTime: new Date(), data: [{ name: 'name', value: 1 }] })
 
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
@@ -216,7 +212,7 @@ describe('DefaultTelemetryService', () => {
         assert.strictEqual(service.records.length, 3)
         // events are, in order, the dummy test event, the start event, and the shutdown event
         // test event is first since we record it before starting the service
-        assert.strictEqual(service.records[0].namespace, 'name')
+        assert.strictEqual(service.records[0].data![0].name, 'name')
         assert.strictEqual(service.records[0].data![0].metadata!.get('awsAccount'), AccountStatus.NotSet)
     })
 
@@ -233,7 +229,7 @@ describe('DefaultTelemetryService', () => {
         assert.notStrictEqual(service.timer, undefined)
 
         // telemetry off: events are never recorded
-        service.record({ namespace: 'name', createTime: new Date() })
+        service.record({ createTime: new Date(), data: [{ name: 'name', value: 1 }] })
 
         clock.tick(testFlushPeriod + 1)
         await service.shutdown()
@@ -258,7 +254,7 @@ describe('DefaultTelemetryService', () => {
         assert.notStrictEqual(service.timer, undefined)
 
         // event recorded while decision has not been made
-        service.record({ namespace: 'name', createTime: new Date() })
+        service.record({ createTime: new Date(), data: [{ name: 'namespace', value: 1 }] })
         assert.notStrictEqual(service.records.length, 0)
 
         // user disables telemetry and events are cleared
@@ -289,7 +285,7 @@ describe('DefaultTelemetryService', () => {
         assert.notStrictEqual(service.timer, undefined)
 
         // event recorded while decision has not been made
-        service.record({ namespace: 'name', createTime: new Date() })
+        service.record({ createTime: new Date(), data: [{ name: 'namespace', value: 1 }] })
         assert.notStrictEqual(service.records.length, 0)
 
         // user enables telemetry and events are kept

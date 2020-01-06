@@ -19,7 +19,6 @@ import { ext } from '../../shared/extensionGlobals'
 import { ExtensionUtilities } from '../../shared/extensionUtilities'
 import { getLogger, Logger } from '../../shared/logger'
 import { TelemetryService } from '../../shared/telemetry/telemetryService'
-import { TelemetryNamespace } from '../../shared/telemetry/telemetryTypes'
 import { defaultMetricDatum } from '../../shared/telemetry/telemetryUtils'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
@@ -209,9 +208,8 @@ export function createMessageReceivedFunc({
 
 function recordSchemaSearchTelemetry(telemetryService: TelemetryService, action: string) {
     telemetryService.record({
-        namespace: TelemetryNamespace.Schema,
         createTime: new Date(),
-        data: [defaultMetricDatum(action)]
+        data: [defaultMetricDatum(`schemas_${action}`)]
     })
 }
 

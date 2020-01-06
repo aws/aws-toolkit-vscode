@@ -16,7 +16,7 @@ import { getLogger } from '../logger'
 import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
-import { Datum, TelemetryNamespace } from '../telemetry/telemetryTypes'
+import { Datum } from '../telemetry/telemetryTypes'
 import { registerCommand } from '../telemetry/telemetryUtils'
 import { ChannelLogger, getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
 import {
@@ -338,10 +338,7 @@ export async function initialize({
                 runtime
             })
         },
-        telemetryName: {
-            namespace: TelemetryNamespace.Lambda,
-            name: 'invokelocal'
-        }
+        telemetryName: 'lambda_invokelocal'
     })
 }
 

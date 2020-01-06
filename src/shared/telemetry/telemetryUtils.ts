@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { ext } from '../extensionGlobals'
-import { Datum, METADATA_FIELD_NAME, MetadataResult, TelemetryName } from './telemetryTypes'
+import { Datum, METADATA_FIELD_NAME, MetadataResult } from './telemetryTypes'
 
 export function defaultMetricDatum(name: string): Datum {
     return {
@@ -19,24 +19,21 @@ export function registerCommand<T>({
     command,
     thisArg,
     register = vscode.commands.registerCommand,
-    telemetryName = {
-        namespace: 'Command',
-        name: command
-    },
+    telemetryName,
     callback
 }: {
     command: string
     thisArg?: any
     register?: typeof vscode.commands.registerCommand
-    telemetryName?: TelemetryName
-    callback(...args: any[]): Promise<T & { datum?: Datum } | void>
+    telemetryName: string
+    callback(...args: any[]): Promise<(T & { datum?: Datum }) | void>
 }): vscode.Disposable {
     return register(
         command,
         async (...callbackArgs: any[]) => {
             const startTime = new Date()
             let hasException = false
-            let result: T & { datum?: Datum } | void
+            let result: (T & { datum?: Datum }) | void
 
             try {
                 result = await callback(...callbackArgs)
@@ -45,7 +42,7 @@ export function registerCommand<T>({
                 throw e
             } finally {
                 const endTime = new Date()
-                const datum = result && result.datum ? result.datum : defaultMetricDatum(telemetryName.name)
+                const datum = result && result.datum ? result.datum : defaultMetricDatum(telemetryName)
                 if (!datum.metadata) {
                     datum.metadata = new Map()
                 }
@@ -57,7 +54,6 @@ export function registerCommand<T>({
                 setMetadataIfNotExists(datum.metadata, 'duration', `${endTime.getTime() - startTime.getTime()}`)
 
                 ext.telemetry.record({
-                    namespace: telemetryName.namespace,
                     createTime: startTime,
                     data: [datum]
                 })

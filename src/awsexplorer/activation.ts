@@ -17,7 +17,6 @@ import { safeGet } from '../shared/extensionUtilities'
 import { getLogger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { ResourceFetcher } from '../shared/resourceFetcher'
-import { TelemetryNamespace } from '../shared/telemetry/telemetryTypes'
 import { registerCommand } from '../shared/telemetry/telemetryUtils'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../shared/treeview/nodes/errorNode'
@@ -67,7 +66,8 @@ async function registerAwsExplorerCommands(
         callback: async () => {
             await ext.awsContextCommands.onCommandShowRegion()
             await recordNumberOfActiveRegionsMetric(awsExplorer)
-        }
+        },
+        telemetryName: 'Command_aws.showRegion'
     })
 
     registerCommand({
@@ -75,12 +75,14 @@ async function registerAwsExplorerCommands(
         callback: async (node?: RegionNode) => {
             await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
             await recordNumberOfActiveRegionsMetric(awsExplorer)
-        }
+        },
+        telemetryName: 'Command_aws.hideRegion'
     })
 
     registerCommand({
         command: 'aws.refreshAwsExplorer',
-        callback: async () => awsExplorer.refresh()
+        callback: async () => awsExplorer.refresh(),
+        telemetryName: 'Command_aws.refreshAwsExplorer'
     })
 
     registerCommand({
@@ -92,25 +94,20 @@ async function registerAwsExplorerCommands(
                 outputChannel: lambdaOutputChannel,
                 onRefresh: () => awsExplorer.refresh(node.parent)
             }),
-        telemetryName: {
-            namespace: TelemetryNamespace.Lambda,
-            name: 'delete'
-        }
+        telemetryName: 'lambda_delete'
     })
 
     registerCommand({
         command: 'aws.deleteCloudFormation',
         callback: async (node: CloudFormationStackNode) =>
             await deleteCloudFormation(() => awsExplorer.refresh(node.parent), node),
-        telemetryName: {
-            namespace: TelemetryNamespace.Cloudformation,
-            name: 'delete'
-        }
+        telemetryName: 'cloudformation_delete'
     })
 
     registerCommand({
         command: 'aws.showErrorDetails',
-        callback: async (node: ErrorNode) => await showErrorDetails(node)
+        callback: async (node: ErrorNode) => await showErrorDetails(node),
+        telemetryName: 'Command_aws.showErrorDetails'
     })
 
     registerCommand({
@@ -122,17 +119,15 @@ async function registerAwsExplorerCommands(
                 outputChannel: lambdaOutputChannel,
                 resourceFetcher: resourceFetcher
             }),
-        telemetryName: {
-            namespace: TelemetryNamespace.Lambda,
-            name: 'invokeremote'
-        }
+        telemetryName: 'lambda_invokeremote'
     })
 
     registerCommand({
         command: 'aws.refreshAwsExplorerNode',
         callback: async (awsexplorer: AwsExplorer, element: AWSTreeNodeBase) => {
             awsexplorer.refresh(element)
-        }
+        },
+        telemetryName: 'Command_aws.refreshAwsExplorerNode'
     })
 }
 
@@ -141,9 +136,8 @@ async function recordNumberOfActiveRegionsMetric(awsExplorer: AwsExplorer) {
     const currTime = new Date()
 
     ext.telemetry.record({
-        namespace: TelemetryNamespace.VSCode,
         createTime: currTime,
-        data: [{ name: 'activeregions', value: numOfActiveRegions, unit: 'Count' }]
+        data: [{ name: 'vscode_activeregions', value: numOfActiveRegions, unit: 'Count' }]
     })
 }
 
