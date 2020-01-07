@@ -7,15 +7,10 @@ import * as handlebars from 'handlebars'
 import * as path from 'path'
 
 import { writeFile } from 'fs-extra'
-import * as vscode from 'vscode'
-import * as nls from 'vscode-nls'
 import { getConfigFilename, getCredentialsFilename } from '../../credentials/sharedCredentials'
-import { credentialHelpUrl } from '../constants'
 import { mkdir } from '../filesystem'
 import { fileExists, readFileAsString } from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
-
-const localize = nls.loadMessageBundle()
 
 /**
  * The payload used to fill in the handlebars template
@@ -88,17 +83,5 @@ export class UserCredentialsUtils {
             encoding: 'utf8',
             mode: 0o100600 // basic file (type 100) with 600 permissions
         })
-    }
-
-    public static async notifyUserCredentialsAreBad(profileName: string) {
-        const getHelp = localize('AWS.message.credentials.invalidProfile.help', 'Get Help...')
-        const selection = await vscode.window.showErrorMessage(
-            localize('AWS.message.credentials.invalidProfile', 'Credentials profile {0} is invalid', profileName),
-            getHelp
-        )
-
-        if (selection === getHelp) {
-            vscode.env.openExternal(vscode.Uri.parse(credentialHelpUrl))
-        }
     }
 }

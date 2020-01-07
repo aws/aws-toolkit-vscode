@@ -1,11 +1,15 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
+import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
+import { credentialHelpUrl } from '../shared/constants'
 import { getAccountId } from '../shared/credentials/accountId'
-import { UserCredentialsUtils } from '../shared/credentials/userCredentialsUtils'
 import { getLogger } from '../shared/logger'
 import { CredentialsStore } from './credentialsStore'
 import { CredentialsProvider } from './providers/credentialsProvider'
@@ -55,9 +59,7 @@ export class LoginManager {
 
             await this.logout()
 
-            // TODO : CC : Update this notification
-            // tslint:disable-next-line: no-floating-promises
-            UserCredentialsUtils.notifyUserCredentialsAreBad(credentialsId)
+            this.notifyUserInvalidCredentials(credentialsId)
         }
     }
 
@@ -84,5 +86,28 @@ export class LoginManager {
                 credentialsHashCode: provider.getHashCode()
             }
         })
+    }
+
+    private notifyUserInvalidCredentials(credentialProviderId: string) {
+        const getHelp = localize('AWS.message.credentials.invalid.help', 'Get Help...')
+        const viewLogs = localize('AWS.message.credentials.invalid.logs', 'View logs')
+
+        vscode.window
+            .showErrorMessage(
+                localize(
+                    'AWS.message.credentials.invalid',
+                    'Invalid Credentials {0}, see logs for more information.',
+                    credentialProviderId
+                ),
+                getHelp,
+                viewLogs
+            )
+            .then((selection: string | undefined) => {
+                if (selection === getHelp) {
+                    vscode.env.openExternal(vscode.Uri.parse(credentialHelpUrl))
+                } else if (selection === viewLogs) {
+                    vscode.commands.executeCommand('aws.viewLogs')
+                }
+            })
     }
 }
