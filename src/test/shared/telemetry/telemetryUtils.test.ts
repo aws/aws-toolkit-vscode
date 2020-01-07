@@ -52,12 +52,12 @@ describe('telemetryUtils', () => {
                             assert.notStrictEqual(mockService.lastEvent!.createTime, undefined)
                             assert.notStrictEqual(mockService.lastEvent!.data, undefined)
                             assert.notStrictEqual(mockService.lastEvent!.data![0].Metadata, undefined)
-                            assert.ok(mockService.lastEvent!.data![0].Metadata!.every(item => item.Key !== 'duration'))
+                            assert.ok(mockService.lastEvent!.data![0].Metadata!.some(item => item.Key === 'duration'))
 
                             assert.strictEqual(
                                 mockService.lastEvent!.data![0].Metadata!.find(
                                     item => item.Key === METADATA_FIELD_NAME.RESULT
-                                ),
+                                )?.Value,
                                 MetadataResult.Pass
                             )
                             assert.strictEqual(mockService.lastEvent!.data![0].MetricName, 'Command_command')
@@ -90,23 +90,14 @@ describe('telemetryUtils', () => {
                             assert.notStrictEqual(data.Metadata, undefined)
                             const metadata = data.Metadata!
 
-                            assert.notStrictEqual(
-                                metadata.find(item => item.Key === 'duration'),
-                                undefined
-                            )
+                            assert.notStrictEqual(metadata.find(item => item.Key === 'duration')?.Value, undefined)
 
                             assert.strictEqual(
-                                metadata.find(item => item.Key === METADATA_FIELD_NAME.RESULT),
+                                metadata.find(item => item.Key === METADATA_FIELD_NAME.RESULT)?.Value,
                                 MetadataResult.Pass
                             )
-                            assert.strictEqual(
-                                metadata.find(item => item.Key === 'foo'),
-                                'bar'
-                            )
-                            assert.strictEqual(
-                                metadata.find(item => item.Key === 'hitcount'),
-                                '5'
-                            )
+                            assert.strictEqual(metadata.find(item => item.Key === 'foo')?.Value, 'bar')
+                            assert.strictEqual(metadata.find(item => item.Key === 'hitcount')?.Value, '5')
 
                             assert.strictEqual(data.MetricName, 'somemetric')
                             done()
@@ -235,7 +226,7 @@ describe('telemetryUtils', () => {
                             assert.strictEqual(
                                 mockService.lastEvent!.data![0].Metadata!.find(
                                     item => item.Key === METADATA_FIELD_NAME.RESULT
-                                ),
+                                )?.Value,
                                 MetadataResult.Fail
                             )
                             assert.strictEqual(mockService.lastEvent!.data![0].MetricName, 'Command.command')

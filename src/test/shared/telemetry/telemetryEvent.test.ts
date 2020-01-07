@@ -79,7 +79,9 @@ describe('TelemetryEventArray', () => {
                     },
                     {
                         MetricName: 'namespace_event3',
-                        Value: 0.333
+                        Unit: 'Percent',
+                        Value: 0.333,
+                        Metadata: [{ Key: 'key3', Value: 'value3' }]
                     }
                 ]
             }
