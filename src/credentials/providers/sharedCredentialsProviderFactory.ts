@@ -54,7 +54,6 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
     private async loadSharedCredentialsProviders(): Promise<void> {
         this.resetProviders()
 
-        // TODO : CC : If system has config but not credentials (and no envvar defined), try writing a blank credentials file into toolkit temp. This should compensate for JS SDK ENOENT issue.
         this.logger.verbose('Loading all Shared Credentials Profiles')
         const allCredentialProfiles = await loadSharedCredentialsProfiles()
         this.loadedCredentialsModificationDate = await this.getLastModifiedTime(getCredentialsFilename())
