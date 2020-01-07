@@ -6,7 +6,19 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch Extension",
+            "name": "Extension",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
+            "env": {
+                "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true"
+            },
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "preLaunchTask": "npm: watch"
+        },
+        {
+            "name": "Extension (webpack)",
             "type": "extensionHost",
             "request": "launch",
             "runtimeExecutable": "${execPath}",
@@ -24,7 +36,7 @@
                 "--extensionTestsPath=${workspaceFolder}/dist/src/test/index.js"
             ],
             "outFiles": ["${workspaceFolder}/dist/src/test/**/*.js"],
-            "preLaunchTask": "npm: testCompile"
+            "preLaunchTask": "npm: watch"
         },
         {
             "name": "Integration Tests",
