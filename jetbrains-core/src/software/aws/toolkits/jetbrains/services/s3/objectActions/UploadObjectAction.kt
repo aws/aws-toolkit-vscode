@@ -20,7 +20,7 @@ class UploadObjectAction(
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.getRequiredData(LangDataKeys.PROJECT)
 
-        val node = treeTable.getSelectedNodes().firstOrNull() ?: return
+        val node = treeTable.getSelectedNodes().firstOrNull() ?: treeTable.getRootNode()
         val descriptor =
             FileChooserDescriptorFactory.createAllButJarContentsDescriptor().withDescription(message("s3.upload.object.action", bucket.name))
         val chooserDialog = FileChooserFactory.getInstance().createFileChooser(descriptor, project, null)
