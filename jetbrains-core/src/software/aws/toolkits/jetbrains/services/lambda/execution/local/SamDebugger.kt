@@ -48,7 +48,7 @@ internal class SamDebugger(runtimeGroup: RuntimeGroup) : SamRunner() {
             }
         })
 
-        debugExtension.createDebugProcessAsync(environment, state, debugPorts)
+        debugExtension.createDebugProcessAsync(environment, state, state.settings.debugHost, debugPorts)
             .onSuccess { debugProcessStarter ->
                 val debugManager = XDebuggerManager.getInstance(environment.project)
                 val runContentDescriptor = debugProcessStarter?.let {

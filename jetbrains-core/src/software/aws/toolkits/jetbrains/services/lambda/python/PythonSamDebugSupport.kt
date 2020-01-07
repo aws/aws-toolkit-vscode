@@ -31,6 +31,7 @@ class PythonSamDebugSupport : SamDebugSupport {
     override fun createDebugProcess(
         environment: ExecutionEnvironment,
         state: SamRunningState,
+        debugHost: String,
         debugPorts: List<Int>
     ): XDebugProcessStarter? = object : XDebugProcessStarter() {
         override fun start(session: XDebugSession): XDebugProcess {
@@ -53,7 +54,7 @@ class PythonSamDebugSupport : SamDebugSupport {
                 session,
                 executionResult.executionConsole,
                 executionResult.processHandler,
-                "localhost",
+                debugHost,
                 debugPorts.first()
             ).also {
                 it.positionConverter = PathMapper.PositionConverter(PathMapper(mappings))

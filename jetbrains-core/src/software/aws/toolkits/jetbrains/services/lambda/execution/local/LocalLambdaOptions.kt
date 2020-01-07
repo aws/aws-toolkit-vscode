@@ -17,6 +17,7 @@ class LocalLambdaOptions : BaseLambdaOptions() {
     var functionOptions = FunctionOptions()
     @get:Property(surroundWithTag = false)
     var samOptions = SamOptions()
+    var debugHost = "localhost"
 }
 
 @Tag("FunctionOptions")

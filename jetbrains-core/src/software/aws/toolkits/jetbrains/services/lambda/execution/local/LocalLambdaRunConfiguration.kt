@@ -157,7 +157,8 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
                 resolveRegion(),
                 psiElement,
                 templateDetails,
-                serializableOptions.samOptions.copy()
+                serializableOptions.samOptions.copy(),
+                serializableOptions.debugHost
             )
 
             return SamRunningState(environment, samRunSettings)
@@ -247,6 +248,12 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
 
     fun dockerNetwork(network: String?) {
         serializableOptions.samOptions.dockerNetwork = network
+    }
+
+    fun debugHost(): String = serializableOptions.debugHost
+
+    fun debugHost(host: String) {
+        serializableOptions.debugHost = host
     }
 
     fun skipPullImage(): Boolean = serializableOptions.samOptions.skipImagePull
@@ -358,7 +365,8 @@ data class LocalLambdaRunSettings(
     val region: AwsRegion,
     val handlerElement: NavigatablePsiElement,
     val templateDetails: SamTemplateDetails?,
-    val samOptions: SamOptions
+    val samOptions: SamOptions,
+    val debugHost: String
 ) {
     val runtimeGroup: RuntimeGroup = runtime.runtimeGroup
         ?: throw IllegalStateException("Attempting to run SAM for unsupported runtime $runtime")

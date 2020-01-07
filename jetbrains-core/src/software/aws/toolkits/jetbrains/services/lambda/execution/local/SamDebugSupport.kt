@@ -26,12 +26,14 @@ interface SamDebugSupport {
     fun createDebugProcessAsync(
         environment: ExecutionEnvironment,
         state: SamRunningState,
+        debugHost: String,
         debugPorts: List<Int>
-    ): Promise<XDebugProcessStarter?> = resolvedPromise(createDebugProcess(environment, state, debugPorts))
+    ): Promise<XDebugProcessStarter?> = resolvedPromise(createDebugProcess(environment, state, debugHost, debugPorts))
 
     fun createDebugProcess(
         environment: ExecutionEnvironment,
         state: SamRunningState,
+        debugHost: String,
         debugPorts: List<Int>
     ): XDebugProcessStarter?
 
