@@ -1,4 +1,4 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 package software.aws.toolkits.jetbrains.services.s3.editor
 
@@ -12,6 +12,8 @@ import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileWrapper
+import com.intellij.ui.Cell
+import com.intellij.ui.TableSpeedSearch
 import com.intellij.ui.treeStructure.treetable.TreeTable
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -28,6 +30,7 @@ import java.awt.dnd.DnDConstants
 import java.awt.dnd.DropTarget
 import java.awt.dnd.DropTargetAdapter
 import java.awt.dnd.DropTargetDropEvent
+import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
@@ -61,26 +64,33 @@ class S3TreeTable(
         }
     }
 
-    private val mouseListener = object : MouseAdapter() {
+    private val doubleClickListener = object : MouseAdapter() {
         override fun mouseClicked(e: MouseEvent) {
+            if (e.clickCount < 2 || e.button != MouseEvent.BUTTON1) {
+                return
+            }
             val row = rowAtPoint(e.point).takeIf { it >= 0 } ?: return
-            handleOpeningFile(row, e)
-            handleLoadingMore(row, e)
+            handleOpeningFile(row)
+            handleLoadingMore(row)
         }
     }
 
-    override fun processKeyEvent(e: KeyEvent?) {
-        if (e?.keyCode == KeyEvent.VK_DELETE || e?.keyCode == KeyEvent.VK_BACK_SPACE) {
+    private val keyListener = object : KeyAdapter() {
+        override fun keyTyped(e: KeyEvent) = doProcessKeyEvent(e)
+    }
+
+    private fun doProcessKeyEvent(e: KeyEvent) {
+        if (!e.isConsumed && (e.keyCode == KeyEvent.VK_DELETE || e.keyCode == KeyEvent.VK_BACK_SPACE)) {
             e.consume()
             deleteSelectedObjects(project, this@S3TreeTable)
         }
-        super.processKeyEvent(e)
+        if (e.keyCode == KeyEvent.VK_ENTER && selectedRowCount == 1) {
+            handleOpeningFile(selectedRow)
+            handleLoadingMore(selectedRow)
+        }
     }
 
-    private fun handleOpeningFile(row: Int, e: MouseEvent) {
-        if (e.clickCount < 2 || e.button != MouseEvent.BUTTON1) {
-            return
-        }
+    private fun handleOpeningFile(row: Int) {
         val objectNode = (tree.getPathForRow(row).lastPathComponent as? DefaultMutableTreeNode)?.userObject as? S3TreeObjectNode ?: return
         if (objectNode.size > S3TreeObjectNode.MAX_FILE_SIZE_TO_OPEN_IN_IDE) {
             notifyError(message("s3.open.file_too_big", StringUtil.formatFileSize(S3TreeObjectNode.MAX_FILE_SIZE_TO_OPEN_IN_IDE.toLong())))
@@ -110,10 +120,7 @@ class S3TreeTable(
         }
     }
 
-    private fun handleLoadingMore(row: Int, e: MouseEvent) {
-        if (e.clickCount < 2 || e.button != MouseEvent.BUTTON1) {
-            return
-        }
+    private fun handleLoadingMore(row: Int) {
         val continuationNode = (tree.getPathForRow(row).lastPathComponent as? DefaultMutableTreeNode)?.userObject as? S3TreeContinuationNode ?: return
         val parent = continuationNode.parent ?: return
 
@@ -126,6 +133,15 @@ class S3TreeTable(
     init {
         // Associate the drop target listener with this instance which will allow uploading by drag and drop
         DropTarget(this, dropTargetListener)
+        TableSpeedSearch(this) { obj: Any?, cell: Cell ->
+            when {
+                cell.column != 0 -> null // Only search the name column
+                obj == null -> ""
+                else -> obj.toString()
+            }
+        }
+        super.addMouseListener(doubleClickListener)
+        super.addKeyListener(keyListener)
     }
 
     fun uploadAndRefresh(selectedFiles: List<VirtualFile>, node: S3TreeNode) {
@@ -170,10 +186,6 @@ class S3TreeTable(
             clearSelection()
             treeTableModel.structureTreeModel.invalidate()
         }
-    }
-
-    init {
-        super.addMouseListener(mouseListener)
     }
 
     fun getNodeForRow(row: Int): S3TreeNode? {
