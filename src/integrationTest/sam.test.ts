@@ -307,7 +307,7 @@ describe('SAM Integration Tests', async () => {
                         Value: 1,
                         Unit: 'Count',
                         Metadata: [
-                            { Key: 'runtime', Value: 'scenario.runtime' },
+                            { Key: 'runtime', Value: scenario.runtime },
                             { Key: 'debug', Value: 'false' },
                             { Key: 'result', Value: 'Succeeded' }
                         ]
@@ -376,8 +376,8 @@ describe('SAM Integration Tests', async () => {
                         Value: 1,
                         Unit: 'Count',
                         Metadata: [
-                            { Key: 'runtime', Value: 'scenario.runtime' },
-                            { Key: 'debug', Value: 'false' },
+                            { Key: 'runtime', Value: scenario.runtime },
+                            { Key: 'debug', Value: 'true' },
                             { Key: 'result', Value: 'Succeeded' }
                         ]
                     })
