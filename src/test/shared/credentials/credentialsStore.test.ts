@@ -9,9 +9,12 @@ import { CredentialsStore } from '../../../credentials/credentialsStore'
 
 describe('CredentialsStore', async () => {
     let sandbox: sinon.SinonSandbox
+    let sut: CredentialsStore
+    const sampleCredentials = ({} as any) as AWS.Credentials
 
     beforeEach(async () => {
         sandbox = sinon.createSandbox()
+        sut = new CredentialsStore()
     })
 
     afterEach(async () => {
@@ -19,36 +22,35 @@ describe('CredentialsStore', async () => {
     })
 
     it('getCredentials returns undefined when credentials are not loaded', async () => {
-        const store = new CredentialsStore()
-
-        assert.strictEqual(await store.getCredentials('someId'), undefined)
+        assert.strictEqual(await sut.getCredentials('someId'), undefined)
     })
 
     it('getCredentialsOrCreate creates when credentials are not loaded', async () => {
-        const sampleCredentials = ({} as any) as AWS.Credentials
-        const store = new CredentialsStore()
-
-        const loadedCredentials = await store.getCredentialsOrCreate('someId', async credentialsId => {
+        const loadedCredentials = await sut.getCredentialsOrCreate('someId', async credentialsId => {
             assert.strictEqual(credentialsId, 'someId')
 
-            return sampleCredentials
+            return {
+                credentials: sampleCredentials,
+                credentialsHashCode: 0
+            }
         })
 
         assert.strictEqual(loadedCredentials, sampleCredentials)
     })
 
     it('getCredentialsOrCreate does not call create method once credentials are loaded', async () => {
-        const sampleCredentials = ({} as any) as AWS.Credentials
-        const store = new CredentialsStore()
         const fn = sandbox
             .stub()
             .onFirstCall()
-            .resolves(sampleCredentials)
+            .resolves({
+                credentials: sampleCredentials,
+                credentialsHashCode: 1234
+            })
             .onSecondCall()
             .throws('Create should not be called!')
 
-        const loadedCredentials1 = await store.getCredentialsOrCreate('someId', fn)
-        const loadedCredentials2 = await store.getCredentialsOrCreate('someId', fn)
+        const loadedCredentials1 = await sut.getCredentialsOrCreate('someId', fn)
+        const loadedCredentials2 = await sut.getCredentialsOrCreate('someId', fn)
 
         assert.strictEqual(fn.callCount, 1, 'Expected create method to be called once only')
         assert.strictEqual(loadedCredentials1, sampleCredentials)
@@ -56,22 +58,44 @@ describe('CredentialsStore', async () => {
     })
 
     it('getCredentials returns stored credentials', async () => {
-        const sampleCredentials = ({} as any) as AWS.Credentials
-        const store = new CredentialsStore()
-
-        await store.getCredentialsOrCreate('someId', async () => sampleCredentials)
-        const loadedCredentials = await store.getCredentials('someId')
+        await sut.getCredentialsOrCreate('someId', async () => {
+            return {
+                credentials: sampleCredentials,
+                credentialsHashCode: 0
+            }
+        })
+        const loadedCredentials = await sut.getCredentials('someId')
 
         assert.strictEqual(loadedCredentials, sampleCredentials)
     })
 
-    it('invalidate removes the credentials from storage', async () => {
-        const sampleCredentials = ({} as any) as AWS.Credentials
-        const store = new CredentialsStore()
+    it('getCredentialsHashCode returns stored credentials hashcode', async () => {
+        await sut.getCredentialsOrCreate('someId', async () => {
+            return {
+                credentials: sampleCredentials,
+                credentialsHashCode: 12345678
+            }
+        })
+        const hashCode = sut.getCredentialsHashCode('someId')
 
-        await store.getCredentialsOrCreate('someId', async () => sampleCredentials)
-        store.invalidateCredentials('someId')
-        const loadedCredentials = await store.getCredentials('someId')
+        assert.strictEqual(hashCode, 12345678)
+    })
+
+    it('getCredentialsHashCode returns undefined when no credentials are stored', async () => {
+        const hashCode = sut.getCredentialsHashCode('someId')
+
+        assert.strictEqual(hashCode, undefined)
+    })
+
+    it('invalidate removes the credentials from storage', async () => {
+        await sut.getCredentialsOrCreate('someId', async () => {
+            return {
+                credentials: sampleCredentials,
+                credentialsHashCode: 0
+            }
+        })
+        sut.invalidateCredentials('someId')
+        const loadedCredentials = await sut.getCredentials('someId')
 
         assert.strictEqual(loadedCredentials, undefined)
     })

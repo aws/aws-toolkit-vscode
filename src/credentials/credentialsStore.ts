@@ -5,11 +5,16 @@
 
 import * as AWS from 'aws-sdk'
 
+interface CredentialsData {
+    credentials: AWS.Credentials
+    credentialsHashCode: number
+}
+
 /**
  * Simple cache for credentials
  */
 export class CredentialsStore {
-    private readonly credentialsCache: { [key: string]: AWS.Credentials }
+    private readonly credentialsCache: { [key: string]: CredentialsData }
 
     public constructor() {
         this.credentialsCache = {}
@@ -19,7 +24,7 @@ export class CredentialsStore {
      * Returns undefined if credentials are not stored for given ID
      */
     public async getCredentials(credentialsId: string): Promise<AWS.Credentials | undefined> {
-        return this.credentialsCache[credentialsId]
+        return this.credentialsCache[credentialsId]?.credentials
     }
 
     /**
@@ -27,18 +32,25 @@ export class CredentialsStore {
      */
     public async getCredentialsOrCreate(
         credentialsId: string,
-        createCredentialsFn: (credentialsId: string) => Promise<AWS.Credentials>
+        createCredentialsFn: (credentialsId: string) => Promise<CredentialsData>
     ): Promise<AWS.Credentials> {
-        let credentials = await this.getCredentials(credentialsId)
+        const credentials = await this.getCredentials(credentialsId)
 
         if (credentials) {
             return credentials
         }
 
-        credentials = await createCredentialsFn(credentialsId)
-        this.credentialsCache[credentialsId] = credentials
+        const newCredentials = await createCredentialsFn(credentialsId)
+        this.credentialsCache[credentialsId] = newCredentials
 
-        return credentials
+        return newCredentials.credentials
+    }
+
+    /**
+     * Returns undefined if credentials are not stored for given ID
+     */
+    public getCredentialsHashCode(credentialsId: string): number | undefined {
+        return this.credentialsCache[credentialsId]?.credentialsHashCode
     }
 
     /**

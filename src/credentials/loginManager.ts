@@ -7,8 +7,9 @@ import { AwsContext } from '../shared/awsContext'
 import { getAccountId } from '../shared/credentials/accountId'
 import { UserCredentialsUtils } from '../shared/credentials/userCredentialsUtils'
 import { getLogger } from '../shared/logger'
-import { createCredentials } from './credentialsCreator'
 import { CredentialsStore } from './credentialsStore'
+import { CredentialsProvider } from './providers/credentialsProvider'
+import { getCredentialsProviderManagerInstance } from './providers/credentialsProviderManager'
 
 export class LoginManager {
     private readonly credentialsStore: CredentialsStore = new CredentialsStore()
@@ -21,15 +22,20 @@ export class LoginManager {
      */
     public async login(credentialsId: string): Promise<void> {
         try {
-            // TODO : CC : Invalidate credentials when their hash changes
-            const credentials = await this.credentialsStore.getCredentialsOrCreate(credentialsId, createCredentials)
+            const provider = await getCredentialsProviderManagerInstance().getCredentialsProvider(credentialsId)
+            if (!provider) {
+                throw new Error(`Could not find Credentials Provider for ${credentialsId}`)
+            }
+
+            await this.updateCredentialsStore(credentialsId, provider)
+
+            const credentials = await this.credentialsStore.getCredentials(credentialsId)
             if (!credentials) {
                 throw new Error(`No credentials found for id ${credentialsId}`)
             }
 
             // TODO : Get a region relevant to the partition for these credentials -- https://github.com/aws/aws-toolkit-vscode/issues/188
             const accountId = await getAccountId(credentials, 'us-east-1')
-
             if (!accountId) {
                 throw new Error('Could not determine Account Id for credentials')
             }
@@ -38,7 +44,7 @@ export class LoginManager {
                 credentials: credentials,
                 credentialsId: credentialsId,
                 accountId: accountId,
-                defaultRegion: 'us-east-1' // TODO : CC : Get CredentialProvider DefaultRegion
+                defaultRegion: provider.getDefaultRegion()
             })
         } catch (err) {
             getLogger().error(
@@ -49,6 +55,7 @@ export class LoginManager {
 
             await this.logout()
 
+            // TODO : CC : Update this notification
             // tslint:disable-next-line: no-floating-promises
             UserCredentialsUtils.notifyUserCredentialsAreBad(credentialsId)
         }
@@ -59,5 +66,23 @@ export class LoginManager {
      */
     public async logout(): Promise<void> {
         await this.awsContext.setCredentials(undefined)
+    }
+
+    /**
+     * Updates the CredentialsStore if the credentials are considered different
+     */
+    private async updateCredentialsStore(credentialsId: string, provider: CredentialsProvider): Promise<void> {
+        const currentHash = this.credentialsStore.getCredentialsHashCode(credentialsId)
+        if (provider.getHashCode() !== currentHash) {
+            getLogger().verbose(`Credentials for ${credentialsId} have changed, using updated credentials.`)
+            this.credentialsStore.invalidateCredentials(credentialsId)
+        }
+
+        await this.credentialsStore.getCredentialsOrCreate(credentialsId, async () => {
+            return {
+                credentials: await provider.getCredentials(),
+                credentialsHashCode: provider.getHashCode()
+            }
+        })
     }
 }

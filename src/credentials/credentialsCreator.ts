@@ -6,24 +6,12 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import * as AWS from 'aws-sdk'
 import * as vscode from 'vscode'
-import { getCredentialsProviderManagerInstance } from './providers/credentialsProviderManager'
 
 const ERROR_MESSAGE_USER_CANCELLED = localize(
     'AWS.error.mfa.userCancelled',
     'User cancelled entering authentication code'
 )
-
-export async function createCredentials(profileName: string): Promise<AWS.Credentials> {
-    const provider = await getCredentialsProviderManagerInstance().getCredentialsProvider(profileName)
-    if (!provider) {
-        throw new Error(`Could not find Credentials Provider for ${profileName}`)
-    }
-
-    // TODO : CC : Return provider chain + metadata instead of credentials?
-    return provider.getCredentials()
-}
 
 /**
  * @description Prompts user for MFA token

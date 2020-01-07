@@ -5,8 +5,9 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import * as credentialsCreator from '../../../credentials/credentialsCreator'
 import { LoginManager } from '../../../credentials/loginManager'
+import { CredentialsProvider } from '../../../credentials/providers/credentialsProvider'
+import { getCredentialsProviderManagerInstance } from '../../../credentials/providers/credentialsProviderManager'
 import { AwsContext } from '../../../shared/awsContext'
 import * as accountId from '../../../shared/credentials/accountId'
 
@@ -21,15 +22,25 @@ describe('LoginManager', async () => {
     const sampleCredentials = ({} as any) as AWS.Credentials
 
     let loginManager: LoginManager
+    let credentialsProvider: CredentialsProvider
     let getAccountIdStub: sinon.SinonStub<[AWS.Credentials, string], Promise<string | undefined>>
-    let createCredentialsStub: sinon.SinonStub<[string], Promise<AWS.Credentials>>
+    let getCredentialsProviderStub: sinon.SinonStub<[string], Promise<CredentialsProvider | undefined>>
 
     beforeEach(async () => {
         sandbox = sinon.createSandbox()
 
         loginManager = new LoginManager(awsContext)
+        credentialsProvider = {
+            getCredentials: sandbox.stub().resolves(sampleCredentials),
+            getCredentialsProviderId: sandbox.stub().returns('someId'),
+            getDefaultRegion: sandbox.stub().returns('someRegion'),
+            getHashCode: sandbox.stub().returns('1234')
+        }
+
         getAccountIdStub = sandbox.stub(accountId, 'getAccountId')
-        createCredentialsStub = sandbox.stub(credentialsCreator, 'createCredentials')
+        getAccountIdStub.resolves('AccountId1234')
+        getCredentialsProviderStub = sandbox.stub(getCredentialsProviderManagerInstance(), 'getCredentialsProvider')
+        getCredentialsProviderStub.resolves(credentialsProvider)
     })
 
     afterEach(async () => {
@@ -37,8 +48,6 @@ describe('LoginManager', async () => {
     })
 
     it('logs in with credentials (happy path)', async () => {
-        createCredentialsStub.resolves(sampleCredentials)
-        getAccountIdStub.resolves('AccountId1234')
         const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials')
 
         await loginManager.login('someId')
@@ -46,8 +55,6 @@ describe('LoginManager', async () => {
     })
 
     it('logs out (happy path)', async () => {
-        createCredentialsStub.resolves(sampleCredentials)
-        getAccountIdStub.resolves('AccountId1234')
         const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials')
 
         await loginManager.login('someId')
@@ -56,7 +63,8 @@ describe('LoginManager', async () => {
     })
 
     it('logs out if credentials could not be retrieved', async () => {
-        createCredentialsStub.resolves(undefined)
+        getCredentialsProviderStub.reset()
+        getCredentialsProviderStub.resolves(undefined)
         const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials').callsFake(async credentials => {
             // Verify that logout is called
             assert.strictEqual(credentials, undefined)
@@ -67,7 +75,7 @@ describe('LoginManager', async () => {
     })
 
     it('logs out if an account Id could not be determined', async () => {
-        createCredentialsStub.resolves(sampleCredentials)
+        getAccountIdStub.reset()
         getAccountIdStub.resolves(undefined)
         const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials').callsFake(async credentials => {
             // Verify that logout is called
@@ -79,7 +87,7 @@ describe('LoginManager', async () => {
     })
 
     it('logs out if getting an account Id throws an Error', async () => {
-        createCredentialsStub.resolves(sampleCredentials)
+        getAccountIdStub.reset()
         getAccountIdStub.throws('Simulating getAccountId throwing an Error')
         const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials').callsFake(async credentials => {
             // Verify that logout is called
