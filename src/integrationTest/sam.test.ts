@@ -17,7 +17,7 @@ import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { fileExists } from '../shared/filesystemUtilities'
 import { getLogger } from '../shared/logger'
 import { WinstonToolkitLogger } from '../shared/logger/winstonToolkitLogger'
-import { Datum } from '../shared/telemetry/telemetryTypes'
+import { MetricDatum } from '../shared/telemetry/clienttelemetry'
 import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep, TIMEOUT } from './integrationTestsUtilities'
 
 const projectFolder = getTestWorkspaceFolder()
@@ -30,7 +30,7 @@ interface TestScenario {
 }
 
 interface LocalInvokeCodeLensCommandResult {
-    datum: Datum
+    datum: MetricDatum
 }
 
 // When testing additional runtimes, consider pulling the docker container in buildspec\linuxIntegrationTests.yml
@@ -124,12 +124,12 @@ function validateLocalInvokeResult(
     actualResult: LocalInvokeCodeLensCommandResult,
     expectedResult: LocalInvokeCodeLensCommandResult
 ) {
-    assert.strictEqual(actualResult.datum.name, expectedResult.datum.name)
-    assert.strictEqual(actualResult.datum.value, expectedResult.datum.value)
-    assert.strictEqual(actualResult.datum.unit, expectedResult.datum.unit)
+    assert.strictEqual(actualResult.datum.MetricName, expectedResult.datum.MetricName)
+    assert.strictEqual(actualResult.datum.Value, expectedResult.datum.Value)
+    assert.strictEqual(actualResult.datum.Unit, expectedResult.datum.Unit)
 
-    expectedResult.datum.metadata!.forEach((value, key) => {
-        assert.strictEqual(actualResult.datum.metadata!.get(key), value)
+    expectedResult.datum.Metadata!.forEach((key, entry) => {
+        assert.strictEqual(actualResult.datum.Metadata![entry], key)
     })
 }
 
@@ -310,14 +310,14 @@ describe('SAM Integration Tests', async () => {
                     assert.ok(runResult, 'expected to get invoke results back')
                     validateLocalInvokeResult(runResult!, {
                         datum: {
-                            name: 'invokelocal',
-                            value: 1,
-                            unit: 'Count',
-                            metadata: new Map([
-                                ['runtime', scenario.runtime],
-                                ['debug', 'false'],
-                                ['result', 'Succeeded']
-                            ])
+                            MetricName: 'invokelocal',
+                            Value: 1,
+                            Unit: 'Count',
+                            Metadata: [
+                                { Key: 'runtime', Value: 'scenario.runtime' },
+                                { Key: 'debug', Value: 'false' },
+                                { Key: 'result', Value: 'Succeeded' }
+                            ]
                         }
                     })
                 }).timeout(TIMEOUT)
@@ -381,14 +381,14 @@ describe('SAM Integration Tests', async () => {
                     assert.ok(runResult, 'expected to get invoke results back')
                     validateLocalInvokeResult(runResult!, {
                         datum: {
-                            name: 'invokelocal',
-                            value: 1,
-                            unit: 'Count',
-                            metadata: new Map([
-                                ['runtime', scenario.runtime],
-                                ['debug', 'true'],
-                                ['result', 'Succeeded']
-                            ])
+                            MetricName: 'invokelocal',
+                            Value: 1,
+                            Unit: 'Count',
+                            Metadata: [
+                                { Key: 'runtime', Value: 'scenario.runtime' },
+                                { Key: 'debug', Value: 'false' },
+                                { Key: 'result', Value: 'Succeeded' }
+                            ]
                         }
                     })
 

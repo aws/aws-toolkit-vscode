@@ -15,21 +15,21 @@ describe('TelemetryEventArray', () => {
                     createTime: new Date(),
                     data: [
                         {
-                            name: 'namespace',
-                            value: 1
+                            MetricName: 'namespace',
+                            Value: 1
                         },
                         {
-                            name: 'namespace_even#t1',
-                            value: 1
+                            MetricName: 'namespace_even#t1',
+                            Value: 1
                         },
                         {
-                            name: 'namespace_event:2',
-                            value: 0.5,
-                            unit: 'Percent',
-                            metadata: new Map([
-                                ['key', 'value'],
-                                ['key2', 'value2']
-                            ])
+                            MetricName: 'namespace_event:2',
+                            Value: 0.5,
+                            Unit: 'Percent',
+                            metadata: [
+                                { Key: 'key', Value: 'value' },
+                                { Key: 'key2', Value: 'value2' }
+                            ]
                         }
                     ]
                 }
@@ -48,7 +48,7 @@ describe('TelemetryEventArray', () => {
             const eventArray = []
             const metricEvent = {
                 createTime: new Date(),
-                data: [{ name: 'namespace', value: 1 }]
+                data: [{ MetricName: 'namespace', Value: 1 }]
             }
             eventArray.push(metricEvent)
             const data = toMetricData(eventArray)
@@ -65,23 +65,21 @@ describe('TelemetryEventArray', () => {
                 createTime: new Date(),
                 data: [
                     {
-                        name: 'namespace_event1',
-                        value: 1
+                        MetricName: 'namespace_event1',
+                        Value: 1
                     },
                     {
-                        name: 'namespace_event2',
-                        value: 0.5,
-                        unit: 'Percent',
-                        metadata: new Map([
-                            ['key', 'value'],
-                            ['key2', 'value2']
-                        ])
+                        MetricName: 'namespace_event2',
+                        Value: 0.5,
+                        Unit: 'Percent',
+                        Metadata: [
+                            { Key: 'key', Value: 'value' },
+                            { Key: 'key2', Value: 'value2' }
+                        ]
                     },
                     {
-                        name: 'namespace_event3',
-                        value: 0.333,
-                        unit: 'Percent',
-                        metadata: new Map([['key3', 'value3']])
+                        MetricName: 'namespace_event3',
+                        Value: 0.333
                     }
                 ]
             }

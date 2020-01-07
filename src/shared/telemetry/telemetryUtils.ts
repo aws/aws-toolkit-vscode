@@ -5,13 +5,14 @@
 
 import * as vscode from 'vscode'
 import { ext } from '../extensionGlobals'
-import { Datum, METADATA_FIELD_NAME, MetadataResult } from './telemetryTypes'
+import { Metadata, MetricDatum } from './clienttelemetry'
+import { METADATA_FIELD_NAME, MetadataResult } from './telemetryTypes'
 
-export function defaultMetricDatum(name: string): Datum {
+export function defaultMetricDatum(name: string): MetricDatum {
     return {
-        name: name,
-        unit: 'Count',
-        value: 1
+        MetricName: name,
+        Unit: 'Count',
+        Value: 1
     }
 }
 
@@ -26,14 +27,14 @@ export function registerCommand<T>({
     thisArg?: any
     register?: typeof vscode.commands.registerCommand
     telemetryName: string
-    callback(...args: any[]): Promise<(T & { datum?: Datum }) | void>
+    callback(...args: any[]): Promise<(T & { datum?: MetricDatum }) | void>
 }): vscode.Disposable {
     return register(
         command,
         async (...callbackArgs: any[]) => {
             const startTime = new Date()
             let hasException = false
-            let result: (T & { datum?: Datum }) | void
+            let result: (T & { datum?: MetricDatum }) | void
 
             try {
                 result = await callback(...callbackArgs)
@@ -43,15 +44,15 @@ export function registerCommand<T>({
             } finally {
                 const endTime = new Date()
                 const datum = result && result.datum ? result.datum : defaultMetricDatum(telemetryName)
-                if (!datum.metadata) {
-                    datum.metadata = new Map()
+                if (!datum.Metadata) {
+                    datum.Metadata = []
                 }
                 setMetadataIfNotExists(
-                    datum.metadata,
+                    datum.Metadata,
                     METADATA_FIELD_NAME.RESULT,
                     hasException ? MetadataResult.Fail.toString() : MetadataResult.Pass.toString()
                 )
-                setMetadataIfNotExists(datum.metadata, 'duration', `${endTime.getTime() - startTime.getTime()}`)
+                setMetadataIfNotExists(datum.Metadata, 'duration', `${endTime.getTime() - startTime.getTime()}`)
 
                 ext.telemetry.record({
                     createTime: startTime,
@@ -65,8 +66,8 @@ export function registerCommand<T>({
     )
 }
 
-function setMetadataIfNotExists(metadata: Map<string, string>, key: string, value: string) {
-    if (!metadata.has(key)) {
-        metadata.set(key, value)
+function setMetadataIfNotExists(metadata: Metadata, key: string, value: string) {
+    if (!metadata.find(item => item.Key === key)) {
+        metadata.push({ Key: key, Value: value })
     }
 }

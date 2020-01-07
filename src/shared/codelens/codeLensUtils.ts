@@ -12,8 +12,8 @@ import { getLogger } from '../logger'
 import { SamCliProcessInvoker } from '../sam/cli/samCliInvokerUtils'
 import { SamLocalInvokeCommand } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
+import { MetricDatum } from '../telemetry/clienttelemetry'
 import { TelemetryService } from '../telemetry/telemetryService'
-import { Datum } from '../telemetry/telemetryTypes'
 import { defaultMetricDatum } from '../telemetry/telemetryUtils'
 import { localize } from '../utilities/vsCodeUtils'
 
@@ -135,11 +135,14 @@ function makeConfigureCodeLens({
     return new vscode.CodeLens(range, command)
 }
 
-export function getMetricDatum({ isDebug, runtime }: { isDebug: boolean; runtime: string }): { datum: Datum } {
+export function getMetricDatum({ isDebug, runtime }: { isDebug: boolean; runtime: string }): { datum: MetricDatum } {
     return {
         datum: {
             ...defaultMetricDatum('invokelocal'),
-            metadata: new Map([['runtime', runtime], ['debug', `${isDebug}`]])
+            Metadata: [
+                { Key: 'runtime', Value: 'runtime' },
+                { Key: 'debug', Value: `${isDebug}` }
+            ]
         }
     }
 }
