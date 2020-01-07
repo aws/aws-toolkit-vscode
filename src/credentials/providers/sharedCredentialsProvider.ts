@@ -6,6 +6,7 @@
 import * as AWS from 'aws-sdk'
 import { Profile } from '../../shared/credentials/credentialsFile'
 import { getLogger } from '../../shared/logger'
+import { getStringHash } from '../../shared/utilities/textUtilities'
 import { getMfaTokenFromUser } from '../credentialsCreator'
 import { CredentialsProvider } from './credentialsProvider'
 import { makeCredentialsProviderId } from './credentialsProviderId'
@@ -49,8 +50,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     }
 
     public getHashCode(): number {
-        // TODO : CC : Implement this
-        return 0
+        return getStringHash(JSON.stringify(this.profile))
     }
 
     public getDefaultRegion(): string | undefined {
