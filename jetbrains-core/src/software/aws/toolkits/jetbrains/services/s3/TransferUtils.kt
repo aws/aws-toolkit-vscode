@@ -85,12 +85,7 @@ fun S3Client.download(
 ): CompletionStage<GetObjectResponse> {
     val future = CompletableFuture<GetObjectResponse>()
     val request = GetObjectRequest.builder().bucket(bucket).key(key).build()
-    ProgressManager.getInstance().run(object : Task.Backgroundable(
-        project,
-        message ?: message("s3.download.object.progress", key.substringAfterLast("/")),
-        true,
-        if (startInBackground) ALWAYS_BACKGROUND else null
-    ) {
+    ProgressManager.getInstance().run(object : Task.Backgroundable(project, message, true, if (startInBackground) ALWAYS_BACKGROUND else null) {
         override fun run(indicator: ProgressIndicator) {
             try {
                 this@download.getObject(request) { response, inputStream ->
