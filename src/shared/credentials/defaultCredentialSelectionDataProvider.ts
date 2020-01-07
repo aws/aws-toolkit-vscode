@@ -30,7 +30,7 @@ interface ProfileEntry {
 export class DefaultCredentialSelectionDataProvider implements CredentialSelectionDataProvider {
     private static readonly defaultCredentialsProfileName: string = makeCredentialsProviderId({
         credentialType: SharedCredentialsProviderFactory.CREDENTIAL_TYPE,
-        providerId: 'default'
+        credentialTypeId: 'default'
     })
 
     private readonly _credentialsMru: CredentialsProfileMru

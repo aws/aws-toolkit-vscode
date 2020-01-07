@@ -45,7 +45,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     public getCredentialsProviderId(): string {
         return makeCredentialsProviderId({
             credentialType: SharedCredentialsProvider.CREDENTIALS_TYPE,
-            providerId: this.profileName
+            credentialTypeId: this.profileName
         })
     }
 

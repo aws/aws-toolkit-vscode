@@ -7,7 +7,7 @@ const CREDENTIALS_PROVIDER_ID_SEPARATOR = ':'
 
 export interface CredentialsProviderIdComponents {
     credentialType: string
-    providerId: string
+    credentialTypeId: string
 }
 
 export function makeCredentialsProviderIdComponents(credentialsProviderId: string): CredentialsProviderIdComponents {
@@ -19,12 +19,12 @@ export function makeCredentialsProviderIdComponents(credentialsProviderId: strin
 
     return {
         credentialType: chunks[0],
-        providerId: chunks[1]
+        credentialTypeId: chunks[1]
     }
 }
 
 export function makeCredentialsProviderId(credentialsProviderIdComponents: CredentialsProviderIdComponents): string {
-    return [credentialsProviderIdComponents.credentialType, credentialsProviderIdComponents.providerId].join(
+    return [credentialsProviderIdComponents.credentialType, credentialsProviderIdComponents.credentialTypeId].join(
         CREDENTIALS_PROVIDER_ID_SEPARATOR
     )
 }
