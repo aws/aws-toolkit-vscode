@@ -11,6 +11,7 @@ export interface TelemetryEvent {
     createTime: Date
     data: MetricDatum[]
 }
+
 export function toMetricData(array: TelemetryEvent[]): MetricDatum[] {
     return ([] as MetricDatum[]).concat(
         ...array

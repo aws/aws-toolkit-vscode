@@ -29,10 +29,6 @@ interface TestScenario {
     language: Language
 }
 
-interface LocalInvokeCodeLensCommandResult {
-    datum: MetricDatum
-}
-
 // When testing additional runtimes, consider pulling the docker container in buildspec\linuxIntegrationTests.yml
 // to reduce the chance of automated tests timing out.
 const scenarios: TestScenario[] = [
@@ -120,16 +116,13 @@ async function closeAllEditors(): Promise<void> {
     await vscode.commands.executeCommand('workbench.action.closeAllEditors')
 }
 
-function validateLocalInvokeResult(
-    actualResult: LocalInvokeCodeLensCommandResult,
-    expectedResult: LocalInvokeCodeLensCommandResult
-) {
-    assert.strictEqual(actualResult.datum.MetricName, expectedResult.datum.MetricName)
-    assert.strictEqual(actualResult.datum.Value, expectedResult.datum.Value)
-    assert.strictEqual(actualResult.datum.Unit, expectedResult.datum.Unit)
+function validateLocalInvokeResult(actualResult: MetricDatum, expectedResult: MetricDatum) {
+    assert.strictEqual(actualResult.MetricName, expectedResult.MetricName)
+    assert.strictEqual(actualResult.Value, expectedResult.Value)
+    assert.strictEqual(actualResult.Unit, expectedResult.Unit)
 
-    expectedResult.datum.Metadata!.forEach((key, entry) => {
-        assert.strictEqual(actualResult.datum.Metadata![entry], key)
+    expectedResult.Metadata!.forEach((key, entry) => {
+        assert.strictEqual(actualResult.Metadata![entry], key)
     })
 }
 
@@ -303,22 +296,21 @@ describe('SAM Integration Tests', async () => {
                     const codeLens = await getRunLocalCodeLens(samAppCodeUri, scenario.language)
                     assert.ok(codeLens, 'expected to find a CodeLens')
 
-                    const runResult = await vscode.commands.executeCommand<LocalInvokeCodeLensCommandResult>(
+                    // tslint:disable-next-line: no-unsafe-any
+                    const runResult = ((await vscode.commands.executeCommand<any>(
                         codeLens.command!.command,
                         ...codeLens.command!.arguments!
-                    )
+                    )) as any).datum as MetricDatum
                     assert.ok(runResult, 'expected to get invoke results back')
                     validateLocalInvokeResult(runResult!, {
-                        datum: {
-                            MetricName: 'invokelocal',
-                            Value: 1,
-                            Unit: 'Count',
-                            Metadata: [
-                                { Key: 'runtime', Value: 'scenario.runtime' },
-                                { Key: 'debug', Value: 'false' },
-                                { Key: 'result', Value: 'Succeeded' }
-                            ]
-                        }
+                        MetricName: 'invokelocal',
+                        Value: 1,
+                        Unit: 'Count',
+                        Metadata: [
+                            { Key: 'runtime', Value: 'scenario.runtime' },
+                            { Key: 'debug', Value: 'false' },
+                            { Key: 'result', Value: 'Succeeded' }
+                        ]
                     })
                 }).timeout(TIMEOUT)
 
@@ -374,22 +366,20 @@ describe('SAM Integration Tests', async () => {
                         )
                     })
 
-                    const runResult = await vscode.commands.executeCommand<LocalInvokeCodeLensCommandResult>(
+                    const runResult = ((await vscode.commands.executeCommand<any>(
                         codeLens.command!.command,
                         ...codeLens.command!.arguments!
-                    )
+                    )) as any).datum as MetricDatum
                     assert.ok(runResult, 'expected to get invoke results back')
                     validateLocalInvokeResult(runResult!, {
-                        datum: {
-                            MetricName: 'invokelocal',
-                            Value: 1,
-                            Unit: 'Count',
-                            Metadata: [
-                                { Key: 'runtime', Value: 'scenario.runtime' },
-                                { Key: 'debug', Value: 'false' },
-                                { Key: 'result', Value: 'Succeeded' }
-                            ]
-                        }
+                        MetricName: 'invokelocal',
+                        Value: 1,
+                        Unit: 'Count',
+                        Metadata: [
+                            { Key: 'runtime', Value: 'scenario.runtime' },
+                            { Key: 'debug', Value: 'false' },
+                            { Key: 'result', Value: 'Succeeded' }
+                        ]
                     })
 
                     await debugSessionStartedAndStoppedPromise
