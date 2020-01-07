@@ -1,3 +1,15 @@
+# _1.10_ (2020-01-07)
+- **(Breaking Change)** Minimum SAM CLI version has been increased to 0.38.0
+- **(Breaking Change)** Remove the Lambda nodes underneath of the CloudFromation stack in the explorer
+- **(Feature)** Add S3 node and S3 Browser:
+  - Browse files and folders in a tree view
+  - Drag and drop upload
+  - Double click to open files directly in the IDE
+- **(Feature)** Add support for NodeJS 12 SAM/Lambdas
+- **(Feature)** Add support for Java 11 SAM/Lambda
+- **(Feature)** Add support for Java 11 SAM/Lambdas
+- **(Bug Fix)** Profile name restrictions has been relaxed to allow `.`, `%`, `@`. amd `/`
+
 # _1.9_ (2019-12-02)
 - **(Feature)** Added support for Amazon EventBridge schema registry, making it easy to discover and write code for events in EventBridge.
 

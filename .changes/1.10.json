@@ -1,0 +1,26 @@
+{
+  "date" : "2020-01-07",
+  "version" : "1.10",
+  "entries" : [ {
+    "type" : "breaking",
+    "description" : "Minimum SAM CLI version has been increased to 0.38.0"
+  }, {
+    "type" : "breaking",
+    "description" : "Remove the Lambda nodes underneath of the CloudFromation stack in the explorer"
+  }, {
+    "type" : "feature",
+    "description" : "Add S3 node and S3 Browser:\n- Browse files and folders in a tree view\n- Drag and drop upload\n- Double click to open files directly in the IDE"
+  }, {
+    "type" : "feature",
+    "description" : "Add support for NodeJS 12 SAM/Lambdas"
+  }, {
+    "type" : "feature",
+    "description" : "Add support for Java 11 SAM/Lambda"
+  }, {
+    "type" : "feature",
+    "description" : "Add support for Java 11 SAM/Lambdas"
+  }, {
+    "type" : "bugfix",
+    "description" : "Profile name restrictions has been relaxed to allow `.`, `%`, `@`. amd `/`"
+  } ]
+}

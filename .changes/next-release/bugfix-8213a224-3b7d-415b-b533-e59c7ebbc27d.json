@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Profile name restrictions has been relaxed to allow `.`, `%`, `@`. amd `/`"
-}

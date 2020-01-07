@@ -1,4 +1,0 @@
-{
-  "type" : "breaking",
-  "description" : "Remove the Lambda nodes underneath of the CloudFromation stack in the explorer"
-}

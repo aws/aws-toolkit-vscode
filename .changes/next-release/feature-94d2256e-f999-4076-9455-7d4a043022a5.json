@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Add S3 node and S3 Browser:\n- Browse files and folders in a tree view\n- Drag and drop upload\n- Double click to open files directly in the IDE"
-}
