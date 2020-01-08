@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-const CREDENTIALS_PROVIDER_ID_SEPARATOR = ':'
+export const CREDENTIALS_PROVIDER_ID_SEPARATOR = ':'
 
 export interface CredentialsProviderIdComponents {
     credentialType: string
