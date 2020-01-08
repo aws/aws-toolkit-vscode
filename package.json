@@ -465,7 +465,7 @@
         "buildScripts": "npm run bundleDeps && npm run copyNonCodeFiles && npm run generateNonCodeFiles",
         "compile": "webpack --mode development && npm run buildScripts",
         "recompile": "npm run clean && npm run compile",
-        "watch": "npm run buildScripts && webpack --mode development --watch",
+        "watch": "npm run buildScripts && tsc -watch -p ./",
         "postinstall": "ts-node ./build-scripts/generateServiceClient.ts",
         "testCompile": "tsc -p ./ && npm run buildScripts",
         "test": "npm run testCompile && ts-node ./test-scripts/test.ts",
