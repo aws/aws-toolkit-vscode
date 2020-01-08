@@ -20,8 +20,8 @@ import * as pyLensProvider from '../codelens/pythonCodeLensProvider'
 import * as tsLensProvider from '../codelens/typescriptCodeLensProvider'
 import { RegionProvider } from '../regions/regionProvider'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
+import { MetricDatum } from '../telemetry/clienttelemetry'
 import { TelemetryService } from '../telemetry/telemetryService'
-import { Datum } from '../telemetry/telemetryTypes'
 import { defaultMetricDatum, registerCommand } from '../telemetry/telemetryUtils'
 import { PromiseSharer } from '../utilities/promiseUtilities'
 import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
@@ -95,13 +95,13 @@ async function registerServerlessCommands(params: {
     params.extensionContext.subscriptions.push(
         registerCommand({
             command: 'aws.lambda.createNewSamApp',
-            callback: async (): Promise<{ datum: Datum }> => {
+            callback: async (): Promise<{ datum: MetricDatum }> => {
                 const createNewSamApplicationResults: CreateNewSamApplicationResults = await createNewSamApplication(
                     params.channelLogger
                 )
                 const datum = defaultMetricDatum('new')
-                datum.metadata = new Map()
-                applyResultsToMetadata(createNewSamApplicationResults, datum.metadata)
+                datum.Metadata = []
+                applyResultsToMetadata(createNewSamApplicationResults, datum.Metadata)
 
                 return {
                     datum

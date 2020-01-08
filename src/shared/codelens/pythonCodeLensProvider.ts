@@ -16,7 +16,7 @@ import { getLogger } from '../logger'
 import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
-import { Datum } from '../telemetry/telemetryTypes'
+import { MetricDatum } from '../telemetry/clienttelemetry'
 import { registerCommand } from '../telemetry/telemetryUtils'
 import { ChannelLogger, getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
 import {
@@ -321,7 +321,7 @@ export async function initialize({
     const command = getInvokeCmdKey('python')
     registerCommand({
         command,
-        callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: Datum }> => {
+        callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: MetricDatum }> => {
             const resource = await CloudFormation.getResourceFromTemplate({
                 handlerName: params.handlerName,
                 templatePath: params.samTemplate.fsPath

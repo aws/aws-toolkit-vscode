@@ -21,8 +21,8 @@ import {
     WAIT_FOR_DEBUGGER_MESSAGES
 } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
+import { MetricDatum } from '../telemetry/clienttelemetry'
 import { TelemetryService } from '../telemetry/telemetryService'
-import { Datum } from '../telemetry/telemetryTypes'
 import { registerCommand } from '../telemetry/telemetryUtils'
 import { dirnameWithTrailingSlash } from '../utilities/pathUtils'
 import { ChannelLogger, getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
@@ -70,7 +70,7 @@ export async function initialize({
     const command = getInvokeCmdKey(CSHARP_LANGUAGE)
     registerCommand({
         command,
-        callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: Datum }> => {
+        callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: MetricDatum }> => {
             return await onLocalInvokeCommand({
                 lambdaLocalInvokeParams: params,
                 configuration,
@@ -141,7 +141,7 @@ async function onLocalInvokeCommand(
         }): Promise<CloudFormation.Resource>
     },
     context: OnLocalInvokeCommandContext = new DefaultOnLocalInvokeCommandContext(toolkitOutputChannel)
-): Promise<{ datum: Datum }> {
+): Promise<{ datum: MetricDatum }> {
     const channelLogger = getChannelLogger(toolkitOutputChannel)
     const template: CloudFormation.Template = await loadCloudFormationTemplate(
         lambdaLocalInvokeParams.samTemplate.fsPath

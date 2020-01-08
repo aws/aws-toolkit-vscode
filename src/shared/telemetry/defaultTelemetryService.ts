@@ -66,9 +66,9 @@ export class DefaultTelemetryService implements TelemetryService {
                 createTime: this.startTime,
                 data: [
                     {
-                        name: 'session_start',
-                        value: 0,
-                        unit: 'None'
+                        MetricName: 'session_start',
+                        Value: 0,
+                        Unit: 'None'
                     }
                 ]
             },
@@ -88,9 +88,9 @@ export class DefaultTelemetryService implements TelemetryService {
                 createTime: currTime,
                 data: [
                     {
-                        name: 'session_end',
-                        value: currTime.getTime() - this.startTime.getTime(),
-                        unit: 'Milliseconds'
+                        MetricName: 'session_end',
+                        Value: currTime.getTime() - this.startTime.getTime(),
+                        Unit: 'Milliseconds'
                     }
                 ]
             },
@@ -220,7 +220,7 @@ export class DefaultTelemetryService implements TelemetryService {
     private injectAccountMetadata(event: TelemetryEvent, awsContext: AwsContext): TelemetryEvent {
         let accountValue: string | AccountStatus
         // The AWS account ID is not set on session start. This matches JetBrains' functionality.
-        if (event.data.every(item => item.name === 'session_end' || item.name === 'session_start')) {
+        if (event.data.every(item => item.MetricName === 'session_end' || item.MetricName === 'session_start')) {
             accountValue = AccountStatus.NotApplicable
         } else {
             const account = awsContext.getCredentialAccountId()
@@ -243,10 +243,10 @@ export class DefaultTelemetryService implements TelemetryService {
         // event has data
         if (event.data) {
             for (const datum of event.data) {
-                if (datum.metadata) {
-                    datum.metadata.set(ACCOUNT_METADATA_KEY, accountValue)
+                if (datum.Metadata) {
+                    datum.Metadata.push({ Key: ACCOUNT_METADATA_KEY, Value: accountValue })
                 } else {
-                    datum.metadata = new Map([[ACCOUNT_METADATA_KEY, accountValue]])
+                    datum.Metadata = [{ Key: ACCOUNT_METADATA_KEY, Value: accountValue }]
                 }
             }
         } else {
@@ -254,9 +254,9 @@ export class DefaultTelemetryService implements TelemetryService {
             // this shouldn't happen
             const data = [
                 {
-                    name: 'noData',
-                    value: 0,
-                    metadata: new Map([[ACCOUNT_METADATA_KEY, accountValue]])
+                    MetricName: 'noData',
+                    Value: 0,
+                    Metadata: [{ Key: ACCOUNT_METADATA_KEY, Value: accountValue }]
                 }
             ]
             event.data = data

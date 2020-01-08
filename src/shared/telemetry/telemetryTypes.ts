@@ -3,15 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Unit } from './clienttelemetry'
-
-export interface Datum {
-    name: string
-    value: number
-    unit?: Unit
-    metadata?: Map<string, string>
-}
-
 export const ACCOUNT_METADATA_KEY = 'awsAccount'
 
 export enum AccountStatus {
