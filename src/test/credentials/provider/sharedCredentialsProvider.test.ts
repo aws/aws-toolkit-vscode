@@ -13,8 +13,11 @@ const MISSING_PROPERTIES_FRAGMENT = 'missing properties'
 describe('SharedCredentialsProvider', async () => {
     it('constructor errs if profile does not exist', async () => {
         await assertThrowsError(async () => {
-            // @ts-ignore - sut is unused
-            const sut = new SharedCredentialsProvider('some-other-profile', sharedCredentialProfiles)
+            // @ts-ignore - sut is unused, we expect the constructor to throw
+            const sut = new SharedCredentialsProvider(
+                'some-other-profile',
+                new Map<string, Profile>([['default', { aws_access_key_id: 'x', aws_secret_access_key: 'y' }]])
+            )
         })
     })
 
