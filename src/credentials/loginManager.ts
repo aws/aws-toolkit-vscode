@@ -90,7 +90,7 @@ export class LoginManager {
 
     private notifyUserInvalidCredentials(credentialProviderId: string) {
         const getHelp = localize('AWS.message.credentials.invalid.help', 'Get Help...')
-        const viewLogs = localize('AWS.message.credentials.invalid.logs', 'View logs')
+        const viewLogs = localize('AWS.message.credentials.invalid.logs', 'View logs...')
 
         vscode.window
             .showErrorMessage(
