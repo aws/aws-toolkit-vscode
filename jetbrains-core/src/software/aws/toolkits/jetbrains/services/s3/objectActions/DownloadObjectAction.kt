@@ -1,20 +1,18 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 package software.aws.toolkits.jetbrains.services.s3.objectActions
 
 import com.intellij.icons.AllIcons
-import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptor
 import com.intellij.openapi.fileChooser.FileChooserFactory
 import com.intellij.openapi.fileChooser.FileSaverDescriptor
-import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.util.io.outputStream
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.TelemetryResult
@@ -24,21 +22,20 @@ import software.aws.toolkits.resources.message
 import java.io.OutputStream
 import java.nio.file.Paths
 
-class DownloadObjectAction(
-    private val treeTable: S3TreeTable
-) : DumbAwareAction(message("s3.download.object.action"), null, AllIcons.Actions.Download) {
+class DownloadObjectAction(private val project: Project, treeTable: S3TreeTable) :
+    S3ObjectAction(treeTable, message("s3.download.object.action"), AllIcons.Actions.Download) {
 
     private val bucket = treeTable.bucket
-    @Suppress("unused")
-    override fun actionPerformed(e: AnActionEvent) {
-        val project = e.getRequiredData(LangDataKeys.PROJECT)
 
-        val files = treeTable.getSelectedNodes().filterIsInstance<S3TreeObjectNode>()
+    override fun performAction(nodes: List<S3TreeNode>) {
+        val files = nodes.filterIsInstance<S3TreeObjectNode>()
         when (files.size) {
             1 -> downloadSingle(project, files.first())
             else -> downloadMultiple(project, files)
         }
     }
+
+    override fun enabled(nodes: List<S3TreeNode>): Boolean = nodes.all { it is S3TreeObjectNode }
 
     private fun downloadMultiple(project: Project, files: List<S3TreeObjectNode>) {
         val baseDir = VfsUtil.getUserHomeDir()
@@ -71,10 +68,6 @@ class DownloadObjectAction(
                 TelemetryService.recordSimpleTelemetry(project, ALL_OBJECTS, TelemetryResult.Failed, treeTable.selectedRows.size.toDouble())
             }
         }
-    }
-
-    override fun update(e: AnActionEvent) {
-        e.presentation.isEnabled = !(treeTable.isEmpty || (treeTable.selectedRow < 0) || (treeTable.getValueAt(treeTable.selectedRow, 1) == ""))
     }
 
     companion object {

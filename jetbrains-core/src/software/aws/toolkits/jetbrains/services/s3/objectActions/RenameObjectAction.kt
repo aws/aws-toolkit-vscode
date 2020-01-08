@@ -1,14 +1,13 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 package software.aws.toolkits.jetbrains.services.s3.objectActions
 
-import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.LangDataKeys
-import com.intellij.openapi.project.DumbAwareAction
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.InputValidator
 import com.intellij.openapi.ui.Messages
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.TelemetryResult
@@ -16,10 +15,11 @@ import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 
-class RenameObjectAction(private val treeTable: S3TreeTable) : DumbAwareAction(message("s3.rename.object.action")) {
-    override fun actionPerformed(e: AnActionEvent) {
-        val project = e.getRequiredData(LangDataKeys.PROJECT)
-        val node = treeTable.getSelectedNodes().firstOrNull() as? S3TreeObjectNode ?: return
+class RenameObjectAction(private val project: Project, treeTable: S3TreeTable) : SingleS3ObjectAction(treeTable, message("s3.rename.object.action")) {
+
+    override fun enabled(node: S3TreeNode): Boolean = node is S3TreeObjectNode
+
+    override fun performAction(node: S3TreeNode) {
 
         val newName = Messages.showInputDialog(
             project,
@@ -48,11 +48,6 @@ class RenameObjectAction(private val treeTable: S3TreeTable) : DumbAwareAction(m
                 }
             }
         }
-    }
-
-    override fun update(e: AnActionEvent) {
-        e.presentation.isEnabled = !(treeTable.isEmpty || (treeTable.selectedRow < 0) ||
-            (treeTable.getValueAt(treeTable.selectedRow, 1) == "") || (treeTable.selectedRows.size > 1))
     }
 
     companion object {

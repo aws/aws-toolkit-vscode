@@ -47,9 +47,11 @@ public class S3ViewerPanel {
     private S3TreeTable treeTable;
     private S3TreeNode s3TreeNode;
     private S3TreeTableModel model;
+    private Project project;
 
     public S3ViewerPanel(Disposable disposable, Project project, S3VirtualBucket bucketVirtual) {
         this.disposable = disposable;
+        this.project = project;
 
         name.setText(bucketVirtual.getName());
         date.setText(S3Resources.formatDate(bucketVirtual.getS3Bucket().creationDate()));
@@ -116,14 +118,14 @@ public class S3ViewerPanel {
 
     private void addTreeActions() {
         DefaultActionGroup actionGroup = new DefaultActionGroup();
-        actionGroup.add(new DownloadObjectAction(treeTable));
-        actionGroup.add(new UploadObjectAction(treeTable));
+        actionGroup.add(new DownloadObjectAction(project, treeTable));
+        actionGroup.add(new UploadObjectAction(project, treeTable));
         actionGroup.add(new Separator());
-        actionGroup.add(new NewFolderAction(treeTable));
-        actionGroup.add(new RenameObjectAction(treeTable));
-        actionGroup.add(new CopyPathAction(treeTable));
+        actionGroup.add(new NewFolderAction(project, treeTable));
+        actionGroup.add(new RenameObjectAction(project, treeTable));
+        actionGroup.add(new CopyPathAction(project, treeTable));
         actionGroup.add(new Separator());
-        actionGroup.add(new DeleteObjectAction(treeTable));
+        actionGroup.add(new DeleteObjectAction(project, treeTable));
         PopupHandler.installPopupHandler(treeTable, actionGroup, ActionPlaces.EDITOR_POPUP, ActionManager.getInstance());
     }
 
