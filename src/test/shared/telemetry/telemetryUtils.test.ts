@@ -178,7 +178,7 @@ describe('telemetryUtils', () => {
                             assert.notStrictEqual(mockService.lastEvent!.createTime, undefined)
                             assert.notStrictEqual(mockService.lastEvent!.data, undefined)
                             assert.notStrictEqual(
-                                mockService.lastEvent!.data![0].Metadata!.find(item => item.Key === 'duration')?.Value,
+                                mockService.lastEvent!.data![0]?.Metadata!.find(item => item.Key === 'duration')?.Value,
                                 undefined
                             )
 

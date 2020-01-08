@@ -121,8 +121,9 @@ function validateLocalInvokeResult(actualResult: MetricDatum, expectedResult: Me
     assert.strictEqual(actualResult.Value, expectedResult.Value)
     assert.strictEqual(actualResult.Unit, expectedResult.Unit)
 
-    expectedResult.Metadata!.forEach((key, entry) => {
-        assert.strictEqual(actualResult.Metadata![entry], key)
+    expectedResult.Metadata!.forEach((entry, key) => {
+        assert.strictEqual(actualResult.Metadata![key].Key, entry.Key)
+        assert.strictEqual(actualResult.Metadata![key].Value, entry.Value)
     })
 }
 
