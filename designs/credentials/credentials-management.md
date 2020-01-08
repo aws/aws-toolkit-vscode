@@ -28,7 +28,7 @@ Credentials Provider Id may be surfaced to users, however it is an internal iden
 
 When the user connects to AWS in the Toolkit, a Credentials Provider is requested, which is then used to obtain credentials. The toolkit requests a Credentials Provider by checking which credentials provider factories support the provider's credentials type. The factories of interest are queried to see which (if any) have the requested Credentials Provider.
 
-At the time of writing this document, there is only support for Shared Credentials. If additional credentials support was implemented (and this document was not updated), it would be found in `/src/credentials/providers`.
+At the time of writing this document, there is only support for Shared Credentials. If additional credentials support was implemented (and this document was not updated), it would be found in [/src/credentials/providers](/src/credentials/providers).
 
 ### Shared Credentials Profiles
 
