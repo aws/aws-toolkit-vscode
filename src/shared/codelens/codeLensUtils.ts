@@ -138,9 +138,9 @@ function makeConfigureCodeLens({
 export function getMetricDatum({ isDebug, runtime }: { isDebug: boolean; runtime: string }): { datum: MetricDatum } {
     return {
         datum: {
-            ...defaultMetricDatum('invokelocal'),
+            ...defaultMetricDatum('lambda_invokelocal'),
             Metadata: [
-                { Key: 'runtime', Value: 'runtime' },
+                { Key: 'runtime', Value: `${runtime}` },
                 { Key: 'debug', Value: `${isDebug}` }
             ]
         }

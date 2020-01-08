@@ -304,7 +304,7 @@ describe('SAM Integration Tests', async () => {
                     )) as any).datum as MetricDatum
                     assert.ok(runResult, 'expected to get invoke results back')
                     validateLocalInvokeResult(runResult!, {
-                        MetricName: 'invokelocal',
+                        MetricName: 'lambda_invokelocal',
                         Value: 1,
                         Unit: 'Count',
                         Metadata: [
@@ -373,7 +373,7 @@ describe('SAM Integration Tests', async () => {
                     )) as any).datum as MetricDatum
                     assert.ok(runResult, 'expected to get invoke results back')
                     validateLocalInvokeResult(runResult!, {
-                        MetricName: 'invokelocal',
+                        MetricName: 'lambda_invokelocal',
                         Value: 1,
                         Unit: 'Count',
                         Metadata: [
