@@ -30,7 +30,6 @@ import { activate as activateServerless } from './shared/sam/activation'
 import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
 import { AwsTelemetryOptOut } from './shared/telemetry/awsTelemetryOptOut'
 import { DefaultTelemetryService } from './shared/telemetry/defaultTelemetryService'
-import { TelemetryNamespace } from './shared/telemetry/telemetryTypes'
 import { registerCommand } from './shared/telemetry/telemetryUtils'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { getChannelLogger } from './shared/utilities/vsCodeUtils'
@@ -79,28 +78,19 @@ export async function activate(context: vscode.ExtensionContext) {
         registerCommand({
             command: 'aws.login',
             callback: async () => await ext.awsContextCommands.onCommandLogin(),
-            telemetryName: {
-                namespace: TelemetryNamespace.Aws,
-                name: 'credentialslogin'
-            }
+            telemetryName: 'aws_credentialslogin'
         })
 
         registerCommand({
             command: 'aws.credential.profile.create',
             callback: async () => await ext.awsContextCommands.onCommandCreateCredentialsProfile(),
-            telemetryName: {
-                namespace: TelemetryNamespace.Aws,
-                name: 'credentialscreate'
-            }
+            telemetryName: 'aws_credentialscreate'
         })
 
         registerCommand({
             command: 'aws.logout',
             callback: async () => await ext.awsContextCommands.onCommandLogout(),
-            telemetryName: {
-                namespace: TelemetryNamespace.Aws,
-                name: 'credentialslogout'
-            }
+            telemetryName: 'aws_credentialslogout'
         })
 
         // register URLs in extension menu
@@ -108,25 +98,29 @@ export async function activate(context: vscode.ExtensionContext) {
             command: 'aws.help',
             callback: async () => {
                 vscode.env.openExternal(vscode.Uri.parse(documentationUrl))
-            }
+            },
+            telemetryName: 'Command_aws.help'
         })
         registerCommand({
             command: 'aws.github',
             callback: async () => {
                 vscode.env.openExternal(vscode.Uri.parse(githubUrl))
-            }
+            },
+            telemetryName: 'Command_aws.github'
         })
         registerCommand({
             command: 'aws.reportIssue',
             callback: async () => {
                 vscode.env.openExternal(vscode.Uri.parse(reportIssueUrl))
-            }
+            },
+            telemetryName: 'Command_aws.reportIssue'
         })
         registerCommand({
             command: 'aws.quickStart',
             callback: async () => {
                 await showQuickStartWebview(context)
-            }
+            },
+            telemetryName: 'Command_aws.quickStart'
         })
 
         await activateCdk({

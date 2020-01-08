@@ -17,7 +17,7 @@ import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { fileExists } from '../shared/filesystemUtilities'
 import { getLogger } from '../shared/logger'
 import { WinstonToolkitLogger } from '../shared/logger/winstonToolkitLogger'
-import { Datum } from '../shared/telemetry/telemetryTypes'
+import { MetricDatum } from '../shared/telemetry/clienttelemetry'
 import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep, TIMEOUT } from './integrationTestsUtilities'
 
 const projectFolder = getTestWorkspaceFolder()
@@ -27,10 +27,6 @@ interface TestScenario {
     path: string
     debugSessionType: string
     language: Language
-}
-
-interface LocalInvokeCodeLensCommandResult {
-    datum: Datum
 }
 
 // When testing additional runtimes, consider pulling the docker container in buildspec\linuxIntegrationTests.yml
@@ -120,16 +116,14 @@ async function closeAllEditors(): Promise<void> {
     await vscode.commands.executeCommand('workbench.action.closeAllEditors')
 }
 
-function validateLocalInvokeResult(
-    actualResult: LocalInvokeCodeLensCommandResult,
-    expectedResult: LocalInvokeCodeLensCommandResult
-) {
-    assert.strictEqual(actualResult.datum.name, expectedResult.datum.name)
-    assert.strictEqual(actualResult.datum.value, expectedResult.datum.value)
-    assert.strictEqual(actualResult.datum.unit, expectedResult.datum.unit)
+function validateLocalInvokeResult(actualResult: MetricDatum, expectedResult: MetricDatum) {
+    assert.strictEqual(actualResult.MetricName, expectedResult.MetricName)
+    assert.strictEqual(actualResult.Value, expectedResult.Value)
+    assert.strictEqual(actualResult.Unit, expectedResult.Unit)
 
-    expectedResult.datum.metadata!.forEach((value, key) => {
-        assert.strictEqual(actualResult.datum.metadata!.get(key), value)
+    expectedResult.Metadata!.forEach((entry, key) => {
+        assert.strictEqual(actualResult.Metadata![key].Key, entry.Key)
+        assert.strictEqual(actualResult.Metadata![key].Value, entry.Value)
     })
 }
 
@@ -303,22 +297,21 @@ describe('SAM Integration Tests', async () => {
                     const codeLens = await getRunLocalCodeLens(samAppCodeUri, scenario.language)
                     assert.ok(codeLens, 'expected to find a CodeLens')
 
-                    const runResult = await vscode.commands.executeCommand<LocalInvokeCodeLensCommandResult>(
+                    // tslint:disable-next-line: no-unsafe-any
+                    const runResult = ((await vscode.commands.executeCommand<any>(
                         codeLens.command!.command,
                         ...codeLens.command!.arguments!
-                    )
+                    )) as any).datum as MetricDatum
                     assert.ok(runResult, 'expected to get invoke results back')
                     validateLocalInvokeResult(runResult!, {
-                        datum: {
-                            name: 'invokelocal',
-                            value: 1,
-                            unit: 'Count',
-                            metadata: new Map([
-                                ['runtime', scenario.runtime],
-                                ['debug', 'false'],
-                                ['result', 'Succeeded']
-                            ])
-                        }
+                        MetricName: 'lambda_invokelocal',
+                        Value: 1,
+                        Unit: 'Count',
+                        Metadata: [
+                            { Key: 'runtime', Value: scenario.runtime },
+                            { Key: 'debug', Value: 'false' },
+                            { Key: 'result', Value: 'Succeeded' }
+                        ]
                     })
                 }).timeout(TIMEOUT)
 
@@ -374,22 +367,20 @@ describe('SAM Integration Tests', async () => {
                         )
                     })
 
-                    const runResult = await vscode.commands.executeCommand<LocalInvokeCodeLensCommandResult>(
+                    const runResult = ((await vscode.commands.executeCommand<any>(
                         codeLens.command!.command,
                         ...codeLens.command!.arguments!
-                    )
+                    )) as any).datum as MetricDatum
                     assert.ok(runResult, 'expected to get invoke results back')
                     validateLocalInvokeResult(runResult!, {
-                        datum: {
-                            name: 'invokelocal',
-                            value: 1,
-                            unit: 'Count',
-                            metadata: new Map([
-                                ['runtime', scenario.runtime],
-                                ['debug', 'true'],
-                                ['result', 'Succeeded']
-                            ])
-                        }
+                        MetricName: 'lambda_invokelocal',
+                        Value: 1,
+                        Unit: 'Count',
+                        Metadata: [
+                            { Key: 'runtime', Value: scenario.runtime },
+                            { Key: 'debug', Value: 'true' },
+                            { Key: 'result', Value: 'Succeeded' }
+                        ]
                     })
 
                     await debugSessionStartedAndStoppedPromise

@@ -585,23 +585,20 @@ function recordAttachDebuggerMetric(params: RecordAttachDebuggerMetricContext) {
     const currTime = new Date()
     const namespace = params.result ? 'DebugAttachSuccess' : 'DebugAttachFailure'
 
-    const metadata = new Map([['runtime', params.runtime]])
-
     params.telemetryService.record({
-        namespace: namespace,
         createTime: currTime,
         data: [
             {
-                name: 'attempts',
-                value: params.attempts,
-                unit: 'Count',
-                metadata
+                MetricName: `${namespace}_attempts`,
+                Value: params.attempts,
+                Unit: 'Count',
+                Metadata: [{ Key: 'runtime', Value: params.runtime }]
             },
             {
-                name: 'duration',
-                value: params.durationMillis,
-                unit: 'Milliseconds',
-                metadata
+                MetricName: `${namespace}_duration`,
+                Value: params.durationMillis,
+                Unit: 'Milliseconds',
+                Metadata: [{ Key: 'runtime', Value: params.runtime }]
             }
         ]
     })

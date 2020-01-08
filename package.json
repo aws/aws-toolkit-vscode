@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit for Visual Studio Code",
     "description": "An extension for working with Amazon Web Services in Visual Studio Code",
-    "version": "1.4.0",
+    "version": "1.5.0",
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {
@@ -167,6 +167,14 @@
                 },
                 {
                     "command": "aws.viewSchemaItem",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.searchSchema",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.searchSchemaPerRegistry",
                     "when": "false"
                 },
                 {
@@ -457,7 +465,7 @@
         "buildScripts": "npm run bundleDeps && npm run copyNonCodeFiles && npm run generateNonCodeFiles",
         "compile": "webpack --mode development && npm run buildScripts",
         "recompile": "npm run clean && npm run compile",
-        "watch": "npm run buildScripts && webpack --mode development --watch",
+        "watch": "npm run buildScripts && tsc -watch -p ./",
         "postinstall": "ts-node ./build-scripts/generateServiceClient.ts",
         "testCompile": "tsc -p ./ && npm run buildScripts",
         "test": "npm run testCompile && ts-node ./test-scripts/test.ts",

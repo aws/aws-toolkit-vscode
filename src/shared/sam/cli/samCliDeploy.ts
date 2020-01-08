@@ -10,7 +10,7 @@ import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliI
 export interface SamCliDeployParameters {
     templateFile: string
     parameterOverrides: Map<string, string>
-    profile: string
+    environmentVariables: NodeJS.ProcessEnv
     region: string
     stackName: string
 }
@@ -29,16 +29,17 @@ export async function runSamCliDeploy(
         '--capabilities',
         'CAPABILITY_IAM',
         '--region',
-        deployArguments.region,
-        '--profile',
-        deployArguments.profile
+        deployArguments.region
     ]
     if (deployArguments.parameterOverrides.size > 0) {
         const overrides = [...map(deployArguments.parameterOverrides.entries(), ([key, value]) => `${key}=${value}`)]
         args.push('--parameter-overrides', ...overrides)
     }
 
-    const childProcessResult = await invoker.invoke({ arguments: args })
+    const childProcessResult = await invoker.invoke({
+        arguments: args,
+        spawnOptions: { env: deployArguments.environmentVariables }
+    })
 
     logAndThrowIfUnexpectedExitCode(childProcessResult, 0, logger)
 }
