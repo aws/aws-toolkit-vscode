@@ -13,6 +13,9 @@ import { Profile } from '../../../shared/credentials/credentialsFile'
 describe('SharedCredentialsProviderFactory', async () => {
     let sandbox: sinon.SinonSandbox
     let loadSharedCredentialsProfilesStub: sinon.SinonStub<[], Promise<Map<string, Profile>>>
+
+    let sharedCredentialsLastModifiedMillis: number
+
     let sharedCredentialProfiles: Map<string, Profile>
 
     const validProfile: Profile = {
@@ -30,6 +33,13 @@ describe('SharedCredentialsProviderFactory', async () => {
 
     beforeEach(async () => {
         sandbox = sinon.createSandbox()
+
+        sharedCredentialsLastModifiedMillis = 1
+        sandbox.stub(fs, 'stat').callsFake(async () => {
+            return ({
+                mtimeMs: sharedCredentialsLastModifiedMillis
+            } as any) as fs.Stats
+        })
 
         sharedCredentialProfiles = new Map<string, Profile>()
         sharedCredentialProfiles.set(validProfileName1, validProfile)
@@ -76,10 +86,6 @@ describe('SharedCredentialsProviderFactory', async () => {
     })
 
     it('refresh does not reload from file if the file has not changed', async () => {
-        sandbox.stub(fs, 'stat').resolves(({
-            mtimeMs: 1
-        } as any) as fs.Stats)
-
         const sut = new SharedCredentialsProviderFactory()
 
         // First load
@@ -95,20 +101,13 @@ describe('SharedCredentialsProviderFactory', async () => {
     })
 
     it('refresh reloads from file if the file has changed', async () => {
-        let lastModifiedMillis = 1
-        sandbox.stub(fs, 'stat').callsFake(async () => {
-            return ({
-                mtimeMs: lastModifiedMillis
-            } as any) as fs.Stats
-        })
-
         const sut = new SharedCredentialsProviderFactory()
 
         // First load
         await sut.refresh()
 
         // Simulate modifying files
-        lastModifiedMillis++
+        sharedCredentialsLastModifiedMillis++
 
         // Expect: Reload
         await sut.refresh()

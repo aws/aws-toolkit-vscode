@@ -19,8 +19,8 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
 
     private readonly logger: Logger = getLogger()
 
-    private loadedCredentialsModificationDate: number = 0
-    private loadedConfigModificationDate: number = 0
+    private loadedCredentialsModificationDate?: number
+    private loadedConfigModificationDate?: number
 
     public getCredentialType(): string {
         return SharedCredentialsProviderFactory.CREDENTIAL_TYPE
@@ -35,8 +35,8 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
     }
 
     protected resetProviders() {
-        this.loadedCredentialsModificationDate = 0
-        this.loadedConfigModificationDate = 0
+        this.loadedCredentialsModificationDate = undefined
+        this.loadedConfigModificationDate = undefined
 
         super.resetProviders()
     }
@@ -77,13 +77,13 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
         }
     }
 
-    private async getLastModifiedTime(filepath: string): Promise<number> {
+    private async getLastModifiedTime(filepath: string): Promise<number | undefined> {
         try {
             const stat = await fs.stat(filepath)
 
             return stat.mtimeMs
         } catch (err) {
-            return 0
+            return undefined
         }
     }
 }
