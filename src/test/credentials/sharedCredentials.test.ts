@@ -19,6 +19,12 @@ describe('sharedCredentials', () => {
         tempFolder = await makeTemporaryToolkitFolder()
     })
 
+    afterEach(async () => {
+        const env = process.env as EnvironmentVariables
+        delete env.AWS_SHARED_CREDENTIALS_FILE
+        delete env.AWS_CONFIG_FILE
+    })
+
     after(async () => {
         del.sync([tempFolder], { force: true })
     })
