@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "When changes are made to Shared Credentials files, the changes will be picked up the next time that credentials are selected for connecting to AWS. This also fixes an issue that required users to close and re-open VS Code before Credentials changes were used by the Toolkit."
+}
