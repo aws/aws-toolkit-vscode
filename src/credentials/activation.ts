@@ -10,7 +10,7 @@ import { CredentialsProfileMru } from '../shared/credentials/credentialsProfileM
 import { SettingsConfiguration } from '../shared/settingsConfiguration'
 import { LoginManager } from './loginManager'
 import { CREDENTIALS_PROVIDER_ID_SEPARATOR, makeCredentialsProviderId } from './providers/credentialsProviderId'
-import { SharedCredentialsProviderFactory } from './providers/sharedCredentialsProviderFactory'
+import { SharedCredentialsProvider } from './providers/sharedCredentialsProvider'
 
 export interface CredentialsInitializeParameters {
     extensionContext: vscode.ExtensionContext
@@ -37,7 +37,7 @@ export async function loginWithMostRecentCredentials(
         // treat it like a Shared Crdentials Provider.
         if (previousCredentialsId.indexOf(CREDENTIALS_PROVIDER_ID_SEPARATOR) === -1) {
             previousCredentialsId = makeCredentialsProviderId({
-                credentialType: SharedCredentialsProviderFactory.CREDENTIAL_TYPE,
+                credentialType: SharedCredentialsProvider.getCredentialsType(),
                 credentialTypeId: previousCredentialsId
             })
         }

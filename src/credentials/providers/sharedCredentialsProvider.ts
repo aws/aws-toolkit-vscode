@@ -25,7 +25,7 @@ const SHARED_CREDENTIAL_PROPERTIES = {
  * Represents one profile from the AWS Shared Credentials files, and produces Credentials from this profile.
  */
 export class SharedCredentialsProvider implements CredentialsProvider {
-    public static readonly CREDENTIALS_TYPE = 'profile'
+    private static readonly CREDENTIALS_TYPE = 'profile'
 
     private readonly profile: Profile
 
@@ -44,7 +44,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
 
     public getCredentialsProviderId(): string {
         return makeCredentialsProviderId({
-            credentialType: SharedCredentialsProvider.CREDENTIALS_TYPE,
+            credentialType: SharedCredentialsProvider.getCredentialsType(),
             credentialTypeId: this.profileName
         })
     }
@@ -185,5 +185,8 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                 tokenCodeFn: async (mfaSerial, callback) =>
                     await getMfaTokenFromUser(mfaSerial, this.profileName, callback)
             })
+    }
+    public static getCredentialsType(): string {
+        return SharedCredentialsProvider.CREDENTIALS_TYPE
     }
 }

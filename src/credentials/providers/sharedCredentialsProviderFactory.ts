@@ -15,15 +15,13 @@ import { BaseCredentialsProviderFactory } from './credentialsProviderFactory'
 import { SharedCredentialsProvider } from './sharedCredentialsProvider'
 
 export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFactory<SharedCredentialsProvider> {
-    public static readonly CREDENTIAL_TYPE = 'profile'
-
     private readonly logger: Logger = getLogger()
 
     private loadedCredentialsModificationDate?: number
     private loadedConfigModificationDate?: number
 
     public getCredentialType(): string {
-        return SharedCredentialsProviderFactory.CREDENTIAL_TYPE
+        return SharedCredentialsProvider.getCredentialsType()
     }
 
     public async refresh(): Promise<void> {
