@@ -10,7 +10,7 @@ import { assertThrowsError } from '../../shared/utilities/assertUtils'
 
 const MISSING_PROPERTIES_FRAGMENT = 'missing properties'
 
-describe.only('SharedCredentialsProvider', async () => {
+describe('SharedCredentialsProvider', async () => {
     it('constructor errs if profile does not exist', async () => {
         await assertThrowsError(async () => {
             // @ts-ignore - sut is unused
