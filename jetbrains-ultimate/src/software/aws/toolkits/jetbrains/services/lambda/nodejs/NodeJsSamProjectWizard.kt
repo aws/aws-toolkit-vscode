@@ -71,7 +71,7 @@ class NodeJsSdkSettings(
 ) : SdkSettings
 
 abstract class SamNodeJsProjectTemplate : SamProjectTemplate() {
-    override fun supportedRuntimes(): Set<Runtime> = setOf(Runtime.NODEJS8_10, Runtime.NODEJS10_X, Runtime.NODEJS12_X)
+    override fun supportedRuntimes(): Set<Runtime> = setOf(Runtime.NODEJS10_X, Runtime.NODEJS12_X)
 
     override fun setupSdk(rootModel: ModifiableRootModel, settings: SamNewProjectSettings) {
         val nodeJsSdkSettings = settings.sdkSettings as NodeJsSdkSettings

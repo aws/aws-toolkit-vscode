@@ -1,0 +1,4 @@
+{
+  "type" : "breaking",
+  "description" : "Remove NodeJS 8.10 from the new project wizard since the runtime is deprecated"
+}
