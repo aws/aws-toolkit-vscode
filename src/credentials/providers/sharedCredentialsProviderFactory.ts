@@ -17,8 +17,8 @@ import { SharedCredentialsProvider } from './sharedCredentialsProvider'
 export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFactory<SharedCredentialsProvider> {
     private readonly logger: Logger = getLogger()
 
-    private loadedCredentialsModificationDate?: number
-    private loadedConfigModificationDate?: number
+    private loadedCredentialsModificationMillis?: number
+    private loadedConfigModificationMillis?: number
 
     public getCredentialType(): string {
         return SharedCredentialsProvider.getCredentialsType()
@@ -31,19 +31,19 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
     }
 
     protected resetProviders() {
-        this.loadedCredentialsModificationDate = undefined
-        this.loadedConfigModificationDate = undefined
+        this.loadedCredentialsModificationMillis = undefined
+        this.loadedConfigModificationMillis = undefined
 
         super.resetProviders()
     }
 
     private async needsRefresh(): Promise<boolean> {
-        const credentialsLastMod = await this.getLastModifiedTime(getCredentialsFilename())
-        const configLastMod = await this.getLastModifiedTime(getConfigFilename())
+        const credentialsLastModMillis = await this.getLastModifiedMillis(getCredentialsFilename())
+        const configLastModMillis = await this.getLastModifiedMillis(getConfigFilename())
 
         return (
-            this.loadedCredentialsModificationDate !== credentialsLastMod ||
-            this.loadedConfigModificationDate !== configLastMod
+            this.loadedCredentialsModificationMillis !== credentialsLastModMillis ||
+            this.loadedConfigModificationMillis !== configLastModMillis
         )
     }
 
@@ -52,8 +52,8 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
 
         this.logger.verbose('Loading all Shared Credentials Profiles')
         const allCredentialProfiles = await loadSharedCredentialsProfiles()
-        this.loadedCredentialsModificationDate = await this.getLastModifiedTime(getCredentialsFilename())
-        this.loadedConfigModificationDate = await this.getLastModifiedTime(getConfigFilename())
+        this.loadedCredentialsModificationMillis = await this.getLastModifiedMillis(getCredentialsFilename())
+        this.loadedConfigModificationMillis = await this.getLastModifiedMillis(getConfigFilename())
         await updateAwsSdkLoadConfigEnvironmentVariable()
 
         for (const profileName of allCredentialProfiles.keys()) {
@@ -73,7 +73,7 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
         }
     }
 
-    private async getLastModifiedTime(filepath: string): Promise<number | undefined> {
+    private async getLastModifiedMillis(filepath: string): Promise<number | undefined> {
         try {
             const stat = await fs.stat(filepath)
 
