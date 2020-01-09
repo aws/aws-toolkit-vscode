@@ -1,4 +1,7 @@
 version: 0.2
+env:
+    variables:
+        AWS_TOOLKIT_TEST_NO_COLOR: '1'
 phases:
     install:
         commands:
