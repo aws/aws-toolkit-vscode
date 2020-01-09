@@ -38,7 +38,8 @@ export interface CreateNewSamAppWizardContext {
 }
 
 export class DefaultCreateNewSamAppWizardContext extends WizardContext implements CreateNewSamAppWizardContext {
-    public readonly lambdaRuntimes = lambdaRuntime.samLambdaRuntimes
+    // Filter out node8 until local debugging is no longer supported, and it can be removed from samLambdaRuntimes
+    public readonly lambdaRuntimes = lambdaRuntime.samLambdaRuntimes.filter(runtime => runtime !== 'nodejs8.10')
     private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Documentation'))
 
     public constructor() {
