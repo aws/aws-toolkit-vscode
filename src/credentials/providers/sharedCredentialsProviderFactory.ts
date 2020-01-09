@@ -25,11 +25,9 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
     }
 
     public async refresh(): Promise<void> {
-        if (!(await this.needsRefresh())) {
-            return
+        if (await this.needsRefresh()) {
+            await this.loadSharedCredentialsProviders()
         }
-
-        await this.loadSharedCredentialsProviders()
     }
 
     protected resetProviders() {
