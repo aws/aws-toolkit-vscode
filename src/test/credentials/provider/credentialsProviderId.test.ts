@@ -12,10 +12,17 @@ import { assertThrowsError } from '../../shared/utilities/assertUtils'
 
 describe('makeCredentialsProviderIdComponents', async () => {
     it('splits a CredentialsProviderId into components', async () => {
-        const components = makeCredentialsProviderIdComponents('profile:default')
+        const components = makeCredentialsProviderIdComponents('profile|default')
 
         assert.strictEqual(components.credentialType, 'profile')
         assert.strictEqual(components.credentialTypeId, 'default')
+    })
+
+    it('supports cases where the separator is in the profile name', async () => {
+        const components = makeCredentialsProviderIdComponents('profile|default|foo')
+
+        assert.strictEqual(components.credentialType, 'profile')
+        assert.strictEqual(components.credentialTypeId, 'default|foo')
     })
 
     it('errs on unexpected format - not enough separators', async () => {
@@ -26,7 +33,7 @@ describe('makeCredentialsProviderIdComponents', async () => {
 
     it('errs on unexpected format - different separator', async () => {
         await assertThrowsError(async () => {
-            makeCredentialsProviderIdComponents('profile|default')
+            makeCredentialsProviderIdComponents('profile$default')
         })
     })
 })
@@ -38,6 +45,6 @@ describe('makeCredentialsProviderId', async () => {
             credentialTypeId: 'default'
         })
 
-        assert.strictEqual(id, 'profile:default')
+        assert.strictEqual(id, 'profile|default')
     })
 })

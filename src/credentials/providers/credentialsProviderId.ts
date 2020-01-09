@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export const CREDENTIALS_PROVIDER_ID_SEPARATOR = ':'
+export const CREDENTIALS_PROVIDER_ID_SEPARATOR = '|'
 
 export interface CredentialsProviderIdComponents {
     credentialType: string
@@ -11,15 +11,15 @@ export interface CredentialsProviderIdComponents {
 }
 
 export function makeCredentialsProviderIdComponents(credentialsProviderId: string): CredentialsProviderIdComponents {
-    const chunks = credentialsProviderId.split(CREDENTIALS_PROVIDER_ID_SEPARATOR)
+    const separatorPos = credentialsProviderId.indexOf(CREDENTIALS_PROVIDER_ID_SEPARATOR)
 
-    if (chunks.length !== 2) {
+    if (separatorPos === -1) {
         throw new Error(`Unexpected credentialsProviderId format: ${credentialsProviderId}`)
     }
 
     return {
-        credentialType: chunks[0],
-        credentialTypeId: chunks[1]
+        credentialType: credentialsProviderId.substring(0, separatorPos),
+        credentialTypeId: credentialsProviderId.substring(separatorPos + 1)
     }
 }
 
