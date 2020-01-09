@@ -36,7 +36,7 @@ At the this document was written, Shared Credentials are the only supported Cred
 
 Profiles are retrieved from the user's shared credentials files. The profile is handled and validated differently based on which fields are present. Handling and validation logic can be found in [sharedCredentialsProvider.ts](/src/credentials/providers/sharedCredentialsProvider.ts).
 
-Profiles that are not considered valid are not provided to the toolkit. When connecting in the toolkit, the user is not able to select these Credentials to work with. Validation issues detected are written to the logs to help users understand why a profile is not available in the toolkit.
+Only profiles that are considered valid are provided to the toolkit. When validation issues are detected, they are written to the logs to help users understand why the toolkit is having difficulties with a profile. Users running the 'Connect to AWS' command will not see invalid profiles in the list of Credentials.
 
 Examples of validation include:
 
