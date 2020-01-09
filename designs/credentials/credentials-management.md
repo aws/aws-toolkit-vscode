@@ -65,3 +65,13 @@ When the Toolkit is initialized, it sets up a `CredentialsProviderManager` insta
 When the toolkit wants to list available Credentials Providers, `CredentialsProviderManager` is queried using `getAllCredentialsProviders`. This in turn calls `listProviders` on every `CredentialsProviderFactory`. Implementations for `listProviders` determine what `CredentialsProvider` objects are available/valid and return them.
 
 When the toolkit wants a specific Credentials Provider, `getCredentialsProvider` is called on `CredentialsProviderManager`. This in turn queries `getProvider` on its `CredentialsProviderFactory` objects until a provider is returned.
+
+## Alternate Concepts
+
+This section discusses alternative considerations that were not used in the current design.
+
+### Immediately Updating the Toolkit whenever Shared Credentials are updated
+
+File watchers could be created and maintained against shared credentials files. Whenever these files change, the toolkit's current collection of credentials providers is updated, and the current connection would get updated with new credentials if appropriate. If the current connection's credentials are updated, this needs to propagate throughout all of the toolkit's state (for example the AWS Explorer would need to be refreshed).
+
+Credentials files are generally altered to add new credentials, or fix incorrect credentials. This low frequency doesn't seem to justify the additional complexities. We will prefer to evaluate functionality like this based on community input.
