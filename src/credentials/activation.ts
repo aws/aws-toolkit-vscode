@@ -31,18 +31,19 @@ export async function loginWithMostRecentCredentials(
     toolkitSettings: SettingsConfiguration,
     loginManager: LoginManager
 ): Promise<void> {
-    let previousCredentialsId = toolkitSettings.readSetting<string>(profileSettingKey, '')
+    const previousCredentialsId = toolkitSettings.readSetting<string>(profileSettingKey, '')
     if (previousCredentialsId) {
         // Migrate from older Toolkits - If the last providerId isn't in the new CredentialProviderId format,
         // treat it like a Shared Crdentials Provider.
-        if (previousCredentialsId.indexOf(CREDENTIALS_PROVIDER_ID_SEPARATOR) === -1) {
-            previousCredentialsId = makeCredentialsProviderId({
-                credentialType: SharedCredentialsProvider.getCredentialsType(),
-                credentialTypeId: previousCredentialsId
-            })
-        }
+        const loginCredentialsId =
+            previousCredentialsId.indexOf(CREDENTIALS_PROVIDER_ID_SEPARATOR) === -1
+                ? makeCredentialsProviderId({
+                      credentialType: SharedCredentialsProvider.getCredentialsType(),
+                      credentialTypeId: previousCredentialsId
+                  })
+                : previousCredentialsId
 
-        await loginManager.login(previousCredentialsId)
+        await loginManager.login(loginCredentialsId)
     } else {
         await loginManager.logout()
     }
