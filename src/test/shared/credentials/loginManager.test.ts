@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import { LoginManager } from '../../../credentials/loginManager'
 import { CredentialsProvider } from '../../../credentials/providers/credentialsProvider'
-import { getCredentialsProviderManagerInstance } from '../../../credentials/providers/credentialsProviderManager'
+import { CredentialsProviderManager } from '../../../credentials/providers/credentialsProviderManager'
 import { AwsContext } from '../../../shared/awsContext'
 import * as accountId from '../../../shared/credentials/accountId'
 
@@ -39,7 +39,7 @@ describe('LoginManager', async () => {
 
         getAccountIdStub = sandbox.stub(accountId, 'getAccountId')
         getAccountIdStub.resolves('AccountId1234')
-        getCredentialsProviderStub = sandbox.stub(getCredentialsProviderManagerInstance(), 'getCredentialsProvider')
+        getCredentialsProviderStub = sandbox.stub(CredentialsProviderManager.getInstance(), 'getCredentialsProvider')
         getCredentialsProviderStub.resolves(credentialsProvider)
     })
 

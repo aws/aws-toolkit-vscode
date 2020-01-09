@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 import { Credentials } from 'aws-sdk'
 import { env, Uri, ViewColumn, window } from 'vscode'
 import { LoginManager } from '../credentials/loginManager'
-import { getCredentialsProviderManagerInstance } from '../credentials/providers/credentialsProviderManager'
+import { CredentialsProviderManager } from '../credentials/providers/credentialsProviderManager'
 import { AwsContext } from './awsContext'
 import { AwsContextTreeCollection } from './awsContextTreeCollection'
 import * as extensionConstants from './constants'
@@ -173,7 +173,7 @@ export class DefaultAWSContextCommands {
             return await this.promptAndCreateNewCredentialsFile()
         } else {
             const profileNames = (
-                await getCredentialsProviderManagerInstance().getAllCredentialsProviders()
+                await CredentialsProviderManager.getInstance().getAllCredentialsProviders()
             ).map(provider => provider.getCredentialsProviderId())
 
             // If no credentials were found, the user should be

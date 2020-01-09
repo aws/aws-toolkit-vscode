@@ -7,20 +7,11 @@ import { CredentialsProvider } from './credentialsProvider'
 import { CredentialsProviderFactory } from './credentialsProviderFactory'
 import { makeCredentialsProviderIdComponents } from './credentialsProviderId'
 
-let credentialsProviderManagerInstance: CredentialsProviderManager | undefined
-
-export function getCredentialsProviderManagerInstance(): CredentialsProviderManager {
-    if (!credentialsProviderManagerInstance) {
-        credentialsProviderManagerInstance = new CredentialsProviderManager()
-    }
-
-    return credentialsProviderManagerInstance
-}
-
 /**
  * Responsible for providing the Toolkit with all available CredentialsProviders.
  */
 export class CredentialsProviderManager {
+    private static INSTANCE: CredentialsProviderManager | undefined
     private readonly providerFactories: CredentialsProviderFactory[] = []
 
     public async getAllCredentialsProviders(): Promise<CredentialsProvider[]> {
@@ -57,5 +48,13 @@ export class CredentialsProviderManager {
 
     private getFactories(credentialsType: string) {
         return this.providerFactories.filter(f => f.getCredentialType() === credentialsType)
+    }
+
+    public static getInstance(): CredentialsProviderManager {
+        if (!CredentialsProviderManager.INSTANCE) {
+            CredentialsProviderManager.INSTANCE = new CredentialsProviderManager()
+        }
+
+        return CredentialsProviderManager.INSTANCE
     }
 }

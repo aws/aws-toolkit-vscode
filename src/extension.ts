@@ -11,7 +11,7 @@ import { activate as activateCdk } from './cdk/activation'
 import { initialize as initializeCredentials, loginWithMostRecentCredentials } from './credentials/activation'
 import { initializeAwsCredentialsStatusBarItem } from './credentials/awsCredentialsStatusBarItem'
 import { LoginManager } from './credentials/loginManager'
-import { getCredentialsProviderManagerInstance } from './credentials/providers/credentialsProviderManager'
+import { CredentialsProviderManager } from './credentials/providers/credentialsProviderManager'
 import { SharedCredentialsProviderFactory } from './credentials/providers/sharedCredentialsProviderFactory'
 import { activate as activateSchemas } from './eventSchemas/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
@@ -177,7 +177,7 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
 }
 
 function initializeCredentialsProviderManager() {
-    getCredentialsProviderManagerInstance().addProviderFactory(new SharedCredentialsProviderFactory())
+    CredentialsProviderManager.getInstance().addProviderFactory(new SharedCredentialsProviderFactory())
 }
 
 // Unique extension entrypoint names, so that they can be obtained from the webpack bundle
