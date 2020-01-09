@@ -33,19 +33,19 @@ export class LoginManager {
 
             await this.updateCredentialsStore(credentialsId, provider)
 
-            const credentials = await this.credentialsStore.getCredentials(credentialsId)
-            if (!credentials) {
+            const storedCredentials = await this.credentialsStore.getCredentials(credentialsId)
+            if (!storedCredentials) {
                 throw new Error(`No credentials found for id ${credentialsId}`)
             }
 
             // TODO : Get a region relevant to the partition for these credentials -- https://github.com/aws/aws-toolkit-vscode/issues/188
-            const accountId = await getAccountId(credentials, 'us-east-1')
+            const accountId = await getAccountId(storedCredentials.credentials, 'us-east-1')
             if (!accountId) {
                 throw new Error('Could not determine Account Id for credentials')
             }
 
             await this.awsContext.setCredentials({
-                credentials: credentials,
+                credentials: storedCredentials.credentials,
                 credentialsId: credentialsId,
                 accountId: accountId,
                 defaultRegion: provider.getDefaultRegion()
@@ -74,18 +74,13 @@ export class LoginManager {
      * Updates the CredentialsStore if the credentials are considered different
      */
     private async updateCredentialsStore(credentialsId: string, provider: CredentialsProvider): Promise<void> {
-        const currentHash = this.credentialsStore.getCredentialsHashCode(credentialsId)
-        if (provider.getHashCode() !== currentHash) {
+        const storedCredentials = await this.credentialsStore.getCredentials(credentialsId)
+        if (provider.getHashCode() !== storedCredentials?.credentialsHashCode) {
             getLogger().verbose(`Credentials for ${credentialsId} have changed, using updated credentials.`)
             this.credentialsStore.invalidateCredentials(credentialsId)
         }
 
-        await this.credentialsStore.getCredentialsOrCreate(credentialsId, async () => {
-            return {
-                credentials: await provider.getCredentials(),
-                credentialsHashCode: provider.getHashCode()
-            }
-        })
+        await this.credentialsStore.getOrCreateCredentials(credentialsId, provider)
     }
 
     private notifyUserInvalidCredentials(credentialProviderId: string) {
