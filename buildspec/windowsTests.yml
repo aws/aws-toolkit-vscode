@@ -10,6 +10,7 @@ phases:
 
     build:
         commands:
+            - $env:AWS_TOOLKIT_TEST_NO_COLOR=1
             - npm run testCompile
             - npm run lint
             - npm run test
