@@ -60,7 +60,7 @@ Credentials Providers for Shared Credentials are only ever refreshed when the us
 
 ![Class Diagram](class-diagram.svg)
 
-When the Toolkit is initialized, it sets up an `CredentialsProviderManager` instance to manage Credentials Providers for the Toolkit session. `CredentialsProviderFactory` objects (like `SharedCredentialsProviderFactory`) are added to it during setup.
+When the Toolkit is initialized, it sets up a `CredentialsProviderManager` instance to manage Credentials Providers for the Toolkit session. `CredentialsProviderFactory` objects (like `SharedCredentialsProviderFactory`) are added to it during setup.
 
 When the toolkit wants to list available Credentials Providers, `CredentialsProviderManager` is queried using `getAllCredentialsProviders`. This in turn calls `listProviders` on every `CredentialsProviderFactory`. Implementations for `listProviders` determine what `CredentialsProvider` objects are available/valid and return them.
 
