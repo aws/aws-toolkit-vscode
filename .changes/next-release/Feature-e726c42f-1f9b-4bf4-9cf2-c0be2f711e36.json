@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "Removed the ability to create node.js 8.10 SAM Applications. This runtime has been deprecated. See https://docs.aws.amazon.com/lambda/latest/dg/runtime-support-policy.html for more information."
+}
