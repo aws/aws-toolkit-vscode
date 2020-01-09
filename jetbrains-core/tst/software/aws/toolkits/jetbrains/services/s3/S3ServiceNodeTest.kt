@@ -1,4 +1,4 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 package software.aws.toolkits.jetbrains.services.s3
 
@@ -48,7 +48,6 @@ class S3ServiceNodeTest {
     fun s3BucketsAreListed() {
         val bucketList = listOf("bcd", "abc", "AEF", "ZZZ")
         resourceCache().s3buckets(bucketList)
-        bucketList.map { resourceCache().bucketRegion(it) }
         val children = S3ServiceNode(projectRule.project).children
 
         assertThat(children).allMatch { it is S3BucketNode }
@@ -64,17 +63,13 @@ class S3ServiceNodeTest {
     fun noBucketsInTheRegion() {
         val bucketList = emptyList<String>()
         resourceCache().s3buckets(bucketList)
-        bucketList.map { resourceCache().bucketRegion(it) }
         val children = S3ServiceNode(projectRule.project).children
         assertThat(children).allMatch { it is AwsExplorerEmptyNode }
     }
 
     @Test
     fun errorLoadingBuckets() {
-        resourceCache().addEntry(S3Resources.LIST_BUCKETS, CompletableFuture<List<Bucket>>().also {
-            it.completeExceptionally(RuntimeException("Simulated error"))
-        })
-        resourceCache().addEntry(S3Resources.bucketRegion("foo"), CompletableFuture<String>().also {
+        resourceCache().addEntry(S3Resources.LIST_REGIONALIZED_BUCKETS, CompletableFuture<List<S3Resources.RegionalizedBucket>>().also {
             it.completeExceptionally(RuntimeException("Simulated error"))
         })
         val children = S3ServiceNode(projectRule.project).children
@@ -89,14 +84,10 @@ class S3ServiceNodeTest {
 
     private fun resourceCache() = MockResourceCache.getInstance(projectRule.project)
 
-    private fun MockResourceCache.bucketRegion(name: String) {
-        this.addEntry(S3Resources.bucketRegion(name), CompletableFuture.completedFuture("aws-global"))
-    }
-
     private fun MockResourceCache.s3buckets(names: List<String>) {
         this.addEntry(
-            S3Resources.LIST_BUCKETS,
-            CompletableFuture.completedFuture(names.map(::bucketData))
+            S3Resources.LIST_REGIONALIZED_BUCKETS,
+            CompletableFuture.completedFuture(names.map { S3Resources.RegionalizedBucket(bucketData(it), AwsRegion.GLOBAL) })
         )
     }
 }

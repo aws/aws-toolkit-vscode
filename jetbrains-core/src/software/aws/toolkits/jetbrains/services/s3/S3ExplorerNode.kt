@@ -1,4 +1,4 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.s3
@@ -8,7 +8,6 @@ import icons.AwsIcons
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.Bucket
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerService
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
@@ -16,13 +15,8 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRoo
 import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
 
 class S3ServiceNode(project: Project) : AwsExplorerServiceRootNode(project, AwsExplorerService.S3) {
-    private val activeRegionId = ProjectAccountSettingsManager.getInstance(nodeProject).activeRegion.id
-
     override fun getChildrenInternal(): List<AwsExplorerNode<*>> =
-        AwsResourceCache.getInstance(nodeProject).getResourceNow(S3Resources.LIST_BUCKETS)
-            .filter { AwsResourceCache.getInstance(nodeProject).getResourceNow(S3Resources.bucketRegion(it.name())) == activeRegionId }
-            .map { S3BucketNode(nodeProject, it) }
-            .toList()
+        AwsResourceCache.getInstance(nodeProject).getResourceNow(S3Resources.listBucketsByActiveRegion(nodeProject)).map { S3BucketNode(nodeProject, it) }
 }
 
 class S3BucketNode(project: Project, val bucket: Bucket) :

@@ -1,44 +1,53 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 package software.aws.toolkits.jetbrains.services.s3.resources
 
 import com.intellij.openapi.project.Project
+import org.slf4j.event.Level
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.Bucket
-import software.amazon.awssdk.services.s3.model.S3Exception
-import software.aws.toolkits.core.utils.listBucketsByRegion
+import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.core.s3.regionForBucket
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
 import software.aws.toolkits.jetbrains.core.Resource
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.filter
+import software.aws.toolkits.jetbrains.core.map
+import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 object S3Resources {
-    val LIST_BUCKETS: Resource.Cached<List<Bucket>> = ClientBackedCachedResource(S3Client::class, "s3.list_buckets") {
-        listBuckets().buckets().toList()
+    private val LOG = getLogger<S3Resources>()
+    private val regions by lazy { AwsRegionProvider.getInstance().regions() }
+
+    val LIST_REGIONALIZED_BUCKETS = ClientBackedCachedResource(S3Client::class, "s3.list_buckets") {
+        listBuckets().buckets().mapNotNull { bucket ->
+            LOG.tryOrNull("Cannot determine region for ${bucket.name()}", level = Level.WARN) {
+                regionForBucket(bucket.name())
+            }?.let { regions[it] }?.let {
+                RegionalizedBucket(bucket, it)
+            }
+        }
     }
 
-    fun bucketRegion(bucketName: String) = ClientBackedCachedResource(S3Client::class, "s3.head_bucket.$bucketName") {
-        try {
-            headBucket { it.bucket(bucketName) }
-                .sdkHttpResponse()
-                .headers()["x-amz-bucket-region"]?.first()
-                ?: throw IllegalStateException("Failed to get bucket header")
-        } catch (e: S3Exception) {
-            e.awsErrorDetails().sdkHttpResponse().firstMatchingHeader("x-amz-bucket-region").orElseGet { null }
-                ?: throw e
-        }
+    val LIST_BUCKETS: Resource<List<Bucket>> = LIST_REGIONALIZED_BUCKETS.map { it.bucket }
+
+    fun bucketRegion(bucketName: String): Resource<AwsRegion?> = Resource.View(LIST_REGIONALIZED_BUCKETS) {
+        find { it.bucket.name() == bucketName }?.region
+    }
+
+    fun listBucketsByActiveRegion(project: Project): Resource<List<Bucket>> {
+        val activeRegion = ProjectAccountSettingsManager.getInstance(project).activeRegion
+        return LIST_REGIONALIZED_BUCKETS.filter { it.region == activeRegion }.map { it.bucket }
     }
 
     @JvmStatic
-    fun listBucketsByActiveRegion(project: Project): Resource<List<String>> {
-        val activeRegion = ProjectAccountSettingsManager.getInstance(project).activeRegion
-        return ClientBackedCachedResource(S3Client::class, "s3.list_buckets(${activeRegion.id})") {
-            listBucketsByRegion(activeRegion.id).map { it.name() }.toList()
-        }
-    }
+    fun listBucketNamesByActiveRegion(project: Project): Resource<List<String>> = listBucketsByActiveRegion(project).map { it.name() }
 
     @JvmStatic
     fun formatDate(date: Instant): String {
@@ -46,4 +55,6 @@ object S3Resources {
         return datetime.atZone(ZoneId.systemDefault())
             .format(DateTimeFormatter.ofPattern("MMM d YYYY hh:mm:ss a z"))
     }
+
+    data class RegionalizedBucket(val bucket: Bucket, val region: AwsRegion)
 }

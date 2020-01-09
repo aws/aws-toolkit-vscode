@@ -1,4 +1,4 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.lambda.deploy;
@@ -89,7 +89,7 @@ public class DeployServerlessApplicationPanel {
         environmentVariablesTable = new EnvVariablesTable();
         stackParameters = new Wrapper();
         stacks = ResourceSelector.builder(project).resource(ACTIVE_STACKS).build();
-        s3Bucket = ResourceSelector.builder(project).resource(S3Resources.listBucketsByActiveRegion(project)).build();
+        s3Bucket = ResourceSelector.builder(project).resource(S3Resources.listBucketNamesByActiveRegion(project)).build();
 
         if (!ApplicationManager.getApplication().isUnitTestMode()) {
             JComponent tableComponent = environmentVariablesTable.getComponent();
