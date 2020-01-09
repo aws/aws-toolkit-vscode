@@ -67,7 +67,6 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             return this.validateSourceProfileChain()
         } else if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_PROCESS)) {
             // No validation. Don't check anything else.
-
             return undefined
         } else if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.AWS_SESSION_TOKEN)) {
             expectedProperties.push(
