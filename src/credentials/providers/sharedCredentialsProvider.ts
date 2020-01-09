@@ -76,6 +76,8 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             )
         } else if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.AWS_ACCESS_KEY_ID)) {
             expectedProperties.push(SHARED_CREDENTIAL_PROPERTIES.AWS_SECRET_ACCESS_KEY)
+        } else {
+            return `Profile ${this.profileName} is not supported by the Toolkit.`
         }
 
         const missingProperties = this.getMissingProperties(expectedProperties)

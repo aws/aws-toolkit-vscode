@@ -104,6 +104,16 @@ describe('SharedCredentialsProvider', async () => {
         assertSubstringsInText(sut.validate(), MISSING_PROPERTIES_FRAGMENT, 'aws_secret_access_key')
     })
 
+    it('validation identifies when the profile contains no supported properties', async () => {
+        const sut = new SharedCredentialsProvider(
+            'default',
+            new Map<string, Profile>([['default', { hello: 'world' }]])
+        )
+
+        assert.notStrictEqual(sut.validate(), undefined)
+        assertSubstringsInText(sut.validate(), 'not supported')
+    })
+
     it('validates a valid profile with an access key', async () => {
         const sut = new SharedCredentialsProvider(
             'default',
