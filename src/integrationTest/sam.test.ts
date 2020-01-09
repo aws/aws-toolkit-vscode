@@ -33,12 +33,6 @@ interface TestScenario {
 // to reduce the chance of automated tests timing out.
 const scenarios: TestScenario[] = [
     {
-        runtime: 'nodejs8.10',
-        path: 'hello-world/app.js',
-        debugSessionType: 'node2',
-        language: 'javascript'
-    },
-    {
         runtime: 'nodejs10.x',
         path: 'hello-world/app.js',
         debugSessionType: 'node2',
