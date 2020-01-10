@@ -41,6 +41,37 @@ describe('CompositeResourceFetcher', async () => {
         assert.strictEqual(contents, expectedContents)
     })
 
-    // tries to load from the next resource fetcher when one raises an error
-    // returns undefined if no resource fetcher returns contents
+    it('tries to load from the next resource fetcher when one raises an error', async () => {
+        const fetcher1 = {
+            get: async () => {
+                assert.fail('Error, load from the next fetcher')
+            }
+        }
+
+        const fetcher2 = {
+            get: async () => expectedContents
+        }
+
+        const sut = new CompositeResourceFetcher(fetcher1, fetcher2)
+
+        const contents = await sut.get()
+        assert.strictEqual(contents, expectedContents)
+    })
+
+    it('returns undefined if no resource fetcher returns contents', async () => {
+        let timesCalled = 0
+        const fetcher = {
+            get: async () => {
+                timesCalled++
+
+                return undefined
+            }
+        }
+
+        const sut = new CompositeResourceFetcher(fetcher, fetcher)
+
+        const contents = await sut.get()
+        assert.strictEqual(contents, undefined)
+        assert.strictEqual(timesCalled, 2, 'fetcher was not called the expected amount of times')
+    })
 })
