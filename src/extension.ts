@@ -19,7 +19,6 @@ import { documentationUrl, extensionSettingsPrefix, githubUrl, reportIssueUrl } 
 import { DefaultCredentialsFileReaderWriter } from './shared/credentials/defaultCredentialsFileReaderWriter'
 import { DefaultAwsContext } from './shared/defaultAwsContext'
 import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
-import { DefaultResourceFetcher } from './shared/defaultResourceFetcher'
 import { ext } from './shared/extensionGlobals'
 import { showQuickStartWebview, toastNewUser } from './shared/extensionUtilities'
 import { getLogger } from './shared/logger'
@@ -47,7 +46,6 @@ export async function activate(context: vscode.ExtensionContext) {
         const toolkitSettings = new DefaultSettingsConfiguration(extensionSettingsPrefix)
         const awsContext = new DefaultAwsContext(context)
         const awsContextTrees = new AwsContextTreeCollection()
-        const resourceFetcher = new DefaultResourceFetcher()
         const regionProvider = new DefaultRegionProvider(makeEndpointsResourceFetcher(context))
         const loginManager = new LoginManager(awsContext)
 
@@ -125,7 +123,7 @@ export async function activate(context: vscode.ExtensionContext) {
             extensionContext: context
         })
 
-        await activateAwsExplorer({ awsContext, context, awsContextTrees, regionProvider, resourceFetcher })
+        await activateAwsExplorer({ awsContext, context, awsContextTrees, regionProvider })
 
         await activateSchemas()
 
