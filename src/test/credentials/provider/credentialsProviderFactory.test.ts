@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import { CredentialsProvider } from '../../../credentials/providers/credentialsProvider'
 import { BaseCredentialsProviderFactory } from '../../../credentials/providers/credentialsProviderFactory'
+import { CredentialsProviderId } from '../../../credentials/providers/credentialsProviderId'
 
 describe('BaseCredentialsProviderFactory', async () => {
     /**
@@ -76,7 +77,7 @@ describe('BaseCredentialsProviderFactory', async () => {
         const provider = makeSampleCredentialsProvider('provider1')
         sut.getProviders().push(provider)
 
-        const retrievedProvider = sut.getProvider('provider1')
+        const retrievedProvider = sut.getProvider(makeSampleCredentialsProviderId('provider1'))
         assert.notStrictEqual(retrievedProvider, undefined)
     })
 
@@ -84,13 +85,20 @@ describe('BaseCredentialsProviderFactory', async () => {
         const provider = makeSampleCredentialsProvider('provider1')
         sut.getProviders().push(provider)
 
-        const retrievedProvider = sut.getProvider('provider2')
+        const retrievedProvider = sut.getProvider(makeSampleCredentialsProviderId('provider2'))
         assert.strictEqual(retrievedProvider, undefined)
     })
 
-    function makeSampleCredentialsProvider(credentialsProviderId: string): CredentialsProvider {
+    function makeSampleCredentialsProviderId(testProviderId: string): CredentialsProviderId {
+        return {
+            credentialType: 'test',
+            credentialTypeId: testProviderId
+        }
+    }
+
+    function makeSampleCredentialsProvider(testProviderId: string): CredentialsProvider {
         return ({
-            getCredentialsProviderId: () => credentialsProviderId
+            getCredentialsProviderId: () => makeSampleCredentialsProviderId(testProviderId)
         } as any) as CredentialsProvider
     }
 })

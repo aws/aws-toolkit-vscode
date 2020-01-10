@@ -27,7 +27,10 @@ describe('SharedCredentialsProvider', async () => {
             new Map<string, Profile>([['default', { aws_access_key_id: 'x', aws_secret_access_key: 'y' }]])
         )
 
-        assert.strictEqual(sut.getCredentialsProviderId(), 'profile|default')
+        assert.deepStrictEqual(sut.getCredentialsProviderId(), {
+            credentialType: 'profile',
+            credentialTypeId: 'default'
+        })
     })
 
     it('retrieves the default region from the profile', async () => {

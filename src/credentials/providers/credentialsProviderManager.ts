@@ -5,7 +5,7 @@
 
 import { CredentialsProvider } from './credentialsProvider'
 import { CredentialsProviderFactory } from './credentialsProviderFactory'
-import { makeCredentialsProviderIdComponents } from './credentialsProviderId'
+import { CredentialsProviderId } from './credentialsProviderId'
 
 /**
  * Responsible for providing the Toolkit with all available CredentialsProviders.
@@ -26,10 +26,10 @@ export class CredentialsProviderManager {
         return providers
     }
 
-    public async getCredentialsProvider(credentialsProviderId: string): Promise<CredentialsProvider | undefined> {
-        const credentialsType = makeCredentialsProviderIdComponents(credentialsProviderId).credentialType
-
-        const factories = this.getFactories(credentialsType)
+    public async getCredentialsProvider(
+        credentialsProviderId: CredentialsProviderId
+    ): Promise<CredentialsProvider | undefined> {
+        const factories = this.getFactories(credentialsProviderId.credentialType)
         for (const factory of factories) {
             await factory.refresh()
 
@@ -46,7 +46,7 @@ export class CredentialsProviderManager {
         this.providerFactories.push(factory)
     }
 
-    private getFactories(credentialsType: string) {
+    private getFactories(credentialsType: string): CredentialsProviderFactory[] {
         return this.providerFactories.filter(f => f.getCredentialType() === credentialsType)
     }
 

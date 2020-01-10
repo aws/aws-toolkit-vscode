@@ -9,6 +9,7 @@ const localize = nls.loadMessageBundle()
 import { Credentials } from 'aws-sdk'
 import { env, Uri, ViewColumn, window } from 'vscode'
 import { LoginManager } from '../credentials/loginManager'
+import { asString, fromString } from '../credentials/providers/credentialsProviderId'
 import { CredentialsProviderManager } from '../credentials/providers/credentialsProviderManager'
 import { AwsContext } from './awsContext'
 import { AwsContextTreeCollection } from './awsContextTreeCollection'
@@ -48,7 +49,7 @@ export class DefaultAWSContextCommands {
             return
         }
 
-        await this.loginManager.login(profileName)
+        await this.loginManager.login(fromString(profileName))
     }
 
     public async onCommandCreateCredentialsProfile(): Promise<void> {
@@ -59,7 +60,7 @@ export class DefaultAWSContextCommands {
             const profileName: string | undefined = await this.promptAndCreateNewCredentialsFile()
 
             if (profileName) {
-                await this.loginManager.login(profileName)
+                await this.loginManager.login(fromString(profileName))
             }
         } else {
             // Get the editor set up and turn things over to the user
@@ -174,7 +175,7 @@ export class DefaultAWSContextCommands {
         } else {
             const profileNames = (
                 await CredentialsProviderManager.getInstance().getAllCredentialsProviders()
-            ).map(provider => provider.getCredentialsProviderId())
+            ).map(provider => asString(provider.getCredentialsProviderId()))
 
             // If no credentials were found, the user should be
             // encouraged to define some.

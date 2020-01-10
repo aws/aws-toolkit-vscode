@@ -3,14 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export const CREDENTIALS_PROVIDER_ID_SEPARATOR = '|'
+const CREDENTIALS_PROVIDER_ID_SEPARATOR = ':'
 
-export interface CredentialsProviderIdComponents {
-    credentialType: string
-    credentialTypeId: string
+export interface CredentialsProviderId {
+    readonly credentialType: string
+    readonly credentialTypeId: string
 }
 
-export function makeCredentialsProviderIdComponents(credentialsProviderId: string): CredentialsProviderIdComponents {
+export function asString(credentialsProviderId: CredentialsProviderId): string {
+    return [credentialsProviderId.credentialType, credentialsProviderId.credentialTypeId].join(
+        CREDENTIALS_PROVIDER_ID_SEPARATOR
+    )
+}
+
+export function fromString(credentialsProviderId: string): CredentialsProviderId {
     const separatorPos = credentialsProviderId.indexOf(CREDENTIALS_PROVIDER_ID_SEPARATOR)
 
     if (separatorPos === -1) {
@@ -23,8 +29,6 @@ export function makeCredentialsProviderIdComponents(credentialsProviderId: strin
     }
 }
 
-export function makeCredentialsProviderId(credentialsProviderIdComponents: CredentialsProviderIdComponents): string {
-    return [credentialsProviderIdComponents.credentialType, credentialsProviderIdComponents.credentialTypeId].join(
-        CREDENTIALS_PROVIDER_ID_SEPARATOR
-    )
+export function isEqual(idA: CredentialsProviderId, idB: CredentialsProviderId): boolean {
+    return idA.credentialType === idB.credentialType && idA.credentialTypeId === idB.credentialTypeId
 }

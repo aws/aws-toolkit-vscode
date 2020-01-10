@@ -5,6 +5,7 @@
 
 import * as AWS from 'aws-sdk'
 import { CredentialsProvider } from './providers/credentialsProvider'
+import { asString, CredentialsProviderId } from './providers/credentialsProviderId'
 
 export interface CachedCredentials {
     credentials: AWS.Credentials
@@ -24,18 +25,18 @@ export class CredentialsStore {
     /**
      * Returns undefined if credentials are not stored for given ID
      */
-    public async getCredentials(credentialsProfileId: string): Promise<CachedCredentials | undefined> {
-        return this.credentialsCache[credentialsProfileId]
+    public async getCredentials(credentialsProviderId: CredentialsProviderId): Promise<CachedCredentials | undefined> {
+        return this.credentialsCache[asString(credentialsProviderId)]
     }
 
     /**
      * If credentials are not stored, the credentialsProvider is used to produce credentials (which are then stored).
      */
     public async getOrCreateCredentials(
-        credentialsProfileId: string,
+        credentialsProviderId: CredentialsProviderId,
         credentialsProvider: CredentialsProvider
     ): Promise<CachedCredentials> {
-        let credentials = await this.getCredentials(credentialsProfileId)
+        let credentials = await this.getCredentials(credentialsProviderId)
 
         if (!credentials) {
             credentials = {
@@ -43,7 +44,7 @@ export class CredentialsStore {
                 credentialsHashCode: credentialsProvider.getHashCode()
             }
 
-            this.credentialsCache[credentialsProfileId] = credentials
+            this.credentialsCache[asString(credentialsProviderId)] = credentials
         }
 
         return credentials
@@ -52,8 +53,8 @@ export class CredentialsStore {
     /**
      * Evicts credentials from storage
      */
-    public invalidateCredentials(credentialsProfileId: string) {
+    public invalidateCredentials(credentialsProviderId: CredentialsProviderId) {
         // tslint:disable-next-line:no-dynamic-delete
-        delete this.credentialsCache[credentialsProfileId]
+        delete this.credentialsCache[asString(credentialsProviderId)]
     }
 }

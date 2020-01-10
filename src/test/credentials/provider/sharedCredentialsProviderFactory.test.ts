@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import * as sinon from 'sinon'
+import { isEqual } from '../../../credentials/providers/credentialsProviderId'
 import { SharedCredentialsProviderFactory } from '../../../credentials/providers/sharedCredentialsProviderFactory'
 import * as sharedCredentials from '../../../credentials/sharedCredentials'
 import { Profile } from '../../../shared/credentials/credentialsFile'
@@ -63,11 +64,22 @@ describe('SharedCredentialsProviderFactory', async () => {
 
         assert.strictEqual(providers.length, 2, 'Expected two providers to be created')
         assert.ok(
-            providers.find(p => p.getCredentialsProviderId() === `profile|${validProfileName1}`),
+            providers.find(p =>
+                isEqual(p.getCredentialsProviderId(), {
+                    credentialType: 'profile',
+                    credentialTypeId: validProfileName1
+                })
+            ),
             'Expected to find the first profile'
         )
         assert.ok(
-            providers.find(p => p.getCredentialsProviderId() === `profile|${validProfileName2}`),
+            providers.find(p =>
+                isEqual(p.getCredentialsProviderId(), {
+                    credentialType: 'profile',
+                    credentialTypeId: validProfileName2
+                })
+            ),
+
             'Expected to find the second profile'
         )
     })
@@ -82,7 +94,13 @@ describe('SharedCredentialsProviderFactory', async () => {
         const providers = sut.listProviders()
 
         assert.strictEqual(providers.length, 2, 'Expected two providers to be created') // the valid ones
-        assert.strictEqual(sut.getProvider(`profile|${invalidProfileName}`), undefined)
+        assert.strictEqual(
+            sut.getProvider({
+                credentialType: 'default',
+                credentialTypeId: invalidProfileName
+            }),
+            undefined
+        )
     })
 
     it('refresh does not reload from file if the file has not changed', async () => {

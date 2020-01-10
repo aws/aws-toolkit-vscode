@@ -9,7 +9,7 @@ import { profileSettingKey } from '../shared/constants'
 import { CredentialsProfileMru } from '../shared/credentials/credentialsProfileMru'
 import { SettingsConfiguration } from '../shared/settingsConfiguration'
 import { LoginManager } from './loginManager'
-import { CREDENTIALS_PROVIDER_ID_SEPARATOR, makeCredentialsProviderId } from './providers/credentialsProviderId'
+import { CredentialsProviderId, fromString } from './providers/credentialsProviderId'
 import { SharedCredentialsProvider } from './providers/sharedCredentialsProvider'
 
 export interface CredentialsInitializeParameters {
@@ -35,13 +35,10 @@ export async function loginWithMostRecentCredentials(
     if (previousCredentialsId) {
         // Migrate from older Toolkits - If the last providerId isn't in the new CredentialProviderId format,
         // treat it like a Shared Crdentials Provider.
-        const loginCredentialsId =
-            previousCredentialsId.indexOf(CREDENTIALS_PROVIDER_ID_SEPARATOR) === -1
-                ? makeCredentialsProviderId({
-                      credentialType: SharedCredentialsProvider.getCredentialsType(),
-                      credentialTypeId: previousCredentialsId
-                  })
-                : previousCredentialsId
+        const loginCredentialsId = tryMakeCredentialsProviderId(previousCredentialsId) ?? {
+            credentialType: SharedCredentialsProvider.getCredentialsType(),
+            credentialTypeId: previousCredentialsId
+        }
 
         await loginManager.login(loginCredentialsId)
     } else {
@@ -79,4 +76,12 @@ function updateConfigurationWhenAwsContextChanges(
             )
         })
     )
+}
+
+function tryMakeCredentialsProviderId(credentialsProviderId: string): CredentialsProviderId | undefined {
+    try {
+        return fromString(credentialsProviderId)
+    } catch (err) {
+        return undefined
+    }
 }

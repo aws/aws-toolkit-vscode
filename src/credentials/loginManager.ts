@@ -13,6 +13,7 @@ import { getAccountId } from '../shared/credentials/accountId'
 import { getLogger } from '../shared/logger'
 import { CredentialsStore } from './credentialsStore'
 import { CredentialsProvider } from './providers/credentialsProvider'
+import { asString, CredentialsProviderId } from './providers/credentialsProviderId'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 
 export class LoginManager {
@@ -24,18 +25,20 @@ export class LoginManager {
      * Establishes a Credentials for the Toolkit to use. Essentially the Toolkit becomes "logged in".
      * If an error occurs while trying to set up and verify these credentials, the Toolkit is "logged out".
      */
-    public async login(credentialsId: string): Promise<void> {
+    public async login(credentialsProviderId: CredentialsProviderId): Promise<void> {
         try {
-            const provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(credentialsId)
+            const provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(
+                credentialsProviderId
+            )
             if (!provider) {
-                throw new Error(`Could not find Credentials Provider for ${credentialsId}`)
+                throw new Error(`Could not find Credentials Provider for ${asString(credentialsProviderId)}`)
             }
 
-            await this.updateCredentialsStore(credentialsId, provider)
+            await this.updateCredentialsStore(credentialsProviderId, provider)
 
-            const storedCredentials = await this.credentialsStore.getCredentials(credentialsId)
+            const storedCredentials = await this.credentialsStore.getCredentials(credentialsProviderId)
             if (!storedCredentials) {
-                throw new Error(`No credentials found for id ${credentialsId}`)
+                throw new Error(`No credentials found for id ${asString(credentialsProviderId)}`)
             }
 
             // TODO : Get a region relevant to the partition for these credentials -- https://github.com/aws/aws-toolkit-vscode/issues/188
@@ -46,20 +49,22 @@ export class LoginManager {
 
             await this.awsContext.setCredentials({
                 credentials: storedCredentials.credentials,
-                credentialsId: credentialsId,
+                credentialsId: asString(credentialsProviderId),
                 accountId: accountId,
                 defaultRegion: provider.getDefaultRegion()
             })
         } catch (err) {
             getLogger().error(
-                `Error trying to connect to AWS with Credentials Provider ${credentialsId}. Toolkit will now disconnect from AWS.`,
+                `Error trying to connect to AWS with Credentials Provider ${asString(
+                    credentialsProviderId
+                )}. Toolkit will now disconnect from AWS.`,
                 err as Error
             )
-            this.credentialsStore.invalidateCredentials(credentialsId)
+            this.credentialsStore.invalidateCredentials(credentialsProviderId)
 
             await this.logout()
 
-            this.notifyUserInvalidCredentials(credentialsId)
+            this.notifyUserInvalidCredentials(credentialsProviderId)
         }
     }
 
@@ -73,17 +78,22 @@ export class LoginManager {
     /**
      * Updates the CredentialsStore if the credentials are considered different
      */
-    private async updateCredentialsStore(credentialsId: string, provider: CredentialsProvider): Promise<void> {
-        const storedCredentials = await this.credentialsStore.getCredentials(credentialsId)
+    private async updateCredentialsStore(
+        credentialsProviderId: CredentialsProviderId,
+        provider: CredentialsProvider
+    ): Promise<void> {
+        const storedCredentials = await this.credentialsStore.getCredentials(credentialsProviderId)
         if (provider.getHashCode() !== storedCredentials?.credentialsHashCode) {
-            getLogger().verbose(`Credentials for ${credentialsId} have changed, using updated credentials.`)
-            this.credentialsStore.invalidateCredentials(credentialsId)
+            getLogger().verbose(
+                `Credentials for ${asString(credentialsProviderId)} have changed, using updated credentials.`
+            )
+            this.credentialsStore.invalidateCredentials(credentialsProviderId)
         }
 
-        await this.credentialsStore.getOrCreateCredentials(credentialsId, provider)
+        await this.credentialsStore.getOrCreateCredentials(credentialsProviderId, provider)
     }
 
-    private notifyUserInvalidCredentials(credentialProviderId: string) {
+    private notifyUserInvalidCredentials(credentialProviderId: CredentialsProviderId) {
         const getHelp = localize('AWS.message.credentials.invalid.help', 'Get Help...')
         const viewLogs = localize('AWS.message.credentials.invalid.logs', 'View Logs...')
 
@@ -92,7 +102,7 @@ export class LoginManager {
                 localize(
                     'AWS.message.credentials.invalid',
                     'Invalid Credentials {0}, see logs for more information.',
-                    credentialProviderId
+                    asString(credentialProviderId)
                 ),
                 getHelp,
                 viewLogs

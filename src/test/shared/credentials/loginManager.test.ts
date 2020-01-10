@@ -7,6 +7,7 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import { LoginManager } from '../../../credentials/loginManager'
 import { CredentialsProvider } from '../../../credentials/providers/credentialsProvider'
+import { CredentialsProviderId } from '../../../credentials/providers/credentialsProviderId'
 import { CredentialsProviderManager } from '../../../credentials/providers/credentialsProviderManager'
 import { AwsContext } from '../../../shared/awsContext'
 import * as accountId from '../../../shared/credentials/accountId'
@@ -20,11 +21,15 @@ describe('LoginManager', async () => {
         }
     } as any) as AwsContext
     const sampleCredentials = ({} as any) as AWS.Credentials
+    const sampleCredentialsProviderId: CredentialsProviderId = {
+        credentialType: 'test',
+        credentialTypeId: 'someId'
+    }
 
     let loginManager: LoginManager
     let credentialsProvider: CredentialsProvider
     let getAccountIdStub: sinon.SinonStub<[AWS.Credentials, string], Promise<string | undefined>>
-    let getCredentialsProviderStub: sinon.SinonStub<[string], Promise<CredentialsProvider | undefined>>
+    let getCredentialsProviderStub: sinon.SinonStub<[CredentialsProviderId], Promise<CredentialsProvider | undefined>>
 
     beforeEach(async () => {
         sandbox = sinon.createSandbox()
@@ -32,7 +37,7 @@ describe('LoginManager', async () => {
         loginManager = new LoginManager(awsContext)
         credentialsProvider = {
             getCredentials: sandbox.stub().resolves(sampleCredentials),
-            getCredentialsProviderId: sandbox.stub().returns('someId'),
+            getCredentialsProviderId: sandbox.stub().returns(sampleCredentialsProviderId),
             getDefaultRegion: sandbox.stub().returns('someRegion'),
             getHashCode: sandbox.stub().returns('1234')
         }
@@ -50,14 +55,14 @@ describe('LoginManager', async () => {
     it('logs in with credentials (happy path)', async () => {
         const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials')
 
-        await loginManager.login('someId')
+        await loginManager.login(sampleCredentialsProviderId)
         assert.strictEqual(setCredentialsStub.callCount, 1, 'Expected awsContext setCredentials to be called once')
     })
 
     it('logs out (happy path)', async () => {
         const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials')
 
-        await loginManager.login('someId')
+        await loginManager.login(sampleCredentialsProviderId)
         await loginManager.logout()
         assert.strictEqual(setCredentialsStub.callCount, 2, 'Expected awsContext setCredentials to be called twice')
     })
@@ -70,7 +75,7 @@ describe('LoginManager', async () => {
             assert.strictEqual(credentials, undefined)
         })
 
-        await loginManager.login('someId')
+        await loginManager.login(sampleCredentialsProviderId)
         assert.strictEqual(setCredentialsStub.callCount, 1, 'Expected awsContext setCredentials to be called once')
     })
 
@@ -82,7 +87,7 @@ describe('LoginManager', async () => {
             assert.strictEqual(credentials, undefined)
         })
 
-        await loginManager.login('someId')
+        await loginManager.login(sampleCredentialsProviderId)
         assert.strictEqual(setCredentialsStub.callCount, 1, 'Expected awsContext setCredentials to be called once')
     })
 
@@ -94,7 +99,7 @@ describe('LoginManager', async () => {
             assert.strictEqual(credentials, undefined)
         })
 
-        await loginManager.login('someId')
+        await loginManager.login(sampleCredentialsProviderId)
         assert.strictEqual(setCredentialsStub.callCount, 1, 'Expected awsContext setCredentials to be called once')
     })
 })

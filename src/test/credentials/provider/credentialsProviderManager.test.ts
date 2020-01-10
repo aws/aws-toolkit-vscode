@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import { CredentialsProvider } from '../../../credentials/providers/credentialsProvider'
 import { CredentialsProviderFactory } from '../../../credentials/providers/credentialsProviderFactory'
-import { makeCredentialsProviderId } from '../../../credentials/providers/credentialsProviderId'
+import { CredentialsProviderId, isEqual } from '../../../credentials/providers/credentialsProviderId'
 import { CredentialsProviderManager } from '../../../credentials/providers/credentialsProviderManager'
 
 /**
@@ -19,11 +19,10 @@ class TestCredentialsProviderFactory implements CredentialsProviderFactory {
         this.providers.push(
             ...providerSubIds.map<CredentialsProvider>(subId => {
                 return ({
-                    getCredentialsProviderId: () =>
-                        makeCredentialsProviderId({
-                            credentialType: this.credentialType,
-                            credentialTypeId: subId
-                        })
+                    getCredentialsProviderId: () => ({
+                        credentialType: this.credentialType,
+                        credentialTypeId: subId
+                    })
                 } as any) as CredentialsProvider
             })
         )
@@ -37,8 +36,8 @@ class TestCredentialsProviderFactory implements CredentialsProviderFactory {
         return this.providers
     }
 
-    public getProvider(credentialsProviderId: string): CredentialsProvider | undefined {
-        const providers = this.providers.filter(p => p.getCredentialsProviderId() === credentialsProviderId)
+    public getProvider(credentialsProviderId: CredentialsProviderId): CredentialsProvider | undefined {
+        const providers = this.providers.filter(p => isEqual(p.getCredentialsProviderId(), credentialsProviderId))
 
         if (providers.length === 0) {
             return undefined
@@ -69,15 +68,30 @@ describe('CredentialsProviderManager', async () => {
 
             assert.strictEqual(providers.length, 3, 'Manager did not return the expected number of providers')
             assert.ok(
-                providers.some(x => x.getCredentialsProviderId() === 'credentialTypeA|one'),
+                providers.some(x =>
+                    isEqual(x.getCredentialsProviderId(), {
+                        credentialType: 'credentialTypeA',
+                        credentialTypeId: 'one'
+                    })
+                ),
                 'Manager did not return the first provider'
             )
             assert.ok(
-                providers.some(x => x.getCredentialsProviderId() === 'credentialTypeB|two'),
+                providers.some(x =>
+                    isEqual(x.getCredentialsProviderId(), {
+                        credentialType: 'credentialTypeB',
+                        credentialTypeId: 'two'
+                    })
+                ),
                 'Manager did not return the second provider'
             )
             assert.ok(
-                providers.some(x => x.getCredentialsProviderId() === 'credentialTypeB|three'),
+                providers.some(x =>
+                    isEqual(x.getCredentialsProviderId(), {
+                        credentialType: 'credentialTypeB',
+                        credentialTypeId: 'three'
+                    })
+                ),
                 'Manager did not return the third provider'
             )
         })
@@ -86,14 +100,17 @@ describe('CredentialsProviderManager', async () => {
     describe('getCredentialsProvider', async () => {
         it('returns a provider', async () => {
             const factoryA = new TestCredentialsProviderFactory('profile', ['default'])
-            const expectedCredentialsProviderId = 'profile|default'
+            const expectedCredentialsProviderId: CredentialsProviderId = {
+                credentialType: 'profile',
+                credentialTypeId: 'default'
+            }
 
             sut.addProviderFactory(factoryA)
 
             const provider = await sut.getCredentialsProvider(expectedCredentialsProviderId)
 
             assert.notStrictEqual(provider, undefined, 'Manager did not return a provider')
-            assert.strictEqual(
+            assert.deepStrictEqual(
                 provider?.getCredentialsProviderId(),
                 expectedCredentialsProviderId,
                 'Manager did not return the expected provider'
@@ -105,7 +122,10 @@ describe('CredentialsProviderManager', async () => {
 
             sut.addProviderFactory(factoryA)
 
-            const provider = await sut.getCredentialsProvider('profile|default')
+            const provider = await sut.getCredentialsProvider({
+                credentialType: 'profile',
+                credentialTypeId: 'default'
+            })
 
             assert.strictEqual(provider, undefined, 'Manager was not supposed to return a provider')
         })
@@ -115,7 +135,10 @@ describe('CredentialsProviderManager', async () => {
 
             sut.addProviderFactory(factoryA)
 
-            const provider = await sut.getCredentialsProvider('profile|default')
+            const provider = await sut.getCredentialsProvider({
+                credentialType: 'profile',
+                credentialTypeId: 'default'
+            })
 
             assert.strictEqual(provider, undefined, 'Manager was not supposed to return a provider')
         })

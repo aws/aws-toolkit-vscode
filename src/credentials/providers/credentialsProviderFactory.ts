@@ -4,6 +4,7 @@
  */
 
 import { CredentialsProvider } from './credentialsProvider'
+import { CredentialsProviderId, isEqual } from './credentialsProviderId'
 
 /**
  * Responsible for producing CredentialsProvider objects for a Credential Type
@@ -11,7 +12,7 @@ import { CredentialsProvider } from './credentialsProvider'
 export interface CredentialsProviderFactory {
     getCredentialType(): string
     listProviders(): CredentialsProvider[]
-    getProvider(credentialsProviderId: string): CredentialsProvider | undefined
+    getProvider(credentialsProviderId: CredentialsProviderId): CredentialsProvider | undefined
     refresh(): Promise<void>
 }
 
@@ -24,9 +25,9 @@ export abstract class BaseCredentialsProviderFactory<T extends CredentialsProvid
         return [...this.providers]
     }
 
-    public getProvider(credentialsProviderId: string): CredentialsProvider | undefined {
+    public getProvider(credentialsProviderId: CredentialsProviderId): CredentialsProvider | undefined {
         for (const provider of this.providers) {
-            if (provider.getCredentialsProviderId() === credentialsProviderId) {
+            if (isEqual(provider.getCredentialsProviderId(), credentialsProviderId)) {
                 return provider
             }
         }

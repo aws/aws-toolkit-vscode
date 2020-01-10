@@ -9,7 +9,7 @@ import { getLogger } from '../../shared/logger'
 import { getStringHash } from '../../shared/utilities/textUtilities'
 import { getMfaTokenFromUser } from '../credentialsCreator'
 import { CredentialsProvider } from './credentialsProvider'
-import { makeCredentialsProviderId } from './credentialsProviderId'
+import { CredentialsProviderId } from './credentialsProviderId'
 
 const SHARED_CREDENTIAL_PROPERTIES = {
     AWS_ACCESS_KEY_ID: 'aws_access_key_id',
@@ -42,11 +42,11 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         this.profile = profile
     }
 
-    public getCredentialsProviderId(): string {
-        return makeCredentialsProviderId({
+    public getCredentialsProviderId(): CredentialsProviderId {
+        return {
             credentialType: SharedCredentialsProvider.getCredentialsType(),
             credentialTypeId: this.profileName
-        })
+        }
     }
 
     public getHashCode(): number {

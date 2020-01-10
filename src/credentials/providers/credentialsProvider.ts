@@ -3,8 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { CredentialsProviderId } from './credentialsProviderId'
+
 export interface CredentialsProvider {
-    getCredentialsProviderId(): string
+    getCredentialsProviderId(): CredentialsProviderId
     getDefaultRegion(): string | undefined
     getHashCode(): number
     getCredentials(): Promise<AWS.Credentials>
