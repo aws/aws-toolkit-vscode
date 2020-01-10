@@ -24,7 +24,7 @@ import { ext } from './shared/extensionGlobals'
 import { showQuickStartWebview, toastNewUser } from './shared/extensionUtilities'
 import { getLogger } from './shared/logger'
 import { activate as activateLogger } from './shared/logger/activation'
-import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
+import { DefaultRegionProvider, makeEndpointsResourceFetcher } from './shared/regions/defaultRegionProvider'
 import { activate as activateServerless } from './shared/sam/activation'
 import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
 import { AwsTelemetryOptOut } from './shared/telemetry/awsTelemetryOptOut'
@@ -48,7 +48,7 @@ export async function activate(context: vscode.ExtensionContext) {
         const awsContext = new DefaultAwsContext(context)
         const awsContextTrees = new AwsContextTreeCollection()
         const resourceFetcher = new DefaultResourceFetcher()
-        const regionProvider = new DefaultRegionProvider(context, resourceFetcher)
+        const regionProvider = new DefaultRegionProvider(makeEndpointsResourceFetcher(context))
         const loginManager = new LoginManager(awsContext)
 
         await initializeAwsCredentialsStatusBarItem(awsContext, context)

@@ -7,12 +7,14 @@
 
 import * as assert from 'assert'
 import {
+    DefaultRegionProvider,
     getRegionsFromEndpoints,
     getRegionsFromPartition,
     RawEndpoints,
     RawPartition
 } from '../../../shared/regions/defaultRegionProvider'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
+import { ResourceFetcher } from '../../../shared/resourcefetcher/resourcefetcher'
 
 const sampleEndpoints: RawEndpoints = {
     partitions: [
@@ -48,6 +50,38 @@ const sampleEndpoints: RawEndpoints = {
         }
     ]
 }
+
+describe('DefaultRegionProvider', async () => {
+    class ResourceFetcherCounter implements ResourceFetcher {
+        public timesCalled = 0
+
+        public async get(): Promise<string> {
+            this.timesCalled++
+
+            return JSON.stringify(sampleEndpoints)
+        }
+    }
+
+    it('returns region data', async () => {
+        const resourceFetcher = new ResourceFetcherCounter()
+        const regionProvider = new DefaultRegionProvider(resourceFetcher)
+
+        const regions = await regionProvider.getRegionData()
+
+        assert.strictEqual(regions.length, 3, 'Expected to retrieve three regions')
+        assert.strictEqual(resourceFetcher.timesCalled, 1)
+    })
+
+    it('loads from the resource fetcher only once', async () => {
+        const resourceFetcher = new ResourceFetcherCounter()
+        const regionProvider = new DefaultRegionProvider(resourceFetcher)
+
+        await regionProvider.getRegionData()
+        await regionProvider.getRegionData()
+
+        assert.strictEqual(resourceFetcher.timesCalled, 1)
+    })
+})
 
 describe('getRegionsFromPartition', async () => {
     it('pulls region data from partition', async () => {
