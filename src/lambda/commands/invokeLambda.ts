@@ -8,7 +8,6 @@ import _ = require('lodash')
 import path = require('path')
 import * as vscode from 'vscode'
 import xml2js = require('xml2js')
-import { AwsContext } from '../../shared/awsContext'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
 import { ExtensionUtilities } from '../../shared/extensionUtilities'
@@ -42,7 +41,6 @@ export async function invokeLambda(params: {
      *      invokeParams: {functionArn: string} // or Lambda.Types.InvocationRequest (see: lambda.d.ts)
      *  }
      */
-    awsContext: AwsContext // TODO: Consider replacing 'awsContext' with something specific and meaningful
     outputChannel: vscode.OutputChannel
     resourceFetcher: ResourceFetcher
     functionNode: LambdaFunctionNode

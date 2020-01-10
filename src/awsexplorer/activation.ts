@@ -42,7 +42,7 @@ export async function activate(activateArguments: {
         vscode.window.registerTreeDataProvider(awsExplorer.viewProviderId, awsExplorer)
     )
 
-    await registerAwsExplorerCommands(awsExplorer, activateArguments.awsContext, activateArguments.resourceFetcher)
+    await registerAwsExplorerCommands(awsExplorer, activateArguments.resourceFetcher)
 
     await recordNumberOfActiveRegionsMetric(awsExplorer)
 
@@ -57,7 +57,6 @@ export async function activate(activateArguments: {
 
 async function registerAwsExplorerCommands(
     awsExplorer: AwsExplorer,
-    awsContext: AwsContext,
     resourceFetcher: ResourceFetcher,
     lambdaOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Lambda')
 ): Promise<void> {
@@ -114,7 +113,6 @@ async function registerAwsExplorerCommands(
         command: 'aws.invokeLambda',
         callback: async (node: LambdaFunctionNode) =>
             await invokeLambda({
-                awsContext: awsContext,
                 functionNode: node,
                 outputChannel: lambdaOutputChannel,
                 resourceFetcher: resourceFetcher
