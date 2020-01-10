@@ -25,6 +25,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
                     if (error) {
                         reject(error)
                     } else {
+                        // tslint:disable-next-line: no-unsafe-any
                         resolve(body.toString())
                     }
                 })
