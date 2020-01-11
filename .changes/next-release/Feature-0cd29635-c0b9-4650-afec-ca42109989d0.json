@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "The MFA prompt now shows which MFA Device a code is being asked for."
+}

@@ -6,7 +6,7 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import * as vscode from 'vscode'
+import { createInputBox, promptUser } from '../shared/ui/input'
 
 const ERROR_MESSAGE_USER_CANCELLED = localize(
     'AWS.error.mfa.userCancelled',
@@ -29,15 +29,16 @@ export async function getMfaTokenFromUser(
     callback: (err?: Error, token?: string) => void
 ): Promise<void> {
     try {
-        const token = await vscode.window.showInputBox({
-            ignoreFocusOut: true,
-            placeHolder: localize('AWS.prompt.mfa.enterCode.placeholder', 'Enter Authentication Code Here'),
-            prompt: localize(
-                'AWS.prompt.mfa.enterCode.prompt',
-                'Enter authentication code for profile {0}',
-                profileName
-            )
+        const inputBox = createInputBox({
+            options: {
+                ignoreFocusOut: true,
+                placeHolder: localize('AWS.prompt.mfa.enterCode.placeholder', 'Enter Authentication Code Here'),
+                title: localize('AWS.prompt.mfa.enterCode.title', 'MFA Challenge for {0}', profileName),
+                prompt: localize('AWS.prompt.mfa.enterCode.prompt', 'Enter code for MFA device {0}', mfaSerial)
+            }
         })
+
+        const token = await promptUser({ inputBox: inputBox })
 
         // Distinguish user cancel vs code entry issues with the error message
         if (!token) {
