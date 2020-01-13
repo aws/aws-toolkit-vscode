@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { removeAnsi } from '../../../shared/utilities/textUtilities'
+import { getStringHash, removeAnsi } from '../../../shared/utilities/textUtilities'
 
 describe('removeAnsi', async () => {
     it('removes ansi code from text', async () => {
@@ -14,5 +14,15 @@ describe('removeAnsi', async () => {
     it('text without ansi code remains as-is', async () => {
         const text = 'Hello World 123!'
         assert.strictEqual(removeAnsi(text), text)
+    })
+})
+
+describe('getStringHash', async () => {
+    it('produces a hash', async () => {
+        assert.ok(getStringHash('hello'))
+    })
+
+    it('produces a different hash for different strings', async () => {
+        assert.notStrictEqual(getStringHash('hello'), getStringHash('hello '))
     })
 })

@@ -7,15 +7,10 @@ import * as handlebars from 'handlebars'
 import * as path from 'path'
 
 import { writeFile } from 'fs-extra'
-import * as vscode from 'vscode'
-import * as nls from 'vscode-nls'
-import { credentialHelpUrl } from '../constants'
-import { EnvironmentVariables } from '../environmentVariables'
+import { getConfigFilename, getCredentialsFilename } from '../../credentials/sharedCredentials'
 import { mkdir } from '../filesystem'
 import { fileExists, readFileAsString } from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
-
-const localize = nls.loadMessageBundle()
 
 /**
  * The payload used to fill in the handlebars template
@@ -41,7 +36,7 @@ export class UserCredentialsUtils {
      * @returns array of filenames for files found.
      */
     public static async findExistingCredentialsFilenames(): Promise<string[]> {
-        const candidateFiles: string[] = [this.getCredentialsFilename(), this.getConfigFilename()]
+        const candidateFiles: string[] = [getCredentialsFilename(), getConfigFilename()]
 
         const existsResults: boolean[] = await Promise.all(
             candidateFiles.map(async filename => await SystemUtilities.fileExists(filename))
@@ -51,30 +46,12 @@ export class UserCredentialsUtils {
     }
 
     /**
-     * @returns Filename for the credentials file
-     */
-    public static getCredentialsFilename(): string {
-        const env = process.env as EnvironmentVariables
-
-        return env.AWS_SHARED_CREDENTIALS_FILE || path.join(SystemUtilities.getHomeDirectory(), '.aws', 'credentials')
-    }
-
-    /**
-     * @returns Filename for the config file
-     */
-    public static getConfigFilename(): string {
-        const env = process.env as EnvironmentVariables
-
-        return env.AWS_CONFIG_FILE || path.join(SystemUtilities.getHomeDirectory(), '.aws', 'config')
-    }
-
-    /**
      * @description Determines if credentials directory exists
      * If it doesn't, creates credentials directory
-     * at directory from this.getCredentialsFilename()
+     * at directory from getCredentialsFilename()
      */
     public static async generateCredentialDirectoryIfNonexistent(): Promise<void> {
-        const filepath = path.dirname(this.getCredentialsFilename())
+        const filepath = path.dirname(getCredentialsFilename())
         if (!(await fileExists(filepath))) {
             await mkdir(filepath, { recursive: true })
         }
@@ -98,25 +75,13 @@ export class UserCredentialsUtils {
         const credentialsFileContents = handlebarTemplate(credentialsContext)
 
         // Make a final check
-        if (await SystemUtilities.fileExists(this.getCredentialsFilename())) {
+        if (await SystemUtilities.fileExists(getCredentialsFilename())) {
             throw new Error('Credentials file exists. Not overwriting it.')
         }
 
-        await writeFile(this.getCredentialsFilename(), credentialsFileContents, {
+        await writeFile(getCredentialsFilename(), credentialsFileContents, {
             encoding: 'utf8',
             mode: 0o100600 // basic file (type 100) with 600 permissions
         })
-    }
-
-    public static async notifyUserCredentialsAreBad(profileName: string) {
-        const getHelp = localize('AWS.message.credentials.invalidProfile.help', 'Get Help...')
-        const selection = await vscode.window.showErrorMessage(
-            localize('AWS.message.credentials.invalidProfile', 'Credentials profile {0} is invalid', profileName),
-            getHelp
-        )
-
-        if (selection === getHelp) {
-            vscode.env.openExternal(vscode.Uri.parse(credentialHelpUrl))
-        }
     }
 }

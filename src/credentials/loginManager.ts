@@ -1,14 +1,20 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
+import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
+import { credentialHelpUrl } from '../shared/constants'
 import { getAccountId } from '../shared/credentials/accountId'
-import { UserCredentialsUtils } from '../shared/credentials/userCredentialsUtils'
 import { getLogger } from '../shared/logger'
-import { createCredentials } from './credentialsCreator'
 import { CredentialsStore } from './credentialsStore'
+import { CredentialsProvider } from './providers/credentialsProvider'
+import { asString, CredentialsProviderId } from './providers/credentialsProviderId'
+import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 
 export class LoginManager {
     private readonly credentialsStore: CredentialsStore = new CredentialsStore()
@@ -19,33 +25,46 @@ export class LoginManager {
      * Establishes a Credentials for the Toolkit to use. Essentially the Toolkit becomes "logged in".
      * If an error occurs while trying to set up and verify these credentials, the Toolkit is "logged out".
      */
-    public async login(credentialsId: string): Promise<void> {
+    public async login(credentialsProviderId: CredentialsProviderId): Promise<void> {
         try {
-            const credentials = await this.credentialsStore.getCredentialsOrCreate(credentialsId, createCredentials)
-            if (!credentials) {
-                throw new Error(`No credentials found for id ${credentialsId}`)
+            const provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(
+                credentialsProviderId
+            )
+            if (!provider) {
+                throw new Error(`Could not find Credentials Provider for ${asString(credentialsProviderId)}`)
+            }
+
+            await this.updateCredentialsStore(credentialsProviderId, provider)
+
+            const storedCredentials = await this.credentialsStore.getCredentials(credentialsProviderId)
+            if (!storedCredentials) {
+                throw new Error(`No credentials found for id ${asString(credentialsProviderId)}`)
             }
 
             // TODO : Get a region relevant to the partition for these credentials -- https://github.com/aws/aws-toolkit-vscode/issues/188
-            const accountId = await getAccountId(credentials, 'us-east-1')
-
+            const accountId = await getAccountId(storedCredentials.credentials, 'us-east-1')
             if (!accountId) {
                 throw new Error('Could not determine Account Id for credentials')
             }
 
             await this.awsContext.setCredentials({
-                credentials: credentials,
-                credentialsId: credentialsId,
-                accountId: accountId
+                credentials: storedCredentials.credentials,
+                credentialsId: asString(credentialsProviderId),
+                accountId: accountId,
+                defaultRegion: provider.getDefaultRegion()
             })
         } catch (err) {
-            getLogger().error('Error logging in', err as Error)
-            this.credentialsStore.invalidateCredentials(credentialsId)
+            getLogger().error(
+                `Error trying to connect to AWS with Credentials Provider ${asString(
+                    credentialsProviderId
+                )}. Toolkit will now disconnect from AWS.`,
+                err as Error
+            )
+            this.credentialsStore.invalidateCredentials(credentialsProviderId)
 
             await this.logout()
 
-            // tslint:disable-next-line: no-floating-promises
-            UserCredentialsUtils.notifyUserCredentialsAreBad(credentialsId)
+            this.notifyUserInvalidCredentials(credentialsProviderId)
         }
     }
 
@@ -54,5 +73,46 @@ export class LoginManager {
      */
     public async logout(): Promise<void> {
         await this.awsContext.setCredentials(undefined)
+    }
+
+    /**
+     * Updates the CredentialsStore if the credentials are considered different
+     */
+    private async updateCredentialsStore(
+        credentialsProviderId: CredentialsProviderId,
+        provider: CredentialsProvider
+    ): Promise<void> {
+        const storedCredentials = await this.credentialsStore.getCredentials(credentialsProviderId)
+        if (provider.getHashCode() !== storedCredentials?.credentialsHashCode) {
+            getLogger().verbose(
+                `Credentials for ${asString(credentialsProviderId)} have changed, using updated credentials.`
+            )
+            this.credentialsStore.invalidateCredentials(credentialsProviderId)
+        }
+
+        await this.credentialsStore.getOrCreateCredentials(credentialsProviderId, provider)
+    }
+
+    private notifyUserInvalidCredentials(credentialProviderId: CredentialsProviderId) {
+        const getHelp = localize('AWS.message.credentials.invalid.help', 'Get Help...')
+        const viewLogs = localize('AWS.message.credentials.invalid.logs', 'View Logs...')
+
+        vscode.window
+            .showErrorMessage(
+                localize(
+                    'AWS.message.credentials.invalid',
+                    'Invalid Credentials {0}, see logs for more information.',
+                    asString(credentialProviderId)
+                ),
+                getHelp,
+                viewLogs
+            )
+            .then((selection: string | undefined) => {
+                if (selection === getHelp) {
+                    vscode.env.openExternal(vscode.Uri.parse(credentialHelpUrl))
+                } else if (selection === viewLogs) {
+                    vscode.commands.executeCommand('aws.viewLogs')
+                }
+            })
     }
 }
