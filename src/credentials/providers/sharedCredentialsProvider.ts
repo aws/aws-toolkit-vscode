@@ -49,7 +49,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         }
     }
 
-    public getHashCode(): number {
+    public getHashCode(): string {
         return getStringHash(JSON.stringify(this.profile))
     }
 

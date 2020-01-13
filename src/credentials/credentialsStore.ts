@@ -9,7 +9,7 @@ import { asString, CredentialsProviderId } from './providers/credentialsProvider
 
 export interface CachedCredentials {
     credentials: AWS.Credentials
-    credentialsHashCode: number
+    credentialsHashCode: string
 }
 
 /**

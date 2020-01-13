@@ -8,6 +8,6 @@ import { CredentialsProviderId } from './credentialsProviderId'
 export interface CredentialsProvider {
     getCredentialsProviderId(): CredentialsProviderId
     getDefaultRegion(): string | undefined
-    getHashCode(): number
+    getHashCode(): string
     getCredentials(): Promise<AWS.Credentials>
 }
