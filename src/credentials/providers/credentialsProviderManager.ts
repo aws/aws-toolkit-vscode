@@ -15,12 +15,12 @@ export class CredentialsProviderManager {
     private readonly providerFactories: CredentialsProviderFactory[] = []
 
     public async getAllCredentialsProviders(): Promise<CredentialsProvider[]> {
-        const providers: CredentialsProvider[] = []
+        let providers: CredentialsProvider[] = []
 
         for (const factory of this.providerFactories) {
             await factory.refresh()
 
-            providers.push(...factory.listProviders())
+            providers = providers.concat(factory.listProviders())
         }
 
         return providers
