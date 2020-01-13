@@ -20,11 +20,12 @@ A factory is capable of producing one or more Credentials Providers for a single
 
 ### Credentials Provider Id
 
-All Credentials Provider instances are uniquely identified by a Credentials Provider Id. These take the format `(credentials type)|(credentials type id)`.
+All Credentials Provider instances are uniquely identified by a Credentials Provider Id. These consist of the following parts:
 
-Example, Shared Credentials Providers have a credentials type `profile`, and an id that represents the profile name. So if a user's shared credentials contained a profile named "foo", the Credentials Provider Id of a corresponding CredentialsProvider instance would be `profile|foo`.
+-   Credentials Type - a classification of the source data used to produce credentials. For example, the toolkit assigns Shared Credentials the type `profile`
+-   Credentials Type Id - within a credentials type, this is a unique identifier for the source data used to produce credentials. Using Shared Credentials files as an example, each profile is used as the Id.
 
-Credentials Provider Id may be surfaced to users, however it is an internal identification construct.
+A formatted version of the Credentials Provider Id may be surfaced to users, however it is an internal identification construct.
 
 ## How it Works
 
