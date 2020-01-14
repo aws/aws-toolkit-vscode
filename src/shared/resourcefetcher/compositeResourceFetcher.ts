@@ -11,14 +11,14 @@ export class CompositeResourceFetcher implements ResourceFetcher {
     private readonly fetchers: ResourceFetcher[]
 
     /**
-     * Tries loading from fetchers in order until one returns a resource
+     * @param fetchers - resource load is attempted from provided fetchers until one succeeds
      */
     public constructor(...fetchers: ResourceFetcher[]) {
         this.fetchers = fetchers
     }
 
     /**
-     * Returns the contents of the resource, or undefined if the resource could not be retrieved.
+     * Returns the contents of the resource from the first fetcher that successfully retrieves it, or undefined if the resource could not be retrieved.
      */
     public async get(): Promise<string | undefined> {
         try {
