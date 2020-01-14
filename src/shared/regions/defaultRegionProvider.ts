@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import path = require('path')
 import * as vscode from 'vscode'
 import { endpointsFileUrl } from '../constants'
+import { ext } from '../extensionGlobals'
 import { getLogger, Logger } from '../logger'
 import { CompositeResourceFetcher } from '../resourcefetcher/compositeResourceFetcher'
 import { FileResourceFetcher } from '../resourcefetcher/fileResourceFetcher'
@@ -75,11 +75,9 @@ export class DefaultRegionProvider implements RegionProvider {
 }
 
 export function makeEndpointsResourceFetcher(extensionContext: vscode.ExtensionContext): ResourceFetcher {
-    const localEndpointsPath = extensionContext.asAbsolutePath(path.join('resources', 'endpoints.json'))
-
     return new CompositeResourceFetcher(
         new HttpResourceFetcher(endpointsFileUrl),
-        new FileResourceFetcher(localEndpointsPath)
+        new FileResourceFetcher(ext.manifestPaths.endpoints)
     )
 }
 

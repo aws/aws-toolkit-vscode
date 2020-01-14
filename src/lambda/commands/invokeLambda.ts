@@ -5,7 +5,6 @@
 
 import { _Blob } from 'aws-sdk/clients/lambda'
 import _ = require('lodash')
-import path = require('path')
 import * as vscode from 'vscode'
 import xml2js = require('xml2js')
 import { LambdaClient } from '../../shared/clients/lambdaClient'
@@ -183,10 +182,8 @@ function createMessageReceivedFunc({
 }
 
 function makeSampleRequestManifestResourceFetcher(): ResourceFetcher {
-    const resourcePath = ext.context.asAbsolutePath(path.join('resources', 'vs-lambda-sample-request-manifest.xml'))
-
     return new CompositeResourceFetcher(
         new HttpResourceFetcher(sampleRequestManifestPath),
-        new FileResourceFetcher(resourcePath)
+        new FileResourceFetcher(ext.manifestPaths.lambdaSampleRequests)
     )
 }

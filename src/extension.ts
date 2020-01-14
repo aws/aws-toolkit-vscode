@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { join } from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
@@ -44,6 +45,7 @@ export async function activate(context: vscode.ExtensionContext) {
         initializeCredentialsProviderManager()
 
         initializeIconPaths(context)
+        initializeManifestPaths(context)
 
         const toolkitSettings = new DefaultSettingsConfiguration(extensionSettingsPrefix)
         const awsContext = new DefaultAwsContext(context)
@@ -172,6 +174,13 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
 
     ext.iconPaths.dark.schema = context.asAbsolutePath('resources/dark/schema.svg')
     ext.iconPaths.light.schema = context.asAbsolutePath('resources/light/schema.svg')
+}
+
+function initializeManifestPaths(extensionContext: vscode.ExtensionContext) {
+    ext.manifestPaths.endpoints = extensionContext.asAbsolutePath(join('resources', 'endpoints.json'))
+    ext.manifestPaths.lambdaSampleRequests = extensionContext.asAbsolutePath(
+        join('resources', 'vs-lambda-sample-request-manifest.xml')
+    )
 }
 
 function initializeCredentialsProviderManager() {
