@@ -5,16 +5,16 @@
 
 import { _Blob } from 'aws-sdk/clients/lambda'
 import _ = require('lodash')
-import path = require('path')
 import * as vscode from 'vscode'
 import xml2js = require('xml2js')
-import { AwsContext } from '../../shared/awsContext'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
 import { ExtensionUtilities } from '../../shared/extensionUtilities'
 import { getLogger, Logger } from '../../shared/logger'
-import { ResourceFetcher } from '../../shared/resourceFetcher'
-import { FileResourceLocation, WebResourceLocation } from '../../shared/resourceLocation'
+import { CompositeResourceFetcher } from '../../shared/resourcefetcher/compositeResourceFetcher'
+import { FileResourceFetcher } from '../../shared/resourcefetcher/fileResourceFetcher'
+import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
+import { ResourceFetcher } from '../../shared/resourcefetcher/resourcefetcher'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
 import { sampleRequestManifestPath, sampleRequestPath } from '../constants'
 import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
@@ -42,9 +42,7 @@ export async function invokeLambda(params: {
      *      invokeParams: {functionArn: string} // or Lambda.Types.InvocationRequest (see: lambda.d.ts)
      *  }
      */
-    awsContext: AwsContext // TODO: Consider replacing 'awsContext' with something specific and meaningful
     outputChannel: vscode.OutputChannel
-    resourceFetcher: ResourceFetcher
     functionNode: LambdaFunctionNode
 }) {
     const logger: Logger = getLogger()
@@ -67,26 +65,22 @@ export async function invokeLambda(params: {
         })
 
         // ideally need to get the client from the explorer, but the context will do for now
-        logger.info('building template...')
-
         const invokeTemplateFn = _.template(LambdaTemplates.INVOKE_TEMPLATE)
-        const resourcePath = path.join(ext.context.extensionPath, 'resources', 'vs-lambda-sample-request-manifest.xml')
 
-        logger.info(sampleRequestManifestPath)
-        logger.info(resourcePath)
+        logger.info('Loading Sample Requests Manifest')
 
         try {
-            const sampleInput = await params.resourceFetcher.getResource([
-                new WebResourceLocation(sampleRequestManifestPath),
-                new FileResourceLocation(resourcePath)
-            ])
+            const sampleInput = await makeSampleRequestManifestResourceFetcher().get()
+
+            if (!sampleInput) {
+                throw new Error('Unable to retrieve Sample Request manifest')
+            }
+
+            logger.debug(`Loaded: ${sampleInput}`)
+
             const inputs: SampleRequest[] = []
 
-            logger.info('querying manifest url')
-
             xml2js.parseString(sampleInput, { explicitArray: false }, (err: Error, result: SampleRequestManifest) => {
-                logger.info(result.toString())
-
                 if (err) {
                     return
                 }
@@ -98,8 +92,6 @@ export async function invokeLambda(params: {
 
             const loadScripts = ExtensionUtilities.getScriptsForHtml(['invokeLambdaVue.js'])
             const loadLibs = ExtensionUtilities.getLibrariesForHtml(['vue.min.js'])
-
-            logger.info(loadLibs.toString())
 
             view.webview.html = baseTemplateFn({
                 content: invokeTemplateFn({
@@ -114,8 +106,6 @@ export async function invokeLambda(params: {
                 createMessageReceivedFunc({
                     fn: functionNode,
                     outputChannel: params.outputChannel,
-                    resourceFetcher: params.resourceFetcher,
-                    resourcePath: resourcePath,
                     onPostMessage: message => view.webview.postMessage(message)
                 }),
                 undefined,
@@ -138,8 +128,6 @@ function createMessageReceivedFunc({
     // TODO: Consider passing lambdaClient: LambdaClient
     fn: LambdaFunctionNode // TODO: Replace w/ invokeParams: {functionArn: string} // or Lambda.Types.InvocationRequest
     outputChannel: vscode.OutputChannel
-    resourceFetcher: ResourceFetcher
-    resourcePath: string
     onPostMessage(message: any): Thenable<boolean>
 }) {
     const logger: Logger = getLogger()
@@ -147,15 +135,12 @@ function createMessageReceivedFunc({
     return async (message: CommandMessage) => {
         switch (message.command) {
             case 'sampleRequestSelected':
-                logger.info('selected the following sample:')
-                logger.info(String(message.value))
+                logger.info(`Requesting ${message.value}`)
+                const sampleUrl = `${sampleRequestPath}${message.value}`
 
-                const sample = await restParams.resourceFetcher.getResource([
-                    new WebResourceLocation(`${sampleRequestPath}${message.value}`),
-                    new FileResourceLocation(restParams.resourcePath)
-                ])
+                const sample = (await new HttpResourceFetcher(sampleUrl).get()) ?? ''
 
-                logger.info(sample)
+                logger.debug(`Retrieved: ${sample}`)
 
                 restParams.onPostMessage({ command: 'loadedSample', sample: sample })
 
@@ -194,4 +179,11 @@ function createMessageReceivedFunc({
                 return
         }
     }
+}
+
+function makeSampleRequestManifestResourceFetcher(): ResourceFetcher {
+    return new CompositeResourceFetcher(
+        new HttpResourceFetcher(sampleRequestManifestPath),
+        new FileResourceFetcher(ext.manifestPaths.lambdaSampleRequests)
+    )
 }

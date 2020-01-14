@@ -26,6 +26,11 @@ export namespace ext {
         export const dark: IconPaths = makeIconPathsObject()
         export const light: IconPaths = makeIconPathsObject()
     }
+
+    export namespace manifestPaths {
+        export let endpoints: string = ''
+        export let lambdaSampleRequests: string = ''
+    }
 }
 
 export interface IconPaths {

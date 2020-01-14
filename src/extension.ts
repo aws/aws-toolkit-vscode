@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { join } from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
@@ -20,12 +21,11 @@ import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClie
 import { documentationUrl, extensionSettingsPrefix, githubUrl, reportIssueUrl } from './shared/constants'
 import { DefaultAwsContext } from './shared/defaultAwsContext'
 import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
-import { DefaultResourceFetcher } from './shared/defaultResourceFetcher'
 import { ext } from './shared/extensionGlobals'
 import { showQuickStartWebview, toastNewUser } from './shared/extensionUtilities'
 import { getLogger } from './shared/logger'
 import { activate as activateLogger } from './shared/logger/activation'
-import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
+import { DefaultRegionProvider, makeEndpointsResourceFetcher } from './shared/regions/defaultRegionProvider'
 import { activate as activateServerless } from './shared/sam/activation'
 import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
 import { AwsTelemetryOptOut } from './shared/telemetry/awsTelemetryOptOut'
@@ -45,12 +45,12 @@ export async function activate(context: vscode.ExtensionContext) {
         initializeCredentialsProviderManager()
 
         initializeIconPaths(context)
+        initializeManifestPaths(context)
 
         const toolkitSettings = new DefaultSettingsConfiguration(extensionSettingsPrefix)
         const awsContext = new DefaultAwsContext(context)
         const awsContextTrees = new AwsContextTreeCollection()
-        const resourceFetcher = new DefaultResourceFetcher()
-        const regionProvider = new DefaultRegionProvider(context, resourceFetcher)
+        const regionProvider = new DefaultRegionProvider(makeEndpointsResourceFetcher(context))
         const loginManager = new LoginManager(awsContext)
 
         await initializeAwsCredentialsStatusBarItem(awsContext, context)
@@ -127,7 +127,7 @@ export async function activate(context: vscode.ExtensionContext) {
             extensionContext: context
         })
 
-        await activateAwsExplorer({ awsContext, context, awsContextTrees, regionProvider, resourceFetcher })
+        await activateAwsExplorer({ awsContext, context, awsContextTrees, regionProvider })
 
         await activateSchemas()
 
@@ -174,6 +174,13 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
 
     ext.iconPaths.dark.schema = context.asAbsolutePath('resources/dark/schema.svg')
     ext.iconPaths.light.schema = context.asAbsolutePath('resources/light/schema.svg')
+}
+
+function initializeManifestPaths(extensionContext: vscode.ExtensionContext) {
+    ext.manifestPaths.endpoints = extensionContext.asAbsolutePath(join('resources', 'endpoints.json'))
+    ext.manifestPaths.lambdaSampleRequests = extensionContext.asAbsolutePath(
+        join('resources', 'vs-lambda-sample-request-manifest.xml')
+    )
 }
 
 function initializeCredentialsProviderManager() {
