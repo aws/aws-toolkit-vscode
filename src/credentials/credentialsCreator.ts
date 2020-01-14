@@ -6,26 +6,12 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import * as AWS from 'aws-sdk'
 import * as vscode from 'vscode'
 
 const ERROR_MESSAGE_USER_CANCELLED = localize(
     'AWS.error.mfa.userCancelled',
     'User cancelled entering authentication code'
 )
-
-export async function createCredentials(profileName: string): Promise<AWS.Credentials> {
-    const provider = new AWS.CredentialProviderChain([
-        () => new AWS.ProcessCredentials({ profile: profileName }),
-        () =>
-            new AWS.SharedIniFileCredentials({
-                profile: profileName,
-                tokenCodeFn: async (mfaSerial, callback) => await getMfaTokenFromUser(mfaSerial, profileName, callback)
-            })
-    ])
-
-    return provider.resolvePromise()
-}
 
 /**
  * @description Prompts user for MFA token

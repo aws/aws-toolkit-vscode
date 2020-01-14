@@ -50,6 +50,10 @@ export class FakeAwsContext implements AwsContext {
         return this.awsContextCredentials?.accountId
     }
 
+    public getCredentialDefaultRegion(): string | undefined {
+        return this.awsContextCredentials?.defaultRegion
+    }
+
     public async getExplorerRegions(): Promise<string[]> {
         return [DEFAULT_TEST_REGION_CODE]
     }

@@ -9,6 +9,8 @@ import { profileSettingKey } from '../shared/constants'
 import { CredentialsProfileMru } from '../shared/credentials/credentialsProfileMru'
 import { SettingsConfiguration } from '../shared/settingsConfiguration'
 import { LoginManager } from './loginManager'
+import { CredentialsProviderId, fromString } from './providers/credentialsProviderId'
+import { SharedCredentialsProvider } from './providers/sharedCredentialsProvider'
 
 export interface CredentialsInitializeParameters {
     extensionContext: vscode.ExtensionContext
@@ -29,9 +31,16 @@ export async function loginWithMostRecentCredentials(
     toolkitSettings: SettingsConfiguration,
     loginManager: LoginManager
 ): Promise<void> {
-    const previousCredentialsId = toolkitSettings.readSetting(profileSettingKey, '')
+    const previousCredentialsId = toolkitSettings.readSetting<string>(profileSettingKey, '')
     if (previousCredentialsId) {
-        await loginManager.login(previousCredentialsId)
+        // Migrate from older Toolkits - If the last providerId isn't in the new CredentialProviderId format,
+        // treat it like a Shared Crdentials Provider.
+        const loginCredentialsId = tryMakeCredentialsProviderId(previousCredentialsId) ?? {
+            credentialType: SharedCredentialsProvider.getCredentialsType(),
+            credentialTypeId: previousCredentialsId
+        }
+
+        await loginManager.login(loginCredentialsId)
     } else {
         await loginManager.logout()
     }
@@ -67,4 +76,12 @@ function updateConfigurationWhenAwsContextChanges(
             )
         })
     )
+}
+
+function tryMakeCredentialsProviderId(credentialsProviderId: string): CredentialsProviderId | undefined {
+    try {
+        return fromString(credentialsProviderId)
+    } catch (err) {
+        return undefined
+    }
 }
