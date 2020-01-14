@@ -14,6 +14,7 @@ import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.io.FileUtil
 import com.intellij.util.ExceptionUtil
 import software.amazon.awssdk.services.schemas.model.DescribeSchemaResponse
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
@@ -25,6 +26,7 @@ import software.aws.toolkits.resources.message
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 import javax.swing.JComponent
+import kotlin.math.min
 
 class SchemaViewer(
     private val project: Project,
@@ -124,14 +126,16 @@ class SchemaPreviewer() {
         val credentialIdentifier = project.activeCredentialProvider().displayName
         val region = project.activeRegion().id
 
-        val fileName = "$credentialIdentifier.$region.$registryName.$schemaName.$version.json"
+        val fileName = "${credentialIdentifier}_${region}_${registryName}_${schemaName}_$version"
+        val sanitizedFileName = FileUtil.sanitizeFileName(fileName, false)
+        val trimmedFileNameWithExtension = sanitizedFileName.substring(0, min(sanitizedFileName.length, MAX_FILE_LENGTH)) + SCHEMA_EXTENSION
 
         val future = CompletableFuture<Void>()
 
         ApplicationManager.getApplication().invokeLater({
             try {
                 val vfile = ScratchRootType.getInstance()
-                    .createScratchFile(project, fileName, JsonLanguage.INSTANCE, schemaContent, ScratchFileService.Option.create_if_missing)
+                    .createScratchFile(project, trimmedFileNameWithExtension, JsonLanguage.INSTANCE, schemaContent, ScratchFileService.Option.create_if_missing)
 
                 vfile?.let {
                     val fileEditorManager = FileEditorManager.getInstance(project)
@@ -145,5 +149,10 @@ class SchemaPreviewer() {
         })
 
         return future
+    }
+
+    companion object {
+        val SCHEMA_EXTENSION = ".json"
+        val MAX_FILE_LENGTH = 255 - SCHEMA_EXTENSION.length // min(MAX_FILE_NAME_LENGTH_WINDOWS, MAX_FILE_NAME_LENGTH_MAC)
     }
 }

@@ -43,9 +43,12 @@ class SchemasViewerTest {
     private val REGION = MockProjectAccountSettingsManager.getInstance(projectRule.project).activeRegion.id
     private val REGISTRY = "registry"
     private val SCHEMA = "schema"
+    private val SCHEMA_SUPER_LONG_NAME =
+        "schema12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890" +
+            "12345678901234567890123456789012345678901234567890123456789012345678901234567890"
+    private val SCHEMA_SPECIAL_CHARACTER = "schema:awesome"
+    private val SCHEMA_SPECIAL_CHARACTER_SANITIZED = "schema_awesome"
     private val VERSION = "2"
-
-    private val SCHEMA_FILE_NAME = "$CREDENTIAL_IDENTIFIER.$REGION.$REGISTRY.$SCHEMA.$VERSION.json"
 
     private val AWS_EVENT_SCHEMA_RAW = File(javaClass.getResource("/awsEventSchemaRaw.json.txt").toURI()).readText(Charsets.UTF_8)
     private val AWS_EVENT_SCHEMA_PRETTY = File(javaClass.getResource("/awsEventSchemaPretty.json.txt").toURI()).readText(Charsets.UTF_8)
@@ -94,7 +97,37 @@ class SchemasViewerTest {
 
         future.get()
 
-        assertThat(fileEditorManager.openFiles).hasOnlyOneElementSatisfying { assertThat(it.name).isEqualTo(SCHEMA_FILE_NAME) }
+        assertThat(fileEditorManager.openFiles).hasOnlyOneElementSatisfying { assertThat(it.name).isEqualTo(getSchemaFileName(SCHEMA)) }
+    }
+
+    @Test
+    fun canOpenFileDialogLongSchemaName() {
+        var future = CompletableFuture<Void>()
+        runInEdtAndWait() {
+            future = SchemaPreviewer().openFileInEditor(REGISTRY, SCHEMA_SUPER_LONG_NAME, AWS_EVENT_SCHEMA_PRETTY, VERSION, projectRule.project)
+                .toCompletableFuture()
+        }
+
+        future.get()
+
+        val trimmedSchemaFileName = getSchemaFileName(SCHEMA_SUPER_LONG_NAME).substring(0, SchemaPreviewer.MAX_FILE_LENGTH) +
+            SchemaPreviewer.SCHEMA_EXTENSION
+        assertThat(fileEditorManager.openFiles).hasOnlyOneElementSatisfying { assertThat(it.name).isEqualTo(trimmedSchemaFileName) }
+    }
+
+    @Test
+    fun canOpenFileDialogSchemaNameWithSpecialCharacters() {
+        var future = CompletableFuture<Void>()
+        runInEdtAndWait() {
+            future = SchemaPreviewer().openFileInEditor(REGISTRY, SCHEMA_SPECIAL_CHARACTER, AWS_EVENT_SCHEMA_PRETTY, VERSION, projectRule.project)
+                .toCompletableFuture()
+        }
+
+        future.get()
+
+        assertThat(fileEditorManager.openFiles).hasOnlyOneElementSatisfying {
+            assertThat(it.name).isEqualTo(getSchemaFileName(SCHEMA_SPECIAL_CHARACTER_SANITIZED))
+        }
     }
 
     @Test
@@ -154,4 +187,6 @@ class SchemasViewerTest {
         future.complete(obj)
         return future
     }
+
+    fun getSchemaFileName(schemaName: String) = "${CREDENTIAL_IDENTIFIER}_${REGION}_${REGISTRY}_${schemaName}_$VERSION.json"
 }
