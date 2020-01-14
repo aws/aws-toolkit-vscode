@@ -7,8 +7,6 @@ import * as vscode from 'vscode'
 import { AwsContext, AwsContextCredentials, ContextChangeEventsArgs } from '../../shared/awsContext'
 import { RegionInfo } from '../../shared/regions/regionInfo'
 import { RegionProvider } from '../../shared/regions/regionProvider'
-import { ResourceFetcher } from '../../shared/resourceFetcher'
-import { ResourceLocation } from '../../shared/resourceLocation'
 
 export const DEFAULT_TEST_PROFILE_NAME = 'qwerty'
 export const DEFAULT_TEST_ACCOUNT_ID = '123456789012'
@@ -65,12 +63,6 @@ export class FakeAwsContext implements AwsContext {
     }
 
     public async removeExplorerRegion(...regions: string[]): Promise<void> {
-        throw new Error('Method not implemented.')
-    }
-}
-
-export class FakeResourceFetcher implements ResourceFetcher {
-    public async getResource(resourceLocations: ResourceLocation[]): Promise<string> {
         throw new Error('Method not implemented.')
     }
 }

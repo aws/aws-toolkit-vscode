@@ -3,12 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import path = require('path')
-import { ExtensionContext } from 'vscode'
+import * as vscode from 'vscode'
 import { endpointsFileUrl } from '../constants'
+import { ext } from '../extensionGlobals'
 import { getLogger, Logger } from '../logger'
-import { ResourceFetcher } from '../resourceFetcher'
-import { FileResourceLocation, WebResourceLocation } from '../resourceLocation'
+import { CompositeResourceFetcher } from '../resourcefetcher/compositeResourceFetcher'
+import { FileResourceFetcher } from '../resourcefetcher/fileResourceFetcher'
+import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
+import { ResourceFetcher } from '../resourcefetcher/resourcefetcher'
 import { RegionInfo } from './regionInfo'
 import { RegionProvider } from './regionProvider'
 
@@ -28,34 +30,33 @@ export interface RawEndpoints {
 }
 
 export class DefaultRegionProvider implements RegionProvider {
+    private readonly logger: Logger = getLogger()
     private _areRegionsLoaded: boolean = false
     private _loadedRegions: RegionInfo[]
-    private readonly _context: ExtensionContext
     private readonly _resourceFetcher: ResourceFetcher
 
-    public constructor(context: ExtensionContext, resourceFetcher: ResourceFetcher) {
+    public constructor(resourceFetcher: ResourceFetcher) {
         this._loadedRegions = []
-        this._context = context
         this._resourceFetcher = resourceFetcher
     }
 
     // Returns an array of Regions, and caches them in memory.
     public async getRegionData(): Promise<RegionInfo[]> {
-        const logger: Logger = getLogger()
         if (this._areRegionsLoaded) {
             return this._loadedRegions
         }
 
         let availableRegions: RegionInfo[] = []
         try {
-            logger.info('> Downloading latest toolkits endpoint data')
+            this.logger.info('Retrieving AWS endpoint data')
 
-            const resourcePath = path.join(this._context.extensionPath, 'resources', 'endpoints.json')
-            const endpointsSource = await this._resourceFetcher.getResource([
-                new WebResourceLocation(endpointsFileUrl),
-                new FileResourceLocation(resourcePath)
-            ])
-            const allEndpoints = JSON.parse(endpointsSource) as RawEndpoints
+            const endpointsContents = await this._resourceFetcher.get()
+
+            if (!endpointsContents) {
+                throw new Error('No endpoints data found')
+            }
+
+            const allEndpoints = JSON.parse(endpointsContents) as RawEndpoints
 
             availableRegions = getRegionsFromEndpoints(allEndpoints)
 
@@ -63,7 +64,7 @@ export class DefaultRegionProvider implements RegionProvider {
             this._loadedRegions = availableRegions
         } catch (err) {
             this._areRegionsLoaded = false
-            logger.error('...error downloading endpoints: ', err as Error)
+            this.logger.error('Unable to retrieve AWS endpoints: ', err as Error)
             // TODO: now what, oneline + local failed...?
             availableRegions = []
             this._loadedRegions = []
@@ -71,6 +72,13 @@ export class DefaultRegionProvider implements RegionProvider {
 
         return availableRegions
     }
+}
+
+export function makeEndpointsResourceFetcher(extensionContext: vscode.ExtensionContext): ResourceFetcher {
+    return new CompositeResourceFetcher(
+        new HttpResourceFetcher(endpointsFileUrl),
+        new FileResourceFetcher(ext.manifestPaths.endpoints)
+    )
 }
 
 export function getRegionsFromPartition(partition: RawPartition): RegionInfo[] {

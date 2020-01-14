@@ -16,7 +16,6 @@ import { ext } from '../shared/extensionGlobals'
 import { safeGet } from '../shared/extensionUtilities'
 import { getLogger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
-import { ResourceFetcher } from '../shared/resourceFetcher'
 import { registerCommand } from '../shared/telemetry/telemetryUtils'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../shared/treeview/nodes/errorNode'
@@ -34,7 +33,6 @@ export async function activate(activateArguments: {
     context: vscode.ExtensionContext
     awsContextTrees: AwsContextTreeCollection
     regionProvider: RegionProvider
-    resourceFetcher: ResourceFetcher
 }): Promise<void> {
     const awsExplorer = new AwsExplorer(activateArguments.awsContext, activateArguments.regionProvider)
 
@@ -42,7 +40,7 @@ export async function activate(activateArguments: {
         vscode.window.registerTreeDataProvider(awsExplorer.viewProviderId, awsExplorer)
     )
 
-    await registerAwsExplorerCommands(awsExplorer, activateArguments.awsContext, activateArguments.resourceFetcher)
+    await registerAwsExplorerCommands(awsExplorer)
 
     await recordNumberOfActiveRegionsMetric(awsExplorer)
 
@@ -57,8 +55,6 @@ export async function activate(activateArguments: {
 
 async function registerAwsExplorerCommands(
     awsExplorer: AwsExplorer,
-    awsContext: AwsContext,
-    resourceFetcher: ResourceFetcher,
     lambdaOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Lambda')
 ): Promise<void> {
     registerCommand({
@@ -114,10 +110,8 @@ async function registerAwsExplorerCommands(
         command: 'aws.invokeLambda',
         callback: async (node: LambdaFunctionNode) =>
             await invokeLambda({
-                awsContext: awsContext,
                 functionNode: node,
-                outputChannel: lambdaOutputChannel,
-                resourceFetcher: resourceFetcher
+                outputChannel: lambdaOutputChannel
             }),
         telemetryName: 'lambda_invokeremote'
     })
