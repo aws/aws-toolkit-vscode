@@ -1,4 +1,4 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.utils
@@ -11,6 +11,7 @@ import com.intellij.openapi.ui.showYesNoDialog
 import software.amazon.awssdk.services.resourcegroupstaggingapi.ResourceGroupsTaggingApiClient
 import software.amazon.awssdk.services.resourcegroupstaggingapi.model.GetResourcesRequest
 import software.amazon.awssdk.services.resourcegroupstaggingapi.model.TagFilter
+import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.resources.message
 
@@ -23,6 +24,7 @@ enum class TaggingResourceType(val value: String, val tagFilter: String) {
     LAMBDA_FUNCTION(message("codepipeline.lambda.resource_type"), "lambda:function"),
     CLOUDFORMATION_STACK(message("codepipeline.stack.resource_type"), "cloudformation:stack"),
     S3_BUCKET(message("codepipeline.bucket.resource_type"), "s3");
+
     override fun toString() = value
 }
 
@@ -72,16 +74,10 @@ fun getCodePipelineArnForResource(project: Project, resourceArn: String, resourc
     val tagFilter = TagFilter.builder().key(CODEPIPELINE_SYSTEM_TAG_KEY).build()
     val request = GetResourcesRequest.builder().tagFilters(tagFilter).resourceTypeFilters(resourceTypeFilter).build()
 
-    client.getResourcesPaginator(request).forEach {
-        for (resourceTagMapping in it.resourceTagMappingList().filterNotNull()) {
-            if (resourceTagMapping.resourceARN() == resourceArn) {
-                val tagValue = resourceTagMapping.tags().filterNotNull().find { it.key() == CODEPIPELINE_SYSTEM_TAG_KEY }?.value()
-                if (tagValue != null) {
-                    return tagValue
-                }
-            }
-        }
+    return tryOrNull {
+        client.getResourcesPaginator(request).resourceTagMappingList().filterNotNull()
+            .filter { it.resourceARN() == resourceArn }
+            .mapNotNull { it.tags().filterNotNull().find { it.key() == CODEPIPELINE_SYSTEM_TAG_KEY }?.value() }
+            .firstOrNull()
     }
-
-    return null
 }

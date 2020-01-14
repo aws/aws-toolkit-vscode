@@ -1,4 +1,4 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.fixtures
@@ -12,6 +12,7 @@ import com.intellij.testGuiFramework.util.scenarios.NewProjectDialogModel.Consta
 import com.intellij.testGuiFramework.util.scenarios.assertProjectPathExists
 import com.intellij.testGuiFramework.util.scenarios.connectDialog
 import com.intellij.testGuiFramework.util.scenarios.fileSystemUtils
+import com.intellij.testGuiFramework.util.scenarios.selectProjectGroup
 import com.intellij.testGuiFramework.util.scenarios.selectSdk
 import com.intellij.testGuiFramework.util.scenarios.typeProjectNameAndLocation
 import com.intellij.testGuiFramework.util.scenarios.waitLoadingTemplates
@@ -67,6 +68,24 @@ fun NewProjectDialogModel.createServerlessProject(
                     button(buttonFinish).click()
                     waitTillGone()
                 }
+            }
+        }
+    }
+}
+
+fun NewProjectDialogModel.createEmptyProject(projectPath: String) {
+    with(connectDialog()) {
+        selectProjectGroup(NewProjectDialogModel.Groups.Empty)
+        button(buttonNext).click()
+        typeProjectNameAndLocation(projectPath)
+        button(buttonFinish).click()
+    }
+
+    with(guiTestCase) {
+        ideFrame {
+            waitForBackgroundTasksToFinish()
+            dialog("Project Structure") {
+                button(NewProjectDialogModel.Constants.buttonCancel).click()
             }
         }
     }

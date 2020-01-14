@@ -1,4 +1,4 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 apply plugin: 'org.jetbrains.intellij'
@@ -25,6 +25,11 @@ runIde {
         port = 5005
         server = true
         suspend = true
+    }
+    systemProperty("testDataPath", project.rootDir.toPath().resolve("testdata").toString())
+    systemProperty("ide.mac.file.chooser.native", "false")
+    if (System.getenv("CI") != null) {
+        systemProperty("aws.sharedCredentialsFile", "/tmp/.aws/credentials")
     }
 
     /* Need to split the space-delimited value in the exec.args */
