@@ -9,17 +9,17 @@ import * as assert from 'assert'
 import {
     DefaultRegionProvider,
     getRegionsFromEndpoints,
-    getRegionsFromPartition,
-    RawEndpoints,
-    RawPartition
+    getRegionsFromPartition
 } from '../../../shared/regions/defaultRegionProvider'
+import { EndpointsManifest, Partition } from '../../../shared/regions/endpointsManifest'
 import { RegionInfo } from '../../../shared/regions/regionInfo'
 import { ResourceFetcher } from '../../../shared/resourcefetcher/resourcefetcher'
 
-const sampleEndpoints: RawEndpoints = {
+const sampleEndpoints: EndpointsManifest = {
     partitions: [
         {
             partition: 'aws',
+            partitionName: 'Standard',
             regions: {
                 region1: {
                     description: 'aws region one'
@@ -30,23 +30,28 @@ const sampleEndpoints: RawEndpoints = {
                 region3: {
                     description: 'aws region three'
                 }
-            }
+            },
+            services: {}
         },
         {
             partition: 'aws-cn',
+            partitionName: 'China',
             regions: {
                 awscnregion1: {
                     description: 'aws-cn region one'
                 }
-            }
+            },
+            services: {}
         },
         {
             partition: 'fake',
+            partitionName: 'Fake Region',
             regions: {
                 fakeregion1: {
                     description: 'fake region one'
                 }
-            }
+            },
+            services: {}
         }
     ]
 }
@@ -109,7 +114,7 @@ describe('getRegionsFromEndpoints', async () => {
 /**
  * Assert that all regions in expectedPartition exist in actualRegions
  */
-function assertPartitionRegionsExist(expectedPartition: RawPartition, actualRegions: RegionInfo[]) {
+function assertPartitionRegionsExist(expectedPartition: Partition, actualRegions: RegionInfo[]) {
     Object.keys(expectedPartition.regions).forEach(regionCode => {
         const expectedRegion = expectedPartition.regions[regionCode]
         const candidateRegions = actualRegions.filter(region => region.regionCode === regionCode)

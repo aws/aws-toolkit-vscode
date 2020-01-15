@@ -11,23 +11,9 @@ import { CompositeResourceFetcher } from '../resourcefetcher/compositeResourceFe
 import { FileResourceFetcher } from '../resourcefetcher/fileResourceFetcher'
 import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
 import { ResourceFetcher } from '../resourcefetcher/resourcefetcher'
+import { EndpointsManifest, Partition } from './endpointsManifest'
 import { RegionInfo } from './regionInfo'
 import { RegionProvider } from './regionProvider'
-
-export interface RawRegion {
-    description: string
-}
-
-export interface RawPartition {
-    partition: string
-    regions: {
-        [regionKey: string]: RawRegion
-    }
-}
-
-export interface RawEndpoints {
-    partitions: RawPartition[]
-}
 
 export class DefaultRegionProvider implements RegionProvider {
     private readonly logger: Logger = getLogger()
@@ -56,7 +42,7 @@ export class DefaultRegionProvider implements RegionProvider {
                 throw new Error('No endpoints data found')
             }
 
-            const allEndpoints = JSON.parse(endpointsContents) as RawEndpoints
+            const allEndpoints = JSON.parse(endpointsContents) as EndpointsManifest
 
             availableRegions = getRegionsFromEndpoints(allEndpoints)
 
@@ -81,18 +67,18 @@ export function makeEndpointsResourceFetcher(extensionContext: vscode.ExtensionC
     )
 }
 
-export function getRegionsFromPartition(partition: RawPartition): RegionInfo[] {
+export function getRegionsFromPartition(partition: Partition): RegionInfo[] {
     return Object.keys(partition.regions).map(
         regionKey => new RegionInfo(regionKey, `${partition.regions[regionKey].description}`)
     )
 }
 
-export function getRegionsFromEndpoints(endpoints: RawEndpoints): RegionInfo[] {
+export function getRegionsFromEndpoints(endpoints: EndpointsManifest): RegionInfo[] {
     return (
         endpoints.partitions
             // TODO : Support other Partition regions : https://github.com/aws/aws-toolkit-vscode/issues/188
             .filter(partition => partition.partition && partition.partition === 'aws')
-            .reduce((accumulator: RegionInfo[], partition: RawPartition) => {
+            .reduce((accumulator: RegionInfo[], partition: Partition) => {
                 accumulator.push(...getRegionsFromPartition(partition))
 
                 return accumulator
