@@ -6,16 +6,10 @@
 'use strict'
 
 import * as assert from 'assert'
-import {
-    DefaultRegionProvider,
-    getRegionsFromEndpoints,
-    getRegionsFromPartition
-} from '../../../shared/regions/defaultRegionProvider'
-import { EndpointsManifest, Partition } from '../../../shared/regions/endpointsManifest'
-import { RegionInfo } from '../../../shared/regions/regionInfo'
+import { DefaultRegionProvider } from '../../../shared/regions/defaultRegionProvider'
 import { ResourceFetcher } from '../../../shared/resourcefetcher/resourcefetcher'
 
-const sampleEndpoints: EndpointsManifest = {
+const sampleEndpoints = {
     partitions: [
         {
             partition: 'aws',
@@ -30,8 +24,7 @@ const sampleEndpoints: EndpointsManifest = {
                 region3: {
                     description: 'aws region three'
                 }
-            },
-            services: {}
+            }
         },
         {
             partition: 'aws-cn',
@@ -40,18 +33,7 @@ const sampleEndpoints: EndpointsManifest = {
                 awscnregion1: {
                     description: 'aws-cn region one'
                 }
-            },
-            services: {}
-        },
-        {
-            partition: 'fake',
-            partitionName: 'Fake Region',
-            regions: {
-                fakeregion1: {
-                    description: 'fake region one'
-                }
-            },
-            services: {}
+            }
         }
     ]
 }
@@ -87,42 +69,3 @@ describe('DefaultRegionProvider', async () => {
         assert.strictEqual(resourceFetcher.timesCalled, 1)
     })
 })
-
-describe('getRegionsFromPartition', async () => {
-    it('pulls region data from partition', async () => {
-        const partition = sampleEndpoints.partitions.filter(p => p.partition === 'aws')[0]
-        const regions = getRegionsFromPartition(partition)
-
-        assert.ok(regions, 'Expected to get regions')
-        assert.strictEqual(regions.length, 3, 'Expected 3 regions')
-        assertPartitionRegionsExist(partition, regions)
-    })
-})
-
-describe('getRegionsFromEndpoints', async () => {
-    it('returns expected regions', async () => {
-        // TODO : Support other Partition regions : https://github.com/aws/aws-toolkit-vscode/issues/188
-        const partition = sampleEndpoints.partitions.filter(p => p.partition === 'aws')[0]
-        const regions = getRegionsFromEndpoints(sampleEndpoints)
-
-        assert.ok(regions, 'Expected to get regions')
-        assert.strictEqual(regions.length, 3, 'Expected 3 regions')
-        assertPartitionRegionsExist(partition, regions)
-    })
-})
-
-/**
- * Assert that all regions in expectedPartition exist in actualRegions
- */
-function assertPartitionRegionsExist(expectedPartition: Partition, actualRegions: RegionInfo[]) {
-    Object.keys(expectedPartition.regions).forEach(regionCode => {
-        const expectedRegion = expectedPartition.regions[regionCode]
-        const candidateRegions = actualRegions.filter(region => region.regionCode === regionCode)
-        assert.strictEqual(candidateRegions.length, 1, `Region not found for ${regionCode}`)
-        assert.strictEqual(
-            candidateRegions[0].regionName,
-            expectedRegion.description,
-            `Unexpected Region name for ${regionCode}`
-        )
-    })
-}

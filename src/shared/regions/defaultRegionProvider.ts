@@ -11,7 +11,7 @@ import { CompositeResourceFetcher } from '../resourcefetcher/compositeResourceFe
 import { FileResourceFetcher } from '../resourcefetcher/fileResourceFetcher'
 import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
 import { ResourceFetcher } from '../resourcefetcher/resourcefetcher'
-import { EndpointsManifest, Partition } from './endpointsManifest'
+import { Endpoints, loadEndpoints, Region } from './endpoints'
 import { RegionInfo } from './regionInfo'
 import { RegionProvider } from './regionProvider'
 
@@ -42,9 +42,10 @@ export class DefaultRegionProvider implements RegionProvider {
                 throw new Error('No endpoints data found')
             }
 
-            const allEndpoints = JSON.parse(endpointsContents) as EndpointsManifest
+            const endpoints = loadEndpoints(endpointsContents)
 
-            availableRegions = getRegionsFromEndpoints(allEndpoints)
+            // TODO : Support other Partition regions : https://github.com/aws/aws-toolkit-vscode/issues/188
+            availableRegions = getRegionInfo(endpoints, 'aws')
 
             this._areRegionsLoaded = true
             this._loadedRegions = availableRegions
@@ -67,24 +68,21 @@ export function makeEndpointsResourceFetcher(extensionContext: vscode.ExtensionC
     )
 }
 
-export function getRegionsFromPartition(partition: Partition): RegionInfo[] {
-    return Object.keys(partition.regions).map(regionKey => {
-        return {
-            regionCode: regionKey,
-            regionName: `${partition.regions[regionKey].description}`
-        }
-    })
+function getRegionInfo(endpoints: Endpoints, partitionId: string): RegionInfo[] {
+    let regions: RegionInfo[] = []
+
+    endpoints.partitions
+        .filter(partition => partition.id === partitionId)
+        .forEach(partition => {
+            regions = regions.concat(partition.regions.map(asRegionInfo))
+        })
+
+    return regions
 }
 
-export function getRegionsFromEndpoints(endpoints: EndpointsManifest): RegionInfo[] {
-    return (
-        endpoints.partitions
-            // TODO : Support other Partition regions : https://github.com/aws/aws-toolkit-vscode/issues/188
-            .filter(partition => partition.partition && partition.partition === 'aws')
-            .reduce((accumulator: RegionInfo[], partition: Partition) => {
-                accumulator.push(...getRegionsFromPartition(partition))
-
-                return accumulator
-            }, [])
-    )
+function asRegionInfo(region: Region): RegionInfo {
+    return {
+        regionCode: region.id,
+        regionName: region.description
+    }
 }
