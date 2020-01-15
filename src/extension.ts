@@ -18,14 +18,23 @@ import { activate as activateSchemas } from './eventSchemas/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
-import { documentationUrl, extensionSettingsPrefix, githubUrl, reportIssueUrl } from './shared/constants'
+import {
+    documentationUrl,
+    endpointsFileUrl,
+    extensionSettingsPrefix,
+    githubUrl,
+    reportIssueUrl
+} from './shared/constants'
 import { DefaultAwsContext } from './shared/defaultAwsContext'
 import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
 import { ext } from './shared/extensionGlobals'
 import { showQuickStartWebview, toastNewUser } from './shared/extensionUtilities'
 import { getLogger } from './shared/logger'
 import { activate as activateLogger } from './shared/logger/activation'
-import { DefaultRegionProvider, makeEndpointsResourceFetcher } from './shared/regions/defaultRegionProvider'
+import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
+import { EndpointsProvider } from './shared/regions/endpointsProvider'
+import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetcher'
+import { HttpResourceFetcher } from './shared/resourcefetcher/httpResourceFetcher'
 import { activate as activateServerless } from './shared/sam/activation'
 import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
 import { AwsTelemetryOptOut } from './shared/telemetry/awsTelemetryOptOut'
@@ -48,9 +57,12 @@ export async function activate(context: vscode.ExtensionContext) {
         initializeManifestPaths(context)
 
         const toolkitSettings = new DefaultSettingsConfiguration(extensionSettingsPrefix)
+
+        const endpointsProvider = makeEndpointsProvider()
+
         const awsContext = new DefaultAwsContext(context)
         const awsContextTrees = new AwsContextTreeCollection()
-        const regionProvider = new DefaultRegionProvider(makeEndpointsResourceFetcher(context))
+        const regionProvider = new DefaultRegionProvider(endpointsProvider)
         const loginManager = new LoginManager(awsContext)
 
         await initializeAwsCredentialsStatusBarItem(awsContext, context)
@@ -185,6 +197,17 @@ function initializeManifestPaths(extensionContext: vscode.ExtensionContext) {
 
 function initializeCredentialsProviderManager() {
     CredentialsProviderManager.getInstance().addProviderFactory(new SharedCredentialsProviderFactory())
+}
+
+function makeEndpointsProvider(): EndpointsProvider {
+    const localManifestFetcher = new FileResourceFetcher(ext.manifestPaths.endpoints)
+    const remoteManifestFetcher = new HttpResourceFetcher(endpointsFileUrl)
+
+    const provider = new EndpointsProvider(localManifestFetcher, remoteManifestFetcher)
+    // tslint:disable-next-line:no-floating-promises -- start the load without waiting. It raises events as fetchers retrieve data.
+    provider.load()
+
+    return provider
 }
 
 // Unique extension entrypoint names, so that they can be obtained from the webpack bundle

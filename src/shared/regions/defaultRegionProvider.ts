@@ -3,69 +3,85 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
-import { endpointsFileUrl } from '../constants'
-import { ext } from '../extensionGlobals'
-import { getLogger, Logger } from '../logger'
-import { CompositeResourceFetcher } from '../resourcefetcher/compositeResourceFetcher'
-import { FileResourceFetcher } from '../resourcefetcher/fileResourceFetcher'
-import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
-import { ResourceFetcher } from '../resourcefetcher/resourcefetcher'
-import { Endpoints, loadEndpoints, Region } from './endpoints'
+import { Endpoints, Partition, Region } from './endpoints'
+import { EndpointsProvider } from './endpointsProvider'
 import { RegionInfo } from './regionInfo'
 import { RegionProvider } from './regionProvider'
 
-export class DefaultRegionProvider implements RegionProvider {
-    private readonly logger: Logger = getLogger()
-    private _areRegionsLoaded: boolean = false
-    private _loadedRegions: RegionInfo[]
-    private readonly _resourceFetcher: ResourceFetcher
-
-    public constructor(resourceFetcher: ResourceFetcher) {
-        this._loadedRegions = []
-        this._resourceFetcher = resourceFetcher
-    }
-
-    // Returns an array of Regions, and caches them in memory.
-    public async getRegionData(): Promise<RegionInfo[]> {
-        if (this._areRegionsLoaded) {
-            return this._loadedRegions
-        }
-
-        let availableRegions: RegionInfo[] = []
-        try {
-            this.logger.info('Retrieving AWS endpoint data')
-
-            const endpointsContents = await this._resourceFetcher.get()
-
-            if (!endpointsContents) {
-                throw new Error('No endpoints data found')
-            }
-
-            const endpoints = loadEndpoints(endpointsContents)
-
-            // TODO : Support other Partition regions : https://github.com/aws/aws-toolkit-vscode/issues/188
-            availableRegions = getRegionInfo(endpoints, 'aws')
-
-            this._areRegionsLoaded = true
-            this._loadedRegions = availableRegions
-        } catch (err) {
-            this._areRegionsLoaded = false
-            this.logger.error('Unable to retrieve AWS endpoints: ', err as Error)
-            // TODO: now what, oneline + local failed...?
-            availableRegions = []
-            this._loadedRegions = []
-        }
-
-        return availableRegions
-    }
+interface RegionData {
+    partitionId: string
+    serviceIds: string[]
 }
 
-export function makeEndpointsResourceFetcher(extensionContext: vscode.ExtensionContext): ResourceFetcher {
-    return new CompositeResourceFetcher(
-        new HttpResourceFetcher(endpointsFileUrl),
-        new FileResourceFetcher(ext.manifestPaths.endpoints)
-    )
+export class DefaultRegionProvider implements RegionProvider {
+    // TODO : Deprecate _loadedRegions
+    private _loadedRegions: RegionInfo[] = []
+    private partitions: Partition[] = []
+    private readonly regionIdToRegionData: Map<string, RegionData> = new Map()
+
+    public constructor(endpointsProvider: EndpointsProvider) {
+        endpointsProvider.onEndpointsUpdated(e => this.loadFromEndpointsProvider(e))
+        this.loadFromEndpointsProvider(endpointsProvider)
+    }
+
+    public async getRegionData(): Promise<RegionInfo[]> {
+        return this._loadedRegions
+    }
+
+    public getRegions(partitionId: string): Region[] {
+        let regions: Region[] = []
+
+        this.partitions
+            .filter(p => p.id === partitionId)
+            .forEach(p => {
+                regions = regions.concat(p.regions)
+            })
+
+        return regions
+    }
+
+    public getParentPartitionId(regionId: string): string | undefined {
+        return this.regionIdToRegionData.get(regionId)?.partitionId
+    }
+
+    public isServiceInRegion(serviceId: string, regionId: string): boolean {
+        return !!this.regionIdToRegionData.get(regionId)?.serviceIds.find(x => x === serviceId) ?? false
+    }
+
+    private loadFromEndpointsProvider(provider: EndpointsProvider) {
+        const endpoints = provider.getEndpoints()
+
+        if (endpoints) {
+            this.loadFromEndpoints(endpoints)
+        }
+    }
+
+    private loadFromEndpoints(endpoints: Endpoints) {
+        // TODO : Support other Partition regions : https://github.com/aws/aws-toolkit-vscode/issues/188
+        this._loadedRegions = getRegionInfo(endpoints, 'aws')
+        this.partitions = endpoints.partitions
+
+        this.regionIdToRegionData.clear()
+
+        endpoints.partitions.forEach(p => {
+            p.regions.forEach(r =>
+                this.regionIdToRegionData.set(r.id, {
+                    partitionId: p.id,
+                    serviceIds: []
+                })
+            )
+
+            p.services.forEach(s => {
+                s.endpoints.forEach(e => {
+                    const regionData = this.regionIdToRegionData.get(e.regionId)
+
+                    if (regionData) {
+                        regionData.serviceIds.push(s.id)
+                    }
+                })
+            })
+        })
+    }
 }
 
 function getRegionInfo(endpoints: Endpoints, partitionId: string): RegionInfo[] {
