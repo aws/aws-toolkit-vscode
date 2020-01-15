@@ -118,8 +118,7 @@ async function registerServerlessCommands(params: {
                 await deploySamApplication(
                     {
                         channelLogger: params.channelLogger,
-                        regionProvider: params.regionProvider,
-                        extensionContext: params.extensionContext
+                        regionProvider: params.regionProvider
                     },
                     {
                         awsContext: params.awsContext
