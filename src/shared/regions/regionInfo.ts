@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export class RegionInfo {
-    public constructor(public readonly regionCode: string, public readonly regionName: string) {}
+export interface RegionInfo {
+    readonly regionCode: string
+    readonly regionName: string
 }

@@ -5,12 +5,11 @@
 
 import * as assert from 'assert'
 import { RegionNode } from '../../awsexplorer/regionNode'
-import { RegionInfo } from '../../shared/regions/regionInfo'
 
 describe('RegionNode', () => {
     const regionCode = 'us-east-1'
     const regionName = 'US East (N. Virginia)'
-    const testNode = new RegionNode(new RegionInfo(regionCode, regionName))
+    const testNode = new RegionNode({ regionCode, regionName })
 
     it('initializes name and tooltip', async () => {
         assert.strictEqual(testNode.label, regionName)

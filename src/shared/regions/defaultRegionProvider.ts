@@ -68,9 +68,12 @@ export function makeEndpointsResourceFetcher(extensionContext: vscode.ExtensionC
 }
 
 export function getRegionsFromPartition(partition: Partition): RegionInfo[] {
-    return Object.keys(partition.regions).map(
-        regionKey => new RegionInfo(regionKey, `${partition.regions[regionKey].description}`)
-    )
+    return Object.keys(partition.regions).map(regionKey => {
+        return {
+            regionCode: regionKey,
+            regionName: `${partition.regions[regionKey].description}`
+        }
+    })
 }
 
 export function getRegionsFromEndpoints(endpoints: EndpointsManifest): RegionInfo[] {
