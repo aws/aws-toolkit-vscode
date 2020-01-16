@@ -1,5 +1,5 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -9,7 +9,7 @@ import { SchemasDataProvider } from '../../../eventSchemas/providers/schemasData
 import { MockSchemaClient } from '../../shared/clients/mockClients'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 
-describe('getRegistires', () => {
+describe('getRegistries', () => {
     let sandbox: sinon.SinonSandbox
     beforeEach(() => {
         sandbox = sinon.createSandbox()
@@ -34,7 +34,7 @@ describe('getRegistires', () => {
 
         sandbox.stub(schemaClient, 'listRegistries').returns(asyncGenerator([registrySummary1, registrySummary2]))
 
-        const registryNames = await SchemasDataProvider.getInstance().getRegistires(TEST_REGION, schemaClient)
+        const registryNames = await SchemasDataProvider.getInstance().getRegistries(TEST_REGION, schemaClient)
 
         assert.ok(registryNames.length === 2, 'Should be two registries')
         assert.strictEqual(registryNames[0], TEST_REGISTRY, 'TEST_REGISTRY name should match')
@@ -47,24 +47,19 @@ describe('getRegistires', () => {
         assert.ok(cachedResults.length === 1, 'Should be one region in the cache')
         assert.strictEqual(cachedResults[0].region, TEST_REGION)
 
-        assert.ok(cachedResults[0].registrySchameMapList.length === 2, 'Should be two registries')
-        assert.strictEqual(cachedResults[0].registrySchameMapList[0].registryName, TEST_REGISTRY)
-        assert.strictEqual(cachedResults[0].registrySchameMapList[1].registryName, TEST_REGISTRY2)
+        assert.ok(cachedResults[0].registryNames.length === 2, 'Should be two registries')
+        assert.strictEqual(cachedResults[0].registryNames[0], TEST_REGISTRY)
+        assert.strictEqual(cachedResults[0].registryNames[1], TEST_REGISTRY2)
 
         assert.deepStrictEqual(
-            cachedResults[0].registrySchameMapList[0].schemaList,
+            cachedResults[0].registrySchemasMapList,
             [],
-            'Registry should have no schemas'
-        )
-        assert.deepStrictEqual(
-            cachedResults[0].registrySchameMapList[1].schemaList,
-            [],
-            'Registry should have no schemas'
+            'Regiion should have no registrySchemasMapList'
         )
     })
 
     it('should retrieve registries from cache ', async () => {
-        const registryNames = await SchemasDataProvider.getInstance().getRegistires(TEST_REGION, schemaClient)
+        const registryNames = await SchemasDataProvider.getInstance().getRegistries(TEST_REGION, schemaClient)
         assert.strictEqual(registryNames[0], TEST_REGISTRY, 'TEST_REGISTRY names should match')
         assert.strictEqual(registryNames[1], TEST_REGISTRY2, 'TEST_REGISTRY2 name should match')
     })
@@ -85,16 +80,11 @@ describe('getRegistires', () => {
         it('should retain results once it is queried ', async () => {
             const cachedResults = SchemasDataProvider.getInstance().getCachedRegionMap()
 
-            assert.ok(cachedResults[0].registrySchameMapList.length === 2, 'Should be two registries')
+            assert.ok(cachedResults[0].registrySchemasMapList.length === 1, 'Should be one registry with schema list')
             assert.deepStrictEqual(
-                cachedResults[0].registrySchameMapList[0].schemaList,
+                cachedResults[0].registrySchemasMapList[0].schemaList,
                 [schemaSummary, schemaSummary2],
-                'First queried registry should have two schemas'
-            )
-            assert.deepStrictEqual(
-                cachedResults[0].registrySchameMapList[1].schemaList,
-                [],
-                'Second registry should have no schemas'
+                'Single queried registry should have two schemas'
             )
         })
 

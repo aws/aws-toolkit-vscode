@@ -15,7 +15,7 @@ import { SchemasDataProvider } from '../../eventSchemas/providers/schemasDataPro
 import { SchemaClient } from '../../shared/clients/schemaClient'
 import { samInitDocUrl } from '../../shared/constants'
 import { ext } from '../../shared/extensionGlobals'
-import { MINIMUM_SAM_CLI_VERSION_SCHEMAS_SUPPORT } from '../../shared/sam/cli/samCliValidator'
+import { MINIMUM_SAM_CLI_VERSION_SCHEMAS_SUPPORT_INCLUSIVE } from '../../shared/sam/cli/samCliValidator'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
@@ -143,12 +143,12 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
             }
 
             //check if detected samCliVersion supports eventBridgeStarterAppTemplate
-            if (semver.lt(this.samCliVersion, MINIMUM_SAM_CLI_VERSION_SCHEMAS_SUPPORT)) {
+            if (semver.lt(this.samCliVersion, MINIMUM_SAM_CLI_VERSION_SCHEMAS_SUPPORT_INCLUSIVE)) {
                 vscode.window.showErrorMessage(
                     localize(
                         'AWS.samcli.error.invalid_schema_support_version',
                         'Installed SAM executable does not support templates that require Event Schema selection. Required minimum version {0}, but found {1}',
-                        MINIMUM_SAM_CLI_VERSION_SCHEMAS_SUPPORT,
+                        MINIMUM_SAM_CLI_VERSION_SCHEMAS_SUPPORT_INCLUSIVE,
                         this.samCliVersion
                     )
                 )
@@ -161,7 +161,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
     }
 
     public async promptUserForRegion(currRegion?: string): Promise<string | undefined> {
-        const SCHEMAS_REGIONS = ['us-east-1', 'us-east-2', 'us-west-2', 'eu-west-1', 'ap-northeast-1']
+        const schemasRegions = ['us-east-1', 'us-east-2', 'us-west-2', 'eu-west-1', 'ap-northeast-1']
 
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
@@ -170,7 +170,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                 value: currRegion ? currRegion : ''
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
-            items: SCHEMAS_REGIONS.map(region => ({
+            items: schemasRegions.map(region => ({
                 label: region,
                 alwaysShow: region === currRegion,
                 description:
@@ -195,7 +195,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
 
     public async promptUserForRegistry(currRegion: string, currRegistry?: string): Promise<string | undefined> {
         const client: SchemaClient = ext.toolkitClientBuilder.createSchemaClient(currRegion)
-        const registryNames = await SchemasDataProvider.getInstance().getRegistires(currRegion, client)
+        const registryNames = await SchemasDataProvider.getInstance().getRegistries(currRegion, client)
 
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {

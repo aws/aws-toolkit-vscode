@@ -1,19 +1,19 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import { Schemas } from 'aws-sdk'
-import _ = require('lodash')
 import { SchemaClient } from '../../shared/clients/schemaClient'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 
 export interface regionRegistryMap {
     region: string
-    registrySchameMapList: registrySchemaMap[]
+    registryNames: string[]
+    registrySchemasMapList: registrySchemasMap[]
 }
 
-export interface registrySchemaMap {
+export interface registrySchemasMap {
     registryName: string
     schemaList: Schemas.SchemaSummary[]
 }
@@ -25,65 +25,45 @@ export class SchemasDataProvider {
     private static INSTANCE: SchemasDataProvider | undefined
     private readonly cachedRegions: regionRegistryMap[] = []
 
-    public async getRegistires(region: string, client: SchemaClient) {
+    public async getRegistries(region: string, client: SchemaClient) {
         const cachedRegion = this.cachedRegions.filter(cacheValue => cacheValue.region === region).shift()
-        let registryNames: string[] = []
 
-        // if region is cached, retrieve registries
-        if (cachedRegion) {
-            registryNames = cachedRegion.registrySchameMapList.reduce(
-                (accumulator: string[], item: registrySchemaMap) => {
-                    accumulator.push(item.registryName)
-
-                    return accumulator
-                },
-                []
-            )
-        }
-
-        // if no registries found, make api query and retain results
-        if (_.isEmpty(registryNames)) {
-            const registrySchemaMapList: registrySchemaMap[] = []
+        // if region is not cached, make api query and retain results
+        if (!cachedRegion) {
             const registrySummary = await toArrayAsync(client.listRegistries())
-            registrySummary.forEach(summary => registryNames.push(summary.RegistryName!))
-
-            registryNames.map(async registry => {
-                const singleItem: registrySchemaMap = {
-                    registryName: registry,
-                    schemaList: []
-                }
-                registrySchemaMapList.push(singleItem)
-            })
-
+            const registryNames = registrySummary.map(x => x.RegistryName!)
             const item: regionRegistryMap = {
                 region: region,
-                registrySchameMapList: registrySchemaMapList
+                registryNames: registryNames,
+                registrySchemasMapList: []
             }
             this.cachedRegions.push(item)
+
+            return registryNames
         }
 
-        return registryNames
+        return cachedRegion!.registryNames
     }
 
     public async getSchemas(region: string, registryName: string, client: SchemaClient) {
-        let schemas = this.cachedRegions
-            .filter(x => x.region === region)
-            .shift()
-            ?.registrySchameMapList.filter(x => x.registryName === registryName)
-            .shift()?.schemaList
+        const registrySchemasMapList = this.cachedRegions.filter(x => x.region === region).shift()
+            ?.registrySchemasMapList
+        let schemas = registrySchemasMapList?.filter(x => x.registryName === registryName).shift()?.schemaList
 
         // if no schemas found, make api query and retain results given that registryName && region already cached
-        if (_.isEmpty(schemas)) {
+        if (!schemas || schemas.length === 0) {
             schemas = await toArrayAsync(client.listSchemas(registryName))
 
-            const registrySchemaListMap = this.cachedRegions
-                .filter(x => x.region === region)
-                .shift()
-                ?.registrySchameMapList.filter(x => x.registryName === registryName)
-                .shift()
+            if (registrySchemasMapList) {
+                const singleItem: registrySchemasMap = {
+                    registryName: registryName,
+                    schemaList: schemas
+                }
 
-            if (registrySchemaListMap) {
-                schemas.forEach(item => registrySchemaListMap.schemaList.push(item))
+                this.cachedRegions
+                    .filter(x => x.region === region)
+                    .shift()
+                    ?.registrySchemasMapList.push(singleItem)
             }
         }
 
