@@ -11,7 +11,6 @@ import * as nls from 'vscode-nls'
 import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
 import { AwsContext, NoActiveCredentialError } from '../../shared/awsContext'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
-import { RegionProvider } from '../../shared/regions/regionProvider'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
 import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
 import { runSamCliDeploy } from '../../shared/sam/cli/samCliDeploy'
@@ -20,7 +19,7 @@ import { runSamCliPackage } from '../../shared/sam/cli/samCliPackage'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
 import { makeCheckLogsMessage } from '../../shared/utilities/messages'
 import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
-import { DefaultSamDeployWizardContext, SamDeployWizard, SamDeployWizardResponse } from '../wizards/samDeployWizard'
+import { SamDeployWizardResponse } from '../wizards/samDeployWizard'
 
 const localize = nls.loadMessageBundle()
 
@@ -48,13 +47,11 @@ export async function deploySamApplication(
     {
         samCliContext = getSamCliContext(),
         channelLogger,
-        regionProvider,
-        samDeployWizard = getDefaultSamDeployWizardResponseProvider(regionProvider)
+        samDeployWizard
     }: {
         samCliContext?: SamCliContext
         channelLogger: ChannelLogger
-        regionProvider: RegionProvider
-        samDeployWizard?: SamDeployWizardResponseProvider
+        samDeployWizard: SamDeployWizardResponseProvider
     },
     {
         awsContext,
@@ -287,15 +284,5 @@ function getDefaultWindowFunctions(): WindowFunctions {
         setStatusBarMessage: vscode.window.setStatusBarMessage,
         showErrorMessage: vscode.window.showErrorMessage,
         showInformationMessage: vscode.window.showInformationMessage
-    }
-}
-
-function getDefaultSamDeployWizardResponseProvider(regionProvider: RegionProvider): SamDeployWizardResponseProvider {
-    return {
-        getSamDeployWizardResponse: async (): Promise<SamDeployWizardResponse | undefined> => {
-            const wizard = new SamDeployWizard(new DefaultSamDeployWizardContext(regionProvider))
-
-            return wizard.run()
-        }
     }
 }

@@ -16,7 +16,6 @@ import {
 import { SamDeployWizardResponse } from '../../../lambda/wizards/samDeployWizard'
 import { AwsContext } from '../../../shared/awsContext'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-import { RegionProvider } from '../../../shared/regions/regionProvider'
 import { SamCliContext } from '../../../shared/sam/cli/samCliContext'
 import { SamCliProcessInvoker } from '../../../shared/sam/cli/samCliInvokerUtils'
 import {
@@ -150,7 +149,6 @@ describe('deploySamApplication', async () => {
             {
                 samCliContext: goodSamCliContext(),
                 channelLogger,
-                regionProvider: (undefined as any) as RegionProvider,
                 samDeployWizard
             },
             {
@@ -170,7 +168,6 @@ describe('deploySamApplication', async () => {
             {
                 samCliContext: goodSamCliContext(),
                 channelLogger,
-                regionProvider: (undefined as any) as RegionProvider,
                 samDeployWizard
             },
             {
@@ -187,7 +184,6 @@ describe('deploySamApplication', async () => {
             {
                 samCliContext: invalidSamCliContext,
                 channelLogger,
-                regionProvider: (undefined as any) as RegionProvider,
                 samDeployWizard
             },
             {
@@ -206,7 +202,6 @@ describe('deploySamApplication', async () => {
             {
                 samCliContext: goodSamCliContext(),
                 channelLogger,
-                regionProvider: (undefined as any) as RegionProvider,
                 samDeployWizard
             },
             {
@@ -236,7 +231,6 @@ describe('deploySamApplication', async () => {
             {
                 samCliContext: goodSamCliContext(),
                 channelLogger,
-                regionProvider: (undefined as any) as RegionProvider,
                 samDeployWizard
             },
             {
@@ -269,7 +263,6 @@ describe('deploySamApplication', async () => {
             {
                 samCliContext: goodSamCliContext(),
                 channelLogger,
-                regionProvider: (undefined as any) as RegionProvider,
                 samDeployWizard
             },
             {
@@ -302,7 +295,6 @@ describe('deploySamApplication', async () => {
             {
                 samCliContext: goodSamCliContext(),
                 channelLogger,
-                regionProvider: (undefined as any) as RegionProvider,
                 samDeployWizard
             },
             {
