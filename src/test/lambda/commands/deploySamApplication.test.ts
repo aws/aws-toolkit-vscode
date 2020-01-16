@@ -109,6 +109,8 @@ describe('deploySamApplication', async () => {
     // Other support stubs
 
     const regionProvider: RegionProvider = {
+        onRegionProviderUpdated: (undefined as any) as vscode.Event<void>,
+
         getRegionData: async (): Promise<RegionInfo[]> => {
             return [
                 {

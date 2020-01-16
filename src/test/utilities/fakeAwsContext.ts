@@ -15,6 +15,9 @@ export const DEFAULT_TEST_REGION_NAME = 'The Querty Region'
 
 // TODO : Introduce Mocking instead of stub implementations
 export class FakeRegionProvider implements RegionProvider {
+    public readonly onRegionProviderUpdatedEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter<void>()
+    public readonly onRegionProviderUpdated: vscode.Event<void> = this.onRegionProviderUpdatedEmitter.event
+
     public async getRegionData(): Promise<RegionInfo[]> {
         return [
             {

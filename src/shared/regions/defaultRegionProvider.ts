@@ -3,17 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { Endpoints, Region } from './endpoints'
 import { EndpointsProvider } from './endpointsProvider'
 import { RegionInfo } from './regionInfo'
 import { RegionProvider } from './regionProvider'
 
 export class DefaultRegionProvider implements RegionProvider {
+    private readonly onRegionProviderUpdatedEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter()
     private _loadedRegions: RegionInfo[] = []
 
     public constructor(endpointsProvider: EndpointsProvider) {
         endpointsProvider.onEndpointsUpdated(e => this.loadFromEndpointsProvider(e))
         this.loadFromEndpointsProvider(endpointsProvider)
+    }
+
+    public get onRegionProviderUpdated(): vscode.Event<void> {
+        return this.onRegionProviderUpdatedEmitter.event
     }
 
     public async getRegionData(): Promise<RegionInfo[]> {

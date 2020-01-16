@@ -41,6 +41,7 @@ function createQuickPickRegionResponseItem(detail: string): QuickPickRegionRespo
 }
 
 class MockRegionProvider implements RegionProvider {
+    public onRegionProviderUpdated = (undefined as any) as vscode.Event<void>
     public async getRegionData(): Promise<RegionInfo[]> {
         return [
             {

@@ -3,10 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { RegionInfo } from './regionInfo'
 
 // Provides AWS Region Information
 export interface RegionProvider {
-    // Returns an array of Regions
+    onRegionProviderUpdated: vscode.Event<void>
+
     getRegionData(): Promise<RegionInfo[]>
 }
