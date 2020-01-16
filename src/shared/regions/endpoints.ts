@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { getLogger } from '../logger'
+
 // Parses the endpoints.json file into a usable structure
 
 export interface Endpoints {
@@ -61,11 +63,19 @@ interface ManifestService {
 
 // --- END JSON Serialization Structures ---
 
-export function loadEndpoints(json: string): Endpoints {
-    const manifestEndpoints = JSON.parse(json) as ManifestEndpoints
+export function loadEndpoints(json: string): Endpoints | undefined {
+    try {
+        const manifestEndpoints = JSON.parse(json) as ManifestEndpoints
 
-    return {
-        partitions: manifestEndpoints.partitions?.map(convertToPartition) ?? []
+        return {
+            partitions: manifestEndpoints.partitions?.map(convertToPartition) ?? []
+        }
+    } catch (err) {
+        const logger = getLogger()
+        logger.error('Failed to load endpoints manifest', err as Error)
+        logger.verbose('endpoints payload was:', json)
+
+        return undefined
     }
 }
 

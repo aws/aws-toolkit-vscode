@@ -36,13 +36,22 @@ export class EndpointsProvider {
         const localEndpointsJson = await this.localFetcher.get()
         if (localEndpointsJson) {
             const localEndpoints = loadEndpoints(localEndpointsJson)
-            this.updateEndpoints(localEndpoints)
+            if (localEndpoints) {
+                this.updateEndpoints(localEndpoints)
+            }
         }
 
         const remoteEndpointsJson = await this.remoteFetcher.get()
         if (remoteEndpointsJson) {
             const remoteEndpoints = loadEndpoints(remoteEndpointsJson)
-            this.updateEndpoints(remoteEndpoints)
+            if (remoteEndpoints) {
+                this.updateEndpoints(remoteEndpoints)
+            }
+        }
+
+        // If endpoints were never loaded by this point, we have a critical error
+        if (!this.endpoints) {
+            throw new Error('Failure to load any endpoints manifest data')
         }
     }
 

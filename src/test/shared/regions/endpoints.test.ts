@@ -58,9 +58,19 @@ const sampleEndpoints = {
 
 describe('loadEndpoints', async () => {
     const json = JSON.stringify(sampleEndpoints)
-    const endpoints = loadEndpoints(json)
+
+    it('returns undefined for malformed json', async () => {
+        const endpoints = loadEndpoints('{ foo: ')
+        assert.strictEqual(endpoints, undefined)
+    })
+
+    it('returns an object for well-formed json', async () => {
+        const endpoints = loadEndpoints(json)
+        assert.ok(endpoints)
+    })
 
     it('loads partitions', async () => {
+        const endpoints = loadEndpoints(json)!
         assert.strictEqual(endpoints.partitions.length, 3, 'Unexpected amount of partitions loaded')
         const partition = endpoints.partitions[0]
         assert.strictEqual(partition.id, 'aws')
@@ -68,6 +78,7 @@ describe('loadEndpoints', async () => {
     })
 
     it('loads regions', async () => {
+        const endpoints = loadEndpoints(json)!
         const partition = endpoints.partitions[0]
         const regions = partition.regions
         assert.strictEqual(regions.length, 3, 'Unexpected amount of regions loaded')
@@ -77,6 +88,7 @@ describe('loadEndpoints', async () => {
     })
 
     it('loads services', async () => {
+        const endpoints = loadEndpoints(json)!
         const partition = endpoints.partitions[2]
         const services = partition.services
         assert.strictEqual(services.length, 1, 'Unexpected amount of services loaded')

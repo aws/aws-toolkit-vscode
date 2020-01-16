@@ -205,7 +205,13 @@ function makeEndpointsProvider(): EndpointsProvider {
 
     const provider = new EndpointsProvider(localManifestFetcher, remoteManifestFetcher)
     // tslint:disable-next-line:no-floating-promises -- start the load without waiting. It raises events as fetchers retrieve data.
-    provider.load()
+    provider.load().catch((err: Error) => {
+        getLogger().error('Failure while loading Endpoints Manifest', err)
+        vscode.window.showErrorMessage(
+            'AWS.error.endpoint.load.failure',
+            'The AWS Toolkit was unable to load endpoints data. Toolkit functionality may be impacted until VS Code is restarted.'
+        )
+    })
 
     return provider
 }
