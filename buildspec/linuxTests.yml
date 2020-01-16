@@ -18,7 +18,7 @@ phases:
 
     commands:
       - apt update
-      - apt install -y msbuild
+      - apt install -y mono-complete
 
   build:
     commands:

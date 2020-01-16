@@ -20,7 +20,7 @@ phases:
       - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay&
       - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
       - apt-get update
-      - apt-get install -y jq python2.7 python-pip python3.6 python3.7 python3.8 python3-pip python3-distutils msbuild
+      - apt-get install -y jq python2.7 python-pip python3.6 python3.7 python3.8 python3-pip python3-distutils mono-complete
       - aws sts assume-role --role-arn $ASSUME_ROLE_ARN --role-session-name integ-test > creds.json
       - export KEY_ID=`jq -r '.Credentials.AccessKeyId' creds.json`
       - export SECRET=`jq -r '.Credentials.SecretAccessKey' creds.json`
