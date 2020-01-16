@@ -77,7 +77,7 @@ export interface SamDeployWizardContext {
         missingParameters?: Set<string>
     }): Promise<ParameterPromptResult>
 
-    promptUserForRegion(regionProvider: RegionProvider, initialValue?: string): Promise<string | undefined>
+    promptUserForRegion(initialValue?: string): Promise<string | undefined>
 
     /**
      * Retrieves an S3 Bucket to deploy to from the user.
@@ -123,7 +123,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     public readonly getOverriddenParameters = getOverriddenParameters
     private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Documentation'))
 
-    public constructor() {}
+    public constructor(private readonly regionProvider: RegionProvider) {}
 
     public get workspaceFolders(): vscode.Uri[] | undefined {
         return (vscode.workspace.workspaceFolders || []).map(f => f.uri)
@@ -255,11 +255,8 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         }
     }
 
-    public async promptUserForRegion(
-        regionProvider: RegionProvider,
-        initialRegionCode: string
-    ): Promise<string | undefined> {
-        const regionData = await regionProvider.getRegionData()
+    public async promptUserForRegion(initialRegionCode: string): Promise<string | undefined> {
+        const regionData = await this.regionProvider.getRegionData()
 
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
@@ -384,10 +381,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     private readonly response: Partial<SamDeployWizardResponse> = {}
 
-    public constructor(
-        private readonly regionProvider: RegionProvider,
-        private readonly context: SamDeployWizardContext
-    ) {
+    public constructor(private readonly context: SamDeployWizardContext) {
         super()
     }
 
@@ -476,7 +470,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     }
 
     private readonly REGION: WizardStep = async () => {
-        this.response.region = await this.context.promptUserForRegion(this.regionProvider, this.response.region)
+        this.response.region = await this.context.promptUserForRegion(this.response.region)
 
         // The PARAMETER_OVERRIDES step is part of the TEMPLATE step from the user's perspective,
         // so we go back to the TEMPLATE step instead of PARAMETER_OVERRIDES.

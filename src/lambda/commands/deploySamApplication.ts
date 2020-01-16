@@ -293,7 +293,7 @@ function getDefaultWindowFunctions(): WindowFunctions {
 function getDefaultSamDeployWizardResponseProvider(regionProvider: RegionProvider): SamDeployWizardResponseProvider {
     return {
         getSamDeployWizardResponse: async (): Promise<SamDeployWizardResponse | undefined> => {
-            const wizard = new SamDeployWizard(regionProvider, new DefaultSamDeployWizardContext())
+            const wizard = new SamDeployWizard(new DefaultSamDeployWizardContext(regionProvider))
 
             return wizard.run()
         }
