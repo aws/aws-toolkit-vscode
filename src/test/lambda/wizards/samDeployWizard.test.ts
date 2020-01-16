@@ -14,8 +14,6 @@ import {
     SamDeployWizardContext,
     validateS3Bucket
 } from '../../../lambda/wizards/samDeployWizard'
-import { RegionInfo } from '../../../shared/regions/regionInfo'
-import { RegionProvider } from '../../../shared/regions/regionProvider'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 
 interface QuickPickUriResponseItem extends vscode.QuickPickItem {
@@ -37,18 +35,6 @@ function createQuickPickRegionResponseItem(detail: string): QuickPickRegionRespo
     return {
         label: '',
         detail: detail
-    }
-}
-
-class MockRegionProvider implements RegionProvider {
-    public onRegionProviderUpdated = (undefined as any) as vscode.Event<void>
-    public async getRegionData(): Promise<RegionInfo[]> {
-        return [
-            {
-                regionCode: 'us-west-2',
-                regionName: 'TEST REGION'
-            }
-        ]
     }
 }
 
@@ -106,10 +92,7 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
         return this.promptForS3BucketResponses.pop()
     }
 
-    public async promptUserForRegion(
-        regionProvider: RegionProvider,
-        initialValue?: string
-    ): Promise<string | undefined> {
+    public async promptUserForRegion(initialValue?: string): Promise<string | undefined> {
         if (this.promptForRegionResponses.length <= 0) {
             throw new Error('promptUserForRegion was called more times than expected')
         }
@@ -152,7 +135,6 @@ describe('SamDeployWizard', async () => {
     describe('TEMPLATE', async () => {
         it('fails gracefully when no templates are found', async () => {
             const wizard = new SamDeployWizard(
-                new MockRegionProvider(),
                 new MockSamDeployWizardContext(
                     async function*() {
                         yield* []
@@ -172,7 +154,6 @@ describe('SamDeployWizard', async () => {
             const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const wizard = new SamDeployWizard(
-                new MockRegionProvider(),
                 new MockSamDeployWizardContext(
                     async function*() {
                         yield vscode.Uri.file(templatePath)
@@ -192,7 +173,6 @@ describe('SamDeployWizard', async () => {
             const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const wizard = new SamDeployWizard(
-                new MockRegionProvider(),
                 new MockSamDeployWizardContext(
                     async function*() {
                         yield vscode.Uri.file(templatePath)
@@ -257,7 +237,7 @@ describe('SamDeployWizard', async () => {
                     }
                 })
 
-                const wizard = new SamDeployWizard(new MockRegionProvider(), context)
+                const wizard = new SamDeployWizard(context)
                 const result = await wizard.run()
 
                 assert.ok(result)
@@ -276,7 +256,7 @@ describe('SamDeployWizard', async () => {
                     }
                 })
 
-                const wizard = new SamDeployWizard(new MockRegionProvider(), context)
+                const wizard = new SamDeployWizard(context)
                 const result = await wizard.run()
 
                 assert.ok(result)
@@ -292,7 +272,7 @@ describe('SamDeployWizard', async () => {
                     promptUserForParametersIfApplicable: async () => ParameterPromptResult.Continue
                 })
 
-                const wizard = new SamDeployWizard(new MockRegionProvider(), context)
+                const wizard = new SamDeployWizard(context)
                 const result = await wizard.run()
 
                 assert.ok(result)
@@ -317,7 +297,7 @@ describe('SamDeployWizard', async () => {
                     }
                 })
 
-                const wizard = new SamDeployWizard(new MockRegionProvider(), context)
+                const wizard = new SamDeployWizard(context)
                 const result = await wizard.run()
 
                 assert.strictEqual(result, undefined)
@@ -345,7 +325,7 @@ describe('SamDeployWizard', async () => {
                     }
                 })
 
-                const wizard = new SamDeployWizard(new MockRegionProvider(), context)
+                const wizard = new SamDeployWizard(context)
                 const result = await wizard.run()
 
                 assert.strictEqual(result, undefined)
@@ -372,7 +352,7 @@ describe('SamDeployWizard', async () => {
                     }
                 })
 
-                const wizard = new SamDeployWizard(new MockRegionProvider(), context)
+                const wizard = new SamDeployWizard(context)
                 const result = await wizard.run()
 
                 assert.strictEqual(result, undefined)
@@ -399,7 +379,7 @@ describe('SamDeployWizard', async () => {
                     }
                 })
 
-                const wizard = new SamDeployWizard(new MockRegionProvider(), context)
+                const wizard = new SamDeployWizard(context)
                 const result = await wizard.run()
 
                 assert.ok(result)
@@ -418,7 +398,6 @@ describe('SamDeployWizard', async () => {
             const region = 'us-east-1'
 
             const wizard = new SamDeployWizard(
-                new MockRegionProvider(),
                 new MockSamDeployWizardContext(
                     async function*() {
                         yield vscode.Uri.file(templatePath)
@@ -444,7 +423,6 @@ describe('SamDeployWizard', async () => {
             const region = 'us-east-1'
 
             const wizard = new SamDeployWizard(
-                new MockRegionProvider(),
                 new MockSamDeployWizardContext(
                     async function*() {
                         yield vscode.Uri.file(templatePath1)
@@ -480,7 +458,6 @@ describe('SamDeployWizard', async () => {
             const region2 = 'us-east-2'
 
             const wizard = new SamDeployWizard(
-                new MockRegionProvider(),
                 new MockSamDeployWizardContext(
                     async function*() {
                         yield vscode.Uri.file(templatePath1)
@@ -510,7 +487,6 @@ describe('SamDeployWizard', async () => {
             const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const wizard = new SamDeployWizard(
-                new MockRegionProvider(),
                 new MockSamDeployWizardContext(
                     async function*() {
                         yield vscode.Uri.file(templatePath)
@@ -534,7 +510,6 @@ describe('SamDeployWizard', async () => {
             const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const wizard = new SamDeployWizard(
-                new MockRegionProvider(),
                 new MockSamDeployWizardContext(
                     async function*() {
                         yield vscode.Uri.file(templatePath)
@@ -556,7 +531,6 @@ describe('SamDeployWizard', async () => {
             const workspaceFolderPath = normalizePath('my', 'workspace', 'folder')
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const wizard = new SamDeployWizard(
-                new MockRegionProvider(),
                 new MockSamDeployWizardContext(
                     async function*() {
                         yield vscode.Uri.file(templatePath)
@@ -581,7 +555,6 @@ describe('SamDeployWizard', async () => {
 
                 try {
                     await new SamDeployWizard(
-                        new MockRegionProvider(),
                         new MockSamDeployWizardContext(
                             async function*() {
                                 yield vscode.Uri.file(templatePath)

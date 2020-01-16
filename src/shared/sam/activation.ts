@@ -10,9 +10,14 @@ import {
     CreateNewSamApplicationResults,
     resumeCreateNewSamApp
 } from '../../lambda/commands/createNewSamApp'
-import { deploySamApplication } from '../../lambda/commands/deploySamApplication'
+import { deploySamApplication, SamDeployWizardResponseProvider } from '../../lambda/commands/deploySamApplication'
 import { SamParameterCompletionItemProvider } from '../../lambda/config/samParameterCompletionItemProvider'
 import { configureLocalLambda } from '../../lambda/local/configureLocalLambda'
+import {
+    DefaultSamDeployWizardContext,
+    SamDeployWizard,
+    SamDeployWizardResponse
+} from '../../lambda/wizards/samDeployWizard'
 import { AwsContext } from '../awsContext'
 import { CodeLensProviderParams } from '../codelens/codeLensUtils'
 import * as csLensProvider from '../codelens/csharpCodeLensProvider'
@@ -114,16 +119,26 @@ async function registerServerlessCommands(params: {
     params.extensionContext.subscriptions.push(
         registerCommand({
             command: 'aws.deploySamApplication',
-            callback: async () =>
+            callback: async () => {
+                const samDeployWizardContext = new DefaultSamDeployWizardContext(params.regionProvider)
+                const samDeployWizard: SamDeployWizardResponseProvider = {
+                    getSamDeployWizardResponse: async (): Promise<SamDeployWizardResponse | undefined> => {
+                        const wizard = new SamDeployWizard(samDeployWizardContext)
+
+                        return wizard.run()
+                    }
+                }
+
                 await deploySamApplication(
                     {
                         channelLogger: params.channelLogger,
-                        regionProvider: params.regionProvider
+                        samDeployWizard
                     },
                     {
                         awsContext: params.awsContext
                     }
-                ),
+                )
+            },
             telemetryName: 'lambda_deploy'
         })
     )
