@@ -37,6 +37,8 @@ export class DefaultRegionProvider implements RegionProvider {
     private loadFromEndpoints(endpoints: Endpoints) {
         // TODO : Support other Partition regions : https://github.com/aws/aws-toolkit-vscode/issues/188
         this._loadedRegions = getRegionInfo(endpoints, 'aws')
+
+        this.onRegionProviderUpdatedEmitter.fire()
     }
 }
 
