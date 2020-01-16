@@ -58,7 +58,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         const toolkitSettings = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 
-        const endpointsProvider = makeEndpointsProvider()
+        const endpointsProvider = makeEndpointsProvider(localize)
 
         const awsContext = new DefaultAwsContext(context)
         const awsContextTrees = new AwsContextTreeCollection()
@@ -199,7 +199,7 @@ function initializeCredentialsProviderManager() {
     CredentialsProviderManager.getInstance().addProviderFactory(new SharedCredentialsProviderFactory())
 }
 
-function makeEndpointsProvider(): EndpointsProvider {
+function makeEndpointsProvider(localize: nls.LocalizeFunc): EndpointsProvider {
     const localManifestFetcher = new FileResourceFetcher(ext.manifestPaths.endpoints)
     const remoteManifestFetcher = new HttpResourceFetcher(endpointsFileUrl)
 
@@ -207,9 +207,12 @@ function makeEndpointsProvider(): EndpointsProvider {
     // tslint:disable-next-line:no-floating-promises -- start the load without waiting. It raises events as fetchers retrieve data.
     provider.load().catch((err: Error) => {
         getLogger().error('Failure while loading Endpoints Manifest', err)
+
         vscode.window.showErrorMessage(
-            'AWS.error.endpoint.load.failure',
-            'The AWS Toolkit was unable to load endpoints data. Toolkit functionality may be impacted until VS Code is restarted.'
+            localize(
+                'AWS.error.endpoint.load.failure',
+                'The AWS Toolkit was unable to load endpoints data. Toolkit functionality may be impacted until VS Code is restarted.'
+            )
         )
     })
 
