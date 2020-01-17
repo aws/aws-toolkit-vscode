@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { Runtime } from 'aws-sdk/clients/lambda'
 import { Set } from 'immutable'
+import { supportsEventBridgeTemplates } from '../../../src/lambda/models/samTemplates'
 
 export const JAVA = 'Java 8+'
 export const PYTHON = 'Python 3.6+'
@@ -43,4 +45,12 @@ export function getLanguageDetails(
         default:
             throw new Error(`Language ${language} is not supported as Schema Code Language`)
     }
+}
+
+export function getApiValueForSchemasDownload(runtime: Runtime): string {
+    if (supportsEventBridgeTemplates(runtime)) {
+        return 'Python36'
+    }
+
+    throw new Error(`Runtime ${runtime} is not supported by eventBridge application`)
 }

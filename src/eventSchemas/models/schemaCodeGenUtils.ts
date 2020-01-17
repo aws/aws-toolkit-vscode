@@ -12,15 +12,16 @@ export class SchemaCodeGenUtils {
     private readonly AWS_PARTNER_PREFIX = `${this.AWS}.${this.PARTNER}-` // dash suffix because of 3p partner registry name format
     private readonly AWS_EVENTS_PREFIX = `${this.AWS}.` // . suffix because of 1p event registry schema format
 
-    public buildSchemaPackageName(schemaName: string) {
+    public buildSchemaPackageName(schemaName: string): string {
         const builder = new CodeGenPackageBuilder()
         builder.append(this.SCHEMA_PACKAGE_PREFIX)
         this.buildPackageName(builder, schemaName)
 
-        return builder.getBuilder()
+        return builder.build()
     }
 
-    private buildPackageName(builder: CodeGenPackageBuilder, schemaName: string) {
+    private buildPackageName(builder: CodeGenPackageBuilder, schemaName: string): void {
+        // do not modify the order of conditional checks
         if (this.isAwsPartnerEvent(schemaName)) {
             this.buildPartnerEventPackageName(builder, schemaName)
         } else if (this.isAwsEvent(schemaName)) {
@@ -30,11 +31,11 @@ export class SchemaCodeGenUtils {
         }
     }
 
-    private isAwsPartnerEvent(schemaName: string): Boolean {
+    private isAwsPartnerEvent(schemaName: string): boolean {
         return schemaName.startsWith(this.AWS_PARTNER_PREFIX)
     }
 
-    private buildPartnerEventPackageName(builder: CodeGenPackageBuilder, schemaName: string) {
+    private buildPartnerEventPackageName(builder: CodeGenPackageBuilder, schemaName: string): void {
         const partnerSchemaString = schemaName.substring(this.AWS_PARTNER_PREFIX.length)
 
         builder
@@ -43,18 +44,18 @@ export class SchemaCodeGenUtils {
             .append(partnerSchemaString)
     }
 
-    private isAwsEvent(name: string): Boolean {
+    private isAwsEvent(name: string): boolean {
         return name.startsWith(this.AWS_EVENTS_PREFIX)
     }
 
-    private buildAwsEventPackageName(builder: CodeGenPackageBuilder, schemaName: string) {
+    private buildAwsEventPackageName(builder: CodeGenPackageBuilder, schemaName: string): void {
         const awsEventSchemaParts = schemaName.split('.')
         for (const part of awsEventSchemaParts) {
             builder.append(part)
         }
     }
 
-    private buildCustomPackageName(builder: CodeGenPackageBuilder, schemaName: string) {
+    private buildCustomPackageName(builder: CodeGenPackageBuilder, schemaName: string): void {
         builder.append(schemaName)
     }
 }
@@ -63,7 +64,7 @@ class CodeGenPackageBuilder {
     private builder = ''
     private readonly formatter = new IdentifierFormatter()
 
-    public getBuilder() {
+    public build(): string {
         return this.builder
     }
 
@@ -85,7 +86,7 @@ export class IdentifierFormatter {
     private readonly POTENTIAL_PACKAGE_SEPARATOR_REGEX = new RegExp(this.POTENTIAL_PACKAGE_SEPARATOR, 'g')
     private readonly UNDERSCORE = '_'
 
-    public toValidIdentifier(name: string) {
+    public toValidIdentifier(name: string): string {
         return name
             .replace(this.NOT_VALID_IDENTIFIER_REGEX, this.UNDERSCORE)
             .replace(this.POTENTIAL_PACKAGE_SEPARATOR_REGEX, this.PACKAGE_SEPARATOR)

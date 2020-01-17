@@ -7,12 +7,17 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { SchemaClient } from '../../../src/shared/clients/schemaClient'
 import { createSchemaCodeDownloaderObject } from '../..//eventSchemas/commands/downloadSchemaItemCode'
 import {
     SchemaCodeDownloader,
     SchemaCodeDownloadRequestDetails
 } from '../../eventSchemas/commands/downloadSchemaItemCode'
-import { buildSchemaTemplateParameters } from '../../eventSchemas/templates/schemasAppTemplateUtils'
+import { getApiValueForSchemasDownload } from '../../eventSchemas/models/schemaCodeLangs'
+import {
+    buildSchemaTemplateParameters,
+    SchemaTemplateParameters
+} from '../../eventSchemas/templates/schemasAppTemplateUtils'
 import { ActivationLaunchPath } from '../../shared/activationLaunchPath'
 import { AwsContext } from '../../shared/awsContext'
 import { ext } from '../../shared/extensionGlobals'
@@ -26,7 +31,7 @@ import { makeCheckLogsMessage } from '../../shared/utilities/messages'
 import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
 import { getDependencyManager } from '../models/samLambdaRuntime'
-import { eventBridgeStarterAppTemplate, getApiValueForSchemasDownload } from '../models/samTemplates'
+import { eventBridgeStarterAppTemplate } from '../models/samTemplates'
 import {
     CreateNewSamAppWizard,
     CreateNewSamAppWizardResponse,
@@ -86,9 +91,9 @@ export async function createNewSamApplication(
         const validationResult = await samCliContext.validator.detectValidSamCli()
         throwAndNotifyIfInvalid(validationResult)
 
-        const selectedCredentials = await awsContext.getCredentials()
+        const userIsConnectedToAws = await awsContext.getCredentials()
         const wizardContext = new DefaultCreateNewSamAppWizardContext(
-            selectedCredentials === undefined,
+            userIsConnectedToAws !== undefined,
             validationResult.versionValidation!.version!
         )
         const config: CreateNewSamAppWizardResponse | undefined = await new CreateNewSamAppWizard(wizardContext).run()
@@ -114,26 +119,17 @@ export async function createNewSamApplication(
 
         let request: SchemaCodeDownloadRequestDetails
         let schemaCodeDownloader: SchemaCodeDownloader
+        let schemaTemplateParameters: SchemaTemplateParameters
+        let client: SchemaClient
         if (config.template === eventBridgeStarterAppTemplate) {
-            const client = ext.toolkitClientBuilder.createSchemaClient(config.region!)
-            const schemaTemplateParameters = await buildSchemaTemplateParameters(
+            client = ext.toolkitClientBuilder.createSchemaClient(config.region!)
+            schemaTemplateParameters = await buildSchemaTemplateParameters(
                 config.schemaName!,
                 config.registryName!,
                 client
             )
 
             initArguments.extraContent = schemaTemplateParameters.templateExtraContent
-
-            const destinationDirectory = path.join(config.location.fsPath, config.name, 'hello_world_function')
-            request = {
-                registryName: config.registryName!,
-                schemaName: config.schemaName!,
-                language: getApiValueForSchemasDownload(config.runtime),
-                schemaVersion: schemaTemplateParameters!.SchemaVersion,
-                destinationDirectory: vscode.Uri.file(destinationDirectory),
-                schemaCoreCodeFileName: '' //set only if file needs to be opened in the editor post download
-            }
-            schemaCodeDownloader = createSchemaCodeDownloaderObject(client)
         }
 
         await runSamCliInit(initArguments, samCliContext)
@@ -148,6 +144,16 @@ export async function createNewSamApplication(
         }
 
         if (config.template === eventBridgeStarterAppTemplate) {
+            const destinationDirectory = path.join(config.location.fsPath, config.name, 'hello_world_function')
+            request = {
+                registryName: config.registryName!,
+                schemaName: config.schemaName!,
+                language: getApiValueForSchemasDownload(config.runtime),
+                schemaVersion: schemaTemplateParameters!.SchemaVersion,
+                destinationDirectory: vscode.Uri.file(destinationDirectory),
+                schemaCoreCodeFileName: '' //set only if file needs to be opened in the editor post download
+            }
+            schemaCodeDownloader = createSchemaCodeDownloaderObject(client!)
             await schemaCodeDownloader!.downloadCode(request!)
 
             vscode.window.showInformationMessage(

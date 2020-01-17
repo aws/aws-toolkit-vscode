@@ -57,12 +57,12 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
     // Filter out node8 until local debugging is no longer supported, and it can be removed from samLambdaRuntimes
     public readonly lambdaRuntimes = samLambdaRuntimes.filter(runtime => runtime !== 'nodejs8.10')
     private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Documentation'))
-    private readonly credentialsNotFound: boolean = false
+    private readonly userIsConnectedToAws: boolean = false
     private readonly samCliVersion: string = ''
 
-    public constructor(credentialsNotFound: boolean, samCliVersion: string) {
+    public constructor(userIsConnectedToAws: boolean, samCliVersion: string) {
         super()
-        this.credentialsNotFound = credentialsNotFound
+        this.userIsConnectedToAws = userIsConnectedToAws
         this.samCliVersion = samCliVersion
     }
 
@@ -109,7 +109,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
             options: {
                 ignoreFocusOut: true,
                 title: localize('AWS.samcli.initWizard.template.prompt', 'Select a SAM Application Template'),
-                value: currTemplate ? currTemplate : ''
+                value: currTemplate
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: templates.toArray().map(template => ({
@@ -136,7 +136,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
 
         //eventBridgeStarterAppTemplate requires aws credentials
         if (val && val.label === eventBridgeStarterAppTemplate) {
-            if (this.credentialsNotFound) {
+            if (!this.userIsConnectedToAws) {
                 await ext.awsContextCommands.onCommandLogin()
 
                 return exitWizard
@@ -161,6 +161,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
     }
 
     public async promptUserForRegion(currRegion?: string): Promise<string | undefined> {
+        // TODO : Retrieve available regions from endpoints.json and remove hardcoded values  : https://github.com/aws/aws-toolkit-vscode/issues/850
         const schemasRegions = ['us-east-1', 'us-east-2', 'us-west-2', 'eu-west-1', 'ap-northeast-1']
 
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({

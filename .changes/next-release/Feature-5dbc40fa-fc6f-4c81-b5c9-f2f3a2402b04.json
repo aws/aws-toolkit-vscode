@@ -1,4 +1,4 @@
 {
     "type": "Feature",
-    "description": "Added new serverless application EventBridge schemas support."
+    "description": "Added the ability to create new Serverless Applications with EventBridge Schemas support."
 }

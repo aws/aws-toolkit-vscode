@@ -46,7 +46,7 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
     public get samTemplates(): Set<SamTemplate> {
         if (Array.isArray(this._samTemplates)) {
             if (this._samTemplates!.length <= 0) {
-                throw new Error('samTemplates was called more times than expected') // bunu belke rename ele
+                throw new Error('samTemplates was called more times than expected')
             }
 
             return (this._samTemplates as Set<SamTemplate>[]).pop() || Set()

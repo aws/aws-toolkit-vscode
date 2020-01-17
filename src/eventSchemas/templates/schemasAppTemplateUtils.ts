@@ -40,7 +40,8 @@ export async function buildSchemaTemplateParameters(schemaName: string, registry
     const response = await client.describeSchema(registryName, schemaName)
     const schemaNode = JSON.parse(response.Content!)
     const latestSchemaVersion = response.SchemaVersion
-    const awsEventNode = getAwsEventNode(response.Content!)
+    // Standard OpenAPI specification for AwsEventNode
+    const awsEventNode = _.get(schemaNode, COMPONENTS.concat('.', SCHEMAS, '.', AWS_EVENT))
 
     // Derive source from custom OpenAPI metadata provided by Schemas service
     const source = _.get(awsEventNode, X_AMAZON_EVENT_SOURCE, DEFAULT_EVENT_SOURCE)
@@ -96,13 +97,6 @@ function buildRootSchemaEventName(schemaNode: any, awsEventNode: any) {
     }
 
     return undefined
-}
-
-function getAwsEventNode(schemaNode: string) {
-    const schemasNodeJson = JSON.parse(schemaNode)
-
-    // Standard OpenAPI specification
-    return _.get(schemasNodeJson, COMPONENTS.concat('.', SCHEMAS, '.', AWS_EVENT))
 }
 
 function getCoreFileName(schemaName: string) {

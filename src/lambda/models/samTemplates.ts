@@ -8,13 +8,13 @@ import { Set } from 'immutable'
 export const helloWorldTemplate = 'AWS SAM Hello World'
 export const eventBridgeHelloWorldTemplate = 'AWS SAM EventBridge Hello World'
 export const eventBridgeStarterAppTemplate = 'AWS SAM EventBridge App from Scratch'
-export const exitWizard = 'exitWizard'
+export const exitWizard = 'USER_RESPONSE_EXIT_WIZARD'
 
 export type SamTemplate =
     | 'AWS SAM Hello World'
     | 'AWS SAM EventBridge Hello World'
     | 'AWS SAM EventBridge App from Scratch'
-    | 'exitWizard'
+    | 'USER_RESPONSE_EXIT_WIZARD'
 
 export const validTemplateOptions: Set<SamTemplate> = Set<SamTemplate>([
     helloWorldTemplate,
@@ -24,7 +24,7 @@ export const validTemplateOptions: Set<SamTemplate> = Set<SamTemplate>([
 
 export const helloWorldOption: Set<SamTemplate> = Set<SamTemplate>([helloWorldTemplate])
 
-function supportsEventBridgeTemplates(runtime: Runtime): boolean {
+export function supportsEventBridgeTemplates(runtime: Runtime): boolean {
     return runtime === 'python3.7' || runtime === 'python3.6' || runtime === 'python3.8'
 }
 
@@ -51,12 +51,4 @@ export function getSamCliTemplateParameter(templateSelected: SamTemplate): strin
 
 export function getTemplateDescription(template: SamTemplate): string {
     return template === eventBridgeStarterAppTemplate ? 'You need to be connected to AWS to select this entry' : ''
-}
-
-export function getApiValueForSchemasDownload(runtime: Runtime): string {
-    if (supportsEventBridgeTemplates(runtime)) {
-        return 'Python36'
-    }
-
-    throw new Error(`Runtime ${runtime} is not supported by eventBridge application`)
 }

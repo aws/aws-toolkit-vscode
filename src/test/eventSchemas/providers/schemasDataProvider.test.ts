@@ -47,14 +47,14 @@ describe('getRegistries', () => {
         assert.ok(cachedResults.length === 1, 'Should be one region in the cache')
         assert.strictEqual(cachedResults[0].region, TEST_REGION)
 
-        assert.ok(cachedResults[0].registryNames.length === 2, 'Should be two registries')
+        assert.ok(cachedResults[0].registryNames.length === 2, 'Unexpected number of registryNames returned')
         assert.strictEqual(cachedResults[0].registryNames[0], TEST_REGISTRY)
         assert.strictEqual(cachedResults[0].registryNames[1], TEST_REGISTRY2)
 
         assert.deepStrictEqual(
             cachedResults[0].registrySchemasMapList,
             [],
-            'Regiion should have no registrySchemasMapList'
+            'Region should have no registrySchemasMapList'
         )
     })
 
@@ -72,7 +72,7 @@ describe('getRegistries', () => {
             sandbox.stub(schemaClient, 'listSchemas').returns(asyncGenerator([schemaSummary, schemaSummary2]))
             const schemas = await SchemasDataProvider.getInstance().getSchemas(TEST_REGION, TEST_REGISTRY, schemaClient)
 
-            assert.ok(schemas!.length === 2, 'Should be two schemas')
+            assert.ok(schemas!.length === 2, 'Unexpected number of schemas returned')
             assert.strictEqual(schemas![0], schemaSummary, 'schemaSummary should match')
             assert.strictEqual(schemas![1], schemaSummary2, 'schemaSummary2 should match')
         })
@@ -80,7 +80,10 @@ describe('getRegistries', () => {
         it('should retain results once it is queried ', async () => {
             const cachedResults = SchemasDataProvider.getInstance().getCachedRegionMap()
 
-            assert.ok(cachedResults[0].registrySchemasMapList.length === 1, 'Should be one registry with schema list')
+            assert.ok(
+                cachedResults[0].registrySchemasMapList.length === 1,
+                'Unexpected number of elements returned in registrySchemasMapList'
+            )
             assert.deepStrictEqual(
                 cachedResults[0].registrySchemasMapList[0].schemaList,
                 [schemaSummary, schemaSummary2],
