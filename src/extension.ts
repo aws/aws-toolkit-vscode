@@ -43,8 +43,10 @@ import { registerCommand } from './shared/telemetry/telemetryUtils'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { getChannelLogger } from './shared/utilities/vsCodeUtils'
 
+let localize: nls.LocalizeFunc
+
 export async function activate(context: vscode.ExtensionContext) {
-    const localize = nls.loadMessageBundle()
+    localize = nls.loadMessageBundle()
 
     ext.context = context
     await activateLogger(context)
@@ -58,7 +60,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         const toolkitSettings = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 
-        const endpointsProvider = makeEndpointsProvider(localize)
+        const endpointsProvider = makeEndpointsProvider()
 
         const awsContext = new DefaultAwsContext(context)
         const awsContextTrees = new AwsContextTreeCollection()
@@ -199,7 +201,7 @@ function initializeCredentialsProviderManager() {
     CredentialsProviderManager.getInstance().addProviderFactory(new SharedCredentialsProviderFactory())
 }
 
-function makeEndpointsProvider(localize: nls.LocalizeFunc): EndpointsProvider {
+function makeEndpointsProvider(): EndpointsProvider {
     const localManifestFetcher = new FileResourceFetcher(ext.manifestPaths.endpoints)
     const remoteManifestFetcher = new HttpResourceFetcher(endpointsFileUrl)
 
