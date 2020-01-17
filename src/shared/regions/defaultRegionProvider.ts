@@ -4,98 +4,59 @@
  */
 
 import * as vscode from 'vscode'
-import { endpointsFileUrl } from '../constants'
-import { ext } from '../extensionGlobals'
-import { getLogger, Logger } from '../logger'
-import { CompositeResourceFetcher } from '../resourcefetcher/compositeResourceFetcher'
-import { FileResourceFetcher } from '../resourcefetcher/fileResourceFetcher'
-import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
-import { ResourceFetcher } from '../resourcefetcher/resourcefetcher'
+import { Endpoints, Region } from './endpoints'
+import { EndpointsProvider } from './endpointsProvider'
 import { RegionInfo } from './regionInfo'
 import { RegionProvider } from './regionProvider'
 
-export interface RawRegion {
-    description: string
-}
-
-export interface RawPartition {
-    partition: string
-    regions: {
-        [regionKey: string]: RawRegion
-    }
-}
-
-export interface RawEndpoints {
-    partitions: RawPartition[]
-}
-
 export class DefaultRegionProvider implements RegionProvider {
-    private readonly logger: Logger = getLogger()
-    private _areRegionsLoaded: boolean = false
-    private _loadedRegions: RegionInfo[]
-    private readonly _resourceFetcher: ResourceFetcher
+    private readonly onRegionProviderUpdatedEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter()
+    private _loadedRegions: RegionInfo[] = []
 
-    public constructor(resourceFetcher: ResourceFetcher) {
-        this._loadedRegions = []
-        this._resourceFetcher = resourceFetcher
+    public constructor(endpointsProvider: EndpointsProvider) {
+        endpointsProvider.onEndpointsUpdated(e => this.loadFromEndpointsProvider(e))
+        this.loadFromEndpointsProvider(endpointsProvider)
     }
 
-    // Returns an array of Regions, and caches them in memory.
+    public get onRegionProviderUpdated(): vscode.Event<void> {
+        return this.onRegionProviderUpdatedEmitter.event
+    }
+
     public async getRegionData(): Promise<RegionInfo[]> {
-        if (this._areRegionsLoaded) {
-            return this._loadedRegions
+        return this._loadedRegions
+    }
+
+    private loadFromEndpointsProvider(provider: EndpointsProvider) {
+        const endpoints = provider.getEndpoints()
+
+        if (endpoints) {
+            this.loadFromEndpoints(endpoints)
         }
+    }
 
-        let availableRegions: RegionInfo[] = []
-        try {
-            this.logger.info('Retrieving AWS endpoint data')
+    private loadFromEndpoints(endpoints: Endpoints) {
+        // TODO : Support other Partition regions : https://github.com/aws/aws-toolkit-vscode/issues/188
+        this._loadedRegions = getRegionInfo(endpoints, 'aws')
 
-            const endpointsContents = await this._resourceFetcher.get()
-
-            if (!endpointsContents) {
-                throw new Error('No endpoints data found')
-            }
-
-            const allEndpoints = JSON.parse(endpointsContents) as RawEndpoints
-
-            availableRegions = getRegionsFromEndpoints(allEndpoints)
-
-            this._areRegionsLoaded = true
-            this._loadedRegions = availableRegions
-        } catch (err) {
-            this._areRegionsLoaded = false
-            this.logger.error('Unable to retrieve AWS endpoints: ', err as Error)
-            // TODO: now what, oneline + local failed...?
-            availableRegions = []
-            this._loadedRegions = []
-        }
-
-        return availableRegions
+        this.onRegionProviderUpdatedEmitter.fire()
     }
 }
 
-export function makeEndpointsResourceFetcher(extensionContext: vscode.ExtensionContext): ResourceFetcher {
-    return new CompositeResourceFetcher(
-        new HttpResourceFetcher(endpointsFileUrl),
-        new FileResourceFetcher(ext.manifestPaths.endpoints)
-    )
+function getRegionInfo(endpoints: Endpoints, partitionId: string): RegionInfo[] {
+    let regions: RegionInfo[] = []
+
+    endpoints.partitions
+        .filter(partition => partition.id === partitionId)
+        .forEach(partition => {
+            regions = regions.concat(partition.regions.map(asRegionInfo))
+        })
+
+    return regions
 }
 
-export function getRegionsFromPartition(partition: RawPartition): RegionInfo[] {
-    return Object.keys(partition.regions).map(
-        regionKey => new RegionInfo(regionKey, `${partition.regions[regionKey].description}`)
-    )
-}
-
-export function getRegionsFromEndpoints(endpoints: RawEndpoints): RegionInfo[] {
-    return (
-        endpoints.partitions
-            // TODO : Support other Partition regions : https://github.com/aws/aws-toolkit-vscode/issues/188
-            .filter(partition => partition.partition && partition.partition === 'aws')
-            .reduce((accumulator: RegionInfo[], partition: RawPartition) => {
-                accumulator.push(...getRegionsFromPartition(partition))
-
-                return accumulator
-            }, [])
-    )
+function asRegionInfo(region: Region): RegionInfo {
+    return {
+        regionCode: region.id,
+        regionName: region.description
+    }
 }

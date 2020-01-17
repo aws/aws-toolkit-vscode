@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
+import { getLogger, Logger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { RefreshableAwsTreeProvider } from '../shared/treeview/awsTreeProvider'
 import { AWSCommandTreeNode } from '../shared/treeview/nodes/awsCommandTreeNode'
@@ -16,6 +17,7 @@ import { RegionNode } from './regionNode'
 export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
     public viewProviderId: string = 'aws.explorer'
     public readonly onDidChangeTreeData: vscode.Event<AWSTreeNodeBase | undefined>
+    private readonly logger: Logger = getLogger()
     private readonly _onDidChangeTreeData: vscode.EventEmitter<AWSTreeNodeBase | undefined>
     private readonly regionNodes: Map<string, RegionNode>
 
@@ -23,6 +25,11 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
         this._onDidChangeTreeData = new vscode.EventEmitter<AWSTreeNodeBase | undefined>()
         this.onDidChangeTreeData = this._onDidChangeTreeData.event
         this.regionNodes = new Map<string, RegionNode>()
+
+        this.regionProvider.onRegionProviderUpdated(() => {
+            this.logger.verbose('Refreshing AWS Explorer due to Region Provider updates')
+            this.refresh()
+        })
     }
 
     public getTreeItem(element: AWSTreeNodeBase): vscode.TreeItem {
