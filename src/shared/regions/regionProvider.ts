@@ -11,4 +11,5 @@ export interface RegionProvider {
     onRegionProviderUpdated: vscode.Event<void>
 
     getRegionData(): Promise<RegionInfo[]>
+    isServiceInRegion(serviceId: string, regionId: string): boolean
 }

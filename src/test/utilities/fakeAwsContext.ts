@@ -17,6 +17,7 @@ export const DEFAULT_TEST_REGION_NAME = 'The Querty Region'
 export class FakeRegionProvider implements RegionProvider {
     public readonly onRegionProviderUpdatedEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter<void>()
     public readonly onRegionProviderUpdated: vscode.Event<void> = this.onRegionProviderUpdatedEmitter.event
+    public readonly servicesNotInRegion: string[] = []
 
     public async getRegionData(): Promise<RegionInfo[]> {
         return [
@@ -25,6 +26,10 @@ export class FakeRegionProvider implements RegionProvider {
                 regionName: DEFAULT_TEST_REGION_NAME
             }
         ]
+    }
+
+    public isServiceInRegion(serviceId: string, regionId: string): boolean {
+        return this.servicesNotInRegion.indexOf(serviceId) === -1
     }
 }
 

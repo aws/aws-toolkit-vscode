@@ -6,7 +6,9 @@
 'use strict'
 
 import * as assert from 'assert'
+import * as sinon from 'sinon'
 import { DefaultRegionProvider } from '../../../shared/regions/defaultRegionProvider'
+import { Endpoints } from '../../../shared/regions/endpoints'
 import { EndpointsProvider } from '../../../shared/regions/endpointsProvider'
 import { ResourceFetcher } from '../../../shared/resourcefetcher/resourcefetcher'
 
@@ -62,5 +64,67 @@ describe('DefaultRegionProvider', async () => {
                 `${expectedRegionId} was missing from retrieved regions`
             )
         }
+    })
+
+    describe('isServiceInRegion', async () => {
+        let sandbox: sinon.SinonSandbox
+
+        let endpoints: Endpoints
+        let endpointsProvider: EndpointsProvider
+
+        const regionCode = 'someRegion'
+        const serviceId = 'someService'
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+
+            endpoints = {
+                partitions: [
+                    {
+                        id: 'aws',
+                        name: '',
+                        regions: [
+                            {
+                                id: regionCode,
+                                description: ''
+                            }
+                        ],
+                        services: [
+                            {
+                                id: serviceId,
+                                endpoints: [
+                                    {
+                                        regionId: regionCode,
+                                        data: {}
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+
+            endpointsProvider = new EndpointsProvider(resourceFetcher, resourceFetcher)
+            sandbox.stub(endpointsProvider, 'getEndpoints').returns(endpoints)
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('indicates when a service is in a region', async () => {
+            const regionProvider = new DefaultRegionProvider(endpointsProvider)
+
+            assert.ok(regionProvider.isServiceInRegion(serviceId, regionCode), 'Expected service to be in region')
+        })
+
+        it('indicates when a service is not in a region', async () => {
+            const regionProvider = new DefaultRegionProvider(endpointsProvider)
+
+            assert.ok(
+                !regionProvider.isServiceInRegion(`${serviceId}x`, regionCode),
+                'Expected service not to be in region'
+            )
+        })
     })
 })
