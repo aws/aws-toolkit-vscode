@@ -18,6 +18,13 @@ phases:
             - xvfb-run npm run test
             - cp ./extension-readme.md ./README.md
             - npm run package
+
+reports:
+    unit-test:
+        files:
+            - '*'
+        base-directory: '.test-reports'
+
 artifacts:
     files:
         - aws-toolkit-vscode*
