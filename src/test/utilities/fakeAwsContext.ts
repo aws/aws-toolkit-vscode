@@ -5,11 +5,13 @@
 
 import * as vscode from 'vscode'
 import { AwsContext, AwsContextCredentials, ContextChangeEventsArgs } from '../../shared/awsContext'
+import { Region } from '../../shared/regions/endpoints'
 import { RegionInfo } from '../../shared/regions/regionInfo'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 
 export const DEFAULT_TEST_PROFILE_NAME = 'qwerty'
 export const DEFAULT_TEST_ACCOUNT_ID = '123456789012'
+export const DEFAULT_TEST_PARTITION_ID = 'partitionQwerty'
 export const DEFAULT_TEST_REGION_CODE = 'regionQuerty'
 export const DEFAULT_TEST_REGION_NAME = 'The Querty Region'
 
@@ -26,6 +28,27 @@ export class FakeRegionProvider implements RegionProvider {
                 regionName: DEFAULT_TEST_REGION_NAME
             }
         ]
+    }
+
+    public getPartitionId(regionId: string): string | undefined {
+        if (regionId === DEFAULT_TEST_REGION_CODE) {
+            return DEFAULT_TEST_PARTITION_ID
+        }
+
+        return undefined
+    }
+
+    public getRegions(partitionId: string): Region[] {
+        if (partitionId === DEFAULT_TEST_PARTITION_ID) {
+            return [
+                {
+                    id: DEFAULT_TEST_REGION_CODE,
+                    description: DEFAULT_TEST_REGION_NAME
+                }
+            ]
+        }
+
+        return []
     }
 
     public isServiceInRegion(serviceId: string, regionId: string): boolean {

@@ -127,4 +127,50 @@ describe('DefaultRegionProvider', async () => {
             )
         })
     })
+
+    describe('getPartitionId', async () => {
+        let endpointsProvider: EndpointsProvider
+        let regionProvider: DefaultRegionProvider
+
+        beforeEach(async () => {
+            endpointsProvider = new EndpointsProvider(resourceFetcher, resourceFetcher)
+            await endpointsProvider.load()
+
+            regionProvider = new DefaultRegionProvider(endpointsProvider)
+        })
+
+        it('gets partition for a known region', async () => {
+            const partitionId = regionProvider.getPartitionId('awscnregion1')
+            assert.strictEqual(partitionId, 'aws-cn')
+        })
+
+        it('returns undefined for an unknown region', async () => {
+            const partitionId = regionProvider.getPartitionId('foo')
+            assert.strictEqual(partitionId, undefined)
+        })
+    })
+
+    describe('getRegions', async () => {
+        let endpointsProvider: EndpointsProvider
+        let regionProvider: DefaultRegionProvider
+
+        beforeEach(async () => {
+            endpointsProvider = new EndpointsProvider(resourceFetcher, resourceFetcher)
+            await endpointsProvider.load()
+
+            regionProvider = new DefaultRegionProvider(endpointsProvider)
+        })
+
+        it('gets regions for a known partition', async () => {
+            const regions = regionProvider.getRegions('aws')
+            assert.ok(regions)
+            assert.strictEqual(regions.length, 3, 'Unexpected amount of regions returned')
+        })
+
+        it('returns empty array for an unknown partition', async () => {
+            const regions = regionProvider.getRegions('foo')
+            assert.ok(regions)
+            assert.strictEqual(regions.length, 0, 'Unexpected regions returned')
+        })
+    })
 })

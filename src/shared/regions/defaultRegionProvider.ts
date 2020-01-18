@@ -11,6 +11,7 @@ import { RegionProvider } from './regionProvider'
 
 interface RegionData {
     partitionId: string
+    region: Region
     serviceIds: string[]
 }
 
@@ -37,6 +38,16 @@ export class DefaultRegionProvider implements RegionProvider {
         return !!this.regionIdToRegionData.get(regionId)?.serviceIds.find(x => x === serviceId) ?? false
     }
 
+    public getPartitionId(regionId: string): string | undefined {
+        return this.regionIdToRegionData.get(regionId)?.partitionId ?? undefined
+    }
+
+    public getRegions(partitionId: string): Region[] {
+        return [...this.regionIdToRegionData.values()]
+            .filter(region => region.partitionId === partitionId)
+            .map(region => region.region)
+    }
+
     private loadFromEndpointsProvider(provider: EndpointsProvider) {
         const endpoints = provider.getEndpoints()
 
@@ -55,6 +66,7 @@ export class DefaultRegionProvider implements RegionProvider {
             partition.regions.forEach(region =>
                 this.regionIdToRegionData.set(region.id, {
                     partitionId: partition.id,
+                    region: region,
                     serviceIds: []
                 })
             )

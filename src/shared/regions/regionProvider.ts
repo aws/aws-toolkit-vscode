@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { Region } from './endpoints'
 import { RegionInfo } from './regionInfo'
 
 // Provides AWS Region Information
@@ -11,5 +12,7 @@ export interface RegionProvider {
     onRegionProviderUpdated: vscode.Event<void>
 
     getRegionData(): Promise<RegionInfo[]>
+    getPartitionId(regionId: string): string | undefined
+    getRegions(partitionId: string): Region[]
     isServiceInRegion(serviceId: string, regionId: string): boolean
 }
