@@ -108,7 +108,8 @@ export function makeFakeAwsContextWithPlaceholderIds(credentials: AWS.Credential
         contextCredentials: {
             credentials: credentials,
             credentialsId: DEFAULT_TEST_PROFILE_NAME,
-            accountId: DEFAULT_TEST_ACCOUNT_ID
+            accountId: DEFAULT_TEST_ACCOUNT_ID,
+            defaultRegion: DEFAULT_TEST_REGION_CODE
         }
     })
 }

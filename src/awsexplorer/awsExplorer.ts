@@ -68,8 +68,12 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
             ]
         }
 
+        const defaultRegionId = this.awsContext.getCredentialDefaultRegion() ?? 'us-east-1'
+        const partitionId = this.regionProvider.getPartitionId(defaultRegionId) ?? 'aws'
+        const partitionRegions = this.regionProvider.getRegions(partitionId)
+
         const explorerRegionCodes = await this.awsContext.getExplorerRegions()
-        const regionMap = toMap(await this.regionProvider.getRegionData(), r => r.regionCode)
+        const regionMap = toMap(partitionRegions, r => r.id)
 
         updateInPlace(
             this.regionNodes,

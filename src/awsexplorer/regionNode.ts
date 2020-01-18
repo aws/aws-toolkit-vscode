@@ -7,7 +7,7 @@ import { TreeItemCollapsibleState } from 'vscode'
 import { SchemasNode } from '../eventSchemas/explorer/schemasNode'
 import { CloudFormationNode } from '../lambda/explorer/cloudFormationNodes'
 import { LambdaNode } from '../lambda/explorer/lambdaNodes'
-import { RegionInfo } from '../shared/regions/regionInfo'
+import { Region } from '../shared/regions/endpoints'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 
@@ -17,22 +17,22 @@ import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
  * an account's Lambda Functions and CloudFormation stacks for this region)
  */
 export class RegionNode extends AWSTreeNodeBase {
-    private info: RegionInfo
+    private region: Region
     private readonly childNodes: AWSTreeNodeBase[] = []
 
     public get regionCode(): string {
-        return this.info.regionCode
+        return this.region.id
     }
 
     public get regionName(): string {
-        return this.info.regionName
+        return this.region.description
     }
 
-    public constructor(info: RegionInfo, regionProvider: RegionProvider) {
-        super(info.regionName, TreeItemCollapsibleState.Expanded)
+    public constructor(region: Region, regionProvider: RegionProvider) {
+        super(region.description, TreeItemCollapsibleState.Expanded)
         this.contextValue = 'awsRegionNode'
-        this.info = info
-        this.update(info)
+        this.region = region
+        this.update(region)
 
         const serviceCandidates = [
             { serviceId: 'cloudformation', createFn: () => new CloudFormationNode(this.regionCode) },
@@ -49,10 +49,10 @@ export class RegionNode extends AWSTreeNodeBase {
         return this.childNodes
     }
 
-    public update(info: RegionInfo): void {
-        this.info = info
-        this.label = info.regionName
-        this.tooltip = `${info.regionName} [${info.regionCode}]`
+    public update(region: Region): void {
+        this.region = region
+        this.label = this.regionName
+        this.tooltip = `${this.regionName} [${this.regionCode}]`
     }
 
     private addChildNodeIfInRegion(

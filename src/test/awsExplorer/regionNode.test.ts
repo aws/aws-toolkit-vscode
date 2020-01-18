@@ -11,7 +11,7 @@ import { DEFAULT_TEST_REGION_CODE, DEFAULT_TEST_REGION_NAME, FakeRegionProvider 
 describe('RegionNode', () => {
     const regionCode = DEFAULT_TEST_REGION_CODE
     const regionName = DEFAULT_TEST_REGION_NAME
-    const testNode = new RegionNode({ regionCode, regionName }, new FakeRegionProvider())
+    const testNode = new RegionNode({ id: regionCode, description: regionName }, new FakeRegionProvider())
 
     it('initializes name and tooltip', async () => {
         assert.strictEqual(testNode.label, regionName)
@@ -26,7 +26,7 @@ describe('RegionNode', () => {
     it('does not have child nodes for services not available in a region', async () => {
         const regionProvider = new FakeRegionProvider()
         regionProvider.servicesNotInRegion.push('schemas')
-        const regionNode = new RegionNode({ regionCode, regionName }, regionProvider)
+        const regionNode = new RegionNode({ id: regionCode, description: regionName }, regionProvider)
 
         const childNodes = await regionNode.getChildren()
         assert.ok(
