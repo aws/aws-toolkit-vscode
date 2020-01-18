@@ -34,16 +34,14 @@ export class RegionNode extends AWSTreeNodeBase {
         this.info = info
         this.update(info)
 
-        if (regionProvider.isServiceInRegion('cloudformation', info.regionCode)) {
-            this.childNodes.push(new CloudFormationNode(this.regionCode))
-        }
+        const serviceCandidates = [
+            { serviceId: 'cloudformation', createFn: () => new CloudFormationNode(this.regionCode) },
+            { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },
+            { serviceId: 'schemas', createFn: () => new SchemasNode(this.regionCode) }
+        ]
 
-        if (regionProvider.isServiceInRegion('lambda', info.regionCode)) {
-            this.childNodes.push(new LambdaNode(this.regionCode))
-        }
-
-        if (regionProvider.isServiceInRegion('schemas', info.regionCode)) {
-            this.childNodes.push(new SchemasNode(this.regionCode))
+        for (const serviceCandidate of serviceCandidates) {
+            this.addChildNodeIfInRegion(serviceCandidate.serviceId, regionProvider, serviceCandidate.createFn)
         }
     }
 
@@ -55,5 +53,15 @@ export class RegionNode extends AWSTreeNodeBase {
         this.info = info
         this.label = info.regionName
         this.tooltip = `${info.regionName} [${info.regionCode}]`
+    }
+
+    private addChildNodeIfInRegion(
+        serviceId: string,
+        regionProvider: RegionProvider,
+        childNodeProducer: () => AWSTreeNodeBase
+    ) {
+        if (regionProvider.isServiceInRegion(serviceId, this.regionCode)) {
+            this.childNodes.push(childNodeProducer())
+        }
     }
 }
