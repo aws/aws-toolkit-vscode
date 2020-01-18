@@ -5,7 +5,6 @@
 
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { Set } from 'immutable'
-import { supportsEventBridgeTemplates } from '../../../src/lambda/models/samTemplates'
 
 export const JAVA = 'Java 8+'
 export const PYTHON = 'Python 3.6+'
@@ -45,6 +44,10 @@ export function getLanguageDetails(
         default:
             throw new Error(`Language ${language} is not supported as Schema Code Language`)
     }
+}
+
+export function supportsEventBridgeTemplates(runtime: Runtime): boolean {
+    return runtime === 'python3.7' || runtime === 'python3.6' || runtime === 'python3.8'
 }
 
 export function getApiValueForSchemasDownload(runtime: Runtime): string {

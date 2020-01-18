@@ -4,6 +4,7 @@
  */
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { Set } from 'immutable'
+import { supportsEventBridgeTemplates } from '../../../src/eventSchemas/models/schemaCodeLangs'
 
 export const helloWorldTemplate = 'AWS SAM Hello World'
 export const eventBridgeHelloWorldTemplate = 'AWS SAM EventBridge Hello World'
@@ -23,10 +24,6 @@ export const validTemplateOptions: Set<SamTemplate> = Set<SamTemplate>([
 ])
 
 export const helloWorldOption: Set<SamTemplate> = Set<SamTemplate>([helloWorldTemplate])
-
-export function supportsEventBridgeTemplates(runtime: Runtime): boolean {
-    return runtime === 'python3.7' || runtime === 'python3.6' || runtime === 'python3.8'
-}
 
 export function getSamTemplateWizardOption(runtime: Runtime): Set<SamTemplate> {
     if (supportsEventBridgeTemplates(runtime)) {

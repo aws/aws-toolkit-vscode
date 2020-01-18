@@ -25,6 +25,7 @@ import { fileExists } from '../../shared/filesystemUtilities'
 import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
+import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
 import { Metadata } from '../../shared/telemetry/clienttelemetry'
 import { METADATA_FIELD_NAME, MetadataResult } from '../../shared/telemetry/telemetryTypes'
 import { makeCheckLogsMessage } from '../../shared/utilities/messages'
@@ -88,14 +89,10 @@ export async function createNewSamApplication(
     }
 
     try {
-        const validationResult = await samCliContext.validator.detectValidSamCli()
-        throwAndNotifyIfInvalid(validationResult)
+        await validateSamCli(samCliContext.validator)
 
         const userIsConnectedToAws = await awsContext.getCredentials()
-        const wizardContext = new DefaultCreateNewSamAppWizardContext(
-            userIsConnectedToAws !== undefined,
-            validationResult.versionValidation!.version!
-        )
+        const wizardContext = new DefaultCreateNewSamAppWizardContext(userIsConnectedToAws !== undefined)
         const config: CreateNewSamAppWizardResponse | undefined = await new CreateNewSamAppWizard(wizardContext).run()
         if (!config) {
             results.result = 'cancel'
@@ -197,6 +194,11 @@ export async function createNewSamApplication(
     }
 
     return results
+}
+
+async function validateSamCli(samCliValidator: SamCliValidator): Promise<void> {
+    const validationResult = await samCliValidator.detectValidSamCli()
+    throwAndNotifyIfInvalid(validationResult)
 }
 
 async function getMainUri(

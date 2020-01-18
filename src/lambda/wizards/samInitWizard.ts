@@ -5,7 +5,6 @@
 
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
-import * as semver from 'semver'
 
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { Set } from 'immutable'
@@ -15,7 +14,6 @@ import { SchemasDataProvider } from '../../eventSchemas/providers/schemasDataPro
 import { SchemaClient } from '../../shared/clients/schemaClient'
 import { samInitDocUrl } from '../../shared/constants'
 import { ext } from '../../shared/extensionGlobals'
-import { MINIMUM_SAM_CLI_VERSION_SCHEMAS_SUPPORT_INCLUSIVE } from '../../shared/sam/cli/samCliValidator'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
@@ -58,12 +56,10 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
     public readonly lambdaRuntimes = samLambdaRuntimes.filter(runtime => runtime !== 'nodejs8.10')
     private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Documentation'))
     private readonly userIsConnectedToAws: boolean = false
-    private readonly samCliVersion: string = ''
 
-    public constructor(userIsConnectedToAws: boolean, samCliVersion: string) {
+    public constructor(userIsConnectedToAws: boolean) {
         super()
         this.userIsConnectedToAws = userIsConnectedToAws
-        this.samCliVersion = samCliVersion
     }
 
     public async promptUserForRuntime(currRuntime?: Runtime): Promise<Runtime | undefined> {
@@ -137,23 +133,15 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
         //eventBridgeStarterAppTemplate requires aws credentials
         if (val && val.label === eventBridgeStarterAppTemplate) {
             if (!this.userIsConnectedToAws) {
-                await ext.awsContextCommands.onCommandLogin()
-
-                return exitWizard
-            }
-
-            //check if detected samCliVersion supports eventBridgeStarterAppTemplate
-            if (semver.lt(this.samCliVersion, MINIMUM_SAM_CLI_VERSION_SCHEMAS_SUPPORT_INCLUSIVE)) {
-                vscode.window.showErrorMessage(
+                vscode.window.showInformationMessage(
                     localize(
-                        'AWS.samcli.error.invalid_schema_support_version',
-                        'Installed SAM executable does not support templates that require Event Schema selection. Required minimum version {0}, but found {1}',
-                        MINIMUM_SAM_CLI_VERSION_SCHEMAS_SUPPORT_INCLUSIVE,
-                        this.samCliVersion
+                        'AWS.message.info.schemas.downloadCodeBindings.generate',
+                        'You need to be connected to AWS to select {0}.',
+                        val.label
                     )
                 )
 
-                return exitWizard
+                return undefined
             }
         }
 
