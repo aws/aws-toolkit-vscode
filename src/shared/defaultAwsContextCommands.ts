@@ -23,7 +23,7 @@ import {
 } from './credentials/defaultCredentialSelectionDataProvider'
 import { UserCredentialsUtils } from './credentials/userCredentialsUtils'
 import { ext } from './extensionGlobals'
-import { RegionInfo } from './regions/regionInfo'
+import { Region } from './regions/endpoints'
 import { RegionProvider } from './regions/regionProvider'
 
 export class DefaultAWSContextCommands {
@@ -75,7 +75,7 @@ export class DefaultAWSContextCommands {
     public async onCommandShowRegion() {
         const explorerRegions = new Set(await this._awsContext.getExplorerRegions())
         const newRegion = await this.promptForFilteredRegion(
-            candidateRegion => !explorerRegions.has(candidateRegion.regionCode)
+            candidateRegion => !explorerRegions.has(candidateRegion.id)
         )
 
         if (newRegion) {
@@ -251,9 +251,13 @@ export class DefaultAWSContextCommands {
      *
      * @param filter Filter to apply to the available regions
      */
-    private async promptForFilteredRegion(filter: (region: RegionInfo) => boolean): Promise<string | undefined> {
-        const availableRegions = await this._regionProvider.getRegionData()
-        const regionsToShow = availableRegions.filter(filter).map(r => r.regionCode)
+    private async promptForFilteredRegion(filter: (region: Region) => boolean): Promise<string | undefined> {
+        // TODO : CC : Dedupe this resolving code
+        const defaultRegionId = this._awsContext.getCredentialDefaultRegion() ?? 'us-east-1'
+        const partitionId = this._regionProvider.getPartitionId(defaultRegionId) ?? 'aws'
+        const partitionRegions = this._regionProvider.getRegions(partitionId)
+
+        const regionsToShow = partitionRegions.filter(filter).map(r => r.id)
 
         return this.promptForRegion(regionsToShow)
     }
@@ -265,18 +269,22 @@ export class DefaultAWSContextCommands {
      * regions are shown. Regions provided must exist in the available regions to be shown.
      */
     private async promptForRegion(regions?: string[]): Promise<string | undefined> {
-        const availableRegions = await this._regionProvider.getRegionData()
-        const regionsToShow = availableRegions
+        // TODO : CC : Dedupe this resolving code
+        const defaultRegionId = this._awsContext.getCredentialDefaultRegion() ?? 'us-east-1'
+        const partitionId = this._regionProvider.getPartitionId(defaultRegionId) ?? 'aws'
+        const partitionRegions = this._regionProvider.getRegions(partitionId)
+
+        const regionsToShow = partitionRegions
             .filter(r => {
                 if (regions) {
-                    return regions.some(x => x === r.regionCode)
+                    return regions.some(x => x === r.id)
                 }
 
                 return true
             })
             .map(r => ({
-                label: r.regionName,
-                detail: r.regionCode
+                label: r.description,
+                detail: r.id
             }))
         const input = await window.showQuickPick(regionsToShow, {
             placeHolder: localize('AWS.message.selectRegion', 'Select an AWS region'),
