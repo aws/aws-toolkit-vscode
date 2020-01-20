@@ -8,8 +8,8 @@ import { SchemasNode } from '../eventSchemas/explorer/schemasNode'
 import { CloudFormationNode } from '../lambda/explorer/cloudFormationNodes'
 import { LambdaNode } from '../lambda/explorer/lambdaNodes'
 import { RegionInfo } from '../shared/regions/regionInfo'
+import { RegionProvider } from '../shared/regions/regionProvider'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
-import { toMap, updateInPlace } from '../shared/utilities/collectionUtils'
 
 /**
  * An AWS Explorer node representing a region.
@@ -18,9 +18,7 @@ import { toMap, updateInPlace } from '../shared/utilities/collectionUtils'
  */
 export class RegionNode extends AWSTreeNodeBase {
     private info: RegionInfo
-    private readonly cloudFormationNode: CloudFormationNode
-    private readonly lambdaNode: LambdaNode
-    private readonly schemasNode: SchemasNode
+    private readonly childNodes: AWSTreeNodeBase[] = []
 
     public get regionCode(): string {
         return this.info.regionCode
@@ -30,19 +28,25 @@ export class RegionNode extends AWSTreeNodeBase {
         return this.info.regionName
     }
 
-    public constructor(info: RegionInfo) {
+    public constructor(info: RegionInfo, regionProvider: RegionProvider) {
         super(info.regionName, TreeItemCollapsibleState.Expanded)
         this.contextValue = 'awsRegionNode'
         this.info = info
         this.update(info)
 
-        this.cloudFormationNode = new CloudFormationNode(this.regionCode)
-        this.lambdaNode = new LambdaNode(this.regionCode)
-        this.schemasNode = new SchemasNode(this.regionCode)
+        const serviceCandidates = [
+            { serviceId: 'cloudformation', createFn: () => new CloudFormationNode(this.regionCode) },
+            { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },
+            { serviceId: 'schemas', createFn: () => new SchemasNode(this.regionCode) }
+        ]
+
+        for (const serviceCandidate of serviceCandidates) {
+            this.addChildNodeIfInRegion(serviceCandidate.serviceId, regionProvider, serviceCandidate.createFn)
+        }
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
-        return [this.cloudFormationNode, this.lambdaNode, this.schemasNode]
+        return this.childNodes
     }
 
     public update(info: RegionInfo): void {
@@ -50,23 +54,14 @@ export class RegionNode extends AWSTreeNodeBase {
         this.label = info.regionName
         this.tooltip = `${info.regionName} [${info.regionCode}]`
     }
-}
 
-export class RegionNodeCollection {
-    private readonly regionNodes: Map<string, RegionNode>
-
-    public constructor() {
-        this.regionNodes = new Map<string, RegionNode>()
-    }
-
-    public async updateChildren(regionDefinitions: RegionInfo[]): Promise<void> {
-        const regionMap = toMap(regionDefinitions, r => r.regionCode)
-
-        updateInPlace(
-            this.regionNodes,
-            regionMap.keys(),
-            key => this.regionNodes.get(key)!.update(regionMap.get(key)!),
-            key => new RegionNode(regionMap.get(key)!)
-        )
+    private addChildNodeIfInRegion(
+        serviceId: string,
+        regionProvider: RegionProvider,
+        childNodeProducer: () => AWSTreeNodeBase
+    ) {
+        if (regionProvider.isServiceInRegion(serviceId, this.regionCode)) {
+            this.childNodes.push(childNodeProducer())
+        }
     }
 }

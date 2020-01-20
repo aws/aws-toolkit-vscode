@@ -75,7 +75,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
             this.regionNodes,
             intersection(regionMap.keys(), explorerRegionCodes),
             key => this.regionNodes.get(key)!.update(regionMap.get(key)!),
-            key => new RegionNode(regionMap.get(key)!)
+            key => new RegionNode(regionMap.get(key)!, this.regionProvider)
         )
 
         if (this.regionNodes.size > 0) {
