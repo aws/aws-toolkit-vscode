@@ -81,7 +81,7 @@ function buildSchemaPackageHierarchy(schemaName: string) {
 }
 
 function buildRootSchemaEventName(schemaNode: any, awsEventNode: any) {
-    const identifierFormatter = new IdentifierFormatter()
+    const identifierFormatter = IdentifierFormatter.getInstance()
     const refValue = _.get(awsEventNode, PROPERTIES.concat('.', DETAIL, '.', REF))
 
     if (_.isString(refValue) && refValue.includes(COMPONENTS_SCHEMAS_PATH)) {

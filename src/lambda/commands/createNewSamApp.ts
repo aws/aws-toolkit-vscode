@@ -151,6 +151,14 @@ export async function createNewSamApplication(
                 schemaCoreCodeFileName: '' //set only if file needs to be opened in the editor post download
             }
             schemaCodeDownloader = createSchemaCodeDownloaderObject(client!)
+            channelLogger.logger.info(
+                localize(
+                    'AWS.message.info.schemas.downloadCodeBindings.start',
+                    'Downloading code for schema {0}...',
+                    config.schemaName!
+                )
+            )
+
             await schemaCodeDownloader!.downloadCode(request!)
 
             vscode.window.showInformationMessage(

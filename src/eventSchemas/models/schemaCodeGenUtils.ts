@@ -62,7 +62,7 @@ export class SchemaCodeGenUtils {
 
 class CodeGenPackageBuilder {
     private builder = ''
-    private readonly formatter = new IdentifierFormatter()
+    private readonly formatter = IdentifierFormatter.getInstance()
 
     public build(): string {
         return this.builder
@@ -79,6 +79,7 @@ class CodeGenPackageBuilder {
 }
 
 export class IdentifierFormatter {
+    private static INSTANCE: IdentifierFormatter | undefined
     public readonly PACKAGE_SEPARATOR = '.'
     private readonly POTENTIAL_PACKAGE_SEPARATOR = '@'
     private readonly NOT_VALID_IDENTIFIER_CHARACTER = `[^a-zA-Z0-9_${this.POTENTIAL_PACKAGE_SEPARATOR}]`
@@ -90,5 +91,13 @@ export class IdentifierFormatter {
         return name
             .replace(this.NOT_VALID_IDENTIFIER_REGEX, this.UNDERSCORE)
             .replace(this.POTENTIAL_PACKAGE_SEPARATOR_REGEX, this.PACKAGE_SEPARATOR)
+    }
+
+    public static getInstance(): IdentifierFormatter {
+        if (!IdentifierFormatter.INSTANCE) {
+            IdentifierFormatter.INSTANCE = new IdentifierFormatter()
+        }
+
+        return IdentifierFormatter.INSTANCE
     }
 }

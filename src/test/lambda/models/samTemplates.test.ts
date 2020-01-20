@@ -8,6 +8,7 @@ import {
     exitWizard,
     getSamCliTemplateParameter,
     getSamTemplateWizardOption,
+    getTemplateDescription,
     helloWorldOption,
     validTemplateOptions
 } from '../../../lambda/models/samTemplates'
@@ -45,7 +46,7 @@ describe('getSamCliTemplateParameter', () => {
     it('should successfully return template values used by sam cli', () => {
         for (const template of validTemplateOptions.values()) {
             const result = getSamCliTemplateParameter(template)
-            assert.ok(result, `Template description on the wizard : ${template}, sam cli parameter value : ${result}`)
+            assert.ok(result, `Template name on the wizard : ${template}, sam cli parameter value : ${result}`)
         }
     })
 
@@ -53,5 +54,14 @@ describe('getSamCliTemplateParameter', () => {
         const errorMessage = `Template ${exitWizard} is not supported for sam application flow`
         const error = await assertThrowsError(async () => getSamCliTemplateParameter(exitWizard))
         assert.strictEqual(error.message, errorMessage, 'Should fail for same error')
+    })
+})
+
+describe('getTemplateDescription', async () => {
+    it('all templates are handled', async () => {
+        validTemplateOptions.forEach(template => {
+            // Checking that call does not throw
+            getTemplateDescription(template)
+        })
     })
 })

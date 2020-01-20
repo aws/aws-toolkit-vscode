@@ -2,6 +2,9 @@
  * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { Set } from 'immutable'
 import { supportsEventBridgeTemplates } from '../../../src/eventSchemas/models/schemaCodeLangs'
@@ -47,5 +50,20 @@ export function getSamCliTemplateParameter(templateSelected: SamTemplate): strin
 }
 
 export function getTemplateDescription(template: SamTemplate): string {
-    return template === eventBridgeStarterAppTemplate ? 'You need to be connected to AWS to select this entry' : ''
+    switch (template) {
+        case helloWorldTemplate:
+            return localize('AWS.samcli.initWizard.template.helloWorld.description', 'A basic SAM app')
+        case eventBridgeHelloWorldTemplate:
+            return localize(
+                'AWS.samcli.initWizard.template.eventBridge_helloWorld.description',
+                'A Hello World app for Amazon EventBridge that invokes a Lambda for every EC2 instance state change in your account'
+            )
+        case eventBridgeStarterAppTemplate:
+            return localize(
+                'AWS.samcli.initWizard.template.eventBridge_starterApp.description',
+                'A Starter app for Amazon EventBridge that invokes a Lambda based on a dynamic event trigger for an EventBridge Schema of your choice'
+            )
+        default:
+            throw new Error(`No description found for template ${template}`)
+    }
 }
