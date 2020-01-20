@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { Credentials } from 'aws-sdk'
-import { env, Uri, ViewColumn, window } from 'vscode'
+import { env, QuickPickItem, Uri, ViewColumn, window } from 'vscode'
 import { LoginManager } from '../credentials/loginManager'
 import { asString, fromString } from '../credentials/providers/credentialsProviderId'
 import { CredentialsProviderManager } from '../credentials/providers/credentialsProviderManager'
@@ -25,6 +25,16 @@ import { UserCredentialsUtils } from './credentials/userCredentialsUtils'
 import { ext } from './extensionGlobals'
 import { RegionInfo } from './regions/regionInfo'
 import { RegionProvider } from './regions/regionProvider'
+import { createQuickPick, promptUser } from './ui/picker'
+
+const TITLE_HIDE_REGION = localize(
+    'AWS.message.prompt.region.hide.title',
+    'Select a region to hide from the AWS Explorer'
+)
+const TITLE_SHOW_REGION = localize(
+    'AWS.message.prompt.region.show.title',
+    'Select a region to show in the AWS Explorer'
+)
 
 export class DefaultAWSContextCommands {
     private readonly _awsContext: AwsContext
@@ -75,7 +85,8 @@ export class DefaultAWSContextCommands {
     public async onCommandShowRegion() {
         const explorerRegions = new Set(await this._awsContext.getExplorerRegions())
         const newRegion = await this.promptForFilteredRegion(
-            candidateRegion => !explorerRegions.has(candidateRegion.regionCode)
+            candidateRegion => !explorerRegions.has(candidateRegion.regionCode),
+            TITLE_SHOW_REGION
         )
 
         if (newRegion) {
@@ -85,7 +96,8 @@ export class DefaultAWSContextCommands {
     }
 
     public async onCommandHideRegion(regionCode?: string) {
-        const region = regionCode || (await this.promptForRegion(await this._awsContext.getExplorerRegions()))
+        const region =
+            regionCode || (await this.promptForRegion(await this._awsContext.getExplorerRegions(), TITLE_HIDE_REGION))
         if (region) {
             await this._awsContext.removeExplorerRegion(region)
             this.refresh()
@@ -251,11 +263,14 @@ export class DefaultAWSContextCommands {
      *
      * @param filter Filter to apply to the available regions
      */
-    private async promptForFilteredRegion(filter: (region: RegionInfo) => boolean): Promise<string | undefined> {
+    private async promptForFilteredRegion(
+        filter: (region: RegionInfo) => boolean,
+        title?: string
+    ): Promise<string | undefined> {
         const availableRegions = await this._regionProvider.getRegionData()
         const regionsToShow = availableRegions.filter(filter).map(r => r.regionCode)
 
-        return this.promptForRegion(regionsToShow)
+        return this.promptForRegion(regionsToShow, title)
     }
 
     /**
@@ -264,9 +279,9 @@ export class DefaultAWSContextCommands {
      * @param regions (Optional) The regions to show the user. If none provided, all available
      * regions are shown. Regions provided must exist in the available regions to be shown.
      */
-    private async promptForRegion(regions?: string[]): Promise<string | undefined> {
+    private async promptForRegion(regions?: string[], title?: string): Promise<string | undefined> {
         const availableRegions = await this._regionProvider.getRegionData()
-        const regionsToShow = availableRegions
+        const regionItems = availableRegions
             .filter(r => {
                 if (regions) {
                     return regions.some(x => x === r.regionCode)
@@ -278,11 +293,24 @@ export class DefaultAWSContextCommands {
                 label: r.regionName,
                 detail: r.regionCode
             }))
-        const input = await window.showQuickPick(regionsToShow, {
-            placeHolder: localize('AWS.message.selectRegion', 'Select an AWS region'),
-            matchOnDetail: true
+
+        const picker = createQuickPick({
+            options: {
+                placeHolder: localize('AWS.message.selectRegion', 'Select an AWS region'),
+                title: title,
+                matchOnDetail: true
+            },
+            items: regionItems
         })
 
-        return input ? input.detail : undefined
+        const response = await promptUser<QuickPickItem>({
+            picker: picker
+        })
+
+        if (response?.length === 1) {
+            return response[0].detail
+        }
+
+        return undefined
     }
 }
