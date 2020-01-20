@@ -18,7 +18,7 @@ import software.aws.toolkits.jetbrains.services.lambda.resources.LambdaResources
 
 class LambdaServiceNode(project: Project) :
     CacheBackedAwsExplorerServiceRootNode<FunctionConfiguration>(project, AwsExplorerService.LAMBDA, LambdaResources.LIST_FUNCTIONS) {
-    override fun toNode(child: FunctionConfiguration): AwsExplorerNode<*> = LambdaFunctionNode(nodeProject, child.toDataClass(credentialProvider.id, region))
+    override fun toNode(child: FunctionConfiguration): AwsExplorerNode<*> = LambdaFunctionNode(nodeProject, child.toDataClass())
 }
 
 open class LambdaFunctionNode(

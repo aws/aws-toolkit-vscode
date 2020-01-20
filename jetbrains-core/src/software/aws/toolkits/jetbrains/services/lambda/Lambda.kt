@@ -14,11 +14,8 @@ import com.intellij.psi.NavigatablePsiElement
 import com.intellij.psi.search.GlobalSearchScope
 import software.amazon.awssdk.services.lambda.model.CreateFunctionResponse
 import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
-import software.amazon.awssdk.services.lambda.model.GetFunctionConfigurationResponse
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.lambda.model.TracingMode
-import software.amazon.awssdk.services.lambda.model.UpdateFunctionConfigurationResponse
-import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.services.iam.IamRole
@@ -112,12 +109,10 @@ data class LambdaFunction(
     val timeout: Int,
     val memorySize: Int,
     val xrayEnabled: Boolean,
-    val role: IamRole,
-    val region: AwsRegion,
-    val credentialProviderId: String
+    val role: IamRole
 )
 
-fun FunctionConfiguration.toDataClass(credentialProviderId: String, region: AwsRegion) = LambdaFunction(
+fun FunctionConfiguration.toDataClass() = LambdaFunction(
     name = this.functionName(),
     description = this.description(),
     arn = this.functionArn(),
@@ -127,13 +122,11 @@ fun FunctionConfiguration.toDataClass(credentialProviderId: String, region: AwsR
     envVariables = this.environment()?.variables(),
     timeout = this.timeout(),
     memorySize = this.memorySize(),
-    role = IamRole(this.role()),
-    credentialProviderId = credentialProviderId,
     xrayEnabled = this.tracingConfig().mode() == TracingMode.ACTIVE,
-    region = region
+    role = IamRole(this.role())
 )
 
-fun CreateFunctionResponse.toDataClass(credentialProviderId: String, region: AwsRegion) = LambdaFunction(
+fun CreateFunctionResponse.toDataClass() = LambdaFunction(
     name = this.functionName(),
     description = this.description(),
     arn = this.functionArn(),
@@ -143,40 +136,6 @@ fun CreateFunctionResponse.toDataClass(credentialProviderId: String, region: Aws
     envVariables = this.environment()?.variables(),
     timeout = this.timeout(),
     memorySize = this.memorySize(),
-    role = IamRole(this.role()),
-    credentialProviderId = credentialProviderId,
-    region = region,
-    xrayEnabled = this.tracingConfig().mode() == TracingMode.ACTIVE
-)
-
-fun UpdateFunctionConfigurationResponse.toDataClass(credentialProviderId: String, region: AwsRegion) = LambdaFunction(
-    name = this.functionName(),
-    description = this.description(),
-    arn = this.functionArn(),
-    lastModified = this.lastModified(),
-    handler = this.handler(),
-    runtime = this.runtime(),
-    envVariables = this.environment()?.variables(),
-    timeout = this.timeout(),
-    memorySize = this.memorySize(),
-    role = IamRole(this.role()),
-    credentialProviderId = credentialProviderId,
-    region = region,
-    xrayEnabled = this.tracingConfig().mode() == TracingMode.ACTIVE
-)
-
-fun GetFunctionConfigurationResponse.toDataClass(credentialProviderId: String, region: AwsRegion) = LambdaFunction(
-    name = this.functionName(),
-    description = this.description(),
-    arn = this.functionArn(),
-    lastModified = this.lastModified(),
-    handler = this.handler(),
-    runtime = this.runtime(),
-    envVariables = this.environment()?.variables(),
-    timeout = this.timeout(),
-    memorySize = this.memorySize(),
-    role = IamRole(this.role()),
-    credentialProviderId = credentialProviderId,
-    region = region,
-    xrayEnabled = this.tracingConfig().mode() == TracingMode.ACTIVE
+    xrayEnabled = this.tracingConfig().mode() == TracingMode.ACTIVE,
+    role = IamRole(this.role())
 )

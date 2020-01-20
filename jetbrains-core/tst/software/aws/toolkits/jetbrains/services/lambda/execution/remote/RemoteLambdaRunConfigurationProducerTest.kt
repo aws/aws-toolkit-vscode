@@ -16,6 +16,7 @@ import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.services.iam.IamRole
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 
@@ -28,7 +29,7 @@ class RemoteLambdaRunConfigurationProducerTest {
     fun validRunConfigurationIsCreated() {
         val functionName = "SomeFunction"
         val region = AwsRegion("us-east-1", "us-east-1", "aws")
-        val credentialProviderId = "SomeCredProvider"
+        val credentialProviderId = MockProjectAccountSettingsManager.getInstance(projectRule.project).selectedCredentials
 
         val lambdaLocation = LambdaFunction(
             name = functionName,
@@ -37,13 +38,11 @@ class RemoteLambdaRunConfigurationProducerTest {
             lastModified = "someDate",
             handler = "someHandler",
             runtime = Runtime.values().first(),
-            role = IamRole("DummyRoleArn"),
             envVariables = emptyMap(),
             timeout = 60,
-            credentialProviderId = credentialProviderId,
-            region = region,
             memorySize = 128,
-            xrayEnabled = false
+            xrayEnabled = false,
+            role = IamRole("DummyRoleArn")
         )
 
         runInEdtAndWait {
@@ -51,7 +50,7 @@ class RemoteLambdaRunConfigurationProducerTest {
             assertThat(runConfiguration).isNotNull
             val configuration = runConfiguration?.configuration as RemoteLambdaRunConfiguration
             assertThat(configuration.functionName()).isEqualTo(functionName)
-            assertThat(configuration.credentialProviderId()).isEqualTo(credentialProviderId)
+            assertThat(configuration.credentialProviderId()).isEqualTo(credentialProviderId?.id)
             assertThat(configuration.regionId()).isEqualTo(region.id)
             assertThat(configuration.name).isEqualTo("[Remote] $functionName")
         }

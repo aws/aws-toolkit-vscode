@@ -14,7 +14,6 @@ import software.amazon.awssdk.services.lambda.model.UpdateFunctionCodeRequest
 import software.amazon.awssdk.services.lambda.model.UpdateFunctionConfigurationRequest
 import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.core.ToolkitClientManager
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderUtils
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
@@ -48,7 +47,7 @@ class LambdaCreator internal constructor(
         s3Bucket: String
     ): CompletionStage<LambdaFunction> = packageLambda(handler, functionDetails, module, builder)
         .thenCompose { uploader.upload(functionDetails, it, s3Bucket, module.project) }
-        .thenCompose { functionCreator.create(module.project, functionDetails, it) }
+        .thenCompose { functionCreator.create(functionDetails, it) }
 
     fun updateLambda(
         module: Module,
@@ -82,11 +81,7 @@ class LambdaCreator internal constructor(
 }
 
 class LambdaFunctionCreator(private val lambdaClient: LambdaClient) {
-    fun create(
-        project: Project,
-        details: FunctionUploadDetails,
-        uploadedCode: UploadedCode
-    ): CompletionStage<LambdaFunction> {
+    fun create(details: FunctionUploadDetails, uploadedCode: UploadedCode): CompletionStage<LambdaFunction> {
         val future = CompletableFuture<LambdaFunction>()
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
@@ -109,14 +104,8 @@ class LambdaFunctionCreator(private val lambdaClient: LambdaClient) {
                     }
                     .build()
 
-                val settingsManager = ProjectAccountSettingsManager.getInstance(project)
                 val result = lambdaClient.createFunction(req)
-                future.complete(
-                    result.toDataClass(
-                        settingsManager.activeCredentialProvider.id,
-                        settingsManager.activeRegion
-                    )
-                )
+                future.complete(result.toDataClass())
             } catch (e: Exception) {
                 future.completeExceptionally(e)
             }

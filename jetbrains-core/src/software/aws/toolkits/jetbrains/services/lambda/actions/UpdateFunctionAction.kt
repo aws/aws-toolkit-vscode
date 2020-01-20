@@ -8,7 +8,6 @@ import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.application.ApplicationManager
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.aws.toolkits.jetbrains.core.AwsClientManager
-import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeAction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
@@ -28,20 +27,14 @@ abstract class UpdateFunctionAction(private val mode: EditFunctionMode, title: S
         ApplicationManager.getApplication().executeOnPooledThread {
             val selectedFunction = selected.value
 
-            val client: LambdaClient = AwsClientManager.getInstance(project).getClient(
-                credentialsProviderOverride = CredentialManager.getInstance().getCredentialProvider(selectedFunction.credentialProviderId),
-                regionOverride = selectedFunction.region
-            )
+            val client: LambdaClient = AwsClientManager.getInstance(project).getClient()
 
             // Fetch latest version just in case
             val functionConfiguration = client.getFunction {
                 it.functionName(selected.functionName())
             }.configuration()
 
-            val lambdaFunction = functionConfiguration.toDataClass(
-                selectedFunction.credentialProviderId,
-                selectedFunction.region
-            )
+            val lambdaFunction = functionConfiguration.toDataClass()
 
             warnResourceOperationAgainstCodePipeline(
                 project,
