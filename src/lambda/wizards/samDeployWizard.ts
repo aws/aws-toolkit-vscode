@@ -255,13 +255,13 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         }
     }
 
-    public async promptUserForRegion(initialRegionCode: string): Promise<string | undefined> {
+    public async promptUserForRegion(initialRegionCode?: string): Promise<string | undefined> {
         const regionData = await this.regionProvider.getRegionData()
 
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
                 title: localize('AWS.samcli.deploy.region.prompt', 'Which AWS Region would you like to deploy to?'),
-                value: initialRegionCode || '',
+                value: initialRegionCode,
                 matchOnDetail: true,
                 ignoreFocusOut: true
             },
@@ -291,7 +291,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         })
         const val = picker.verifySinglePickerOutput(choices)
 
-        return val ? val.detail : undefined
+        return val?.detail
     }
 
     /**
