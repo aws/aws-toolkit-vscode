@@ -120,7 +120,10 @@ async function registerServerlessCommands(params: {
         registerCommand({
             command: 'aws.deploySamApplication',
             callback: async () => {
-                const samDeployWizardContext = new DefaultSamDeployWizardContext(params.regionProvider)
+                const samDeployWizardContext = new DefaultSamDeployWizardContext(
+                    params.regionProvider,
+                    params.awsContext
+                )
                 const samDeployWizard: SamDeployWizardResponseProvider = {
                     getSamDeployWizardResponse: async (): Promise<SamDeployWizardResponse | undefined> => {
                         const wizard = new SamDeployWizard(samDeployWizardContext)
