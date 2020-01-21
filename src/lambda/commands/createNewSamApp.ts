@@ -91,8 +91,8 @@ export async function createNewSamApplication(
     try {
         await validateSamCli(samCliContext.validator)
 
-        const userIsConnectedToAws = await awsContext.getCredentials()
-        const wizardContext = new DefaultCreateNewSamAppWizardContext(userIsConnectedToAws !== undefined)
+        const currentCredentials = await awsContext.getCredentials()
+        const wizardContext = new DefaultCreateNewSamAppWizardContext(currentCredentials)
         const config: CreateNewSamAppWizardResponse | undefined = await new CreateNewSamAppWizard(wizardContext).run()
         if (!config) {
             results.result = 'cancel'

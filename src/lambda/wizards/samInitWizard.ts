@@ -6,6 +6,7 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
+import { Credentials } from 'aws-sdk'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { Set } from 'immutable'
 import * as path from 'path'
@@ -55,11 +56,11 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
     // Filter out node8 until local debugging is no longer supported, and it can be removed from samLambdaRuntimes
     public readonly lambdaRuntimes = samLambdaRuntimes.filter(runtime => runtime !== 'nodejs8.10')
     private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Documentation'))
-    private readonly userIsConnectedToAws: boolean = false
+    private readonly currentCredentials: Credentials | undefined
 
-    public constructor(userIsConnectedToAws: boolean) {
+    public constructor(currentCredentials: Credentials | undefined) {
         super()
-        this.userIsConnectedToAws = userIsConnectedToAws
+        this.currentCredentials = currentCredentials
     }
 
     public async promptUserForRuntime(currRuntime?: Runtime): Promise<Runtime | undefined> {
@@ -132,7 +133,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
 
         //eventBridgeStarterAppTemplate requires aws credentials
         if (val && val.label === eventBridgeStarterAppTemplate) {
-            if (!this.userIsConnectedToAws) {
+            if (!this.currentCredentials) {
                 vscode.window.showInformationMessage(
                     localize(
                         'AWS.message.info.schemas.downloadCodeBindings.generate',
@@ -184,7 +185,18 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
 
     public async promptUserForRegistry(currRegion: string, currRegistry?: string): Promise<string | undefined> {
         const client: SchemaClient = ext.toolkitClientBuilder.createSchemaClient(currRegion)
-        const registryNames = await SchemasDataProvider.getInstance().getRegistries(currRegion, client)
+        const registryNames = await SchemasDataProvider.getInstance(this.currentCredentials!).getRegistries(
+            currRegion,
+            client
+        )
+
+        if (!registryNames) {
+            vscode.window.showInformationMessage(
+                localize('AWS.samcli.initWizard.schemas.registry.failed_to_load_resources', 'Error loading registries.')
+            )
+
+            return undefined
+        }
 
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
@@ -222,7 +234,31 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
         currSchema?: string
     ): Promise<string | undefined> {
         const client: SchemaClient = ext.toolkitClientBuilder.createSchemaClient(currRegion)
-        const schemas = await SchemasDataProvider.getInstance().getSchemas(currRegion, currRegistry, client)
+        const schemas = await SchemasDataProvider.getInstance(this.currentCredentials!).getSchemas(
+            currRegion,
+            currRegistry,
+            client
+        )
+
+        if (!schemas) {
+            vscode.window.showInformationMessage(
+                localize(
+                    'AWS.samcli.initWizard.schemas.failed_to_load_resources',
+                    'Error loading schemas in registry {0}.',
+                    currRegistry
+                )
+            )
+
+            return undefined
+        }
+
+        if (schemas!.length === 0) {
+            vscode.window.showInformationMessage(
+                localize('AWS.samcli.initWizard.schemas.notFound"', 'No schemas found in registry {0}.', currRegistry)
+            )
+
+            return undefined
+        }
 
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
