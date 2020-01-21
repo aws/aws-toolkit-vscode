@@ -447,7 +447,7 @@
         "jsonValidation": [
             {
                 "fileMatch": ".aws/templates.json",
-                "url": "./dist/src/schemas/templates.json"
+                "url": "./dist/src/templates/templates.json"
             },
             {
                 "fileMatch": "*ecs-task-def.json",
