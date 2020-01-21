@@ -143,10 +143,6 @@ class ProfileToolkitCredentialsProviderFactory(
         }
     }
 
-    override fun shutDown() {
-        profileWatcher.removeListener(this)
-    }
-
     companion object {
         private val LOG = LoggerFactory.getLogger(ProfileToolkitCredentialsProviderFactory::class.java)
 

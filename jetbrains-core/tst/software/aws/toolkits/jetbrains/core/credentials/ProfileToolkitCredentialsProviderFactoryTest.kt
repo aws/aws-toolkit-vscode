@@ -3,9 +3,14 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
+import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.ui.TestInputDialog
+import com.intellij.openapi.util.io.FileUtil
+import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.testFramework.ProjectRule
+import com.intellij.testFramework.VfsTestUtil
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.atLeastOnce
@@ -67,6 +72,7 @@ class ProfileToolkitCredentialsProviderFactoryTest {
 
     private lateinit var profileFile: File
     private lateinit var credentialsFile: File
+
     private val mockSdkHttpClient: SdkHttpClient = mock()
     private val mockRegionProvider: ToolkitRegionProvider = mock()
     private val mockProviderManager: ToolkitCredentialsProviderManager = mock()
@@ -75,9 +81,10 @@ class ProfileToolkitCredentialsProviderFactoryTest {
 
     @Before
     fun setUp() {
-        val awsFolder = temporaryFolder.newFolder(".aws")
+        val awsFolder = File(temporaryFolder.root, ".aws")
         profileFile = File(awsFolder, "config")
         credentialsFile = File(awsFolder, "credentials")
+
         System.getProperties().setProperty("aws.configFile", profileFile.absolutePath)
         System.getProperties().setProperty("aws.sharedCredentialsFile", credentialsFile.absolutePath)
 
@@ -90,7 +97,6 @@ class ProfileToolkitCredentialsProviderFactoryTest {
     fun tearDown() {
         Messages.setTestInputDialog(TestInputDialog.DEFAULT)
         profileFactory?.shutDown()
-        profileWatcher?.dispose()
     }
 
     @Test
@@ -101,7 +107,7 @@ class ProfileToolkitCredentialsProviderFactoryTest {
 
     @Test
     fun testLoadingWithExpectedProfiles() {
-        profileFile.writeText(TEST_PROFILE_FILE_CONTENTS)
+        profileFile.writeToFile(TEST_PROFILE_FILE_CONTENTS)
 
         val providerFactory = createProviderFactory()
 
@@ -114,7 +120,8 @@ class ProfileToolkitCredentialsProviderFactoryTest {
 
     @Test
     fun testLoadingWithIllegalFormat() {
-        profileFile.writeText("""
+        profileFile.writeToFile(
+            """
             [profile bar]
             aws_access_key_id BarAccessKey
             aws_secret_access_key=BarSecretKey
@@ -123,7 +130,8 @@ class ProfileToolkitCredentialsProviderFactoryTest {
             aws_access_key_id=FooAccessKey
             aws_secret_access_key=FooSecretKey
             aws_session_token=FooSessionToken
-        """.trimIndent())
+            """.trimIndent()
+        )
 
         val providerFactory = createProviderFactory()
 
@@ -133,7 +141,7 @@ class ProfileToolkitCredentialsProviderFactoryTest {
 
     @Test
     fun testCreationOfBasicCredentials() {
-        profileFile.writeText(TEST_PROFILE_FILE_CONTENTS)
+        profileFile.writeToFile(TEST_PROFILE_FILE_CONTENTS)
 
         val providerFactory = createProviderFactory()
 
@@ -144,7 +152,7 @@ class ProfileToolkitCredentialsProviderFactoryTest {
 
     @Test
     fun testCreationOfStaticSessionCredentials() {
-        profileFile.writeText(TEST_PROFILE_FILE_CONTENTS)
+        profileFile.writeToFile(TEST_PROFILE_FILE_CONTENTS)
 
         val providerFactory = createProviderFactory()
         val credentialsProvider = providerFactory.get("profile:foo")
@@ -154,7 +162,7 @@ class ProfileToolkitCredentialsProviderFactoryTest {
 
     @Test
     fun oneFailureDoesNotCauseOtherCredentialsToFail() {
-        profileFile.writeText(
+        profileFile.writeToFile(
             """
             [profile role]
             role_arn=arn1
@@ -178,7 +186,7 @@ class ProfileToolkitCredentialsProviderFactoryTest {
 
     @Test
     fun testAssumingRoles() {
-        profileFile.writeText(
+        profileFile.writeToFile(
             """
             [profile role]
             role_arn=arn1
@@ -219,7 +227,7 @@ class ProfileToolkitCredentialsProviderFactoryTest {
 
     @Test
     fun testAssumingRolesMfa() {
-        profileFile.writeText(
+        profileFile.writeToFile(
             """
             [profile role]
             role_arn=arn1
@@ -267,7 +275,7 @@ class ProfileToolkitCredentialsProviderFactoryTest {
 
     @Test
     fun testAssumingRoleChained() {
-        profileFile.writeText(
+        profileFile.writeToFile(
             """
             [profile role]
             role_arn=arn1
@@ -319,7 +327,7 @@ class ProfileToolkitCredentialsProviderFactoryTest {
 
     @Test
     fun testSourceProfileDoesNotExist() {
-        profileFile.writeText(
+        profileFile.writeToFile(
             """
             [profile role]
             role_arn=arn1
@@ -342,7 +350,7 @@ class ProfileToolkitCredentialsProviderFactoryTest {
 
     @Test
     fun testCircularChainProfiles() {
-        profileFile.writeText(
+        profileFile.writeToFile(
             """
             [profile role]
             role_arn=arn1
@@ -375,7 +383,7 @@ class ProfileToolkitCredentialsProviderFactoryTest {
 
     @Test
     fun testRefreshExistingProfiles() {
-        profileFile.writeText(
+        profileFile.writeToFile(
             """
             [profile foo]
             aws_access_key_id=FooAccessKey
@@ -396,10 +404,7 @@ class ProfileToolkitCredentialsProviderFactoryTest {
                 assertThat(sessionCredentials.sessionToken()).isEqualTo("FooSessionToken")
             }
 
-        // Mac timestamp is 1 sec granularity
-        Thread.sleep(1000)
-
-        profileFile.writeText(
+        profileFile.writeToFile(
             """
             [profile foo]
             aws_access_key_id=FooAccessKey2
@@ -408,27 +413,20 @@ class ProfileToolkitCredentialsProviderFactoryTest {
             """.trimIndent()
         )
 
-        retryableAssert(maxAttempts = 5, interval = Duration.ofSeconds(5)) {
-            try {
-                assertThat(credentialsProvider.resolveCredentials()).isInstanceOf(AwsSessionCredentials::class.java)
-                    .satisfies {
-                        val sessionCredentials = it as AwsSessionCredentials
-                        assertThat(sessionCredentials.accessKeyId()).isEqualTo("FooAccessKey2")
-                        assertThat(sessionCredentials.secretAccessKey()).isEqualTo("FooSecretKey2")
-                        assertThat(sessionCredentials.sessionToken()).isEqualTo("FooSessionToken2")
-                    }
-            } catch (e: Exception) {
-                throw AssertionError(e)
+        assertThat(credentialsProvider.resolveCredentials()).isInstanceOf(AwsSessionCredentials::class.java)
+            .satisfies {
+                val sessionCredentials = it as AwsSessionCredentials
+                assertThat(sessionCredentials.accessKeyId()).isEqualTo("FooAccessKey2")
+                assertThat(sessionCredentials.secretAccessKey()).isEqualTo("FooSecretKey2")
+                assertThat(sessionCredentials.sessionToken()).isEqualTo("FooSessionToken2")
             }
 
-            // TODO: Debug why on windows this is sometimes 1, sometimes 2
-            verify(mockProviderManager, atLeastOnce()).providerModified(credentialsProvider)
-        }
+        verify(mockProviderManager, atLeastOnce()).providerModified(credentialsProvider)
     }
 
     @Test
     fun testRefreshDeletesProfiles() {
-        profileFile.writeText(
+        profileFile.writeToFile(
             """
             [profile foo]
             aws_access_key_id=FooAccessKey
@@ -448,36 +446,28 @@ class ProfileToolkitCredentialsProviderFactoryTest {
                 assertThat(sessionCredentials.sessionToken()).isEqualTo("FooSessionToken")
             }
 
-        // Mac timestamp is 1 sec granularity
-        Thread.sleep(1000)
+        profileFile.writeToFile("")
 
-        profileFile.writeText("")
+        assertThat(providerFactory.get("profile:foo")).isNull()
 
-        retryableAssert(maxAttempts = 5, interval = Duration.ofSeconds(5)) {
-            assertThat(providerFactory.get("profile:foo")).isNull()
+        assertThatThrownBy {
+            // Old references should now throw exceptions
+            credentialsProvider.resolveCredentials()
+        }.isInstanceOf(IllegalStateException::class.java)
 
-            assertThatThrownBy {
-                // Old references should now throw exceptions
-                credentialsProvider.resolveCredentials()
-            }
-
-            verify(mockProviderManager).providerRemoved("profile:foo")
-        }
+        verify(mockProviderManager).providerRemoved("profile:foo")
     }
 
     @Test
     fun testRefreshAddsProfiles() {
-        profileFile.writeText("")
+        profileFile.writeToFile("")
 
         val providerFactory = createProviderFactory()
 
         val credentialsProvider = providerFactory.get("profile:foo")
         assertThat(credentialsProvider).isNull()
 
-        // Mac timestamp is 1 sec granularity
-        Thread.sleep(1000)
-
-        profileFile.writeText(
+        profileFile.writeToFile(
             """
             [profile foo]
             aws_access_key_id=FooAccessKey
@@ -496,6 +486,79 @@ class ProfileToolkitCredentialsProviderFactoryTest {
                     assertThat(sessionCredentials.sessionToken()).isEqualTo("FooSessionToken")
                 }
             verify(mockProviderManager).providerAdded(providerFactory.get("profile:foo")!!)
+        }
+    }
+
+    @Test
+    fun testProfileFileIsDeleted() {
+        assertThat(profileFile).doesNotExist()
+
+        val providerFactory = createProviderFactory()
+
+        val credentialsProvider = providerFactory.get("profile:foo")
+        assertThat(credentialsProvider).isNull()
+
+        profileFile.writeToFile(
+            """
+            [profile foo]
+            aws_access_key_id=FooAccessKey
+            aws_secret_access_key=FooSecretKey
+            aws_session_token=FooSessionToken
+            """.trimIndent()
+        )
+
+        retryableAssert(maxAttempts = 5, interval = Duration.ofSeconds(5)) {
+            assertThat(providerFactory.get("profile:foo")?.resolveCredentials())
+                .isInstanceOf(AwsSessionCredentials::class.java)
+                .satisfies {
+                    val sessionCredentials = it as AwsSessionCredentials
+                    assertThat(sessionCredentials.accessKeyId()).isEqualTo("FooAccessKey")
+                    assertThat(sessionCredentials.secretAccessKey()).isEqualTo("FooSecretKey")
+                    assertThat(sessionCredentials.sessionToken()).isEqualTo("FooSessionToken")
+                }
+            verify(mockProviderManager).providerAdded(providerFactory.get("profile:foo")!!)
+        }
+    }
+
+    @Test
+    fun testRefreshDeleteProfileFile() {
+        profileFile.writeToFile(
+            """
+            [profile foo]
+            aws_access_key_id=FooAccessKey
+            aws_secret_access_key=FooSecretKey
+            aws_session_token=FooSessionToken
+            """.trimIndent()
+        )
+
+        val providerFactory = createProviderFactory()
+        val credentialsProvider = providerFactory.get("profile:foo")
+        assertThat(credentialsProvider).isNotNull
+        assertThat(credentialsProvider!!.resolveCredentials()).isInstanceOf(AwsSessionCredentials::class.java)
+            .satisfies {
+                val sessionCredentials = it as AwsSessionCredentials
+                assertThat(sessionCredentials.accessKeyId()).isEqualTo("FooAccessKey")
+                assertThat(sessionCredentials.secretAccessKey()).isEqualTo("FooSecretKey")
+                assertThat(sessionCredentials.sessionToken()).isEqualTo("FooSessionToken")
+            }
+
+        VfsTestUtil.deleteFile(LocalFileSystem.getInstance().findFileByIoFile(profileFile)!!)
+
+        assertThat(providerFactory.get("profile:foo")).isNull()
+
+        assertThatThrownBy {
+            // Old references should now throw exceptions
+            credentialsProvider.resolveCredentials()
+        }.isInstanceOf(IllegalStateException::class.java)
+
+        verify(mockProviderManager).providerRemoved("profile:foo")
+    }
+
+    private fun File.writeToFile(content: String) {
+        WriteCommandAction.runWriteCommandAction(projectRule.project) {
+            FileUtil.createIfDoesntExist(this)
+            val virtualFile = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(this)!!
+            VfsUtil.saveText(virtualFile, content)
         }
     }
 
@@ -562,9 +625,11 @@ class ProfileToolkitCredentialsProviderFactoryTest {
 
         return object : ExecutableHttpRequest {
             override fun call(): HttpExecuteResponse = HttpExecuteResponse.builder()
-                .response(SdkHttpFullResponse.builder()
-                    .statusCode(200)
-                    .build())
+                .response(
+                    SdkHttpFullResponse.builder()
+                        .statusCode(200)
+                        .build()
+                )
                 .responseBody(AbortableInputStream.create(body.toByteArray().inputStream()))
                 .build()
 

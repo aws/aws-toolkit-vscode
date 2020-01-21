@@ -21,6 +21,7 @@ class ProfileCredentialProviderFactory : CredentialProviderFactory {
     companion object {
         val profileWatcher = ProfileWatcher().also {
             it.start()
+            // TODO: Scope this better in the cred manager refactor
             Disposer.register(ApplicationManager.getApplication(), it)
         }
     }

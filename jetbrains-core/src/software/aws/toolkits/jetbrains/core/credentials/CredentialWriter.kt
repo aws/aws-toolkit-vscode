@@ -18,7 +18,6 @@ import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.LocalFileSystem
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.profiles.ProfileFileLocation
-import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileCredentialProviderFactory
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.resources.message
 import java.io.File
@@ -74,8 +73,6 @@ class CreateOrUpdateCredentialProfilesAction @TestOnly constructor(
                 }
                 TelemetryService.recordSimpleTelemetry(project, "aws_config_edit", true)
             }
-
-            ProfileCredentialProviderFactory.profileWatcher.start()
         }
     }
 
