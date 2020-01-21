@@ -20,7 +20,7 @@ reported the issue. Please try to include as much information as you can. Detail
 
 ## Building From Source
 
-#### Requirements
+### Requirements
 
 * [Java 8](https://docs.aws.amazon.com/corretto/latest/corretto-8-ug/downloads-list.html)
 * [Git](https://git-scm.com/)
@@ -32,7 +32,7 @@ reported the issue. Please try to include as much information as you can. Detail
     ```
   * Note: You can skip this if you do not want to build Rider support by adding `-PskipRider` to any Gradle command.
 
-#### Instructions
+### Instructions
 
 1. Clone the github repository and run `./gradlew buildPlugin` <br/> (This will produce a plugin zip under `build/distributions`)
 2. In your JetBrains IDE (e.g. IntelliJ) navigate to the `Plugins` preferences and select "Install Plugin from Disk...", navigate to the zip file produced in step 1. 
@@ -70,7 +70,7 @@ To send us a pull request, please:
 GitHub provides additional documentation on [forking a repository](https://help.github.com/articles/fork-a-repo/) and 
 [creating a pull request](https://help.github.com/articles/creating-a-pull-request/).
 
-### Debugging/Running Locally
+## Debugging/Running Locally
 
 To test your changes locally, you can run the project from IntelliJ or gradle.
 
@@ -114,6 +114,7 @@ To test your changes locally, you can run the project from IntelliJ or gradle.
 - Log messages (`LOG.info`, `LOG.error()`, …) by default are written to:
   ```
   jetbrains-core/build/idea-sandbox/system/log/idea.log
+  jetbrains-core/build/idea-sandbox/system-test/logs/idea.log  # Tests
   ```
 - DEBUG-level log messages are skipped by default. To enable them, add the
   following line to the _Help_ \> _Debug Log Settings_ dialog in the IDE
@@ -123,9 +124,14 @@ To test your changes locally, you can run the project from IntelliJ or gradle.
   ```
 
 
+## Guidelines
+
+- AWS Explorer should not have "dependencies" (such as `sam` or `cloud-debug`). It should work without needing to install extra stuff.
+- Dependencies (such as `sam` or `cloud-debug`) should fetch/install lazily, when the user interacts with a feature that requires them.
+
 ## Finding contributions to work on
 
-Looking at the existing issues is a great way to find something to contribute on. Looking at any ['help wanted'](https://github.com/aws/aws-toolkit-jetbrains/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) issues is a great place to start. 
+Looking at the existing issues is a great way to find something to contribute on. Any of the [help wanted](https://github.com/aws/aws-toolkit-jetbrains/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) issues is a great place to start.
 
 
 ## Code of Conduct
