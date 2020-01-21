@@ -2,7 +2,7 @@
 
 ## Objective
 
-Justify the use of more webviews within the AWS Toolkit for VS Code to create richer UIs than VS Code natively allows.
+Justify expanding the criteria for using webviews within the AWS Toolkit for VS Code in order to create richer UIs than VS Code natively allows.
 
 ### Out-of-scope
 
@@ -31,7 +31,7 @@ The workflow-centric constructs (quick picks, input boxes, and file pickers) can
 
 Another major reported pain point from working within the VS Code-specific constructs come from some of the confusion with how the inputs look the same but register differently depending on their type; an example can be seen in [the following Github issue](https://github.com/aws/aws-toolkit-vscode/issues/650).
 
-Our toolkit does currently include some webviews based on Vue.js. These webviews for the most part get the job done but have an inconsistent design and have little to no styling. These webviews are also written in Javascript, eschewing any type safety. Furthermore, they use a relatively esoteric Lodash-based templating system to create their HTML. We have limited their use within the toolkit, both due to these facts as well as a desire to stay as close to native VS Code constructs as possible; the only workflows that use these are for remote AWS Lambda invocations and EventBridge Schemas, which both feature use-cases that are too complex for the workflow constructs.
+Our toolkit does currently include some webviews based on Vue.js. These webviews for the most part get the job done but have an inconsistent design and have little to no styling. These webviews are also written in Javascript, eschewing any type safety. Furthermore, they use a relatively esoteric Lodash-based templating system to create their HTML. We have limited their use within the toolkit, both due to these facts as well as a desire to stay as close to native VS Code constructs as possible; the only workflows that use these are for remote AWS Lambda invocations and EventBridge Schema searching, which both feature use-cases that are too complex for the workflow constructs.
 
 All of our other IDE toolkits feature interactibility via form-like interfaces, showing multiple fields at a time and allowing for validation of individual elements upon submission without having to backtrack through multiple steps.
 
@@ -67,7 +67,7 @@ As an example, based on these rules, I would propose we do the following with ou
 
 VS Code webviews are not a cureall, and introduce a new set of complexities. A list, along with mitigations, follows:
 
-* Webviews are HTML + JS running in an `iframe`, which adds a considerable resource burden on the IDE.
+* Webviews are HTML + JS running in an `iframe`, which adds a considerable resource burden on the IDE (see Appendix 1).
   * Webviews offer a `retainContextWhenHidden` which is false by default. If false, when the webview goes to the background, it is no longer rendered, and re-rendered when it regains context.
 * If webviews aren't configured to persist context when a user moves it to the background, the webview will have to re-render, losing any unsaved state.
   * This is only a concern if `retainContextWhenHidden` is false (which is recommended). VS Code lets you set a JSON-serilaizable state which can be reloaded when regaining context, via prorpietary VS Code functions, `vscode.getState` and `vscode.setState`.
@@ -78,7 +78,7 @@ VS Code webviews are not a cureall, and introduce a new set of complexities. A l
       * One caveat: messages should only be posted to the webview while the webview is active, ideally on frontend request.
         * Messages to dormant webviews are batched and received by the webview on load, but are added to the Javascript event queue. If the webview is rehibernated prior to processing the message from the queue, the message will be lost as VS Code will have sent it, but the event queue will have been wiped.
         * Messages should additionally carry as full of a state as possible; this makes webviews more resilient to dropping messages (since the next state will carry a full slate of information)
-    * The frontend can post to the backend by proprietary VS Code function, `vscode.postMessage`.
+    * The frontend can post to the backend by proprietary VS Code function, `vscode.postMessage`, which is then picked up by the frontend via `vscode.WebviewPanel.webview.onDidReceiveMessage`, which invokes a callback function on the message.
 
 ## Appendicies
 
