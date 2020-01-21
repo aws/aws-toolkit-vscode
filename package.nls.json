@@ -141,6 +141,8 @@
     "AWS.message.prompt.credentials.definition.tryAgain": "The credentials do not appear to be valid. Check the AWS Toolkit Logs for details. Would you like to try again?",
     "AWS.message.prompt.selectLocalLambda.placeholder": "Select a lambda function",
     "AWS.message.prompt.quickStart.toastMessage": "You are now using the AWS Toolkit for Visual Studio Code, version {0}",
+    "AWS.message.prompt.region.hide.title": "Select a region to hide from the AWS Explorer",
+    "AWS.message.prompt.region.show.title": "Select a region to show in the AWS Explorer",
     "AWS.output.building.sam.application": "Building SAM Application...",
     "AWS.output.building.sam.application.complete": "Build complete.",
     "AWS.output.sam.local.attaching": "Attaching debugger to SAM Application...",
