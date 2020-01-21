@@ -7,6 +7,7 @@ Justify the use of more webviews within the AWS Toolkit for VS Code to create ri
 ### Out-of-scope
 
 * Architectures or frameworks for the webviews
+  * A best-practices guide to developing webviews with the architecture/framework decided on above.
 * Look and feel discussions
 * A detailed list of user experiences to port to webviews
 
