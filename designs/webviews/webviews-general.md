@@ -11,7 +11,7 @@ Justify expanding the criteria for using webviews within the AWS Toolkit for VS 
 * Look and feel discussions
 * A detailed list of user experiences to port to webviews
 
-## Tenets (unless you have better ones)
+## Tenets (unless you know better ones)
 
 1. Users should have a delightful experience when interacting with AWS features through our AWS Toolkit.
 2. We should not limit ourselves to IDE-specific conventions if it does not provide the best user experience possible.
