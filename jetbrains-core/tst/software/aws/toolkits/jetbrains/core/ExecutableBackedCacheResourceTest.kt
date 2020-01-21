@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.core
 
 import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
@@ -20,7 +21,6 @@ import software.aws.toolkits.jetbrains.core.executables.ExecutableType
 import software.aws.toolkits.jetbrains.core.executables.Validatable
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import software.aws.toolkits.jetbrains.utils.CompatibilityUtils.registerExtension
-import software.aws.toolkits.jetbrains.utils.rules.TestDisposableRule
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
@@ -35,7 +35,7 @@ class ExecutableBackedCacheResourceTest {
 
     @Rule
     @JvmField
-    val testDisposableRule = TestDisposableRule()
+    val disposableRule = DisposableRule()
 
     private val mockCredentials: ToolkitCredentialsProvider
         get() = MockCredentialsManager.getInstance().addCredentials(
@@ -48,7 +48,7 @@ class ExecutableBackedCacheResourceTest {
         registerExtension(
             ExecutableType.EP_NAME,
             MockExecutable,
-            testDisposableRule.testDisposable
+            disposableRule.disposable
         )
     }
 

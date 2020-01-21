@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.core.explorer
 
 import com.intellij.openapi.application.runInEdt
+import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ProjectRule
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.tree.TreeUtil
@@ -19,7 +20,6 @@ import software.aws.toolkits.jetbrains.core.fillResourceCache
 import software.aws.toolkits.jetbrains.ui.tree.AsyncTreeModel
 import software.aws.toolkits.jetbrains.ui.tree.StructureTreeModel
 import software.aws.toolkits.jetbrains.utils.CompatibilityUtils
-import software.aws.toolkits.jetbrains.utils.rules.TestDisposableRule
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import javax.swing.tree.TreeModel
@@ -31,7 +31,7 @@ class AwsExplorerTreeStructureProviderTest {
 
     @Rule
     @JvmField
-    val testDisposableRule = TestDisposableRule()
+    val disposableRule = DisposableRule()
 
     @Before
     fun setUp() {
@@ -41,7 +41,7 @@ class AwsExplorerTreeStructureProviderTest {
     @Test
     fun testTreeStructureProviderIsInvoked() {
         val mockExtension = mock<AwsExplorerTreeStructureProvider>()
-        CompatibilityUtils.registerExtension(AwsExplorerTreeStructureProvider.EP_NAME, mockExtension, testDisposableRule.testDisposable)
+        CompatibilityUtils.registerExtension(AwsExplorerTreeStructureProvider.EP_NAME, mockExtension, disposableRule.disposable)
 
         val countDownLatch = CountDownLatch(1)
 
@@ -62,8 +62,8 @@ class AwsExplorerTreeStructureProviderTest {
 
     private fun createTreeModel(): TreeModel {
         val awsTreeModel = AwsExplorerTreeStructure(projectRule.project)
-        val structureTreeModel = StructureTreeModel(awsTreeModel, testDisposableRule.testDisposable)
-        return AsyncTreeModel(structureTreeModel, false, testDisposableRule.testDisposable)
+        val structureTreeModel = StructureTreeModel(awsTreeModel, disposableRule.disposable)
+        return AsyncTreeModel(structureTreeModel, false, disposableRule.disposable)
     }
 
     private fun resourceCache() = MockResourceCache.getInstance(projectRule.project)
