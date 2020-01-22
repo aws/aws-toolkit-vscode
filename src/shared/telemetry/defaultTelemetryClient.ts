@@ -6,7 +6,7 @@
 import { Credentials, Service } from 'aws-sdk'
 import * as os from 'os'
 import * as vscode from 'vscode'
-import * as constants from '../constants'
+import { pluginVersion } from '../constants'
 import { ext } from '../extensionGlobals'
 import * as ClientTelemetry from './clienttelemetry'
 import apiConfig = require('./service-2.json')
@@ -30,7 +30,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
             await this.client
                 .postMetrics({
                     AWSProduct: DefaultTelemetryClient.PRODUCT_NAME,
-                    AWSProductVersion: constants.pluginVersion,
+                    AWSProductVersion: pluginVersion,
                     ClientID: this.clientId,
                     OS: os.platform(),
                     OSVersion: os.release(),

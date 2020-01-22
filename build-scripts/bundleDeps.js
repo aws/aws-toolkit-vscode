@@ -11,6 +11,10 @@ const JS_DEPS = [
     {
         name: 'vue.min.js',
         path: 'vue/dist/vue.min.js'
+    },
+    {
+        name: 'lodash.min.js',
+        path: 'lodash/lodash.min.js'
     }
 ]
 const WORKING_DIR = path.join(__dirname, '..')

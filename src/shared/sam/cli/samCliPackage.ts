@@ -15,7 +15,7 @@ export interface SamCliPackageParameters {
      * The SAM Template produced by SAM CLI's packaging
      */
     destinationTemplateFile: string
-    profile: string
+    environmentVariables: NodeJS.ProcessEnv
     region: string
     s3Bucket: string
 }
@@ -35,10 +35,11 @@ export async function runSamCliPackage(
             '--output-template-file',
             packageArguments.destinationTemplateFile,
             '--region',
-            packageArguments.region,
-            '--profile',
-            packageArguments.profile
-        ]
+            packageArguments.region
+        ],
+        spawnOptions: {
+            env: packageArguments.environmentVariables
+        }
     })
 
     logAndThrowIfUnexpectedExitCode(childProcessResult, 0, logger)

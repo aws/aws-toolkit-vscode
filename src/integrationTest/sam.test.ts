@@ -4,50 +4,71 @@
  */
 
 import * as assert from 'assert'
-import { mkdirpSync, readFileSync, removeSync } from 'fs-extra'
+import { Runtime } from 'aws-sdk/clients/lambda'
+import { mkdirpSync, mkdtemp, readFileSync, removeSync } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { getDependencyManager, SamLambdaRuntime } from '../../src/lambda/models/samLambdaRuntime'
+import { getDependencyManager } from '../../src/lambda/models/samLambdaRuntime'
 import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
 import { assertThrowsError } from '../../src/test/shared/utilities/assertUtils'
-import {
-    activateExtension,
-    EXTENSION_NAME_AWS_TOOLKIT,
-    getCodeLenses,
-    getTestWorkspaceFolder,
-    sleep,
-    TIMEOUT
-} from './integrationTestsUtilities'
+import { getInvokeCmdKey, Language } from '../shared/codelens/codeLensUtils'
+import { VSCODE_EXTENSION_ID } from '../shared/extensions'
+import { fileExists } from '../shared/filesystemUtilities'
+import { getLogger } from '../shared/logger'
+import { WinstonToolkitLogger } from '../shared/logger/winstonToolkitLogger'
+import { MetricDatum } from '../shared/telemetry/clienttelemetry'
+import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep, TIMEOUT } from './integrationTestsUtilities'
 
 const projectFolder = getTestWorkspaceFolder()
-// Retry tests because CodeLenses do not reliably get produced in the tests
-// TODO : Remove retries in future - https://github.com/aws/aws-toolkit-vscode/issues/737
-const maxCodeLensTestAttempts = 3
 
-const runtimes = [
-    { name: 'nodejs8.10', path: 'testProject/hello-world/app.js', debuggerType: 'node2' },
-    { name: 'nodejs10.x', path: 'testProject/hello-world/app.js', debuggerType: 'node2' },
-    { name: 'python2.7', path: 'testProject/hello_world/app.py', debuggerType: 'python' },
-    { name: 'python3.6', path: 'testProject/hello_world/app.py', debuggerType: 'python' },
-    { name: 'python3.7', path: 'testProject/hello_world/app.py', debuggerType: 'python' }
-    // { name: 'dotnetcore2.1', path: 'testProject/src/HelloWorld/Function.cs', debuggerType: 'coreclr' }
+interface TestScenario {
+    runtime: Runtime
+    path: string
+    debugSessionType: string
+    language: Language
+}
+
+// When testing additional runtimes, consider pulling the docker container in buildspec\linuxIntegrationTests.yml
+// to reduce the chance of automated tests timing out.
+const scenarios: TestScenario[] = [
+    {
+        runtime: 'nodejs10.x',
+        path: 'hello-world/app.js',
+        debugSessionType: 'node2',
+        language: 'javascript'
+    },
+    { runtime: 'nodejs12.x', path: 'hello-world/app.js', debugSessionType: 'node2', language: 'javascript' },
+    { runtime: 'python2.7', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
+    { runtime: 'python3.6', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
+    { runtime: 'python3.7', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
+    { runtime: 'python3.8', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' }
+    // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr' }
 ]
 
-async function openSamProject(projectPath: string): Promise<vscode.Uri> {
-    const documentPath = path.join(projectFolder, projectPath)
-    const document = await vscode.workspace.openTextDocument(documentPath)
+async function openSamAppFile(applicationPath: string): Promise<vscode.Uri> {
+    const document = await vscode.workspace.openTextDocument(applicationPath)
 
     return document.uri
 }
 
-function tryRemoveProjectFolder() {
+function tryRemoveFolder(fullPath: string) {
     try {
-        removeSync(path.join(projectFolder, 'testProject'))
-    } catch (e) {}
+        removeSync(fullPath)
+    } catch (e) {
+        console.error(`Failed to remove path ${fullPath}`, e)
+    }
 }
 
-async function getSamCodeLenses(documentUri: vscode.Uri): Promise<vscode.CodeLens[]> {
+async function getDebugLocalCodeLens(documentUri: vscode.Uri, language: Language): Promise<vscode.CodeLens> {
+    return getLocalCodeLens(documentUri, language, true)
+}
+
+async function getRunLocalCodeLens(documentUri: vscode.Uri, language: Language): Promise<vscode.CodeLens> {
+    return getLocalCodeLens(documentUri, language, false)
+}
+
+async function getLocalCodeLens(documentUri: vscode.Uri, language: Language, debug: boolean): Promise<vscode.CodeLens> {
     while (true) {
         try {
             // this works without a sleep locally, but not on CodeBuild
@@ -56,153 +77,356 @@ async function getSamCodeLenses(documentUri: vscode.Uri): Promise<vscode.CodeLen
             if (!codeLenses || codeLenses.length === 0) {
                 continue
             }
+
             // omnisharp spits out some undefined code lenses for some reason, we filter them because they are
             // not shown to the user and do not affect how our extension is working
-            codeLenses = codeLenses.filter(lens => lens !== undefined && lens.command !== undefined)
-            if (codeLenses.length === 3) {
-                return codeLenses as vscode.CodeLens[]
+            codeLenses = codeLenses.filter(codeLens => {
+                if (codeLens.command && codeLens.command.arguments && codeLens.command.arguments.length === 1) {
+                    return (
+                        codeLens.command.command === getInvokeCmdKey(language) &&
+                        // tslint:disable-next-line:no-unsafe-any
+                        codeLens.command.arguments[0].isDebug === debug
+                    )
+                }
+
+                return false
+            })
+            if (codeLenses.length === 1) {
+                return codeLenses[0]
             }
         } catch (e) {}
     }
 }
 
-async function getCodeLensesOrFail(documentUri: vscode.Uri): Promise<vscode.CodeLens[]> {
-    const codeLensPromise = getSamCodeLenses(documentUri)
-    const timeout = new Promise(resolve => {
-        setTimeout(resolve, 10000, undefined)
-    })
-    const result = await Promise.race([codeLensPromise, timeout])
-
-    assert.ok(result, 'Codelenses took too long to show up!')
-
-    return result as vscode.CodeLens[]
-}
-
-async function onDebugChanged(e: vscode.DebugSession | undefined, debuggerType: string) {
-    if (!e) {
-        return
-    }
-    assert.strictEqual(e.configuration.name, 'SamLocalDebug')
-    assert.strictEqual(e.configuration.type, debuggerType)
-    // wait for it to actually start (which we do not get an event for). 800 is
-    // short enough to finish before the next test is run and long enough to
-    // actually act after it pauses
-    await sleep(800)
+async function continueDebugger(): Promise<void> {
     await vscode.commands.executeCommand('workbench.action.debug.continue')
 }
 
-function validateRunResult(runResult: any | undefined, projectSDK: string, debug: string) {
-    // tslint:disable: no-unsafe-any
-    assert.ok(runResult)
-    const datum = runResult!.datum
-    assert.strictEqual(datum.name, 'invokelocal')
-    assert.strictEqual(datum.value, 1)
-    assert.strictEqual(datum.unit, 'Count')
-
-    assert.ok(datum.metadata)
-    const metadata = datum.metadata!
-    assert.strictEqual(metadata.get('runtime'), projectSDK)
-    assert.strictEqual(metadata.get('debug'), debug)
-    // tslint:enable: no-unsafe-any
+async function stopDebugger(): Promise<void> {
+    await vscode.commands.executeCommand('workbench.action.debug.stop')
 }
 
-// Iterate through and test all runtimes
-for (const runtime of runtimes) {
-    const projectSDK = runtime.name
-    const projectPath = runtime.path
-    const debuggerType = runtime.debuggerType
-    let documentUri: vscode.Uri
-    let debugDisposable: vscode.Disposable
-    let runCodeLensAttempt: number = 0
-    let debugCodeLensAttempt: number = 0
+async function closeAllEditors(): Promise<void> {
+    await vscode.commands.executeCommand('workbench.action.closeAllEditors')
+}
 
-    describe(`SAM Integration tests ${runtime.name}`, async () => {
-        before(async function() {
-            // tslint:disable-next-line: no-invalid-this
-            this.timeout(TIMEOUT)
+function validateLocalInvokeResult(actualResult: MetricDatum, expectedResult: MetricDatum) {
+    assert.strictEqual(actualResult.MetricName, expectedResult.MetricName)
+    assert.strictEqual(actualResult.Value, expectedResult.Value)
+    assert.strictEqual(actualResult.Unit, expectedResult.Unit)
 
-            // set up debug config
-            debugDisposable = vscode.debug.onDidChangeActiveDebugSession(async session =>
-                onDebugChanged(session, debuggerType)
-            )
-            await activateExtension(EXTENSION_NAME_AWS_TOOLKIT)
-            console.log(`Using SDK ${projectSDK} with project in path ${projectPath}`)
-            tryRemoveProjectFolder()
-            mkdirpSync(projectFolder)
-            // this is really test 1, but since it has to run before everything it's in the before section
-            const runtimeArg = projectSDK as SamLambdaRuntime
+    expectedResult.Metadata!.forEach((entry, key) => {
+        assert.strictEqual(actualResult.Metadata![key].Key, entry.Key)
+        assert.strictEqual(actualResult.Metadata![key].Value, entry.Value)
+    })
+}
+
+async function activateExtensions(): Promise<void> {
+    console.log('Activating extensions...')
+    await activateExtension(VSCODE_EXTENSION_ID.python)
+    await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
+    console.log('Extensions activated')
+}
+
+async function configurePythonExtension(): Promise<void> {
+    logSeparator()
+    const configPy = vscode.workspace.getConfiguration('python')
+    // Disable linting to silence some of the Python extension's log spam
+    await configPy.update('linting.pylintEnabled', false, false)
+    await configPy.update('linting.enabled', false, false)
+    logSeparator()
+}
+
+async function configureAwsToolkitExtension(): Promise<void> {
+    logSeparator()
+    const configAws = vscode.workspace.getConfiguration('aws')
+    await configAws.update('logLevel', 'verbose', false)
+    // Prevent the extension from preemptively cancelling a 'sam local' run
+    await configAws.update('samcli.debug.attach.timeout.millis', '90000', false)
+    logSeparator()
+}
+
+function logSeparator() {
+    console.log('************************************************************')
+}
+
+function configureToolkitLogging() {
+    const logger = getLogger()
+
+    if (logger instanceof WinstonToolkitLogger) {
+        // Ensure we're logging everything possible
+        logger.setLogLevel('debug')
+        // The logs help to diagnose SAM integration test failures
+        logger.logToConsole()
+    } else {
+        assert.fail('Unexpected extension logger')
+    }
+}
+
+describe('SAM Integration Tests', async () => {
+    const samApplicationName = 'testProject'
+    let testSuiteRoot: string
+
+    before(async function() {
+        // tslint:disable-next-line:no-invalid-this
+        this.timeout(600000)
+
+        await activateExtensions()
+        await configureAwsToolkitExtension()
+        await configurePythonExtension()
+
+        configureToolkitLogging()
+
+        testSuiteRoot = await mkdtemp(path.join(projectFolder, 'inttest'))
+        console.log('testSuiteRoot: ', testSuiteRoot)
+        mkdirpSync(testSuiteRoot)
+    })
+
+    after(async () => {
+        tryRemoveFolder(testSuiteRoot)
+    })
+
+    for (const scenario of scenarios) {
+        describe(`SAM Application Runtime: ${scenario.runtime}`, async () => {
+            let runtimeTestRoot: string
+
+            before(async function() {
+                runtimeTestRoot = path.join(testSuiteRoot, scenario.runtime)
+                console.log('runtimeTestRoot: ', runtimeTestRoot)
+                mkdirpSync(runtimeTestRoot)
+            })
+
+            after(async function() {
+                tryRemoveFolder(runtimeTestRoot)
+            })
+
+            /**
+             * This suite cleans up at the end of each test.
+             */
+            describe('Starting from scratch', async () => {
+                let subSuiteTestLocation: string
+
+                beforeEach(async function() {
+                    subSuiteTestLocation = await mkdtemp(path.join(runtimeTestRoot, 'test-'))
+                    console.log(`subSuiteTestLocation: ${subSuiteTestLocation}`)
+                })
+
+                afterEach(async function() {
+                    tryRemoveFolder(subSuiteTestLocation)
+                })
+
+                it('creates a new SAM Application (happy path)', async function() {
+                    // tslint:disable-next-line: no-invalid-this
+                    this.timeout(TIMEOUT)
+
+                    await createSamApplication(subSuiteTestLocation)
+
+                    // Check for readme file
+                    const readmePath = path.join(subSuiteTestLocation, samApplicationName, 'README.md')
+                    assert.ok(await fileExists(readmePath), `Expected SAM App readme to exist at ${readmePath}`)
+                })
+            })
+
+            /**
+             * This suite makes a sam app that all tests operate on.
+             * Cleanup happens at the end of the suite.
+             */
+            describe(`Starting with a newly created ${scenario.runtime} SAM Application...`, async () => {
+                let testDisposables: vscode.Disposable[]
+                let subSuiteTestLocation: string
+
+                let samAppCodeUri: vscode.Uri
+                let samTemplatePath: string
+
+                before(async function() {
+                    // tslint:disable-next-line: no-invalid-this
+                    this.timeout(TIMEOUT)
+
+                    subSuiteTestLocation = await mkdtemp(path.join(runtimeTestRoot, 'samapp-'))
+                    console.log(`subSuiteTestLocation: ${subSuiteTestLocation}`)
+
+                    await createSamApplication(subSuiteTestLocation)
+                    const appPath = path.join(subSuiteTestLocation, samApplicationName, scenario.path)
+                    samTemplatePath = path.join(subSuiteTestLocation, samApplicationName, 'template.yaml')
+                    samAppCodeUri = await openSamAppFile(appPath)
+                })
+
+                beforeEach(async function() {
+                    testDisposables = []
+                    await closeAllEditors()
+                })
+
+                afterEach(async function() {
+                    // tslint:disable-next-line: no-unsafe-any
+                    testDisposables.forEach(d => d.dispose())
+                })
+
+                after(async function() {
+                    tryRemoveFolder(subSuiteTestLocation)
+                })
+
+                it('the SAM Template contains the expected runtime', async () => {
+                    const fileContents = readFileSync(samTemplatePath).toString()
+                    assert.ok(fileContents.includes(`Runtime: ${scenario.runtime}`))
+                })
+
+                it('produces an error when creating a SAM Application to the same location', async () => {
+                    const err = await assertThrowsError(async () => await createSamApplication(subSuiteTestLocation))
+                    assert(err.message.includes('directory already exists'))
+                }).timeout(TIMEOUT)
+
+                it('produces a Run Local CodeLens', async () => {
+                    const codeLens = await getRunLocalCodeLens(samAppCodeUri, scenario.language)
+                    assert.ok(codeLens, 'expected to find a CodeLens')
+                    assertCodeLensReferencesSamTemplate(codeLens, samTemplatePath)
+                }).timeout(TIMEOUT)
+
+                it('produces a Debug Local CodeLens', async () => {
+                    const codeLens = await getDebugLocalCodeLens(samAppCodeUri, scenario.language)
+                    assert.ok(codeLens)
+                    assertCodeLensReferencesSamTemplate(codeLens, samTemplatePath)
+                }).timeout(TIMEOUT)
+
+                it('invokes the Run Local CodeLens', async () => {
+                    const codeLens = await getRunLocalCodeLens(samAppCodeUri, scenario.language)
+                    assert.ok(codeLens, 'expected to find a CodeLens')
+
+                    // tslint:disable-next-line: no-unsafe-any
+                    const runResult = ((await vscode.commands.executeCommand<any>(
+                        codeLens.command!.command,
+                        ...codeLens.command!.arguments!
+                    )) as any).datum as MetricDatum
+                    assert.ok(runResult, 'expected to get invoke results back')
+                    validateLocalInvokeResult(runResult!, {
+                        MetricName: 'lambda_invokelocal',
+                        Value: 1,
+                        Unit: 'Count',
+                        Metadata: [
+                            { Key: 'runtime', Value: scenario.runtime },
+                            { Key: 'debug', Value: 'false' },
+                            { Key: 'result', Value: 'Succeeded' }
+                        ]
+                    })
+                }).timeout(TIMEOUT)
+
+                it('invokes the Debug Local CodeLens', async () => {
+                    assert.strictEqual(
+                        vscode.debug.activeDebugSession,
+                        undefined,
+                        'unexpected debug session in progress'
+                    )
+
+                    const codeLens = await getDebugLocalCodeLens(samAppCodeUri, scenario.language)
+                    assert.ok(codeLens, 'expected to find a CodeLens')
+
+                    const debugSessionStartedAndStoppedPromise = new Promise<void>((resolve, reject) => {
+                        testDisposables.push(
+                            vscode.debug.onDidStartDebugSession(async startedSession => {
+                                const sessionValidation = validateSamDebugSession(
+                                    startedSession,
+                                    scenario.debugSessionType
+                                )
+
+                                if (sessionValidation) {
+                                    await stopDebugger()
+                                    throw new Error(sessionValidation)
+                                }
+
+                                // Wait for this debug session to terminate
+                                testDisposables.push(
+                                    vscode.debug.onDidTerminateDebugSession(async endedSession => {
+                                        const endSessionValidation = validateSamDebugSession(
+                                            endedSession,
+                                            scenario.debugSessionType
+                                        )
+
+                                        if (endSessionValidation) {
+                                            throw new Error(endSessionValidation)
+                                        }
+
+                                        if (startedSession.id === endedSession.id) {
+                                            resolve()
+                                        } else {
+                                            reject(new Error('Unexpected debug session ended'))
+                                        }
+                                    })
+                                )
+
+                                // wait for it to actually start (which we do not get an event for). 800 is
+                                // short enough to finish before the next test is run and long enough to
+                                // actually act after it pauses
+                                await sleep(800)
+                                await continueDebugger()
+                            })
+                        )
+                    })
+
+                    const runResult = ((await vscode.commands.executeCommand<any>(
+                        codeLens.command!.command,
+                        ...codeLens.command!.arguments!
+                    )) as any).datum as MetricDatum
+                    assert.ok(runResult, 'expected to get invoke results back')
+                    validateLocalInvokeResult(runResult!, {
+                        MetricName: 'lambda_invokelocal',
+                        Value: 1,
+                        Unit: 'Count',
+                        Metadata: [
+                            { Key: 'runtime', Value: scenario.runtime },
+                            { Key: 'debug', Value: 'true' },
+                            { Key: 'result', Value: 'Succeeded' }
+                        ]
+                    })
+
+                    await debugSessionStartedAndStoppedPromise
+                }).timeout(TIMEOUT * 2)
+            })
+        })
+
+        async function createSamApplication(location: string): Promise<void> {
             const initArguments: SamCliInitArgs = {
-                name: 'testProject',
-                location: projectFolder,
-                runtime: runtimeArg,
-                dependencyManager: getDependencyManager(runtimeArg)
+                name: samApplicationName,
+                location: location,
+                runtime: scenario.runtime,
+                dependencyManager: getDependencyManager(scenario.runtime)
             }
             const samCliContext = getSamCliContext()
             await runSamCliInit(initArguments, samCliContext)
-            // Activate the relevent extensions if needed
-            if (projectSDK.includes('dotnet')) {
-                await activateExtension('ms-vscode.csharp')
+        }
+
+        /**
+         * Returns a string if there is a validation issue, undefined if there is no issue
+         */
+        function validateSamDebugSession(
+            debugSession: vscode.DebugSession,
+            expectedSessionType: string
+        ): string | undefined {
+            if (debugSession.name !== 'SamLocalDebug') {
+                return `Unexpected Session Name ${debugSession}`
             }
-            if (projectSDK.includes('python')) {
-                await activateExtension('ms-python.python')
+
+            if (debugSession.type !== expectedSessionType) {
+                return `Unexpected Session Type ${debugSession}`
             }
-            documentUri = await openSamProject(projectPath)
-        })
+        }
 
-        after(async () => {
-            tryRemoveProjectFolder()
-            debugDisposable.dispose()
-        })
+        function assertCodeLensReferencesSamTemplate(codeLens: vscode.CodeLens, expectedSamTemplatePath: string) {
+            assert.ok(codeLens.command, 'CodeLens did not have a command')
+            const command = codeLens.command!
 
-        it('Generates a template with a proper runtime', async () => {
-            const fileContents = readFileSync(`${projectFolder}/testProject/template.yaml`).toString()
-            assert.ok(fileContents.includes(`Runtime: ${projectSDK}`))
-        })
+            assert.ok(command.arguments, 'CodeLens command had no arguments')
+            const commandArguments = command.arguments!
 
-        it('Fails to create template when it already exists', async () => {
-            const runtimeArg = projectSDK as SamLambdaRuntime
-            const initArguments: SamCliInitArgs = {
-                name: 'testProject',
-                location: projectFolder,
-                runtime: runtimeArg,
-                dependencyManager: getDependencyManager(runtimeArg)
-            }
-            console.log(initArguments.location)
-            const samCliContext = getSamCliContext()
-            const err = await assertThrowsError(async () => runSamCliInit(initArguments, samCliContext))
-            assert(err.message.includes('directory already exists'))
-        }).timeout(TIMEOUT)
+            assert.strictEqual(commandArguments.length, 1, 'CodeLens command had unexpected arg count')
+            const params = commandArguments[0]
+            assert.ok(params, 'unexpected non-defined command argument')
 
-        it(`Invokes the ${runtime.name} run codelens`, async () => {
-            console.log(`Attempt #${++runCodeLensAttempt} at testing ${runtime.name} Run CodeLens`)
-
-            const [runCodeLens] = await getCodeLensesOrFail(documentUri)
-            assert.ok(runCodeLens.command)
-            const command = runCodeLens.command!
-            assert.ok(command.arguments)
-            const runResult: any | undefined = await vscode.commands.executeCommand(
-                command.command,
-                ...command.arguments!
+            // tslint:disable-next-line:no-unsafe-any
+            const samTemplateUri = params.samTemplate as vscode.Uri
+            assert.strictEqual(
+                samTemplateUri.fsPath,
+                vscode.Uri.file(expectedSamTemplatePath).fsPath,
+                'CodeLens not referencing expected SAM Template'
             )
-            validateRunResult(runResult, projectSDK, 'false')
-        })
-            .timeout(TIMEOUT)
-            .retries(maxCodeLensTestAttempts) // Retry tests because CodeLenses do not reliably get produced in the tests
-
-        it(`Invokes the ${runtime.name} debug codelens`, async () => {
-            console.log(`Attempt #${++debugCodeLensAttempt} at testing ${runtime.name} Debug CodeLens`)
-
-            const [, debugCodeLens] = await getCodeLensesOrFail(documentUri)
-            assert.ok(debugCodeLens.command)
-            const command = debugCodeLens.command!
-            assert.ok(command.arguments)
-            const runResult: any | undefined = await vscode.commands.executeCommand(
-                command.command,
-                ...command.arguments!
-            )
-            validateRunResult(runResult, projectSDK, 'true')
-        })
-            .timeout(TIMEOUT * 2) // This timeout is significantly longer, mostly to accommodate the long first time .net debugger
-            .retries(maxCodeLensTestAttempts) // Retry tests because CodeLenses do not reliably get produced in the tests
-    })
-}
+        }
+    }
+})

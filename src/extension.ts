@@ -3,78 +3,87 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { join } from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import { AwsExplorer } from './awsexplorer/awsExplorer'
-import { RegionNode } from './awsexplorer/regionNode'
+import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCdk } from './cdk/activation'
+import { initialize as initializeCredentials, loginWithMostRecentCredentials } from './credentials/activation'
+import { initializeAwsCredentialsStatusBarItem } from './credentials/awsCredentialsStatusBarItem'
+import { LoginManager } from './credentials/loginManager'
+import { CredentialsProviderManager } from './credentials/providers/credentialsProviderManager'
+import { SharedCredentialsProviderFactory } from './credentials/providers/sharedCredentialsProviderFactory'
+import { activate as activateSchemas } from './eventSchemas/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
-import { documentationUrl, extensionSettingsPrefix, githubUrl, reportIssueUrl } from './shared/constants'
-import { DefaultCredentialsFileReaderWriter } from './shared/credentials/defaultCredentialsFileReaderWriter'
-import { UserCredentialsUtils } from './shared/credentials/userCredentialsUtils'
+import {
+    documentationUrl,
+    endpointsFileUrl,
+    extensionSettingsPrefix,
+    githubUrl,
+    reportIssueUrl
+} from './shared/constants'
 import { DefaultAwsContext } from './shared/defaultAwsContext'
 import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
-import { DefaultResourceFetcher } from './shared/defaultResourceFetcher'
-import { DefaultAWSStatusBar } from './shared/defaultStatusBar'
-import { EnvironmentVariables } from './shared/environmentVariables'
 import { ext } from './shared/extensionGlobals'
-import { safeGet, showQuickStartWebview, toastNewUser } from './shared/extensionUtilities'
+import { showQuickStartWebview, toastNewUser } from './shared/extensionUtilities'
 import { getLogger } from './shared/logger'
 import { activate as activateLogger } from './shared/logger/activation'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
+import { EndpointsProvider } from './shared/regions/endpointsProvider'
+import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetcher'
+import { HttpResourceFetcher } from './shared/resourcefetcher/httpResourceFetcher'
 import { activate as activateServerless } from './shared/sam/activation'
 import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
 import { AwsTelemetryOptOut } from './shared/telemetry/awsTelemetryOptOut'
 import { DefaultTelemetryService } from './shared/telemetry/defaultTelemetryService'
-import { TelemetryNamespace } from './shared/telemetry/telemetryTypes'
 import { registerCommand } from './shared/telemetry/telemetryUtils'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { getChannelLogger } from './shared/utilities/vsCodeUtils'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
 
-export async function activate(context: vscode.ExtensionContext) {
-    const env = process.env as EnvironmentVariables
-    if (!!env.VSCODE_NLS_CONFIG) {
-        nls.config(JSON.parse(env.VSCODE_NLS_CONFIG) as nls.Options)()
-    } else {
-        nls.config()()
-    }
+let localize: nls.LocalizeFunc
 
-    const localize = nls.loadMessageBundle()
+export async function activate(context: vscode.ExtensionContext) {
+    localize = nls.loadMessageBundle()
 
     ext.context = context
-    await activateLogger()
+    await activateLogger(context)
     const toolkitOutputChannel = vscode.window.createOutputChannel(localize('AWS.channel.aws.toolkit', 'AWS Toolkit'))
 
     try {
-        await new DefaultCredentialsFileReaderWriter().setCanUseConfigFileIfExists()
+        initializeCredentialsProviderManager()
+
         initializeIconPaths(context)
+        initializeManifestPaths(context)
 
         const toolkitSettings = new DefaultSettingsConfiguration(extensionSettingsPrefix)
-        const awsContext = new DefaultAwsContext(toolkitSettings, context)
-        const awsContextTrees = new AwsContextTreeCollection()
-        const resourceFetcher = new DefaultResourceFetcher()
-        const regionProvider = new DefaultRegionProvider(context, resourceFetcher)
 
-        ext.awsContextCommands = new DefaultAWSContextCommands(awsContext, awsContextTrees, regionProvider)
+        const endpointsProvider = makeEndpointsProvider()
+
+        const awsContext = new DefaultAwsContext(context)
+        const awsContextTrees = new AwsContextTreeCollection()
+        const regionProvider = new DefaultRegionProvider(endpointsProvider)
+        const loginManager = new LoginManager(awsContext)
+
+        await initializeAwsCredentialsStatusBarItem(awsContext, context)
+        ext.awsContextCommands = new DefaultAWSContextCommands(
+            awsContext,
+            awsContextTrees,
+            regionProvider,
+            loginManager
+        )
         ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
         ext.toolkitClientBuilder = new DefaultToolkitClientBuilder()
 
-        // check to see if current user is valid
-        const currentProfile = awsContext.getCredentialProfileName()
-        if (currentProfile) {
-            const successfulLogin = await UserCredentialsUtils.addUserDataToContext(currentProfile, awsContext)
-            if (!successfulLogin) {
-                await UserCredentialsUtils.removeUserDataFromContext(awsContext)
-                // tslint:disable-next-line: no-floating-promises
-                UserCredentialsUtils.notifyUserCredentialsAreBad(currentProfile)
-            }
-        }
+        await initializeCredentials({
+            extensionContext: context,
+            awsContext: awsContext,
+            settingsConfiguration: toolkitSettings
+        })
 
-        ext.statusBar = new DefaultAWSStatusBar(awsContext, context)
         ext.telemetry = new DefaultTelemetryService(context, awsContext)
         new AwsTelemetryOptOut(ext.telemetry, toolkitSettings).ensureUserNotified().catch(err => {
             console.warn(`Exception while displaying opt-out message: ${err}`)
@@ -84,40 +93,19 @@ export async function activate(context: vscode.ExtensionContext) {
         registerCommand({
             command: 'aws.login',
             callback: async () => await ext.awsContextCommands.onCommandLogin(),
-            telemetryName: {
-                namespace: TelemetryNamespace.Aws,
-                name: 'credentialslogin'
-            }
+            telemetryName: 'aws_credentialslogin'
         })
 
         registerCommand({
             command: 'aws.credential.profile.create',
             callback: async () => await ext.awsContextCommands.onCommandCreateCredentialsProfile(),
-            telemetryName: {
-                namespace: TelemetryNamespace.Aws,
-                name: 'credentialscreate'
-            }
+            telemetryName: 'aws_credentialscreate'
         })
 
         registerCommand({
             command: 'aws.logout',
             callback: async () => await ext.awsContextCommands.onCommandLogout(),
-            telemetryName: {
-                namespace: TelemetryNamespace.Aws,
-                name: 'credentialslogout'
-            }
-        })
-
-        registerCommand({
-            command: 'aws.showRegion',
-            callback: async () => await ext.awsContextCommands.onCommandShowRegion()
-        })
-
-        registerCommand({
-            command: 'aws.hideRegion',
-            callback: async (node?: RegionNode) => {
-                await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
-            }
+            telemetryName: 'aws_credentialslogout'
         })
 
         // register URLs in extension menu
@@ -125,39 +113,38 @@ export async function activate(context: vscode.ExtensionContext) {
             command: 'aws.help',
             callback: async () => {
                 vscode.env.openExternal(vscode.Uri.parse(documentationUrl))
-            }
+            },
+            telemetryName: 'Command_aws.help'
         })
         registerCommand({
             command: 'aws.github',
             callback: async () => {
                 vscode.env.openExternal(vscode.Uri.parse(githubUrl))
-            }
+            },
+            telemetryName: 'Command_aws.github'
         })
         registerCommand({
             command: 'aws.reportIssue',
             callback: async () => {
                 vscode.env.openExternal(vscode.Uri.parse(reportIssueUrl))
-            }
+            },
+            telemetryName: 'Command_aws.reportIssue'
         })
         registerCommand({
             command: 'aws.quickStart',
             callback: async () => {
                 await showQuickStartWebview(context)
-            }
+            },
+            telemetryName: 'Command_aws.quickStart'
         })
 
         await activateCdk({
             extensionContext: context
         })
 
-        const providers = [new AwsExplorer(awsContext, awsContextTrees, regionProvider, resourceFetcher)]
+        await activateAwsExplorer({ awsContext, context, awsContextTrees, regionProvider })
 
-        providers.forEach(p => {
-            p.initialize(context)
-            context.subscriptions.push(vscode.window.registerTreeDataProvider(p.viewProviderId, p))
-        })
-
-        await ext.statusBar.updateContext(undefined)
+        await activateSchemas()
 
         await ExtensionDisposableFiles.initialize(context)
 
@@ -173,6 +160,8 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateStepFunctions(context)
 
         toastNewUser(context, getLogger())
+
+        await loginWithMostRecentCredentials(toolkitSettings, loginManager)
     } catch (error) {
         const channelLogger = getChannelLogger(toolkitOutputChannel)
         channelLogger.error('AWS.channel.aws.toolkit.activation.error', 'Error Activating AWS Toolkit', error as Error)
@@ -196,4 +185,45 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
 
     ext.iconPaths.dark.settings = context.asAbsolutePath('third-party/resources/from-vscode-icons/dark/gear.svg')
     ext.iconPaths.light.settings = context.asAbsolutePath('third-party/resources/from-vscode-icons/light/gear.svg')
+
+    ext.iconPaths.dark.registry = context.asAbsolutePath('resources/dark/registry.svg')
+    ext.iconPaths.light.registry = context.asAbsolutePath('resources/light/registry.svg')
+
+    ext.iconPaths.dark.schema = context.asAbsolutePath('resources/dark/schema.svg')
+    ext.iconPaths.light.schema = context.asAbsolutePath('resources/light/schema.svg')
 }
+
+function initializeManifestPaths(extensionContext: vscode.ExtensionContext) {
+    ext.manifestPaths.endpoints = extensionContext.asAbsolutePath(join('resources', 'endpoints.json'))
+    ext.manifestPaths.lambdaSampleRequests = extensionContext.asAbsolutePath(
+        join('resources', 'vs-lambda-sample-request-manifest.xml')
+    )
+}
+
+function initializeCredentialsProviderManager() {
+    CredentialsProviderManager.getInstance().addProviderFactory(new SharedCredentialsProviderFactory())
+}
+
+function makeEndpointsProvider(): EndpointsProvider {
+    const localManifestFetcher = new FileResourceFetcher(ext.manifestPaths.endpoints)
+    const remoteManifestFetcher = new HttpResourceFetcher(endpointsFileUrl)
+
+    const provider = new EndpointsProvider(localManifestFetcher, remoteManifestFetcher)
+    // tslint:disable-next-line:no-floating-promises -- start the load without waiting. It raises events as fetchers retrieve data.
+    provider.load().catch((err: Error) => {
+        getLogger().error('Failure while loading Endpoints Manifest', err)
+
+        vscode.window.showErrorMessage(
+            localize(
+                'AWS.error.endpoint.load.failure',
+                'The AWS Toolkit was unable to load endpoints data. Toolkit functionality may be impacted until VS Code is restarted.'
+            )
+        )
+    })
+
+    return provider
+}
+
+// Unique extension entrypoint names, so that they can be obtained from the webpack bundle
+export const awsToolkitActivate = activate
+export const awsToolkitDeactivate = deactivate

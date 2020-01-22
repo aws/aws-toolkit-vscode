@@ -14,6 +14,7 @@ import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliCont
 import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
 import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
+import { Metadata } from '../../shared/telemetry/clienttelemetry'
 import { METADATA_FIELD_NAME, MetadataResult } from '../../shared/telemetry/telemetryTypes'
 import { makeCheckLogsMessage } from '../../shared/utilities/messages'
 import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
@@ -173,7 +174,7 @@ async function addWorkspaceFolder(folder: { uri: vscode.Uri; name?: string }): P
     await addFolderToWorkspace(folder)
 }
 
-export function applyResultsToMetadata(createResults: CreateNewSamApplicationResults, metadata: Map<string, string>) {
+export function applyResultsToMetadata(createResults: CreateNewSamApplicationResults, metadata: Metadata) {
     let metadataResult: MetadataResult
 
     switch (createResults.result) {
@@ -189,7 +190,7 @@ export function applyResultsToMetadata(createResults: CreateNewSamApplicationRes
             break
     }
 
-    metadata.set('runtime', createResults.runtime)
-    metadata.set(METADATA_FIELD_NAME.RESULT, metadataResult.toString())
-    metadata.set(METADATA_FIELD_NAME.REASON, createResults.reason)
+    metadata.push({ Key: 'runtime', Value: createResults.runtime })
+    metadata.push({ Key: METADATA_FIELD_NAME.RESULT, Value: metadataResult.toString() })
+    metadata.push({ Key: METADATA_FIELD_NAME.REASON, Value: createResults.reason })
 }

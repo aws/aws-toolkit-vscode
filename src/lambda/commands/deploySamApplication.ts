@@ -8,9 +8,9 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
+import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
 import { AwsContext, NoActiveCredentialError } from '../../shared/awsContext'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
-import { RegionProvider } from '../../shared/regions/regionProvider'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
 import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
 import { runSamCliDeploy } from '../../shared/sam/cli/samCliDeploy'
@@ -19,14 +19,14 @@ import { runSamCliPackage } from '../../shared/sam/cli/samCliPackage'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
 import { makeCheckLogsMessage } from '../../shared/utilities/messages'
 import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
-import { DefaultSamDeployWizardContext, SamDeployWizard, SamDeployWizardResponse } from '../wizards/samDeployWizard'
+import { SamDeployWizardResponse } from '../wizards/samDeployWizard'
 
 const localize = nls.loadMessageBundle()
 
 interface DeploySamApplicationParameters {
     sourceTemplatePath: string
     deployRootFolder: string
-    profile: string
+    environmentVariables: NodeJS.ProcessEnv
     region: string
     packageBucketName: string
     destinationStackName: string
@@ -47,27 +47,23 @@ export async function deploySamApplication(
     {
         samCliContext = getSamCliContext(),
         channelLogger,
-        regionProvider,
-        extensionContext,
-        samDeployWizard = getDefaultSamDeployWizardResponseProvider(regionProvider, extensionContext)
+        samDeployWizard
     }: {
         samCliContext?: SamCliContext
         channelLogger: ChannelLogger
-        regionProvider: RegionProvider
-        samDeployWizard?: SamDeployWizardResponseProvider
-        extensionContext: Pick<vscode.ExtensionContext, 'asAbsolutePath'>
+        samDeployWizard: SamDeployWizardResponseProvider
     },
     {
         awsContext,
         window = getDefaultWindowFunctions()
     }: {
-        awsContext: Pick<AwsContext, 'getCredentialProfileName'>
+        awsContext: Pick<AwsContext, 'getCredentials'>
         window?: WindowFunctions
     }
 ): Promise<void> {
     try {
-        const profile: string | undefined = awsContext.getCredentialProfileName()
-        if (!profile) {
+        const credentials = await awsContext.getCredentials()
+        if (!credentials) {
             throw new NoActiveCredentialError()
         }
 
@@ -84,7 +80,7 @@ export async function deploySamApplication(
             destinationStackName: deployWizardResponse.stackName,
             packageBucketName: deployWizardResponse.s3Bucket,
             parameterOverrides: deployWizardResponse.parameterOverrides,
-            profile,
+            environmentVariables: asEnvironmentVariables(credentials),
             region: deployWizardResponse.region,
             sourceTemplatePath: deployWizardResponse.template.fsPath
         }
@@ -156,9 +152,8 @@ async function packageOperation(params: {
 }): Promise<void> {
     params.channelLogger.info(
         'AWS.samcli.deploy.workflow.packaging',
-        'Packaging SAM Application to S3 Bucket: {0} with profile: {1}',
-        params.deployParameters.packageBucketName,
-        params.deployParameters.profile
+        'Packaging SAM Application to S3 Bucket: {0}',
+        params.deployParameters.packageBucketName
     )
 
     const buildTemplatePath = getBuildTemplatePath(params.deployParameters.deployRootFolder)
@@ -168,7 +163,7 @@ async function packageOperation(params: {
         {
             sourceTemplateFile: buildTemplatePath,
             destinationTemplateFile: packageTemplatePath,
-            profile: params.deployParameters.profile,
+            environmentVariables: params.deployParameters.environmentVariables,
             region: params.deployParameters.region,
             s3Bucket: params.deployParameters.packageBucketName
         },
@@ -185,9 +180,8 @@ async function deployOperation(params: {
     try {
         params.channelLogger.info(
             'AWS.samcli.deploy.workflow.stackName.initiated',
-            'Deploying SAM Application to CloudFormation Stack: {0} with profile: {1}',
-            params.deployParameters.destinationStackName,
-            params.deployParameters.profile
+            'Deploying SAM Application to CloudFormation Stack: {0}',
+            params.deployParameters.destinationStackName
         )
 
         const packageTemplatePath = getPackageTemplatePath(params.deployParameters.deployRootFolder)
@@ -195,7 +189,7 @@ async function deployOperation(params: {
         await runSamCliDeploy(
             {
                 parameterOverrides: params.deployParameters.parameterOverrides,
-                profile: params.deployParameters.profile,
+                environmentVariables: params.deployParameters.environmentVariables,
                 templateFile: packageTemplatePath,
                 region: params.deployParameters.region,
                 stackName: params.deployParameters.destinationStackName
@@ -232,9 +226,8 @@ async function deploy(params: {
 
         params.channelLogger.info(
             'AWS.samcli.deploy.workflow.success',
-            'Successfully deployed SAM Application to CloudFormation Stack: {0} with profile: {1}',
-            params.deployParameters.destinationStackName,
-            params.deployParameters.profile
+            'Successfully deployed SAM Application to CloudFormation Stack: {0}',
+            params.deployParameters.destinationStackName
         )
 
         params.window.showInformationMessage(
@@ -264,9 +257,6 @@ function enhanceAwsCloudFormationInstructions(
         )
     ) {
         message += ` --region ${deployParameters.region}`
-        if (deployParameters.profile) {
-            message += ` --profile ${deployParameters.profile}`
-        }
     }
 
     return message
@@ -294,18 +284,5 @@ function getDefaultWindowFunctions(): WindowFunctions {
         setStatusBarMessage: vscode.window.setStatusBarMessage,
         showErrorMessage: vscode.window.showErrorMessage,
         showInformationMessage: vscode.window.showInformationMessage
-    }
-}
-
-function getDefaultSamDeployWizardResponseProvider(
-    regionProvider: RegionProvider,
-    context: Pick<vscode.ExtensionContext, 'asAbsolutePath'>
-): SamDeployWizardResponseProvider {
-    return {
-        getSamDeployWizardResponse: async (): Promise<SamDeployWizardResponse | undefined> => {
-            const wizard = new SamDeployWizard(regionProvider, new DefaultSamDeployWizardContext())
-
-            return wizard.run()
-        }
     }
 }

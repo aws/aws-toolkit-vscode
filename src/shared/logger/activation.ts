@@ -26,14 +26,14 @@ const LOG_OUTPUT_CHANNEL: vscode.OutputChannel = vscode.window.createOutputChann
 /**
  * Activate Logger functionality for the extension.
  */
-export async function activate(): Promise<void> {
+export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     const outputChannel = LOG_OUTPUT_CHANNEL
     const logPath = LOG_PATH
     const logLevel = getLogLevel()
 
     await ensureLogFolderExists(path.dirname(logPath))
 
-    setLogger(makeLogger(logLevel, logPath, outputChannel))
+    setLogger(makeLogger(logLevel, logPath, outputChannel, extensionContext.subscriptions))
 
     await registerLoggerCommands()
 
@@ -42,10 +42,26 @@ export async function activate(): Promise<void> {
     )
 }
 
-export function makeLogger(logLevel: LogLevel, logPath: string, outputChannel: vscode.OutputChannel): Logger {
+export function makeLogger(
+    logLevel: LogLevel,
+    logPath: string,
+    outputChannel: vscode.OutputChannel,
+    disposables?: vscode.Disposable[]
+): Logger {
     const logger = new WinstonToolkitLogger(logLevel)
     logger.logToFile(logPath)
     logger.logToOutputChannel(outputChannel)
+
+    vscode.workspace.onDidChangeConfiguration(
+        configurationChangeEvent => {
+            if (configurationChangeEvent.affectsConfiguration('aws.logLevel')) {
+                const newLogLevel = vscode.workspace.getConfiguration('aws').get('logLevel', logLevel)
+                logger.setLogLevel(newLogLevel)
+            }
+        },
+        undefined,
+        disposables
+    )
 
     return logger
 }
@@ -85,6 +101,7 @@ async function ensureLogFolderExists(logFolder: string): Promise<void> {
 async function registerLoggerCommands(): Promise<void> {
     registerCommand({
         command: 'aws.viewLogs',
-        callback: async () => await vscode.window.showTextDocument(vscode.Uri.file(path.normalize(LOG_PATH)))
+        callback: async () => await vscode.window.showTextDocument(vscode.Uri.file(path.normalize(LOG_PATH))),
+        telemetryName: 'Command_aws.viewLogs'
     })
 }
