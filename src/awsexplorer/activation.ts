@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 
+import { recordVscodeActiveregions } from 'telemetry'
 import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { deleteLambda } from '../lambda/commands/deleteLambda'
 import { invokeLambda } from '../lambda/commands/invokeLambda'
@@ -42,8 +43,6 @@ export async function activate(activateArguments: {
 
     await registerAwsExplorerCommands(awsExplorer)
 
-    await recordNumberOfActiveRegionsMetric(awsExplorer)
-
     activateArguments.awsContextTrees.addTree(awsExplorer)
 
     updateAwsExplorerWhenAwsContextCredentialsChange(
@@ -61,7 +60,7 @@ async function registerAwsExplorerCommands(
         command: 'aws.showRegion',
         callback: async () => {
             await ext.awsContextCommands.onCommandShowRegion()
-            await recordNumberOfActiveRegionsMetric(awsExplorer)
+            recordVscodeActiveregions({ value: awsExplorer.getRegionNodesSize() })
         },
         telemetryName: 'Command_aws.showRegion'
     })
@@ -70,7 +69,7 @@ async function registerAwsExplorerCommands(
         command: 'aws.hideRegion',
         callback: async (node?: RegionNode) => {
             await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
-            await recordNumberOfActiveRegionsMetric(awsExplorer)
+            recordVscodeActiveregions({ value: awsExplorer.getRegionNodesSize() })
         },
         telemetryName: 'Command_aws.hideRegion'
     })
@@ -81,17 +80,16 @@ async function registerAwsExplorerCommands(
         telemetryName: 'Command_aws.refreshAwsExplorer'
     })
 
-    registerCommand({
-        command: 'aws.deleteLambda',
-        callback: async (node: LambdaFunctionNode) =>
+    vscode.commands.registerCommand(
+        'aws.deleteLambda',
+        async (node: LambdaFunctionNode) =>
             await deleteLambda({
                 deleteParams: { functionName: node.configuration.FunctionName || '' },
                 lambdaClient: ext.toolkitClientBuilder.createLambdaClient(node.regionCode),
                 outputChannel: lambdaOutputChannel,
                 onRefresh: () => awsExplorer.refresh(node.parent)
-            }),
-        telemetryName: 'lambda_delete'
-    })
+            })
+    )
 
     registerCommand({
         command: 'aws.deleteCloudFormation',
@@ -122,16 +120,6 @@ async function registerAwsExplorerCommands(
             awsexplorer.refresh(element)
         },
         telemetryName: 'Command_aws.refreshAwsExplorerNode'
-    })
-}
-
-async function recordNumberOfActiveRegionsMetric(awsExplorer: AwsExplorer) {
-    const numOfActiveRegions = awsExplorer.getRegionNodesSize()
-    const currTime = new Date()
-
-    ext.telemetry.record({
-        createTime: currTime,
-        data: [{ MetricName: 'vscode_activeregions', Value: numOfActiveRegions, Unit: 'Count' }]
     })
 }
 

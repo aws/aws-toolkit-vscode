@@ -50,6 +50,7 @@ rules:
               - vscode-test
               - del
               - sinon
+              - telemetry
     no-inferred-empty-object-type: true
     no-invalid-template-strings: true
     no-invalid-this:

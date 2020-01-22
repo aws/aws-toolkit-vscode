@@ -2,7 +2,8 @@
     "compilerOptions": {
         "baseUrl": ".",
         "paths": {
-            "*": ["types/*"]
+            "*": ["types/*"],
+            "telemetry": ["src/shared/telemetry/telemetry"]
         },
         "incremental": true,
         "module": "commonjs",

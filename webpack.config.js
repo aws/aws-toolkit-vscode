@@ -28,7 +28,8 @@ const config = {
     resolve: {
         extensions: ['.ts', '.js'],
         alias: {
-            handlebars: 'handlebars/dist/handlebars.min.js'
+            handlebars: 'handlebars/dist/handlebars.min.js',
+            telemetry: path.join(__dirname, 'src', 'shared', 'telemetry', 'telemetry')
         }
     },
     node: {

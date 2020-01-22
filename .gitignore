@@ -10,6 +10,8 @@ telemetryCache
 quickStart.html
 .gitcommit
 media/libs/
+# Auto generated telemety defintion
+src/shared/telemetry/telemetry.ts
 
 # Auto generated Service Clients
 src/shared/telemetry/clienttelemetry.d.ts
