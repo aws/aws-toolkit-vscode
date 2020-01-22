@@ -135,6 +135,7 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
                 broadcastChangeEvent(ValidConnectionSettings(credentials, region, connectionState))
             } catch (e: Exception) {
                 connectionState = ConnectionState.INVALID
+                LOGGER.warn(e) { message("credentials.profile.validation_error", credentials.displayName) }
                 broadcastChangeEvent(InvalidConnectionSettings(credentials, region, e, connectionState))
             } finally {
                 incModificationCount()
