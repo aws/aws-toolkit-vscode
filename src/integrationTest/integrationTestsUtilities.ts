@@ -6,17 +6,26 @@
 import * as assert from 'assert'
 import * as vscode from 'vscode'
 
-export const EXTENSION_NAME_AWS_TOOLKIT = 'amazonwebservices.aws-toolkit-vscode'
-
 const SECOND = 1000
 export const TIMEOUT = 30 * SECOND
 
-export async function activateExtension(extensionName: string): Promise<vscode.Extension<void>> {
-    const extension: vscode.Extension<void> | undefined = vscode.extensions.getExtension(extensionName)
-    assert.ok(extension)
-    await extension!.activate()
+export async function activateExtension(extensionId: string): Promise<vscode.Extension<void>> {
+    console.log(`activateExtension request: ${extensionId}`)
+    const extension: vscode.Extension<void> | undefined = vscode.extensions.getExtension(extensionId)
+    assert.ok(extension, `Extension not found: ${extensionId}`)
 
-    return extension as vscode.Extension<void>
+    if (!extension) {
+        throw new Error(`Extension not found: ${extensionId}`)
+    }
+
+    if (!extension.isActive) {
+        console.log(`Activating extension: ${extensionId}`)
+        await extension.activate()
+    } else {
+        console.log('Extension is already active')
+    }
+
+    return extension
 }
 
 export async function sleep(miliseconds: number): Promise<void> {

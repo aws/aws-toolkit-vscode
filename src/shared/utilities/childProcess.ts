@@ -5,6 +5,7 @@
 
 import * as child_process from 'child_process'
 import * as crossSpawn from 'cross-spawn'
+import { getLogger } from '../logger'
 
 export interface ChildProcessStartArguments {
     onStdout?(text: string): void
@@ -71,15 +72,16 @@ export class ChildProcess {
             throw new Error('process already started')
         }
 
+        getLogger().info(`Running command: ${this.process} ${this.args.join(' ')}`)
         this.childProcess = crossSpawn(this.process, this.args, this.options)
 
-        this.childProcess.stdout.on('data', (data: { toString(): string }) => {
+        this.childProcess.stdout?.on('data', (data: { toString(): string }) => {
             if (params.onStdout) {
                 params.onStdout(data.toString())
             }
         })
 
-        this.childProcess.stderr.on('data', (data: { toString(): string }) => {
+        this.childProcess.stderr?.on('data', (data: { toString(): string }) => {
             if (params.onStderr) {
                 params.onStderr(data.toString())
             }
@@ -96,15 +98,15 @@ export class ChildProcess {
                 params.onClose(code, signal)
             }
 
-            this.childProcess!.stdout.removeAllListeners()
-            this.childProcess!.stderr.removeAllListeners()
+            this.childProcess!.stdout?.removeAllListeners()
+            this.childProcess!.stderr?.removeAllListeners()
             this.childProcess!.removeAllListeners()
         })
     }
 
-    public kill(signal?: string): void {
+    public kill(): void {
         if (this.childProcess && !this.killed) {
-            this.childProcess.kill(signal)
+            this.childProcess.kill()
         } else {
             throw new Error('Attempting to kill a process that has already been killed')
         }

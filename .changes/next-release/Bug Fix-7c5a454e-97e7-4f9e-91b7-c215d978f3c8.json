@@ -1,0 +1,4 @@
+{
+    "type": "Bug Fix",
+    "description": "Fixed an issue where invalid credentials were reused until VS Code was closed and re-opened, even if the credentials source was updated. It is no longer necessary to restart VS Code. (#705)"
+}

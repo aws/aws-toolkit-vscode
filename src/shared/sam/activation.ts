@@ -10,8 +10,14 @@ import {
     CreateNewSamApplicationResults,
     resumeCreateNewSamApp
 } from '../../lambda/commands/createNewSamApp'
-import { deploySamApplication } from '../../lambda/commands/deploySamApplication'
+import { deploySamApplication, SamDeployWizardResponseProvider } from '../../lambda/commands/deploySamApplication'
 import { SamParameterCompletionItemProvider } from '../../lambda/config/samParameterCompletionItemProvider'
+import { configureLocalLambda } from '../../lambda/local/configureLocalLambda'
+import {
+    DefaultSamDeployWizardContext,
+    SamDeployWizard,
+    SamDeployWizardResponse
+} from '../../lambda/wizards/samDeployWizard'
 import { AwsContext } from '../awsContext'
 import { CodeLensProviderParams } from '../codelens/codeLensUtils'
 import * as csLensProvider from '../codelens/csharpCodeLensProvider'
@@ -19,8 +25,8 @@ import * as pyLensProvider from '../codelens/pythonCodeLensProvider'
 import * as tsLensProvider from '../codelens/typescriptCodeLensProvider'
 import { RegionProvider } from '../regions/regionProvider'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
+import { MetricDatum } from '../telemetry/clienttelemetry'
 import { TelemetryService } from '../telemetry/telemetryService'
-import { Datum, TelemetryNamespace } from '../telemetry/telemetryTypes'
 import { defaultMetricDatum, registerCommand } from '../telemetry/telemetryUtils'
 import { PromiseSharer } from '../utilities/promiseUtilities'
 import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
@@ -85,6 +91,7 @@ async function registerServerlessCommands(params: {
     params.extensionContext.subscriptions.push(
         registerCommand({
             command: 'aws.samcli.detect',
+            telemetryName: 'Command_aws.samcli.detect',
             callback: async () =>
                 await PromiseSharer.getExistingPromiseOrCreate('samcli.detect', async () => await detectSamCli(true))
         })
@@ -93,43 +100,54 @@ async function registerServerlessCommands(params: {
     params.extensionContext.subscriptions.push(
         registerCommand({
             command: 'aws.lambda.createNewSamApp',
-            callback: async (): Promise<{ datum: Datum }> => {
+            callback: async (): Promise<{ datum: MetricDatum }> => {
                 const createNewSamApplicationResults: CreateNewSamApplicationResults = await createNewSamApplication(
                     params.channelLogger
                 )
                 const datum = defaultMetricDatum('new')
-                datum.metadata = new Map()
-                applyResultsToMetadata(createNewSamApplicationResults, datum.metadata)
+                datum.Metadata = []
+                applyResultsToMetadata(createNewSamApplicationResults, datum.Metadata)
 
                 return {
                     datum
                 }
             },
-            telemetryName: {
-                namespace: TelemetryNamespace.Project,
-                name: 'new'
-            }
+            telemetryName: 'project_new'
         })
     )
 
     params.extensionContext.subscriptions.push(
         registerCommand({
             command: 'aws.deploySamApplication',
-            callback: async () =>
+            callback: async () => {
+                const samDeployWizardContext = new DefaultSamDeployWizardContext(params.regionProvider)
+                const samDeployWizard: SamDeployWizardResponseProvider = {
+                    getSamDeployWizardResponse: async (): Promise<SamDeployWizardResponse | undefined> => {
+                        const wizard = new SamDeployWizard(samDeployWizardContext)
+
+                        return wizard.run()
+                    }
+                }
+
                 await deploySamApplication(
                     {
                         channelLogger: params.channelLogger,
-                        regionProvider: params.regionProvider,
-                        extensionContext: params.extensionContext
+                        samDeployWizard
                     },
                     {
                         awsContext: params.awsContext
                     }
-                ),
-            telemetryName: {
-                namespace: TelemetryNamespace.Lambda,
-                name: 'deploy'
-            }
+                )
+            },
+            telemetryName: 'lambda_deploy'
+        })
+    )
+
+    params.extensionContext.subscriptions.push(
+        registerCommand({
+            command: 'aws.configureLambda',
+            callback: configureLocalLambda,
+            telemetryName: 'lambda_configurelocal'
         })
     )
 

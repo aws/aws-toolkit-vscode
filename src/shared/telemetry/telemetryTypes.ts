@@ -3,31 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Unit } from './clienttelemetry'
-
-export interface TelemetryName {
-    namespace: TelemetryNamespace | OldTelemetryNamespace
-    name: string
-}
-
-export interface Datum {
-    name: string
-    value: number
-    unit?: Unit
-    metadata?: Map<string, string>
-}
-
-type OldTelemetryNamespace = 'Command'
 export const ACCOUNT_METADATA_KEY = 'awsAccount'
-
-export enum TelemetryNamespace {
-    Aws = 'aws',
-    Cdk = 'cdk',
-    Cloudformation = 'cloudformation',
-    Lambda = 'lambda',
-    Project = 'project',
-    Session = 'session'
-}
 
 export enum AccountStatus {
     NotApplicable = 'n/a',

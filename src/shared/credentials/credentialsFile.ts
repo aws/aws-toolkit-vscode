@@ -9,11 +9,10 @@
 // their version.
 // ***************************************************************************
 
-import { copy } from 'fs-extra'
+import { copy, writeFile } from 'fs-extra'
 import { homedir } from 'os'
 import { join, sep } from 'path'
 import { EnvironmentVariables } from '../environmentVariables'
-import { writeFile } from '../filesystem'
 import { fileExists, readFileAsString } from '../filesystemUtilities'
 
 export interface SharedConfigInit {

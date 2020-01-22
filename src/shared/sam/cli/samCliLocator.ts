@@ -6,6 +6,7 @@
 import * as path from 'path'
 import { EnvironmentVariables } from '../../environmentVariables'
 import * as filesystemUtilities from '../../filesystemUtilities'
+import { getLogger, Logger } from '../../logger'
 
 export interface SamCliLocationProvider {
     getLocation(): Promise<string | undefined>
@@ -32,6 +33,8 @@ export class DefaultSamCliLocationProvider implements SamCliLocationProvider {
 }
 
 abstract class BaseSamCliLocator {
+    protected readonly logger: Logger = getLogger()
+
     public constructor() {
         this.verifyOs()
     }
@@ -45,6 +48,8 @@ abstract class BaseSamCliLocator {
         if (!location) {
             location = await this.getSystemPathLocation()
         }
+
+        this.logger.info(`SAM CLI location: ${location}`)
 
         return location
     }
@@ -63,6 +68,7 @@ abstract class BaseSamCliLocator {
             })
 
         for (const fullPath of fullPaths) {
+            this.logger.verbose(`Searching for SAM CLI in: ${fullPath}`)
             if (await filesystemUtilities.fileExists(fullPath)) {
                 return fullPath
             }

@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "When credentials are invalid a notification is shown. To help diagnose these situations, a button was added to the notification that can open the logs."
+}

@@ -305,3 +305,10 @@ class CoverageRunner {
         });
     }
 }
+
+// 2019-12-05: Amazon addition. (export declarations - runTests)
+export const runTests = (testsRoot: string, clb: (err: any, failedTests: number) => void ): void => run(testsRoot, clb)
+// END 2019-12-05: Amazon addition. (export declarations - runTests)
+// 2020-01-08: Amazon addition. (export declarations - configureMocha)
+export const configureMocha = (mochaOpts: any) => configure(mochaOpts)
+// END 2020-01-08: Amazon addition. (export declarations - configureMocha)

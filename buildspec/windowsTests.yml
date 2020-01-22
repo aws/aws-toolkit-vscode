@@ -1,0 +1,28 @@
+version: 0.2
+env:
+    variables:
+        AWS_TOOLKIT_TEST_NO_COLOR: '1'
+phases:
+    install:
+        commands:
+            - choco install -y --no-progress codecov
+
+    pre_build:
+        commands:
+            - npm install
+
+    build:
+        commands:
+            - npm run testCompile
+            - npm run lint
+            - npm run test
+            - |
+                if(-Not($Env:CODEBUILD_BUILD_SUCCEEDING -eq "0" -Or $Env:CODE_COV_TOKEN -eq $null)) {
+                  $env:VCS_COMMIT_ID=$Env:CODEBUILD_RESOLVED_SOURCE_VERSION;
+                  $env:CI_BUILD_URL=[uri]::EscapeUriString($Env:CODEBUILD_BUILD_URL);
+                  $env:CI_BUILD_ID=$Env:CODEBUILD_BUILD_ID;
+                  codecov -t $Env:CODE_COV_TOKEN `
+                    --flag unittest `
+                    -f "build/reports/jacoco/coverageReport/coverageReport.xml" `
+                    -c $Env:CODEBUILD_RESOLVED_SOURCE_VERSION
+                }

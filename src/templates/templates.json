@@ -1,0 +1,56 @@
+{
+    "$id": "https://github.com/aws/aws-toolkit-vscode/tree/master/src/templates/templates.json",
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "object",
+    "properties": {
+        "templates": {
+            "type": "object",
+            "description": "Holds configurations for all SAM Templates within the Workspace Folder.",
+            "patternProperties": {
+                ".*": {
+                    "type": "object",
+                    "properties": {
+                        "parameterOverrides": {
+                            "type": "object",
+                            "default": {},
+                            "description": "Configures the SAM Template's parameter values used when deploying the template.",
+                            "patternProperties": {
+                                ".*": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "handlers": {
+                            "type": "object",
+                            "default": {},
+                            "description": "Holds configurations for each Lambda function contained in this SAM Template.",
+                            "patternProperties": {
+                                ".*": {
+                                    "type": "object",
+                                    "description": "Configuration for a Lambda handler within a SAM Template.",
+                                    "properties": {
+                                        "event": {
+                                            "type": "object",
+                                            "default": {},
+                                            "description": "Event data passed to the Lambda function when it is invoked locally. If you don't specify this option, an empty payload is used as a default."
+                                        },
+                                        "environmentVariables": {
+                                            "type": "object",
+                                            "default": {},
+                                            "description": "Overrides the environment variable values defined in the SAM Template when running the Lambda function locally."
+                                        },
+                                        "dockerNetwork": {
+                                            "type": "string",
+                                            "default": null,
+                                            "description": "If specified, adds a --docker-network parameter to the SAM CLI.  If not specified, no parameter will be sent."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

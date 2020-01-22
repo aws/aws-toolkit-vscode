@@ -5,29 +5,33 @@
 
 import * as vscode from 'vscode'
 
+export interface AwsContextCredentials {
+    readonly credentials: AWS.Credentials
+    readonly credentialsId: string
+    readonly accountId?: string
+    readonly defaultRegion?: string
+}
+
 // Carries the current context data on events
-export class ContextChangeEventsArgs {
-    public constructor(
-        public readonly profileName: string | undefined,
-        public readonly accountId: string | undefined,
-        public readonly regions: string[]
-    ) {}
+export interface ContextChangeEventsArgs {
+    readonly profileName?: string
+    readonly accountId?: string
 }
 
 // Represents a credential profile and zero or more regions.
 export interface AwsContext {
     onDidChangeContext: vscode.Event<ContextChangeEventsArgs>
 
-    // optionally accepts a profile to validate a profile that hasn't logged in yet
-    getCredentials(profileName?: string): Promise<AWS.Credentials | undefined>
+    setCredentials(credentials?: AwsContextCredentials): Promise<void>
+
+    getCredentials(): Promise<AWS.Credentials | undefined>
 
     // returns the configured profile, if any
     getCredentialProfileName(): string | undefined
-    // resets the context to the indicated profile, saving it into settings
-    setCredentialProfileName(profileName?: string): Promise<void>
 
     getCredentialAccountId(): string | undefined
-    setCredentialAccountId(accountId?: string): Promise<void>
+
+    getCredentialDefaultRegion(): string | undefined
 
     getExplorerRegions(): Promise<string[]>
 
