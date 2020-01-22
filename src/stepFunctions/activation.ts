@@ -17,7 +17,6 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
 }
 
 async function registerStepFunctionCommands(extensionContext: vscode.ExtensionContext): Promise<void> {
-
     initalizeWebviewPaths(extensionContext)
 
     extensionContext.subscriptions.push(
@@ -25,21 +24,22 @@ async function registerStepFunctionCommands(extensionContext: vscode.ExtensionCo
             command: 'aws.renderStateMachine',
             callback: async () => {
                 return await visualizeStateMachine()
-            }
+            },
+            telemetryName: 'stepfunctions_renderstatemachine'
         })
     )
 }
 
 function initalizeWebviewPaths(context: vscode.ExtensionContext) {
-    ext.visualizationResourcePaths.stateMachineThemePath =
-        vscode.Uri.file(context.asAbsolutePath(join('media', 'css')))
+    ext.visualizationResourcePaths.stateMachineThemePath = vscode.Uri.file(context.asAbsolutePath(join('media', 'css')))
 
-    ext.visualizationResourcePaths.stateMachineThemeCSS =
-        vscode.Uri.file(context.asAbsolutePath(join('media', 'css', 'stateMachineRender.css')))
+    ext.visualizationResourcePaths.stateMachineThemeCSS = vscode.Uri.file(
+        context.asAbsolutePath(join('media', 'css', 'stateMachineRender.css'))
+    )
 
-    ext.visualizationResourcePaths.localScriptsPath =
-        vscode.Uri.file(context.asAbsolutePath(join('media', 'js')))
+    ext.visualizationResourcePaths.localScriptsPath = vscode.Uri.file(context.asAbsolutePath(join('media', 'js')))
 
-    ext.visualizationResourcePaths.webviewScript =
-        vscode.Uri.file(context.asAbsolutePath(join('media', 'js', 'graphStateMachine.js')))
+    ext.visualizationResourcePaths.webviewScript = vscode.Uri.file(
+        context.asAbsolutePath(join('media', 'js', 'graphStateMachine.js'))
+    )
 }
