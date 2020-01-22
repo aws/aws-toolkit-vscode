@@ -12,9 +12,9 @@ import { getLogger, Logger } from '../../shared/logger'
 import { updateCache } from '../utils'
 
 export interface messageObject {
-    command: string,
-    text: string,
-    error?: string,
+    command: string
+    text: string
+    error?: string
     stateMachineData: string
 }
 
@@ -46,7 +46,10 @@ export async function visualizeStateMachine(globalStorage: vscode.Memento): Prom
         await updateCache(globalStorage)
 
         return setupWebviewPanel(documentUri, documentText)
-    } catch(err) {
+    } catch (err) {
+        vscode.window.showInformationMessage(
+            'There was an error rendering State Machine Graph, check logs for details.'
+        )
         logger.debug('Unable to setup webview panel.')
         logger.error(err as Error)
     }
@@ -54,10 +57,7 @@ export async function visualizeStateMachine(globalStorage: vscode.Memento): Prom
     return
 }
 
-async function setupWebviewPanel(
-    documentUri: vscode.Uri,
-    documentText: string
-): Promise<vscode.WebviewPanel> {
+async function setupWebviewPanel(documentUri: vscode.Uri, documentText: string): Promise<vscode.WebviewPanel> {
     const logger: Logger = getLogger()
 
     // Create and show panel
