@@ -105,12 +105,12 @@ class SamSchemaDownloadPostCreationAction {
     private fun notifyOnValidationFailure(
         schemaRootEventName: String,
         schemaPackageHierarchy: String,
-        specificValiationError: String,
+        specificValidationError: String,
         newApplicationProject: Project
     ) {
         notifyError(
             title = NOTIFICATION_TITLE,
-            content = message("sam.init.schema.validation_failed", schemaRootEventName, schemaPackageHierarchy, specificValiationError),
+            content = message("sam.init.schema.validation_failed", schemaRootEventName, schemaPackageHierarchy, specificValidationError),
             project = newApplicationProject
         )
     }

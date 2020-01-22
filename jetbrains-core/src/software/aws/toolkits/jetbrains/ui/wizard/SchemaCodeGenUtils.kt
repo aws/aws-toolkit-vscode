@@ -3,15 +3,15 @@
 
 package software.aws.toolkits.jetbrains.ui.wizard
 
-// TODO: This is fragile. Very fragle. But it is necessary to get Schemas service launched, and we've evaluated all other tradeoffs
+// TODO: This is fragile. Very fragile. But it is necessary to get Schemas service launched, and we've evaluated all other trade offs
 // This will be done on the server-side as soon as we can, but for now the client needs to do this
 class SchemaCodeGenUtils {
     companion object {
-        private val SCHEMA_PACKAGE_PREFIX = "schema"
-        private val AWS = "aws"
-        private val PARTNER = "partner"
-        private val AWS_PARTNER_PREFIX = "$AWS.$PARTNER-" // dash suffix because of 3p partner registry name format
-        private val AWS_EVENTS_PREFIX = "$AWS." // . suffix because of 1p event registry schema format
+        private const val SCHEMA_PACKAGE_PREFIX = "schema"
+        private const val AWS = "aws"
+        private const val PARTNER = "partner"
+        private const val AWS_PARTNER_PREFIX = "$AWS.$PARTNER-" // dash suffix because of 3p partner registry name format
+        private const val AWS_EVENTS_PREFIX = "$AWS." // . suffix because of 1p event registry schema format
 
         fun buildSchemaPackageName(schemaName: String): String {
             val builder = CodeGenPackageBuilder()
@@ -57,7 +57,7 @@ class SchemaCodeGenUtils {
         private val builder: StringBuilder = StringBuilder()
 
         fun append(segment: String): CodeGenPackageBuilder {
-            if (builder.length > 0) {
+            if (builder.isNotEmpty()) {
                 builder.append(IdentifierFormatter.PACKAGE_SEPARATOR)
             }
             builder.append(IdentifierFormatter.toValidIdentifier(segment.toLowerCase()))
@@ -69,19 +69,18 @@ class SchemaCodeGenUtils {
 
     class IdentifierFormatter {
         companion object {
-            private val POTENTIAL_PACKAGE_SEPARATOR = "@"
+            private const val POTENTIAL_PACKAGE_SEPARATOR = "@"
 
-            private val NOT_VALID_IDENTIFIER_CHARACTER = "[^a-zA-Z0-9_$POTENTIAL_PACKAGE_SEPARATOR]"
+            private const val NOT_VALID_IDENTIFIER_CHARACTER = "[^a-zA-Z0-9_$POTENTIAL_PACKAGE_SEPARATOR]"
             private val NOT_VALID_IDENTIFIER_REGEX = Regex(NOT_VALID_IDENTIFIER_CHARACTER)
 
-            val PACKAGE_SEPARATOR = "."
+            const val PACKAGE_SEPARATOR = "."
 
-            private val UNDERSCORE = "_"
+            private const val UNDERSCORE = "_"
 
-            fun toValidIdentifier(name: String): String =
-                name
-                    .replace(NOT_VALID_IDENTIFIER_REGEX, UNDERSCORE)
-                    .replace(POTENTIAL_PACKAGE_SEPARATOR, PACKAGE_SEPARATOR)
+            fun toValidIdentifier(name: String): String = name
+                .replace(NOT_VALID_IDENTIFIER_REGEX, UNDERSCORE)
+                .replace(POTENTIAL_PACKAGE_SEPARATOR, PACKAGE_SEPARATOR)
         }
     }
 }

@@ -8,7 +8,7 @@ import software.amazon.awssdk.services.schemas.model.SchemaSummary
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.resources.message
 
-enum class SchemaCodeLangs private constructor(
+enum class SchemaCodeLangs(
     val apiValue: String,
     val text: String,
     val extension: String,
@@ -21,16 +21,9 @@ enum class SchemaCodeLangs private constructor(
     override fun toString() = text
 }
 
-data class Schema(
-    val name: String,
-    val registryName: String,
-    val arn: String?
-)
+data class Schema(val name: String, val registryName: String, val arn: String?)
 
-data class SchemaSummary(
-    val name: String,
-    val registryName: String
-) {
+data class SchemaSummary(val name: String, val registryName: String) {
     fun title(): String = name.split('.', '@').last()
 
     override fun toString() = "$registryName/$name"

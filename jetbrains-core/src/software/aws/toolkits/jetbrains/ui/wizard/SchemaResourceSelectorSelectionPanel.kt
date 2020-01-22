@@ -25,7 +25,7 @@ class SchemaResourceSelectorSelectionPanel(
     val builder: SamProjectBuilder,
     val runtimeGroup: RuntimeGroup,
     val project: Project,
-    // Subsequent parameters injectable for unit tests to eanble mocking because ResourceSelector has inconsistent unit test behaviour
+    // Subsequent parameters injectable for unit tests to enable mocking because ResourceSelector has inconsistent unit test behaviour
     val resourceSelectorBuilder: ResourceSelector.ResourceBuilder = ResourceSelector.builder(project),
     private val useSpeedSearch: Boolean = true,
     private val rootPanelBuilder: () -> JPanel = { JPanel(BorderLayout()) }
@@ -38,7 +38,7 @@ class SchemaResourceSelectorSelectionPanel(
 
     private var currentAwsConnection: AwsConnection
 
-    val schemasSelector: ResourceSelector<SchemaSelectionItem>
+    private val schemasSelector: ResourceSelector<SchemaSelectionItem>
 
     init {
         currentAwsConnection = initializeAwsConnection()
@@ -59,10 +59,10 @@ class SchemaResourceSelectorSelectionPanel(
 
     private fun initializeAwsConnection(): AwsConnection {
         val settings = ProjectAccountSettingsManager.getInstance(project)
-        if (settings.isValidConnectionSettings()) {
-            return settings.activeRegion to settings.activeCredentialProvider
+        return if (settings.isValidConnectionSettings()) {
+            settings.activeRegion to settings.activeCredentialProvider
         } else {
-            return settings.activeRegion to LateBoundToolkitCredentialsProvider()
+            settings.activeRegion to LateBoundToolkitCredentialsProvider()
         }
     }
 
@@ -73,7 +73,7 @@ class SchemaResourceSelectorSelectionPanel(
             .customRenderer(SchemaSelectionListCellRenderer())
             .disableAutomaticLoading()
             .disableAutomaticSorting()
-            .awsConnection({ currentAwsConnection }) // Must be inline function as it gets updated and re-evaluated
+            .awsConnection { currentAwsConnection } // Must be inline function as it gets updated and re-evaluated
             .build()
 
     override fun reloadSchemas(awsConnection: Pair<AwsRegion, ToolkitCredentialsProvider>?) {
@@ -93,27 +93,21 @@ class SchemaResourceSelectorSelectionPanel(
         return null
     }
 
-    override fun registryName(): String? {
-        val selected = schemasSelector.selected()
-        when (selected) {
-            is SchemaSelectionItem.SchemaItem -> {
-                return selected.registryName
-            }
-            else -> {
-                return null
-            }
+    override fun registryName(): String? = when (val selected = schemasSelector.selected()) {
+        is SchemaSelectionItem.SchemaItem -> {
+            selected.registryName
+        }
+        else -> {
+            null
         }
     }
 
-    override fun schemaName(): String? {
-        val selected = schemasSelector.selected()
-        when (selected) {
-            is SchemaSelectionItem.SchemaItem -> {
-                return selected.itemText
-            }
-            else -> {
-                return null
-            }
+    override fun schemaName(): String? = when (val selected = schemasSelector.selected()) {
+        is SchemaSelectionItem.SchemaItem -> {
+            selected.itemText
+        }
+        else -> {
+            null
         }
     }
 

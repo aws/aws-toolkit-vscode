@@ -34,7 +34,6 @@ import software.aws.toolkits.jetbrains.services.lambda.SamNewProjectSettings;
 import software.aws.toolkits.jetbrains.services.lambda.SamProjectTemplate;
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon;
 
-@SuppressWarnings("NullableProblems")
 public class SamInitSelectionPanel implements ValidatablePanel {
     @NotNull JPanel mainPanel;
     @NotNull private ComboBox<Runtime> runtimeComboBox;
@@ -42,7 +41,6 @@ public class SamInitSelectionPanel implements ValidatablePanel {
     @NotNull private JButton editSamExecutableButton;
     @NotNull private JBLabel samLabel;
     @NotNull private ComboBox<SamProjectTemplate> templateComboBox;
-    @NotNull private JLabel runtimeLabel;
 
     private SdkSelectionPanel sdkSelectionUi;
     private JLabel currentSdkSelectorLabel;
@@ -153,12 +151,7 @@ public class SamInitSelectionPanel implements ValidatablePanel {
         }
 
         this.awsCredentialSelectionUi = AwsConnectionSettingsPanel.create(selectedTemplate, generator, this::awsCredentialsUpdated);
-        if (this.awsCredentialSelectionUi == null) {
-            addAwsConnectionSettingsPanel(new NoOpAwsConnectionSettingsPanel());
-            return;
-        } else {
-            addAwsConnectionSettingsPanel(awsCredentialSelectionUi);
-        }
+        addAwsConnectionSettingsPanel(awsCredentialSelectionUi);
 
         ProjectAccountSettingsManager accountSettingsManager = ProjectAccountSettingsManager.Companion.getInstance(generator.getDefaultSourceCreatingProject());
         if (accountSettingsManager.isValidConnectionSettings()) {
@@ -175,18 +168,11 @@ public class SamInitSelectionPanel implements ValidatablePanel {
 
         CredentialManager credentialManager = CredentialManager.Companion.getInstance();
         ToolkitCredentialsProvider credentialProvider = credentialManager.getCredentialProvider(credentialProviderId);
-        if (credentialProvider == null) {
-            throw new IllegalArgumentException("Unknown credential provider selected");
-        }
 
         return awsCredentialsUpdated(awsRegion, credentialProvider);
     }
 
-    private Unit awsCredentialsUpdated(AwsRegion awsRegion, ToolkitCredentialsProvider credentialProvider) {
-        if (awsRegion == null || credentialProvider == null) {
-            return Unit.INSTANCE;
-        }
-
+    private Unit awsCredentialsUpdated(@NotNull AwsRegion awsRegion, @NotNull ToolkitCredentialsProvider credentialProvider) {
         ProjectAccountSettingsManager accountSettingsManager = ProjectAccountSettingsManager.Companion.getInstance(generator.getDefaultSourceCreatingProject());
         if (!accountSettingsManager.isValidConnectionSettings() ||
             accountSettingsManager.getActiveCredentialProvider() != credentialProvider) {
@@ -233,7 +219,7 @@ public class SamInitSelectionPanel implements ValidatablePanel {
     private void addSdkPanel(@NotNull SdkSelectionPanel sdkSelectionPanel) {
         // glitchy behavior if we don't clean up any old panels
         // Also, while it looks like addSdkPanel, addAwsConnectionSettingsPanel, and addSchemaPanel could all be refactored into one helper function
-        // that takes a currentLable and a currentSelectorPanel, due to some Swing magic, it does not work, and things get, well, glitchy.
+        // that takes a currentLabel and a currentSelectorPanel, due to some Swing magic, it does not work, and things get, well, glitchy.
         if (currentSdkSelectorLabel != null) {
             mainPanel.remove(currentSdkSelectorLabel);
         }
@@ -254,7 +240,7 @@ public class SamInitSelectionPanel implements ValidatablePanel {
     private void addAwsConnectionSettingsPanel(@NotNull AwsConnectionSettingsPanel awsConnectionSettingsPanel) {
         // glitchy behavior if we don't clean up any old panels
         // Also, while it looks like addSdkPanel, addAwsConnectionSettingsPanel, and addSchemaPanel could all be refactored into one helper function
-        // that takes a currentLable and a currentSelectorPanel, due to some Swing magic, it does not work, and things get, well, glitchy.
+        // that takes a currentLabel and a currentSelectorPanel, due to some Swing magic, it does not work, and things get, well, glitchy.
         if (currentAwsCredentialSelectorLabel != null) {
             mainPanel.remove(currentAwsCredentialSelectorLabel);
         }
@@ -276,7 +262,7 @@ public class SamInitSelectionPanel implements ValidatablePanel {
     private void addSchemaPanel(@NotNull SchemaSelectionPanel schemaSelectionPanel) {
         // glitchy behavior if we don't clean up any old panels
         // Also, while it looks like addSdkPanel, addAwsConnectionSettingsPanel, and addSchemaPanel could all be refactored into one helper function
-        // that takes a currentLable and a currentSelectorPanel, due to some Swing magic, it does not work, and things get, well, glitchy.
+        // that takes a currentLabel and a currentSelectorPanel, due to some Swing magic, it does not work, and things get, well, glitchy.
         if (currentSchemaSelectorLabel != null) {
             mainPanel.remove(currentSchemaSelectorLabel);
         }

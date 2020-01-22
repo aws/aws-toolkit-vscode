@@ -20,22 +20,21 @@ interface SchemaSearchDialog<T : SchemaSearchResultBase, U : SchemaSearchDialogS
 class SchemaSearchSingleRegistryDialog(
     private val registryName: String,
     project: Project,
-    onCancelCallback: (SchemaSearchSingleRegistyDialogState) -> Unit,
+    onCancelCallback: (SchemaSearchSingleRegistryDialogState) -> Unit,
     private val searchExecutor: SchemaSearchExecutor = SchemaSearchExecutor(project),
     schemaViewer: SchemaViewer = SchemaViewer(project),
     alarmThreadToUse: Alarm.ThreadToUse = Alarm.ThreadToUse.SWING_THREAD
-) :
-    SchemasSearchDialogBase<SchemaSearchResult, SchemaSearchSingleRegistyDialogState>(
-        project,
-        schemaViewer,
-        message("schemas.search.header.text.singleRegistry", registryName),
-        onCancelCallback,
-        alarmThreadToUse
-    ) {
+) : SchemasSearchDialogBase<SchemaSearchResult, SchemaSearchSingleRegistryDialogState>(
+    project,
+    schemaViewer,
+    message("schemas.search.header.text.singleRegistry", registryName),
+    onCancelCallback,
+    alarmThreadToUse
+) {
 
-    override fun getCurrentState(): SchemaSearchSingleRegistyDialogState {
+    override fun getCurrentState(): SchemaSearchSingleRegistryDialogState {
         val searchResults = IntStream.range(0, resultsModel.size()).mapToObj(resultsModel::get).toList()
-        return SchemaSearchSingleRegistyDialogState(currentSearchText(), searchResults, selectedSchema(), selectedSchemaVersion()?.version)
+        return SchemaSearchSingleRegistryDialogState(currentSearchText(), searchResults, selectedSchema(), selectedSchemaVersion()?.version)
     }
 
     override fun selectedSchemaRegistry() = registryName

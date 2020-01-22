@@ -8,6 +8,7 @@ import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.JBSplitter
@@ -30,7 +31,6 @@ import javax.swing.Action
 import javax.swing.DefaultComboBoxModel
 import javax.swing.DefaultListModel
 import javax.swing.JButton
-import javax.swing.JComboBox
 import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.JTextArea
@@ -48,8 +48,7 @@ abstract class SchemasSearchDialogBase<T : SchemaSearchResultBase, U : SchemaSea
     private val headerText: String,
     private val onCancelCallback: (U) -> Unit,
     private val alarmThreadToUse: Alarm.ThreadToUse = Alarm.ThreadToUse.SWING_THREAD
-) :
-    SchemaSearchDialog<T, U>, DialogWrapper(project), Disposable {
+) : SchemaSearchDialog<T, U>, DialogWrapper(project), Disposable {
 
     private val DEFAULT_PADDING = 10
     private val HIGHLIGHT_COLOR = Color.YELLOW
@@ -63,10 +62,10 @@ abstract class SchemasSearchDialogBase<T : SchemaSearchResultBase, U : SchemaSea
     private val resultsLock = ReentrantLock()
 
     val versionsModel: DefaultComboBoxModel<SchemaSearchResultVersion> = DefaultComboBoxModel()
-    val versionsCombo = JComboBox<SchemaSearchResultVersion>(versionsModel)
+    val versionsCombo = ComboBox<SchemaSearchResultVersion>(versionsModel)
 
     val previewText = JTextArea()
-    // EditorTextFieldProvider.getInstance().getEditorField(JsonLanguage.INSTANCE, project, listOf(MonospaceEditorCustomization(), EditorCustomization { it.isViewer = true }))
+
     private val previewScrollPane = JBScrollPane()
 
     private val openDownloadDialogAction = OpenCodeDownloadDialogAction()
@@ -97,8 +96,8 @@ abstract class SchemasSearchDialogBase<T : SchemaSearchResultBase, U : SchemaSea
     }
 
     private fun initListeners() {
-        resultsList.addListSelectionListener({
-            if (it.getValueIsAdjusting()) return@addListSelectionListener
+        resultsList.addListSelectionListener {
+            if (it.valueIsAdjusting) return@addListSelectionListener
 
             getDownloadButton()?.isEnabled = true
 
@@ -107,15 +106,15 @@ abstract class SchemasSearchDialogBase<T : SchemaSearchResultBase, U : SchemaSea
                 updateSchemaVersions(selectedSchema)
                 previewSchema(selectedSchema)
             }
-        })
+        }
 
-        versionsCombo.addActionListener({
+        versionsCombo.addActionListener {
             val selectedSchema = selectedSchema()
 
             if (selectedSchema != null && selectedSchemaVersion() != null) {
                 previewSchema(selectedSchema)
             }
-        })
+        }
 
         searchTextField.document.addDocumentListener(object : DocumentListener {
             override fun changedUpdate(e: DocumentEvent?) = search()
@@ -129,7 +128,6 @@ abstract class SchemasSearchDialogBase<T : SchemaSearchResultBase, U : SchemaSea
 
                 searchTextAlarm.addRequest({
                     val searchText = searchTextField.text
-                    println("searching $searchText ...")
 
                     if (searchText.isNullOrEmpty()) {
                         clearState()

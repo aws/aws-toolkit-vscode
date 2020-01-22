@@ -35,7 +35,7 @@ class SchemasViewerTest {
     @Rule
     val mockClientManager = MockClientManagerRule(projectRule)
 
-    var errorNotification: Notification? = null
+    private var errorNotification: Notification? = null
 
     private val fileEditorManager = FileEditorManager.getInstance(projectRule.project)
 
@@ -75,10 +75,10 @@ class SchemasViewerTest {
             REGISTRY, SCHEMA, schemaResponse
         )
 
-        val actualReponse = SchemaDownloader().getSchemaContent(REGISTRY, SCHEMA, project = projectRule.project)
+        val actualResponse = SchemaDownloader().getSchemaContent(REGISTRY, SCHEMA, project = projectRule.project)
             .toCompletableFuture().get()
 
-        assertThat(actualReponse).isEqualTo(schemaResponse)
+        assertThat(actualResponse).isEqualTo(schemaResponse)
     }
 
     @Test
@@ -171,7 +171,7 @@ class SchemasViewerTest {
             CompletableFuture.completedFuture(schema))
     }
 
-    fun subscribeToNotifications() {
+    private fun subscribeToNotifications() {
         val project = projectRule.project
 
         val messageBus = project.messageBus.connect()
@@ -182,11 +182,11 @@ class SchemasViewerTest {
         messageBus.subscribe(Notifications.TOPIC)
     }
 
-    fun <T> completableFutureOf(obj: T): CompletableFuture<T> {
+    private fun <T> completableFutureOf(obj: T): CompletableFuture<T> {
         val future = CompletableFuture<T>()
         future.complete(obj)
         return future
     }
 
-    fun getSchemaFileName(schemaName: String) = "${CREDENTIAL_IDENTIFIER}_${REGION}_${REGISTRY}_${schemaName}_$VERSION.json"
+    private fun getSchemaFileName(schemaName: String) = "${CREDENTIAL_IDENTIFIER}_${REGION}_${REGISTRY}_${schemaName}_$VERSION.json"
 }

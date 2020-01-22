@@ -79,7 +79,7 @@ class SchemaSearchDialogTest {
 
         val future = CompletableFuture<SchemaSearchSingleRegistryDialog>()
         runInEdtAndWait {
-            val dialog = initSingleRegistryDialog(SchemaSearchSingleRegistyDialogState(SEARCH_CRITERIA, searchResults, result2, LAST_VERSION))
+            val dialog = initSingleRegistryDialog(SchemaSearchSingleRegistryDialogState(SEARCH_CRITERIA, searchResults, result2, LAST_VERSION))
 
             future.complete(dialog)
         }
@@ -318,7 +318,7 @@ class SchemaSearchDialogTest {
         }
     }
 
-    private fun initSingleRegistryDialog(state: SchemaSearchSingleRegistyDialogState? = null): SchemaSearchSingleRegistryDialog {
+    private fun initSingleRegistryDialog(state: SchemaSearchSingleRegistryDialogState? = null): SchemaSearchSingleRegistryDialog {
         val dialog =
             SchemaSearchSingleRegistryDialog(REGISTRY1, projectRule.project, { }, mockSchemaSearchExecutor, mockSchemaViewer, Alarm.ThreadToUse.POOLED_THREAD)
         if (state == null) {
@@ -395,7 +395,7 @@ class SchemaSearchDialogTest {
         assertThat(dialog.previewText.caretPosition).isGreaterThan(0)
     }
 
-    fun <T> completableFutureOf(obj: T): CompletableFuture<T> {
+    private fun <T> completableFutureOf(obj: T): CompletableFuture<T> {
         val future = CompletableFuture<T>()
         future.complete(obj)
         return future

@@ -64,7 +64,7 @@ class DownloadCodeForSchemaDialogTest {
     private val SCHEMA = Schema(SCHEMA_NAME, REGISTRY, null)
     private val VERSION = "4"
     private val LATEST = "5"
-    private val VERSIONS = listOf<String>("3", VERSION, LATEST)
+    private val VERSIONS = listOf("3", VERSION, LATEST)
     private val LANGUAGE = SchemaCodeLangs.JAVA8
 
     private val schemaCodeDownloader = mockk<SchemaCodeDownloader>()
@@ -134,7 +134,7 @@ class DownloadCodeForSchemaDialogTest {
     }
 
     @Test
-    fun okActionTriggersDownloaderFileOpenInEditorAndSuccessNotificaiton() {
+    fun okActionTriggersDownloaderFileOpenInEditorAndSuccessNotification() {
         initJavaSdk()
 
         val newFolder = tempFolder.newFolder()
@@ -213,19 +213,19 @@ class DownloadCodeForSchemaDialogTest {
         }
     }
 
-    fun <T> completableFutureOf(obj: T): CompletableFuture<T> {
+    private fun <T> completableFutureOf(obj: T): CompletableFuture<T> {
         val future = CompletableFuture<T>()
         future.complete(obj)
         return future
     }
 
-    fun <T> completableFutureOfException(exception: Exception): CompletableFuture<T> {
+    private fun <T> completableFutureOfException(exception: Exception): CompletableFuture<T> {
         val future = CompletableFuture<T>()
         future.completeExceptionally(exception)
         return future
     }
 
-    fun subscribeToNotifications() {
+    private fun subscribeToNotifications() {
         val project = projectRule.project
 
         val messageBus = project.messageBus.connect()

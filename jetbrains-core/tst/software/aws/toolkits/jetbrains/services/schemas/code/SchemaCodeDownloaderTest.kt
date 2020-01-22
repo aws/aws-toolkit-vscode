@@ -26,7 +26,6 @@ import software.amazon.awssdk.services.schemas.SchemasClient
 import software.amazon.awssdk.services.schemas.model.CodeGenerationStatus
 import software.amazon.awssdk.services.schemas.model.DescribeCodeBindingRequest
 import software.amazon.awssdk.services.schemas.model.DescribeCodeBindingResponse
-import software.amazon.awssdk.services.schemas.model.DescribeSchemaResponse
 import software.amazon.awssdk.services.schemas.model.GetCodeBindingSourceRequest
 import software.amazon.awssdk.services.schemas.model.GetCodeBindingSourceResponse
 import software.amazon.awssdk.services.schemas.model.InternalServerErrorException
@@ -35,12 +34,8 @@ import software.amazon.awssdk.services.schemas.model.PutCodeBindingRequest
 import software.amazon.awssdk.services.schemas.model.PutCodeBindingResponse
 import software.aws.toolkits.core.utils.WaiterTimeoutException
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.core.MockResourceCache
-import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
-import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.services.schemas.SchemaCodeLangs
 import software.aws.toolkits.jetbrains.services.schemas.SchemaSummary
-import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.ByteBuffer
@@ -79,16 +74,12 @@ class SchemaCodeDownloaderTest {
 
     private var errorNotification: Notification? = null
 
-    private val CREDENTIAL_IDENTIFIER = MockCredentialsManager.DUMMY_PROVIDER_ID
-    private val REGION = MockProjectAccountSettingsManager.getInstance(projectRule.project).activeRegion.id
     private val REGISTRY = "registry"
     private val SCHEMA = "schema"
     private val FAKE_DESTINATION = "/some/destination/anything/really"
     private val SCHEMA_SUMMARY = SchemaSummary(SCHEMA, REGISTRY)
     private val VERSION = "2"
     private val LANGUAGE = SchemaCodeLangs.JAVA8
-    private val MAX_ATTEMPTS = 5
-    private val POLLING_SETTINGS = CodeGenerationStatusPoller.PollingSettings(Duration.ofMillis(10), MAX_ATTEMPTS)
     private val REQUEST = SchemaCodeDownloadRequestDetails(SCHEMA_SUMMARY, VERSION, LANGUAGE, FAKE_DESTINATION)
     private val ZIP_FILE_SCHEMA_CORE_CODE_FILE_NAME = REQUEST.schemaCoreCodeFileName()
 
@@ -761,15 +752,7 @@ class SchemaCodeDownloaderTest {
         every { progressUpdater.updateProgress(progressIndicator, any()) } returns completableFutureOf(null)
     }
 
-    private fun resourceCache() = MockResourceCache.getInstance(projectRule.project)
-
-    private fun MockResourceCache.mockSchemaCache(registryName: String, schemaName: String, schema: DescribeSchemaResponse) {
-        this.addEntry(
-            SchemasResources.getSchema(registryName, schemaName),
-            CompletableFuture.completedFuture(schema))
-    }
-
-    fun subscribeToNotifications() {
+    private fun subscribeToNotifications() {
         val project = projectRule.project
 
         val messageBus = project.messageBus.connect()
@@ -780,17 +763,17 @@ class SchemaCodeDownloaderTest {
         messageBus.subscribe(Notifications.TOPIC)
     }
 
-    fun <T> completableFutureOf(obj: T): CompletableFuture<T> {
+    private fun <T> completableFutureOf(obj: T): CompletableFuture<T> {
         val future = CompletableFuture<T>()
         future.complete(obj)
         return future
     }
 
-    fun <T> completableFutureOfException(exception: Exception): CompletableFuture<T> {
+    private fun <T> completableFutureOfException(exception: Exception): CompletableFuture<T> {
         val future = CompletableFuture<T>()
         future.completeExceptionally(exception)
         return future
     }
 
-    fun fileToByteBuffer(file: File): ByteBuffer = ByteBuffer.wrap(Files.readAllBytes(file.toPath()))
+    private fun fileToByteBuffer(file: File): ByteBuffer = ByteBuffer.wrap(Files.readAllBytes(file.toPath()))
 }

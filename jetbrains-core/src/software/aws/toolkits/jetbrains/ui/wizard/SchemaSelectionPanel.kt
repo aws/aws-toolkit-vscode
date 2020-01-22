@@ -78,16 +78,16 @@ abstract class SchemaSelectionPanelBase(private val project: Project) :
         val source = awsEventNode.path(X_AMAZON_EVENT_SOURCE).textValue() ?: DEFAULT_EVENT_SOURCE
 
         // Derive detail type from custom OpenAPI metadata provided by Schemas service
-        var detailType = awsEventNode.path(X_AMAZON_EVENT_DETAIL_TYPE).textValue() ?: DEFAULT_EVENT_DETAIL_TYPE
+        val detailType = awsEventNode.path(X_AMAZON_EVENT_DETAIL_TYPE).textValue() ?: DEFAULT_EVENT_DETAIL_TYPE
 
         // Generate schema root/package from the scheme name
         // In the near future, this will be returned as part of a Schemas Service API call
         val schemaPackageHierarchy = buildSchemaPackageHierarchy(schemaName)
 
         // Derive root schema event name from OpenAPI metadata, or if ambiguous, use the last post-character section of a schema name
-        var rootSchemaEventName = buildRootSchemaEventName(schemaNode, awsEventNode) ?: schemaSummary.title()
+        val rootSchemaEventName = buildRootSchemaEventName(schemaNode, awsEventNode) ?: schemaSummary.title()
 
-        val schemaTemplateParameters = SchemaTemplateParameters(
+        return SchemaTemplateParameters(
             schemaSummary,
             latestSchemaVersion,
             SchemaTemplateExtraContext(
@@ -98,8 +98,6 @@ abstract class SchemaSelectionPanelBase(private val project: Project) :
                 detailType
             )
         )
-
-        return schemaTemplateParameters
     }
 
     private fun getAwsEventNode(schemaNode: JsonNode): JsonNode =
@@ -115,7 +113,7 @@ abstract class SchemaSelectionPanelBase(private val project: Project) :
         }
 
         val schemaRoots = schemaNode.path(COMPONENTS).path(SCHEMAS).fieldNames().asSequence().toList()
-        if (schemaRoots.size >= 1) {
+        if (schemaRoots.isNotEmpty()) {
             return SchemaCodeGenUtils.IdentifierFormatter.toValidIdentifier(schemaRoots[0])
         }
 
@@ -123,21 +121,19 @@ abstract class SchemaSelectionPanelBase(private val project: Project) :
     }
 
     companion object {
+        const val X_AMAZON_EVENT_SOURCE = "x-amazon-events-source"
+        const val X_AMAZON_EVENT_DETAIL_TYPE = "x-amazon-events-detail-type"
 
-        val X_AMAZON_EVENT_SOURCE = "x-amazon-events-source"
-        val X_AMAZON_EVENT_DETAIL_TYPE = "x-amazon-events-detail-type"
+        const val COMPONENTS = "components"
+        const val SCHEMAS = "schemas"
+        const val COMPONENTS_SCHEMAS_PATH = "#/components/schemas/"
+        const val AWS_EVENT = "AWSEvent"
+        const val PROPERTIES = "properties"
+        const val DETAIL = "detail"
+        const val REF = "${'$'}ref"
 
-        val COMPONENTS = "components"
-        val SCHEMAS = "schemas"
-        val COMPONENTS_SCHEMAS_PATH = "#/components/schemas/"
-        val INFO = "info"
-        val AWS_EVENT = "AWSEvent"
-        val PROPERTIES = "properties"
-        val DETAIL = "detail"
-        val REF = "${'$'}ref"
-
-        val DEFAULT_EVENT_SOURCE = "INSERT-YOUR-EVENT-SOURCE"
-        val DEFAULT_EVENT_DETAIL_TYPE = "INSERT-YOUR-DETAIL-TYPE"
+        const val DEFAULT_EVENT_SOURCE = "INSERT-YOUR-EVENT-SOURCE"
+        const val DEFAULT_EVENT_DETAIL_TYPE = "INSERT-YOUR-DETAIL-TYPE"
     }
 }
 

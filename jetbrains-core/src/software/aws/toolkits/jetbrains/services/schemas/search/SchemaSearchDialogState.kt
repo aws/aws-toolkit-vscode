@@ -3,21 +3,19 @@
 
 package software.aws.toolkits.jetbrains.services.schemas.search
 
-class SchemaSearchSingleRegistyDialogState(
+class SchemaSearchSingleRegistryDialogState(
     searchText: String,
     searchResults: List<SchemaSearchResult>,
     selectedResult: SchemaSearchResult?,
     selectedVersion: String?
-) :
-    SchemaSearchDialogState<SchemaSearchResult>(searchText, searchResults, selectedResult, selectedVersion)
+) : SchemaSearchDialogState<SchemaSearchResult>(searchText, searchResults, selectedResult, selectedVersion)
 
 class SchemaSearchAllRegistriesDialogState(
     searchText: String,
     searchResults: List<SchemaSearchResultWithRegistry>,
     selectedResult: SchemaSearchResultWithRegistry?,
     selectedVersion: String?
-) :
-    SchemaSearchDialogState<SchemaSearchResultWithRegistry>(searchText, searchResults, selectedResult, selectedVersion)
+) : SchemaSearchDialogState<SchemaSearchResultWithRegistry>(searchText, searchResults, selectedResult, selectedVersion)
 
 open class SchemaSearchDialogState<T : SchemaSearchResultBase>(
     val searchText: String,
