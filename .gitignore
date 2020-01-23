@@ -11,7 +11,7 @@ quickStart.html
 .gitcommit
 media/libs/
 # Auto generated telemety defintion
-src/shared/telemetry/telemetry.ts
+src/shared/telemetry/telemetry.gen.ts
 
 # Auto generated Service Clients
 src/shared/telemetry/clienttelemetry.d.ts

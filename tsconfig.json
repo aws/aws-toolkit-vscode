@@ -3,7 +3,7 @@
         "baseUrl": ".",
         "paths": {
             "*": ["types/*"],
-            "telemetry": ["src/shared/telemetry/telemetry"]
+            "telemetry": ["src/shared/telemetry/telemetry.gen"]
         },
         "incremental": true,
         "module": "commonjs",

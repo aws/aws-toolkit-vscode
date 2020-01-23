@@ -29,7 +29,7 @@ const config = {
         extensions: ['.ts', '.js'],
         alias: {
             handlebars: 'handlebars/dist/handlebars.min.js',
-            telemetry: path.join(__dirname, 'src', 'shared', 'telemetry', 'telemetry')
+            telemetry: path.join(__dirname, 'src', 'shared', 'telemetry', 'telemetry.gen')
         }
     },
     node: {
