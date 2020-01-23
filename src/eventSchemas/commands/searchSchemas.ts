@@ -18,6 +18,7 @@ import { SchemaClient } from '../../shared/clients/schemaClient'
 import { ext } from '../../shared/extensionGlobals'
 import { ExtensionUtilities } from '../../shared/extensionUtilities'
 import { getLogger, Logger } from '../../shared/logger'
+import { recordSchemasSearch, result } from '../../shared/telemetry/telemetry'
 import { TelemetryService } from '../../shared/telemetry/telemetryService'
 import { defaultMetricDatum } from '../../shared/telemetry/telemetryUtils'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
@@ -29,14 +30,15 @@ export async function createSearchSchemasWebView(params: { node: RegistryItemNod
     const logger: Logger = getLogger()
     const client: SchemaClient = ext.toolkitClientBuilder.createSchemaClient(params.node.regionCode)
     const registryNames = await getRegistryNames(params.node, client)
-
-    if (registryNames.length === 0) {
-        vscode.window.showInformationMessage(localize('AWS.schemas.search.no_registries', 'No Schema Registries'))
-
-        return
-    }
+    let webviewResult: result = 'Succeeded'
 
     try {
+        if (registryNames.length === 0) {
+            vscode.window.showInformationMessage(localize('AWS.schemas.search.no_registries', 'No Schema Registries'))
+
+            return
+        }
+
         const view = vscode.window.createWebviewPanel(
             'html',
             localize('AWS.schemas.search.title', 'EventBridge Schemas Search'),
@@ -86,8 +88,11 @@ export async function createSearchSchemasWebView(params: { node: RegistryItemNod
             ext.context.subscriptions
         )
     } catch (err) {
+        webviewResult = 'Failed'
         const error = err as Error
         logger.error('Error searching schemas', error)
+    } finally {
+        recordSchemasSearch({ result: webviewResult })
     }
 }
 
