@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 
-import { recordVscodeActiveregions } from '../shared/telemetry/telemetry'
 import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { deleteLambda } from '../lambda/commands/deleteLambda'
 import { invokeLambda } from '../lambda/commands/invokeLambda'
@@ -17,6 +16,7 @@ import { ext } from '../shared/extensionGlobals'
 import { safeGet } from '../shared/extensionUtilities'
 import { getLogger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
+import { recordVscodeActiveregions } from '../shared/telemetry/telemetry'
 import { registerCommand } from '../shared/telemetry/telemetryUtils'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../shared/treeview/nodes/errorNode'
