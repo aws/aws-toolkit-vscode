@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 
-import { recordVscodeActiveregions } from 'telemetry'
+import { recordVscodeActiveregions } from '../shared/telemetry/telemetry'
 import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { deleteLambda } from '../lambda/commands/deleteLambda'
 import { invokeLambda } from '../lambda/commands/invokeLambda'

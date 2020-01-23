@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import { millisecondsSince, recordLambdaDelete, result } from 'telemetry'
+import { millisecondsSince, recordLambdaDelete, result } from '../../shared/telemetry/telemetry'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 
 const localize = nls.loadMessageBundle()
