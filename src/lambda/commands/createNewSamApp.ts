@@ -25,6 +25,7 @@ import {
     CreateNewSamAppWizardResponse,
     DefaultCreateNewSamAppWizardContext
 } from '../wizards/samInitWizard'
+import { recordSamInit, result } from '../../shared/telemetry/telemetry'
 
 export async function resumeCreateNewSamApp(activationLaunchPath: ActivationLaunchPath = new ActivationLaunchPath()) {
     try {
@@ -56,8 +57,8 @@ export async function resumeCreateNewSamApp(activationLaunchPath: ActivationLaun
 
 export interface CreateNewSamApplicationResults {
     reason: 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
-    result: 'pass' | 'fail' | 'cancel'
     runtime: string
+    result: result
 }
 
 /**
@@ -67,11 +68,11 @@ export async function createNewSamApplication(
     channelLogger: ChannelLogger,
     samCliContext: SamCliContext = getSamCliContext(),
     activationLaunchPath: ActivationLaunchPath = new ActivationLaunchPath()
-): Promise<CreateNewSamApplicationResults> {
+): Promise<void> {
     const results: CreateNewSamApplicationResults = {
         reason: 'unknown',
-        result: 'fail',
-        runtime: 'unknown'
+        runtime: 'unknown',
+        result: 'Failed'
     }
 
     try {
@@ -83,7 +84,7 @@ export async function createNewSamApplication(
             results.result = 'cancel'
             results.reason = 'userCancelled'
 
-            return results
+            return
         }
 
         results.runtime = config.runtime
@@ -106,7 +107,7 @@ export async function createNewSamApplication(
         if (!uri) {
             results.reason = 'fileNotFound'
 
-            return results
+            return
         }
 
         // In case adding the workspace folder triggers a VS Code restart, instruct extension to
@@ -138,9 +139,11 @@ export async function createNewSamApplication(
 
         // An error occured, so do not try to open any files during the next extension activation
         activationLaunchPath.clearLaunchPath()
+    } finally {
+        recordSamInit({
+            result: results.result
+        })
     }
-
-    return results
 }
 
 async function validateSamCli(samCliValidator: SamCliValidator): Promise<void> {

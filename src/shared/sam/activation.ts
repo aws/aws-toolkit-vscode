@@ -4,12 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import {
-    applyResultsToMetadata,
-    createNewSamApplication,
-    CreateNewSamApplicationResults,
-    resumeCreateNewSamApp
-} from '../../lambda/commands/createNewSamApp'
+import { createNewSamApplication, resumeCreateNewSamApp } from '../../lambda/commands/createNewSamApp'
 import { deploySamApplication, SamDeployWizardResponseProvider } from '../../lambda/commands/deploySamApplication'
 import { SamParameterCompletionItemProvider } from '../../lambda/config/samParameterCompletionItemProvider'
 import { configureLocalLambda } from '../../lambda/local/configureLocalLambda'
@@ -25,9 +20,8 @@ import * as pyLensProvider from '../codelens/pythonCodeLensProvider'
 import * as tsLensProvider from '../codelens/typescriptCodeLensProvider'
 import { RegionProvider } from '../regions/regionProvider'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
-import { MetricDatum } from '../telemetry/clienttelemetry'
 import { TelemetryService } from '../telemetry/telemetryService'
-import { defaultMetricDatum, registerCommand } from '../telemetry/telemetryUtils'
+import { registerCommand } from '../telemetry/telemetryUtils'
 import { PromiseSharer } from '../utilities/promiseUtilities'
 import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
 import { initialize as initializeSamCliContext } from './cli/samCliContext'
@@ -89,30 +83,13 @@ async function registerServerlessCommands(params: {
     channelLogger: ChannelLogger
 }): Promise<void> {
     params.extensionContext.subscriptions.push(
-        registerCommand({
-            command: 'aws.samcli.detect',
-            telemetryName: 'Command_aws.samcli.detect',
-            callback: async () =>
+        vscode.commands.registerCommand(
+            'aws.samcli.detect',
+            async () =>
                 await PromiseSharer.getExistingPromiseOrCreate('samcli.detect', async () => await detectSamCli(true))
-        })
-    )
-
-    params.extensionContext.subscriptions.push(
-        registerCommand({
-            command: 'aws.lambda.createNewSamApp',
-            callback: async (): Promise<{ datum: MetricDatum }> => {
-                const createNewSamApplicationResults: CreateNewSamApplicationResults = await createNewSamApplication(
-                    params.channelLogger
-                )
-                const datum = defaultMetricDatum('new')
-                datum.Metadata = []
-                applyResultsToMetadata(createNewSamApplicationResults, datum.Metadata)
-
-                return {
-                    datum
-                }
-            },
-            telemetryName: 'project_new'
+        ),
+        vscode.commands.registerCommand('aws.lambda.createNewSamApp', async () => {
+            await createNewSamApplication(params.channelLogger)
         })
     )
 

@@ -7,6 +7,7 @@ import * as AsyncLock from 'async-lock'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { extensionSettingsPrefix, samAboutInstallUrl } from '../../constants'
+import { recordSamDetect } from '../../../shared/telemetry/telemetry'
 import { DefaultSettingsConfiguration } from '../../settingsConfiguration'
 import { DefaultSamCliConfiguration, SamCliConfiguration } from './samCliConfiguration'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
@@ -47,6 +48,8 @@ export async function detectSamCli(showMessageIfDetected: boolean): Promise<void
                 vscode.window.showInformationMessage(message)
             }
         }
+
+        recordSamDetect({ result: currentsamCliLocation === undefined ? 'Failed' : 'Succeeded' })
     })
 }
 
