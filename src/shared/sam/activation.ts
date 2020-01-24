@@ -88,41 +88,22 @@ async function registerServerlessCommands(params: {
         ),
         vscode.commands.registerCommand('aws.lambda.createNewSamApp', async () => {
             await createNewSamApplication(params.channelLogger)
-        })
-    )
+        }),
+        vscode.commands.registerCommand('aws.configureLambda', configureLocalLambda),
+        vscode.commands.registerCommand('aws.deploySamApplication', async () => {
+            const samDeployWizardContext = new DefaultSamDeployWizardContext(params.regionProvider)
+            const samDeployWizard: SamDeployWizardResponseProvider = {
+                getSamDeployWizardResponse: async (): Promise<SamDeployWizardResponse | undefined> => {
+                    const wizard = new SamDeployWizard(samDeployWizardContext)
 
-    params.extensionContext.subscriptions.push(
-        registerCommand({
-            command: 'aws.deploySamApplication',
-            callback: async () => {
-                const samDeployWizardContext = new DefaultSamDeployWizardContext(params.regionProvider)
-                const samDeployWizard: SamDeployWizardResponseProvider = {
-                    getSamDeployWizardResponse: async (): Promise<SamDeployWizardResponse | undefined> => {
-                        const wizard = new SamDeployWizard(samDeployWizardContext)
-
-                        return wizard.run()
-                    }
+                    return wizard.run()
                 }
+            }
 
-                await deploySamApplication(
-                    {
-                        channelLogger: params.channelLogger,
-                        samDeployWizard
-                    },
-                    {
-                        awsContext: params.awsContext
-                    }
-                )
-            },
-            telemetryName: 'lambda_deploy'
-        })
-    )
-
-    params.extensionContext.subscriptions.push(
-        registerCommand({
-            command: 'aws.configureLambda',
-            callback: configureLocalLambda,
-            telemetryName: 'lambda_configurelocal'
+            await deploySamApplication(
+                { channelLogger: params.channelLogger, samDeployWizard },
+                { awsContext: params.awsContext }
+            )
         })
     )
 
