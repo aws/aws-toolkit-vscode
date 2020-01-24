@@ -13,7 +13,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { SchemasDataProvider } from '../../eventSchemas/providers/schemasDataProvider'
 import { SchemaClient } from '../../shared/clients/schemaClient'
-import { samInitDocUrl } from '../../shared/constants'
+import { eventBridgeSchemasDocUrl, samInitDocUrl } from '../../shared/constants'
 import { ext } from '../../shared/extensionGlobals'
 import { RegionInfo } from '../../shared/regions/regionInfo'
 import { createHelpButton } from '../../shared/ui/buttons'
@@ -177,7 +177,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(samInitDocUrl))
+                    vscode.env.openExternal(vscode.Uri.parse(eventBridgeSchemasDocUrl))
                 }
             }
         })
@@ -222,7 +222,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(samInitDocUrl))
+                    vscode.env.openExternal(vscode.Uri.parse(eventBridgeSchemasDocUrl))
                 }
             }
         })
@@ -284,7 +284,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(samInitDocUrl))
+                    vscode.env.openExternal(vscode.Uri.parse(eventBridgeSchemasDocUrl))
                 }
             }
         })

@@ -39,12 +39,7 @@ export class SchemasDataProvider {
             if (!cachedRegion || cachedRegion.registryNames.length === 0) {
                 const registrySummary = await toArrayAsync(client.listRegistries())
                 const registryNames = registrySummary.map(x => x.RegistryName!)
-                const item: regionRegistryMap = {
-                    region: region,
-                    registryNames: registryNames,
-                    registrySchemasMapList: []
-                }
-                this.cache.regionDataList.push(item)
+                this.pushRegionDataIntoCache(region, registryNames, [])
 
                 return registryNames
             }
@@ -69,12 +64,7 @@ export class SchemasDataProvider {
                 const singleItem: registrySchemasMap = { registryName: registryName, schemaList: schemas }
                 //wizard setup always calls getRegistries method prior to getSchemas, so this shouldn't be undefined
                 if (!registrySchemasMapList) {
-                    const regionData: regionRegistryMap = {
-                        region: region,
-                        registryNames: [],
-                        registrySchemasMapList: [singleItem]
-                    }
-                    this.cache.regionDataList.push(regionData)
+                    this.pushRegionDataIntoCache(region, [], [singleItem])
                 }
 
                 if (registrySchemasMapList) {
@@ -89,6 +79,20 @@ export class SchemasDataProvider {
         }
 
         return schemas
+    }
+
+    private pushRegionDataIntoCache(
+        region: string,
+        registryNames: string[],
+        registrySchemasMapList: registrySchemasMap[]
+    ): void {
+        const regionData: regionRegistryMap = {
+            region: region,
+            registryNames: registryNames,
+            registrySchemasMapList: registrySchemasMapList
+        }
+
+        this.cache.regionDataList.push(regionData)
     }
 
     public static getInstance(credential: Credentials, cache: Cache = new Cache([])): SchemasDataProvider {
