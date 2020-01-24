@@ -87,8 +87,8 @@ export async function createNewSamApplication(
             return
         }
 
-        // This cast will always succeed because Runtime (from config.runtime) is the same
-        // sectino of types as runtime
+        // This cast (and all like it) will always succeed because Runtime (from config.runtime) is the same
+        // section of types as runtime
         createRuntime = config.runtime as runtime
 
         // TODO: Make this selectable in the wizard to account for runtimes with multiple dependency managers
