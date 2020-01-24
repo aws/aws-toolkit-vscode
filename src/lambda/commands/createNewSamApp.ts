@@ -14,8 +14,7 @@ import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliCont
 import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
 import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
-import { Metadata } from '../../shared/telemetry/clienttelemetry'
-import { METADATA_FIELD_NAME, MetadataResult } from '../../shared/telemetry/telemetryTypes'
+import { recordSamInit, result, runtime } from '../../shared/telemetry/telemetry'
 import { makeCheckLogsMessage } from '../../shared/utilities/messages'
 import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
@@ -25,7 +24,6 @@ import {
     CreateNewSamAppWizardResponse,
     DefaultCreateNewSamAppWizardContext
 } from '../wizards/samInitWizard'
-import { recordSamInit, result, runtime } from '../../shared/telemetry/telemetry'
 
 export async function resumeCreateNewSamApp(activationLaunchPath: ActivationLaunchPath = new ActivationLaunchPath()) {
     try {
@@ -180,25 +178,4 @@ async function addWorkspaceFolder(folder: { uri: vscode.Uri; name?: string }): P
     }
 
     await addFolderToWorkspace(folder)
-}
-
-export function applyResultsToMetadata(createResults: CreateNewSamApplicationResults, metadata: Metadata) {
-    let metadataResult: MetadataResult
-
-    switch (createResults.result) {
-        case 'pass':
-            metadataResult = MetadataResult.Pass
-            break
-        case 'cancel':
-            metadataResult = MetadataResult.Cancel
-            break
-        case 'fail':
-        default:
-            metadataResult = MetadataResult.Fail
-            break
-    }
-
-    metadata.push({ Key: 'runtime', Value: createResults.runtime })
-    metadata.push({ Key: METADATA_FIELD_NAME.RESULT, Value: metadataResult.toString() })
-    metadata.push({ Key: METADATA_FIELD_NAME.REASON, Value: createResults.reason })
 }

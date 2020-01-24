@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as fsUtils from '../../shared/filesystemUtilities'
 import { getLogger, Logger } from '../../shared/logger'
-import { recordLambdaConfigurelocal, result } from '../../shared/telemetry/telemetry'
+import { recordLambdaConfigure, result } from '../../shared/telemetry/telemetry'
 import { getNormalizedRelativePath } from '../../shared/utilities/pathUtils'
 import { getChildrenRange } from '../../shared/utilities/symbolUtilities'
 import { getTabSize, saveDocumentIfDirty } from '../../shared/utilities/textDocumentUtilities'
@@ -86,7 +86,7 @@ export async function configureLocalLambda(
             throw e
         }
     } finally {
-        recordLambdaConfigurelocal({ result: configureResult })
+        recordLambdaConfigure({ result: configureResult })
     }
 }
 

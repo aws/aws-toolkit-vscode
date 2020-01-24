@@ -280,9 +280,9 @@ export function getSchemaVersionedSummary(searchSummary: Schemas.SearchSchemaSum
 }
 
 export function getSchemaNameFromTitle(title: string) {
-    const result = title.split('/')
+    const name = title.split('/')
 
-    return result[result.length - 1]
+    return name[name.length - 1]
 }
 
 function sortNumericStringsInDescendingOrder(a: string, b: string) {

@@ -16,16 +16,9 @@ import { getLogger } from '../logger'
 import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
-import { MetricDatum } from '../telemetry/clienttelemetry'
-import { registerCommand } from '../telemetry/telemetryUtils'
+import { recordLambdaInvokelocal, result, runtime } from '../telemetry/telemetry'
 import { ChannelLogger, getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
-import {
-    CodeLensProviderParams,
-    DRIVE_LETTER_REGEX,
-    getInvokeCmdKey,
-    getMetricDatum,
-    makeCodeLenses
-} from './codeLensUtils'
+import { CodeLensProviderParams, DRIVE_LETTER_REGEX, getInvokeCmdKey, makeCodeLenses } from './codeLensUtils'
 import {
     executeSamBuild,
     getHandlerRelativePath,
@@ -318,28 +311,34 @@ export async function initialize({
         }
     }
 
-    const command = getInvokeCmdKey('python')
-    registerCommand({
-        command,
-        callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: MetricDatum }> => {
-            const resource = await CloudFormation.getResourceFromTemplate({
-                handlerName: params.handlerName,
-                templatePath: params.samTemplate.fsPath
-            })
-            const runtime = CloudFormation.getRuntime(resource)
+    vscode.commands.registerCommand(
+        getInvokeCmdKey('python'),
+        async (params: LambdaLocalInvokeParams): Promise<void> => {
+            let invokeResult: result = 'Succeeded'
+            let lambdaRuntime = 'unknown'
+            try {
+                const resource = await CloudFormation.getResourceFromTemplate({
+                    handlerName: params.handlerName,
+                    templatePath: params.samTemplate.fsPath
+                })
+                lambdaRuntime = CloudFormation.getRuntime(resource)
 
-            await invokeLambda({
-                runtime,
-                ...params
-            })
-
-            return getMetricDatum({
-                isDebug: params.isDebug,
-                runtime
-            })
-        },
-        telemetryName: 'lambda_invokelocal'
-    })
+                await invokeLambda({
+                    runtime: lambdaRuntime,
+                    ...params
+                })
+            } catch (err) {
+                invokeResult = 'Failed'
+                throw err
+            } finally {
+                recordLambdaInvokelocal({
+                    result: invokeResult,
+                    runtime: lambdaRuntime as runtime,
+                    debug: params.isDebug
+                })
+            }
+        }
+    )
 }
 
 export async function waitForPythonDebugAdapter(

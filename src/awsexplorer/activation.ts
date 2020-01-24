@@ -22,7 +22,6 @@ import {
     recordAwsShowRegion,
     recordVscodeActiveregions
 } from '../shared/telemetry/telemetry'
-import { registerCommand } from '../shared/telemetry/telemetryUtils'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../shared/treeview/nodes/errorNode'
 import { showErrorDetails } from '../shared/treeview/webviews/showErrorDetails'
@@ -91,36 +90,30 @@ async function registerAwsExplorerCommands(
             })
     )
 
-    registerCommand({
-        command: 'aws.deleteCloudFormation',
-        callback: async (node: CloudFormationStackNode) =>
-            await deleteCloudFormation(() => awsExplorer.refresh(node.parent), node),
-        telemetryName: 'cloudformation_delete'
-    })
+    vscode.commands.registerCommand(
+        'aws.deleteCloudFormation',
+        async (node: CloudFormationStackNode) =>
+            await deleteCloudFormation(() => awsExplorer.refresh(node.parent), node)
+    )
 
-    registerCommand({
-        command: 'aws.showErrorDetails',
-        callback: async (node: ErrorNode) => await showErrorDetails(node),
-        telemetryName: 'Command_aws.showErrorDetails'
-    })
+    vscode.commands.registerCommand('aws.showErrorDetails', async (node: ErrorNode) => await showErrorDetails(node))
 
-    registerCommand({
-        command: 'aws.invokeLambda',
-        callback: async (node: LambdaFunctionNode) =>
+    vscode.commands.registerCommand(
+        'aws.invokeLambda',
+        async (node: LambdaFunctionNode) =>
             await invokeLambda({
                 functionNode: node,
                 outputChannel: lambdaOutputChannel
-            }),
-        telemetryName: 'lambda_invokeremote'
-    })
+            })
+    )
 
-    registerCommand({
-        command: 'aws.refreshAwsExplorerNode',
-        callback: async (awsexplorer: AwsExplorer, element: AWSTreeNodeBase) => {
+    vscode.commands.registerCommand(
+        'aws.refreshAwsExplorerNode',
+        async (awsexplorer: AwsExplorer, element: AWSTreeNodeBase) => {
             awsexplorer.refresh(element)
-        },
-        telemetryName: 'Command_aws.refreshAwsExplorerNode'
-    })
+            recordAwsRefreshExplorer()
+        }
+    )
 }
 
 function updateAwsExplorerWhenAwsContextCredentialsChange(
