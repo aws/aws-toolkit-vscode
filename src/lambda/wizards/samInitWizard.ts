@@ -30,9 +30,9 @@ import {
 import { compareSamLambdaRuntime, samLambdaRuntimes } from '../models/samLambdaRuntime'
 import {
     eventBridgeStarterAppTemplate,
-    exitWizard,
     getSamTemplateWizardOption,
     getTemplateDescription,
+    repromptUserForTemplate,
     SamTemplate
 } from '../models/samTemplates'
 
@@ -145,7 +145,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                     )
                 )
 
-                return undefined
+                return repromptUserForTemplate
             }
         }
 
@@ -413,6 +413,12 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
             return undefined
         }
 
+        if (this.template === eventBridgeStarterAppTemplate) {
+            if (!this.region || !this.schemaName || !this.registryName) {
+                return undefined
+            }
+        }
+
         return {
             runtime: this.runtime,
             template: this.template,
@@ -433,8 +439,8 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
     private readonly TEMPLATE: WizardStep = async () => {
         this.template = await this.context.promptUserForTemplate(this.runtime!)
 
-        if (this.template === exitWizard) {
-            return undefined
+        if (this.template === repromptUserForTemplate) {
+            return this.TEMPLATE
         }
         if (this.template === eventBridgeStarterAppTemplate) {
             return this.REGION

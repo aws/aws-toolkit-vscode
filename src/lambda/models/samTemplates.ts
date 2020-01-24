@@ -12,13 +12,13 @@ import { supportsEventBridgeTemplates } from '../../../src/eventSchemas/models/s
 export const helloWorldTemplate = 'AWS SAM Hello World'
 export const eventBridgeHelloWorldTemplate = 'AWS SAM EventBridge Hello World'
 export const eventBridgeStarterAppTemplate = 'AWS SAM EventBridge App from Scratch'
-export const exitWizard = 'USER_RESPONSE_EXIT_WIZARD'
+export const repromptUserForTemplate = 'REQUIRES_AWS_CREDENTIALS_REPROMPT_USER_FOR_TEMPLATE'
 
 export type SamTemplate =
     | 'AWS SAM Hello World'
     | 'AWS SAM EventBridge Hello World'
     | 'AWS SAM EventBridge App from Scratch'
-    | 'USER_RESPONSE_EXIT_WIZARD'
+    | 'REQUIRES_AWS_CREDENTIALS_REPROMPT_USER_FOR_TEMPLATE'
 
 export const validTemplateOptions: Set<SamTemplate> = Set<SamTemplate>([
     helloWorldTemplate,
@@ -61,7 +61,7 @@ export function getTemplateDescription(template: SamTemplate): string {
         case eventBridgeStarterAppTemplate:
             return localize(
                 'AWS.samcli.initWizard.template.eventBridge_starterApp.description',
-                'A Starter app for Amazon EventBridge that invokes a Lambda based on a dynamic event trigger for an EventBridge Schema of your choice'
+                'A starter app for Amazon EventBridge that invokes a Lambda based on a dynamic event trigger for an EventBridge Schema of your choice'
             )
         default:
             throw new Error(`No description found for template ${template}`)

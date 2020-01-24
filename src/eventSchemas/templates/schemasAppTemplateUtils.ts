@@ -44,10 +44,16 @@ export async function buildSchemaTemplateParameters(schemaName: string, registry
     const awsEventNode = _.get(schemaNode, COMPONENTS.concat('.', SCHEMAS, '.', AWS_EVENT))
 
     // Derive source from custom OpenAPI metadata provided by Schemas service
-    const source = _.get(awsEventNode, X_AMAZON_EVENT_SOURCE, DEFAULT_EVENT_SOURCE)
+    let source = _.get(awsEventNode, X_AMAZON_EVENT_SOURCE)
+    if (!_.isString(source)) {
+        source = DEFAULT_EVENT_SOURCE
+    }
 
     // Derive detail type from custom OpenAPI metadata provided by Schemas service
-    const detailType = _.get(awsEventNode, X_AMAZON_EVENT_DETAIL_TYPE, DEFAULT_EVENT_DETAIL_TYPE)
+    let detailType = _.get(awsEventNode, X_AMAZON_EVENT_DETAIL_TYPE)
+    if (!_.isString(detailType)) {
+        detailType = DEFAULT_EVENT_DETAIL_TYPE
+    }
 
     // Generate schema root/package from the scheme name
     // In the near future, this will be returned as part of a Schemas Service API call
@@ -60,8 +66,10 @@ export async function buildSchemaTemplateParameters(schemaName: string, registry
         AWS_Schema_registry: registryName,
         AWS_Schema_name: rootSchemaEventName!,
         AWS_Schema_root: schemaPackageHierarchy,
-        AWS_Schema_source: source as string,
-        AWS_Schema_detail_type: detailType as string,
+        // tslint:disable-next-line: no-unsafe-any
+        AWS_Schema_source: source,
+        // tslint:disable-next-line: no-unsafe-any
+        AWS_Schema_detail_type: detailType,
         // Need to provide user agent to SAM CLI so that it will enable appTemplate-based
         user_agent: 'AWSToolkit'
     }

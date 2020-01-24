@@ -5,11 +5,11 @@
 
 import * as assert from 'assert'
 import {
-    exitWizard,
     getSamCliTemplateParameter,
     getSamTemplateWizardOption,
     getTemplateDescription,
     helloWorldOption,
+    repromptUserForTemplate,
     validTemplateOptions
 } from '../../../lambda/models/samTemplates'
 import { assertThrowsError } from '../../../test/shared/utilities/assertUtils'
@@ -51,8 +51,8 @@ describe('getSamCliTemplateParameter', () => {
     })
 
     it('should return error if the template option is not valid', async () => {
-        const errorMessage = `Template ${exitWizard} is not supported for sam application flow`
-        const error = await assertThrowsError(async () => getSamCliTemplateParameter(exitWizard))
+        const errorMessage = `Template ${repromptUserForTemplate} is not supported for sam application flow`
+        const error = await assertThrowsError(async () => getSamCliTemplateParameter(repromptUserForTemplate))
         assert.strictEqual(error.message, errorMessage, 'Should fail for same error')
     })
 })
