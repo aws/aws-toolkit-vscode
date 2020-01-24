@@ -16,7 +16,12 @@ import { ext } from '../shared/extensionGlobals'
 import { safeGet } from '../shared/extensionUtilities'
 import { getLogger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
-import { recordVscodeActiveregions } from '../shared/telemetry/telemetry'
+import {
+    recordAwsHideRegion,
+    recordAwsRefreshExplorer,
+    recordAwsShowRegion,
+    recordVscodeActiveregions
+} from '../shared/telemetry/telemetry'
 import { registerCommand } from '../shared/telemetry/telemetryUtils'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../shared/treeview/nodes/errorNode'
@@ -58,28 +63,21 @@ async function registerAwsExplorerCommands(
     awsExplorer: AwsExplorer,
     lambdaOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Lambda')
 ): Promise<void> {
-    registerCommand({
-        command: 'aws.showRegion',
-        callback: async () => {
-            await ext.awsContextCommands.onCommandShowRegion()
-            recordVscodeActiveregions({ value: awsExplorer.getRegionNodesSize() })
-        },
-        telemetryName: 'Command_aws.showRegion'
+    vscode.commands.registerCommand('aws.showRegion', async () => {
+        await ext.awsContextCommands.onCommandShowRegion()
+        recordAwsShowRegion()
+        recordVscodeActiveregions({ value: awsExplorer.getRegionNodesSize() })
     })
 
-    registerCommand({
-        command: 'aws.hideRegion',
-        callback: async (node?: RegionNode) => {
-            await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
-            recordVscodeActiveregions({ value: awsExplorer.getRegionNodesSize() })
-        },
-        telemetryName: 'Command_aws.hideRegion'
+    vscode.commands.registerCommand('aws.hideRegion', async (node?: RegionNode) => {
+        await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
+        recordAwsHideRegion()
+        recordVscodeActiveregions({ value: awsExplorer.getRegionNodesSize() })
     })
 
-    registerCommand({
-        command: 'aws.refreshAwsExplorer',
-        callback: async () => awsExplorer.refresh(),
-        telemetryName: 'Command_aws.refreshAwsExplorer'
+    vscode.commands.registerCommand('aws.refreshAwsExplorer', async () => {
+        recordAwsRefreshExplorer()
+        awsExplorer.refresh()
     })
 
     vscode.commands.registerCommand(
