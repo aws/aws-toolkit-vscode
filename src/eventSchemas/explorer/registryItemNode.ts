@@ -14,7 +14,6 @@ import { listSchemaItems } from '../utils'
 
 import { SchemaClient } from '../../shared/clients/schemaClient'
 import { ext } from '../../shared/extensionGlobals'
-import { AWSTreeErrorHandlerNode } from '../../shared/treeview/nodes/awsTreeErrorHandlerNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
@@ -22,7 +21,7 @@ import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { toMapAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { SchemaItemNode } from './schemaItemNode'
 
-export class RegistryItemNode extends AWSTreeErrorHandlerNode {
+export class RegistryItemNode extends AWSTreeNodeBase {
     private readonly schemaNodes: Map<string, SchemaItemNode>
 
     public constructor(public readonly regionCode: string, private registryItemOutput: Schemas.RegistrySummary) {

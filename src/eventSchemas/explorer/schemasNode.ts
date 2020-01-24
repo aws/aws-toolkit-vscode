@@ -12,7 +12,6 @@ import { listRegistryItems } from '../../eventSchemas/utils'
 import { SchemaClient } from '../../shared/clients/schemaClient'
 
 import { ext } from '../../shared/extensionGlobals'
-import { AWSTreeErrorHandlerNode } from '../../shared/treeview/nodes/awsTreeErrorHandlerNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
@@ -20,7 +19,7 @@ import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { toMapAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { RegistryItemNode } from './registryItemNode'
 
-export class SchemasNode extends AWSTreeErrorHandlerNode {
+export class SchemasNode extends AWSTreeNodeBase {
     private readonly registryNodes: Map<string, RegistryItemNode>
 
     public constructor(public readonly regionCode: string) {
