@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "When changes are made to Shared Credentials files, they will be picked up by the Toolkit the next time credentials are selected during the 'Connect to AWS' command."
+}

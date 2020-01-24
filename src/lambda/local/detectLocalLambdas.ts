@@ -17,13 +17,7 @@ export interface LocalLambda {
     handler?: string
 }
 
-export async function detectLocalLambdas(
-    workspaceFolders: vscode.WorkspaceFolder[] | undefined = vscode.workspace.workspaceFolders
-): Promise<LocalLambda[]> {
-    if (!workspaceFolders) {
-        return []
-    }
-
+export async function detectLocalLambdas(workspaceFolders: vscode.WorkspaceFolder[]): Promise<LocalLambda[]> {
     return (await Promise.all(workspaceFolders.map(detectLambdasFromWorkspaceFolder))).reduce(
         (accumulator: LocalLambda[], current: LocalLambda[]) => {
             accumulator.push(...current)

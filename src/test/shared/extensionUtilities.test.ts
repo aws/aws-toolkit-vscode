@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 
 import * as del from 'del'
+import { writeFile } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { mostRecentVersionKey, pluginVersion } from '../../shared/constants'
@@ -15,7 +16,6 @@ import {
     safeGet,
     setMostRecentVersion
 } from '../../shared/extensionUtilities'
-import { writeFile } from '../../shared/filesystem'
 import * as filesystemUtilities from '../../shared/filesystemUtilities'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { assertRejects } from './utilities/assertUtils'
@@ -31,9 +31,18 @@ describe('extensionUtilities', () => {
         }
 
         it('can access sub-property', () => {
-            assert.strictEqual(safeGet(new Blah('hello!'), x => x.someProp), 'hello!')
-            assert.strictEqual(safeGet(new Blah(), x => x.someProp), undefined)
-            assert.strictEqual(safeGet(undefined as Blah | undefined, x => x.someProp), undefined)
+            assert.strictEqual(
+                safeGet(new Blah('hello!'), x => x.someProp),
+                'hello!'
+            )
+            assert.strictEqual(
+                safeGet(new Blah(), x => x.someProp),
+                undefined
+            )
+            assert.strictEqual(
+                safeGet(undefined as Blah | undefined, x => x.someProp),
+                undefined
+            )
         })
     })
 

@@ -8,10 +8,6 @@ phases:
     build:
         commands:
             - |
-                if [ $STAGE != "prod" ]; then
-                  echo "Stage is not production, version does not need bumping"
-                  exit 0
-                fi
                 echo "bumping version, BUMP_TYPE set to \"$BUMP_TYPE\""
                 git config --global user.name "aws-toolkit-automation"
                 git config --global user.email "<>"
@@ -26,12 +22,14 @@ phases:
                 git reset HEAD --hard
                 git checkout -b release/v$VERSION
                 if [ "$BUMP_TYPE" = "MAJOR" ]; then
-                  npm version major
+                  npm --no-git-tag-version version major
                 elif [ "$BUMP_TYPE" = "PATCH" ]; then
-                  npm version patch
+                  npm --no-git-tag-version version patch
                 else
-                  npm version minor
+                  npm --no-git-tag-version version minor
                 fi
+                git add package.json
+                git add package-lock.json
                 # Call npm install because 'createRelease' uses ts-node
                 npm install
                 npm run createRelease

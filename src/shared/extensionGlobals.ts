@@ -7,7 +7,6 @@ import { ExtensionContext, OutputChannel, Uri } from 'vscode'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AWSContextCommands } from './awsContextCommands'
 import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
-import { AWSStatusBar } from './statusBar'
 import { TelemetryService } from './telemetry/telemetryService'
 
 /**
@@ -21,7 +20,6 @@ export namespace ext {
     export let awsContextCommands: AWSContextCommands
     export let sdkClientBuilder: AWSClientBuilder
     export let toolkitClientBuilder: ToolkitClientBuilder
-    export let statusBar: AWSStatusBar
     export let telemetry: TelemetryService
 
     export namespace iconPaths {
@@ -38,18 +36,29 @@ export namespace ext {
         export let stateMachineCustomThemePath: Uri
         export let stateMachineCustomThemeCSS: Uri
     }
+
+    export namespace manifestPaths {
+        export let endpoints: string = ''
+        export let lambdaSampleRequests: string = ''
+    }
 }
 
 export interface IconPaths {
     help: string
     cloudFormation: string
     lambda: string
+    settings: string
+    registry: string
+    schema: string
 }
 
 function makeIconPathsObject(): IconPaths {
     return {
         help: '',
         cloudFormation: '',
-        lambda: ''
+        lambda: '',
+        settings: '',
+        registry: '',
+        schema: ''
     }
 }

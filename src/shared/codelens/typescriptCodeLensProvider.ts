@@ -10,18 +10,17 @@ import { CloudFormation } from '../cloudformation/cloudformation'
 import { findFileInParentPaths } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
-import { Datum, TelemetryNamespace } from '../telemetry/telemetryTypes'
+import { MetricDatum } from '../telemetry/clienttelemetry'
 import { registerCommand } from '../telemetry/telemetryUtils'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { getChannelLogger, getDebugPort, localize } from '../utilities/vsCodeUtils'
 
+import { nodeJsRuntimes } from '../../lambda/models/samLambdaRuntime'
 import { getLogger } from '../logger'
 import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { CodeLensProviderParams, getInvokeCmdKey, getMetricDatum, makeCodeLenses } from './codeLensUtils'
 import { getHandlerRelativePath, LambdaLocalInvokeParams, LocalLambdaRunner } from './localLambdaRunner'
-
-const supportedNodeJsRuntimes: Set<string> = new Set<string>(['nodejs8.10', 'nodejs10.x'])
 
 async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
     const packageJsonPath: string | undefined = await findFileInParentPaths(path.dirname(filepath), 'package.json')
@@ -87,7 +86,7 @@ export function initialize({
     const command = getInvokeCmdKey('javascript')
     registerCommand({
         command,
-        callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: Datum }> => {
+        callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: MetricDatum }> => {
             const logger = getLogger()
 
             const resource = await CloudFormation.getResourceFromTemplate({
@@ -96,7 +95,7 @@ export function initialize({
             })
             const runtime = CloudFormation.getRuntime(resource)
 
-            if (!supportedNodeJsRuntimes.has(runtime)) {
+            if (!nodeJsRuntimes.has(runtime)) {
                 logger.error(
                     `Javascript local invoke on ${params.document.uri.fsPath} encountered` +
                         ` unsupported runtime ${runtime}`
@@ -122,10 +121,7 @@ export function initialize({
                 runtime
             })
         },
-        telemetryName: {
-            namespace: TelemetryNamespace.Lambda,
-            name: 'invokelocal'
-        }
+        telemetryName: 'lambda_invokelocal'
     })
 }
 

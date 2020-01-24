@@ -29,13 +29,6 @@ describe('detectLocalLambdas', () => {
         workspaceFolders.length = 0
     })
 
-    it('detects no lambdas when workspaceFolders is undefined', async () => {
-        const actual = await detectLocalLambdas(undefined)
-
-        assert.ok(actual)
-        assert.strictEqual(actual.length, 0)
-    })
-
     it('detects no lambdas when workspaceFolders is empty', async () => {
         const actual = await detectLocalLambdas([])
 

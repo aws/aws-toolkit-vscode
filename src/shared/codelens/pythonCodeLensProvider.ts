@@ -3,21 +3,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { unlink, writeFile } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { PythonDebugConfiguration, PythonPathMapping } from '../../lambda/local/debugConfiguration'
 import { CloudFormation } from '../cloudformation/cloudformation'
-import { unlink, writeFile } from '../filesystem'
+import { VSCODE_EXTENSION_ID } from '../extensions'
 import { fileExists, readFileAsString } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
 import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
-import { Datum, TelemetryNamespace } from '../telemetry/telemetryTypes'
+import { MetricDatum } from '../telemetry/clienttelemetry'
 import { registerCommand } from '../telemetry/telemetryUtils'
-import { getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
+import { ChannelLogger, getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
 import {
     CodeLensProviderParams,
     DRIVE_LETTER_REGEX,
@@ -36,7 +37,9 @@ import {
     makeBuildDir,
     makeInputTemplate
 } from './localLambdaRunner'
+import { PythonDebugAdapterHeartbeat } from './pythonDebugAdapterHeartbeat'
 
+const PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MS = 1000
 export const PYTHON_LANGUAGE = 'python'
 export const PYTHON_ALLFILES: vscode.DocumentFilter[] = [
     {
@@ -50,56 +53,16 @@ const getSamProjectDirPathForFile = async (filepath: string): Promise<string> =>
     return path.dirname(filepath)
 }
 
-async function getLambdaHandlerCandidates({
-    uri,
-    pythonSettings
-}: {
-    uri: vscode.Uri
-    pythonSettings: SettingsConfiguration
-}): Promise<LambdaHandlerCandidate[]> {
-    const PYTHON_JEDI_ENABLED_KEY = 'jediEnabled'
-    const RETRY_INTERVAL_MS = 1000
-    const MAX_RETRIES = 10
-
-    const logger = getLogger()
+async function getLambdaHandlerCandidates(uri: vscode.Uri): Promise<LambdaHandlerCandidate[]> {
     const filename = uri.fsPath
 
-    let symbols: vscode.DocumentSymbol[] =
-        (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', uri)) ||
+    const symbols: vscode.DocumentSymbol[] =
+        (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', uri)) ??
         []
-
-    // A recent regression in vscode-python stops codelenses from rendering if we first return an empty array
-    // (because symbols have not yet been loaded), then a non-empty array (when our codelens provider is re-invoked
-    // upon symbols loading). To work around this, we attempt to wait for symbols to load before returning. We cannot
-    // distinguish between "the document does not contain any symbols" and "the symbols have not yet been loaded", so
-    // we stop retrying if we are still getting an empty result after several retries.
-    //
-    // This issue only surfaces when the setting `python.jediEnabled` is not set to false.
-    // TODO: When the above issue is resolved, remove this workaround AND bump the minimum
-    //       required VS Code version and/or add a minimum supported version for the Python
-    //       extension.
-    const jediEnabled = pythonSettings.readSetting<boolean>(PYTHON_JEDI_ENABLED_KEY, true)
-    if (jediEnabled) {
-        for (let i = 0; i < MAX_RETRIES && !symbols.length; i++) {
-            await new Promise<void>(resolve => setTimeout(resolve, RETRY_INTERVAL_MS))
-            symbols =
-                (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
-                    'vscode.executeDocumentSymbolProvider',
-                    uri
-                )) || []
-        }
-    }
 
     return symbols
         .filter(sym => sym.kind === vscode.SymbolKind.Function)
-        .map(symbol => {
-            logger.debug(
-                `pythonCodeLensProviderFound.getLambdaHandlerCandidates: ${JSON.stringify({
-                    filePath: uri.fsPath,
-                    handlerName: `${path.parse(filename).name}.${symbol.name}`
-                })}`
-            )
-
+        .map<LambdaHandlerCandidate>(symbol => {
             return {
                 filename,
                 handlerName: `${path.parse(filename).name}.${symbol.name}`,
@@ -115,7 +78,7 @@ const makePythonDebugManifest = async (params: {
 }): Promise<string | undefined> => {
     let manifestText = ''
     const manfestPath = path.join(params.samProjectCodeRoot, 'requirements.txt')
-    if (fileExists(manfestPath)) {
+    if (await fileExists(manfestPath)) {
         manifestText = await readFileAsString(manfestPath)
     }
     getLogger().debug(`pythonCodeLensProvider.makePythonDebugManifest params: ${JSON.stringify(params, undefined, 2)}`)
@@ -233,7 +196,7 @@ export async function initialize({
     const channelLogger = getChannelLogger(toolkitOutputChannel)
 
     if (!localInvokeCommand) {
-        localInvokeCommand = new DefaultSamLocalInvokeCommand(channelLogger, [WAIT_FOR_DEBUGGER_MESSAGES.PYTHON])
+        localInvokeCommand = new DefaultSamLocalInvokeCommand(channelLogger, [])
     }
 
     const invokeLambda = async (args: LambdaLocalInvokeParams & { runtime: string }) => {
@@ -338,7 +301,8 @@ export async function initialize({
                 channelLogger,
                 configuration,
                 samLocalInvokeCommand: localInvokeCommand!,
-                telemetryService
+                telemetryService,
+                onWillAttachDebugger: waitForPythonDebugAdapter
             })
         } catch (err) {
             const error = err as Error
@@ -357,7 +321,7 @@ export async function initialize({
     const command = getInvokeCmdKey('python')
     registerCommand({
         command,
-        callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: Datum }> => {
+        callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: MetricDatum }> => {
             const resource = await CloudFormation.getResourceFromTemplate({
                 handlerName: params.handlerName,
                 templatePath: params.samTemplate.fsPath
@@ -374,11 +338,57 @@ export async function initialize({
                 runtime
             })
         },
-        telemetryName: {
-            namespace: TelemetryNamespace.Lambda,
-            name: 'invokelocal'
-        }
+        telemetryName: 'lambda_invokelocal'
     })
+}
+
+export async function waitForPythonDebugAdapter(
+    debugPort: number,
+    timeoutDurationMillis: number,
+    channelLogger: ChannelLogger
+) {
+    const logger = getLogger()
+    const stopMillis = Date.now() + timeoutDurationMillis
+
+    logger.verbose(`Testing debug adapter connection on port ${debugPort}`)
+
+    let debugServerAvailable: boolean = false
+
+    while (!debugServerAvailable) {
+        const tester = new PythonDebugAdapterHeartbeat(debugPort)
+
+        try {
+            if (await tester.connect()) {
+                if (await tester.isDebugServerUp()) {
+                    logger.verbose('Debug Adapter is available')
+                    debugServerAvailable = true
+                }
+            }
+        } catch (err) {
+            logger.verbose('Error while testing', err as Error)
+        } finally {
+            await tester.disconnect()
+        }
+
+        if (!debugServerAvailable) {
+            if (Date.now() > stopMillis) {
+                break
+            }
+
+            logger.verbose('Debug Adapter not ready, retrying...')
+            await new Promise<void>(resolve => {
+                setTimeout(resolve, PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MS)
+            })
+        }
+    }
+
+    if (!debugServerAvailable) {
+        channelLogger.warn(
+            'AWS.sam.local.invoke.python.server.not.available',
+            // tslint:disable-next-line:max-line-length
+            'Unable to communicate with the Python Debug Adapter. The debugger might not succeed when attaching to your SAM Application.'
+        )
+    }
 }
 
 // Convenience method to swallow any errors
@@ -387,6 +397,16 @@ async function deleteFile(filePath: string): Promise<void> {
         await unlink(filePath)
     } catch (err) {
         getLogger().warn(err as Error)
+    }
+}
+
+async function activatePythonExtensionIfInstalled() {
+    const extension = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.python)
+
+    // If the extension is not installed, it is not a failure. There may be reduced functionality.
+    if (extension && !extension.isActive) {
+        getLogger().info('Python CodeLens Provider is activating the python extension')
+        await extension.activate()
     }
 }
 
@@ -401,10 +421,13 @@ export async function makePythonCodeLensProvider(
             document: vscode.TextDocument,
             token: vscode.CancellationToken
         ): Promise<vscode.CodeLens[]> => {
-            const handlers: LambdaHandlerCandidate[] = await getLambdaHandlerCandidates({
-                uri: document.uri,
-                pythonSettings
-            })
+            // Try to activate the Python Extension before requesting symbols from a python file
+            await activatePythonExtensionIfInstalled()
+            if (token.isCancellationRequested) {
+                return []
+            }
+
+            const handlers: LambdaHandlerCandidate[] = await getLambdaHandlerCandidates(document.uri)
             logger.debug(
                 'pythonCodeLensProvider.makePythonCodeLensProvider handlers:',
                 JSON.stringify(handlers, undefined, 2)
