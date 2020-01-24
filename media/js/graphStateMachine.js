@@ -5,10 +5,11 @@
 
 const vscode = acquireVsCodeApi()
 
-let containerId = "#svgcontainer"
+let containerId = '#svgcontainer'
+
 let options = {
-    width: 600,
-    height: 5000,
+    width: window.innerWidth,
+    height: window.innerHeight,
     resizeHeight: true
 }
 
@@ -19,7 +20,7 @@ window.addEventListener('message', event => {
     const message = event.data
     switch (message.command) {
         case 'update':
-            console.log("Updating state machine: " + message.stateMachineData)
+            console.log('Updating state machine: ' + message.stateMachineData)
             try {
                 graph = new sfn.StateMachineGraph(JSON.parse(message.stateMachineData), containerId, options)
                 graph.render()

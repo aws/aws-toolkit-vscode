@@ -3,76 +3,57 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as immutable from 'immutable'
+import { Runtime } from 'aws-sdk/clients/lambda'
+import { Map, Set } from 'immutable'
 
-// TODO: Can we dynamically determine the available runtimes? We could theoretically parse the
-// output of `sam init --help`, but that's a hack.
-export type SamLambdaRuntime = 'python3.7' | 'python3.6' | 'python2.7' | 'nodejs8.10' | 'nodejs10.x' | 'dotnetcore2.1'
+export const nodeJsRuntimes: Set<Runtime> = Set<Runtime>(['nodejs8.10', 'nodejs10.x', 'nodejs12.x'])
+export const pythonRuntimes: Set<Runtime> = Set<Runtime>(['python3.8', 'python3.7', 'python3.6', 'python2.7'])
+export const dotNetRuntimes: Set<Runtime> = Set<Runtime>(['dotnetcore2.1'])
 
-export const samLambdaRuntimes: immutable.Set<SamLambdaRuntime> = immutable.Set([
-    'python3.7',
-    'python3.6',
-    'python2.7',
-    'nodejs8.10',
-    'nodejs10.x',
-    'dotnetcore2.1'
-] as SamLambdaRuntime[])
+export const samLambdaRuntimes: Set<Runtime> = Set.union([nodeJsRuntimes, pythonRuntimes, dotNetRuntimes])
 
 export type DependencyManager = 'cli-package' | 'mod' | 'gradle' | 'pip' | 'npm' | 'maven' | 'bundler'
 
 // TODO: Make this return an array of DependencyManagers when we add runtimes with multiple dependency managers
-export function getDependencyManager (runtime: SamLambdaRuntime): DependencyManager {
-    switch (runtime) {
-        case 'nodejs10.x':
-        case 'nodejs8.10':
-            return 'npm'
-        case 'python2.7':
-        case 'python3.6':
-        case 'python3.7':
-            return 'pip'
-        case 'dotnetcore2.1':
-            return 'cli-package'
-        default:
-            throw new Error(`Runtime ${runtime} does not have an associated DependencyManager`)
+export function getDependencyManager(runtime: Runtime): DependencyManager {
+    if (nodeJsRuntimes.has(runtime)) {
+        return 'npm'
+    } else if (pythonRuntimes.has(runtime)) {
+        return 'pip'
+    } else if (dotNetRuntimes.has(runtime)) {
+        return 'cli-package'
     }
+    throw new Error(`Runtime ${runtime} does not have an associated DependencyManager`)
 }
 
-export enum SamLambdaRuntimeFamily {
+export enum RuntimeFamily {
     Python,
     NodeJS,
     DotNetCore
 }
 
-export function getFamily(runtime: string | undefined): SamLambdaRuntimeFamily {
-    switch (runtime) {
-        case 'python3.7':
-        case 'python3.6':
-        case 'python2.7':
-        case 'python':
-            return SamLambdaRuntimeFamily.Python
-        case 'nodejs8.10':
-        case 'nodejs10.x':
-        case 'nodejs':
-            return SamLambdaRuntimeFamily.NodeJS
-        case 'dotnetcore2.1':
-        case 'dotnetcore':
-        case 'dotnet':
-            return SamLambdaRuntimeFamily.DotNetCore
-        default:
-            throw new Error(`Unrecognized runtime: '${runtime}'`)
+export function getFamily(runtime: string | undefined): RuntimeFamily {
+    if (!runtime) {
+        throw new Error(`Unrecognized runtime: '${runtime}'`)
     }
+    if (nodeJsRuntimes.has(runtime)) {
+        return RuntimeFamily.NodeJS
+    } else if (pythonRuntimes.has(runtime)) {
+        return RuntimeFamily.Python
+    } else if (dotNetRuntimes.has(runtime)) {
+        return RuntimeFamily.DotNetCore
+    }
+    throw new Error(`Unrecognized runtime: '${runtime}'`)
 }
 
 // This allows us to do things like "sort" nodejs10.x after nodejs8.10
 // Map Values are used for comparisons, not for display
-const runtimeCompareText: Map<SamLambdaRuntime, string> = new Map<SamLambdaRuntime, string>([
-    ['nodejs8.10', 'nodejs08.10']
-])
+const runtimeCompareText: Map<Runtime, string> = Map<Runtime, string>([['nodejs8.10', 'nodejs08.10']])
 
-function getSortableCompareText(runtime: SamLambdaRuntime): string {
+function getSortableCompareText(runtime: Runtime): string {
     return runtimeCompareText.get(runtime) || runtime.toString()
 }
 
-export function compareSamLambdaRuntime(a: SamLambdaRuntime, b: SamLambdaRuntime): number {
+export function compareSamLambdaRuntime(a: Runtime, b: Runtime): number {
     return getSortableCompareText(a).localeCompare(getSortableCompareText(b))
 }

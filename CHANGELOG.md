@@ -1,3 +1,25 @@
+## 1.5.0 2020-01-06
+
+- **Breaking Change** Minimum version of SAM CLI has been adjusted from 0.16.0 to 0.32.0 to accommodate new runtime support
+- **Feature** Bumped maximum (exclusive) supported SAM CLI version from 0.40.0 to 0.50.0.
+- **Feature** SAM Application support for the python3.8 runtime
+- **Feature** Reduced plugin size and startup time significantly
+- **Feature** SAM Application support for the nodejs12.x runtime
+- **Feature** The StatusBar item displaying the current credentials used by the toolkit now shows when no credentials are being used. It can also be clicked to change the Toolkit's active credentials.
+- **Feature** The Toolkit now applies configuration changes to the log level when it changes instead of the next time the toolkit is started (#860)
+- **Feature** The folder depth within a workspace that SAM Template files are searched for is now configurable. Previously, this was fixed at 2.
+
+## 1.4.0 2019-12-02
+
+- **Feature** Added support for Amazon EventBridge schema registry, making it easy to discover and write code for events in EventBridge
+
+## 1.3.0 2019-11-22
+
+- **Bug Fix** AWS Explorer now shows a node indicating when CloudFormation Stacks cannot be found in a region
+- **Bug Fix** AWS Explorer now sorts the resources that belong to each CloudFormation Stack
+- **Bug Fix** AWS Explorer now shows a node indicating when Lambda Functions cannot be found in a region
+- **Feature** CDK projects can now be visualized with the CDK Explorer
+
 ## 1.2.0 2019-10-17
 
 - **Bug Fix** Add '--no-interactive' flag to 'sam init' calls when SAM CLI version is greater than or equal to 0.30.0

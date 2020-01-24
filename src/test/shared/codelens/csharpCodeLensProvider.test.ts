@@ -10,6 +10,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as sampleDotNetSamProgram from './sampleDotNetSamProgram'
 
+import { writeFile } from 'fs-extra'
 import {
     DotNetLambdaHandlerComponents,
     findParentProjectFile,
@@ -18,7 +19,6 @@ import {
     isPublicClassSymbol,
     isPublicMethodSymbol
 } from '../../../shared/codelens/csharpCodeLensProvider'
-import { writeFile } from '../../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 
 const fakeRange = new vscode.Range(0, 0, 0, 0)

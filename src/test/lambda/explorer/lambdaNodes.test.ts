@@ -10,15 +10,11 @@ import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
 import { CONTEXT_VALUE_LAMBDA_FUNCTION, LambdaNode } from '../../../lambda/explorer/lambdaNodes'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 import { ext } from '../../../shared/extensionGlobals'
+import { asyncGenerator } from '../../utilities/collectionUtils'
 import {
     assertNodeListOnlyContainsErrorNode,
     assertNodeListOnlyContainsPlaceholderNode
 } from './explorerNodeAssertions'
-
-// TODO : Consolidate all asyncGenerator calls into a shared utility method
-async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
-    yield* items
-}
 
 const FAKE_REGION_CODE = 'someregioncode'
 const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']

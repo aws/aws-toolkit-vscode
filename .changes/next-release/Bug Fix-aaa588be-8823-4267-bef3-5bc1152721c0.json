@@ -1,0 +1,4 @@
+{
+    "type": "Bug Fix",
+    "description": "AWS Explorer no longer shows service nodes under regions where the service is not available (#850)"
+}

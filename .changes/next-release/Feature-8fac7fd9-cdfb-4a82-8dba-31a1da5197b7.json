@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "Credentials were previously shown by their Shared Credentials profile names. They are now displayed in a \"type:name\" format, to better indicate the type of Credentials being used, and to support additional Credentials types in the future. Shared Credentials are shown with the type \"profile\"."
+}

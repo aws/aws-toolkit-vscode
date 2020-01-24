@@ -6,10 +6,11 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 
+import { access } from 'fs-extra'
 import { makeCoreCLRDebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { DefaultDockerClient, DockerClient } from '../clients/dockerClient'
 import { CloudFormation } from '../cloudformation/cloudformation'
-import { access, mkdir } from '../filesystem'
+import { mkdir } from '../filesystem'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
 import { DefaultSamCliProcessInvoker } from '../sam/cli/samCliInvoker'
@@ -20,8 +21,8 @@ import {
     WAIT_FOR_DEBUGGER_MESSAGES
 } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
+import { MetricDatum } from '../telemetry/clienttelemetry'
 import { TelemetryService } from '../telemetry/telemetryService'
-import { Datum, TelemetryNamespace } from '../telemetry/telemetryTypes'
 import { registerCommand } from '../telemetry/telemetryUtils'
 import { dirnameWithTrailingSlash } from '../utilities/pathUtils'
 import { ChannelLogger, getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
@@ -34,7 +35,8 @@ import {
     InvokeLambdaFunctionContext,
     LambdaLocalInvokeParams,
     makeBuildDir,
-    makeInputTemplate
+    makeInputTemplate,
+    waitForDebugPort
 } from './localLambdaRunner'
 
 export const CSHARP_LANGUAGE = 'csharp'
@@ -68,7 +70,7 @@ export async function initialize({
     const command = getInvokeCmdKey(CSHARP_LANGUAGE)
     registerCommand({
         command,
-        callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: Datum }> => {
+        callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: MetricDatum }> => {
             return await onLocalInvokeCommand({
                 lambdaLocalInvokeParams: params,
                 configuration,
@@ -78,10 +80,7 @@ export async function initialize({
                 telemetryService
             })
         },
-        telemetryName: {
-            namespace: TelemetryNamespace.Lambda,
-            name: 'invokelocal'
-        }
+        telemetryName: 'lambda_invokelocal'
     })
 }
 
@@ -142,7 +141,7 @@ async function onLocalInvokeCommand(
         }): Promise<CloudFormation.Resource>
     },
     context: OnLocalInvokeCommandContext = new DefaultOnLocalInvokeCommandContext(toolkitOutputChannel)
-): Promise<{ datum: Datum }> {
+): Promise<{ datum: MetricDatum }> {
     const channelLogger = getChannelLogger(toolkitOutputChannel)
     const template: CloudFormation.Template = await loadCloudFormationTemplate(
         lambdaLocalInvokeParams.samTemplate.fsPath
@@ -234,7 +233,8 @@ async function onLocalInvokeCommand(
                     channelLogger,
                     configuration,
                     samLocalInvokeCommand: localInvokeCommand,
-                    telemetryService
+                    telemetryService,
+                    onWillAttachDebugger: waitForDebugPort
                 }
             )
         }

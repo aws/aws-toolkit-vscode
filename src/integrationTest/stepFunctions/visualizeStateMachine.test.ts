@@ -5,10 +5,10 @@
 
 import * as assert from 'assert'
 import * as del from 'del'
+import * as fs from 'fs-extra'
 import * as path from 'path'
 import { spy } from 'sinon'
 import * as vscode from 'vscode'
-import { writeFile } from '../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { messageObject } from '../../stepFunctions/commands/visualizeStateMachine'
 
@@ -58,7 +58,7 @@ let tempFolder: string
  */
 async function openATextEditorWithText(fileText: string, fileName: string): Promise<vscode.TextEditor> {
     const completeFilePath = path.join(tempFolder, fileName)
-    await writeFile(completeFilePath, fileText)
+    await fs.writeFile(completeFilePath, fileText)
 
     const textDocument = await vscode.workspace.openTextDocument(completeFilePath)
 
@@ -82,7 +82,6 @@ async function waitUntilWebviewIsVisible(webviewPanel: vscode.WebviewPanel | und
 }
 
 describe('visualizeStateMachine', async () => {
-
     beforeEach(async () => {
         // Make a temp folder for all these tests
         tempFolder = await makeTemporaryToolkitFolder()
@@ -128,7 +127,6 @@ describe('visualizeStateMachine', async () => {
             assert.deepStrictEqual(result.viewType, 'stateMachineVisualization')
             assert.ok(result.webview.html)
         }
-
     })
 
     it('update webview is triggered when user saves correct text editor', async () => {
@@ -136,13 +134,12 @@ describe('visualizeStateMachine', async () => {
         const fileName = 'mysamplestatemachine.json'
         const textEditor = await openATextEditorWithText(stateMachineFileText, fileName)
 
-        const result =
-            await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.renderStateMachine')
+        const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.renderStateMachine')
 
         assert.ok(result)
 
         if (result) {
-            const viewStateChanged = new Promise<vscode.WebviewPanelOnDidChangeViewStateEvent>((resolve) => {
+            const viewStateChanged = new Promise<vscode.WebviewPanelOnDidChangeViewStateEvent>(resolve => {
                 result.onDidChangeViewState(e => {
                     // Ensure that this event fires after document is saved
                     assert.ok(e)
@@ -164,7 +161,6 @@ describe('visualizeStateMachine', async () => {
 
             await viewStateChanged
         }
-
     })
 
     it('throws an error if no active text editor is open', async () => {

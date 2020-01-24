@@ -3,38 +3,51 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-
 /*
  * Custom theming applied on top of existing styles.
  * Adds additional styles for when user has dark/light/high-contrast themes.
+ * Fixes height issue in vscode webview iframe. 
  */
-
 
 /*  
  * General
  */
 
- body {
-    background-color: var(--vscode-editor-background);
+/* Sizing CSS */
+html,
+body {
+    height: 100%;
+    margin: 0px;
+    padding: 0px;
+    overflow-y: hidden;
 }
 
+#svgcontainer {
+    height: 100%;
+    padding: 0px;
+}
+
+/* Theming CSS Below */
+body {
+    background-color: var(--vscode-editor-background);
+}
 
 /* 
  * Dark Theme Styles
  */
 
 body.vscode-dark .path {
-    stroke: #D3D3D3;
-    background-color: #D3D3D3;
+    stroke: #d3d3d3;
+    background-color: #d3d3d3;
 }
 
 body.vscode-dark path {
-    stroke: #D3D3D3;
+    stroke: #d3d3d3;
 }
 
 body.vscode-dark .node > .shape {
     fill: var(--vscode-editor-background);
-    stroke: #D3D3D3;
+    stroke: #d3d3d3;
 }
 
 body.vscode-dark .node.anchor > .shape {
@@ -42,13 +55,12 @@ body.vscode-dark .node.anchor > .shape {
 }
 
 body.vscode-dark .label {
-    fill: #FFFFFF;
+    fill: #ffffff;
 }
 
 body.vscode-dark marker {
-    fill: #D3D3D3;
+    fill: #d3d3d3;
 }
-
 
 /*
  * High Contrast Theme Styles

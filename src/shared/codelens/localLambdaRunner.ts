@@ -9,7 +9,6 @@ import * as vscode from 'vscode'
 import { getLocalLambdaConfiguration } from '../../lambda/local/configureLocalLambda'
 import { detectLocalLambdas, LocalLambda } from '../../lambda/local/detectLocalLambdas'
 import { CloudFormation } from '../cloudformation/cloudformation'
-import { writeFile } from '../filesystem'
 import { makeTemporaryToolkitFolder } from '../filesystemUtilities'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from '../sam/cli/samCliBuild'
 import { SamCliProcessInvoker } from '../sam/cli/samCliInvokerUtils'
@@ -22,10 +21,11 @@ import { SettingsConfiguration } from '../settingsConfiguration'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 
+import { writeFile } from 'fs-extra'
 import { generateDefaultHandlerConfig, HandlerConfig } from '../../lambda/config/templates'
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
-import { getFamily, SamLambdaRuntimeFamily } from '../../lambda/models/samLambdaRuntime'
-import { Logger } from '../logger'
+import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
+import { getLogger, Logger } from '../logger'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { Timeout } from '../utilities/timeoutUtils'
@@ -200,20 +200,8 @@ export class LocalLambdaRunner {
         await command.execute(timer)
 
         if (this.localInvokeParams.isDebug) {
-            const isPortOpen = await waitForDebugPort({
-                debugPort: this.debugPort,
-                configuration: this.configuration,
-                channelLogger: this.channelLogger,
-                timeoutDuration: timer.remainingTime
-            })
-
-            if (!isPortOpen) {
-                this.channelLogger.warn(
-                    'AWS.samcli.local.invoke.port.not.open',
-                    // tslint:disable-next-line:max-line-length
-                    "The debug port doesn't appear to be open. The debugger might not succeed when attaching to your SAM Application."
-                )
-            }
+            messageUserWaitingToAttach(this.channelLogger)
+            await waitForDebugPort(this.debugPort, timer.remainingTime, this.channelLogger)
 
             const attachResults = await attachDebugger({
                 debugConfig: this.debugConfig,
@@ -381,11 +369,18 @@ export interface InvokeLambdaFunctionContext {
     configuration: SettingsConfiguration
     samLocalInvokeCommand: SamLocalInvokeCommand
     telemetryService: TelemetryService
+    onWillAttachDebugger?(debugPort: number, timeoutDuration: number, channelLogger: ChannelLogger): Promise<void>
 }
 
 export async function invokeLambdaFunction(
     invokeArgs: InvokeLambdaFunctionArguments,
-    { channelLogger, configuration, samLocalInvokeCommand, telemetryService }: InvokeLambdaFunctionContext
+    {
+        channelLogger,
+        configuration,
+        samLocalInvokeCommand,
+        telemetryService,
+        onWillAttachDebugger
+    }: InvokeLambdaFunctionContext
 ): Promise<void> {
     channelLogger.info(
         'AWS.output.starting.sam.app.locally',
@@ -425,19 +420,9 @@ export async function invokeLambdaFunction(
     await command.execute(timer)
 
     if (debugArgs) {
-        const isPortOpen = await waitForDebugPort({
-            debugPort: debugArgs.debugPort,
-            configuration,
-            channelLogger,
-            timeoutDuration: timer.remainingTime
-        })
-
-        if (!isPortOpen) {
-            channelLogger.warn(
-                'AWS.samcli.local.invoke.port.not.open',
-                // tslint:disable-next-line:max-line-length
-                "The debug port doesn't appear to be open. The debugger might not succeed when attaching to your SAM Application."
-            )
+        if (onWillAttachDebugger) {
+            messageUserWaitingToAttach(channelLogger)
+            await onWillAttachDebugger(debugArgs.debugPort, timer.remainingTime, channelLogger)
         }
 
         const attachResults = await attachDebugger({
@@ -569,34 +554,22 @@ export async function attachDebugger({
     }
 }
 
-async function waitForDebugPort({
-    debugPort,
-    configuration,
-    channelLogger,
-    timeoutDuration
-}: {
-    debugPort: number
-    configuration: SettingsConfiguration
+export async function waitForDebugPort(
+    debugPort: number,
+    timeoutDuration: number,
     channelLogger: ChannelLogger
-    timeoutDuration: number
-}): Promise<boolean> {
-    channelLogger.info(
-        'AWS.output.sam.local.waiting',
-        'Waiting for SAM Application to start before attaching debugger...'
-    )
-
+): Promise<void> {
     try {
-        // this should not fail: if it hits this point, the port should be open
         // this function always attempts once no matter the timeoutDuration
         await tcpPortUsed.waitUntilUsed(debugPort, SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS, timeoutDuration)
-
-        return true
     } catch (err) {
-        channelLogger.logger.verbose(
-            `Timed out after ${timeoutDuration} ms waiting for port ${debugPort} to open: ${err}`
-        )
+        getLogger().warn(`Timed out after ${timeoutDuration} ms waiting for port ${debugPort} to open`, err as Error)
 
-        return false
+        channelLogger.warn(
+            'AWS.samcli.local.invoke.port.not.open',
+            // tslint:disable-next-line:max-line-length
+            "The debug port doesn't appear to be open. The debugger might not succeed when attaching to your SAM Application."
+        )
     }
 }
 
@@ -612,23 +585,20 @@ function recordAttachDebuggerMetric(params: RecordAttachDebuggerMetricContext) {
     const currTime = new Date()
     const namespace = params.result ? 'DebugAttachSuccess' : 'DebugAttachFailure'
 
-    const metadata = new Map([['runtime', params.runtime]])
-
     params.telemetryService.record({
-        namespace: namespace,
         createTime: currTime,
         data: [
             {
-                name: 'attempts',
-                value: params.attempts,
-                unit: 'Count',
-                metadata
+                MetricName: `${namespace}_attempts`,
+                Value: params.attempts,
+                Unit: 'Count',
+                Metadata: [{ Key: 'runtime', Value: params.runtime }]
             },
             {
-                name: 'duration',
-                value: params.durationMillis,
-                unit: 'Milliseconds',
-                metadata
+                MetricName: `${namespace}_duration`,
+                Value: params.durationMillis,
+                Unit: 'Milliseconds',
+                Metadata: [{ Key: 'runtime', Value: params.runtime }]
             }
         ]
     })
@@ -641,10 +611,10 @@ function getAttachDebuggerMaxRetryLimit(configuration: SettingsConfiguration, de
 export function shouldAppendRelativePathToFunctionHandler(runtime: string): boolean {
     // getFamily will throw an error if the runtime doesn't exist
     switch (getFamily(runtime)) {
-        case SamLambdaRuntimeFamily.NodeJS:
-        case SamLambdaRuntimeFamily.Python:
+        case RuntimeFamily.NodeJS:
+        case RuntimeFamily.Python:
             return true
-        case SamLambdaRuntimeFamily.DotNetCore:
+        case RuntimeFamily.DotNetCore:
             return false
         // if the runtime exists but for some reason we forgot to cover it here, throw anyway so we remember to cover it
         default:
@@ -679,4 +649,11 @@ async function showDebugConsole({
         // in case the vs code command changes or misbehaves, swallow error
         params.logger.verbose('Unable to switch to the Debug Console', err as Error)
     }
+}
+
+function messageUserWaitingToAttach(channelLogger: ChannelLogger) {
+    channelLogger.info(
+        'AWS.output.sam.local.waiting',
+        'Waiting for SAM Application to start before attaching debugger...'
+    )
 }

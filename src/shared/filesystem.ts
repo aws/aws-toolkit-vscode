@@ -3,32 +3,28 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs'
+import * as fs from 'fs-extra'
 import * as _path from 'path'
-import { promisify } from 'util'
 
-// interfaces & types
-export type PathLike = fs.PathLike
-export type MakeDirectoryOptions = fs.MakeDirectoryOptions
+async function mkdirRecursive(path: string, options: fs.MakeDirectoryOptions): Promise<void> {
+    const parent = _path.dirname(path)
+    if (parent !== path) {
+        await fs.ensureDir(parent, options)
+    }
 
-export interface Stats extends fs.Stats {
-    // fs.Stats is a class, so for easy mocking we code against an interface with the same shape.
+    await fs.ensureDir(path, options)
 }
 
-// functions
-export const access = promisify(fs.access)
-
-const _mkdir = promisify(fs.mkdir)
 interface ErrorWithCode {
     code?: string
 }
 
 export async function mkdir(
-    path: PathLike,
-    options?: number | string | MakeDirectoryOptions | undefined | null
+    path: fs.PathLike,
+    options?: number | string | fs.MakeDirectoryOptions | undefined | null
 ): Promise<void> {
     try {
-        await _mkdir(path, options)
+        await fs.promises.mkdir(path, options)
     } catch (err) {
         // mkdir calls with recurse do not work as expected when called through electron.
         // See: https://github.com/nodejs/node/issues/24698#issuecomment-486405542 for info.
@@ -46,25 +42,17 @@ export async function mkdir(
     }
 }
 
-async function mkdirRecursive(path: string, options: MakeDirectoryOptions): Promise<void> {
-    const parent = _path.dirname(path)
-    if (parent !== path) {
-        await mkdir(parent, options)
+// Recursive delete including files and folders
+export async function rmrf(path: string) {
+    const stats = await fs.stat(path)
+    if (stats.isFile()) {
+        await fs.unlink(path)
+    } else if (stats.isDirectory()) {
+        const promises = (await fs.readdir(path)).map(async child => rmrf(_path.join(path, child)))
+
+        await Promise.all(promises)
+        await fs.rmdir(path)
+    } else {
+        throw new Error(`Could not delete '${path}' because it is neither a file nor directory`)
     }
-
-    await mkdir(path, options)
 }
-
-export const mkdtemp = promisify(fs.mkdtemp)
-
-export const readFile = promisify(fs.readFile)
-
-export const readdir = promisify(fs.readdir)
-
-export const rename = promisify(fs.rename)
-
-export const stat = promisify(fs.stat)
-
-export const unlink = promisify(fs.unlink)
-
-export const writeFile = promisify(fs.writeFile)

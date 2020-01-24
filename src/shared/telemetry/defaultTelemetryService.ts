@@ -4,17 +4,17 @@
  */
 
 import * as fs from 'fs'
+import { writeFile } from 'fs-extra'
 import * as path from 'path'
 import uuidv4 = require('uuid/v4')
 import { ExtensionContext } from 'vscode'
 import { AwsContext } from '../awsContext'
-import * as filesystem from '../filesystem'
 import { DefaultTelemetryClient } from './defaultTelemetryClient'
 import { DefaultTelemetryPublisher } from './defaultTelemetryPublisher'
 import { TelemetryEvent } from './telemetryEvent'
 import { TelemetryPublisher } from './telemetryPublisher'
 import { TelemetryService } from './telemetryService'
-import { ACCOUNT_METADATA_KEY, AccountStatus, TelemetryNamespace } from './telemetryTypes'
+import { ACCOUNT_METADATA_KEY, AccountStatus } from './telemetryTypes'
 
 export class DefaultTelemetryService implements TelemetryService {
     public static readonly TELEMETRY_COGNITO_ID_KEY = 'telemetryId'
@@ -63,13 +63,12 @@ export class DefaultTelemetryService implements TelemetryService {
     public async start(): Promise<void> {
         this.record(
             {
-                namespace: TelemetryNamespace.Session,
                 createTime: this.startTime,
                 data: [
                     {
-                        name: 'start',
-                        value: 0,
-                        unit: 'None'
+                        MetricName: 'session_start',
+                        Value: 0,
+                        Unit: 'None'
                     }
                 ]
             },
@@ -86,13 +85,12 @@ export class DefaultTelemetryService implements TelemetryService {
         const currTime = new Date()
         this.record(
             {
-                namespace: TelemetryNamespace.Session,
                 createTime: currTime,
                 data: [
                     {
-                        name: 'end',
-                        value: currTime.getTime() - this.startTime.getTime(),
-                        unit: 'Milliseconds'
+                        MetricName: 'session_end',
+                        Value: currTime.getTime() - this.startTime.getTime(),
+                        Unit: 'Milliseconds'
                     }
                 ]
             },
@@ -102,7 +100,7 @@ export class DefaultTelemetryService implements TelemetryService {
         // only write events to disk if telemetry is enabled at shutdown time
         if (this.telemetryEnabled) {
             try {
-                await filesystem.writeFile(this.persistFilePath, JSON.stringify(this._eventQueue))
+                await writeFile(this.persistFilePath, JSON.stringify(this._eventQueue))
             } catch {}
         }
     }
@@ -221,8 +219,8 @@ export class DefaultTelemetryService implements TelemetryService {
 
     private injectAccountMetadata(event: TelemetryEvent, awsContext: AwsContext): TelemetryEvent {
         let accountValue: string | AccountStatus
-        if (event.namespace === TelemetryNamespace.Session) {
-            // this matches JetBrains' functionality: the AWS account ID is not set on session start.
+        // The AWS account ID is not set on session start. This matches JetBrains' functionality.
+        if (event.data.every(item => item.MetricName === 'session_end' || item.MetricName === 'session_start')) {
             accountValue = AccountStatus.NotApplicable
         } else {
             const account = awsContext.getCredentialAccountId()
@@ -245,10 +243,10 @@ export class DefaultTelemetryService implements TelemetryService {
         // event has data
         if (event.data) {
             for (const datum of event.data) {
-                if (datum.metadata) {
-                    datum.metadata.set(ACCOUNT_METADATA_KEY, accountValue)
+                if (datum.Metadata) {
+                    datum.Metadata.push({ Key: ACCOUNT_METADATA_KEY, Value: accountValue })
                 } else {
-                    datum.metadata = new Map([[ACCOUNT_METADATA_KEY, accountValue]])
+                    datum.Metadata = [{ Key: ACCOUNT_METADATA_KEY, Value: accountValue }]
                 }
             }
         } else {
@@ -256,9 +254,9 @@ export class DefaultTelemetryService implements TelemetryService {
             // this shouldn't happen
             const data = [
                 {
-                    name: 'noData',
-                    value: 0,
-                    metadata: new Map([[ACCOUNT_METADATA_KEY, accountValue]])
+                    MetricName: 'noData',
+                    Value: 0,
+                    Metadata: [{ Key: ACCOUNT_METADATA_KEY, Value: accountValue }]
                 }
             ]
             event.data = data

@@ -7,12 +7,8 @@ import * as assert from 'assert'
 import { join } from 'path'
 import * as vscode from 'vscode'
 import { LambdaLocalInvokeParams } from '../shared/codelens/localLambdaRunner'
-import {
-    activateExtension,
-    expectCodeLenses,
-    EXTENSION_NAME_AWS_TOOLKIT,
-    getTestWorkspaceFolder
-} from './integrationTestsUtilities'
+import { VSCODE_EXTENSION_ID } from '../shared/extensions'
+import { activateExtension, expectCodeLenses, getTestWorkspaceFolder } from './integrationTestsUtilities'
 
 const ACTIVATE_EXTENSION_TIMEOUT_MILLIS = 30000
 const CODELENS_TEST_TIMEOUT_MILLIS = 10000
@@ -24,7 +20,9 @@ describe('SAM Local CodeLenses (JS)', async () => {
     before(async function() {
         // tslint:disable-next-line:no-invalid-this
         this.timeout(ACTIVATE_EXTENSION_TIMEOUT_MILLIS)
-        await activateExtension(EXTENSION_NAME_AWS_TOOLKIT)
+        await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
+
+        await vscode.workspace.getConfiguration('aws').update('sam.template.depth', 8, false)
     })
 
     it('appear when manifest in subfolder and app is beside manifest', async () => {
@@ -68,6 +66,20 @@ describe('SAM Local CodeLenses (JS)', async () => {
         assertRunCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)
         assertConfigureCodeLensExists(codeLenses)
     }).timeout(CODELENS_TEST_TIMEOUT_MILLIS)
+
+    it('appear when project is a few folders deep in the workspace', async () => {
+        const appRoot = join(workspaceFolder, 'deeper-projects', 'js-plain-sam-app')
+        const appCodePath = join(appRoot, 'src', 'app.js')
+        const samTemplatePath = join(appRoot, 'template.yaml')
+        const expectedHandlerName = 'app.projectDeepInWorkspace'
+        const document = await vscode.workspace.openTextDocument(appCodePath)
+
+        const codeLenses = await expectCodeLenses(document.uri)
+
+        assertDebugCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)
+        assertRunCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)
+        assertConfigureCodeLensExists(codeLenses)
+    })
 
     function assertDebugCodeLensExists(
         codeLenses: vscode.CodeLens[],

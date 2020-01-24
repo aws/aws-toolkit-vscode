@@ -3,12 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
-
 interface AwsTreeProvider {
     viewProviderId: string
-
-    initialize(context: Pick<vscode.ExtensionContext, 'globalState'>): void
 }
 
 export interface RefreshableAwsTreeProvider extends AwsTreeProvider {

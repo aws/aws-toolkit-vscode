@@ -5,10 +5,11 @@
 
 // import { IncomingHttpHeaders } from 'http'
 // import { get } from 'https'
+import { writeFile } from 'fs-extra'
 import * as request from 'request'
 import { Memento } from 'vscode'
 import { ext } from '../shared/extensionGlobals'
-import { mkdir, writeFile } from '../shared/filesystem'
+import { mkdir } from '../shared/filesystem'
 import { fileExists } from '../shared/filesystemUtilities'
 import { getLogger, Logger } from '../shared/logger'
 
