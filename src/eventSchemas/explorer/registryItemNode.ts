@@ -15,7 +15,10 @@ import { listSchemaItems } from '../utils'
 import { SchemaClient } from '../../shared/clients/schemaClient'
 import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeErrorHandlerNode } from '../../shared/treeview/nodes/awsTreeErrorHandlerNode'
+import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
+import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
+import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { toMapAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { SchemaItemNode } from './schemaItemNode'
 
@@ -41,25 +44,26 @@ export class RegistryItemNode extends AWSTreeErrorHandlerNode {
         )
     }
 
-    public async getChildren(): Promise<(SchemaItemNode | PlaceholderNode)[]> {
-        await this.handleErrorProneOperation(
-            async () => this.updateChildren(),
-            localize('AWS.explorerNode.registry.error', 'Error loading registry schema items')
-        )
+    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+        return await makeChildrenNodes({
+            getChildNodes: async () => {
+                await this.updateChildren()
 
-        if (this.errorNode) {
-            return [this.errorNode]
-        }
-
-        if (this.schemaNodes.size > 0) {
-            return [...this.schemaNodes.values()].sort((nodeA, nodeB) =>
-                nodeA.schemaName.localeCompare(nodeB.schemaName)
-            )
-        }
-
-        return [
-            new PlaceholderNode(this, localize('AWS.explorerNode.registry.noSchemas', '[no schemas in this registry]'))
-        ]
+                return [...this.schemaNodes.values()]
+            },
+            getErrorNode: async (error: Error) =>
+                new ErrorNode(
+                    this,
+                    error,
+                    localize('AWS.explorerNode.registry.error', 'Error loading registry schema items')
+                ),
+            getNoChildrenPlaceholderNode: async () =>
+                new PlaceholderNode(
+                    this,
+                    localize('AWS.explorerNode.registry.noSchemas', '[no schemas in this registry]')
+                ),
+            sort: (nodeA: SchemaItemNode, nodeB: SchemaItemNode) => nodeA.schemaName.localeCompare(nodeB.schemaName)
+        })
     }
 
     public update(registryItemOutput: Schemas.RegistrySummary): void {
