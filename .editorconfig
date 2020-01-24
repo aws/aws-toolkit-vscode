@@ -38,6 +38,8 @@ ij_java_use_single_class_imports = true
 ij_java_while_brace_force = always
 
 [{*.kts,*.kt}]
+# Temporary disabled this rule through .editorconfig due to https://youtrack.jetbrains.com/issue/KT-10974 and https://github.com/pinterest/ktlint/issues/527
+disabled_rules = import-ordering
 ij_kotlin_code_style_defaults = KOTLIN_OFFICIAL
 ij_kotlin_name_count_to_use_star_import = 2147483647
 ij_kotlin_name_count_to_use_star_import_for_members = 2147483647
