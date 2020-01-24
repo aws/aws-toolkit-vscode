@@ -14,6 +14,17 @@ import { intersection, toMap, updateInPlace } from '../shared/utilities/collecti
 import { localize } from '../shared/utilities/vsCodeUtils'
 import { RegionNode } from './regionNode'
 
+const ROOT_NODE_SIGN_IN = new AWSCommandTreeNode(
+    undefined,
+    localize('AWS.explorerNode.signIn', 'Connect to AWS...'),
+    'aws.login',
+    undefined,
+    localize(
+        'AWS.explorerNode.signIn.tooltip',
+        'Click here to select credentials the AWS Toolkit will connect to AWS with'
+    )
+)
+
 export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, RefreshableAwsTreeProvider {
     public viewProviderId: string = 'aws.explorer'
     public readonly onDidChangeTreeData: vscode.Event<AWSTreeNodeBase | undefined>
@@ -37,43 +48,53 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
     }
 
     public async getChildren(element?: AWSTreeNodeBase): Promise<AWSTreeNodeBase[]> {
-        if (!!element) {
-            try {
-                return await element.getChildren()
-            } catch (error) {
-                return [
-                    new AWSCommandTreeNode(
-                        element,
-                        localize(
-                            'AWS.explorerNode.lambda.retry',
-                            'Unable to load Lambda Functions, click here to retry'
-                        ),
-                        'aws.refreshAwsExplorerNode',
-                        [this, element]
-                    )
-                ]
+        let childNodes: AWSTreeNodeBase[] = []
+
+        try {
+            if (element) {
+                childNodes = childNodes.concat(await element.getChildren())
+            } else {
+                childNodes = childNodes.concat(await this.getRootNodes())
             }
-        }
+        } catch (err) {
+            const error = err as Error
+            this.logger.error(`Error getting children for node ${element?.label ?? 'Root Node'}`, error)
 
-        const profileName = this.awsContext.getCredentialProfileName()
-        if (!profileName) {
-            return [
+            childNodes.splice(
+                0,
+                childNodes.length,
                 new AWSCommandTreeNode(
-                    undefined,
-                    localize('AWS.explorerNode.signIn', 'Connect to AWS...'),
-                    'aws.login',
-                    undefined,
-                    localize('AWS.explorerNode.signIn.tooltip', 'Connect to AWS using a credential profile')
+                    element,
+                    localize('AWS.explorerNode.error.retry', 'Unable to get child nodes, click here to retry'),
+                    'aws.refreshAwsExplorerNode',
+                    [this, element],
+                    error.message
                 )
-            ]
+            )
         }
 
-        const explorerRegionCodes = await this.awsContext.getExplorerRegions()
+        return childNodes
+    }
+
+    public getRegionNodesSize() {
+        return this.regionNodes.size
+    }
+
+    public refresh(node?: AWSTreeNodeBase) {
+        this._onDidChangeTreeData.fire(node)
+    }
+
+    private async getRootNodes(): Promise<AWSTreeNodeBase[]> {
+        if (!(await this.awsContext.getCredentials())) {
+            return [ROOT_NODE_SIGN_IN]
+        }
+
+        const userVisibleRegionCodes = await this.awsContext.getExplorerRegions()
         const regionMap = toMap(await this.regionProvider.getRegionData(), r => r.regionCode)
 
         updateInPlace(
             this.regionNodes,
-            intersection(regionMap.keys(), explorerRegionCodes),
+            intersection(regionMap.keys(), userVisibleRegionCodes),
             key => this.regionNodes.get(key)!.update(regionMap.get(key)!),
             key => new RegionNode(regionMap.get(key)!, this.regionProvider)
         )
@@ -91,13 +112,5 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
                 )
             ]
         }
-    }
-
-    public getRegionNodesSize() {
-        return this.regionNodes.size
-    }
-
-    public refresh(node?: AWSTreeNodeBase) {
-        this._onDidChangeTreeData.fire(node)
     }
 }
