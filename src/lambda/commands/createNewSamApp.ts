@@ -25,7 +25,7 @@ import {
     CreateNewSamAppWizardResponse,
     DefaultCreateNewSamAppWizardContext
 } from '../wizards/samInitWizard'
-import { recordSamInit, result } from '../../shared/telemetry/telemetry'
+import { recordSamInit, result, runtime } from '../../shared/telemetry/telemetry'
 
 export async function resumeCreateNewSamApp(activationLaunchPath: ActivationLaunchPath = new ActivationLaunchPath()) {
     try {
@@ -56,10 +56,11 @@ export async function resumeCreateNewSamApp(activationLaunchPath: ActivationLaun
 }
 
 export interface CreateNewSamApplicationResults {
-    reason: 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
     runtime: string
     result: result
 }
+
+type createReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
 
 /**
  * Runs `sam init` in the given context and returns useful metadata about its invocation
@@ -69,30 +70,33 @@ export async function createNewSamApplication(
     samCliContext: SamCliContext = getSamCliContext(),
     activationLaunchPath: ActivationLaunchPath = new ActivationLaunchPath()
 ): Promise<void> {
-    const results: CreateNewSamApplicationResults = {
-        reason: 'unknown',
-        runtime: 'unknown',
-        result: 'Failed'
-    }
+    let createResult: result = 'Succeeded'
+    let reason: createReason = 'unknown'
+    let createRuntime: runtime = 'unknown'
+    let config: CreateNewSamAppWizardResponse | undefined
+
+    let initArguments: SamCliInitArgs
 
     try {
         await validateSamCli(samCliContext.validator)
 
         const wizardContext = new DefaultCreateNewSamAppWizardContext()
-        const config: CreateNewSamAppWizardResponse | undefined = await new CreateNewSamAppWizard(wizardContext).run()
+        config = await new CreateNewSamAppWizard(wizardContext).run()
         if (!config) {
-            results.result = 'cancel'
-            results.reason = 'userCancelled'
+            createResult = 'Cancelled'
+            reason = 'userCancelled'
 
             return
         }
 
-        results.runtime = config.runtime
+        // This cast will always succeed because Runtime (from config.runtime) is the same
+        // sectino of types as runtime
+        createRuntime = config.runtime as runtime
 
         // TODO: Make this selectable in the wizard to account for runtimes with multiple dependency managers
         const dependencyManager = getDependencyManager(config.runtime)
 
-        const initArguments: SamCliInitArgs = {
+        initArguments = {
             name: config.name,
             location: config.location.fsPath,
             runtime: config.runtime,
@@ -101,11 +105,9 @@ export async function createNewSamApplication(
 
         await runSamCliInit(initArguments, samCliContext)
 
-        results.result = 'pass'
-
         const uri = await getMainUri(config)
         if (!uri) {
-            results.reason = 'fileNotFound'
+            reason = 'fileNotFound'
 
             return
         }
@@ -121,8 +123,11 @@ export async function createNewSamApplication(
         await vscode.window.showTextDocument(uri)
         activationLaunchPath.clearLaunchPath()
 
-        results.reason = 'complete'
+        reason = 'complete'
     } catch (err) {
+        createResult = 'Failed'
+        reason = 'error'
+
         const checkLogsMessage = makeCheckLogsMessage()
 
         channelLogger.channel.show(true)
@@ -132,16 +137,16 @@ export async function createNewSamApplication(
             checkLogsMessage
         )
 
-        const error = err as Error
-        channelLogger.logger.error(error)
-        results.result = 'fail'
-        results.reason = 'error'
+        channelLogger.logger.error(err as Error)
 
         // An error occured, so do not try to open any files during the next extension activation
         activationLaunchPath.clearLaunchPath()
     } finally {
         recordSamInit({
-            result: results.result
+            result: createResult,
+            reason: reason,
+            runtime: createRuntime,
+            name: config?.name
         })
     }
 }

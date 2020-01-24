@@ -40,9 +40,7 @@ export async function activate(activateArguments: {
 }): Promise<void> {
     const channelLogger = getChannelLogger(activateArguments.outputChannel)
 
-    initializeSamCliContext({
-        settingsConfiguration: activateArguments.toolkitSettings
-    })
+    initializeSamCliContext({ settingsConfiguration: activateArguments.toolkitSettings })
 
     activateArguments.extensionContext.subscriptions.push(
         ...(await activateCodeLensProviders(
