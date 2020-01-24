@@ -15,6 +15,7 @@ import { SchemasDataProvider } from '../../eventSchemas/providers/schemasDataPro
 import { SchemaClient } from '../../shared/clients/schemaClient'
 import { samInitDocUrl } from '../../shared/constants'
 import { ext } from '../../shared/extensionGlobals'
+import { RegionInfo } from '../../shared/regions/regionInfo'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
@@ -57,10 +58,12 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
     public readonly lambdaRuntimes = samLambdaRuntimes.filter(runtime => runtime !== 'nodejs8.10')
     private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Documentation'))
     private readonly currentCredentials: Credentials | undefined
+    private readonly schemasRegions: RegionInfo[]
 
-    public constructor(currentCredentials: Credentials | undefined) {
+    public constructor(currentCredentials: Credentials | undefined, schemasRegions: RegionInfo[]) {
         super()
         this.currentCredentials = currentCredentials
+        this.schemasRegions = schemasRegions
     }
 
     public async promptUserForRuntime(currRuntime?: Runtime): Promise<Runtime | undefined> {
@@ -150,21 +153,21 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
     }
 
     public async promptUserForRegion(currRegion?: string): Promise<string | undefined> {
-        // TODO : Retrieve available regions from endpoints.json and remove hardcoded values  : https://github.com/aws/aws-toolkit-vscode/issues/850
-        const schemasRegions = ['us-east-1', 'us-east-2', 'us-west-2', 'eu-west-1', 'ap-northeast-1']
-
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
                 ignoreFocusOut: true,
-                title: localize('AWS.samcli.initWizard.schemas.region.prompt', 'Select a Region'),
+                title: localize('AWS.samcli.initWizard.schemas.region.prompt', 'Select an EventBridge Schemas Region'),
                 value: currRegion ? currRegion : ''
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
-            items: schemasRegions.map(region => ({
-                label: region,
-                alwaysShow: region === currRegion,
+            items: this.schemasRegions.map(region => ({
+                label: region.regionName,
+                detail: region.regionCode,
+                alwaysShow: region.regionCode === currRegion,
                 description:
-                    region === currRegion ? localize('AWS.wizard.selectedPreviously', 'Selected Previously') : ''
+                    region.regionCode === currRegion
+                        ? localize('AWS.wizard.selectedPreviously', 'Selected Previously')
+                        : ''
             }))
         })
 
@@ -180,7 +183,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
         })
         const val = picker.verifySinglePickerOutput(choices)
 
-        return val ? (val.label as string) : undefined
+        return val ? (val.detail as string) : undefined
     }
 
     public async promptUserForRegistry(currRegion: string, currRegistry?: string): Promise<string | undefined> {

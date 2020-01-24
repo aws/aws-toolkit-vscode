@@ -22,6 +22,7 @@ import { ActivationLaunchPath } from '../../shared/activationLaunchPath'
 import { AwsContext } from '../../shared/awsContext'
 import { ext } from '../../shared/extensionGlobals'
 import { fileExists } from '../../shared/filesystemUtilities'
+import { RegionProvider } from '../../shared/regions/regionProvider'
 import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
@@ -79,6 +80,7 @@ export interface CreateNewSamApplicationResults {
 export async function createNewSamApplication(
     channelLogger: ChannelLogger,
     awsContext: AwsContext,
+    regionProvider: RegionProvider,
     samCliContext: SamCliContext = getSamCliContext(),
     activationLaunchPath: ActivationLaunchPath = new ActivationLaunchPath()
 ): Promise<CreateNewSamApplicationResults> {
@@ -92,7 +94,12 @@ export async function createNewSamApplication(
         await validateSamCli(samCliContext.validator)
 
         const currentCredentials = await awsContext.getCredentials()
-        const wizardContext = new DefaultCreateNewSamAppWizardContext(currentCredentials)
+        const availableRegions = await regionProvider.getRegionData()
+        const schemasRegions = availableRegions.filter(region =>
+            regionProvider.isServiceInRegion('schemas', region.regionCode)
+        )
+
+        const wizardContext = new DefaultCreateNewSamAppWizardContext(currentCredentials, schemasRegions)
         const config: CreateNewSamAppWizardResponse | undefined = await new CreateNewSamAppWizard(wizardContext).run()
         if (!config) {
             results.result = 'cancel'

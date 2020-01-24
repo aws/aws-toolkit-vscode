@@ -103,7 +103,8 @@ async function registerServerlessCommands(params: {
             callback: async (): Promise<{ datum: MetricDatum }> => {
                 const createNewSamApplicationResults: CreateNewSamApplicationResults = await createNewSamApplication(
                     params.channelLogger,
-                    params.awsContext
+                    params.awsContext,
+                    params.regionProvider
                 )
                 const datum = defaultMetricDatum('new')
                 datum.Metadata = []

@@ -234,7 +234,7 @@
     "AWS.samcli.initWizard.template.helloWorld.description": "A basic SAM app",
     "AWS.samcli.initWizard.template.eventBridge_helloWorld.description": "A Hello World app for Amazon EventBridge that invokes a Lambda for every EC2 instance state change in your account",
     "AWS.samcli.initWizard.template.eventBridge_starterApp.description": "A Starter app for Amazon EventBridge that invokes a Lambda based on a dynamic event trigger for an EventBridge Schema of your choice",
-    "AWS.samcli.initWizard.schemas.region.prompt": "Select a Region",
+    "AWS.samcli.initWizard.schemas.region.prompt": "Select an EventBridge Schemas Region",
     "AWS.samcli.initWizard.schemas.registry.prompt": "Select a Registry",
     "AWS.samcli.initWizard.schemas.registry.failed_to_load_resources": "Error loading registries.",
     "AWS.samcli.initWizard.schemas.schema.prompt": "Select a Schema",
