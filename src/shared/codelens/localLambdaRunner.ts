@@ -26,6 +26,7 @@ import { generateDefaultHandlerConfig, HandlerConfig } from '../../lambda/config
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { getLogger, Logger } from '../logger'
+import { recordSamAttachDebugger, runtime as lambdaRuntime } from '../telemetry/telemetry'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { Timeout } from '../utilities/timeoutUtils'
@@ -582,25 +583,11 @@ export interface RecordAttachDebuggerMetricContext {
 }
 
 function recordAttachDebuggerMetric(params: RecordAttachDebuggerMetricContext) {
-    const currTime = new Date()
-    const namespace = params.result ? 'DebugAttachSuccess' : 'DebugAttachFailure'
-
-    params.telemetryService.record({
-        createTime: currTime,
-        data: [
-            {
-                MetricName: `${namespace}_attempts`,
-                Value: params.attempts,
-                Unit: 'Count',
-                Metadata: [{ Key: 'runtime', Value: params.runtime }]
-            },
-            {
-                MetricName: `${namespace}_duration`,
-                Value: params.durationMillis,
-                Unit: 'Milliseconds',
-                Metadata: [{ Key: 'runtime', Value: params.runtime }]
-            }
-        ]
+    recordSamAttachDebugger({
+        runtime: params.runtime as lambdaRuntime,
+        result: params.result ? 'Succeeded' : 'Failed',
+        attempts: params.attempts,
+        duration: params.durationMillis
     })
 }
 

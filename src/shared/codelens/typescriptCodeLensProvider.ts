@@ -10,16 +10,15 @@ import { CloudFormation } from '../cloudformation/cloudformation'
 import { findFileInParentPaths } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
-import { MetricDatum } from '../telemetry/clienttelemetry'
-import { registerCommand } from '../telemetry/telemetryUtils'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { getChannelLogger, getDebugPort, localize } from '../utilities/vsCodeUtils'
 
 import { nodeJsRuntimes } from '../../lambda/models/samLambdaRuntime'
 import { getLogger } from '../logger'
 import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
+import { recordLambdaInvokelocal, result, runtime } from '../telemetry/telemetry'
 import { normalizeSeparator } from '../utilities/pathUtils'
-import { CodeLensProviderParams, getInvokeCmdKey, getMetricDatum, makeCodeLenses } from './codeLensUtils'
+import { CodeLensProviderParams, getInvokeCmdKey, makeCodeLenses } from './codeLensUtils'
 import { getHandlerRelativePath, LambdaLocalInvokeParams, LocalLambdaRunner } from './localLambdaRunner'
 
 async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
@@ -84,21 +83,21 @@ export function initialize({
     }
 
     const command = getInvokeCmdKey('javascript')
-    registerCommand({
-        command,
-        callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: MetricDatum }> => {
-            const logger = getLogger()
+    vscode.commands.registerCommand(command, async (params: LambdaLocalInvokeParams) => {
+        const logger = getLogger()
 
-            const resource = await CloudFormation.getResourceFromTemplate({
-                handlerName: params.handlerName,
-                templatePath: params.samTemplate.fsPath
-            })
-            const runtime = CloudFormation.getRuntime(resource)
-
-            if (!nodeJsRuntimes.has(runtime)) {
+        const resource = await CloudFormation.getResourceFromTemplate({
+            handlerName: params.handlerName,
+            templatePath: params.samTemplate.fsPath
+        })
+        const lambdaRuntime = CloudFormation.getRuntime(resource)
+        let invokeResult: result = 'Succeeded'
+        try {
+            if (!nodeJsRuntimes.has(lambdaRuntime)) {
+                invokeResult = 'Failed'
                 logger.error(
                     `Javascript local invoke on ${params.document.uri.fsPath} encountered` +
-                        ` unsupported runtime ${runtime}`
+                        ` unsupported runtime ${lambdaRuntime}`
                 )
 
                 vscode.window.showErrorMessage(
@@ -106,22 +105,25 @@ export function initialize({
                         'AWS.samcli.local.invoke.runtime.unsupported',
                         'Unsupported {0} runtime: {1}',
                         'javascript',
-                        runtime
+                        lambdaRuntime
                     )
                 )
             } else {
                 await invokeLambda({
-                    runtime,
+                    runtime: lambdaRuntime,
                     ...params
                 })
             }
-
-            return getMetricDatum({
-                isDebug: params.isDebug,
-                runtime
+        } catch (err) {
+            invokeResult = 'Failed'
+            throw err
+        } finally {
+            recordLambdaInvokelocal({
+                result: invokeResult,
+                runtime: lambdaRuntime as runtime,
+                debug: params.isDebug
             })
-        },
-        telemetryName: 'lambda_invokelocal'
+        }
     })
 }
 

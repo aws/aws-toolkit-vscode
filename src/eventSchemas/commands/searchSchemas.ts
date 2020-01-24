@@ -18,9 +18,8 @@ import { SchemaClient } from '../../shared/clients/schemaClient'
 import { ext } from '../../shared/extensionGlobals'
 import { ExtensionUtilities } from '../../shared/extensionUtilities'
 import { getLogger, Logger } from '../../shared/logger'
-import { recordSchemasSearch, result } from '../../shared/telemetry/telemetry'
+import { recordSchemasSearch, recordSchemasView, result } from '../../shared/telemetry/telemetry'
 import { TelemetryService } from '../../shared/telemetry/telemetryService'
-import { defaultMetricDatum } from '../../shared/telemetry/telemetryUtils'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
@@ -148,7 +147,7 @@ export function createMessageReceivedFunc({
     return async (message: CommandMessage) => {
         switch (message.command) {
             case 'fetchSchemaContent':
-                recordSchemaSearchTelemetry(telemetryService, message.command)
+                recordSchemasView({ result: 'Succeeded' })
 
                 let selectedVersion = message.version
                 let versionList: string[] = []
@@ -178,7 +177,7 @@ export function createMessageReceivedFunc({
                 return
 
             case 'searchSchemas':
-                recordSchemaSearchTelemetry(telemetryService, message.command)
+                recordSchemasSearch({ result: 'Succeeded' })
 
                 const results = await getSearchResults(schemaClient, registryNames, message.keyword!)
 
@@ -191,8 +190,6 @@ export function createMessageReceivedFunc({
                 return
 
             case 'downloadCodeBindings':
-                recordSchemaSearchTelemetry(telemetryService, message.command)
-
                 const schemaItem: Schemas.SchemaSummary = {
                     SchemaName: getSchemaNameFromTitle(message.schemaSummary!.Title)
                 }
@@ -209,13 +206,6 @@ export function createMessageReceivedFunc({
                 throw new Error(`Search webview command ${message.command} is invalid`)
         }
     }
-}
-
-function recordSchemaSearchTelemetry(telemetryService: TelemetryService, action: string) {
-    telemetryService.record({
-        createTime: new Date(),
-        data: [defaultMetricDatum(`schemas_${action}`)]
-    })
 }
 
 interface SchemaVersionedSummary {
