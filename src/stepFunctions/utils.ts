@@ -1,5 +1,5 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -35,7 +35,7 @@ export async function updateCache(globalStorage: Memento): Promise<void> {
         currentURL: VISUALIZATION_SCRIPT_URL,
         filePath: ext.visualizationResourcePaths.visualizationLibraryScript.fsPath
     }).catch(error => {
-        logger.debug('Failed to update State Machine Graph script assets')
+        logger.error('Failed to update State Machine Graph script assets')
 
         throw error
     })
@@ -46,7 +46,7 @@ export async function updateCache(globalStorage: Memento): Promise<void> {
         currentURL: VISUALIZATION_CSS_URL,
         filePath: ext.visualizationResourcePaths.visualizationLibraryCSS.fsPath
     }).catch(error => {
-        logger.debug('Failed to update State Machine Graph css assets')
+        logger.error('Failed to update State Machine Graph css assets')
 
         throw error
     })
@@ -59,19 +59,13 @@ async function writeToLocalStorage(destinationPath: string, data: string): Promi
 
     const storageFolder = ext.visualizationResourcePaths.visualizationLibraryCachePath.fsPath
 
-    if (!(await fileExists(storageFolder))) {
-        logger.debug('Folder for graphing script and styling doesnt exist. Creating it.')
-
-        try {
-            await mkdir(storageFolder)
-        } catch (err) {
-            logger.error(err as Error)
-
-            throw err
-        }
-    }
-
     try {
+        if (!(await fileExists(storageFolder))) {
+            logger.debug('Folder for graphing script and styling doesnt exist. Creating it.')
+
+            await mkdir(storageFolder)
+        }
+
         await writeFile(destinationPath, data, 'utf8')
     } catch (err) {
         /*
@@ -86,13 +80,13 @@ async function writeToLocalStorage(destinationPath: string, data: string): Promi
 
 export async function updateCachedFile(options: UpdateCachedScriptOptions) {
     const logger: Logger = getLogger()
-    const downloaedUrl = options.globalStorage.get<string>(options.lastDownloadedURLKey)
+    const downloadedUrl = options.globalStorage.get<string>(options.lastDownloadedURLKey)
     const cachedFileExists = await fileExists(options.filePath)
 
     // if current url is different than url that was previously used to download the assets
     // or if the file assets do not exist
     // download and cache the assets
-    if (downloaedUrl !== options.currentURL || !cachedFileExists) {
+    if (downloadedUrl !== options.currentURL || !cachedFileExists) {
         const response = await httpsGetRequestWrapper(options.currentURL).catch(err => {
             logger.error(err as Error)
 
