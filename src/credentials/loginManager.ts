@@ -11,6 +11,7 @@ import { AwsContext } from '../shared/awsContext'
 import { credentialHelpUrl } from '../shared/constants'
 import { getAccountId } from '../shared/credentials/accountId'
 import { getLogger } from '../shared/logger'
+import { recordAwsSetCredentials, result } from '../shared/telemetry/telemetry'
 import { CredentialsStore } from './credentialsStore'
 import { CredentialsProvider } from './providers/credentialsProvider'
 import { asString, CredentialsProviderId } from './providers/credentialsProviderId'
@@ -26,6 +27,7 @@ export class LoginManager {
      * If an error occurs while trying to set up and verify these credentials, the Toolkit is "logged out".
      */
     public async login(credentialsProviderId: CredentialsProviderId): Promise<void> {
+        let loginResult: result = 'Succeeded'
         try {
             const provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(
                 credentialsProviderId
@@ -54,6 +56,7 @@ export class LoginManager {
                 defaultRegion: provider.getDefaultRegion()
             })
         } catch (err) {
+            loginResult = 'Failed'
             getLogger().error(
                 `Error trying to connect to AWS with Credentials Provider ${asString(
                     credentialsProviderId
@@ -65,6 +68,8 @@ export class LoginManager {
             await this.logout()
 
             this.notifyUserInvalidCredentials(credentialsProviderId)
+        } finally {
+            recordAwsSetCredentials({ result: loginResult })
         }
     }
 

@@ -95,7 +95,6 @@ export async function activate(context: vscode.ExtensionContext) {
         })
         await ext.telemetry.start()
 
-        // TODO remove logout and rename login, they make no sense from a UX standpoint
         vscode.commands.registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())
         vscode.commands.registerCommand('aws.logout', async () => await ext.awsContextCommands.onCommandLogout())
 
