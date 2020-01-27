@@ -12,7 +12,7 @@ import * as vscode from 'vscode'
 import { SchemaClient } from '../../shared/clients/schemaClient'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { getLogger, Logger } from '../../shared/logger'
-import { recordSchemasDownload, result } from '../../shared/telemetry/telemetry'
+import { recordSchemasDownload, Result } from '../../shared/telemetry/telemetry'
 import { ExtensionDisposableFiles } from '../../shared/utilities/disposableFiles'
 import { SchemaItemNode } from '../explorer/schemaItemNode'
 import { getLanguageDetails } from '../models/schemaCodeLangs'
@@ -35,7 +35,7 @@ const MAX_RETRIES = 150 // p100 of Java code generation is 250 seconds. So retry
 
 export async function downloadSchemaItemCode(node: SchemaItemNode) {
     const logger: Logger = getLogger()
-    let downloadResult: result = 'Succeeded'
+    let downloadResult: Result = 'Succeeded'
 
     try {
         const wizardContext = new DefaultSchemaCodeDownloadWizardContext(node)

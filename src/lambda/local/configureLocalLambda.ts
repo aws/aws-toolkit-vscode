@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as fsUtils from '../../shared/filesystemUtilities'
 import { getLogger, Logger } from '../../shared/logger'
-import { recordLambdaConfigure, result } from '../../shared/telemetry/telemetry'
+import { recordLambdaConfigure, Result } from '../../shared/telemetry/telemetry'
 import { getNormalizedRelativePath } from '../../shared/utilities/pathUtils'
 import { getChildrenRange } from '../../shared/utilities/symbolUtilities'
 import { getTabSize, saveDocumentIfDirty } from '../../shared/utilities/textDocumentUtilities'
@@ -40,7 +40,7 @@ export async function configureLocalLambda(
     samTemplate: vscode.Uri,
     context: ConfigureLocalLambdaContext = new DefaultConfigureLocalLambdaContext()
 ): Promise<void> {
-    let configureResult: result = 'Succeeded'
+    let configureResult: Result = 'Succeeded'
     const templateRelativePath = getNormalizedRelativePath(workspaceFolder.uri.fsPath, samTemplate.fsPath)
 
     const configPath: string = getTemplatesConfigPath(workspaceFolder.uri.fsPath)

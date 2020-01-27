@@ -11,7 +11,7 @@ import { AwsContext } from '../shared/awsContext'
 import { credentialHelpUrl } from '../shared/constants'
 import { getAccountId } from '../shared/credentials/accountId'
 import { getLogger } from '../shared/logger'
-import { recordAwsSetCredentials, result } from '../shared/telemetry/telemetry'
+import { recordAwsSetCredentials, Result } from '../shared/telemetry/telemetry'
 import { CredentialsStore } from './credentialsStore'
 import { CredentialsProvider } from './providers/credentialsProvider'
 import { asString, CredentialsProviderId } from './providers/credentialsProviderId'
@@ -27,7 +27,7 @@ export class LoginManager {
      * If an error occurs while trying to set up and verify these credentials, the Toolkit is "logged out".
      */
     public async login(credentialsProviderId: CredentialsProviderId): Promise<void> {
-        let loginResult: result = 'Succeeded'
+        let loginResult: Result = 'Succeeded'
         try {
             const provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(
                 credentialsProviderId

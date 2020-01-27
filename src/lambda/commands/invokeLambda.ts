@@ -15,7 +15,7 @@ import { CompositeResourceFetcher } from '../../shared/resourcefetcher/composite
 import { FileResourceFetcher } from '../../shared/resourcefetcher/fileResourceFetcher'
 import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
 import { ResourceFetcher } from '../../shared/resourcefetcher/resourcefetcher'
-import { recordLambdaInvokeremote, result, runtime } from '../../shared/telemetry/telemetry'
+import { recordLambdaInvokeremote, Result, Runtime } from '../../shared/telemetry/telemetry'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
 import { sampleRequestManifestPath, sampleRequestPath } from '../constants'
 import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
@@ -48,7 +48,7 @@ export async function invokeLambda(params: {
 }) {
     const logger: Logger = getLogger()
     const functionNode = params.functionNode
-    let invokeResult: result = 'Succeeded'
+    let invokeResult: Result = 'Succeeded'
 
     try {
         const view = vscode.window.createWebviewPanel(
@@ -82,19 +82,15 @@ export async function invokeLambda(params: {
 
             const inputs: SampleRequest[] = []
 
-            xml2js.parseString(
-                sampleInput,
-                { explicitArray: false },
-                (err: Error, sampleRequest: SampleRequestManifest) => {
-                    if (err) {
-                        return
-                    }
-
-                    _.forEach(sampleRequest.requests.request, r => {
-                        inputs.push({ name: r.name, filename: r.filename })
-                    })
+            xml2js.parseString(sampleInput, { explicitArray: false }, (err: Error, result: SampleRequestManifest) => {
+                if (err) {
+                    return
                 }
-            )
+
+                _.forEach(result.requests.request, r => {
+                    inputs.push({ name: r.name, filename: r.filename })
+                })
+            })
 
             const loadScripts = ExtensionUtilities.getScriptsForHtml(['invokeLambdaVue.js'])
             const loadLibs = ExtensionUtilities.getLibrariesForHtml(['vue.min.js'])
@@ -127,7 +123,7 @@ export async function invokeLambda(params: {
     } finally {
         recordLambdaInvokeremote({
             result: invokeResult,
-            runtime: functionNode.configuration.Runtime as runtime
+            runtime: functionNode.configuration.Runtime as Runtime
         })
     }
 }

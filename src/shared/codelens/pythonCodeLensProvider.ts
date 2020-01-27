@@ -16,7 +16,7 @@ import { getLogger } from '../logger'
 import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
-import { recordLambdaInvokelocal, result, runtime } from '../telemetry/telemetry'
+import { recordLambdaInvokelocal, Result, Runtime } from '../telemetry/telemetry'
 import { ChannelLogger, getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
 import { CodeLensProviderParams, DRIVE_LETTER_REGEX, getInvokeCmdKey, makeCodeLenses } from './codeLensUtils'
 import {
@@ -314,7 +314,7 @@ export async function initialize({
     vscode.commands.registerCommand(
         getInvokeCmdKey('python'),
         async (params: LambdaLocalInvokeParams): Promise<void> => {
-            let invokeResult: result = 'Succeeded'
+            let invokeResult: Result = 'Succeeded'
             let lambdaRuntime = 'unknown'
             try {
                 const resource = await CloudFormation.getResourceFromTemplate({
@@ -333,7 +333,7 @@ export async function initialize({
             } finally {
                 recordLambdaInvokelocal({
                     result: invokeResult,
-                    runtime: lambdaRuntime as runtime,
+                    runtime: lambdaRuntime as Runtime,
                     debug: params.isDebug
                 })
             }

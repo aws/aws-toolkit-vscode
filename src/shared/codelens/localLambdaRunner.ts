@@ -26,7 +26,7 @@ import { generateDefaultHandlerConfig, HandlerConfig } from '../../lambda/config
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { getLogger, Logger } from '../logger'
-import { recordSamAttachDebugger, runtime as lambdaRuntime } from '../telemetry/telemetry'
+import { recordSamAttachDebugger, Runtime } from '../telemetry/telemetry'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { Timeout } from '../utilities/timeoutUtils'
@@ -584,7 +584,7 @@ export interface RecordAttachDebuggerMetricContext {
 
 function recordAttachDebuggerMetric(params: RecordAttachDebuggerMetricContext) {
     recordSamAttachDebugger({
-        runtime: params.runtime as lambdaRuntime,
+        runtime: params.runtime as Runtime,
         result: params.result ? 'Succeeded' : 'Failed',
         attempts: params.attempts,
         duration: params.durationMillis

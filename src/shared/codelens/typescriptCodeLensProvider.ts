@@ -16,7 +16,7 @@ import { getChannelLogger, getDebugPort, localize } from '../utilities/vsCodeUti
 import { nodeJsRuntimes } from '../../lambda/models/samLambdaRuntime'
 import { getLogger } from '../logger'
 import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
-import { recordLambdaInvokelocal, result, runtime } from '../telemetry/telemetry'
+import { recordLambdaInvokelocal, Result, Runtime } from '../telemetry/telemetry'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { CodeLensProviderParams, getInvokeCmdKey, makeCodeLenses } from './codeLensUtils'
 import { getHandlerRelativePath, LambdaLocalInvokeParams, LocalLambdaRunner } from './localLambdaRunner'
@@ -91,7 +91,7 @@ export function initialize({
             templatePath: params.samTemplate.fsPath
         })
         const lambdaRuntime = CloudFormation.getRuntime(resource)
-        let invokeResult: result = 'Succeeded'
+        let invokeResult: Result = 'Succeeded'
         try {
             if (!nodeJsRuntimes.has(lambdaRuntime)) {
                 invokeResult = 'Failed'
@@ -120,7 +120,7 @@ export function initialize({
         } finally {
             recordLambdaInvokelocal({
                 result: invokeResult,
-                runtime: lambdaRuntime as runtime,
+                runtime: lambdaRuntime as Runtime,
                 debug: params.isDebug
             })
         }

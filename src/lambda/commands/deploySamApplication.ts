@@ -17,7 +17,7 @@ import { runSamCliDeploy } from '../../shared/sam/cli/samCliDeploy'
 import { SamCliProcessInvoker } from '../../shared/sam/cli/samCliInvokerUtils'
 import { runSamCliPackage } from '../../shared/sam/cli/samCliPackage'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
-import { recordSamDeploy, result } from '../../shared/telemetry/telemetry'
+import { recordSamDeploy, Result } from '../../shared/telemetry/telemetry'
 import { makeCheckLogsMessage } from '../../shared/utilities/messages'
 import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
 import { SamDeployWizardResponse } from '../wizards/samDeployWizard'
@@ -62,7 +62,7 @@ export async function deploySamApplication(
         window?: WindowFunctions
     }
 ): Promise<void> {
-    let deployResult: result = 'Succeeded'
+    let deployResult: Result = 'Succeeded'
     try {
         const credentials = await awsContext.getCredentials()
         if (!credentials) {

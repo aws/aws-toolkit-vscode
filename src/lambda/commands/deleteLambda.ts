@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
 import { LambdaClient } from '../../shared/clients/lambdaClient'
-import { millisecondsSince, recordLambdaDelete, result } from '../../shared/telemetry/telemetry'
+import { millisecondsSince, recordLambdaDelete, Result } from '../../shared/telemetry/telemetry'
 
 const localize = nls.loadMessageBundle()
 
@@ -46,7 +46,7 @@ export async function deleteLambda({
         return
     }
     const startTime = new Date()
-    let deleteResult: result = 'Succeeded'
+    let deleteResult: Result = 'Succeeded'
     try {
         const isConfirmed = await onConfirm()
         if (isConfirmed) {

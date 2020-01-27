@@ -18,7 +18,7 @@ import { SchemaClient } from '../../shared/clients/schemaClient'
 import { ext } from '../../shared/extensionGlobals'
 import { ExtensionUtilities } from '../../shared/extensionUtilities'
 import { getLogger, Logger } from '../../shared/logger'
-import { recordSchemasSearch, recordSchemasView, result } from '../../shared/telemetry/telemetry'
+import { recordSchemasSearch, recordSchemasView, Result } from '../../shared/telemetry/telemetry'
 import { TelemetryService } from '../../shared/telemetry/telemetryService'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
@@ -29,7 +29,7 @@ export async function createSearchSchemasWebView(params: { node: RegistryItemNod
     const logger: Logger = getLogger()
     const client: SchemaClient = ext.toolkitClientBuilder.createSchemaClient(params.node.regionCode)
     const registryNames = await getRegistryNames(params.node, client)
-    let webviewResult: result = 'Succeeded'
+    let webviewResult: Result = 'Succeeded'
 
     try {
         if (registryNames.length === 0) {

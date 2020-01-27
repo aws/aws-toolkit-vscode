@@ -14,7 +14,7 @@ import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliCont
 import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
 import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
-import { recordSamInit, result, runtime } from '../../shared/telemetry/telemetry'
+import { recordSamInit, Result, Runtime } from '../../shared/telemetry/telemetry'
 import { makeCheckLogsMessage } from '../../shared/utilities/messages'
 import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
@@ -55,7 +55,7 @@ export async function resumeCreateNewSamApp(activationLaunchPath: ActivationLaun
 
 export interface CreateNewSamApplicationResults {
     runtime: string
-    result: result
+    result: Result
 }
 
 type createReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
@@ -68,9 +68,9 @@ export async function createNewSamApplication(
     samCliContext: SamCliContext = getSamCliContext(),
     activationLaunchPath: ActivationLaunchPath = new ActivationLaunchPath()
 ): Promise<void> {
-    let createResult: result = 'Succeeded'
+    let createResult: Result = 'Succeeded'
     let reason: createReason = 'unknown'
-    let createRuntime: runtime = 'unknown'
+    let createRuntime: Runtime = 'unknown'
     let config: CreateNewSamAppWizardResponse | undefined
 
     let initArguments: SamCliInitArgs
@@ -88,8 +88,8 @@ export async function createNewSamApplication(
         }
 
         // This cast (and all like it) will always succeed because Runtime (from config.runtime) is the same
-        // section of types as runtime
-        createRuntime = config.runtime as runtime
+        // section of types as Runtime
+        createRuntime = config.runtime as Runtime
 
         // TODO: Make this selectable in the wizard to account for runtimes with multiple dependency managers
         const dependencyManager = getDependencyManager(config.runtime)

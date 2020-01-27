@@ -9,14 +9,14 @@ const localize = nls.loadMessageBundle()
 import _ = require('lodash')
 import * as vscode from 'vscode'
 import { getLogger, Logger } from '../../logger'
-import { recordAwsShowExplorerErrorDetails, result } from '../../telemetry/telemetry'
+import { recordAwsShowExplorerErrorDetails, Result } from '../../telemetry/telemetry'
 import { BaseTemplates } from '../../templates/baseTemplates'
 import { ErrorNode } from '../nodes/errorNode'
 import { ErrorTemplates } from './errorTemplates'
 
 export async function showErrorDetails(element: ErrorNode) {
     const logger: Logger = getLogger()
-    let showResult: result = 'Succeeded'
+    let showResult: Result = 'Succeeded'
 
     const view = vscode.window.createWebviewPanel(
         'html',

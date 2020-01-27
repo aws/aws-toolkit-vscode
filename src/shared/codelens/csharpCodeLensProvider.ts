@@ -21,7 +21,7 @@ import {
     WAIT_FOR_DEBUGGER_MESSAGES
 } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
-import { recordLambdaInvokelocal, result, runtime } from '../telemetry/telemetry'
+import { recordLambdaInvokelocal, Result, Runtime } from '../telemetry/telemetry'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { dirnameWithTrailingSlash } from '../utilities/pathUtils'
 import { ChannelLogger, getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
@@ -144,7 +144,7 @@ async function onLocalInvokeCommand(
         templateResources: template.Resources,
         handlerName: lambdaLocalInvokeParams.handlerName
     })
-    let invokeResult: result = 'Succeeded'
+    let invokeResult: Result = 'Succeeded'
     const lambdaRuntime = CloudFormation.getRuntime(resource)
 
     try {
@@ -243,7 +243,7 @@ async function onLocalInvokeCommand(
     } finally {
         recordLambdaInvokelocal({
             result: invokeResult,
-            runtime: lambdaRuntime as runtime,
+            runtime: lambdaRuntime as Runtime,
             debug: lambdaLocalInvokeParams.isDebug
         })
     }

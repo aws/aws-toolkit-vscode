@@ -10,12 +10,12 @@ import * as vscode from 'vscode'
 import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { ext } from '../../shared/extensionGlobals'
 import { getLogger, Logger } from '../../shared/logger'
-import { recordCloudformationDelete, result } from '../../shared/telemetry/telemetry'
+import { recordCloudformationDelete, Result } from '../../shared/telemetry/telemetry'
 import { CloudFormationStackNode } from '../explorer/cloudFormationNodes'
 
 export async function deleteCloudFormation(refresh: () => void, node?: CloudFormationStackNode) {
     const logger: Logger = getLogger()
-    let deleteResult: result = 'Succeeded'
+    let deleteResult: Result = 'Succeeded'
     const stackName = node?.stackName ?? ''
     try {
         if (!node) {

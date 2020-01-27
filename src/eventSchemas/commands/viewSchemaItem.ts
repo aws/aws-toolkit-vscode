@@ -8,14 +8,14 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import { getLogger, Logger } from '../../shared/logger'
-import { recordSchemasView, result } from '../../shared/telemetry/telemetry'
+import { recordSchemasView, Result } from '../../shared/telemetry/telemetry'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { SchemaItemNode } from '../explorer/schemaItemNode'
 
 export async function viewSchemaItem(node: SchemaItemNode) {
     const logger: Logger = getLogger()
 
-    let viewResult: result = 'Succeeded'
+    let viewResult: Result = 'Succeeded'
     try {
         const rawSchemaContent = await node.getSchemaContent()
         await showSchemaContent(rawSchemaContent)
