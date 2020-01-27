@@ -82,15 +82,19 @@ export async function invokeLambda(params: {
 
             const inputs: SampleRequest[] = []
 
-            xml2js.parseString(sampleInput, { explicitArray: false }, (err: Error, request: SampleRequestManifest) => {
-                if (err) {
-                    return
-                }
+            xml2js.parseString(
+                sampleInput,
+                { explicitArray: false },
+                (err: Error, sampleRequest: SampleRequestManifest) => {
+                    if (err) {
+                        return
+                    }
 
-                _.forEach(request.requests.request, r => {
-                    inputs.push({ name: r.name, filename: r.filename })
-                })
-            })
+                    _.forEach(sampleRequest.requests.request, r => {
+                        inputs.push({ name: r.name, filename: r.filename })
+                    })
+                }
+            )
 
             const loadScripts = ExtensionUtilities.getScriptsForHtml(['invokeLambdaVue.js'])
             const loadLibs = ExtensionUtilities.getLibrariesForHtml(['vue.min.js'])

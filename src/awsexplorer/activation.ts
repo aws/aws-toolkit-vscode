@@ -20,7 +20,7 @@ import {
     recordAwsHideRegion,
     recordAwsRefreshExplorer,
     recordAwsShowRegion,
-    recordVscodeActiveregions
+    recordVscodeActiveRegions
 } from '../shared/telemetry/telemetry'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../shared/treeview/nodes/errorNode'
@@ -47,7 +47,7 @@ export async function activate(activateArguments: {
 
     await registerAwsExplorerCommands(awsExplorer)
 
-    recordVscodeActiveregions({ value: awsExplorer.getRegionNodesSize() })
+    recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
 
     activateArguments.awsContextTrees.addTree(awsExplorer)
 
@@ -65,13 +65,13 @@ async function registerAwsExplorerCommands(
     vscode.commands.registerCommand('aws.showRegion', async () => {
         await ext.awsContextCommands.onCommandShowRegion()
         recordAwsShowRegion()
-        recordVscodeActiveregions({ value: awsExplorer.getRegionNodesSize() })
+        recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
     })
 
     vscode.commands.registerCommand('aws.hideRegion', async (node?: RegionNode) => {
         await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
         recordAwsHideRegion()
-        recordVscodeActiveregions({ value: awsExplorer.getRegionNodesSize() })
+        recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
     })
 
     vscode.commands.registerCommand('aws.refreshAwsExplorer', async () => {
