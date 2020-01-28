@@ -7,6 +7,7 @@ import { join } from 'path'
 import * as vscode from 'vscode'
 import { ext } from '../shared/extensionGlobals'
 import { registerCommand } from '../shared/telemetry/telemetryUtils'
+import { createStateMachineFromTemplate } from './commands/createStateMachineFromTemplate'
 import { visualizeStateMachine } from './commands/visualizeStateMachine'
 
 /**
@@ -26,6 +27,16 @@ async function registerStepFunctionCommands(extensionContext: vscode.ExtensionCo
                 return await visualizeStateMachine()
             },
             telemetryName: 'stepfunctions_renderstatemachine'
+        })
+    )
+
+    extensionContext.subscriptions.push(
+        registerCommand({
+            command: 'aws.stepfunctions.createStateMachineFromTemplate',
+            telemetryName: 'stepfunctions_createStateMachineFromTemplate',
+            callback: async () => {
+                await createStateMachineFromTemplate(extensionContext)
+            }
         })
     )
 }
