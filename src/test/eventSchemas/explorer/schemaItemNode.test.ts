@@ -10,8 +10,8 @@ import { RegistryItemNode } from '../../../eventSchemas/explorer/registryItemNod
 import { SchemaItemNode } from '../../../eventSchemas/explorer/schemaItemNode'
 import { SchemaClient } from '../../../shared/clients/schemaClient'
 import { ext } from '../../../shared/extensionGlobals'
+import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
-import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { MockSchemaClient, MockToolkitClientBuilder } from '../../shared/clients/mockClients'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 import { asyncGenerator } from '../../utilities/collectionUtils'
@@ -131,10 +131,7 @@ describe('RegistryItemNode', () => {
             `Expected ${inputSchemaNames.length} RegistryItem children, got ${children.length}`
         )
 
-        function assertChildNodeSchemaName(
-            actualChildNode: SchemaItemNode | PlaceholderNode,
-            expectedNodeText: string
-        ) {
+        function assertChildNodeSchemaName(actualChildNode: AWSTreeNodeBase, expectedNodeText: string) {
             assert.strictEqual(
                 'schemaName' in actualChildNode,
                 true,
