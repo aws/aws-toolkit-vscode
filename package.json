@@ -48,6 +48,7 @@
         "onCommand:aws.help",
         "onCommand:aws.github",
         "onCommand:aws.renderStateMachine",
+        "onCommand:aws.stepfunctions.createStateMachineFromTemplate",
         "onView:aws.cdk.explorer",
         "onCommand:aws.refreshCdkExplorer"
     ],
@@ -443,6 +444,11 @@
                     "dark": "third-party/resources/from-vscode-icons/dark/refresh.svg",
                     "light": "third-party/resources/from-vscode-icons/light/refresh.svg"
                 }
+            },
+            {
+                "command": "aws.stepfunctions.createStateMachineFromTemplate",
+                "title": "%AWS.command.stepFunctions.createStateMachineFromTemplate%",
+                "category": "AWS"
             },
             {
                 "command": "aws.renderStateMachine",
