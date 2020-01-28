@@ -57,10 +57,7 @@ export class RegistryItemNode extends AWSTreeNodeBase {
                     localize('AWS.explorerNode.registry.error', 'Error loading registry schema items')
                 ),
             getNoChildrenPlaceholderNode: async () =>
-                new PlaceholderNode(
-                    this,
-                    localize('AWS.explorerNode.registry.noSchemas', '[no schemas in this registry]')
-                ),
+                new PlaceholderNode(this, localize('AWS.explorerNode.registry.noSchemas', '[No Registry Schemas]')),
             sort: (nodeA: SchemaItemNode, nodeB: SchemaItemNode) => nodeA.schemaName.localeCompare(nodeB.schemaName)
         })
     }
