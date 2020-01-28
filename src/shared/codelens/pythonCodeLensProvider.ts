@@ -28,6 +28,7 @@ import {
 } from './codeLensUtils'
 import {
     executeSamBuild,
+    getConfig,
     getHandlerRelativePath,
     getLambdaInfoFromExistingTemplate,
     getRelativeFunctionHandler,
@@ -269,14 +270,20 @@ export async function initialize({
                 )}`
             )
 
-            const codeDir = samProjectCodeRoot
+            const config = await getConfig({
+                handlerName: args.handlerName,
+                documentUri: args.document.uri,
+                samTemplate: vscode.Uri.file(args.samTemplate.fsPath)
+            })
+
             const samTemplatePath: string = await executeSamBuild({
                 baseBuildDir,
                 channelLogger,
-                codeDir,
+                codeDir: samProjectCodeRoot,
                 inputTemplatePath,
                 manifestPath,
-                samProcessInvoker: processInvoker
+                samProcessInvoker: processInvoker,
+                useContainer: config.useContainer
             })
 
             const invokeArgs: InvokeLambdaFunctionArguments = {

@@ -90,12 +90,20 @@ export class LocalLambdaRunner {
             )
 
             const inputTemplate: string = await this.generateInputTemplate(this.codeRootDirectoryPath)
+
+            const config = await getConfig({
+                handlerName: this.localInvokeParams.handlerName,
+                documentUri: this.localInvokeParams.document.uri,
+                samTemplate: this.localInvokeParams.samTemplate
+            })
+
             const samBuildTemplate: string = await executeSamBuild({
                 baseBuildDir: await this.getBaseBuildFolder(),
                 channelLogger: this.channelLogger,
                 codeDir: this.codeRootDirectoryPath,
                 inputTemplatePath: inputTemplate,
-                samProcessInvoker: this.processInvoker
+                samProcessInvoker: this.processInvoker,
+                useContainer: config.useContainer
             })
 
             await this.invokeLambdaFunction(samBuildTemplate)
@@ -317,6 +325,7 @@ export interface ExecuteSamBuildArguments {
     manifestPath?: string
     environmentVariables?: NodeJS.ProcessEnv
     samProcessInvoker: SamCliProcessInvoker
+    useContainer?: boolean
 }
 
 export async function executeSamBuild({
@@ -326,7 +335,8 @@ export async function executeSamBuild({
     inputTemplatePath,
     manifestPath,
     environmentVariables,
-    samProcessInvoker
+    samProcessInvoker,
+    useContainer
 }: ExecuteSamBuildArguments): Promise<string> {
     channelLogger.info('AWS.output.building.sam.application', 'Building SAM Application...')
 
@@ -338,7 +348,8 @@ export async function executeSamBuild({
         templatePath: inputTemplatePath,
         invoker: samProcessInvoker,
         manifestPath,
-        environmentVariables
+        environmentVariables,
+        useContainer
     }
     await new SamCliBuildInvocation(samCliArgs).execute()
 
@@ -449,11 +460,11 @@ export async function invokeLambdaFunction(
     }
 }
 
-const getConfig = async (params: {
+export async function getConfig(params: {
     handlerName: string
     documentUri: vscode.Uri
     samTemplate: vscode.Uri
-}): Promise<HandlerConfig> => {
+}): Promise<HandlerConfig> {
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(params.documentUri)
     if (!workspaceFolder) {
         return generateDefaultHandlerConfig()

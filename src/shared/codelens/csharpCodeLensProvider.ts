@@ -30,6 +30,7 @@ import { CodeLensProviderParams, getInvokeCmdKey, getMetricDatum, makeCodeLenses
 import {
     executeSamBuild,
     ExecuteSamBuildArguments,
+    getConfig,
     invokeLambdaFunction,
     InvokeLambdaFunctionArguments,
     InvokeLambdaFunctionContext,
@@ -175,12 +176,19 @@ async function onLocalInvokeCommand(
             properties: resource.Properties
         })
 
+        const config =  await getConfig({
+            handlerName: handlerName,
+            documentUri: documentUri,
+            samTemplate: vscode.Uri.file(lambdaLocalInvokeParams.samTemplate.fsPath)
+        })
+
         const buildArgs: ExecuteSamBuildArguments = {
             baseBuildDir,
             channelLogger,
             codeDir: codeUri,
             inputTemplatePath,
-            samProcessInvoker: processInvoker
+            samProcessInvoker: processInvoker,
+            useContainer: config.useContainer
         }
         if (lambdaLocalInvokeParams.isDebug) {
             buildArgs.environmentVariables = {

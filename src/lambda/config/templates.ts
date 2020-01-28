@@ -40,13 +40,15 @@ export interface HandlerConfig {
         [name: string]: string
     }
     dockerNetwork?: string
+    useContainer?: boolean
 }
 
 export function generateDefaultHandlerConfig(): HandlerConfig {
     return {
         event: {},
         environmentVariables: {},
-        dockerNetwork: undefined
+        dockerNetwork: undefined,
+        useContainer: undefined
     }
 }
 

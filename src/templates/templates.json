@@ -43,6 +43,11 @@
                                             "type": "string",
                                             "default": null,
                                             "description": "If specified, adds a --docker-network parameter to the SAM CLI.  If not specified, no parameter will be sent."
+                                        },
+                                        "useContainer": {
+                                            "type": "boolean",
+                                            "default": false,
+                                            "description": "If specified, adds a --use-container parameter to the SAM CLI. If not specified, no parameter will be sent. If your functions depend on packages that have natively compiled dependencies use this flag to build your function inside an AWS Lambda-like Docker container."
                                         }
                                     }
                                 }
