@@ -466,7 +466,7 @@
         "compile": "webpack --mode development && npm run buildScripts",
         "recompile": "npm run clean && npm run compile",
         "watch": "npm run buildScripts && tsc -watch -p ./",
-        "postinstall": "ts-node ./build-scripts/generateServiceClient.ts",
+        "postinstall": "ts-node ./build-scripts/generateServiceClient.ts && npm run generateTelemetry",
         "testCompile": "tsc -p ./ && npm run buildScripts",
         "test": "npm run testCompile && ts-node ./test-scripts/test.ts",
         "integrationTest": "npm run testCompile && ts-node ./test-scripts/integrationTest.ts",
@@ -474,10 +474,12 @@
         "lintfix": "tslint --project . --fix",
         "package": "vsce package",
         "install-plugin": "vsce package -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix",
+        "generateTelemetry": "node node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts",
         "newChange": "ts-node ./build-scripts/newChange.ts",
         "createRelease": "ts-node ./build-scripts/createRelease.ts"
     },
     "devDependencies": {
+        "@aws-toolkits/telemetry": "0.0.6",
         "@types/adm-zip": "^0.4.32",
         "@types/async-lock": "^1.1.0",
         "@types/cross-spawn": "^6.0.0",
