@@ -9,7 +9,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { ext } from '../../shared/extensionGlobals'
 import { getLogger, Logger } from '../../shared/logger'
-import { updateCache } from '../utils'
+import StateMachineCache from '../utils'
 
 export interface messageObject {
     command: string
@@ -23,6 +23,7 @@ export interface messageObject {
  */
 export async function visualizeStateMachine(globalStorage: vscode.Memento): Promise<vscode.WebviewPanel | void> {
     const logger: Logger = getLogger()
+    const cache = new StateMachineCache({ logger })
 
     /* TODO: Determine behaviour when command is run against bad input, or
      * non-json files. Determine if we want to limit the command to only a
@@ -43,7 +44,7 @@ export async function visualizeStateMachine(globalStorage: vscode.Memento): Prom
     }
 
     try {
-        await updateCache(globalStorage)
+        await cache.updateCache(globalStorage)
 
         return setupWebviewPanel(documentUri, documentText)
     } catch (err) {
