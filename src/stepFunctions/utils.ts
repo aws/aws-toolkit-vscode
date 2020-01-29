@@ -11,8 +11,8 @@ import { mkdir } from '../shared/filesystem'
 import { fileExists } from '../shared/filesystemUtilities'
 import { getLogger, Logger } from '../shared/logger'
 
-export const VISUALIZATION_SCRIPT_URL = 'https://d19z89qxwgm7w9.cloudfront.net/sfn-0.0.3.js'
-export const VISUALIZATION_CSS_URL = 'https://d19z89qxwgm7w9.cloudfront.net/graph-0.0.1.css'
+export const VISUALIZATION_SCRIPT_URL = 'https://do0of8uwbahzz.cloudfront.net/sfn-0.1.4.js'
+export const VISUALIZATION_CSS_URL = 'https://do0of8uwbahzz.cloudfront.net/graph-0.1.4.css'
 
 export const SCRIPTS_LAST_DOWNLOADED_URL = 'SCRIPT_LAST_DOWNLOADED_URL'
 export const CSS_LAST_DOWNLOADED_URL = 'CSS_LAST_DOWNLOADED_URL'
