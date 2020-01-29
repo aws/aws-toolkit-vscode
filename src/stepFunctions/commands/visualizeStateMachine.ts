@@ -9,7 +9,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { ext } from '../../shared/extensionGlobals'
 import { getLogger, Logger } from '../../shared/logger'
-import StateMachineCache from '../utils'
+import StateMachineGraphCache from '../utils'
 
 export interface messageObject {
     command: string
@@ -23,7 +23,7 @@ export interface messageObject {
  */
 export async function visualizeStateMachine(globalStorage: vscode.Memento): Promise<vscode.WebviewPanel | void> {
     const logger: Logger = getLogger()
-    const cache = new StateMachineCache({ logger })
+    const cache = new StateMachineGraphCache()
 
     /* TODO: Determine behaviour when command is run against bad input, or
      * non-json files. Determine if we want to limit the command to only a
@@ -49,8 +49,12 @@ export async function visualizeStateMachine(globalStorage: vscode.Memento): Prom
         return setupWebviewPanel(documentUri, documentText)
     } catch (err) {
         vscode.window.showInformationMessage(
-            'There was an error rendering State Machine Graph, check logs for details.'
+            localize(
+                'AWS.stepfunctions.visualisation.errors.rendering',
+                'There was an error rendering State Machine Graph, check logs for details.'
+            )
         )
+
         logger.debug('Unable to setup webview panel.')
         logger.error(err as Error)
     }

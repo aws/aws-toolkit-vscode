@@ -11,6 +11,7 @@ import { spy } from 'sinon'
 import * as vscode from 'vscode'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { messageObject } from '../../stepFunctions/commands/visualizeStateMachine'
+import { assertThrowsError } from '../../test/shared/utilities/assertUtils'
 
 const sampleStateMachine = `
 	 {
@@ -167,15 +168,10 @@ describe('visualizeStateMachine', async () => {
         // Make sure nothing is open from previous tests.
         await vscode.commands.executeCommand('workbench.action.closeAllEditors')
 
-        try {
-            await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.renderStateMachine')
-            // Putting assert.fail here. Otherwise, if the call does not throw an exception
-            // the test would still pass.
-            assert.fail()
-        } catch (err) {
-            const error = err as Error
-            assert.deepStrictEqual(error.message, 'Could not grab active text editor for state machine render.')
-        }
+        const err = await assertThrowsError(
+            async () => await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.renderStateMachine')
+        )
+        assert.deepStrictEqual(err.message, 'Could not grab active text editor for state machine render.')
     })
 
     it('doesnt update the graph if a seperate file is opened or modified', async () => {

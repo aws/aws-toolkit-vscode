@@ -3,15 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// import { IncomingHttpHeaders } from 'http'
-// import { get } from 'https'
 import { writeFile } from 'fs-extra'
 import * as request from 'request'
 import { Memento } from 'vscode'
 import { ext } from '../shared/extensionGlobals'
 import { mkdir } from '../shared/filesystem'
 import { fileExists } from '../shared/filesystemUtilities'
-import { getLogger } from '../shared/logger'
+import { getLogger, Logger } from '../shared/logger'
 
 export const VISUALIZATION_SCRIPT_URL = 'https://d19z89qxwgm7w9.cloudfront.net/sfn-0.0.3.js'
 export const VISUALIZATION_CSS_URL = 'https://d19z89qxwgm7w9.cloudfront.net/graph-0.0.1.css'
@@ -26,18 +24,12 @@ export interface UpdateCachedScriptOptions {
     filePath: string
 }
 
-interface CustomLogger {
-    error(message: string | Error): void
-    debug(message: string): void
-}
-
 export interface StateMachineGraphCacheOptions {
     cssFilePath?: string
     jsFilePath?: string
     dirPath?: string
     scriptUrl?: string
     cssUrl?: string
-    logger?: CustomLogger
     writeFile?(path: string, data: string, encoding: string): Promise<void>
     makeDir?(path: string): Promise<void>
     getFileData?(url: string): Promise<string>
@@ -49,23 +41,17 @@ export default class StateMachineGraphCache {
     protected writeFile: (path: string, data: string, encoding: string) => Promise<void>
     protected getFileData: (url: string) => Promise<string>
     protected fileExists: (path: string) => Promise<boolean>
-    protected logger: CustomLogger
+    protected logger: Logger
     protected cssFilePath: string
     protected jsFilePath: string
     protected dirPath: string
 
     public constructor(options: StateMachineGraphCacheOptions = {}) {
-        const {
-            makeDir,
-            writeFile: writeFileCustom,
-            logger: loggerCustom,
-            getFileData,
-            fileExists: fileExistsCustom
-        } = options
+        const { makeDir, writeFile: writeFileCustom, getFileData, fileExists: fileExistsCustom } = options
 
         this.makeDir = makeDir ?? mkdir
         this.writeFile = writeFileCustom ?? writeFile
-        this.logger = loggerCustom ?? getLogger()
+        this.logger = getLogger()
         this.getFileData = getFileData ?? httpsGetRequestWrapper
         this.cssFilePath = options.cssFilePath ?? ext.visualizationResourcePaths.visualizationLibraryCSS.fsPath
         this.jsFilePath = options.jsFilePath ?? ext.visualizationResourcePaths.visualizationLibraryScript.fsPath
@@ -81,6 +67,7 @@ export default class StateMachineGraphCache {
             filePath: this.jsFilePath
         }).catch(error => {
             this.logger.error('Failed to update State Machine Graph script assets')
+            this.logger.error(error as Error)
 
             throw error
         })
@@ -92,6 +79,7 @@ export default class StateMachineGraphCache {
             filePath: this.cssFilePath
         }).catch(error => {
             this.logger.error('Failed to update State Machine Graph css assets')
+            this.logger.error(error as Error)
 
             throw error
         })
@@ -107,17 +95,8 @@ export default class StateMachineGraphCache {
         // or if the file assets do not exist
         // download and cache the assets
         if (downloadedUrl !== options.currentURL || !cachedFileExists) {
-            const response = await this.getFileData(options.currentURL).catch(err => {
-                this.logger.error(err as Error)
-
-                throw err
-            })
-
-            await this.writeToLocalStorage(options.filePath, response).catch(err => {
-                this.logger.error(err as Error)
-
-                throw err
-            })
+            const response = await this.getFileData(options.currentURL)
+            await this.writeToLocalStorage(options.filePath, response)
 
             // save the url of the downloaded and cached assets
             options.globalStorage.update(options.lastDownloadedURLKey, options.currentURL)
