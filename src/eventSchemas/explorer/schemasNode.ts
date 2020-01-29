@@ -12,13 +12,14 @@ import { listRegistryItems } from '../../eventSchemas/utils'
 import { SchemaClient } from '../../shared/clients/schemaClient'
 
 import { ext } from '../../shared/extensionGlobals'
-import { AWSTreeErrorHandlerNode } from '../../shared/treeview/nodes/awsTreeErrorHandlerNode'
+import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
+import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { toMapAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { RegistryItemNode } from './registryItemNode'
 
-export class SchemasNode extends AWSTreeErrorHandlerNode {
+export class SchemasNode extends AWSTreeNodeBase {
     private readonly registryNodes: Map<string, RegistryItemNode>
 
     public constructor(public readonly regionCode: string) {
@@ -27,23 +28,24 @@ export class SchemasNode extends AWSTreeErrorHandlerNode {
         this.contextValue = 'awsSchemasNode'
     }
 
-    public async getChildren(): Promise<(RegistryItemNode | ErrorNode | PlaceholderNode)[]> {
-        await this.handleErrorProneOperation(
-            async () => this.updateChildren(),
-            localize('AWS.explorerNode.schemas.error', 'Error loading Schemas resources')
-        )
+    public async getChildren(): Promise<AWSTreeNodeBase[]> {
+        return await makeChildrenNodes({
+            getChildNodes: async () => {
+                await this.updateChildren()
 
-        if (this.errorNode) {
-            return [this.errorNode]
-        }
-
-        if (this.registryNodes.size > 0) {
-            return [...this.registryNodes.values()].sort((nodeA, nodeB) =>
+                return [...this.registryNodes.values()]
+            },
+            getErrorNode: async (error: Error) =>
+                new ErrorNode(
+                    this,
+                    error,
+                    localize('AWS.explorerNode.schemas.error', 'Error loading Schemas resources')
+                ),
+            getNoChildrenPlaceholderNode: async () =>
+                new PlaceholderNode(this, localize('AWS.explorerNode.schemas.noRegistry', '[No Schema Registries]')),
+            sort: (nodeA: RegistryItemNode, nodeB: RegistryItemNode) =>
                 nodeA.registryName.localeCompare(nodeB.registryName)
-            )
-        }
-
-        return [new PlaceholderNode(this, localize('AWS.explorerNode.schemas.noRegistry', '[No Schema Registries]'))]
+        })
     }
 
     public async updateChildren(): Promise<void> {
