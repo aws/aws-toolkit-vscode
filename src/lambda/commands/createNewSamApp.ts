@@ -10,6 +10,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { ActivationLaunchPath } from '../../shared/activationLaunchPath'
 import { fileExists } from '../../shared/filesystemUtilities'
+import { getLogger } from '../../shared/logger'
 import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
@@ -132,7 +133,7 @@ export async function createNewSamApplication(
         )
 
         const error = err as Error
-        channelLogger.logger.error(error)
+        getLogger().error('Error creating new SAM Application', error)
         results.result = 'fail'
         results.reason = 'error'
 
