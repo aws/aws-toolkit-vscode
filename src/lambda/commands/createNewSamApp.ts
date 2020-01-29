@@ -154,8 +154,7 @@ export async function createNewSamApplication(
                 schemaName: config.schemaName!,
                 language: getApiValueForSchemasDownload(config.runtime),
                 schemaVersion: schemaTemplateParameters!.SchemaVersion,
-                destinationDirectory: vscode.Uri.file(destinationDirectory),
-                schemaCoreCodeFileName: '' //set only if file needs to be opened in the editor post download
+                destinationDirectory: vscode.Uri.file(destinationDirectory)
             }
             schemaCodeDownloader = createSchemaCodeDownloaderObject(client!)
             channelLogger.logger.info(

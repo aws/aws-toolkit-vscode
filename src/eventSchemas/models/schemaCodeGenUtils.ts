@@ -62,42 +62,30 @@ export class SchemaCodeGenUtils {
 
 class CodeGenPackageBuilder {
     private builder = ''
-    private readonly formatter = IdentifierFormatter.getInstance()
-
     public build(): string {
         return this.builder
     }
 
     public append(segment: String): CodeGenPackageBuilder {
         if (this.builder.length > 0) {
-            this.builder = this.builder.concat(this.formatter.PACKAGE_SEPARATOR)
+            this.builder = this.builder.concat(IdentifierFormatter.PACKAGE_SEPARATOR)
         }
-        this.builder = this.builder.concat(this.formatter.toValidIdentifier(segment.toLowerCase()))
+        this.builder = this.builder.concat(IdentifierFormatter.toValidIdentifier(segment.toLowerCase()))
 
         return this
     }
 }
 
-export class IdentifierFormatter {
-    private static INSTANCE: IdentifierFormatter | undefined
-    public readonly PACKAGE_SEPARATOR = '.'
-    private readonly POTENTIAL_PACKAGE_SEPARATOR = '@'
-    private readonly NOT_VALID_IDENTIFIER_CHARACTER = `[^a-zA-Z0-9_${this.POTENTIAL_PACKAGE_SEPARATOR}]`
-    private readonly NOT_VALID_IDENTIFIER_REGEX = new RegExp(this.NOT_VALID_IDENTIFIER_CHARACTER, 'g')
-    private readonly POTENTIAL_PACKAGE_SEPARATOR_REGEX = new RegExp(this.POTENTIAL_PACKAGE_SEPARATOR, 'g')
-    private readonly UNDERSCORE = '_'
+export namespace IdentifierFormatter {
+    export const PACKAGE_SEPARATOR = '.'
+    const POTENTIAL_PACKAGE_SEPARATOR = '@'
+    const NOT_VALID_IDENTIFIER_REGEX = new RegExp(`[^a-zA-Z0-9_${POTENTIAL_PACKAGE_SEPARATOR}]`, 'g')
+    const POTENTIAL_PACKAGE_SEPARATOR_REGEX = new RegExp(POTENTIAL_PACKAGE_SEPARATOR, 'g')
+    const UNDERSCORE = '_'
 
-    public toValidIdentifier(name: string): string {
+    export function toValidIdentifier(name: string): string {
         return name
-            .replace(this.NOT_VALID_IDENTIFIER_REGEX, this.UNDERSCORE)
-            .replace(this.POTENTIAL_PACKAGE_SEPARATOR_REGEX, this.PACKAGE_SEPARATOR)
-    }
-
-    public static getInstance(): IdentifierFormatter {
-        if (!IdentifierFormatter.INSTANCE) {
-            IdentifierFormatter.INSTANCE = new IdentifierFormatter()
-        }
-
-        return IdentifierFormatter.INSTANCE
+            .replace(NOT_VALID_IDENTIFIER_REGEX, UNDERSCORE)
+            .replace(POTENTIAL_PACKAGE_SEPARATOR_REGEX, PACKAGE_SEPARATOR)
     }
 }

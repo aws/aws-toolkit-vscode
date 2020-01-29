@@ -89,19 +89,18 @@ function buildSchemaPackageHierarchy(schemaName: string) {
 }
 
 function buildRootSchemaEventName(schemaNode: any, awsEventNode: any) {
-    const identifierFormatter = IdentifierFormatter.getInstance()
     const refValue = _.get(awsEventNode, PROPERTIES.concat('.', DETAIL, '.', REF))
 
     if (_.isString(refValue) && refValue.includes(COMPONENTS_SCHEMAS_PATH)) {
         const awsEventDetailRef = refValue.split(COMPONENTS_SCHEMAS_PATH).pop()
         if (!_.isEmpty(awsEventDetailRef)) {
-            return identifierFormatter.toValidIdentifier(awsEventDetailRef!)
+            return IdentifierFormatter.toValidIdentifier(awsEventDetailRef!)
         }
     }
 
     const schemaRoots = _.keysIn(_.get(schemaNode, COMPONENTS.concat('.', SCHEMAS)))
     if (!_.isEmpty(schemaRoots)) {
-        return identifierFormatter.toValidIdentifier(schemaRoots[0])
+        return IdentifierFormatter.toValidIdentifier(schemaRoots[0])
     }
 
     return undefined

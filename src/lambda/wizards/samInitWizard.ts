@@ -188,9 +188,10 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
 
     public async promptUserForRegistry(currRegion: string, currRegistry?: string): Promise<string | undefined> {
         const client: SchemaClient = ext.toolkitClientBuilder.createSchemaClient(currRegion)
-        const registryNames = await SchemasDataProvider.getInstance(this.currentCredentials!).getRegistries(
+        const registryNames = await SchemasDataProvider.getInstance().getRegistries(
             currRegion,
-            client
+            client,
+            this.currentCredentials!
         )
 
         if (!registryNames) {
@@ -237,10 +238,11 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
         currSchema?: string
     ): Promise<string | undefined> {
         const client: SchemaClient = ext.toolkitClientBuilder.createSchemaClient(currRegion)
-        const schemas = await SchemasDataProvider.getInstance(this.currentCredentials!).getSchemas(
+        const schemas = await SchemasDataProvider.getInstance().getSchemas(
             currRegion,
             currRegistry,
-            client
+            client,
+            this.currentCredentials!
         )
 
         if (!schemas) {

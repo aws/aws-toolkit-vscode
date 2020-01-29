@@ -67,14 +67,13 @@ describe('SchemaCodeGenUtils', async () => {
 })
 
 describe('IdentifierFormatter', async () => {
-    const formatter = IdentifierFormatter.getInstance()
     describe('toValidIdentifier', async () => {
         it('replaces invalid identifier characters with underscore', async () => {
-            assert.strictEqual(formatter.toValidIdentifier('Review.created?today'), 'Review_created_today')
+            assert.strictEqual(IdentifierFormatter.toValidIdentifier('Review.created?today'), 'Review_created_today')
         })
 
         it('replaces package seperator @ with dot', async () => {
-            assert.strictEqual(formatter.toValidIdentifier('Review@created'), 'Review.created')
+            assert.strictEqual(IdentifierFormatter.toValidIdentifier('Review@created'), 'Review.created')
         })
     })
 })

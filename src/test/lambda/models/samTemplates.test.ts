@@ -51,7 +51,7 @@ describe('getSamCliTemplateParameter', () => {
     })
 
     it('should return error if the template option is not valid', async () => {
-        const errorMessage = `Template ${repromptUserForTemplate} is not supported for sam application flow`
+        const errorMessage = `${repromptUserForTemplate} is not valid sam template`
         const error = await assertThrowsError(async () => getSamCliTemplateParameter(repromptUserForTemplate))
         assert.strictEqual(error.message, errorMessage, 'Should fail for same error')
     })

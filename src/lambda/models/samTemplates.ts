@@ -45,7 +45,7 @@ export function getSamCliTemplateParameter(templateSelected: SamTemplate): strin
         case eventBridgeStarterAppTemplate:
             return 'eventBridge-schema-app'
         default:
-            throw new Error(`Template ${templateSelected} is not supported for sam application flow`)
+            throw new Error(`${templateSelected} is not valid sam template`)
     }
 }
 
