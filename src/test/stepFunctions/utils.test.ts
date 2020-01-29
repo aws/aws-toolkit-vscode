@@ -5,8 +5,6 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-// import { Memento } from 'vscode'
-
 import StateMachineGraphCache from '../../stepFunctions/utils'
 
 const REQUEST_BODY = 'request body string'
@@ -14,7 +12,7 @@ const ASSET_URL = 'https://something'
 const FILE_PATH = '/some/path'
 const STORAGE_KEY = 'KEY'
 
-describe.only('StateMachineGraphCache', () => {
+describe('StateMachineGraphCache', () => {
     describe('updateCachedFile', () => {
         it('downloads a file when it is not in cache and stores it', async () => {
             const globalStorage = {

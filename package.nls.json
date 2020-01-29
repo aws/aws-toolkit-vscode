@@ -229,6 +229,7 @@
     "AWS.samcli.initWizard.runtime.prompt": "Select a SAM Application Runtime",
     "AWS.samcli.initWizard.source.error.notFound": "Project created successfully, but main source code file not found: {0}",
     "AWS.samcli.initWizard.source.error.notInWorkspace": "Could not open file '{0}'. If this file exists on disk, try adding it to your workspace.",
+    "AWS.stepfunctions.visualisation.errors.rendering": "There was an error rendering State Machine Graph, check logs for details.",
     "AWS.wizard.selectedPreviously": "Selected Previously",
     "AWS.generic.response.no": "No",
     "AWS.generic.response.yes": "Yes",
