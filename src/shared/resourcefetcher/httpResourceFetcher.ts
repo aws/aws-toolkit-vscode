@@ -20,20 +20,28 @@ export class HttpResourceFetcher implements ResourceFetcher {
         try {
             this.logger.verbose(`Loading resource from ${this.url}`)
 
-            return new Promise<string>((resolve, reject) => {
-                request(this.url, (error: any, response: IncomingMessage, body: any) => {
-                    if (error) {
-                        reject(error)
-                    } else {
-                        // tslint:disable-next-line: no-unsafe-any
-                        resolve(body.toString())
-                    }
-                })
-            })
+            const contents = await this.loadFromUrl()
+
+            this.logger.verbose(`Finished loading resource from ${this.url}`)
+
+            return contents
         } catch (err) {
             this.logger.error(`Error loading resource from ${this.url}`, err as Error)
 
             return undefined
         }
+    }
+
+    private async loadFromUrl(): Promise<string | undefined> {
+        return new Promise<string>((resolve, reject) => {
+            request(this.url, (error: any, response: IncomingMessage, body: any) => {
+                if (error) {
+                    reject(error)
+                } else {
+                    // tslint:disable-next-line: no-unsafe-any
+                    resolve(body.toString())
+                }
+            })
+        })
     }
 }

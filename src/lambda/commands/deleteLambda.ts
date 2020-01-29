@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
 import { LambdaClient } from '../../shared/clients/lambdaClient'
+import { millisecondsSince, recordLambdaDelete, result } from '../../shared/telemetry/telemetry'
 
 const localize = nls.loadMessageBundle()
 
@@ -44,6 +45,8 @@ export async function deleteLambda({
     if (!deleteParams.functionName) {
         return
     }
+    const startTime = new Date()
+    let deleteResult: result = 'Succeeded'
     try {
         const isConfirmed = await onConfirm()
         if (isConfirmed) {
@@ -51,6 +54,7 @@ export async function deleteLambda({
             restParams.onRefresh()
         }
     } catch (err) {
+        deleteResult = 'Failed'
         restParams.outputChannel.show(true)
         restParams.outputChannel.appendLine(
             localize(
@@ -62,5 +66,11 @@ export async function deleteLambda({
         restParams.outputChannel.appendLine(String(err)) // linter hates toString on type any
         restParams.outputChannel.appendLine('')
         restParams.onRefresh() // Refresh in case it was already deleted.
+    } finally {
+        recordLambdaDelete({
+            createTime: startTime,
+            duration: millisecondsSince(startTime),
+            result: deleteResult
+        })
     }
 }
