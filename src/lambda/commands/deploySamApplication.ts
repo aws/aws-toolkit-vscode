@@ -168,8 +168,7 @@ async function packageOperation(params: {
             region: params.deployParameters.region,
             s3Bucket: params.deployParameters.packageBucketName
         },
-        params.invoker,
-        params.channelLogger.logger
+        params.invoker
     )
 }
 
@@ -195,8 +194,7 @@ async function deployOperation(params: {
                 region: params.deployParameters.region,
                 stackName: params.deployParameters.destinationStackName
             },
-            params.invoker,
-            params.channelLogger.logger
+            params.invoker
         )
     } catch (err) {
         // Handle sam deploy Errors to supplement the error message prior to writing it out
