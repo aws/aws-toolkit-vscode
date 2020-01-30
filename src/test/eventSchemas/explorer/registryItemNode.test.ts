@@ -11,6 +11,7 @@ import { SchemaItemNode } from '../../../eventSchemas/explorer/schemaItemNode'
 import { SchemasNode } from '../../../eventSchemas/explorer/schemasNode'
 import { SchemaClient } from '../../../shared/clients/schemaClient'
 import { ext } from '../../../shared/extensionGlobals'
+import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { assertNodeListOnlyContainsPlaceholderNode } from '../../lambda/explorer/explorerNodeAssertions'
@@ -174,10 +175,7 @@ describe('DefaultRegistryNode', () => {
             `Expected ${inputRegistryNames.length} Registry children, got ${children.length}`
         )
 
-        function assertChildNodeRegistryName(
-            actualChildNode: RegistryItemNode | ErrorNode | PlaceholderNode,
-            expectedNodeText: string
-        ) {
+        function assertChildNodeRegistryName(actualChildNode: AWSTreeNodeBase, expectedNodeText: string) {
             assert.strictEqual(actualChildNode instanceof RegistryItemNode, true, 'Child node was not a Registry Node')
 
             const node: RegistryItemNode = actualChildNode as RegistryItemNode
