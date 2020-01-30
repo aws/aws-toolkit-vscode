@@ -70,7 +70,7 @@ export async function createNewSamApplication(
 ): Promise<void> {
     let createResult: Result = 'Succeeded'
     let reason: createReason = 'unknown'
-    let createRuntime: Runtime = 'unknown'
+    let createRuntime: Runtime | undefined
     let config: CreateNewSamAppWizardResponse | undefined
 
     let initArguments: SamCliInitArgs
