@@ -25,7 +25,7 @@ import { writeFile } from 'fs-extra'
 import { generateDefaultHandlerConfig, HandlerConfig } from '../../lambda/config/templates'
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
-import { getLogger, Logger } from '../logger'
+import { getLogger } from '../logger'
 import { recordSamAttachDebugger, Runtime } from '../telemetry/telemetry'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { normalizeSeparator } from '../utilities/pathUtils'
@@ -221,9 +221,7 @@ export class LocalLambdaRunner {
             })
 
             if (attachResults.success) {
-                await showDebugConsole({
-                    logger: this.channelLogger.logger
-                })
+                await showDebugConsole()
             }
         }
     }
@@ -387,7 +385,7 @@ export async function invokeLambdaFunction(
         'AWS.output.starting.sam.app.locally',
         'Starting the SAM Application locally (see Terminal for output)'
     )
-    channelLogger.logger.debug(`localLambdaRunner.invokeLambdaFunction: ${JSON.stringify(invokeArgs, undefined, 2)}`)
+    getLogger().debug(`localLambdaRunner.invokeLambdaFunction: ${JSON.stringify(invokeArgs, undefined, 2)}`)
 
     const eventPath: string = path.join(invokeArgs.baseBuildDir, 'event.json')
     const environmentVariablePath = path.join(invokeArgs.baseBuildDir, 'env-vars.json')
@@ -443,9 +441,7 @@ export async function invokeLambdaFunction(
         })
 
         if (attachResults.success) {
-            await showDebugConsole({
-                logger: channelLogger.logger
-            })
+            await showDebugConsole()
         }
     }
 }
@@ -485,7 +481,7 @@ export interface AttachDebuggerContext {
     debugConfig: DebugConfiguration
     maxRetries: number
     retryDelayMillis?: number
-    channelLogger: Pick<ChannelLogger, 'info' | 'error' | 'logger'>
+    channelLogger: Pick<ChannelLogger, 'info' | 'error'>
     onStartDebugging?: typeof vscode.debug.startDebugging
     onRecordAttachDebuggerMetric?(attachResult: boolean | undefined, attempts: number): void
     onWillRetry?(): Promise<void>
@@ -502,8 +498,7 @@ export async function attachDebugger({
     ...params
 }: AttachDebuggerContext): Promise<{ success: boolean }> {
     const channelLogger = params.channelLogger
-    const logger = params.channelLogger.logger
-    logger.debug(
+    getLogger().debug(
         `localLambdaRunner.attachDebugger: startDebugging with debugConfig: ${JSON.stringify(
             params.debugConfig,
             undefined,
@@ -623,18 +618,12 @@ function createInvokeTimer(configuration: SettingsConfiguration): Timeout {
  * If the OutputChannel is showing, focus does not consistently switch over to the debug console, so we're
  * helping make this happen.
  */
-async function showDebugConsole({
-    executeVsCodeCommand = vscode.commands.executeCommand,
-    ...params
-}: {
-    executeVsCodeCommand?: typeof vscode.commands.executeCommand
-    logger: Logger
-}): Promise<void> {
+async function showDebugConsole(): Promise<void> {
     try {
-        await executeVsCodeCommand('workbench.debug.action.toggleRepl')
+        await vscode.commands.executeCommand('workbench.debug.action.toggleRepl')
     } catch (err) {
         // in case the vs code command changes or misbehaves, swallow error
-        params.logger.verbose('Unable to switch to the Debug Console', err as Error)
+        getLogger().verbose('Unable to switch to the Debug Console', err as Error)
     }
 }
 

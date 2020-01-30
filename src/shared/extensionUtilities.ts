@@ -11,7 +11,7 @@ import { ScriptResource } from '../lambda/models/scriptResource'
 import { ext } from '../shared/extensionGlobals'
 import { mostRecentVersionKey, pluginVersion } from './constants'
 import { readFileAsString } from './filesystemUtilities'
-import { Logger } from './logger'
+import { getLogger } from './logger'
 
 const localize = nls.loadMessageBundle()
 
@@ -189,7 +189,7 @@ async function promptQuickStart(): Promise<void> {
  *
  * @param context VS Code Extension Context
  */
-export function toastNewUser(context: vscode.ExtensionContext, logger: Logger): void {
+export function toastNewUser(context: vscode.ExtensionContext): void {
     try {
         if (isDifferentVersion(context)) {
             setMostRecentVersion(context)
@@ -199,6 +199,6 @@ export function toastNewUser(context: vscode.ExtensionContext, logger: Logger): 
         }
     } catch (err) {
         // swallow error and don't block extension load
-        logger.error(err as Error)
+        getLogger().error(err as Error)
     }
 }

@@ -14,20 +14,9 @@ import {
     TemplateHandler,
     TemplateParams
 } from '../../../shared/utilities/vsCodeUtils'
+import { getTestLogger } from '../../globalSetup.test'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { TestLogger } from '../../testLogger'
-
-interface TestCaseParams {
-    logLevel: LogLevel
-    testDataCase: TestData
-    expectedPrettyMsg: string
-    expectedPrettyTokens: string[]
-    expectedErrorTokens: Error[]
-}
-
-interface TestRunner {
-    (params: TestCaseParams): Promise<void>
-}
 
 const logLevels: LogLevel[] = ['verbose', 'debug', 'info', 'warn', 'error']
 
@@ -85,122 +74,88 @@ describe('getChannelLogger', function() {
     let outputChannel: MockOutputChannel
     let channelLogger: ChannelLogger
 
-    const runEachTestCase = async (onRunTest: TestRunner) => {
-        for (const logLevel of logLevels) {
-            for (const testDataCase of testData) {
-                // Reset loggers for each test case
-                logger = new TestLogger()
-                outputChannel = new MockOutputChannel()
-                channelLogger = getChannelLogger(outputChannel, logger)
-                console.debug(`         input ${JSON.stringify({ logLevel, ...testDataCase })}`)
-                const expectedPrettyTokens: Exclude<Loggable, Error>[] = []
-                const expectedErrorTokens: Error[] = []
-                if (testDataCase.templateTokens) {
-                    testDataCase.templateTokens.forEach(token => {
-                        if (token instanceof Error) {
-                            expectedPrettyTokens.push(token.message)
-                            expectedErrorTokens.push(token)
-                        } else {
-                            expectedPrettyTokens.push(token)
-                        }
-                    })
-                }
-                const expectedPrettyMsg = localize(
-                    testDataCase.nlsKey,
-                    testDataCase.nlsTemplate,
-                    ...expectedPrettyTokens
-                )
+    beforeEach(async () => {
+        logger = getTestLogger()
+        outputChannel = new MockOutputChannel()
+        channelLogger = getChannelLogger(outputChannel)
+    })
 
-                await onRunTest({
-                    logLevel,
-                    testDataCase,
-                    expectedPrettyMsg,
-                    expectedPrettyTokens,
-                    expectedErrorTokens
+    for (const logLevel of logLevels) {
+        describe(`log level ${logLevel}`, async () => {
+            for (const scenario of testData) {
+                describe(scenario.title, async () => {
+                    const expectedPrettyTokens = getFormattedLoggables(scenario.templateTokens)
+                    const expectedErrorTokens: Error[] = getErrorLoggables(scenario.templateTokens)
+                    const expectedPrettyMsg = localize(scenario.nlsKey, scenario.nlsTemplate, ...expectedPrettyTokens)
+
+                    beforeEach(async () => {
+                        // Log message to channel (eg: calls channelLogger.info(...))
+                        ;((channelLogger as unknown) as { [logLevel: string]: TemplateHandler })[logLevel](
+                            scenario.nlsKey,
+                            scenario.nlsTemplate,
+                            ...(scenario.templateTokens || [])
+                        )
+                    })
+
+                    it('writes to the logger', async () => {
+                        const actualLogEntries = logger.getLoggedEntries(logLevel)
+                        const loggedErrors = actualLogEntries.filter(isLoggableError)
+                        const loggedText = actualLogEntries.filter(x => !isLoggableError(x))
+
+                        assert.strictEqual(loggedText.length, 1, 'Expected to log only one string')
+                        assert.strictEqual(
+                            loggedErrors.length,
+                            expectedErrorTokens.length,
+                            'Unexpected amount of Error objects logged'
+                        )
+                        assert.strictEqual(loggedText[0], expectedPrettyMsg, 'Unexpected formatted message')
+                    })
+
+                    it('writes to the output channel', async () => {
+                        assert(
+                            outputChannel.value.indexOf(expectedPrettyMsg) >= 0,
+                            `channel missing msg: ${expectedPrettyMsg} in ${outputChannel.value}` +
+                                ` input: ${JSON.stringify({ ...scenario, expectedPrettyTokens })}`
+                        )
+                    })
+
+                    it('processTemplate handles this scenario', async () => {
+                        const { prettyMessage: actualPrettyMsg, errors: actualErrorTokens } = processTemplate(scenario)
+
+                        assert.strictEqual(
+                            expectedPrettyMsg,
+                            actualPrettyMsg,
+                            `input: ${JSON.stringify({ ...scenario })}`
+                        )
+                        assert.deepStrictEqual(
+                            expectedErrorTokens,
+                            actualErrorTokens,
+                            `expected error tokens to be ${expectedErrorTokens}, found ${actualErrorTokens}` +
+                                ` input: ${JSON.stringify({ ...scenario })}`
+                        )
+                    })
                 })
             }
-        }
+        })
     }
-
-    const assertCommonLoggerWorks: TestRunner = async ({
-        logLevel,
-        expectedPrettyMsg,
-        expectedPrettyTokens,
-        expectedErrorTokens,
-        testDataCase
-    }: TestCaseParams) => {
-        // Log message to channel
-        ;((channelLogger as unknown) as { [logLevel: string]: TemplateHandler })[logLevel](
-            testDataCase.nlsKey,
-            testDataCase.nlsTemplate,
-            ...(testDataCase.templateTokens || [])
-        )
-        const actualLogEntries = logger.getLoggedEntries(logLevel)
-        const loggedErrors = actualLogEntries.filter(isLoggableError)
-        const loggedText = actualLogEntries.filter(x => !isLoggableError(x))
-
-        assert.strictEqual(loggedText.length, 1, 'Expected to log only one string')
-        assert.strictEqual(loggedErrors.length, expectedErrorTokens.length, 'Unexpected amount of Error objects logged')
-        assert.strictEqual(loggedText[0], expectedPrettyMsg, 'Unexpected formatted message')
-    }
-
-    const assertChannelLoggerWorks: TestRunner = async ({
-        expectedPrettyMsg,
-        expectedPrettyTokens,
-        logLevel,
-        testDataCase
-    }: TestCaseParams) => {
-        // Log message to channel
-        ;((channelLogger as unknown) as { [logLevel: string]: TemplateHandler })[logLevel](
-            testDataCase.nlsKey,
-            testDataCase.nlsTemplate,
-            ...(testDataCase.templateTokens || [])
-        )
-
-        assert(
-            outputChannel.value.indexOf(expectedPrettyMsg) >= 0,
-            `channel missing msg: ${expectedPrettyMsg} in ${outputChannel.value}` +
-                ` input: ${JSON.stringify({ ...testDataCase, expectedPrettyTokens })}`
-        )
-    }
-
-    const assertProcessTemplateWorks: TestRunner = async ({
-        testDataCase,
-        expectedPrettyMsg,
-        expectedErrorTokens
-    }: TestCaseParams) => {
-        const { prettyMessage: actualPrettyMsg, errors: actualErrorTokens } = processTemplate(testDataCase)
-
-        assert(
-            expectedPrettyMsg === actualPrettyMsg,
-            `expected pretty msg to be ${expectedPrettyMsg}, found ${actualPrettyMsg}` +
-                ` input: ${JSON.stringify({ ...testDataCase })}`
-        )
-        assert.deepStrictEqual(
-            expectedErrorTokens,
-            actualErrorTokens,
-            `expected error tokens to be ${expectedErrorTokens}, found ${actualErrorTokens}` +
-                ` input: ${JSON.stringify({ ...testDataCase })}`
-        )
-    }
-
-    it('should log to common logger', async () => {
-        await runEachTestCase(assertCommonLoggerWorks)
-    })
-
-    it('should log to channel logger', async () => {
-        await runEachTestCase(assertChannelLoggerWorks)
-    })
-
-    it('should processTemplate', async () => {
-        await runEachTestCase(assertProcessTemplateWorks)
-    })
 
     it('should expose output channel', async () => {
         assert(channelLogger.channel === outputChannel, 'channelLogger.channel !== outputChannel')
     })
-
-    it('should expose logger', async () => {
-        assert(channelLogger.logger === logger, 'channelLogger.logger !== logger')
-    })
 })
+
+function getErrorLoggables(loggables?: Loggable[]): Error[] {
+    return loggables?.filter(x => x instanceof Error).map(x => x as Error) ?? []
+}
+
+function getFormattedLoggables(loggables?: Loggable[]): Exclude<Loggable, Error>[] {
+    return (
+        loggables?.map(loggable => {
+            if (loggable instanceof Error) {
+                return loggable.message
+            } else {
+                return loggable
+            }
+        }) ?? []
+    )
+}

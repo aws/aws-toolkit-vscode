@@ -10,6 +10,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { ActivationLaunchPath } from '../../shared/activationLaunchPath'
 import { fileExists } from '../../shared/filesystemUtilities'
+import { getLogger } from '../../shared/logger'
 import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
@@ -135,7 +136,7 @@ export async function createNewSamApplication(
             checkLogsMessage
         )
 
-        channelLogger.logger.error(err as Error)
+        getLogger().error('Error creating new SAM Application', err as Error)
 
         // An error occured, so do not try to open any files during the next extension activation
         activationLaunchPath.clearLaunchPath()

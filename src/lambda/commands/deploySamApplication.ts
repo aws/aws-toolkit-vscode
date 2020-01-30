@@ -11,6 +11,7 @@ import * as nls from 'vscode-nls'
 import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
 import { AwsContext, NoActiveCredentialError } from '../../shared/awsContext'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { getLogger } from '../../shared/logger'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
 import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
 import { runSamCliDeploy } from '../../shared/sam/cli/samCliDeploy'
@@ -172,8 +173,7 @@ async function packageOperation(params: {
             region: params.deployParameters.region,
             s3Bucket: params.deployParameters.packageBucketName
         },
-        params.invoker,
-        params.channelLogger.logger
+        params.invoker
     )
 }
 
@@ -199,14 +199,13 @@ async function deployOperation(params: {
                 region: params.deployParameters.region,
                 stackName: params.deployParameters.destinationStackName
             },
-            params.invoker,
-            params.channelLogger.logger
+            params.invoker
         )
     } catch (err) {
         // Handle sam deploy Errors to supplement the error message prior to writing it out
         const error = err as Error
 
-        params.channelLogger.logger.error(error)
+        getLogger().error(error)
 
         const errorMessage = enhanceAwsCloudFormationInstructions(String(err), params.deployParameters)
         params.channelLogger.channel.appendLine(errorMessage)
@@ -268,7 +267,7 @@ function enhanceAwsCloudFormationInstructions(
 }
 
 function outputDeployError(error: Error, channelLogger: ChannelLogger) {
-    channelLogger.logger.error(error)
+    getLogger().error(error)
 
     if (error.message) {
         channelLogger.channel.appendLine(error.message)
