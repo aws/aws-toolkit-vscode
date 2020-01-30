@@ -7,6 +7,7 @@ import * as child_process from 'child_process'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { fileExists } from '../../filesystemUtilities'
+import { getLogger, Logger } from '../../logger'
 import { ChildProcess } from '../../utilities/childProcess'
 import { removeAnsi } from '../../utilities/textUtilities'
 import { Timeout } from '../../utilities/timeoutUtils'
@@ -32,10 +33,12 @@ export interface SamLocalInvokeCommandArgs {
  * Represents and manages the SAM CLI command that is run to locally invoke SAM Applications.
  */
 export interface SamLocalInvokeCommand {
-    invoke({  }: SamLocalInvokeCommandArgs): Promise<void>
+    invoke({}: SamLocalInvokeCommandArgs): Promise<void>
 }
 
 export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
+    private readonly logger: Logger = getLogger()
+
     public constructor(
         private readonly channelLogger: ChannelLogger,
         private readonly debuggerAttachCues: string[] = [
@@ -66,16 +69,14 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                         // Look for messages like "Waiting for debugger to attach" before returning back to caller
                         if (this.debuggerAttachCues.some(cue => text.includes(cue))) {
                             checkForDebuggerAttachCue = false
-                            this.channelLogger.logger.verbose(
-                                'Local SAM App should be ready for a debugger to attach now.'
-                            )
+                            this.logger.verbose('Local SAM App should be ready for a debugger to attach now.')
                             debuggerPromiseClosed = true
                             resolve()
                         }
                     }
                 },
                 onClose: (code: number, signal: string): void => {
-                    this.channelLogger.logger.verbose(`The child process for sam local invoke closed with code ${code}`)
+                    this.logger.verbose(`The child process for sam local invoke closed with code ${code}`)
                     this.channelLogger.channel.appendLine(
                         localize('AWS.samcli.local.invoke.ended', 'Local invoke of SAM Application has ended.')
                     )
