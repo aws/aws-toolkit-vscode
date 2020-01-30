@@ -10,7 +10,8 @@ import * as path from 'path'
 import { spy } from 'sinon'
 import * as vscode from 'vscode'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
-import { messageObject, visualizeStateMachine } from '../../stepFunctions/commands/visualizeStateMachine'
+import { messageObject } from '../../stepFunctions/commands/visualizeStateMachine'
+import { assertThrowsError } from '../../test/shared/utilities/assertUtils'
 
 const sampleStateMachine = `
 	 {
@@ -101,9 +102,9 @@ describe('visualizeStateMachine', async () => {
         const fileName = 'mysamplestatemachine.json'
         await openATextEditorWithText(stateMachineFileText, fileName)
 
-        const webviewPanel = await visualizeStateMachine()
+        const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.renderStateMachine')
 
-        assert.ok(webviewPanel)
+        assert.ok(result)
     })
 
     it('correctly displays content when given a sample state machine', async () => {
@@ -167,15 +168,10 @@ describe('visualizeStateMachine', async () => {
         // Make sure nothing is open from previous tests.
         await vscode.commands.executeCommand('workbench.action.closeAllEditors')
 
-        try {
-            await visualizeStateMachine()
-            // Putting assert.fail here. Otherwise, if the call does not throw an exception
-            // the test would still pass.
-            assert.fail()
-        } catch (err) {
-            const error = err as Error
-            assert.deepStrictEqual(error.message, 'Could not grab active text editor for state machine render.')
-        }
+        const err = await assertThrowsError(
+            async () => await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.renderStateMachine')
+        )
+        assert.deepStrictEqual(err.message, 'Could not grab active text editor for state machine render.')
     })
 
     it('doesnt update the graph if a seperate file is opened or modified', async () => {

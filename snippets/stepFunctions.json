@@ -148,11 +148,7 @@
     },
     "succeedState": {
         "prefix": "sfss",
-        "body": [
-            "\"${1:SuccessState}\": {",
-            "\t\"Type\": \"Succeed\"",
-            "}"
-        ],
+        "body": ["\"${1:SuccessState}\": {", "\t\"Type\": \"Succeed\"", "}"],
         "description": "Code snippet for a Succeed state.\n\n A Succeed state stops an execution successfully."
     },
     "failState": {
