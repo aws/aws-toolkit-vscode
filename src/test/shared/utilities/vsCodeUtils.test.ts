@@ -199,8 +199,4 @@ describe('getChannelLogger', function() {
     it('should expose output channel', async () => {
         assert(channelLogger.channel === outputChannel, 'channelLogger.channel !== outputChannel')
     })
-
-    it('should expose logger', async () => {
-        assert(channelLogger.logger === logger, 'channelLogger.logger !== logger')
-    })
 })

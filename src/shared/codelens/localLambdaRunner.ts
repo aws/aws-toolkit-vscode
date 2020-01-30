@@ -25,7 +25,7 @@ import { writeFile } from 'fs-extra'
 import { generateDefaultHandlerConfig, HandlerConfig } from '../../lambda/config/templates'
 import { DebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
-import { getLogger, Logger } from '../logger'
+import { getLogger } from '../logger'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { Timeout } from '../utilities/timeoutUtils'
@@ -480,7 +480,7 @@ export interface AttachDebuggerContext {
     debugConfig: DebugConfiguration
     maxRetries: number
     retryDelayMillis?: number
-    channelLogger: Pick<ChannelLogger, 'info' | 'error' | 'logger'>
+    channelLogger: Pick<ChannelLogger, 'info' | 'error'>
     onStartDebugging?: typeof vscode.debug.startDebugging
     onRecordAttachDebuggerMetric?(attachResult: boolean | undefined, attempts: number): void
     onWillRetry?(): Promise<void>

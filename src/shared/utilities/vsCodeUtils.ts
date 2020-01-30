@@ -50,7 +50,6 @@ export function processTemplate<T extends TemplateParams>({
 
 export interface ChannelLogger {
     readonly channel: vscode.OutputChannel
-    readonly logger: Logger
     verbose: TemplateHandler
     debug: TemplateHandler
     info: TemplateHandler
