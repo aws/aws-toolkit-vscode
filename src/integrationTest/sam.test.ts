@@ -17,7 +17,6 @@ import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { fileExists } from '../shared/filesystemUtilities'
 import { getLogger } from '../shared/logger'
 import { WinstonToolkitLogger } from '../shared/logger/winstonToolkitLogger'
-import { MetricDatum } from '../shared/telemetry/clienttelemetry'
 import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep, TIMEOUT } from './integrationTestsUtilities'
 
 const projectFolder = getTestWorkspaceFolder()
@@ -108,17 +107,6 @@ async function stopDebugger(): Promise<void> {
 
 async function closeAllEditors(): Promise<void> {
     await vscode.commands.executeCommand('workbench.action.closeAllEditors')
-}
-
-function validateLocalInvokeResult(actualResult: MetricDatum, expectedResult: MetricDatum) {
-    assert.strictEqual(actualResult.MetricName, expectedResult.MetricName)
-    assert.strictEqual(actualResult.Value, expectedResult.Value)
-    assert.strictEqual(actualResult.Unit, expectedResult.Unit)
-
-    expectedResult.Metadata!.forEach((entry, key) => {
-        assert.strictEqual(actualResult.Metadata![key].Key, entry.Key)
-        assert.strictEqual(actualResult.Metadata![key].Value, entry.Value)
-    })
 }
 
 async function activateExtensions(): Promise<void> {
@@ -292,21 +280,10 @@ describe('SAM Integration Tests', async () => {
                     assert.ok(codeLens, 'expected to find a CodeLens')
 
                     // tslint:disable-next-line: no-unsafe-any
-                    const runResult = ((await vscode.commands.executeCommand<any>(
+                    await vscode.commands.executeCommand<any>(
                         codeLens.command!.command,
                         ...codeLens.command!.arguments!
-                    )) as any).datum as MetricDatum
-                    assert.ok(runResult, 'expected to get invoke results back')
-                    validateLocalInvokeResult(runResult!, {
-                        MetricName: 'lambda_invokelocal',
-                        Value: 1,
-                        Unit: 'Count',
-                        Metadata: [
-                            { Key: 'runtime', Value: scenario.runtime },
-                            { Key: 'debug', Value: 'false' },
-                            { Key: 'result', Value: 'Succeeded' }
-                        ]
-                    })
+                    )
                 }).timeout(TIMEOUT)
 
                 it('invokes the Debug Local CodeLens', async () => {
@@ -361,21 +338,10 @@ describe('SAM Integration Tests', async () => {
                         )
                     })
 
-                    const runResult = ((await vscode.commands.executeCommand<any>(
+                    await vscode.commands.executeCommand<any>(
                         codeLens.command!.command,
                         ...codeLens.command!.arguments!
-                    )) as any).datum as MetricDatum
-                    assert.ok(runResult, 'expected to get invoke results back')
-                    validateLocalInvokeResult(runResult!, {
-                        MetricName: 'lambda_invokelocal',
-                        Value: 1,
-                        Unit: 'Count',
-                        Metadata: [
-                            { Key: 'runtime', Value: scenario.runtime },
-                            { Key: 'debug', Value: 'true' },
-                            { Key: 'result', Value: 'Succeeded' }
-                        ]
-                    })
+                    )
 
                     await debugSessionStartedAndStoppedPromise
                 }).timeout(TIMEOUT * 2)

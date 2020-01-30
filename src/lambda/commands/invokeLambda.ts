@@ -15,6 +15,7 @@ import { CompositeResourceFetcher } from '../../shared/resourcefetcher/composite
 import { FileResourceFetcher } from '../../shared/resourcefetcher/fileResourceFetcher'
 import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
 import { ResourceFetcher } from '../../shared/resourcefetcher/resourcefetcher'
+import { recordLambdaInvokeRemote, Result, Runtime } from '../../shared/telemetry/telemetry'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
 import { sampleRequestManifestPath, sampleRequestPath } from '../constants'
 import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
@@ -46,9 +47,10 @@ export async function invokeLambda(params: {
     functionNode: LambdaFunctionNode
 }) {
     const logger: Logger = getLogger()
+    const functionNode = params.functionNode
+    let invokeResult: Result = 'Succeeded'
 
     try {
-        const functionNode = params.functionNode
         const view = vscode.window.createWebviewPanel(
             'html',
             `Invoked ${functionNode.configuration.FunctionName}`,
@@ -112,11 +114,17 @@ export async function invokeLambda(params: {
                 ext.context.subscriptions
             )
         } catch (err) {
+            invokeResult = 'Failed'
             logger.error('Error getting manifest data..', err as Error)
         }
     } catch (err) {
-        const error = err as Error
-        logger.error(error)
+        invokeResult = 'Failed'
+        logger.error(err as Error)
+    } finally {
+        recordLambdaInvokeRemote({
+            result: invokeResult,
+            runtime: functionNode.configuration.Runtime as Runtime
+        })
     }
 }
 

@@ -4,12 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import {
-    applyResultsToMetadata,
-    createNewSamApplication,
-    CreateNewSamApplicationResults,
-    resumeCreateNewSamApp
-} from '../../lambda/commands/createNewSamApp'
+import { createNewSamApplication, resumeCreateNewSamApp } from '../../lambda/commands/createNewSamApp'
 import { deploySamApplication, SamDeployWizardResponseProvider } from '../../lambda/commands/deploySamApplication'
 import { SamParameterCompletionItemProvider } from '../../lambda/config/samParameterCompletionItemProvider'
 import { configureLocalLambda } from '../../lambda/local/configureLocalLambda'
@@ -25,9 +20,7 @@ import * as pyLensProvider from '../codelens/pythonCodeLensProvider'
 import * as tsLensProvider from '../codelens/typescriptCodeLensProvider'
 import { RegionProvider } from '../regions/regionProvider'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
-import { MetricDatum } from '../telemetry/clienttelemetry'
 import { TelemetryService } from '../telemetry/telemetryService'
-import { defaultMetricDatum, registerCommand } from '../telemetry/telemetryUtils'
 import { PromiseSharer } from '../utilities/promiseUtilities'
 import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
 import { initialize as initializeSamCliContext } from './cli/samCliContext'
@@ -46,9 +39,7 @@ export async function activate(activateArguments: {
 }): Promise<void> {
     const channelLogger = getChannelLogger(activateArguments.outputChannel)
 
-    initializeSamCliContext({
-        settingsConfiguration: activateArguments.toolkitSettings
-    })
+    initializeSamCliContext({ settingsConfiguration: activateArguments.toolkitSettings })
 
     activateArguments.extensionContext.subscriptions.push(
         ...(await activateCodeLensProviders(
@@ -89,65 +80,29 @@ async function registerServerlessCommands(params: {
     channelLogger: ChannelLogger
 }): Promise<void> {
     params.extensionContext.subscriptions.push(
-        registerCommand({
-            command: 'aws.samcli.detect',
-            telemetryName: 'Command_aws.samcli.detect',
-            callback: async () =>
+        vscode.commands.registerCommand(
+            'aws.samcli.detect',
+            async () =>
                 await PromiseSharer.getExistingPromiseOrCreate('samcli.detect', async () => await detectSamCli(true))
-        })
-    )
+        ),
+        vscode.commands.registerCommand('aws.lambda.createNewSamApp', async () => {
+            await createNewSamApplication(params.channelLogger)
+        }),
+        vscode.commands.registerCommand('aws.configureLambda', configureLocalLambda),
+        vscode.commands.registerCommand('aws.deploySamApplication', async () => {
+            const samDeployWizardContext = new DefaultSamDeployWizardContext(params.regionProvider)
+            const samDeployWizard: SamDeployWizardResponseProvider = {
+                getSamDeployWizardResponse: async (): Promise<SamDeployWizardResponse | undefined> => {
+                    const wizard = new SamDeployWizard(samDeployWizardContext)
 
-    params.extensionContext.subscriptions.push(
-        registerCommand({
-            command: 'aws.lambda.createNewSamApp',
-            callback: async (): Promise<{ datum: MetricDatum }> => {
-                const createNewSamApplicationResults: CreateNewSamApplicationResults = await createNewSamApplication(
-                    params.channelLogger
-                )
-                const datum = defaultMetricDatum('new')
-                datum.Metadata = []
-                applyResultsToMetadata(createNewSamApplicationResults, datum.Metadata)
-
-                return {
-                    datum
+                    return wizard.run()
                 }
-            },
-            telemetryName: 'project_new'
-        })
-    )
+            }
 
-    params.extensionContext.subscriptions.push(
-        registerCommand({
-            command: 'aws.deploySamApplication',
-            callback: async () => {
-                const samDeployWizardContext = new DefaultSamDeployWizardContext(params.regionProvider)
-                const samDeployWizard: SamDeployWizardResponseProvider = {
-                    getSamDeployWizardResponse: async (): Promise<SamDeployWizardResponse | undefined> => {
-                        const wizard = new SamDeployWizard(samDeployWizardContext)
-
-                        return wizard.run()
-                    }
-                }
-
-                await deploySamApplication(
-                    {
-                        channelLogger: params.channelLogger,
-                        samDeployWizard
-                    },
-                    {
-                        awsContext: params.awsContext
-                    }
-                )
-            },
-            telemetryName: 'lambda_deploy'
-        })
-    )
-
-    params.extensionContext.subscriptions.push(
-        registerCommand({
-            command: 'aws.configureLambda',
-            callback: configureLocalLambda,
-            telemetryName: 'lambda_configurelocal'
+            await deploySamApplication(
+                { channelLogger: params.channelLogger, samDeployWizard },
+                { awsContext: params.awsContext }
+            )
         })
     )
 
