@@ -21,7 +21,7 @@ import {
     WAIT_FOR_DEBUGGER_MESSAGES
 } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
-import { recordLambdaInvokelocal, Result, Runtime } from '../telemetry/telemetry'
+import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { dirnameWithTrailingSlash } from '../utilities/pathUtils'
 import { ChannelLogger, getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
@@ -241,7 +241,7 @@ async function onLocalInvokeCommand(
             err as Error
         )
     } finally {
-        recordLambdaInvokelocal({
+        recordLambdaInvokeLocal({
             result: invokeResult,
             runtime: lambdaRuntime as Runtime,
             debug: lambdaLocalInvokeParams.isDebug

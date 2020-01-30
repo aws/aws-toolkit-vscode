@@ -16,7 +16,7 @@ import { getLogger } from '../logger'
 import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
-import { recordLambdaInvokelocal, Result, Runtime } from '../telemetry/telemetry'
+import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
 import { ChannelLogger, getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
 import { CodeLensProviderParams, DRIVE_LETTER_REGEX, getInvokeCmdKey, makeCodeLenses } from './codeLensUtils'
 import {
@@ -331,7 +331,7 @@ export async function initialize({
                 invokeResult = 'Failed'
                 throw err
             } finally {
-                recordLambdaInvokelocal({
+                recordLambdaInvokeLocal({
                     result: invokeResult,
                     runtime: lambdaRuntime as Runtime,
                     debug: params.isDebug

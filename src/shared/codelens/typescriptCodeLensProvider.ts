@@ -16,7 +16,7 @@ import { getChannelLogger, getDebugPort, localize } from '../utilities/vsCodeUti
 import { nodeJsRuntimes } from '../../lambda/models/samLambdaRuntime'
 import { getLogger } from '../logger'
 import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
-import { recordLambdaInvokelocal, Result, Runtime } from '../telemetry/telemetry'
+import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { CodeLensProviderParams, getInvokeCmdKey, makeCodeLenses } from './codeLensUtils'
 import { getHandlerRelativePath, LambdaLocalInvokeParams, LocalLambdaRunner } from './localLambdaRunner'
@@ -118,7 +118,7 @@ export function initialize({
             invokeResult = 'Failed'
             throw err
         } finally {
-            recordLambdaInvokelocal({
+            recordLambdaInvokeLocal({
                 result: invokeResult,
                 runtime: lambdaRuntime as Runtime,
                 debug: params.isDebug

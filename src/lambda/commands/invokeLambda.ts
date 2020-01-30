@@ -15,7 +15,7 @@ import { CompositeResourceFetcher } from '../../shared/resourcefetcher/composite
 import { FileResourceFetcher } from '../../shared/resourcefetcher/fileResourceFetcher'
 import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
 import { ResourceFetcher } from '../../shared/resourcefetcher/resourcefetcher'
-import { recordLambdaInvokeremote, Result, Runtime } from '../../shared/telemetry/telemetry'
+import { recordLambdaInvokeRemote, Result, Runtime } from '../../shared/telemetry/telemetry'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
 import { sampleRequestManifestPath, sampleRequestPath } from '../constants'
 import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
@@ -121,7 +121,7 @@ export async function invokeLambda(params: {
         invokeResult = 'Failed'
         logger.error(err as Error)
     } finally {
-        recordLambdaInvokeremote({
+        recordLambdaInvokeRemote({
             result: invokeResult,
             runtime: functionNode.configuration.Runtime as Runtime
         })
