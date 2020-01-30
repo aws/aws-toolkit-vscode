@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains
 
+import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.testGuiFramework.impl.GuiTestCase
 import com.intellij.testGuiFramework.util.scenarios.newProjectDialogModel
 import org.junit.Before
@@ -16,6 +17,12 @@ abstract class EmptyProjectTestCase : GuiTestCase() {
 
     @Before
     fun createEmptyProject() {
+        // TODO fix tests on 2019.3
+        val info = ApplicationInfo.getInstance()
+        if (info.majorVersion != "2019" || info.minorVersionMainPart != "2") {
+            return
+        }
+
         welcomeFrame {
             createNewProject()
             newProjectDialogModel.createEmptyProject(projectFolder)

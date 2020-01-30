@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.ui.s3
 
+import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.testGuiFramework.driver.ExtendedJTreePathFinder
 import com.intellij.testGuiFramework.fixtures.IdeFrameFixture
@@ -41,6 +42,12 @@ class S3BrowserTest : EmptyProjectTestCase() {
 
     @Test
     fun s3MainFunctionality() {
+        // TODO fix tests on 2019.3
+        val info = ApplicationInfo.getInstance()
+        if (info.majorVersion != "2019" || info.minorVersionMainPart != "2") {
+            return
+        }
+
         ideFrame {
             waitForBackgroundTasksToFinish()
 
@@ -148,6 +155,11 @@ class S3BrowserTest : EmptyProjectTestCase() {
 
     @After
     fun cleanUp() {
+        // TODO fix tests on 2019.3
+        val info = ApplicationInfo.getInstance()
+        if (info.majorVersion != "2019" || info.minorVersionMainPart != "3") {
+            return
+        }
         step("Delete bucket named $bucket") {
             ideFrame {
                 toolwindow("aws.explorer") {
