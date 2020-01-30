@@ -156,7 +156,7 @@ export async function activate(context: vscode.ExtensionContext) {
             toolkitSettings
         })
 
-        toastNewUser(context, getLogger())
+        toastNewUser(context)
 
         await loginWithMostRecentCredentials(toolkitSettings, loginManager)
     } catch (error) {
