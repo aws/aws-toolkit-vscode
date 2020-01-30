@@ -39,10 +39,10 @@ class MockTelemetryPublisher implements TelemetryPublisher {
 }
 
 const originalTelemetryClient: TelemetryService = ext.telemetry
-let mockContext = new FakeExtensionContext()
-let mockAws = new FakeAwsContext()
-let mockPublisher = new MockTelemetryPublisher()
-let service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
+let mockContext: FakeExtensionContext
+let mockAws: FakeAwsContext
+let mockPublisher: MockTelemetryPublisher
+let service: DefaultTelemetryService
 
 beforeEach(() => {
     mockContext = new FakeExtensionContext()

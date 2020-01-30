@@ -20,7 +20,7 @@ import { FakeAwsContext } from './utilities/fakeAwsContext'
 // Expectation: Tests are not run concurrently
 let testLogger: TestLogger | undefined
 
-// Set up global logger
+// Set up global telemetry client
 before(async () => {
     const mockContext = new FakeExtensionContext()
     const mockAws = new FakeAwsContext()

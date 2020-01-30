@@ -74,7 +74,10 @@ async function registerCdkCommands(explorer: AwsCdkExplorer): Promise<void> {
         recordCdkHelp()
     })
     vscode.commands.registerCommand('aws.refreshCdkExplorer', async () => {
-        explorer.refresh()
-        recordCdkRefreshExplorer()
+        try {
+            explorer.refresh()
+        } finally {
+            recordCdkRefreshExplorer()
+        }
     })
 }

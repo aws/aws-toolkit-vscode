@@ -99,8 +99,11 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('aws.logout', async () => await ext.awsContextCommands.onCommandLogout())
 
         vscode.commands.registerCommand('aws.credential.profile.create', async () => {
-            await ext.awsContextCommands.onCommandCreateCredentialsProfile()
-            recordAwsCreateCredentials()
+            try {
+                await ext.awsContextCommands.onCommandCreateCredentialsProfile()
+            } finally {
+                recordAwsCreateCredentials()
+            }
         })
 
         // register URLs in extension menu
@@ -117,8 +120,11 @@ export async function activate(context: vscode.ExtensionContext) {
             recordAwsReportPluginIssue()
         })
         vscode.commands.registerCommand('aws.quickStart', async () => {
-            await showQuickStartWebview(context)
-            recordAwsHelpQuickstart()
+            try {
+                await showQuickStartWebview(context)
+            } finally {
+                recordAwsHelpQuickstart()
+            }
         })
 
         await activateCdk({

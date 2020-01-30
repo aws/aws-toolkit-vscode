@@ -91,6 +91,7 @@ export async function createSearchSchemasWebView(params: { node: RegistryItemNod
         const error = err as Error
         logger.error('Error searching schemas', error)
     } finally {
+        // TODO make this telemetry actually record failures
         recordSchemasSearch({ result: webviewResult })
     }
 }

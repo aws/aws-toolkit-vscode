@@ -63,15 +63,21 @@ async function registerAwsExplorerCommands(
     lambdaOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Lambda')
 ): Promise<void> {
     vscode.commands.registerCommand('aws.showRegion', async () => {
-        await ext.awsContextCommands.onCommandShowRegion()
-        recordAwsShowRegion()
-        recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
+        try {
+            await ext.awsContextCommands.onCommandShowRegion()
+        } finally {
+            recordAwsShowRegion()
+            recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
+        }
     })
 
     vscode.commands.registerCommand('aws.hideRegion', async (node?: RegionNode) => {
-        await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
-        recordAwsHideRegion()
-        recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
+        try {
+            await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
+        } finally {
+            recordAwsHideRegion()
+            recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
+        }
     })
 
     vscode.commands.registerCommand('aws.refreshAwsExplorer', async () => {
@@ -110,8 +116,11 @@ async function registerAwsExplorerCommands(
     vscode.commands.registerCommand(
         'aws.refreshAwsExplorerNode',
         async (awsexplorer: AwsExplorer, element: AWSTreeNodeBase) => {
-            awsexplorer.refresh(element)
-            recordAwsRefreshExplorer()
+            try {
+                awsexplorer.refresh(element)
+            } finally {
+                recordAwsRefreshExplorer()
+            }
         }
     )
 }
