@@ -9,19 +9,21 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { ext } from '../../shared/extensionGlobals'
 import { getLogger, Logger } from '../../shared/logger'
+import StateMachineGraphCache from '../utils'
 
 export interface messageObject {
-    command: string,
-    text: string,
-    error?: string,
+    command: string
+    text: string
+    error?: string
     stateMachineData: string
 }
 
 /**
  * Graphs the state machine defined in the current active editor
  */
-export async function visualizeStateMachine(): Promise<vscode.WebviewPanel> {
+export async function visualizeStateMachine(globalStorage: vscode.Memento): Promise<vscode.WebviewPanel | void> {
     const logger: Logger = getLogger()
+    const cache = new StateMachineGraphCache()
 
     /* TODO: Determine behaviour when command is run against bad input, or
      * non-json files. Determine if we want to limit the command to only a
@@ -41,13 +43,26 @@ export async function visualizeStateMachine(): Promise<vscode.WebviewPanel> {
         throw new Error('Could not grab active text editor for state machine render.')
     }
 
-    return setupWebviewPanel(documentUri, documentText)
+    try {
+        await cache.updateCache(globalStorage)
+
+        return setupWebviewPanel(documentUri, documentText)
+    } catch (err) {
+        vscode.window.showInformationMessage(
+            localize(
+                'AWS.stepfunctions.visualisation.errors.rendering',
+                'There was an error rendering State Machine Graph, check logs for details.'
+            )
+        )
+
+        logger.debug('Unable to setup webview panel.')
+        logger.error(err as Error)
+    }
+
+    return
 }
 
-async function setupWebviewPanel(
-    documentUri: vscode.Uri,
-    documentText: string
-): Promise<vscode.WebviewPanel> {
+async function setupWebviewPanel(documentUri: vscode.Uri, documentText: string): Promise<vscode.WebviewPanel> {
     const logger: Logger = getLogger()
 
     // Create and show panel
@@ -58,8 +73,9 @@ async function setupWebviewPanel(
         {
             enableScripts: true,
             localResourceRoots: [
-                ext.visualizationResourcePaths.localScriptsPath,
-                ext.visualizationResourcePaths.stateMachineThemePath
+                ext.visualizationResourcePaths.localWebviewScriptsPath,
+                ext.visualizationResourcePaths.visualizationLibraryCachePath,
+                ext.visualizationResourcePaths.stateMachineCustomThemePath
             ],
             retainContextWhenHidden: true
         }
@@ -67,8 +83,10 @@ async function setupWebviewPanel(
 
     // Set the initial html for the webpage
     panel.webview.html = getWebviewContent(
-        ext.visualizationResourcePaths.webviewScript.with({ scheme: 'vscode-resource' }),
-        ext.visualizationResourcePaths.stateMachineThemeCSS.with({ scheme: 'vscode-resource' })
+        ext.visualizationResourcePaths.webviewBodyScript.with({ scheme: 'vscode-resource' }),
+        ext.visualizationResourcePaths.visualizationLibraryScript.with({ scheme: 'vscode-resource' }),
+        ext.visualizationResourcePaths.visualizationLibraryCSS.with({ scheme: 'vscode-resource' }),
+        ext.visualizationResourcePaths.stateMachineCustomThemeCSS.with({ scheme: 'vscode-resource' })
     )
 
     // Add listener function to update the graph on document save
@@ -116,17 +134,19 @@ function makeWebviewTitle(sourceDocumentUri: vscode.Uri): string {
 }
 
 function getWebviewContent(
-    graphStateMachineScriptPath: vscode.Uri,
-    stateMachineThemeCSS: vscode.Uri
+    webviewBodyScript: vscode.Uri,
+    graphStateMachineLibrary: vscode.Uri,
+    vsCodeCustomStyling: vscode.Uri,
+    graphStateMachineDefaultStyles: vscode.Uri
 ): string {
     return `
 <!DOCTYPE html>
 <html>
     <head>
         <meta charset="UTF-8">
-        <link rel="stylesheet" href="https://d19z89qxwgm7w9.cloudfront.net/graph-0.0.1.css">
-        <link rel="stylesheet" href='${stateMachineThemeCSS}'>
-        <script src="https://d19z89qxwgm7w9.cloudfront.net/sfn-0.0.3.js"></script>
+        <link rel="stylesheet" href='${graphStateMachineDefaultStyles}'>
+        <link rel="stylesheet" href='${vsCodeCustomStyling}'>
+        <script src='${graphStateMachineLibrary}'></script>
     </head>
 
     <body>
@@ -134,7 +154,7 @@ function getWebviewContent(
             <svg></svg>
         </div>
 
-        <script src='${graphStateMachineScriptPath}'></script>
+        <script src='${webviewBodyScript}'></script>
     </body>
 </html>`
 }

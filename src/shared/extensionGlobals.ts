@@ -28,10 +28,13 @@ export namespace ext {
     }
 
     export namespace visualizationResourcePaths {
-        export let localScriptsPath: Uri
-        export let webviewScript: Uri
-        export let stateMachineThemePath: Uri
-        export let stateMachineThemeCSS: Uri
+        export let localWebviewScriptsPath: Uri
+        export let webviewBodyScript: Uri
+        export let visualizationLibraryCachePath: Uri
+        export let visualizationLibraryScript: Uri
+        export let visualizationLibraryCSS: Uri
+        export let stateMachineCustomThemePath: Uri
+        export let stateMachineCustomThemeCSS: Uri
     }
 
     export namespace manifestPaths {
