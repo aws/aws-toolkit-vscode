@@ -157,7 +157,7 @@ class S3BrowserTest : EmptyProjectTestCase() {
     fun cleanUp() {
         // TODO fix tests on 2019.3
         val info = ApplicationInfo.getInstance()
-        if (info.majorVersion != "2019" || info.minorVersionMainPart != "3") {
+        if (info.majorVersion != "2019" || info.minorVersionMainPart != "2") {
             return
         }
         step("Delete bucket named $bucket") {
