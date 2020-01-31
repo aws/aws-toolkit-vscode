@@ -102,7 +102,7 @@ export async function createNewSamApplication(
         )
 
         const wizardContext = new DefaultCreateNewSamAppWizardContext(currentCredentials, schemasRegions)
-        const config = await new CreateNewSamAppWizard(wizardContext).run()
+        config = await new CreateNewSamAppWizard(wizardContext).run()
 
         if (!config) {
             createResult = 'Cancelled'
@@ -160,12 +160,10 @@ export async function createNewSamApplication(
                 destinationDirectory: vscode.Uri.file(destinationDirectory)
             }
             schemaCodeDownloader = createSchemaCodeDownloaderObject(client!)
-            channelLogger.logger.info(
-                localize(
-                    'AWS.message.info.schemas.downloadCodeBindings.start',
-                    'Downloading code for schema {0}...',
-                    config.schemaName!
-                )
+            channelLogger.info(
+                'AWS.message.info.schemas.downloadCodeBindings.start',
+                'Downloading code for schema {0}...',
+                config.schemaName!
             )
 
             await schemaCodeDownloader!.downloadCode(request!)
