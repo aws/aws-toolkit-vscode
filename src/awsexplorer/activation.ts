@@ -16,8 +16,12 @@ import { ext } from '../shared/extensionGlobals'
 import { safeGet } from '../shared/extensionUtilities'
 import { getLogger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
-import { recordVscodeActiveregions } from '../shared/telemetry/telemetry'
-import { registerCommand } from '../shared/telemetry/telemetryUtils'
+import {
+    recordAwsHideRegion,
+    recordAwsRefreshExplorer,
+    recordAwsShowRegion,
+    recordVscodeActiveRegions
+} from '../shared/telemetry/telemetry'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../shared/treeview/nodes/errorNode'
 import { showErrorDetails } from '../shared/treeview/webviews/showErrorDetails'
@@ -43,7 +47,7 @@ export async function activate(activateArguments: {
 
     await registerAwsExplorerCommands(awsExplorer)
 
-    recordVscodeActiveregions({ value: awsExplorer.getRegionNodesSize() })
+    recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
 
     activateArguments.awsContextTrees.addTree(awsExplorer)
 
@@ -58,28 +62,27 @@ async function registerAwsExplorerCommands(
     awsExplorer: AwsExplorer,
     lambdaOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Lambda')
 ): Promise<void> {
-    registerCommand({
-        command: 'aws.showRegion',
-        callback: async () => {
+    vscode.commands.registerCommand('aws.showRegion', async () => {
+        try {
             await ext.awsContextCommands.onCommandShowRegion()
-            recordVscodeActiveregions({ value: awsExplorer.getRegionNodesSize() })
-        },
-        telemetryName: 'Command_aws.showRegion'
+        } finally {
+            recordAwsShowRegion()
+            recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
+        }
     })
 
-    registerCommand({
-        command: 'aws.hideRegion',
-        callback: async (node?: RegionNode) => {
+    vscode.commands.registerCommand('aws.hideRegion', async (node?: RegionNode) => {
+        try {
             await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
-            recordVscodeActiveregions({ value: awsExplorer.getRegionNodesSize() })
-        },
-        telemetryName: 'Command_aws.hideRegion'
+        } finally {
+            recordAwsHideRegion()
+            recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
+        }
     })
 
-    registerCommand({
-        command: 'aws.refreshAwsExplorer',
-        callback: async () => awsExplorer.refresh(),
-        telemetryName: 'Command_aws.refreshAwsExplorer'
+    vscode.commands.registerCommand('aws.refreshAwsExplorer', async () => {
+        recordAwsRefreshExplorer()
+        awsExplorer.refresh()
     })
 
     vscode.commands.registerCommand(
@@ -93,36 +96,33 @@ async function registerAwsExplorerCommands(
             })
     )
 
-    registerCommand({
-        command: 'aws.deleteCloudFormation',
-        callback: async (node: CloudFormationStackNode) =>
-            await deleteCloudFormation(() => awsExplorer.refresh(node.parent), node),
-        telemetryName: 'cloudformation_delete'
-    })
+    vscode.commands.registerCommand(
+        'aws.deleteCloudFormation',
+        async (node: CloudFormationStackNode) =>
+            await deleteCloudFormation(() => awsExplorer.refresh(node.parent), node)
+    )
 
-    registerCommand({
-        command: 'aws.showErrorDetails',
-        callback: async (node: ErrorNode) => await showErrorDetails(node),
-        telemetryName: 'Command_aws.showErrorDetails'
-    })
+    vscode.commands.registerCommand('aws.showErrorDetails', async (node: ErrorNode) => await showErrorDetails(node))
 
-    registerCommand({
-        command: 'aws.invokeLambda',
-        callback: async (node: LambdaFunctionNode) =>
+    vscode.commands.registerCommand(
+        'aws.invokeLambda',
+        async (node: LambdaFunctionNode) =>
             await invokeLambda({
                 functionNode: node,
                 outputChannel: lambdaOutputChannel
-            }),
-        telemetryName: 'lambda_invokeremote'
-    })
+            })
+    )
 
-    registerCommand({
-        command: 'aws.refreshAwsExplorerNode',
-        callback: async (awsexplorer: AwsExplorer, element: AWSTreeNodeBase) => {
-            awsexplorer.refresh(element)
-        },
-        telemetryName: 'Command_aws.refreshAwsExplorerNode'
-    })
+    vscode.commands.registerCommand(
+        'aws.refreshAwsExplorerNode',
+        async (awsexplorer: AwsExplorer, element: AWSTreeNodeBase) => {
+            try {
+                awsexplorer.refresh(element)
+            } finally {
+                recordAwsRefreshExplorer()
+            }
+        }
+    )
 }
 
 function updateAwsExplorerWhenAwsContextCredentialsChange(

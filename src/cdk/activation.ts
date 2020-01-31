@@ -5,23 +5,19 @@
 
 import * as vscode from 'vscode'
 import { cdkDocumentationUrl, cdkProvideFeedbackUrl } from '../shared/constants'
-import { ext } from '../shared/extensionGlobals'
-import { TelemetryEvent } from '../shared/telemetry/telemetryEvent'
-import { defaultMetricDatum, registerCommand } from '../shared/telemetry/telemetryUtils'
+import {
+    recordCdkAppExpanded,
+    recordCdkExplorerDisabled,
+    recordCdkExplorerEnabled,
+    recordCdkHelp,
+    recordCdkProvideFeedback,
+    recordCdkRefreshExplorer
+} from '../shared/telemetry/telemetry'
 import { AwsCdkExplorer } from './explorer/awsCdkExplorer'
 import { AppNode } from './explorer/nodes/appNode'
 import { cdk } from './globals'
 
 const EXPLORER_ENABLED_CONFIG_KEY = 'aws.cdk.explorer.enabled'
-
-/**
- * Telemetry event names for recorded metrics
- */
-enum TelemetryEventTypes {
-    APP_EXPANDED = 'cdk_appExpanded',
-    EXPLORER_RE_ENABLED = 'cdk_explorerEnabled',
-    EXPLORER_DISABLED = 'cdk_explorerDisabled'
-}
 
 /**
  * Activate AWS CDK related functionality for the extension.
@@ -42,7 +38,7 @@ export async function activate(activateArguments: { extensionContext: vscode.Ext
     const appNodeExpanded = view.onDidExpandElement(e => {
         if (e.element instanceof AppNode && !e.element.expandMetricRecorded) {
             e.element.expandMetricRecorded = true
-            ext.telemetry.record(getTelemetryEvent(TelemetryEventTypes.APP_EXPANDED))
+            recordCdkAppExpanded()
         }
     })
     activateArguments.extensionContext.subscriptions.push(appNodeExpanded)
@@ -51,20 +47,13 @@ export async function activate(activateArguments: { extensionContext: vscode.Ext
     const explorerEnabledToggled = vscode.workspace.onDidChangeConfiguration(e => {
         if (e.affectsConfiguration(EXPLORER_ENABLED_CONFIG_KEY)) {
             if (vscode.workspace.getConfiguration().get(EXPLORER_ENABLED_CONFIG_KEY)) {
-                ext.telemetry.record(getTelemetryEvent(TelemetryEventTypes.EXPLORER_RE_ENABLED))
+                recordCdkExplorerEnabled()
             } else {
-                ext.telemetry.record(getTelemetryEvent(TelemetryEventTypes.EXPLORER_DISABLED))
+                recordCdkExplorerDisabled()
             }
         }
     })
     activateArguments.extensionContext.subscriptions.push(explorerEnabledToggled)
-}
-
-function getTelemetryEvent(eventName: TelemetryEventTypes): TelemetryEvent {
-    return {
-        createTime: new Date(),
-        data: [defaultMetricDatum(eventName)]
-    }
 }
 
 function initializeIconPaths(context: vscode.ExtensionContext) {
@@ -76,23 +65,19 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
 }
 
 async function registerCdkCommands(explorer: AwsCdkExplorer): Promise<void> {
-    registerCommand({
-        command: 'aws.cdk.provideFeedback',
-        callback: async () => {
-            vscode.env.openExternal(vscode.Uri.parse(cdkProvideFeedbackUrl))
-        },
-        telemetryName: 'Command_aws.cdk.provideFeedback'
+    vscode.commands.registerCommand('aws.cdk.provideFeedback', async () => {
+        vscode.env.openExternal(vscode.Uri.parse(cdkProvideFeedbackUrl))
+        recordCdkProvideFeedback()
     })
-    registerCommand({
-        command: 'aws.cdk.help',
-        callback: async () => {
-            vscode.env.openExternal(vscode.Uri.parse(cdkDocumentationUrl))
-        },
-        telemetryName: 'Command_aws.cdk.help'
+    vscode.commands.registerCommand('aws.cdk.help', async () => {
+        vscode.env.openExternal(vscode.Uri.parse(cdkDocumentationUrl))
+        recordCdkHelp()
     })
-    registerCommand({
-        command: 'aws.refreshCdkExplorer',
-        callback: async () => explorer.refresh(),
-        telemetryName: 'Command_aws.refreshCdkExplorer'
+    vscode.commands.registerCommand('aws.refreshCdkExplorer', async () => {
+        try {
+            explorer.refresh()
+        } finally {
+            recordCdkRefreshExplorer()
+        }
     })
 }

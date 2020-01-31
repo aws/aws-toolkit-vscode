@@ -8,16 +8,19 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import { getLogger, Logger } from '../../shared/logger'
+import { recordSchemasView, Result } from '../../shared/telemetry/telemetry'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { SchemaItemNode } from '../explorer/schemaItemNode'
 
 export async function viewSchemaItem(node: SchemaItemNode) {
     const logger: Logger = getLogger()
 
+    let viewResult: Result = 'Succeeded'
     try {
         const rawSchemaContent = await node.getSchemaContent()
         await showSchemaContent(rawSchemaContent)
     } catch (err) {
+        viewResult = 'Failed'
         const error = err as Error
         vscode.window.showErrorMessage(
             localize(
@@ -27,6 +30,8 @@ export async function viewSchemaItem(node: SchemaItemNode) {
             )
         )
         logger.error('Error on schema preview', error)
+    } finally {
+        recordSchemasView({ result: viewResult })
     }
 }
 

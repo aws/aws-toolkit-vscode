@@ -18,8 +18,8 @@ import { SchemaClient } from '../../shared/clients/schemaClient'
 import { ext } from '../../shared/extensionGlobals'
 import { ExtensionUtilities } from '../../shared/extensionUtilities'
 import { getLogger, Logger } from '../../shared/logger'
+import { recordSchemasSearch, recordSchemasView, Result } from '../../shared/telemetry/telemetry'
 import { TelemetryService } from '../../shared/telemetry/telemetryService'
-import { defaultMetricDatum } from '../../shared/telemetry/telemetryUtils'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
@@ -29,14 +29,15 @@ export async function createSearchSchemasWebView(params: { node: RegistryItemNod
     const logger: Logger = getLogger()
     const client: SchemaClient = ext.toolkitClientBuilder.createSchemaClient(params.node.regionCode)
     const registryNames = await getRegistryNames(params.node, client)
-
-    if (registryNames.length === 0) {
-        vscode.window.showInformationMessage(localize('AWS.schemas.search.no_registries', 'No Schema Registries'))
-
-        return
-    }
+    let webviewResult: Result = 'Succeeded'
 
     try {
+        if (registryNames.length === 0) {
+            vscode.window.showInformationMessage(localize('AWS.schemas.search.no_registries', 'No Schema Registries'))
+
+            return
+        }
+
         const view = vscode.window.createWebviewPanel(
             'html',
             localize('AWS.schemas.search.title', 'EventBridge Schemas Search'),
@@ -86,8 +87,12 @@ export async function createSearchSchemasWebView(params: { node: RegistryItemNod
             ext.context.subscriptions
         )
     } catch (err) {
+        webviewResult = 'Failed'
         const error = err as Error
         logger.error('Error searching schemas', error)
+    } finally {
+        // TODO make this telemetry actually record failures
+        recordSchemasSearch({ result: webviewResult })
     }
 }
 
@@ -143,7 +148,7 @@ export function createMessageReceivedFunc({
     return async (message: CommandMessage) => {
         switch (message.command) {
             case 'fetchSchemaContent':
-                recordSchemaSearchTelemetry(telemetryService, message.command)
+                recordSchemasView({ result: 'Succeeded' })
 
                 let selectedVersion = message.version
                 let versionList: string[] = []
@@ -173,7 +178,7 @@ export function createMessageReceivedFunc({
                 return
 
             case 'searchSchemas':
-                recordSchemaSearchTelemetry(telemetryService, message.command)
+                recordSchemasSearch({ result: 'Succeeded' })
 
                 const results = await getSearchResults(schemaClient, registryNames, message.keyword!)
 
@@ -186,8 +191,6 @@ export function createMessageReceivedFunc({
                 return
 
             case 'downloadCodeBindings':
-                recordSchemaSearchTelemetry(telemetryService, message.command)
-
                 const schemaItem: Schemas.SchemaSummary = {
                     SchemaName: getSchemaNameFromTitle(message.schemaSummary!.Title)
                 }
@@ -204,13 +207,6 @@ export function createMessageReceivedFunc({
                 throw new Error(`Search webview command ${message.command} is invalid`)
         }
     }
-}
-
-function recordSchemaSearchTelemetry(telemetryService: TelemetryService, action: string) {
-    telemetryService.record({
-        createTime: new Date(),
-        data: [defaultMetricDatum(`schemas_${action}`)]
-    })
 }
 
 interface SchemaVersionedSummary {
@@ -275,9 +271,9 @@ export function getSchemaVersionedSummary(searchSummary: Schemas.SearchSchemaSum
 }
 
 export function getSchemaNameFromTitle(title: string) {
-    const result = title.split('/')
+    const name = title.split('/')
 
-    return result[result.length - 1]
+    return name[name.length - 1]
 }
 
 function sortNumericStringsInDescendingOrder(a: string, b: string) {

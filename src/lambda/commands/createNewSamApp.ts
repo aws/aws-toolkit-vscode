@@ -5,21 +5,35 @@
 
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
-
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { SchemaClient } from '../../../src/shared/clients/schemaClient'
+import { createSchemaCodeDownloaderObject } from '../..//eventSchemas/commands/downloadSchemaItemCode'
+import {
+    SchemaCodeDownloader,
+    SchemaCodeDownloadRequestDetails
+} from '../../eventSchemas/commands/downloadSchemaItemCode'
+import { getApiValueForSchemasDownload } from '../../eventSchemas/models/schemaCodeLangs'
+import {
+    buildSchemaTemplateParameters,
+    SchemaTemplateParameters
+} from '../../eventSchemas/templates/schemasAppTemplateUtils'
 import { ActivationLaunchPath } from '../../shared/activationLaunchPath'
+import { AwsContext } from '../../shared/awsContext'
+import { ext } from '../../shared/extensionGlobals'
 import { fileExists } from '../../shared/filesystemUtilities'
+import { getLogger } from '../../shared/logger'
+import { RegionProvider } from '../../shared/regions/regionProvider'
 import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
 import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
-import { Metadata } from '../../shared/telemetry/clienttelemetry'
-import { METADATA_FIELD_NAME, MetadataResult } from '../../shared/telemetry/telemetryTypes'
+import { recordSamInit, Result, Runtime } from '../../shared/telemetry/telemetry'
 import { makeCheckLogsMessage } from '../../shared/utilities/messages'
 import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
 import { getDependencyManager } from '../models/samLambdaRuntime'
+import { eventBridgeStarterAppTemplate } from '../models/samTemplates'
 import {
     CreateNewSamAppWizard,
     CreateNewSamAppWizardResponse,
@@ -55,58 +69,112 @@ export async function resumeCreateNewSamApp(activationLaunchPath: ActivationLaun
 }
 
 export interface CreateNewSamApplicationResults {
-    reason: 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
-    result: 'pass' | 'fail' | 'cancel'
     runtime: string
+    result: Result
 }
+
+type createReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 'error'
 
 /**
  * Runs `sam init` in the given context and returns useful metadata about its invocation
  */
 export async function createNewSamApplication(
     channelLogger: ChannelLogger,
+    awsContext: AwsContext,
+    regionProvider: RegionProvider,
     samCliContext: SamCliContext = getSamCliContext(),
     activationLaunchPath: ActivationLaunchPath = new ActivationLaunchPath()
-): Promise<CreateNewSamApplicationResults> {
-    const results: CreateNewSamApplicationResults = {
-        reason: 'unknown',
-        result: 'fail',
-        runtime: 'unknown'
-    }
+): Promise<void> {
+    let createResult: Result = 'Succeeded'
+    let reason: createReason = 'unknown'
+    let createRuntime: Runtime | undefined
+    let config: CreateNewSamAppWizardResponse | undefined
+
+    let initArguments: SamCliInitArgs
 
     try {
         await validateSamCli(samCliContext.validator)
 
-        const wizardContext = new DefaultCreateNewSamAppWizardContext()
-        const config: CreateNewSamAppWizardResponse | undefined = await new CreateNewSamAppWizard(wizardContext).run()
-        if (!config) {
-            results.result = 'cancel'
-            results.reason = 'userCancelled'
+        const currentCredentials = await awsContext.getCredentials()
+        const availableRegions = await regionProvider.getRegionData()
+        const schemasRegions = availableRegions.filter(region =>
+            regionProvider.isServiceInRegion('schemas', region.regionCode)
+        )
 
-            return results
+        const wizardContext = new DefaultCreateNewSamAppWizardContext(currentCredentials, schemasRegions)
+        config = await new CreateNewSamAppWizard(wizardContext).run()
+
+        if (!config) {
+            createResult = 'Cancelled'
+            reason = 'userCancelled'
+
+            return
         }
 
-        results.runtime = config.runtime
+        // This cast (and all like it) will always succeed because Runtime (from config.runtime) is the same
+        // section of types as Runtime
+        createRuntime = config.runtime as Runtime
 
         // TODO: Make this selectable in the wizard to account for runtimes with multiple dependency managers
         const dependencyManager = getDependencyManager(config.runtime)
 
-        const initArguments: SamCliInitArgs = {
+        initArguments = {
             name: config.name,
             location: config.location.fsPath,
             runtime: config.runtime,
-            dependencyManager
+            dependencyManager,
+            template: config.template
+        }
+
+        let request: SchemaCodeDownloadRequestDetails
+        let schemaCodeDownloader: SchemaCodeDownloader
+        let schemaTemplateParameters: SchemaTemplateParameters
+        let client: SchemaClient
+        if (config.template === eventBridgeStarterAppTemplate) {
+            client = ext.toolkitClientBuilder.createSchemaClient(config.region!)
+            schemaTemplateParameters = await buildSchemaTemplateParameters(
+                config.schemaName!,
+                config.registryName!,
+                client
+            )
+
+            initArguments.extraContent = schemaTemplateParameters.templateExtraContent
         }
 
         await runSamCliInit(initArguments, samCliContext)
 
-        results.result = 'pass'
-
         const uri = await getMainUri(config)
         if (!uri) {
-            results.reason = 'fileNotFound'
+            reason = 'fileNotFound'
 
-            return results
+            return
+        }
+
+        if (config.template === eventBridgeStarterAppTemplate) {
+            const destinationDirectory = path.join(config.location.fsPath, config.name, 'hello_world_function')
+            request = {
+                registryName: config.registryName!,
+                schemaName: config.schemaName!,
+                language: getApiValueForSchemasDownload(config.runtime),
+                schemaVersion: schemaTemplateParameters!.SchemaVersion,
+                destinationDirectory: vscode.Uri.file(destinationDirectory)
+            }
+            schemaCodeDownloader = createSchemaCodeDownloaderObject(client!)
+            channelLogger.info(
+                'AWS.message.info.schemas.downloadCodeBindings.start',
+                'Downloading code for schema {0}...',
+                config.schemaName!
+            )
+
+            await schemaCodeDownloader!.downloadCode(request!)
+
+            vscode.window.showInformationMessage(
+                localize(
+                    'AWS.message.info.schemas.downloadCodeBindings.finished',
+                    'Downloaded code for schema {0}!',
+                    request!.schemaName
+                )
+            )
         }
 
         // In case adding the workspace folder triggers a VS Code restart, instruct extension to
@@ -120,8 +188,11 @@ export async function createNewSamApplication(
         await vscode.window.showTextDocument(uri)
         activationLaunchPath.clearLaunchPath()
 
-        results.reason = 'complete'
+        reason = 'complete'
     } catch (err) {
+        createResult = 'Failed'
+        reason = 'error'
+
         const checkLogsMessage = makeCheckLogsMessage()
 
         channelLogger.channel.show(true)
@@ -131,16 +202,18 @@ export async function createNewSamApplication(
             checkLogsMessage
         )
 
-        const error = err as Error
-        channelLogger.logger.error(error)
-        results.result = 'fail'
-        results.reason = 'error'
+        getLogger().error('Error creating new SAM Application', err as Error)
 
         // An error occured, so do not try to open any files during the next extension activation
         activationLaunchPath.clearLaunchPath()
+    } finally {
+        recordSamInit({
+            result: createResult,
+            reason: reason,
+            runtime: createRuntime,
+            name: config?.name
+        })
     }
-
-    return results
 }
 
 async function validateSamCli(samCliValidator: SamCliValidator): Promise<void> {
@@ -172,25 +245,4 @@ async function addWorkspaceFolder(folder: { uri: vscode.Uri; name?: string }): P
     }
 
     await addFolderToWorkspace(folder)
-}
-
-export function applyResultsToMetadata(createResults: CreateNewSamApplicationResults, metadata: Metadata) {
-    let metadataResult: MetadataResult
-
-    switch (createResults.result) {
-        case 'pass':
-            metadataResult = MetadataResult.Pass
-            break
-        case 'cancel':
-            metadataResult = MetadataResult.Cancel
-            break
-        case 'fail':
-        default:
-            metadataResult = MetadataResult.Fail
-            break
-    }
-
-    metadata.push({ Key: 'runtime', Value: createResults.runtime })
-    metadata.push({ Key: METADATA_FIELD_NAME.RESULT, Value: metadataResult.toString() })
-    metadata.push({ Key: METADATA_FIELD_NAME.REASON, Value: createResults.reason })
 }

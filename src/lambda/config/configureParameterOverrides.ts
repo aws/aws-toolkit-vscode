@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger, Logger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger'
 import { getNormalizedRelativePath } from '../../shared/utilities/pathUtils'
 import { getChildrenRange } from '../../shared/utilities/symbolUtilities'
 import { getTabSize } from '../../shared/utilities/textDocumentUtilities'
@@ -21,7 +21,6 @@ export interface ConfigureParameterOverridesContext {
     showErrorMessage: typeof vscode.window.showErrorMessage
     showTextDocument: typeof vscode.window.showTextDocument
     executeCommand: typeof vscode.commands.executeCommand
-    logger: Logger
 }
 
 class DefaultConfigureParameterOverridesContext implements ConfigureParameterOverridesContext {
@@ -32,8 +31,6 @@ class DefaultConfigureParameterOverridesContext implements ConfigureParameterOve
     public readonly showTextDocument = vscode.window.showTextDocument
 
     public readonly executeCommand = vscode.commands.executeCommand
-
-    public readonly logger = getLogger()
 }
 
 export async function configureParameterOverrides(
@@ -114,6 +111,8 @@ async function getParameterOverridesRange(
     },
     context: ConfigureParameterOverridesContext
 ) {
+    const logger = getLogger()
+
     const symbols: vscode.DocumentSymbol[] | undefined = await context.executeCommand<vscode.DocumentSymbol[]>(
         'vscode.executeDocumentSymbolProvider',
         editor.document.uri
@@ -127,23 +126,21 @@ async function getParameterOverridesRange(
 
     const templatesSymbol = symbols.find(c => c.name === 'templates')
     if (!templatesSymbol) {
-        context.logger.warn(`Invalid format for document ${editor.document.uri}`)
+        logger.warn(`Invalid format for document ${editor.document.uri}`)
 
         return defaultRange
     }
 
     const templateSymbol = templatesSymbol.children.find(c => c.name === relativeTemplatePath)
     if (!templateSymbol) {
-        context.logger.warn(`Unable to find template section ${relativeTemplatePath} in ${editor.document.uri}`)
+        logger.warn(`Unable to find template section ${relativeTemplatePath} in ${editor.document.uri}`)
 
         return defaultRange
     }
 
     const parameterOverridesSymbol = templateSymbol.children.find(c => c.name === 'parameterOverrides')
     if (!parameterOverridesSymbol) {
-        context.logger.warn(
-            `Unable to find parameterOverrides section for ${relativeTemplatePath} in ${editor.document.uri}`
-        )
+        logger.warn(`Unable to find parameterOverrides section for ${relativeTemplatePath} in ${editor.document.uri}`)
 
         return defaultRange
     }
