@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 import { Set } from 'immutable'
 import * as vscode from 'vscode'
 
-import { schemaCodeDownloadDocUrl } from '../../shared/constants'
+import { eventBridgeSchemasDocUrl } from '../../shared/constants'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as picker from '../../shared/ui/picker'
 import {
@@ -73,7 +73,7 @@ export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implem
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(schemaCodeDownloadDocUrl))
+                    vscode.env.openExternal(vscode.Uri.parse(eventBridgeSchemasDocUrl))
                 }
             }
         })
@@ -112,7 +112,7 @@ export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implem
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(schemaCodeDownloadDocUrl))
+                    vscode.env.openExternal(vscode.Uri.parse(eventBridgeSchemasDocUrl))
                 }
             }
         })
@@ -152,7 +152,7 @@ export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implem
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(schemaCodeDownloadDocUrl))
+                    vscode.env.openExternal(vscode.Uri.parse(eventBridgeSchemasDocUrl))
                 }
             }
         })

@@ -86,7 +86,7 @@ async function registerServerlessCommands(params: {
                 await PromiseSharer.getExistingPromiseOrCreate('samcli.detect', async () => await detectSamCli(true))
         ),
         vscode.commands.registerCommand('aws.lambda.createNewSamApp', async () => {
-            await createNewSamApplication(params.channelLogger)
+            await createNewSamApplication(params.channelLogger, params.awsContext, params.regionProvider)
         }),
         vscode.commands.registerCommand('aws.configureLambda', configureLocalLambda),
         vscode.commands.registerCommand('aws.deploySamApplication', async () => {

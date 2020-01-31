@@ -9,6 +9,7 @@ import { mkdirpSync, mkdtemp, readFileSync, removeSync } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { getDependencyManager } from '../../src/lambda/models/samLambdaRuntime'
+import { helloWorldTemplate } from '../../src/lambda/models/samTemplates'
 import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
 import { assertThrowsError } from '../../src/test/shared/utilities/assertUtils'
@@ -352,6 +353,7 @@ describe('SAM Integration Tests', async () => {
             const initArguments: SamCliInitArgs = {
                 name: samApplicationName,
                 location: location,
+                template: helloWorldTemplate,
                 runtime: scenario.runtime,
                 dependencyManager: getDependencyManager(scenario.runtime)
             }

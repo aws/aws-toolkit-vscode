@@ -100,7 +100,7 @@ function getCoreFileName(schemaName: string, fileExtension: string) {
     return parsedName[parsedName.length - 1].concat(fileExtension)
 }
 
-function createSchemaCodeDownloaderObject(client: SchemaClient): SchemaCodeDownloader {
+export function createSchemaCodeDownloaderObject(client: SchemaClient): SchemaCodeDownloader {
     const downloader = new CodeDownloader(client)
     const generator = new CodeGenerator(client)
     const poller = new CodeGenerationStatusPoller(client)
@@ -115,7 +115,7 @@ export interface SchemaCodeDownloadRequestDetails {
     language: string
     schemaVersion: string
     destinationDirectory: vscode.Uri
-    schemaCoreCodeFileName: string
+    schemaCoreCodeFileName?: string
 }
 
 export class SchemaCodeDownloader {
@@ -342,16 +342,18 @@ export class CodeExtractor {
         })
     }
 
-    public getCoreCodeFilePath(codeZipFile: string, coreFileName: string): string | undefined {
-        const zip = new admZip(codeZipFile)
-        const zipEntries = zip.getEntries()
+    public getCoreCodeFilePath(codeZipFile: string, coreFileName: string | undefined): string | undefined {
+        if (coreFileName) {
+            const zip = new admZip(codeZipFile)
+            const zipEntries = zip.getEntries()
 
-        for (const zipEntry of zipEntries) {
-            if (zipEntry.isDirectory) {
-                // Ignore directories
-            } else {
-                if (zipEntry.name === coreFileName) {
-                    return zipEntry.entryName
+            for (const zipEntry of zipEntries) {
+                if (zipEntry.isDirectory) {
+                    // Ignore directories
+                } else {
+                    if (zipEntry.name === coreFileName) {
+                        return zipEntry.entryName
+                    }
                 }
             }
         }

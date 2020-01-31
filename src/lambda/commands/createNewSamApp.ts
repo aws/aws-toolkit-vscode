@@ -5,12 +5,25 @@
 
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
-
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { SchemaClient } from '../../../src/shared/clients/schemaClient'
+import { createSchemaCodeDownloaderObject } from '../..//eventSchemas/commands/downloadSchemaItemCode'
+import {
+    SchemaCodeDownloader,
+    SchemaCodeDownloadRequestDetails
+} from '../../eventSchemas/commands/downloadSchemaItemCode'
+import { getApiValueForSchemasDownload } from '../../eventSchemas/models/schemaCodeLangs'
+import {
+    buildSchemaTemplateParameters,
+    SchemaTemplateParameters
+} from '../../eventSchemas/templates/schemasAppTemplateUtils'
 import { ActivationLaunchPath } from '../../shared/activationLaunchPath'
+import { AwsContext } from '../../shared/awsContext'
+import { ext } from '../../shared/extensionGlobals'
 import { fileExists } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
+import { RegionProvider } from '../../shared/regions/regionProvider'
 import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
@@ -20,6 +33,7 @@ import { makeCheckLogsMessage } from '../../shared/utilities/messages'
 import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
 import { getDependencyManager } from '../models/samLambdaRuntime'
+import { eventBridgeStarterAppTemplate } from '../models/samTemplates'
 import {
     CreateNewSamAppWizard,
     CreateNewSamAppWizardResponse,
@@ -66,6 +80,8 @@ type createReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 
  */
 export async function createNewSamApplication(
     channelLogger: ChannelLogger,
+    awsContext: AwsContext,
+    regionProvider: RegionProvider,
     samCliContext: SamCliContext = getSamCliContext(),
     activationLaunchPath: ActivationLaunchPath = new ActivationLaunchPath()
 ): Promise<void> {
@@ -79,8 +95,15 @@ export async function createNewSamApplication(
     try {
         await validateSamCli(samCliContext.validator)
 
-        const wizardContext = new DefaultCreateNewSamAppWizardContext()
+        const currentCredentials = await awsContext.getCredentials()
+        const availableRegions = await regionProvider.getRegionData()
+        const schemasRegions = availableRegions.filter(region =>
+            regionProvider.isServiceInRegion('schemas', region.regionCode)
+        )
+
+        const wizardContext = new DefaultCreateNewSamAppWizardContext(currentCredentials, schemasRegions)
         config = await new CreateNewSamAppWizard(wizardContext).run()
+
         if (!config) {
             createResult = 'Cancelled'
             reason = 'userCancelled'
@@ -99,7 +122,23 @@ export async function createNewSamApplication(
             name: config.name,
             location: config.location.fsPath,
             runtime: config.runtime,
-            dependencyManager
+            dependencyManager,
+            template: config.template
+        }
+
+        let request: SchemaCodeDownloadRequestDetails
+        let schemaCodeDownloader: SchemaCodeDownloader
+        let schemaTemplateParameters: SchemaTemplateParameters
+        let client: SchemaClient
+        if (config.template === eventBridgeStarterAppTemplate) {
+            client = ext.toolkitClientBuilder.createSchemaClient(config.region!)
+            schemaTemplateParameters = await buildSchemaTemplateParameters(
+                config.schemaName!,
+                config.registryName!,
+                client
+            )
+
+            initArguments.extraContent = schemaTemplateParameters.templateExtraContent
         }
 
         await runSamCliInit(initArguments, samCliContext)
@@ -109,6 +148,33 @@ export async function createNewSamApplication(
             reason = 'fileNotFound'
 
             return
+        }
+
+        if (config.template === eventBridgeStarterAppTemplate) {
+            const destinationDirectory = path.join(config.location.fsPath, config.name, 'hello_world_function')
+            request = {
+                registryName: config.registryName!,
+                schemaName: config.schemaName!,
+                language: getApiValueForSchemasDownload(config.runtime),
+                schemaVersion: schemaTemplateParameters!.SchemaVersion,
+                destinationDirectory: vscode.Uri.file(destinationDirectory)
+            }
+            schemaCodeDownloader = createSchemaCodeDownloaderObject(client!)
+            channelLogger.info(
+                'AWS.message.info.schemas.downloadCodeBindings.start',
+                'Downloading code for schema {0}...',
+                config.schemaName!
+            )
+
+            await schemaCodeDownloader!.downloadCode(request!)
+
+            vscode.window.showInformationMessage(
+                localize(
+                    'AWS.message.info.schemas.downloadCodeBindings.finished',
+                    'Downloaded code for schema {0}!',
+                    request!.schemaName
+                )
+            )
         }
 
         // In case adding the workspace folder triggers a VS Code restart, instruct extension to
