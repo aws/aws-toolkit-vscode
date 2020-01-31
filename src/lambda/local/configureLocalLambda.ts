@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import { getLogger, Logger } from '../../shared/logger'
+import { recordLambdaConfigure, Result } from '../../shared/telemetry/telemetry'
 import { getNormalizedRelativePath } from '../../shared/utilities/pathUtils'
 import { getChildrenRange } from '../../shared/utilities/symbolUtilities'
 import { getTabSize } from '../../shared/utilities/textDocumentUtilities'
@@ -35,6 +36,7 @@ export async function configureLocalLambda(
     samTemplate: vscode.Uri,
     context: ConfigureLocalLambdaContext = new DefaultConfigureLocalLambdaContext()
 ): Promise<void> {
+    let configureResult: Result = 'Succeeded'
     const templateRelativePath = getNormalizedRelativePath(workspaceFolder.uri.fsPath, samTemplate.fsPath)
 
     const configPath: string = getTemplatesConfigPath(workspaceFolder.uri.fsPath)
@@ -73,11 +75,14 @@ export async function configureLocalLambda(
             selection: await getEventRange(editor, templateRelativePath, handler, context)
         })
     } catch (e) {
+        configureResult = 'Failed'
         if (e instanceof TemplatesConfigFieldTypeError) {
             showTemplatesConfigurationError(e, context.showErrorMessage)
         } else {
             throw e
         }
+    } finally {
+        recordLambdaConfigure({ result: configureResult })
     }
 }
 
