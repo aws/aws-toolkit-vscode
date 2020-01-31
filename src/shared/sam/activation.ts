@@ -90,7 +90,7 @@ async function registerServerlessCommands(params: {
         }),
         vscode.commands.registerCommand('aws.configureLambda', configureLocalLambda),
         vscode.commands.registerCommand('aws.deploySamApplication', async () => {
-            const samDeployWizardContext = new DefaultSamDeployWizardContext(params.regionProvider)
+            const samDeployWizardContext = new DefaultSamDeployWizardContext(params.regionProvider, params.awsContext)
             const samDeployWizard: SamDeployWizardResponseProvider = {
                 getSamDeployWizardResponse: async (): Promise<SamDeployWizardResponse | undefined> => {
                     const wizard = new SamDeployWizard(samDeployWizardContext)
