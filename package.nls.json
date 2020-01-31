@@ -75,7 +75,7 @@
     "AWS.explorerNode.schemas.error": "Error loading Schemas resources",
     "AWS.explorerNode.schemas.noRegistry": "[No Schema Registries]",
     "AWS.explorerNode.registry.error": "Error loading registry schema items",
-    "AWS.explorerNode.registry.noSchemas": "[no schemas in this registry]",
+    "AWS.explorerNode.registry.noSchemas": "[No Registry Schemas]",
     "AWS.explorerNode.registry.registryName.Not.Found": "Registry name not found",
     "AWS.explorerNode.signIn": "Connect to AWS...",
     "AWS.explorerNode.signIn.tooltip": "Connect to AWS using a credential profile",

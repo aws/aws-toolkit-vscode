@@ -10,27 +10,29 @@ import * as vscode from 'vscode'
 import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { ext } from '../../shared/extensionGlobals'
 import { getLogger, Logger } from '../../shared/logger'
+import { recordCloudformationDelete, Result } from '../../shared/telemetry/telemetry'
 import { CloudFormationStackNode } from '../explorer/cloudFormationNodes'
 
 export async function deleteCloudFormation(refresh: () => void, node?: CloudFormationStackNode) {
     const logger: Logger = getLogger()
-    if (!node) {
-        vscode.window.showErrorMessage(
-            localize(
-                'AWS.message.error.cloudFormation.unsupported',
-                'Unable to delete a CloudFormation Stack. No stack provided.'
-            )
-        )
-
-        return
-    }
-
-    const stackName = node.stackName
-
-    const responseYes: string = localize('AWS.generic.response.yes', 'Yes')
-    const responseNo: string = localize('AWS.generic.response.no', 'No')
-
+    let deleteResult: Result = 'Succeeded'
+    const stackName = node?.stackName ?? ''
     try {
+        if (!node) {
+            deleteResult = 'Failed'
+            vscode.window.showErrorMessage(
+                localize(
+                    'AWS.message.error.cloudFormation.unsupported',
+                    'Unable to delete a CloudFormation Stack. No stack provided.'
+                )
+            )
+
+            return
+        }
+
+        const responseYes: string = localize('AWS.generic.response.yes', 'Yes')
+        const responseNo: string = localize('AWS.generic.response.no', 'No')
+
         const userResponse = await vscode.window.showInformationMessage(
             localize('AWS.message.prompt.deleteCloudFormation', 'Are you sure you want to delete {0}?', stackName),
             responseYes,
@@ -49,7 +51,8 @@ export async function deleteCloudFormation(refresh: () => void, node?: CloudForm
             refresh()
         }
     } catch (err) {
-        const error = err as Error
+        deleteResult = 'Failed'
+        logger.error(err as Error)
 
         vscode.window.showInformationMessage(
             localize(
@@ -58,7 +61,7 @@ export async function deleteCloudFormation(refresh: () => void, node?: CloudForm
                 stackName
             )
         )
-
-        logger.error(error)
+    } finally {
+        recordCloudformationDelete({ result: deleteResult })
     }
 }
