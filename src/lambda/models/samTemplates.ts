@@ -56,12 +56,12 @@ export function getTemplateDescription(template: SamTemplate): string {
         case eventBridgeHelloWorldTemplate:
             return localize(
                 'AWS.samcli.initWizard.template.eventBridge_helloWorld.description',
-                'A Hello World app for Amazon EventBridge that invokes a Lambda for every EC2 instance state change in your account'
+                'Invokes a Lambda for every EC2 instance state change in your account'
             )
         case eventBridgeStarterAppTemplate:
             return localize(
                 'AWS.samcli.initWizard.template.eventBridge_starterApp.description',
-                'A starter app for Amazon EventBridge that invokes a Lambda based on a dynamic event trigger for an EventBridge Schema of your choice'
+                'Invokes a Lambda based on a dynamic event trigger for an EventBridge Schema of your choice'
             )
         default:
             throw new Error(`No description found for template ${template}`)
