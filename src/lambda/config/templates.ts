@@ -15,6 +15,7 @@ import { mkdir } from '../../shared/filesystem'
 import * as fsUtils from '../../shared/filesystemUtilities'
 import { getLogger, Logger } from '../../shared/logger'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
+import { getNormalizedRelativePath } from '../../shared/utilities/pathUtils'
 import { saveDocumentIfDirty } from '../../shared/utilities/textDocumentUtilities'
 
 const localize = nls.loadMessageBundle()
@@ -49,6 +50,57 @@ export function generateDefaultHandlerConfig(): HandlerConfig {
         environmentVariables: {},
         dockerNetwork: undefined,
         useContainer: undefined
+    }
+}
+
+export async function getHandlerConfig(params: {
+    handlerName: string
+    documentUri: vscode.Uri
+    samTemplate: vscode.Uri
+}): Promise<HandlerConfig> {
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(params.documentUri)
+    if (!workspaceFolder) {
+        return generateDefaultHandlerConfig()
+    }
+
+    const config: HandlerConfig = await getLocalLambdaConfiguration(
+        workspaceFolder,
+        params.handlerName,
+        params.samTemplate
+    )
+
+    return config
+}
+
+async function getLocalLambdaConfiguration(
+    workspaceFolder: vscode.WorkspaceFolder,
+    handler: string,
+    samTemplate: vscode.Uri
+): Promise<HandlerConfig> {
+    try {
+        const configPath: string = getTemplatesConfigPath(workspaceFolder.uri.fsPath)
+        const templateRelativePath = getNormalizedRelativePath(workspaceFolder.uri.fsPath, samTemplate.fsPath)
+
+        await saveDocumentIfDirty(configPath)
+
+        let rawConfig: string = '{}'
+        if (await fsUtils.fileExists(configPath)) {
+            rawConfig = await fsUtils.readFileAsString(configPath)
+        }
+
+        const configPopulationResult = new TemplatesConfigPopulator(rawConfig)
+            .ensureTemplateHandlerSectionExists(templateRelativePath, handler)
+            .getResults()
+
+        const config: TemplatesConfig = loadTemplatesConfigFromJson(configPopulationResult.json)
+
+        return config.templates[templateRelativePath]!.handlers![handler]!
+    } catch (e) {
+        if (e instanceof TemplatesConfigFieldTypeError) {
+            showTemplatesConfigurationError(e)
+        }
+
+        throw e
     }
 }
 

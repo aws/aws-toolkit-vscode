@@ -7,6 +7,7 @@ import { unlink, writeFile } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { getHandlerConfig } from '../../lambda/config/templates'
 import { PythonDebugConfiguration, PythonPathMapping } from '../../lambda/local/debugConfiguration'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { VSCODE_EXTENSION_ID } from '../extensions'
@@ -28,7 +29,6 @@ import {
 } from './codeLensUtils'
 import {
     executeSamBuild,
-    getConfig,
     getHandlerRelativePath,
     getLambdaInfoFromExistingTemplate,
     getRelativeFunctionHandler,
@@ -270,7 +270,7 @@ export async function initialize({
                 )}`
             )
 
-            const config = await getConfig({
+            const config = await getHandlerConfig({
                 handlerName: args.handlerName,
                 documentUri: args.document.uri,
                 samTemplate: vscode.Uri.file(args.samTemplate.fsPath)
