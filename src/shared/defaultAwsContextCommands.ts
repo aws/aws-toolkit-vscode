@@ -25,6 +25,7 @@ import { UserCredentialsUtils } from './credentials/userCredentialsUtils'
 import { ext } from './extensionGlobals'
 import { Region } from './regions/endpoints'
 import { RegionProvider } from './regions/regionProvider'
+import { getRegionsForActiveCredentials } from './regions/regionUtilities'
 import { createQuickPick, promptUser } from './ui/picker'
 
 const TITLE_HIDE_REGION = localize(
@@ -267,10 +268,7 @@ export class DefaultAWSContextCommands {
         filter: (region: Region) => boolean,
         title?: string
     ): Promise<string | undefined> {
-        // TODO : CC : Dedupe this resolving code
-        const defaultRegionId = this._awsContext.getCredentialDefaultRegion() ?? 'us-east-1'
-        const partitionId = this._regionProvider.getPartitionId(defaultRegionId) ?? 'aws'
-        const partitionRegions = this._regionProvider.getRegions(partitionId)
+        const partitionRegions = getRegionsForActiveCredentials(this._awsContext, this._regionProvider)
 
         const regionsToShow = partitionRegions.filter(filter).map(r => r.id)
 
@@ -284,10 +282,7 @@ export class DefaultAWSContextCommands {
      * regions are shown. Regions provided must exist in the available regions to be shown.
      */
     private async promptForRegion(regions?: string[], title?: string): Promise<string | undefined> {
-        // TODO : CC : Dedupe this resolving code
-        const defaultRegionId = this._awsContext.getCredentialDefaultRegion() ?? 'us-east-1'
-        const partitionId = this._regionProvider.getPartitionId(defaultRegionId) ?? 'aws'
-        const partitionRegions = this._regionProvider.getRegions(partitionId)
+        const partitionRegions = getRegionsForActiveCredentials(this._awsContext, this._regionProvider)
 
         const regionsToShow = partitionRegions
             .filter(r => {

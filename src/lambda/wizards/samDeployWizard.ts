@@ -12,6 +12,7 @@ import { AwsContext } from '../../shared/awsContext'
 import { samDeployDocUrl } from '../../shared/constants'
 import { getLogger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'
+import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
@@ -257,10 +258,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     }
 
     public async promptUserForRegion(initialRegionCode?: string): Promise<string | undefined> {
-        // TODO : CC : Dedupe this resolving code
-        const defaultRegionId = this.awsContext.getCredentialDefaultRegion() ?? 'us-east-1'
-        const partitionId = this.regionProvider.getPartitionId(defaultRegionId) ?? 'aws'
-        const partitionRegions = this.regionProvider.getRegions(partitionId)
+        const partitionRegions = getRegionsForActiveCredentials(this.awsContext, this.regionProvider)
 
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
