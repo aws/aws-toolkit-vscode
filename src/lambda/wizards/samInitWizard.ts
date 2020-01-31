@@ -115,7 +115,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
             items: templates.toArray().map(template => ({
                 label: template,
                 alwaysShow: template === currTemplate,
-                description:
+                detail:
                     template === currTemplate
                         ? localize('AWS.wizard.selectedPreviously', 'Selected Previously')
                         : getTemplateDescription(template)
