@@ -5,9 +5,9 @@ apply plugin: 'org.jetbrains.intellij'
 
 dependencies {
     compile project(":jetbrains-core")
-    testCompile project(path: ":jetbrains-core", configuration: 'testArtifacts')
-    testCompile project(path: ":core", configuration: 'testArtifacts')
-    integrationTestCompile project(path: ":jetbrains-core", configuration: 'testArtifacts')
+    testImplementation project(path: ":jetbrains-core", configuration: 'testArtifacts')
+    testImplementation project(path: ":core", configuration: 'testArtifacts')
+    integrationTestImplementation project(path: ":jetbrains-core", configuration: 'testArtifacts')
 }
 
 intellij {
@@ -28,5 +28,5 @@ runIde {
 }
 
 jar {
-    baseName = 'aws-intellij-toolkit-ultimate'
+    archiveBaseName = 'aws-intellij-toolkit-ultimate'
 }

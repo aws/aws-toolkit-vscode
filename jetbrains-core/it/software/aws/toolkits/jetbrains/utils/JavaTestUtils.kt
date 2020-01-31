@@ -61,7 +61,7 @@ internal fun HeavyJavaCodeInsightTestFixtureRule.setUpGradleProject(compatibilit
 
             dependencies {
                 compile 'com.amazonaws:aws-lambda-java-core:1.2.0'
-                testCompile 'junit:junit:4.12'
+                testImplementation 'junit:junit:4.12'
             }
             """.trimIndent()
     ).virtualFile

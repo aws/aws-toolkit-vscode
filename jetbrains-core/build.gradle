@@ -26,7 +26,7 @@ test {
 }
 
 task testJar (type: Jar) {
-    baseName = "${project.name}-test"
+    archiveBaseName = "${project.name}-test"
     from sourceSets.test.output
     from sourceSets.integrationTest.output
 }
@@ -40,7 +40,7 @@ task pluginChangeLog(type: GenerateChangeLog) {
 
 jar.dependsOn(pluginChangeLog)
 jar {
-    baseName = 'aws-intellij-toolkit-core'
+    archiveBaseName = 'aws-intellij-toolkit-core'
     from(pluginChangeLog.jetbrainsChangeNotesFile) {
         into "META-INF"
     }
@@ -83,7 +83,7 @@ dependencies {
     compile("software.amazon.awssdk:resourcegroupstaggingapi:$awsSdkVersion") {
         exclude group: 'org.slf4j'
     }
-    testCompile project(path: ":core", configuration: 'testArtifacts')
-    integrationTestCompile('org.eclipse.jetty:jetty-servlet:9.4.15.v20190215')
-    integrationTestCompile('org.eclipse.jetty:jetty-proxy:9.4.15.v20190215')
+    testImplementation project(path: ":core", configuration: 'testArtifacts')
+    integrationTestImplementation('org.eclipse.jetty:jetty-servlet:9.4.15.v20190215')
+    integrationTestImplementation('org.eclipse.jetty:jetty-proxy:9.4.15.v20190215')
 }

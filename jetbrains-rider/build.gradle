@@ -40,7 +40,7 @@ apply from: 'backend.gradle'
 
 dependencies {
     compile project(":jetbrains-core")
-    testCompile project(path: ":jetbrains-core", configuration: 'testArtifacts')
+    testImplementation project(path: ":jetbrains-core", configuration: 'testArtifacts')
 }
 
 intellij {

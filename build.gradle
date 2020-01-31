@@ -109,10 +109,10 @@ subprojects {
         compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
         compile "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
         compile "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.2.1"
-        testCompile "com.nhaarman.mockitokotlin2:mockito-kotlin:2.0.0"
-        testCompile "io.mockk:mockk:1.9.3"
-        testCompile "org.assertj:assertj-core:$assertjVersion"
-        testCompile "junit:junit:$junitVersion"
+        testImplementation "com.nhaarman.mockitokotlin2:mockito-kotlin:$mockitoKotlinVersion"
+        testImplementation "io.mockk:mockk:1.9.3"
+        testImplementation "org.assertj:assertj-core:$assertjVersion"
+        testImplementation "junit:junit:$junitVersion"
     }
 
     testlogger {

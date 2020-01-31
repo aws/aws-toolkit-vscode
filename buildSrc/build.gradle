@@ -33,14 +33,14 @@ sourceSets {
 }
 
 dependencies {
-    compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
-    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
-    compile "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    compile "org.eclipse.jgit:org.eclipse.jgit:5.0.2.201807311906-r"
-    compile "com.atlassian.commonmark:commonmark:0.11.0"
-    compile "software.amazon.awssdk:codegen:$awsSdkVersion"
+    api "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    api "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
+    api "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    api "org.eclipse.jgit:org.eclipse.jgit:5.0.2.201807311906-r"
+    api "com.atlassian.commonmark:commonmark:0.11.0"
+    api "software.amazon.awssdk:codegen:$awsSdkVersion"
 
-    testCompile "org.assertj:assertj-core:$assertjVersion"
-    testCompile "junit:junit:$junitVersion"
-    testCompile "com.nhaarman.mockitokotlin2:mockito-kotlin:2.0.0"
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "junit:junit:$junitVersion"
+    testImplementation "com.nhaarman.mockitokotlin2:mockito-kotlin:$mockitoKotlinVersion"
 }
