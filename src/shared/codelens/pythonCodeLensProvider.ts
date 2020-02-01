@@ -7,6 +7,7 @@ import { unlink, writeFile } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { getHandlerConfig } from '../../lambda/config/templates'
 import { PythonDebugConfiguration, PythonPathMapping } from '../../lambda/local/debugConfiguration'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { VSCODE_EXTENSION_ID } from '../extensions'
@@ -262,14 +263,20 @@ export async function initialize({
                 )}`
             )
 
-            const codeDir = samProjectCodeRoot
+            const config = await getHandlerConfig({
+                handlerName: args.handlerName,
+                documentUri: args.document.uri,
+                samTemplate: vscode.Uri.file(args.samTemplate.fsPath)
+            })
+
             const samTemplatePath: string = await executeSamBuild({
                 baseBuildDir,
                 channelLogger,
-                codeDir,
+                codeDir: samProjectCodeRoot,
                 inputTemplatePath,
                 manifestPath,
-                samProcessInvoker: processInvoker
+                samProcessInvoker: processInvoker,
+                useContainer: config.useContainer
             })
 
             const invokeArgs: InvokeLambdaFunctionArguments = {
