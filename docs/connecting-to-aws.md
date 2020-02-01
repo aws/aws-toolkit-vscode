@@ -31,3 +31,13 @@ Additional credentials can be defined in the shared AWS credentials file. In the
 
 -   If the shared AWS credentials file is not found, the Toolkit prompts for a profile name, an access key ID, and the corresponding secret access key. This information is then used to create an initial credentials file.
 -   If the shared AWS credentials file is found, it is opened in VS Code for editing, and the Toolkit provides information about how to change the file.
+
+## Working with Regions in other Partitions
+
+Partitions influence which regions are available for an account to operate in. Many regions commonly used belong to the 'aws' partition, such as 'us-east-1' (N. Virginia). Some regions such as Beijing reside in [other partitions](https://docs.aws.amazon.com/general/latest/gr/rande.html#learn-more).
+
+Toolkit support for regions in other partitions is dependent on the type of credentials being used, as outlined below. Portions of the Toolkit's features may not be available in every partition.
+
+### Partition support using Shared Credentials Profiles
+
+If a profile contains a `region` key, its value will be used to determine the partition used by these credentials. When `region` is not found, the profile is assumed to have the region `us-east-1`.
