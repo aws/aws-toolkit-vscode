@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import { AwsContext, AwsContextCredentials, ContextChangeEventsArgs } from '../../shared/awsContext'
 import { Region } from '../../shared/regions/endpoints'
-import { RegionInfo } from '../../shared/regions/regionInfo'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 
 export const DEFAULT_TEST_PROFILE_NAME = 'qwerty'
@@ -20,15 +19,6 @@ export class FakeRegionProvider implements RegionProvider {
     public readonly onRegionProviderUpdatedEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter<void>()
     public readonly onRegionProviderUpdated: vscode.Event<void> = this.onRegionProviderUpdatedEmitter.event
     public readonly servicesNotInRegion: string[] = []
-
-    public async getRegionData(): Promise<RegionInfo[]> {
-        return [
-            {
-                regionCode: DEFAULT_TEST_REGION_CODE,
-                regionName: DEFAULT_TEST_REGION_NAME
-            }
-        ]
-    }
 
     public getPartitionId(regionId: string): string | undefined {
         if (regionId === DEFAULT_TEST_REGION_CODE) {

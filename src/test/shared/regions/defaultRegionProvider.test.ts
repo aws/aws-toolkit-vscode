@@ -48,24 +48,6 @@ describe('DefaultRegionProvider', async () => {
         }
     }
 
-    it('returns region data', async () => {
-        const endpointsProvider = new EndpointsProvider(resourceFetcher, resourceFetcher)
-        await endpointsProvider.load()
-
-        const regionProvider = new DefaultRegionProvider(endpointsProvider)
-
-        const regions = await regionProvider.getRegionData()
-
-        assert.strictEqual(regions.length, 3, 'Expected to retrieve three regions')
-
-        for (const expectedRegionId of ['region1', 'region2', 'region3']) {
-            assert.ok(
-                regions.some(r => r.regionCode === expectedRegionId),
-                `${expectedRegionId} was missing from retrieved regions`
-            )
-        }
-    })
-
     describe('isServiceInRegion', async () => {
         let sandbox: sinon.SinonSandbox
 
