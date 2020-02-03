@@ -88,14 +88,23 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     }
 
     public async getCredentials(): Promise<AWS.Credentials> {
-        const validationMessage = this.validate()
-        if (validationMessage) {
-            throw new Error(`Profile ${this.profileName} is not a valid Credential Profile: ${validationMessage}`)
+        const originalStsConfiguration = AWS.config.sts
+
+        try {
+            const validationMessage = this.validate()
+            if (validationMessage) {
+                throw new Error(`Profile ${this.profileName} is not a valid Credential Profile: ${validationMessage}`)
+            }
+
+            const provider = new AWS.CredentialProviderChain([this.makeCredentialsProvider()])
+
+            // Profiles with references involving non-aws partitions need help getting the right STS endpoint
+            this.applyProfileRegionToGlobalStsConfig()
+
+            return await provider.resolvePromise()
+        } finally {
+            AWS.config.sts = originalStsConfiguration
         }
-
-        const provider = new AWS.CredentialProviderChain([this.makeCredentialsProvider()])
-
-        return provider.resolvePromise()
     }
 
     private hasProfileProperty(propertyName: string): boolean {
@@ -187,6 +196,15 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                     await getMfaTokenFromUser(mfaSerial, this.profileName, callback)
             })
     }
+
+    private applyProfileRegionToGlobalStsConfig() {
+        if (!AWS.config.sts) {
+            AWS.config.sts = {}
+        }
+
+        AWS.config.sts.region = this.getDefaultRegion()
+    }
+
     public static getCredentialsType(): string {
         return SharedCredentialsProvider.CREDENTIALS_TYPE
     }
