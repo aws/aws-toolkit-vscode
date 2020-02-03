@@ -18,6 +18,7 @@ import { asString, CredentialsProviderId } from './providers/credentialsProvider
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 
 export class LoginManager {
+    private readonly defaultCredentialsRegion = 'us-east-1'
     private readonly credentialsStore: CredentialsStore = new CredentialsStore()
 
     public constructor(private readonly awsContext: AwsContext) {}
@@ -43,8 +44,8 @@ export class LoginManager {
                 throw new Error(`No credentials found for id ${asString(credentialsProviderId)}`)
             }
 
-            // TODO : Get a region relevant to the partition for these credentials -- https://github.com/aws/aws-toolkit-vscode/issues/188
-            const accountId = await getAccountId(storedCredentials.credentials, 'us-east-1')
+            const credentialsRegion = provider.getDefaultRegion() ?? this.defaultCredentialsRegion
+            const accountId = await getAccountId(storedCredentials.credentials, credentialsRegion)
             if (!accountId) {
                 throw new Error('Could not determine Account Id for credentials')
             }
