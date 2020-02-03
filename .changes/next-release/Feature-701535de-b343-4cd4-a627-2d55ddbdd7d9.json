@@ -1,4 +1,4 @@
 {
     "type": "Feature",
-    "description": "Added support for the useContainer option for local lambda run and local lambda debug."
+    "description": "Added support for the useContainer option for local run and debug for SAM applications"
 }
