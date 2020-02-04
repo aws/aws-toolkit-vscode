@@ -89,6 +89,6 @@ function getRegionInfo(endpoints: Endpoints, partitionId: string): RegionInfo[] 
 function asRegionInfo(region: Region): RegionInfo {
     return {
         regionCode: region.id,
-        regionName: region.description
+        regionName: region.name
     }
 }
