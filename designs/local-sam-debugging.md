@@ -116,6 +116,8 @@ TBD Future Proposal Stage:
 
 -   configuring overrides for the template/resource
 
+## OLD
+
 Override
 
 -   Runtime
@@ -133,6 +135,43 @@ Override
     -   docker network
     -   sam build args
     -   sam local invoke args
+
+---
+
+## Local Debug Arguments
+
+### What is being run
+
+| Property                   | Configured with plain Lambda Invoke | Configured with SAM Template Invoke |
+| -------------------------- | ----------------------------------- | ----------------------------------- |
+| SAM Template               |                                     | x                                   |
+| SAM Template Resource      |                                     | x                                   |
+| SAM Template Parameters    |                                     | x                                   |
+| Environment Variables      | x                                   | x                                   |
+| Input Event (file or json) | x                                   | x                                   |
+| Runtime                    | x                                   |                                     |
+| Handler                    | x                                   |                                     |
+| Timeout                    | x                                   |                                     |
+| Memory                     | x                                   |                                     |
+
+### How is it run - SAM
+
+_Configured with plain Lambda Invoke and SAM Template Invoke_
+
+-   Build in container
+-   Skip new image check
+-   docker network
+-   build args
+-   local invoke args
+
+### How is it run - AWS
+
+_Configured with plain Lambda Invoke and SAM Template Invoke_
+
+-   Credentials
+-   Region
+
+---
 
 ### Defining Debug Configurations
 
