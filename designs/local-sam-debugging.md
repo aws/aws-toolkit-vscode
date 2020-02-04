@@ -21,19 +21,23 @@ TODO : Fill this section
 
 #### CodeLens
 
-CodeLenses are visual decorators anchored to a document location. They are used to convey information and/or provide a link that triggers an action. They are a presentation-only mechanic and are not inserted into a file. Additional information and examples about CodeLenses can be found [on the VS Code blog](https://code.visualstudio.com/blogs/2017/02/12/code-lens-roundup).
+CodeLenses are visual decorators anchored to a document location. They are used to convey information and/or provide links that trigger an action. They are a presentation-only mechanic and do not reside within a file. Additional information and examples about CodeLenses can be found [on the VS Code blog](https://code.visualstudio.com/blogs/2017/02/12/code-lens-roundup).
 
 #### Debug Configuration
 
-Debug Configurations are JSON entries in a VS Code workspace's `launch.json` file. These allow users to configure what they would like to Debug, then press F5 (or the Debug button) to start a Debugging session. VS Code extensions can provide additional Debug Configuration types, and implement behavior for these types.
+Debug Configurations are JSON entries within the `.vscode/launch.json` file optionally located in each VS Code workspace. These are user managed, defining what programs can be debugged. Presing F5 (or the Debug button) starts a Debugging session for the currently selected Debug Configuration. VS Code extensions can provide and implement Debug Configuration types in addition to those available in VS Code.
 
 More information about VS Code Debugging can be found [in the VS Code Documentation](https://code.visualstudio.com/docs/editor/debugging).
 
-TODO : UNKNOWN: DEBUG VS Run WIThOUT DEBUGGING
-
 #### SAM Template
 
-TODO : Write
+A SAM Template defines a Serverless Application's resources, and supporting code. This is used by the SAM CLI to build, run, package, and deploy the Application.
+
+Additional information about SAM can be found at:
+
+-   [SAM Homepage](https://aws.amazon.com/serverless/sam/)
+-   [What Is the AWS Serverless Application Model (AWS SAM)?](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html)
+-   [SAM CLI GitHub Repo](https://github.com/awslabs/aws-sam-cli)
 
 ## Overview
 
@@ -265,3 +269,9 @@ Additional Ideas
 -   CodeLenses on SAM Templates - Template-level operations (create Debug Configurations for a Resource?)
 
 TODO : Appendix: Section comparing proposal to existing feature
+
+# SCRAP
+
+## Old Overview
+
+The Local Debugging features released in version 1.0 are limited, and have some design limitations. TODO Reference Issue. This proposal improves the user experience with additional ways to locally debug SAM Applications, and disambiguates some of the unspecified behaviors.
