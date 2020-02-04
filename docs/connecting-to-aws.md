@@ -21,7 +21,7 @@ The following types of credentials are supported:
 -   Credential profiles defined in shared [credentials files](https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html):
     -   Profiles with an access key and a secret key ([Named Profiles](https://docs.aws.amazon.com/cli/latest/userguide/cli-multiple-profiles.html))
     -   Profiles that [assume a role](https://docs.aws.amazon.com/cli/latest/userguide/cli-roles.html)
-    -   Profiles that [assume a role](https://docs.aws.amazon.com/cli/latest/userguide/cli-roles.html) and [use multifactor authentication](https://docs.aws.amazon.com/cli/latest/userguide/cli-roles.html#cli-configure-role-mfa) (MFA)
+    -   Profiles that [assume a role and use multifactor authentication](https://docs.aws.amazon.com/cli/latest/userguide/cli-roles.html#cli-configure-role-mfa) (MFA)
         -   When connecting with credentials defined to assume a role and use MFA, the Toolkit prompts for an MFA token.
     -   profiles that use an [external credential process](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/external-credential-process.html)
 
@@ -34,7 +34,7 @@ Additional credentials can be defined in the shared AWS credentials file. In the
 
 ## Working with Regions in other Partitions
 
-Partitions influence which regions are available for an account to operate in. Many popular regions belong to the "aws" partition, such as "us-east-1" (N. Virginia). Some regions such as Beijing reside in [other partitions](https://docs.aws.amazon.com/general/latest/gr/rande.html#learn-more).
+Partitions influence which regions are available for an account to operate in. Many popular regions belong to the "aws" partition, such as "us-east-1" (N. Virginia). Some regions such as "cn-north-1" (Beijing) reside in [other partitions](https://docs.aws.amazon.com/general/latest/gr/rande.html#learn-more).
 
 Toolkit support for regions in other partitions is dependent on the type of credentials being used, as outlined below. Portions of the Toolkit's features may not be available in every partition.
 
