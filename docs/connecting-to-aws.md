@@ -34,7 +34,7 @@ Additional credentials can be defined in the shared AWS credentials file. In the
 
 ## Working with Regions in other Partitions
 
-Partitions influence which regions are available for an account to operate in. Many regions commonly used belong to the 'aws' partition, such as 'us-east-1' (N. Virginia). Some regions such as Beijing reside in [other partitions](https://docs.aws.amazon.com/general/latest/gr/rande.html#learn-more).
+Partitions influence which regions are available for an account to operate in. Many popular regions belong to the "aws" partition, such as "us-east-1" (N. Virginia). Some regions such as Beijing reside in [other partitions](https://docs.aws.amazon.com/general/latest/gr/rande.html#learn-more).
 
 Toolkit support for regions in other partitions is dependent on the type of credentials being used, as outlined below. Portions of the Toolkit's features may not be available in every partition.
 
