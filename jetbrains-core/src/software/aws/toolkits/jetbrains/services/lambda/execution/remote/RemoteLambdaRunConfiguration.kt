@@ -13,8 +13,8 @@ import com.intellij.openapi.options.SettingsEditorGroup
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
-import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationType
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationBase
+import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationType
 import software.aws.toolkits.jetbrains.ui.connection.AwsConnectionSettingsEditor
 import software.aws.toolkits.jetbrains.ui.connection.addAwsConnectionEditor
 import software.aws.toolkits.resources.message
@@ -40,9 +40,8 @@ class RemoteLambdaRunConfiguration(project: Project, factory: ConfigurationFacto
 
     override fun checkConfiguration() {
         functionName() ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_function_specified"))
-
+        resolveRegion()
         resolveCredentials()
-        regionId() ?: throw RuntimeConfigurationError(message("configure.validate.no_region_specified"))
         checkInput()
     }
 

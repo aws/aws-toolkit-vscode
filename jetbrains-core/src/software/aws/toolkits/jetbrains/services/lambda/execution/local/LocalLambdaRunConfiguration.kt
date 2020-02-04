@@ -79,9 +79,9 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
 
     override fun checkConfiguration() {
         checkSamVersion()
+        resolveRegion()
         resolveCredentials()
         checkLambdaHandler()
-        checkRegion()
         checkInput()
     }
 
@@ -134,10 +134,6 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
         val isHandlerValid = promise.blockingGet(0)!!
         if (!isHandlerValid)
             throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
-    }
-
-    private fun checkRegion() {
-        regionId() ?: throw RuntimeConfigurationError(message("configure.validate.no_region_specified"))
     }
 
     override fun getState(executor: Executor, environment: ExecutionEnvironment): SamRunningState {
