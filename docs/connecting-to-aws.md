@@ -18,7 +18,7 @@ Once the Toolkit connects to AWS, and the **AWS Explorer** shows resources (such
 
 The following types of credentials are supported:
 
--   Credential profiles defined in shared credentials files (see [Configuration and Credential Files](https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html)):
+-   Credential profiles defined in shared [credentials files](https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html):
     -   Profiles with an access key and a secret key ([Named Profiles](https://docs.aws.amazon.com/cli/latest/userguide/cli-multiple-profiles.html))
     -   Profiles that [assume a role](https://docs.aws.amazon.com/cli/latest/userguide/cli-roles.html)
     -   Profiles that [assume a role](https://docs.aws.amazon.com/cli/latest/userguide/cli-roles.html) and [use multifactor authentication](https://docs.aws.amazon.com/cli/latest/userguide/cli-roles.html#cli-configure-role-mfa) (MFA)
