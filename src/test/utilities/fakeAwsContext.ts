@@ -33,7 +33,7 @@ export class FakeRegionProvider implements RegionProvider {
             return [
                 {
                     id: DEFAULT_TEST_REGION_CODE,
-                    description: DEFAULT_TEST_REGION_NAME
+                    name: DEFAULT_TEST_REGION_NAME
                 }
             ]
         }

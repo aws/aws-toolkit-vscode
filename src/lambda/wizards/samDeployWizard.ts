@@ -268,7 +268,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 ignoreFocusOut: true
             },
             items: partitionRegions.map(region => ({
-                label: region.description,
+                label: region.name,
                 detail: region.id,
                 // this is the only way to get this to show on going back
                 // this will make it so it always shows even when searching for something else

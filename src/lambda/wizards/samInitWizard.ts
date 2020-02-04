@@ -161,7 +161,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: this.schemasRegions.map(region => ({
-                label: region.description,
+                label: region.name,
                 detail: region.id,
                 alwaysShow: region.id === currRegion,
                 description:

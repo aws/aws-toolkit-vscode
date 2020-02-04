@@ -293,7 +293,7 @@ export class DefaultAWSContextCommands {
                 return true
             })
             .map(r => ({
-                label: r.description,
+                label: r.name,
                 detail: r.id
             }))
 

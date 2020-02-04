@@ -25,11 +25,11 @@ describe('getRegionsForActiveCredentials', async () => {
     const samplePartitionRegions: Region[] = [
         {
             id: 'region1',
-            description: 'one'
+            name: 'one'
         },
         {
             id: 'region2',
-            description: 'two'
+            name: 'two'
         }
     ]
 
