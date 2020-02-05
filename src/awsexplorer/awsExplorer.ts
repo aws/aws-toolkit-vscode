@@ -20,10 +20,7 @@ const ROOT_NODE_SIGN_IN = new AWSCommandTreeNode(
     localize('AWS.explorerNode.signIn', 'Connect to AWS...'),
     'aws.login',
     undefined,
-    localize(
-        'AWS.explorerNode.signIn.tooltip',
-        'Click here to select credentials the AWS Toolkit will connect to AWS with'
-    )
+    localize('AWS.explorerNode.signIn.tooltip', 'Click here to select credentials for the AWS Toolkit')
 )
 
 const ROOT_NODE_ADD_REGION = new AWSCommandTreeNode(

@@ -78,7 +78,7 @@
     "AWS.explorerNode.registry.noSchemas": "[no schemas in this registry]",
     "AWS.explorerNode.registry.registryName.Not.Found": "Registry name not found",
     "AWS.explorerNode.signIn": "Connect to AWS...",
-    "AWS.explorerNode.signIn.tooltip": "Click here to select credentials the AWS Toolkit will connect to AWS with",
+    "AWS.explorerNode.signIn.tooltip": "Click here to select credentials for the AWS Toolkit",
     "AWS.lambda.explorerTitle": "Explorer",
     "AWS.lambda.configure.error.fieldtype": "Your templates.json file has an issue. {0} was detected as {1} instead of one of the following: [{2}]. Please change or remove this field, and try again.",
     "AWS.lambda.debug.node.launchConfig.name": "Lambda: Debug {0} locally",
