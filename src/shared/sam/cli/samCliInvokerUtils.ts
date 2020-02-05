@@ -4,7 +4,7 @@
  */
 
 import { SpawnOptions } from 'child_process'
-import { getLogger, Logger } from '../../logger'
+import { getLogger } from '../../logger'
 import { ChildProcessResult } from '../../utilities/childProcess'
 
 export interface SamCliProcessInvokeOptions {
@@ -27,14 +27,12 @@ export interface SamCliProcessInvoker {
     invoke(options?: SamCliProcessInvokeOptions): Promise<ChildProcessResult>
 }
 
-export function logAndThrowIfUnexpectedExitCode(
-    processResult: ChildProcessResult,
-    expectedExitCode: number,
-    logger: Logger = getLogger()
-): void {
+export function logAndThrowIfUnexpectedExitCode(processResult: ChildProcessResult, expectedExitCode: number): void {
     if (processResult.exitCode === expectedExitCode) {
         return
     }
+
+    const logger = getLogger()
 
     logger.error(`Unexpected exitcode (${processResult.exitCode}), expecting (${expectedExitCode})`)
     logger.error(`Error: ${processResult.error}`)

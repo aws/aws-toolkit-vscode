@@ -11,6 +11,7 @@ import { ExtensionContext } from 'vscode'
 import { AwsContext } from '../awsContext'
 import { DefaultTelemetryClient } from './defaultTelemetryClient'
 import { DefaultTelemetryPublisher } from './defaultTelemetryPublisher'
+import { recordSessionEnd, recordSessionStart } from './telemetry'
 import { TelemetryEvent } from './telemetryEvent'
 import { TelemetryPublisher } from './telemetryPublisher'
 import { TelemetryService } from './telemetryService'
@@ -61,19 +62,7 @@ export class DefaultTelemetryService implements TelemetryService {
     }
 
     public async start(): Promise<void> {
-        this.record(
-            {
-                createTime: this.startTime,
-                data: [
-                    {
-                        MetricName: 'session_start',
-                        Value: 0,
-                        Unit: 'None'
-                    }
-                ]
-            },
-            this.awsContext
-        )
+        recordSessionStart()
         await this.startTimer()
     }
 
@@ -83,19 +72,7 @@ export class DefaultTelemetryService implements TelemetryService {
             this._timer = undefined
         }
         const currTime = new Date()
-        this.record(
-            {
-                createTime: currTime,
-                data: [
-                    {
-                        MetricName: 'session_end',
-                        Value: currTime.getTime() - this.startTime.getTime(),
-                        Unit: 'Milliseconds'
-                    }
-                ]
-            },
-            this.awsContext
-        )
+        recordSessionEnd({ value: currTime.getTime() - this.startTime.getTime() })
 
         // only write events to disk if telemetry is enabled at shutdown time
         if (this.telemetryEnabled) {

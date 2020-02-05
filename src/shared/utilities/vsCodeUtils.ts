@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { getLogger, Loggable, Logger, LogLevel } from '../logger'
+import { getLogger, Loggable, LogLevel } from '../logger'
 
 // TODO: Consider NLS initialization/configuration here & have packages to import localize from here
 export const localize = nls.loadMessageBundle()
@@ -50,7 +50,6 @@ export function processTemplate<T extends TemplateParams>({
 
 export interface ChannelLogger {
     readonly channel: vscode.OutputChannel
-    readonly logger: Logger
     verbose: TemplateHandler
     debug: TemplateHandler
     info: TemplateHandler
@@ -62,7 +61,9 @@ export interface ChannelLogger {
  * Wrapper around normal logger that writes to output channel and normal logs.
  * Avoids making two log statements when writing to output channel and improves consistency
  */
-export function getChannelLogger(channel: vscode.OutputChannel, logger: Logger = getLogger()): ChannelLogger {
+export function getChannelLogger(channel: vscode.OutputChannel): ChannelLogger {
+    const logger = getLogger()
+
     function log({ nlsKey, nlsTemplate, templateTokens, level }: TemplateParams & { level: LogLevel }): void {
         if (level === 'error') {
             channel.show(true)
@@ -76,7 +77,6 @@ export function getChannelLogger(channel: vscode.OutputChannel, logger: Logger =
 
     return Object.freeze({
         channel,
-        logger,
         verbose: (nlsKey: string, nlsTemplate: string, ...templateTokens: Loggable[]) =>
             log({
                 level: 'verbose',
