@@ -41,13 +41,34 @@ Additional information about SAM can be found at:
 
 ## Overview
 
-The Local Debugging features released in version 1.0 are limited, and have some design limitations. TODO Reference Issue. This proposal improves the user experience with additional ways to locally debug SAM Applications, and disambiguates some of the unspecified behaviors.
+The following scenarios are supported for Locally Running and Debugging with the Serverless Application Model:
+
+-   Invoking SAM Template Lambda Function Resources
+-   API Gateway requests against SAM Template Lambda Function Resources
+-   Invoking standalone Lambda Function Handlers
+-   API Gateway requests against standalone Lambda Function Handlers
+
+---
 
 Users can Locally Debug SAM Applications in the following ways:
 
 -   Debug Configurations - Launch a Debugging session using the Debug Panel in VS Code and pressing F5.
 -   Local SAM Templates View - One UI Location to see and act on all SAM Applications / Functions
 -   CodeLenses on Lambda Handlers - Locally run and debug a Lambda handler function without any SAM Template associations
+
+## ?
+
+## Types of Experiences
+
+### Debug Configurations
+
+### User Interface
+
+### CodeLenses
+
+### Serverless Projects Tree
+
+---
 
 ## Debug Configurations
 
@@ -175,7 +196,127 @@ _Configured with plain Lambda Invoke and SAM Template Invoke_
 -   Credentials
 -   Region
 
+### Concept
+
+```json
+{
+    "configurations": [
+        {
+            "name": "a",
+            "type": "aws-sam",
+            "request": "template-invoke",
+            "samTemplate": {
+                "path": "some path",
+                "resource": "HelloWorldResource",
+                "parameters": {
+                    "param1": "somevalue"
+                }
+            },
+            "environmentVariables": {
+                "envvar1": "somevalue",
+                "envvar2": "..."
+            },
+            "event": {
+                "path": "somepath",
+                "json": {
+                    // some json
+                    // path or json, not both
+                }
+            },
+            "sam": {
+                "containerBuild": false,
+                "skipNewImageCheck": false,
+                "dockerNetwork": "aaaaa",
+                "buildArguments": "--foo",
+                "localArguments": "--foo"
+            },
+            "aws": {
+                "credentials": "profile:default",
+                "region": "us-west-2"
+            }
+        },
+        {
+            "name": "a2",
+            "type": "aws-sam",
+            "request": "template-api",
+            "samTemplate": {
+                "path": "some path",
+                "resource": "HelloWorldResource",
+                "parameters": {
+                    "param1": "somevalue"
+                }
+            },
+            "environmentVariables": {
+                "envvar1": "somevalue",
+                "envvar2": "..."
+            },
+            // If event is missing, don't terminate
+            "event": {
+                "api": {
+                    "path": "/bee",
+                    "method": "get",
+                    "query": "aaa=1&bbb=2",
+                    "body": "text - can we do this?"
+                }
+            },
+            "sam": {
+                "containerBuild": false,
+                "skipNewImageCheck": false,
+                "dockerNetwork": "aaaaa",
+                "buildArguments": "--foo",
+                "localArguments": "--foo"
+            },
+            "aws": {
+                "credentials": "profile:default",
+                "region": "us-west-2"
+            }
+        }
+        // lambda invoke -- programmatically generate the template equivalents
+        // {
+        //     "name": "a3",
+        //     "type": "aws-sam",
+        //     "request": "lambda-invoke"
+        // },
+        // {
+        //     "name": "a4",
+        //     "type": "aws-sam",
+        //     "request": "lambda-api"
+        // }
+    ]
+}
+```
+
 ---
+
+### template invoke
+
+#### from UI
+
+? No UI ?
+
+-   pick template + resource
+-   other configuration
+-   select event
+-   Buttons: Run, Debug, Save to Debug Config
+
+### template start-api
+
+-   sam build
+-   sam local start-api
+-   make http request
+-   surface results (statusCode, sam output, response)
+-   terminate process
+
+*   What about keeping it running?
+
+#### from UI
+
+-   pick template + resource
+-   ? No other configuration ?
+-   set path
+-   set method
+-   set query, body
+-   Buttons: Start, Request, End, Debug Toggle
 
 ### Defining Debug Configurations
 
