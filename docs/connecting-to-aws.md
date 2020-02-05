@@ -10,7 +10,7 @@ From the VS Code [Command Palette](https://code.visualstudio.com/docs/getstarted
 
 Instead of selecting Credentials from the list, users have the option to create a new Shared Credentials Profie (see "Adding Credentials" below).
 
-If credentials are selected from the list, they are validated by the Toolkit. All Toolkit actions related to AWS are then made using these credentials.
+If credentials are selected from the list, they are validated by the Toolkit. If valid, the Toolkit uses them to connect to AWS.
 
 Once the Toolkit connects to AWS, and the **AWS Explorer** shows resources (such as AWS Lambda functions) from the associated account. The credentials used by the Toolkit are shown in the VS Code status bar.
 
