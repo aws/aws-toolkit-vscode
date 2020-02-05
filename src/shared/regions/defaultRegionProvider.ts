@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { getLogger } from '../logger'
 import { Endpoints, Region } from './endpoints'
 import { EndpointsProvider } from './endpointsProvider'
 import { RegionProvider } from './regionProvider'
@@ -32,7 +33,13 @@ export class DefaultRegionProvider implements RegionProvider {
     }
 
     public getPartitionId(regionId: string): string | undefined {
-        return this.regionIdToRegionData.get(regionId)?.partitionId ?? undefined
+        const partitionId = this.regionIdToRegionData.get(regionId)?.partitionId
+
+        if (!partitionId) {
+            getLogger().warn(`Unable to determine the Partition that Region ${regionId} belongs to`)
+        }
+
+        return partitionId ?? undefined
     }
 
     public getRegions(partitionId: string): Region[] {
