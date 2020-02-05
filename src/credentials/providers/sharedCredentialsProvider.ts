@@ -88,6 +88,10 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     }
 
     public async getCredentials(): Promise<AWS.Credentials> {
+        // Profiles with references involving non-aws partitions need help getting the right STS endpoint
+        // when resolving SharedIniFileCredentials. We set the global sts configuration with a suitable region
+        // only to perform the resolve, then reset it.
+        // This hack can be removed when https://github.com/aws/aws-sdk-js/issues/3088 is addressed.
         const originalStsConfiguration = AWS.config.sts
 
         try {
@@ -103,6 +107,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
 
             return await provider.resolvePromise()
         } finally {
+            // Profiles with references involving non-aws partitions need help getting the right STS endpoint
             AWS.config.sts = originalStsConfiguration
         }
     }
