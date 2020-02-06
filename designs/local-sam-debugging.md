@@ -94,11 +94,13 @@ The following parameters influence a debug seession.
 
 The following SAM CLI related arguments are relevant to debugging both standalone lambda function handlers and sam template resources. For reference see the [sam build](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-build.html) command.
 
--   Build SAM App in container
--   Skip new image check
--   use a docker network
--   additional build args (passed along to `sam build` calls)
--   additional local invoke args (passed along to `sam local` calls)
+| Property                                                         | Default Value                    |
+| ---------------------------------------------------------------- | -------------------------------- |
+| Build SAM App in container                                       | false                            |
+| Skip new image check                                             | false                            |
+| use a docker network                                             | empty string (no docker network) |
+| additional build args (passed along to `sam build` calls)        | empty string                     |
+| additional local invoke args (passed along to `sam local` calls) | empty string                     |
 
 The following AWS related arguments are relevant to debugging both standalone lambda function handlers and sam template resources:
 
@@ -132,6 +134,7 @@ These debug configurations are authored in a json file. The toolkit assists with
 
 Example Debug Configuration entries can be found in the Appendix - Sample Debug Configurations
 
+Debug Configurations are the idiomatic approach to running and debugging software in VS Code. This is the main experience for debugging SAM Template resources in the toolkit.
 Standalone Lambda function handlers are not supported through Debug Configurations.
 
 ### CodeLenses
@@ -143,12 +146,18 @@ CodeLenses only appear for languages/runtimes that the Toolkit has implemented D
 
 The following CodeLenses appear above every template resource of type `AWS::Serverless::Function`:
 
--   Run Locally - Builds the SAM Application and runs the target Resource, using configurations set with the Configure CodeLens
--   Debug Locally - Builds the SAM Application and debugs the target Resource, using configurations set with the Configure CodeLens
+-   Run Locally - See below for details
+-   Debug Locally - See below for details
 -   Configure - allows the user to configure a limited set of arguments that are used with the Run and Debug CodeLenses
     -   Anything that can be defined by the SAM Template would not be configurable in here
     -   This covers aspects like input event, and SAM CLI related arguments
 -   Add Debug Configuration - Utility feature to produce a skeleton Debug Configuration in `launch.json` for users
+
+When clicked, the Run and Debug CodeLenses locally invoke their associated Template Resource. The following takes place:
+
+-   The SAM Application is built
+-   The associated SAM Template resource is invoked, using configurations set with the Configure CodeLens
+-   (If the Debug CodeLens was clicked) The VS Code debugger is attached to the invoked resource
 
 The Run and Debug CodeLenses perform a regular local invoke on a resource. These CodeLenses do not perform API Gateway style invokes.
 
@@ -160,110 +169,20 @@ The following CodeLenses appear over any function that appears to be an eligible
 
 -   Run Locally - See below for details
 -   Debug Locally - See below for details
--   Configure - allows the user to configure a limited set of arguments that are used with the Run and Debug CodeLenses (see What can be configured for a Debug session?)
+-   Configure - allows the user to configure arguments that are used with the Run and Debug CodeLenses (see What can be configured for a Debug session?)
 
-The Run and Debug CodeLenses invoke a lambda handler independent of any SAM Templates that exist in the users workspace. The Toolkit produces a temporary SAM Template containing the Lambda handler of interest. This Template is then invoked using the SAM CLI.
+When clicked, the Run and Debug CodeLenses locally invoke the Lambda handler function they represent. These Lambda handlers are invoked independent of SAM Templates that exist in the users workspace. The following takes place:
+
+-   A temporary SAM Template is produced, which contains one resource that references the Lambda handler
+-   The temporary SAM Application is built
+-   The resource in the temporary SAM Template is invoked, using configurations set with the Configure CodeLens
+-   (If the Debug CodeLens was clicked) The VS Code debugger is attached to the invoked resource
 
 These CodeLenses do not perform API Gateway style invokes.
 
-Some users may find CodeLenses in code files distracting, particularly if they are using the Toolkit for features not related to local debugging. Toolkit settings can be used to enable and disable CodeLenses.
+Some users may find CodeLenses within code files distracting, particularly if they are using the Toolkit for features not related to local debugging. Toolkit settings can be used to enable and disable CodeLenses.
 
 ### User Interface
-
-### Serverless Projects Tree
-
----
-
-## Debug Configurations
-
-Debug Configurations of type `AWS-SAM-Local` can target a resource in a SAM Template, or directly target a Lambda handler in a code file. The Debug Configuration contains enough information to orchestrate a series of SAM CLI calls to build and invoke a SAM Application.
-
-The Debug Configuration is only way to invoke the debugger. All of the local SAM debugging experiences build on this facility.
-
-### Debug Configuration Variants
-
-#### Debug Configurations that target a SAM Template & Resource
-
-This experience is suitable for projects that have already defined their resources in a SAM Template.
-
-When a Debug Configuration targets a resource in a SAM Template, it contains:
-
--   a path to a SAM Template file
--   the name of a resource within the template.
--   Additional Options Id
-
-The following take place when this debug session is started:
-
--   the Debug Configuration is validated as follows. Failures prevent the debug session from proceeding:
-
-    -   the SAM Template exists
-    -   the Resource exists in the SAM Template
-    -   the Resource's Runtime is supported by Toolkit
-
--   the SAM Application is built from the SAM Tempate
--   the resource's runtime is used to prepare for debugging
-    -   Python: The lambda handler is wrapped by another method which starts the VS Code python debugger (ptvsd) and waits for a debugger to attach
-    -   dotnetcore: the dotnetcore debugger is installed
--   the referenced SAM Application resource is invoked
--   the appropriate language debugger is connected to the running program
-
-#### Debug Configurations that target a Lambda handler directly
-
-This experience is suitable for prototyping some code before adding it into the SAM Template, or for working with code that does not belong to a SAM Application.
-
-When a Debug Configuration targets a Lambda handler directly, it contains:
-
--   a path to the file containing the handler
--   a path representing the root of the application
--   a path to the manifest file (eg: `package.json` for Javascript)
--   the name of the handler
-    -   JS/Python: this is the function name
-    -   dotnetcore: this is the fully qualified assembly name
--   Unknown: Override? the runtime to use
--   Additional Options Id
-
-The following takes place when this debug session is started:
-
--   the Debug Configuration is validated as follows. Failures prevent the debug session from proceeding:
-
-    -   the code file exists
-    -   the manifest file exists
-    -   the Resource's Runtime is supported by Toolkit
-
--   a temporary SAM Application is created, containing a single resource populated by the configuration details
--   the SAM Application is handled in the same manner as above
--   the temporary SAM Application is then disposed
-
-TODO : Unknown : Can we invoke local Run by other means?
-
-### Sample
-
-TODO : Sample SAM Template
-TODO : Sample Debug Configuration
-
-TBD Future Proposal Stage:
-
--   configuring overrides for the template/resource
-
-## OLD
-
-Override
-
--   Runtime
--   env var
--   event
--   Unknown: Credentials + Region
--   ? root path
--   ? manifest path
--   timeout
--   memory
--   SAM
-    -   Unknown: (Sam Template) Parameters
-    -   build inside container
-    -   skip newer image check
-    -   docker network
-    -   sam build args
-    -   sam local invoke args
 
 ---
 
