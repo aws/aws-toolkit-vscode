@@ -41,9 +41,17 @@ phases:
   post_build:
     commands:
       - TEST_ARTIFACTS="/tmp/testArtifacts"
-      - mkdir $TEST_ARTIFACTS
+      - mkdir -p $TEST_ARTIFACTS/test-reports
       - rsync -rmq --include='*/' --include '**/build/idea-sandbox/system*/log/**' --exclude='*' . $TEST_ARTIFACTS/ || true
       - rsync -rmq --include='*/' --include '**/build/reports/**' --exclude='*' . $TEST_ARTIFACTS/ || true
+      - rsync -rmq --include='*/' --include '**/test-results/**/*.xml' --exclude='*' . $TEST_ARTIFACTS/test-reports || true
+
+reports:
+  integ-test:
+    files:
+      - "**/*"
+    base-directory: /tmp/testArtifacts/test-reports
+    discard-paths: yes
 
 artifacts:
   files:
