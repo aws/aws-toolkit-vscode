@@ -1,4 +1,4 @@
-# Design Proposal: Local Debugging Experience for SAM Applications
+# Local Debugging Experience for SAM Applications
 
 Current Proposal Stage: General Experience
 
@@ -14,6 +14,10 @@ Previous Proposal Stages:
 ## Introduction
 
 TODO : Intro
+
+While this document's main focus is on debugging capabilities in the toolkit, there are places where the experience around invoking without the debugger (aka "running") is also discussed.
+
+TODO : A limited selection of programming languages are supported in the Toolkit.
 
 ### Terminology
 
@@ -56,11 +60,79 @@ Users can Locally Debug SAM Applications in the following ways:
 -   Local SAM Templates View - One UI Location to see and act on all SAM Applications / Functions
 -   CodeLenses on Lambda Handlers - Locally run and debug a Lambda handler function without any SAM Template associations
 
-## ?
+## What can be Debugged Locally
 
-## Types of Experiences
+### SAM Template Resources
+
+SAM Template Resources of type `AWS::Serverless::Function` represent Lambda functions. The corresponding Lambda function code (if present) can be locally Run or Debugged. The SAM CLI is used to invoke the Lambda function similar to how it is run in the cloud, and a debugger can be attached to the Lambda function code.
+
+If the SAM Template Resource contains an event of type [Api](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-api.html), the SAM CLI can also be used to invoke the Lambda function in a manner similar to how they are invoked through API Gateway.
+
+### Standalone Lambda Function Handlers
+
+Lambda Function Handler code can be locally Run or Debugged, even if it does not belong to a SAM Application. A temporary SAM Application is produced behind the scenes to contain the handler of interest, and the SAM CLI is used to invoke the Lambda function, similar to the section above. Afterwards, the temporary SAM Application is removed.
+
+In this mode, any SAM Templates that a Handler is associated with are ignored. Functionality provided by the above section accommodates for debugging within the context of a defined SAM Application.
+
+It is not possible to locally run or debug standalone Lambda function handlers in a manner emulating API Gateway. The code should be referenced from a SAM Template to use the API Gateway style debugging mentioned in the earlier section.
+
+## What can be configured for a Debug session?
+
+The following parameters influence a debug seession.
+
+| Property                | Description                                          | Used by Standalone Lambda Handler | Used by SAM Template Resources |
+| ----------------------- | ---------------------------------------------------- | --------------------------------- | ------------------------------ |
+| SAM Template            | Path to SAM Template file                            |                                   | x                              |
+| SAM Template Resource   | Name of resource within SAM Template                 |                                   | x                              |
+| SAM Template Parameters | Values to use for SAM Template Parameters            |                                   | x                              |
+| Environment Variables   | Environment Variables exposed to the Lambda Function | x                                 | x                              |
+| Input Event             | Payload passed to the invoked Lambda Function        | x                                 | x                              |
+| Runtime                 | Runtime of Lambda Function to invoke                 | x                                 |                                |
+| Handler                 | Lambda Function Handler to invoke                    | x                                 |                                |
+| Timeout                 | Timeout threshold for Lambda function                | x                                 |                                |
+| Memory                  | Memory provided to Lambda function                   | x                                 |                                |
+
+The following SAM CLI related arguments are relevant to debugging both standalone lambda function handlers and sam template resources. For reference see the [sam build](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-build.html) command.
+
+-   Build SAM App in container
+-   Skip new image check
+-   use a docker network
+-   additional build args (passed along to `sam build` calls)
+-   additional local invoke args (passed along to `sam local` calls)
+
+The following AWS related arguments are relevant to debugging both standalone lambda function handlers and sam template resources:
+
+-   Credentials
+-   Region
+
+## Local Debugging Experiences
+
+CC: what is/isn't supported, and what it looks like for each experience
 
 ### Debug Configurations
+
+The Toolkit implements a Debug Configuration type `aws-sam`. When run, this configuration type:
+
+-   validates debug configuration inputs
+-   uses SAM CLI to build a SAM Application
+-   uses SAM CLI to invoke a SAM Template Resource
+-   attaches a debugger to the SAM invocation
+-   if the debug configuration is for a local api gateway invoke, the debugger is detached after the http request is made, but SAM CLI remains active. The debug configuration implementation terminates the SAM CLI session to prevent a proliferation of CLI processes.
+
+In the most basic form, the debug configuration references a SAM Template file location, and a Resource within that file. Other execution parameters can be configured, but are optional.
+
+Debugging local lambda invokes and local api gateway invokes each require slightly different inputs. The `aws-sam` Debug Configuration uses different request types to accommodate these variations.
+
+These debug configurations are authored in a json file. The toolkit assists with this as follows:
+
+-   autocompletion with descriptions is provided for `aws-sam` related fields
+    -   There is no autocompletion available for specific values in a configuration. For example, if a user types in the location of a SAM Template file, there is no filesystem-based autocompletion. The Debug Configuration validates the configuration and notifies of errant values when it is run.
+-   snippets to produce typical (or starter) `aws-sam` debug configurations
+-   when no launch.json file is present in a workspace, VS Code exposes functionality that allows users to request auto-generated Debug Configurations. In this situation, the toolkit generates an `aws-sam` Debug Configuration for all `AWS::Serverless::Function` Resources detected within all SAM Templates located in the workspace.
+
+Example Debug Configuration entries can be found in the Appendix - Sample Debug Configurations
+
+Standalone Lambda function handlers are not supported through Debug Configurations.
 
 ### User Interface
 
@@ -402,6 +474,14 @@ Examples of what can be configured include:
 -   Path to Manifest file relative to the root folder
     -   For a Javascript program, the `package.json` file
     -   For a Python program, the `requirements.txt` file
+
+## Appendix
+
+### Differences between this doc and v1.0.0 of Toolkit
+
+-   Lambda Handlers no longer associated with SAM Templates
+
+### Sample Debug Configurations
 
 ---
 
