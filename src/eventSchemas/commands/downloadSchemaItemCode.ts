@@ -173,9 +173,7 @@ export class SchemaCodeDownloader {
 }
 
 export class CodeGenerator {
-    public constructor(public client: SchemaClient) {
-        this.client = client
-    }
+    public constructor(public client: SchemaClient) {}
 
     public async generate(
         codeDownloadRequest: SchemaCodeDownloadRequestDetails
@@ -210,9 +208,7 @@ export class CodeGenerator {
 }
 
 export class CodeGenerationStatusPoller {
-    public constructor(public client: SchemaClient) {
-        this.client = client
-    }
+    public constructor(public client: SchemaClient) {}
 
     public async pollForCompletion(
         codeDownloadRequest: SchemaCodeDownloadRequestDetails,
@@ -258,9 +254,7 @@ export class CodeGenerationStatusPoller {
     }
 }
 export class CodeDownloader {
-    public constructor(public client: SchemaClient) {
-        this.client = client
-    }
+    public constructor(public client: SchemaClient) {}
 
     public async download(codeDownloadRequest: SchemaCodeDownloadRequestDetails): Promise<ArrayBuffer> {
         const response = await this.client.getCodeBindingSource(
