@@ -70,9 +70,9 @@ If the SAM Template Resource contains an event of type [Api](https://docs.aws.am
 
 ### Standalone Lambda Function Handlers
 
-Lambda Function Handler code can be locally Run or Debugged, even if it does not belong to a SAM Application. A temporary SAM Application is produced behind the scenes to contain the handler of interest, and the SAM CLI is used to invoke the Lambda function, similar to the section above. Afterwards, the temporary SAM Application is removed.
+Lambda Function Handler code can be locally Run or Debugged, even if it does not belong to a SAM Application. A temporary SAM Application is produced behind the scenes to contain the handler of interest, and the SAM CLI is used to invoke the Lambda function, as outlined in SAM Template Resources. Afterwards, the temporary SAM Application is removed.
 
-In this mode, any SAM Templates that a Handler is associated with are ignored. Functionality provided by the above section accommodates for debugging within the context of a defined SAM Application.
+In this mode, any SAM Templates that a Handler is associated with are ignored. This prevents confusion/errors introduced when trying to resolve between SAM Template Resource handlers with code (examples include incorrectly determining a function's lambda handler string, or situations where more than one resource references the same function).
 
 It is not possible to locally run or debug standalone Lambda function handlers in a manner emulating API Gateway. The code should be referenced from a SAM Template to use the API Gateway style debugging mentioned in the earlier section.
 
@@ -134,9 +134,41 @@ Example Debug Configuration entries can be found in the Appendix - Sample Debug 
 
 Standalone Lambda function handlers are not supported through Debug Configurations.
 
-### User Interface
-
 ### CodeLenses
+
+Toolkit settings can be used to enable and disable CodeLenses.
+CodeLenses only appear for languages/runtimes that the Toolkit has implemented Debug support for.
+
+#### CodeLenses in SAM Template files
+
+The following CodeLenses appear above every template resource of type `AWS::Serverless::Function`:
+
+-   Run Locally - Builds the SAM Application and runs the target Resource, using configurations set with the Configure CodeLens
+-   Debug Locally - Builds the SAM Application and debugs the target Resource, using configurations set with the Configure CodeLens
+-   Configure - allows the user to configure a limited set of arguments that are used with the Run and Debug CodeLenses
+    -   Anything that can be defined by the SAM Template would not be configurable in here
+    -   This covers aspects like input event, and SAM CLI related arguments
+-   Add Debug Configuration - Utility feature to produce a skeleton Debug Configuration in `launch.json` for users
+
+The Run and Debug CodeLenses perform a regular local invoke on a resource. These CodeLenses do not perform API Gateway style invokes.
+
+#### CodeLenses in Code files
+
+CodeLenses in code files provides support for debugging Standalone Lambda function handlers.
+
+The following CodeLenses appear over any function that appears to be an eligible Lambda Handler:
+
+-   Run Locally - See below for details
+-   Debug Locally - See below for details
+-   Configure - allows the user to configure a limited set of arguments that are used with the Run and Debug CodeLenses (see What can be configured for a Debug session?)
+
+The Run and Debug CodeLenses invoke a lambda handler independent of any SAM Templates that exist in the users workspace. The Toolkit produces a temporary SAM Template containing the Lambda handler of interest. This Template is then invoked using the SAM CLI.
+
+These CodeLenses do not perform API Gateway style invokes.
+
+Some users may find CodeLenses in code files distracting, particularly if they are using the Toolkit for features not related to local debugging. Toolkit settings can be used to enable and disable CodeLenses.
+
+### User Interface
 
 ### Serverless Projects Tree
 
@@ -236,37 +268,6 @@ Override
 ---
 
 ## Local Debug Arguments
-
-### What is being run
-
-| Property                   | Configured with plain Lambda Invoke | Configured with SAM Template Invoke |
-| -------------------------- | ----------------------------------- | ----------------------------------- |
-| SAM Template               |                                     | x                                   |
-| SAM Template Resource      |                                     | x                                   |
-| SAM Template Parameters    |                                     | x                                   |
-| Environment Variables      | x                                   | x                                   |
-| Input Event (file or json) | x                                   | x                                   |
-| Runtime                    | x                                   |                                     |
-| Handler                    | x                                   |                                     |
-| Timeout                    | x                                   |                                     |
-| Memory                     | x                                   |                                     |
-
-### How is it run - SAM
-
-_Configured with plain Lambda Invoke and SAM Template Invoke_
-
--   Build in container
--   Skip new image check
--   docker network
--   build args
--   local invoke args
-
-### How is it run - AWS
-
-_Configured with plain Lambda Invoke and SAM Template Invoke_
-
--   Credentials
--   Region
 
 ### Concept
 
