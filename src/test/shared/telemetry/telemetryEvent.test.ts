@@ -59,15 +59,11 @@ describe('TelemetryEventArray', () => {
             assert.deepStrictEqual(data[0].Metadata, undefined)
         })
 
-        it('Rejects entries that have null value or MetricName', () => {
+        it('Rejects entries that have null Value', () => {
             const eventArray: TelemetryEvent[] = []
             const metricEvent = {
                 createTime: new Date(),
                 data: [
-                    {
-                        MetricName: undefined,
-                        Value: 1
-                    },
                     {
                         MetricName: 'namespace_event2',
                         Value: undefined,
@@ -76,6 +72,28 @@ describe('TelemetryEventArray', () => {
                             { Key: 'key', Value: 'value' },
                             { Key: 'key2', Value: 'value2' }
                         ]
+                    },
+                    {
+                        MetricName: 'namespace_event3',
+                        Unit: 'Percent',
+                        Value: 0.333,
+                        Metadata: [{ Key: 'key3', Value: 'value3' }]
+                    }
+                ]
+            }
+            eventArray.push(metricEvent)
+            const data = toMetricData(eventArray)
+            assert.strictEqual(data.length, 1)
+        })
+
+        it('Rejects entries that have null MetricName', () => {
+            const eventArray: TelemetryEvent[] = []
+            const metricEvent = {
+                createTime: new Date(),
+                data: [
+                    {
+                        MetricName: undefined,
+                        Value: 1
                     },
                     {
                         MetricName: 'namespace_event3',

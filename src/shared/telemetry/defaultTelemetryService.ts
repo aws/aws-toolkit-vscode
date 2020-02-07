@@ -249,6 +249,7 @@ export class DefaultTelemetryService implements TelemetryService {
             const input = JSON.parse(fs.readFileSync(cachePath, 'utf-8'))
             const events = filterTelemetryCacheEvents(input)
             events.forEach((element: TelemetryEvent) => {
+                // This is coercing the createTime into a Date type: it's read in as a string
                 element.createTime = new Date(element.createTime)
             })
 
