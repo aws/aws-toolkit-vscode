@@ -7,6 +7,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 
 import { access } from 'fs-extra'
+import { getHandlerConfig } from '../../lambda/config/templates'
 import { makeCoreCLRDebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { DefaultDockerClient, DockerClient } from '../clients/dockerClient'
 import { CloudFormation } from '../cloudformation/cloudformation'
@@ -170,12 +171,19 @@ async function onLocalInvokeCommand(
             properties: resource.Properties
         })
 
+        const config =  await getHandlerConfig({
+            handlerName: handlerName,
+            documentUri: documentUri,
+            samTemplate: vscode.Uri.file(lambdaLocalInvokeParams.samTemplate.fsPath)
+        })
+
         const buildArgs: ExecuteSamBuildArguments = {
             baseBuildDir,
             channelLogger,
             codeDir: codeUri,
             inputTemplatePath,
-            samProcessInvoker: processInvoker
+            samProcessInvoker: processInvoker,
+            useContainer: config.useContainer
         }
         if (lambdaLocalInvokeParams.isDebug) {
             buildArgs.environmentVariables = {
