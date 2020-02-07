@@ -46,7 +46,6 @@ describe('Telemetry cache', () => {
         writeFileSync(tempFile, input)
         const output = DefaultTelemetryService.readEventsFromCache(tempFile)
         assert.strictEqual(output.length, 1)
-        assert.strictEqual(output, [])
     })
 
     it('Happy path', () => {
@@ -55,6 +54,5 @@ describe('Telemetry cache', () => {
         writeFileSync(tempFile, input)
         const output = DefaultTelemetryService.readEventsFromCache(tempFile)
         assert.strictEqual(output.length, 1)
-        assert.strictEqual(output, [])
     })
 })
