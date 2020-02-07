@@ -63,7 +63,7 @@ export class DefaultTelemetryService implements TelemetryService {
     }
 
     public async start(): Promise<void> {
-        this._eventQueue.concat(DefaultTelemetryService.readEventsFromCache(this.persistFilePath))
+        this._eventQueue.push(...DefaultTelemetryService.readEventsFromCache(this.persistFilePath))
         recordSessionStart()
         await this.startTimer()
     }
