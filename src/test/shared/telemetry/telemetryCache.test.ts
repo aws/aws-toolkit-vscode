@@ -25,11 +25,8 @@ describe('Telemetry cache', () => {
     it('Rejects bad data', () => {
         const input = "THis isn't even valid json"
         writeFileSync(tempFile, input)
-        assert.throws(
-            () => DefaultTelemetryService.readEventsFromCache(tempFile),
-            Error,
-            `Input into validateTypeIsTelmetryEventArray:\n${input}\nis not an array!`
-        )
+        const output = DefaultTelemetryService.readEventsFromCache(tempFile)
+        assert.strictEqual(output, [])
     })
 
     it('Filters out old data', () => {
