@@ -14,20 +14,28 @@ export interface TelemetryEvent {
 
 export function toMetricData(array: TelemetryEvent[]): MetricDatum[] {
     return ([] as MetricDatum[]).concat(
-        ...array
+        ...(array
             .filter(item => {
                 return item.data !== undefined
             })
             .map((metricEvent: TelemetryEvent) =>
-                metricEvent.data.map(datum => {
-                    return {
-                        MetricName: datum.MetricName?.replace(NAME_ILLEGAL_CHARS_REGEX, ''),
-                        EpochTimestamp: metricEvent.createTime.getTime(),
-                        Unit: datum.Unit ?? 'None',
-                        Value: datum.Value,
-                        Metadata: datum.Metadata
-                    }
-                })
-            )
+                metricEvent.data
+                    .map(datum => {
+                        const name = datum.MetricName?.replace(NAME_ILLEGAL_CHARS_REGEX, '')
+                        // Filter out bad data
+                        if (name === undefined || name === '' || datum.Value === undefined) {
+                            return undefined
+                        }
+
+                        return {
+                            MetricName: name,
+                            EpochTimestamp: metricEvent.createTime.getTime(),
+                            Unit: datum.Unit ?? 'None',
+                            Value: datum.Value,
+                            Metadata: datum.Metadata
+                        }
+                    })
+                    .filter(item => item !== undefined)
+            ) as MetricDatum[])
     )
 }

@@ -27,6 +27,12 @@ export class DefaultTelemetryClient implements TelemetryClient {
      */
     public async postMetrics(batch: TelemetryEvent[]): Promise<TelemetryEvent[] | undefined> {
         try {
+            const metricData = toMetricData(batch)
+            // If our batching logic rejected all of the telemetry, don't try to post
+            if (metricData.length === 0) {
+                return undefined
+            }
+
             await this.client
                 .postMetrics({
                     AWSProduct: DefaultTelemetryClient.PRODUCT_NAME,
@@ -36,10 +42,12 @@ export class DefaultTelemetryClient implements TelemetryClient {
                     OSVersion: os.release(),
                     ParentProduct: vscode.env.appName,
                     ParentProductVersion: vscode.version,
-                    MetricData: toMetricData(batch)
+                    MetricData: metricData
                 })
                 .promise()
             console.info(`Successfully sent a telemetry batch of ${batch.length}`)
+
+            return undefined
         } catch (err) {
             console.error(`Batch error: ${err}`)
 
