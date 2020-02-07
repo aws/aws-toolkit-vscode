@@ -244,10 +244,10 @@ export class DefaultTelemetryService implements TelemetryService {
         return event
     }
 
-    public static readEventsFromCache(cachePath: string): TelemetryEvent[] {
+    private static readEventsFromCache(cachePath: string): TelemetryEvent[] {
         try {
             const input = JSON.parse(fs.readFileSync(cachePath, 'utf-8'))
-            const events = this.filterTelemetryCacheEvents(input)
+            const events = filterTelemetryCacheEvents(input)
             events.forEach((element: TelemetryEvent) => {
                 element.createTime = new Date(element.createTime)
             })
@@ -260,61 +260,57 @@ export class DefaultTelemetryService implements TelemetryService {
             return []
         }
     }
+}
 
-    private static filterTelemetryCacheEvents(input: any): TelemetryEvent[] {
-        if (!Array.isArray(input)) {
-            getLogger().error(`Input into filterTelemetryCacheEvents:\n${input}\nis not an array!`)
+export function filterTelemetryCacheEvents(input: any): TelemetryEvent[] {
+    if (!Array.isArray(input)) {
+        getLogger().error(`Input into filterTelemetryCacheEvents:\n${input}\nis not an array!`)
 
-            return []
-        }
-        const arr = input as any[]
-
-        return arr
-            .filter((item: any) => {
-                // Make sure the item is an object
-                if (item !== Object(item)) {
-                    getLogger().error(`Item in telemetry cache:\n${item}\nis not an object! skipping!`)
-
-                    return false
-                }
-
-                return true
-            })
-            .filter((item: Object) => {
-                // Only accept objects that have createTime and data because that's what's required by TelemetryEvent
-                if (!item.hasOwnProperty('createTime') || !item.hasOwnProperty('data')) {
-                    getLogger().warn(
-                        `Item in telemetry cache: ${item}\n does not have 'data' or 'createTime'! skipping!`
-                    )
-
-                    return false
-                }
-
-                return true
-            })
-            .filter((item: TelemetryEvent) => {
-                // skip it if data is not an array or empty
-                if (!Array.isArray(item.data) || item.data.length === 0) {
-                    getLogger().warn(
-                        `Item in telemetry cache: ${item}\n has invalid data field: ${item.data}! skipping!`
-                    )
-
-                    return false
-                }
-
-                // Only accept objects that have value and metricname which are the base things required for telemetry
-                return item.data.every(data => {
-                    // Make sure data is actually an object then check that it has the required properties
-                    if (data !== Object(data) || !data.hasOwnProperty('Value') || !data.hasOwnProperty('MetricName')) {
-                        getLogger().warn(
-                            `Item in telemetry cache: ${item}\n has invalid data in the field 'data': ${data}! skipping!`
-                        )
-
-                        return false
-                    }
-
-                    return true
-                })
-            }) as TelemetryEvent[]
+        return []
     }
+    const arr = input as any[]
+
+    return arr
+        .filter((item: any) => {
+            // Make sure the item is an object
+            if (item !== Object(item)) {
+                getLogger().error(`Item in telemetry cache:\n${item}\nis not an object! skipping!`)
+
+                return false
+            }
+
+            return true
+        })
+        .filter((item: Object) => {
+            // Only accept objects that have createTime and data because that's what's required by TelemetryEvent
+            if (!item.hasOwnProperty('createTime') || !item.hasOwnProperty('data')) {
+                getLogger().warn(`Item in telemetry cache: ${item}\n does not have 'data' or 'createTime'! skipping!`)
+
+                return false
+            }
+
+            return true
+        })
+        .filter((item: TelemetryEvent) => {
+            // skip it if data is not an array or empty
+            if (!Array.isArray(item.data) || item.data.length === 0) {
+                getLogger().warn(`Item in telemetry cache: ${item}\n has invalid data field: ${item.data}! skipping!`)
+
+                return false
+            }
+
+            // Only accept objects that have value and metricname which are the base things required for telemetry
+            return item.data.every(data => {
+                // Make sure data is actually an object then check that it has the required properties
+                if (data !== Object(data) || !data.hasOwnProperty('Value') || !data.hasOwnProperty('MetricName')) {
+                    getLogger().warn(
+                        `Item in telemetry cache: ${item}\n has invalid data in the field 'data': ${data}! skipping!`
+                    )
+
+                    return false
+                }
+
+                return true
+            })
+        }) as TelemetryEvent[]
 }
