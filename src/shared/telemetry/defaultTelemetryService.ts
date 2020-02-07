@@ -9,6 +9,7 @@ import * as path from 'path'
 import uuidv4 = require('uuid/v4')
 import { ExtensionContext } from 'vscode'
 import { AwsContext } from '../awsContext'
+import { getLogger } from '../logger'
 import { DefaultTelemetryClient } from './defaultTelemetryClient'
 import { DefaultTelemetryPublisher } from './defaultTelemetryPublisher'
 import { recordSessionEnd, recordSessionStart } from './telemetry'
@@ -244,14 +245,55 @@ export class DefaultTelemetryService implements TelemetryService {
 
     private static readEventsFromCache(cachePath: string): TelemetryEvent[] {
         try {
-            const events = JSON.parse(fs.readFileSync(cachePath, 'utf-8')) as TelemetryEvent[]
+            const input = JSON.parse(fs.readFileSync(cachePath, 'utf-8'))
+            const events = this.validateTelemetryCache(input)
             events.forEach((element: TelemetryEvent) => {
                 element.createTime = new Date(element.createTime)
             })
 
             return events
-        } catch {
+        } catch (error) {
+            // tslint:disable-next-line: no-unsafe-any
+            getLogger().error(error)
+
             return []
         }
+    }
+
+    private static validateTelemetryCache(input: any): TelemetryEvent[] {
+        if (!Array.isArray(input)) {
+            throw new Error(`Input into validateTypeIsTelmetryEventArray:\n ${input}\n is not an array!`)
+        }
+        const arr = input as any[]
+
+        return arr
+            .filter((item: any) => {
+                // Make sure the item is an object
+                return item === Object(item)
+            })
+            .filter((item: Object) => {
+                // Only accept objects that have createTime and data because that's what's required by TelemetryEvent
+                return item.hasOwnProperty('createTime') && item.hasOwnProperty('data')
+            })
+            .filter((item: TelemetryEvent) => {
+                // skip it if data is not an array or empty
+                if (!Array.isArray(item.data) || item.data.length === 0) {
+                    return false
+                }
+
+                // Only accept objects that have value and metricname which are the base things required for telemetry
+                return item.data.every(data => {
+                    // Make sure data is actually an object
+                    if (data !== Object(data)) {
+                        return false
+                    }
+                    // then check that it has the required properties
+                    if (!data.hasOwnProperty('Value') || !data.hasOwnProperty('MetricName')) {
+                        return false
+                    }
+
+                    return true
+                })
+            }) as TelemetryEvent[]
     }
 }

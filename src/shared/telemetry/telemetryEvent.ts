@@ -18,7 +18,7 @@ export function toMetricData(array: TelemetryEvent[]): MetricDatum[] {
             .filter(item => {
                 return item.data !== undefined
             })
-            .map(metricEvent =>
+            .map((metricEvent: TelemetryEvent) =>
                 metricEvent.data.map(datum => {
                     return {
                         MetricName: datum.MetricName?.replace(NAME_ILLEGAL_CHARS_REGEX, ''),
