@@ -209,7 +209,7 @@
     "AWS.samcli.local.invoke.debugger.timeout": "The SAM process did not make the debugger available within the time limit",
     "AWS.samcli.notification.not.found": "Unable to find SAM CLI. It is required in order to work with Serverless Applications locally.",
     "AWS.samcli.notification.unexpected.validation.issue": "An unexpected issue occured while validating SAM CLI: {0}",
-    "AWS.samcli.notification.version.invalid": "Your SAM CLI version {0} does not meet requirements ({1} ≤ version < {2}). {3}",
+    "AWS.samcli.notification.version.invalid": "Your SAM CLI version {0} does not meet requirements ({1} ≤ version < {2}). {3}",
     "AWS.samcli.notification.version.valid": "Your SAM CLI version {0} is valid.",
     "AWS.samcli.recommend.update.toolkit": "Please check the Marketplace for an updated Toolkit.",
     "AWS.samcli.recommend.update.samcli": "Please update your SAM CLI.",
