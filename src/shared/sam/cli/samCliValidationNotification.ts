@@ -129,7 +129,7 @@ function makeVersionValidationNotificationMessage(validationResult: SamCliVersio
 
     return localize(
         'AWS.samcli.notification.version.invalid',
-        'Your SAM CLI version {0} does not meet requirements ({1}\u00a0\u2264\u00a0version\u00a0<\u00a0{2}). {3}',
+        'Your SAM CLI version {0} does not meet requirements ({1} ≤ version < {2}). {3}',
         validationResult.version,
         MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
         MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE,
