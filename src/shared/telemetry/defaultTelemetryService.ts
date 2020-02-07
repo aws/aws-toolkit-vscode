@@ -243,7 +243,7 @@ export class DefaultTelemetryService implements TelemetryService {
         return event
     }
 
-    private static readEventsFromCache(cachePath: string): TelemetryEvent[] {
+    public static readEventsFromCache(cachePath: string): TelemetryEvent[] {
         try {
             const input = JSON.parse(fs.readFileSync(cachePath, 'utf-8'))
             const events = this.validateTelemetryCache(input)
@@ -262,7 +262,7 @@ export class DefaultTelemetryService implements TelemetryService {
 
     private static validateTelemetryCache(input: any): TelemetryEvent[] {
         if (!Array.isArray(input)) {
-            throw new Error(`Input into validateTypeIsTelmetryEventArray:\n ${input}\n is not an array!`)
+            throw new Error(`Input into validateTypeIsTelmetryEventArray:\n${input}\nis not an array!`)
         }
         const arr = input as any[]
 

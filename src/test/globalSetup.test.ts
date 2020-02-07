@@ -22,6 +22,7 @@ let testLogger: TestLogger | undefined
 
 // Set up global telemetry client
 before(async () => {
+    setupTestLogger()
     const mockContext = new FakeExtensionContext()
     const mockAws = new FakeAwsContext()
     const mockPublisher: TelemetryPublisher = {
