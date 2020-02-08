@@ -74,7 +74,7 @@ Lambda Function Handler code can be locally Run or Debugged, even if it does not
 
 In this mode, any SAM Templates that a Handler is associated with are ignored. This prevents confusion/errors introduced when trying to resolve between SAM Template Resource handlers with code (examples include incorrectly determining a function's lambda handler string, or situations where more than one resource references the same function).
 
-It is not possible to locally run or debug standalone Lambda function handlers in a manner emulating API Gateway. The code should be referenced from a SAM Template to use the API Gateway style debugging mentioned in the earlier section.
+The Toolkit does not provide support for locally running or debugging standalone Lambda function handlers in a manner emulating API Gateway. The code should be referenced from a SAM Template to use the API Gateway style debugging mentioned in the earlier section.
 
 ## What can be configured for a Debug session?
 
@@ -159,6 +159,8 @@ When clicked, the Run and Debug CodeLenses locally invoke their associated Templ
 -   The associated SAM Template resource is invoked, using configurations set with the Configure CodeLens
 -   (If the Debug CodeLens was clicked) The VS Code debugger is attached to the invoked resource
 
+When clicked, the Configure CodeLens opens a (JSON) configuration file that resides in the workspace and is managed by the Toolkit. The configuration file is used for each SAM Template Resource within the workspace. Users have autocompletion support with this file. A rich UI is not considered at this time, but the door remains open to adding a visual editor in the future based on user feedback.
+
 The Run and Debug CodeLenses perform a regular local invoke on a resource. These CodeLenses do not perform API Gateway style invokes.
 
 #### CodeLenses in Code files
@@ -178,11 +180,27 @@ When clicked, the Run and Debug CodeLenses locally invoke the Lambda handler fun
 -   The resource in the temporary SAM Template is invoked, using configurations set with the Configure CodeLens
 -   (If the Debug CodeLens was clicked) The VS Code debugger is attached to the invoked resource
 
+When clicked, the Configure CodeLens opens a (JSON) configuration file that resides in the workspace and is managed by the Toolkit. All standalone handlers within a workspace will have their configurations stored in this file. Users have autocompletion support with this file. A rich UI is not considered at this time, but the door remains open to adding a visual editor in the future based on user feedback.
+
 These CodeLenses do not perform API Gateway style invokes.
 
 Some users may find CodeLenses within code files distracting, particularly if they are using the Toolkit for features not related to local debugging. Toolkit settings can be used to enable and disable CodeLenses.
 
 ### User Interface
+
+A UI is provided to support API Gateway based local debugging of SAM Template Resources. The view resembles a simple REST request workbench. After selecting a SAM Template, and a resource from that template, users craft a REST request (GET, POST, ect, as well as query string and body). Submitting the request (through a Run or Debug button) performs the following:
+
+-   build the SAM Application
+-   invoke the SAM Template Resource in api gateway mode
+-   send the REST request to the invoked SAM application
+-   (if debugging)
+    -   attach a debugger to the invoked SAM application
+    -   once the lambda handler exits, the debug session ends. The Toolkit terminates the invoked SAM application
+-   (if running)
+    -   once a response is received, the toolkit terminates the invoked SAM application
+-   The request, response, response code, and sam cli output are output to the toolkit's OutputChannel
+
+Users have the option to customize the SAM invocation in the same way as CodeLenses in SAM Template files.
 
 ---
 
