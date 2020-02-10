@@ -217,7 +217,7 @@ Here is an outline of the differences between this design and version 1.0.0 of t
 Here is an example Debug Configuration to debug a SAM Template Resource called "HelloWorldResource".
 The only required fields are: type, request, samTemplate.path, samTemplate.resource
 
-```json
+```jsonc
 {
     "configurations": [
         {
@@ -267,7 +267,7 @@ Here is an example Debug Configuration to debug an API Gateway invoked SAM Templ
 The variation is defined by the `request` field, and the only difference is in the event field.
 The only required fields are: type, request, samTemplate.path, samTemplate.resource
 
-```json
+```jsonc
 {
     "configurations": [
         {
