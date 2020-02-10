@@ -1,15 +1,6 @@
 # Local Debugging Experience for SAM Applications
 
-Current Proposal Stage: General Experience
-
-Future Proposal Stages (as future PRs):
-
--   General Experience In-depth
--   Architecture
-
-Previous Proposal Stages:
-
--   None
+Current Status: Not Implemented
 
 ## Introduction
 
@@ -20,8 +11,6 @@ While this document's main focus is on debugging capabilities in the toolkit, th
 TODO : A limited selection of programming languages are supported in the Toolkit.
 
 ### Terminology
-
-TODO : Fill this section
 
 #### CodeLens
 
@@ -55,11 +44,13 @@ Each scenario has one or more relevant user experiences. The different debugging
 
 ## What can be Debugged Locally
 
-### SAM Template Resources
+### SAM Template Resources (Local Invoke)
 
-SAM Template Resources of type `AWS::Serverless::Function` represent Lambda functions. The corresponding Lambda function code (if present) can be locally Run or Debugged. The SAM CLI is used to invoke the Lambda function similar to how it is run in the cloud. A debugger can be attached to the invoked Lambda function code.
+SAM Template Resources of type `AWS::Serverless::Function` represent Lambda functions. Lambda function code referenced by these resources can be locally Run or Debugged. The Toolkit uses SAM CLI to invoke the Lambda function, emulating how the function is run on AWS. A debugger can be attached to the invoked Lambda function code, and the event passed into the Lambda function can be customized.
 
-If the SAM Template Resource contains an event of type [Api](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-api.html), it can be locally hosted. A REST request would trigger the Lambda handler as if it were called by API Gateway.
+### SAM Template Resources (API Gateway style Local Invoke)
+
+SAM Template Resources that contain an event of type [Api](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-api.html), can be hosted in a web server for local development and iteration. A REST request triggers the Lambda handler as if it were called by API Gateway, and the Lambda function receives an API Gateway based event.
 
 ### Standalone Lambda Function Handlers
 
@@ -180,19 +171,28 @@ Some users may find CodeLenses within code files distracting, particularly if th
 
 ### Graphical User Interface
 
-A UI is provided to support API Gateway based local debugging of SAM Template Resources. The view resembles a simple REST request workbench. After selecting a SAM Template, and a resource from that template, users craft a REST request (GET, POST, ect, as well as query string and body). Submitting the request (through a Run or Debug button) performs the following:
+SAM Template Resources invoked by API Gateway can be locally tested with a REST Workbench.
 
--   build the SAM Application
--   invoke the SAM Template Resource in api gateway mode
--   send the REST request to the invoked SAM application
--   (if debugging)
-    -   attach a debugger to the invoked SAM application
-    -   once the lambda handler exits, the debug session ends. The Toolkit terminates the invoked SAM application
--   (if running)
-    -   once a response is received, the toolkit terminates the invoked SAM application
--   The request, response, response code, and sam cli output are output to the toolkit's OutputChannel
+The REST Workbench is accessed with the command "Open Local REST Workbench for SAM Applications", opens a webview document.
 
-Users have the option to customize the SAM invocation in the same way as CodeLenses in SAM Template files.
+In the REST Workbench, users select a SAM Application Template, build and launch the application (with or without debug mode), and proceed to make a series of REST requests against the running application.
+
+![Workbench Start-up](workbench-start.png)
+
+Users start by selecting the SAM Application they would like to work with. A dropdown lists all SAM Template files detected within the workspace. Next, they launch the application (Run or Debug), which builds and launches the local web server host. At this point, the SAM Application can no longer be changed (users can open a new workbench in order to operate against a different SAM Application).
+
+![Workbench Request Iteration](workbench-request.png)
+
+The running instance of the application is used for all REST queries made by the user. Users define REST parameters (endpoint, request type (GET, POST, etc), a query string, and an optional request body), and press Submit. If the application is run in Debug mode, the Toolkit will attach a debugger after sending the request. The following information is sent to the Toolkit's Output Channel with each REST request:
+
+-   request
+-   response
+-   response code
+-   SAM CLI output
+
+After making code changes, users can click Restart to rebuild the application and start it again.
+
+Closing a REST Workbench tab closes the invoked SAM Application if one is running.
 
 ## Appendix
 
