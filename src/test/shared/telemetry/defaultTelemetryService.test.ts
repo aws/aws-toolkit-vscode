@@ -4,6 +4,7 @@
  */
 
 import * as assert from 'assert'
+import * as del from 'del'
 // tslint:disable-next-line:no-implicit-dependencies
 import * as lolex from 'lolex'
 import * as sinon from 'sinon'
@@ -53,6 +54,8 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+    // Remove the persist file as it is saved
+    del.sync([ext.telemetry.persistFilePath], { force: true })
     ext.telemetry = originalTelemetryClient
 })
 

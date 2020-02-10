@@ -1,0 +1,10 @@
+{
+	"date": "2020-02-10",
+	"version": "1.6.1",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Fixed an issue related to toolkit metrics"
+		}
+	]
+}
