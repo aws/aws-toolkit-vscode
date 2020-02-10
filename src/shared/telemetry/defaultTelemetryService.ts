@@ -9,6 +9,7 @@ import * as path from 'path'
 import uuidv4 = require('uuid/v4')
 import { ExtensionContext } from 'vscode'
 import { AwsContext } from '../awsContext'
+import { getLogger } from '../logger'
 import { DefaultTelemetryClient } from './defaultTelemetryClient'
 import { DefaultTelemetryPublisher } from './defaultTelemetryPublisher'
 import { recordSessionEnd, recordSessionStart } from './telemetry'
@@ -48,8 +49,8 @@ export class DefaultTelemetryService implements TelemetryService {
         }
 
         this.startTime = new Date()
-        this._eventQueue = DefaultTelemetryService.readEventsFromCache(this.persistFilePath)
 
+        this._eventQueue = []
         this._flushPeriod = DefaultTelemetryService.DEFAULT_FLUSH_PERIOD_MILLIS
 
         if (publisher !== undefined) {
@@ -62,6 +63,7 @@ export class DefaultTelemetryService implements TelemetryService {
     }
 
     public async start(): Promise<void> {
+        this._eventQueue.push(...DefaultTelemetryService.readEventsFromCache(this.persistFilePath))
         recordSessionStart()
         await this.startTimer()
     }
@@ -244,14 +246,72 @@ export class DefaultTelemetryService implements TelemetryService {
 
     private static readEventsFromCache(cachePath: string): TelemetryEvent[] {
         try {
-            const events = JSON.parse(fs.readFileSync(cachePath, 'utf-8')) as TelemetryEvent[]
+            const input = JSON.parse(fs.readFileSync(cachePath, 'utf-8'))
+            const events = filterTelemetryCacheEvents(input)
             events.forEach((element: TelemetryEvent) => {
+                // This is coercing the createTime into a Date type: it's read in as a string
                 element.createTime = new Date(element.createTime)
             })
 
             return events
-        } catch {
+        } catch (error) {
+            // tslint:disable-next-line: no-unsafe-any
+            getLogger().error(error)
+
             return []
         }
     }
+}
+
+export function filterTelemetryCacheEvents(input: any): TelemetryEvent[] {
+    if (!Array.isArray(input)) {
+        getLogger().error(`Input into filterTelemetryCacheEvents:\n${input}\nis not an array!`)
+
+        return []
+    }
+    const arr = input as any[]
+
+    return arr
+        .filter((item: any) => {
+            // Make sure the item is an object
+            if (item !== Object(item)) {
+                getLogger().error(`Item in telemetry cache:\n${item}\nis not an object! skipping!`)
+
+                return false
+            }
+
+            return true
+        })
+        .filter((item: Object) => {
+            // Only accept objects that have createTime and data because that's what's required by TelemetryEvent
+            if (!item.hasOwnProperty('createTime') || !item.hasOwnProperty('data')) {
+                getLogger().warn(`Item in telemetry cache: ${item}\n does not have 'data' or 'createTime'! skipping!`)
+
+                return false
+            }
+
+            return true
+        })
+        .filter((item: TelemetryEvent) => {
+            // skip it if data is not an array or empty
+            if (!Array.isArray(item.data) || item.data.length === 0) {
+                getLogger().warn(`Item in telemetry cache: ${item}\n has invalid data field: ${item.data}! skipping!`)
+
+                return false
+            }
+
+            // Only accept objects that have value and metricname which are the base things required for telemetry
+            return item.data.every(data => {
+                // Make sure data is actually an object then check that it has the required properties
+                if (data !== Object(data) || !data.hasOwnProperty('Value') || !data.hasOwnProperty('MetricName')) {
+                    getLogger().warn(
+                        `Item in telemetry cache: ${item}\n has invalid data in the field 'data': ${data}! skipping!`
+                    )
+
+                    return false
+                }
+
+                return true
+            })
+        }) as TelemetryEvent[]
 }
