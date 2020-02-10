@@ -203,7 +203,7 @@ Here is an outline of the differences between this design and version 1.0.0 of t
     -   CodeLenses on code files invoke the function in isolation, and no longer attempt to associate the function with a SAM Template
     -   CodeLens configurations have a new location and structure
 -   New functionality
-    -   `aws-sam` Debug Configurations are
+    -   `aws-sam` Debug Configurations provide a new way to launch debug sessions against SAM Template resources
     -   CodeLenses on SAM Template files
     -   API Gateway related debugging
 -   Removed functionality
