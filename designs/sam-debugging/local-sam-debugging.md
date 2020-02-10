@@ -4,11 +4,11 @@ Current Status: Not Implemented
 
 ## Introduction
 
-TODO : Intro
+The AWS Toolkit enhances the SAM Application development experience by integrating local debug functionality into VS Code. This document outlines the available functionality.
 
 While this document's main focus is on debugging capabilities in the toolkit, there are places where the experience around invoking without the debugger (aka "running") is also discussed.
 
-TODO : A limited selection of programming languages are supported in the Toolkit.
+Each programming languages (and corresponding Lambda Runtimes) require Toolkit support for debugging features to work. A limited selection of programming languages are supported in the Toolkit.
 
 ### Terminology
 
@@ -44,7 +44,7 @@ Each scenario has one or more relevant user experiences. The different debugging
 
 ## What can be Debugged Locally
 
-### SAM Template Resources (Local Invoke)
+### <a id="sam-template-resource-local"></a> SAM Template Resources (Local Invoke)
 
 SAM Template Resources of type `AWS::Serverless::Function` represent Lambda functions. Lambda function code referenced by these resources can be locally Run or Debugged. The Toolkit uses SAM CLI to invoke the Lambda function, emulating how the function is run on AWS. A debugger can be attached to the invoked Lambda function code, and the event passed into the Lambda function can be customized.
 
@@ -54,13 +54,13 @@ SAM Template Resources that contain an event of type [Api](https://docs.aws.amaz
 
 ### Standalone Lambda Function Handlers
 
-Lambda Function Handler code can be locally Run or Debugged, even if it does not belong to a SAM Application. The Toolkit produces a temporary SAM Application to contain the handler code. This temporary SAM Application is handled as mentioned in the above section SAM Template Resources. At the end of the debug session, the temporary SAM Application is removed.
+Lambda Function Handler code can be locally Run or Debugged, even if it does not belong to a SAM Application. The Toolkit produces a temporary SAM Application to contain the handler code. This temporary SAM Application is handled as mentioned [earlier](#sam-template-resource-local). At the end of the debug session, the temporary SAM Application is removed.
 
 In this mode, any SAM Templates that a Handler is associated with are ignored. This prevents confusion/errors introduced when trying to determine an association between code and SAM Template Resource handlers (examples include incorrectly determining a function's lambda handler string, or situations where more than one resource references the same function).
 
 The Toolkit does not provide support for locally running or debugging standalone Lambda function handlers as API Gateway calls. The code should be referenced from a SAM Template in order to use the API Gateway style debugging features mentioned in the earlier section.
 
-## What can be configured for a Debug session?
+## <a id="debug-config"></a> What can be configured for a Debug session?
 
 The following parameters influence a debug session. These are user-configured (discussed in the Debugging Experiences section).
 
@@ -114,7 +114,7 @@ These debug configurations are authored in a json file. The following Toolkit as
 -   snippets to produce typical (or starter) `aws-sam` debug configurations
 -   when no launch.json file is present in a workspace, VS Code exposes functionality that allows users to request auto-generated Debug Configurations. In this situation, the toolkit generates an `aws-sam` Debug Configuration for all `AWS::Serverless::Function` Resources detected within all SAM Templates located in the workspace.
 
-Example Debug Configuration entries can be found in the Appendix - Sample Debug Configurations
+Example Debug Configuration entries can be found in the [Appendix](#sample-debug-configurations)
 
 Debug Configurations are the idiomatic approach to running and debugging software in VS Code. They are also a reusable component - the Toolkit generates and executes these at runtime to trigger debug sessions (CodeLenses is one example of this). Debug Configurations are the main experience for debugging SAM Template resources in the Toolkit.
 
@@ -154,7 +154,7 @@ The following CodeLenses appear over any function that appears to be an eligible
 
 -   Run Locally - See below for details
 -   Debug Locally - See below for details
--   Configure - allows the user to configure arguments that are used with the Run and Debug CodeLenses (see What can be configured for a Debug session?)
+-   Configure - allows the user to configure arguments that are used with the Run and Debug CodeLenses (see [What can be configured for a Debug session?](#debug-config))
 
 When clicked, the Run and Debug CodeLenses locally invoke the Lambda handler function they represent. These Lambda handlers are invoked independent of SAM Templates that exist in the users workspace. The following takes place:
 
@@ -196,13 +196,23 @@ Closing a REST Workbench tab closes the invoked SAM Application if one is runnin
 
 ## Appendix
 
-### Differences between this doc and v1.0.0 of Toolkit
+### Differences from v1.0.0 of AWS Toolkit
 
--   Lambda Handlers no longer associated with SAM Templates
--   api gateway support
--   Debug Configuration support
+The debug capabilities initially released in the Toolkit were not well rounded. CodeLenses provided the only means of local debugging, and without a way to directly debug SAM Template Resources these CodeLenses tried to compensate, leading to scenarios with undefined behaviors. Many of the issues are referenced from https://github.com/aws/aws-toolkit-vscode/issues/758
 
-### Sample Debug Configurations
+Here is an outline of the differences between this design and version 1.0.0 of the AWS Toolkit:
+
+-   Changed functionality
+    -   CodeLenses on code files invoke the function in isolation, and no longer attempt to associate the function with a SAM Template
+    -   CodeLens configurations have a new location and structure
+-   New functionality
+    -   `aws-sam` Debug Configurations are
+    -   CodeLenses on SAM Template files
+    -   API Gateway related debugging
+-   Removed functionality
+    -   None
+
+### <a id="sample-debug-configurations"></a> Sample Debug Configurations
 
 Here is an example Debug Configuration to debug a SAM Template Resource called "HelloWorldResource".
 The only required fields are: type, request, samTemplate.path, samTemplate.resource
