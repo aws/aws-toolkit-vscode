@@ -279,11 +279,11 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
 
     private void saveTelemetrySettings() {
         AwsSettings awsSettings = AwsSettings.getInstance();
-        Boolean oldSetting = awsSettings.isTelemetryEnabled();
+        boolean oldSetting = awsSettings.isTelemetryEnabled();
         try {
             awsSettings.setTelemetryEnabled(enableTelemetry.isSelected());
         } finally {
-            Boolean newSetting = awsSettings.isTelemetryEnabled();
+            boolean newSetting = awsSettings.isTelemetryEnabled();
             if (newSetting != oldSetting) {
                 publisher.notify(newSetting);
             }

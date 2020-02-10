@@ -3,6 +3,7 @@
 [![Gitter](https://badges.gitter.im/aws/aws-toolkit-jetbrains.svg)](https://gitter.im/aws/aws-toolkit-jetbrains?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 [![Downloads](https://img.shields.io/jetbrains/plugin/d/11349-aws-toolkit.svg)](https://plugins.jetbrains.com/plugin/11349-aws-toolkit) 
 [![Version](https://img.shields.io/jetbrains/plugin/v/11349.svg?label=version)](https://plugins.jetbrains.com/plugin/11349-aws-toolkit)
+[![LGTM Grade](https://img.shields.io/lgtm/grade/java/github/aws/aws-toolkit-jetbrains)](https://lgtm.com/projects/g/aws/aws-toolkit-jetbrains/)
  
 # AWS Toolkit for JetBrains
 
