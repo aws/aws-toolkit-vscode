@@ -84,6 +84,7 @@ dependencies {
         exclude group: 'org.slf4j'
     }
     testImplementation project(path: ":core", configuration: 'testArtifacts')
+    testImplementation('com.github.tomakehurst:wiremock-jre8:2.26.0')
     integrationTestImplementation('org.eclipse.jetty:jetty-servlet:9.4.15.v20190215')
     integrationTestImplementation('org.eclipse.jetty:jetty-proxy:9.4.15.v20190215')
 }

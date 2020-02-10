@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "IDE trust manager is now used to connect to AWS allowing configuration of untrusted certificates through the UI"
+}

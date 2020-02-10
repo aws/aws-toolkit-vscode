@@ -7,6 +7,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.util.Disposer
+import com.intellij.util.net.ssl.CertificateManager
 import com.intellij.util.proxy.CommonProxy
 import org.apache.http.impl.client.SystemDefaultCredentialsProvider
 import org.apache.http.impl.conn.SystemDefaultRoutePlanner
@@ -27,9 +28,10 @@ class AwsSdkClient : Disposable {
     val sdkHttpClient: SdkHttpClient by lazy {
         LOG.info { "Create new Apache client" }
         val httpClientBuilder = ApacheHttpClient.builder()
-                .proxyConfiguration(ProxyConfiguration.builder().useSystemPropertyValues(false).build())
-                .httpRoutePlanner(SystemDefaultRoutePlanner(CommonProxy.getInstance()))
-                .credentialsProvider(SystemDefaultCredentialsProvider())
+            .proxyConfiguration(ProxyConfiguration.builder().useSystemPropertyValues(false).build())
+            .httpRoutePlanner(SystemDefaultRoutePlanner(CommonProxy.getInstance()))
+            .credentialsProvider(SystemDefaultCredentialsProvider())
+            .tlsTrustManagersProvider { arrayOf(CertificateManager.getInstance().trustManager) }
 
         ValidateCorrectThreadClient(httpClientBuilder.build())
     }

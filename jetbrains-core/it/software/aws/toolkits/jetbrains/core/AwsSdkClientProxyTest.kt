@@ -25,7 +25,7 @@ import org.junit.Test
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
 
-class AwsSdkClientTest {
+class AwsSdkClientProxyTest {
     @Rule
     @JvmField
     val application = ApplicationRule()
