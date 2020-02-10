@@ -442,6 +442,11 @@
                     "dark": "third-party/resources/from-vscode-icons/dark/refresh.svg",
                     "light": "third-party/resources/from-vscode-icons/light/refresh.svg"
                 }
+            },
+            {
+                "command": "aws.getToolkitInfo",
+                "title": "%AWS.command.getToolkitInfo%",
+                "category": "AWS"
             }
         ],
         "jsonValidation": [

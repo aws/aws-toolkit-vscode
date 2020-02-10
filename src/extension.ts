@@ -28,7 +28,7 @@ import {
 import { DefaultAwsContext } from './shared/defaultAwsContext'
 import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
 import { ext } from './shared/extensionGlobals'
-import { showQuickStartWebview, toastNewUser } from './shared/extensionUtilities'
+import { getToolkitInfo, showQuickStartWebview, toastNewUser } from './shared/extensionUtilities'
 import { getLogger } from './shared/logger'
 import { activate as activateLogger } from './shared/logger/activation'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
@@ -125,6 +125,10 @@ export async function activate(context: vscode.ExtensionContext) {
             } finally {
                 recordAwsHelpQuickstart()
             }
+        })
+
+        vscode.commands.registerCommand('aws.getToolkitInfo', async () => {
+            await getToolkitInfo(toolkitOutputChannel)
         })
 
         await activateCdk({

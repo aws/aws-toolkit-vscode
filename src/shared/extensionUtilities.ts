@@ -4,6 +4,7 @@
  */
 
 import * as _ from 'lodash'
+import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
@@ -200,5 +201,35 @@ export function toastNewUser(context: vscode.ExtensionContext): void {
     } catch (err) {
         // swallow error and don't block extension load
         getLogger().error(err as Error)
+    }
+}
+
+/**
+ * Creates a modal to display OS, AWS Toolkit, and VS Code
+ * versions and allows user to copy to clipboard
+ * Also prints to the toolkit output channel
+ *
+ * @param toolkitOutputChannel VS Code Output Channel
+ */
+
+export async function getToolkitInfo(toolkitOutputChannel: vscode.OutputChannel) {
+    const copyButtonLabel = localize('AWS.message.prompt.copyButtonLabel', 'Copy')
+    const osType = os.type()
+    const osArch = os.arch()
+    const osRelease = os.release()
+    const vsCodeVersion = vscode.version
+    const envDetails = localize(
+        'AWS.message.toolkitInfo',
+        'OS:  {0} {1} {2}\nVisual Studtio Code Version:  {3}\nAWS Toolkit for Visual Studio Code Version:  {4}\n',
+        osType,
+        osArch,
+        osRelease,
+        vsCodeVersion,
+        pluginVersion
+    )
+    toolkitOutputChannel.appendLine(envDetails)
+    const result = await vscode.window.showInformationMessage(envDetails, { modal: true }, copyButtonLabel)
+    if (result === copyButtonLabel) {
+        vscode.env.clipboard.writeText(envDetails)
     }
 }
