@@ -11,28 +11,31 @@ describe('Telemetry cache', () => {
         const input = "THis isn't even valid json"
 
         const output = filterTelemetryCacheEvents(input)
-        assert.strictEqual(output, [])
+        assert.strictEqual(output.length, 0)
     })
 
     it('Filters out old data', () => {
-        const input =
+        const input = JSON.parse(
             '[{"namespace":"session","createTime":"2020-01-07T22:24:13.356Z","data":[{"name":"end","value":4226661,"unit":"Milliseconds","metadata":{}}]}]'
+        )
 
         const output = filterTelemetryCacheEvents(input)
-        assert.strictEqual(output, [])
+        assert.strictEqual(output.length, 0)
     })
 
     it('Extracts good data when there is bad data present', () => {
-        const input =
+        const input = JSON.parse(
             '["this is a string", {"namespace":"session","createTime":"2020-01-07T22:24:13.356Z","data":[{"name":"end","value":4226661,"unit":"Milliseconds","metadata":{}}]},{"createTime":"2020-02-07T16:54:58.293Z","data":[{"MetricName":"session_end","Value":18709,"Unit":"None","Metadata":[{"Key":"awsAccount","Value":"n/a"}]}]}]'
+        )
 
         const output = filterTelemetryCacheEvents(input)
         assert.strictEqual(output.length, 1)
     })
 
     it('Happy path', () => {
-        const input =
+        const input = JSON.parse(
             '[{"createTime":"2020-02-07T16:54:58.293Z","data":[{"MetricName":"session_end","Value":18709,"Unit":"None","Metadata":[{"Key":"awsAccount","Value":"n/a"}]}]}]'
+        )
         const output = filterTelemetryCacheEvents(input)
         assert.strictEqual(output.length, 1)
     })
