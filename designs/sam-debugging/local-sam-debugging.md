@@ -205,7 +205,7 @@ Here is an outline of the differences between this design and version 1.0.0 of t
 -   New functionality
     -   `aws-sam` Debug Configurations provide a new way to launch debug sessions against SAM Template resources
     -   CodeLenses on SAM Template files
-    -   API Gateway related debugging
+    -   API Gateway related debugging (Debug Configuration support and REST Workbench UI)
 -   Removed functionality
     -   None
 
