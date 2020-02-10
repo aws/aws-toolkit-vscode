@@ -1,4 +1,4 @@
 {
     "type": "Feature",
-    "description": "Created a command to display Toolkit and environment info. These include OS, VS Code, and Toolkit versions."
+    "description": "Added 'aws.aboutToolkit' command to show AWS Toolkit versioning details that are useful to include with bug reports."
 }

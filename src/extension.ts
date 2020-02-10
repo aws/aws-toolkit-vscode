@@ -28,7 +28,12 @@ import {
 import { DefaultAwsContext } from './shared/defaultAwsContext'
 import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
 import { ext } from './shared/extensionGlobals'
-import { getToolkitInfo, showQuickStartWebview, toastNewUser } from './shared/extensionUtilities'
+import {
+    aboutToolkit,
+    getToolkitEnvironmentDetails,
+    showQuickStartWebview,
+    toastNewUser
+} from './shared/extensionUtilities'
 import { getLogger } from './shared/logger'
 import { activate as activateLogger } from './shared/logger/activation'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
@@ -56,6 +61,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
     ext.context = context
     await activateLogger(context)
+    const toolkitEnvDetails = getToolkitEnvironmentDetails()
+    getLogger().info(toolkitEnvDetails)
     const toolkitOutputChannel = vscode.window.createOutputChannel(localize('AWS.channel.aws.toolkit', 'AWS Toolkit'))
 
     try {
@@ -127,8 +134,8 @@ export async function activate(context: vscode.ExtensionContext) {
             }
         })
 
-        vscode.commands.registerCommand('aws.getToolkitInfo', async () => {
-            await getToolkitInfo(toolkitOutputChannel)
+        vscode.commands.registerCommand('aws.aboutToolkit', async () => {
+            await aboutToolkit(toolkitOutputChannel)
         })
 
         await activateCdk({

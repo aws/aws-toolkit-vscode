@@ -211,25 +211,33 @@ export function toastNewUser(context: vscode.ExtensionContext): void {
  *
  * @param toolkitOutputChannel VS Code Output Channel
  */
-
-export async function getToolkitInfo(toolkitOutputChannel: vscode.OutputChannel) {
+export async function aboutToolkit(toolkitOutputChannel: vscode.OutputChannel): Promise<void> {
+    const toolkitEnvDetails = getToolkitEnvironmentDetails()
     const copyButtonLabel = localize('AWS.message.prompt.copyButtonLabel', 'Copy')
+    toolkitOutputChannel.appendLine(toolkitEnvDetails)
+    const result = await vscode.window.showInformationMessage(toolkitEnvDetails, { modal: true }, copyButtonLabel)
+    if (result === copyButtonLabel) {
+        vscode.env.clipboard.writeText(toolkitEnvDetails)
+    }
+}
+
+/**
+ * Returns a string that includes the OS, AWS Toolkit,
+ * and VS Code versions.
+ */
+export function getToolkitEnvironmentDetails(): string {
     const osType = os.type()
     const osArch = os.arch()
     const osRelease = os.release()
     const vsCodeVersion = vscode.version
     const envDetails = localize(
         'AWS.message.toolkitInfo',
-        'OS:  {0} {1} {2}\nVisual Studtio Code Version:  {3}\nAWS Toolkit for Visual Studio Code Version:  {4}\n',
+        'OS:  {0} {1} {2}\nVisual Studio Code Version:  {3}\nAWS Toolkit for Visual Studio Code Version:  {4}\n',
         osType,
         osArch,
         osRelease,
         vsCodeVersion,
         pluginVersion
     )
-    toolkitOutputChannel.appendLine(envDetails)
-    const result = await vscode.window.showInformationMessage(envDetails, { modal: true }, copyButtonLabel)
-    if (result === copyButtonLabel) {
-        vscode.env.clipboard.writeText(envDetails)
-    }
+    return envDetails
 }
