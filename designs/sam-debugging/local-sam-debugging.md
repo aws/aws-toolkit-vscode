@@ -8,7 +8,7 @@ The AWS Toolkit enhances the SAM Application development experience by integrati
 
 While this document's main focus is on debugging capabilities in the toolkit, there are places where the experience around invoking without the debugger (aka "running") is also discussed.
 
-Each programming languages (and corresponding Lambda Runtimes) require Toolkit support for debugging features to work. A limited selection of programming languages are supported in the Toolkit.
+Each programming language (and corresponding Lambda Runtimes) requires Toolkit support for debugging features to work. A limited selection of programming languages are supported in the Toolkit.
 
 ### Terminology
 
@@ -56,7 +56,7 @@ SAM Template Resources that contain an event of type [Api](https://docs.aws.amaz
 
 Lambda Function Handler code can be locally Run or Debugged, even if it does not belong to a SAM Application. The Toolkit produces a temporary SAM Application to contain the handler code. This temporary SAM Application is handled as mentioned [earlier](#sam-template-resource-local). At the end of the debug session, the temporary SAM Application is removed.
 
-In this mode, any SAM Templates that a Handler is associated with are ignored. This prevents confusion/errors introduced when trying to determine an association between code and SAM Template Resource handlers (examples include incorrectly determining a function's lambda handler string, or situations where more than one resource references the same function).
+In this mode, any SAM Templates that reference a Handler are ignored. This prevents confusion/errors introduced when trying to perform a reverse-lookup between code and SAM Template Resources (examples include incorrectly determining a function's lambda handler string, or situations where more than one resource references the same function).
 
 The Toolkit does not provide support for locally running or debugging standalone Lambda function handlers as API Gateway calls. The code should be referenced from a SAM Template in order to use the API Gateway style debugging features mentioned in the earlier section.
 
@@ -95,7 +95,9 @@ The following AWS related arguments are relevant to debugging both standalone la
 
 ### Debug Configurations
 
-The Toolkit implements a Debug Configuration type `aws-sam`. When run, this configuration type:
+Debug Configurations are the idiomatic approach to running and debugging software in VS Code. They are also a reusable component - the Toolkit is able to internally produce and execute these configurations on the fly (for example as a part of the [CodeLenses](#codelenses) functionality). This is the Toolkit's main experience for debugging SAM Template resources.
+
+The Toolkit implements a Debug Configuration type `aws-sam`. Users can author and maintain these configuration entries, then launch them by pressing F5. When launched, this configuration type:
 
 -   validates debug configuration inputs
 -   uses SAM CLI to build a SAM Application
@@ -116,14 +118,9 @@ These debug configurations are authored in a json file. The following Toolkit as
 
 Example Debug Configuration entries can be found in the [Appendix](#sample-debug-configurations)
 
-Debug Configurations are the idiomatic approach to running and debugging software in VS Code. They are also a reusable component - the Toolkit generates and executes these at runtime to trigger debug sessions (CodeLenses is one example of this). Debug Configurations are the main experience for debugging SAM Template resources in the Toolkit.
-
 Standalone Lambda function handlers are not supported through Debug Configurations.
 
-### CodeLenses
-
-Toolkit settings can be used to enable and disable CodeLenses.
-CodeLenses only appear for languages/runtimes that the Toolkit has implemented Debug support for.
+### <a id="codelenses"></a> CodeLenses
 
 #### CodeLenses in SAM Template files
 
@@ -167,7 +164,7 @@ When clicked, the Configure CodeLens opens a (JSON) configuration file that resi
 
 These CodeLenses do not support API Gateway style invokes.
 
-Some users may find CodeLenses within code files distracting, particularly if they are using the Toolkit for features not related to local debugging. Toolkit settings can be used to enable and disable CodeLenses.
+Some users may find CodeLenses within code files distracting, particularly if they are using the Toolkit for features not related to local debugging. Toolkit settings can be used to enable and disable CodeLenses. CodeLenses only appear for languages/runtimes that the Toolkit has implemented Debug support for.
 
 ### Graphical User Interface
 
