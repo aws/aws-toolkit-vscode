@@ -62,7 +62,7 @@ The Toolkit does not provide support for locally running or debugging standalone
 
 ## <a id="debug-config"></a> What can be configured for a Debug session?
 
-The following parameters influence a debug session. These are user-configured (discussed in the Debugging Experiences section).
+The following parameters influence a debug session. These are user-configured, and are referenced by the various [debugging experiences](#debugging-experiences).
 
 | Property                | Description                                          | Used by Standalone Lambda Handler | Used by SAM Template Resources |
 | ----------------------- | ---------------------------------------------------- | --------------------------------- | ------------------------------ |
@@ -91,7 +91,7 @@ The following AWS related arguments are relevant to debugging both standalone la
 -   Credentials
 -   Region
 
-## Local Debugging Experiences
+## <a id="debugging-experiences"></a> Local Debugging Experiences
 
 ### Debug Configurations
 
