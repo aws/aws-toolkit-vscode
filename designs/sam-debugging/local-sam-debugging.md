@@ -71,20 +71,20 @@ The following parameters influence a debug session. These are user-configured, a
 | SAM Template Parameters | Values to use for SAM Template Parameters                  |                                   | ✅                             |
 | Environment Variables   | Environment Variables exposed to the Lambda Function       | ✅                                | ✅                             |
 | Input Event             | Payload passed to the invoked Lambda Function              | ✅                                | ✅                             |
-| Runtime                 | Runtime of Lambda Function to invoke                       | ✅                                |                                |
-| Handler                 | Lambda Function handler to invoke                          | ✅                                |                                |
-| Timeout                 | Timeout threshold for Lambda function                      | ✅                                |                                |
-| Memory                  | Memory provided to Lambda function                         | ✅                                |                                |
+| Runtime                 | Runtime of Lambda Function to invoke                       | ✅                                | obtained from SAM Template     |
+| Handler                 | Lambda Function handler to invoke                          | ✅                                | obtained from SAM Template     |
+| Timeout                 | Timeout threshold for Lambda function                      | ✅                                | obtained from SAM Template     |
+| Memory                  | Memory provided to Lambda function                         | ✅                                | obtained from SAM Template     |
 
 The following SAM CLI related arguments are relevant to debugging both standalone lambda function handlers and sam template resources. For reference see the [sam build](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-build.html) command.
 
-| Property                                                         | Default Value                    |
-| ---------------------------------------------------------------- | -------------------------------- |
-| Build SAM App in container                                       | false                            |
-| Skip new image check                                             | false                            |
-| use a docker network                                             | empty string (no docker network) |
-| additional build args (passed along to `sam build` calls)        | empty string                     |
-| additional local invoke args (passed along to `sam local` calls) | empty string                     |
+| Property                                                         | Description                                                                                                                                                                                                                      | Default Value                    |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| Build SAM App in container                                       | Supports cases where dependencies have natively compiled dependencies (See [use-container](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-build.html))             | false                            |
+| Skip new image check                                             | Skips checking/downloading the latest Lambda Runtime Docker images every invoke (See [skip-pull-image](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-build.html)) | false                            |
+| use a docker network                                             | Connects invoked SAM App to a Docker network (See [docker-network](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-build.html))                                     | empty string (no docker network) |
+| additional build args (passed along to `sam build` calls)        |                                                                                                                                                                                                                                  | empty string                     |
+| additional local invoke args (passed along to `sam local` calls) |                                                                                                                                                                                                                                  | empty string                     |
 
 The following AWS related arguments are relevant to debugging both standalone lambda function handlers and sam template resources:
 
