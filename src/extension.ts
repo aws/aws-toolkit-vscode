@@ -61,8 +61,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     ext.context = context
     await activateLogger(context)
-    const toolkitEnvDetails = getToolkitEnvironmentDetails()
-    getLogger().info(toolkitEnvDetails)
+    
     const toolkitOutputChannel = vscode.window.createOutputChannel(localize('AWS.channel.aws.toolkit', 'AWS Toolkit'))
 
     try {
@@ -70,6 +69,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
         initializeIconPaths(context)
         initializeManifestPaths(context)
+
+        const toolkitEnvDetails = getToolkitEnvironmentDetails()
+        getLogger().info(toolkitEnvDetails)
 
         const toolkitSettings = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 
