@@ -211,10 +211,9 @@ export function toastNewUser(context: vscode.ExtensionContext): void {
  *
  * @param toolkitOutputChannel VS Code Output Channel
  */
-export async function aboutToolkit(toolkitOutputChannel: vscode.OutputChannel): Promise<void> {
+export async function aboutToolkit(): Promise<void> {
     const toolkitEnvDetails = getToolkitEnvironmentDetails()
     const copyButtonLabel = localize('AWS.message.prompt.copyButtonLabel', 'Copy')
-    toolkitOutputChannel.appendLine(toolkitEnvDetails)
     const result = await vscode.window.showInformationMessage(toolkitEnvDetails, { modal: true }, copyButtonLabel)
     if (result === copyButtonLabel) {
         vscode.env.clipboard.writeText(toolkitEnvDetails)
@@ -239,5 +238,6 @@ export function getToolkitEnvironmentDetails(): string {
         vsCodeVersion,
         pluginVersion
     )
+
     return envDetails
 }

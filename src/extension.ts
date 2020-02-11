@@ -61,7 +61,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
     ext.context = context
     await activateLogger(context)
-    
     const toolkitOutputChannel = vscode.window.createOutputChannel(localize('AWS.channel.aws.toolkit', 'AWS Toolkit'))
 
     try {
@@ -69,9 +68,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         initializeIconPaths(context)
         initializeManifestPaths(context)
-
-        const toolkitEnvDetails = getToolkitEnvironmentDetails()
-        getLogger().info(toolkitEnvDetails)
 
         const toolkitSettings = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 
@@ -81,6 +77,9 @@ export async function activate(context: vscode.ExtensionContext) {
         const awsContextTrees = new AwsContextTreeCollection()
         const regionProvider = new DefaultRegionProvider(endpointsProvider)
         const loginManager = new LoginManager(awsContext)
+
+        const toolkitEnvDetails = getToolkitEnvironmentDetails()
+        getLogger().info(toolkitEnvDetails)
 
         await initializeAwsCredentialsStatusBarItem(awsContext, context)
         ext.awsContextCommands = new DefaultAWSContextCommands(
@@ -137,7 +136,7 @@ export async function activate(context: vscode.ExtensionContext) {
         })
 
         vscode.commands.registerCommand('aws.aboutToolkit', async () => {
-            await aboutToolkit(toolkitOutputChannel)
+            await aboutToolkit()
         })
 
         await activateCdk({
