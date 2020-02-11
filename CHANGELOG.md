@@ -1,3 +1,7 @@
+## 1.6.1 2020-02-10
+
+- **Bug Fix** Fixed an issue related to toolkit metrics
+
 ## 1.6.0 2020-02-06
 
 - **Breaking Change** Minimum version of SAM CLI has been adjusted from 0.32.0 to 0.38.0 to accommodate new SAM application support for EventBridge Schemas
