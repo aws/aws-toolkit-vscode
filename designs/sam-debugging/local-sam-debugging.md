@@ -93,7 +93,7 @@ The following AWS related arguments are relevant to debugging both standalone la
 
 ## <a id="debugging-experiences"></a> Local Debugging Experiences
 
-### Debug Configurations
+### <a id="debug-configurations"></a> Debug Configurations
 
 Debug Configurations are the idiomatic approach to running and debugging software in VS Code. They are also a reusable component - the Toolkit is able to internally produce and execute these configurations on the fly (for example as a part of the [CodeLenses](#codelenses) functionality). This is the Toolkit's main experience for debugging SAM Template resources.
 
@@ -125,24 +125,11 @@ Standalone Lambda function handlers are not supported through Debug Configuratio
 
 #### CodeLenses in SAM Template files
 
-The following CodeLenses appear above every template resource of type `AWS::Serverless::Function`:
+CodeLenses are added to SAM Template files that serve as shortcuts to any [debug configurations](#debug-configurations) defined in the workspace.
 
--   Run Locally - See below for details
--   Debug Locally - See below for details
--   Configure - allows the user to configure a limited set of arguments that are used with the Run and Debug CodeLenses
-    -   Anything that can be defined by the SAM Template would not be configurable in here
-    -   This covers aspects like input event, and SAM CLI related arguments
--   Add Debug Configuration - This is a utility feature to produce a pre-filled Debug Configuration in `launch.json` based on the associated template resource
+Every Debug Configuration that references a SAM Template and resource pairing will produce a CodeLens above that resource. When clicked, these CodeLenses launch the corresponding debug session, as if the user selected that debug configuration and pressed Debug from VS Code's Debug view.
 
-When clicked, the Run and Debug CodeLenses locally invoke their associated Template resource. The following takes place:
-
--   The SAM Application is built
--   The associated SAM Template resource is invoked, using configurations set with the Configure CodeLens
--   (If the Debug CodeLens was clicked) The VS Code debugger is attached to the invoked resource
-
-When clicked, the Configure CodeLens opens a (JSON) configuration file that resides in the workspace and is read by the Toolkit. The configuration file is used for each SAM Template resource within the workspace. Users have autocompletion support in this file. A rich UI for configuration is not considered at this time, but the door remains open to adding a visual editor in the future based on user feedback.
-
-The Run and Debug CodeLenses perform a regular local invoke on a SAM Template resource. These CodeLenses do not perform API Gateway style invokes.
+An additional CodeLens is placed above every template resource of type `AWS::Serverless::Function` called "Add Debug Configuration". Clicking this CodeLens produces a pre-filled `aws-sam` Debug Configuration in `launch.json` capable of performing a [local invoke](#sam-template-resource-local) of the associated resource.
 
 #### CodeLenses in Code files
 
