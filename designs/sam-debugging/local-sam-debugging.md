@@ -86,10 +86,10 @@ The following SAM CLI related arguments are relevant to debugging both standalon
 | additional build args (passed along to `sam build` calls)        |                                                                                                                                                                                                                                  | empty string                     |
 | additional local invoke args (passed along to `sam local` calls) |                                                                                                                                                                                                                                  | empty string                     |
 
-The following AWS related arguments are relevant to debugging both standalone lambda function handlers and sam template resources:
+The following AWS related arguments are relevant to debugging both standalone lambda function handlers and sam template resources. When provided, they are injected into the local Lambda containers running the invoked SAM Application. This is useful in scenarios where the Lambda running locally is accessing other AWS resources.
 
--   Credentials
--   Region
+-   Credentials - Set this to the Credentials ID as shown in the Credentials selection list (example: `profile:default`). If this is omitted, the Toolkit's active credentials are used.
+-   Region - Set this to the region code (eg: `us-east-1`)
 
 ## <a id="debugging-experiences"></a> Local Debugging Experiences
 
