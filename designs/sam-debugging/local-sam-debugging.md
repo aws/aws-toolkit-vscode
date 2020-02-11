@@ -66,15 +66,15 @@ The following parameters influence a debug session. These are user-configured, a
 
 | Property                | Description                                                | Used by Standalone Lambda Handler | Used by SAM Template Resources |
 | ----------------------- | ---------------------------------------------------------- | --------------------------------- | ------------------------------ |
-| SAM Template            | Path to SAM Template file                                  |                                   | x                              |
-| SAM Template Resource   | Name of lambda function-based resource within SAM Template |                                   | x                              |
-| SAM Template Parameters | Values to use for SAM Template Parameters                  |                                   | x                              |
-| Environment Variables   | Environment Variables exposed to the Lambda Function       | x                                 | x                              |
-| Input Event             | Payload passed to the invoked Lambda Function              | x                                 | x                              |
-| Runtime                 | Runtime of Lambda Function to invoke                       | x                                 |                                |
-| Handler                 | Lambda Function handler to invoke                          | x                                 |                                |
-| Timeout                 | Timeout threshold for Lambda function                      | x                                 |                                |
-| Memory                  | Memory provided to Lambda function                         | x                                 |                                |
+| SAM Template            | Path to SAM Template file                                  |                                   | ✅                             |
+| SAM Template Resource   | Name of lambda function-based resource within SAM Template |                                   | ✅                             |
+| SAM Template Parameters | Values to use for SAM Template Parameters                  |                                   | ✅                             |
+| Environment Variables   | Environment Variables exposed to the Lambda Function       | ✅                                | ✅                             |
+| Input Event             | Payload passed to the invoked Lambda Function              | ✅                                | ✅                             |
+| Runtime                 | Runtime of Lambda Function to invoke                       | ✅                                |                                |
+| Handler                 | Lambda Function handler to invoke                          | ✅                                |                                |
+| Timeout                 | Timeout threshold for Lambda function                      | ✅                                |                                |
+| Memory                  | Memory provided to Lambda function                         | ✅                                |                                |
 
 The following SAM CLI related arguments are relevant to debugging both standalone lambda function handlers and sam template resources. For reference see the [sam build](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-build.html) command.
 
