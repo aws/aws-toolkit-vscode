@@ -36,9 +36,9 @@ Additional information about SAM can be found at:
 
 The toolkit supports the following scenarios for Locally Running and Debugging code using the Serverless Application Model:
 
--   Invoking SAM Template resources that are Lambda functions
+-   invoking SAM Template resources that are Lambda functions
 -   making API Gateway style requests against SAM Template resources that are Lambda functions
--   Invoking standalone Lambda function handlers
+-   invoking standalone Lambda function handlers (these don't use SAM Templates, but the debugging functionality is supported by one behind the scenes)
 
 Each scenario has one or more relevant user experiences. The different debugging functionalities are discussed first. Then, the various user experiences are discussed, along with which scenarios they apply to.
 
@@ -64,17 +64,17 @@ The Toolkit does not provide support for locally running or debugging standalone
 
 The following parameters influence a debug session. These are user-configured, and are referenced by the various [debugging experiences](#debugging-experiences).
 
-| Property                | Description                                          | Used by Standalone Lambda Handler | Used by SAM Template Resources |
-| ----------------------- | ---------------------------------------------------- | --------------------------------- | ------------------------------ |
-| SAM Template            | Path to SAM Template file                            |                                   | x                              |
-| SAM Template Resource   | Name of resource within SAM Template                 |                                   | x                              |
-| SAM Template Parameters | Values to use for SAM Template Parameters            |                                   | x                              |
-| Environment Variables   | Environment Variables exposed to the Lambda Function | x                                 | x                              |
-| Input Event             | Payload passed to the invoked Lambda Function        | x                                 | x                              |
-| Runtime                 | Runtime of Lambda Function to invoke                 | x                                 |                                |
-| Handler                 | Lambda Function handler to invoke                    | x                                 |                                |
-| Timeout                 | Timeout threshold for Lambda function                | x                                 |                                |
-| Memory                  | Memory provided to Lambda function                   | x                                 |                                |
+| Property                | Description                                                | Used by Standalone Lambda Handler | Used by SAM Template Resources |
+| ----------------------- | ---------------------------------------------------------- | --------------------------------- | ------------------------------ |
+| SAM Template            | Path to SAM Template file                                  |                                   | x                              |
+| SAM Template Resource   | Name of lambda function-based resource within SAM Template |                                   | x                              |
+| SAM Template Parameters | Values to use for SAM Template Parameters                  |                                   | x                              |
+| Environment Variables   | Environment Variables exposed to the Lambda Function       | x                                 | x                              |
+| Input Event             | Payload passed to the invoked Lambda Function              | x                                 | x                              |
+| Runtime                 | Runtime of Lambda Function to invoke                       | x                                 |                                |
+| Handler                 | Lambda Function handler to invoke                          | x                                 |                                |
+| Timeout                 | Timeout threshold for Lambda function                      | x                                 |                                |
+| Memory                  | Memory provided to Lambda function                         | x                                 |                                |
 
 The following SAM CLI related arguments are relevant to debugging both standalone lambda function handlers and sam template resources. For reference see the [sam build](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-build.html) command.
 
@@ -99,7 +99,7 @@ Debug Configurations are the idiomatic approach to running and debugging softwar
 
 The Toolkit implements a Debug Configuration type `aws-sam`. Users can author and maintain these configuration entries, then launch them by pressing F5. When launched, this configuration type:
 
--   validates debug configuration inputs
+-   validates debug configuration inputs (see [Debug Configuration Validations](#debug-configuration-validation))
 -   uses SAM CLI to build a SAM Application
 -   uses SAM CLI to invoke a SAM Template resource
 -   attaches a debugger to the SAM invocation
@@ -306,3 +306,12 @@ The only required fields are: type, request, samTemplate.path, samTemplate.resou
     ]
 }
 ```
+
+### <a id="debug-configuration-validation"></a> Debug Configuration Validations
+
+The following validation checks are performed when running an `aws-sam` Debug Configuration
+
+-   does the referenced SAM template file exist
+-   does the referneced SAM Template resource exist
+-   is the referneced SAM Template resource a supported type (for example, a Lambda function)
+-   is the lambda function runtime supported by the Toolkit
