@@ -48,7 +48,7 @@ Each scenario has one or more relevant user experiences. The different debugging
 
 SAM Template resources of type `AWS::Serverless::Function` represent Lambda functions. Lambda function code referenced by these resources can be locally Run or Debugged. The Toolkit uses SAM CLI to invoke the Lambda function, emulating how the function is run on AWS. A debugger can be attached to the invoked Lambda function code, and the event passed into the Lambda function can be customized.
 
-### SAM Template Resources (API Gateway style Local Invoke)
+### <a id="sam-template-resource-api-gateway"></a> SAM Template Resources (API Gateway style Local Invoke)
 
 SAM Template resources that contain an event of type [Api](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-api.html), can be hosted in a web server for local development and iteration. A REST request triggers the Lambda handler as if it were called by API Gateway, and the Lambda function receives an API Gateway based event.
 
@@ -102,8 +102,9 @@ The Toolkit implements a Debug Configuration type `aws-sam`. Users can author an
 -   validates debug configuration inputs (see [Debug Configuration Validations](#debug-configuration-validation))
 -   uses SAM CLI to build a SAM Application
 -   uses SAM CLI to invoke a SAM Template resource
+-   if the Debug Configuration is for an [API Gateway SAM Template Resource](#sam-template-resource-api-gateway), the configured REST request is sent
 -   attaches a debugger to the SAM invocation
--   if the debug configuration is for a local api gateway invoke, the debugger is detached after the http request is made, but SAM CLI remains active. The debug configuration implementation terminates the SAM CLI session to prevent a proliferation of CLI processes.
+-   if the Debug Configuration is for an [API Gateway SAM Template Resource](#sam-template-resource-api-gateway), the SAM-based http host is terminated to prevent a proliferation of CLI processes
 
 In the most basic form, the debug configuration references a SAM Template file location, and a resource within that file. Other execution parameters can be configured, but are optional.
 
@@ -201,6 +202,11 @@ Here is an outline of the differences between this design and version 1.0.0 of t
 
 -   Changed functionality
     -   CodeLenses on code files invoke the function in isolation, and no longer attempt to associate the function with a SAM Template
+        -   This change may surprise existing users. There is a high likelihood that they will prefer using F5 to debug their SAM Applications instead of searching for the CodeLenses. To mitigate this change, we have the following strategies:
+            -   publicize the change (through a PR of this document)
+            -   ensure the changelog entry suitably explains the impact when the change is made
+            -   update the user docs
+            -   describe behavior explicitly where appropriate ( for example, in tooltips)
     -   CodeLens configurations have a new location and structure
 -   New functionality
     -   `aws-sam` Debug Configurations provide a new way to launch debug sessions against SAM Template resources
