@@ -18,7 +18,7 @@ CodeLenses are visual decorators anchored to a document location. They are used 
 
 #### Debug Configuration
 
-Debug Configurations are JSON entries within the `.vscode/launch.json` file optionally located in the root of each VS Code workspace. These are user managed, and define what programs can be debugged. Presing F5 (or the Debug button) starts a Debugging session for the currently selected Debug Configuration. VS Code extensions increase VS Code's debugging capablities by implementing Debug Configuration types.
+Debug Configurations are JSON entries within the `.vscode/launch.json` file optionally located in the root of each VS Code workspace. These are user managed, and define what programs can be debugged. Pressing F5 (or the Debug button) starts a Debugging session for the currently selected Debug Configuration. VS Code extensions increase VS Code's debugging capablities by implementing Debug Configuration types.
 
 More information about VS Code Debugging can be found [in the VS Code Documentation](https://code.visualstudio.com/docs/editor/debugging).
 
