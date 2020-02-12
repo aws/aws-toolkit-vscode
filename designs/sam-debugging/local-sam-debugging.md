@@ -50,7 +50,9 @@ SAM Template resources of type `AWS::Serverless::Function` represent Lambda func
 
 ### <a id="sam-template-resource-api-gateway"></a> SAM Template Resources (API Gateway style Local Invoke)
 
-SAM Template resources that contain an event of type [Api](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-api.html), can be hosted in a web server for local development and iteration. A REST request triggers the Lambda handler as if it were called by API Gateway, and the Lambda function receives an API Gateway based event.
+SAM Template resources that contain an event of type [Api](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-api.html), can be hosted in a web server for local development and iteration. A REST request causes the Lambda function to receive an API Gateway based event.
+
+At this time, an experience for API Gateway support is not available. Some portions of this document (Debug Configurations for example) have considerations made for supporting API Gateway functionality.
 
 ### Standalone Lambda Function Handlers
 
@@ -102,9 +104,7 @@ The Toolkit implements a Debug Configuration type `aws-sam`. Users can author an
 -   validates debug configuration inputs (see [Debug Configuration Validations](#debug-configuration-validation))
 -   uses SAM CLI to build a SAM Application
 -   uses SAM CLI to invoke a SAM Template resource
--   if the Debug Configuration is for an [API Gateway SAM Template Resource](#sam-template-resource-api-gateway), the configured REST request is sent
 -   attaches a debugger to the SAM invocation (skipped if "Run without Debugging" was used)
--   if the Debug Configuration is for an [API Gateway SAM Template Resource](#sam-template-resource-api-gateway), the SAM-based http host is terminated to prevent a proliferation of CLI processes
 
 In the most basic form, the debug configuration references a SAM Template file location, and a resource within that file. Other execution parameters can be configured, but are optional.
 
@@ -151,31 +151,6 @@ These CodeLenses do not support API Gateway style invokes.
 
 Some users may find CodeLenses within code files distracting, particularly if they are using the Toolkit for features not related to local debugging. Toolkit settings can be used to enable and disable CodeLenses. CodeLenses only appear for languages/runtimes that the Toolkit has implemented Debug support for.
 
-### Graphical User Interface
-
-SAM Template resources invoked by API Gateway can be locally tested with a REST Workbench.
-
-The REST Workbench is accessed with the command "Open Local REST Workbench for SAM Applications", opens a webview document.
-
-In the REST Workbench, users select a SAM Application Template, build and launch the application (with or without debug mode), and proceed to make a series of REST requests against the running application.
-
-![Workbench Start-up](workbench-start.png)
-
-Users start by selecting the SAM Application they would like to work with. A dropdown lists all SAM Template files detected within the workspace. Next, they launch the application (Run or Debug), which builds and launches the local web server host. At this point, the SAM Application can no longer be changed (users can open a new workbench in order to operate against a different SAM Application).
-
-![Workbench Request Iteration](workbench-request.png)
-
-The running instance of the application is used for all REST queries made by the user. Users define REST parameters (endpoint, request type (GET, POST, etc), a query string, and an optional request body), and press Submit. If the application is run in Debug mode, the Toolkit will attach a debugger after sending the request. The following information is sent to the Toolkit's Output Channel with each REST request:
-
--   request
--   response
--   response code
--   SAM CLI output
-
-After making code changes, users can click Restart to rebuild the application and start it again.
-
-Closing a REST Workbench tab closes the invoked SAM Application if one is running.
-
 ## Appendix
 
 ### Differences from v1.0.0 of AWS Toolkit
@@ -195,7 +170,7 @@ Here is an outline of the differences between this design and version 1.0.0 of t
 -   New functionality
     -   `aws-sam` Debug Configurations provide a new way to launch debug sessions against SAM Template resources
     -   CodeLenses on SAM Template files
-    -   API Gateway related debugging (Debug Configuration support and REST Workbench UI)
+    -   API Gateway related debugging (TBD)
 -   Removed functionality
     -   None
 
