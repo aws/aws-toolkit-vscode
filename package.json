@@ -48,7 +48,8 @@
         "onCommand:aws.help",
         "onCommand:aws.github",
         "onView:aws.cdk.explorer",
-        "onCommand:aws.refreshCdkExplorer"
+        "onCommand:aws.refreshCdkExplorer",
+        "onCommand:aws.aboutToolkit"
     ],
     "main": "./extensionMain",
     "contributes": {
@@ -259,6 +260,11 @@
                     "command": "aws.cdk.provideFeedback",
                     "when": "view == aws.cdk.explorer",
                     "group": "z_externalLinks@3"
+                },
+                {
+                    "command": "aws.aboutToolkit",
+                    "when": "view == aws.explorer",
+                    "group": "zz_about@1"
                 }
             ],
             "view/item/context": [
@@ -442,6 +448,11 @@
                     "dark": "third-party/resources/from-vscode-icons/dark/refresh.svg",
                     "light": "third-party/resources/from-vscode-icons/light/refresh.svg"
                 }
+            },
+            {
+                "command": "aws.aboutToolkit",
+                "title": "%AWS.command.aboutToolkit%",
+                "category": "AWS"
             }
         ],
         "jsonValidation": [

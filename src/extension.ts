@@ -28,7 +28,12 @@ import {
 import { DefaultAwsContext } from './shared/defaultAwsContext'
 import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
 import { ext } from './shared/extensionGlobals'
-import { showQuickStartWebview, toastNewUser } from './shared/extensionUtilities'
+import {
+    aboutToolkit,
+    getToolkitEnvironmentDetails,
+    showQuickStartWebview,
+    toastNewUser
+} from './shared/extensionUtilities'
 import { getLogger } from './shared/logger'
 import { activate as activateLogger } from './shared/logger/activation'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
@@ -72,6 +77,9 @@ export async function activate(context: vscode.ExtensionContext) {
         const awsContextTrees = new AwsContextTreeCollection()
         const regionProvider = new DefaultRegionProvider(endpointsProvider)
         const loginManager = new LoginManager(awsContext)
+
+        const toolkitEnvDetails = getToolkitEnvironmentDetails()
+        getLogger().info(toolkitEnvDetails)
 
         await initializeAwsCredentialsStatusBarItem(awsContext, context)
         ext.awsContextCommands = new DefaultAWSContextCommands(
@@ -125,6 +133,10 @@ export async function activate(context: vscode.ExtensionContext) {
             } finally {
                 recordAwsHelpQuickstart()
             }
+        })
+
+        vscode.commands.registerCommand('aws.aboutToolkit', async () => {
+            await aboutToolkit()
         })
 
         await activateCdk({
