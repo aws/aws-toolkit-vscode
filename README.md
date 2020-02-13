@@ -22,7 +22,6 @@ requests or any positive contribution. See [CONTRIBUTING](CONTRIBUTING.md) for h
 We want your feedback!
 
 - Upvote 👍 [feature requests](https://github.com/aws/aws-toolkit-vscode/issues?q=is%3Aissue+is%3Aopen+label%3Afeature-request+sort%3Areactions-%2B1-desc)
-- Ask a question on [Stack Overflow](https://stackoverflow.com/questions/tagged/aws-toolkit)
 - [Request a new feature](./CONTRIBUTING.md#reporting-bugsfeature-requests)
 - [File an issue](https://github.com/aws/aws-toolkit-vscode/issues)
 
