@@ -46,7 +46,7 @@ Each scenario has one or more relevant user experiences. The different debugging
 
 ### <a id="sam-template-resource-local"></a> SAM Template Resources (Local Invoke)
 
-SAM Template resources of type `AWS::Serverless::Function` represent Lambda functions. Lambda function code referenced by these resources can be locally Run or Debugged. The Toolkit uses SAM CLI to invoke the Lambda function, emulating how the function is run on AWS. A debugger can be attached to the invoked Lambda function code, and the event passed into the Lambda function can be customized.
+SAM Template resources of type [`AWS::Serverless::Function`](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html) represent Lambda functions. Lambda function code referenced by these resources can be locally Run or Debugged. The Toolkit uses SAM CLI to invoke the Lambda function, emulating how the function is run on AWS. A debugger can be attached to the invoked Lambda function code, and the event passed into the Lambda function can be customized.
 
 ### <a id="sam-template-resource-api-gateway"></a> SAM Template Resources (API Gateway style Local Invoke)
 
@@ -329,3 +329,4 @@ The following validation checks are performed when running an `aws-sam` Debug Co
 -   does the referneced SAM Template resource exist
 -   is the referneced SAM Template resource a supported type (for example, a Lambda function)
 -   is the lambda function runtime supported by the Toolkit
+-   are there any environment variables do not exist in the SAM Template? (these surface to the user as warnings, and don't stop the debug session)
