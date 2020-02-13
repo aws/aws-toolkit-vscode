@@ -196,17 +196,20 @@ The only required fields are: type, request, samTemplate.path, samTemplate.resou
                     "param1": "somevalue"
                 }
             },
-            // Environment Variables accessible by Lambda handler
-            "environmentVariables": {
-                "envvar1": "somevalue",
-                "envvar2": "..."
-            },
-            // The event passed to the Lambda handler (defaults to an empty JSON object)
-            "event": {
-                // path or json, not both
-                "path": "somepath", // Path to event data
-                "json": {
-                    // event data
+            // Lambda Execution related arguments
+            "lambda": {
+                // Environment Variables accessible by Lambda handler
+                "environmentVariables": {
+                    "envvar1": "somevalue",
+                    "envvar2": "..."
+                },
+                // The event passed to the Lambda handler (defaults to an empty JSON object)
+                "event": {
+                    // path or json, not both
+                    "path": "somepath", // Path to event data
+                    "json": {
+                        // event data
+                    }
                 }
             },
             // SAM CLI related arguments
@@ -245,17 +248,21 @@ The only required fields are: type, request, samTemplate.path, samTemplate.resou
                     "param1": "somevalue"
                 }
             },
-            "environmentVariables": {
-                "envvar1": "somevalue",
-                "envvar2": "..."
-            },
-            // The API call made to the handler once invoked
-            "event": {
-                "api": {
-                    "path": "/bee",
-                    "method": "get",
-                    "query": "aaa=1&bbb=2",
-                    "body": "text - can we do this?"
+            // Lambda Execution related arguments
+            "lambda": {
+                // Environment Variables accessible by Lambda handler
+                "environmentVariables": {
+                    "envvar1": "somevalue",
+                    "envvar2": "..."
+                },
+                // The API call made to the handler once invoked
+                "event": {
+                    "api": {
+                        "path": "/bee",
+                        "method": "get",
+                        "query": "aaa=1&bbb=2",
+                        "body": "text - can we do this?"
+                    }
                 }
             },
             "sam": {
@@ -285,17 +292,22 @@ The configuration file for debugging standalone lambda function handlers is loca
         "src/foo.js": {
             // Keys are function names
             "lambdaHandler": {
-                // Environment Variables accessible by Lambda handler
-                "environmentVariables": {
-                    "envvar1": "somevalue",
-                    "envvar2": "..."
-                },
-                // The event passed to the Lambda handler (defaults to an empty JSON object)
-                "event": {
-                    // path or json, not both
-                    "path": "somepath", // Path to event data
-                    "json": {
-                        // event data
+                // Lambda Execution related arguments
+                "lambda": {
+                    "timeoutSec": 30,
+                    "memoryMb": 128,
+                    // Environment Variables accessible by Lambda handler
+                    "environmentVariables": {
+                        "envvar1": "somevalue",
+                        "envvar2": "..."
+                    },
+                    // The event passed to the Lambda handler (defaults to an empty JSON object)
+                    "event": {
+                        // path or json, not both
+                        "path": "somepath", // Path to event data
+                        "json": {
+                            // event data
+                        }
                     }
                 },
                 // SAM CLI related arguments
