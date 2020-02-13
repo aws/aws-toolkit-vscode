@@ -14,11 +14,13 @@ Each programming language (and corresponding Lambda Runtimes) requires Toolkit s
 
 #### CodeLens
 
-CodeLenses are visual decorators anchored to a document location. They are used to convey information and/or provide links that trigger an action. They are a presentation-only mechanic and do not reside within a file. Additional information and examples about CodeLenses can be found [on the VS Code blog](https://code.visualstudio.com/blogs/2017/02/12/code-lens-roundup).
+CodeLenses are visual decorators anchored to document locations. They are used to convey information and/or provide links that trigger an action. Additional information and examples about CodeLenses can be found [on the VS Code blog](https://code.visualstudio.com/blogs/2017/02/12/code-lens-roundup).
 
 #### Debug Configuration
 
-Debug Configurations are JSON entries within the `.vscode/launch.json` file optionally located in the root of each VS Code workspace. These are user managed, and define what programs can be debugged. Pressing F5 (or the Debug button) starts a Debugging session for the currently selected Debug Configuration. VS Code extensions increase VS Code's debugging capablities by implementing Debug Configuration types.
+Debug Configurations are user-managed JSON entries that define what programs can be debugged. Pressing F5 (or the Debug button) starts a Debug session for the Debug Configuration currently selected in VS Code's Debug View. VS Code extensions increase VS Code's debugging capablities by implementing Debug Configuration types.
+
+Debug Configurations are stored in `.vscode/launch.json` relative to the VS Code workspace.
 
 More information about VS Code Debugging can be found [in the VS Code Documentation](https://code.visualstudio.com/docs/editor/debugging).
 
