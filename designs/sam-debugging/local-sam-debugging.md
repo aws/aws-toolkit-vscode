@@ -56,9 +56,9 @@ SAM Template resources that contain an event of type [Api](https://docs.aws.amaz
 
 At this time, an experience for API Gateway support is not available. Some portions of this document (Debug Configurations for example) have considerations made for supporting API Gateway functionality.
 
-### Standalone Lambda Function Handlers
+### <a id="standalone-lambda"></a> Standalone Lambda Function Handlers
 
-Lambda function handler code can be locally Run or Debugged, even if it does not belong to a SAM Application. The Toolkit produces a temporary SAM Application to contain the handler code. This temporary SAM Application is handled as mentioned [earlier](#sam-template-resource-local). At the end of the debug session, the temporary SAM Application is removed.
+Lambda function handler code can be locally Run or Debugged independent of any SAM Application. This functionality is powered by SAM in order to provide a host to the Lambda hander. The Toolkit produces a temporary SAM Application that references the handler code. This temporary SAM Application is handled as mentioned [earlier](#sam-template-resource-local). At the end of the debug session, the temporary SAM Application is removed.
 
 In this mode, any SAM Templates that reference a handler are ignored. This prevents confusion/errors introduced when trying to perform a reverse-lookup between code and SAM Template resources (examples include incorrectly determining a function's Lambda handler string, or situations where more than one resource references the same function).
 
@@ -99,7 +99,7 @@ The following AWS related arguments are relevant to debugging both standalone la
 
 ### <a id="debug-configurations"></a> Debug Configurations
 
-Debug Configurations are the idiomatic approach to running and debugging software in VS Code. They are also a reusable component - the Toolkit is able to internally produce and execute these configurations on the fly (for example as a part of the [CodeLenses](#codelenses) functionality). This is the Toolkit's main experience for debugging SAM Template resources.
+Debug Configurations are the idiomatic approach to running and debugging software in VS Code. They are also a reusable component - the Toolkit is able to internally produce and execute these configurations on the fly. This is the Toolkit's main experience for debugging SAM Template resources.
 
 The Toolkit implements a Debug Configuration type `aws-sam`. Users can author and maintain these configuration entries, then launch them by pressing F5 (or Ctrl+F5 to Run without Debugging). When launched, this configuration type:
 
@@ -107,10 +107,8 @@ The Toolkit implements a Debug Configuration type `aws-sam`. Users can author an
 -   uses SAM CLI to build a SAM Application
 -   uses SAM CLI to invoke a SAM Template resource
 -   attaches a debugger to the SAM invocation (skipped if "Run without Debugging" was used)
-
-In the most basic form, the debug configuration references a SAM Template file location, and a resource within that file. Other execution parameters can be configured, but are optional.
-
-Debugging local lambda invokes and local api gateway invokes each require slightly different inputs. The `aws-sam` Debug Configuration uses different request types to accommodate these variations.
+    -   if a debugger is attached, debug output is shown in the Debug Console
+-   throughout this process, SAM CLI output is shown in the Toolkit's Output Channel
 
 These debug configurations are authored in a json file. The following Toolkit assistance is provided:
 
@@ -119,9 +117,13 @@ These debug configurations are authored in a json file. The following Toolkit as
 -   snippets to produce typical (or starter) `aws-sam` debug configurations
 -   when no launch.json file is present in a workspace, VS Code exposes functionality that allows users to request auto-generated Debug Configurations. In this situation, the toolkit generates an `aws-sam` Debug Configuration for all `AWS::Serverless::Function` resources detected within all SAM Templates located in the workspace.
 
-Example Debug Configuration entries can be found in the [Appendix](#sample-debug-configurations)
+Debug Configurations support local debugging for both [SAM Template resources](#sam-template-resource-local) and [standalone Lambda handlers](#standalone-lambda). Support for these different features is provided using different `request` field values in an `aws-sam` debug configuration.
 
-Standalone Lambda function handlers are not supported through Debug Configurations.
+SAM Template resources are configured by setting `request` to `template-invoke`. A SAM Template and resource are required. This debug configuration uses the SAM Template as-is to debug as discussed above.
+
+Standalone Lambda handlers are configured by setting `request` to `standalone-lambda`. At a minimum, these configurations need to know what the Lambda handler is, which path is considered the project root, and what the Lambda runtime is. When this configuration is launched, a temporary SAM Template is produced. The template has a resource which references the Lambda handler. This temporary template (and resource) is then handled the same way as `template-invoke` configurations are.
+
+Example Debug Configuration entries can be found in the [Appendix](#sample-debug-configurations).
 
 ### <a id="codelenses"></a> CodeLenses
 
@@ -135,21 +137,11 @@ An additional CodeLens is placed above every template resource of type `AWS::Ser
 
 #### CodeLenses in Code files
 
-CodeLenses in code files provide support for debugging standalone Lambda function handlers.
+CodeLenses in code files assist with debugging standalone Lambda function handlers.
 
-The following CodeLenses appear over any function that appears to be an eligible Lambda handler: Run Locally, Debug Locally, Configure.
+A "Create Debug Configuration" CodeLens appears over functions considered eligible Lambda handlers. Clicking this CodeLens produces a pre-filled `aws-sam` Debug Configuration in `launch.json` capable of locally debugging a [standalone Lambda](#standalone-lambda), and opens `launch.json`.
 
-The Configure CodeLens allows users to customize how the function handler is locally debugged. Configuration is optional, using sensible defaults when necessary. The configurable aspects are listed [above](#debug-config). Each handler is configured separately, and all handler configurations are stored in the workspace at `.aws/lambda-handlers.json` ([file structure](#code-file-codelens-config)). Clicking the Configure CodeLens opens this file, adds a configuration entry for the corresponding handler if necessary, and places the cursor at the handler's entry. Users have autocompletion support in this file. A rich UI for configuration is not considered at this time, but the door remains open to adding a visual editor in the future based on user feedback.
-
-When clicked, the Run and Debug CodeLenses locally invoke their associated Lambda handler function. These Lambda handlers are invoked independently of SAM Templates that exist in the users workspace. The Toolkit performs the following:
-
--   A temporary SAM Template is produced, containing one resource that references the Lambda handler
--   The temporary SAM Application is built. Where applicable, settings are applied from the configurations speficied with the Configure CodeLens.
--   The resource in the temporary SAM Template is invoked. Where applicable, settings are applied from the configurations speficied with the Configure CodeLens.
--   (If the Debug CodeLens was clicked) The VS Code debugger is attached to the invoked resource
--   SAM CLI output is shown in the Toolkit's Output Channel. If a debugger is attached, output is also shown in the Debug Console.
-
-These CodeLenses do not support API Gateway style invokes.
+CodeLenses also appear over functions that match standalone Lambda related Debug Configurations. When clicked, these CodeLenses invoke the associated Debug Configuration as if they were launched from the Debug View of VS Code.
 
 Some users may find CodeLenses within code files distracting, particularly if they are using the Toolkit for features not related to local debugging. Toolkit settings can be used to enable and disable CodeLenses. CodeLenses only appear for languages/runtimes that the Toolkit has implemented Debug support for.
 
@@ -168,13 +160,13 @@ Here is an outline of the differences between this design and version 1.0.0 of t
             -   ensure the changelog entry suitably explains the impact when the change is made
             -   update the user docs
             -   describe behavior explicitly where appropriate ( for example, in tooltips)
-    -   CodeLens configurations have a new location and structure
+            -   for the first month after the functional change, the toolkit could surface a "New!" CodeLens in this area, explaining the difference in brief
 -   New functionality
     -   `aws-sam` Debug Configurations provide a new way to launch debug sessions against SAM Template resources
     -   CodeLenses on SAM Template files
     -   API Gateway related debugging (TBD)
 -   Removed functionality
-    -   None
+    -   CodeLenses are now pointers to Debug Configurations, and do not directly launch debug sessions on their own. The configuration files that were used by the old functionality are no longer relevant/used
 
 ### <a id="sample-debug-configurations"></a> Sample Debug Configurations
 
@@ -281,57 +273,55 @@ The only required fields are: type, request, samTemplate.path, samTemplate.resou
 }
 ```
 
-### <a id="code-file-codelens-config"></a> Sample Code file CodeLens Configuration
-
-The configuration file for debugging standalone lambda function handlers is located in the workspace at `.aws/lambda-handlers.json`. Here is a sample configuration file.
+Here is an example Debug Configuration to debug a standalone Lambda handler.
+The variation is defined by the `request` field. The differences compared to the "template-invoke" variant are the `lambdaEntry` object, and an extended `lambda` structure.
+The only required fields are: type, request, lambdaEntry, lambda.runtime
 
 ```jsonc
 {
-    "configurations": {
-        // Keys are code file paths relative to workspace
-        "src/foo.js": {
-            // Keys are function names
-            "lambdaHandler": {
-                // Lambda Execution related arguments
-                "lambda": {
-                    "timeoutSec": 30,
-                    "memoryMb": 128,
-                    // Environment Variables accessible by Lambda handler
-                    "environmentVariables": {
-                        "envvar1": "somevalue",
-                        "envvar2": "..."
-                    },
-                    // The event passed to the Lambda handler (defaults to an empty JSON object)
-                    "event": {
-                        // path or json, not both
-                        "path": "somepath", // Path to event data
-                        "json": {
-                            // event data
-                        }
+    "configurations": [
+        {
+            "name": "Debug HelloWorldResource",
+            "type": "aws-sam",
+            "request": "standalone-lambda", // This is the "aws-sam" variation for debugging standalone Lambda handlers
+            "lambdaEntry": {
+                "projectRoot": "path to folder", // The top level folder to run the Lambda handler in (this affects the lambdaHandler field in runtimes like node and python).
+                "lambdaHandler": "HelloWorld::HelloWorld.Function::FunctionHandler" // nodeJs example: app.lambdaHandler
+            },
+            // Lambda Execution related arguments
+            "lambda": {
+                "runtime": "someruntime",
+                "timeoutSec": 30,
+                "memoryMb": 128,
+                // Environment Variables accessible by Lambda handler
+                "environmentVariables": {
+                    "envvar1": "somevalue",
+                    "envvar2": "..."
+                },
+                // The event passed to the Lambda handler (defaults to an empty JSON object)
+                "event": {
+                    // path or json, not both
+                    "path": "somepath", // Path to event data
+                    "json": {
+                        // event data
                     }
-                },
-                // SAM CLI related arguments
-                "sam": {
-                    "containerBuild": false,
-                    "skipNewImageCheck": false,
-                    "dockerNetwork": "aaaaa",
-                    "buildArguments": "--foo",
-                    "localArguments": "--foo"
-                },
-                // AWS related arguments
-                "aws": {
-                    "credentials": "profile:default",
-                    "region": "us-west-2"
                 }
             },
-            "handler2": {
-                // and so on...
+            // SAM CLI related arguments
+            "sam": {
+                "containerBuild": false,
+                "skipNewImageCheck": false,
+                "dockerNetwork": "aaaaa",
+                "buildArguments": "--foo",
+                "localArguments": "--foo"
+            },
+            // AWS related arguments
+            "aws": {
+                "credentials": "profile:default",
+                "region": "us-west-2"
             }
-        },
-        "src/processors.js": {
-            // and so on...
         }
-    }
+    ]
 }
 ```
 
