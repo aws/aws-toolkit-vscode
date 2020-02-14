@@ -129,7 +129,7 @@ Example Debug Configuration entries can be found in the [Appendix](#sample-debug
 
 #### CodeLenses in SAM Template files
 
-CodeLenses are added to SAM Template files that serve as shortcuts to any [debug configurations](#debug-configurations) defined in the workspace.
+CodeLenses are added to SAM Template files that serve as shortcuts to `template-invoke` [debug configurations](#debug-configurations) defined in the workspace.
 
 Every Debug Configuration that references a SAM Template and resource pairing will produce a CodeLens above that resource. When clicked, these CodeLenses launch the corresponding debug session, as if the user selected that debug configuration and pressed Debug from VS Code's Debug view.
 
@@ -141,7 +141,7 @@ CodeLenses in code files assist with debugging standalone Lambda function handle
 
 A "Create Debug Configuration" CodeLens appears over functions considered eligible Lambda handlers. Clicking this CodeLens produces a pre-filled `aws-sam` Debug Configuration in `launch.json` capable of locally debugging a [standalone Lambda](#standalone-lambda), and opens `launch.json`.
 
-CodeLenses also appear over functions that match standalone Lambda related Debug Configurations. When clicked, these CodeLenses invoke the associated Debug Configuration as if they were launched from the Debug View of VS Code.
+CodeLenses also appear over functions that match `standalone-lambda` Debug Configurations. When clicked, these CodeLenses invoke the associated Debug Configuration as if they were launched from the Debug View of VS Code.
 
 Some users may find CodeLenses within code files distracting, particularly if they are using the Toolkit for features not related to local debugging. Toolkit settings can be used to enable and disable CodeLenses. CodeLenses only appear for languages/runtimes that the Toolkit has implemented Debug support for.
 
