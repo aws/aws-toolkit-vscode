@@ -26,7 +26,6 @@ import com.intellij.openapi.util.Key
 import com.intellij.openapi.wm.ToolWindowId
 import com.intellij.openapi.wm.ToolWindowManager
 import org.slf4j.event.Level
-import software.amazon.awssdk.services.toolkittelemetry.model.Unit as MetricUnit
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
@@ -44,22 +43,17 @@ import software.aws.toolkits.jetbrains.services.ecs.EcsClusterNode
 import software.aws.toolkits.jetbrains.services.ecs.EcsServiceNode
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources.describeService
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources.listServiceArns
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.CLOUDDEBUG_TELEMETRY_PREFIX
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.CLOUDDEBUG_VERSION
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.RESULT
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.TelemetryResult
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
-import java.time.Duration
+import software.aws.toolkits.telemetry.Result
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicReference
 
 // TODO refactor this whole file
 abstract class PseCliAction(val project: Project, val actionName: String, private val successMessage: String, private val failureMessage: String) {
-    protected abstract val metricName: String
     abstract fun buildCommandLine(cmd: GeneralCommandLine)
+    protected abstract fun produceTelemetry(startTime: Instant, result: Result, version: String?)
 
     fun runAction(selectedNode: AbstractTreeNode<*>? = null, callback: ((Boolean) -> Unit)? = null) {
         ProgressManager.getInstance().run(
@@ -103,7 +97,7 @@ abstract class PseCliAction(val project: Project, val actionName: String, privat
                                 ?: message("general.unknown_error")
                             val errorMessage = message("cloud_debug.step.clouddebug.install.fail", error)
                             notifyError(message("aws.notification.title"), errorMessage, project)
-                            produceTelemetry(startTime, TelemetryResult.Failed.name, null)
+                            produceTelemetry(startTime, Result.FAILED, null)
                             messageEmitter.finishExceptionally(Exception(errorMessage))
                             null
                         }
@@ -193,28 +187,10 @@ abstract class PseCliAction(val project: Project, val actionName: String, privat
                         }
                     }
 
-                    val result = if (exit == 0) {
-                        TelemetryResult.Succeeded.name
-                    } else {
-                        TelemetryResult.Failed.name
-                    }
+                    val result = if (exit == 0) Result.SUCCEEDED else Result.FAILED
                     produceTelemetry(startTime, result, clouddebug.version)
                 }
             }
         )
-    }
-
-    private fun produceTelemetry(startTime: Instant, result: String, version: String?) {
-        TelemetryService.getInstance().record(project) {
-            datum("${CLOUDDEBUG_TELEMETRY_PREFIX}_$metricName") {
-                createTime(startTime)
-                if (version != null) {
-                    metadata(CLOUDDEBUG_VERSION, version)
-                }
-                metadata(RESULT, result)
-                unit(MetricUnit.MILLISECONDS)
-                value(Duration.between(startTime, Instant.now()).toMillis().toDouble())
-            }
-        }
     }
 }

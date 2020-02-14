@@ -14,6 +14,10 @@ import software.aws.toolkits.jetbrains.services.clouddebug.execution.ParallelSte
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.Step
 import software.aws.toolkits.jetbrains.services.ecs.execution.EcsServiceCloudDebuggingRunSettings
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.ClouddebugTelemetry
+import software.aws.toolkits.telemetry.Result
+import java.time.Duration
+import java.time.Instant
 
 class SetUpPortForwarding(private val settings: EcsServiceCloudDebuggingRunSettings, private val enable: Boolean = true) : ParallelStep() {
     override val stepName = if (enable) {
@@ -84,7 +88,6 @@ class PortForwarder(
     private val remotePort: Int,
     private val enable: Boolean
 ) : CliBasedStep() {
-    override val metricName = "portForward"
     // Convert ports to strings first, else it formats 8080 as 8,080
     override val stepName = message(
         "cloud_debug.step.port_forward.resource",
@@ -110,5 +113,15 @@ class PortForwarder(
             .withParameters(if (enable) "enable" else "disable")
             .withEnvironment(settings.region.toEnvironmentVariables())
             .withEnvironment(settings.credentialProvider.resolveCredentials().toEnvironmentVariables())
+    }
+
+    override fun recordTelemetry(context: Context, startTime: Instant, result: Result) {
+        ClouddebugTelemetry.portForward(
+            context.project,
+            result,
+            workflowtoken = context.workflowToken,
+            value = Duration.between(startTime, Instant.now()).toMillis().toDouble(),
+            createTime = startTime
+            )
     }
 }

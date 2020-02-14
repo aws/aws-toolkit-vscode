@@ -12,9 +12,9 @@ import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerService
 import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.TelemetryResult
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.Result
+import software.aws.toolkits.telemetry.S3Telemetry
 import java.awt.Component
 import javax.swing.JComponent
 
@@ -40,7 +40,7 @@ class CreateS3BucketDialog(
     override fun doValidate(): ValidationInfo? = validateBucketName()?.let { ValidationInfo(it, view.bucketName) }
 
     override fun doCancelAction() {
-        TelemetryService.recordSimpleTelemetry(project, TELEMETRY_NAME, TelemetryResult.Cancelled)
+        S3Telemetry.createBucket(project, Result.CANCELLED)
         super.doCancelAction()
     }
 
@@ -56,12 +56,12 @@ class CreateS3BucketDialog(
                         close(OK_EXIT_CODE)
                     }, ModalityState.stateForComponent(view.component))
                     AwsExplorerService.refreshAwsTree(project, S3Resources.LIST_BUCKETS)
-                    TelemetryService.recordSimpleTelemetry(project, TELEMETRY_NAME, TelemetryResult.Succeeded)
+                    S3Telemetry.createBucket(project, Result.SUCCEEDED)
                 } catch (e: Exception) {
                     setErrorText(e.message)
                     setOKButtonText(message("s3.create.bucket.create"))
                     isOKActionEnabled = true
-                    TelemetryService.recordSimpleTelemetry(project, TELEMETRY_NAME, TelemetryResult.Failed)
+                    S3Telemetry.createBucket(project, Result.FAILED)
                 }
             }
         }
@@ -76,8 +76,4 @@ class CreateS3BucketDialog(
 
     @TestOnly
     fun validateBucketName(): String? = if (bucketName().isEmpty()) message("s3.create.bucket.missing.bucket.name") else null
-
-    companion object {
-        private const val TELEMETRY_NAME = "s3_createbucket"
-    }
 }

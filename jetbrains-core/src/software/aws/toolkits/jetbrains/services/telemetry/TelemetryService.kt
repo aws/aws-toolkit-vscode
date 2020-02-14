@@ -8,7 +8,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
 import com.intellij.util.messages.Topic
-import software.amazon.awssdk.services.toolkittelemetry.model.Unit
+import software.amazon.awssdk.services.toolkittelemetry.model.Unit.MILLISECONDS
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADATA_NA
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADATA_NOT_SET
@@ -17,7 +17,6 @@ import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryBatcher
 import software.aws.toolkits.jetbrains.core.credentials.activeAwsAccount
 import software.aws.toolkits.jetbrains.core.credentials.activeRegion
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.TelemetryResult
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import java.time.Duration
 import java.time.Instant
@@ -30,9 +29,9 @@ interface TelemetryService : Disposable {
         val awsRegion: String = METADATA_NA
     )
 
-    fun record(metricEventMetadata: MetricEventMetadata, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}): MetricEvent
+    fun record(metricEventMetadata: MetricEventMetadata, buildEvent: MetricEvent.Builder.() -> Unit = {}): MetricEvent
 
-    fun record(project: Project?, buildEvent: MetricEvent.Builder.() -> kotlin.Unit = {}): CompletableFuture<MetricEvent> {
+    fun record(project: Project?, buildEvent: MetricEvent.Builder.() -> Unit = {}): CompletableFuture<MetricEvent> {
         val metricEvent = CompletableFuture<MetricEvent>()
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
@@ -60,33 +59,6 @@ interface TelemetryService : Disposable {
             ApplicationManager.getApplication().messageBus.connect().subscribe(TELEMETRY_TOPIC, notifier)
         }
 
-        @JvmStatic
-        fun recordSimpleTelemetry(project: Project?, name: String) =
-            getInstance().record(project) {
-                datum(name)
-            }
-
-        @JvmStatic
-        fun recordSimpleTelemetry(project: Project?, name: String, success: Boolean = true, count: Double = 1.0) =
-            getInstance().record(project) {
-                datum(name) {
-                    count(count)
-                    metadata(
-                        TelemetryConstants.RESULT,
-                        if (success) TelemetryResult.Succeeded.name else TelemetryResult.Failed.name
-                    )
-                }
-            }
-
-        @JvmStatic
-        fun recordSimpleTelemetry(project: Project?, name: String, result: TelemetryResult, count: Double = 1.0) =
-            getInstance().record(project) {
-                datum(name) {
-                    count(count)
-                    metadata(TelemetryConstants.RESULT, result.name)
-                }
-            }
-
         private val TELEMETRY_TOPIC: Topic<TelemetryEnabledChangedNotifier> = Topic.create(
             "TELEMETRY_ENABLED_TOPIC",
             TelemetryEnabledChangedNotifier::class.java
@@ -113,7 +85,10 @@ class DefaultTelemetryService(settings: AwsSettings) :
         TelemetryService.subscribe(this)
         TelemetryService.syncPublisher().notify(settings.isTelemetryEnabled)
 
-        record("ToolkitStart").also {
+        // TODO this startup stuff should be moved to a global startup task instead of in the constructor FIX_WHEN_MIN_IS_193
+        // The auto generated telemetry cannot be used here. It tries to get the instance while
+        // constructing it which causes a circular dependency issue.
+        record("session_start").also {
             startTime = it.createTime
         }
     }
@@ -127,12 +102,13 @@ class DefaultTelemetryService(settings: AwsSettings) :
             return
         }
 
+        // Here we cannot use the auto generated telemetry because we would get the while we are are disposing the instance.
         val endTime = Instant.now()
         record {
             createTime(endTime)
-            datum("ToolkitEnd") {
+            datum("session_end") {
                 value(Duration.between(startTime, endTime).toMillis().toDouble())
-                unit(Unit.MILLISECONDS)
+                unit(MILLISECONDS)
             }
         }
 
@@ -141,7 +117,7 @@ class DefaultTelemetryService(settings: AwsSettings) :
 
     override fun record(
         metricEventMetadata: TelemetryService.MetricEventMetadata,
-        buildEvent: MetricEvent.Builder.() -> kotlin.Unit
+        buildEvent: MetricEvent.Builder.() -> Unit
     ): MetricEvent {
         val builder = DefaultMetricEvent.builder()
         buildEvent(builder)
@@ -152,7 +128,7 @@ class DefaultTelemetryService(settings: AwsSettings) :
         return event
     }
 
-    private fun record(event: MetricEvent.Builder.() -> kotlin.Unit): MetricEvent = record(TelemetryService.MetricEventMetadata(), event)
+    private fun record(event: MetricEvent.Builder.() -> Unit): MetricEvent = record(TelemetryService.MetricEventMetadata(), event)
 
     private fun record(metricName: String): MetricEvent = record(TelemetryService.MetricEventMetadata()) {
         this.datum(metricName)

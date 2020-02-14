@@ -6,10 +6,10 @@ package software.aws.toolkits.jetbrains.services.clouddebug.actions
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import software.aws.toolkits.jetbrains.core.help.HelpIds
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.settings.CloudDebugSettings
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.ClouddebugTelemetry
+import software.aws.toolkits.telemetry.Result
 import java.awt.GridBagLayout
 import javax.swing.JCheckBox
 import javax.swing.JComponent
@@ -44,7 +44,6 @@ class ConfirmNonProductionDialogWrapper(private val project: Project, serviceNam
     private val view = ConfirmNonProductionDialog(serviceName)
     private val doNotShowAgain = JCheckBox(message("notice.suppress"))
     private val settings = CloudDebugSettings.getInstance()
-    private val telemetry = TelemetryService.getInstance()
 
     init {
         init()
@@ -59,7 +58,7 @@ class ConfirmNonProductionDialogWrapper(private val project: Project, serviceNam
     override fun createSouthAdditionalPanel() = JPanel(GridBagLayout()).apply { add(doNotShowAgain) }
 
     override fun doOKAction() {
-        recordTelemetry(TelemetryConstants.TelemetryResult.Succeeded)
+        ClouddebugTelemetry.confirmNotProduction(project, Result.SUCCEEDED)
         if (doNotShowAgain.isSelected) {
             settings.showEnableDebugWarning = false
         }
@@ -67,16 +66,7 @@ class ConfirmNonProductionDialogWrapper(private val project: Project, serviceNam
     }
 
     override fun doCancelAction() {
-        recordTelemetry(TelemetryConstants.TelemetryResult.Cancelled)
+        ClouddebugTelemetry.confirmNotProduction(project, Result.CANCELLED)
         super.doCancelAction()
-    }
-
-    private fun recordTelemetry(result: TelemetryConstants.TelemetryResult) {
-        telemetry.record(project) {
-            datum("${TelemetryConstants.CLOUDDEBUG_TELEMETRY_PREFIX}_confirmation") {
-                metadata(TelemetryConstants.RESULT, result.name)
-                count()
-            }
-        }
     }
 }

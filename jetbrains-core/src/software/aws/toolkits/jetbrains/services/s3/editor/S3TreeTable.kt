@@ -20,10 +20,10 @@ import kotlinx.coroutines.launch
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.services.s3.objectActions.deleteSelectedObjects
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.Result
+import software.aws.toolkits.telemetry.S3Telemetry
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.UnsupportedFlavorException
 import java.awt.dnd.DnDConstants
@@ -154,7 +154,7 @@ class S3TreeTable(
                             content = message("s3.upload.directory.impossible", it.name),
                             project = project
                         )
-                        TelemetryService.recordSimpleTelemetry(project, SINGLE_OBJECT, TelemetryConstants.TelemetryResult.Failed)
+                        S3Telemetry.uploadObject(project, Result.FAILED)
                         return@forEach
                     }
 
@@ -162,21 +162,16 @@ class S3TreeTable(
                         bucket.upload(project, it.inputStream, it.length, node.getDirectoryKey() + it.name)
                         invalidateLevel(node)
                         refresh()
-                        TelemetryService.recordSimpleTelemetry(
-                            project,
-                            ALL_OBJECTS,
-                            TelemetryConstants.TelemetryResult.Succeeded,
-                            selectedFiles.size.toDouble()
-                        )
+                        S3Telemetry.uploadObject(project, Result.SUCCEEDED)
                     } catch (e: Exception) {
                         e.notifyError(message("s3.upload.object.failed", it.path), project)
-                        TelemetryService.recordSimpleTelemetry(project, SINGLE_OBJECT, TelemetryConstants.TelemetryResult.Failed)
+                        S3Telemetry.uploadObject(project, Result.FAILED)
                         throw e
                     }
                 }
-                TelemetryService.recordSimpleTelemetry(project, ALL_OBJECTS, TelemetryConstants.TelemetryResult.Succeeded, selectedFiles.size.toDouble())
+                S3Telemetry.uploadObjects(project, Result.SUCCEEDED, selectedFiles.size.toDouble())
             } catch (e: Exception) {
-                TelemetryService.recordSimpleTelemetry(project, ALL_OBJECTS, TelemetryConstants.TelemetryResult.Failed, selectedFiles.size.toDouble())
+                S3Telemetry.uploadObjects(project, Result.FAILED, selectedFiles.size.toDouble())
             }
         }
     }
@@ -206,7 +201,5 @@ class S3TreeTable(
 
     companion object {
         private val LOG = getLogger<S3TreeTable>()
-        private const val SINGLE_OBJECT = "s3_uploadobject"
-        private const val ALL_OBJECTS = "s3_uploadobjects"
     }
 }

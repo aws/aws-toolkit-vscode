@@ -18,8 +18,8 @@ import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.LocalFileSystem
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.profiles.ProfileFileLocation
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.AwsTelemetry
 import java.io.File
 
 class CreateOrUpdateCredentialProfilesAction @TestOnly constructor(
@@ -68,10 +68,10 @@ class CreateOrUpdateCredentialProfilesAction @TestOnly constructor(
                 }
 
                 if (fileEditorManager.openTextEditor(OpenFileDescriptor(project, it), true) == null) {
-                    TelemetryService.recordSimpleTelemetry(project, "aws_config_edit", false)
+                    AwsTelemetry.openCredentials(project, success = false)
                     throw RuntimeException(message("credentials.could_not_open", it))
                 }
-                TelemetryService.recordSimpleTelemetry(project, "aws_config_edit", true)
+                AwsTelemetry.openCredentials(project, success = true)
             }
         }
     }

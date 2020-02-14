@@ -20,10 +20,10 @@ import software.aws.toolkits.jetbrains.services.clouddebug.execution.Context
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.MessageEmitter
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.steps.CloudDebugCliValidate
 import software.aws.toolkits.jetbrains.services.clouddebug.resources.CloudDebuggingResources
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.utils.ZipDecompressor
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.ClouddebugTelemetry
+import software.aws.toolkits.telemetry.Result
 import java.net.URL
 import java.nio.file.Files
 import java.time.Duration
@@ -139,20 +139,22 @@ object CloudDebugResolver {
                 it.extract(directory)
             }
             emitInstallMetric(
-                TelemetryConstants.TelemetryResult.Succeeded,
+                Result.SUCCEEDED,
                 project,
                 startTime,
                 manifest.version,
                 oldVersion
             )
         } catch (e: Exception) {
-            emitInstallMetric(TelemetryConstants.TelemetryResult.Failed, project, startTime, null, oldVersion)
+            emitInstallMetric(Result.FAILED, project, startTime, null, oldVersion)
             throw e
         }
     }
 
     private fun generateCloudDebugManifestUrl(suffix: String): String {
-        if (!SystemInfo.is64Bit) { throw RuntimeException("Cloud Debugging requires a 64-bit OS") }
+        if (!SystemInfo.is64Bit) {
+            throw RuntimeException("Cloud Debugging requires a 64-bit OS")
+        }
         val os = when {
             SystemInfo.isWindows -> "windows_amd64"
             SystemInfo.isMac -> "darwin_amd64"
@@ -194,25 +196,20 @@ object CloudDebugResolver {
     )
 
     private fun emitInstallMetric(
-        result: TelemetryConstants.TelemetryResult,
+        result: Result,
         project: Project,
         startTime: Instant,
         newVersion: String?,
         oldVersion: String?
     ) {
-        TelemetryService.getInstance().record(project) {
-            datum("${TelemetryConstants.CLOUDDEBUG_TELEMETRY_PREFIX}_install") {
-                createTime(startTime)
-                if (oldVersion != null) {
-                    metadata(TelemetryConstants.CLOUDDEBUG_VERSION, oldVersion.toString())
-                }
-                if (newVersion != null) {
-                    metadata(TelemetryConstants.CLOUDDEBUG_NEWVERSION, newVersion.toString())
-                }
-                metadata(TelemetryConstants.RESULT, result.name)
-                value(Duration.between(startTime, Instant.now()).toMillis().toDouble())
-            }
-        }
+        ClouddebugTelemetry.install(
+            project,
+            version = newVersion.toString(),
+            oldversion = oldVersion.toString(),
+            result = result,
+            value = Duration.between(startTime, Instant.now()).toMillis().toDouble(),
+            createTime = startTime
+        )
     }
 
     data class CloudDebugManifest(

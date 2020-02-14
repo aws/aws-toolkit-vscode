@@ -15,10 +15,9 @@ import kotlinx.coroutines.launch
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.TelemetryResult
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.S3Telemetry
 import java.io.OutputStream
 import java.nio.file.Paths
 
@@ -57,21 +56,17 @@ class DownloadObjectAction(private val project: Project, treeTable: S3TreeTable)
                 files.forEach { (key, output) ->
                     try {
                         bucket.download(project, key, output)
-                        TelemetryService.recordSimpleTelemetry(project, SINGLE_OBJECT, TelemetryResult.Succeeded)
+                        S3Telemetry.downloadObject(project, success = true)
                     } catch (e: Exception) {
                         e.notifyError(message("s3.download.object.failed", key))
-                        TelemetryService.recordSimpleTelemetry(project, SINGLE_OBJECT, TelemetryResult.Failed)
+                        S3Telemetry.downloadObject(project, success = false)
                         throw e
                     }
                 }
+                S3Telemetry.downloadObjects(project, success = true, value = treeTable.selectedRows.size.toDouble())
             } catch (e: Exception) {
-                TelemetryService.recordSimpleTelemetry(project, ALL_OBJECTS, TelemetryResult.Failed, treeTable.selectedRows.size.toDouble())
+                S3Telemetry.downloadObjects(project, success = true, value = treeTable.selectedRows.size.toDouble())
             }
         }
-    }
-
-    companion object {
-        private const val SINGLE_OBJECT = "s3_downloadobject"
-        private const val ALL_OBJECTS = "s3_downloadobjects"
     }
 }

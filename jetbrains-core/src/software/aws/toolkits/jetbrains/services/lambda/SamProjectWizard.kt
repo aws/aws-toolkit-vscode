@@ -25,12 +25,13 @@ import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
 import software.aws.toolkits.jetbrains.services.schemas.SchemaTemplateParameters
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources.AWS_EVENTS_REGISTRY
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.ui.wizard.AwsModuleType
 import software.aws.toolkits.jetbrains.ui.wizard.SamInitRunner
 import software.aws.toolkits.jetbrains.ui.wizard.SamProjectGenerator
 import software.aws.toolkits.jetbrains.ui.wizard.SchemaSelectionPanel
 import software.aws.toolkits.jetbrains.ui.wizard.SdkSelectionPanel
+import software.aws.toolkits.telemetry.SamTelemetry
+import software.aws.toolkits.telemetry.Runtime as TelemetryRuntime
 
 /**
  * Used to manage SAM project information for different [RuntimeGroup]s
@@ -140,28 +141,22 @@ abstract class SamProjectTemplate {
     fun getIcon() = AwsIcons.Resources.SERVERLESS_APP
 
     fun build(project: Project?, runtime: Runtime, schemaParameters: SchemaTemplateParameters?, outputDir: VirtualFile) {
-        var hasException = false
+        var success = true
         try {
             doBuild(runtime, schemaParameters, outputDir)
         } catch (e: Throwable) {
-            hasException = true
+            success = false
             throw e
         } finally {
-            TelemetryService.getInstance().record(project) {
-                datum("SAM.Init") {
-                    metadata("name", getName())
-                    metadata("runtime", runtime.name)
-                    metadata("samVersion", SamCommon.getVersionString())
-                    metadata("hasException", hasException)
-                    metadata("hasSchema", schemaParameters != null)
-                    metadata("template", this.javaClass.simpleName)
-                    schemaParameters?.let {
-                        if (it.schema.registryName == AWS_EVENTS_REGISTRY) {
-                            metadata("awsSchema", it.schema.name)
-                        }
-                    }
-                }
-            }
+            SamTelemetry.init(
+                project,
+                name = getName(),
+                success = success,
+                runtime = TelemetryRuntime.from(runtime.toString()),
+                version = SamCommon.getVersionString(),
+                templatename = this.javaClass.simpleName,
+                eventbridgeschema = if (schemaParameters?.schema?.registryName == AWS_EVENTS_REGISTRY) schemaParameters.schema.name else null
+            )
         }
     }
 

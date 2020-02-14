@@ -10,10 +10,10 @@ import kotlinx.coroutines.launch
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.TelemetryResult
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.Result
+import software.aws.toolkits.telemetry.S3Telemetry
 
 class RenameObjectAction(private val project: Project, treeTable: S3TreeTable) : SingleS3ObjectAction(treeTable, message("s3.rename.object.action")) {
 
@@ -34,23 +34,19 @@ class RenameObjectAction(private val project: Project, treeTable: S3TreeTable) :
             }
         )
         if (newName == null) {
-            TelemetryService.recordSimpleTelemetry(project, TELEMETRY_NAME, TelemetryResult.Cancelled)
+            S3Telemetry.renameObject(project, Result.CANCELLED)
         } else {
             GlobalScope.launch {
                 try {
                     treeTable.bucket.renameObject(node.key, "${node.parent?.key}$newName")
                     treeTable.invalidateLevel(node)
                     treeTable.refresh()
-                    TelemetryService.recordSimpleTelemetry(project, TELEMETRY_NAME, TelemetryResult.Succeeded)
+                    S3Telemetry.renameObject(project, Result.SUCCEEDED)
                 } catch (e: Exception) {
                     e.notifyError(message("s3.rename.object.failed"))
-                    TelemetryService.recordSimpleTelemetry(project, TELEMETRY_NAME, TelemetryResult.Failed)
+                    S3Telemetry.renameObject(project, Result.FAILED)
                 }
             }
         }
-    }
-
-    companion object {
-        private const val TELEMETRY_NAME = "s3_renameObject"
     }
 }

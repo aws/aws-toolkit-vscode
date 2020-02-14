@@ -12,6 +12,10 @@ import software.aws.toolkits.jetbrains.services.clouddebug.execution.ParallelSte
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.Step
 import software.aws.toolkits.jetbrains.services.ecs.execution.EcsServiceCloudDebuggingRunSettings
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.ClouddebugTelemetry
+import software.aws.toolkits.telemetry.Result
+import java.time.Duration
+import java.time.Instant
 
 class CopyArtifactsStep(private val settings: EcsServiceCloudDebuggingRunSettings) : ParallelStep() {
     override val stepName = message("cloud_debug.step.sync")
@@ -48,7 +52,6 @@ class CopyArtifactsStep(private val settings: EcsServiceCloudDebuggingRunSetting
 }
 
 class ResourceTransferStep(private val localPath: String, private val remotePath: String, private val containerName: String) : CliBasedStep() {
-    override val metricName = "copy"
     override val stepName = message("cloud_debug.step.copy_folder", localPath)
 
     override fun constructCommandLine(context: Context, commandLine: GeneralCommandLine) {
@@ -61,5 +64,14 @@ class ResourceTransferStep(private val localPath: String, private val remotePath
             .withParameters(localPath)
             .withParameters("--dest")
             .withParameters("remote://${ResourceInstrumenter.getTargetForContainer(context, containerName)}://$containerName://$remotePath")
+    }
+
+    override fun recordTelemetry(context: Context, startTime: Instant, result: Result) {
+        ClouddebugTelemetry.copy(
+            context.project,
+            result = result,
+            workflowtoken = context.workflowToken,
+            value = Duration.between(startTime, Instant.now()).toMillis().toDouble()
+        )
     }
 }

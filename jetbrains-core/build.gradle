@@ -1,7 +1,19 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+import software.aws.toolkits.telemetry.generator.gradle.GenerateTelemetry
+
 apply plugin: 'org.jetbrains.intellij'
+
+buildscript {
+    repositories {
+        mavenCentral()
+        maven { setUrl("https://jitpack.io") }
+    }
+    dependencies {
+        classpath("software.aws.toolkits:telemetry-generator:0.0.16")
+    }
+}
 
 intellij {
     def rootIntelliJTask = rootProject.intellij
@@ -19,6 +31,16 @@ patchPluginXml {
 
 configurations {
     testArtifacts
+}
+
+task generateTelemetry(type: GenerateTelemetry) {
+    inputFiles = []
+    outputDirectory = file("${project.buildDir}/generated-src")
+}
+compileKotlin.dependsOn(generateTelemetry)
+
+sourceSets {
+    main.kotlin.srcDirs += "${project.buildDir}/generated-src"
 }
 
 test {

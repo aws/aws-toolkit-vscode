@@ -17,7 +17,6 @@ import icons.TerminalIcons
 import org.jetbrains.plugins.terminal.LocalTerminalDirectRunner
 import org.jetbrains.plugins.terminal.TerminalTabState
 import org.jetbrains.plugins.terminal.TerminalView
-import software.amazon.awssdk.services.toolkittelemetry.model.Unit
 import software.aws.toolkits.jetbrains.core.credentials.activeCredentialProvider
 import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
@@ -32,13 +31,10 @@ import software.aws.toolkits.jetbrains.services.clouddebug.InstrumentResponse
 import software.aws.toolkits.jetbrains.services.clouddebug.resources.CloudDebuggingResources
 import software.aws.toolkits.jetbrains.services.ecs.ContainerDetails
 import software.aws.toolkits.jetbrains.services.ecs.EcsUtils
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.CLOUDDEBUG_TELEMETRY_PREFIX
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.CLOUDDEBUG_VERSION
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.RESULT
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.ClouddebugTelemetry
+import software.aws.toolkits.telemetry.Result
 import java.time.Duration
 import java.time.Instant
 
@@ -120,25 +116,22 @@ class StartRemoteShellAction(private val project: Project, private val container
                 }
 
                 override fun onSuccess() {
-                    recordTelemetry(TelemetryConstants.TelemetryResult.Succeeded.name)
+                    recordTelemetry(Result.SUCCEEDED)
                 }
 
                 override fun onThrowable(error: Throwable) {
-                    recordTelemetry(TelemetryConstants.TelemetryResult.Failed.name)
+                    recordTelemetry(Result.FAILED)
                 }
 
-                private fun recordTelemetry(result: String) {
-                    TelemetryService.getInstance().record(project) {
-                        datum("${CLOUDDEBUG_TELEMETRY_PREFIX}_shell") {
-                            createTime(startTime)
-                            (cloudDebugExecutable as? ExecutableInstance.Executable)?.version?.let {
-                                metadata(CLOUDDEBUG_VERSION, it)
-                            }
-                            metadata(RESULT, result)
-                            unit(Unit.MILLISECONDS)
-                            value(Duration.between(startTime, Instant.now()).toMillis().toDouble())
-                        }
-                    }
+                private fun recordTelemetry(result: Result) {
+                    ClouddebugTelemetry.shell(
+                        project,
+                        // TODO clean up with executable manager changes
+                        version = (cloudDebugExecutable as? ExecutableInstance.Executable)?.version,
+                        result = result,
+                        value = Duration.between(startTime, Instant.now()).toMillis().toDouble(),
+                        createTime = startTime
+                    )
                 }
             })
         }

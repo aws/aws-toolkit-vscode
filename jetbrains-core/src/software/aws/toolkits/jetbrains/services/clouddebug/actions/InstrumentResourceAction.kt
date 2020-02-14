@@ -12,6 +12,10 @@ import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeA
 import software.aws.toolkits.jetbrains.services.ecs.EcsServiceNode
 import software.aws.toolkits.jetbrains.services.ecs.EcsUtils
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.ClouddebugTelemetry
+import software.aws.toolkits.telemetry.Result
+import java.time.Duration
+import java.time.Instant
 
 class InstrumentResourceFromExplorerAction :
     SingleResourceNodeAction<EcsServiceNode>(message("cloud_debug.instrument"), null) {
@@ -86,8 +90,6 @@ internal class InstrumentAction(
     successMessage: String,
     failureMessage: String
 ) : PseCliAction(project, name, successMessage, failureMessage) {
-    override val metricName = "instrument"
-
     override fun buildCommandLine(cmd: GeneralCommandLine) {
         cmd
             .withParameters("--verbose")
@@ -101,5 +103,15 @@ internal class InstrumentAction(
             .withParameters(serviceName)
             .withParameters("--iam-role")
             .withParameters(roleArn)
+    }
+
+    override fun produceTelemetry(startTime: Instant, result: Result, version: String?) {
+        ClouddebugTelemetry.instrument(
+            project,
+            result,
+            version,
+            value = Duration.between(startTime, Instant.now()).toMillis().toDouble(),
+            createTime = startTime
+        )
     }
 }

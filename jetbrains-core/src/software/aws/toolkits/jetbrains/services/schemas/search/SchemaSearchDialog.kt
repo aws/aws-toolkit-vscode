@@ -6,8 +6,9 @@ package software.aws.toolkits.jetbrains.services.schemas.search
 import com.intellij.openapi.project.Project
 import com.intellij.util.Alarm
 import software.aws.toolkits.jetbrains.services.schemas.SchemaViewer
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.Result
+import software.aws.toolkits.telemetry.SchemasTelemetry
 import java.util.concurrent.CompletionStage
 import java.util.stream.IntStream
 import kotlin.streams.toList
@@ -47,7 +48,7 @@ class SchemaSearchSingleRegistryDialog(
         incrementalResultsCallback: OnSearchResultReturned<SchemaSearchResult>,
         registrySearchErrorCallback: OnSearchResultError
     ) {
-        TelemetryService.recordSimpleTelemetry(project, "schemas_search")
+        SchemasTelemetry.search(project, Result.SUCCEEDED)
         searchExecutor.searchSchemasInRegistry(registryName, searchText, incrementalResultsCallback, registrySearchErrorCallback)
     }
 }
@@ -82,7 +83,7 @@ class SchemaSearchAllRegistriesDialog(
         incrementalResultsCallback: OnSearchResultReturned<SchemaSearchResultWithRegistry>,
         registrySearchErrorCallback: OnSearchResultError
     ) {
-        TelemetryService.recordSimpleTelemetry(project, "schemas_search")
+        SchemasTelemetry.search(project, Result.SUCCEEDED)
         searchExecutor.searchSchemasAcrossAllRegistries(searchText, incrementalResultsCallback, registrySearchErrorCallback)
     }
 }

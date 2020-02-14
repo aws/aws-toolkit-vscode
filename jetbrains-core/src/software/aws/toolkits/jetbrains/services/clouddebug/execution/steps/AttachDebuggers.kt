@@ -14,7 +14,6 @@ import com.intellij.execution.ui.ConsoleViewContentType
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.util.Key
-import software.amazon.awssdk.services.toolkittelemetry.model.Unit
 import software.aws.toolkits.jetbrains.services.clouddebug.DebuggerSupport
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.Context
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.MessageEmitter
@@ -22,10 +21,10 @@ import software.aws.toolkits.jetbrains.services.clouddebug.execution.ParallelSte
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.Step
 import software.aws.toolkits.jetbrains.services.ecs.execution.EcsServiceCloudDebuggingRunSettings
 import software.aws.toolkits.jetbrains.services.ecs.execution.ImmutableContainerOptions
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.TelemetryResult
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.CloudDebugPlatform
+import software.aws.toolkits.telemetry.ClouddebugTelemetry
+import software.aws.toolkits.telemetry.Result
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ExecutionException
@@ -58,7 +57,7 @@ class AttachDebugger(
         ignoreCancellation: Boolean
     ) {
         val startTime = Instant.now()
-        var result = TelemetryResult.Succeeded
+        var result = Result.SUCCEEDED
         try {
             val debuggerAttacher = DebuggerSupport.debuggers()[containerOptions.platform]
                 ?: throw IllegalStateException(
@@ -93,19 +92,17 @@ class AttachDebugger(
                 }
             } ?: throw IllegalStateException(message("cloud_debug.step.attach_debugger.failed"))
         } catch (e: ExecutionException) {
-            result = TelemetryResult.Failed
+            result = Result.FAILED
             throw e.cause ?: e
         } finally {
-            TelemetryService.getInstance().record(context.project) {
-                datum("${TelemetryConstants.CLOUDDEBUG_TELEMETRY_PREFIX}_attachdebugger") {
-                    createTime(startTime)
-                    metadata(TelemetryConstants.CLOUDDEBUG_WORKFLOWTOKEN, context.workflowToken)
-                    metadata(TelemetryConstants.CLOUDDEBUG_RUNTIME, containerOptions.platform.name)
-                    metadata(TelemetryConstants.RESULT, result.name)
-                    unit(Unit.MILLISECONDS)
-                    value(Duration.between(startTime, Instant.now()).toMillis().toDouble())
-                }
-            }
+            ClouddebugTelemetry.attachDebugger(
+                project = context.project,
+                result = result,
+                workflowtoken = context.workflowToken,
+                clouddebugplatform = CloudDebugPlatform.from(containerOptions.platform.name),
+                value = Duration.between(startTime, Instant.now()).toMillis().toDouble(),
+                createTime = startTime
+            )
         }
     }
 

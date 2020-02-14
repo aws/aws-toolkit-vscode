@@ -8,19 +8,14 @@ import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.TelemetryResult
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.S3Telemetry
 import java.awt.datatransfer.StringSelection
 
 class CopyPathAction(private val project: Project, treeTable: S3TreeTable) : SingleS3ObjectAction(treeTable, message("s3.copy.path"), AllIcons.Actions.Copy) {
 
     override fun performAction(node: S3TreeNode) {
         CopyPasteManager.getInstance().setContents(StringSelection(node.key))
-        TelemetryService.recordSimpleTelemetry(project, TELEMETRY_NAME, TelemetryResult.Succeeded)
-    }
-
-    companion object {
-        private const val TELEMETRY_NAME = "s3_copypath"
+        S3Telemetry.copyPath(project)
     }
 }

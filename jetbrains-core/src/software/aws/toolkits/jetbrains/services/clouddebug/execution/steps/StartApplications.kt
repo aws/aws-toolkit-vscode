@@ -12,6 +12,10 @@ import software.aws.toolkits.jetbrains.services.clouddebug.execution.ParallelSte
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.Step
 import software.aws.toolkits.jetbrains.services.ecs.execution.EcsServiceCloudDebuggingRunSettings
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.ClouddebugTelemetry
+import software.aws.toolkits.telemetry.Result
+import java.time.Duration
+import java.time.Instant
 
 class SetUpStartApplications(private val settings: EcsServiceCloudDebuggingRunSettings) : ParallelStep() {
     override val stepName = message("cloud_debug.step.start_application")
@@ -27,7 +31,6 @@ class StartApplication(
     private val containerName: String,
     private val startCommand: String
 ) : CliBasedStep() {
-    override val metricName = "startApplication"
     override val stepName = message("cloud_debug.step.start_application.resource", containerName)
 
     override fun constructCommandLine(context: Context, commandLine: GeneralCommandLine) {
@@ -43,5 +46,14 @@ class StartApplication(
             .withParameters(ParametersListUtil.parse(startCommand, false, false))
             .withEnvironment(settings.region.toEnvironmentVariables())
             .withEnvironment(settings.credentialProvider.resolveCredentials().toEnvironmentVariables())
+    }
+
+    override fun recordTelemetry(context: Context, startTime: Instant, result: Result) {
+        ClouddebugTelemetry.startApplication(
+            context.project,
+            result = result,
+            workflowtoken = context.workflowToken,
+            value = Duration.between(startTime, Instant.now()).toMillis().toDouble()
+        )
     }
 }

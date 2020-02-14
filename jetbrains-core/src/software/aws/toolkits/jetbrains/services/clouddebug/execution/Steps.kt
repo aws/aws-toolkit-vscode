@@ -24,18 +24,14 @@ import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.clouddebug.CliOutputParser
 import software.aws.toolkits.jetbrains.services.clouddebug.asLogEvent
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.steps.CloudDebugCliValidate
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.TelemetryResult
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.resources.message
-import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
-import software.amazon.awssdk.services.toolkittelemetry.model.Unit as MetricUnit
+import software.aws.toolkits.telemetry.Result
 
 abstract class Step {
     protected abstract val stepName: String
@@ -115,11 +111,10 @@ abstract class ParallelStep : Step() {
 }
 
 abstract class CliBasedStep : Step() {
-    protected abstract val metricName: String
-
     private fun getCli(context: Context): GeneralCommandLine = context.getRequiredAttribute(CloudDebugCliValidate.EXECUTABLE_ATTRIBUTE).getCommandLine()
 
     protected abstract fun constructCommandLine(context: Context, commandLine: GeneralCommandLine)
+    protected abstract fun recordTelemetry(context: Context, startTime: Instant, result: Result)
 
     final override fun execute(
         context: Context,
@@ -127,7 +122,7 @@ abstract class CliBasedStep : Step() {
         ignoreCancellation: Boolean
     ) {
         val startTime = Instant.now()
-        var result = TelemetryResult.Succeeded
+        var result = Result.SUCCEEDED
         val commandLine = getCli(context)
 
         constructCommandLine(context, commandLine)
@@ -154,22 +149,14 @@ abstract class CliBasedStep : Step() {
             try {
                 handleErrorResult(processCapture.output.stdout, messageEmitter)
             } catch (e: Exception) {
-                result = TelemetryResult.Failed
+                result = Result.FAILED
                 throw e
             }
         } catch (e: ProcessCanceledException) {
-            LOG.warn(e) { "Step $metricName cancelled!" }
-            result = TelemetryResult.Cancelled
+            LOG.warn(e) { "Step \"$stepName\" cancelled!" }
+            result = Result.CANCELLED
         } finally {
-            TelemetryService.getInstance().record(context.project) {
-                datum("${TelemetryConstants.CLOUDDEBUG_TELEMETRY_PREFIX}_$metricName") {
-                    createTime(startTime)
-                    metadata(TelemetryConstants.CLOUDDEBUG_WORKFLOWTOKEN, context.workflowToken)
-                    metadata(TelemetryConstants.RESULT, result.name)
-                    unit(MetricUnit.MILLISECONDS)
-                    value(Duration.between(startTime, Instant.now()).toMillis().toDouble())
-                }
-            }
+            recordTelemetry(context, startTime, result)
         }
     }
 

@@ -232,7 +232,7 @@ task ktlint(type: JavaExec, group: "verification") {
         toExclude = toExclude.replace("/", "\\")
     }
 
-    args "-v", toInclude, "!${toExclude}"
+    args "-v", toInclude, "!${toExclude}", "!/**/generated-src/**/*.kt"
 
     inputs.files(project.fileTree(dir: ".", include: "**/*.kt"))
     outputs.dir("${project.buildDir}/reports/ktlint/")

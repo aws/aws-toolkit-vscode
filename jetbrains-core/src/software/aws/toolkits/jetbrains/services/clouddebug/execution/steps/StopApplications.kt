@@ -12,6 +12,10 @@ import software.aws.toolkits.jetbrains.services.clouddebug.execution.ParallelSte
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.Step
 import software.aws.toolkits.jetbrains.services.ecs.execution.EcsServiceCloudDebuggingRunSettings
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.ClouddebugTelemetry
+import software.aws.toolkits.telemetry.Result
+import java.time.Duration
+import java.time.Instant
 
 class StopApplications(
     private val settings: EcsServiceCloudDebuggingRunSettings,
@@ -34,7 +38,6 @@ class StopApplication(
     private val containerName: String,
     private val isCleanup: Boolean
 ) : CliBasedStep() {
-    override val metricName = "stopApplication"
     override val stepName = if (isCleanup) {
         message("cloud_debug.step.stop_application.cleanup.resource", containerName)
     } else {
@@ -53,6 +56,15 @@ class StopApplication(
             .withParameters(containerName)
             .withEnvironment(settings.region.toEnvironmentVariables())
             .withEnvironment(settings.credentialProvider.resolveCredentials().toEnvironmentVariables())
+    }
+
+    override fun recordTelemetry(context: Context, startTime: Instant, result: Result) {
+        ClouddebugTelemetry.stopApplication(
+            context.project,
+            result = result,
+            workflowtoken = context.workflowToken,
+            value = Duration.between(startTime, Instant.now()).toMillis().toDouble()
+        )
     }
 
     override fun handleErrorResult(output: String, messageEmitter: MessageEmitter) =

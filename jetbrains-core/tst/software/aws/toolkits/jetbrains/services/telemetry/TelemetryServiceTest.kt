@@ -118,9 +118,9 @@ class TelemetryServiceTest {
 
         verify(batcher, times(3)).enqueue(eventCaptor.capture())
 
-        assertMetricEventsContains(eventCaptor.allValues.flatten(), "ToolkitStart", METADATA_NA, METADATA_NA)
+        assertMetricEventsContains(eventCaptor.allValues.flatten(), "session_start", METADATA_NA, METADATA_NA)
         assertMetricEventsContains(eventCaptor.allValues.flatten(), "Foo", METADATA_NOT_SET, "us-east-1")
-        assertMetricEventsContains(eventCaptor.allValues.flatten(), "ToolkitEnd", METADATA_NA, METADATA_NA)
+        assertMetricEventsContains(eventCaptor.allValues.flatten(), "session_end", METADATA_NA, METADATA_NA)
     }
 
     @Test

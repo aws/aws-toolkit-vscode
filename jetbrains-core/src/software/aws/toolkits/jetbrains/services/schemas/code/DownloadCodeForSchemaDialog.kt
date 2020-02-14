@@ -17,22 +17,21 @@ import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtil
 import org.apache.commons.lang.exception.ExceptionUtils
-import software.amazon.awssdk.services.schemas.SchemasClient
 import software.amazon.awssdk.services.schemas.model.SchemaVersionSummary
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
-import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.schemas.Schema
 import software.aws.toolkits.jetbrains.services.schemas.SchemaCodeLangs
 import software.aws.toolkits.jetbrains.services.schemas.SchemaSummary
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.SchemaLanguage
+import software.aws.toolkits.telemetry.SchemasTelemetry
 import java.awt.event.ActionEvent
 import java.io.File
 import java.util.ArrayList
@@ -64,7 +63,6 @@ class DownloadCodeForSchemaDialog(
 
     val view = DownloadCodeForSchemaPanel(project, this)
     val validator = DownloadCodeForSchemaValidator()
-    private val schemasClient: SchemasClient = project.awsClient()
 
     private val action: OkAction = DownloadCodeForSchemaOkAction()
 
@@ -141,12 +139,7 @@ class DownloadCodeForSchemaDialog(
         val schemaCodeDownloadDetails = viewToSchemaCodeDownloadDetails()
 
         // Telemetry for download code language
-        TelemetryService.getInstance().record(project) {
-            datum("schemas_download") {
-                count()
-                metadata("language", schemaCodeDownloadDetails.language.apiValue)
-            }
-        }
+        SchemasTelemetry.download(project, success = true, schemalanguage = SchemaLanguage.from(schemaCodeDownloadDetails.language.apiValue))
 
         val schemaName = schemaCodeDownloadDetails.schema.name
         ProgressManager.getInstance().run(object : Task.Backgroundable(project, message("schemas.schema.download_code_bindings.title", schemaName), false) {
@@ -191,7 +184,7 @@ class DownloadCodeForSchemaDialog(
     ) {
         val message = message("schemas.schema.download_code_bindings.notification.finished", schemaName)
         notifyInfo(title = NOTIFICATION_TITLE, content = message, project = project)
-        TelemetryService.recordSimpleTelemetry(project, "schemas_download", true)
+        SchemasTelemetry.download(project, success = true)
     }
 
     private fun showDownloadCompletionErrorNotification(
@@ -203,7 +196,7 @@ class DownloadCodeForSchemaDialog(
             is SchemaCodeDownloadFileCollisionException -> notifyError(title = NOTIFICATION_TITLE, content = rootError.message ?: "", project = project)
             is Exception -> rootError.notifyError(title = NOTIFICATION_TITLE, project = project)
         }
-        TelemetryService.recordSimpleTelemetry(project, "schemas_download", false)
+        SchemasTelemetry.download(project, success = false)
     }
 
     private fun openSchemaCoreCodeFileInEditor(

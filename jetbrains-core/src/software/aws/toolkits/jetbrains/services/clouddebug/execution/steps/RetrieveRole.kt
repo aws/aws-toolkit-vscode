@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.clouddebug.execution.steps
 
-import software.amazon.awssdk.services.toolkittelemetry.model.Unit
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugConstants.INSTRUMENTED_STATUS
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugConstants.INSTRUMENT_IAM_ROLE_KEY
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.Context
@@ -11,10 +10,9 @@ import software.aws.toolkits.jetbrains.services.clouddebug.execution.MessageEmit
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.Step
 import software.aws.toolkits.jetbrains.services.clouddebug.resources.CloudDebuggingResources
 import software.aws.toolkits.jetbrains.services.ecs.execution.EcsServiceCloudDebuggingRunSettings
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.TelemetryResult
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.ClouddebugTelemetry
+import software.aws.toolkits.telemetry.Result
 import java.time.Duration
 import java.time.Instant
 
@@ -28,7 +26,7 @@ class RetrieveRole(private val settings: EcsServiceCloudDebuggingRunSettings) : 
         ignoreCancellation: Boolean
     ) {
         val startTime = Instant.now()
-        var result = TelemetryResult.Succeeded
+        var result = Result.SUCCEEDED
         try {
             val description = CloudDebuggingResources.describeInstrumentedResource(context.project, settings.clusterArn, settings.serviceArn)
             if (description == null || description.status != INSTRUMENTED_STATUS || description.taskRole.isEmpty()) {
@@ -37,18 +35,16 @@ class RetrieveRole(private val settings: EcsServiceCloudDebuggingRunSettings) : 
 
             context.putAttribute(INSTRUMENT_IAM_ROLE_KEY, description.taskRole)
         } catch (e: Exception) {
-            result = TelemetryResult.Failed
+            result = Result.FAILED
             throw RuntimeException(message("cloud_debug.step.retrieve_execution_role.failed"), e)
         } finally {
-            TelemetryService.getInstance().record(context.project) {
-                datum("${TelemetryConstants.CLOUDDEBUG_TELEMETRY_PREFIX}_retrieverole") {
-                    createTime(startTime)
-                    metadata(TelemetryConstants.CLOUDDEBUG_WORKFLOWTOKEN, context.workflowToken)
-                    metadata(TelemetryConstants.RESULT, result.name)
-                    unit(Unit.MILLISECONDS)
-                    value(Duration.between(startTime, Instant.now()).toMillis().toDouble())
-                }
-            }
+            ClouddebugTelemetry.retrieveRole(
+                project = context.project,
+                workflowtoken = context.workflowToken,
+                result = result,
+                value = Duration.between(startTime, Instant.now()).toMillis().toDouble(),
+                createTime = startTime
+            )
         }
     }
 }

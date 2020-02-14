@@ -26,12 +26,9 @@ import software.aws.toolkits.jetbrains.services.clouddebug.execution.steps.RootS
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.steps.SetUpPortForwarding
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.steps.StopApplications
 import software.aws.toolkits.jetbrains.services.ecs.execution.EcsServiceCloudDebuggingRunSettings
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.CLOUDDEBUG_TELEMETRY_PREFIX
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.CLOUDDEBUG_WORKFLOWTOKEN
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.RESULT
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryConstants.TelemetryResult
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.ClouddebugTelemetry
+import software.aws.toolkits.telemetry.Result
 
 class CloudDebugRunState(
     private val environment: ExecutionEnvironment,
@@ -58,13 +55,13 @@ class CloudDebugRunState(
 
         ApplicationManager.getApplication().executeOnPooledThread {
             val messageEmitter = DefaultMessageEmitter.createRoot(buildView, runConfigId())
-            var result = TelemetryResult.Succeeded
+            var result = Result.SUCCEEDED
             try {
                 startRunConfiguration(descriptor, buildView)
                 rootStep.run(context, messageEmitter)
                 finishedSuccessfully(processHandler, buildView)
             } catch (e: Throwable) {
-                result = TelemetryResult.Failed
+                result = Result.FAILED
                 finishedExceptionally(processHandler, buildView, e)
             }
 
@@ -80,13 +77,7 @@ class CloudDebugRunState(
                 LOG.info(e) { "Always-run stopping port forwarding failed with: ${e.message}" }
             }
 
-            TelemetryService.getInstance().record(project) {
-                datum("${CLOUDDEBUG_TELEMETRY_PREFIX}_startRemoteDebug") {
-                    metadata(CLOUDDEBUG_WORKFLOWTOKEN, context.workflowToken)
-                    metadata(RESULT, result.name)
-                    count()
-                }
-            }
+            ClouddebugTelemetry.startRemoteDebug(project, result, context.workflowToken)
         }
 
         return DefaultExecutionResult(buildView, processHandler)
