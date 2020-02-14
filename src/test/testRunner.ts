@@ -11,10 +11,7 @@ export interface RunTestsParameters {
 
 export async function runTests(parameters: RunTestsParameters): Promise<void> {
     if (process.env.AWS_TOOLKIT_TEST_NO_COLOR) {
-        legacyTestRunner.configureMocha({
-            ui: 'bdd',
-            useColors: false
-        })
+        legacyTestRunner.configureMocha(legacyTestRunner.defaultMochaOptions(false))
     }
 
     return new Promise<void>((resolve, reject) => {
