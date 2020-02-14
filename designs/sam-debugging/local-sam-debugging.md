@@ -170,6 +170,8 @@ Here is an outline of the differences between this design and version 1.0.0 of t
 
 ### <a id="sample-debug-configurations"></a> Sample Debug Configurations
 
+Configuration structures group related parameters and reuse shapes where possible.
+
 Here is an example Debug Configuration to debug a SAM Template resource called "HelloWorldResource".
 The only required fields are: type, request, samTemplate.path, samTemplate.resource
 
@@ -177,7 +179,7 @@ The only required fields are: type, request, samTemplate.path, samTemplate.resou
 {
     "configurations": [
         {
-            "name": "Debug HelloWorldResource",
+            "name": "Debug HelloWorldResource", // Users name the entry; shown in Debug dropdown
             "type": "aws-sam",
             "request": "template-invoke", // This is the "aws-sam" variation for debugging SAM Template resources
             "samTemplate": {
@@ -281,12 +283,12 @@ The only required fields are: type, request, lambdaEntry, lambda.runtime
 {
     "configurations": [
         {
-            "name": "Debug HelloWorldResource",
+            "name": "Debug Lambda Handler MyFunctionHandler", // Users name the entry; shown in Debug dropdown
             "type": "aws-sam",
             "request": "standalone-lambda", // This is the "aws-sam" variation for debugging standalone Lambda handlers
             "lambdaEntry": {
                 "projectRoot": "path to folder", // The top level folder to run the Lambda handler in (this affects the lambdaHandler field in runtimes like node and python).
-                "lambdaHandler": "HelloWorld::HelloWorld.Function::FunctionHandler" // nodeJs example: app.lambdaHandler
+                "lambdaHandler": "HelloWorld::HelloWorld.Function::MyFunctionHandler" // nodeJs example: app.lambdaHandler
             },
             // Lambda Execution related arguments
             "lambda": {
