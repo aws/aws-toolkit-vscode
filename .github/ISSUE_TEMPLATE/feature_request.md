@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest an idea for the Toolkit
+about: Suggest an idea for the AWS Toolkit
 labels: feature-request 
 ---
 

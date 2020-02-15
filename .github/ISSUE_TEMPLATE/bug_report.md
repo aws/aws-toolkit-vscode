@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Create a bug report to help us improve the Toolkit
+about: Create a bug report to help us improve the AWS Toolkit
 labels: bug
 ---
 
@@ -21,12 +21,12 @@ labels: bug
 <!-- If applicable, add screenshots to help explain your problem. -->
 
 **Your Environment**
- - OS: 
- - JetBrains' Product:
- - JetBrains' Product Version:
- - Toolkit Version:
- - SAM CLI Version:
- - JVM/Python Version:
+- OS: 
+- JetBrains product:
+- JetBrains product version:
+- AWS Toolkit version:
+- SAM CLI version:
+- JVM/Python version:
 
 **Additional context**
 <!-- Add any other context about the problem here. -->
