@@ -111,7 +111,7 @@ class S3VirtualBucketTest {
         }
 
         val copyRequestCapture = copyCaptor.firstValue
-        assertThat(copyRequestCapture.bucket()).isEqualTo("TestBucket")
+        assertThat(copyRequestCapture.destinationBucket()).isEqualTo("TestBucket")
         assertThat(copyRequestCapture.copySource()).isEqualTo("TestBucket/key")
 
         val deleteRequestCapture = deleteCaptor.firstValue

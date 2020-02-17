@@ -44,7 +44,7 @@ class PageButtonsTest {
             val pages = Page.values()
             assertThat(buttons.enabledButtons).isEmpty()
             buttons.setPagesAvailable(pages.toSet())
-            assertThat(buttons.enabledButtons).containsOnlyElementsOf(pages.toSet())
+            assertThat(buttons.enabledButtons).hasSameElementsAs(pages.toSet())
             pages.forEach { page ->
                 buttons.setPagesAvailable(setOf(page))
                 assertThat(buttons.enabledButtons).containsOnlyOnce(page)

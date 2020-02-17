@@ -370,10 +370,10 @@ class SchemaSearchDialogTest {
         assertThat(dialog.getDownloadButton()?.isEnabled).isFalse()
         assertThat(dialog.previewText.text.isEmpty()).isTrue()
         assertThat(dialog.resultsList.emptyText.text).isEqualTo(message("schemas.search.no_results"))
-        assertThat(dialog.resultsModel.elements().toList()).containsOnlyElementsOf(expectedResults)
+        assertThat(dialog.resultsModel.elements().toList()).hasSameElementsAs(expectedResults)
         assertThat(dialog.versionsCombo.itemCount).isEqualTo(0)
         assertThat(dialog.versionsCombo.isEnabled).isFalse()
-        assertThat(dialog.currentSearchErrors).containsOnlyElementsOf(searchErrors)
+        assertThat(dialog.currentSearchErrors).hasSameElementsAs(searchErrors)
     }
 
     private fun <T : SchemaSearchResultBase, U : SchemaSearchDialogState<T>> assertSearchResultSelectedDialogState(
