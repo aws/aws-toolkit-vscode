@@ -1,44 +1,24 @@
-# Local Debugging Experience for SAM Applications
+# User Experience: Local Debugging SAM Applications
 
-Current Status: Not Implemented
+Current Status: Proposed, Not Implemented
 
 ## Introduction
 
-The AWS Toolkit enhances the SAM Application development experience by integrating local debug functionality into VS Code. This document outlines the available functionality.
+The AWS Toolkit enhances the Serverless Application Model (SAM) Application development experience by integrating local debug functionality into VS Code. This document outlines the user experience.
 
 While this document's main focus is on debugging capabilities in the toolkit, there are places where the experience around invoking without the debugger (aka "running") is also discussed.
 
-Each programming language (and corresponding Lambda Runtimes) requires Toolkit support for debugging features to work. A limited selection of programming languages are supported in the Toolkit.
+Each programming language (and corresponding Lambda Runtimes) requires Toolkit support for debugging features to work. As of v1.6.1 (Feb 2020), the following languages and runtimes are supported:
 
-### Terminology
-
-#### CodeLens
-
-CodeLenses are visual decorators anchored to document locations. They are used to convey information and/or provide links that trigger an action. Additional information and examples about CodeLenses can be found [on the VS Code blog](https://code.visualstudio.com/blogs/2017/02/12/code-lens-roundup).
-
-#### Debug Configuration
-
-Debug Configurations are user-managed JSON entries that define what programs can be debugged. Pressing F5 (or the Debug button) starts a Debug session for the Debug Configuration currently selected in VS Code's Debug View. VS Code extensions increase VS Code's debugging capablities by implementing Debug Configuration types.
-
-Debug Configurations are stored in `.vscode/launch.json` relative to the VS Code workspace.
-
-More information about VS Code Debugging can be found [in the VS Code Documentation](https://code.visualstudio.com/docs/editor/debugging).
-
-#### SAM Template
-
-A SAM Template defines a Serverless Application's resources, and supporting code. This is used by the SAM CLI to build, run, package, and deploy the Application.
-
-Additional information about SAM can be found at:
-
--   [SAM Homepage](https://aws.amazon.com/serverless/sam/)
--   [What Is the AWS Serverless Application Model (AWS SAM)?](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html)
--   [SAM CLI GitHub Repo](https://github.com/awslabs/aws-sam-cli)
+-   javascript (nodejs10.x, nodejs12.x)
+-   python (python2.7, python3.6, python3.7, python3.8)
+-   C# (dotnetcore2.1)
 
 ## Overview
 
 The toolkit supports the following scenarios for Locally Running and Debugging code using the Serverless Application Model:
 
--   invoking SAM Template resources that are Lambda functions
+-   invoking [SAM Template](#terms-sam-template) resources that are Lambda functions
 -   making API Gateway style requests against SAM Template resources that are Lambda functions
 -   invoking standalone Lambda function handlers (these don't use SAM Templates, but the debugging functionality is supported by one behind the scenes)
 
@@ -48,7 +28,7 @@ Each scenario has one or more relevant user experiences. The different debugging
 
 ### <a id="sam-template-resource-local"></a> SAM Template Resources (Local Invoke)
 
-SAM Template resources of type [`AWS::Serverless::Function`](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html) represent Lambda functions. Lambda function code referenced by these resources can be locally Run or Debugged. The Toolkit uses SAM CLI to invoke the Lambda function, emulating how the function is run on AWS. A debugger can be attached to the invoked Lambda function code, and the event passed into the Lambda function can be customized.
+[SAM Template](#terms-sam-template) resources of type [`AWS::Serverless::Function`](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html) represent Lambda functions. Lambda function code referenced by these resources can be locally Run or Debugged. The Toolkit uses SAM CLI to invoke the Lambda function, emulating how the function is run on AWS. A debugger can be attached to the invoked Lambda function code, and the event passed into the Lambda function can be customized.
 
 ### <a id="sam-template-resource-api-gateway"></a> SAM Template Resources (API Gateway style Local Invoke)
 
@@ -99,7 +79,7 @@ The following AWS related arguments are relevant to debugging both standalone la
 
 ### <a id="debug-configurations"></a> Debug Configurations
 
-Debug Configurations are the idiomatic approach to running and debugging software in VS Code. They are also a reusable component - the Toolkit is able to internally produce and execute these configurations on the fly. This is the Toolkit's main experience for debugging SAM Template resources.
+[Debug Configurations](#terms-debug-configuration) are the idiomatic approach to running and debugging software in VS Code. They are also a reusable component - the Toolkit is able to internally produce and execute these configurations on the fly. This is the Toolkit's main experience for debugging SAM Template resources.
 
 The Toolkit implements a Debug Configuration type `aws-sam`. Users can author and maintain these configuration entries, then launch them by pressing F5 (or Ctrl+F5 to Run without Debugging). When launched, this configuration type:
 
@@ -129,7 +109,7 @@ Example Debug Configuration entries can be found in the [Appendix](#sample-debug
 
 #### CodeLenses in SAM Template files
 
-CodeLenses are added to SAM Template files that serve as shortcuts to `template-invoke` [debug configurations](#debug-configurations) defined in the workspace.
+[CodeLenses](#terms-codelenses) are added to SAM Template files that serve as shortcuts to `template-invoke` [debug configurations](#debug-configurations) defined in the workspace.
 
 Every Debug Configuration that references a SAM Template and resource pairing will produce a CodeLens above that resource. When clicked, these CodeLenses launch the corresponding debug session, as if the user selected that debug configuration and pressed Debug from VS Code's Debug view.
 
@@ -146,6 +126,30 @@ CodeLenses also appear over functions that match `standalone-lambda` Debug Confi
 Some users may find CodeLenses within code files distracting, particularly if they are using the Toolkit for features not related to local debugging. Toolkit settings can be used to enable and disable CodeLenses. CodeLenses only appear for languages/runtimes that the Toolkit has implemented Debug support for.
 
 ## Appendix
+
+### Terminology
+
+#### <a id="terms-codelenses"></a> CodeLens
+
+CodeLenses are visual decorators anchored to document locations. They are used to convey information and/or provide links that trigger an action. Additional information and examples about CodeLenses can be found [on the VS Code blog](https://code.visualstudio.com/blogs/2017/02/12/code-lens-roundup).
+
+#### <a id="terms-debug-configuration"></a> Debug Configuration
+
+Debug Configurations are user-managed JSON entries that define what programs can be debugged. Pressing F5 (or the Debug button) starts a Debug session for the Debug Configuration currently selected in VS Code's Debug View. VS Code extensions increase VS Code's debugging capablities by implementing Debug Configuration types.
+
+Debug Configurations are stored in `.vscode/launch.json` relative to the VS Code workspace.
+
+More information about VS Code Debugging can be found [in the VS Code Documentation](https://code.visualstudio.com/docs/editor/debugging).
+
+#### <a id="terms-sam-template"></a> SAM Template
+
+A SAM Template defines a Serverless Application's resources, and supporting code. This is used by the SAM CLI to build, run, package, and deploy the Application.
+
+Additional information about SAM can be found at:
+
+-   [SAM Homepage](https://aws.amazon.com/serverless/sam/)
+-   [What Is the AWS Serverless Application Model (AWS SAM)?](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html)
+-   [SAM CLI GitHub Repo](https://github.com/awslabs/aws-sam-cli)
 
 ### Differences from v1.0.0 of AWS Toolkit
 
@@ -332,7 +336,7 @@ The only required fields are: type, request, lambdaEntry, lambda.runtime
 The following validation checks are performed when running an `aws-sam` Debug Configuration
 
 -   does the referenced SAM template file exist
--   does the referneced SAM Template resource exist
--   is the referneced SAM Template resource a supported type (for example, a Lambda function)
+-   does the referenced SAM Template resource exist
+-   is the referenced SAM Template resource a supported type (for example, a Lambda function)
 -   is the lambda function runtime supported by the Toolkit
 -   are there any environment variables do not exist in the SAM Template? (these surface to the user as warnings, and don't stop the debug session)
