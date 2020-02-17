@@ -77,16 +77,16 @@ Multiple types of errors can be spawned from JetBrains forms:
 ![6]
 ![1]
  
-[1]: ../images/errorMessaging/generalErrorToast.png
-[2]: ../images/errorMessaging/generalErrorEventLog.png
-[3]: ../images/errorMessaging/generalErrorWarning.png
+[1]: images/generalErrorToast.png
+[2]: images/generalErrorEventLog.png
+[3]: images/generalErrorWarning.png
 
-[4]: ../images/errorMessaging/explorerNode.png
-[5]: ../images/errorMessaging/explorerTooltip.png
+[4]: images/explorerNode.png
+[5]: images/explorerTooltip.png
 
-[6]: ../images/errorMessaging/buildToast.png
-[7]: ../images/errorMessaging/buildPanel.png
+[6]: images/buildToast.png
+[7]: images/buildPanel.png
 
-[8]: ../images/errorMessaging/formValidation.png
-[9]: ../images/errorMessaging/formDataPop.png
-[10]: ../images/errorMessaging/formRunConfig.png
+[8]: images/formValidation.png
+[9]: images/formDataPop.png
+[10]: images/formRunConfig.png

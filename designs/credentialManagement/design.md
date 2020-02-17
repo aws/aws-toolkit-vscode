@@ -125,6 +125,6 @@ If the credential provider has MFA, we will need to prompt the user for their OT
 
 [AwsCredentialsProvider]: https://github.com/aws/aws-sdk-java-v2/blob/master/core/auth/src/main/java/software/amazon/awssdk/auth/credentials/AwsCredentialsProvider.java
 [CliConfigDocs]: https://docs.aws.amazon.com/cli/latest/topic/config-vars.html#credentials
-[DefaultCredentialsStatusBar]: ./defaultCrdentialsStatusBar.png
-[NoCredentialsStatusBar]: ./noCrdentialsStatusBar.png
-[ClassDiagram]: ./classDiagram.svg
+[DefaultCredentialsStatusBar]: images/defaultCrdentialsStatusBar.png
+[NoCredentialsStatusBar]: images/noCrdentialsStatusBar.png
+[ClassDiagram]: images/classDiagram.svg
