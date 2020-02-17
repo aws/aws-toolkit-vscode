@@ -23,6 +23,7 @@ import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.SchemasTelemetry
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 import javax.swing.JComponent
@@ -37,6 +38,7 @@ class SchemaViewer(
     fun downloadAndViewSchema(schemaName: String, registryName: String): CompletionStage<Void> =
         schemaDownloader.getSchemaContent(registryName, schemaName, project = project)
             .thenCompose { schemaContent ->
+                SchemasTelemetry.download(project, success = true)
                 schemaFormatter.prettySchemaContent(schemaContent.content())
                     .thenCompose { prettySchemaContent ->
                         schemaPreviewer.openFileInEditor(
@@ -50,6 +52,7 @@ class SchemaViewer(
             }
             .exceptionally { error ->
                 notifyError(message("schemas.schema.could_not_open", schemaName), ExceptionUtil.getThrowableText(error), project)
+                SchemasTelemetry.download(project, success = false)
                 null
             }
 

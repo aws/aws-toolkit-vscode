@@ -24,7 +24,6 @@ import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.TreeUIHelper
 import com.intellij.ui.components.panels.Wrapper
 import com.intellij.ui.treeStructure.Tree
-import software.aws.toolkits.jetbrains.components.telemetry.ToolkitActionPlaces
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsChangeEvent
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsChangeNotifier
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionState
@@ -138,7 +137,7 @@ class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(t
                 additionalActions.forEach { actionGroup.add(it) }
 
                 if (actionGroup.childrenCount > 0) {
-                    val popupMenu = actionManager.createActionPopupMenu(ToolkitActionPlaces.EXPLORER_WINDOW, actionGroup)
+                    val popupMenu = actionManager.createActionPopupMenu("ExplorerToolWindow", actionGroup)
                     popupMenu.component.show(comp, x, y)
                 }
             }

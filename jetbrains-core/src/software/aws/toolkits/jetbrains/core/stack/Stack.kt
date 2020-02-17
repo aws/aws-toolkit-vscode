@@ -20,6 +20,7 @@ import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowTab
 import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowType
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationStackNode
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.CloudformationTelemetry
 import javax.swing.BoxLayout
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
@@ -46,6 +47,7 @@ class StackWindowManager(private val project: Project) {
 class OpenStackUiAction : SingleResourceNodeAction<CloudFormationStackNode>(message("cloudformation.stack.view")) {
     override fun actionPerformed(selected: CloudFormationStackNode, e: AnActionEvent) {
         StackWindowManager.getInstance(e.getRequiredData(LangDataKeys.PROJECT)).openStack(selected.stackName, selected.stackId)
+        CloudformationTelemetry.open(e.project)
     }
 }
 

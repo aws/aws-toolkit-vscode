@@ -6,14 +6,13 @@ package software.aws.toolkits.jetbrains.core.explorer.actions
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import software.aws.toolkits.jetbrains.components.telemetry.AnActionWrapper
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
 import javax.swing.Icon
 
 /**
- * An action from a [AwsExplorerResourceNode] that only operates on a single resource.
+ * An action from a [AwsExplorerResourceNode] that only operates on a single resource. Needed to constrain the type.
  *
  * Automatically disables the action if more than 1 node is selected.
  *
@@ -63,7 +62,7 @@ abstract class SingleExplorerNodeAction<in T : AwsExplorerNode<*>>(text: String,
  * Converts generic [ExplorerNodeAction] list into [T] typed nodes
  */
 abstract class ExplorerNodeAction<in T : AwsExplorerNode<*>>(text: String, description: String? = null, icon: Icon? = null) :
-    AnActionWrapper(text, description, icon) {
+    AnAction(text, description, icon) {
 
     /**
      * Invoked periodically with the selected items of type [T].
@@ -79,7 +78,7 @@ abstract class ExplorerNodeAction<in T : AwsExplorerNode<*>>(text: String, descr
      */
     abstract fun actionPerformed(selected: List<T>, e: AnActionEvent)
 
-    final override fun doActionPerformed(e: AnActionEvent) {
+    final override fun actionPerformed(e: AnActionEvent) {
         actionPerformed(e.selectedNodes(), e)
     }
 

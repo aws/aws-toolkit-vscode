@@ -110,11 +110,8 @@ class DownloadCodeForSchemaDialog(
             .sortedByDescending { s -> s.toIntOrNull() }
 
     private fun getLanguageForCurrentRuntime(): SchemaCodeLangs? {
-        val currentRuntimeGroup = RuntimeGroup.determineRuntimeGroup(project)
+        val currentRuntimeGroup = RuntimeGroup.determineRuntimeGroup(project) ?: return null
 
-        if (currentRuntimeGroup == null) {
-            return null
-        }
         return SchemaCodeLangs.values().firstOrNull { it.runtimeGroup.equals(currentRuntimeGroup) }
     }
 

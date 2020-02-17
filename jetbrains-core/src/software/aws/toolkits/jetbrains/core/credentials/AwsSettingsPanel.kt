@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.ide.DataManager
 import com.intellij.openapi.actionSystem.ActionPlaces
+import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.actionSystem.PlatformDataKeys
@@ -16,7 +17,6 @@ import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.StatusBarWidgetProvider
 import com.intellij.util.Consumer
-import software.aws.toolkits.jetbrains.components.telemetry.AnActionWrapper
 import software.aws.toolkits.resources.message
 import java.awt.Component
 import java.awt.event.MouseEvent
@@ -71,8 +71,8 @@ private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
     override fun dispose() {}
 }
 
-class SettingsSelectorAction(private val showRegions: Boolean = true) : AnActionWrapper(message("configure.toolkit")), DumbAware {
-    override fun doActionPerformed(e: AnActionEvent) {
+class SettingsSelectorAction(private val showRegions: Boolean = true) : AnAction(message("configure.toolkit")), DumbAware {
+    override fun actionPerformed(e: AnActionEvent) {
         val project = e.getRequiredData(PlatformDataKeys.PROJECT)
         val settingsSelector = SettingsSelector(project)
         settingsSelector.settingsPopup(e.dataContext, showRegions = showRegions).showCenteredInCurrentWindow(project)

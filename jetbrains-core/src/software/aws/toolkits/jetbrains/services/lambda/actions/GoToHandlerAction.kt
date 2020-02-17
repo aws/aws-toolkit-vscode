@@ -10,6 +10,7 @@ import com.intellij.psi.NavigatablePsiElement
 import com.intellij.util.OpenSourceUtil
 import software.aws.toolkits.jetbrains.core.explorer.actions.ExplorerNodeAction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
+import software.aws.toolkits.telemetry.LambdaTelemetry
 
 class GoToHandlerAction : ExplorerNodeAction<LambdaFunctionNode>(ActionsBundle.actionText("EditSource"), description = ActionsBundle.actionText("EditSource")) {
     override fun update(selected: List<LambdaFunctionNode>, e: AnActionEvent) {
@@ -26,8 +27,12 @@ class GoToHandlerAction : ExplorerNodeAction<LambdaFunctionNode>(ActionsBundle.a
     }
 
     override fun actionPerformed(selected: List<LambdaFunctionNode>, e: AnActionEvent) {
-        getHandler(selected.first())?.let {
-            OpenSourceUtil.navigate(true, *it)
+        val handlers = getHandler(selected.first())
+        if (handlers != null) {
+            OpenSourceUtil.navigate(true, *handlers)
+            LambdaTelemetry.goToHandler(e.project, true)
+        } else {
+            LambdaTelemetry.goToHandler(e.project, false)
         }
     }
 
