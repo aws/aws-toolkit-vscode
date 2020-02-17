@@ -135,7 +135,7 @@ CodeLenses are visual decorators anchored to document locations. They are used t
 
 #### <a id="terms-debug-configuration"></a> Debug Configuration
 
-Debug Configurations are user-managed JSON entries that define what programs can be debugged. Pressing F5 (or the Debug button) starts a Debug session for the Debug Configuration currently selected in VS Code's Debug View. VS Code extensions increase VS Code's debugging capablities by implementing Debug Configuration types.
+Debug Configurations are user-managed JSON entries that define what programs can be debugged. After users select a Debug Configuration in VS Code's Debug View, they can start a Debug session by pressing the Debug button or using a hotkey (`F5` is the default). VS Code extensions increase the debugging capablities of VS Code by implementing Debug Configuration types.
 
 Debug Configurations are stored in `.vscode/launch.json` relative to the VS Code workspace.
 
@@ -143,12 +143,12 @@ More information about VS Code Debugging can be found [in the VS Code Documentat
 
 #### <a id="terms-sam-template"></a> SAM Template
 
-A SAM Template defines a Serverless Application's resources, and supporting code. This is used by the SAM CLI to build, run, package, and deploy the Application.
+A SAM Template defines a Serverless Application's resources, and supporting code. The SAM CLI provides tooling around this template model to build, run, package, and deploy the Application.
 
 Additional information about SAM can be found at:
 
 -   [SAM Homepage](https://aws.amazon.com/serverless/sam/)
--   [What Is the AWS Serverless Application Model (AWS SAM)?](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html)
+-   [What Is the AWS Serverless Application Model (AWS SAM)?](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html) (includes a Getting Started guide to the SAM CLI)
 -   [SAM CLI GitHub Repo](https://github.com/awslabs/aws-sam-cli)
 
 ### Differences from v1.0.0 of AWS Toolkit
