@@ -5,11 +5,11 @@ package software.aws.toolkits.jetbrains.utils
 
 import com.google.common.collect.BiMap
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.extensions.ExtensionPoint
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.PlatformTestCase
+import com.intellij.testFramework.PlatformTestUtil
 import org.jetbrains.annotations.TestOnly
 import software.aws.toolkits.core.utils.tryOrNull
 import java.io.File
@@ -26,15 +26,23 @@ object CompatibilityUtils {
      */
     @TestOnly
     fun <T> registerExtension(name: ExtensionPointName<T>, extension: T, disposable: Disposable) {
+        registerExtensions(name, listOf(extension), disposable)
+    }
+
+    /**
+     * Can be removed when min-version is 19.3 FIX_WHEN_MIN_IS_193
+     */
+    @TestOnly
+    fun <T> registerExtensions(name: ExtensionPointName<T>, extensions: List<T>, disposable: Disposable) {
         val extensionTestUtil = tryOrNull { Class.forName("com.intellij.testFramework.ExtensionTestUtil") }
 
+        // 193+
         if (extensionTestUtil != null) {
             extensionTestUtil.getMethod("maskExtensions", ExtensionPointName::class.java, List::class.java, Disposable::class.java)
-                .invoke(null, name, listOf(extension), disposable)
+                .invoke(null, name, extensions, disposable)
         } else {
-            val oldRegister = ExtensionPoint::class.java.getMethod("registerExtension", Object::class.java, Disposable::class.java)
-            val ep = name.getPoint(null)
-            oldRegister.invoke(ep, extension, disposable)
+            PlatformTestUtil::class.java.getMethod("maskExtensions", ExtensionPointName::class.java, List::class.java, Disposable::class.java)
+                .invoke(null, name, extensions, disposable)
         }
     }
 
