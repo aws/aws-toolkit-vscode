@@ -13,7 +13,6 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
@@ -36,12 +35,6 @@ class ExecutableBackedCacheResourceTest {
     @Rule
     @JvmField
     val disposableRule = DisposableRule()
-
-    private val mockCredentials: ToolkitCredentialsProvider
-        get() = MockCredentialsManager.getInstance().addCredentials(
-            "mockCreds",
-            AwsBasicCredentials.create("foo", "bar")
-        )
 
     @Before
     fun setUp() {
@@ -114,7 +107,12 @@ class ExecutableBackedCacheResourceTest {
             assertionBlock.invoke(this)
         }
 
-        return cacheResource.fetch(projectRule.project, MockRegionProvider.getInstance().defaultRegion(), mockCredentials)
+        return cacheResource.fetch(projectRule.project, MockRegionProvider.getInstance().defaultRegion(), mockCredentials())
+    }
+
+    private fun mockCredentials(): ToolkitCredentialsProvider {
+        val credentialsManager = MockCredentialsManager.getInstance()
+        return credentialsManager.getAwsCredentialProvider(credentialsManager.addCredentials("Cred2"), MockRegionProvider.getInstance().defaultRegion())
     }
 
     private object MockExecutable : ExecutableType<String>, Validatable {

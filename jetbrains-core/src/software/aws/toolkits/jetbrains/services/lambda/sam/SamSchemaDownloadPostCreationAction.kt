@@ -42,12 +42,12 @@ class SamSchemaDownloadPostCreationAction {
 
         VfsUtil.markDirtyAndRefresh(false, true, true, contentRoot)
 
-        initializeNewProjectCredentialsFromSourceCreatingProjet(newApplicationProject, sourceCreatingProject)
+        initializeNewProjectCredentialsFromSourceCreatingProject(newApplicationProject, sourceCreatingProject)
 
         validateDownloadedCodeAgainstSchema(schemaTemplateParameters, contentRoot, language, newApplicationProject)
     }
 
-    private fun initializeNewProjectCredentialsFromSourceCreatingProjet(newApplicationProject: Project, sourceCreatingProject: Project) {
+    private fun initializeNewProjectCredentialsFromSourceCreatingProject(newApplicationProject: Project, sourceCreatingProject: Project) {
         val newApplicationProjectSettings = ProjectAccountSettingsManager.getInstance(newApplicationProject)
         if (newApplicationProjectSettings.isValidConnectionSettings()) {
             return
@@ -58,7 +58,7 @@ class SamSchemaDownloadPostCreationAction {
             return
         }
 
-        newApplicationProjectSettings.changeCredentialProvider(sourceCreatingProjectSettings.activeCredentialProvider)
+        newApplicationProjectSettings.changeCredentialProvider(sourceCreatingProjectSettings.selectedCredentialIdentifier)
         newApplicationProjectSettings.changeRegion(sourceCreatingProjectSettings.activeRegion)
     }
 

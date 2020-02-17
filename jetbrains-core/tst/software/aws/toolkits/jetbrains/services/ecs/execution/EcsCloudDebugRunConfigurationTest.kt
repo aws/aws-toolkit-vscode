@@ -21,7 +21,7 @@ import software.amazon.awssdk.services.ecs.model.ContainerDefinition
 import software.amazon.awssdk.services.ecs.model.Service
 import software.amazon.awssdk.services.ecs.model.ServiceNotFoundException
 import software.amazon.awssdk.services.ecs.model.TaskDefinition
-import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
+import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
 import software.aws.toolkits.jetbrains.core.MockResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugConstants
@@ -451,7 +451,7 @@ class EcsCloudDebugRunConfigurationTest {
         clusterArn: String = defaultClusterArn,
         serviceArn: String = defaultServiceArn,
         regionId: String = defaultRegion,
-        credentialProvider: ToolkitCredentialsProvider = mockCredentials
+        credentialsIdentifier: ToolkitCredentialsIdentifier = mockCredentials
     ) {
         val resourceCache = MockResourceCache.getInstance(projectRule.project)
         val taskDefinitionName = "taskDefinition"
@@ -465,11 +465,11 @@ class EcsCloudDebugRunConfigurationTest {
                 ContainerDefinition.builder().name(it).build()
             })
             .build()
-        resourceCache.addEntry(EcsResources.describeService(clusterArn, serviceArn), regionId, credentialProvider.id, fakeService)
-        resourceCache.addEntry(EcsResources.describeTaskDefinition(taskDefinitionName), regionId, credentialProvider.id, fakeTaskDefinition)
+        resourceCache.addEntry(EcsResources.describeService(clusterArn, serviceArn), regionId, credentialsIdentifier.id, fakeService)
+        resourceCache.addEntry(EcsResources.describeTaskDefinition(taskDefinitionName), regionId, credentialsIdentifier.id, fakeTaskDefinition)
     }
 
-    private val mockCredentials: ToolkitCredentialsProvider
+    private val mockCredentials: ToolkitCredentialsIdentifier
         get() = MockCredentialsManager.getInstance().addCredentials(
             "mockCreds",
             AwsBasicCredentials.create("foo", "bar")

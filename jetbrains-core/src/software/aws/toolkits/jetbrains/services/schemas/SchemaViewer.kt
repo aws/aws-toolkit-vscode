@@ -75,8 +75,7 @@ class SchemaDownloader() {
         return AwsResourceCache.getInstance(project).getResource(resource)
     }
 
-    fun getSchemaContentAsJson(schemaContent: DescribeSchemaResponse): JsonNode =
-        mapper.readTree(schemaContent.content())
+    fun getSchemaContentAsJson(schemaContent: DescribeSchemaResponse): JsonNode = mapper.readTree(schemaContent.content())
 
     companion object {
         val mapper = ObjectMapper()

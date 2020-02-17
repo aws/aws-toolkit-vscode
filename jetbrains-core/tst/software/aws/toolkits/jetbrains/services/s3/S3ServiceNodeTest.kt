@@ -9,13 +9,12 @@ import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.Bucket
-import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.MockResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerErrorNode
+import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
 import software.aws.toolkits.jetbrains.utils.delegateMock
 import java.time.Instant
@@ -32,15 +31,11 @@ class S3ServiceNodeTest {
     val mockClientManager = MockClientManagerRule { projectRule.project }
 
     private val mockClient = delegateMock<S3Client>()
-    private val mockSettingsManager by lazy {
-        ProjectAccountSettingsManager.getInstance(projectRule.project)
-            as MockProjectAccountSettingsManager
-    }
 
     @Before
     fun setUp() {
         resourceCache().clear()
-        mockSettingsManager.changeRegion(AwsRegion.GLOBAL)
+        MockProjectAccountSettingsManager.getInstance(projectRule.project).reset()
         mockClientManager.manager().register(S3Client::class, mockClient)
     }
 
@@ -87,7 +82,7 @@ class S3ServiceNodeTest {
     private fun MockResourceCache.s3buckets(names: List<String>) {
         this.addEntry(
             S3Resources.LIST_REGIONALIZED_BUCKETS,
-            CompletableFuture.completedFuture(names.map { S3Resources.RegionalizedBucket(bucketData(it), AwsRegion.GLOBAL) })
+            CompletableFuture.completedFuture(names.map { S3Resources.RegionalizedBucket(bucketData(it), MockRegionProvider.getInstance().defaultRegion()) })
         )
     }
 }

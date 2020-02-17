@@ -14,8 +14,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.annotations.TestOnly
-import software.aws.toolkits.core.credentials.CredentialProviderNotFound
+import software.aws.toolkits.core.credentials.CredentialProviderNotFoundException
 import software.aws.toolkits.core.credentials.ToolkitCredentialsChangeListener
+import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.getLogger
@@ -42,14 +43,16 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
     protected val recentlyUsedRegions = MRUList<String>(MAX_HISTORY)
 
     // Internal state is visible for AwsSettingsPanel and ChangeAccountSettingsActionGroup
-    internal var selectedCredentials: ToolkitCredentialsProvider? = null
+    internal var selectedCredentialIdentifier: ToolkitCredentialsIdentifier? = null
     internal var selectedRegion: AwsRegion? = null
+
+    private var selectedCredentialsProvider: ToolkitCredentialsProvider? = null
 
     init {
         ApplicationManager.getApplication().messageBus.connect(project)
             .subscribe(CredentialManager.CREDENTIALS_CHANGED, object : ToolkitCredentialsChangeListener {
-                override fun providerRemoved(providerId: String) {
-                    if (selectedCredentials?.id == providerId) {
+                override fun providerRemoved(identifier: ToolkitCredentialsIdentifier) {
+                    if (selectedCredentialIdentifier == identifier) {
                         changeConnectionSettings(null, selectedRegion)
                     }
                 }
@@ -58,7 +61,7 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
 
     fun isValidConnectionSettings(): Boolean = connectionState == ConnectionState.VALID
 
-    fun connectionSettings(): ConnectionSettings? = selectedCredentials?.let { creds ->
+    fun connectionSettings(): ConnectionSettings? = selectedCredentialsProvider?.let { creds ->
         selectedRegion?.let { region ->
             ConnectionSettings(creds, region)
         }
@@ -67,9 +70,9 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
     /**
      * Internal setter that allows for null values and is intended to set the internal state and still notify
      */
-    protected fun changeConnectionSettings(credentials: ToolkitCredentialsProvider?, region: AwsRegion?) {
+    protected fun changeConnectionSettings(identifier: ToolkitCredentialsIdentifier?, region: AwsRegion?) {
         changeFieldsAndNotify {
-            credentials?.let {
+            identifier?.let {
                 recentlyUsedProfiles.add(it.id)
             }
 
@@ -77,7 +80,7 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
                 recentlyUsedRegions.add(it.id)
             }
 
-            selectedCredentials = credentials
+            selectedCredentialIdentifier = identifier
             selectedRegion = region
         }
     }
@@ -86,26 +89,26 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
     /**
      * Changes the credentials and then validates them. Notifies listeners of results
      */
-    fun changeCredentialProvider(value: ToolkitCredentialsProvider?) {
+    fun changeCredentialProvider(identifier: ToolkitCredentialsIdentifier?) {
         changeFieldsAndNotify {
-            value?.let {
-                recentlyUsedProfiles.add(value.id)
+            identifier?.let {
+                recentlyUsedProfiles.add(identifier.id)
             }
 
-            selectedCredentials = value
+            selectedCredentialIdentifier = identifier
         }
     }
 
     /**
      * Changes the region and then validates them. Notifies listeners of results
      */
-    fun changeRegion(value: AwsRegion) {
+    fun changeRegion(region: AwsRegion) {
         changeFieldsAndNotify {
-            value.let {
-                recentlyUsedRegions.add(value.id)
+            region.let {
+                recentlyUsedRegions.add(region.id)
             }
 
-            selectedRegion = value
+            selectedRegion = region
         }
     }
 
@@ -115,14 +118,17 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
         connectionState = ConnectionState.VALIDATING
         validationJob?.cancel(CancellationException("Newer connection settings chosen"))
 
+        // Clear existing provider
+        selectedCredentialsProvider = null
+
         fieldUpdateBlock()
 
-        validationJob = GlobalScope.launch(Dispatchers.Default) {
+        validationJob = GlobalScope.launch(Dispatchers.IO) {
             broadcastChangeEvent(ConnectionSettingsStateChange(connectionState))
 
-            val credentials = selectedCredentials
+            val credentialsIdentifier = selectedCredentialIdentifier
             val region = selectedRegion
-            if (credentials == null || region == null) {
+            if (credentialsIdentifier == null || region == null) {
                 connectionState = ConnectionState.INVALID
                 broadcastChangeEvent(ConnectionSettingsStateChange(connectionState))
                 incModificationCount()
@@ -130,13 +136,17 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
             }
 
             try {
-                validate(credentials, region)
+                val credentialsProvider = CredentialManager.getInstance().getAwsCredentialProvider(credentialsIdentifier, region)
+
+                validate(credentialsProvider, region)
                 connectionState = ConnectionState.VALID
-                broadcastChangeEvent(ValidConnectionSettings(credentials, region, connectionState))
+                selectedCredentialsProvider = credentialsProvider
+
+                broadcastChangeEvent(ValidConnectionSettings(connectionState))
             } catch (e: Exception) {
                 connectionState = ConnectionState.INVALID
-                LOGGER.warn(e) { message("credentials.profile.validation_error", credentials.displayName) }
-                broadcastChangeEvent(InvalidConnectionSettings(credentials, region, e, connectionState))
+                LOGGER.warn(e) { message("credentials.profile.validation_error", credentialsIdentifier.displayName) }
+                broadcastChangeEvent(InvalidConnectionSettings(credentialsIdentifier, region, e, connectionState))
             } finally {
                 incModificationCount()
                 AwsTelemetry.validateCredentials(project, success = isValidConnectionSettings())
@@ -156,8 +166,8 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
      * Legacy method, should be considered deprecated and avoided since it loads defaults out of band
      */
     val activeCredentialProvider: ToolkitCredentialsProvider
-        @Throws(CredentialProviderNotFound::class)
-        get() = selectedCredentials ?: throw CredentialProviderNotFound(message("credentials.profile.not_configured")).also {
+        @Throws(CredentialProviderNotFoundException::class)
+        get() = selectedCredentialsProvider ?: throw CredentialProviderNotFoundException(message("credentials.profile.not_configured")).also {
             LOGGER.warn(IllegalStateException()) { "Using activeCredentialProvider when credentials is null, calling code needs to be migrated to handle null" }
         }
 
@@ -170,11 +180,12 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
     }
 
     /**
-     * Returns the list of recently used [ToolkitCredentialsProvider]
+     * Returns the list of recently used [ToolkitCredentialsIdentifier]
      */
-    fun recentlyUsedCredentials(): List<ToolkitCredentialsProvider> {
+    fun recentlyUsedCredentials(): List<ToolkitCredentialsIdentifier> {
         val credentialsProvider = CredentialManager.getInstance()
-        return recentlyUsedProfiles.elements().mapNotNull { tryOrNull { credentialsProvider.getCredentialProvider(it) } }
+        val providerIds = credentialsProvider.getCredentialIdentifiers().map { it.id to it }.toMap()
+        return recentlyUsedProfiles.elements().mapNotNull { providerIds[it] }
     }
 
     /**
@@ -207,6 +218,7 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
             ConnectionSettingsChangeNotifier::class.java
         )
 
+        @JvmStatic
         fun getInstance(project: Project): ProjectAccountSettingsManager = ServiceManager.getService(project, ProjectAccountSettingsManager::class.java)
 
         private val LOGGER = getLogger<DefaultProjectAccountSettingsManager>()
@@ -229,14 +241,13 @@ sealed class ConnectionSettingsChangeEvent(val state: ConnectionState)
 class ConnectionSettingsStateChange(state: ConnectionState) : ConnectionSettingsChangeEvent(state)
 
 class InvalidConnectionSettings(
-    val credentialsProvider: ToolkitCredentialsProvider,
+    val credentialsProvider: ToolkitCredentialsIdentifier,
     val region: AwsRegion,
     val cause: Exception,
     state: ConnectionState
 ) : ConnectionSettingsChangeEvent(state)
 
-class ValidConnectionSettings(val credentialsProvider: ToolkitCredentialsProvider, val region: AwsRegion, state: ConnectionState) :
-    ConnectionSettingsChangeEvent(state)
+class ValidConnectionSettings(state: ConnectionState) : ConnectionSettingsChangeEvent(state)
 
 /**
  * Legacy method, should be considered deprecated and avoided since it loads defaults out of band

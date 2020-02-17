@@ -29,7 +29,7 @@ class RemoteLambdaRunConfigurationProducerTest {
     fun validRunConfigurationIsCreated() {
         val functionName = "SomeFunction"
         val region = AwsRegion("us-east-1", "us-east-1", "aws")
-        val credentialProviderId = MockProjectAccountSettingsManager.getInstance(projectRule.project).selectedCredentials
+        val credentialProviderId = MockProjectAccountSettingsManager.getInstance(projectRule.project).connectionSettings()?.credentials
 
         val lambdaLocation = LambdaFunction(
             name = functionName,

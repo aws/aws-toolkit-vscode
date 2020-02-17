@@ -29,7 +29,11 @@ class RemoteLambdaRunSettingsEditor(project: Project) : SettingsEditor<RemoteLam
 
     internal fun updateFunctions(region: AwsRegion?, credentialProviderId: String?) {
         region ?: return
-        val credentialProvider = credentialProviderId?.let { tryOrNull { credentialManager.getCredentialProvider(it) } } ?: return
+        credentialProviderId ?: return
+
+        val credentialIdentifier = credentialManager.getCredentialIdentifierById(credentialProviderId) ?: return
+        val credentialProvider = tryOrNull { credentialManager.getAwsCredentialProvider(credentialIdentifier, region) } ?: return
+
         val oldSettings = settings.getAndUpdate { region to credentialProvider }
         if (oldSettings?.first == region && oldSettings.second == credentialProvider) return
         functionSelector.reload()

@@ -25,9 +25,9 @@ interface SchemaSelectionPanel {
 
     val schemaSelectionLabel: JLabel?
 
-    open fun registryName(): String? = null
+    fun registryName(): String? = null
 
-    open fun schemaName(): String? = null
+    fun schemaName(): String? = null
 
     fun reloadSchemas(awsConnection: AwsConnection? = null) {}
 

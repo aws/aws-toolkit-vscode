@@ -13,7 +13,7 @@ import com.intellij.openapi.actionSystem.ToggleAction
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.psi.util.CachedValueProvider
-import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
+import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.utils.actions.ComputableActionGroup
@@ -71,7 +71,7 @@ private class ChangeCredentialsActionGroup(popup: Boolean) : ComputableActionGro
         val credentialManager = CredentialManager.getInstance()
 
         val actions = mutableListOf<AnAction>()
-        credentialManager.getCredentialProviders().forEach {
+        credentialManager.getCredentialIdentifiers().forEach {
             actions.add(ChangeCredentialsAction(it))
         }
         actions.add(Separator.create())
@@ -107,9 +107,9 @@ private class ChangeRegionAction(private val region: AwsRegion) : ToggleAction(r
     }
 }
 
-private class ChangeCredentialsAction(private val credentialsProvider: ToolkitCredentialsProvider) : ToggleAction(credentialsProvider.displayName),
+private class ChangeCredentialsAction(private val credentialsProvider: ToolkitCredentialsIdentifier) : ToggleAction(credentialsProvider.displayName),
     DumbAware {
-    override fun isSelected(e: AnActionEvent): Boolean = getAccountSetting(e).selectedCredentials == credentialsProvider
+    override fun isSelected(e: AnActionEvent): Boolean = getAccountSetting(e).selectedCredentialIdentifier == credentialsProvider
 
     override fun setSelected(e: AnActionEvent, state: Boolean) {
         if (state) {

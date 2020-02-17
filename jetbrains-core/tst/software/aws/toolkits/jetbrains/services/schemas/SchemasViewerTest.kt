@@ -39,7 +39,7 @@ class SchemasViewerTest {
 
     private val fileEditorManager = FileEditorManager.getInstance(projectRule.project)
 
-    private val CREDENTIAL_IDENTIFIER = MockCredentialsManager.DUMMY_PROVIDER_ID
+    private val CREDENTIAL_IDENTIFIER = MockCredentialsManager.DUMMY_PROVIDER_IDENTIFIER.displayName
     private val REGION = MockProjectAccountSettingsManager.getInstance(projectRule.project).activeRegion.id
     private val REGISTRY = "registry"
     private val SCHEMA = "schema"

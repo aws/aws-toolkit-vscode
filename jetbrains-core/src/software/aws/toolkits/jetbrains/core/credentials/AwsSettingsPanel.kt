@@ -38,7 +38,7 @@ private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
     override fun getTooltipText() = SettingsSelector.tooltipText
 
     override fun getSelectedValue(): String {
-        val credentials = accountSettingsManager.selectedCredentials
+        val credentials = accountSettingsManager.selectedCredentialIdentifier
         val region = accountSettingsManager.selectedRegion
         val statusLine = when {
             credentials == null -> message("settings.credentials.none_selected")

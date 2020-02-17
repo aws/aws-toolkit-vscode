@@ -6,10 +6,6 @@ package software.aws.toolkits.jetbrains.ui.wizard
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.ComboboxSpeedSearch
-import software.amazon.awssdk.auth.credentials.AwsCredentials
-import software.aws.toolkits.core.credentials.CredentialProviderNotFound
-import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
-import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
@@ -27,8 +23,8 @@ class SchemaResourceSelectorSelectionPanel(
     val project: Project,
     // Subsequent parameters injectable for unit tests to enable mocking because ResourceSelector has inconsistent unit test behaviour
     val resourceSelectorBuilder: ResourceSelector.ResourceBuilder = ResourceSelector.builder(project),
-    private val useSpeedSearch: Boolean = true,
-    private val rootPanelBuilder: () -> JPanel = { JPanel(BorderLayout()) }
+    useSpeedSearch: Boolean = true,
+    rootPanelBuilder: () -> JPanel = { JPanel(BorderLayout()) }
 ) :
     SchemaSelectionPanelBase(project) {
 
@@ -36,7 +32,7 @@ class SchemaResourceSelectorSelectionPanel(
 
     private val schemaPanel: JPanel
 
-    private var currentAwsConnection: AwsConnection
+    private var currentAwsConnection: AwsConnection?
 
     private val schemasSelector: ResourceSelector<SchemaSelectionItem>
 
@@ -57,26 +53,25 @@ class SchemaResourceSelectorSelectionPanel(
 
     override val schemaSelectionPanel: JComponent = schemaPanel
 
-    private fun initializeAwsConnection(): AwsConnection {
+    private fun initializeAwsConnection(): AwsConnection? {
         val settings = ProjectAccountSettingsManager.getInstance(project)
         return if (settings.isValidConnectionSettings()) {
             settings.activeRegion to settings.activeCredentialProvider
         } else {
-            settings.activeRegion to LateBoundToolkitCredentialsProvider()
+            null
         }
     }
 
-    private fun initializeSchemasSelector(): ResourceSelector<SchemaSelectionItem> =
-        resourceSelectorBuilder
-            .resource(SchemasResources.LIST_REGISTRIES_AND_SCHEMAS)
-            .comboBoxModel(SchemaSelectionComboBoxModel())
-            .customRenderer(SchemaSelectionListCellRenderer())
-            .disableAutomaticLoading()
-            .disableAutomaticSorting()
-            .awsConnection { currentAwsConnection } // Must be inline function as it gets updated and re-evaluated
-            .build()
+    private fun initializeSchemasSelector(): ResourceSelector<SchemaSelectionItem> = resourceSelectorBuilder
+        .resource(SchemasResources.LIST_REGISTRIES_AND_SCHEMAS)
+        .comboBoxModel(SchemaSelectionComboBoxModel())
+        .customRenderer(SchemaSelectionListCellRenderer())
+        .disableAutomaticLoading()
+        .disableAutomaticSorting()
+        .awsConnection { currentAwsConnection ?: throw IllegalStateException(message("credentials.profile.not_configured")) } // Must be inline function as it gets updated and re-evaluated
+        .build()
 
-    override fun reloadSchemas(awsConnection: Pair<AwsRegion, ToolkitCredentialsProvider>?) {
+    override fun reloadSchemas(awsConnection: AwsConnection?) {
         if (awsConnection != null) {
             currentAwsConnection = awsConnection
         }
@@ -94,32 +89,12 @@ class SchemaResourceSelectorSelectionPanel(
     }
 
     override fun registryName(): String? = when (val selected = schemasSelector.selected()) {
-        is SchemaSelectionItem.SchemaItem -> {
-            selected.registryName
-        }
-        else -> {
-            null
-        }
+        is SchemaSelectionItem.SchemaItem -> selected.registryName
+        else -> null
     }
 
     override fun schemaName(): String? = when (val selected = schemasSelector.selected()) {
-        is SchemaSelectionItem.SchemaItem -> {
-            selected.itemText
-        }
-        else -> {
-            null
-        }
-    }
-
-    // LateBoundToolkitCredentialsProvider throws because it expects the credentials to be provided later (in this case, via invoking reloadSchemas)
-    private class LateBoundToolkitCredentialsProvider : ToolkitCredentialsProvider() {
-        override val id: String
-            get() = throw CredentialProviderNotFound(message("credentials.profile.not_configured"))
-        override val displayName: String
-            get() = throw CredentialProviderNotFound(message("credentials.profile.not_configured"))
-
-        override fun resolveCredentials(): AwsCredentials {
-            throw CredentialProviderNotFound(message("credentials.profile.not_configured"))
-        }
+        is SchemaSelectionItem.SchemaItem -> selected.itemText
+        else -> null
     }
 }

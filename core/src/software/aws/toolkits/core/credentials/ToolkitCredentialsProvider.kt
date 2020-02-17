@@ -5,10 +5,10 @@ package software.aws.toolkits.core.credentials
 
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 
-abstract class ToolkitCredentialsProvider : AwsCredentialsProvider {
+abstract class ToolkitCredentialsIdentifier {
     /**
-     * The ID should be unique across all [ToolkitCredentialsProvider].
-     * It is recommended to concatenate the factory type and the display name.
+     * The ID must be unique across all [ToolkitCredentialsIdentifier].
+     * It is recommended to concatenate the factory ID into this field to help enforce this requirement.
      */
     abstract val id: String
 
@@ -17,11 +17,17 @@ abstract class ToolkitCredentialsProvider : AwsCredentialsProvider {
      */
     abstract val displayName: String
 
+    /**
+     * The ID of the corresponding [CredentialProviderFactory] so that the credential manager knows which factory to invoke in order
+     * to resolve this into a [ToolkitCredentialsProvider]
+     */
+    abstract val factoryId: String
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as ToolkitCredentialsProvider
+        other as ToolkitCredentialsIdentifier
 
         if (id != other.id) return false
 
@@ -33,32 +39,22 @@ abstract class ToolkitCredentialsProvider : AwsCredentialsProvider {
     override fun toString(): String = "${this::class.simpleName}(id='$id')"
 }
 
-/**
- * The class for managing [ToolkitCredentialsProvider] of the same type.
- * @property type The internal ID for this type of [ToolkitCredentialsProvider], eg 'profile' for AWS account whose credentials is stored in the profile file.
- */
-abstract class ToolkitCredentialsProviderFactory<T : ToolkitCredentialsProvider>(
-    val type: String,
-    protected val credentialsProviderManager: ToolkitCredentialsProviderManager
-) {
-    private val providers = mutableMapOf<String, T>()
+class ToolkitCredentialsProvider(private val identifier: ToolkitCredentialsIdentifier, delegate: AwsCredentialsProvider) : AwsCredentialsProvider by delegate {
+    val id: String = identifier.id
+    val displayName = identifier.displayName
 
-    protected fun add(provider: T) {
-        providers[provider.id] = provider
-        credentialsProviderManager.providerAdded(provider)
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ToolkitCredentialsProvider
+
+        if (identifier != other.identifier) return false
+
+        return true
     }
 
-    protected fun remove(provider: T) {
-        providers.remove(provider.id)
-        credentialsProviderManager.providerRemoved(provider.id)
-    }
+    override fun hashCode(): Int = identifier.hashCode()
 
-    fun listCredentialProviders() = providers.values
-
-    fun get(id: String) = providers[id]
-
-    /**
-     * Called when the [ToolkitCredentialsProviderManager] is shutting down to allow for resource clean up
-     */
-    open fun shutDown() {}
+    override fun toString(): String = "${this::class.simpleName}(identifier='$identifier')"
 }
