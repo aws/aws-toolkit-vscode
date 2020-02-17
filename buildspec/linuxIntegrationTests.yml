@@ -45,3 +45,9 @@ phases:
             - export AWS_TOOLKIT_TEST_NO_COLOR=1
             - npm install --unsafe-perm
             - xvfb-run npm run integrationTest
+
+reports:
+    integ-test:
+        files:
+            - '*'
+        base-directory: '.test-reports'

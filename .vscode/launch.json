@@ -35,6 +35,9 @@
                 "--extensionDevelopmentPath=${workspaceFolder}",
                 "--extensionTestsPath=${workspaceFolder}/dist/src/test/index.js"
             ],
+            "env": {
+                "TEST_REPORT_DIR": "${workspaceFolder}/.test-reports"
+            },
             "outFiles": ["${workspaceFolder}/dist/src/test/**/*.js"],
             "preLaunchTask": "npm: watch"
         },
@@ -49,7 +52,8 @@
                 "--extensionTestsPath=${workspaceFolder}/dist/src/integrationTest/index.js"
             ],
             "env": {
-                "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true"
+                "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true",
+                "TEST_REPORT_DIR": "${workspaceFolder}/.test-reports"
             },
             "outFiles": ["${workspaceFolder}/dist/src/integrationTest/**/*.js"],
             "preLaunchTask": "npm: testCompile"
