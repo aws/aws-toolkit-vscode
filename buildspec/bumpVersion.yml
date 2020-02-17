@@ -10,7 +10,7 @@ phases:
             - |
                 echo "bumping version, BUMP_TYPE set to \"$BUMP_TYPE\""
                 git config --global user.name "aws-toolkit-automation"
-                git config --global user.email "<>"
+                git config --global user.email "github-aws-toolkit-automation@amazon.com"
                 if [ "$BUMP_TYPE" = "MAJOR" ]; then
                   npm --no-git-tag-version version major
                 elif [ "$BUMP_TYPE" = "PATCH" ]; then
