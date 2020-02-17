@@ -8,6 +8,7 @@ import com.intellij.openapi.project.Project
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
+import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
@@ -30,6 +31,11 @@ class MockProjectAccountSettingsManager(project: Project) : ProjectAccountSettin
 
     fun changeRegionAndWait(region: AwsRegion) {
         changeRegion(region)
+        waitUntilStable()
+    }
+
+    fun changeCredentialProviderAndWait(identifier: ToolkitCredentialsIdentifier?) {
+        changeCredentialProvider(identifier)
         waitUntilStable()
     }
 
@@ -57,13 +63,13 @@ fun <T> runUnderRealCredentials(project: Project, block: () -> T): T {
         println("Running using real credentials")
 
         val realCredentialsProvider = credentialsManager.addCredentials("RealCredentials", credentials)
-        manager.changeCredentialProvider(realCredentialsProvider)
+        manager.changeCredentialProviderAndWait(realCredentialsProvider)
 
         return block.invoke()
     } finally {
         credentialsManager.reset()
         oldActive?.let {
-            manager.changeCredentialProvider(credentialsManager.getCredentialIdentifierById(oldActive.id))
+            manager.changeCredentialProviderAndWait(credentialsManager.getCredentialIdentifierById(oldActive.id))
         }
     }
 }
