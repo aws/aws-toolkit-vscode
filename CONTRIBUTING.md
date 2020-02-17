@@ -62,7 +62,7 @@ There are also some integration tests, which can be run from the Debug pane, or 
 #### Common Issues
 
 - 12 February 2020
-  - Consecutive test runs on are currently impacted on VS Code v.1.42.0 due to caching issues. We have opened an [issue with the VS Code team](https://github.com/microsoft/vscode/issues/90484) and we are looking into alternate fixes on our end.
+  - Consecutive test runs are currently impacted on VS Code v.1.42.0 due to caching issues. See [VS Code issue #90484](https://github.com/microsoft/vscode/issues/90484).
   - Current workarounds:
     - Delete the `CachedData` directory for VS Code (`{path/to/VS/Code/App/Data}/CachedData/`) between tests
     - Target a different version of VS Code for tests by adding the following environment variable: `VSCODE_TEST_VERSION = "1.41.1"`
