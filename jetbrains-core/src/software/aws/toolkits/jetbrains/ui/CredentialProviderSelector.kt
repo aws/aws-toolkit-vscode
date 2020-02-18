@@ -8,11 +8,12 @@ import com.intellij.ui.CollectionComboBoxModel
 import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.util.containers.OrderedSet
 import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
-import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.jetbrains.utils.ui.selected
 
 /**
  * Combo box used to select a credential provider
+ *
+ * TODO: Find a way to make this more typesafe
  */
 class CredentialProviderSelector : ComboBox<Any>() {
     private val comboBoxModel = Model()
@@ -32,7 +33,7 @@ class CredentialProviderSelector : ComboBox<Any>() {
     fun getSelectedCredentialsProvider(): String? {
         selected().let {
             return when (it) {
-                is ToolkitCredentialsProvider -> it.id
+                is ToolkitCredentialsIdentifier -> it.id
                 is String -> it
                 else -> null
             }
