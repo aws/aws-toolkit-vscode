@@ -26,15 +26,13 @@ Each scenario has one or more relevant user experiences. The different debugging
 
 ## What can be Debugged Locally
 
+TODO : WIP
+
+### Lambda Functions Invoked Directly
+
 ### <a id="sam-template-resource-local"></a> SAM Template Resources (Local Invoke)
 
-[SAM Template](#terms-sam-template) resources of type [`AWS::Serverless::Function`](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html) represent Lambda functions. Lambda function code referenced by these resources can be locally Run or Debugged. The Toolkit uses SAM CLI to invoke the Lambda function, emulating how the function is run on AWS. A debugger can be attached to the invoked Lambda function code, and the event passed into the Lambda function can be customized.
-
-### <a id="sam-template-resource-api-gateway"></a> SAM Template Resources (API Gateway style Local Invoke)
-
-SAM Template resources that contain an event of type [Api](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-api.html), can be hosted in a web server for local development and iteration. A REST request causes the Lambda function to receive an API Gateway based event.
-
-At this time, an experience for API Gateway support is not available. Some portions of this document (Debug Configurations for example) have considerations made for supporting API Gateway functionality.
+Lambda functions are represented in CloudFormation templates as resources of type [`AWS::Lambda::Function`](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-function.html) or [`AWS::Serverless::Function`](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html). With the Toolkit, users can locally invoke Lambda function code, optionally passing a custom event to it. The Toolkit uses SAM CLI to invoke the Lambda function, emulating how the function is run on AWS, then attaches a debugger to the invoked function.
 
 ### <a id="standalone-lambda"></a> Standalone Lambda Function Handlers
 
@@ -43,6 +41,16 @@ Lambda function handler code can be locally Run or Debugged independent of any S
 In this mode, any SAM Templates that reference a handler are ignored. This prevents confusion/errors introduced when trying to perform a reverse-lookup between code and SAM Template resources (examples include incorrectly determining a function's Lambda handler string, or situations where more than one resource references the same function).
 
 The Toolkit does not provide support for locally running or debugging standalone Lambda function handlers as API Gateway calls. The code should be referenced from a SAM Template in order to use the API Gateway style debugging features mentioned in the earlier section.
+
+### Lambda Functions Invoked via API Gateway
+
+### <a id="sam-template-resource-api-gateway"></a> SAM Template Resources (API Gateway style Local Invoke)
+
+SAM Template resources that contain an event of type [Api](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-api.html), can be hosted in a web server for local development and iteration. A REST request causes the Lambda function to receive an API Gateway based event.
+
+At this time, an experience for API Gateway support is not available. Some portions of this document (Debug Configurations for example) have considerations made for supporting API Gateway functionality.
+
+TODO : END WIP
 
 ## <a id="debug-config"></a> What can be configured for a Debug session?
 
