@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "The Toolkit now supports China and GovCloud regions. If you have a shared credentials profile based in one of these regions, you can add a \"region\" property to that profile, and the Toolkit will know to use a different region set."
+}
