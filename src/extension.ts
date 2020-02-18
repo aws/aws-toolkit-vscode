@@ -28,7 +28,12 @@ import {
 import { DefaultAwsContext } from './shared/defaultAwsContext'
 import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
 import { ext } from './shared/extensionGlobals'
-import { showQuickStartWebview, toastNewUser } from './shared/extensionUtilities'
+import {
+    aboutToolkit,
+    getToolkitEnvironmentDetails,
+    showQuickStartWebview,
+    toastNewUser
+} from './shared/extensionUtilities'
 import { getLogger } from './shared/logger'
 import { activate as activateLogger } from './shared/logger/activation'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
@@ -39,7 +44,13 @@ import { activate as activateServerless } from './shared/sam/activation'
 import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
 import { AwsTelemetryOptOut } from './shared/telemetry/awsTelemetryOptOut'
 import { DefaultTelemetryService } from './shared/telemetry/defaultTelemetryService'
-import { registerCommand } from './shared/telemetry/telemetryUtils'
+import {
+    recordAwsCreateCredentials,
+    recordAwsHelp,
+    recordAwsHelpQuickstart,
+    recordAwsReportPluginIssue,
+    recordAwsShowExtensionSource
+} from './shared/telemetry/telemetry'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { getChannelLogger } from './shared/utilities/vsCodeUtils'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
@@ -68,6 +79,9 @@ export async function activate(context: vscode.ExtensionContext) {
         const regionProvider = new DefaultRegionProvider(endpointsProvider)
         const loginManager = new LoginManager(awsContext)
 
+        const toolkitEnvDetails = getToolkitEnvironmentDetails()
+        getLogger().info(toolkitEnvDetails)
+
         await initializeAwsCredentialsStatusBarItem(awsContext, context)
         ext.awsContextCommands = new DefaultAWSContextCommands(
             awsContext,
@@ -90,52 +104,40 @@ export async function activate(context: vscode.ExtensionContext) {
         })
         await ext.telemetry.start()
 
-        registerCommand({
-            command: 'aws.login',
-            callback: async () => await ext.awsContextCommands.onCommandLogin(),
-            telemetryName: 'aws_credentialslogin'
-        })
+        vscode.commands.registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())
+        vscode.commands.registerCommand('aws.logout', async () => await ext.awsContextCommands.onCommandLogout())
 
-        registerCommand({
-            command: 'aws.credential.profile.create',
-            callback: async () => await ext.awsContextCommands.onCommandCreateCredentialsProfile(),
-            telemetryName: 'aws_credentialscreate'
-        })
-
-        registerCommand({
-            command: 'aws.logout',
-            callback: async () => await ext.awsContextCommands.onCommandLogout(),
-            telemetryName: 'aws_credentialslogout'
+        vscode.commands.registerCommand('aws.credential.profile.create', async () => {
+            try {
+                await ext.awsContextCommands.onCommandCreateCredentialsProfile()
+            } finally {
+                recordAwsCreateCredentials()
+            }
         })
 
         // register URLs in extension menu
-        registerCommand({
-            command: 'aws.help',
-            callback: async () => {
-                vscode.env.openExternal(vscode.Uri.parse(documentationUrl))
-            },
-            telemetryName: 'Command_aws.help'
+        vscode.commands.registerCommand('aws.help', async () => {
+            vscode.env.openExternal(vscode.Uri.parse(documentationUrl))
+            recordAwsHelp()
         })
-        registerCommand({
-            command: 'aws.github',
-            callback: async () => {
-                vscode.env.openExternal(vscode.Uri.parse(githubUrl))
-            },
-            telemetryName: 'Command_aws.github'
+        vscode.commands.registerCommand('aws.github', async () => {
+            vscode.env.openExternal(vscode.Uri.parse(githubUrl))
+            recordAwsShowExtensionSource()
         })
-        registerCommand({
-            command: 'aws.reportIssue',
-            callback: async () => {
-                vscode.env.openExternal(vscode.Uri.parse(reportIssueUrl))
-            },
-            telemetryName: 'Command_aws.reportIssue'
+        vscode.commands.registerCommand('aws.reportIssue', async () => {
+            vscode.env.openExternal(vscode.Uri.parse(reportIssueUrl))
+            recordAwsReportPluginIssue()
         })
-        registerCommand({
-            command: 'aws.quickStart',
-            callback: async () => {
+        vscode.commands.registerCommand('aws.quickStart', async () => {
+            try {
                 await showQuickStartWebview(context)
-            },
-            telemetryName: 'Command_aws.quickStart'
+            } finally {
+                recordAwsHelpQuickstart()
+            }
+        })
+
+        vscode.commands.registerCommand('aws.aboutToolkit', async () => {
+            await aboutToolkit()
         })
 
         await activateCdk({
@@ -159,7 +161,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateStepFunctions(context)
 
-        toastNewUser(context, getLogger())
+        toastNewUser(context)
 
         await loginWithMostRecentCredentials(toolkitSettings, loginManager)
     } catch (error) {

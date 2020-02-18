@@ -7,6 +7,7 @@ import { unlink, writeFile } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { getHandlerConfig } from '../../lambda/config/templates'
 import { PythonDebugConfiguration, PythonPathMapping } from '../../lambda/local/debugConfiguration'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { VSCODE_EXTENSION_ID } from '../extensions'
@@ -16,16 +17,9 @@ import { getLogger } from '../logger'
 import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
-import { MetricDatum } from '../telemetry/clienttelemetry'
-import { registerCommand } from '../telemetry/telemetryUtils'
+import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
 import { ChannelLogger, getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
-import {
-    CodeLensProviderParams,
-    DRIVE_LETTER_REGEX,
-    getInvokeCmdKey,
-    getMetricDatum,
-    makeCodeLenses
-} from './codeLensUtils'
+import { CodeLensProviderParams, DRIVE_LETTER_REGEX, getInvokeCmdKey, makeCodeLenses } from './codeLensUtils'
 import {
     executeSamBuild,
     getHandlerRelativePath,
@@ -269,14 +263,20 @@ export async function initialize({
                 )}`
             )
 
-            const codeDir = samProjectCodeRoot
+            const config = await getHandlerConfig({
+                handlerName: args.handlerName,
+                documentUri: args.document.uri,
+                samTemplate: vscode.Uri.file(args.samTemplate.fsPath)
+            })
+
             const samTemplatePath: string = await executeSamBuild({
                 baseBuildDir,
                 channelLogger,
-                codeDir,
+                codeDir: samProjectCodeRoot,
                 inputTemplatePath,
                 manifestPath,
-                samProcessInvoker: processInvoker
+                samProcessInvoker: processInvoker,
+                useContainer: config.useContainer
             })
 
             const invokeArgs: InvokeLambdaFunctionArguments = {
@@ -318,28 +318,34 @@ export async function initialize({
         }
     }
 
-    const command = getInvokeCmdKey('python')
-    registerCommand({
-        command,
-        callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: MetricDatum }> => {
-            const resource = await CloudFormation.getResourceFromTemplate({
-                handlerName: params.handlerName,
-                templatePath: params.samTemplate.fsPath
-            })
-            const runtime = CloudFormation.getRuntime(resource)
+    vscode.commands.registerCommand(
+        getInvokeCmdKey('python'),
+        async (params: LambdaLocalInvokeParams): Promise<void> => {
+            let invokeResult: Result = 'Succeeded'
+            let lambdaRuntime = 'unknown'
+            try {
+                const resource = await CloudFormation.getResourceFromTemplate({
+                    handlerName: params.handlerName,
+                    templatePath: params.samTemplate.fsPath
+                })
+                lambdaRuntime = CloudFormation.getRuntime(resource)
 
-            await invokeLambda({
-                runtime,
-                ...params
-            })
-
-            return getMetricDatum({
-                isDebug: params.isDebug,
-                runtime
-            })
-        },
-        telemetryName: 'lambda_invokelocal'
-    })
+                await invokeLambda({
+                    runtime: lambdaRuntime,
+                    ...params
+                })
+            } catch (err) {
+                invokeResult = 'Failed'
+                throw err
+            } finally {
+                recordLambdaInvokeLocal({
+                    result: invokeResult,
+                    runtime: lambdaRuntime as Runtime,
+                    debug: params.isDebug
+                })
+            }
+        }
+    )
 }
 
 export async function waitForPythonDebugAdapter(

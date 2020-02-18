@@ -9,12 +9,22 @@ The AWS Toolkit for Visual Studio Code is an extension for working with AWS serv
 
 The Toolkit is available from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/itemdetails?itemName=AmazonWebServices.aws-toolkit-vscode).
 
-This is an open source project because we want you to be involved. We love issues, feature requests, code reviews, pull requests or any positive contribution.
+This is an open source project because we want you to be involved. We love issues, feature requests, code reviews, pull 
+requests or any positive contribution. See [CONTRIBUTING](CONTRIBUTING.md) for how to help.
 
 ## Documentation
 
 -   The [Quick Start Guide](extension-readme.md) provides a summary of the Toolkit and the most common tasks.
 -   The [User Guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/welcome) contains detailed instructions for getting up and running with the Toolkit.
+
+## Feedback
+
+We want your feedback!
+
+- Upvote 👍 [feature requests](https://github.com/aws/aws-toolkit-vscode/issues?q=is%3Aissue+is%3Aopen+label%3Afeature-request+sort%3Areactions-%2B1-desc)
+- [Ask a question](https://github.com/aws/aws-toolkit-vscode/issues/new?labels=guidance&template=guidance_request.md)
+- [Request a new feature](https://github.com/aws/aws-toolkit-vscode/issues/new?labels=feature-request&template=feature_request.md)
+- [File an issue](https://github.com/aws/aws-toolkit-vscode/issues/new?labels=bug&template=bug_report.md)
 
 ## Debugging from the Debug panel
 
@@ -23,10 +33,6 @@ CodeLenses appear above Serverless Application Lambda Functions, allowing you to
 -   [Debugging NodeJS Lambda Functions](docs/debugging-nodejs-lambda-functions.md)
 -   [Debugging Python Lambda Functions](docs/debugging-python-lambda-functions.md)
 -   [Debugging .NET Core Lambda Functions](docs/debugging-dotnet-lambda-functions.md)
-
-## Contributing
-
-See [Contributing](./CONTRIBUTING.md).
 
 ## License
 

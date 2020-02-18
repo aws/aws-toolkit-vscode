@@ -8,12 +8,30 @@
  */
 
 import * as assert from 'assert'
+import { ext } from '../shared/extensionGlobals'
 import { getLogger } from '../shared/logger'
 import { setLogger } from '../shared/logger/logger'
+import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetryService'
+import { TelemetryPublisher } from '../shared/telemetry/telemetryPublisher'
+import { FakeExtensionContext } from './fakeExtensionContext'
 import { TestLogger } from './testLogger'
+import { FakeAwsContext } from './utilities/fakeAwsContext'
 
 // Expectation: Tests are not run concurrently
 let testLogger: TestLogger | undefined
+
+// Set up global telemetry client
+before(async () => {
+    const mockContext = new FakeExtensionContext()
+    const mockAws = new FakeAwsContext()
+    const mockPublisher: TelemetryPublisher = {
+        async init() {},
+        enqueue(...events: any[]) {},
+        async flush() {}
+    }
+    const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
+    ext.telemetry = service
+})
 
 beforeEach(async () => {
     // Set every test up so that TestLogger is the logger used by toolkit code

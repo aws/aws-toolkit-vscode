@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit for Visual Studio Code",
     "description": "An extension for working with Amazon Web Services in Visual Studio Code",
-    "version": "1.5.0",
+    "version": "1.6.1",
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {
@@ -50,7 +50,8 @@
         "onCommand:aws.renderStateMachine",
         "onCommand:aws.stepfunctions.createStateMachineFromTemplate",
         "onView:aws.cdk.explorer",
-        "onCommand:aws.refreshCdkExplorer"
+        "onCommand:aws.refreshCdkExplorer",
+        "onCommand:aws.aboutToolkit"
     ],
     "main": "./extensionMain",
     "contributes": {
@@ -261,6 +262,11 @@
                     "command": "aws.cdk.provideFeedback",
                     "when": "view == aws.cdk.explorer",
                     "group": "z_externalLinks@3"
+                },
+                {
+                    "command": "aws.aboutToolkit",
+                    "when": "view == aws.explorer",
+                    "group": "zz_about@1"
                 }
             ],
             "view/item/context": [
@@ -454,6 +460,11 @@
                 "command": "aws.renderStateMachine",
                 "title": "%AWS.command.stepFunctions.renderStateMachine%",
                 "category": "AWS"
+            },
+            {
+                "command": "aws.aboutToolkit",
+                "title": "%AWS.command.aboutToolkit%",
+                "category": "AWS"
             }
         ],
         "jsonValidation": [
@@ -496,7 +507,7 @@
         "compile": "webpack --mode development && npm run buildScripts",
         "recompile": "npm run clean && npm run compile",
         "watch": "npm run buildScripts && tsc -watch -p ./",
-        "postinstall": "ts-node ./build-scripts/generateServiceClient.ts",
+        "postinstall": "ts-node ./build-scripts/generateServiceClient.ts && npm run generateTelemetry",
         "testCompile": "tsc -p ./ && npm run buildScripts",
         "test": "npm run testCompile && ts-node ./test-scripts/test.ts",
         "integrationTest": "npm run testCompile && ts-node ./test-scripts/integrationTest.ts",
@@ -504,10 +515,12 @@
         "lintfix": "tslint --project . --fix",
         "package": "vsce package",
         "install-plugin": "vsce package -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix",
+        "generateTelemetry": "node node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts",
         "newChange": "ts-node ./build-scripts/newChange.ts",
         "createRelease": "ts-node ./build-scripts/createRelease.ts"
     },
     "devDependencies": {
+        "@aws-toolkits/telemetry": "0.0.8",
         "@types/adm-zip": "^0.4.32",
         "@types/async-lock": "^1.1.0",
         "@types/cross-spawn": "^6.0.0",
@@ -535,6 +548,8 @@
         "lolex": "^4.2.0",
         "marked": "^0.7.0",
         "mocha": "^6.2.0",
+        "mocha-junit-reporter": "^1.23.3",
+        "mocha-multi-reporters": "^1.1.7",
         "prettier": "^1.19.1",
         "pretty-quick": "^1.10.0",
         "readline-sync": "^1.4.9",

@@ -4,6 +4,7 @@
  */
 
 import * as assert from 'assert'
+import * as del from 'del'
 // tslint:disable-next-line:no-implicit-dependencies
 import * as lolex from 'lolex'
 import * as sinon from 'sinon'
@@ -12,6 +13,9 @@ import { DefaultTelemetryService } from '../../../shared/telemetry/defaultTeleme
 import { TelemetryPublisher } from '../../../shared/telemetry/telemetryPublisher'
 import { AccountStatus } from '../../../shared/telemetry/telemetryTypes'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
+
+import { ext } from '../../../shared/extensionGlobals'
+import { TelemetryService } from '../../../shared/telemetry/telemetryService'
 import {
     DEFAULT_TEST_ACCOUNT_ID,
     FakeAwsContext,
@@ -35,6 +39,26 @@ class MockTelemetryPublisher implements TelemetryPublisher {
     }
 }
 
+const originalTelemetryClient: TelemetryService = ext.telemetry
+let mockContext: FakeExtensionContext
+let mockAws: FakeAwsContext
+let mockPublisher: MockTelemetryPublisher
+let service: DefaultTelemetryService
+
+beforeEach(() => {
+    mockContext = new FakeExtensionContext()
+    mockAws = new FakeAwsContext()
+    mockPublisher = new MockTelemetryPublisher()
+    service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
+    ext.telemetry = service
+})
+
+afterEach(() => {
+    // Remove the persist file as it is saved
+    del.sync([ext.telemetry.persistFilePath], { force: true })
+    ext.telemetry = originalTelemetryClient
+})
+
 describe('DefaultTelemetryService', () => {
     const testFlushPeriod = 10
     let clock: lolex.InstalledClock
@@ -51,10 +75,6 @@ describe('DefaultTelemetryService', () => {
     })
 
     it('publishes periodically if user has said ok', async () => {
-        const mockContext = new FakeExtensionContext()
-        const mockAws = new FakeAwsContext()
-        const mockPublisher = new MockTelemetryPublisher()
-        const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
         service.clearRecords()
         service.telemetryEnabled = true
         service.notifyOptOutOptionMade()
@@ -73,10 +93,7 @@ describe('DefaultTelemetryService', () => {
     })
 
     it('events are kept in memory if user has not made a decision', async () => {
-        const mockContext = new FakeExtensionContext()
-        const mockAws = new FakeAwsContext()
-        const mockPublisher = new MockTelemetryPublisher()
-        const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
+        ext.telemetry = service
         service.clearRecords()
         service.telemetryEnabled = false
         service.flushPeriod = testFlushPeriod
@@ -102,10 +119,9 @@ describe('DefaultTelemetryService', () => {
     })
 
     it('events automatically inject the active account id into the metadata', async () => {
-        const mockContext = new FakeExtensionContext()
-        const mockAws = makeFakeAwsContextWithPlaceholderIds(({} as any) as AWS.Credentials)
-        const mockPublisher = new MockTelemetryPublisher()
-        const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
+        const mockAwsWithIds = makeFakeAwsContextWithPlaceholderIds(({} as any) as AWS.Credentials)
+        service = new DefaultTelemetryService(mockContext, mockAwsWithIds, mockPublisher)
+        ext.telemetry = service
         service.clearRecords()
         service.telemetryEnabled = false
         service.flushPeriod = testFlushPeriod
@@ -133,10 +149,6 @@ describe('DefaultTelemetryService', () => {
     })
 
     it('events with `session` namespace do not have an account tied to them', async () => {
-        const mockContext = new FakeExtensionContext()
-        const mockAws = new FakeAwsContext()
-        const mockPublisher = new MockTelemetryPublisher()
-        const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
         service.clearRecords()
         service.telemetryEnabled = false
         service.flushPeriod = testFlushPeriod
@@ -168,12 +180,11 @@ describe('DefaultTelemetryService', () => {
     })
 
     it('events created with a bad active account produce metadata mentioning the bad account', async () => {
-        const mockContext = new FakeExtensionContext()
-        const mockAws: AwsContext = ({
+        const mockAwsBad = ({
             getCredentialAccountId: () => 'this is bad!'
         } as any) as AwsContext
-        const mockPublisher = new MockTelemetryPublisher()
-        const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
+        service = new DefaultTelemetryService(mockContext, mockAwsBad, mockPublisher)
+        ext.telemetry = service
         service.clearRecords()
         service.telemetryEnabled = false
         service.flushPeriod = testFlushPeriod
@@ -201,10 +212,6 @@ describe('DefaultTelemetryService', () => {
     })
 
     it('events created prior to signing in do not have an account attached', async () => {
-        const mockContext = new FakeExtensionContext()
-        const mockAws = new FakeAwsContext(undefined)
-        const mockPublisher = new MockTelemetryPublisher()
-        const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
         service.clearRecords()
         service.telemetryEnabled = false
         service.flushPeriod = testFlushPeriod
@@ -232,10 +239,6 @@ describe('DefaultTelemetryService', () => {
     })
 
     it('events are never recorded if telemetry has been disabled', async () => {
-        const mockContext = new FakeExtensionContext()
-        const mockAws = new FakeAwsContext()
-        const mockPublisher = new MockTelemetryPublisher()
-        const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
         service.clearRecords()
         service.telemetryEnabled = false
         service.notifyOptOutOptionMade()
@@ -258,10 +261,6 @@ describe('DefaultTelemetryService', () => {
     })
 
     it('events are cleared after user disables telemetry via prompt', async () => {
-        const mockContext = new FakeExtensionContext()
-        const mockAws = new FakeAwsContext()
-        const mockPublisher = new MockTelemetryPublisher()
-        const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
         service.clearRecords()
 
         service.flushPeriod = testFlushPeriod
@@ -289,10 +288,6 @@ describe('DefaultTelemetryService', () => {
     })
 
     it('events are kept after user enables telemetry via prompt', async () => {
-        const mockContext = new FakeExtensionContext()
-        const mockAws = new FakeAwsContext()
-        const mockPublisher = new MockTelemetryPublisher()
-        const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
         service.clearRecords()
 
         service.flushPeriod = testFlushPeriod

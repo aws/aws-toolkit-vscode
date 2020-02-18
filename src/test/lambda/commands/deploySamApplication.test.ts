@@ -24,6 +24,7 @@ import {
     SamCliVersionValidation
 } from '../../../shared/sam/cli/samCliValidator'
 import { ChildProcessResult } from '../../../shared/utilities/childProcess'
+import { getTestLogger } from '../../globalSetup.test'
 import { FakeChannelLogger } from '../../shared/fakeChannelLogger'
 import { FakeChildProcessResult, TestSamCliProcessInvoker } from '../../shared/sam/cli/testSamCliProcessInvoker'
 
@@ -241,7 +242,7 @@ describe('deploySamApplication', async () => {
 
         await waitForDeployToComplete()
         assert.strictEqual(invokerCalledCount, 1, 'Unexpected sam cli invoke count')
-        assertErrorLogsContain('broken build', channelLogger, false)
+        assertErrorLogsContain('broken build', false)
         assertGeneralErrorLogged(channelLogger)
     })
 
@@ -273,7 +274,7 @@ describe('deploySamApplication', async () => {
 
         await waitForDeployToComplete()
         assert.strictEqual(invokerCalledCount, 2, 'Unexpected sam cli invoke count')
-        assertErrorLogsContain('broken package', channelLogger, false)
+        assertErrorLogsContain('broken package', false)
         assertGeneralErrorLogged(channelLogger)
     })
 
@@ -305,7 +306,7 @@ describe('deploySamApplication', async () => {
 
         await waitForDeployToComplete()
         assert.strictEqual(invokerCalledCount, 3, 'Unexpected sam cli invoke count')
-        assertErrorLogsContain('broken deploy', channelLogger, false)
+        assertErrorLogsContain('broken deploy', false)
         assertGeneralErrorLogged(channelLogger)
     })
 
@@ -322,9 +323,9 @@ function assertGeneralErrorLogged(channelLogger: FakeChannelLogger) {
     )
 }
 
-function assertErrorLogsContain(text: string, channelLogger: FakeChannelLogger, exactMatch: boolean) {
+function assertErrorLogsContain(text: string, exactMatch: boolean) {
     assert.ok(
-        channelLogger.logger
+        getTestLogger()
             .getLoggedEntries('error')
             .some(e => e instanceof Error && (exactMatch ? e.message === text : e.message.indexOf(text) !== -1)),
         `Expected to find ${text} in the error logs`

@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "Added the 'About AWS Toolkit' command and menu option to show AWS Toolkit versioning details that are useful to include with bug reports."
+}

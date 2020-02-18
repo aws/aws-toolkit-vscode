@@ -86,7 +86,7 @@ describe('DefaultRegionProvider', async () => {
                         regions: [
                             {
                                 id: regionCode,
-                                description: ''
+                                name: ''
                             }
                         ],
                         services: [
