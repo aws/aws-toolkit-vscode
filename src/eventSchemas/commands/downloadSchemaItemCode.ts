@@ -12,6 +12,7 @@ import * as vscode from 'vscode'
 import { SchemaClient } from '../../shared/clients/schemaClient'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { getLogger, Logger } from '../../shared/logger'
+import { recordSchemasDownload, Result } from '../../shared/telemetry/telemetry'
 import { ExtensionDisposableFiles } from '../../shared/utilities/disposableFiles'
 import { SchemaItemNode } from '../explorer/schemaItemNode'
 import { getLanguageDetails } from '../models/schemaCodeLangs'
@@ -34,6 +35,7 @@ const MAX_RETRIES = 150 // p100 of Java code generation is 250 seconds. So retry
 
 export async function downloadSchemaItemCode(node: SchemaItemNode) {
     const logger: Logger = getLogger()
+    let downloadResult: Result = 'Succeeded'
 
     try {
         const wizardContext = new DefaultSchemaCodeDownloadWizardContext(node)
@@ -75,6 +77,7 @@ export async function downloadSchemaItemCode(node: SchemaItemNode) {
             await vscode.window.showTextDocument(vscode.Uri.file(coreCodeFilePath))
         }
     } catch (err) {
+        downloadResult = 'Failed'
         const error = err as Error
         let errorMessage = localize(
             'AWS.message.error.schemas.downloadCodeBindings.failed_to_download',
@@ -86,6 +89,8 @@ export async function downloadSchemaItemCode(node: SchemaItemNode) {
         }
         vscode.window.showErrorMessage(errorMessage)
         logger.error('Error downloading schema', error)
+    } finally {
+        recordSchemasDownload({ result: downloadResult })
     }
 }
 
@@ -95,7 +100,7 @@ function getCoreFileName(schemaName: string, fileExtension: string) {
     return parsedName[parsedName.length - 1].concat(fileExtension)
 }
 
-function createSchemaCodeDownloaderObject(client: SchemaClient): SchemaCodeDownloader {
+export function createSchemaCodeDownloaderObject(client: SchemaClient): SchemaCodeDownloader {
     const downloader = new CodeDownloader(client)
     const generator = new CodeGenerator(client)
     const poller = new CodeGenerationStatusPoller(client)
@@ -110,7 +115,7 @@ export interface SchemaCodeDownloadRequestDetails {
     language: string
     schemaVersion: string
     destinationDirectory: vscode.Uri
-    schemaCoreCodeFileName: string
+    schemaCoreCodeFileName?: string
 }
 
 export class SchemaCodeDownloader {
@@ -168,9 +173,7 @@ export class SchemaCodeDownloader {
 }
 
 export class CodeGenerator {
-    public constructor(public client: SchemaClient) {
-        this.client = client
-    }
+    public constructor(public client: SchemaClient) {}
 
     public async generate(
         codeDownloadRequest: SchemaCodeDownloadRequestDetails
@@ -205,9 +208,7 @@ export class CodeGenerator {
 }
 
 export class CodeGenerationStatusPoller {
-    public constructor(public client: SchemaClient) {
-        this.client = client
-    }
+    public constructor(public client: SchemaClient) {}
 
     public async pollForCompletion(
         codeDownloadRequest: SchemaCodeDownloadRequestDetails,
@@ -253,9 +254,7 @@ export class CodeGenerationStatusPoller {
     }
 }
 export class CodeDownloader {
-    public constructor(public client: SchemaClient) {
-        this.client = client
-    }
+    public constructor(public client: SchemaClient) {}
 
     public async download(codeDownloadRequest: SchemaCodeDownloadRequestDetails): Promise<ArrayBuffer> {
         const response = await this.client.getCodeBindingSource(
@@ -337,16 +336,18 @@ export class CodeExtractor {
         })
     }
 
-    public getCoreCodeFilePath(codeZipFile: string, coreFileName: string): string | undefined {
-        const zip = new admZip(codeZipFile)
-        const zipEntries = zip.getEntries()
+    public getCoreCodeFilePath(codeZipFile: string, coreFileName: string | undefined): string | undefined {
+        if (coreFileName) {
+            const zip = new admZip(codeZipFile)
+            const zipEntries = zip.getEntries()
 
-        for (const zipEntry of zipEntries) {
-            if (zipEntry.isDirectory) {
-                // Ignore directories
-            } else {
-                if (zipEntry.name === coreFileName) {
-                    return zipEntry.entryName
+            for (const zipEntry of zipEntries) {
+                if (zipEntry.isDirectory) {
+                    // Ignore directories
+                } else {
+                    if (zipEntry.name === coreFileName) {
+                        return zipEntry.entryName
+                    }
                 }
             }
         }

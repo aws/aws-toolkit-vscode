@@ -4,6 +4,7 @@
  */
 
 import * as _ from 'lodash'
+import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
@@ -11,7 +12,7 @@ import { ScriptResource } from '../lambda/models/scriptResource'
 import { ext } from '../shared/extensionGlobals'
 import { mostRecentVersionKey, pluginVersion } from './constants'
 import { readFileAsString } from './filesystemUtilities'
-import { Logger } from './logger'
+import { getLogger } from './logger'
 
 const localize = nls.loadMessageBundle()
 
@@ -189,7 +190,7 @@ async function promptQuickStart(): Promise<void> {
  *
  * @param context VS Code Extension Context
  */
-export function toastNewUser(context: vscode.ExtensionContext, logger: Logger): void {
+export function toastNewUser(context: vscode.ExtensionContext): void {
     try {
         if (isDifferentVersion(context)) {
             setMostRecentVersion(context)
@@ -199,6 +200,44 @@ export function toastNewUser(context: vscode.ExtensionContext, logger: Logger): 
         }
     } catch (err) {
         // swallow error and don't block extension load
-        logger.error(err as Error)
+        getLogger().error(err as Error)
     }
+}
+
+/**
+ * Creates a modal to display OS, AWS Toolkit, and VS Code
+ * versions and allows user to copy to clipboard
+ * Also prints to the toolkit output channel
+ *
+ * @param toolkitOutputChannel VS Code Output Channel
+ */
+export async function aboutToolkit(): Promise<void> {
+    const toolkitEnvDetails = getToolkitEnvironmentDetails()
+    const copyButtonLabel = localize('AWS.message.prompt.copyButtonLabel', 'Copy')
+    const result = await vscode.window.showInformationMessage(toolkitEnvDetails, { modal: true }, copyButtonLabel)
+    if (result === copyButtonLabel) {
+        vscode.env.clipboard.writeText(toolkitEnvDetails)
+    }
+}
+
+/**
+ * Returns a string that includes the OS, AWS Toolkit,
+ * and VS Code versions.
+ */
+export function getToolkitEnvironmentDetails(): string {
+    const osType = os.type()
+    const osArch = os.arch()
+    const osRelease = os.release()
+    const vsCodeVersion = vscode.version
+    const envDetails = localize(
+        'AWS.message.toolkitInfo',
+        'OS:  {0} {1} {2}\nVisual Studio Code Version:  {3}\nAWS Toolkit for Visual Studio Code Version:  {4}\n',
+        osType,
+        osArch,
+        osRelease,
+        vsCodeVersion,
+        pluginVersion
+    )
+
+    return envDetails
 }

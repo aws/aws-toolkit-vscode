@@ -4,18 +4,15 @@
  */
 
 import * as vscode from 'vscode'
-import * as fsUtils from '../../shared/filesystemUtilities'
 import { getLogger, Logger } from '../../shared/logger'
+import { recordLambdaConfigure, Result } from '../../shared/telemetry/telemetry'
 import { getNormalizedRelativePath } from '../../shared/utilities/pathUtils'
 import { getChildrenRange } from '../../shared/utilities/symbolUtilities'
-import { getTabSize, saveDocumentIfDirty } from '../../shared/utilities/textDocumentUtilities'
+import { getTabSize } from '../../shared/utilities/textDocumentUtilities'
 import {
     ensureTemplatesConfigFileExists,
     getTemplatesConfigPath,
-    HandlerConfig,
-    loadTemplatesConfigFromJson,
     showTemplatesConfigurationError,
-    TemplatesConfig,
     TemplatesConfigFieldTypeError,
     TemplatesConfigPopulator
 } from '../config/templates'
@@ -39,6 +36,7 @@ export async function configureLocalLambda(
     samTemplate: vscode.Uri,
     context: ConfigureLocalLambdaContext = new DefaultConfigureLocalLambdaContext()
 ): Promise<void> {
+    let configureResult: Result = 'Succeeded'
     const templateRelativePath = getNormalizedRelativePath(workspaceFolder.uri.fsPath, samTemplate.fsPath)
 
     const configPath: string = getTemplatesConfigPath(workspaceFolder.uri.fsPath)
@@ -77,43 +75,14 @@ export async function configureLocalLambda(
             selection: await getEventRange(editor, templateRelativePath, handler, context)
         })
     } catch (e) {
+        configureResult = 'Failed'
         if (e instanceof TemplatesConfigFieldTypeError) {
             showTemplatesConfigurationError(e, context.showErrorMessage)
         } else {
             throw e
         }
-    }
-}
-
-export async function getLocalLambdaConfiguration(
-    workspaceFolder: vscode.WorkspaceFolder,
-    handler: string,
-    samTemplate: vscode.Uri
-): Promise<HandlerConfig> {
-    try {
-        const configPath: string = getTemplatesConfigPath(workspaceFolder.uri.fsPath)
-        const templateRelativePath = getNormalizedRelativePath(workspaceFolder.uri.fsPath, samTemplate.fsPath)
-
-        await saveDocumentIfDirty(configPath)
-
-        let rawConfig: string = '{}'
-        if (await fsUtils.fileExists(configPath)) {
-            rawConfig = await fsUtils.readFileAsString(configPath)
-        }
-
-        const configPopulationResult = new TemplatesConfigPopulator(rawConfig)
-            .ensureTemplateHandlerSectionExists(templateRelativePath, handler)
-            .getResults()
-
-        const config: TemplatesConfig = loadTemplatesConfigFromJson(configPopulationResult.json)
-
-        return config.templates[templateRelativePath]!.handlers![handler]!
-    } catch (e) {
-        if (e instanceof TemplatesConfigFieldTypeError) {
-            showTemplatesConfigurationError(e)
-        }
-
-        throw e
+    } finally {
+        recordLambdaConfigure({ result: configureResult })
     }
 }
 

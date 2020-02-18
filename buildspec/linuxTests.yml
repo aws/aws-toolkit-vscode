@@ -19,3 +19,9 @@ phases:
             - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"
             - curl -s https://codecov.io/bash > codecov.sh || true # this sometimes times out but we don't want to fail the build
             - if [ "$CODE_COV_TOKEN" ]; then bash ./codecov.sh -t $CODE_COV_TOKEN || true; fi
+
+reports:
+    unit-test:
+        files:
+            - '*'
+        base-directory: '.test-reports'

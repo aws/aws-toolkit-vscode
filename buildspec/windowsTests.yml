@@ -15,7 +15,7 @@ phases:
         commands:
             - npm run testCompile
             - npm run lint
-            - npm run test
+            - $env:TEST_REPORT_DIR="$env:CODEBUILD_SRC_DIR/.test_reports"; npm run test
             - |
                 if(-Not($Env:CODEBUILD_BUILD_SUCCEEDING -eq "0" -Or $Env:CODE_COV_TOKEN -eq $null)) {
                   $env:VCS_COMMIT_ID=$Env:CODEBUILD_RESOLVED_SOURCE_VERSION;
@@ -26,3 +26,9 @@ phases:
                     -f "build/reports/jacoco/coverageReport/coverageReport.xml" `
                     -c $Env:CODEBUILD_RESOLVED_SOURCE_VERSION
                 }
+
+reports:
+    unit-test:
+        files:
+            - '**/*'
+        base-directory: '$env:CODEBUILD_SRC_DIR/.test_reports'

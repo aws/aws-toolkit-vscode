@@ -6,6 +6,7 @@ linterOptions:
     exclude:
         - node_modules/**
         - '**/*.json'
+        - '**/*.gen.ts'
 rules:
     # TypeScript-specific
     # These rules find errors related to TypeScript features:
@@ -50,6 +51,7 @@ rules:
               - vscode-test
               - del
               - sinon
+              - telemetry
     no-inferred-empty-object-type: true
     no-invalid-template-strings: true
     no-invalid-this:

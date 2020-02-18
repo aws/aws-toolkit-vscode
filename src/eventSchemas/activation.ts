@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { downloadSchemaItemCode } from '../eventSchemas/commands/downloadSchemaItemCode'
 import { createSearchSchemasWebView } from '../eventSchemas/commands/searchSchemas'
 import { viewSchemaItem } from '../eventSchemas/commands/viewSchemaItem'
 import { RegistryItemNode } from '../eventSchemas/explorer/registryItemNode'
 import { SchemaItemNode } from '../eventSchemas/explorer/schemaItemNode'
 import { SchemasNode } from '../eventSchemas/explorer/schemasNode'
-import { registerCommand } from '../shared/telemetry/telemetryUtils'
 
 /**
  * Activate Schemas functionality for the extension.
@@ -19,33 +19,17 @@ export async function activate(): Promise<void> {
 }
 
 async function registerSchemasCommands(): Promise<void> {
-    registerCommand({
-        command: 'aws.viewSchemaItem',
-        callback: async (node: SchemaItemNode) => await viewSchemaItem(node),
-        telemetryName: 'schemas_view'
-    })
-
-    registerCommand({
-        command: 'aws.downloadSchemaItemCode',
-        callback: async (node: SchemaItemNode) => await downloadSchemaItemCode(node),
-        telemetryName: 'schemas_download'
-    })
-
-    registerCommand({
-        command: 'aws.searchSchema',
-        callback: async (node: SchemasNode) =>
-            await createSearchSchemasWebView({
-                node: node
-            }),
-        telemetryName: 'schemas_search'
-    })
-
-    registerCommand({
-        command: 'aws.searchSchemaPerRegistry',
-        callback: async (node: RegistryItemNode) =>
-            await createSearchSchemasWebView({
-                node: node
-            }),
-        telemetryName: 'schemas_search'
-    })
+    vscode.commands.registerCommand('aws.viewSchemaItem', async (node: SchemaItemNode) => await viewSchemaItem(node))
+    vscode.commands.registerCommand(
+        'aws.downloadSchemaItemCode',
+        async (node: SchemaItemNode) => await downloadSchemaItemCode(node)
+    )
+    vscode.commands.registerCommand(
+        'aws.searchSchema',
+        async (node: SchemasNode) => await createSearchSchemasWebView({ node: node })
+    )
+    vscode.commands.registerCommand(
+        'aws.searchSchemaPerRegistry',
+        async (node: RegistryItemNode) => await createSearchSchemasWebView({ node: node })
+    )
 }

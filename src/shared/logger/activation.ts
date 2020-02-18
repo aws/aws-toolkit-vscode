@@ -13,7 +13,7 @@ import { extensionSettingsPrefix } from '../constants'
 import { mkdir } from '../filesystem'
 import { fileExists } from '../filesystemUtilities'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
-import { registerCommand } from '../telemetry/telemetryUtils'
+import { recordVscodeViewLogs } from '../telemetry/telemetry'
 import { setLogger } from './logger'
 import { WinstonToolkitLogger } from './winstonToolkitLogger'
 
@@ -99,9 +99,8 @@ async function ensureLogFolderExists(logFolder: string): Promise<void> {
 }
 
 async function registerLoggerCommands(): Promise<void> {
-    registerCommand({
-        command: 'aws.viewLogs',
-        callback: async () => await vscode.window.showTextDocument(vscode.Uri.file(path.normalize(LOG_PATH))),
-        telemetryName: 'Command_aws.viewLogs'
+    vscode.commands.registerCommand('aws.viewLogs', async () => {
+        await vscode.window.showTextDocument(vscode.Uri.file(path.normalize(LOG_PATH)))
+        recordVscodeViewLogs()
     })
 }
