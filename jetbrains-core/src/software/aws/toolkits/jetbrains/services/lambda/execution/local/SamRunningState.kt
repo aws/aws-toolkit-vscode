@@ -33,11 +33,11 @@ class SamRunningState(
         val commandLine = SamCommon.getSamCommandLine()
             .withParameters("local")
             .withParameters("invoke")
+            .apply { settings.templateDetails?.run { withParameters(logicalName) } }
             .withParameters("--template")
             .withParameters(builtLambda.templateLocation.toString())
             .withParameters("--event")
             .withParameters(createEventFile())
-            .apply { settings.templateDetails?.run { withParameters(logicalName) } }
             .withEnvironment(totalEnvVars)
             .withEnvironment("PYTHONUNBUFFERED", "1") // Force SAM to not buffer stdout/stderr so it gets shown in IDE
 
