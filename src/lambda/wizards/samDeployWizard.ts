@@ -8,9 +8,11 @@ const localize = nls.loadMessageBundle()
 
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { AwsContext } from '../../shared/awsContext'
 import { samDeployDocUrl } from '../../shared/constants'
 import { getLogger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'
+import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
@@ -123,7 +125,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     public readonly getOverriddenParameters = getOverriddenParameters
     private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Documentation'))
 
-    public constructor(private readonly regionProvider: RegionProvider) {}
+    public constructor(private readonly regionProvider: RegionProvider, private readonly awsContext: AwsContext) {}
 
     public get workspaceFolders(): vscode.Uri[] | undefined {
         return (vscode.workspace.workspaceFolders || []).map(f => f.uri)
@@ -255,25 +257,25 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         }
     }
 
-    public async promptUserForRegion(initialRegionCode: string): Promise<string | undefined> {
-        const regionData = await this.regionProvider.getRegionData()
+    public async promptUserForRegion(initialRegionCode?: string): Promise<string | undefined> {
+        const partitionRegions = getRegionsForActiveCredentials(this.awsContext, this.regionProvider)
 
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
                 title: localize('AWS.samcli.deploy.region.prompt', 'Which AWS Region would you like to deploy to?'),
-                value: initialRegionCode || '',
+                value: initialRegionCode,
                 matchOnDetail: true,
                 ignoreFocusOut: true
             },
-            items: regionData.map(r => ({
-                label: r.regionName,
-                detail: r.regionCode,
+            items: partitionRegions.map(region => ({
+                label: region.name,
+                detail: region.id,
                 // this is the only way to get this to show on going back
                 // this will make it so it always shows even when searching for something else
-                alwaysShow: r.regionCode === initialRegionCode,
+                alwaysShow: region.id === initialRegionCode,
                 description:
-                    r.regionCode === initialRegionCode
-                        ? localize('AWS.samcli.wizard.selectedPreviously', 'Selected Previously')
+                    region.id === initialRegionCode
+                        ? localize('AWS.wizard.selectedPreviously', 'Selected Previously')
                         : ''
             })),
             buttons: [this.helpButton, vscode.QuickInputButtons.Back]
@@ -291,7 +293,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         })
         const val = picker.verifySinglePickerOutput(choices)
 
-        return val ? val.detail : undefined
+        return val?.detail
     }
 
     /**
