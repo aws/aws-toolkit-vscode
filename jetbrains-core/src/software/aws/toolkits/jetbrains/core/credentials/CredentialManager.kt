@@ -35,7 +35,8 @@ abstract class CredentialManager : SimpleModificationTracker() {
     fun getAwsCredentialProvider(providerId: ToolkitCredentialsIdentifier, region: AwsRegion): ToolkitCredentialsProvider =
         ToolkitCredentialsProvider(providerId, AwsCredentialProviderProxy(providerId, region))
 
-    fun getCredentialIdentifiers(): List<ToolkitCredentialsIdentifier> = providerIds.values.toList()
+    fun getCredentialIdentifiers(): List<ToolkitCredentialsIdentifier> = providerIds.values
+        .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.displayName })
 
     fun getCredentialIdentifierById(id: String): ToolkitCredentialsIdentifier? = providerIds[id]
 
