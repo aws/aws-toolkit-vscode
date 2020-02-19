@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getLogger, Logger } from '../../logger'
 import { map } from '../../utilities/collectionUtils'
 import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
 
@@ -17,8 +16,7 @@ export interface SamCliDeployParameters {
 
 export async function runSamCliDeploy(
     deployArguments: SamCliDeployParameters,
-    invoker: SamCliProcessInvoker,
-    logger: Logger = getLogger()
+    invoker: SamCliProcessInvoker
 ): Promise<void> {
     const args = [
         'deploy',
@@ -41,5 +39,5 @@ export async function runSamCliDeploy(
         spawnOptions: { env: deployArguments.environmentVariables }
     })
 
-    logAndThrowIfUnexpectedExitCode(childProcessResult, 0, logger)
+    logAndThrowIfUnexpectedExitCode(childProcessResult, 0)
 }

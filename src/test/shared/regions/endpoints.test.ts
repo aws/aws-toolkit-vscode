@@ -84,7 +84,7 @@ describe('loadEndpoints', async () => {
         assert.strictEqual(regions.length, 3, 'Unexpected amount of regions loaded')
         const region = regions[1]
         assert.strictEqual(region.id, 'region2')
-        assert.strictEqual(region.description, 'aws region two')
+        assert.strictEqual(region.name, 'aws region two')
     })
 
     it('loads services', async () => {

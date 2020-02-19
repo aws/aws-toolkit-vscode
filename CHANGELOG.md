@@ -1,3 +1,21 @@
+## 1.6.1 2020-02-10
+
+- **Bug Fix** Fixed an issue related to toolkit metrics
+
+## 1.6.0 2020-02-06
+
+- **Breaking Change** Minimum version of SAM CLI has been adjusted from 0.32.0 to 0.38.0 to accommodate new SAM application support for EventBridge Schemas
+- **Bug Fix** AWS Explorer no longer shows service nodes under regions where the service is not available (#850)
+- **Bug Fix** Fixed an issue where invalid credentials were reused until VS Code was closed and re-opened, even if the credentials source was updated. It is no longer necessary to restart VS Code. (#705)
+- **Feature** The MFA prompt now shows which MFA Device a code is being asked for.
+- **Feature** When credentials are invalid a notification is shown. To help diagnose these situations, a button was added to the notification that can open the logs.
+- **Feature** Removed the ability to create node.js 8.10 SAM Applications. This runtime has been deprecated. See https://docs.aws.amazon.com/lambda/latest/dg/runtime-support-policy.html for more information.
+- **Feature** When changes are made to Shared Credentials files, they will be picked up by the Toolkit the next time credentials are selected during the 'Connect to AWS' command.
+- **Feature** Added support to locally run SAM applications in containers.
+- **Feature** AWS Explorer now sorts region nodes by the region name
+- **Feature** Credentials were previously shown by their Shared Credentials profile names. They are now displayed in a "type:name" format, to better indicate the type of Credentials being used, and to support additional Credentials types in the future. Shared Credentials are shown with the type "profile".
+- **Feature** Added the ability to create new Serverless Applications with EventBridge Schemas support.
+
 ## 1.5.0 2020-01-06
 
 - **Breaking Change** Minimum version of SAM CLI has been adjusted from 0.16.0 to 0.32.0 to accommodate new runtime support

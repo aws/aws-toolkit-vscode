@@ -7,6 +7,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 
 import { access } from 'fs-extra'
+import { getHandlerConfig } from '../../lambda/config/templates'
 import { makeCoreCLRDebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { DefaultDockerClient, DockerClient } from '../clients/dockerClient'
 import { CloudFormation } from '../cloudformation/cloudformation'
@@ -21,12 +22,11 @@ import {
     WAIT_FOR_DEBUGGER_MESSAGES
 } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
-import { MetricDatum } from '../telemetry/clienttelemetry'
+import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
 import { TelemetryService } from '../telemetry/telemetryService'
-import { registerCommand } from '../telemetry/telemetryUtils'
 import { dirnameWithTrailingSlash } from '../utilities/pathUtils'
 import { ChannelLogger, getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
-import { CodeLensProviderParams, getInvokeCmdKey, getMetricDatum, makeCodeLenses } from './codeLensUtils'
+import { CodeLensProviderParams, getInvokeCmdKey, makeCodeLenses } from './codeLensUtils'
 import {
     executeSamBuild,
     ExecuteSamBuildArguments,
@@ -67,20 +67,15 @@ export async function initialize({
         WAIT_FOR_DEBUGGER_MESSAGES.DOTNET
     ])
 }: CodeLensProviderParams): Promise<void> {
-    const command = getInvokeCmdKey(CSHARP_LANGUAGE)
-    registerCommand({
-        command,
-        callback: async (params: LambdaLocalInvokeParams): Promise<{ datum: MetricDatum }> => {
-            return await onLocalInvokeCommand({
-                lambdaLocalInvokeParams: params,
-                configuration,
-                toolkitOutputChannel,
-                processInvoker,
-                localInvokeCommand,
-                telemetryService
-            })
-        },
-        telemetryName: 'lambda_invokelocal'
+    vscode.commands.registerCommand(getInvokeCmdKey(CSHARP_LANGUAGE), async (params: LambdaLocalInvokeParams) => {
+        await onLocalInvokeCommand({
+            lambdaLocalInvokeParams: params,
+            configuration,
+            toolkitOutputChannel,
+            processInvoker,
+            localInvokeCommand,
+            telemetryService
+        })
     })
 }
 
@@ -141,7 +136,7 @@ async function onLocalInvokeCommand(
         }): Promise<CloudFormation.Resource>
     },
     context: OnLocalInvokeCommandContext = new DefaultOnLocalInvokeCommandContext(toolkitOutputChannel)
-): Promise<{ datum: MetricDatum }> {
+): Promise<void> {
     const channelLogger = getChannelLogger(toolkitOutputChannel)
     const template: CloudFormation.Template = await loadCloudFormationTemplate(
         lambdaLocalInvokeParams.samTemplate.fsPath
@@ -150,7 +145,8 @@ async function onLocalInvokeCommand(
         templateResources: template.Resources,
         handlerName: lambdaLocalInvokeParams.handlerName
     })
-    const runtime = CloudFormation.getRuntime(resource)
+    let invokeResult: Result = 'Succeeded'
+    const lambdaRuntime = CloudFormation.getRuntime(resource)
 
     try {
         // Switch over to the output channel so the user has feedback that we're getting things ready
@@ -170,9 +166,15 @@ async function onLocalInvokeCommand(
             baseBuildDir,
             codeDir: codeUri,
             relativeFunctionHandler: handlerName,
-            runtime,
+            runtime: lambdaRuntime,
             globals: template.Globals,
             properties: resource.Properties
+        })
+
+        const config =  await getHandlerConfig({
+            handlerName: handlerName,
+            documentUri: documentUri,
+            samTemplate: vscode.Uri.file(lambdaLocalInvokeParams.samTemplate.fsPath)
         })
 
         const buildArgs: ExecuteSamBuildArguments = {
@@ -180,7 +182,8 @@ async function onLocalInvokeCommand(
             channelLogger,
             codeDir: codeUri,
             inputTemplatePath,
-            samProcessInvoker: processInvoker
+            samProcessInvoker: processInvoker,
+            useContainer: config.useContainer
         }
         if (lambdaLocalInvokeParams.isDebug) {
             buildArgs.environmentVariables = {
@@ -196,7 +199,7 @@ async function onLocalInvokeCommand(
             handlerName,
             originalSamTemplatePath: lambdaLocalInvokeParams.samTemplate.fsPath,
             samTemplatePath,
-            runtime
+            runtime: lambdaRuntime
         }
 
         const invokeContext: InvokeLambdaFunctionContext = {
@@ -210,7 +213,7 @@ async function onLocalInvokeCommand(
             await invokeLambdaFunction(invokeArgs, invokeContext)
         } else {
             const { debuggerPath } = await context.installDebugger({
-                runtime,
+                lambdaRuntime: lambdaRuntime,
                 targetFolder: codeUri,
                 channelLogger
             })
@@ -239,18 +242,19 @@ async function onLocalInvokeCommand(
             )
         }
     } catch (err) {
-        const error = err as Error
+        invokeResult = 'Failed'
         channelLogger.error(
             'AWS.error.during.sam.local',
             'An error occurred trying to run SAM Application locally: {0}',
-            error
+            err as Error
         )
+    } finally {
+        recordLambdaInvokeLocal({
+            result: invokeResult,
+            runtime: lambdaRuntime as Runtime,
+            debug: lambdaLocalInvokeParams.isDebug
+        })
     }
-
-    return getMetricDatum({
-        isDebug: lambdaLocalInvokeParams.isDebug,
-        runtime
-    })
 }
 
 export async function makeCSharpCodeLensProvider(): Promise<vscode.CodeLensProvider> {
@@ -423,7 +427,7 @@ export function generateDotNetLambdaHandler(components: DotNetLambdaHandlerCompo
 }
 
 interface InstallDebuggerArgs {
-    runtime: string
+    lambdaRuntime: string
     targetFolder: string
     channelLogger: ChannelLogger
 }
@@ -447,7 +451,7 @@ async function ensureDebuggerPathExists(parentFolder: string): Promise<void> {
 }
 
 async function _installDebugger(
-    { runtime, targetFolder, channelLogger }: InstallDebuggerArgs,
+    { lambdaRuntime, targetFolder, channelLogger }: InstallDebuggerArgs,
     { dockerClient }: { dockerClient: DockerClient }
 ): Promise<InstallDebuggerResult> {
     await ensureDebuggerPathExists(targetFolder)
@@ -463,7 +467,7 @@ async function _installDebugger(
 
         await dockerClient.invoke({
             command: 'run',
-            image: `lambci/lambda:${runtime}`,
+            image: `lambci/lambda:${lambdaRuntime}`,
             removeOnExit: true,
             mount: {
                 type: 'bind',
