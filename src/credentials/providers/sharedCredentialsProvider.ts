@@ -112,11 +112,10 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     private validateSourceProfileChain(): string | undefined {
         const profilesTraversed: string[] = [this.profileName]
 
-        let profileName = this.profileName
         let profile = this.profile
 
         while (!!profile[SHARED_CREDENTIAL_PROPERTIES.SOURCE_PROFILE]) {
-            profileName = profile[SHARED_CREDENTIAL_PROPERTIES.SOURCE_PROFILE]!
+            const profileName = profile[SHARED_CREDENTIAL_PROPERTIES.SOURCE_PROFILE]!
 
             // Cycle
             if (profilesTraversed.indexOf(profileName) !== -1) {

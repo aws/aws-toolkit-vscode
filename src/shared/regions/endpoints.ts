@@ -19,8 +19,14 @@ export interface Partition {
 }
 
 export interface Region {
+    /**
+     * Region Code
+     */
     id: string
-    description: string
+    /**
+     * Friendly Name
+     */
+    name: string
 }
 
 export interface Service {
@@ -102,7 +108,7 @@ function convertJsonMap<TIn, TOut>(
 function convertToRegion(id: string, region: ManifestRegion): Region {
     return {
         id: id,
-        description: region.description
+        name: region.description
     }
 }
 
