@@ -183,9 +183,8 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
      * Returns the list of recently used [ToolkitCredentialsIdentifier]
      */
     fun recentlyUsedCredentials(): List<ToolkitCredentialsIdentifier> {
-        val credentialsProvider = CredentialManager.getInstance()
-        val providerIds = credentialsProvider.getCredentialIdentifiers().map { it.id to it }.toMap()
-        return recentlyUsedProfiles.elements().mapNotNull { providerIds[it] }
+        val credentialManager = CredentialManager.getInstance()
+        return recentlyUsedProfiles.elements().mapNotNull { credentialManager.getCredentialIdentifierById(it) }
     }
 
     /**
