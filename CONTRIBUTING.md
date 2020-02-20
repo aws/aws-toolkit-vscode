@@ -59,6 +59,13 @@ There are also some integration tests, which can be run from the Debug pane, or 
 
     npm run integrationTest
 
+#### Common Issues
+
+- Consecutive test runs are currently impacted on VS Code v.1.42.0 due to caching issues. See [VS Code issue #90484](https://github.com/microsoft/vscode/issues/90484). (12 February 2020)
+  - Workarounds:
+    - Delete the `CachedData` directory for VS Code (`{path/to/VS/Code/App/Data}/CachedData/`) between tests, specifically the folder corresponding to VS Code 1.42.0 (`ae08d5460b5a45169385ff3fd44208f431992451`)
+    - Target a different version of VS Code for tests by adding the following environment variable: `VSCODE_TEST_VERSION = "1.41.1"`
+
 #### Checking coverage report
 
 After running the tests, the coverage report can be found at ./coverage/index.html

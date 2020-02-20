@@ -39,6 +39,11 @@ import * as os from "os"
 // END 2018-10-05: Amazon addition.
 import * as paths from "path";
 
+// 2020-02-05: Amazon addition.
+import { MochaOptions } from "mocha";
+import { resolve } from "path";
+// END 2020-02-05: Amazon addition.
+
 const istanbul = require("istanbul");
 const Mocha = require("mocha");
 const remapIstanbul = require("remap-istanbul");
@@ -52,10 +57,24 @@ if (!tty.getWindowSize) {
     };
 }
 
-let mocha = new Mocha({
-    ui: "bdd",
-    useColors: true,
-});
+// 2020-02-05: Amazon addition.
+export function defaultMochaOptions(useColors: boolean = true): MochaOptions {
+    const outputFile = resolve(process.env["TEST_REPORT_DIR"] || ".test-reports", "report.xml")
+    return {
+        ui: "bdd",
+        useColors: useColors,
+        reporter: "mocha-multi-reporters",
+        reporterOptions: {
+            reporterEnabled: "mocha-junit-reporter, spec",
+            mochaJunitReporterReporterOptions: {
+                mochaFile: outputFile
+            }
+        }
+    }
+}
+
+let mocha = new Mocha(defaultMochaOptions());
+// END 2020-02-05: Amazon addition.
 
 // 2018-10-05: Amazon addition.
 // @ts-ignore - Implicit any
@@ -307,7 +326,7 @@ class CoverageRunner {
 }
 
 // 2019-12-05: Amazon addition. (export declarations - runTests)
-export const runTests = (testsRoot: string, clb: (err: any, failedTests: number) => void ): void => run(testsRoot, clb)
+export const runTests = (testsRoot: string, clb: (err: any, failedTests: number) => void): void => run(testsRoot, clb)
 // END 2019-12-05: Amazon addition. (export declarations - runTests)
 // 2020-01-08: Amazon addition. (export declarations - configureMocha)
 export const configureMocha = (mochaOpts: any) => configure(mochaOpts)
