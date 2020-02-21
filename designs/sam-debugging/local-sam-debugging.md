@@ -165,23 +165,17 @@ Additional information about SAM can be found at:
 -   [What Is the AWS Serverless Application Model (AWS SAM)?](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html) (includes a Getting Started guide to the SAM CLI)
 -   [SAM CLI GitHub Repo](https://github.com/awslabs/aws-sam-cli)
 
-### Differences from v1.0.0 of AWS Toolkit
+### Differences between this design, and v1.0.0 (through present versions) of AWS Toolkit
 
 The debug capabilities initially released in the Toolkit were not well rounded. CodeLenses provided the only means of local debugging, and without a way to directly debug SAM Template resources these CodeLenses tried to compensate, leading to scenarios with undefined behaviors. Many of the issues are referenced from https://github.com/aws/aws-toolkit-vscode/issues/758
 
-Here is an outline of the differences between this design and version 1.0.0 of the AWS Toolkit:
+Here is an outline of the differences between this design and the current version of the AWS Toolkit:
 
 -   Changed functionality
-    -   CodeLenses on code files invoke the function in isolation, and no longer attempt to associate the function with a SAM Template
-        -   This change may surprise existing users. There is a high likelihood that they will prefer using F5 to debug their SAM Applications instead of searching for the CodeLenses. To mitigate this change, we have the following strategies:
-            -   publicize the change (through a PR of this document)
-            -   ensure the changelog entry suitably explains the impact when the change is made
-            -   update the user docs
-            -   describe behavior explicitly where appropriate ( for example, in tooltips)
-            -   for the first month after the functional change, the toolkit could surface a "New!" CodeLens in this area, explaining the difference in brief
+    -   CodeLenses on code files now provide the abilitiy to invoke a function in isolation, or as part of a SAM Template. Previously, they could only be invoked as part of a SAM Template.
 -   New functionality
     -   `aws-sam` Debug Configurations provide a new way to launch debug sessions against SAM Template resources
-    -   CodeLenses on SAM Template files
+    -   CodeLens provide debugging capabilities from SAM Template files
     -   API Gateway related debugging (TBD)
 -   Removed functionality
     -   CodeLenses are now pointers to Debug Configurations, and do not directly launch debug sessions on their own. The configuration files that were used by the old functionality are no longer relevant/used
