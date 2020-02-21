@@ -2,7 +2,7 @@
 
 Current Status: Proposed, Not Implemented
 
-## Introduction
+## <a id="introduction"> Introduction
 
 The AWS Toolkit enhances the Serverless Application Model (SAM) Application development experience by integrating local debug functionality into VS Code. This document outlines the user experience.
 
@@ -115,24 +115,29 @@ Example Debug Configuration entries can be found in the [Appendix](#sample-debug
 
 ### <a id="codelenses"></a> CodeLenses
 
+The Toolkit uses [CodeLenses](#terms-codelenses) as a shortcut to launching `aws-sam` [Debug Configurations](#debug-configurations).
+
+Some users find CodeLenses visually distracting, while others use the Toolkit for features not related to local debugging. The Toolkit's CodeLenses are enabled by default, but can be disabled in the Toolkit settings.
+
+The CodeLenses discussed below only appear for languages/runtimes that the Toolkit provides support for (see [Introduction](#introduction)).
+
 #### CodeLenses in SAM Template files
 
-The Toolkit adds [CodeLenses](#terms-codelenses) to SAM Template files, above every resource of type `AWS::Serverless::Function`. These CodeLenses provide users with an alternate way of launching `aws-sam` [debug configurations](#debug-configurations).
+The Toolkit adds CodeLenses to SAM Template files, above every resource of type `AWS::Serverless::Function`. These CodeLenses provide users with an alternate way of launching `aws-sam` debug configurations.
 
-Two CodeLenses are added: "Run Locally", and "Debug Locally". The only difference between the two is whether or not a debugger is involved. When users click either CodeLens, the TODO : LEFT OFF
-Every Debug Configuration that references a SAM Template and resource pairing will produce a CodeLens above that resource. When clicked, these CodeLenses launch the corresponding debug session, as if the user selected that debug configuration and pressed Debug from VS Code's Debug view.
+Two CodeLenses are added: "Run Locally", and "Debug Locally". The only difference between the two is whether or not a debugger is involved. When users click either CodeLens, the Toolkit shows a selection picker. The picker presents users with the following choices:
 
-An additional CodeLens is placed above every template resource of type `AWS::Serverless::Function` called "Add Debug Configuration". Clicking this CodeLens produces a pre-filled `aws-sam` Debug Configuration in `launch.json` capable of performing a [local invoke](#sam-template-resource-local) of the associated resource.
+-   "Invoke \<Debug Configuration Name\>" - The picker contains one of these for every debug configuration found that references this SAM Template and resource. If users select this choice, the toolkit launches the corresponding debug configuration, as if the user launched it from VS Code's Debug view.
+-   "Add Debug Configuration" - If users select this choice, the toolkit produces a pre-filled `aws-sam` Debug Configuration, configured to invoke the resource being acted on. Users are taken to the new entry in `launch.json` instead of starting a debug session.
 
 #### CodeLenses in Code files
 
-CodeLenses in code files assist with debugging standalone Lambda function handlers.
+The Toolkit adds CodeLenses to functions considered [eligible Lambda handlers](#eligible-lambda-handler).
 
-A "Create Debug Configuration" CodeLens appears over functions considered eligible Lambda handlers. Clicking this CodeLens produces a pre-filled `aws-sam` Debug Configuration in `launch.json` capable of locally debugging a [standalone Lambda](#standalone-lambda), and opens `launch.json`.
+Two CodeLenses are added: "Run Locally", and "Debug Locally". The only difference between the two is whether or not a debugger is involved. When users click either CodeLens, the Toolkit shows a selection picker. The picker presents users with the following choices:
 
-CodeLenses also appear over functions that match `standalone-lambda` Debug Configurations. When clicked, these CodeLenses invoke the associated Debug Configuration as if they were launched from the Debug View of VS Code.
-
-Some users may find CodeLenses within code files distracting, particularly if they are using the Toolkit for features not related to local debugging. Toolkit settings can be used to enable and disable CodeLenses. CodeLenses only appear for languages/runtimes that the Toolkit has implemented Debug support for.
+-   "Invoke \<Debug Configuration Name\>" - The picker contains one of these for every debug configuration found that references this lambda handler. This includes debug configurations that directly reference this function, and those that reference this function through SAM Template resources. If users select this choice, the toolkit launches the corresponding debug configuration, as if the user launched it from VS Code's Debug view.
+-   "Add Debug Configuration" - If users select this choice, the toolkit produces a pre-filled `aws-sam` Debug Configuration, configured to directly invoke the function being acted on. Users are taken to the new entry in `launch.json` instead of starting a debug session.
 
 ## Appendix
 
@@ -288,7 +293,7 @@ The only required fields are: type, request, samTemplate.path, samTemplate.resou
 }
 ```
 
-Here is an example Debug Configuration to debug a standalone Lambda handler.
+Here is an example Debug Configuration to directly invoke and debug a Lambda handler function.
 The variation is defined by the `request` field. The differences compared to the "template-invoke" variant are the `lambdaEntry` object, and an extended `lambda` structure.
 The only required fields are: type, request, lambdaEntry, lambda.runtime
 
@@ -349,3 +354,19 @@ The following validation checks are performed when running an `aws-sam` Debug Co
 -   is the referenced SAM Template resource a supported type (for example, a Lambda function)
 -   is the lambda function runtime supported by the Toolkit
 -   are there any environment variables do not exist in the SAM Template? (these surface to the user as warnings, and don't stop the debug session)
+
+### <a id="eligible-lambda-handler"></a> What is an eligible Lambda Handler
+
+Functions considered by the Toolkit to be eligible Lambda Handlers:
+
+Python:
+
+-   Top level functions
+
+Javascript:
+
+-   exported functions with 3 or fewer parameters
+
+C#:
+
+-   public functions within public classes
