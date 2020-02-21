@@ -341,13 +341,17 @@ The only required fields are: type, request, lambdaEntry, lambda.runtime
 
 ### <a id="debug-configuration-validation"></a> Debug Configuration Validations
 
-The following validation checks are performed when running an `aws-sam` Debug Configuration
+The Toolkit performs the following validation checks when launching an `aws-sam` Debug Configuration:
 
--   does the referenced SAM template file exist
--   does the referenced SAM Template resource exist
--   is the referenced SAM Template resource a supported type (for example, a Lambda function)
--   is the lambda function runtime supported by the Toolkit
--   are there any environment variables do not exist in the SAM Template? (these surface to the user as warnings, and don't stop the debug session)
+-   Errors (launch is stopped, user is informed):
+
+    -   the referenced SAM template file does not exist
+    -   the referenced SAM Template resource does not exist
+    -   the referenced SAM Template resource is not a supported type (for example, isn't a Lambda function)
+    -   the lambda function runtime is not supported by the Toolkit
+
+-   Warnings (launch is not stopped, user is informed):
+    -   environment variables that are defined in the debug configuration, but do not exist in the SAM Template
 
 ### <a id="eligible-lambda-handler"></a> What is an eligible Lambda Handler
 
