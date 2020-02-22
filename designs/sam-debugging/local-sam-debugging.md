@@ -32,7 +32,7 @@ TODO : WIP
 
 ### <a id="sam-template-resource-local"></a> SAM Template Resources (Local Invoke)
 
-Lambda functions are represented in CloudFormation templates as resources of type [`AWS::Lambda::Function`](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-function.html) or [`AWS::Serverless::Function`](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html). With the Toolkit, users can locally invoke Lambda function code, optionally passing a custom event to it. The Toolkit uses SAM CLI to invoke the Lambda function, emulating how the function is run on AWS, then attaches a debugger to the invoked function.
+Lambda functions are represented in CloudFormation templates as resources of type [`AWS::Lambda::Function`](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-function.html) or [`AWS::Serverless::Function`](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html). With the Toolkit, users can locally invoke Lambda function code, while optionally passing a custom event to it. The Toolkit uses SAM CLI to invoke the Lambda function, which emulates how the function is run on AWS, and then attaches a debugger to the invoked function.
 
 ### <a id="standalone-lambda"></a> Standalone Lambda Function Handlers
 
@@ -368,3 +368,17 @@ Javascript:
 C#:
 
 -   public functions within public classes
+
+### Comparison to other AWS Toolkits
+
+#### AWS Toolkit for JetBrains
+
+This toolkit has comparable debugging functionality overall.
+
+Instead of Debug Configurations, the toolkit has run configurations. The run configurations allow users to reference a lambda handler directly, or a SAM Template resource.
+
+Instead of CodeLenses, the toolkit has gutter icons that appear to the right of relevant functions and template resources. These gutter icons allow users to create new Run Configurations.
+
+#### AWS Toolkit for Visual Studio
+
+This toolkit has no support for local SAM Debugging.
