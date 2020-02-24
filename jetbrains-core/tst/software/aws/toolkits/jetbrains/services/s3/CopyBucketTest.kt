@@ -11,9 +11,9 @@ import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.Bucket
+import software.aws.toolkits.core.utils.delegateMock
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.services.s3.bucketActions.CopyBucketNameAction
-import software.aws.toolkits.jetbrains.utils.delegateMock
 import java.awt.datatransfer.DataFlavor
 
 class CopyBucketTest {

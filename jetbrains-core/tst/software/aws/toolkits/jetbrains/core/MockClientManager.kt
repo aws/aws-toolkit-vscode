@@ -11,7 +11,7 @@ import software.amazon.awssdk.core.SdkClient
 import software.aws.toolkits.core.ToolkitClientManager
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
-import software.aws.toolkits.jetbrains.utils.delegateMock
+import software.aws.toolkits.core.utils.delegateMock
 import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
 import kotlin.reflect.KClass
 

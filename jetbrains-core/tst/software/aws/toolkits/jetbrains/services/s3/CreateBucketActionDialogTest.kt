@@ -8,7 +8,6 @@ import com.intellij.testFramework.runInEdtAndWait
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
-import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.stub
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -18,14 +17,14 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.BucketAlreadyExistsException
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest
 import software.amazon.awssdk.services.s3.model.CreateBucketResponse
-import software.aws.toolkits.jetbrains.utils.DelegateSdkConsumers
+import software.aws.toolkits.core.utils.delegateMock
 
 class CreateBucketActionDialogTest {
     @Rule
     @JvmField
     val projectRule = ProjectRule()
 
-    private val s3Mock = mock<S3Client>(defaultAnswer = DelegateSdkConsumers())
+    private val s3Mock = delegateMock<S3Client>()
 
     @Test
     fun validateBucketName_emptyBucketName() {

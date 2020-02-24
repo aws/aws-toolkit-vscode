@@ -9,7 +9,6 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
-import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.reset
 import com.nhaarman.mockitokotlin2.stub
 import org.assertj.core.api.Assertions.assertThat
@@ -25,14 +24,14 @@ import software.amazon.awssdk.services.iam.model.DeleteRoleResponse
 import software.amazon.awssdk.services.iam.model.MalformedPolicyDocumentException
 import software.amazon.awssdk.services.iam.model.PutRolePolicyRequest
 import software.amazon.awssdk.services.iam.model.PutRolePolicyResponse
-import software.aws.toolkits.jetbrains.utils.DelegateSdkConsumers
+import software.aws.toolkits.core.utils.delegateMock
 
 class CreateIamRoleDialogTest {
     @Rule
     @JvmField
     val projectRule = ProjectRule()
 
-    private val iamMock = mock<IamClient>(defaultAnswer = DelegateSdkConsumers())
+    private val iamMock = delegateMock<IamClient>()
 
     @Before
     fun setUp() {

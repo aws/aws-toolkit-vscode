@@ -15,7 +15,7 @@ import software.amazon.awssdk.services.toolkittelemetry.model.AWSProduct
 import software.amazon.awssdk.services.toolkittelemetry.model.MetadataEntry
 import software.amazon.awssdk.services.toolkittelemetry.model.PostMetricsRequest
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent
-import software.aws.toolkits.jetbrains.utils.delegateMock
+import software.aws.toolkits.core.utils.delegateMock
 
 class DefaultTelemetryPublisherTest {
     @Rule
