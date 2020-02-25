@@ -68,7 +68,8 @@ object SamInitRunner {
         if (process.exitCode != 0) {
             throw RuntimeException("${message("sam.init.execution_error")}: ${process.stderrLines}")
         } else {
-            LOG.info { "SAM output: ${process.stdout}" }
+            LOG.info { "SAM init output stdout:\n${process.stdout}" }
+            LOG.info { "SAM init output stderr:\n${process.stderr}" }
         }
 
         val subFolders = tempDir.listFiles()?.toList() ?: emptyList()
