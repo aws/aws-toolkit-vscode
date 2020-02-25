@@ -4,11 +4,11 @@ Current Status: Proposed, Not Implemented
 
 ## <a id="introduction"></a> Introduction
 
-The AWS Toolkit enhances the Serverless Application Model (SAM) Application development experience by integrating local debug functionality into VS Code. This document outlines the user experience.
+The AWS Toolkit for Visual Studio Code (toolkit) enhances the Serverless Application Model (SAM) Application development experience by integrating local debug functionality into Visual Studio Code (VS Code). This document outlines the user experience.
 
-While this document's main focus is on debugging capabilities in the toolkit, there are places where the experience around invoking without the debugger (aka "running") is also discussed.
+While this document's main focus is on debugging capabilities in the toolkit, the experience around invoking without the debugger (aka "running") is also discussed.
 
-Each programming language (and corresponding Lambda Runtimes) requires Toolkit support for debugging features to work. As of v1.6.1 (Feb 2020), the following languages and runtimes are supported:
+Each programming language (and its corresponding Lambda Runtime(s)) requires Toolkit support for debugging features to work. As of v1.7.0 (Feb 2020), the following languages and runtimes are supported:
 
 -   javascript (nodejs10.x, nodejs12.x)
 -   python (python2.7, python3.6, python3.7, python3.8)
@@ -30,7 +30,7 @@ Each scenario has one or more relevant user experiences. The different debugging
 
 Users can directly invoke Lambda functions and run them locally.
 
-Lambda functions can be invoked in the context of their Serverless Application. CloudFormation template resources of the type [`AWS::Lambda::Function`](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-function.html) or [`AWS::Serverless::Function`](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html) represent Lambda functions. The toolkit provides ways to invoke against these resources.
+Lambda functions can be invoked in the context of a Serverless Application. CloudFormation template resources of the type [`AWS::Lambda::Function`](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-function.html) or [`AWS::Serverless::Function`](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html) represent Lambda functions. The toolkit provides ways to invoke these resources.
 
 Lambda functions can also be invoked directly from code, without any Serverless Application context. This gives users a way to quickly iterate and experiment with a Lambda, before deciding to integrate their code into a Serverless Application.
 
@@ -38,25 +38,27 @@ Lambda functions can also be invoked directly from code, without any Serverless 
 
 SAM Template resources that contain an event of type [Api](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-api.html) can be locally hosted in a web server for development and iteration. When users make REST requests to the web server, the Lambda function receives an API Gateway based event.
 
-At this time, an experience for API Gateway support is not available. Some portions of this document may contain considerations for API Gateway related functionality before a corresponding design is complete.
+At this time, an experience for API Gateway support has not been designed.
 
 ## <a id="debug-config"></a> What can be configured for a Debug session?
 
 The following parameters influence a debug session. These are user-configured, and are referenced by the various [debugging experiences](#debugging-experiences).
 
-| Property                | Description                                                                                                                                                                             | Where is it located                                                                             |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| SAM Template            | Path to SAM Template file - Only applies to invoking Resources                                                                                                                          | Debug Configuration                                                                             |
-| SAM Template Resource   | Name of lambda function-based resource within SAM Template - Only applies to invoking Resources                                                                                         | Debug Configuration                                                                             |
-| SAM Template Parameters | Values to use for [Parameters](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html) in a SAM Template - Only applies to invoking Resources | Debug Configuration                                                                             |
-| Environment Variables   | Environment Variables exposed to the Lambda Function                                                                                                                                    | Debug Configuration                                                                             |
-| Input Event             | Payload passed to the invoked Lambda Function                                                                                                                                           | Debug Configuration                                                                             |
-| Runtime                 | Runtime of Lambda Function to invoke                                                                                                                                                    | CloudFormation Template when running a Resource, Debug Configuration when directly running code |
-| Handler                 | Lambda Function handler to invoke                                                                                                                                                       | CloudFormation Template when running a Resource, Debug Configuration when directly running code |
-| Timeout                 | Timeout threshold for Lambda function                                                                                                                                                   | CloudFormation Template                                                                         |
-| Memory                  | Memory provided to Lambda function                                                                                                                                                      | CloudFormation Template                                                                         |
+### General
 
-The following SAM CLI related arguments are relevant to debugging both standalone lambda function handlers and sam template resources. For reference see the [sam build](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-build.html) command.
+| Property                | Description                                                                                                                                                                                  | Where is it located                                                                             |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Environment Variables   | Environment Variables exposed to the Lambda Function                                                                                                                                         | Debug Configuration                                                                             |
+| Input Event             | Payload passed to the invoked Lambda Function                                                                                                                                                | Debug Configuration                                                                             |
+| SAM Template Parameters | Values to use for [Parameters](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html) in a SAM Template - Only applicable when invoking Resources | Debug Configuration                                                                             |
+| Runtime                 | Runtime of Lambda Function to invoke                                                                                                                                                         | CloudFormation Template when running a Resource, Debug Configuration when directly running code |
+| Handler                 | Lambda Function handler to invoke                                                                                                                                                            | CloudFormation Template when running a Resource, Debug Configuration when directly running code |
+| Timeout                 | Timeout threshold for Lambda function                                                                                                                                                        | CloudFormation Template                                                                         |
+| Memory                  | Memory provided to Lambda function                                                                                                                                                           | CloudFormation Template                                                                         |
+
+### SAM CLI
+
+SAM CLI related parameters affect how the application is built and launched. For reference see the [sam build](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-build.html) command.
 
 | Property                     | Description                                                                                                                                                                                                                      | Default Value                    |
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
@@ -66,7 +68,9 @@ The following SAM CLI related arguments are relevant to debugging both standalon
 | Additional build args        | These are passed along to `sam build` calls                                                                                                                                                                                      | empty string                     |
 | Additional local invoke args | These are passed along to `sam local` calls                                                                                                                                                                                      | empty string                     |
 
-The following AWS related arguments are relevant to debugging both standalone lambda function handlers and sam template resources. When provided, they are injected into the local Lambda containers running the invoked SAM Application. This is useful in scenarios where the Lambda running locally is accessing other AWS resources.
+### AWS
+
+When provided, AWS parameters are injected into local Lambda containers running the invoked SAM Application. This is useful in scenarios where the Lambda running locally is accessing other AWS resources.
 
 | Property    | Description                                                                                                                                                        | Default Value                                                                                                                             |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
@@ -105,7 +109,7 @@ Example Debug Configuration entries can be found in the [Appendix](#sample-debug
 
 The Toolkit uses [CodeLenses](#terms-codelenses) as a shortcut to launching `aws-sam` [Debug Configurations](#debug-configurations).
 
-Some users find CodeLenses visually distracting, while others use the Toolkit for features not related to local debugging. The Toolkit's CodeLenses are enabled by default, but can be disabled in the Toolkit settings.
+Some users find CodeLenses visually distracting. Others use the Toolkit for features not related to local debugging. The Toolkit's CodeLenses are enabled by default, but can be disabled in the Toolkit settings.
 
 The CodeLenses discussed below only appear for languages/runtimes that the Toolkit provides support for (see [Introduction](#introduction)).
 
@@ -115,8 +119,8 @@ The Toolkit adds CodeLenses to SAM Template files, above every resource of type 
 
 Two CodeLenses are added: "Run Locally", and "Debug Locally". The only difference between the two is whether or not a debugger is involved. When users click either CodeLens, the Toolkit shows a selection picker. The picker presents users with the following choices:
 
--   "Invoke \<Debug Configuration Name\>" - The picker contains one of these for every debug configuration found that references this SAM Template and resource. If users select this choice, the toolkit launches the corresponding debug configuration, as if the user launched it from VS Code's Debug view.
--   "Add Debug Configuration" - If users select this choice, the toolkit produces a pre-filled `aws-sam` Debug Configuration, configured to invoke the resource being acted on. Users are taken to the new entry in `launch.json` instead of starting a debug session.
+-   "Invoke \<Debug Configuration Name\>" - The picker contains one of these for every debug configuration found that references this SAM Template and resource. If users select one of these choices, the toolkit launches the corresponding debug configuration, as if the user launched it from VS Code's Debug view.
+-   "Add Debug Configuration" - If users select this choice the toolkit produces an `aws-sam` Debug Configuration that is configured to invoke the resource being acted on, and adds it to `launch.json`. Users are taken to the new entry in `launch.json` instead of starting a debug session.
 
 #### CodeLenses in Code files
 
@@ -124,8 +128,8 @@ The Toolkit adds CodeLenses to functions considered [eligible Lambda handlers](#
 
 Two CodeLenses are added: "Run Locally", and "Debug Locally". The only difference between the two is whether or not a debugger is involved. When users click either CodeLens, the Toolkit shows a selection picker. The picker presents users with the following choices:
 
--   "Invoke \<Debug Configuration Name\>" - The picker contains one of these for every debug configuration found that references this lambda handler. This includes debug configurations that directly reference this function, and those that reference this function through SAM Template resources. If users select this choice, the toolkit launches the corresponding debug configuration, as if the user launched it from VS Code's Debug view.
--   "Add Debug Configuration" - If users select this choice, the toolkit produces a pre-filled `aws-sam` Debug Configuration, configured to directly invoke the function being acted on. Users are taken to the new entry in `launch.json` instead of starting a debug session.
+-   "Invoke \<Debug Configuration Name\>" - The picker contains one of these for every debug configuration found that references this lambda handler. This includes debug configurations that directly reference this function, and those that reference this function through SAM Template resources. If users select one of these choices, the toolkit launches the corresponding debug configuration, as if the user launched it from VS Code's Debug view.
+-   "Add Debug Configuration" - If users select this choice the toolkit produces an `aws-sam` Debug Configuration that is configured to invoke the resource being acted on, and adds it to `launch.json`. Users are taken to the new entry in `launch.json` instead of starting a debug session.
 
 ## Appendix
 
@@ -155,16 +159,15 @@ Additional information about SAM can be found at:
 
 ### Differences between this design, and v1.0.0 (through present versions) of AWS Toolkit
 
-The debug capabilities initially released in the Toolkit were not well rounded. CodeLenses provided the only means of local debugging, and without a way to directly debug SAM Template resources these CodeLenses tried to compensate, leading to scenarios with undefined behaviors. Many of the issues are referenced from https://github.com/aws/aws-toolkit-vscode/issues/758
+The debug capabilities initially released in the Toolkit were not well rounded. CodeLenses provided the only means of local debugging, and did not have a well defined design around what was being debugged. Because the Toolkit lacked a way to directly invoke/debug SAM Template resources, these CodeLenses tried to compensate which lead to to scenarios with undefined behaviors. Many of these issues are referenced from https://github.com/aws/aws-toolkit-vscode/issues/758
 
 Here is an outline of the differences between this design and the current version of the AWS Toolkit:
 
 -   Changed functionality
     -   CodeLenses on code files now provide the abilitiy to invoke a function in isolation, or as part of a SAM Template. Previously, they could only be invoked as part of a SAM Template.
+        -   The current design explicitly presents options for what to launch. This should minimize confusion from customers who are familiar with the previous functionality.
 -   New functionality
-    -   `aws-sam` Debug Configurations provide a new way to launch debug sessions against SAM Template resources
-    -   CodeLens provide debugging capabilities from SAM Template files
-    -   API Gateway related debugging (TBD)
+    -   `aws-sam` Debug Configurations provide a controllable way to launch debug sessions
 -   Removed functionality
     -   CodeLenses are now pointers to Debug Configurations, and do not directly launch debug sessions on their own. The configuration files that were used by the old functionality are no longer relevant/used
 
