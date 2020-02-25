@@ -8,7 +8,7 @@
  */
 
 import * as assert from 'assert'
-import { appendFileSync } from 'fs-extra'
+import { appendFileSync, mkdirpSync } from 'fs-extra'
 import { join } from 'path'
 import { ext } from '../shared/extensionGlobals'
 import { rmrf } from '../shared/filesystem'
@@ -20,16 +20,19 @@ import { FakeExtensionContext } from './fakeExtensionContext'
 import { TestLogger } from './testLogger'
 import { FakeAwsContext } from './utilities/fakeAwsContext'
 
-const testLogOutput = join(__dirname, '../../../.test-reports/testLog.log')
+const testReportDir = join(__dirname, '../../../.test-reports')
+const testLogOutput = join(testReportDir, 'testLog.log')
 
 // Expectation: Tests are not run concurrently
 let testLogger: TestLogger | undefined
 
-// Set up global telemetry client
 before(async () => {
+    // Clean up and set up test logs
     try {
         await rmrf(testLogOutput)
     } catch (e) {}
+    mkdirpSync(testReportDir)
+    // Set up global telemetry client
     const mockContext = new FakeExtensionContext()
     const mockAws = new FakeAwsContext()
     const mockPublisher: TelemetryPublisher = {
