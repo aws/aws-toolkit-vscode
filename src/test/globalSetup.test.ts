@@ -9,12 +9,13 @@
 
 import * as assert from 'assert'
 import { ext } from '../shared/extensionGlobals'
+import { rmrf } from '../shared/filesystem'
 import { getLogger } from '../shared/logger'
 import { setLogger } from '../shared/logger/logger'
 import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetryService'
 import { TelemetryPublisher } from '../shared/telemetry/telemetryPublisher'
 import { FakeExtensionContext } from './fakeExtensionContext'
-import { TestLogger } from './testLogger'
+import { TestLogger, testLogOutput } from './testLogger'
 import { FakeAwsContext } from './utilities/fakeAwsContext'
 
 // Expectation: Tests are not run concurrently
@@ -22,6 +23,9 @@ let testLogger: TestLogger | undefined
 
 // Set up global telemetry client
 before(async () => {
+    try {
+        await rmrf(testLogOutput)
+    } catch (e) {}
     const mockContext = new FakeExtensionContext()
     const mockAws = new FakeAwsContext()
     const mockPublisher: TelemetryPublisher = {
@@ -33,14 +37,16 @@ before(async () => {
     ext.telemetry = service
 })
 
-beforeEach(async () => {
+beforeEach(async function() {
     // Set every test up so that TestLogger is the logger used by toolkit code
-    testLogger = setupTestLogger()
+    // tslint:disable-next-line: no-unsafe-any, no-invalid-this
+    testLogger = setupTestLogger(this.currentTest?.fullTitle() as string)
 })
 
-afterEach(async () => {
+afterEach(async function() {
     // Prevent other tests from using the same TestLogger instance
-    teardownTestLogger()
+    // tslint:disable-next-line: no-unsafe-any, no-invalid-this
+    teardownTestLogger(this.currentTest?.fullTitle() as string)
     testLogger = undefined
 })
 
@@ -56,13 +62,15 @@ export function getTestLogger(): TestLogger {
     return testLogger!
 }
 
-function setupTestLogger(): TestLogger {
+function setupTestLogger(testName: string): TestLogger {
     const logger = new TestLogger()
     setLogger(logger)
+    logger.writeLoggedEntriesToFile(`=== Starting test "${testName}" ===`)
 
     return logger
 }
 
-function teardownTestLogger() {
+function teardownTestLogger(testName: string) {
+    testLogger?.writeLoggedEntriesToFile(`=== Ending test "${testName}" ===\n`)
     setLogger(undefined)
 }

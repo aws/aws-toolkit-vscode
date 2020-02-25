@@ -3,7 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { appendFileSync } from 'fs-extra'
+import { join } from 'path'
 import { Loggable, Logger, LogLevel } from '../shared/logger'
+
+export const testLogOutput = join(__dirname, 'testLog.log')
 
 /**
  * In-memory Logger implementation suitable for use by tests.
@@ -40,12 +44,17 @@ export class TestLogger implements Logger {
             .map(loggedEntry => loggedEntry.entry)
     }
 
+    public writeLoggedEntriesToFile(entry: Loggable) {
+        appendFileSync(testLogOutput, `${entry}\n`, 'utf8')
+    }
+
     private addLoggedEntries(logLevel: LogLevel, entries: Loggable[]) {
         entries.forEach(entry => {
             this.loggedEntries.push({
                 logLevel,
                 entry
             })
+            this.writeLoggedEntriesToFile(entry)
         })
     }
 }
