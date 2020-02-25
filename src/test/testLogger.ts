@@ -7,7 +7,7 @@ import { appendFileSync } from 'fs-extra'
 import { join } from 'path'
 import { Loggable, Logger, LogLevel } from '../shared/logger'
 
-export const testLogOutput = join(__dirname, 'testLog.log')
+export const testLogOutput = join(__dirname, '..', '..', '..', '.test-reports', 'testLog.log')
 
 /**
  * In-memory Logger implementation suitable for use by tests.

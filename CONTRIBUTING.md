@@ -59,7 +59,7 @@ There are also some integration tests, which can be run from the Debug pane, or 
 
     npm run integrationTest
 
-Tests will output log output to `./dist/src/test/testLog.log` for debugging
+Tests will output log output to `./.test-reports/testLog.log` for debugging
 
 #### Common Issues
 
