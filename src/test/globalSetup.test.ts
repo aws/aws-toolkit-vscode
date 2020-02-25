@@ -43,7 +43,6 @@ before(async () => {
 
 beforeEach(async function() {
     // Set every test up so that TestLogger is the logger used by toolkit code
-    // tslint:disable-next-line: no-unsafe-any, no-invalid-this
     testLogger = setupTestLogger()
 })
 
@@ -81,6 +80,6 @@ function teardownTestLogger(testName: string) {
 function writeLogsToFile(testName: string) {
     const entries = testLogger?.getLoggedEntries()
     entries?.unshift(`=== Starting test "${testName}" ===`)
-    entries?.push(`=== Ending test "${testName}" ===\n`)
-    appendFileSync(testLogOutput, `${entries?.join('\n')}\n`, 'utf8')
+    entries?.push(`=== Ending test "${testName}" ===\n\n`)
+    appendFileSync(testLogOutput, entries?.join('\n'), 'utf8')
 }
