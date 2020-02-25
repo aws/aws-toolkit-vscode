@@ -10,7 +10,7 @@ import { MockLambdaClient } from '../../shared/clients/mockClients'
 
 describe('deleteLambda', async () => {
     it('should do nothing if function name is not provided', async () => {
-        return assertLambdaDeleteWorksWhen({
+        await assertLambdaDeleteWorksWhen({
             // test variables
             functionName: '',
             onConfirm: async () => assert.fail('should not try to confirm w/o function name'),
@@ -22,7 +22,7 @@ describe('deleteLambda', async () => {
     })
 
     it('should delete lambda when confirmed', async () => {
-        return assertLambdaDeleteWorksWhen({
+        await assertLambdaDeleteWorksWhen({
             // test variables
             functionName: 'myFunctionName',
             onConfirm: async () => true,
@@ -34,7 +34,7 @@ describe('deleteLambda', async () => {
     })
 
     it('should not delete lambda when cancelled', async () => {
-        return assertLambdaDeleteWorksWhen({
+        await assertLambdaDeleteWorksWhen({
             // test variables
             functionName: 'myFunctionName',
             onConfirm: async () => false,
@@ -48,7 +48,7 @@ describe('deleteLambda', async () => {
     it('should handles errors gracefully', async () => {
         const errorToThrowDuringDelete = new SyntaxError('Fake error inserted to test error handling')
 
-        return assertLambdaDeleteWorksWhen({
+        await assertLambdaDeleteWorksWhen({
             // test variables
             errorToThrowDuringDelete,
             functionName: 'myFunctionName',
