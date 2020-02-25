@@ -170,10 +170,10 @@ Here is an outline of the differences between this design and the current versio
 
 ### <a id="sample-debug-configurations"></a> Sample Debug Configurations
 
-Configuration structures group related parameters and reuse shapes where possible.
+Configuration structures are modelled so that they group related parameters, and allows the toolkit to reuse structure types where possible.
 
 Here is an example Debug Configuration to debug a SAM Template resource called "HelloWorldResource".
-The only required fields are: type, request, samTemplate.path, samTemplate.resource
+The required fields are: type, request, invokeTarget
 
 ```jsonc
 {
@@ -181,14 +181,12 @@ The only required fields are: type, request, samTemplate.path, samTemplate.resou
         {
             "name": "Debug HelloWorldResource", // Users name the entry; shown in Debug dropdown
             "type": "aws-sam",
-            "request": "template-invoke", // This is the "aws-sam" variation for debugging SAM Template resources
-            "samTemplate": {
-                "path": "path to template yaml file",
-                "resource": "HelloWorldResource", // Name of Template resource to debug
-                // SAM Template Parameter substitutions
-                "parameters": {
-                    "param1": "somevalue"
-                }
+            "request": "direct-invoke", // This is the "aws-sam" variation for debugging SAM Template resources and Lambda handlers
+            // Reference to the thing (Template or Code) being invoked
+            "invokeTarget": {
+                "target": "template", // template | code
+                "samTemplatePath": "path to template yaml file",
+                "samTemplateResource": "HelloWorldResource" // Name of Template resource to debug
             },
             // Lambda Execution related arguments
             "lambda": {
@@ -206,13 +204,20 @@ The only required fields are: type, request, samTemplate.path, samTemplate.resou
                     }
                 }
             },
-            // SAM CLI related arguments
+            // SAM Template and SAM CLI related arguments
             "sam": {
                 "containerBuild": false,
                 "skipNewImageCheck": false,
                 "dockerNetwork": "aaaaa",
                 "buildArguments": "--foo",
-                "localArguments": "--foo"
+                "localArguments": "--foo",
+                // used when invokeTarget references a SAM Template
+                "template": {
+                    // SAM Template Parameter substitutions
+                    "parameters": {
+                        "param1": "somevalue"
+                    }
+                }
             },
             // AWS related arguments
             "aws": {
@@ -225,8 +230,9 @@ The only required fields are: type, request, samTemplate.path, samTemplate.resou
 ```
 
 Here is an example Debug Configuration to directly invoke and debug a Lambda handler function.
-The variation is defined by the `request` field. The differences compared to the "template-invoke" variant are the `lambdaEntry` object, and an extended `lambda` structure.
-The only required fields are: type, request, lambdaEntry, lambda.runtime
+The variation to directly invoke a function instead of a template resource is defined by the `invokeTarget.target` field. The differences are the fields within `invokeTarget`, an extended `lambda` structure, and no `sam.template` object.
+
+The required fields are: type, request, invokeTarget, lambda.runtime
 
 ```jsonc
 {
@@ -234,10 +240,12 @@ The only required fields are: type, request, lambdaEntry, lambda.runtime
         {
             "name": "Debug Lambda Handler MyFunctionHandler", // Users name the entry; shown in Debug dropdown
             "type": "aws-sam",
-            "request": "standalone-lambda", // This is the "aws-sam" variation for debugging standalone Lambda handlers
-            "lambdaEntry": {
+            "request": "direct-invoke", // This is the "aws-sam" variation for debugging SAM Template resources and Lambda handlers
+            // Reference to the thing (Template or Code) being invoked
+            "invokeTarget": {
+                "target": "code", // template | code
                 "projectRoot": "path to folder", // The top level folder to run the Lambda handler in (this affects the lambdaHandler field in runtimes like node and python).
-                "lambdaHandler": "HelloWorld::HelloWorld.Function::MyFunctionHandler" // nodeJs example: app.lambdaHandler
+                "lambdaHandler": "HelloWorld::HelloWorld.Function::MyFunctionHandler" // C# example shown. nodeJs example: app.lambdaHandler
             },
             // Lambda Execution related arguments
             "lambda": {
@@ -258,7 +266,7 @@ The only required fields are: type, request, lambdaEntry, lambda.runtime
                     }
                 }
             },
-            // SAM CLI related arguments
+            // SAM Template and SAM CLI related arguments
             "sam": {
                 "containerBuild": false,
                 "skipNewImageCheck": false,
@@ -282,6 +290,7 @@ The Toolkit performs the following validation checks when launching an `aws-sam`
 
 -   Errors (launch is stopped, user is informed):
 
+    -   required fields are missing from the debug configuration
     -   the referenced SAM template file does not exist
     -   the referenced SAM Template resource does not exist
     -   the referenced SAM Template resource is not a supported type (for example, isn't a Lambda function)
