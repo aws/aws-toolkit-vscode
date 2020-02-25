@@ -224,57 +224,6 @@ The only required fields are: type, request, samTemplate.path, samTemplate.resou
 }
 ```
 
-Here is an example Debug Configuration to debug an API Gateway invoked SAM Template resource called "HelloWorldResource".
-The variation is defined by the `request` field, and the only difference is in the event field.
-The only required fields are: type, request, samTemplate.path, samTemplate.resource
-
-```jsonc
-{
-    "configurations": [
-        {
-            "name": "a2",
-            "type": "aws-sam",
-            "request": "template-api", // This is the "aws-sam" variation for debugging API Gateway invoked SAM Template resources
-            "samTemplate": {
-                "path": "some path",
-                "resource": "HelloWorldResource",
-                "parameters": {
-                    "param1": "somevalue"
-                }
-            },
-            // Lambda Execution related arguments
-            "lambda": {
-                // Environment Variables accessible by Lambda handler
-                "environmentVariables": {
-                    "envvar1": "somevalue",
-                    "envvar2": "..."
-                },
-                // The API call made to the handler once invoked
-                "event": {
-                    "api": {
-                        "path": "/bee",
-                        "method": "get",
-                        "query": "aaa=1&bbb=2",
-                        "body": "text - can we do this?"
-                    }
-                }
-            },
-            "sam": {
-                "containerBuild": false,
-                "skipNewImageCheck": false,
-                "dockerNetwork": "aaaaa",
-                "buildArguments": "--foo",
-                "localArguments": "--foo"
-            },
-            "aws": {
-                "credentials": "profile:default",
-                "region": "us-west-2"
-            }
-        }
-    ]
-}
-```
-
 Here is an example Debug Configuration to directly invoke and debug a Lambda handler function.
 The variation is defined by the `request` field. The differences compared to the "template-invoke" variant are the `lambdaEntry` object, and an extended `lambda` structure.
 The only required fields are: type, request, lambdaEntry, lambda.runtime
