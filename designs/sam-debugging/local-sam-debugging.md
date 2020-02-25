@@ -2,7 +2,7 @@
 
 Current Status: Proposed, Not Implemented
 
-## <a id="introduction"> Introduction
+## <a id="introduction"></a> Introduction
 
 The AWS Toolkit enhances the Serverless Application Model (SAM) Application development experience by integrating local debug functionality into VS Code. This document outlines the user experience.
 
