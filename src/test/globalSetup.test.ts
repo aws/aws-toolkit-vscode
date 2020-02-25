@@ -8,6 +8,8 @@
  */
 
 import * as assert from 'assert'
+import { appendFileSync } from 'fs-extra'
+import { join } from 'path'
 import { ext } from '../shared/extensionGlobals'
 import { rmrf } from '../shared/filesystem'
 import { getLogger } from '../shared/logger'
@@ -15,8 +17,10 @@ import { setLogger } from '../shared/logger/logger'
 import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetryService'
 import { TelemetryPublisher } from '../shared/telemetry/telemetryPublisher'
 import { FakeExtensionContext } from './fakeExtensionContext'
-import { TestLogger, testLogOutput } from './testLogger'
+import { TestLogger } from './testLogger'
 import { FakeAwsContext } from './utilities/fakeAwsContext'
+
+const testLogOutput = join(__dirname, '../../../.test-reports/testLog.log')
 
 // Expectation: Tests are not run concurrently
 let testLogger: TestLogger | undefined
@@ -40,7 +44,7 @@ before(async () => {
 beforeEach(async function() {
     // Set every test up so that TestLogger is the logger used by toolkit code
     // tslint:disable-next-line: no-unsafe-any, no-invalid-this
-    testLogger = setupTestLogger(this.currentTest?.fullTitle() as string)
+    testLogger = setupTestLogger()
 })
 
 afterEach(async function() {
@@ -62,15 +66,21 @@ export function getTestLogger(): TestLogger {
     return testLogger!
 }
 
-function setupTestLogger(testName: string): TestLogger {
+function setupTestLogger(): TestLogger {
     const logger = new TestLogger()
     setLogger(logger)
-    logger.writeLoggedEntriesToFile(`=== Starting test "${testName}" ===`)
 
     return logger
 }
 
 function teardownTestLogger(testName: string) {
-    testLogger?.writeLoggedEntriesToFile(`=== Ending test "${testName}" ===\n`)
+    writeLogsToFile(testName)
     setLogger(undefined)
+}
+
+function writeLogsToFile(testName: string) {
+    const entries = testLogger?.getLoggedEntries()
+    entries?.unshift(`=== Starting test "${testName}" ===`)
+    entries?.push(`=== Ending test "${testName}" ===\n`)
+    appendFileSync(testLogOutput, `${entries?.join('\n')}\n`, 'utf8')
 }
