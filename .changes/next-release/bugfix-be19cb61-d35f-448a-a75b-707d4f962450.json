@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix being unable to use `--parameter-overrides` with SAM build"
-}

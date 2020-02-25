@@ -1,3 +1,9 @@
+# _1.11_ (2020-02-25)
+- **(Breaking Change)** Remove NodeJS 8.10 from the new project wizard since the runtime is deprecated
+- **(Feature)** IDE trust manager is now used to connect to AWS allowing configuration of untrusted certificates through the UI
+- **(Bug Fix)** Fix being unable to use `--parameter-overrides` with SAM build
+- **(Bug Fix)** Fixed not being able to view EventService Schemas on Windows 10
+
 # _1.10_ (2020-01-07)
 - **(Breaking Change)** Minimum SAM CLI version has been increased to 0.38.0
 - **(Breaking Change)** Remove the Lambda nodes underneath of the CloudFromation stack in the explorer

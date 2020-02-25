@@ -1,0 +1,17 @@
+{
+  "date" : "2020-02-25",
+  "version" : "1.11",
+  "entries" : [ {
+    "type" : "breaking",
+    "description" : "Remove NodeJS 8.10 from the new project wizard since the runtime is deprecated"
+  }, {
+    "type" : "feature",
+    "description" : "IDE trust manager is now used to connect to AWS allowing configuration of untrusted certificates through the UI"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix being unable to use `--parameter-overrides` with SAM build"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fixed not being able to view EventService Schemas on Windows 10"
+  } ]
+}

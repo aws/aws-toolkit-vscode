@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fixed not being able to view EventService Schemas on Windows 10"
-}
