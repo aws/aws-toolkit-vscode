@@ -7,7 +7,7 @@ import com.intellij.openapi.application.runInEdt
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.explorer.actions.DeleteResourceAction
-import software.aws.toolkits.jetbrains.core.stack.StackWindowManager
+import software.aws.toolkits.jetbrains.services.cloudformation.stack.StackWindowManager
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationStackNode
 import software.aws.toolkits.jetbrains.services.cloudformation.waitForStackDeletionComplete
 import software.aws.toolkits.jetbrains.utils.TaggingResourceType
