@@ -31,10 +31,9 @@
         <constraints>
           <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
-        <properties>
-          <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="aws.settings.sam.location"/>
-          <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="aws.settings.sam.find.description"/>
-        </properties>
+		<properties>
+			<text resource-bundle="software/aws/toolkits/resources/localized_messages" key="aws.settings.sam.location"/>
+		</properties>
       </component>
       <vspacer id="5c79f">
         <constraints>
@@ -75,14 +74,11 @@
             <properties>
               <editable value="false"/>
               <enabled value="false"/>
-              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="aws.settings.sam.find.description"/>
             </properties>
           </component>
           <component id="88ecb" class="com.intellij.openapi.ui.FixedSizeButton" binding="editSamExecutableButton">
             <constraints border-constraint="East"/>
-            <properties>
-              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="aws.settings.sam.find.description"/>
-            </properties>
+            <properties/>
           </component>
         </children>
       </grid>

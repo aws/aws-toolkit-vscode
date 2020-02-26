@@ -8,3 +8,4 @@ build/
 Build/
 venv/
 guitest.log
+stale_outputs_checked

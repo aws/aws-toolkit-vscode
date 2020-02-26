@@ -10,7 +10,6 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommonTestUtils
-import software.aws.toolkits.jetbrains.settings.SamSettings
 
 abstract class LambdaRunConfigurationTestBase : BaseTestWithSolution() {
 
@@ -25,10 +24,11 @@ abstract class LambdaRunConfigurationTestBase : BaseTestWithSolution() {
     protected val defaultHandler = "HelloWorld::HelloWorld.Function::FunctionHandler"
     protected val defaultInput = "inputText"
 
+    protected var validSam: String = ""
+
     @BeforeMethod
     fun setUpCredentialsManager() {
-        val validSam = SamCommonTestUtils.makeATestSam(SamCommonTestUtils.getMinVersionAsJson()).toString()
-        SamSettings.getInstance().savedExecutablePath = validSam
+        validSam = SamCommonTestUtils.makeATestSam(SamCommonTestUtils.getMinVersionAsJson()).toString()
 
         MockCredentialsManager.getInstance().addCredentials(mockId, mockCreds)
     }
@@ -44,7 +44,8 @@ abstract class LambdaRunConfigurationTestBase : BaseTestWithSolution() {
             runtime = runtime,
             handler = handler,
             input = input,
-            credentialsProviderId = mockId)
+            credentialsProviderId = mockId
+        )
 
     protected fun preWarmLambdaHandlerValidation(handler: String = defaultHandler) =
         preWarmLambdaHandlerValidation(project, runtime, handler, HANDLER_EVALUATE_TIMEOUT_MS)

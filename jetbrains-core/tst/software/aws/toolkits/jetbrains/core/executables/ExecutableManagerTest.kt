@@ -93,7 +93,7 @@ class ExecutableManagerTest {
         }
 
         assertThat(sut.getExecutable(type).value).isInstanceOfSatisfying(ExecutableInstance.UnresolvedExecutable::class.java) {
-            assertThat(it.resolutionError).endsWith("blah")
+            assertThat(it.validationError).endsWith("blah")
         }
     }
 
@@ -176,7 +176,8 @@ class ExecutableManagerTest {
 
         sut.setExecutablePath(type, Paths.get(executable)).value
 
-        assertThat(sut.getExecutable(type).value).isInstanceOf(ExecutableInstance.UnresolvedExecutable::class.java)
+        // as there was not a valid path set, invalid executable is allowed to be set
+        assertThat(sut.getExecutable(type).value).isInstanceOf(ExecutableInstance.InvalidExecutable::class.java)
     }
 
     @Test

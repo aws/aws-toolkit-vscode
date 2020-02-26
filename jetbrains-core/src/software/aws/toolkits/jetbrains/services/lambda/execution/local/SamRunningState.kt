@@ -10,8 +10,11 @@ import com.intellij.execution.process.ProcessHandlerFactory
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.util.io.FileUtil
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
+import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
+import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
+import software.aws.toolkits.jetbrains.core.executables.getExecutableIfPresent
 import software.aws.toolkits.jetbrains.services.lambda.BuiltLambda
-import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 
 class SamRunningState(
     environment: ExecutionEnvironment,
@@ -30,7 +33,13 @@ class SamRunningState(
         totalEnvVars += settings.credentials.resolveCredentials().toEnvironmentVariables()
         totalEnvVars += settings.region.toEnvironmentVariables()
 
-        val commandLine = SamCommon.getSamCommandLine()
+        val samExecutable = ExecutableManager.getInstance().getExecutableIfPresent<SamExecutable>().let {
+            when (it) {
+                is ExecutableInstance.Executable -> it
+                else -> throw RuntimeException((it as? ExecutableInstance.BadExecutable)?.validationError ?: "")
+            }
+        }
+        val commandLine = samExecutable.getCommandLine()
             .withParameters("local")
             .withParameters("invoke")
             .apply { settings.templateDetails?.run { withParameters(logicalName) } }

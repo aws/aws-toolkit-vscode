@@ -20,22 +20,22 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.rules.S3TemporaryBucketRule
 import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.runUnderRealCredentials
-import software.aws.toolkits.jetbrains.settings.SamSettings
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 class SamDeployTest {
     private val s3Client = S3Client.builder()
-            .httpClient(ApacheHttpClient.builder().build())
-            .region(Region.US_WEST_2)
-            .serviceConfiguration { it.pathStyleAccessEnabled(true) }
-            .build()
+        .httpClient(ApacheHttpClient.builder().build())
+        .region(Region.US_WEST_2)
+        .serviceConfiguration { it.pathStyleAccessEnabled(true) }
+        .build()
 
     private val cfnClient = CloudFormationClient.builder()
-            .httpClient(ApacheHttpClient.builder().build())
-            .region(Region.US_WEST_2)
-            .build()
+        .httpClient(ApacheHttpClient.builder().build())
+        .region(Region.US_WEST_2)
+        .build()
 
     @Rule
     @JvmField
@@ -47,7 +47,8 @@ class SamDeployTest {
 
     @Before
     fun setUp() {
-        SamSettings.getInstance().savedExecutablePath = System.getenv().getOrDefault("SAM_CLI_EXEC", "sam")
+        setSamExecutableFromEnvironment()
+
         MockProjectAccountSettingsManager.getInstance(projectRule.project).changeRegion(AwsRegion(Region.US_WEST_2.id(), "us-west-2", "aws"))
     }
 

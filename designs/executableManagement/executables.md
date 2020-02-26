@@ -81,11 +81,25 @@ or the automated resolution has failed.
 These states are conveyed as a `sealed class`:
 
 ```kt
+
 sealed class ExecutableInstance {
-    class Executable(val executablePath: Path) : ExecutableInstance()
-    class InvalidExecutable(val executablePath: Path, val validationError: String) : ExecutableInstance()
-    class UnresolvedExecutable(val resolutionError: String? = null) : ExecutableInstance()
+    class Executable(val executablePath: Path) : ExecutableInstance(), ExecutableWithPath
+    class InvalidExecutable(val executablePath: Path, val validationError: String) : ExecutableInstance(), ExecutableWithPath, BadExecutable
+    class UnresolvedExecutable(val validationError: String) : ExecutableInstance(), BadExecutable
 }
+```
+
+Each one of the classes in the `sealed class` implement at least one of these interfaces:
+```kt
+interface ExecutableWithPath {
+    val executablePath: Path
+    val autoResolved: Boolean
+}
+
+interface BadExecutable {
+    val validationError: String
+}
+
 ```
 
 ### Operations
@@ -93,16 +107,19 @@ sealed class ExecutableInstance {
 interface ExecutableManager {
     fun getExecutable(type: ExecutableType<*>): CompletionStage<ExecutableInstance>
     fun getExecutableIfPresent(type: ExecutableType<*>): ExecutableInstance
+    fun validateExecutablePath(type: ExecutableType<*>, path: Path): ExecutableInstance
     fun setExecutablePath(type: ExecutableType<*>, path: Path): CompletionStage<ExecutableInstance>
     fun removeExecutable(type: ExecutableType<*>)
 }
 ```
 
-The `ExecutableManager` will expose two methods that allow an executables path to be determined:
+The `ExecutableManager` exposes three methods that allow an executables path to be determined:
 * **getExecutable** will asynchronously resolve the path and validate it (if the `ExecutableType` extends `AutoResolvable` and/or `Validatable`).
 The result will be cached (with a timestamp of the file) and future calls will not require auto-resolution.
 * **getExecutableIfPresent** a non-blocking call that will check if the `ExecutableType` has already been resolved and return it if it has; otherwise 
 `ExecutableInstance.UnresolvedExecutable` is returned. *nb: no validation occurs as part of this call*
+* **validateExecutablePath** is a  blocking call that will validate if the path passed in is a valid executable. It
+will not mutate the state of the `ExecutableManager` and is most useful for UI code.
 
 In addition the **setExecutablePath** method allows explicitly associating a `Path` with a given `type`. 
 

@@ -28,18 +28,27 @@ import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider;
 import software.aws.toolkits.core.region.AwsRegion;
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager;
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager;
+import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance;
+import software.aws.toolkits.jetbrains.core.executables.ExecutableManager;
+import software.aws.toolkits.jetbrains.core.executables.ExecutableType;
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder;
 import software.aws.toolkits.jetbrains.services.lambda.SamNewProjectSettings;
 import software.aws.toolkits.jetbrains.services.lambda.SamProjectTemplate;
-import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon;
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable;
 
 public class SamInitSelectionPanel implements ValidatablePanel {
-    @NotNull JPanel mainPanel;
-    @NotNull private ComboBox<Runtime> runtimeComboBox;
-    @NotNull private JTextField samExecutableField;
-    @NotNull private JButton editSamExecutableButton;
-    @NotNull private JBLabel samLabel;
-    @NotNull private ComboBox<SamProjectTemplate> templateComboBox;
+    @NotNull
+    JPanel mainPanel;
+    @NotNull
+    private ComboBox<Runtime> runtimeComboBox;
+    @NotNull
+    private JTextField samExecutableField;
+    @NotNull
+    private JButton editSamExecutableButton;
+    @NotNull
+    private JBLabel samLabel;
+    @NotNull
+    private ComboBox<SamProjectTemplate> templateComboBox;
 
     private SdkSelectionPanel sdkSelectionUi;
     private JLabel currentSdkSelectorLabel;
@@ -125,7 +134,9 @@ public class SamInitSelectionPanel implements ValidatablePanel {
         templateComboBox.setRenderer(new ColoredListCellRenderer<SamProjectTemplate>() {
             @Override
             protected void customizeCellRenderer(@NotNull JList<? extends SamProjectTemplate> list, SamProjectTemplate value, int index, boolean selected, boolean hasFocus) {
-                if (value == null) return;
+                if (value == null) {
+                    return;
+                }
                 setIcon(value.getIcon());
                 append(value.getName());
             }
@@ -316,10 +327,9 @@ public class SamInitSelectionPanel implements ValidatablePanel {
     @Nullable
     @Override
     public ValidationInfo validate() {
-        // validate against currently saved sam path
-        String samValidationMessage = SamCommon.Companion.validate();
-        if (samValidationMessage != null) {
-            return new ValidationInfo(samValidationMessage, samExecutableField);
+        ExecutableInstance samExecutable = ExecutableManager.getInstance().getExecutableIfPresent(ExecutableType.getExecutable(SamExecutable.class));
+        if (samExecutable instanceof ExecutableInstance.BadExecutable) {
+            return new ValidationInfo(((ExecutableInstance.BadExecutable) samExecutable).getValidationError(), samExecutableField);
         }
 
         if (sdkSelectionUi == null) {

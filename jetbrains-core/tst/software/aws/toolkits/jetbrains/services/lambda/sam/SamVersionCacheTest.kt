@@ -42,7 +42,7 @@ class SamVersionCacheTest {
     fun samCliMinVersion() {
         val samPath = SamCommonTestUtils.makeATestSam(SamCommonTestUtils.getMinVersionAsJson()).toString()
         val samVersion = SamVersionCache.evaluateBlocking(samPath).result
-        assertEquals("Mismatch SAM executable version", samVersion, SamCommon.expectedSamMinVersion)
+        assertEquals("Mismatch SAM executable version", samVersion, SamExecutable().samMinVersion)
     }
 
     @Test

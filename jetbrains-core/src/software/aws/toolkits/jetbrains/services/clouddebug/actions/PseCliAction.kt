@@ -92,9 +92,7 @@ abstract class PseCliAction(val project: Project, val actionName: String, privat
                         if (it is ExecutableInstance.Executable) {
                             it
                         } else {
-                            val error = (it as? ExecutableInstance.InvalidExecutable)?.validationError
-                                ?: (it as? ExecutableInstance.UnresolvedExecutable)?.resolutionError
-                                ?: message("general.unknown_error")
+                            val error = (it as? ExecutableInstance.BadExecutable)?.validationError ?: message("general.unknown_error")
                             val errorMessage = message("cloud_debug.step.clouddebug.install.fail", error)
                             notifyError(message("aws.notification.title"), errorMessage, project)
                             produceTelemetry(startTime, Result.FAILED, null)

@@ -124,6 +124,7 @@ interface AwsResourceCache {
         // Getting resources can take a long time on a slow connection or if there are a lot of resources. This call should
         // always be done in an async context so it should be OK to take multiple seconds.
         private val DEFAULT_TIMEOUT = Duration.ofSeconds(30)
+
         private fun <T> wait(timeout: Duration, call: () -> CompletionStage<T>) = try {
             call().toCompletableFuture().get(timeout.toMillis(), TimeUnit.MILLISECONDS)
         } catch (e: ExecutionException) {
@@ -198,8 +199,8 @@ class ExecutableBackedCacheResource<ReturnType, ExecType : ExecutableType<*>>(
         val executable = ExecutableManager.getInstance().getExecutableIfPresent(executableType).let {
             when (it) {
                 is ExecutableInstance.Executable -> it
-                is ExecutableInstance.InvalidExecutable -> throw IllegalStateException(it.validationError)
-                is ExecutableInstance.UnresolvedExecutable -> throw IllegalStateException(it.resolutionError)
+                is ExecutableInstance.InvalidExecutable, is ExecutableInstance.UnresolvedExecutable ->
+                    throw IllegalStateException((it as ExecutableInstance.BadExecutable).validationError)
             }
         }
 

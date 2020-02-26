@@ -38,6 +38,7 @@ class ExecutableLoader : StartupActivity, DumbAware {
 interface ExecutableManager {
     fun getExecutable(type: ExecutableType<*>): CompletionStage<ExecutableInstance>
     fun getExecutableIfPresent(type: ExecutableType<*>): ExecutableInstance
+    fun validateExecutablePath(type: ExecutableType<*>, path: Path): ExecutableInstance
     fun setExecutablePath(type: ExecutableType<*>, path: Path): CompletionStage<ExecutableInstance>
     fun removeExecutable(type: ExecutableType<*>)
 
@@ -67,12 +68,37 @@ class DefaultExecutableManager : PersistentStateComponent<ExecutableStateList>, 
         }
     }
 
-    override fun getExecutableIfPresent(type: ExecutableType<*>): ExecutableInstance = internalState[type.id]?.second?.takeIf {
-        when (it) {
-            is ExecutableWithPath -> it.executablePath.exists()
-            else -> true
+    override fun getExecutableIfPresent(type: ExecutableType<*>): ExecutableInstance {
+        val instance = internalState[type.id]?.second?.takeIf {
+            when (it) {
+                is ExecutableWithPath -> it.executablePath.exists()
+                else -> true
+            }
         }
-    } ?: ExecutableInstance.UnresolvedExecutable()
+
+        // If the executable is unresolved, either the path does not exist, or there is no
+        // entry in the cache. In this case, always try to get the executable out of the cache.
+        if (instance == null) {
+            getExecutable(type).exceptionally {
+                LOG.warn(it) { "Error thrown while updating executable cache" }
+                null
+            }
+            return ExecutableInstance.UnresolvedExecutable(message("executableCommon.missing_executable", type.displayName))
+        }
+
+        // Check if the set executable was modified. If it was, start an update in the background. Overlapping
+        // runs of update are eventually consistent, and called often, so we do not have to keep track of the future
+        val lastModified = (instance as ExecutableWithPath).executablePath.lastModifiedOrNull()
+        if (lastModified != internalState[type.id]?.third) {
+            getExecutable(type).exceptionally {
+                LOG.warn(it) { "Error thrown while updating executable cache" }
+                null
+            }
+        }
+        return instance
+    }
+
+    override fun validateExecutablePath(type: ExecutableType<*>, path: Path): ExecutableInstance = validate(type, path, false)
 
     override fun getExecutable(type: ExecutableType<*>): CompletionStage<ExecutableInstance> {
         val future = CompletableFuture<ExecutableInstance>()
@@ -89,7 +115,7 @@ class DefaultExecutableManager : PersistentStateComponent<ExecutableStateList>, 
             future.complete(
                 when {
                     instance is ExecutableWithPath && persisted.autoResolved == true && instance.executablePath.isNewerThan(lastKnownFileTime) ->
-                        validate(type, instance.executablePath, false)
+                        validateAndSave(type, instance.executablePath, autoResolved = false)
                     instance is ExecutableWithPath && instance.executablePath.lastModifiedOrNull() == lastValidated ->
                         instance
                     else ->
@@ -103,21 +129,21 @@ class DefaultExecutableManager : PersistentStateComponent<ExecutableStateList>, 
     override fun setExecutablePath(type: ExecutableType<*>, path: Path): CompletionStage<ExecutableInstance> {
         val future = CompletableFuture<ExecutableInstance>()
         ApplicationManager.getApplication().executeOnPooledThread {
-            val executable = validate(type, path, false)
+            val executable = validateAndSave(type, path, false)
             future.complete(executable)
         }
         return future
     }
 
     override fun removeExecutable(type: ExecutableType<*>) {
-        internalState.remove(type.id)
+        internalState[type.id] = Triple(ExecutableState(type.id), null, null)
     }
 
     private fun load(type: ExecutableType<*>, persisted: ExecutableState?): ExecutableInstance {
         val persistedPath = persisted?.executablePath?.let { Paths.get(it) }
         val autoResolved = persisted?.autoResolved ?: false
         return when {
-            persistedPath?.exists() == true -> validate(type, persistedPath, autoResolved)
+            persistedPath?.exists() == true -> validateAndSave(type, persistedPath, autoResolved)
             else -> resolve(type)
         }
     }
@@ -139,27 +165,44 @@ class DefaultExecutableManager : PersistentStateComponent<ExecutableStateList>, 
     }
 
     private fun resolve(type: ExecutableType<*>): ExecutableInstance = try {
-        (type as? AutoResolvable)?.resolve()?.let { validate(type, it, true) } ?: ExecutableInstance.UnresolvedExecutable()
+        (type as? AutoResolvable)?.resolve()?.let { validateAndSave(type, it, autoResolved = true) }
+            ?: ExecutableInstance.UnresolvedExecutable(message("executableCommon.missing_executable", type.displayName))
     } catch (e: Exception) {
         ExecutableInstance.UnresolvedExecutable(message("aws.settings.executables.resolution_exception", type.displayName, e.asString))
     }
 
-    private fun validate(type: ExecutableType<*>, path: Path, autoResolved: Boolean): ExecutableInstance = try {
-        (type as? Validatable)?.validate(path)
-        determineVersion(type, path, autoResolved)
-    } catch (e: Exception) {
-        val message = message("aws.settings.executables.executable_invalid", type.displayName, e.asString)
-        LOG.warn(e) { message }
+    private fun validate(type: ExecutableType<*>, path: Path, autoResolved: Boolean): ExecutableInstance =
+        try {
+            (type as? Validatable)?.validate(path)
+            determineVersion(type, path, autoResolved)
+        } catch (e: Exception) {
+            val message = message("aws.settings.executables.executable_invalid", type.displayName, e.asString)
+            LOG.warn(e) { message }
 
-        ExecutableInstance.InvalidExecutable(
-            path,
-            null,
-            autoResolved,
-            message
-        )
-    }.also {
-        when (it) {
-            is ExecutableInstance.Executable -> updateInternalState(type, it)
+            ExecutableInstance.InvalidExecutable(
+                path,
+                null,
+                autoResolved,
+                message
+            )
+        }
+
+    private fun validateAndSave(type: ExecutableType<*>, path: Path, autoResolved: Boolean): ExecutableInstance {
+        val originalValue = internalState[type.id]?.second
+
+        return when (val instance = validate(type, path, autoResolved)) {
+            is ExecutableInstance.Executable -> {
+                updateInternalState(type, instance)
+                instance
+            }
+            is ExecutableInstance.UnresolvedExecutable, is ExecutableInstance.InvalidExecutable -> {
+                if (originalValue is ExecutableInstance.Executable) {
+                    originalValue
+                } else {
+                    updateInternalState(type, instance)
+                    instance
+                }
+            }
         }
     }
 
@@ -187,10 +230,15 @@ class DefaultExecutableManager : PersistentStateComponent<ExecutableStateList>, 
 }
 
 sealed class ExecutableInstance {
+    abstract val version: String?
+
     interface ExecutableWithPath {
         val executablePath: Path
-        val version: String?
         val autoResolved: Boolean
+    }
+
+    interface BadExecutable {
+        val validationError: String
     }
 
     class Executable(
@@ -207,10 +255,12 @@ sealed class ExecutableInstance {
         override val executablePath: Path,
         override val version: String?,
         override val autoResolved: Boolean,
-        val validationError: String
-    ) : ExecutableInstance(), ExecutableWithPath
+        override val validationError: String
+    ) : ExecutableInstance(), ExecutableWithPath, BadExecutable
 
-    class UnresolvedExecutable(val resolutionError: String? = null) : ExecutableInstance()
+    class UnresolvedExecutable(override val validationError: String) : ExecutableInstance(), BadExecutable {
+        override val version: String? = null
+    }
 }
 
 // PersistentStateComponent requires a bean, so we wrap the List

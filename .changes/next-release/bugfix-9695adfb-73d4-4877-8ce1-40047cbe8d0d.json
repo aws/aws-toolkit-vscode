@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix several issues with updating the SAM cli while the IDE is open"
+}

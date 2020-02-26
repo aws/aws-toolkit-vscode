@@ -70,9 +70,7 @@ class StartRemoteShellAction(private val project: Project, private val container
             ProgressManager.getInstance().run(object : Task.Backgroundable(project, title, false) {
                 override fun run(indicator: ProgressIndicator) {
                     if (cloudDebugExecutable !is ExecutableInstance.Executable) {
-                        val error = (cloudDebugExecutable as? ExecutableInstance.InvalidExecutable)?.validationError
-                            ?: (cloudDebugExecutable as? ExecutableInstance.UnresolvedExecutable)?.resolutionError
-                            ?: message("general.unknown_error")
+                        val error = (cloudDebugExecutable as? ExecutableInstance.BadExecutable)?.validationError ?: message("general.unknown_error")
 
                         runInEdt {
                             notifyError(message("cloud_debug.step.clouddebug.install.fail", error))

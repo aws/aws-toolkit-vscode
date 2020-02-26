@@ -17,7 +17,7 @@ import software.aws.toolkits.jetbrains.services.PathMapping
 import software.aws.toolkits.jetbrains.services.lambda.BuiltLambda
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
-import software.aws.toolkits.jetbrains.settings.SamSettings
+import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.streams.toList
@@ -27,7 +27,7 @@ abstract class BaseLambdaBuilderTest {
 
     @Before
     open fun setUp() {
-        SamSettings.getInstance().savedExecutablePath = System.getenv()["SAM_CLI_EXEC"]
+        setSamExecutableFromEnvironment()
     }
 
     protected fun buildLambda(

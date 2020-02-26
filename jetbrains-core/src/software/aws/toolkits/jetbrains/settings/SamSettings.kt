@@ -7,6 +7,7 @@ import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import org.jetbrains.annotations.TestOnly
 
 @State(name = "sam", storages = [Storage("aws.xml")])
 class SamSettings : PersistentStateComponent<SamConfiguration> {
@@ -18,28 +19,9 @@ class SamSettings : PersistentStateComponent<SamConfiguration> {
         this.state = state
     }
 
-    /**
-     * Returns the path to the SAM CLI executable by first using the manual value,
-     * if it is not set attempts to auto-detect it
-     */
-    val executablePath: String?
-        get() = if (state.savedExecutablePath.isNullOrEmpty()) {
-            SamExecutableDetector().find()
-        } else {
-            state.savedExecutablePath
-        }
-
-    /**
-     * Exposes the saved (aka manually set) path to SAM CLI executable
-     */
-    var savedExecutablePath: String?
-        get() = state.savedExecutablePath
-        set(value) {
-            state.savedExecutablePath = value
-        }
-
     companion object {
         @JvmStatic
+        @TestOnly
         fun getInstance(): SamSettings = ServiceManager.getService(SamSettings::class.java)
     }
 }
