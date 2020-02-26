@@ -7,7 +7,6 @@ import com.intellij.notification.Notification
 import com.intellij.notification.Notifications
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.testFramework.ProjectRule
-import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.util.io.Compressor
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.eq
@@ -17,6 +16,7 @@ import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import org.apache.commons.lang.exception.ExceptionUtils
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.Assertions.catchThrowable
 import org.junit.Before
 import org.junit.Rule
@@ -44,9 +44,7 @@ import java.nio.ByteBuffer
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.Duration
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletableFuture.completedFuture
-import kotlin.test.fail
 
 class SchemaCodeDownloaderTest {
 
@@ -207,15 +205,12 @@ class SchemaCodeDownloaderTest {
                 .thenReturn(completedResponse)
         }
 
-        try {
+        assertThatThrownBy {
             val pollingSettings = CodeGenerationStatusPoller.PollingSettings(Duration.ofMillis(10), maxAttempts)
             CodeGenerationStatusPoller(mockSchemasClient, pollingSettings).pollForCompletion(REQUEST).toCompletableFuture().get()
-        } catch (e: Exception) {
-            assertThat(ExceptionUtils.getRootCause(e)::class).isEqualTo(WaiterTimeoutException::class)
-            verify(mockSchemasClient, times(2)).describeCodeBinding(describeCodeBindingRequest)
-            return
-        }
-        fail("Should never get here")
+        }.hasRootCauseInstanceOf(WaiterTimeoutException::class.java)
+
+        verify(mockSchemasClient, times(2)).describeCodeBinding(describeCodeBindingRequest)
     }
 
     @Test
@@ -256,18 +251,9 @@ class SchemaCodeDownloaderTest {
             on { getCodeBindingSource(any<GetCodeBindingSourceRequest>()) }.thenThrow(someException)
         }
 
-        var future = CompletableFuture<DownloadedSchemaCode>()
-        runInEdtAndWait {
-            future = CodeDownloader(mockSchemasClient).download(REQUEST).toCompletableFuture()
-        }
-
-        try {
-            future.get()
-            fail("Should never get here")
-        } catch (e: Exception) {
-            assertThat(e.cause!!::class).isEqualTo(RuntimeException::class)
-            assertThat(ExceptionUtils.getRootCause(e)).isEqualTo(someException)
-        }
+        assertThatThrownBy {
+            CodeDownloader(mockSchemasClient).download(REQUEST).toCompletableFuture().get()
+        }.hasRootCause(someException)
     }
 
     @Test
@@ -278,17 +264,9 @@ class SchemaCodeDownloaderTest {
             on { getCodeBindingSource(any<GetCodeBindingSourceRequest>()) }.thenThrow(notFoundException)
         }
 
-        var future = CompletableFuture<DownloadedSchemaCode>()
-        runInEdtAndWait {
-            future = CodeDownloader(mockSchemasClient).download(REQUEST).toCompletableFuture()
-        }
-
-        try {
-            future.get()
-            fail("Should never get here")
-        } catch (e: Exception) {
-            assertThat(e.cause).isEqualTo(notFoundException)
-        }
+        assertThatThrownBy {
+            CodeDownloader(mockSchemasClient).download(REQUEST).toCompletableFuture().get()
+        }.hasRootCause(notFoundException)
     }
 
     @Test
@@ -383,7 +361,7 @@ class SchemaCodeDownloaderTest {
 
         assertThat(ExceptionUtils.getRootCause(exception)).isInstanceOf(SchemaCodeDownloadFileCollisionException::class.java)
 
-        // Directory and File alraedy exists
+        // Directory and File already exists
         assertThat(destinationDirectory.exists()).isTrue()
         assertThat(destinationFile.exists()).isTrue()
 
@@ -423,33 +401,29 @@ class SchemaCodeDownloaderTest {
         // Invoke CodeExtractor which should not throw any
         CodeExtractor().extractAndPlace(realDestinationRequest, downloadedSchemaCode).toCompletableFuture().get()
 
-        // Directory and File alraedy exist
+        // Directory and File already exist
         assertThat(destinationDirectory.exists()).isTrue()
         assertThat(destinationFile.exists()).isTrue()
     }
 
     @Test
     fun canUpdateProgress() {
-        val progressIndicator = mock<ProgressIndicator>() // Relaxed required because calling a void java setter
+        val progressIndicator = mock<ProgressIndicator>()
         val newStatus = "new status"
 
-        val future = ProgressUpdater().updateProgress(progressIndicator, newStatus)
-        future.toCompletableFuture().get()
+        ProgressUpdater().updateProgress(progressIndicator, newStatus).toCompletableFuture().get()
 
         verify(progressIndicator).isIndeterminate = true
-        verify(progressIndicator).setText(newStatus)
+        verify(progressIndicator).text = newStatus
     }
 
     @Test
     fun canDownloadCodeFirstInvocationPath() {
         standardDependencyMockInitialization()
 
-        var future = CompletableFuture<File?>()
-        runInEdtAndWait {
-            future = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
-                .downloadCode(REQUEST, progressIndicator).toCompletableFuture()
-        }
-        assertThat(future.get()).isEqualTo(schemaCodeCoreFile)
+        val schema = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
+            .downloadCode(REQUEST, progressIndicator).toCompletableFuture().get()
+        assertThat(schema).isEqualTo(schemaCodeCoreFile)
 
         // Assert no error notifications
         assertThat(errorNotification?.dropDownText).isNull()
@@ -469,12 +443,9 @@ class SchemaCodeDownloaderTest {
             on { generate(REQUEST) }.thenReturn(completedFuture(CodeGenerationStatus.CREATE_COMPLETE))
         }
 
-        var future = CompletableFuture<File?>()
-        runInEdtAndWait {
-            future = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
-                .downloadCode(REQUEST, progressIndicator).toCompletableFuture()
-        }
-        assertThat(future.get()).isEqualTo(schemaCodeCoreFile)
+        val schema = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
+            .downloadCode(REQUEST, progressIndicator).toCompletableFuture().get()
+        assertThat(schema).isEqualTo(schemaCodeCoreFile)
 
         // Assert no error notifications
         assertThat(errorNotification?.dropDownText).isNull()
@@ -494,12 +465,9 @@ class SchemaCodeDownloaderTest {
             on { download(REQUEST) }.thenReturn(completedFuture(downloadedSchemaCode))
         }
 
-        var future = CompletableFuture<File?>()
-        runInEdtAndWait {
-            future = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
-                .downloadCode(REQUEST, progressIndicator).toCompletableFuture()
-        }
-        assertThat(future.get()).isEqualTo(schemaCodeCoreFile)
+        val schema = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
+                .downloadCode(REQUEST, progressIndicator).toCompletableFuture().get()
+        assertThat(schema).isEqualTo(schemaCodeCoreFile)
 
         // Assert no error notifications
         assertThat(errorNotification?.dropDownText).isNull()
@@ -521,27 +489,19 @@ class SchemaCodeDownloaderTest {
             on { generate(REQUEST) }.thenReturn(failedFuture(someException))
         }
 
-        var future = CompletableFuture<File?>()
-        runInEdtAndWait {
-            future = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
-                .downloadCode(REQUEST, progressIndicator).toCompletableFuture()
-        }
+        assertThatThrownBy {
+            SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
+                .downloadCode(REQUEST, progressIndicator).toCompletableFuture().get()
+        }.hasRootCause(someException)
 
-        try {
-            future.get()
-            fail("Should never get here")
-        } catch (e: Exception) {
-            assertThat(ExceptionUtils.getRootCause(e)).isEqualTo(someException)
+        // Assert no error notifications
+        assertThat(errorNotification?.dropDownText).isNull()
 
-            // Assert no error notifications
-            assertThat(errorNotification?.dropDownText).isNull()
-
-            verify(codeGenerator).generate(REQUEST)
-            verify(codePoller, times(0)).pollForCompletion(REQUEST)
-            verify(codeDownloader).download(REQUEST)
-            verify(codeExtractor, times(0)).extractAndPlace(REQUEST, downloadedSchemaCode)
-            verify(progressUpdater, times(2)).updateProgress(eq(progressIndicator), any())
-        }
+        verify(codeGenerator).generate(REQUEST)
+        verify(codePoller, times(0)).pollForCompletion(REQUEST)
+        verify(codeDownloader).download(REQUEST)
+        verify(codeExtractor, times(0)).extractAndPlace(REQUEST, downloadedSchemaCode)
+        verify(progressUpdater, times(2)).updateProgress(eq(progressIndicator), any())
     }
 
     @Test
@@ -554,27 +514,19 @@ class SchemaCodeDownloaderTest {
             on { pollForCompletion(REQUEST) }.thenReturn(failedFuture(someException))
         }
 
-        var future = CompletableFuture<File?>()
-        runInEdtAndWait {
-            future = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
-                .downloadCode(REQUEST, progressIndicator).toCompletableFuture()
-        }
+        assertThatThrownBy {
+            SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
+                .downloadCode(REQUEST, progressIndicator).toCompletableFuture().get()
+        }.hasRootCause(someException)
 
-        try {
-            future.get()
-            fail("Should never get here")
-        } catch (e: Exception) {
-            assertThat(ExceptionUtils.getRootCause(e)).isEqualTo(someException)
+        // Assert no error notifications
+        assertThat(errorNotification?.dropDownText).isNull()
 
-            // Assert no error notifications
-            assertThat(errorNotification?.dropDownText).isNull()
-
-            verify(codeGenerator).generate(REQUEST)
-            verify(codeDownloader).download(REQUEST)
-            verify(codePoller).pollForCompletion(REQUEST)
-            verify(codeExtractor, times(0)).extractAndPlace(REQUEST, downloadedSchemaCode)
-            verify(progressUpdater, times(2)).updateProgress(eq(progressIndicator), any())
-        }
+        verify(codeGenerator).generate(REQUEST)
+        verify(codeDownloader).download(REQUEST)
+        verify(codePoller).pollForCompletion(REQUEST)
+        verify(codeExtractor, times(0)).extractAndPlace(REQUEST, downloadedSchemaCode)
+        verify(progressUpdater, times(2)).updateProgress(eq(progressIndicator), any())
     }
 
     @Test
@@ -587,27 +539,19 @@ class SchemaCodeDownloaderTest {
             on { pollForCompletion(REQUEST) }.thenReturn(failedFuture(waiterTimeoutException))
         }
 
-        var future = CompletableFuture<File?>()
-        runInEdtAndWait {
-            future = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
-                .downloadCode(REQUEST, progressIndicator).toCompletableFuture()
-        }
+        assertThatThrownBy {
+            SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
+                .downloadCode(REQUEST, progressIndicator).toCompletableFuture().get()
+        }.hasRootCause(waiterTimeoutException)
 
-        try {
-            future.get()
-            fail("Should never get here")
-        } catch (e: Exception) {
-            assertThat(ExceptionUtils.getRootCause(e)).isEqualTo(waiterTimeoutException)
+        // Assert no error notifications
+        assertThat(errorNotification?.dropDownText).isNull()
 
-            // Assert no error notifications
-            assertThat(errorNotification?.dropDownText).isNull()
-
-            verify(codeGenerator).generate(REQUEST)
-            verify(codePoller).pollForCompletion(REQUEST)
-            verify(codeDownloader).download(REQUEST)
-            verify(codeExtractor, times(0)).extractAndPlace(REQUEST, downloadedSchemaCode)
-            verify(progressUpdater, times(2)).updateProgress(eq(progressIndicator), any())
-        }
+        verify(codeGenerator).generate(REQUEST)
+        verify(codePoller).pollForCompletion(REQUEST)
+        verify(codeDownloader).download(REQUEST)
+        verify(codeExtractor, times(0)).extractAndPlace(REQUEST, downloadedSchemaCode)
+        verify(progressUpdater, times(2)).updateProgress(eq(progressIndicator), any())
     }
 
     @Test
@@ -619,27 +563,19 @@ class SchemaCodeDownloaderTest {
             on { download(REQUEST) }.thenReturn(failedFuture(someException))
         }
 
-        var future = CompletableFuture<File?>()
-        runInEdtAndWait {
-            future = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
-                .downloadCode(REQUEST, progressIndicator).toCompletableFuture()
-        }
+        assertThatThrownBy {
+            SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
+                .downloadCode(REQUEST, progressIndicator).toCompletableFuture().get()
+        }.hasRootCause(someException)
 
-        try {
-            future.get()
-            fail("Should never get here")
-        } catch (e: Exception) {
-            assertThat(ExceptionUtils.getRootCause(e)).isEqualTo(someException)
+        // Assert no error notifications
+        assertThat(errorNotification?.dropDownText).isNull()
 
-            // Assert no error notifications
-            assertThat(errorNotification?.dropDownText).isNull()
-
-            verify(codeGenerator, times(0)).generate(REQUEST)
-            verify(codePoller, times(0)).pollForCompletion(REQUEST)
-            verify(codeDownloader).download(REQUEST)
-            verify(codeExtractor, times(0)).extractAndPlace(REQUEST, downloadedSchemaCode)
-            verify(progressUpdater).updateProgress(eq(progressIndicator), any())
-        }
+        verify(codeGenerator, times(0)).generate(REQUEST)
+        verify(codePoller, times(0)).pollForCompletion(REQUEST)
+        verify(codeDownloader).download(REQUEST)
+        verify(codeExtractor, times(0)).extractAndPlace(REQUEST, downloadedSchemaCode)
+        verify(progressUpdater).updateProgress(eq(progressIndicator), any())
     }
 
     @Test
@@ -651,27 +587,19 @@ class SchemaCodeDownloaderTest {
             on { codeDownloader.download(REQUEST) }.thenReturn(failedFuture(notFoundException))
         }
 
-        var future = CompletableFuture<File?>()
-        runInEdtAndWait {
-            future = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
-                .downloadCode(REQUEST, progressIndicator).toCompletableFuture()
-        }
+        assertThatThrownBy {
+            SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
+                .downloadCode(REQUEST, progressIndicator).toCompletableFuture().get()
+        }.hasRootCause(notFoundException)
 
-        try {
-            future.get()
-            fail("Should never get here")
-        } catch (e: Exception) {
-            assertThat(ExceptionUtils.getRootCause(e)).isEqualTo(notFoundException)
+        // Assert no error notifications
+        assertThat(errorNotification?.dropDownText).isNull()
 
-            // Assert no error notifications
-            assertThat(errorNotification?.dropDownText).isNull()
-
-            verify(codeGenerator).generate(REQUEST)
-            verify(codePoller).pollForCompletion(REQUEST)
-            verify(codeDownloader, times(2)).download(REQUEST)
-            verify(codeExtractor, times(0)).extractAndPlace(REQUEST, downloadedSchemaCode)
-            verify(progressUpdater, times(3)).updateProgress(eq(progressIndicator), any())
-        }
+        verify(codeGenerator).generate(REQUEST)
+        verify(codePoller).pollForCompletion(REQUEST)
+        verify(codeDownloader, times(2)).download(REQUEST)
+        verify(codeExtractor, times(0)).extractAndPlace(REQUEST, downloadedSchemaCode)
+        verify(progressUpdater, times(3)).updateProgress(eq(progressIndicator), any())
     }
 
     @Test
@@ -684,29 +612,19 @@ class SchemaCodeDownloaderTest {
             on { extractAndPlace(REQUEST, downloadedSchemaCode) }.thenReturn(failedFuture(someException))
         }
 
-        var future = CompletableFuture<File?>()
-        runInEdtAndWait {
-            future = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
-                .downloadCode(REQUEST, progressIndicator).toCompletableFuture()
-        }
+        assertThatThrownBy {
+            SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
+                .downloadCode(REQUEST, progressIndicator).toCompletableFuture().get()
+        }.hasRootCause(someException)
 
-        try {
-            future.get()
-        } catch (e: Exception) {
-            assertThat(ExceptionUtils.getRootCause(e)).isEqualTo(someException)
+        // Assert no error notifications
+        assertThat(errorNotification?.dropDownText).isNull()
 
-            // Assert no error notifications
-            assertThat(errorNotification?.dropDownText).isNull()
-
-            verify(codeGenerator).generate(REQUEST)
-            verify(codePoller).pollForCompletion(REQUEST)
-            verify(codeDownloader, times(2)).download(REQUEST)
-            verify(codeExtractor).extractAndPlace(REQUEST, downloadedSchemaCode)
-            verify(progressUpdater, times(4)).updateProgress(eq(progressIndicator), any())
-            return
-        }
-
-        fail("Should never get here")
+        verify(codeGenerator).generate(REQUEST)
+        verify(codePoller).pollForCompletion(REQUEST)
+        verify(codeDownloader, times(2)).download(REQUEST)
+        verify(codeExtractor).extractAndPlace(REQUEST, downloadedSchemaCode)
+        verify(progressUpdater, times(4)).updateProgress(eq(progressIndicator), any())
     }
 
     @Test
@@ -719,27 +637,19 @@ class SchemaCodeDownloaderTest {
             on { extractAndPlace(REQUEST, downloadedSchemaCode) }.thenReturn(failedFuture(schemaCodeDownloadFileCollisionException))
         }
 
-        var future = CompletableFuture<File?>()
-        runInEdtAndWait {
-            future = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
-                .downloadCode(REQUEST, progressIndicator).toCompletableFuture()
-        }
+        assertThatThrownBy {
+            SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
+                .downloadCode(REQUEST, progressIndicator).toCompletableFuture().get()
+        }.hasRootCause(schemaCodeDownloadFileCollisionException)
 
-        try {
-            future.get()
-            fail("Should never get here")
-        } catch (e: Exception) {
-            assertThat(ExceptionUtils.getRootCause(e)).isEqualTo(schemaCodeDownloadFileCollisionException)
+        // Assert no error notifications
+        assertThat(errorNotification?.dropDownText).isNull()
 
-            // Assert no error notifications
-            assertThat(errorNotification?.dropDownText).isNull()
-
-            verify(codeGenerator).generate(REQUEST)
-            verify(codePoller).pollForCompletion(REQUEST)
-            verify(codeDownloader, times(2)).download(REQUEST)
-            verify(codeExtractor).extractAndPlace(REQUEST, downloadedSchemaCode)
-            verify(progressUpdater, times(4)).updateProgress(eq(progressIndicator), any())
-        }
+        verify(codeGenerator).generate(REQUEST)
+        verify(codePoller).pollForCompletion(REQUEST)
+        verify(codeDownloader, times(2)).download(REQUEST)
+        verify(codeExtractor).extractAndPlace(REQUEST, downloadedSchemaCode)
+        verify(progressUpdater, times(4)).updateProgress(eq(progressIndicator), any())
     }
 
     private fun initializeRealSourceAndDestinationFolders() {
