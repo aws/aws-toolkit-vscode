@@ -50,6 +50,7 @@ interface ExecutableManager {
 
 inline fun <reified T : ExecutableType<*>> ExecutableManager.getExecutable() = getExecutable(ExecutableType.getInstance<T>())
 inline fun <reified T : ExecutableType<*>> ExecutableManager.getExecutableIfPresent() = getExecutableIfPresent(ExecutableType.getInstance<T>())
+inline fun <reified T : ExecutableType<*>> ExecutableManager.setExecutablePath(path: Path) = setExecutablePath(ExecutableType.getInstance<T>(), path)
 
 @State(name = "executables", storages = [Storage("aws.xml")])
 class DefaultExecutableManager : PersistentStateComponent<ExecutableStateList>, ExecutableManager {

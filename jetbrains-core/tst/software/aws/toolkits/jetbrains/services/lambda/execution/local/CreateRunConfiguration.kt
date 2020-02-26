@@ -8,11 +8,15 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
+import software.aws.toolkits.jetbrains.core.executables.setExecutablePath
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationType
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamVersionCache
 import software.aws.toolkits.jetbrains.services.lambda.validation.LambdaHandlerValidator
+import java.nio.file.Paths
 import java.security.InvalidParameterException
 
 private const val TEST_EVALUATE_BLOCKING_TIMEOUT_MS = 2000
@@ -107,6 +111,7 @@ fun samRunConfiguration(project: Project): LocalLambdaRunConfiguration {
 fun preWarmSamVersionCache(path: String?, timeoutMs: Int = TEST_EVALUATE_BLOCKING_TIMEOUT_MS) {
     path ?: throw InvalidParameterException("Test SAM CLI executable path is not set")
     SamVersionCache.evaluateBlocking(path, timeoutMs)
+    ExecutableManager.getInstance().setExecutablePath<SamExecutable>(Paths.get(path))
 }
 
 fun preWarmLambdaHandlerValidation(project: Project, runtime: Runtime, handler: String, timeoutMs: Int = TEST_EVALUATE_BLOCKING_TIMEOUT_MS) {
