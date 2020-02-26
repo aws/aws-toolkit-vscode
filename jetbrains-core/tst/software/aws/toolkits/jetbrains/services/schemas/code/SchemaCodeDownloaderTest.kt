@@ -9,11 +9,12 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.util.io.Compressor
-import io.mockk.Called
-import io.mockk.called
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.verify
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.stub
+import com.nhaarman.mockitokotlin2.times
+import com.nhaarman.mockitokotlin2.verify
 import org.apache.commons.lang.exception.ExceptionUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.catchThrowable
@@ -33,6 +34,7 @@ import software.amazon.awssdk.services.schemas.model.NotFoundException
 import software.amazon.awssdk.services.schemas.model.PutCodeBindingRequest
 import software.amazon.awssdk.services.schemas.model.PutCodeBindingResponse
 import software.aws.toolkits.core.utils.WaiterTimeoutException
+import software.aws.toolkits.core.utils.failedFuture
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.services.schemas.SchemaCodeLangs
 import software.aws.toolkits.jetbrains.services.schemas.SchemaSummary
@@ -43,6 +45,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletableFuture.completedFuture
 import kotlin.test.fail
 
 class SchemaCodeDownloaderTest {
@@ -83,15 +86,15 @@ class SchemaCodeDownloaderTest {
     private val REQUEST = SchemaCodeDownloadRequestDetails(SCHEMA_SUMMARY, VERSION, LANGUAGE, FAKE_DESTINATION)
     private val ZIP_FILE_SCHEMA_CORE_CODE_FILE_NAME = REQUEST.schemaCoreCodeFileName()
 
-    private val mockSchemasClient = mockk<SchemasClient>()
-    private val codeGenerator = mockk<CodeGenerator>()
-    private val codePoller = mockk<CodeGenerationStatusPoller>()
-    private val codeDownloader = mockk<CodeDownloader>()
-    private val codeExtractor = mockk<CodeExtractor>()
-    private val progressUpdater = mockk<ProgressUpdater>()
-    private val progressIndicator = mockk<ProgressIndicator>()
-    private val downloadedSchemaCode = mockk<DownloadedSchemaCode>()
-    private val schemaCodeCoreFile = mockk<File>()
+    private val mockSchemasClient = mock<SchemasClient>()
+    private val codeGenerator = mock<CodeGenerator>()
+    private val codePoller = mock<CodeGenerationStatusPoller>()
+    private val codeDownloader = mock<CodeDownloader>()
+    private val codeExtractor = mock<CodeExtractor>()
+    private val progressUpdater = mock<ProgressUpdater>()
+    private val progressIndicator = mock<ProgressIndicator>()
+    private val downloadedSchemaCode = mock<DownloadedSchemaCode>()
+    private val schemaCodeCoreFile = mock<File>()
 
     @Before
     fun setUp() {
@@ -112,11 +115,13 @@ class SchemaCodeDownloaderTest {
             .schemaVersion(VERSION)
             .build()
 
-        every { mockSchemasClient.putCodeBinding(putCodeBindingRequest) } returns putCodeBindingResponse
+        mockSchemasClient.stub {
+            on { putCodeBinding(putCodeBindingRequest) }.thenReturn(putCodeBindingResponse)
+        }
 
         val codeGenerationStatus = CodeGenerator(mockSchemasClient).generate(REQUEST).toCompletableFuture().get()
 
-        verify { mockSchemasClient.putCodeBinding(putCodeBindingRequest) }
+        verify(mockSchemasClient).putCodeBinding(putCodeBindingRequest)
         assertThat(codeGenerationStatus).isEqualTo(CodeGenerationStatus.CREATE_IN_PROGRESS)
     }
 
@@ -135,11 +140,13 @@ class SchemaCodeDownloaderTest {
             .schemaVersion(VERSION)
             .build()
 
-        every { mockSchemasClient.describeCodeBinding(describeCodeBindingRequest) } returns describeCodeBindingResponse
+        mockSchemasClient.stub {
+            on { mockSchemasClient.describeCodeBinding(describeCodeBindingRequest) }.thenReturn(describeCodeBindingResponse)
+        }
 
         val actualCodeGenerationStatus = CodeGenerationStatusPoller(mockSchemasClient).getCurrentStatus(REQUEST).toCompletableFuture().get()
 
-        verify { mockSchemasClient.describeCodeBinding(describeCodeBindingRequest) }
+        verify(mockSchemasClient).describeCodeBinding(describeCodeBindingRequest)
         assertThat(actualCodeGenerationStatus).isEqualTo(expectedCodeGenerationStatus)
     }
 
@@ -161,15 +168,16 @@ class SchemaCodeDownloaderTest {
             .schemaVersion(VERSION)
             .build()
 
-        every { mockSchemasClient.describeCodeBinding(describeCodeBindingRequest) } returns
-            inProgressResponse andThen
-            inProgressResponse andThen
-            inProgressResponse andThen
-            completedResponse
+        mockSchemasClient.stub {
+            on { describeCodeBinding(describeCodeBindingRequest) }.thenReturn(inProgressResponse)
+                .thenReturn(inProgressResponse)
+                .thenReturn(inProgressResponse)
+                .thenReturn(completedResponse)
+        }
 
         val createdSchemaName = CodeGenerationStatusPoller(mockSchemasClient).pollForCompletion(REQUEST).toCompletableFuture().get()
 
-        verify(exactly = 4) { mockSchemasClient.describeCodeBinding(describeCodeBindingRequest) }
+        verify(mockSchemasClient, times(4)).describeCodeBinding(describeCodeBindingRequest)
         assertThat(createdSchemaName).isEqualTo(SCHEMA)
     }
 
@@ -193,17 +201,18 @@ class SchemaCodeDownloaderTest {
 
         val maxAttempts = 2
 
-        every { mockSchemasClient.describeCodeBinding(describeCodeBindingRequest) } returns
-            inProgressResponse andThen
-            inProgressResponse andThen
-            completedResponse // After maxAttempts
+        mockSchemasClient.stub {
+            on { describeCodeBinding(describeCodeBindingRequest) }.thenReturn(inProgressResponse)
+                .thenReturn(inProgressResponse)
+                .thenReturn(completedResponse)
+        }
 
         try {
             val pollingSettings = CodeGenerationStatusPoller.PollingSettings(Duration.ofMillis(10), maxAttempts)
             CodeGenerationStatusPoller(mockSchemasClient, pollingSettings).pollForCompletion(REQUEST).toCompletableFuture().get()
         } catch (e: Exception) {
             assertThat(ExceptionUtils.getRootCause(e)::class).isEqualTo(WaiterTimeoutException::class)
-            verify(exactly = 2) { mockSchemasClient.describeCodeBinding(describeCodeBindingRequest) }
+            verify(mockSchemasClient, times(2)).describeCodeBinding(describeCodeBindingRequest)
             return
         }
         fail("Should never get here")
@@ -218,19 +227,23 @@ class SchemaCodeDownloaderTest {
             .schemaVersion(VERSION)
             .build()
 
-        val sdkBytesResponse = mockk<SdkBytes>()
-        val zipByteBuffer = mockk<ByteBuffer>()
-        every { sdkBytesResponse.asByteBuffer() } returns zipByteBuffer
+        val zipByteBuffer = mock<ByteBuffer>()
+
+        val sdkBytesResponse = mock<SdkBytes> {
+            on { asByteBuffer() }.thenReturn(zipByteBuffer)
+        }
 
         val getCodeBindingResponse = GetCodeBindingSourceResponse.builder()
             .body(sdkBytesResponse)
             .build()
 
-        every { mockSchemasClient.getCodeBindingSource(getCodeBindingRequest) } returns getCodeBindingResponse
+        mockSchemasClient.stub {
+            on { getCodeBindingSource(getCodeBindingRequest) }.thenReturn(getCodeBindingResponse)
+        }
 
         val downloadedSchemaCode = CodeDownloader(mockSchemasClient).download(REQUEST).toCompletableFuture().get()
 
-        verify { mockSchemasClient.getCodeBindingSource(getCodeBindingRequest) }
+        verify(mockSchemasClient).getCodeBindingSource(getCodeBindingRequest)
 
         assertThat(downloadedSchemaCode.zipContents).isEqualTo(zipByteBuffer)
     }
@@ -238,40 +251,44 @@ class SchemaCodeDownloaderTest {
     @Test
     fun downloadGeneratedCodeWrapsExceptions() {
         val someException = IllegalStateException()
-        every { mockSchemasClient.getCodeBindingSource(ofType(GetCodeBindingSourceRequest::class)) } throws someException
+
+        mockSchemasClient.stub {
+            on { getCodeBindingSource(any<GetCodeBindingSourceRequest>()) }.thenThrow(someException)
+        }
 
         var future = CompletableFuture<DownloadedSchemaCode>()
-        runInEdtAndWait() {
+        runInEdtAndWait {
             future = CodeDownloader(mockSchemasClient).download(REQUEST).toCompletableFuture()
         }
 
         try {
             future.get()
+            fail("Should never get here")
         } catch (e: Exception) {
             assertThat(e.cause!!::class).isEqualTo(RuntimeException::class)
             assertThat(ExceptionUtils.getRootCause(e)).isEqualTo(someException)
-            return
         }
-        fail("Should never get here")
     }
 
     @Test
     fun downloadGeneratedCodeDoesNotWrapNotFoundException() {
         val notFoundException = NotFoundException.builder().build()
-        every { mockSchemasClient.getCodeBindingSource(ofType(GetCodeBindingSourceRequest::class)) } throws notFoundException
+
+        mockSchemasClient.stub {
+            on { getCodeBindingSource(any<GetCodeBindingSourceRequest>()) }.thenThrow(notFoundException)
+        }
 
         var future = CompletableFuture<DownloadedSchemaCode>()
-        runInEdtAndWait() {
+        runInEdtAndWait {
             future = CodeDownloader(mockSchemasClient).download(REQUEST).toCompletableFuture()
         }
 
         try {
             future.get()
+            fail("Should never get here")
         } catch (e: Exception) {
             assertThat(e.cause).isEqualTo(notFoundException)
-            return
         }
-        fail("Should never get here")
     }
 
     @Test
@@ -413,14 +430,14 @@ class SchemaCodeDownloaderTest {
 
     @Test
     fun canUpdateProgress() {
-        val progressIndicator: ProgressIndicator = mockk<ProgressIndicator>(relaxUnitFun = true) // Relaxed required because calling a void java setter
+        val progressIndicator = mock<ProgressIndicator>() // Relaxed required because calling a void java setter
         val newStatus = "new status"
 
         val future = ProgressUpdater().updateProgress(progressIndicator, newStatus)
         future.toCompletableFuture().get()
 
-        verify { progressIndicator.setIndeterminate(true) }
-        verify { progressIndicator.text = newStatus }
+        verify(progressIndicator).isIndeterminate = true
+        verify(progressIndicator).setText(newStatus)
     }
 
     @Test
@@ -428,7 +445,7 @@ class SchemaCodeDownloaderTest {
         standardDependencyMockInitialization()
 
         var future = CompletableFuture<File?>()
-        runInEdtAndWait() {
+        runInEdtAndWait {
             future = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
                 .downloadCode(REQUEST, progressIndicator).toCompletableFuture()
         }
@@ -437,21 +454,23 @@ class SchemaCodeDownloaderTest {
         // Assert no error notifications
         assertThat(errorNotification?.dropDownText).isNull()
 
-        verify { codeGenerator.generate(REQUEST) }
-        verify { codePoller.pollForCompletion(REQUEST) }
-        verify(exactly = 2) { codeDownloader.download(REQUEST) }
-        verify { codeExtractor.extractAndPlace(REQUEST, downloadedSchemaCode) }
-        verify(exactly = 4) { progressUpdater.updateProgress(progressIndicator, any()) }
+        verify(codeGenerator).generate(REQUEST)
+        verify(codePoller).pollForCompletion(REQUEST)
+        verify(codeDownloader, times(2)).download(REQUEST)
+        verify(codeExtractor).extractAndPlace(REQUEST, downloadedSchemaCode)
+        verify(progressUpdater, times(4)).updateProgress(eq(progressIndicator), any())
     }
 
     @Test
     fun canDownloadCodeCodeGeneratedImmediately() {
         standardDependencyMockInitialization()
 
-        every { codeGenerator.generate(REQUEST) } returns completableFutureOf(CodeGenerationStatus.CREATE_COMPLETE)
+        codeGenerator.stub {
+            on { generate(REQUEST) }.thenReturn(completedFuture(CodeGenerationStatus.CREATE_COMPLETE))
+        }
 
         var future = CompletableFuture<File?>()
-        runInEdtAndWait() {
+        runInEdtAndWait {
             future = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
                 .downloadCode(REQUEST, progressIndicator).toCompletableFuture()
         }
@@ -460,22 +479,23 @@ class SchemaCodeDownloaderTest {
         // Assert no error notifications
         assertThat(errorNotification?.dropDownText).isNull()
 
-        verify { codeGenerator.generate(REQUEST) }
-        verify { codePoller.pollForCompletion(REQUEST) wasNot Called }
-        verify(exactly = 2) { codeDownloader.download(REQUEST) }
-        verify { codeExtractor.extractAndPlace(REQUEST, downloadedSchemaCode) }
-        verify(exactly = 4) { progressUpdater.updateProgress(progressIndicator, any()) }
+        verify(codeGenerator).generate(REQUEST)
+        verify(codePoller, times(0)).pollForCompletion(REQUEST)
+        verify(codeDownloader, times(2)).download(REQUEST)
+        verify(codeExtractor).extractAndPlace(REQUEST, downloadedSchemaCode)
+        verify(progressUpdater, times(4)).updateProgress(eq(progressIndicator), any())
     }
 
     @Test
     fun canDownloadAlreadyGeneratedCode() {
         standardDependencyMockInitialization()
 
-        every { codeDownloader.download(REQUEST) } returns
-            completableFutureOf(downloadedSchemaCode) // Return code from first time
+        codeDownloader.stub {
+            on { download(REQUEST) }.thenReturn(completedFuture(downloadedSchemaCode))
+        }
 
         var future = CompletableFuture<File?>()
-        runInEdtAndWait() {
+        runInEdtAndWait {
             future = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
                 .downloadCode(REQUEST, progressIndicator).toCompletableFuture()
         }
@@ -484,11 +504,11 @@ class SchemaCodeDownloaderTest {
         // Assert no error notifications
         assertThat(errorNotification?.dropDownText).isNull()
 
-        verify(exactly = 1) { codeDownloader.download(REQUEST) }
-        verify { codeGenerator.generate(any()) wasNot Called }
-        verify { codePoller.pollForCompletion(any()) wasNot Called }
-        verify { codeExtractor.extractAndPlace(REQUEST, downloadedSchemaCode) }
-        verify(exactly = 2) { progressUpdater.updateProgress(progressIndicator, any()) }
+        verify(codeGenerator, times(0)).generate(REQUEST)
+        verify(codePoller, times(0)).pollForCompletion(REQUEST)
+        verify(codeDownloader).download(REQUEST)
+        verify(codeExtractor).extractAndPlace(REQUEST, downloadedSchemaCode)
+        verify(progressUpdater, times(2)).updateProgress(eq(progressIndicator), any())
     }
 
     @Test
@@ -497,32 +517,31 @@ class SchemaCodeDownloaderTest {
 
         val someException = InternalServerErrorException.builder().build()
 
-        every { codeGenerator.generate(REQUEST) } returns
-            completableFutureOfException(someException)
+        codeGenerator.stub {
+            on { generate(REQUEST) }.thenReturn(failedFuture(someException))
+        }
 
         var future = CompletableFuture<File?>()
-        runInEdtAndWait() {
+        runInEdtAndWait {
             future = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
                 .downloadCode(REQUEST, progressIndicator).toCompletableFuture()
         }
 
         try {
             future.get()
+            fail("Should never get here")
         } catch (e: Exception) {
             assertThat(ExceptionUtils.getRootCause(e)).isEqualTo(someException)
 
             // Assert no error notifications
             assertThat(errorNotification?.dropDownText).isNull()
 
-            verify(exactly = 1) { codeGenerator.generate(REQUEST) }
-            verify { codePoller.pollForCompletion(REQUEST) wasNot called }
-            verify(exactly = 1) { codeDownloader.download(REQUEST) }
-            verify { codeExtractor.extractAndPlace(REQUEST, downloadedSchemaCode) wasNot Called }
-            verify(exactly = 2) { progressUpdater.updateProgress(progressIndicator, any()) }
-            return
+            verify(codeGenerator).generate(REQUEST)
+            verify(codePoller, times(0)).pollForCompletion(REQUEST)
+            verify(codeDownloader).download(REQUEST)
+            verify(codeExtractor, times(0)).extractAndPlace(REQUEST, downloadedSchemaCode)
+            verify(progressUpdater, times(2)).updateProgress(eq(progressIndicator), any())
         }
-
-        fail("Should never get here")
     }
 
     @Test
@@ -531,31 +550,31 @@ class SchemaCodeDownloaderTest {
 
         val someException = InternalServerErrorException.builder().build()
 
-        every { codePoller.pollForCompletion(REQUEST) } returns completableFutureOfException(someException)
+        codePoller.stub {
+            on { pollForCompletion(REQUEST) }.thenReturn(failedFuture(someException))
+        }
 
         var future = CompletableFuture<File?>()
-        runInEdtAndWait() {
+        runInEdtAndWait {
             future = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
                 .downloadCode(REQUEST, progressIndicator).toCompletableFuture()
         }
 
         try {
             future.get()
+            fail("Should never get here")
         } catch (e: Exception) {
             assertThat(ExceptionUtils.getRootCause(e)).isEqualTo(someException)
 
             // Assert no error notifications
             assertThat(errorNotification?.dropDownText).isNull()
 
-            verify(exactly = 1) { codeGenerator.generate(REQUEST) }
-            verify(exactly = 1) { codePoller.pollForCompletion(REQUEST) }
-            verify(exactly = 1) { codeDownloader.download(REQUEST) }
-            verify { codeExtractor.extractAndPlace(REQUEST, downloadedSchemaCode) wasNot Called }
-            verify(exactly = 2) { progressUpdater.updateProgress(progressIndicator, any()) }
-            return
+            verify(codeGenerator).generate(REQUEST)
+            verify(codeDownloader).download(REQUEST)
+            verify(codePoller).pollForCompletion(REQUEST)
+            verify(codeExtractor, times(0)).extractAndPlace(REQUEST, downloadedSchemaCode)
+            verify(progressUpdater, times(2)).updateProgress(eq(progressIndicator), any())
         }
-
-        fail("Should never get here")
     }
 
     @Test
@@ -564,31 +583,31 @@ class SchemaCodeDownloaderTest {
 
         val waiterTimeoutException = WaiterTimeoutException("")
 
-        every { codePoller.pollForCompletion(REQUEST) } returns completableFutureOfException(waiterTimeoutException)
+        codePoller.stub {
+            on { pollForCompletion(REQUEST) }.thenReturn(failedFuture(waiterTimeoutException))
+        }
 
         var future = CompletableFuture<File?>()
-        runInEdtAndWait() {
+        runInEdtAndWait {
             future = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
                 .downloadCode(REQUEST, progressIndicator).toCompletableFuture()
         }
 
         try {
             future.get()
+            fail("Should never get here")
         } catch (e: Exception) {
             assertThat(ExceptionUtils.getRootCause(e)).isEqualTo(waiterTimeoutException)
 
             // Assert no error notifications
             assertThat(errorNotification?.dropDownText).isNull()
 
-            verify(exactly = 1) { codeGenerator.generate(REQUEST) }
-            verify(exactly = 1) { codePoller.pollForCompletion(REQUEST) }
-            verify(exactly = 1) { codeDownloader.download(REQUEST) }
-            verify { codeExtractor.extractAndPlace(REQUEST, downloadedSchemaCode) wasNot Called }
-            verify(exactly = 2) { progressUpdater.updateProgress(progressIndicator, any()) }
-            return
+            verify(codeGenerator).generate(REQUEST)
+            verify(codePoller).pollForCompletion(REQUEST)
+            verify(codeDownloader).download(REQUEST)
+            verify(codeExtractor, times(0)).extractAndPlace(REQUEST, downloadedSchemaCode)
+            verify(progressUpdater, times(2)).updateProgress(eq(progressIndicator), any())
         }
-
-        fail("Should never get here")
     }
 
     @Test
@@ -596,32 +615,31 @@ class SchemaCodeDownloaderTest {
         standardDependencyMockInitialization()
 
         val someException = InternalServerErrorException.builder().build()
-        every { codeDownloader.download(REQUEST) } returns
-            completableFutureOfException(someException)
+        codeDownloader.stub {
+            on { download(REQUEST) }.thenReturn(failedFuture(someException))
+        }
 
         var future = CompletableFuture<File?>()
-        runInEdtAndWait() {
+        runInEdtAndWait {
             future = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
                 .downloadCode(REQUEST, progressIndicator).toCompletableFuture()
         }
 
         try {
             future.get()
+            fail("Should never get here")
         } catch (e: Exception) {
             assertThat(ExceptionUtils.getRootCause(e)).isEqualTo(someException)
 
             // Assert no error notifications
             assertThat(errorNotification?.dropDownText).isNull()
 
-            verify { codeGenerator.generate(REQUEST) wasNot Called }
-            verify { codePoller.pollForCompletion(REQUEST) wasNot called }
-            verify(exactly = 1) { codeDownloader.download(REQUEST) }
-            verify { codeExtractor.extractAndPlace(REQUEST, downloadedSchemaCode) wasNot Called }
-            verify(exactly = 1) { progressUpdater.updateProgress(progressIndicator, any()) }
-            return
+            verify(codeGenerator, times(0)).generate(REQUEST)
+            verify(codePoller, times(0)).pollForCompletion(REQUEST)
+            verify(codeDownloader).download(REQUEST)
+            verify(codeExtractor, times(0)).extractAndPlace(REQUEST, downloadedSchemaCode)
+            verify(progressUpdater).updateProgress(eq(progressIndicator), any())
         }
-
-        fail("Should never get here")
     }
 
     @Test
@@ -629,32 +647,31 @@ class SchemaCodeDownloaderTest {
         standardDependencyMockInitialization()
 
         val notFoundException = NotFoundException.builder().build()
-        every { codeDownloader.download(REQUEST) } returns
-            completableFutureOfException(notFoundException)
+        codeDownloader.stub {
+            on { codeDownloader.download(REQUEST) }.thenReturn(failedFuture(notFoundException))
+        }
 
         var future = CompletableFuture<File?>()
-        runInEdtAndWait() {
+        runInEdtAndWait {
             future = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
                 .downloadCode(REQUEST, progressIndicator).toCompletableFuture()
         }
 
         try {
             future.get()
+            fail("Should never get here")
         } catch (e: Exception) {
             assertThat(ExceptionUtils.getRootCause(e)).isEqualTo(notFoundException)
 
             // Assert no error notifications
             assertThat(errorNotification?.dropDownText).isNull()
 
-            verify(exactly = 1) { codeGenerator.generate(REQUEST) }
-            verify(exactly = 1) { codePoller.pollForCompletion(REQUEST) }
-            verify(exactly = 2) { codeDownloader.download(REQUEST) }
-            verify { codeExtractor.extractAndPlace(REQUEST, downloadedSchemaCode) wasNot Called }
-            verify(exactly = 3) { progressUpdater.updateProgress(progressIndicator, any()) }
-            return
+            verify(codeGenerator).generate(REQUEST)
+            verify(codePoller).pollForCompletion(REQUEST)
+            verify(codeDownloader, times(2)).download(REQUEST)
+            verify(codeExtractor, times(0)).extractAndPlace(REQUEST, downloadedSchemaCode)
+            verify(progressUpdater, times(3)).updateProgress(eq(progressIndicator), any())
         }
-
-        fail("Should never get here")
     }
 
     @Test
@@ -663,10 +680,12 @@ class SchemaCodeDownloaderTest {
 
         val someException = InternalServerErrorException.builder().build()
 
-        every { codeExtractor.extractAndPlace(REQUEST, downloadedSchemaCode) } returns completableFutureOfException(someException)
+        codeExtractor.stub {
+            on { extractAndPlace(REQUEST, downloadedSchemaCode) }.thenReturn(failedFuture(someException))
+        }
 
         var future = CompletableFuture<File?>()
-        runInEdtAndWait() {
+        runInEdtAndWait {
             future = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
                 .downloadCode(REQUEST, progressIndicator).toCompletableFuture()
         }
@@ -679,11 +698,11 @@ class SchemaCodeDownloaderTest {
             // Assert no error notifications
             assertThat(errorNotification?.dropDownText).isNull()
 
-            verify(exactly = 1) { codeGenerator.generate(REQUEST) }
-            verify(exactly = 1) { codePoller.pollForCompletion(REQUEST) }
-            verify(exactly = 2) { codeDownloader.download(REQUEST) }
-            verify(exactly = 1) { codeExtractor.extractAndPlace(REQUEST, downloadedSchemaCode) }
-            verify(exactly = 4) { progressUpdater.updateProgress(progressIndicator, any()) }
+            verify(codeGenerator).generate(REQUEST)
+            verify(codePoller).pollForCompletion(REQUEST)
+            verify(codeDownloader, times(2)).download(REQUEST)
+            verify(codeExtractor).extractAndPlace(REQUEST, downloadedSchemaCode)
+            verify(progressUpdater, times(4)).updateProgress(eq(progressIndicator), any())
             return
         }
 
@@ -695,31 +714,32 @@ class SchemaCodeDownloaderTest {
         standardDependencyMockInitialization()
 
         val schemaCodeDownloadFileCollisionException = SchemaCodeDownloadFileCollisionException("SomeFile")
-        every { codeExtractor.extractAndPlace(REQUEST, downloadedSchemaCode) } returns completableFutureOfException(schemaCodeDownloadFileCollisionException)
+
+        codeExtractor.stub {
+            on { extractAndPlace(REQUEST, downloadedSchemaCode) }.thenReturn(failedFuture(schemaCodeDownloadFileCollisionException))
+        }
 
         var future = CompletableFuture<File?>()
-        runInEdtAndWait() {
+        runInEdtAndWait {
             future = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
                 .downloadCode(REQUEST, progressIndicator).toCompletableFuture()
         }
 
         try {
             future.get()
+            fail("Should never get here")
         } catch (e: Exception) {
             assertThat(ExceptionUtils.getRootCause(e)).isEqualTo(schemaCodeDownloadFileCollisionException)
 
             // Assert no error notifications
             assertThat(errorNotification?.dropDownText).isNull()
 
-            verify(exactly = 1) { codeGenerator.generate(REQUEST) }
-            verify(exactly = 1) { codePoller.pollForCompletion(REQUEST) }
-            verify(exactly = 2) { codeDownloader.download(REQUEST) }
-            verify(exactly = 1) { codeExtractor.extractAndPlace(REQUEST, downloadedSchemaCode) }
-            verify(exactly = 4) { progressUpdater.updateProgress(progressIndicator, any()) }
-            return
+            verify(codeGenerator).generate(REQUEST)
+            verify(codePoller).pollForCompletion(REQUEST)
+            verify(codeDownloader, times(2)).download(REQUEST)
+            verify(codeExtractor).extractAndPlace(REQUEST, downloadedSchemaCode)
+            verify(progressUpdater, times(4)).updateProgress(eq(progressIndicator), any())
         }
-
-        fail("Should never get here")
     }
 
     private fun initializeRealSourceAndDestinationFolders() {
@@ -742,14 +762,26 @@ class SchemaCodeDownloaderTest {
     }
 
     private fun standardDependencyMockInitialization() {
-        every { codeDownloader.download(REQUEST) } returns
-            completableFutureOfException(NotFoundException.builder().build()) andThen // First time throws exception
-            completableFutureOf(downloadedSchemaCode) // Second time returns code
+        codeDownloader.stub {
+            on { download(REQUEST) }.thenReturn(failedFuture(NotFoundException.builder().build()))
+                .thenReturn(completedFuture(downloadedSchemaCode))
+        }
 
-        every { codeGenerator.generate(REQUEST) } returns completableFutureOf(CodeGenerationStatus.CREATE_IN_PROGRESS)
-        every { codePoller.pollForCompletion(REQUEST, any()) } returns completableFutureOf(SCHEMA)
-        every { codeExtractor.extractAndPlace(REQUEST, downloadedSchemaCode) } returns completableFutureOf(schemaCodeCoreFile)
-        every { progressUpdater.updateProgress(progressIndicator, any()) } returns completableFutureOf(null)
+        codeGenerator.stub {
+            on { generate(REQUEST) }.thenReturn(completedFuture(CodeGenerationStatus.CREATE_IN_PROGRESS))
+        }
+
+        codePoller.stub {
+            on { pollForCompletion(eq(REQUEST), any()) }.thenReturn(completedFuture(SCHEMA))
+        }
+
+        codeExtractor.stub {
+            on { extractAndPlace(REQUEST, downloadedSchemaCode) }.thenReturn(completedFuture(schemaCodeCoreFile))
+        }
+
+        progressUpdater.stub {
+            on { updateProgress(eq(progressIndicator), any()) }.thenReturn(completedFuture(null))
+        }
     }
 
     private fun subscribeToNotifications() {
@@ -761,18 +793,6 @@ class SchemaCodeDownloaderTest {
             errorNotification = params[0] as Notification
         }
         messageBus.subscribe(Notifications.TOPIC)
-    }
-
-    private fun <T> completableFutureOf(obj: T): CompletableFuture<T> {
-        val future = CompletableFuture<T>()
-        future.complete(obj)
-        return future
-    }
-
-    private fun <T> completableFutureOfException(exception: Exception): CompletableFuture<T> {
-        val future = CompletableFuture<T>()
-        future.completeExceptionally(exception)
-        return future
     }
 
     private fun fileToByteBuffer(file: File): ByteBuffer = ByteBuffer.wrap(Files.readAllBytes(file.toPath()))

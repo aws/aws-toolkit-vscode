@@ -12,17 +12,19 @@ import com.intellij.openapi.projectRoots.ProjectJdkTable
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.testFramework.IdeaTestUtil
 import com.intellij.testFramework.runInEdtAndWait
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.verify
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.stub
+import com.nhaarman.mockitokotlin2.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import software.amazon.awssdk.services.schemas.SchemasClient
 import software.amazon.awssdk.services.schemas.model.SchemaVersionSummary
+import software.aws.toolkits.core.utils.failedFuture
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.MockResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
@@ -35,7 +37,7 @@ import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRul
 import software.aws.toolkits.jetbrains.utils.rules.PyTestSdk
 import software.aws.toolkits.resources.message
 import java.io.File
-import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletableFuture.completedFuture
 
 class DownloadCodeForSchemaDialogTest {
 
@@ -57,8 +59,6 @@ class DownloadCodeForSchemaDialogTest {
     private var infoNotification: Notification? = null
     private var errorNotification: Notification? = null
 
-    private lateinit var schemasClient: SchemasClient
-
     private val REGISTRY = "registry"
     private val SCHEMA_NAME = "schema"
     private val SCHEMA = Schema(SCHEMA_NAME, REGISTRY, null)
@@ -67,13 +67,10 @@ class DownloadCodeForSchemaDialogTest {
     private val VERSIONS = listOf("3", VERSION, LATEST)
     private val LANGUAGE = SchemaCodeLangs.JAVA8
 
-    private val schemaCodeDownloader = mockk<SchemaCodeDownloader>()
+    private val schemaCodeDownloader = mock<SchemaCodeDownloader>()
 
     @Before
     fun setup() {
-        schemasClient = mockk<SchemasClient>()
-        mockClientManager.create<SchemasClient>()
-
         fileEditorManager = FileEditorManager.getInstance(projectRule.project)
         mockSettingsManager = ProjectAccountSettingsManager.getInstance(projectRule.project) as MockProjectAccountSettingsManager
 
@@ -145,7 +142,9 @@ class DownloadCodeForSchemaDialogTest {
 
         val path = newFolder.absolutePath
 
-        every { schemaCodeDownloader.downloadCode(any(), any()) } returns completableFutureOf(testFile)
+        schemaCodeDownloader.stub {
+            on { downloadCode(any(), any()) }.thenReturn(completedFuture(testFile))
+        }
 
         runInEdtAndWait {
             val dialog = DownloadCodeForSchemaDialog(projectRule.project, SCHEMA)
@@ -155,7 +154,7 @@ class DownloadCodeForSchemaDialogTest {
         }
 
         val request = SchemaCodeDownloadRequestDetails(SchemaSummary(SCHEMA_NAME, REGISTRY), VERSION, LANGUAGE, path)
-        verify { schemaCodeDownloader.downloadCode(request, any()) }
+        verify(schemaCodeDownloader).downloadCode(eq(request), any())
         assertThat(fileEditorManager.openFiles).hasOnlyOneElementSatisfying { assertThat(it.name).isEqualTo(fileName) }
 
         assertThat(errorNotification?.content).isNull()
@@ -169,7 +168,10 @@ class DownloadCodeForSchemaDialogTest {
         val newFolder = tempFolder.newFolder()
 
         val exception = SchemaCodeDownloadFileCollisionException(SCHEMA_NAME)
-        every { schemaCodeDownloader.downloadCode(any(), any()) } returns completableFutureOfException(exception)
+
+        schemaCodeDownloader.stub {
+            on { downloadCode(any(), any()) }.thenReturn(failedFuture(exception))
+        }
 
         runInEdtAndWait {
             val dialog = DownloadCodeForSchemaDialog(projectRule.project, SCHEMA)
@@ -213,18 +215,6 @@ class DownloadCodeForSchemaDialogTest {
         }
     }
 
-    private fun <T> completableFutureOf(obj: T): CompletableFuture<T> {
-        val future = CompletableFuture<T>()
-        future.complete(obj)
-        return future
-    }
-
-    private fun <T> completableFutureOfException(exception: Exception): CompletableFuture<T> {
-        val future = CompletableFuture<T>()
-        future.completeExceptionally(exception)
-        return future
-    }
-
     private fun subscribeToNotifications() {
         val project = projectRule.project
 
@@ -246,10 +236,12 @@ class DownloadCodeForSchemaDialogTest {
     private fun MockResourceCache.mockSchemaVersions(registryName: String, schemaName: String, schemaVersions: List<String>) {
         this.addEntry(
             SchemasResources.getSchemaVersions(registryName, schemaName),
-            CompletableFuture.completedFuture(schemaVersions.map { v ->
+            completedFuture(schemaVersions.map { v ->
                 SchemaVersionSummary.builder()
                     .schemaName(schemaName)
                     .schemaVersion(v)
-                    .build() }))
+                    .build()
+            })
+        )
     }
 }

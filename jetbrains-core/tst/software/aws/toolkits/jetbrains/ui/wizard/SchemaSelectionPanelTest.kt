@@ -6,8 +6,9 @@ package software.aws.toolkits.jetbrains.ui.wizard
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.ui.ColoredListCellRenderer
-import io.mockk.every
-import io.mockk.mockk
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.stub
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
@@ -61,16 +62,15 @@ class SchemaSelectionPanelTest {
     private val CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES =
         File(javaClass.getResource("/customerUploadedEventSchemaMultipleTypes.json.txt").toURI()).readText(Charsets.UTF_8)
 
-    private val mockSamProjectBuilder = mockk<SamProjectBuilder>()
+    private val mockSamProjectBuilder = mock<SamProjectBuilder>()
     private val RUNTIME_GROUP = RuntimeGroup.JAVA
 
-    private val mockResource = mockk<Resource<List<SchemaSelectionItem>>>()
     // Relaxed required because calling a void java setter see https://github.com/mockk/mockk/issues/91
-    private val mockResourceSelector = mockk<ResourceSelector<SchemaSelectionItem>>(relaxUnitFun = true)
-    private val mockPanel = mockk<JPanel>(relaxUnitFun = true)
+    private val mockResourceSelector = mock<ResourceSelector<SchemaSelectionItem>>()
+    private val mockPanel = mock<JPanel>()
 
-    private val mockResourceBuilderOptions = mockk<ResourceSelector.ResourceBuilderOptions<SchemaSelectionItem>>()
-    private val mockResourceSelectorBuilder = mockk<ResourceSelector.ResourceBuilder>()
+    private val mockResourceBuilderOptions = mock<ResourceSelector.ResourceBuilderOptions<SchemaSelectionItem>>()
+    private val mockResourceSelectorBuilder = mock<ResourceSelector.ResourceBuilder>()
 
     private lateinit var schemaSelectionPanel: SchemaResourceSelectorSelectionPanel
 
@@ -133,20 +133,26 @@ class SchemaSelectionPanelTest {
     }
 
     private fun initMockResourceSelector() {
-        every { mockResourceBuilderOptions.comboBoxModel(any()) } returns mockResourceBuilderOptions
-        every { mockResourceBuilderOptions.customRenderer(any<ColoredListCellRenderer<SchemaSelectionItem>>()) } returns mockResourceBuilderOptions
-        every { mockResourceBuilderOptions.disableAutomaticLoading() } returns mockResourceBuilderOptions
-        every { mockResourceBuilderOptions.disableAutomaticSorting() } returns mockResourceBuilderOptions
-        every { mockResourceBuilderOptions.awsConnection(any<AwsConnection>()) } returns mockResourceBuilderOptions
-        every { mockResourceBuilderOptions.awsConnection(any<LazyAwsConnectionEvaluator>()) } returns mockResourceBuilderOptions
-        every { mockResourceBuilderOptions.build() } returns mockResourceSelector
+        mockResourceBuilderOptions.stub {
+            on { comboBoxModel(any()) }.thenReturn(mockResourceBuilderOptions)
+            on { customRenderer(any<ColoredListCellRenderer<SchemaSelectionItem>>()) }.thenReturn(mockResourceBuilderOptions)
+            on { disableAutomaticLoading() }.thenReturn(mockResourceBuilderOptions)
+            on { disableAutomaticSorting() }.thenReturn(mockResourceBuilderOptions)
+            on { awsConnection(any<AwsConnection>()) }.thenReturn(mockResourceBuilderOptions)
+            on { awsConnection(any<LazyAwsConnectionEvaluator>()) }.thenReturn(mockResourceBuilderOptions)
+            on { build() }.thenReturn(mockResourceSelector)
+        }
 
-        every { mockResourceSelectorBuilder.resource(any<Resource<List<SchemaSelectionItem>>>()) } returns mockResourceBuilderOptions
+        mockResourceSelectorBuilder.stub {
+            on { resource(any<Resource<List<SchemaSelectionItem>>>()) }.thenReturn(mockResourceBuilderOptions)
+        }
     }
 
     @Test
     fun schemaTemplateParametersNullWithoutSelection() {
-        every { mockResourceSelector.selected() } returns null
+        mockResourceSelector.stub {
+            on { selected() }.thenReturn(null)
+        }
 
         val schemaTemplateParameters = schemaSelectionPanel.buildSchemaTemplateParameters()
 
@@ -155,7 +161,9 @@ class SchemaSelectionPanelTest {
 
     @Test
     fun schemaTemplateParametersNullIfRegistrySelected() {
-        every { mockResourceSelector.selected() } returns REGISTRY_ITEM
+        mockResourceSelector.stub {
+            on { selected() }.thenReturn(REGISTRY_ITEM)
+        }
 
         val schemaTemplateParameters = schemaSelectionPanel.buildSchemaTemplateParameters()
 
@@ -164,7 +172,9 @@ class SchemaSelectionPanelTest {
 
     @Test
     fun schemaTemplateParametersBuiltAfterSelectionAwsSchema() {
-        every { mockResourceSelector.selected() } returns AWS_SCHEMA_ITEM
+        mockResourceSelector.stub {
+            on { selected() }.thenReturn(AWS_SCHEMA_ITEM)
+        }
 
         val schemaTemplateParameters = schemaSelectionPanel.buildSchemaTemplateParameters()
 
@@ -189,7 +199,9 @@ class SchemaSelectionPanelTest {
 
     @Test
     fun schemaTemplateParametersBuiltAfterSelectionPartnerSchema() {
-        every { mockResourceSelector.selected() } returns PARTNER_SCHEMA_ITEM
+        mockResourceSelector.stub {
+            on { selected() }.thenReturn(PARTNER_SCHEMA_ITEM)
+        }
 
         val schemaTemplateParameters = schemaSelectionPanel.buildSchemaTemplateParameters()
 
@@ -202,8 +214,7 @@ class SchemaSelectionPanelTest {
         assertThat(schemaTemplateParameters?.templateExtraContext).isNotNull
         assertThat(schemaTemplateParameters?.templateExtraContext?.schemaRegistry).isEqualTo(REGISTRY_NAME)
         assertThat(schemaTemplateParameters?.templateExtraContext?.schemaRootEventName).isEqualTo("aws_partner_mongodb_com_Ticket_Created")
-        assertThat(schemaTemplateParameters?.templateExtraContext?.schemaPackageHierarchy)
-            .isEqualTo(PARTNER_SCHEMA_EXPECTED_PACKAGE_NAME)
+        assertThat(schemaTemplateParameters?.templateExtraContext?.schemaPackageHierarchy).isEqualTo(PARTNER_SCHEMA_EXPECTED_PACKAGE_NAME)
         assertThat(schemaTemplateParameters?.templateExtraContext?.source).isEqualTo("aws.partner-mongodb.com")
         assertThat(schemaTemplateParameters?.templateExtraContext?.detailType).isEqualTo("MongoDB Trigger for my_store.reviews")
         assertThat(schemaTemplateParameters?.templateExtraContext?.userAgent).isEqualTo(AWSToolkitUserAgent)
@@ -211,7 +222,9 @@ class SchemaSelectionPanelTest {
 
     @Test
     fun schemaTemplateParametersBuiltAfterSelectionCustomerUploadedSchema() {
-        every { mockResourceSelector.selected() } returns CUSTOMER_UPLOADED_SCHEMA_ITEM
+        mockResourceSelector.stub {
+            on { selected() }.thenReturn(CUSTOMER_UPLOADED_SCHEMA_ITEM)
+        }
 
         val schemaTemplateParameters = schemaSelectionPanel.buildSchemaTemplateParameters()
         assertCustomerUploadedSchemaParameters(
@@ -224,7 +237,9 @@ class SchemaSelectionPanelTest {
 
     @Test
     fun schemaTemplateParametersBuiltAfterSelectionCustomerUploadedSchemaMultipleTypes() {
-        every { mockResourceSelector.selected() } returns CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_ITEM
+        mockResourceSelector.stub {
+            on { selected() }.thenReturn(CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_ITEM)
+        }
 
         val schemaTemplateParameters = schemaSelectionPanel.buildSchemaTemplateParameters()
         assertCustomerUploadedSchemaParameters(
