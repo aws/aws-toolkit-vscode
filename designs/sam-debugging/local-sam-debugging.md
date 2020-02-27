@@ -40,23 +40,23 @@ At this time, an experience for API Gateway support has not been designed.
 
 ## <a id="debug-config"></a> What can be configured for a Debug session?
 
-The following parameters influence a debug session. These are user-configured, and are referenced by the various [debugging experiences](#debugging-experiences).
+The following properties influence a debug session. These are user-configured, and are referenced by the various [debugging experiences](#debugging-experiences).
 
 ### General
 
-| Property                | Description                                                                                                                                                                                  | Where is it located                                                                             |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Environment Variables   | Environment Variables exposed to the Lambda Function                                                                                                                                         | Debug Configuration                                                                             |
-| Input Event             | Payload passed to the invoked Lambda Function                                                                                                                                                | Debug Configuration                                                                             |
-| SAM Template Parameters | Values to use for [Parameters](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html) in a SAM Template - Only applicable when invoking Resources | Debug Configuration                                                                             |
-| Runtime                 | Runtime of Lambda Function to invoke                                                                                                                                                         | CloudFormation Template when running a Resource, Debug Configuration when directly running code |
-| Handler                 | Lambda Function handler to invoke                                                                                                                                                            | CloudFormation Template when running a Resource, Debug Configuration when directly running code |
-| Timeout                 | Timeout threshold for Lambda function                                                                                                                                                        | CloudFormation Template                                                                         |
-| Memory                  | Memory provided to Lambda function                                                                                                                                                           | CloudFormation Template                                                                         |
+| Property                | Description                                                                                                                                                                                  | Source when invoking Template Resources    | Source when invoking code |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ------------------------- |
+| Environment Variables   | Environment Variables exposed to the Lambda Function                                                                                                                                         | Debug Configuration first, Template second | Debug Configuration       |
+| Input Event             | Payload passed to the invoked Lambda Function                                                                                                                                                | Debug Configuration                        | Debug Configuration       |
+| SAM Template Parameters | Values to use for [Parameters](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html) in a SAM Template - Only applicable when invoking Resources | Debug Configuration                        | Not Applicable            |
+| Runtime                 | Runtime of Lambda Function to invoke                                                                                                                                                         | Template                                   | Debug Configuration       |
+| Handler                 | Lambda Function handler to invoke                                                                                                                                                            | Template                                   | Debug Configuration       |
+| Timeout                 | Timeout threshold for Lambda function                                                                                                                                                        | Template                                   | Debug Configuration       |
+| Memory                  | Memory provided to Lambda function                                                                                                                                                           | Template                                   | Debug Configuration       |
 
 ### SAM CLI
 
-SAM CLI related parameters affect how the application is built and launched. For reference see the [sam build](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-build.html) command.
+SAM CLI related properties affect how the application is built and launched. For reference see the [sam build](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-build.html) command.
 
 | Property                     | Description                                                                                                                                                                                                                      | Default Value                    |
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
@@ -68,12 +68,12 @@ SAM CLI related parameters affect how the application is built and launched. For
 
 ### AWS
 
-When provided, AWS parameters are injected into local Lambda containers running the invoked SAM Application. This is useful in scenarios where the Lambda running locally is accessing other AWS resources.
+When provided, AWS properties are injected into local Lambda containers running the invoked SAM Application. This is useful in scenarios where the Lambda running locally is accessing other AWS resources.
 
 | Property    | Description                                                                                                                                                        | Default Value                                                                                                                             |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | Credentials | Provides credentials to the Lambda function being invoked. Set this to the Credentials ID as shown in the Credentials selection list (example: `profile:default`). | The Toolkit's active credentials are used. No credentials are provided to the local Lambda container if the user is not connected to AWS. |
-| Region      | Region assumed by the local Lambda container                                                                                                                       | us-east-1                                                                                                                                 |
+| Region      | Region assumed by the local Lambda container                                                                                                                       | The active credentials' default region (if available), else us-east-1                                                                     |
 
 ## <a id="debugging-experiences"></a> Local Debugging Experiences
 
