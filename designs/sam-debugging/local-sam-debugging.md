@@ -104,29 +104,23 @@ Example Debug Configuration entries can be found in the [Appendix](#sample-debug
 
 ### <a id="codelenses"></a> CodeLenses
 
-The Toolkit uses [CodeLenses](#terms-codelenses) as a shortcut to launching `aws-sam` [Debug Configurations](#debug-configurations).
+The Toolkit uses [CodeLenses](#terms-codelenses) as a way of setting up a [Debug Configuration](#debug-configurations) of type `aws-sam`.
 
-Some users find CodeLenses visually distracting. Others use the Toolkit for features not related to local debugging. The Toolkit's CodeLenses are enabled by default, but can be disabled in the Toolkit settings.
+Some users find CodeLenses visually distracting. Other users use the Toolkit for features that aren't related to local debugging. The Toolkit's CodeLenses are enabled by default, but can be disabled in the Toolkit settings.
 
 The CodeLenses discussed below only appear for languages/runtimes that the Toolkit provides support for (see [Introduction](#introduction)).
 
 #### CodeLenses in SAM Template files
 
-The Toolkit adds CodeLenses to SAM Template files, above every resource of type `AWS::Serverless::Function`. These CodeLenses provide users with an alternate way of launching `aws-sam` debug configurations.
+The Toolkit offers a way for users to set up debug configurations for template resources of type `AWS::Serverless::Function` and `AWS::Lambda::Function`.
 
-Two CodeLenses are added: "Run Locally", and "Debug Locally". The only difference between the two is whether or not a debugger is involved. When users click either CodeLens, the Toolkit shows a selection picker. The picker presents users with the following choices:
-
--   "Invoke \<Debug Configuration Name\>" - The picker contains one of these for every debug configuration found that references this SAM Template and resource. If users select one of these choices, the toolkit launches the corresponding debug configuration, as if the user launched it from VS Code's Debug view.
--   "Add Debug Configuration" - If users select this choice the toolkit produces an `aws-sam` Debug Configuration that is configured to invoke the resource being acted on, and adds it to `launch.json`. Users are taken to the new entry in `launch.json` instead of starting a debug session.
+The Toolkit adds an "Add Debug Configuration" CodeLens above resources that are not already referenced by a debug configuration. When users click this CodeLens, the toolkit produces a Debug Configuration of type `aws-sam`, configures it to invoke the resource, and adds it to `launch.json`. Users are taken to the new entry in `launch.json`.
 
 #### CodeLenses in Code files
 
-The Toolkit adds CodeLenses to functions considered [eligible Lambda handlers](#eligible-lambda-handler).
+The Toolkit offers a way for users to set up debug configurations that can launch functions considered [eligible Lambda handlers](#eligible-lambda-handler).
 
-Two CodeLenses are added: "Run Locally", and "Debug Locally". The only difference between the two is whether or not a debugger is involved. When users click either CodeLens, the Toolkit shows a selection picker. The picker presents users with the following choices:
-
--   "Invoke \<Debug Configuration Name\>" - The picker contains one of these for every debug configuration found that references this lambda handler. This includes debug configurations that directly reference this function, and those that reference this function through SAM Template resources. If users select one of these choices, the toolkit launches the corresponding debug configuration, as if the user launched it from VS Code's Debug view.
--   "Add Debug Configuration" - If users select this choice the toolkit produces an `aws-sam` Debug Configuration that is configured to invoke the resource being acted on, and adds it to `launch.json`. Users are taken to the new entry in `launch.json` instead of starting a debug session.
+The Toolkit adds an "Add Debug Configuration" CodeLens above lambda handers that are not already referenced by a debug configuration. When users click this CodeLens, the toolkit produces a Debug Configuration of type `aws-sam`, configures it to invoke the lambda handler, and adds it to `launch.json`. Users are taken to the new entry in `launch.json`.
 
 ## Appendix
 
@@ -160,13 +154,12 @@ The debug capabilities initially released in the Toolkit were not well rounded. 
 
 Here is an outline of the differences between this design and the current version of the AWS Toolkit:
 
--   Changed functionality
-    -   CodeLenses on code files now provide the abilitiy to invoke a function in isolation, or as part of a SAM Template. Previously, they could only be invoked as part of a SAM Template.
-        -   The current design explicitly presents options for what to launch. This should minimize confusion from customers who are familiar with the previous functionality.
 -   New functionality
     -   `aws-sam` Debug Configurations provide a way to launch debug sessions that articulate what is being debugged
+    -   Added CodeLenses to help users to produce Debug Configurations
 -   Removed functionality
-    -   CodeLenses are now pointers to Debug Configurations, and do not directly launch debug sessions on their own. The configuration files (`{workspace}/.aws/templates.json`) that were used by the old functionality are no longer relevant/used
+    -   Using CodeLenses as a mechanism to launch debug sessions are removed. Users familiar with the outgoing functionality are provided with an assisted transition path to using Debug Configurations.
+        -   the toolkit detects if users were using the previous CodeLens functionality based on the presence of a (`{workspace}/.aws/templates.json`) file. For these users, lambda handlers that used to show Run/Debug CodeLenses will be decorated with a tooltip or Hover type construct. This construct mentions the functionality shift and offers to convert the function's old CodeLens configuration over to a new debug configuration.
 
 ### <a id="sample-debug-configurations"></a> Sample Debug Configurations
 
