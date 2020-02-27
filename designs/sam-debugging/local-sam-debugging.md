@@ -1,6 +1,6 @@
 # User Experience: Local Debugging SAM Applications
 
-Current Status: Proposed, Not Implemented
+Current Status: **Accepted, Not Implemented**
 
 ## <a id="introduction"></a> Introduction
 
@@ -19,20 +19,18 @@ Each programming language (and its corresponding Lambda Runtime(s)) requires Too
 The toolkit supports the following scenarios for Locally Running and Debugging code using the Serverless Application Model:
 
 -   users can locally invoke [SAM Template](#terms-sam-template) resources that are Lambda functions
--   users can locally invoke Lambda function handler code independent of SAM Templates
--   users can locally trigger API Gateway style SAM Template resources that are Lambda functions
-
-Each scenario has one or more relevant user experiences. The different debugging functionalities are discussed first. Then, the various user experiences are discussed, along with which scenarios they apply to.
+-   users can locally invoke Lambda function handler code independent of templates
+-   in the future, users will be able to locally trigger API Gateway style SAM Template resources that are Lambda functions (design is TBD)
 
 ## What can be Debugged Locally
 
 ### Lambda Functions Invoked Directly
 
-Users can directly invoke Lambda functions and run them locally.
+Users can directly invoke Lambda functions and debug them locally.
 
 Lambda functions can be invoked in the context of a Serverless Application. CloudFormation template resources of the type [`AWS::Lambda::Function`](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-function.html) or [`AWS::Serverless::Function`](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html) represent Lambda functions. The toolkit provides ways to invoke these resources.
 
-Lambda functions can also be invoked directly from code, without any Serverless Application context. This gives users a way to quickly iterate and experiment with a Lambda, before deciding to integrate their code into a Serverless Application.
+Lambda functions can also be invoked directly from code, without any CloudFormation or SAM Templates. This gives users a way to quickly iterate and experiment with Lambda code that may or may not be integrated into CloudFormation Templates, SAM Templates, or some other Infrastructure as Code technologies.
 
 ### Lambda Functions Invoked via API Gateway
 
