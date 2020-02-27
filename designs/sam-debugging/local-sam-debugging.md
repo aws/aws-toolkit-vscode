@@ -184,7 +184,8 @@ The required fields are: type, request, invokeTarget
         {
             "name": "Debug HelloWorldResource", // Users name the entry; shown in Debug dropdown
             "type": "aws-sam",
-            "request": "direct-invoke", // This is the "aws-sam" variation for debugging SAM Template resources and Lambda handlers
+            // direct-invoke is the "aws-sam" variation for debugging SAM Template resources and Lambda handlers
+            "request": "direct-invoke",
             // Reference to the thing (Template or Code) being invoked
             "invokeTarget": {
                 "target": "template", // template | code
@@ -243,12 +244,16 @@ The required fields are: type, request, invokeTarget, lambda.runtime
         {
             "name": "Debug Lambda Handler MyFunctionHandler", // Users name the entry; shown in Debug dropdown
             "type": "aws-sam",
-            "request": "direct-invoke", // This is the "aws-sam" variation for debugging SAM Template resources and Lambda handlers
+            // direct-invoke is the "aws-sam" variation for debugging SAM Template resources and Lambda handlers
+            "request": "direct-invoke",
             // Reference to the thing (Template or Code) being invoked
             "invokeTarget": {
                 "target": "code", // template | code
-                "projectRoot": "path to folder", // The top level folder to run the Lambda handler in (this affects the lambdaHandler field in runtimes like node and python).
-                "lambdaHandler": "HelloWorld::HelloWorld.Function::MyFunctionHandler" // C# example shown. nodeJs example: app.lambdaHandler
+                // projectRoot - The top level folder to run the Lambda handler in
+                // (this affects the lambdaHandler field in runtimes like node and python).
+                "projectRoot": "path to folder",
+                // lambdaHandler - C# example shown. nodeJs example: app.lambdaHandler
+                "lambdaHandler": "HelloWorld::HelloWorld.Function::MyFunctionHandler"
             },
             // Lambda Execution related arguments
             "lambda": {
