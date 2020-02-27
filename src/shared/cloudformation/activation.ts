@@ -8,6 +8,7 @@ import { createFileSystemWatcher } from '../utilities/fileSystemWatcher'
 import {
     CloudFormationTemplateRegistry,
     DefaultCloudFormationTemplateRegistry,
+    DefaultCloudFormationTemplateRegistryListener,
     setTemplateRegistry
 } from './templateRegistry'
 
@@ -26,12 +27,13 @@ export async function activate(
     extensionContext: vscode.ExtensionContext,
     globPattern: string = TEMPLATE_FILE_GLOB_PATTERN
 ): Promise<void> {
-    const registry = new DefaultCloudFormationTemplateRegistry(globPattern)
+    const registry = new DefaultCloudFormationTemplateRegistry()
+    const listener = new DefaultCloudFormationTemplateRegistryListener(registry)
+    const watcher = createFileSystemWatcher(listener, globPattern)
     await populateRegistry(registry, globPattern)
     setTemplateRegistry(registry)
-    const watcher = createFileSystemWatcher(registry, globPattern)
 
-    extensionContext.subscriptions.push(registry)
+    extensionContext.subscriptions.push(listener)
     extensionContext.subscriptions.push(watcher)
 }
 

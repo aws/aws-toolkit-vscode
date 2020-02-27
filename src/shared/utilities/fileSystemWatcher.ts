@@ -5,10 +5,13 @@
 
 import * as vscode from 'vscode'
 
-export interface FileWatcherListener {
-    onListenedChange(templateUri: vscode.Uri): void
-    onListenedCreate(templateUri: vscode.Uri): void
-    onListenedDelete(templateUri: vscode.Uri): void
+/**
+ * Interface representing an object that can listen to a vscode.FileSystemWatcher
+ */
+export interface FileWatcherListener extends vscode.Disposable {
+    onListenedChange(templatePath: vscode.Uri): Promise<void>
+    onListenedCreate(templatePath: vscode.Uri): Promise<void>
+    onListenedDelete(templtemplatePathateUri: vscode.Uri): Promise<void>
 }
 
 /**
@@ -24,13 +27,13 @@ export function createFileSystemWatcher(
 ): vscode.FileSystemWatcher {
     const watcher = vscode.workspace.createFileSystemWatcher(globPattern)
     watcher.onDidChange(async (filename) => {
-        listener.onListenedChange(filename)
+        await listener.onListenedChange(filename)
     })
     watcher.onDidCreate(async (filename) => {
-        listener.onListenedCreate(filename)
+        await listener.onListenedCreate(filename)
     })
     watcher.onDidDelete(async (filename) => {
-        listener.onListenedDelete(filename)
+        await listener.onListenedDelete(filename)
     })
 
     return watcher
