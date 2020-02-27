@@ -81,17 +81,15 @@ When provided, AWS properties are injected into local Lambda containers running 
 
 [Debug Configurations](#terms-debug-configuration) are the idiomatic approach to running and debugging software in VS Code. They are also a reusable component - the Toolkit is able to internally produce and execute these configurations on the fly. This is the Toolkit's main experience for debugging SAM Template resources.
 
-The Toolkit provides a Debug Configuration type `aws-sam`. Users author and maintain these configuration entries. When users launch an `aws-sam` debug configuration, the toolkit performs the following:
+The Toolkit provides a Debug Configuration type `aws-sam`. Users author and maintain these configuration entries. When users launch a debug configuration of type `aws-sam`, the toolkit performs the following:
 
--   the debug configuration is validated (see [Debug Configuration Validations](#debug-configuration-validation)). In some situations, the launch is stopped.
--   a SAM Application's code is built
--   a SAM Template resource is invoked
--   a debugger is attached to the invoke (this is skipped if the debug configuration was launched using "Run without Debugging")
+1.  the debug configuration is validated (see [Debug Configuration Validations](#debug-configuration-validation)). The launch is stopped if errors are detected.
+1.  a SAM Application's code is built
+1.  a SAM Template resource is invoked
+1.  a debugger is attached to the invoked resource (this is skipped if the debug configuration was launched using "Run without Debugging")
     -   debug output is shown in the Debug Console of VS Code during this Debug Session
 
-The Debug Console can only be written to when VS Code has an active debug session. Launch progress is written to the Toolkit's Output Channel until a debugger is attached.
-
-During the launch sequence, the Toolkit writes the SAM CLI commands it executes to the Output Channel. This allows users to see what is happening behind the scenes.
+The Debug Console can only be written to when VS Code has an active debug session. During the launch sequence, launch progress is written to the Toolkit's Output Channel until a debugger is attached. SAM CLI commands executed by the Toolkit are written to the Output Channel, so users can see what is happening behind the scenes.
 
 Debug configurations reside in a JSON file. The Toolkit assists users working with `aws-sam` entries in the following ways:
 
@@ -99,7 +97,8 @@ Debug configurations reside in a JSON file. The Toolkit assists users working wi
     -   autocompletion is not available for open ended configuration values. For example, when a user types in the location of a SAM Template file, there is no filesystem-based autocompletion. The toolkit validates `aws-sam` debug configurations when launched, and notifies users as errant values are detected.
 -   users see field descriptions (tooltips) for `aws-sam` related fields
 -   users have access to snippets that produce typical (or starter) `aws-sam` debug configurations
--   the toolkit is capable of generating an `aws-sam` Debug Configuration for all `AWS::Serverless::Function` resources detected within a workspace
+-   the toolkit is capable of generating an `aws-sam` Debug Configuration for all `AWS::Serverless::Function` and `AWS::Lambda::Function` resources detected within a workspace
+    -   when users create a new SAM Application, the toolkit automatically performs this step to produce initial Debug Configurations
 
 Example Debug Configuration entries can be found in the [Appendix](#sample-debug-configurations).
 
