@@ -5,7 +5,10 @@ env:
 phases:
     install:
         commands:
-            - choco install -y --no-progress codecov
+            - |
+              if(-Not($Env:CODE_COV_TOKEN -eq $null)) {
+                  choco install -y --no-progress codecov
+              }
 
     pre_build:
         commands:
