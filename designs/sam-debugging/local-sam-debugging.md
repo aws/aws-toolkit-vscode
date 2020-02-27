@@ -158,8 +158,8 @@ Here is an outline of the differences between this design and the current versio
     -   `aws-sam` Debug Configurations provide a way to launch debug sessions that articulate what is being debugged
     -   Added CodeLenses to help users to produce Debug Configurations
 -   Removed functionality
-    -   Using CodeLenses as a mechanism to launch debug sessions are removed. Users familiar with the outgoing functionality are provided with an assisted transition path to using Debug Configurations.
-        -   the toolkit detects if users were using the previous CodeLens functionality based on the presence of a (`{workspace}/.aws/templates.json`) file. For these users, lambda handlers that used to show Run/Debug CodeLenses will be decorated with a tooltip or Hover type construct. This construct mentions the functionality shift and offers to convert the function's old CodeLens configuration over to a new debug configuration.
+    -   Using CodeLenses as a mechanism to launch debug sessions will be removed. Users familiar with the outgoing functionality are provided with an assisted transition path towards using Debug Configurations.
+        -   the toolkit detects if users were using the previous CodeLens functionality based on the presence of a CodeLens configuration file (`{workspace}/.aws/templates.json`). For these users, lambda handlers that used to show Run/Debug CodeLenses will be decorated with a tooltip or Hover type construct. This construct mentions the functionality shift and offers to convert the function's old CodeLens configuration over to a new debug configuration.
 
 ### <a id="sample-debug-configurations"></a> Sample Debug Configurations
 
