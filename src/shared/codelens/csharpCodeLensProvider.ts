@@ -66,8 +66,8 @@ export async function initialize({
     localInvokeCommand = new DefaultSamLocalInvokeCommand(getChannelLogger(toolkitOutputChannel), [
         WAIT_FOR_DEBUGGER_MESSAGES.DOTNET
     ])
-}: CodeLensProviderParams): Promise<void> {
-    vscode.commands.registerCommand(getInvokeCmdKey(CSHARP_LANGUAGE), async (params: LambdaLocalInvokeParams) => {
+}: CodeLensProviderParams): Promise<vscode.Disposable> {
+    return vscode.commands.registerCommand(getInvokeCmdKey(CSHARP_LANGUAGE), async (params: LambdaLocalInvokeParams) => {
         await onLocalInvokeCommand({
             lambdaLocalInvokeParams: params,
             configuration,

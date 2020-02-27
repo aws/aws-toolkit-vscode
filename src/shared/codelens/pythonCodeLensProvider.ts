@@ -185,7 +185,7 @@ export async function initialize({
     processInvoker = new DefaultValidatingSamCliProcessInvoker({}),
     telemetryService,
     localInvokeCommand
-}: CodeLensProviderParams): Promise<void> {
+}: CodeLensProviderParams): Promise<vscode.Disposable> {
     const logger = getLogger()
     const channelLogger = getChannelLogger(toolkitOutputChannel)
 
@@ -318,7 +318,7 @@ export async function initialize({
         }
     }
 
-    vscode.commands.registerCommand(
+    return vscode.commands.registerCommand(
         getInvokeCmdKey('python'),
         async (params: LambdaLocalInvokeParams): Promise<void> => {
             let invokeResult: Result = 'Succeeded'

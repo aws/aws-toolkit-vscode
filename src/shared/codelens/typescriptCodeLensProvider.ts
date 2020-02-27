@@ -44,7 +44,7 @@ export function initialize({
         WAIT_FOR_DEBUGGER_MESSAGES.NODEJS
     ]),
     telemetryService
-}: CodeLensProviderParams): void {
+}: CodeLensProviderParams): vscode.Disposable {
     const invokeLambda = async (params: LambdaLocalInvokeParams & { runtime: string }) => {
         const samProjectCodeRoot = await getSamProjectDirPathForFile(params.document.uri.fsPath)
         let debugPort: number | undefined
@@ -83,7 +83,8 @@ export function initialize({
     }
 
     const command = getInvokeCmdKey('javascript')
-    vscode.commands.registerCommand(command, async (params: LambdaLocalInvokeParams) => {
+
+    return vscode.commands.registerCommand(command, async (params: LambdaLocalInvokeParams) => {
         const logger = getLogger()
 
         const resource = await CloudFormation.getResourceFromTemplate({

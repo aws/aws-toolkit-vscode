@@ -27,7 +27,7 @@ export async function activate(activateArguments: { extensionContext: vscode.Ext
 
     initializeIconPaths(activateArguments.extensionContext)
 
-    await registerCdkCommands(explorer)
+    await registerCdkCommands(activateArguments.extensionContext, explorer)
     const view = vscode.window.createTreeView(explorer.viewProviderId, {
         treeDataProvider: explorer,
         showCollapseAll: true
@@ -64,20 +64,20 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
     cdk.iconPaths.light.cloudFormation = context.asAbsolutePath('resources/light/cdk/cloudformation.svg')
 }
 
-async function registerCdkCommands(explorer: AwsCdkExplorer): Promise<void> {
-    vscode.commands.registerCommand('aws.cdk.provideFeedback', async () => {
+async function registerCdkCommands(context: vscode.ExtensionContext, explorer: AwsCdkExplorer): Promise<void> {
+    context.subscriptions.push(vscode.commands.registerCommand('aws.cdk.provideFeedback', async () => {
         vscode.env.openExternal(vscode.Uri.parse(cdkProvideFeedbackUrl))
         recordCdkProvideFeedback()
-    })
-    vscode.commands.registerCommand('aws.cdk.help', async () => {
+    }))
+    context.subscriptions.push(vscode.commands.registerCommand('aws.cdk.help', async () => {
         vscode.env.openExternal(vscode.Uri.parse(cdkDocumentationUrl))
         recordCdkHelp()
-    })
-    vscode.commands.registerCommand('aws.refreshCdkExplorer', async () => {
+    }))
+    context.subscriptions.push(vscode.commands.registerCommand('aws.refreshCdkExplorer', async () => {
         try {
             explorer.refresh()
         } finally {
             recordCdkRefreshExplorer()
         }
-    })
+    }))
 }
