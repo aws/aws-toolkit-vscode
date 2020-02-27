@@ -156,7 +156,7 @@ Additional information about SAM can be found at:
 
 ### Differences between this design, and v1.0.0 (through present versions) of AWS Toolkit
 
-The debug capabilities initially released in the Toolkit were not well rounded. CodeLenses provided the only means of local debugging, and did not have a well defined design around what was being debugged. Because the Toolkit lacked a way to directly invoke/debug SAM Template resources, these CodeLenses tried to compensate which lead to to scenarios with undefined behaviors. Many of these issues are referenced from https://github.com/aws/aws-toolkit-vscode/issues/758
+The debug capabilities initially released in the Toolkit were not well rounded. CodeLenses provided the only means of local debugging, and did not have a well defined design around what was being debugged. Because the Toolkit lacked a way to directly invoke/debug SAM Template resources, these CodeLenses tried to compensate, leading to scenarios with undefined behaviors. Many of these issues are referenced from https://github.com/aws/aws-toolkit-vscode/issues/758
 
 Here is an outline of the differences between this design and the current version of the AWS Toolkit:
 
@@ -164,9 +164,9 @@ Here is an outline of the differences between this design and the current versio
     -   CodeLenses on code files now provide the abilitiy to invoke a function in isolation, or as part of a SAM Template. Previously, they could only be invoked as part of a SAM Template.
         -   The current design explicitly presents options for what to launch. This should minimize confusion from customers who are familiar with the previous functionality.
 -   New functionality
-    -   `aws-sam` Debug Configurations provide a controllable way to launch debug sessions
+    -   `aws-sam` Debug Configurations provide a way to launch debug sessions that articulate what is being debugged
 -   Removed functionality
-    -   CodeLenses are now pointers to Debug Configurations, and do not directly launch debug sessions on their own. The configuration files that were used by the old functionality are no longer relevant/used
+    -   CodeLenses are now pointers to Debug Configurations, and do not directly launch debug sessions on their own. The configuration files (`{workspace}/.aws/templates.json`) that were used by the old functionality are no longer relevant/used
 
 ### <a id="sample-debug-configurations"></a> Sample Debug Configurations
 
@@ -185,7 +185,7 @@ The required fields are: type, request, invokeTarget
             "request": "direct-invoke",
             // Reference to the thing (Template or Code) being invoked
             "invokeTarget": {
-                "target": "template", // template | code
+                "target": "template", // template | code, influences fields expected by toolkit
                 "samTemplatePath": "path to template yaml file",
                 "samTemplateResource": "HelloWorldResource" // Name of Template resource to debug
             },
@@ -245,7 +245,7 @@ The required fields are: type, request, invokeTarget, lambda.runtime
             "request": "direct-invoke",
             // Reference to the thing (Template or Code) being invoked
             "invokeTarget": {
-                "target": "code", // template | code
+                "target": "code", // template | code, influences fields expected by toolkit
                 // projectRoot - The top level folder to run the Lambda handler in
                 // (this affects the lambdaHandler field in runtimes like node and python).
                 "projectRoot": "path to folder",
@@ -333,3 +333,11 @@ Instead of CodeLenses, the toolkit has gutter icons that appear to the right of 
 #### AWS Toolkit for Visual Studio
 
 This toolkit has no support for local SAM Debugging.
+
+### Future Considerations
+
+Functionality not currently planned, but could be evaluated based on feasibility, interest, and usage patterns.
+
+-   **Go to Definition style Referencing** - provide an in-editor approach to jump between a Template Resource and the Lambda handler code
+-   **Intelligent Rename** - when renaming a Lambda hander function, propagate changes to any Debug Configurations and Template resources that reference the function
+-   **Support for SAM CLI Config** - ([Reference](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-config.html)) could certain invoke behaviors be defined more consistently?
