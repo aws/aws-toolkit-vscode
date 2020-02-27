@@ -118,12 +118,13 @@ async function activateCodeLensProviders(
 ): Promise<vscode.Disposable[]> {
     const disposables: vscode.Disposable[] = []
     const providerParams: CodeLensProviderParams = {
+        context,
         configuration,
         outputChannel: toolkitOutputChannel,
         telemetryService
     }
 
-    tsLensProvider.initialize(context, providerParams)
+    tsLensProvider.initialize(providerParams)
 
     disposables.push(
         vscode.languages.registerCodeLensProvider(
@@ -138,7 +139,7 @@ async function activateCodeLensProviders(
         )
     )
 
-    await pyLensProvider.initialize(context, providerParams)
+    await pyLensProvider.initialize(providerParams)
     disposables.push(
         vscode.languages.registerCodeLensProvider(
             pyLensProvider.PYTHON_ALLFILES,
@@ -146,7 +147,7 @@ async function activateCodeLensProviders(
         )
     )
 
-    await csLensProvider.initialize(context, providerParams)
+    await csLensProvider.initialize(providerParams)
     disposables.push(
         vscode.languages.registerCodeLensProvider(
             csLensProvider.CSHARP_ALLFILES,
