@@ -43,6 +43,7 @@ export async function activate(activateArguments: {
 
     activateArguments.extensionContext.subscriptions.push(
         ...(await activateCodeLensProviders(
+            activateArguments.extensionContext,
             activateArguments.toolkitSettings,
             activateArguments.outputChannel,
             activateArguments.telemetryService
@@ -110,6 +111,7 @@ async function registerServerlessCommands(params: {
 }
 
 async function activateCodeLensProviders(
+    context: vscode.ExtensionContext,
     configuration: SettingsConfiguration,
     toolkitOutputChannel: vscode.OutputChannel,
     telemetryService: TelemetryService
@@ -121,8 +123,9 @@ async function activateCodeLensProviders(
         telemetryService
     }
 
+    tsLensProvider.initialize(context, providerParams)
+
     disposables.push(
-        tsLensProvider.initialize(providerParams),
         vscode.languages.registerCodeLensProvider(
             // TODO : Turn into a constant to be consistent with Python, C#
             [
@@ -135,16 +138,16 @@ async function activateCodeLensProviders(
         )
     )
 
+    await pyLensProvider.initialize(context, providerParams)
     disposables.push(
-        await pyLensProvider.initialize(providerParams),
         vscode.languages.registerCodeLensProvider(
             pyLensProvider.PYTHON_ALLFILES,
             await pyLensProvider.makePythonCodeLensProvider(new DefaultSettingsConfiguration('python'))
         )
     )
 
+    await csLensProvider.initialize(context, providerParams)
     disposables.push(
-        await csLensProvider.initialize(providerParams),
         vscode.languages.registerCodeLensProvider(
             csLensProvider.CSHARP_ALLFILES,
             await csLensProvider.makeCSharpCodeLensProvider()

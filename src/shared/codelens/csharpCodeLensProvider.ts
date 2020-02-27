@@ -59,6 +59,7 @@ export interface DotNetLambdaHandlerComponents {
 }
 
 export async function initialize({
+    context,
     configuration,
     outputChannel: toolkitOutputChannel,
     processInvoker = new DefaultSamCliProcessInvoker(),
@@ -66,8 +67,8 @@ export async function initialize({
     localInvokeCommand = new DefaultSamLocalInvokeCommand(getChannelLogger(toolkitOutputChannel), [
         WAIT_FOR_DEBUGGER_MESSAGES.DOTNET
     ])
-}: CodeLensProviderParams): Promise<vscode.Disposable> {
-    return vscode.commands.registerCommand(getInvokeCmdKey(CSHARP_LANGUAGE), async (params: LambdaLocalInvokeParams) => {
+}: CodeLensProviderParams): Promise<void> {
+    context.subscriptions.push(vscode.commands.registerCommand(getInvokeCmdKey(CSHARP_LANGUAGE), async (params: LambdaLocalInvokeParams) => {
         await onLocalInvokeCommand({
             lambdaLocalInvokeParams: params,
             configuration,
@@ -76,7 +77,7 @@ export async function initialize({
             localInvokeCommand,
             telemetryService
         })
-    })
+    }))
 }
 
 export interface OnLocalInvokeCommandContext {
