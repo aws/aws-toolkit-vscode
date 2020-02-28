@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { createFileSystemWatcher } from '../utilities/fileSystemWatcher'
+import { associateFileSystemWatcherWithListener } from '../utilities/fileSystemWatcher'
 import {
     CloudFormationTemplateRegistry,
     DefaultCloudFormationTemplateRegistry,
@@ -29,8 +29,10 @@ export async function activate(
 ): Promise<void> {
     const registry = new DefaultCloudFormationTemplateRegistry()
     const listener = new DefaultCloudFormationTemplateRegistryListener(registry)
-    const watcher = createFileSystemWatcher(listener, globPattern)
-    await populateRegistry(registry, globPattern)
+    const watcher = vscode.workspace.createFileSystemWatcher(globPattern)
+    associateFileSystemWatcherWithListener(watcher, listener, globPattern)
+    const templatePaths = await vscode.workspace.findFiles(globPattern)
+    await populateRegistry(registry, templatePaths)
     setTemplateRegistry(registry)
 
     extensionContext.subscriptions.push(listener)
@@ -43,15 +45,21 @@ export async function activate(
  * Handle as many template files as possible, as quickly as possible by queuing up all promises immediately
  *
  * @param registry CloudFormationTemplateRegistry to initially populate
- * @param globPattern Glob pattern for files to populate
+ * @param templatePaths Paths to enter into the registry
  */
-async function populateRegistry(registry: CloudFormationTemplateRegistry, globPattern: string) {
+export async function populateRegistry(registry: CloudFormationTemplateRegistry, templatePaths: vscode.Uri[]): Promise<void> {
     const templateParsingPromises: Promise<void>[] = []
-
-    // initial data population
-    const templatePaths = await vscode.workspace.findFiles(globPattern)
     for (const templatePath of templatePaths) {
-        templateParsingPromises.push(registry.addTemplateToTemplateData(templatePath))
+        templateParsingPromises.push(
+            new Promise(async (resolve) => {
+                try {
+                    await registry.addTemplateToTemplateData(templatePath)
+                    resolve()
+                } catch (e) {
+                    resolve()
+                }
+            })
+        )
     }
 
     await Promise.all(templateParsingPromises)

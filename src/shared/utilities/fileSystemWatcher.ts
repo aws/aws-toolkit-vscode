@@ -21,11 +21,11 @@ export interface FileWatcherListener extends vscode.Disposable {
  * @param listener FileWatcherListener that includes functions to attach to onEvent hooks
  * @param globPattern Glob pattern to use for file watcher
  */
-export function createFileSystemWatcher(
+export function associateFileSystemWatcherWithListener(
+    watcher: vscode.FileSystemWatcher,
     listener: FileWatcherListener,
     globPattern: string
-): vscode.FileSystemWatcher {
-    const watcher = vscode.workspace.createFileSystemWatcher(globPattern)
+): void {
     watcher.onDidChange(async (filename) => {
         await listener.onListenedChange(filename)
     })
@@ -35,6 +35,4 @@ export function createFileSystemWatcher(
     watcher.onDidDelete(async (filename) => {
         await listener.onListenedDelete(filename)
     })
-
-    return watcher
 }

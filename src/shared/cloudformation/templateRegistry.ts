@@ -4,6 +4,7 @@
  */
 
 import * as path from 'path'
+import { fileURLToPath, pathToFileURL } from 'url'
 import * as vscode from 'vscode'
 import { FileWatcherListener } from '../utilities/fileSystemWatcher'
 import { CloudFormation } from './CloudFormation'
@@ -104,82 +105,39 @@ export class DefaultCloudFormationTemplateRegistry implements CloudFormationTemp
      * @param templatePath vscode.Uri containing the template to load in
      */
     public async addTemplateToTemplateData(templatePath: vscode.Uri): Promise<void> {
-        const pathAsString = templatePath.toString()
+        const pathAsString = fileURLToPath(templatePath.toString())
         const resources = await CloudFormation.load(pathAsString)
         this.templateRegistryData.set(pathAsString, resources)
     }
 
     public removeTemplateFromRegistry(templatePath: vscode.Uri): void {
-        this.templateRegistryData.delete(templatePath.toString())
+        const pathAsString = fileURLToPath(templatePath.toString())
+        this.templateRegistryData.delete(pathAsString)
     }
 }
 
 /**
- * Returns data for a Lambda function registered in a CloudFormationTemplateRegistry, if it exists
- *
- * Beware! This doesn't currently check the filename itself, just handler and directory
- *
- * Use for CodeLenses and to handle onRegistryChange events
- *
- * TODO: Check for filename. Might need concessions for different languages
- * TODO: Return source template?
- * @param registry CloudFormationTemplateRegistry to check against
- * @param filepath Absolute path to file containing Lambda
- * @param handler Lambda hander's name
+ * Normalizes filepaths by lowercasing the drive letter for absolute paths on Windows. Does not affect:
+ * * relative paths
+ * * Unix paths
+ * @param filepath Filepath to normalize
  */
-export function getRegisteredLambdaFunction(
-    registry: CloudFormationTemplateRegistry,
-    filepath: string,
-    handler: string
-): CloudFormation.Resource | undefined {
-    const registryData = registry.registeredTemplates
-
-    registryData.forEach( (template, templatePath) => {
-        const basePath = path.dirname(templatePath)
-        if (template.Resources) {
-            for (const resourceKey in template.Resources) {
-                if (resourceKey) {
-                    const resource = template.Resources[resourceKey]
-                    // ...there's gotta be a better way than this
-                    if (
-                        resource &&
-                        resource.Type === 'AWS::Serverless::Function' &&
-                        resource.Properties &&
-                        path.join(basePath, resource.Properties.CodeUri) === path.dirname(filepath) &&
-                        resource.Properties.Handler.includes(handler)
-                    ) {
-                        return resource
-                    }
-                }
-            }
+export function normalizePathIfWindows(filepath: string): string {
+    let alteredPath = filepath
+    if (path.isAbsolute(filepath)) {
+        const root = path.parse(filepath).root
+        if (root !== '/') {
+            alteredPath = `${filepath.charAt(0).toLowerCase()}${filepath.slice(1)}`
         }
-    })
+    }
 
-    return undefined
+    return alteredPath
 }
 
 /**
- * Returns a list of all registered Lambda functions, across all registered templates in a registry
- * 
- * TODO: Return source templates?
- * @param registry CloudFormationTemplateRegistry to pull Lambdas from
+ * Turns strings to URIs.
+ * @param path Path to convert to a URI
  */
-export function getRegisteredLambdaFunctions(registry: CloudFormationTemplateRegistry): CloudFormation.Resource[] {
-    const registeredFunctions: CloudFormation.Resource[] = []
-    const registryData = registry.registeredTemplates
-
-    registryData.forEach(template => {
-        if (template.Resources) {
-            for (const resourceKey in template.Resources) {
-                if (resourceKey) {
-                    const resource = template.Resources[resourceKey]
-                    if (resource && resource.Type === 'AWS::Serverless::Function') {
-                        registeredFunctions.push(resource)
-                    }
-                }
-            }
-        }
-    })
-
-    return registeredFunctions
+export function pathToUri(filepath: string): vscode.Uri {
+    return vscode.Uri.parse(pathToFileURL(filepath).toString())
 }
