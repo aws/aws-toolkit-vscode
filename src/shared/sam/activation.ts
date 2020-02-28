@@ -43,6 +43,7 @@ export async function activate(activateArguments: {
 
     activateArguments.extensionContext.subscriptions.push(
         ...(await activateCodeLensProviders(
+            activateArguments.extensionContext,
             activateArguments.toolkitSettings,
             activateArguments.outputChannel,
             activateArguments.telemetryService
@@ -110,12 +111,14 @@ async function registerServerlessCommands(params: {
 }
 
 async function activateCodeLensProviders(
+    context: vscode.ExtensionContext,
     configuration: SettingsConfiguration,
     toolkitOutputChannel: vscode.OutputChannel,
     telemetryService: TelemetryService
 ): Promise<vscode.Disposable[]> {
     const disposables: vscode.Disposable[] = []
     const providerParams: CodeLensProviderParams = {
+        context,
         configuration,
         outputChannel: toolkitOutputChannel,
         telemetryService

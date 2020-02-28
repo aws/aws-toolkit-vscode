@@ -35,7 +35,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
 
     setLogger(makeLogger(logLevel, logPath, outputChannel, extensionContext.subscriptions))
 
-    await registerLoggerCommands()
+    await registerLoggerCommands(extensionContext)
 
     outputChannel.appendLine(
         localize('AWS.log.fileLocation', 'Error logs for this session are permanently stored in {0}', logPath)
@@ -98,9 +98,9 @@ async function ensureLogFolderExists(logFolder: string): Promise<void> {
     }
 }
 
-async function registerLoggerCommands(): Promise<void> {
-    vscode.commands.registerCommand('aws.viewLogs', async () => {
+async function registerLoggerCommands(context: vscode.ExtensionContext): Promise<void> {
+    context.subscriptions.push(vscode.commands.registerCommand('aws.viewLogs', async () => {
         await vscode.window.showTextDocument(vscode.Uri.file(path.normalize(LOG_PATH)))
         recordVscodeViewLogs()
-    })
+    }))
 }
