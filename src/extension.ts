@@ -104,41 +104,43 @@ export async function activate(context: vscode.ExtensionContext) {
         })
         await ext.telemetry.start()
 
-        vscode.commands.registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())
-        vscode.commands.registerCommand('aws.logout', async () => await ext.awsContextCommands.onCommandLogout())
+        context.subscriptions.push(vscode.commands.registerCommand('aws.login',
+            async () => await ext.awsContextCommands.onCommandLogin()))
+        context.subscriptions.push(vscode.commands.registerCommand('aws.logout',
+            async () => await ext.awsContextCommands.onCommandLogout()))
 
-        vscode.commands.registerCommand('aws.credential.profile.create', async () => {
+        context.subscriptions.push(vscode.commands.registerCommand('aws.credential.profile.create', async () => {
             try {
                 await ext.awsContextCommands.onCommandCreateCredentialsProfile()
             } finally {
                 recordAwsCreateCredentials()
             }
-        })
+        }))
 
         // register URLs in extension menu
-        vscode.commands.registerCommand('aws.help', async () => {
+        context.subscriptions.push(vscode.commands.registerCommand('aws.help', async () => {
             vscode.env.openExternal(vscode.Uri.parse(documentationUrl))
             recordAwsHelp()
-        })
-        vscode.commands.registerCommand('aws.github', async () => {
+        }))
+        context.subscriptions.push(vscode.commands.registerCommand('aws.github', async () => {
             vscode.env.openExternal(vscode.Uri.parse(githubUrl))
             recordAwsShowExtensionSource()
-        })
-        vscode.commands.registerCommand('aws.reportIssue', async () => {
+        }))
+        context.subscriptions.push(vscode.commands.registerCommand('aws.reportIssue', async () => {
             vscode.env.openExternal(vscode.Uri.parse(reportIssueUrl))
             recordAwsReportPluginIssue()
-        })
-        vscode.commands.registerCommand('aws.quickStart', async () => {
+        }))
+        context.subscriptions.push(vscode.commands.registerCommand('aws.quickStart', async () => {
             try {
                 await showQuickStartWebview(context)
             } finally {
                 recordAwsHelpQuickstart()
             }
-        })
+        }))
 
-        vscode.commands.registerCommand('aws.aboutToolkit', async () => {
+        context.subscriptions.push(vscode.commands.registerCommand('aws.aboutToolkit', async () => {
             await aboutToolkit()
-        })
+        }))
 
         await activateCdk({
             extensionContext: context
@@ -146,7 +148,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateAwsExplorer({ awsContext, context, awsContextTrees, regionProvider })
 
-        await activateSchemas()
+        await activateSchemas({
+            context: context
+        })
 
         await ExtensionDisposableFiles.initialize(context)
 

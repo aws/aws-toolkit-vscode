@@ -1,0 +1,14 @@
+{
+	"date": "2020-02-18",
+	"version": "1.7.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "The Toolkit now supports China and GovCloud regions. If you have a shared credentials profile based in one of these regions, you can add a \"region\" property to that profile, and the Toolkit will know to use a different region set."
+		},
+		{
+			"type": "Feature",
+			"description": "Added the 'About AWS Toolkit' command and menu option to show AWS Toolkit versioning details that are useful to include with bug reports."
+		}
+	]
+}

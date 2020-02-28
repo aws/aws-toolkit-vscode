@@ -246,6 +246,11 @@ export class DefaultTelemetryService implements TelemetryService {
 
     private static readEventsFromCache(cachePath: string): TelemetryEvent[] {
         try {
+            if (!fs.existsSync(cachePath)) {
+                getLogger().info(`telemetry cache not found: '${cachePath}'`)
+
+                return []
+            }
             const input = JSON.parse(fs.readFileSync(cachePath, 'utf-8'))
             const events = filterTelemetryCacheEvents(input)
             events.forEach((element: TelemetryEvent) => {

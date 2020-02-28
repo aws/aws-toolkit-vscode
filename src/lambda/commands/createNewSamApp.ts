@@ -24,6 +24,7 @@ import { ext } from '../../shared/extensionGlobals'
 import { fileExists } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'
+import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
 import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
@@ -96,10 +97,8 @@ export async function createNewSamApplication(
         await validateSamCli(samCliContext.validator)
 
         const currentCredentials = await awsContext.getCredentials()
-        const availableRegions = await regionProvider.getRegionData()
-        const schemasRegions = availableRegions.filter(region =>
-            regionProvider.isServiceInRegion('schemas', region.regionCode)
-        )
+        const availableRegions = getRegionsForActiveCredentials(awsContext, regionProvider)
+        const schemasRegions = availableRegions.filter(region => regionProvider.isServiceInRegion('schemas', region.id))
 
         const wizardContext = new DefaultCreateNewSamAppWizardContext(currentCredentials, schemasRegions)
         config = await new CreateNewSamAppWizard(wizardContext).run()
