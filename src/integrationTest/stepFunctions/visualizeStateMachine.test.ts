@@ -102,7 +102,7 @@ describe('visualizeStateMachine', async () => {
         const fileName = 'mysamplestatemachine.json'
         await openATextEditorWithText(stateMachineFileText, fileName)
 
-        const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.renderStateMachine')
+        const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.previewStateMachine')
 
         assert.ok(result)
     })
@@ -111,7 +111,7 @@ describe('visualizeStateMachine', async () => {
         const fileName = 'mysamplestatemachine.json'
         const textEditor = await openATextEditorWithText(sampleStateMachine, fileName)
 
-        const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.renderStateMachine')
+        const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.previewStateMachine')
 
         assert.ok(result)
 
@@ -135,7 +135,7 @@ describe('visualizeStateMachine', async () => {
         const fileName = 'mysamplestatemachine.json'
         const textEditor = await openATextEditorWithText(stateMachineFileText, fileName)
 
-        const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.renderStateMachine')
+        const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.previewStateMachine')
 
         assert.ok(result)
 
@@ -169,7 +169,7 @@ describe('visualizeStateMachine', async () => {
         await vscode.commands.executeCommand('workbench.action.closeAllEditors')
 
         const err = await assertThrowsError(
-            async () => await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.renderStateMachine')
+            async () => await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.previewStateMachine')
         )
         assert.deepStrictEqual(err.message, 'Could not grab active text editor for state machine render.')
     })
@@ -179,7 +179,7 @@ describe('visualizeStateMachine', async () => {
         const stateMachineDefinitionFile = 'mystatemachine.json'
         await openATextEditorWithText(stateMachineFileText, stateMachineDefinitionFile)
 
-        const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.renderStateMachine')
+        const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.previewStateMachine')
         assert.ok(result)
 
         await waitUntilWebviewIsVisible(result)

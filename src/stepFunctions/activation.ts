@@ -21,11 +21,11 @@ async function registerStepFunctionCommands(extensionContext: vscode.ExtensionCo
     initalizeWebviewPaths(extensionContext)
 
     extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.renderStateMachine', async () => {
+        vscode.commands.registerCommand('aws.previewStateMachine', async () => {
             try {
                 return await visualizeStateMachine(extensionContext.globalState)
             } finally {
-                telemetry.recordStepfunctionsRenderstatemachine()
+                telemetry.recordStepfunctionsPreviewstatemachine()
             }
         })
     )
