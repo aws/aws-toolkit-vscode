@@ -48,24 +48,6 @@ describe('DefaultRegionProvider', async () => {
         }
     }
 
-    it('returns region data', async () => {
-        const endpointsProvider = new EndpointsProvider(resourceFetcher, resourceFetcher)
-        await endpointsProvider.load()
-
-        const regionProvider = new DefaultRegionProvider(endpointsProvider)
-
-        const regions = await regionProvider.getRegionData()
-
-        assert.strictEqual(regions.length, 3, 'Expected to retrieve three regions')
-
-        for (const expectedRegionId of ['region1', 'region2', 'region3']) {
-            assert.ok(
-                regions.some(r => r.regionCode === expectedRegionId),
-                `${expectedRegionId} was missing from retrieved regions`
-            )
-        }
-    })
-
     describe('isServiceInRegion', async () => {
         let sandbox: sinon.SinonSandbox
 
@@ -125,6 +107,52 @@ describe('DefaultRegionProvider', async () => {
                 !regionProvider.isServiceInRegion(`${serviceId}x`, regionCode),
                 'Expected service not to be in region'
             )
+        })
+    })
+
+    describe('getPartitionId', async () => {
+        let endpointsProvider: EndpointsProvider
+        let regionProvider: DefaultRegionProvider
+
+        beforeEach(async () => {
+            endpointsProvider = new EndpointsProvider(resourceFetcher, resourceFetcher)
+            await endpointsProvider.load()
+
+            regionProvider = new DefaultRegionProvider(endpointsProvider)
+        })
+
+        it('gets partition for a known region', async () => {
+            const partitionId = regionProvider.getPartitionId('awscnregion1')
+            assert.strictEqual(partitionId, 'aws-cn')
+        })
+
+        it('returns undefined for an unknown region', async () => {
+            const partitionId = regionProvider.getPartitionId('foo')
+            assert.strictEqual(partitionId, undefined)
+        })
+    })
+
+    describe('getRegions', async () => {
+        let endpointsProvider: EndpointsProvider
+        let regionProvider: DefaultRegionProvider
+
+        beforeEach(async () => {
+            endpointsProvider = new EndpointsProvider(resourceFetcher, resourceFetcher)
+            await endpointsProvider.load()
+
+            regionProvider = new DefaultRegionProvider(endpointsProvider)
+        })
+
+        it('gets regions for a known partition', async () => {
+            const regions = regionProvider.getRegions('aws')
+            assert.ok(regions)
+            assert.strictEqual(regions.length, 3, 'Unexpected amount of regions returned')
+        })
+
+        it('returns empty array for an unknown partition', async () => {
+            const regions = regionProvider.getRegions('foo')
+            assert.ok(regions)
+            assert.strictEqual(regions.length, 0, 'Unexpected regions returned')
         })
     })
 })

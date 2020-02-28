@@ -18,6 +18,7 @@ import { localize } from '../utilities/vsCodeUtils'
 export type Language = 'python' | 'javascript' | 'csharp'
 
 export interface CodeLensProviderParams {
+    context: vscode.ExtensionContext
     configuration: SettingsConfiguration
     outputChannel: vscode.OutputChannel
     processInvoker?: SamCliProcessInvoker

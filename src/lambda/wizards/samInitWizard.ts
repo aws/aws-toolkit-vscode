@@ -15,7 +15,7 @@ import { SchemasDataProvider } from '../../eventSchemas/providers/schemasDataPro
 import { SchemaClient } from '../../shared/clients/schemaClient'
 import { eventBridgeSchemasDocUrl, samInitDocUrl } from '../../shared/constants'
 import { ext } from '../../shared/extensionGlobals'
-import { RegionInfo } from '../../shared/regions/regionInfo'
+import { Region } from '../../shared/regions/endpoints'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
@@ -58,9 +58,9 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
     public readonly lambdaRuntimes = samLambdaRuntimes.filter(runtime => runtime !== 'nodejs8.10')
     private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Documentation'))
     private readonly currentCredentials: Credentials | undefined
-    private readonly schemasRegions: RegionInfo[]
+    private readonly schemasRegions: Region[]
 
-    public constructor(currentCredentials: Credentials | undefined, schemasRegions: RegionInfo[]) {
+    public constructor(currentCredentials: Credentials | undefined, schemasRegions: Region[]) {
         super()
         this.currentCredentials = currentCredentials
         this.schemasRegions = schemasRegions
@@ -161,13 +161,11 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: this.schemasRegions.map(region => ({
-                label: region.regionName,
-                detail: region.regionCode,
-                alwaysShow: region.regionCode === currRegion,
+                label: region.name,
+                detail: region.id,
+                alwaysShow: region.id === currRegion,
                 description:
-                    region.regionCode === currRegion
-                        ? localize('AWS.wizard.selectedPreviously', 'Selected Previously')
-                        : ''
+                    region.id === currRegion ? localize('AWS.wizard.selectedPreviously', 'Selected Previously') : ''
             }))
         })
 

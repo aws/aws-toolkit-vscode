@@ -37,6 +37,7 @@ async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
 }
 
 export function initialize({
+    context,
     configuration,
     outputChannel: toolkitOutputChannel,
     processInvoker = new DefaultValidatingSamCliProcessInvoker({}),
@@ -83,7 +84,7 @@ export function initialize({
     }
 
     const command = getInvokeCmdKey('javascript')
-    vscode.commands.registerCommand(command, async (params: LambdaLocalInvokeParams) => {
+    context.subscriptions.push(vscode.commands.registerCommand(command, async (params: LambdaLocalInvokeParams) => {
         const logger = getLogger()
 
         const resource = await CloudFormation.getResourceFromTemplate({
@@ -124,7 +125,7 @@ export function initialize({
                 debug: params.isDebug
             })
         }
-    })
+    }))
 }
 
 export function makeTypescriptCodeLensProvider(): vscode.CodeLensProvider {

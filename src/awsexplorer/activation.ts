@@ -45,7 +45,7 @@ export async function activate(activateArguments: {
         vscode.window.registerTreeDataProvider(awsExplorer.viewProviderId, awsExplorer)
     )
 
-    await registerAwsExplorerCommands(awsExplorer)
+    await registerAwsExplorerCommands(activateArguments.context, awsExplorer)
 
     recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
 
@@ -59,33 +59,34 @@ export async function activate(activateArguments: {
 }
 
 async function registerAwsExplorerCommands(
+    context: vscode.ExtensionContext,
     awsExplorer: AwsExplorer,
     lambdaOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Lambda')
 ): Promise<void> {
-    vscode.commands.registerCommand('aws.showRegion', async () => {
+    context.subscriptions.push(vscode.commands.registerCommand('aws.showRegion', async () => {
         try {
             await ext.awsContextCommands.onCommandShowRegion()
         } finally {
             recordAwsShowRegion()
             recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
         }
-    })
+    }))
 
-    vscode.commands.registerCommand('aws.hideRegion', async (node?: RegionNode) => {
+    context.subscriptions.push(vscode.commands.registerCommand('aws.hideRegion', async (node?: RegionNode) => {
         try {
             await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
         } finally {
             recordAwsHideRegion()
             recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
         }
-    })
+    }))
 
-    vscode.commands.registerCommand('aws.refreshAwsExplorer', async () => {
+    context.subscriptions.push(vscode.commands.registerCommand('aws.refreshAwsExplorer', async () => {
         recordAwsRefreshExplorer()
         awsExplorer.refresh()
-    })
+    }))
 
-    vscode.commands.registerCommand(
+    context.subscriptions.push(vscode.commands.registerCommand(
         'aws.deleteLambda',
         async (node: LambdaFunctionNode) =>
             await deleteLambda({
@@ -94,26 +95,26 @@ async function registerAwsExplorerCommands(
                 outputChannel: lambdaOutputChannel,
                 onRefresh: () => awsExplorer.refresh(node.parent)
             })
-    )
+    ))
 
-    vscode.commands.registerCommand(
+    context.subscriptions.push(vscode.commands.registerCommand(
         'aws.deleteCloudFormation',
         async (node: CloudFormationStackNode) =>
             await deleteCloudFormation(() => awsExplorer.refresh(node.parent), node)
-    )
+    ))
 
-    vscode.commands.registerCommand('aws.showErrorDetails', async (node: ErrorNode) => await showErrorDetails(node))
+    context.subscriptions.push(vscode.commands.registerCommand('aws.showErrorDetails', async (node: ErrorNode) => await showErrorDetails(node)))
 
-    vscode.commands.registerCommand(
+    context.subscriptions.push(vscode.commands.registerCommand(
         'aws.invokeLambda',
         async (node: LambdaFunctionNode) =>
             await invokeLambda({
                 functionNode: node,
                 outputChannel: lambdaOutputChannel
             })
-    )
+    ))
 
-    vscode.commands.registerCommand(
+    context.subscriptions.push(vscode.commands.registerCommand(
         'aws.refreshAwsExplorerNode',
         async (awsexplorer: AwsExplorer, element: AWSTreeNodeBase) => {
             try {
@@ -122,7 +123,7 @@ async function registerAwsExplorerCommands(
                 recordAwsRefreshExplorer()
             }
         }
-    )
+    ))
 }
 
 function updateAwsExplorerWhenAwsContextCredentialsChange(

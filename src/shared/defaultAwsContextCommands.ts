@@ -23,8 +23,9 @@ import {
 } from './credentials/defaultCredentialSelectionDataProvider'
 import { UserCredentialsUtils } from './credentials/userCredentialsUtils'
 import { ext } from './extensionGlobals'
-import { RegionInfo } from './regions/regionInfo'
+import { Region } from './regions/endpoints'
 import { RegionProvider } from './regions/regionProvider'
+import { getRegionsForActiveCredentials } from './regions/regionUtilities'
 import { createQuickPick, promptUser } from './ui/picker'
 
 const TITLE_HIDE_REGION = localize(
@@ -85,7 +86,7 @@ export class DefaultAWSContextCommands {
     public async onCommandShowRegion() {
         const explorerRegions = new Set(await this._awsContext.getExplorerRegions())
         const newRegion = await this.promptForFilteredRegion(
-            candidateRegion => !explorerRegions.has(candidateRegion.regionCode),
+            candidateRegion => !explorerRegions.has(candidateRegion.id),
             TITLE_SHOW_REGION
         )
 
@@ -264,11 +265,12 @@ export class DefaultAWSContextCommands {
      * @param filter Filter to apply to the available regions
      */
     private async promptForFilteredRegion(
-        filter: (region: RegionInfo) => boolean,
+        filter: (region: Region) => boolean,
         title?: string
     ): Promise<string | undefined> {
-        const availableRegions = await this._regionProvider.getRegionData()
-        const regionsToShow = availableRegions.filter(filter).map(r => r.regionCode)
+        const partitionRegions = getRegionsForActiveCredentials(this._awsContext, this._regionProvider)
+
+        const regionsToShow = partitionRegions.filter(filter).map(r => r.id)
 
         return this.promptForRegion(regionsToShow, title)
     }
@@ -280,18 +282,19 @@ export class DefaultAWSContextCommands {
      * regions are shown. Regions provided must exist in the available regions to be shown.
      */
     private async promptForRegion(regions?: string[], title?: string): Promise<string | undefined> {
-        const availableRegions = await this._regionProvider.getRegionData()
-        const regionItems = availableRegions
+        const partitionRegions = getRegionsForActiveCredentials(this._awsContext, this._regionProvider)
+
+        const regionsToShow = partitionRegions
             .filter(r => {
                 if (regions) {
-                    return regions.some(x => x === r.regionCode)
+                    return regions.some(x => x === r.id)
                 }
 
                 return true
             })
             .map(r => ({
-                label: r.regionName,
-                detail: r.regionCode
+                label: r.name,
+                detail: r.id
             }))
 
         const picker = createQuickPick({
@@ -300,7 +303,7 @@ export class DefaultAWSContextCommands {
                 title: title,
                 matchOnDetail: true
             },
-            items: regionItems
+            items: regionsToShow
         })
 
         const response = await promptUser<QuickPickItem>({
