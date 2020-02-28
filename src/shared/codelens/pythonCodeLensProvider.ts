@@ -180,6 +180,7 @@ function makeDebugConfig({
 }
 
 export async function initialize({
+    context,
     configuration,
     outputChannel: toolkitOutputChannel,
     processInvoker = new DefaultValidatingSamCliProcessInvoker({}),
@@ -318,7 +319,7 @@ export async function initialize({
         }
     }
 
-    vscode.commands.registerCommand(
+    context.subscriptions.push(vscode.commands.registerCommand(
         getInvokeCmdKey('python'),
         async (params: LambdaLocalInvokeParams): Promise<void> => {
             let invokeResult: Result = 'Succeeded'
@@ -345,7 +346,7 @@ export async function initialize({
                 })
             }
         }
-    )
+    ))
 }
 
 export async function waitForPythonDebugAdapter(

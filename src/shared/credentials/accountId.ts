@@ -11,6 +11,8 @@ import { getLogger } from '../logger'
  */
 export async function getAccountId(credentials: AWS.Credentials, region: string): Promise<string | undefined> {
     try {
+        getLogger().verbose(`Getting AccountId from region ${region}`)
+
         const sts = ext.toolkitClientBuilder.createStsClient(region, {
             credentials: credentials
         })
