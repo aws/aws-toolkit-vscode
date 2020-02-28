@@ -2,6 +2,7 @@
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import { debounce } from 'lodash'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
@@ -16,6 +17,15 @@ export interface messageObject {
     text: string
     error?: string
     stateMachineData: string
+}
+
+// TO DO: once the amazon-states-language-service is open sourced
+// it should be used directly here - diagnostics appear with a delay
+// and an invalid states machine still can be rendered
+function isDocumentValid(uri: vscode.Uri): boolean {
+    return !vscode.languages
+        .getDiagnostics(uri)
+        .some(diagnostic => diagnostic.severity === vscode.DiagnosticSeverity.Error)
 }
 
 /**
@@ -64,6 +74,7 @@ export async function visualizeStateMachine(globalStorage: vscode.Memento): Prom
 
 async function setupWebviewPanel(documentUri: vscode.Uri, documentText: string): Promise<vscode.WebviewPanel> {
     const logger: Logger = getLogger()
+    let lastUpdatedTextDocument: vscode.TextDocument
 
     // Create and show panel
     const panel = vscode.window.createWebviewPanel(
@@ -81,27 +92,68 @@ async function setupWebviewPanel(documentUri: vscode.Uri, documentText: string):
         }
     )
 
+    function sendUpdateMessage(textDocument: vscode.TextDocument) {
+        panel.webview.postMessage({
+            command: 'update',
+            stateMachineData: textDocument.getText(),
+            isValid: isDocumentValid(textDocument.uri)
+        })
+    }
+
+    const debouncedUpdate = debounce(sendUpdateMessage, 500)
+    let wasDocumentValid = isDocumentValid(documentUri)
+
+    const interval = setInterval(() => {
+        const isValid = isDocumentValid(lastUpdatedTextDocument.uri)
+
+        // Diagnostics are validated with a delay
+        // We need to poll them to check if they are updated
+        if (isValid && !wasDocumentValid) {
+            sendUpdateMessage(lastUpdatedTextDocument)
+        }
+
+        wasDocumentValid = isValid
+    }, 500)
+
     // Set the initial html for the webpage
     panel.webview.html = getWebviewContent(
         ext.visualizationResourcePaths.webviewBodyScript.with({ scheme: 'vscode-resource' }),
         ext.visualizationResourcePaths.visualizationLibraryScript.with({ scheme: 'vscode-resource' }),
         ext.visualizationResourcePaths.visualizationLibraryCSS.with({ scheme: 'vscode-resource' }),
-        ext.visualizationResourcePaths.stateMachineCustomThemeCSS.with({ scheme: 'vscode-resource' })
+        ext.visualizationResourcePaths.stateMachineCustomThemeCSS.with({ scheme: 'vscode-resource' }),
+        {
+            inSync: localize('AWS.stepFunctions.graph.status.inSync', 'Previewing ASL document. <a>View</a>'),
+            notInSync: localize('AWS.stepFunctions.graph.status.notInSync', 'Errors detected. Cannot preview.'),
+            syncing: localize('AWS.stepFunctions.graph.status.syncing', 'Rendering ASL graph...')
+        }
     )
 
     // Add listener function to update the graph on document save
     const updateOnSaveDisposable = vscode.workspace.onDidSaveTextDocument(textDocument => {
-        if (textDocument && textDocument.uri === documentUri) {
+        if (textDocument && textDocument.uri.path === documentUri.path) {
+            const isValid = isDocumentValid(documentUri)
             logger.debug('Sending update message to webview.')
+
             panel.webview.postMessage({
                 command: 'update',
-                stateMachineData: textDocument.getText()
+                stateMachineData: textDocument.getText(),
+                isValid
             })
+
+            wasDocumentValid = isValid
+        }
+    })
+
+    const updateOnChangeDisposable = vscode.workspace.onDidChangeTextDocument(textDocument => {
+        lastUpdatedTextDocument = textDocument.document
+        if (textDocument.document.uri.path === documentUri.path) {
+            logger.debug('Sending update message to webview.')
+            debouncedUpdate(textDocument.document)
         }
     })
 
     // Handle messages from the webview
-    const receiveMessageDisposable = panel.webview.onDidReceiveMessage((message: messageObject) => {
+    const receiveMessageDisposable = panel.webview.onDidReceiveMessage(async (message: messageObject) => {
         switch (message.command) {
             case 'updateResult':
                 logger.debug(message.text)
@@ -109,13 +161,27 @@ async function setupWebviewPanel(documentUri: vscode.Uri, documentText: string):
                     logger.error(message.error)
                 }
                 break
-            case 'webviewRendered':
+            case 'webviewRendered': {
                 // Webview has finished rendering, so now we can give it our
                 // initial state machine definition.
+                const isValid = isDocumentValid(documentUri)
                 panel.webview.postMessage({
                     command: 'update',
-                    stateMachineData: documentText
+                    stateMachineData: documentText,
+                    isValid
                 })
+
+                wasDocumentValid = isValid
+                break
+            }
+
+            case 'viewDocument':
+                try {
+                    const document = await vscode.workspace.openTextDocument(documentUri)
+                    vscode.window.showTextDocument(document, vscode.ViewColumn.One)
+                } catch (e) {
+                    logger.error(e as Error)
+                }
                 break
         }
     })
@@ -123,7 +189,9 @@ async function setupWebviewPanel(documentUri: vscode.Uri, documentText: string):
     // When the panel is closed, dispose of any disposables/remove subscriptions
     panel.onDidDispose(() => {
         updateOnSaveDisposable.dispose()
+        updateOnChangeDisposable.dispose()
         receiveMessageDisposable.dispose()
+        clearInterval(interval)
     })
 
     return panel
@@ -137,7 +205,12 @@ function getWebviewContent(
     webviewBodyScript: vscode.Uri,
     graphStateMachineLibrary: vscode.Uri,
     vsCodeCustomStyling: vscode.Uri,
-    graphStateMachineDefaultStyles: vscode.Uri
+    graphStateMachineDefaultStyles: vscode.Uri,
+    statusTexts: {
+        syncing: string
+        notInSync: string
+        inSync: string
+    }
 ): string {
     return `
 <!DOCTYPE html>
@@ -152,6 +225,16 @@ function getWebviewContent(
     <body>
         <div id="svgcontainer" class="workflowgraph">
             <svg></svg>
+        </div>
+        <div class="status-info">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="50"/>
+            </svg>
+            <div class="status-messages">
+                <span class="previewing-asl-message">${statusTexts.inSync}</span>
+                <span class="rendering-asl-message">${statusTexts.syncing}</span>
+                <span class="error-asl-message">${statusTexts.notInSync}</span>
+            </div>
         </div>
 
         <script src='${webviewBodyScript}'></script>
