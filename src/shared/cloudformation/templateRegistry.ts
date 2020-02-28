@@ -7,7 +7,7 @@ import * as path from 'path'
 import { fileURLToPath, pathToFileURL } from 'url'
 import * as vscode from 'vscode'
 import { FileWatcherListener } from '../utilities/fileSystemWatcher'
-import { CloudFormation } from './CloudFormation'
+import { CloudFormation } from './cloudformation'
 
 let templateRegistry: CloudFormationTemplateRegistry | undefined
 
