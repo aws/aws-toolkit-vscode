@@ -159,7 +159,7 @@ Here is an outline of the differences between this design and the current versio
     -   Added CodeLenses to help users to produce Debug Configurations
 -   Removed functionality
     -   Using CodeLenses as a mechanism to launch debug sessions will be removed. Users familiar with the outgoing functionality are provided with an assisted transition path towards using Debug Configurations.
-        -   the toolkit detects if users were using the previous CodeLens functionality based on the presence of a CodeLens configuration file (`{workspace}/.aws/templates.json`). For these users, lambda handlers that used to show Run/Debug CodeLenses will be decorated with a tooltip or Hover type construct. This construct mentions the functionality shift and offers to convert the function's old CodeLens configuration over to a new debug configuration.
+        -   the toolkit detects if users were using the previous CodeLens functionality based on the presence of a CodeLens configuration file (`{workspace}/.aws/templates.json`). For these users, lambda handlers that used to show Run/Debug CodeLenses will be decorated to mention the functionality shift, and will offer to convert the function's old CodeLens configuration over to a new debug configuration.
 
 ### <a id="sample-debug-configurations"></a> Sample Debug Configurations
 
