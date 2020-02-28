@@ -110,7 +110,6 @@ subprojects {
         compile "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
         compile "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.2.1"
         testImplementation "com.nhaarman.mockitokotlin2:mockito-kotlin:$mockitoKotlinVersion"
-        testImplementation "io.mockk:mockk:1.9.3"
         testImplementation "org.assertj:assertj-core:$assertjVersion"
         testImplementation "junit:junit:$junitVersion"
     }

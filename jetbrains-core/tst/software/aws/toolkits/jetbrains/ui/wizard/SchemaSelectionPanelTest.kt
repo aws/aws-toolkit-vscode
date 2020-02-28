@@ -65,7 +65,6 @@ class SchemaSelectionPanelTest {
     private val mockSamProjectBuilder = mock<SamProjectBuilder>()
     private val RUNTIME_GROUP = RuntimeGroup.JAVA
 
-    // Relaxed required because calling a void java setter see https://github.com/mockk/mockk/issues/91
     private val mockResourceSelector = mock<ResourceSelector<SchemaSelectionItem>>()
     private val mockPanel = mock<JPanel>()
 
