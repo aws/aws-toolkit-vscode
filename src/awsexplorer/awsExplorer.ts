@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
 import { getLogger, Logger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
+import { getRegionsForActiveCredentials } from '../shared/regions/regionUtilities'
 import { RefreshableAwsTreeProvider } from '../shared/treeview/awsTreeProvider'
 import { AWSCommandTreeNode } from '../shared/treeview/nodes/awsCommandTreeNode'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
@@ -95,8 +96,10 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
             return [ROOT_NODE_SIGN_IN]
         }
 
+        const partitionRegions = getRegionsForActiveCredentials(this.awsContext, this.regionProvider)
+
         const userVisibleRegionCodes = await this.awsContext.getExplorerRegions()
-        const regionMap = toMap(await this.regionProvider.getRegionData(), r => r.regionCode)
+        const regionMap = toMap(partitionRegions, r => r.id)
 
         return await makeChildrenNodes({
             getChildNodes: async () => {

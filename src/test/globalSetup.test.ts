@@ -8,7 +8,10 @@
  */
 
 import * as assert from 'assert'
+import { appendFileSync, mkdirpSync } from 'fs-extra'
+import { join } from 'path'
 import { ext } from '../shared/extensionGlobals'
+import { rmrf } from '../shared/filesystem'
 import { getLogger } from '../shared/logger'
 import { setLogger } from '../shared/logger/logger'
 import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetryService'
@@ -17,11 +20,19 @@ import { FakeExtensionContext } from './fakeExtensionContext'
 import { TestLogger } from './testLogger'
 import { FakeAwsContext } from './utilities/fakeAwsContext'
 
+const testReportDir = join(__dirname, '../../../.test-reports')
+const testLogOutput = join(testReportDir, 'testLog.log')
+
 // Expectation: Tests are not run concurrently
 let testLogger: TestLogger | undefined
 
-// Set up global telemetry client
 before(async () => {
+    // Clean up and set up test logs
+    try {
+        await rmrf(testLogOutput)
+    } catch (e) {}
+    mkdirpSync(testReportDir)
+    // Set up global telemetry client
     const mockContext = new FakeExtensionContext()
     const mockAws = new FakeAwsContext()
     const mockPublisher: TelemetryPublisher = {
@@ -33,14 +44,15 @@ before(async () => {
     ext.telemetry = service
 })
 
-beforeEach(async () => {
+beforeEach(async function() {
     // Set every test up so that TestLogger is the logger used by toolkit code
     testLogger = setupTestLogger()
 })
 
-afterEach(async () => {
+afterEach(async function() {
     // Prevent other tests from using the same TestLogger instance
-    teardownTestLogger()
+    // tslint:disable-next-line: no-unsafe-any, no-invalid-this
+    teardownTestLogger(this.currentTest?.fullTitle() as string)
     testLogger = undefined
 })
 
@@ -63,6 +75,14 @@ function setupTestLogger(): TestLogger {
     return logger
 }
 
-function teardownTestLogger() {
+function teardownTestLogger(testName: string) {
+    writeLogsToFile(testName)
     setLogger(undefined)
+}
+
+function writeLogsToFile(testName: string) {
+    const entries = testLogger?.getLoggedEntries()
+    entries?.unshift(`=== Starting test "${testName}" ===`)
+    entries?.push(`=== Ending test "${testName}" ===\n\n`)
+    appendFileSync(testLogOutput, entries?.join('\n'), 'utf8')
 }
