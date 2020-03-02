@@ -25,7 +25,7 @@ export async function runSamCliDeploy(
         '--stack-name',
         deployArguments.stackName,
         '--capabilities',
-        'CAPABILITY_IAM',
+        'CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM',
         '--region',
         deployArguments.region
     ]
