@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.schemas.search
 
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.editor.colors.EditorColorsManager
@@ -12,6 +11,7 @@ import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.JBSplitter
+import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBList
 import com.intellij.ui.components.JBScrollPane
@@ -19,6 +19,7 @@ import com.intellij.util.Alarm
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.services.schemas.SchemaViewer
 import software.aws.toolkits.jetbrains.services.schemas.code.DownloadCodeForSchemaDialog
+import software.aws.toolkits.jetbrains.utils.ui.selected
 import software.aws.toolkits.resources.message
 import java.awt.BorderLayout
 import java.awt.Color
@@ -27,6 +28,7 @@ import java.awt.Font
 import java.awt.event.ActionEvent
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.locks.ReentrantLock
+import java.util.stream.IntStream
 import javax.swing.Action
 import javax.swing.DefaultComboBoxModel
 import javax.swing.DefaultListModel
@@ -41,28 +43,28 @@ import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 import javax.swing.text.DefaultHighlighter
 import kotlin.concurrent.withLock
+import kotlin.streams.toList
 
-abstract class SchemasSearchDialogBase<T : SchemaSearchResultBase, U : SchemaSearchDialogState<T>>(
+abstract class SchemasSearchDialogBase(
     protected val project: Project,
     private val schemaViewer: SchemaViewer,
     private val headerText: String,
-    private val onCancelCallback: (U) -> Unit,
-    private val alarmThreadToUse: Alarm.ThreadToUse = Alarm.ThreadToUse.SWING_THREAD
-) : SchemaSearchDialog<T, U>, DialogWrapper(project), Disposable {
+    private val onCancelCallback: (SchemaSearchDialogState) -> Unit
+) : SchemaSearchDialog, DialogWrapper(project) {
 
     private val DEFAULT_PADDING = 10
+    private val SEARCH_DELAY_MS = 300L
     private val HIGHLIGHT_COLOR = Color.YELLOW
 
     val searchTextField = JTextField()
-    private val SEARCH_DELAY_MS: Long = 300
-    private val searchTextAlarm = Alarm(alarmThreadToUse, this)
+    private val searchTextAlarm = Alarm(Alarm.ThreadToUse.SWING_THREAD, this.disposable)
 
-    val resultsModel = DefaultListModel<T>()
-    val resultsList = JBList<T>(resultsModel)
+    val resultsModel = DefaultListModel<SchemaSearchResultWithRegistry>()
+    val resultsList = JBList<SchemaSearchResultWithRegistry>(resultsModel)
     private val resultsLock = ReentrantLock()
 
-    val versionsModel: DefaultComboBoxModel<SchemaSearchResultVersion> = DefaultComboBoxModel()
-    val versionsCombo = ComboBox<SchemaSearchResultVersion>(versionsModel)
+    val versionsModel: DefaultComboBoxModel<String> = DefaultComboBoxModel()
+    val versionsCombo = ComboBox<String>(versionsModel)
 
     val previewText = JTextArea()
 
@@ -73,7 +75,7 @@ abstract class SchemasSearchDialogBase<T : SchemaSearchResultBase, U : SchemaSea
 
     private val contentPanel = JPanel(BorderLayout(0, DEFAULT_PADDING))
 
-    val currentSearchErrors: MutableList<SchemaSearchError> = ArrayList<SchemaSearchError>()
+    val currentSearchErrors = mutableListOf<SchemaSearchError>()
 
     init {
         title = message("schemas.search.title")
@@ -84,7 +86,7 @@ abstract class SchemasSearchDialogBase<T : SchemaSearchResultBase, U : SchemaSea
         versionsCombo.isEditable = false
         versionsCombo.isEnabled = false
 
-        val editorColorsScheme = EditorColorsManager.getInstance().getGlobalScheme()
+        val editorColorsScheme = EditorColorsManager.getInstance().globalScheme
         previewText.font = Font(editorColorsScheme.editorFontName, Font.PLAIN, editorColorsScheme.editorFontSize)
         previewText.isEditable = false
 
@@ -151,7 +153,7 @@ abstract class SchemasSearchDialogBase<T : SchemaSearchResultBase, U : SchemaSea
         })
     }
 
-    private fun onSearchResultsReturned(searchResults: List<T>) {
+    private fun onSearchResultsReturned(searchResults: List<SchemaSearchResultWithRegistry>) {
         runInEdt(ModalityState.any()) {
             resultsLock.withLock {
                 resultsList.setEmptyText(message("schemas.search.no_results"))
@@ -170,19 +172,20 @@ abstract class SchemasSearchDialogBase<T : SchemaSearchResultBase, U : SchemaSea
         }
     }
 
-    private fun updateSchemaVersions(selectedSchema: T, selectedSchemaVersion: SchemaSearchResultVersion? = null) {
+    private fun updateSchemaVersions(selectedSchema: SchemaSearchResultWithRegistry, selectedSchemaVersion: String? = null) {
         versionsModel.removeAllElements()
 
         val newVersions = selectedSchema.versions
-        newVersions.forEach { version -> versionsModel.addElement(SchemaSearchResultVersion(version)) }
+        newVersions.forEach { version -> versionsModel.addElement(version) }
 
         versionsModel.selectedItem = selectedSchemaVersion ?: versionsCombo.getItemAt(0)
         versionsCombo.isEnabled = newVersions.size > 1
     }
 
     override fun doValidate(): ValidationInfo? {
-        if (currentSearchErrors.isEmpty())
+        if (currentSearchErrors.isEmpty()) {
             return null
+        }
 
         val registriesInError = currentSearchErrors.map { message("schemas.search.error.registry", it.registryName, it.errorMessage) }
         val registriesInErrorString = registriesInError.joinToString(", ")
@@ -190,10 +193,10 @@ abstract class SchemasSearchDialogBase<T : SchemaSearchResultBase, U : SchemaSea
         return ValidationInfo(message("schemas.search.error", registriesInErrorString))
     }
 
-    private fun previewSchema(selectedSchema: T) {
+    private fun previewSchema(selectedSchema: SchemaSearchResultWithRegistry) {
         val selectedSchemaVersion = selectedSchemaVersion()
         selectedSchemaVersion?.let {
-            downloadSchemaContent(selectedSchema, selectedSchemaVersion.version)
+            downloadSchemaContent(selectedSchema, it)
                 .thenApply { schemaText ->
                     runInEdt(ModalityState.any()) {
                         previewScrollPane.verticalScrollBar.value = previewScrollPane.verticalScrollBar.minimum
@@ -206,7 +209,7 @@ abstract class SchemasSearchDialogBase<T : SchemaSearchResultBase, U : SchemaSea
                         if (!searchText.isNullOrEmpty()) {
                             val resultsInSchema = findAllOccurrencesInString(schemaText, searchText)
 
-                            if (!resultsInSchema.isEmpty()) {
+                            if (resultsInSchema.isNotEmpty()) {
                                 val highlighter = previewText.highlighter
                                 val painter = DefaultHighlighter.DefaultHighlightPainter(HIGHLIGHT_COLOR)
 
@@ -237,7 +240,7 @@ abstract class SchemasSearchDialogBase<T : SchemaSearchResultBase, U : SchemaSea
         initValidation()
     }
 
-    override fun initializeFromState(state: U) {
+    override fun initializeFromState(state: SchemaSearchDialogState) {
         searchTextField.text = state.searchText
 
         resultsLock.withLock {
@@ -247,7 +250,7 @@ abstract class SchemasSearchDialogBase<T : SchemaSearchResultBase, U : SchemaSea
             val selectedResult = state.selectedResult
             if (selectedResult != null) {
                 resultsList.setSelectedValue(selectedResult, true)
-                updateSchemaVersions(selectedResult, if (state.selectedVersion == null) null else SchemaSearchResultVersion(state.selectedVersion))
+                updateSchemaVersions(selectedResult, state.selectedVersion)
                 previewSchema(selectedResult)
 
                 getDownloadButton()?.isEnabled = true
@@ -258,30 +261,35 @@ abstract class SchemasSearchDialogBase<T : SchemaSearchResultBase, U : SchemaSea
         }
     }
 
-    abstract fun getCurrentState(): U
+    private fun getCurrentState(): SchemaSearchDialogState {
+        val searchResults = IntStream.range(0, resultsModel.size()).mapToObj(resultsModel::get).toList()
+        return SchemaSearchDialogState(currentSearchText(), searchResults, selectedSchema(), selectedSchemaVersion())
+    }
 
-    fun currentSearchText(): String = searchTextField.text
+    private fun currentSearchText(): String = searchTextField.text
 
-    fun selectedSchema(): T? = resultsList.selectedValue
+    private fun selectedSchema(): SchemaSearchResultWithRegistry? = resultsList.selectedValue
 
     fun selectedSchemaName() = selectedSchema()?.name
 
-    fun selectedSchemaVersion(): SchemaSearchResultVersion? =
-        if (versionsCombo.selectedIndex >= 0) versionsCombo.getItemAt(versionsCombo.selectedIndex) else null
+    fun selectedSchemaVersion(): String? = versionsCombo.selected()
 
-    abstract fun selectedSchemaRegistry(): String?
+    fun selectedSchemaRegistry() = selectedSchema()?.registry
 
     private fun initLayout() {
         val top = JPanel(BorderLayout(DEFAULT_PADDING, 0))
         top.add(JBLabel(headerText), BorderLayout.WEST)
         top.add(searchTextField, BorderLayout.CENTER)
 
+        resultsList.installCellRenderer<SchemaSearchResultWithRegistry>(createResultRenderer())
+        versionsCombo.renderer = SimpleListCellRenderer.create("") { message("schemas.search.version.prefix", it) }
+
         val resultsScrollPane = JBScrollPane()
         resultsScrollPane.setViewportView(resultsList)
-        resultsScrollPane.setPreferredSize(Dimension(350, 600))
+        resultsScrollPane.preferredSize = Dimension(350, 600)
 
         previewScrollPane.setViewportView(previewText)
-        previewScrollPane.setPreferredSize(Dimension(450, 600))
+        previewScrollPane.preferredSize = Dimension(450, 600)
 
         val right = JPanel(BorderLayout(0, DEFAULT_PADDING))
         right.add(versionsCombo, BorderLayout.NORTH)
@@ -298,17 +306,17 @@ abstract class SchemasSearchDialogBase<T : SchemaSearchResultBase, U : SchemaSea
         contentPanel.setSize(700, 800)
         contentPanel.add(top, BorderLayout.PAGE_START)
         contentPanel.add(center, BorderLayout.CENTER)
-        contentPanel.setBorder(EmptyBorder(DEFAULT_PADDING, DEFAULT_PADDING, DEFAULT_PADDING, DEFAULT_PADDING))
+        contentPanel.border = EmptyBorder(DEFAULT_PADDING, DEFAULT_PADDING, DEFAULT_PADDING, DEFAULT_PADDING)
     }
 
-    abstract fun downloadSchemaContent(schema: T, version: String): CompletionStage<String>
+    abstract fun createResultRenderer(): (SchemaSearchResultWithRegistry) -> JComponent
 
-    protected fun doDownloadSchemaContent(registryName: String, schemaName: String, version: String): CompletionStage<String> =
-        schemaViewer.downloadPrettySchema(schemaName, registryName, version, contentPanel)
+    private fun downloadSchemaContent(schema: SchemaSearchResultWithRegistry, version: String): CompletionStage<String> =
+        schemaViewer.downloadPrettySchema(schema.name, schema.registry, version, contentPanel)
 
     abstract fun searchSchemas(
         searchText: String,
-        incrementalResultsCallback: OnSearchResultReturned<T>,
+        incrementalResultsCallback: OnSearchResultReturned,
         registrySearchErrorCallback: OnSearchResultError
     )
 
@@ -333,10 +341,6 @@ abstract class SchemasSearchDialogBase<T : SchemaSearchResultBase, U : SchemaSea
 
     fun getDownloadButton(): JButton? = getButton(openDownloadDialogAction)
 
-    override fun dispose() {
-        super.dispose()
-    }
-
     private inner class OpenCodeDownloadDialogAction : OkAction() {
         init {
             putValue(Action.NAME, message("schemas.schema.download_code_bindings.action"))
@@ -351,7 +355,7 @@ abstract class SchemasSearchDialogBase<T : SchemaSearchResultBase, U : SchemaSea
                     project,
                     currentSchema,
                     currentSchemaRegistry,
-                    selectedSchemaVersion()?.version,
+                    selectedSchemaVersion(),
                     onClose = { close(OK_EXIT_CODE) }
                 ).show()
             }

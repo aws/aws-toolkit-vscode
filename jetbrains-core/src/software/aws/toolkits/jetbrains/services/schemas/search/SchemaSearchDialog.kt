@@ -4,48 +4,38 @@
 package software.aws.toolkits.jetbrains.services.schemas.search
 
 import com.intellij.openapi.project.Project
-import com.intellij.util.Alarm
+import com.intellij.ui.components.JBLabel
 import software.aws.toolkits.jetbrains.services.schemas.SchemaViewer
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
 import software.aws.toolkits.telemetry.SchemasTelemetry
-import java.util.concurrent.CompletionStage
-import java.util.stream.IntStream
-import kotlin.streams.toList
+import javax.swing.JComponent
 
-interface SchemaSearchDialog<T : SchemaSearchResultBase, U : SchemaSearchDialogState<T>> {
+interface SchemaSearchDialog {
     fun initializeNew()
-    fun initializeFromState(state: U)
+    fun initializeFromState(state: SchemaSearchDialogState)
 }
 
 class SchemaSearchSingleRegistryDialog(
     private val registryName: String,
     project: Project,
-    onCancelCallback: (SchemaSearchSingleRegistryDialogState) -> Unit,
     private val searchExecutor: SchemaSearchExecutor = SchemaSearchExecutor(project),
     schemaViewer: SchemaViewer = SchemaViewer(project),
-    alarmThreadToUse: Alarm.ThreadToUse = Alarm.ThreadToUse.SWING_THREAD
-) : SchemasSearchDialogBase<SchemaSearchResult, SchemaSearchSingleRegistryDialogState>(
+    onCancelCallback: (SchemaSearchDialogState) -> Unit
+) : SchemasSearchDialogBase(
     project,
     schemaViewer,
     message("schemas.search.header.text.singleRegistry", registryName),
-    onCancelCallback,
-    alarmThreadToUse
+    onCancelCallback
 ) {
 
-    override fun getCurrentState(): SchemaSearchSingleRegistryDialogState {
-        val searchResults = IntStream.range(0, resultsModel.size()).mapToObj(resultsModel::get).toList()
-        return SchemaSearchSingleRegistryDialogState(currentSearchText(), searchResults, selectedSchema(), selectedSchemaVersion()?.version)
+    override fun createResultRenderer(): (SchemaSearchResultWithRegistry) -> JComponent = {
+        JBLabel(it.name)
     }
-
-    override fun selectedSchemaRegistry() = registryName
-
-    override fun downloadSchemaContent(schema: SchemaSearchResult, version: String): CompletionStage<String> =
-        doDownloadSchemaContent(registryName, schema.name, version)
 
     override fun searchSchemas(
         searchText: String,
-        incrementalResultsCallback: OnSearchResultReturned<SchemaSearchResult>,
+        incrementalResultsCallback: OnSearchResultReturned,
         registrySearchErrorCallback: OnSearchResultError
     ) {
         SchemasTelemetry.search(project, Result.SUCCEEDED)
@@ -55,32 +45,23 @@ class SchemaSearchSingleRegistryDialog(
 
 class SchemaSearchAllRegistriesDialog(
     project: Project,
-    onCancelCallback: (SchemaSearchAllRegistriesDialogState) -> Unit,
     private val searchExecutor: SchemaSearchExecutor = SchemaSearchExecutor(project),
     schemaViewer: SchemaViewer = SchemaViewer(project),
-    alarmThreadToUse: Alarm.ThreadToUse = Alarm.ThreadToUse.SWING_THREAD
-) :
-    SchemasSearchDialogBase<SchemaSearchResultWithRegistry, SchemaSearchAllRegistriesDialogState>(
+    onCancelCallback: (SchemaSearchDialogState) -> Unit
+) : SchemasSearchDialogBase(
         project,
         schemaViewer,
         message("schemas.search.header.text.allRegistries"),
-        onCancelCallback,
-        alarmThreadToUse
+        onCancelCallback
     ) {
 
-    override fun getCurrentState(): SchemaSearchAllRegistriesDialogState {
-        val searchResults = IntStream.range(0, resultsModel.size()).mapToObj(resultsModel::get).toList()
-        return SchemaSearchAllRegistriesDialogState(currentSearchText(), searchResults, selectedSchema(), selectedSchemaVersion()?.version)
+    override fun createResultRenderer(): (SchemaSearchResultWithRegistry) -> JComponent = {
+        JBLabel("${it.registry}/${it.name}")
     }
-
-    override fun selectedSchemaRegistry() = selectedSchema()?.registry
-
-    override fun downloadSchemaContent(schema: SchemaSearchResultWithRegistry, version: String): CompletionStage<String> =
-        doDownloadSchemaContent(schema.registry, schema.name, version)
 
     override fun searchSchemas(
         searchText: String,
-        incrementalResultsCallback: OnSearchResultReturned<SchemaSearchResultWithRegistry>,
+        incrementalResultsCallback: OnSearchResultReturned,
         registrySearchErrorCallback: OnSearchResultError
     ) {
         SchemasTelemetry.search(project, Result.SUCCEEDED)

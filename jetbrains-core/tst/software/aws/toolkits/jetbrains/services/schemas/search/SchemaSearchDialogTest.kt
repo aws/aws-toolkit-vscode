@@ -47,15 +47,15 @@ class SchemaSearchDialogTest {
 
     @Test
     fun initializeSearchRegistryDialogFromState() {
-        val result1 = SchemaSearchResult(SCHEMA1, VERSIONS)
-        val result2 = SchemaSearchResult(SCHEMA2, VERSIONS)
+        val result1 = SchemaSearchResultWithRegistry(SCHEMA1, VERSIONS, REGISTRY1)
+        val result2 = SchemaSearchResultWithRegistry(SCHEMA2, VERSIONS, REGISTRY1)
         val searchResults = listOf(result1, result2)
 
         val latch = CountDownLatch(1)
 
         mockSchemaSearchExecutor.stub {
             on { searchSchemasInRegistry(eq(REGISTRY1), eq(SEARCH_CRITERIA), any(), any()) }.thenAnswer {
-                it.getArgument<OnSearchResultReturned<SchemaSearchResult>>(2).invoke(searchResults)
+                it.getArgument<OnSearchResultReturned>(2).invoke(searchResults)
                 latch.countDown()
             }
         }
@@ -65,16 +65,16 @@ class SchemaSearchDialogTest {
         }
 
         val dialog = runInEdtAndGet {
-            initSingleRegistryDialog(SchemaSearchSingleRegistryDialogState(SEARCH_CRITERIA, searchResults, result2, LAST_VERSION))
+            initSingleRegistryDialog(SchemaSearchDialogState(SEARCH_CRITERIA, searchResults, result2, LAST_VERSION))
         }
 
-        latch.await(3, TimeUnit.SECONDS)
+        latch.wait()
 
         assertSearchResultSelectedDialogState(
             dialog,
             SCHEMA2_CONTENTS,
-            VERSIONS.map { SchemaSearchResultVersion(it) },
-            SchemaSearchResultVersion(LAST_VERSION)
+            VERSIONS,
+            LAST_VERSION
         )
     }
 
@@ -88,7 +88,7 @@ class SchemaSearchDialogTest {
 
         mockSchemaSearchExecutor.stub {
             on { searchSchemasAcrossAllRegistries(eq(SEARCH_CRITERIA), any(), any()) }.thenAnswer {
-                it.getArgument<OnSearchResultReturned<SchemaSearchResultWithRegistry>>(2).invoke(searchResults)
+                it.getArgument<OnSearchResultReturned>(2).invoke(searchResults)
                 latch.countDown()
             }
         }
@@ -98,16 +98,16 @@ class SchemaSearchDialogTest {
         }
 
         val dialog = runInEdtAndGet {
-            initAllRegistriesDialog(SchemaSearchAllRegistriesDialogState(SEARCH_CRITERIA, searchResults, result2, LAST_VERSION))
+            initAllRegistriesDialog(SchemaSearchDialogState(SEARCH_CRITERIA, searchResults, result2, LAST_VERSION))
         }
 
-        latch.await(3, TimeUnit.SECONDS)
+        latch.wait()
 
         assertSearchResultSelectedDialogState(
             dialog,
             SCHEMA2_CONTENTS,
-            VERSIONS.map { SchemaSearchResultVersion(it) },
-            SchemaSearchResultVersion(LAST_VERSION)
+            VERSIONS,
+            LAST_VERSION
         )
     }
 
@@ -132,7 +132,7 @@ class SchemaSearchDialogTest {
             }
         }
 
-        searchingLatch.await(3, TimeUnit.SECONDS)
+        searchingLatch.wait()
 
         try {
             assertSearchingDialogState(dialog)
@@ -162,7 +162,7 @@ class SchemaSearchDialogTest {
             }
         }
 
-        searchingLatch.await(3, TimeUnit.SECONDS)
+        searchingLatch.wait()
 
         try {
             assertSearchingDialogState(dialog)
@@ -173,13 +173,13 @@ class SchemaSearchDialogTest {
 
     @Test
     fun singleRegistrySearchWithResults() {
-        val searchResults = listOf(SchemaSearchResult(SCHEMA1, VERSIONS))
+        val searchResults = listOf(SchemaSearchResultWithRegistry(SCHEMA1, VERSIONS, REGISTRY1))
 
         val latch = CountDownLatch(1)
 
         mockSchemaSearchExecutor.stub {
             on { searchSchemasInRegistry(eq(REGISTRY1), eq(SEARCH_CRITERIA), any(), any()) }.thenAnswer {
-                it.getArgument<OnSearchResultReturned<SchemaSearchResult>>(2).invoke(searchResults)
+                it.getArgument<OnSearchResultReturned>(2).invoke(searchResults)
                 latch.countDown()
             }
         }
@@ -190,7 +190,7 @@ class SchemaSearchDialogTest {
             }
         }
 
-        latch.await(3, TimeUnit.SECONDS)
+        latch.wait()
 
         assertSearchResultsDialogState(dialog, searchResults, emptyList())
     }
@@ -214,7 +214,7 @@ class SchemaSearchDialogTest {
             }
         }
 
-        latch.await(3, TimeUnit.SECONDS)
+        latch.wait()
 
         assertSearchResultsDialogState(dialog, emptyList(), listOf(searchError))
     }
@@ -228,8 +228,8 @@ class SchemaSearchDialogTest {
 
         mockSchemaSearchExecutor.stub {
             on { searchSchemasAcrossAllRegistries(eq(SEARCH_CRITERIA), any(), any()) }.thenAnswer {
-                it.getArgument<OnSearchResultReturned<SchemaSearchResultWithRegistry>>(1).invoke(searchResultsPart1)
-                it.getArgument<OnSearchResultReturned<SchemaSearchResultWithRegistry>>(1).invoke(searchResultsPart2)
+                it.getArgument<OnSearchResultReturned>(1).invoke(searchResultsPart1)
+                it.getArgument<OnSearchResultReturned>(1).invoke(searchResultsPart2)
                 latch.countDown()
             }
         }
@@ -240,7 +240,7 @@ class SchemaSearchDialogTest {
             }
         }
 
-        latch.await(3, TimeUnit.SECONDS)
+        latch.wait()
 
         assertSearchResultsDialogState(dialog, searchResultsPart1 + searchResultsPart2, emptyList())
     }
@@ -254,7 +254,7 @@ class SchemaSearchDialogTest {
 
         mockSchemaSearchExecutor.stub {
             on { searchSchemasAcrossAllRegistries(eq(SEARCH_CRITERIA), any(), any()) }.thenAnswer {
-                it.getArgument<OnSearchResultReturned<SchemaSearchResultWithRegistry>>(1).invoke(searchResultsPart1)
+                it.getArgument<OnSearchResultReturned>(1).invoke(searchResultsPart1)
                 it.getArgument<OnSearchResultError>(2).invoke(searchError)
                 latch.countDown()
             }
@@ -266,20 +266,20 @@ class SchemaSearchDialogTest {
             }
         }
 
-        latch.await(3, TimeUnit.SECONDS)
+        latch.wait()
 
         assertSearchResultsDialogState(dialog, searchResultsPart1, listOf(searchError))
     }
 
     @Test
     fun singleRegistrySearchResultSelected() {
-        val searchResults = listOf(SchemaSearchResult(SCHEMA1, VERSIONS))
+        val searchResults = listOf(SchemaSearchResultWithRegistry(SCHEMA1, VERSIONS, REGISTRY1))
 
         val latch = CountDownLatch(1)
 
         mockSchemaSearchExecutor.stub {
             on { searchSchemasInRegistry(eq(REGISTRY1), eq(SEARCH_CRITERIA), any(), any()) }.thenAnswer {
-                it.getArgument<OnSearchResultReturned<SchemaSearchResult>>(2).invoke(searchResults)
+                it.getArgument<OnSearchResultReturned>(2).invoke(searchResults)
                 latch.countDown()
             }
         }
@@ -294,7 +294,7 @@ class SchemaSearchDialogTest {
             }
         }
 
-        latch.await(3, TimeUnit.SECONDS)
+        latch.wait()
 
         runInEdtAndWait {
             dialog.resultsList.selectedIndex = 0
@@ -303,8 +303,8 @@ class SchemaSearchDialogTest {
         assertSearchResultSelectedDialogState(
             dialog,
             SCHEMA1_CONTENTS,
-            VERSIONS.map { SchemaSearchResultVersion(it) },
-            SchemaSearchResultVersion(FIRST_VERSION)
+            VERSIONS,
+            FIRST_VERSION
         )
     }
 
@@ -319,7 +319,7 @@ class SchemaSearchDialogTest {
 
         mockSchemaSearchExecutor.stub {
             on { searchSchemasAcrossAllRegistries(eq(SEARCH_CRITERIA), any(), any()) }.thenAnswer {
-                it.getArgument<OnSearchResultReturned<SchemaSearchResultWithRegistry>>(1).invoke(searchResults)
+                it.getArgument<OnSearchResultReturned>(1).invoke(searchResults)
                 latch.countDown()
             }
         }
@@ -334,7 +334,7 @@ class SchemaSearchDialogTest {
             }
         }
 
-        latch.await(3, TimeUnit.SECONDS)
+        latch.wait()
 
         runInEdtAndWait {
             dialog.resultsList.selectedIndex = 0
@@ -343,18 +343,18 @@ class SchemaSearchDialogTest {
         assertSearchResultSelectedDialogState(
             dialog,
             SCHEMA1_CONTENTS,
-            VERSIONS.map { SchemaSearchResultVersion(it) },
-            SchemaSearchResultVersion(FIRST_VERSION)
+            VERSIONS,
+            FIRST_VERSION
         )
     }
 
-    private fun initSingleRegistryDialog(state: SchemaSearchSingleRegistryDialogState? = null): SchemaSearchSingleRegistryDialog {
+    private fun initSingleRegistryDialog(state: SchemaSearchDialogState? = null): SchemaSearchSingleRegistryDialog {
         val dialog = SchemaSearchSingleRegistryDialog(
             REGISTRY1,
             projectRule.project,
-            { },
             mockSchemaSearchExecutor,
-            mockSchemaViewer
+            mockSchemaViewer,
+            onCancelCallback = { }
         )
 
         if (state == null) {
@@ -366,12 +366,12 @@ class SchemaSearchDialogTest {
         return dialog
     }
 
-    private fun initAllRegistriesDialog(state: SchemaSearchAllRegistriesDialogState? = null): SchemaSearchAllRegistriesDialog {
+    private fun initAllRegistriesDialog(state: SchemaSearchDialogState? = null): SchemaSearchAllRegistriesDialog {
         val dialog = SchemaSearchAllRegistriesDialog(
             projectRule.project,
-            { },
             mockSchemaSearchExecutor,
-            mockSchemaViewer
+            mockSchemaViewer,
+            onCancelCallback = { }
         )
 
         if (state == null) {
@@ -383,7 +383,7 @@ class SchemaSearchDialogTest {
         return dialog
     }
 
-    private fun <T : SchemaSearchResultBase, U : SchemaSearchDialogState<T>> assertInitialDialogState(dialog: SchemasSearchDialogBase<T, U>) {
+    private fun assertInitialDialogState(dialog: SchemasSearchDialogBase) {
         assertThat(dialog.getDownloadButton()?.isEnabled).isFalse()
         assertThat(dialog.searchTextField.text).isEmpty()
         assertThat(dialog.resultsList.isEmpty).isTrue()
@@ -394,7 +394,7 @@ class SchemaSearchDialogTest {
         assertThat(dialog.currentSearchErrors).isEmpty()
     }
 
-    private fun <T : SchemaSearchResultBase, U : SchemaSearchDialogState<T>> assertSearchingDialogState(dialog: SchemasSearchDialogBase<T, U>) {
+    private fun assertSearchingDialogState(dialog: SchemasSearchDialogBase) {
         assertThat(dialog.getDownloadButton()?.isEnabled).isFalse()
         assertThat(dialog.previewText.text.isEmpty()).isTrue()
         assertThat(dialog.resultsList.itemsCount).isEqualTo(0)
@@ -404,9 +404,9 @@ class SchemaSearchDialogTest {
         assertThat(dialog.currentSearchErrors).isEmpty()
     }
 
-    private fun <T : SchemaSearchResultBase, U : SchemaSearchDialogState<T>> assertSearchResultsDialogState(
-        dialog: SchemasSearchDialogBase<T, U>,
-        expectedResults: Collection<T>,
+    private fun assertSearchResultsDialogState(
+        dialog: SchemasSearchDialogBase,
+        expectedResults: Collection<SchemaSearchResultWithRegistry>,
         searchErrors: Collection<SchemaSearchError>
     ) {
         assertThat(dialog.getDownloadButton()?.isEnabled).isFalse()
@@ -418,11 +418,11 @@ class SchemaSearchDialogTest {
         assertThat(dialog.currentSearchErrors).hasSameElementsAs(searchErrors)
     }
 
-    private fun <T : SchemaSearchResultBase, U : SchemaSearchDialogState<T>> assertSearchResultSelectedDialogState(
-        dialog: SchemasSearchDialogBase<T, U>,
+    private fun assertSearchResultSelectedDialogState(
+        dialog: SchemasSearchDialogBase,
         schemaContents: String,
-        versions: Collection<SchemaSearchResultVersion>,
-        selectedVersion: SchemaSearchResultVersion
+        versions: Collection<String>,
+        selectedVersion: String
     ) {
         assertThat(dialog.getDownloadButton()?.isEnabled).isTrue()
         assertThat(dialog.previewText.text).isEqualTo(schemaContents)
@@ -435,6 +435,10 @@ class SchemaSearchDialogTest {
 
         assertThat(dialog.previewText.highlighter.highlights).isNotEmpty
         assertThat(dialog.previewText.caretPosition).isGreaterThan(0)
+    }
+
+    private fun CountDownLatch.wait() {
+        this.await(3, TimeUnit.SECONDS)
     }
 
     private companion object {

@@ -61,15 +61,14 @@ class SchemaViewer(
         registryName: String,
         version: String?,
         component: JComponent
-    ): CompletionStage<String> =
-        schemaDownloader.getSchemaContent(registryName, schemaName, version, project)
-            .thenCompose { schemaContent ->
-                schemaFormatter.prettySchemaContent(schemaContent.content(), component)
-            }
-            .exceptionally { error ->
-                notifyError(message("schemas.schema.could_not_open", schemaName), ExceptionUtil.getThrowableText(error), project)
-                null
-            }
+    ): CompletionStage<String> = schemaDownloader.getSchemaContent(registryName, schemaName, version, project)
+        .thenCompose { schemaContent ->
+            schemaFormatter.prettySchemaContent(schemaContent.content(), component)
+        }
+        .exceptionally { error ->
+            notifyError(message("schemas.schema.could_not_open", schemaName), ExceptionUtil.getThrowableText(error), project)
+            null
+        }
 }
 
 class SchemaDownloader() {

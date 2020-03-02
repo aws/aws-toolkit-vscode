@@ -10,8 +10,8 @@ import software.aws.toolkits.jetbrains.services.schemas.search.SchemaSearchDialo
 import software.aws.toolkits.jetbrains.services.schemas.search.SchemaSearchDialogManager.DialogStateCacheKey.SingleRegistryDialogStateCacheKey
 
 class SchemaSearchDialogManager {
-    private val searchDialogStateCache: MutableMap<SingleRegistryDialogStateCacheKey, SchemaSearchSingleRegistryDialogState> = mutableMapOf()
-    private val allRegistriesSearchDialogStateCache: MutableMap<AllRegistriesDialogStateCacheKey, SchemaSearchAllRegistriesDialogState> = mutableMapOf()
+    private val searchDialogStateCache: MutableMap<SingleRegistryDialogStateCacheKey, SchemaSearchDialogState> = mutableMapOf()
+    private val allRegistriesSearchDialogStateCache: MutableMap<AllRegistriesDialogStateCacheKey, SchemaSearchDialogState> = mutableMapOf()
 
     fun searchRegistryDialog(registry: String, project: Project): DialogWrapper {
         val credentialId = ProjectAccountSettingsManager.getInstance(project).activeCredentialProvider.id
@@ -20,7 +20,7 @@ class SchemaSearchDialogManager {
         val dialog = SchemaSearchSingleRegistryDialog(
             registry,
             project,
-            { state -> cacheSingleRegistryDialogStateOnCancel(registry, credentialId, region, state) }
+            onCancelCallback = { state -> cacheSingleRegistryDialogStateOnCancel(registry, credentialId, region, state) }
         )
 
         val key = SingleRegistryDialogStateCacheKey(registry, credentialId, region)
@@ -40,7 +40,7 @@ class SchemaSearchDialogManager {
 
         val dialog = SchemaSearchAllRegistriesDialog(
             project,
-            { state -> cacheAllRegistriesDialogStateOnCancel(credentialId, region, state) }
+            onCancelCallback = { state -> cacheAllRegistriesDialogStateOnCancel(credentialId, region, state) }
         )
 
         val key = AllRegistriesDialogStateCacheKey(credentialId, region)
@@ -54,11 +54,11 @@ class SchemaSearchDialogManager {
         return dialog
     }
 
-    private fun cacheSingleRegistryDialogStateOnCancel(registry: String, credentialId: String, region: String, state: SchemaSearchSingleRegistryDialogState) {
+    private fun cacheSingleRegistryDialogStateOnCancel(registry: String, credentialId: String, region: String, state: SchemaSearchDialogState) {
         searchDialogStateCache[SingleRegistryDialogStateCacheKey(registry, credentialId, region)] = state
     }
 
-    private fun cacheAllRegistriesDialogStateOnCancel(credentialId: String, region: String, state: SchemaSearchAllRegistriesDialogState) {
+    private fun cacheAllRegistriesDialogStateOnCancel(credentialId: String, region: String, state: SchemaSearchDialogState) {
         allRegistriesSearchDialogStateCache[AllRegistriesDialogStateCacheKey(credentialId, region)] = state
     }
 

@@ -18,17 +18,16 @@ class SchemaSearchExecutor(
     private val project: Project,
     private val schemasClient: SchemasClient = AwsClientManager.getInstance(project).getClient()
 ) {
-
     fun searchSchemasInRegistry(
         registryName: String,
         searchText: String,
-        incrementalResultsCallback: OnSearchResultReturned<SchemaSearchResult>,
+        incrementalResultsCallback: OnSearchResultReturned,
         registrySearchErrorCallback: OnSearchResultError
     ) {
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
                 val results = doSingleSearch(registryName, searchText)
-                incrementalResultsCallback(results.map { SchemaSearchResult(it.name, it.versions) })
+                incrementalResultsCallback(results.map { SchemaSearchResultWithRegistry(it.name, it.versions, registryName) })
             } catch (e: Exception) {
                 LOG.warn(e) { "SchemaSearchExecutor exception searching schema registry" }
                 registrySearchErrorCallback(SchemaSearchError(registryName, e.message ?: ""))
@@ -38,24 +37,15 @@ class SchemaSearchExecutor(
 
     fun searchSchemasAcrossAllRegistries(
         searchText: String,
-        incrementalResultsCallback: OnSearchResultReturned<SchemaSearchResultWithRegistry>,
+        incrementalResultsCallback: OnSearchResultReturned,
         registrySearchErrorCallback: OnSearchResultError
     ) {
         AwsResourceCache.getInstance(project).getResource(SchemasResources.LIST_REGISTRIES)
-            .thenApply { registries ->
-                registries.parallelStream()
-                    .forEach {
-                        val registryName = it.registryName()
-                        ApplicationManager.getApplication().executeOnPooledThread {
-                            try {
-                                val singleSearchResults = doSingleSearch(registryName, searchText)
-                                incrementalResultsCallback(singleSearchResults)
-                            } catch (e: Exception) {
-                                LOG.warn(e) { "SchemaSearchExecutor exception searching schema registry" }
-                                registrySearchErrorCallback(SchemaSearchError(registryName, e.message ?: ""))
-                            }
-                        }
-                    }
+            .thenApply {
+                it.forEach { registry ->
+                    val registryName = registry.registryName()
+                    searchSchemasInRegistry(registryName, searchText, incrementalResultsCallback, registrySearchErrorCallback)
+                }
             }
     }
 
@@ -70,7 +60,7 @@ class SchemaSearchExecutor(
 
         val resultsResponse: SearchSchemasResponse = schemasClient.searchSchemas(searchRequest)
 
-        return resultsResponse.schemas().map { searchSchemaSummary ->
+        return resultsResponse.schemas().mapNotNull { searchSchemaSummary ->
             val sortedVersions = searchSchemaSummary.schemaVersions()
                 .map { it.schemaVersion() }
                 .sortedByDescending { it.toIntOrNull() }
@@ -78,9 +68,13 @@ class SchemaSearchExecutor(
             if (sortedVersions.isEmpty()) {
                 null
             } else {
-                SchemaSearchResultWithRegistry(searchSchemaSummary.schemaName(), sortedVersions, searchSchemaSummary.registryName())
+                SchemaSearchResultWithRegistry(
+                    searchSchemaSummary.schemaName(),
+                    sortedVersions,
+                    searchSchemaSummary.registryName()
+                )
             }
-        }.filterNotNull()
+        }
     }
 
     companion object {
