@@ -4,12 +4,12 @@
  */
 
 import * as assert from 'assert'
-import * as del from 'del'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
 
 import { EnvironmentVariables } from '../../shared/environmentVariables'
+import { rmrf } from '../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../shared/systemUtilities'
 
@@ -22,8 +22,8 @@ describe('SystemUtilities', () => {
         tempFolder = await makeTemporaryToolkitFolder()
     })
 
-    after(() => {
-        del.sync([tempFolder], { force: true })
+    after(async () => {
+        await rmrf(tempFolder)
     })
 
     describe('getHomeDirectory', () => {
