@@ -67,7 +67,7 @@ namespace AWS.Psi.Lambda
                 () => !lifetime.IsAlive || _locks.ContentModelLocks.IsWriteLockRequested))
             {
                 var project = _projectModelViewHost.GetItemById<IProject>(projectId);
-                Assertion.AssertNotNull(project, "project instance shoud not be null");
+                Assertion.AssertNotNull(project, "project instance should not be null");
                 _logger.Verbose($"Searching handler with name '{className}.{methodName}' in the project {project}...");
 
                 var psiModules = project.GetPsiModules();
