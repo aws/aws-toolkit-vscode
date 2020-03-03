@@ -21,21 +21,3 @@ export function dirnameWithTrailingSlash(path: string): string {
 
     return dirname
 }
-
-/**
- * Normalizes filepaths by lowercasing the drive letter for absolute paths on Windows. Does not affect:
- * * relative paths
- * * Unix paths
- * @param filepath Filepath to normalize
- */
-export function normalizePathIfWindows(filepath: string): string {
-    let alteredPath = filepath
-    if (_path.isAbsolute(filepath)) {
-        const root = _path.parse(filepath).root
-        if (root !== '/') {
-            alteredPath = `${filepath.charAt(0).toLowerCase()}${filepath.slice(1)}`
-        }
-    }
-
-    return alteredPath
-}

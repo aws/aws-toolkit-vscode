@@ -16,18 +16,6 @@ export class CloudFormationTemplateRegistry {
     private static INSTANCE: CloudFormationTemplateRegistry | undefined
     private readonly templateRegistryData: Map<string, CloudFormation.Template>
 
-    /**
-     * Returns the CloudFormationTemplateRegistry singleton.
-     * If the singleton doesn't exist, creates it.
-     */
-    public static getRegistry(): CloudFormationTemplateRegistry {
-        if (!CloudFormationTemplateRegistry.INSTANCE) {
-            CloudFormationTemplateRegistry.INSTANCE = new CloudFormationTemplateRegistry()
-        }
-
-        return CloudFormationTemplateRegistry.INSTANCE
-    }
-
     public constructor() {
         this.templateRegistryData = new Map<string, CloudFormation.Template>()
     }
@@ -102,5 +90,17 @@ export class CloudFormationTemplateRegistry {
      */
     public reset() {
         this.templateRegistryData.clear()
+    }
+
+    /**
+     * Returns the CloudFormationTemplateRegistry singleton.
+     * If the singleton doesn't exist, creates it.
+     */
+    public static getRegistry(): CloudFormationTemplateRegistry {
+        if (!CloudFormationTemplateRegistry.INSTANCE) {
+            CloudFormationTemplateRegistry.INSTANCE = new CloudFormationTemplateRegistry()
+        }
+
+        return CloudFormationTemplateRegistry.INSTANCE
     }
 }
