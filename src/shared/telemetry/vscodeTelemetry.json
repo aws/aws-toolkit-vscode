@@ -1,7 +1,7 @@
 {
     "metrics": [
         {
-            "name": "stepfunctions_renderstatemachine",
+            "name": "stepfunctions_previewstatemachine",
             "description": ""
         },
         {
