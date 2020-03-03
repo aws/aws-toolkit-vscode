@@ -47,7 +47,7 @@
         "onCommand:aws.quickStart",
         "onCommand:aws.help",
         "onCommand:aws.github",
-        "onCommand:aws.renderStateMachine",
+        "onCommand:aws.previewStateMachine",
         "onCommand:aws.stepfunctions.createStateMachineFromTemplate",
         "onView:aws.cdk.explorer",
         "onCommand:aws.refreshCdkExplorer",
@@ -457,8 +457,8 @@
                 "category": "AWS"
             },
             {
-                "command": "aws.renderStateMachine",
-                "title": "%AWS.command.stepFunctions.renderStateMachine%",
+                "command": "aws.previewStateMachine",
+                "title": "%AWS.command.stepFunctions.previewStateMachine%",
                 "category": "AWS"
             },
             {
@@ -493,6 +493,14 @@
             {
                 "language": "asl",
                 "path": "./snippets/stepFunctions.json"
+            }
+        ],
+        "keybindings": [
+            {
+                "command": "aws.previewStateMachine",
+                "key": "ctrl+shift+v",
+                "mac": "cmd+shift+v",
+                "when": "editorTextFocus && editorLangId == asl"
             }
         ]
     },
