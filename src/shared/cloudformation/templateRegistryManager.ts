@@ -6,12 +6,10 @@
 import * as vscode from 'vscode'
 import { CloudFormationTemplateRegistry } from './templateRegistry'
 
-interface
-
 export class CloudFormationTemplateRegistryManager implements vscode.Disposable {
     private readonly disposables: vscode.Disposable[] = []
     private _isDisposed: boolean = false
-    private globs: vscode.GlobPattern[] = []
+    private readonly globs: vscode.GlobPattern[] = []
 
     public constructor(private readonly registry: CloudFormationTemplateRegistry) {
         this.disposables.push(

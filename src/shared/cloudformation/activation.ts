@@ -20,6 +20,6 @@ const TEMPLATE_FILE_GLOB_PATTERN = '**/template.{yaml,yml}'
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     const registry = CloudFormationTemplateRegistry.getRegistry()
     const manager = new CloudFormationTemplateRegistryManager(registry)
-    await manager.setTemplateGlob(TEMPLATE_FILE_GLOB_PATTERN)
+    await manager.addTemplateGlob(TEMPLATE_FILE_GLOB_PATTERN)
     extensionContext.subscriptions.push(manager)
 }
