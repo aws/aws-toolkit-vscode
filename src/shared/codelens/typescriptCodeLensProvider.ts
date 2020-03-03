@@ -84,48 +84,50 @@ export function initialize({
     }
 
     const command = getInvokeCmdKey('javascript')
-    context.subscriptions.push(vscode.commands.registerCommand(command, async (params: LambdaLocalInvokeParams) => {
-        const logger = getLogger()
+    context.subscriptions.push(
+        vscode.commands.registerCommand(command, async (params: LambdaLocalInvokeParams) => {
+            const logger = getLogger()
 
-        const resource = await CloudFormation.getResourceFromTemplate({
-            handlerName: params.handlerName,
-            templatePath: params.samTemplate.fsPath
-        })
-        const lambdaRuntime = CloudFormation.getRuntime(resource)
-        let invokeResult: Result = 'Succeeded'
-        try {
-            if (!nodeJsRuntimes.has(lambdaRuntime)) {
-                invokeResult = 'Failed'
-                logger.error(
-                    `Javascript local invoke on ${params.document.uri.fsPath} encountered` +
-                        ` unsupported runtime ${lambdaRuntime}`
-                )
-
-                vscode.window.showErrorMessage(
-                    localize(
-                        'AWS.samcli.local.invoke.runtime.unsupported',
-                        'Unsupported {0} runtime: {1}',
-                        'javascript',
-                        lambdaRuntime
+            const resource = await CloudFormation.getResourceFromTemplate({
+                handlerName: params.handlerName,
+                templatePath: params.samTemplate.fsPath
+            })
+            const lambdaRuntime = CloudFormation.getRuntime(resource)
+            let invokeResult: Result = 'Succeeded'
+            try {
+                if (!nodeJsRuntimes.has(lambdaRuntime)) {
+                    invokeResult = 'Failed'
+                    logger.error(
+                        `Javascript local invoke on ${params.document.uri.fsPath} encountered` +
+                            ` unsupported runtime ${lambdaRuntime}`
                     )
-                )
-            } else {
-                await invokeLambda({
-                    runtime: lambdaRuntime,
-                    ...params
+
+                    vscode.window.showErrorMessage(
+                        localize(
+                            'AWS.samcli.local.invoke.runtime.unsupported',
+                            'Unsupported {0} runtime: {1}',
+                            'javascript',
+                            lambdaRuntime
+                        )
+                    )
+                } else {
+                    await invokeLambda({
+                        runtime: lambdaRuntime,
+                        ...params
+                    })
+                }
+            } catch (err) {
+                invokeResult = 'Failed'
+                throw err
+            } finally {
+                recordLambdaInvokeLocal({
+                    result: invokeResult,
+                    runtime: lambdaRuntime as Runtime,
+                    debug: params.isDebug
                 })
             }
-        } catch (err) {
-            invokeResult = 'Failed'
-            throw err
-        } finally {
-            recordLambdaInvokeLocal({
-                result: invokeResult,
-                runtime: lambdaRuntime as Runtime,
-                debug: params.isDebug
-            })
-        }
-    }))
+        })
+    )
 }
 
 export function makeTypescriptCodeLensProvider(): vscode.CodeLensProvider {
@@ -134,7 +136,10 @@ export function makeTypescriptCodeLensProvider(): vscode.CodeLensProvider {
             document: vscode.TextDocument,
             token: vscode.CancellationToken
         ): Promise<vscode.CodeLens[]> => {
-            const search: TypescriptLambdaHandlerSearch = new TypescriptLambdaHandlerSearch(document.uri)
+            const search: TypescriptLambdaHandlerSearch = new TypescriptLambdaHandlerSearch(
+                document.uri.fsPath,
+                document.getText()
+            )
             const handlers: LambdaHandlerCandidate[] = await search.findCandidateLambdaHandlers()
 
             // For Javascript CodeLenses, store the complete relative pathed handler name
