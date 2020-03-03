@@ -76,9 +76,11 @@ export class CloudFormationTemplateRegistryManager implements vscode.Disposable 
      * @param watcher vscode.FileSystemWatcher
      */
     private setWatcher(watcher: vscode.FileSystemWatcher): void {
-        this.disposables.push(watcher)
-        this.disposables.push(watcher.onDidChange(async uri => this.registry.addTemplateToRegistry(uri)))
-        this.disposables.push(watcher.onDidCreate(async uri => this.registry.addTemplateToRegistry(uri)))
-        this.disposables.push(watcher.onDidDelete(async uri => this.registry.removeTemplateFromRegistry(uri)))
+        this.disposables.push(
+            watcher,
+            watcher.onDidChange(async uri => this.registry.addTemplateToRegistry(uri)),
+            watcher.onDidCreate(async uri => this.registry.addTemplateToRegistry(uri)),
+            watcher.onDidDelete(async uri => this.registry.removeTemplateFromRegistry(uri))
+        )
     }
 }
