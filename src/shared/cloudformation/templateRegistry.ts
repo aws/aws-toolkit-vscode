@@ -8,8 +8,8 @@ import { getLogger } from '../logger/logger'
 import { CloudFormation } from './cloudformation'
 
 export interface TemplateData {
-    templatePath: string
-    templateData: CloudFormation.Template
+    path: string
+    template: CloudFormation.Template
 }
 
 export class CloudFormationTemplateRegistry {
@@ -48,14 +48,14 @@ export class CloudFormationTemplateRegistry {
 
     /**
      * Get a specific template's data
-     * @param templatePath Path to template of interest
+     * @param path Path to template of interest
      */
-    public getRegisteredTemplate(templatePath: string): TemplateData | undefined {
-        const templateData = this.templateRegistryData.get(templatePath)
-        if (templateData) {
+    public getRegisteredTemplate(path: string): TemplateData | undefined {
+        const template = this.templateRegistryData.get(path)
+        if (template) {
             return {
-                templatePath,
-                templateData
+                path,
+                template
             }
         }
     }
