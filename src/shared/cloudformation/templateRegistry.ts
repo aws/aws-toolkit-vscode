@@ -33,19 +33,29 @@ export class CloudFormationTemplateRegistry {
     }
 
     /**
-     * Returns the registry's data as an array of TemplateData objects
+     * Adds multiple templates to the registry.
+     * Invalid templates will have a message logged but otherwise will not report a failure.
+     * @param templateUris Array of vscode.Uris containing templates to remove
      */
-    public get registeredTemplates(): TemplateData[] {
-        const arr: TemplateData[] = []
-
-        for (const templatePath of this.templateRegistryData.keys()) {
-            const template = this.getRegisteredTemplate(templatePath)
-            if (template) {
-                arr.push(template)
+    public async addTemplatesToRegistry(templateUris: vscode.Uri[]) {
+        for (const templateUri of templateUris) {
+            try {
+                await this.addTemplateToRegistry(templateUri)
+            } catch (e) {
+                const err = e as Error
+                getLogger().verbose(`Template ${templateUri} is malformed: ${err.message}`)
             }
         }
+    }
 
-        return arr
+    /**
+     * Adds template to registry. Wipes any existing template in its place with newly-parsed copy of the data.
+     * @param templateUri vscode.Uri containing the template to load in
+     */
+    public async addTemplateToRegistry(templateUri: vscode.Uri): Promise<void> {
+        const pathAsString = templateUri.fsPath
+        const template = await CloudFormation.load(pathAsString)
+        this.templateRegistryData.set(pathAsString, template)
     }
 
     /**
@@ -63,13 +73,19 @@ export class CloudFormationTemplateRegistry {
     }
 
     /**
-     * Adds template to registry. Wipes any existing template in its place with newly-parsed copy of the data.
-     * @param templateUri vscode.Uri containing the template to load in
+     * Returns the registry's data as an array of TemplateData objects
      */
-    public async addTemplateToRegistry(templateUri: vscode.Uri): Promise<void> {
-        const pathAsString = templateUri.fsPath
-        const template = await CloudFormation.load(pathAsString)
-        this.templateRegistryData.set(pathAsString, template)
+    public get registeredTemplates(): TemplateData[] {
+        const arr: TemplateData[] = []
+
+        for (const templatePath of this.templateRegistryData.keys()) {
+            const template = this.getRegisteredTemplate(templatePath)
+            if (template) {
+                arr.push(template)
+            }
+        }
+
+        return arr
     }
 
     /**
@@ -86,21 +102,5 @@ export class CloudFormationTemplateRegistry {
      */
     public reset() {
         this.templateRegistryData.clear()
-    }
-
-    /**
-     * Adds multiple templates to the registry.
-     * Invalid templates will have a message logged but otherwise will not report a failure.
-     * @param templateUris Array of vscode.Uris containing templates to remove
-     */
-    public async addTemplatesToRegistry(templateUris: vscode.Uri[]) {
-        for (const templateUri of templateUris) {
-            try {
-                await this.addTemplateToRegistry(templateUri)
-            } catch (e) {
-                const err = e as Error
-                getLogger().verbose(`Template ${templateUri} is malformed: ${err.message}`)
-            }
-        }
     }
 }
