@@ -5,8 +5,6 @@
 
 import * as path from 'path'
 import * as ts from 'typescript'
-import * as vscode from 'vscode'
-import { readFileAsString } from './filesystemUtilities'
 import { LambdaHandlerCandidate, LambdaHandlerSearch } from './lambdaHandlerSearch'
 
 const getRange = (node: ts.Node) => ({
@@ -20,8 +18,6 @@ const getRange = (node: ts.Node) => ({
 export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
     public static readonly MAXIMUM_FUNCTION_PARAMETERS: number = 3
 
-    private readonly _uri!: vscode.Uri
-    private readonly _filename: string
     private readonly _baseFilename: string
     // _candidateDeclaredFunctionNames - names of functions that could be lambda handlers
     private readonly _candidateDeclaredFunctionNames: Set<string> = new Set()
@@ -32,10 +28,8 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
     // _candidateExportNodes - all "export function Xyz()" / "export const Xyz = () => {}"
     private _candidateExportNodes: ts.Node[] = []
 
-    public constructor(uri: vscode.Uri) {
-        this._uri = uri
-        this._filename = this._uri.fsPath
-        this._baseFilename = path.parse(this._filename).name
+    public constructor(private readonly filename: string, private readonly fileContents: string) {
+        this._baseFilename = path.parse(this.filename).name
     }
 
     /**
@@ -52,9 +46,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
     }
 
     private async getCandidateHandlers(): Promise<LambdaHandlerCandidate[]> {
-        const fileContents = await readFileAsString(this._filename)
-
-        const sourceFile = ts.createSourceFile(this._filename, fileContents, ts.ScriptTarget.Latest, true)
+        const sourceFile = ts.createSourceFile(this.filename, this.fileContents, ts.ScriptTarget.Latest, true)
 
         const handlers: LambdaHandlerCandidate[] = this.processSourceFile(sourceFile)
 
@@ -156,7 +148,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                 const exportsTarget: string = lhsComponents[0] === 'exports' ? lhsComponents[1] : lhsComponents[2]
 
                 return {
-                    filename: this._filename,
+                    filename: this.filename,
                     handlerName: `${this._baseFilename}.${exportsTarget}`,
                     range: getRange(candidate)
                 }
@@ -177,7 +169,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
 
                         if (this._candidateDeclaredFunctionNames.has(exportedFunction)) {
                             handlers.push({
-                                filename: this._filename,
+                                filename: this.filename,
                                 handlerName: `${this._baseFilename}.${exportedFunction}`,
                                 range: getRange(clause)
                             })
@@ -203,7 +195,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                 !!exportNode.name
             ) {
                 handlers.push({
-                    filename: this._filename,
+                    filename: this.filename,
                     handlerName: `${this._baseFilename}.${exportNode.name.getText()}`,
                     range: getRange(exportNode)
                 })
@@ -216,7 +208,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                         TypescriptLambdaHandlerSearch.isFunctionLambdaHandlerCandidate(declaration.initializer, false)
                     ) {
                         handlers.push({
-                            filename: this._filename,
+                            filename: this.filename,
                             handlerName: `${this._baseFilename}.${declaration.name.getText()}`,
                             range: getRange(declaration)
                         })
