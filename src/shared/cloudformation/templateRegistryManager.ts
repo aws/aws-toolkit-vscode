@@ -6,10 +6,12 @@
 import * as vscode from 'vscode'
 import { CloudFormationTemplateRegistry } from './templateRegistry'
 
+interface
+
 export class CloudFormationTemplateRegistryManager implements vscode.Disposable {
     private readonly disposables: vscode.Disposable[] = []
     private _isDisposed: boolean = false
-    private currGlob: vscode.GlobPattern = ''
+    private globs: vscode.GlobPattern[] = []
 
     public constructor(private readonly registry: CloudFormationTemplateRegistry) {
         this.disposables.push(
@@ -20,18 +22,18 @@ export class CloudFormationTemplateRegistryManager implements vscode.Disposable 
     }
 
     /**
-     * Sets the glob pattern to use for lookups and resets the registry to use it.
-     * Throws an error if this manager has already been disposed
-     * @param glob vscode.GlobPattern used for lookups
+     * Adds a glob pattern to use for lookups and resets the registry to use it.
+     * Added templates cannot be removed without restarting the extension.
+     * Throws an error if this manager has already been disposed.
+     * @param glob vscode.GlobPattern to be used for lookups
      */
-    public async setTemplateGlob(glob: vscode.GlobPattern): Promise<void> {
+    public async addTemplateGlob(glob: vscode.GlobPattern): Promise<void> {
         if (this._isDisposed) {
             throw new Error('Manager has already been disposed!')
         }
-        this.currGlob = glob
-        this.disposeDisposables()
+        this.globs.push(glob)
 
-        const watcher = vscode.workspace.createFileSystemWatcher(this.currGlob)
+        const watcher = vscode.workspace.createFileSystemWatcher(glob)
         this.setWatcher(watcher)
 
         await this.rebuildRegistry()
@@ -53,8 +55,10 @@ export class CloudFormationTemplateRegistryManager implements vscode.Disposable 
      */
     private async rebuildRegistry(): Promise<void> {
         this.registry.reset()
-        const templateUris = await vscode.workspace.findFiles(this.currGlob)
-        await this.registry.addTemplatesToRegistry(templateUris)
+        for (const glob of this.globs) {
+            const templateUris = await vscode.workspace.findFiles(glob)
+            await this.registry.addTemplatesToRegistry(templateUris)
+        }
     }
 
     /**
