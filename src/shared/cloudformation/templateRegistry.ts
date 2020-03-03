@@ -3,10 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as path from 'path'
-import { fileURLToPath, pathToFileURL } from 'url'
+import { fileURLToPath } from 'url'
 import * as vscode from 'vscode'
-import { FileWatcherListener } from '../utilities/fileSystemWatcher'
+import { getLogger } from '../logger/logger'
 import { CloudFormation } from './cloudformation'
 
 let templateRegistry: CloudFormationTemplateRegistry | undefined
@@ -28,50 +27,10 @@ export function setTemplateRegistry(registry: CloudFormationTemplateRegistry | u
 export interface CloudFormationTemplateRegistry {
     registeredTemplates: Map<string, CloudFormation.Template>
     getRegisteredTemplate(templatePath: string): CloudFormation.Template | undefined
-    addTemplateToTemplateData(templatePath: vscode.Uri): Promise<void>
-    removeTemplateFromRegistry(templatePath: vscode.Uri): void
-}
-
-export class DefaultCloudFormationTemplateRegistryListener implements FileWatcherListener {
-    public constructor(private readonly registry: CloudFormationTemplateRegistry) {}
-
-    /**
-     * Function used by a vscode.FileSystemWatcher to handle an onDidChange event.
-     * Adds template to data map. TODO: Emit event
-     * @param templateUri vscode.Uri for the changed template file
-     */
-    public async onListenedChange(templatePath: vscode.Uri): Promise<void> {
-        await this.registry.addTemplateToTemplateData(templatePath)
-        // TODO: fire event
-    }
-
-    /**
-     * Function used by a vscode.FileSystemWatcher to handle an onDidCreate event.
-     * Adds template to data map. TODO: Emit event
-     * @param templateUri vscode.Uri for the created template file
-     */
-    public async onListenedCreate(templatePath: vscode.Uri): Promise<void> {
-        await this.registry.addTemplateToTemplateData(templatePath)
-        // TODO: fire event
-    }
-
-    /**
-     * Function used by a vscode.FileSystemWatcher to handle an onDidDelete event.
-     * Removes template from data map. TODO: Emit event
-     * @param templateUri vscode.Uri for the deleted template file
-     */
-    public async onListenedDelete(templatePath: vscode.Uri): Promise<void> {
-        this.registry.removeTemplateFromRegistry(templatePath)
-        // TODO: fire event
-    }
-
-    /**
-     * Disposes the  vscode.EventEmitters tied to this class
-     * // TODO: Add event emitters to the class and dispose of them here
-     */
-    public dispose(): void {
-        // TODO: Add event emitters to be disposed
-    }
+    addTemplateToRegistry(templateUri: vscode.Uri): Promise<void>
+    addTemplatesToRegistry(templateUris: vscode.Uri[]): Promise<void>
+    removeTemplateFromRegistry(templateUri: vscode.Uri): void
+    reset(): void
 }
 
 export class DefaultCloudFormationTemplateRegistry implements CloudFormationTemplateRegistry {
@@ -99,45 +58,44 @@ export class DefaultCloudFormationTemplateRegistry implements CloudFormationTemp
     }
 
     /**
-     * Adds template to template map. Wipes any existing template in its place with newly-parsed copy of the data.
-     *
-     * ***THIS SHOULD NOT BE CALLED EXTERNALLY OUTSIDE OF THE INITIAL REGISTRY POPULATION!!!***
-     * @param templatePath vscode.Uri containing the template to load in
+     * Adds template to registry. Wipes any existing template in its place with newly-parsed copy of the data.
+     * @param templateUri vscode.Uri containing the template to load in
      */
-    public async addTemplateToTemplateData(templatePath: vscode.Uri): Promise<void> {
-        const pathAsString = fileURLToPath(templatePath.toString())
+    public async addTemplateToRegistry(templateUri: vscode.Uri): Promise<void> {
+        const pathAsString = fileURLToPath(templateUri.fsPath)
         const resources = await CloudFormation.load(pathAsString)
         this.templateRegistryData.set(pathAsString, resources)
     }
 
-    public removeTemplateFromRegistry(templatePath: vscode.Uri): void {
-        const pathAsString = fileURLToPath(templatePath.toString())
+    /**
+     * Removes a template from the registry.
+     * @param templateUri vscode.Uri containing template to remove
+     */
+    public removeTemplateFromRegistry(templateUri: vscode.Uri): void {
+        const pathAsString = fileURLToPath(templateUri.fsPath)
         this.templateRegistryData.delete(pathAsString)
     }
-}
 
-/**
- * Normalizes filepaths by lowercasing the drive letter for absolute paths on Windows. Does not affect:
- * * relative paths
- * * Unix paths
- * @param filepath Filepath to normalize
- */
-export function normalizePathIfWindows(filepath: string): string {
-    let alteredPath = filepath
-    if (path.isAbsolute(filepath)) {
-        const root = path.parse(filepath).root
-        if (root !== '/') {
-            alteredPath = `${filepath.charAt(0).toLowerCase()}${filepath.slice(1)}`
-        }
+    /**
+     * Removes all templates from the registry.
+     */
+    public reset() {
+        this.templateRegistryData.clear()
     }
 
-    return alteredPath
-}
-
-/**
- * Turns strings to URIs.
- * @param path Path to convert to a URI
- */
-export function pathToUri(filepath: string): vscode.Uri {
-    return vscode.Uri.parse(pathToFileURL(filepath).toString())
+    /**
+     * Adds multiple templates to the registry.
+     * Invalid templates will have a message logged but otherwise will not report a failure.
+     * @param templateUris Array of vscode.Uris containing templates to remove
+     */
+    public async addTemplatesToRegistry(templateUris: vscode.Uri[]) {
+        for (const templateUri of templateUris) {
+            try {
+                await this.addTemplateToRegistry(templateUri)
+            } catch (e) {
+                const err = e as Error
+                getLogger().verbose(`Template ${templateUri} is malformed: ${err.message}`)
+            }
+        }
+    }
 }

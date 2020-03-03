@@ -6,9 +6,10 @@
 import * as assert from 'assert'
 import * as path from 'path'
 import * as sinon from 'sinon'
+import * as vscode from 'vscode'
 
 import { populateRegistry } from '../../../shared/cloudformation/activation'
-import { normalizePathIfWindows, pathToUri } from '../../../shared/cloudformation/templateRegistry'
+import { normalizePathIfWindows } from '../../../shared/utilities/pathUtils'
 import { FakeRegistry } from './cloudformationTestUtils'
 
 describe('CloudFormation activation', async () => {
@@ -27,7 +28,7 @@ describe('CloudFormation activation', async () => {
             const templateFile = normalizePathIfWindows(path.join('asdf', 'template.yaml'))
             const registry = new FakeRegistry()
             const addStub = sandbox.stub(registry, 'addTemplateToTemplateData')
-            await populateRegistry(registry, [pathToUri(templateFile)])
+            await populateRegistry(registry, [vscode.Uri.file(templateFile)])
             assert.ok(addStub.calledOnce)
         })
 
@@ -36,7 +37,7 @@ describe('CloudFormation activation', async () => {
             const templateFile2 = normalizePathIfWindows(path.join('asdf', 'template2.yaml'))
             const registry = new FakeRegistry()
             const addStub = sandbox.stub(registry, 'addTemplateToTemplateData')
-            await populateRegistry(registry, [pathToUri(templateFile), pathToUri(templateFile2)])
+            await populateRegistry(registry, [vscode.Uri.file(templateFile), vscode.Uri.file(templateFile2)])
             assert.ok(addStub.calledTwice)
         })
 
@@ -47,7 +48,7 @@ describe('CloudFormation activation', async () => {
             const registry = new FakeRegistry()
             const addStub = sandbox.stub(registry, 'addTemplateToTemplateData')
             addStub.onSecondCall().throws('not good!')
-            await populateRegistry(registry, [pathToUri(templateFile), pathToUri(templateFile2), pathToUri(templateFile3)])
+            await populateRegistry(registry, [vscode.Uri.file(templateFile), vscode.Uri.file(templateFile2), vscode.Uri.file(templateFile3)])
             assert.ok(addStub.calledThrice)
         })
     })

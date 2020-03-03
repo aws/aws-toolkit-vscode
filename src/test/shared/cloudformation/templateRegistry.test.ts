@@ -8,9 +8,10 @@ import * as path from 'path'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 
-import { CloudFormationTemplateRegistry, DefaultCloudFormationTemplateRegistry, DefaultCloudFormationTemplateRegistryListener, normalizePathIfWindows, pathToUri } from '../../../shared/cloudformation/templateRegistry'
+import { CloudFormationTemplateRegistry, DefaultCloudFormationTemplateRegistry, DefaultCloudFormationTemplateRegistryListener } from '../../../shared/cloudformation/templateRegistry'
 import { rmrf } from '../../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
+import { normalizePathIfWindows } from '../../../shared/utilities/pathUtils'
 import { assertThrowsError } from '../utilities/assertUtils'
 import { badYaml, FakeRegistry, makeSampleSamTemplateYaml, strToYamlFile } from './cloudformationTestUtils'
 
@@ -36,7 +37,7 @@ describe('CloudFormation Template Registry', async () => {
             it ('adds data from a template to the registry', async () => {
                 const filename = normalizePathIfWindows(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(goodYaml1, filename)
-                await testRegistry.addTemplateToTemplateData(pathToUri(filename))
+                await testRegistry.addTemplateToTemplateData(vscode.Uri.file(filename))
 
                 assert.strictEqual(testRegistry.registeredTemplates.size, 1)
 
@@ -48,7 +49,7 @@ describe('CloudFormation Template Registry', async () => {
                 const filename = normalizePathIfWindows(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(badYaml, filename)
 
-                await assertThrowsError(async () => await testRegistry.addTemplateToTemplateData(pathToUri(filename)))
+                await assertThrowsError(async () => await testRegistry.addTemplateToTemplateData(vscode.Uri.file(filename)))
             })
         })
 
@@ -60,18 +61,18 @@ describe('CloudFormation Template Registry', async () => {
             it ('returns an populated map if the registry has a registered template', async () => {
                 const filename = normalizePathIfWindows(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(goodYaml1, filename)
-                await testRegistry.addTemplateToTemplateData(pathToUri(filename))
+                await testRegistry.addTemplateToTemplateData(vscode.Uri.file(filename))
                 assert.strictEqual(testRegistry.registeredTemplates.size, 1)
             })
 
             it ('returns an populated map if the registry has multiple registered templates', async () => {
                 const filename = normalizePathIfWindows(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(goodYaml1, filename)
-                await testRegistry.addTemplateToTemplateData(pathToUri(filename))
+                await testRegistry.addTemplateToTemplateData(vscode.Uri.file(filename))
 
                 const filename2 = normalizePathIfWindows(path.join(tempFolder, 'template2.yaml'))
                 await strToYamlFile(goodYaml2, filename2)
-                await testRegistry.addTemplateToTemplateData(pathToUri(filename2))
+                await testRegistry.addTemplateToTemplateData(vscode.Uri.file(filename2))
 
                 assert.strictEqual(testRegistry.registeredTemplates.size, 2)
             })
@@ -85,7 +86,7 @@ describe('CloudFormation Template Registry', async () => {
             it ('returns undefined if the registry does not contain the template in question', async () => {
                 const filename = normalizePathIfWindows(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(goodYaml1, filename)
-                await testRegistry.addTemplateToTemplateData(pathToUri(filename))
+                await testRegistry.addTemplateToTemplateData(vscode.Uri.file(filename))
 
                 assert.strictEqual(testRegistry.getRegisteredTemplate('not-the-template.yaml'), undefined)
             })
@@ -93,7 +94,7 @@ describe('CloudFormation Template Registry', async () => {
             it ('returns a template if the registry has registered said template', async () => {
                 const filename = normalizePathIfWindows(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(goodYaml1, filename)
-                await testRegistry.addTemplateToTemplateData(pathToUri(filename))
+                await testRegistry.addTemplateToTemplateData(vscode.Uri.file(filename))
 
                 assert.ok(testRegistry.getRegisteredTemplate(filename))
             })
@@ -101,11 +102,11 @@ describe('CloudFormation Template Registry', async () => {
             it ('returns a template if the registry has multiple registered templates, including the template in question', async () => {
                 const filename = normalizePathIfWindows(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(goodYaml1, filename)
-                await testRegistry.addTemplateToTemplateData(pathToUri(filename))
+                await testRegistry.addTemplateToTemplateData(vscode.Uri.file(filename))
 
                 const filename2 = normalizePathIfWindows(path.join(tempFolder, 'template2.yaml'))
                 await strToYamlFile(goodYaml2, filename2)
-                await testRegistry.addTemplateToTemplateData(pathToUri(filename2))
+                await testRegistry.addTemplateToTemplateData(vscode.Uri.file(filename2))
 
                 assert.ok(testRegistry.getRegisteredTemplate(filename))
                 assert.ok(testRegistry.getRegisteredTemplate(filename))
@@ -116,22 +117,22 @@ describe('CloudFormation Template Registry', async () => {
             it ('removes an added template', async () => {
                 const filename = normalizePathIfWindows(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(goodYaml1, filename)
-                await testRegistry.addTemplateToTemplateData(pathToUri(filename))
+                await testRegistry.addTemplateToTemplateData(vscode.Uri.file(filename))
 
                 assert.strictEqual(testRegistry.registeredTemplates.size, 1)
 
-                testRegistry.removeTemplateFromRegistry(pathToUri(filename))
+                testRegistry.removeTemplateFromRegistry(vscode.Uri.file(filename))
                 assert.strictEqual(testRegistry.registeredTemplates.size, 0)
             })
 
             it ('does not affect the registry if a nonexistant template is removed', async () => {
                 const filename = normalizePathIfWindows(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(goodYaml1, filename)
-                await testRegistry.addTemplateToTemplateData(pathToUri(filename))
+                await testRegistry.addTemplateToTemplateData(vscode.Uri.file(filename))
 
                 assert.strictEqual(testRegistry.registeredTemplates.size, 1)
 
-                testRegistry.removeTemplateFromRegistry(pathToUri('wrong-template.yaml'))
+                testRegistry.removeTemplateFromRegistry(vscode.Uri.file(path.join(tempFolder, 'wrong-template.yaml')))
                 assert.strictEqual(testRegistry.registeredTemplates.size, 1)
             })
         })
