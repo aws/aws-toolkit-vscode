@@ -269,7 +269,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
 
         functionName ?: throw RuntimeConfigurationError(message("lambda.run_configuration.sam.no_function_specified"))
 
-        val templateFile = LocalFileSystem.getInstance().findFileByPath(templatePath)
+        val templateFile = LocalFileSystem.getInstance().refreshAndFindFileByPath(templatePath)
             ?: throw RuntimeConfigurationError(message("lambda.run_configuration.sam.template_file_not_found"))
 
         val function = SamTemplateUtils.findFunctionsFromTemplate(

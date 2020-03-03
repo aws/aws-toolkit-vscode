@@ -116,7 +116,7 @@ class LambdaDaemonHost(project: Project) : LifetimedProjectComponent(project) {
             settings = runManager.createConfiguration(configurationToAdd, factory)
 
             runManager.setTemporaryConfiguration(settings)
-            runManager.addConfiguration(settings, isShared = false) // Match platform default of not saving run configs by default
+            runManager.addConfiguration(settings)
         }
 
         runManager.selectedConfiguration = settings

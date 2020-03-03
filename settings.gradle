@@ -7,7 +7,10 @@ include 'resources'
 include 'telemetry-client'
 include 'core'
 include 'jetbrains-core'
-include 'jetbrains-core-gui'
+// Only include gui tests for 2019.2 and 2019.3 as the framework does not exist on 2020.1
+if (properties.get("ideProfileName") != "2020.1" && System.env.ALTERNATIVE_IDE_PROFILE_NAME != "2020.1") {
+    include 'jetbrains-core-gui'
+}
 include 'jetbrains-ultimate'
 if (!properties.containsKey("skipRider")) {
     include 'jetbrains-rider'

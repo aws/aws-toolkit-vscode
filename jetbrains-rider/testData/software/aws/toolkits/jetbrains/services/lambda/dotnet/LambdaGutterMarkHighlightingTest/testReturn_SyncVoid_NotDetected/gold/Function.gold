@@ -8,7 +8,7 @@ namespace HelloWorld
 {
     public class Function
     {
-        public void FunctionHandler(APIGatewayProxyRequest apigProxyEvent, ILambdaContext context)
+        public void <AWS_LAMBDA_RUN_METHOD_GUTTER_MARK>FunctionHandler</AWS_LAMBDA_RUN_METHOD_GUTTER_MARK>(APIGatewayProxyRequest apigProxyEvent, ILambdaContext context)
         {
             return;
         }

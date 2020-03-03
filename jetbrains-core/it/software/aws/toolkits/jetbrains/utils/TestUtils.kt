@@ -22,12 +22,14 @@ import com.intellij.xdebugger.XDebuggerManager
 import com.intellij.xdebugger.XDebuggerManagerListener
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
+import kotlin.test.assertNotNull
 
 fun executeRunConfiguration(
     runConfiguration: RunConfiguration,
     executorId: String = DefaultRunExecutor.EXECUTOR_ID
 ): Output {
     val executor = ExecutorRegistry.getInstance().getExecutorById(executorId)
+    assertNotNull(executor)
     val executionFuture = CompletableFuture<Output>()
     runInEdt {
         val executionEnvironment = ExecutionEnvironmentBuilder.create(executor, runConfiguration).build()

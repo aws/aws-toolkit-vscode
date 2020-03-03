@@ -14,7 +14,10 @@ intellij {
     updateSinceUntilBuild false
     downloadSources false
     instrumentCode false
-    plugins = idePlugins("IC") + [guiTestFramework(), project(":")]
+    // GUI test framework is not avilable in 2020.1
+    if(resolveIdeProfileName() != "2020.1") {
+        plugins = idePlugins("IC") + [guiTestFramework(), project(":")]
+    }
 }
 
 jacoco.applyTo(runIde)

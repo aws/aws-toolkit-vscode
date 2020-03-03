@@ -33,7 +33,7 @@ namespace HelloWorld
 
     public class MyCustomSerializer : ILambdaSerializer
     {
-        public T Deserialize<T>(Stream requestStream)
+        public T <AWS_LAMBDA_RUN_METHOD_GUTTER_MARK>Deserialize</AWS_LAMBDA_RUN_METHOD_GUTTER_MARK><T>(Stream requestStream)
         {
             throw new System.NotImplementedException();
         }

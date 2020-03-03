@@ -6,8 +6,7 @@ package software.aws.toolkits.jetbrains.ui.tree;
 
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.util.Disposer;
-import com.intellij.util.concurrency.Invoker;
-import com.intellij.util.concurrency.InvokerSupplier;
+import software.aws.toolkits.jetbrains.ui.tree.Invoker;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.concurrency.AsyncPromise;
 import org.junit.Assert;
@@ -19,6 +18,7 @@ import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 import java.awt.EventQueue;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -32,7 +32,7 @@ public class TreeTest implements Disposable {
   private final AsyncPromise<Throwable> promise = new AsyncPromise<>();
   private JTree tree;
 
-  public TreeTest(int minutes, Consumer<TreeTest> consumer, Function<Disposable, TreeModel> function) {
+  public TreeTest(int minutes, Consumer<TreeTest> consumer, Function<Disposable, TreeModel> function) throws TimeoutException {
     assert !EventQueue.isDispatchThread() : "main thread is expected";
     invokeLater(() -> {
       tree = new JTree(function.apply(this));
@@ -105,11 +105,11 @@ public class TreeTest implements Disposable {
     return tree;
   }
 
-  public static void test(Supplier<TreeNode> supplier, Consumer<TreeTest> consumer) {
+  public static void test(Supplier<TreeNode> supplier, Consumer<TreeTest> consumer) throws TimeoutException {
     test(2, supplier, consumer);
   }
 
-  public static void test(int minutes, Supplier<TreeNode> supplier, Consumer<TreeTest> consumer) {
+  public static void test(int minutes, Supplier<TreeNode> supplier, Consumer<TreeTest> consumer) throws TimeoutException {
     new TreeTest(minutes, consumer, parent -> model(supplier, FAST, false, null));
     new TreeTest(minutes, consumer, parent -> model(supplier, SLOW, false, null));
     new TreeTest(minutes, consumer, parent -> model(supplier, FAST, true, new Invoker.EDT(parent)));

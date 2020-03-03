@@ -37,7 +37,7 @@ class ToolkitToolWindowManager(private val project: Project) {
             val content = ContentImpl(component, title, true)
             val toolWindow = windowManager.getToolWindow(type.id)
                 ?: windowManager.registerToolWindow(type.id, true, type.anchor, project, true).also {
-                    it.icon = type.icon
+                    it.setIcon(type.icon)
                     it.stripeTitle = type.title
                 }
             Disposer.register(content, Disposable { closeWindowIfEmpty(toolWindow, type.id) })

@@ -31,6 +31,8 @@ static def ideProfiles() {
                 ],
                 "RD": [
                     sdkVersion: "RD-2019.2",
+                    rdGenVersion: "0.192.36",
+                    nugetVersion: "2019.2.0",
                     plugins: [
                         "yaml"
                     ]
@@ -69,6 +71,49 @@ static def ideProfiles() {
                 ],
                 "RD": [
                     sdkVersion: "RD-2019.3",
+                    rdGenVersion: "0.193.51",
+                    nugetVersion: "2019.3.0",
+                    plugins: [
+                        "yaml"
+                    ]
+                ]
+            ]
+        ],
+        "2020.1": [
+            "sinceVersion": "201",
+            "untilVersion": "201.*",
+            "products": [
+                "IC": [
+                    sdkVersion: "IC-201.5985.32-EAP-SNAPSHOT",
+                    plugins: [
+                        "terminal",
+                        "yaml",
+                        "PythonCore:201.5985.32",
+                        "java",
+                        "gradle",
+                        "maven",
+                        "properties", // Used by Maven
+                        "Docker:201.5985.25"
+                    ]
+                ],
+                "IU": [
+                    sdkVersion: "IU-201.5985.32-EAP-SNAPSHOT",
+                    plugins: [
+                        "terminal",
+                        "platform-images", // Used by a bunch of plugins
+                        "Pythonid:201.5985.32",
+                        "yaml",
+                        "stats-collector", // Transitive, used by JavaScriptLanguage
+                        "JavaScriptLanguage",
+                        "JavaScriptDebugger",
+                        "CSS",
+                        "DatabaseTools"
+                    ]
+                ],
+                "RD": [
+                    sdkVersion: "RD-2020.1-SNAPSHOT",
+                    rdGenVersion: "0.201.65",
+                    nugetVersion: "2020.1.0-eap01",
                     plugins: [
                         "yaml"
                     ]
@@ -118,6 +163,22 @@ def guiTestFramework() {
     return guiVersion
 }
 
+def rdGenVersion() {
+    def rdGen = ideProduct("RD").rdGenVersion
+    if (rdGen == null) {
+        throw new IllegalArgumentException("Missing 'rdGenVersion' in 'RD' product for ${resolveIdeProfileName()}")
+    }
+    return rdGen
+}
+
+def riderNugetSdkVersion() {
+    def rdGen = ideProduct("RD").nugetVersion
+    if (rdGen == null) {
+        throw new IllegalArgumentException("Missing 'nugetVersion' in 'RD' product for ${resolveIdeProfileName()}")
+    }
+    return rdGen
+}
+
 def ideProfile() {
     def profileName = resolveIdeProfileName()
     def profile = ideProfiles()[profileName]
@@ -155,6 +216,8 @@ ext {
     ideUntilVersion = this.&ideUntilVersion
     ideProfile = this.&ideProfile
     guiTestFramework = this.&guiTestFramework
+    rdGenVersion = this.&rdGenVersion
+    riderNugetSdkVersion = this.&riderNugetSdkVersion
     resolveIdeProfileName = this.&resolveIdeProfileName
     shortenVersion = this.&shortenVersion
 }

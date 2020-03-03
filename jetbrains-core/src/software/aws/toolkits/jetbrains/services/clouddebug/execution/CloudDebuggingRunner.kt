@@ -32,7 +32,7 @@ class CloudDebuggingRunner : AsyncProgramRunner<RunnerSettings>() {
     }
 
     override fun execute(environment: ExecutionEnvironment, state: RunProfileState): Promise<RunContentDescriptor?> {
-        val runPromise = AsyncPromise<RunContentDescriptor>()
+        val runPromise = AsyncPromise<RunContentDescriptor?>()
         val runContentDescriptor = state.execute(environment.executor, this)?.let {
             RunContentBuilder(it, environment).showRunContent(environment.contentToReuse)
         }

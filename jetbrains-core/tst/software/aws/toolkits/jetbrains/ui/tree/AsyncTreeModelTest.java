@@ -21,8 +21,7 @@ import com.intellij.testFramework.ProjectRule;
 import com.intellij.ui.tree.TreePathUtil;
 import com.intellij.ui.tree.TreeVisitor;
 import com.intellij.util.ArrayUtilRt;
-import com.intellij.util.concurrency.Invoker;
-import com.intellij.util.concurrency.InvokerSupplier;
+import software.aws.toolkits.jetbrains.ui.tree.Invoker;
 import com.intellij.util.ui.tree.AbstractTreeModel;
 import com.intellij.util.ui.tree.TreeModelAdapter;
 
@@ -62,7 +61,7 @@ public final class AsyncTreeModelTest {
   public ProjectRule projectRule = new ProjectRule();
 
   @Test
-  public void testAggressiveUpdating() {
+  public void testAggressiveUpdating() throws TimeoutException {
     testBackgroundThread(() -> null, test -> test.updateModelAndWait(model -> {
       for (int i = 0; i < 10000; i++) ((DefaultTreeModel)model).setRoot(createRoot());
     }, test::done), false, 0);
@@ -81,7 +80,7 @@ public final class AsyncTreeModelTest {
   }
 
   @Test
-  public void testNullRoot() {
+  public void testNullRoot() throws TimeoutException {
     testAsync(() -> null, test
       -> testPathState0(test.tree, ()
       -> test.updateModelAndWait(model -> ((DefaultTreeModel)model).setRoot(createRoot()), ()
@@ -89,7 +88,7 @@ public final class AsyncTreeModelTest {
   }
 
   @Test
-  public void testRootOnly() {
+  public void testRootOnly() throws TimeoutException {
     testAsync(AsyncTreeModelTest::createRoot, test
       -> testPathState1(test.tree, ()
       -> test.updateModelAndWait(model -> ((DefaultTreeModel)model).setRoot(null), ()
@@ -97,12 +96,12 @@ public final class AsyncTreeModelTest {
   }
 
   @Test
-  public void testRootOnlyUpdate() {
+  public void testRootOnlyUpdate() throws TimeoutException {
     testRootOnlyUpdate(false);
     testRootOnlyUpdate(true);
   }
 
-  private static void testRootOnlyUpdate(boolean mutable) {
+  private static void testRootOnlyUpdate(boolean mutable) throws TimeoutException {
     TreeNode first = new Node("root", mutable);
     TreeNode second = new Node("root", mutable);
     assert mutable == first.equals(second);
@@ -123,7 +122,7 @@ public final class AsyncTreeModelTest {
   }
 
   @Test
-  public void testChildrenUpdate() {
+  public void testChildrenUpdate() throws TimeoutException {
     ArrayList<TreePath> list = new ArrayList<>();
     testAsync(AsyncTreeModelTest::createMutableRoot, test
       -> expandAll(test.tree, ()
@@ -181,7 +180,7 @@ public final class AsyncTreeModelTest {
       "        'gamma'\n";
 
   @Test
-  public void testChildren() {
+  public void testChildren() throws TimeoutException {
     TreeNode color = createColorNode();
     TreeNode digit = createDigitNode();
     TreeNode greek = createGreekNode();
@@ -232,7 +231,7 @@ public final class AsyncTreeModelTest {
       "        'epsilon'\n";
 
   @Test
-  public void testChildrenResolve() {
+  public void testChildrenResolve() throws TimeoutException {
     Node node = new Node("node");
     Node root = new Node("root", new Node("upper", new Node("middle", new Node("lower", node))));
     TreePath tp = TreePathUtil.convertArrayToTreePath(node.getPath());
@@ -244,7 +243,7 @@ public final class AsyncTreeModelTest {
   }
 
   @Test
-  public void testChildrenVisit() {
+  public void testChildrenVisit() throws TimeoutException {
     Node node = new Node("node");
     Node root = new Node("root", new Node("upper", new Node("middle", new Node("lower", node))));
     TreePath tp = TreePathUtil.convertArrayToTreePath(node.getPath(), Object::toString);
@@ -256,7 +255,7 @@ public final class AsyncTreeModelTest {
   }
 
   @Test
-  public void testChildrenVisitWithoutLoading() {
+  public void testChildrenVisitWithoutLoading() throws TimeoutException {
     Node node = new Node("node");
     Node root = new Node("root", new Node("upper", new Node("middle", new Node("lower", node))));
     TreePath tp = TreePathUtil.convertArrayToTreePath(node.getPath(), Object::toString);
@@ -269,7 +268,7 @@ public final class AsyncTreeModelTest {
   }
 
   @Test
-  public void testCollapsedNodeUpdateIfChildrenNotLoaded() {
+  public void testCollapsedNodeUpdateIfChildrenNotLoaded() throws TimeoutException {
     TreeNode color = createColorNode();
     TreeNode digit = createDigitNode();
     TreeNode greek = createGreekNode();
@@ -281,7 +280,7 @@ public final class AsyncTreeModelTest {
   }
 
   @Test
-  public void testCollapsedNodeUpdateIfChildrenLoaded() {
+  public void testCollapsedNodeUpdateIfChildrenLoaded() throws TimeoutException {
     TreeNode color = createColorNode();
     TreeNode digit = createDigitNode();
     TreeNode greek = createGreekNode();
@@ -295,7 +294,7 @@ public final class AsyncTreeModelTest {
   }
 
   @Test
-  public void testExpandedNodeUpdateIfChildrenLoaded() {
+  public void testExpandedNodeUpdateIfChildrenLoaded() throws TimeoutException {
     TreeNode color = createColorNode();
     TreeNode digit = createDigitNode();
     TreeNode greek = createGreekNode();
@@ -367,41 +366,41 @@ public final class AsyncTreeModelTest {
     sb.append("\n");
   }
 
-  private static void testAsync(Supplier<TreeNode> root, @NotNull Consumer<ModelTest> consumer) {
+  private static void testAsync(Supplier<TreeNode> root, @NotNull Consumer<ModelTest> consumer) throws TimeoutException {
     testAsync(root, consumer, false);
     testAsync(root, consumer, true);
   }
 
-  private static void testAsync(Supplier<TreeNode> root, @NotNull Consumer<ModelTest> consumer, boolean showLoadingNode) {
+  private static void testAsync(Supplier<TreeNode> root, @NotNull Consumer<ModelTest> consumer, boolean showLoadingNode) throws TimeoutException {
     testEventDispatchThread(root, consumer, showLoadingNode);
     testBackgroundThread(root, consumer, showLoadingNode);
     testBackgroundPool(root, consumer, showLoadingNode);
   }
 
-  private static void testEventDispatchThread(Supplier<TreeNode> root, Consumer<ModelTest> consumer, boolean showLoadingNode) {
+  private static void testEventDispatchThread(Supplier<TreeNode> root, Consumer<ModelTest> consumer, boolean showLoadingNode) throws TimeoutException {
     testEventDispatchThread(root, consumer, showLoadingNode, TreeTest.FAST);
     testEventDispatchThread(root, consumer, showLoadingNode, TreeTest.SLOW);
   }
 
-  private static void testEventDispatchThread(Supplier<TreeNode> root, Consumer<ModelTest> consumer, boolean showLoadingNode, int delay) {
+  private static void testEventDispatchThread(Supplier<TreeNode> root, Consumer<ModelTest> consumer, boolean showLoadingNode, int delay) throws TimeoutException {
     new AsyncTest(showLoadingNode, new EventDispatchThreadModel(delay, root)).start(consumer, getSecondsToWait(delay));
   }
 
-  private static void testBackgroundThread(Supplier<TreeNode> root, Consumer<ModelTest> consumer, boolean showLoadingNode) {
+  private static void testBackgroundThread(Supplier<TreeNode> root, Consumer<ModelTest> consumer, boolean showLoadingNode) throws TimeoutException {
     testBackgroundThread(root, consumer, showLoadingNode, TreeTest.FAST);
     testBackgroundThread(root, consumer, showLoadingNode, TreeTest.SLOW);
   }
 
-  private static void testBackgroundThread(Supplier<TreeNode> root, Consumer<ModelTest> consumer, boolean showLoadingNode, int delay) {
+  private static void testBackgroundThread(Supplier<TreeNode> root, Consumer<ModelTest> consumer, boolean showLoadingNode, int delay) throws TimeoutException {
     if (consumer != null) new AsyncTest(showLoadingNode, new BackgroundThreadModel(delay, root)).start(consumer, getSecondsToWait(delay));
   }
 
-  private static void testBackgroundPool(Supplier<TreeNode> root, Consumer<ModelTest> consumer, boolean showLoadingNode) {
+  private static void testBackgroundPool(Supplier<TreeNode> root, Consumer<ModelTest> consumer, boolean showLoadingNode) throws TimeoutException {
     testBackgroundPool(root, consumer, showLoadingNode, TreeTest.FAST);
     testBackgroundPool(root, consumer, showLoadingNode, TreeTest.SLOW);
   }
 
-  private static void testBackgroundPool(Supplier<TreeNode> root, Consumer<ModelTest> consumer, boolean showLoadingNode, int delay) {
+  private static void testBackgroundPool(Supplier<TreeNode> root, Consumer<ModelTest> consumer, boolean showLoadingNode, int delay) throws TimeoutException {
     if (consumer != null) new AsyncTest(showLoadingNode, new BackgroundPoolModel(delay, root)).start(consumer, getSecondsToWait(delay));
   }
 
@@ -451,7 +450,7 @@ public final class AsyncTreeModelTest {
       return model;
     }
 
-    void start(@NotNull Consumer<ModelTest> consumer, int seconds) {
+    void start(@NotNull Consumer<ModelTest> consumer, int seconds) throws TimeoutException {
       if (PRINT) System.out.println("start " + toString());
       assert !SwingUtilities.isEventDispatchThread() : "test should be started on the main thread";
       long time = System.currentTimeMillis();
@@ -755,12 +754,12 @@ public final class AsyncTreeModelTest {
 
 
   @Test
-  public void testNodePreservingOnEventDispatchThread() {
+  public void testNodePreservingOnEventDispatchThread() throws TimeoutException {
     testNodePreservingOnEventDispatchThread(false);
     testNodePreservingOnEventDispatchThread(true);
   }
 
-  private static void testNodePreservingOnEventDispatchThread(boolean showLoadingNode) {
+  private static void testNodePreservingOnEventDispatchThread(boolean showLoadingNode) throws TimeoutException {
     testNodePreserving(showLoadingNode, new GroupModel() {
       private final Invoker invoker = new Invoker.EDT(this);
 
@@ -773,12 +772,12 @@ public final class AsyncTreeModelTest {
   }
 
   @Test
-  public void testNodePreservingOnBackgroundThread() {
+  public void testNodePreservingOnBackgroundThread() throws TimeoutException {
     testNodePreservingOnBackgroundThread(false);
     testNodePreservingOnBackgroundThread(true);
   }
 
-  private static void testNodePreservingOnBackgroundThread(boolean showLoadingNode) {
+  private static void testNodePreservingOnBackgroundThread(boolean showLoadingNode) throws TimeoutException {
     testNodePreserving(showLoadingNode, new GroupModel() {
       private final Invoker invoker = new Invoker.BackgroundThread(this);
 
@@ -791,12 +790,12 @@ public final class AsyncTreeModelTest {
   }
 
   @Test
-  public void testNodePreservingOnBackgroundPool() {
+  public void testNodePreservingOnBackgroundPool() throws TimeoutException {
     testNodePreservingOnBackgroundPool(false);
     testNodePreservingOnBackgroundPool(true);
   }
 
-  private static void testNodePreservingOnBackgroundPool(boolean showLoadingNode) {
+  private static void testNodePreservingOnBackgroundPool(boolean showLoadingNode) throws TimeoutException {
     testNodePreserving(showLoadingNode, new GroupModel() {
       private final Invoker invoker = new Invoker.BackgroundPool(this);
 
@@ -808,7 +807,7 @@ public final class AsyncTreeModelTest {
     });
   }
 
-  private static void testNodePreserving(boolean showLoadingNode, @NotNull GroupModel model) {
+  private static void testNodePreserving(boolean showLoadingNode, @NotNull GroupModel model) throws TimeoutException {
     new AsyncTest(showLoadingNode, model).start(test -> testPathState(test.tree, "   +root\n      node\n", ()
       -> testNodePreserving(test, model, "first", ()
       -> testNodePreserving(test, model, "second", ()

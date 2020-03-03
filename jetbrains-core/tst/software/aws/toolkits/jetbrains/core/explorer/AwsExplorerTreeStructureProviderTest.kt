@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.core.explorer
 import com.intellij.openapi.application.runInEdt
 import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ProjectRule
+import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.tree.TreeUtil
 import com.nhaarman.mockitokotlin2.any
@@ -57,7 +58,9 @@ class AwsExplorerTreeStructureProviderTest {
 
         verify(mockExtension, atLeastOnce()).modify(any(), any(), any())
 
-        TreeUtil.collapseAll(model, 0)
+        runInEdtAndWait {
+            TreeUtil.collapseAll(model, 0)
+        }
     }
 
     private fun createTreeModel(): TreeModel {

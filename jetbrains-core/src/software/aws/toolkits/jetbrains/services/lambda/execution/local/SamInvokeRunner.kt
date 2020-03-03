@@ -75,7 +75,7 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
     override fun execute(environment: ExecutionEnvironment, state: RunProfileState): Promise<RunContentDescriptor?> {
         FileDocumentManager.getInstance().saveAllDocuments()
 
-        val buildingPromise = AsyncPromise<RunContentDescriptor>()
+        val buildingPromise = AsyncPromise<RunContentDescriptor?>()
         val samState = state as SamRunningState
         val lambdaSettings = samState.settings
         val module = getModule(samState.settings.handlerElement.containingFile)

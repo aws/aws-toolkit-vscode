@@ -30,6 +30,7 @@ import software.aws.toolkits.jetbrains.services.clouddebug.execution.CloudDebugR
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
 import software.aws.toolkits.resources.message
 import java.util.concurrent.CompletableFuture
+import kotlin.test.assertNotNull
 
 class EcsCloudDebugRunConfigurationTest {
     private val containerOptionsKey = "111"
@@ -409,6 +410,7 @@ class EcsCloudDebugRunConfigurationTest {
 
     private fun getCloudDebugRunningState(configuration: EcsCloudDebugRunConfiguration): CloudDebugRunState? {
         val executor = ExecutorRegistry.getInstance().getExecutorById(DefaultRunExecutor.EXECUTOR_ID)
+        assertNotNull(executor)
         val environment = ExecutionEnvironmentBuilder.create(
             DefaultDebugExecutor.getDebugExecutorInstance(),
             configuration

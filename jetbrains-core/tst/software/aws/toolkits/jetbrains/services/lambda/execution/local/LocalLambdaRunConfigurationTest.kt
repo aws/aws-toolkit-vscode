@@ -5,16 +5,15 @@ package software.aws.toolkits.jetbrains.services.lambda.execution.local
 
 import com.intellij.execution.ExecutorRegistry
 import com.intellij.execution.configurations.RuntimeConfigurationError
+import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.execution.executors.DefaultRunExecutor
-import com.intellij.execution.runners.ExecutionEnvironment
+import com.intellij.execution.runners.ExecutionEnvironmentBuilder
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.testFramework.runInEdtAndWait
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.After
@@ -35,6 +34,7 @@ import software.aws.toolkits.jetbrains.utils.rules.addModule
 import software.aws.toolkits.jetbrains.utils.toElement
 import software.aws.toolkits.resources.message
 import java.nio.file.Paths
+import kotlin.test.assertNotNull
 
 class LocalLambdaRunConfigurationTest {
     @Rule
@@ -720,10 +720,13 @@ class LocalLambdaRunConfigurationTest {
 
     private fun getState(runConfiguration: LocalLambdaRunConfiguration): SamRunningState {
         val executor = ExecutorRegistry.getInstance().getExecutorById(DefaultRunExecutor.EXECUTOR_ID)
-        val environmentMock = mock<ExecutionEnvironment> {
-            on { project } doReturn projectRule.project
-            on { getExecutor() } doReturn executor
-        }
-        return runConfiguration.getState(executor, environmentMock)
+        assertNotNull(executor)
+
+        val environment = ExecutionEnvironmentBuilder.create(
+            DefaultDebugExecutor.getDebugExecutorInstance(),
+            runConfiguration
+        ).build()
+
+        return runConfiguration.getState(executor, environment)
     }
 }
