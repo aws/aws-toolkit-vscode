@@ -7,16 +7,11 @@ import * as vscode from 'vscode'
 import { CloudFormationTemplateRegistry } from './templateRegistry'
 
 export class CloudFormationTemplateRegistryManager implements vscode.Disposable {
-
-    // we may want to move this to non-static to handle globs from any added watchers
-    // consider creating watchers from this class?
-    public static TEMPLATE_FILE_GLOB_PATTERN = '**/template.{yaml,yml}'
     private readonly disposables: vscode.Disposable[] = []
     private _isDisposed: boolean = false
+    private currGlob: vscode.GlobPattern = ''
 
-    public constructor(
-        private readonly registry: CloudFormationTemplateRegistry
-    ) {
+    public constructor(private readonly registry: CloudFormationTemplateRegistry) {
         this.disposables.push(
             vscode.workspace.onDidChangeWorkspaceFolders(async () => {
                 await this.rebuildRegistry()
@@ -24,30 +19,64 @@ export class CloudFormationTemplateRegistryManager implements vscode.Disposable 
         )
     }
 
-    public addWatcher(watcher: vscode.FileSystemWatcher) {
-        this.disposables.push(
-            watcher.onDidChange(async (uri) => this.registry.addTemplateToRegistry(uri))
-        )
-        this.disposables.push(
-            watcher.onDidCreate(async (uri) => this.registry.addTemplateToRegistry(uri))
-        )
-        this.disposables.push(
-            watcher.onDidDelete(async (uri) => this.registry.removeTemplateFromRegistry(uri))
-        )
+    /**
+     * Sets the glob pattern to use for lookups and resets the registry to use it.
+     * Throws an error if this manager has already been disposed
+     * @param glob vscode.GlobPattern used for lookups
+     */
+    public async setTemplateGlob(glob: vscode.GlobPattern): Promise<void> {
+        if (this._isDisposed) {
+            throw new Error('Manager has already been disposed!')
+        }
+        this.currGlob = glob
+        this.disposeDisposables()
+
+        const watcher = vscode.workspace.createFileSystemWatcher(this.currGlob)
+        this.setWatcher(watcher)
+
+        await this.rebuildRegistry()
     }
 
-    public async rebuildRegistry(): Promise<void> {
+    /**
+     * Disposes CloudFormationTemplateRegistryManager and marks as disposed.
+     */
+    public dispose(): void {
+        if (!this._isDisposed) {
+            this.disposeDisposables()
+            this._isDisposed = true
+        }
+    }
+
+    /**
+     * Clears and rebuilds registry using existing glob
+     * All functionality is currently internal to class, but can be made public if we want a manual "refresh" button
+     */
+    private async rebuildRegistry(): Promise<void> {
         this.registry.reset()
-        const templateUris = await vscode.workspace.findFiles(CloudFormationTemplateRegistryManager.TEMPLATE_FILE_GLOB_PATTERN)
+        const templateUris = await vscode.workspace.findFiles(this.currGlob)
         await this.registry.addTemplatesToRegistry(templateUris)
     }
 
-    public dispose() {
-        if (!this._isDisposed) {
-            for (const disposable of this.disposables) {
+    /**
+     * Disposes disposables without marking class as disposed. Also empties this.disposables.
+     */
+    private disposeDisposables(): void {
+        while (this.disposables.length > 0) {
+            const disposable = this.disposables.pop()
+            if (disposable) {
                 disposable.dispose()
             }
-            this._isDisposed = true
         }
+    }
+
+    /**
+     * Sets watcher functionality and adds to this.disposables
+     * @param watcher vscode.FileSystemWatcher
+     */
+    private setWatcher(watcher: vscode.FileSystemWatcher): void {
+        this.disposables.push(watcher)
+        this.disposables.push(watcher.onDidChange(async uri => this.registry.addTemplateToRegistry(uri)))
+        this.disposables.push(watcher.onDidCreate(async uri => this.registry.addTemplateToRegistry(uri)))
+        this.disposables.push(watcher.onDidDelete(async uri => this.registry.removeTemplateFromRegistry(uri)))
     }
 }

@@ -3,58 +3,63 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { fileURLToPath } from 'url'
 import * as vscode from 'vscode'
 import { getLogger } from '../logger/logger'
 import { CloudFormation } from './cloudformation'
 
-let templateRegistry: CloudFormationTemplateRegistry | undefined
-
-export function getTemplateRegistry(): CloudFormationTemplateRegistry {
-    if (!templateRegistry) {
-        throw new Error(
-            'Template Registry not initialized. Extension code should call activate() from shared/cloudformation/activation, test code should call setTemplateRegistry().'
-        )
-    }
-
-    return templateRegistry
+export interface TemplateData {
+    templatePath: string
+    templateData: CloudFormation.Template
 }
 
-export function setTemplateRegistry(registry: CloudFormationTemplateRegistry | undefined): void {
-    templateRegistry = registry
-}
-
-export interface CloudFormationTemplateRegistry {
-    registeredTemplates: Map<string, CloudFormation.Template>
-    getRegisteredTemplate(templatePath: string): CloudFormation.Template | undefined
-    addTemplateToRegistry(templateUri: vscode.Uri): Promise<void>
-    addTemplatesToRegistry(templateUris: vscode.Uri[]): Promise<void>
-    removeTemplateFromRegistry(templateUri: vscode.Uri): void
-    reset(): void
-}
-
-export class DefaultCloudFormationTemplateRegistry implements CloudFormationTemplateRegistry {
+export class CloudFormationTemplateRegistry {
+    private static INSTANCE: CloudFormationTemplateRegistry | undefined
     private readonly templateRegistryData: Map<string, CloudFormation.Template>
 
-    public constructor () {
+    /**
+     * Returns the CloudFormationTemplateRegistry singleton.
+     * If the singleton doesn't exist, creates it.
+     */
+    public static getRegistry(): CloudFormationTemplateRegistry {
+        if (!CloudFormationTemplateRegistry.INSTANCE) {
+            CloudFormationTemplateRegistry.INSTANCE = new CloudFormationTemplateRegistry()
+        }
+
+        return CloudFormationTemplateRegistry.INSTANCE
+    }
+
+    public constructor() {
         this.templateRegistryData = new Map<string, CloudFormation.Template>()
     }
 
     /**
-     * Returns the registry's data in Map form.
-     * Key: template file name, Value: TemplateData object reflecting data in template
-     * TODO: Do we want to return this as a map, an array, or a JS object?
+     * Returns the registry's data as an array of TemplateData objects
      */
-    public get registeredTemplates(): Map<string, CloudFormation.Template> {
-        return this.templateRegistryData
+    public get registeredTemplates(): TemplateData[] {
+        const arr: TemplateData[] = []
+
+        for (const templatePath of this.templateRegistryData.keys()) {
+            const template = this.getRegisteredTemplate(templatePath)
+            if (template) {
+                arr.push(template)
+            }
+        }
+
+        return arr
     }
 
     /**
      * Get a specific template's data
      * @param templatePath Path to template of interest
      */
-    public getRegisteredTemplate(templatePath: string): CloudFormation.Template | undefined {
-        return this.templateRegistryData.get(templatePath)
+    public getRegisteredTemplate(templatePath: string): TemplateData | undefined {
+        const templateData = this.templateRegistryData.get(templatePath)
+        if (templateData) {
+            return {
+                templatePath,
+                templateData
+            }
+        }
     }
 
     /**
@@ -62,9 +67,9 @@ export class DefaultCloudFormationTemplateRegistry implements CloudFormationTemp
      * @param templateUri vscode.Uri containing the template to load in
      */
     public async addTemplateToRegistry(templateUri: vscode.Uri): Promise<void> {
-        const pathAsString = fileURLToPath(templateUri.fsPath)
-        const resources = await CloudFormation.load(pathAsString)
-        this.templateRegistryData.set(pathAsString, resources)
+        const pathAsString = templateUri.fsPath
+        const template = await CloudFormation.load(pathAsString)
+        this.templateRegistryData.set(pathAsString, template)
     }
 
     /**
@@ -72,7 +77,7 @@ export class DefaultCloudFormationTemplateRegistry implements CloudFormationTemp
      * @param templateUri vscode.Uri containing template to remove
      */
     public removeTemplateFromRegistry(templateUri: vscode.Uri): void {
-        const pathAsString = fileURLToPath(templateUri.fsPath)
+        const pathAsString = templateUri.fsPath
         this.templateRegistryData.delete(pathAsString)
     }
 

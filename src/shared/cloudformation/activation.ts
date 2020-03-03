@@ -5,11 +5,10 @@
 
 import * as vscode from 'vscode'
 
-import {
-    DefaultCloudFormationTemplateRegistry,
-    setTemplateRegistry
-} from './templateRegistry'
+import { CloudFormationTemplateRegistry } from './templateRegistry'
 import { CloudFormationTemplateRegistryManager } from './templateRegistryManager'
+
+const TEMPLATE_FILE_GLOB_PATTERN = '**/template.{yaml,yml}'
 
 /**
  * Creates a CloudFormationTemplateRegistry which retains the state of CloudFormation templates in a workspace.
@@ -18,18 +17,9 @@ import { CloudFormationTemplateRegistryManager } from './templateRegistryManager
  * @param extensionContext VS Code extension context
  * @param globPattern Glob pattern for files to track. Default: TEMPLATE_FILE_GLOB_PATTERN
  */
-export async function activate(
-    extensionContext: vscode.ExtensionContext
-): Promise<void> {
-    const registry = new DefaultCloudFormationTemplateRegistry()
+export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
+    const registry = CloudFormationTemplateRegistry.getRegistry()
     const manager = new CloudFormationTemplateRegistryManager(registry)
-    const watcher = vscode.workspace.createFileSystemWatcher(CloudFormationTemplateRegistryManager.TEMPLATE_FILE_GLOB_PATTERN)
-
-    manager.addWatcher(watcher)
-    await manager.rebuildRegistry()
-
-    setTemplateRegistry(registry)
-
+    await manager.setTemplateGlob(TEMPLATE_FILE_GLOB_PATTERN)
     extensionContext.subscriptions.push(manager)
-    extensionContext.subscriptions.push(watcher)
 }
