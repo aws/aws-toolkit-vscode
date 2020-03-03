@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import { CloudFormationTemplateRegistry } from './templateRegistry'
 import { CloudFormationTemplateRegistryManager } from './templateRegistryManager'
 
-const TEMPLATE_FILE_GLOB_PATTERN = '**/template.{yaml,yml}'
+export const TEMPLATE_FILE_GLOB_PATTERN = '**/template.{yaml,yml}'
 
 /**
  * Creates a CloudFormationTemplateRegistry which retains the state of CloudFormation templates in a workspace.
