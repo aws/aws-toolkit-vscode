@@ -3,9 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
 import * as path from 'path'
-import * as vscode from 'vscode'
 
 import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
 import { CloudFormationTemplateRegistryManager } from '../../shared/cloudformation/templateRegistryManager'
@@ -19,12 +17,13 @@ import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
  * Note: these tests are pretty shallow right now. They do not test the following:
  * * Adding/removing workspace folders
  */
-describe('CloudFormation Template Registry Manager', async () => {
+describe.only('CloudFormation Template Registry Manager', async () => {
     let registry: CloudFormationTemplateRegistry
     let manager: CloudFormationTemplateRegistryManager
     let workspaceDir: string
     let testDir: string
     let testDirNested: string
+    let dir: number = 0
 
     before(() => {
         try {
@@ -33,11 +32,11 @@ describe('CloudFormation Template Registry Manager', async () => {
             setLogger(new TestLogger())
         }
         workspaceDir = getTestWorkspaceFolder()
-        testDir = path.join(workspaceDir, 'cloudFormationTemplateRegistry')
-        testDirNested = path.join(testDir, 'nested')
     })
 
     beforeEach(async () => {
+        testDir = path.join(workspaceDir, dir.toString())
+        testDirNested = path.join(testDir, 'nested')
         await mkdir(testDirNested, { recursive: true })
         registry = new CloudFormationTemplateRegistry()
         manager = new CloudFormationTemplateRegistryManager(registry)
@@ -46,50 +45,40 @@ describe('CloudFormation Template Registry Manager', async () => {
     afterEach(async () => {
         manager.dispose()
         await rmrf(testDir)
+        dir++
     })
 
     it('adds initial template files with yaml and yml extensions at various nesting levels', async () => {
-        await createTestYamlTemplates(testDir, testDirNested)
+        await strToYamlFile(makeSampleSamTemplateYaml(true), path.join(testDir, 'test.yaml'))
+        await strToYamlFile(makeSampleSamTemplateYaml(false), path.join(testDirNested, 'test.yml'))
 
         await manager.addTemplateGlob('**/test.{yaml,yml}')
 
-        assert.strictEqual(await registryHasTargetNumberOfFiles(registry, 2), true)
+        await registryHasTargetNumberOfFiles(registry, 2)
     })
 
     it('adds dynamically-added template files with yaml and yml extensions at various nesting levels', async () => {
         await manager.addTemplateGlob('**/test.{yaml,yml}')
 
-        await createTestYamlTemplates(testDir, testDirNested)
+        await strToYamlFile(makeSampleSamTemplateYaml(false), path.join(testDir, 'test.yml'))
+        await strToYamlFile(makeSampleSamTemplateYaml(true), path.join(testDirNested, 'test.yaml'))
 
-        assert.strictEqual(await registryHasTargetNumberOfFiles(registry, 2), true)
+        await registryHasTargetNumberOfFiles(registry, 2)
     })
 
     it('can handle changed files', async () => {
         const filepath = path.join(testDir, 'changeMe.yml')
-
-        const filename = vscode.Uri.file(filepath)
-        await strToYamlFile(makeSampleSamTemplateYaml(false), filename.fsPath)
+        await strToYamlFile(makeSampleSamTemplateYaml(false), filepath)
 
         await manager.addTemplateGlob('**/changeMe.yml')
 
-        assert.strictEqual(await registryHasTargetNumberOfFiles(registry, 1), true)
+        await registryHasTargetNumberOfFiles(registry, 1)
 
-        const initialObj = registry.getRegisteredTemplate(filepath)
-        assert.ok(initialObj)
-        if (initialObj) {
-            assert.strictEqual(Object.keys(initialObj.template).includes('Globals'), false)
-        }
+        await queryRegistryForFileWithGlobalsKeyStatus(registry, filepath, false)
 
-        await strToYamlFile(makeSampleSamTemplateYaml(true), filename.fsPath)
+        await strToYamlFile(makeSampleSamTemplateYaml(true), filepath)
 
-        await new Promise(resolve => setTimeout(resolve, 500))
-        assert.strictEqual(await registryHasTargetNumberOfFiles(registry, 1), true)
-
-        const editedObj = registry.getRegisteredTemplate(filepath)
-        assert.ok(editedObj)
-        if (editedObj) {
-            assert.strictEqual(Object.keys(editedObj.template).includes('Globals'), true)
-        }
+        await queryRegistryForFileWithGlobalsKeyStatus(registry, filepath, true)
     })
 
     it('can handle deleted files', async () => {
@@ -99,36 +88,33 @@ describe('CloudFormation Template Registry Manager', async () => {
         // Otherwise, it seems the file is deleted before the file watcher realizes the file exists
         // This way, we know that a file watcher detects the create event on this file and thus is tracking it
         const filepath = path.join(testDir, 'deleteMe.yml')
+        await strToYamlFile(makeSampleSamTemplateYaml(false), filepath)
 
-        const filename = vscode.Uri.file(filepath)
-        await strToYamlFile(makeSampleSamTemplateYaml(false), filename.fsPath)
-
-        assert.strictEqual(await registryHasTargetNumberOfFiles(registry, 1), true)
+        await registryHasTargetNumberOfFiles(registry, 1)
 
         await rmrf(filepath)
 
-        assert.strictEqual(await registryHasTargetNumberOfFiles(registry, 0), true)
+        await registryHasTargetNumberOfFiles(registry, 0)
     })
 })
 
-async function registryHasTargetNumberOfFiles(
-    registry: CloudFormationTemplateRegistry,
-    target: number
-): Promise<boolean> {
+async function registryHasTargetNumberOfFiles(registry: CloudFormationTemplateRegistry, target: number) {
     while (registry.registeredTemplates.length !== target) {
         await new Promise(resolve => setTimeout(resolve, 20))
     }
-
-    return true
 }
 
-async function createTestYamlTemplates(testDir: string, testDirNested: string) {
-    const path1 = path.join(testDir, 'test.yml')
-    const path2 = path.join(testDirNested, 'test.yaml')
-
-    const filename = vscode.Uri.file(path1)
-    await strToYamlFile(makeSampleSamTemplateYaml(false), filename.fsPath)
-
-    const filename2 = vscode.Uri.file(path2)
-    await strToYamlFile(makeSampleSamTemplateYaml(false), filename2.fsPath)
+async function queryRegistryForFileWithGlobalsKeyStatus(
+    registry: CloudFormationTemplateRegistry,
+    filepath: string,
+    hasGlobals: boolean
+) {
+    let foundMatch = false
+    while (!foundMatch) {
+        await new Promise(resolve => setTimeout(resolve, 20))
+        const obj = registry.getRegisteredTemplate(filepath)
+        if (obj) {
+            foundMatch = Object.keys(obj.template).includes('Globals') === hasGlobals
+        }
+    }
 }
