@@ -59,6 +59,11 @@ allprojects {
             }
         }
     }
+
+    configurations {
+        runtimeClasspath.exclude group: "org.jetbrains.kotlin"
+        runtimeClasspath.exclude group: "org.jetbrains.kotlinx"
+    }
 }
 
 // Kotlin plugin seems to be bugging out when there are no kotlin sources
