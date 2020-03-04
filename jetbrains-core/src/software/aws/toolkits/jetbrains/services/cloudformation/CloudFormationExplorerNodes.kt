@@ -8,16 +8,16 @@ import icons.AwsIcons
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.amazon.awssdk.services.cloudformation.model.StackStatus
 import software.amazon.awssdk.services.cloudformation.model.StackSummary
-import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerService
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.CacheBackedAwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.services.cloudformation.resources.CloudFormationResources
 import software.aws.toolkits.jetbrains.utils.toHumanReadable
 
-class CloudFormationServiceNode(project: Project) : CacheBackedAwsExplorerServiceRootNode<StackSummary>(
+class CloudFormationServiceNode(project: Project, service: AwsExplorerServiceNode) : CacheBackedAwsExplorerServiceRootNode<StackSummary>(
     project,
-    AwsExplorerService.CLOUDFORMATION,
+    service,
     CloudFormationResources.ACTIVE_STACKS
 ) {
     override fun toNode(child: StackSummary): AwsExplorerNode<*> = CloudFormationStackNode(nodeProject, child.stackName(), child.stackStatus(), child.stackId())

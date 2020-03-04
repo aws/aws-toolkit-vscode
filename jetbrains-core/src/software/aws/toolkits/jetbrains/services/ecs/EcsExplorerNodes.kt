@@ -8,10 +8,10 @@ import icons.AwsIcons
 import software.amazon.awssdk.services.ecs.EcsClient
 import software.amazon.awssdk.services.ecs.model.Service
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
-import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerService
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceLocationNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceParentNode
@@ -19,7 +19,7 @@ import software.aws.toolkits.jetbrains.services.ecs.execution.EcsCloudDebugLocat
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
 import software.aws.toolkits.resources.message
 
-class EcsParentNode(project: Project) : AwsExplorerServiceRootNode(project, AwsExplorerService.ECS) {
+class EcsParentNode(project: Project, service: AwsExplorerServiceNode) : AwsExplorerServiceRootNode(project, service) {
     override fun getChildrenInternal(): List<AwsExplorerNode<*>> = listOf(
         EcsClusterParentNode(nodeProject) /*,
         EcsTaskDefinitionsParentNode(nodeProject)

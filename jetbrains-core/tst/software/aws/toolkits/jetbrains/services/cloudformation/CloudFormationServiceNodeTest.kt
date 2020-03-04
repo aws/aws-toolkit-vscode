@@ -12,6 +12,7 @@ import software.amazon.awssdk.services.cloudformation.model.StackStatus
 import software.amazon.awssdk.services.cloudformation.model.StackSummary
 import software.aws.toolkits.jetbrains.core.MockResourceCache
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.CloudFormationExplorerRootNode
 import software.aws.toolkits.jetbrains.services.cloudformation.resources.CloudFormationResources
 import java.util.concurrent.CompletableFuture
 
@@ -30,7 +31,7 @@ class CloudFormationServiceNodeTest {
     fun completedStacksAreShown() {
         resourceCache().stacksWithNames(listOf("Stack" to StackStatus.CREATE_COMPLETE))
 
-        val node = CloudFormationServiceNode(projectRule.project)
+        val node = CloudFormationServiceNode(projectRule.project, CF_EXPLORER_NODE)
 
         assertThat(node.children).hasOnlyOneElementSatisfying { assertThat(it.displayName()).isEqualTo("Stack") }
     }
@@ -39,7 +40,7 @@ class CloudFormationServiceNodeTest {
     fun deletedStacksAreNotShown() {
         resourceCache().stacksWithNames(listOf("Stack" to StackStatus.DELETE_COMPLETE))
 
-        val node = CloudFormationServiceNode(projectRule.project)
+        val node = CloudFormationServiceNode(projectRule.project, CF_EXPLORER_NODE)
 
         assertThat(node.children).hasOnlyElementsOfType(AwsExplorerEmptyNode::class.java)
     }
@@ -48,7 +49,7 @@ class CloudFormationServiceNodeTest {
     fun noStacksShowsEmptyNode() {
         resourceCache().stacksWithNames(emptyList())
 
-        val node = CloudFormationServiceNode(projectRule.project)
+        val node = CloudFormationServiceNode(projectRule.project, CF_EXPLORER_NODE)
 
         assertThat(node.children).hasOnlyElementsOfType(AwsExplorerEmptyNode::class.java)
     }
@@ -67,5 +68,9 @@ class CloudFormationServiceNodeTest {
                         .build()
                 }
             ))
+    }
+
+    private companion object {
+        val CF_EXPLORER_NODE = CloudFormationExplorerRootNode()
     }
 }

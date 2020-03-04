@@ -5,9 +5,9 @@ package software.aws.toolkits.jetbrains.core.explorer.nodes
 
 import com.intellij.ide.projectView.PresentationData
 import com.intellij.ide.util.treeView.AbstractTreeNode
+import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
-import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerService
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 
 /**
@@ -16,8 +16,9 @@ import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 class AwsExplorerRootNode(private val nodeProject: Project) : AbstractTreeNode<Any>(nodeProject, Object()) {
     private val regionProvider = AwsRegionProvider.getInstance()
     private val settings = ProjectAccountSettingsManager.getInstance(nodeProject)
+    private val EP_NAME = ExtensionPointName<AwsExplorerServiceNode>("aws.toolkit.explorer.serviceNode")
 
-    override fun getChildren(): List<AwsExplorerNode<*>> = AwsExplorerService.values()
+    override fun getChildren(): List<AwsExplorerNode<*>> = EP_NAME.extensionList
         .filter { regionProvider.isServiceSupported(settings.activeRegion, it.serviceId) }
         .map { it.buildServiceRootNode(nodeProject) }
 

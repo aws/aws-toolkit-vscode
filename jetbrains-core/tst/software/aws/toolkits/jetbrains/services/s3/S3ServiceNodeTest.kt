@@ -15,6 +15,7 @@ import software.aws.toolkits.jetbrains.core.MockResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerErrorNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.S3ExplorerRootNode
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
 import java.time.Instant
@@ -43,7 +44,7 @@ class S3ServiceNodeTest {
     fun s3BucketsAreListed() {
         val bucketList = listOf("bcd", "abc", "AEF", "ZZZ")
         resourceCache().s3buckets(bucketList)
-        val children = S3ServiceNode(projectRule.project).children
+        val children = S3ServiceNode(projectRule.project, S3_EXPLORER_NODE).children
 
         assertThat(children).allMatch { it is S3BucketNode }
         assertThat(children.filterIsInstance<S3BucketNode>().map { it.displayName() }).containsExactlyInAnyOrder(
@@ -58,7 +59,7 @@ class S3ServiceNodeTest {
     fun noBucketsInTheRegion() {
         val bucketList = emptyList<String>()
         resourceCache().s3buckets(bucketList)
-        val children = S3ServiceNode(projectRule.project).children
+        val children = S3ServiceNode(projectRule.project, S3_EXPLORER_NODE).children
         assertThat(children).allMatch { it is AwsExplorerEmptyNode }
     }
 
@@ -67,7 +68,7 @@ class S3ServiceNodeTest {
         resourceCache().addEntry(S3Resources.LIST_REGIONALIZED_BUCKETS, CompletableFuture<List<S3Resources.RegionalizedBucket>>().also {
             it.completeExceptionally(RuntimeException("Simulated error"))
         })
-        val children = S3ServiceNode(projectRule.project).children
+        val children = S3ServiceNode(projectRule.project, S3_EXPLORER_NODE).children
         assertThat(children).allMatch { it is AwsExplorerErrorNode }
     }
 
@@ -84,5 +85,9 @@ class S3ServiceNodeTest {
             S3Resources.LIST_REGIONALIZED_BUCKETS,
             CompletableFuture.completedFuture(names.map { S3Resources.RegionalizedBucket(bucketData(it), MockRegionProvider.getInstance().defaultRegion()) })
         )
+    }
+
+    private companion object {
+        val S3_EXPLORER_NODE = S3ExplorerRootNode()
     }
 }

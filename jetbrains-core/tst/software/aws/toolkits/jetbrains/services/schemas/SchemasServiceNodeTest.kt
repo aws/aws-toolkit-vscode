@@ -11,6 +11,7 @@ import org.junit.Test
 import software.amazon.awssdk.services.schemas.model.RegistrySummary
 import software.aws.toolkits.jetbrains.core.MockResourceCache
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.SchemasExplorerRootNode
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
 import java.util.concurrent.CompletableFuture
 
@@ -31,7 +32,7 @@ class SchemasServiceNodeTest {
         val registry2 = "aws.events"
         resourceCache().registries(listOf(registry1, registry2))
 
-        val node = SchemasServiceNode(projectRule.project)
+        val node = SchemasServiceNode(projectRule.project, SCHEMAS_EXPLORER_NODE)
 
         assertThat(node.children).hasSize(2)
 
@@ -42,7 +43,7 @@ class SchemasServiceNodeTest {
     fun noRegistriesShowsEmptyNode() {
         resourceCache().registries(emptyList())
 
-        val node = SchemasServiceNode(projectRule.project)
+        val node = SchemasServiceNode(projectRule.project, SCHEMAS_EXPLORER_NODE)
 
         assertThat(node.children).hasOnlyElementsOfType(AwsExplorerEmptyNode::class.java)
     }
@@ -59,5 +60,9 @@ class SchemasServiceNodeTest {
                         .build()
                 }
             ))
+    }
+
+    private companion object {
+        val SCHEMAS_EXPLORER_NODE = SchemasExplorerRootNode()
     }
 }

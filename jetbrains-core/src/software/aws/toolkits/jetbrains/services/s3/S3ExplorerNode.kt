@@ -8,13 +8,13 @@ import icons.AwsIcons
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.Bucket
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
-import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerService
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
 
-class S3ServiceNode(project: Project) : AwsExplorerServiceRootNode(project, AwsExplorerService.S3) {
+class S3ServiceNode(project: Project, service: AwsExplorerServiceNode) : AwsExplorerServiceRootNode(project, service) {
     override fun getChildrenInternal(): List<AwsExplorerNode<*>> =
         AwsResourceCache.getInstance(nodeProject).getResourceNow(S3Resources.listBucketsByActiveRegion(nodeProject)).map { S3BucketNode(nodeProject, it) }
 }

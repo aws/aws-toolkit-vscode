@@ -15,6 +15,7 @@ import software.amazon.awssdk.services.lambda.model.TracingMode
 import software.aws.toolkits.jetbrains.core.MockResourceCache
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerErrorNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.LambdaExplorerRootNode
 import software.aws.toolkits.jetbrains.services.lambda.resources.LambdaResources
 import java.util.concurrent.CompletableFuture
 
@@ -33,7 +34,7 @@ class LambdaServiceNodeTest {
     fun lambdaFunctionsAreListed() {
         resourceCache().lambdaFunctions(listOf("bcd", "abc", "zzz", "AEF"))
 
-        val children = LambdaServiceNode(projectRule.project).children
+        val children = LambdaServiceNode(projectRule.project, LAMBDA_EXPLORER_SERVICE_NODE).children
 
         assertThat(children).allMatch { it is LambdaFunctionNode }
         assertThat(children.filterIsInstance<LambdaFunctionNode>().map { it.functionName() }).containsExactlyInAnyOrder("abc", "AEF", "bcd", "zzz")
@@ -43,7 +44,7 @@ class LambdaServiceNodeTest {
     fun noFunctionsShowsEmptyList() {
         resourceCache().lambdaFunctions(emptyList())
 
-        val children = LambdaServiceNode(projectRule.project).children
+        val children = LambdaServiceNode(projectRule.project, LAMBDA_EXPLORER_SERVICE_NODE).children
 
         assertThat(children).hasSize(1)
         assertThat(children).allMatch { it is AwsExplorerEmptyNode }
@@ -55,7 +56,7 @@ class LambdaServiceNodeTest {
             it.completeExceptionally(RuntimeException("Simulated error"))
         })
 
-        val children = LambdaServiceNode(projectRule.project).children
+        val children = LambdaServiceNode(projectRule.project, LAMBDA_EXPLORER_SERVICE_NODE).children
 
         assertThat(children).hasSize(1)
         assertThat(children).allMatch { it is AwsExplorerErrorNode }
@@ -82,4 +83,8 @@ class LambdaServiceNodeTest {
             .memorySize(128)
             .tracingConfig(TracingConfigResponse.builder().mode(TracingMode.PASS_THROUGH).build())
             .build()
+
+    private companion object {
+        val LAMBDA_EXPLORER_SERVICE_NODE = LambdaExplorerRootNode()
+    }
 }

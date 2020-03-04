@@ -133,6 +133,8 @@
         <extensionPoint name="clouddebug.debuggerSupport" interface="software.aws.toolkits.jetbrains.services.clouddebug.DebuggerSupport"/>
         <extensionPoint name="notice" interface="software.aws.toolkits.jetbrains.core.notification.NoticeType"/>
 
+        <extensionPoint name="explorer.serviceNode" interface="software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceNode"/>
+
         <extensionPoint name="explorer.nodeProcessor" interface="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerNodeProcessor"/>
         <extensionPoint name="explorer.treeStructure" interface="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerTreeStructureProvider"/>
     </extensionPoints>
@@ -235,6 +237,13 @@
         <explorer.treeStructure implementation="software.aws.toolkits.jetbrains.services.clouddebug.CloudDebuggingExplorerTreeStructureProvider"/>
 
         <notice implementation="software.aws.toolkits.jetbrains.core.notification.JetBrainsMinimumVersionChange"/>
+
+        <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.CloudFormationExplorerRootNode"/>
+        <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.LambdaExplorerRootNode"/>
+        <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.S3ExplorerRootNode"/>
+        <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.EcsExplorerRootNode"/>
+        <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.SchemasExplorerRootNode"/>
+
     </extensions>
 
     <actions>

@@ -10,7 +10,7 @@ import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.s3.S3Client
-import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerService
+import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
 import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
@@ -55,7 +55,7 @@ class CreateS3BucketDialog(
                     ApplicationManager.getApplication().invokeLater({
                         close(OK_EXIT_CODE)
                     }, ModalityState.stateForComponent(view.component))
-                    AwsExplorerService.refreshAwsTree(project, S3Resources.LIST_BUCKETS)
+                    project.refreshAwsTree(S3Resources.LIST_BUCKETS)
                     S3Telemetry.createBucket(project, Result.SUCCEEDED)
                 } catch (e: Exception) {
                     setErrorText(e.message)

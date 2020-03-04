@@ -8,17 +8,17 @@ import icons.AwsIcons
 import software.amazon.awssdk.services.schemas.SchemasClient
 import software.amazon.awssdk.services.schemas.model.RegistrySummary
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
-import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerService
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.CacheBackedAwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceParentNode
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
 import software.aws.toolkits.resources.message
 
-class SchemasServiceNode(project: Project) :
-    CacheBackedAwsExplorerServiceRootNode<RegistrySummary>(project, AwsExplorerService.SCHEMAS, SchemasResources.LIST_REGISTRIES) {
+class SchemasServiceNode(project: Project, service: AwsExplorerServiceNode) :
+    CacheBackedAwsExplorerServiceRootNode<RegistrySummary>(project, service, SchemasResources.LIST_REGISTRIES) {
     override fun toNode(child: RegistrySummary): AwsExplorerNode<*> = SchemaRegistryNode(nodeProject, child)
 }
 
