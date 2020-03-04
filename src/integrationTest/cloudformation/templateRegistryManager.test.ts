@@ -9,31 +9,36 @@ import * as vscode from 'vscode'
 
 import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
 import { CloudFormationTemplateRegistryManager } from '../../shared/cloudformation/templateRegistryManager'
-import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { rmrf } from '../../shared/filesystem'
+import { getLogger, setLogger } from '../../shared/logger/logger'
 import { makeSampleSamTemplateYaml, strToYamlFile } from '../../test/shared/cloudformation/cloudformationTestUtils'
-import { activateExtension, getTestWorkspaceFolder } from '../integrationTestsUtilities'
-
-const ACTIVATE_EXTENSION_TIMEOUT_MILLIS = 30000
+import { TestLogger } from '../../test/testLogger'
+import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
 
 /**
  * Note: these tests are pretty shallow right now. They do not test the following:
  * * Adding/removing workspace folders
  */
-describe('CloudFormation Template Registry Manager', async () => {
+describe.only('CloudFormation Template Registry Manager', async () => {
     let registry: CloudFormationTemplateRegistry
     let manager: CloudFormationTemplateRegistryManager
     let workspaceDir: string
+    let testDir: string
     const additionalFiles: string[] = []
 
     before(async function() {
-        // tslint:disable-next-line: no-invalid-this
-        this.timeout(ACTIVATE_EXTENSION_TIMEOUT_MILLIS)
-        await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
+        try {
+            getLogger()
+        } catch (e) {
+            setLogger(new TestLogger())
+        }
         workspaceDir = getTestWorkspaceFolder()
-        registry = CloudFormationTemplateRegistry.getRegistry()
+        testDir = path.join(workspaceDir, 'cloudFormationTemplateRegistry')
+    })
+
+    beforeEach(() => {
+        registry = new CloudFormationTemplateRegistry()
         manager = new CloudFormationTemplateRegistryManager(registry)
-        await manager.addTemplateGlob('**/test.{yaml,yml}')
     })
 
     afterEach(async () => {
@@ -43,20 +48,22 @@ describe('CloudFormation Template Registry Manager', async () => {
                 await rmrf(file)
             }
         }
-    })
-
-    after(() => {
         manager.dispose()
     })
 
     it('adds initial template files with yaml and yml extensions at various nesting levels', async () => {
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        await manager.addTemplateGlob('**/test.{yaml,yml}')
+        await new Promise(resolve => setTimeout(resolve, 500))
         assert.strictEqual(registry.registeredTemplates.length, 2)
     })
 
     it('adds dynamically-added template files with yaml and yml extensions at various nesting levels', async () => {
-        const path1 = path.join(workspaceDir, 'cloudFormationTemplateRegistry', 'test.yml')
-        const path2 = path.join(workspaceDir, 'cloudFormationTemplateRegistry', 'nested', 'test.yaml')
+        await manager.addTemplateGlob('**/test.{yaml,yml}')
+        await new Promise(resolve => setTimeout(resolve, 500))
+        assert.strictEqual(registry.registeredTemplates.length, 2)
+
+        const path1 = path.join(testDir, 'test.yml')
+        const path2 = path.join(testDir, 'nested', 'test.yaml')
         additionalFiles.push(path1)
         additionalFiles.push(path2)
 
@@ -70,23 +77,10 @@ describe('CloudFormation Template Registry Manager', async () => {
         assert.strictEqual(registry.registeredTemplates.length, 4)
     })
 
-    it('can handle new globs and files associated with the new globs', async () => {
-        const path1 = path.join(workspaceDir, 'cloudFormationTemplateRegistry', 'globbed.yml')
-        additionalFiles.push(path1)
-
-        const filename = vscode.Uri.file(path1)
-        await strToYamlFile(makeSampleSamTemplateYaml(false), filename.fsPath)
-
-        await manager.addTemplateGlob('**/globbed.yml')
-
-        await new Promise(resolve => setTimeout(resolve, 500))
-        assert.strictEqual(registry.registeredTemplates.length, 3)
-    })
-
     it('can handle changed files', async () => {
         let objectsFound = 0
 
-        const path1 = path.join(workspaceDir, 'cloudFormationTemplateRegistry', 'changeMe.yml')
+        const path1 = path.join(testDir, 'changeMe.yml')
         additionalFiles.push(path1)
 
         const filename = vscode.Uri.file(path1)
@@ -95,7 +89,7 @@ describe('CloudFormation Template Registry Manager', async () => {
         await manager.addTemplateGlob('**/changeMe.yml')
 
         await new Promise(resolve => setTimeout(resolve, 500))
-        assert.strictEqual(registry.registeredTemplates.length, 3)
+        assert.strictEqual(registry.registeredTemplates.length, 1)
 
         const initialObj = registry.getRegisteredTemplate(path1)
         assert.ok(initialObj)
@@ -107,7 +101,7 @@ describe('CloudFormation Template Registry Manager', async () => {
         await strToYamlFile(makeSampleSamTemplateYaml(true), filename.fsPath)
 
         await new Promise(resolve => setTimeout(resolve, 500))
-        assert.strictEqual(registry.registeredTemplates.length, 3)
+        assert.strictEqual(registry.registeredTemplates.length, 1)
 
         const editedObj = registry.getRegisteredTemplate(path1)
         assert.ok(editedObj)
@@ -120,7 +114,7 @@ describe('CloudFormation Template Registry Manager', async () => {
     })
 
     it('can handle deleted files', async () => {
-        const path1 = path.join(workspaceDir, 'cloudFormationTemplateRegistry', 'deleteMe.yml')
+        const path1 = path.join(testDir, 'deleteMe.yml')
         additionalFiles.push(path1)
 
         const filename = vscode.Uri.file(path1)
@@ -128,7 +122,8 @@ describe('CloudFormation Template Registry Manager', async () => {
 
         await manager.addTemplateGlob('**/deleteMe.yml')
 
-        assert.strictEqual(registry.registeredTemplates.length, 3)
+        await new Promise(resolve => setTimeout(resolve, 500))
+        assert.strictEqual(registry.registeredTemplates.length, 1)
 
         const fileToDelete = additionalFiles.pop()
         if (fileToDelete) {
@@ -136,6 +131,6 @@ describe('CloudFormation Template Registry Manager', async () => {
         }
 
         await new Promise(resolve => setTimeout(resolve, 500))
-        assert.strictEqual(registry.registeredTemplates.length, 2)
+        assert.strictEqual(registry.registeredTemplates.length, 0)
     })
 })

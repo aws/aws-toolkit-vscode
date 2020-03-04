@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { getLogger } from '../logger/logger'
 import { CloudFormationTemplateRegistry } from './templateRegistry'
 
 export class CloudFormationTemplateRegistryManager implements vscode.Disposable {
@@ -78,9 +79,18 @@ export class CloudFormationTemplateRegistryManager implements vscode.Disposable 
     private setWatcher(watcher: vscode.FileSystemWatcher): void {
         this.disposables.push(
             watcher,
-            watcher.onDidChange(async uri => this.registry.addTemplateToRegistry(uri)),
-            watcher.onDidCreate(async uri => this.registry.addTemplateToRegistry(uri)),
-            watcher.onDidDelete(async uri => this.registry.removeTemplateFromRegistry(uri))
+            watcher.onDidChange(async uri => {
+                getLogger().verbose(`Manager detected a change to template file: ${uri.fsPath}`)
+                await this.registry.addTemplateToRegistry(uri)
+            }),
+            watcher.onDidCreate(async uri => {
+                getLogger().verbose(`Manager detected a new template file: ${uri.fsPath}`)
+                await this.registry.addTemplateToRegistry(uri)
+            }),
+            watcher.onDidDelete(async uri => {
+                getLogger().verbose(`Manager detected a deleted template file: ${uri.fsPath}`)
+                this.registry.removeTemplateFromRegistry(uri)
+            })
         )
     }
 }
