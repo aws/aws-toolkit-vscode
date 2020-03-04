@@ -33,7 +33,7 @@ export class CloudFormationTemplateRegistryManager implements vscode.Disposable 
         this.globs.push(glob)
 
         const watcher = vscode.workspace.createFileSystemWatcher(glob)
-        this.setWatcher(watcher)
+        this.addWatcher(watcher)
 
         await this.rebuildRegistry()
     }
@@ -76,7 +76,7 @@ export class CloudFormationTemplateRegistryManager implements vscode.Disposable 
      * Sets watcher functionality and adds to this.disposables
      * @param watcher vscode.FileSystemWatcher
      */
-    private setWatcher(watcher: vscode.FileSystemWatcher): void {
+    private addWatcher(watcher: vscode.FileSystemWatcher): void {
         this.disposables.push(
             watcher,
             watcher.onDidChange(async uri => {

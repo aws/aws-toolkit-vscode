@@ -18,12 +18,12 @@ describe('CloudFormation Template Registry', async () => {
     const goodYaml2 = makeSampleSamTemplateYaml(true)
 
     describe('CloudFormationTemplateRegistry', async () => {
-        const testRegistry: CloudFormationTemplateRegistry = CloudFormationTemplateRegistry.getRegistry()
+        let testRegistry: CloudFormationTemplateRegistry
         let tempFolder: string
 
         beforeEach(async () => {
             tempFolder = await makeTemporaryToolkitFolder()
-            testRegistry.reset()
+            testRegistry = new CloudFormationTemplateRegistry()
         })
 
         afterEach(async () => {

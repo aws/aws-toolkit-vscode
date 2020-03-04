@@ -15,7 +15,6 @@ export const TEMPLATE_FILE_GLOB_PATTERN = '**/template.{yaml,yml}'
  * This also assigns a FileSystemWatcher which will update the registry on any change to tracked templates.
  *
  * @param extensionContext VS Code extension context
- * @param globPattern Glob pattern for files to track. Default: TEMPLATE_FILE_GLOB_PATTERN
  */
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     const registry = CloudFormationTemplateRegistry.getRegistry()
