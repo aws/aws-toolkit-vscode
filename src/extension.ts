@@ -19,11 +19,11 @@ import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
 import {
+    createIssueOnGitHubUrl,
     documentationUrl,
     endpointsFileUrl,
     extensionSettingsPrefix,
-    githubUrl,
-    reportIssueUrl
+    githubUrl
 } from './shared/constants'
 import { DefaultAwsContext } from './shared/defaultAwsContext'
 import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
@@ -103,43 +103,57 @@ export async function activate(context: vscode.ExtensionContext) {
         })
         await ext.telemetry.start()
 
-        context.subscriptions.push(vscode.commands.registerCommand('aws.login',
-            async () => await ext.awsContextCommands.onCommandLogin()))
-        context.subscriptions.push(vscode.commands.registerCommand('aws.logout',
-            async () => await ext.awsContextCommands.onCommandLogout()))
+        context.subscriptions.push(
+            vscode.commands.registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())
+        )
+        context.subscriptions.push(
+            vscode.commands.registerCommand('aws.logout', async () => await ext.awsContextCommands.onCommandLogout())
+        )
 
-        context.subscriptions.push(vscode.commands.registerCommand('aws.credential.profile.create', async () => {
-            try {
-                await ext.awsContextCommands.onCommandCreateCredentialsProfile()
-            } finally {
-                recordAwsCreateCredentials()
-            }
-        }))
+        context.subscriptions.push(
+            vscode.commands.registerCommand('aws.credential.profile.create', async () => {
+                try {
+                    await ext.awsContextCommands.onCommandCreateCredentialsProfile()
+                } finally {
+                    recordAwsCreateCredentials()
+                }
+            })
+        )
 
         // register URLs in extension menu
-        context.subscriptions.push(vscode.commands.registerCommand('aws.help', async () => {
-            vscode.env.openExternal(vscode.Uri.parse(documentationUrl))
-            recordAwsHelp()
-        }))
-        context.subscriptions.push(vscode.commands.registerCommand('aws.github', async () => {
-            vscode.env.openExternal(vscode.Uri.parse(githubUrl))
-            recordAwsShowExtensionSource()
-        }))
-        context.subscriptions.push(vscode.commands.registerCommand('aws.reportIssue', async () => {
-            vscode.env.openExternal(vscode.Uri.parse(reportIssueUrl))
-            recordAwsReportPluginIssue()
-        }))
-        context.subscriptions.push(vscode.commands.registerCommand('aws.quickStart', async () => {
-            try {
-                await showQuickStartWebview(context)
-            } finally {
-                recordAwsHelpQuickstart()
-            }
-        }))
+        context.subscriptions.push(
+            vscode.commands.registerCommand('aws.help', async () => {
+                vscode.env.openExternal(vscode.Uri.parse(documentationUrl))
+                recordAwsHelp()
+            })
+        )
+        context.subscriptions.push(
+            vscode.commands.registerCommand('aws.github', async () => {
+                vscode.env.openExternal(vscode.Uri.parse(githubUrl))
+                recordAwsShowExtensionSource()
+            })
+        )
+        context.subscriptions.push(
+            vscode.commands.registerCommand('aws.createIssueOnGitHub', async () => {
+                vscode.env.openExternal(vscode.Uri.parse(createIssueOnGitHubUrl))
+                recordAwsReportPluginIssue()
+            })
+        )
+        context.subscriptions.push(
+            vscode.commands.registerCommand('aws.quickStart', async () => {
+                try {
+                    await showQuickStartWebview(context)
+                } finally {
+                    recordAwsHelpQuickstart()
+                }
+            })
+        )
 
-        context.subscriptions.push(vscode.commands.registerCommand('aws.aboutToolkit', async () => {
-            await aboutToolkit()
-        }))
+        context.subscriptions.push(
+            vscode.commands.registerCommand('aws.aboutToolkit', async () => {
+                await aboutToolkit()
+            })
+        )
 
         await activateCdk({
             extensionContext: context
