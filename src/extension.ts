@@ -19,10 +19,10 @@ import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
 import {
-    createIssueOnGitHubUrl,
     documentationUrl,
     endpointsFileUrl,
     extensionSettingsPrefix,
+    githubCreateIssueUrl,
     githubUrl
 } from './shared/constants'
 import { DefaultAwsContext } from './shared/defaultAwsContext'
@@ -135,7 +135,7 @@ export async function activate(context: vscode.ExtensionContext) {
         )
         context.subscriptions.push(
             vscode.commands.registerCommand('aws.createIssueOnGitHub', async () => {
-                vscode.env.openExternal(vscode.Uri.parse(createIssueOnGitHubUrl))
+                vscode.env.openExternal(vscode.Uri.parse(githubCreateIssueUrl))
                 recordAwsReportPluginIssue()
             })
         )
