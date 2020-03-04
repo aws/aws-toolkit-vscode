@@ -1,8 +1,10 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.core.telemetry
 
+import kotlinx.coroutines.runBlocking
+import software.amazon.awssdk.core.exception.SdkServiceException
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import java.util.concurrent.Executors
@@ -102,17 +104,25 @@ open class DefaultTelemetryBatcher(
                 batch.add(eventQueue.pop())
             }
 
-            val publishSucceeded = try {
-                publisher.publish(batch)
-            } catch (e: Exception) {
-                LOG.warn(e) { "Failed to publish metrics" }
-                false
+            val stop = runBlocking {
+                try {
+                    publisher.publish(batch)
+                } catch (e: Exception) {
+                    LOG.warn(e) { "Failed to publish metrics" }
+                    val shouldRetry = retry && when (e) {
+                        is SdkServiceException -> e.statusCode() !in 400..499
+                        else -> true
+                    }
+                    if (shouldRetry) {
+                        LOG.warn { "Telemetry metrics failed to publish, retrying later..." }
+                        eventQueue.addAll(batch)
+                        // don't want an infinite loop...
+                        return@runBlocking true
+                    }
+                }
+                return@runBlocking false
             }
-
-            if (!publishSucceeded && retry) {
-                LOG.warn { "Telemetry metrics failed to publish, retrying later..." }
-                eventQueue.addAll(batch)
-                // don't want an infinite loop...
+            if (stop) {
                 return
             }
         }

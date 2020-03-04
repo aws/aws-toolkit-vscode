@@ -1,20 +1,20 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.core.telemetry
 
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doAnswer
-import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.stub
 import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.mockito.ArgumentMatchers.anyCollection
 import org.mockito.stubbing.Answer
+import software.amazon.awssdk.core.exception.SdkServiceException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -37,8 +37,8 @@ class TelemetryBatcherTest {
         val publishCaptor = argumentCaptor<Collection<MetricEvent>>()
 
         publisher.stub {
-            on(publisher.publish(publishCaptor.capture()))
-                .doAnswer(createPublishAnswer(publishCountDown, true))
+            onBlocking { publisher.publish(publishCaptor.capture()) }
+                .doAnswer(createPublishAnswer(publishCountDown))
         }
 
         batcher.enqueue(DefaultMetricEvent.builder().build())
@@ -46,95 +46,77 @@ class TelemetryBatcherTest {
 
         waitForPublish(publishCountDown)
 
-        verify(publisher).publish(anyCollection())
+        verifyBlocking(publisher) { publish(anyCollection()) }
 
         assertThat(publishCaptor.firstValue).hasSize(1)
     }
 
     @Test
     fun testSplitBatch() {
-        val publishCountDown = CountDownLatch(2)
         val publishCaptor = argumentCaptor<Collection<MetricEvent>>()
-
-        publisher.stub {
-            on(publisher.publish(publishCaptor.capture()))
-                    .doAnswer(createPublishAnswer(publishCountDown, true))
-        }
 
         val totalEvents = MAX_BATCH_SIZE + 1
         val events = ArrayList<MetricEvent>()
-        for (i in 0 until totalEvents) {
+        repeat(totalEvents) {
             events.add(createEmptyMetricEvent())
         }
         batcher.enqueue(events)
         batcher.flush(false)
 
-        waitForPublish(publishCountDown)
-
-        verify(publisher, times(2)).publish(anyCollection())
+        verifyBlocking(publisher, times(2)) { publish(publishCaptor.capture()) }
 
         assertThat(publishCaptor.allValues).hasSize(2)
-        assertThat(publishCaptor.allValues[0]).hasSize(MAX_BATCH_SIZE)
-        assertThat(publishCaptor.allValues[1]).hasSize(1)
-    }
-
-    @Test
-    fun testRetry() {
-        val publishCountDown = CountDownLatch(2)
-        val publishCaptor = argumentCaptor<Collection<MetricEvent>>()
-
-        publisher.stub {
-            on(publisher.publish(publishCaptor.capture()))
-                    .doAnswer(createPublishAnswer(publishCountDown, false))
-                    .doAnswer(createPublishAnswer(publishCountDown, true))
-        }
-
-        batcher.enqueue(createEmptyMetricEvent())
-        batcher.flush(true)
-
-        verify(publisher, times(1)).publish(anyCollection())
-
-        assertThat(publishCaptor.allValues).hasSize(1)
-        assertThat(batcher.eventQueue()).hasSize(1)
+        assertThat(publishCaptor.firstValue).hasSize(MAX_BATCH_SIZE)
+        assertThat(publishCaptor.secondValue).hasSize(1)
     }
 
     @Test
     fun testRetryException() {
-        val publishCountDown = CountDownLatch(1)
         val publishCaptor = argumentCaptor<Collection<MetricEvent>>()
 
         publisher.stub {
-            on(publisher.publish(publishCaptor.capture()))
-                    .doThrow(RuntimeException("Mock exception"))
-                    .doAnswer(createPublishAnswer(publishCountDown, true))
+            onBlocking { publisher.publish(anyCollection()) }
+                .doThrow(RuntimeException("Mock exception"))
         }
 
         batcher.enqueue(createEmptyMetricEvent())
         batcher.flush(true)
 
-        waitForPublish(publishCountDown)
-
-        verify(publisher, times(1)).publish(anyCollection())
+        verifyBlocking(publisher, times(1)) { publish(publishCaptor.capture()) }
 
         assertThat(publishCaptor.allValues).hasSize(1)
         assertThat(batcher.eventQueue()).hasSize(1)
+    }
+
+    @Test
+    fun testDontRetry400Exception() {
+        val publishCaptor = argumentCaptor<Collection<MetricEvent>>()
+
+        publisher.stub {
+            onBlocking { publisher.publish(anyCollection()) }
+                .doThrow(SdkServiceException.builder().statusCode(400).build())
+                .doAnswer(Answer<Unit> {})
+        }
+
+        batcher.enqueue(createEmptyMetricEvent())
+        batcher.flush(true)
+
+        verifyBlocking(publisher, times(1)) { publish(publishCaptor.capture()) }
+
+        assertThat(publishCaptor.allValues).hasSize(1)
+        assertThat(batcher.eventQueue()).hasSize(0)
     }
 
     @Test
     fun testDispose() {
         val publishCaptor = argumentCaptor<Collection<MetricEvent>>()
 
-        publisher.stub {
-            on(publisher.publish(publishCaptor.capture()))
-                    .doReturn(true)
-        }
-
         batcher.enqueue(createEmptyMetricEvent())
         batcher.shutdown()
         batcher.enqueue(createEmptyMetricEvent())
         batcher.shutdown()
 
-        verify(publisher).publish(anyCollection())
+        verifyBlocking(publisher) { publish(publishCaptor.capture()) }
 
         assertThat(publishCaptor.allValues).hasSize(1)
         assertThat(publishCaptor.firstValue.toList()).hasSize(1)
@@ -147,9 +129,8 @@ class TelemetryBatcherTest {
         publishCountDown.await(5, TimeUnit.SECONDS)
     }
 
-    private fun createPublishAnswer(publishCountDown: CountDownLatch, value: Boolean): Answer<Boolean> = Answer {
+    private fun createPublishAnswer(publishCountDown: CountDownLatch): Answer<Unit> = Answer {
         publishCountDown.countDown()
-        value
     }
 
     companion object {

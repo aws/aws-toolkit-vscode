@@ -1,12 +1,13 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.telemetry
 
 import com.intellij.openapi.application.ApplicationInfo
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ApplicationNamesInfo
 import com.intellij.openapi.util.SystemInfo
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.cognitoidentity.CognitoIdentityClient
@@ -17,8 +18,6 @@ import software.amazon.awssdk.services.toolkittelemetry.model.MetricDatum
 import software.aws.toolkits.core.ToolkitClientManager
 import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryPublisher
-import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.AwsSdkClient
@@ -35,8 +34,8 @@ class DefaultTelemetryPublisher(
     private val os: String = SystemInfo.OS_NAME,
     private val osVersion: String = SystemInfo.OS_VERSION
 ) : TelemetryPublisher {
-    override fun publish(metricEvents: Collection<MetricEvent>): Boolean = ApplicationManager.getApplication().executeOnPooledThread<Boolean> {
-        try {
+    override suspend fun publish(metricEvents: Collection<MetricEvent>) {
+        withContext(Dispatchers.IO) {
             client.postMetrics {
                 it.awsProduct(productName)
                 it.awsProductVersion(productVersion)
@@ -47,12 +46,8 @@ class DefaultTelemetryPublisher(
                 it.parentProductVersion(parentProductVersion)
                 it.metricData(metricEvents.toMetricData())
             }
-            true
-        } catch (e: Exception) {
-            LOG.warn(e) { "Failed to publish metrics" }
-            false
         }
-    }.get()
+    }
 
     private fun Collection<MetricEvent>.toMetricData(): Collection<MetricDatum> = this
         .flatMap { metricEvent ->
@@ -85,7 +80,6 @@ class DefaultTelemetryPublisher(
         }
 
     private companion object {
-        private val LOG = getLogger<DefaultTelemetryPublisher>()
 
         private const val METADATA_AWS_ACCOUNT = "awsAccount"
         private const val METADATA_AWS_REGION = "awsRegion"

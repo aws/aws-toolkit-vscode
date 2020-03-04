@@ -7,6 +7,7 @@ import com.intellij.testFramework.ProjectRule
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -38,18 +39,20 @@ class DefaultTelemetryPublisherTest {
             osVersion = "1.0"
         )
 
-        publisher.publish(listOf(
-            DefaultMetricEvent.builder()
-                .awsAccount("111111111111")
-                .awsRegion("us-west-2")
-                .datum("foobar") { this.count() }
-                .build(),
-            DefaultMetricEvent.builder()
-                .awsAccount("111111111111")
-                .awsRegion("us-west-2")
-                .datum("spam") { this.count() }
-                .build()
-        ))
+        runBlocking {
+            publisher.publish(listOf(
+                DefaultMetricEvent.builder()
+                    .awsAccount("111111111111")
+                    .awsRegion("us-west-2")
+                    .datum("foobar") { this.count() }
+                    .build(),
+                DefaultMetricEvent.builder()
+                    .awsAccount("111111111111")
+                    .awsRegion("us-west-2")
+                    .datum("spam") { this.count() }
+                    .build()
+            ))
+        }
 
         verify(mockTelemetryClient, times(1)).postMetrics(mockPostMetricsRequestCaptor.capture())
         val postMetricsRequest = mockPostMetricsRequestCaptor.firstValue
@@ -108,18 +111,20 @@ class DefaultTelemetryPublisherTest {
             osVersion = "1.0"
         )
 
-        publisher.publish(listOf(
-            DefaultMetricEvent.builder()
-                .awsAccount("111111111111")
-                .awsRegion("us-west-2")
-                .datum("foobar") { this.count() }
-                .build(),
-            DefaultMetricEvent.builder()
-                .awsAccount("111111111111")
-                .awsRegion("us-west-2")
-                .datum("spam") { this.count() }
-                .build()
-        ))
+        runBlocking {
+            publisher.publish(listOf(
+                DefaultMetricEvent.builder()
+                    .awsAccount("111111111111")
+                    .awsRegion("us-west-2")
+                    .datum("foobar") { this.count() }
+                    .build(),
+                DefaultMetricEvent.builder()
+                    .awsAccount("111111111111")
+                    .awsRegion("us-west-2")
+                    .datum("spam") { this.count() }
+                    .build()
+            ))
+        }
 
         verify(mockTelemetryClient, times(1)).postMetrics(mockPostMetricsRequestCaptor.capture())
         val postMetricsRequest = mockPostMetricsRequestCaptor.firstValue
