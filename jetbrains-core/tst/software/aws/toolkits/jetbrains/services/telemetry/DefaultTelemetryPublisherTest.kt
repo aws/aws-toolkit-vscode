@@ -23,20 +23,24 @@ class DefaultTelemetryPublisherTest {
     @JvmField
     val projectRule = ProjectRule()
 
+    private val clientMetadata = ClientMetadata(
+        productName = AWSProduct.AWS_TOOLKIT_FOR_JET_BRAINS,
+        productVersion = "1.0",
+        clientId = "foo",
+        parentProduct = "JetBrains",
+        parentProductVersion = "191",
+        os = "mac",
+        osVersion = "1.0"
+    )
+
     @Test
     fun testPublish_withNamespace() {
         val mockPostMetricsRequestCaptor = argumentCaptor<PostMetricsRequest>()
 
         val mockTelemetryClient = delegateMock<ToolkitTelemetryClient>()
         val publisher = DefaultTelemetryPublisher(
-            productName = AWSProduct.AWS_TOOLKIT_FOR_JET_BRAINS,
-            productVersion = "1.0",
-            clientId = "foo",
-            parentProduct = "JetBrains",
-            parentProductVersion = "191",
-            client = mockTelemetryClient,
-            os = "mac",
-            osVersion = "1.0"
+            clientMetadata = clientMetadata,
+            client = mockTelemetryClient
         )
 
         runBlocking {
@@ -101,14 +105,8 @@ class DefaultTelemetryPublisherTest {
 
         val mockTelemetryClient = delegateMock<ToolkitTelemetryClient>()
         val publisher = DefaultTelemetryPublisher(
-            productName = AWSProduct.AWS_TOOLKIT_FOR_JET_BRAINS,
-            productVersion = "1.0",
-            clientId = "foo",
-            parentProduct = "JetBrains",
-            parentProductVersion = "191",
-            client = mockTelemetryClient,
-            os = "mac",
-            osVersion = "1.0"
+            clientMetadata = clientMetadata,
+            client = mockTelemetryClient
         )
 
         runBlocking {

@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.telemetry
 
+import software.amazon.awssdk.services.toolkittelemetry.model.Sentiment
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent
 import software.aws.toolkits.core.telemetry.MetricEvent
 
@@ -14,6 +15,8 @@ class MockTelemetryService : TelemetryService {
         builder.awsRegion(metricEventMetadata.awsRegion)
         return builder.build()
     }
+
+    override fun sendFeedback(sentiment: Sentiment, comment: String) {}
 
     override fun dispose() {}
 }

@@ -20,6 +20,14 @@
       },
       "input":{"shape":"PostErrorReportRequest"}
     },
+    "PostFeedback":{
+      "name":"PostFeedback",
+      "http":{
+        "method":"POST",
+        "requestUri":"/feedback"
+      },
+      "input":{"shape":"PostFeedbackRequest"}
+    },
     "PostMetrics":{
       "name":"PostMetrics",
       "http":{
@@ -33,9 +41,11 @@
     "AWSProduct":{
       "type":"string",
       "enum":[
+        "canary",
         "AWS Toolkit For JetBrains",
         "AWS Toolkit For Eclipse",
-        "AWS Toolkit for VisualStudio"
+        "AWS Toolkit For VisualStudio",
+        "AWS Toolkit For VS Code"
       ]
     },
     "AWSProductVersion":{
@@ -92,8 +102,7 @@
     },
     "Metadata":{
       "type":"list",
-      "member":{"shape":"MetadataEntry"},
-      "max":10
+      "member":{"shape":"MetadataEntry"}
     },
     "MetadataEntry":{
       "type":"structure",
@@ -110,6 +119,12 @@
     },
     "MetricDatum":{
       "type":"structure",
+      "required":[
+        "MetricName",
+        "EpochTimestamp",
+        "Unit",
+        "Value"
+      ],
       "members":{
         "MetricName":{"shape":"MetricName"},
         "EpochTimestamp":{"shape":"EpochTimestamp"},
@@ -137,6 +152,28 @@
         "ErrorDetails":{"shape":"ErrorDetails"}
       }
     },
+    "PostFeedbackRequest":{
+      "type":"structure",
+      "required":[
+        "AWSProduct",
+        "AWSProductVersion",
+        "ParentProduct",
+        "ParentProductVersion",
+        "Sentiment",
+        "Comment"
+      ],
+      "members":{
+        "AWSProduct":{"shape":"AWSProduct"},
+        "AWSProductVersion":{"shape":"AWSProductVersion"},
+        "OS":{"shape":"Value"},
+        "OSVersion":{"shape":"Value"},
+        "ParentProduct":{"shape":"Value"},
+        "ParentProductVersion":{"shape":"Value"},
+        "Metadata":{"shape":"Metadata"},
+        "Sentiment":{"shape":"Sentiment"},
+        "Comment":{"shape":"Comment"}
+      }
+    },
     "PostMetricsRequest":{
       "type":"structure",
       "required":[
@@ -155,6 +192,13 @@
         "ParentProductVersion":{"shape":"Value"},
         "MetricData":{"shape":"MetricData"}
       }
+    },
+    "Sentiment":{
+      "type":"string",
+      "enum":[
+        "Positive",
+        "Negative"
+      ]
     },
     "StackTrace":{
       "type":"string",

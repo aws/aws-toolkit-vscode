@@ -19,6 +19,12 @@ object AwsIcons {
         @JvmField val EVENT_BRIDGE = IconLoader.getIcon("/icons/logos/EventBridge.svg") // 13x13
     }
 
+    object Misc {
+        @JvmField val SMILE = IconLoader.getIcon("/icons/misc/smile.svg") // 16x16
+        @JvmField val SMILE_GREY = IconLoader.getIcon("/icons/misc/smile_grey.svg") // 16x16
+        @JvmField val FROWN = IconLoader.getIcon("/icons/misc/frown.svg") // 16x16
+    }
+
     object Resources {
         @JvmField val CLOUDFORMATION_STACK = IconLoader.getIcon("/icons/resources/CloudFormationStack.svg") // 16x16
         @JvmField val LAMBDA_FUNCTION = IconLoader.getIcon("/icons/resources/LambdaFunction.svg") // 16x16

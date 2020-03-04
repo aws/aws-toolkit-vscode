@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="software.aws.toolkits.jetbrains.ui.feedback.SubmitFeedbackPanel">
+  <grid id="27dc6" binding="rootPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
+    <constraints>
+      <xy x="20" y="20" width="658" height="400"/>
+    </constraints>
+    <properties/>
+    <border type="none"/>
+    <children>
+      <grid id="de46c" layout-manager="GridLayoutManager" row-count="3" column-count="5" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+        <margin top="0" left="0" bottom="0" right="0"/>
+        <constraints border-constraint="North"/>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <component id="59dc5" class="com.intellij.ui.components.JBRadioButton" binding="smileButton">
+            <constraints>
+              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="2" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <text value=""/>
+              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="feedback.smiley.happyTooltip"/>
+            </properties>
+          </component>
+          <component id="44df7" class="javax.swing.JLabel">
+            <constraints>
+              <grid row="0" column="0" row-span="1" col-span="5" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="feedback.smiley.question"/>
+            </properties>
+          </component>
+          <component id="5576" class="javax.swing.JLabel">
+            <constraints>
+              <grid row="2" column="0" row-span="1" col-span="5" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="feedback.comment.label"/>
+            </properties>
+          </component>
+          <component id="61190" class="com.intellij.ui.components.JBRadioButton" binding="sadButton">
+            <constraints>
+              <grid row="1" column="2" row-span="1" col-span="1" vsize-policy="2" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="feedback.smiley.sadTooltip"/>
+            </properties>
+          </component>
+          <hspacer id="13118">
+            <constraints>
+              <grid row="1" column="4" row-span="1" col-span="1" vsize-policy="1" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+            </constraints>
+          </hspacer>
+          <component id="bb1dc" class="javax.swing.JLabel" binding="smileIcon" custom-create="true">
+            <constraints>
+              <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <labelFor value="59dc5"/>
+              <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="feedback.smiley.happyTooltip"/>
+              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="feedback.smiley.happyTooltip"/>
+            </properties>
+          </component>
+          <component id="5b855" class="javax.swing.JLabel" binding="sadIcon" custom-create="true">
+            <constraints>
+              <grid row="1" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <labelFor value="61190"/>
+              <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="feedback.smiley.sadTooltip"/>
+              <toolTipText resource-bundle="software/aws/toolkits/resources/localized_messages" key="feedback.smiley.sadTooltip"/>
+            </properties>
+          </component>
+        </children>
+      </grid>
+      <scrollpane id="cf870" class="com.intellij.ui.components.JBScrollPane" binding="textAreaPane" custom-create="true">
+        <constraints border-constraint="Center"/>
+        <properties/>
+        <border type="none"/>
+        <children/>
+      </scrollpane>
+      <grid id="1a1c8" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+        <margin top="0" left="0" bottom="0" right="0"/>
+        <constraints border-constraint="South"/>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <component id="1f543" class="javax.swing.JLabel" binding="lengthLimitLabel" custom-create="true">
+            <constraints>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="feedback.limit.label"/>
+            </properties>
+          </component>
+          <component id="2e34" class="com.intellij.ui.components.JBLabel" binding="githubLink">
+            <constraints>
+              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+            </constraints>
+            <properties>
+              <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="feedback.github.link"/>
+            </properties>
+          </component>
+        </children>
+      </grid>
+    </children>
+  </grid>
+  <buttonGroups>
+    <group name="sentimentButtonGroup" bound="true">
+      <member id="59dc5"/>
+      <member id="61190"/>
+    </group>
+  </buttonGroups>
+</form>

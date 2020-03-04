@@ -8,6 +8,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
 import com.intellij.util.messages.Topic
+import software.amazon.awssdk.services.toolkittelemetry.model.Sentiment
 import software.amazon.awssdk.services.toolkittelemetry.model.Unit.MILLISECONDS
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADATA_NA
@@ -47,6 +48,8 @@ interface TelemetryService : Disposable {
         return metricEvent
     }
 
+    fun sendFeedback(sentiment: Sentiment, comment: String)
+
     companion object {
         @JvmStatic
         fun getInstance(): TelemetryService = ServiceManager.getService(TelemetryService::class.java)
@@ -72,7 +75,8 @@ interface TelemetryEnabledChangedNotifier {
 
 class DefaultTelemetryService(settings: AwsSettings) :
     TelemetryService, TelemetryEnabledChangedNotifier {
-    var batcher: TelemetryBatcher = DefaultTelemetryBatcher(DefaultTelemetryPublisher())
+    private val publisher = DefaultTelemetryPublisher()
+    var batcher: TelemetryBatcher = DefaultTelemetryBatcher(publisher)
         set(value) {
             batcher.setBatcher(value)
             field = value
@@ -126,6 +130,10 @@ class DefaultTelemetryService(settings: AwsSettings) :
         val event = builder.build()
         batcher.enqueue(event)
         return event
+    }
+
+    override fun sendFeedback(sentiment: Sentiment, comment: String) {
+        publisher.sendFeedback(sentiment, comment)
     }
 
     private fun record(event: MetricEvent.Builder.() -> Unit): MetricEvent = record(TelemetryService.MetricEventMetadata(), event)
