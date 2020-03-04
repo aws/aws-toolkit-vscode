@@ -32,7 +32,7 @@ interface TableView : View {
 }
 
 private enum class Fields(val readableName: String, val getData: (StackEvent) -> Any) {
-    TIME(message("cloudformation.stack.time"), { e -> e.timestamp() }),
+    TIME(message("general.time"), { e -> e.timestamp() }),
     // CFN Resource Status does not match what we expect (StackStatus enum)
     STATUS(message("cloudformation.stack.status"), { e -> e.resourceStatusAsString() }),
     TYPE(message("cloudformation.stack.type"), { e -> e.resourceType() }),

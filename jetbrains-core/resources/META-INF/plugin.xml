@@ -239,6 +239,7 @@
         <notice implementation="software.aws.toolkits.jetbrains.core.notification.JetBrainsMinimumVersionChange"/>
 
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.CloudFormationExplorerRootNode"/>
+        <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.CloudWatchRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.LambdaExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.S3ExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.EcsExplorerRootNode"/>
@@ -281,6 +282,11 @@
             <separator/>
             <action id="cloudformation.stack.delete"
                     class="software.aws.toolkits.jetbrains.services.cloudformation.actions.DeleteStackAction"/>
+        </group>
+
+        <group id="aws.toolkit.explorer.logs.group" popup="true" compact="false">
+            <action id="cloudwatch.logs.open"
+                    class="software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.OpenLogGroups"/>
         </group>
 
         <group id="aws.toolkit.explorer.s3" popup="false" compact="false">
