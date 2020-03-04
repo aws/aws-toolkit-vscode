@@ -17,7 +17,7 @@ import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
  * Note: these tests are pretty shallow right now. They do not test the following:
  * * Adding/removing workspace folders
  */
-describe.only('CloudFormation Template Registry Manager', async () => {
+describe('CloudFormation Template Registry Manager', async () => {
     let registry: CloudFormationTemplateRegistry
     let manager: CloudFormationTemplateRegistryManager
     let workspaceDir: string
