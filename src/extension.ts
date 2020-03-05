@@ -23,8 +23,8 @@ import {
     documentationUrl,
     endpointsFileUrl,
     extensionSettingsPrefix,
-    githubUrl,
-    reportIssueUrl
+    githubCreateIssueUrl,
+    githubUrl
 } from './shared/constants'
 import { DefaultAwsContext } from './shared/defaultAwsContext'
 import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
@@ -135,8 +135,8 @@ export async function activate(context: vscode.ExtensionContext) {
             })
         )
         context.subscriptions.push(
-            vscode.commands.registerCommand('aws.reportIssue', async () => {
-                vscode.env.openExternal(vscode.Uri.parse(reportIssueUrl))
+            vscode.commands.registerCommand('aws.createIssueOnGitHub', async () => {
+                vscode.env.openExternal(vscode.Uri.parse(githubCreateIssueUrl))
                 recordAwsReportPluginIssue()
             })
         )

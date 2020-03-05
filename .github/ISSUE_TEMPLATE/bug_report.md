@@ -28,6 +28,9 @@ Steps to reproduce the behavior:
 
 **Desktop (please complete the following information):**
 
+<!-- Tip: Use the 'About AWS Toolkit' option from the toolkit dropdown menu
+ or 'AWS: About AWS Toolkit' in the Command Palette. -->
+ 
 -   OS:
 -   Visual Studio Code Version:
 -   AWS Toolkit for Visual Studio Code Version:
