@@ -61,6 +61,7 @@ allprojects {
     }
 
     configurations {
+        runtimeClasspath.exclude group: "org.slf4j"
         runtimeClasspath.exclude group: "org.jetbrains.kotlin"
         runtimeClasspath.exclude group: "org.jetbrains.kotlinx"
     }
@@ -288,9 +289,9 @@ task guiTest(type: Test) {
 }
 
 dependencies {
-    compile project(':jetbrains-ultimate')
+    implementation project(':jetbrains-ultimate')
     project.findProject(':jetbrains-rider')?.collect {
-        compile it
+        implementation it
     }
 
     ktlint "com.pinterest:ktlint:$ktlintVersion"

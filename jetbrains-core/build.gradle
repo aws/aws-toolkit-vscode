@@ -73,38 +73,20 @@ artifacts {
 }
 
 dependencies {
-    compile(project(":core")) {
-        exclude group: 'org.slf4j'
-    }
-    compile("software.amazon.awssdk:s3:$awsSdkVersion") {
-        exclude group: 'org.slf4j'
-    }
-    compile("software.amazon.awssdk:lambda:$awsSdkVersion") {
-        exclude group: 'org.slf4j'
-    }
-    compile("software.amazon.awssdk:iam:$awsSdkVersion") {
-        exclude group: 'org.slf4j'
-    }
-    compile("software.amazon.awssdk:ecs:$awsSdkVersion") {
-        exclude group: 'org.slf4j'
-    }
-    compile("software.amazon.awssdk:cloudformation:$awsSdkVersion") {
-        exclude group: 'org.slf4j'
-    }
-    compile("software.amazon.awssdk:schemas:$awsSdkVersion") {
-        exclude group: 'org.slf4j'
-    }
-    compile("software.amazon.awssdk:cloudwatchlogs:$awsSdkVersion") {
-        exclude group: 'org.slf4j'
-    }
-    compile("software.amazon.awssdk:apache-client:$awsSdkVersion") {
-        exclude group: 'org.slf4j'
-    }
-    compile("software.amazon.awssdk:resourcegroupstaggingapi:$awsSdkVersion") {
-        exclude group: 'org.slf4j'
-    }
+    api(project(":core"))
+    api("software.amazon.awssdk:s3:$awsSdkVersion")
+    api("software.amazon.awssdk:lambda:$awsSdkVersion")
+    api("software.amazon.awssdk:iam:$awsSdkVersion")
+    api("software.amazon.awssdk:ecs:$awsSdkVersion")
+    api("software.amazon.awssdk:cloudformation:$awsSdkVersion")
+    api("software.amazon.awssdk:schemas:$awsSdkVersion")
+    api("software.amazon.awssdk:cloudwatchlogs:$awsSdkVersion")
+    api("software.amazon.awssdk:apache-client:$awsSdkVersion")
+    api("software.amazon.awssdk:resourcegroupstaggingapi:$awsSdkVersion")
+
     testImplementation project(path: ":core", configuration: 'testArtifacts')
     testImplementation('com.github.tomakehurst:wiremock-jre8:2.26.0')
+
     integrationTestImplementation('org.eclipse.jetty:jetty-servlet:9.4.15.v20190215')
     integrationTestImplementation('org.eclipse.jetty:jetty-proxy:9.4.15.v20190215')
 }
