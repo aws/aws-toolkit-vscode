@@ -4,13 +4,12 @@
  */
 
 import * as vscode from 'vscode'
-import { DebugSession } from 'vscode-debugadapter'
-import { DebugProtocol } from 'vscode-debugprotocol'
 
+const SAM_APP_DEBUG_TYPE = 'sam-app'
 const SAM_APP_REQUEST_TYPES = new Set<string>(['direct-invoke'])
 const SAM_APP_TARGET_TYPES = new Set<string>(['template', 'code'])
 
-export interface SamAppDebugConfiguration {
+export interface SamAppDebugConfiguration extends vscode.DebugConfiguration {
     readonly invokeTarget: {
         readonly target: string
         readonly samTemplatePath: string
@@ -47,29 +46,38 @@ interface JsonObject {
     readonly [key: string]: string
 }
 
-class SamAppDebugger extends DebugSession {
-    public constructor() {
-        super()
-    }
+export function activate(extContext: vscode.ExtensionContext) {
+    const provider = vscode.debug.registerDebugConfigurationProvider(
+        SAM_APP_DEBUG_TYPE,
+        new SamAppDebugConfigurationProvider()
+    )
 
-    protected initializeRequest(
-        response: DebugProtocol.InitializeResponse,
-        args: DebugProtocol.InitializeRequestArguments
-    ): void {
-        // Add debugger capabilities here
-        // Example: https://github.com/microsoft/vscode-mock-debug/blob/master/src/mockDebug.ts#L104
-    }
-
-    protected customRequest(command: string, response: DebugProtocol.Response, args: SamAppDebugConfiguration): void {
-        if (SAM_APP_REQUEST_TYPES.has(command)) {
-            vscode.window.showInformationMessage('Not implemented!')
-            if (SAM_APP_TARGET_TYPES.has(args.invokeTarget.target)) {
-                vscode.window.showInformationMessage('Not implemented, but your config is solid!')
-            }
-        } else {
-            vscode.window.showInformationMessage("Not implemented, but the request type isn't supported anyway!")
-        }
-    }
+    extContext.subscriptions.push(provider)
 }
 
-SamAppDebugger.run(SamAppDebugger)
+class SamAppDebugConfigurationProvider implements vscode.DebugConfigurationProvider {
+    public constructor() {}
+
+    public provideDebugConfigurations(
+        folder: vscode.WorkspaceFolder | undefined,
+        token?: vscode.CancellationToken
+    ): vscode.ProviderResult<SamAppDebugConfiguration[]> {
+        return undefined
+    }
+
+    public resolveDebugConfiguration?(
+        folder: vscode.WorkspaceFolder | undefined,
+        debugConfiguration: SamAppDebugConfiguration,
+        token?: vscode.CancellationToken
+    ): vscode.ProviderResult<SamAppDebugConfiguration> {
+        if (!SAM_APP_REQUEST_TYPES.has(debugConfiguration.request)) {
+            vscode.window.showInformationMessage('Invalid request type')
+        }
+        if (!SAM_APP_TARGET_TYPES.has(debugConfiguration.invokeTarget.target)) {
+            vscode.window.showInformationMessage('Invalid invokeTarget.target type')
+        }
+        vscode.window.showInformationMessage('Not implemented')
+
+        return undefined
+    }
+}
