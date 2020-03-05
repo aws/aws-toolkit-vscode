@@ -55,7 +55,10 @@ class SamAppDebugger extends DebugSession {
     protected initializeRequest(
         response: DebugProtocol.InitializeResponse,
         args: DebugProtocol.InitializeRequestArguments
-    ): void {}
+    ): void {
+        // Add debugger capabilities here
+        // Example: https://github.com/microsoft/vscode-mock-debug/blob/master/src/mockDebug.ts#L104
+    }
 
     protected customRequest(command: string, response: DebugProtocol.Response, args: SamAppDebugConfiguration): void {
         if (SAM_APP_REQUEST_TYPES.has(command)) {
