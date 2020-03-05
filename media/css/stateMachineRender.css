@@ -158,21 +158,18 @@ body .status-info.start-error-asl {
 }
 
 .in-sync-asl svg circle {
+    stroke: #004d00;
     fill: #a5d099;
 }
 
 .syncing-asl svg circle {
+    stroke: #333;
     fill: #d8d8d8;
 }
 
 .not-in-sync-asl svg circle {
+    stroke: #660000;
     fill: #f2ada0;
-}
-
-#test {
-    position: absolute;
-    top: 20px;
-    left: 20px;
 }
 
 a {
