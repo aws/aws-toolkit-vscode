@@ -14,7 +14,7 @@ import { initializeAwsCredentialsStatusBarItem } from './credentials/awsCredenti
 import { LoginManager } from './credentials/loginManager'
 import { CredentialsProviderManager } from './credentials/providers/credentialsProviderManager'
 import { SharedCredentialsProviderFactory } from './credentials/providers/sharedCredentialsProviderFactory'
-import { activate as activateSamAppDebugger } from './debugger/samAppDebugger'
+import { activate as activateAwsSamDebugger } from './debugger/awsSamDebugger'
 import { activate as activateSchemas } from './eventSchemas/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
@@ -177,7 +177,7 @@ export async function activate(context: vscode.ExtensionContext) {
             toolkitSettings
         })
 
-        activateSamAppDebugger(context)
+        activateAwsSamDebugger(context)
 
         toastNewUser(context)
 
