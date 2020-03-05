@@ -19,7 +19,7 @@ export interface messageObject {
     stateMachineData: string
 }
 
-// TO DO: once the amazon-states-language-service is open sourced
+// TODO: once the amazon-states-language-service is open sourced
 // it should be used directly here - diagnostics appear with a delay
 // and an invalid states machine still can be rendered
 function isDocumentValid(uri: vscode.Uri): boolean {
@@ -43,11 +43,11 @@ export async function visualizeStateMachine(globalStorage: vscode.Memento): Prom
     const activeTextEditor: vscode.TextEditor | undefined = vscode.window.activeTextEditor
 
     let documentUri: vscode.Uri
-    let documentText: string
+    let documentText: vscode.TextDocument
 
     if (activeTextEditor) {
         documentUri = activeTextEditor.document.uri
-        documentText = activeTextEditor.document.getText()
+        documentText = activeTextEditor.document
     } else {
         logger.error('Could not grab active text editor for state machine render.')
         throw new Error('Could not grab active text editor for state machine render.')
@@ -72,7 +72,10 @@ export async function visualizeStateMachine(globalStorage: vscode.Memento): Prom
     return
 }
 
-async function setupWebviewPanel(documentUri: vscode.Uri, documentText: string): Promise<vscode.WebviewPanel> {
+async function setupWebviewPanel(
+    documentUri: vscode.Uri,
+    documentText: vscode.TextDocument
+): Promise<vscode.WebviewPanel> {
     const logger: Logger = getLogger()
     let lastUpdatedTextDocument: vscode.TextDocument
 
@@ -93,17 +96,28 @@ async function setupWebviewPanel(documentUri: vscode.Uri, documentText: string):
     )
 
     function sendUpdateMessage(textDocument: vscode.TextDocument) {
+        const isValid = isDocumentValid(documentUri)
+
+        logger.debug('Sending update message to webview.')
+
         panel.webview.postMessage({
             command: 'update',
             stateMachineData: textDocument.getText(),
-            isValid: isDocumentValid(textDocument.uri)
+            isValid
         })
+
+        lastUpdatedTextDocument = textDocument
+        wasDocumentValid = isValid
     }
 
     const debouncedUpdate = debounce(sendUpdateMessage, 500)
     let wasDocumentValid = isDocumentValid(documentUri)
 
     const interval = setInterval(() => {
+        if (!lastUpdatedTextDocument) {
+            return
+        }
+
         const isValid = isDocumentValid(lastUpdatedTextDocument.uri)
 
         // Diagnostics are validated with a delay
@@ -131,23 +145,12 @@ async function setupWebviewPanel(documentUri: vscode.Uri, documentText: string):
     // Add listener function to update the graph on document save
     const updateOnSaveDisposable = vscode.workspace.onDidSaveTextDocument(textDocument => {
         if (textDocument && textDocument.uri.path === documentUri.path) {
-            const isValid = isDocumentValid(documentUri)
-            logger.debug('Sending update message to webview.')
-
-            panel.webview.postMessage({
-                command: 'update',
-                stateMachineData: textDocument.getText(),
-                isValid
-            })
-
-            wasDocumentValid = isValid
+            sendUpdateMessage(textDocument)
         }
     })
 
     const updateOnChangeDisposable = vscode.workspace.onDidChangeTextDocument(textDocument => {
-        lastUpdatedTextDocument = textDocument.document
         if (textDocument.document.uri.path === documentUri.path) {
-            logger.debug('Sending update message to webview.')
             debouncedUpdate(textDocument.document)
         }
     })
@@ -164,14 +167,7 @@ async function setupWebviewPanel(documentUri: vscode.Uri, documentText: string):
             case 'webviewRendered': {
                 // Webview has finished rendering, so now we can give it our
                 // initial state machine definition.
-                const isValid = isDocumentValid(documentUri)
-                panel.webview.postMessage({
-                    command: 'update',
-                    stateMachineData: documentText,
-                    isValid
-                })
-
-                wasDocumentValid = isValid
+                sendUpdateMessage(documentText)
                 break
             }
 
@@ -228,7 +224,7 @@ function getWebviewContent(
         </div>
         <div class="status-info">
             <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="50" cy="50" r="50"/>
+                <circle cx="50" cy="50" r="42" stroke-width="4" />
             </svg>
             <div class="status-messages">
                 <span class="previewing-asl-message">${statusTexts.inSync}</span>
