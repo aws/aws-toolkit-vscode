@@ -48,7 +48,6 @@ export interface AwsSamDebuggerLambdaFields {
         readonly json?: ReadonlyJsonObject
     }
     readonly memoryMb?: number
-    // TODO: Turn samLambdaRuntimes into a type?
     readonly runtime?: string
     readonly timeoutSec?: number
 }
