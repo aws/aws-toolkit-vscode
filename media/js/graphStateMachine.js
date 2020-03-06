@@ -14,11 +14,11 @@ let options = {
 }
 
 const statusInfoContainer = document.querySelector('.status-info')
-const testButton = document.querySelector('.previewing-asl-message a')
+const previewButton = document.querySelector('.previewing-asl-message a')
 let hasRenderedOnce = false
 
-if (testButton) {
-    testButton.addEventListener('click', () => {
+if (previewButton) {
+    previewButton.addEventListener('click', () => {
         vscode.postMessage({ command: 'viewDocument' })
     })
 }

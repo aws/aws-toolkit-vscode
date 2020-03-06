@@ -43,11 +43,11 @@ export async function visualizeStateMachine(globalStorage: vscode.Memento): Prom
     const activeTextEditor: vscode.TextEditor | undefined = vscode.window.activeTextEditor
 
     let documentUri: vscode.Uri
-    let documentText: vscode.TextDocument
+    let textDocument: vscode.TextDocument
 
     if (activeTextEditor) {
         documentUri = activeTextEditor.document.uri
-        documentText = activeTextEditor.document
+        textDocument = activeTextEditor.document
     } else {
         logger.error('Could not grab active text editor for state machine render.')
         throw new Error('Could not grab active text editor for state machine render.')
@@ -56,7 +56,7 @@ export async function visualizeStateMachine(globalStorage: vscode.Memento): Prom
     try {
         await cache.updateCache(globalStorage)
 
-        return setupWebviewPanel(documentUri, documentText)
+        return setupWebviewPanel(documentUri, textDocument)
     } catch (err) {
         vscode.window.showInformationMessage(
             localize(
@@ -74,7 +74,7 @@ export async function visualizeStateMachine(globalStorage: vscode.Memento): Prom
 
 async function setupWebviewPanel(
     documentUri: vscode.Uri,
-    documentText: vscode.TextDocument
+    textDocument: vscode.TextDocument
 ): Promise<vscode.WebviewPanel> {
     const logger: Logger = getLogger()
     let lastUpdatedTextDocument: vscode.TextDocument
@@ -95,18 +95,18 @@ async function setupWebviewPanel(
         }
     )
 
-    function sendUpdateMessage(textDocument: vscode.TextDocument) {
+    function sendUpdateMessage(updatedTextDocument: vscode.TextDocument) {
         const isValid = isDocumentValid(documentUri)
 
         logger.debug('Sending update message to webview.')
 
         panel.webview.postMessage({
             command: 'update',
-            stateMachineData: textDocument.getText(),
+            stateMachineData: updatedTextDocument.getText(),
             isValid
         })
 
-        lastUpdatedTextDocument = textDocument
+        lastUpdatedTextDocument = updatedTextDocument
         wasDocumentValid = isValid
     }
 
@@ -167,7 +167,7 @@ async function setupWebviewPanel(
             case 'webviewRendered': {
                 // Webview has finished rendering, so now we can give it our
                 // initial state machine definition.
-                sendUpdateMessage(documentText)
+                sendUpdateMessage(textDocument)
                 break
             }
 
