@@ -56,7 +56,9 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
         this.loadedConfigModificationMillis = await this.getLastModifiedMillis(getConfigFilename())
         await updateAwsSdkLoadConfigEnvironmentVariable()
 
-        for (const profileName of allCredentialProfiles.keys()) {
+        let profileNames = Array.from(allCredentialProfiles.keys())
+        getLogger().verbose(`credentials: found profiles: ${profileNames}`)
+        for (const profileName of profileNames) {
             const provider = new SharedCredentialsProvider(profileName, allCredentialProfiles)
             await this.addProviderIfValid(profileName, provider)
         }

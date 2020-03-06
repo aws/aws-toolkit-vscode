@@ -11,6 +11,7 @@ import { SettingsConfiguration } from '../shared/settingsConfiguration'
 import { LoginManager } from './loginManager'
 import { CredentialsProviderId, fromString } from './providers/credentialsProviderId'
 import { SharedCredentialsProvider } from './providers/sharedCredentialsProvider'
+import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 
 export interface CredentialsInitializeParameters {
     extensionContext: vscode.ExtensionContext
@@ -31,15 +32,21 @@ export async function loginWithMostRecentCredentials(
     toolkitSettings: SettingsConfiguration,
     loginManager: LoginManager
 ): Promise<void> {
+    const profiles = await CredentialsProviderManager.getInstance().getProfiles()
+    const profileNames = Object.keys(profiles)
     const previousCredentialsId = toolkitSettings.readSetting<string>(profileSettingKey, '')
-    if (previousCredentialsId) {
+    if (profiles && profileNames.length === 1) {
+        // Auto-connect if there is exactly one profile, named "default".
+        await loginManager.login(profiles[profileNames[0]])
+        // Toast.
+        vscode.window.showInformationMessage(`Connected to "${profileNames[0]}"`)
+    } else if (previousCredentialsId) {
         // Migrate from older Toolkits - If the last providerId isn't in the new CredentialProviderId format,
         // treat it like a Shared Crdentials Provider.
         const loginCredentialsId = tryMakeCredentialsProviderId(previousCredentialsId) ?? {
             credentialType: SharedCredentialsProvider.getCredentialsType(),
             credentialTypeId: previousCredentialsId
         }
-
         await loginManager.login(loginCredentialsId)
     } else {
         await loginManager.logout()
