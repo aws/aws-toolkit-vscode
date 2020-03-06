@@ -9,45 +9,6 @@ import { DRIVE_LETTER_REGEX } from '../../shared/codelens/codeLensUtils'
 
 const DOTNET_CORE_DEBUGGER_PATH = '/tmp/lambci_debug_files/vsdbg'
 
-export interface SamAppDebugConfiguration extends vscode.DebugConfiguration {
-    readonly type: 'sam-app'
-    readonly request: 'direct-invoke'
-    readonly invokeTarget: {
-        readonly target: 'template' | 'code'
-        readonly samTemplatePath: string
-        readonly samTemplateResource: string
-    }
-    readonly lambda?: {
-        // TODO: Turn samLambdaRuntimes into a type?
-        readonly runtime?: string
-        readonly timeoutSec?: number
-        readonly memoryMb?: number
-        readonly environmentVariables?: JsonObject
-        readonly event?: {
-            readonly path?: string
-            readonly json?: JsonObject
-        }
-    }
-    readonly sam?: {
-        readonly containerBuild?: boolean
-        readonly skipNewImageCheck?: boolean
-        readonly dockerNetwork?: string
-        readonly buildArguments?: string
-        readonly localArguments?: string
-        readonly template?: {
-            readonly parameters?: JsonObject
-        }
-    }
-    readonly aws?: {
-        readonly credentials?: string
-        readonly region?: string
-    }
-}
-
-interface JsonObject {
-    readonly [key: string]: string
-}
-
 export interface DebugConfiguration extends vscode.DebugConfiguration {
     readonly type: 'node' | 'python' | 'coreclr'
     readonly request: 'attach'
