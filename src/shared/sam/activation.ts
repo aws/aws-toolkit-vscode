@@ -25,6 +25,7 @@ import { PromiseSharer } from '../utilities/promiseUtilities'
 import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
 import { initialize as initializeSamCliContext } from './cli/samCliContext'
 import { detectSamCli } from './cli/samCliDetection'
+import { AWS_SAM_DEBUG_TYPE, AwsSamDebugConfigurationProvider } from './debugger/awsSamDebugger'
 
 /**
  * Activate serverless related functionality for the extension.
@@ -56,6 +57,13 @@ export async function activate(activateArguments: {
         regionProvider: activateArguments.regionProvider,
         channelLogger
     })
+
+    const provider = vscode.debug.registerDebugConfigurationProvider(
+        AWS_SAM_DEBUG_TYPE,
+        new AwsSamDebugConfigurationProvider()
+    )
+
+    activateArguments.extensionContext.subscriptions.push(provider)
 
     activateArguments.extensionContext.subscriptions.push(
         vscode.languages.registerCompletionItemProvider(
