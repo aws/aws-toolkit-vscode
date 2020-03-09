@@ -63,7 +63,7 @@ Tests will output log output to `./.test-reports/testLog.log` for debugging
 
 #### Common Issues
 
--   Consecutive test runs are currently impacted on VS Code v.1.42.0 due to caching issues. See [VS Code issue #90484](https://github.com/microsoft/vscode/issues/90484). (12 February 2020)
+-   Consecutive test runs were impacted on VS Code **`v1.42.0`** and **`v1.42.1`** due to caching issues. See [VS Code issue #90484](https://github.com/microsoft/vscode/issues/90484). **_This issue has been fixed with the VS Code `v1.43.0` release (9 March 2020)_**
     -   Workarounds:
         -   Delete the `CachedData` directory for VS Code (`{path/to/VS/Code/App/Data}/CachedData/`) between tests, specifically the folder corresponding to VS Code 1.42.0 (`ae08d5460b5a45169385ff3fd44208f431992451`)
         -   Target a different version of VS Code for tests by adding the following environment variable: `VSCODE_TEST_VERSION = "1.41.1"`
