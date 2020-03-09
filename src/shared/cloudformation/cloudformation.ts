@@ -49,7 +49,6 @@ export namespace CloudFormation {
 
     export interface Environment {
         Variables?: Variables
-        [key: string]: any
     }
 
     export interface Variables {

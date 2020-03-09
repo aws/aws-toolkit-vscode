@@ -18,7 +18,7 @@ import { activate as activateSchemas } from './eventSchemas/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
-import { activate as ActivateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
+import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
 import {
     documentationUrl,
     endpointsFileUrl,
@@ -156,7 +156,7 @@ export async function activate(context: vscode.ExtensionContext) {
             })
         )
 
-        await ActivateCloudFormationTemplateRegistry(context)
+        await activateCloudFormationTemplateRegistry(context)
 
         await activateCdk({
             extensionContext: context
