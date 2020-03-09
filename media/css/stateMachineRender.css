@@ -82,3 +82,96 @@ body.vscode-high-contrast .node.anchor > .shape {
 body.vscode-high-contrast marker {
     fill: var(--vscode-contrastActiveBorder);
 }
+
+.status-info {
+    display: flex;
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    font-size: 12px;
+    padding: 10px;
+    align-items: center;
+    background-color: var(--vscode-editor-background);
+    border: 1px solid #c9c9c9;
+    color: #7b7b7b;
+}
+
+body .status-info.start-error-asl {
+    display: inline-block;
+    border: 1px solid #da6363;
+    color: #da6363;
+    padding: 10px;
+    bottom: 50%;
+    left: 50%;
+    transform: translate(-50%, 50%);
+}
+
+.status-info.start-error-asl svg {
+    display: none;
+}
+
+.vscode-dark .status-info {
+    border: 1px solid #6c6c6c;
+    color: #949494;
+}
+
+.vscode-high-contrast .status-info {
+    border: 1px solid var(--vscode-contrastActiveBorder);
+    color: var(--vscode-contrastActiveBorder);
+}
+
+.status-messages span {
+    display: none;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+.status-info svg {
+    height: 10px;
+    width: 10px;
+    margin-right: 10px;
+}
+
+.in-sync-asl .status-messages .previewing-asl-message {
+    display: inline-block;
+}
+
+.syncing-asl .status-messages .rendering-asl-message {
+    display: inline-block;
+}
+
+.not-in-sync-asl .status-messages .error-asl-message,
+.start-error-asl .status-messages .error-asl-message {
+    display: inline-block;
+}
+
+.vscode-dark .in-sync-asl svg circle {
+    fill: #46a52c;
+}
+
+.vscode-dark .syncing-asl svg circle {
+    fill: #888;
+}
+
+.vscode-dark .not-in-sync-asl svg circle {
+    fill: #f37f6a;
+}
+
+.in-sync-asl svg circle {
+    stroke: #004d00;
+    fill: #a5d099;
+}
+
+.syncing-asl svg circle {
+    stroke: #333;
+    fill: #d8d8d8;
+}
+
+.not-in-sync-asl svg circle {
+    stroke: #660000;
+    fill: #f2ada0;
+}
+
+a {
+    cursor: pointer;
+}
