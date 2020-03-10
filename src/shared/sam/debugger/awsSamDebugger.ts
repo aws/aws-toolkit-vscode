@@ -36,36 +36,18 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
         debugConfiguration: AwsSamDebuggerConfiguration,
         token?: vscode.CancellationToken
     ): Promise<AwsSamDebuggerConfiguration | undefined> {
-        let invalidMessage: string | undefined
+        let invalidMessage: string | undefined = generalDebugConfigValidation(debugConfiguration)
 
-        if (!AWS_SAM_DEBUG_REQUEST_TYPES.includes(debugConfiguration.request)) {
-            invalidMessage = localize(
-                'AWS.sam.debugger.invalidRequest',
-                'Debug Configuration has an unsupported request type. Supported types: {0}',
-                AWS_SAM_DEBUG_REQUEST_TYPES.join(', ')
-            )
+        if (invalidMessage) {
+            vscode.window.showErrorMessage(invalidMessage)
+
+            return undefined
         }
 
-        if (!AWS_SAM_DEBUG_TARGET_TYPES.includes(debugConfiguration.invokeTarget.target)) {
-            invalidMessage = localize(
-                'AWS.sam.debugger.invalidTarget',
-                'Debug Configuration has an unsupported target type. Supported types: {0}',
-                AWS_SAM_DEBUG_TARGET_TYPES.join(', ')
-            )
-        }
-
-        if (!invalidMessage) {
-            if (debugConfiguration.invokeTarget.target === TEMPLATE_TARGET_TYPE) {
-                invalidMessage = isTemplateDebugConfigValid(debugConfiguration, this.cftRegistry)
-            } else if (debugConfiguration.invokeTarget.target === CODE_TARGET_TYPE) {
-                if (!debugConfiguration.lambda?.runtime || !samLambdaRuntimes.has(debugConfiguration.lambda.runtime)) {
-                    invalidMessage = localize(
-                        'AWS.sam.debugger.missingRuntime',
-                        'Debug Configurations with an invoke target of "{0}" require a valid Lambda runtime value',
-                        CODE_TARGET_TYPE
-                    )
-                }
-            }
+        if (debugConfiguration.invokeTarget.target === TEMPLATE_TARGET_TYPE) {
+            invalidMessage = templateDebugConfigValidation(debugConfiguration, this.cftRegistry)
+        } else if (debugConfiguration.invokeTarget.target === CODE_TARGET_TYPE) {
+            invalidMessage = codeDebugConfigValidation(debugConfiguration)
         }
 
         if (invalidMessage) {
@@ -80,7 +62,25 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
     }
 }
 
-function isTemplateDebugConfigValid(
+function generalDebugConfigValidation(debugConfiguration: AwsSamDebuggerConfiguration): string | undefined {
+    if (!AWS_SAM_DEBUG_REQUEST_TYPES.includes(debugConfiguration.request)) {
+        return localize(
+            'AWS.sam.debugger.invalidRequest',
+            'Debug Configuration has an unsupported request type. Supported types: {0}',
+            AWS_SAM_DEBUG_REQUEST_TYPES.join(', ')
+        )
+    }
+
+    if (!AWS_SAM_DEBUG_TARGET_TYPES.includes(debugConfiguration.invokeTarget.target)) {
+        return localize(
+            'AWS.sam.debugger.invalidTarget',
+            'Debug Configuration has an unsupported target type. Supported types: {0}',
+            AWS_SAM_DEBUG_TARGET_TYPES.join(', ')
+        )
+    }
+}
+
+function templateDebugConfigValidation(
     debugConfiguration: AwsSamDebuggerConfiguration,
     cftRegistry: CloudFormationTemplateRegistry
 ): string | undefined {
@@ -150,5 +150,15 @@ function isTemplateDebugConfigValid(
                 )
             )
         }
+    }
+}
+
+function codeDebugConfigValidation(debugConfiguration: AwsSamDebuggerConfiguration): string | undefined {
+    if (!debugConfiguration.lambda?.runtime || !samLambdaRuntimes.has(debugConfiguration.lambda.runtime)) {
+        return localize(
+            'AWS.sam.debugger.missingRuntime',
+            'Debug Configurations with an invoke target of "{0}" require a valid Lambda runtime value',
+            CODE_TARGET_TYPE
+        )
     }
 }
