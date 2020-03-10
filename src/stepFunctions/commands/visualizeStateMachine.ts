@@ -143,15 +143,15 @@ async function setupWebviewPanel(
     )
 
     // Add listener function to update the graph on document save
-    const updateOnSaveDisposable = vscode.workspace.onDidSaveTextDocument(textDocument => {
-        if (textDocument && textDocument.uri.path === documentUri.path) {
-            sendUpdateMessage(textDocument)
+    const updateOnSaveDisposable = vscode.workspace.onDidSaveTextDocument(savedTextDocument => {
+        if (savedTextDocument && savedTextDocument.uri.path === documentUri.path) {
+            sendUpdateMessage(savedTextDocument)
         }
     })
 
-    const updateOnChangeDisposable = vscode.workspace.onDidChangeTextDocument(textDocument => {
-        if (textDocument.document.uri.path === documentUri.path) {
-            debouncedUpdate(textDocument.document)
+    const updateOnChangeDisposable = vscode.workspace.onDidChangeTextDocument(textDocumentEvent => {
+        if (textDocumentEvent.document.uri.path === documentUri.path) {
+            debouncedUpdate(textDocumentEvent.document)
         }
     })
 
@@ -231,6 +231,25 @@ function getWebviewContent(
                 <span class="rendering-asl-message">${statusTexts.syncing}</span>
                 <span class="error-asl-message">${statusTexts.notInSync}</span>
             </div>
+        </div>
+        <div class="graph-buttons-container">
+            <button id="zoomin">
+                <svg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+                    <line x1="8" y1="1" x2="8" y2="15"></line>
+                    <line x1="15" y1="8" x2="1" y2="8"></line>
+                </svg>
+            </button>
+            <button id="zoomout">
+                <svg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+                    <line x1="15" y1="8" x2="1" y2="8"></line>
+                </svg>
+            </button>
+            <button id="center">
+                <svg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+                    <circle cx="8" cy="8" r="7" stroke-width="2" />
+                    <circle cx="8" cy="8" r="1" stroke-width="2" />
+                </svg>
+            </button>
         </div>
 
         <script src='${webviewBodyScript}'></script>

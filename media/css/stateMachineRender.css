@@ -13,6 +13,13 @@
  * General
  */
 
+:root {
+    --btnDarkOutlineColor: #c5c5c5;
+    --btnDarkIconColor: #888;
+    --btnLightOutlineColor: #b8b8b8;
+    --btnLightIconColor: #616161;
+}
+
 /* Sizing CSS */
 html,
 body {
@@ -23,13 +30,16 @@ body {
 }
 
 #svgcontainer {
-    height: 100%;
+    flex-grow: 1;
     padding: 0px;
 }
 
 /* Theming CSS Below */
 body {
     background-color: var(--vscode-editor-background);
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
 }
 
 /* 
@@ -174,4 +184,81 @@ body .status-info.start-error-asl {
 
 a {
     cursor: pointer;
+}
+
+.graph-buttons-container {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+}
+
+.graph-buttons-container button {
+    background-color: var(--vscode-editor-background);
+    border: 1px solid var(--btnLightOutlineColor);
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    cursor: pointer;
+    width: 38px;
+    height: 30px;
+    margin-bottom: 10px;
+}
+
+#center svg circle:nth-child(2) {
+    fill: var(--btnLightIconColor);
+}
+
+.vscode-dark #center svg circle:nth-child(2) {
+    fill: var(--btnLightIconColor);
+}
+
+.graph-buttons-container button svg {
+    width: 14px;
+    height: 14px;
+    stroke-width: 2px;
+}
+
+.graph-buttons-container button:active {
+    opacity: 0.7;
+}
+
+.vscode-high-contrast .graph-buttons-container button {
+    border: 1px solid white;
+}
+
+.vscode-dark .graph-buttons-container button {
+    border: 1px solid var(--btnDarkOutlineColor);
+}
+
+.graph-buttons-container button line,
+.graph-buttons-container button circle {
+    stroke: var(--btnLightIconColor);
+    fill: transparent;
+}
+
+.graph-buttons-container button circle:nth-child(2) {
+    fill: var(--btnLightIconColor);
+}
+
+.vscode-high-contrast .graph-buttons-container button line,
+.vscode-high-contrast .graph-buttons-container button circle {
+    stroke: white;
+}
+
+.vscode-dark .graph-buttons-container button line,
+.vscode-dark .graph-buttons-container button circle {
+    stroke: var(--btnDarkIconColor);
+}
+
+.vscode-high-contrast .graph-buttons-container button circle:nth-child(2) {
+    fill: var(--btnDarkIconColor);
+}
+
+.graph-buttons-container button:focus {
+    outline: none;
 }
