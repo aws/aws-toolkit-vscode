@@ -36,24 +36,30 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
         debugConfiguration: AwsSamDebuggerConfiguration,
         token?: vscode.CancellationToken
     ): Promise<AwsSamDebuggerConfiguration | undefined> {
-        let invalidMessage: string | undefined = generalDebugConfigValidation(debugConfiguration)
+        let invalidityPair: [boolean, string | undefined] = generalDebugConfigValidation(debugConfiguration)
 
-        if (invalidMessage) {
-            vscode.window.showErrorMessage(invalidMessage)
+        if (invalidityPair[0]) {
+            if (invalidityPair[1]) {
+                vscode.window.showErrorMessage(invalidityPair[1])
+            }
 
             return undefined
         }
 
         if (debugConfiguration.invokeTarget.target === TEMPLATE_TARGET_TYPE) {
-            invalidMessage = templateDebugConfigValidation(debugConfiguration, this.cftRegistry)
+            invalidityPair = templateDebugConfigValidation(debugConfiguration, this.cftRegistry)
         } else if (debugConfiguration.invokeTarget.target === CODE_TARGET_TYPE) {
-            invalidMessage = codeDebugConfigValidation(debugConfiguration)
+            invalidityPair = codeDebugConfigValidation(debugConfiguration)
         }
 
-        if (invalidMessage) {
-            vscode.window.showErrorMessage(invalidMessage)
+        if (invalidityPair[0]) {
+            if (invalidityPair[1]) {
+                vscode.window.showErrorMessage(invalidityPair[1])
+            }
 
             return undefined
+        } else if (invalidityPair[1]) {
+            vscode.window.showInformationMessage(invalidityPair[1])
         }
 
         vscode.window.showInformationMessage(localize('AWS.generic.notImplemented', 'Not implemented'))
@@ -62,71 +68,91 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
     }
 }
 
-function generalDebugConfigValidation(debugConfiguration: AwsSamDebuggerConfiguration): string | undefined {
+function generalDebugConfigValidation(debugConfiguration: AwsSamDebuggerConfiguration): [boolean, string | undefined] {
     if (!AWS_SAM_DEBUG_REQUEST_TYPES.includes(debugConfiguration.request)) {
-        return localize(
-            'AWS.sam.debugger.invalidRequest',
-            'Debug Configuration has an unsupported request type. Supported types: {0}',
-            AWS_SAM_DEBUG_REQUEST_TYPES.join(', ')
-        )
+        return [
+            true,
+            localize(
+                'AWS.sam.debugger.invalidRequest',
+                'Debug Configuration has an unsupported request type. Supported types: {0}',
+                AWS_SAM_DEBUG_REQUEST_TYPES.join(', ')
+            )
+        ]
     }
 
     if (!AWS_SAM_DEBUG_TARGET_TYPES.includes(debugConfiguration.invokeTarget.target)) {
-        return localize(
-            'AWS.sam.debugger.invalidTarget',
-            'Debug Configuration has an unsupported target type. Supported types: {0}',
-            AWS_SAM_DEBUG_TARGET_TYPES.join(', ')
-        )
+        return [
+            true,
+            localize(
+                'AWS.sam.debugger.invalidTarget',
+                'Debug Configuration has an unsupported target type. Supported types: {0}',
+                AWS_SAM_DEBUG_TARGET_TYPES.join(', ')
+            )
+        ]
     }
+
+    return [false, undefined]
 }
 
 function templateDebugConfigValidation(
     debugConfiguration: AwsSamDebuggerConfiguration,
     cftRegistry: CloudFormationTemplateRegistry
-): string | undefined {
+): [boolean, string | undefined] {
     const templateTarget = (debugConfiguration.invokeTarget as any) as AwsSamDebuggerInvokeTargetTemplateFields
 
     const template = cftRegistry.getRegisteredTemplate(templateTarget.samTemplatePath)
 
     if (!template) {
-        return localize(
-            'AWS.sam.debugger.missingTemplate',
-            'Unable to find the Template file {0}',
-            templateTarget.samTemplatePath
-        )
+        return [
+            true,
+            localize(
+                'AWS.sam.debugger.missingTemplate',
+                'Unable to find the Template file {0}',
+                templateTarget.samTemplatePath
+            )
+        ]
     }
 
     const resources = template.template.Resources
 
     if (!resources || !Object.keys(resources).includes(templateTarget.samTemplateResource)) {
-        return localize(
-            'AWS.sam.debugger.missingResource',
-            'Unable to find the Template Resource {0} in Template file {1}',
-            templateTarget.samTemplateResource,
-            templateTarget.samTemplatePath
-        )
+        return [
+            true,
+            localize(
+                'AWS.sam.debugger.missingResource',
+                'Unable to find the Template Resource {0} in Template file {1}',
+                templateTarget.samTemplateResource,
+                templateTarget.samTemplatePath
+            )
+        ]
     }
 
     const resource = resources[templateTarget.samTemplateResource]
 
     // TODO: Validate against `AWS::Lambda::Function`?
     if (resource?.Type !== CloudFormation.SERVERLESS_FUNCTION_TYPE) {
-        return localize(
-            'AWS.sam.debugger.resourceNotAFunction',
-            'Template Resource {0} in Template file {1} needs to be of type {2}',
-            templateTarget.samTemplateResource,
-            templateTarget.samTemplatePath,
-            CloudFormation.SERVERLESS_FUNCTION_TYPE
-        )
+        return [
+            true,
+            localize(
+                'AWS.sam.debugger.resourceNotAFunction',
+                'Template Resource {0} in Template file {1} needs to be of type {2}',
+                templateTarget.samTemplateResource,
+                templateTarget.samTemplatePath,
+                CloudFormation.SERVERLESS_FUNCTION_TYPE
+            )
+        ]
     }
 
     if (!resource?.Properties?.Runtime || !samLambdaRuntimes.has(resource?.Properties?.Runtime as string)) {
-        return localize(
-            'AWS.sam.debugger.unsupportedRuntime',
-            'Runtime for Template Resource {0} in Template file {1} is either undefined or unsupported.',
-            templateTarget.samTemplateResource,
-            templateTarget.samTemplatePath
-        )
+        return [
+            true,
+            localize(
+                'AWS.sam.debugger.unsupportedRuntime',
+                'Runtime for Template Resource {0} in Template file {1} is either undefined or unsupported.',
+                templateTarget.samTemplateResource,
+                templateTarget.samTemplatePath
+            )
+        ]
     }
 
     const templateEnv = resource?.Properties.Environment
@@ -142,23 +168,31 @@ function templateDebugConfigValidation(
         }
         if (missingVars.length > 0) {
             // this check doesn't affect template validity.
-            vscode.window.showInformationMessage(
+            return [
+                false,
                 localize(
                     'AWS.sam.debugger.extraEnvVars',
                     'The following environment variables are not found in the targeted template and will not be overridden: {0}',
                     missingVars.join(', ')
                 )
-            )
+            ]
         }
     }
+
+    return [false, undefined]
 }
 
-function codeDebugConfigValidation(debugConfiguration: AwsSamDebuggerConfiguration): string | undefined {
+function codeDebugConfigValidation(debugConfiguration: AwsSamDebuggerConfiguration): [boolean, string | undefined] {
     if (!debugConfiguration.lambda?.runtime || !samLambdaRuntimes.has(debugConfiguration.lambda.runtime)) {
-        return localize(
-            'AWS.sam.debugger.missingRuntime',
-            'Debug Configurations with an invoke target of "{0}" require a valid Lambda runtime value',
-            CODE_TARGET_TYPE
-        )
+        return [
+            true,
+            localize(
+                'AWS.sam.debugger.missingRuntime',
+                'Debug Configurations with an invoke target of "{0}" require a valid Lambda runtime value',
+                CODE_TARGET_TYPE
+            )
+        ]
     }
+
+    return [false, undefined]
 }
