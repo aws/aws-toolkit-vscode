@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { CloudFormation } from '../../cloudformation/cloudformation'
 import { CloudFormationTemplateRegistry } from '../../cloudformation/templateRegistry'
 import { AwsSamDebuggerConfiguration } from './awsSamDebugConfiguration'
 
@@ -33,7 +32,7 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
                         const resource = templateDatum.template.Resources[resourceKey]
                         if (resource) {
                             debugConfigurations.push(
-                                createSamDebugConfigurationFromTemplate(resourceKey, templateDatum.path, resource)
+                                createSamDebugConfigurationFromTemplate(resourceKey, templateDatum.path)
                             )
                         }
                     }
@@ -67,8 +66,7 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
 
 function createSamDebugConfigurationFromTemplate(
     resourceName: string,
-    templatePath: string,
-    resource: CloudFormation.Resource
+    templatePath: string
 ): AwsSamDebuggerConfiguration {
     return {
         type: AWS_SAM_DEBUG_TYPE,
