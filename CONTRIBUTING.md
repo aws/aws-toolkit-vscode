@@ -61,13 +61,7 @@ There are also some integration tests, which can be run from the Debug pane, or 
 
 Tests will output log output to `./.test-reports/testLog.log` for debugging
 
-#### Common Issues
-
--   Consecutive test runs were impacted on VS Code **`v1.42.x`** due to caching issues. See [VS Code issue #90484](https://github.com/microsoft/vscode/issues/90484).
-    -   Workarounds:
-        -   Update to **VS Code `v1.43.0`** or later
-        -   Delete the `CachedData` directory for VS Code (`{path/to/VS/Code/App/Data}/CachedData/`) between tests, specifically the folder corresponding to VS Code 1.42.0 (`ae08d5460b5a45169385ff3fd44208f431992451`)
-        -   Target a different version of VS Code for tests by adding the `VSCODE_TEST_VERSION` environment variable (e.g. `VSCODE_TEST_VERSION = "1.41.1"`)
+<!--#### Common Issues-->
 
 #### Checking coverage report
 
