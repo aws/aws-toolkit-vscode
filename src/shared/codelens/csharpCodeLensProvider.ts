@@ -4,6 +4,7 @@
  */
 
 import * as path from 'path'
+import { getPortPromise } from 'portfinder'
 import * as vscode from 'vscode'
 
 import { access } from 'fs-extra'
@@ -25,7 +26,7 @@ import { SettingsConfiguration } from '../settingsConfiguration'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { dirnameWithTrailingSlash } from '../utilities/pathUtils'
-import { ChannelLogger, getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
+import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
 import { CodeLensProviderParams, getInvokeCmdKey, makeCodeLenses } from './codeLensUtils'
 import {
     executeSamBuild,
@@ -68,16 +69,18 @@ export async function initialize({
         WAIT_FOR_DEBUGGER_MESSAGES.DOTNET
     ])
 }: CodeLensProviderParams): Promise<void> {
-    context.subscriptions.push(vscode.commands.registerCommand(getInvokeCmdKey(CSHARP_LANGUAGE), async (params: LambdaLocalInvokeParams) => {
-        await onLocalInvokeCommand({
-            lambdaLocalInvokeParams: params,
-            configuration,
-            toolkitOutputChannel,
-            processInvoker,
-            localInvokeCommand,
-            telemetryService
+    context.subscriptions.push(
+        vscode.commands.registerCommand(getInvokeCmdKey(CSHARP_LANGUAGE), async (params: LambdaLocalInvokeParams) => {
+            await onLocalInvokeCommand({
+                lambdaLocalInvokeParams: params,
+                configuration,
+                toolkitOutputChannel,
+                processInvoker,
+                localInvokeCommand,
+                telemetryService
+            })
         })
-    }))
+    )
 }
 
 export interface OnLocalInvokeCommandContext {
@@ -172,7 +175,7 @@ async function onLocalInvokeCommand(
             properties: resource.Properties
         })
 
-        const config =  await getHandlerConfig({
+        const config = await getHandlerConfig({
             handlerName: handlerName,
             documentUri: documentUri,
             samTemplate: vscode.Uri.file(lambdaLocalInvokeParams.samTemplate.fsPath)
@@ -218,7 +221,7 @@ async function onLocalInvokeCommand(
                 targetFolder: codeUri,
                 channelLogger
             })
-            const port = await getDebugPort()
+            const port = await getPortPromise()
             const debugConfig = makeCoreCLRDebugConfiguration({
                 port,
                 codeUri

@@ -6,6 +6,7 @@
 import { unlink, writeFile } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
+import { getPortPromise } from 'portfinder'
 import * as vscode from 'vscode'
 import { getHandlerConfig } from '../../lambda/config/templates'
 import { PythonDebugConfiguration, PythonPathMapping } from '../../lambda/local/debugConfiguration'
@@ -18,7 +19,7 @@ import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidat
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
-import { ChannelLogger, getChannelLogger, getDebugPort } from '../utilities/vsCodeUtils'
+import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
 import { CodeLensProviderParams, DRIVE_LETTER_REGEX, getInvokeCmdKey, makeCodeLenses } from './codeLensUtils'
 import {
     executeSamBuild,
@@ -211,7 +212,7 @@ export async function initialize({
             let handlerName: string = args.handlerName
             let manifestPath: string | undefined
             if (args.isDebug) {
-                debugPort = await getDebugPort()
+                debugPort = await getPortPromise()
                 const { debugHandlerName, outFilePath } = await makeLambdaDebugFile({
                     handlerName: args.handlerName,
                     debugPort: debugPort,
@@ -319,34 +320,36 @@ export async function initialize({
         }
     }
 
-    context.subscriptions.push(vscode.commands.registerCommand(
-        getInvokeCmdKey('python'),
-        async (params: LambdaLocalInvokeParams): Promise<void> => {
-            let invokeResult: Result = 'Succeeded'
-            let lambdaRuntime = 'unknown'
-            try {
-                const resource = await CloudFormation.getResourceFromTemplate({
-                    handlerName: params.handlerName,
-                    templatePath: params.samTemplate.fsPath
-                })
-                lambdaRuntime = CloudFormation.getRuntime(resource)
+    context.subscriptions.push(
+        vscode.commands.registerCommand(
+            getInvokeCmdKey('python'),
+            async (params: LambdaLocalInvokeParams): Promise<void> => {
+                let invokeResult: Result = 'Succeeded'
+                let lambdaRuntime = 'unknown'
+                try {
+                    const resource = await CloudFormation.getResourceFromTemplate({
+                        handlerName: params.handlerName,
+                        templatePath: params.samTemplate.fsPath
+                    })
+                    lambdaRuntime = CloudFormation.getRuntime(resource)
 
-                await invokeLambda({
-                    runtime: lambdaRuntime,
-                    ...params
-                })
-            } catch (err) {
-                invokeResult = 'Failed'
-                throw err
-            } finally {
-                recordLambdaInvokeLocal({
-                    result: invokeResult,
-                    runtime: lambdaRuntime as Runtime,
-                    debug: params.isDebug
-                })
+                    await invokeLambda({
+                        runtime: lambdaRuntime,
+                        ...params
+                    })
+                } catch (err) {
+                    invokeResult = 'Failed'
+                    throw err
+                } finally {
+                    recordLambdaInvokeLocal({
+                        result: invokeResult,
+                        runtime: lambdaRuntime as Runtime,
+                        debug: params.isDebug
+                    })
+                }
             }
-        }
-    ))
+        )
+    )
 }
 
 export async function waitForPythonDebugAdapter(

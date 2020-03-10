@@ -114,8 +114,3 @@ export function getChannelLogger(channel: vscode.OutputChannel): ChannelLogger {
             })
     })
 }
-
-export async function getDebugPort(): Promise<number> {
-    // TODO: Find available port
-    return 5858
-}
