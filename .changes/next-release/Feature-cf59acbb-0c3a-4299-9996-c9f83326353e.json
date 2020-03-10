@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "Toolkit dynamically chooses an open port when debugging SAM applications"
+}
