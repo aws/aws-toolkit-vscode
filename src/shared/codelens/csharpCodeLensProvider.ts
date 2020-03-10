@@ -4,7 +4,6 @@
  */
 
 import * as path from 'path'
-import { getPortPromise } from 'portfinder'
 import * as vscode from 'vscode'
 
 import { access } from 'fs-extra'
@@ -26,7 +25,7 @@ import { SettingsConfiguration } from '../settingsConfiguration'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { dirnameWithTrailingSlash } from '../utilities/pathUtils'
-import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
+import { ChannelLogger, getChannelLogger, getStartPort } from '../utilities/vsCodeUtils'
 import { CodeLensProviderParams, getInvokeCmdKey, makeCodeLenses } from './codeLensUtils'
 import {
     executeSamBuild,
@@ -221,7 +220,7 @@ async function onLocalInvokeCommand(
                 targetFolder: codeUri,
                 channelLogger
             })
-            const port = await getPortPromise()
+            const port = await getStartPort()
             const debugConfig = makeCoreCLRDebugConfiguration({
                 port,
                 codeUri

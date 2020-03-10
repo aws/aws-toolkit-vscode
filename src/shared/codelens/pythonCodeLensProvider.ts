@@ -6,7 +6,6 @@
 import { unlink, writeFile } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
-import { getPortPromise } from 'portfinder'
 import * as vscode from 'vscode'
 import { getHandlerConfig } from '../../lambda/config/templates'
 import { PythonDebugConfiguration, PythonPathMapping } from '../../lambda/local/debugConfiguration'
@@ -19,7 +18,7 @@ import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidat
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
-import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
+import { ChannelLogger, getChannelLogger, getStartPort } from '../utilities/vsCodeUtils'
 import { CodeLensProviderParams, DRIVE_LETTER_REGEX, getInvokeCmdKey, makeCodeLenses } from './codeLensUtils'
 import {
     executeSamBuild,
@@ -212,7 +211,7 @@ export async function initialize({
             let handlerName: string = args.handlerName
             let manifestPath: string | undefined
             if (args.isDebug) {
-                debugPort = await getPortPromise()
+                debugPort = await getStartPort()
                 const { debugHandlerName, outFilePath } = await makeLambdaDebugFile({
                     handlerName: args.handlerName,
                     debugPort: debugPort,

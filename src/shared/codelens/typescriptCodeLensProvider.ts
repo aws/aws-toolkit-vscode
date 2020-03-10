@@ -4,7 +4,6 @@
  */
 
 import * as path from 'path'
-import { getPortPromise } from 'portfinder'
 import * as vscode from 'vscode'
 import { NodejsDebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { CloudFormation } from '../cloudformation/cloudformation'
@@ -12,7 +11,7 @@ import { findFileInParentPaths } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
-import { getChannelLogger, localize } from '../utilities/vsCodeUtils'
+import { getChannelLogger, getStartPort, localize } from '../utilities/vsCodeUtils'
 
 import { nodeJsRuntimes } from '../../lambda/models/samLambdaRuntime'
 import { getLogger } from '../logger'
@@ -52,7 +51,7 @@ export function initialize({
         let debugPort: number | undefined
 
         if (params.isDebug) {
-            debugPort = await getPortPromise()
+            debugPort = await getStartPort()
         }
 
         const debugConfig: NodejsDebugConfiguration = {
