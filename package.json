@@ -36,6 +36,7 @@
         "onCommand:aws.credential.profile.create",
         "onCommand:aws.logout",
         "onCommand:aws.createIssueOnGitHub",
+        "onCommand:aws.submitFeedback",
         "onCommand:aws.showRegion",
         "onCommand:aws.hideRegion",
         "onView:aws.explorer",
@@ -179,6 +180,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.submitFeedback",
+                    "when": "false"
+                },
+                {
                     "command": "aws.refreshAwsExplorer",
                     "when": "false"
                 },
@@ -196,6 +201,11 @@
                 }
             ],
             "view/title": [
+                {
+                    "command": "aws.submitFeedback",
+                    "when": "view == aws.explorer",
+                    "group": "navigation@5"
+                },
                 {
                     "command": "aws.refreshAwsExplorer",
                     "when": "view == aws.explorer",
@@ -245,6 +255,11 @@
                     "command": "aws.createIssueOnGitHub",
                     "when": "view == aws.explorer",
                     "group": "z_externalLinks@3"
+                },
+                {
+                    "command": "aws.submitFeedback",
+                    "when": "view == aws.explorer",
+                    "group": "z_externalLinks@4"
                 },
                 {
                     "command": "aws.refreshCdkExplorer",
@@ -375,6 +390,15 @@
                 "command": "aws.deploySamApplication",
                 "title": "%AWS.command.deploySamApplication%",
                 "category": "AWS"
+            },
+            {
+                "command": "aws.submitFeedback",
+                "title": "%AWS.command.submitFeedback%",
+                "category": "AWS",
+                "icon": {
+                    "dark": "third-party/resources/from-vscode/dark/feedback.svg",
+                    "light": "third-party/resources/from-vscode/light/feedback.svg"
+                }
             },
             {
                 "command": "aws.refreshAwsExplorer",

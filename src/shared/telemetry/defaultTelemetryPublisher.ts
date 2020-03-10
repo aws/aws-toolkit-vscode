@@ -7,6 +7,7 @@ import { CognitoIdentity, CognitoIdentityCredentials } from 'aws-sdk'
 import { DefaultTelemetryClient } from './defaultTelemetryClient'
 import { TelemetryClient } from './telemetryClient'
 import { TelemetryEvent } from './telemetryEvent'
+import { TelemetryFeedback } from './telemetryFeedback'
 import { TelemetryPublisher } from './telemetryPublisher'
 
 export interface IdentityPublisherTuple {
@@ -26,6 +27,18 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
         private telemetryClient?: TelemetryClient
     ) {
         this._eventQueue = []
+    }
+
+    public async postFeedback(feedback: TelemetryFeedback): Promise<void> {
+        if (this.telemetryClient === undefined) {
+            await this.init()
+        }
+
+        if (this.telemetryClient === undefined) {
+            throw new Error('Failed to instantiate telemetry client')
+        }
+
+        return this.telemetryClient.postFeedback(feedback)
     }
 
     public enqueue(...events: TelemetryEvent[]): void {

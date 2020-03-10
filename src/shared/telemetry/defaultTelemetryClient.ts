@@ -12,6 +12,7 @@ import * as ClientTelemetry from './clienttelemetry'
 import apiConfig = require('./service-2.json')
 import { TelemetryClient } from './telemetryClient'
 import { TelemetryEvent, toMetricData } from './telemetryEvent'
+import { TelemetryFeedback } from './telemetryFeedback'
 
 export class DefaultTelemetryClient implements TelemetryClient {
     public static readonly DEFAULT_IDENTITY_POOL = 'us-east-1:820fd6d1-95c0-4ca4-bffb-3f01d32da842'
@@ -52,6 +53,27 @@ export class DefaultTelemetryClient implements TelemetryClient {
             console.error(`Batch error: ${err}`)
 
             return batch
+        }
+    }
+
+    public async postFeedback(feedback: TelemetryFeedback): Promise<void> {
+        try {
+            await this.client
+                .postFeedback({
+                    AWSProduct: DefaultTelemetryClient.PRODUCT_NAME,
+                    AWSProductVersion: pluginVersion,
+                    OS: os.platform(),
+                    OSVersion: os.release(),
+                    ParentProduct: vscode.env.appName,
+                    ParentProductVersion: vscode.version,
+                    Comment: feedback.comment,
+                    Sentiment: feedback.sentiment
+                })
+                .promise()
+            console.info('Successfully posted feedback')
+        } catch (err) {
+            console.error(`Failed to post feedback: ${err}`)
+            throw new Error(`Failed to post feedback: ${err}`)
         }
     }
 
