@@ -16,7 +16,7 @@ class MockTelemetryService : TelemetryService {
         return builder.build()
     }
 
-    override fun sendFeedback(sentiment: Sentiment, comment: String) {}
+    override suspend fun sendFeedback(sentiment: Sentiment, comment: String) {}
 
     override fun dispose() {}
 }

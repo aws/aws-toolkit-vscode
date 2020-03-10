@@ -1,10 +1,9 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.ui.feedback
 
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
@@ -12,11 +11,18 @@ import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.ui.ValidationInfo
 import icons.AwsIcons
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.withContext
 import org.jetbrains.annotations.TestOnly
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
+import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
+import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
+import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 
-class FeedbackDialog(project: Project) : DialogWrapper(project) {
+class FeedbackDialog(private val project: Project) : DialogWrapper(project), CoroutineScope by ApplicationThreadPoolScope("FeedbackDialog") {
     val panel = SubmitFeedbackPanel(initiallyPositive = true)
 
     init {
@@ -32,17 +38,29 @@ class FeedbackDialog(project: Project) : DialogWrapper(project) {
 
             val sentiment = panel.sentiment ?: throw IllegalStateException("sentiment was null after validation")
             val comment = panel.comment ?: throw IllegalStateException("comment was null after validation")
-            ApplicationManager.getApplication().executeOnPooledThread {
+            launch(coroutineContext) {
+                val edtContext = getCoroutineUiContext(ModalityState.stateForComponent(panel.panel))
                 try {
                     TelemetryService.getInstance().sendFeedback(sentiment, comment)
-                    ApplicationManager.getApplication().invokeLater({
+                    withContext(edtContext) {
                         close(OK_EXIT_CODE)
-                    }, ModalityState.stateForComponent(panel.panel))
+                    }
+                    notifyInfo(message("aws.notification.title"), message("feedback.submit_success"), project)
                 } catch (e: Exception) {
-                    Messages.showMessageDialog(panel.panel, message("feedback.submit_failed", e), message("feedback.submit_failed_title"), null)
+                    withContext(edtContext) {
+                        Messages.showMessageDialog(panel.panel, message("feedback.submit_failed", e), message("feedback.submit_failed_title"), null)
+                        setOKButtonText(message("feedback.submit_button"))
+                        isOKActionEnabled = true
+                    }
                 }
             }
         }
+    }
+
+    override fun doCancelAction() {
+        super.doCancelAction()
+        // kill any remaining coroutines
+        coroutineContext.cancel()
     }
 
     public override fun doValidate(): ValidationInfo? {

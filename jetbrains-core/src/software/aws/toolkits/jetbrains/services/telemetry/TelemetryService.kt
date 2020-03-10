@@ -48,7 +48,7 @@ interface TelemetryService : Disposable {
         return metricEvent
     }
 
-    fun sendFeedback(sentiment: Sentiment, comment: String)
+    suspend fun sendFeedback(sentiment: Sentiment, comment: String)
 
     companion object {
         @JvmStatic
@@ -132,7 +132,7 @@ class DefaultTelemetryService(settings: AwsSettings) :
         return event
     }
 
-    override fun sendFeedback(sentiment: Sentiment, comment: String) {
+    override suspend fun sendFeedback(sentiment: Sentiment, comment: String) {
         publisher.sendFeedback(sentiment, comment)
     }
 

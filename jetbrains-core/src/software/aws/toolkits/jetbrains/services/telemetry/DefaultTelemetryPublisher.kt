@@ -38,16 +38,18 @@ class DefaultTelemetryPublisher(
         }
     }
 
-    override fun sendFeedback(sentiment: Sentiment, comment: String) {
-        client.postFeedback {
-            it.awsProduct(clientMetadata.productName)
-            it.awsProductVersion(clientMetadata.productVersion)
-            it.os(clientMetadata.os)
-            it.osVersion(clientMetadata.osVersion)
-            it.parentProduct(clientMetadata.parentProduct)
-            it.parentProductVersion(clientMetadata.parentProductVersion)
-            it.sentiment(sentiment)
-            it.comment(comment)
+    override suspend fun sendFeedback(sentiment: Sentiment, comment: String) {
+        withContext(Dispatchers.IO) {
+            client.postFeedback {
+                it.awsProduct(clientMetadata.productName)
+                it.awsProductVersion(clientMetadata.productVersion)
+                it.os(clientMetadata.os)
+                it.osVersion(clientMetadata.osVersion)
+                it.parentProduct(clientMetadata.parentProduct)
+                it.parentProductVersion(clientMetadata.parentProductVersion)
+                it.sentiment(sentiment)
+                it.comment(comment)
+            }
         }
     }
 

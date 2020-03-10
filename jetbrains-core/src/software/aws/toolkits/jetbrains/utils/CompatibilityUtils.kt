@@ -10,6 +10,9 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.PlatformTestCase
 import com.intellij.testFramework.PlatformTestUtil
+import com.intellij.util.concurrency.AppExecutorUtil
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.asCoroutineDispatcher
 import org.jetbrains.annotations.TestOnly
 import software.aws.toolkits.core.utils.tryOrNull
 import java.io.File
@@ -74,4 +77,14 @@ object CompatibilityUtils {
         val constructor = Remote::class.java.getConstructor(BiMap::class.java, parentClass)
         return constructor.newInstance(mappings, localFileFinder)
     }
+
+    /**
+     * Can be removed when min-version is 19.3 FIX_WHEN_MIN_IS_193
+     *
+     * Can be replaced with Dispatchers.ApplicationThreadPool at the call-site
+     * ApplicationThreadPool is an extension val defined as an util in JetBrains' platform-impl
+     */
+    @Suppress("unused") // unused receiver
+    val ApplicationThreadPool: CoroutineDispatcher
+        get() = AppExecutorUtil.getAppExecutorService().asCoroutineDispatcher()
 }
