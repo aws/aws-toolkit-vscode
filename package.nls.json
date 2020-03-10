@@ -165,7 +165,6 @@
     "AWS.placeHolder.selectProfile": "Select a credential profile",
     "AWS.profile.recentlyUsed": "recently used",
     "AWS.running.command": "Running command: {0}",
-    "AWS.sam.debugger.notImplemented": "Not implemented",
     "AWS.sam.debugger.invalidRequest": "Debug Configuration has an unsupported request type. Supported types: {0}",
     "AWS.sam.debugger.invalidTarget": "Debug Configuration has an unsupported target type. Supported types: {0}",
     "AWS.sam.debugger.missingTemplate": "Unable to find the Template file {0}",
@@ -257,6 +256,7 @@
     "AWS.wizard.selectedPreviously": "Selected Previously",
     "AWS.generic.response.no": "No",
     "AWS.generic.response.yes": "Yes",
+    "AWS.generic.notImplemented": "Not implemented",
     "AWS.template.error.showErrorDetails.title": "Error details for",
     "AWS.template.error.showErrorDetails.errorCode": "Error code",
     "AWS.template.error.showErrorDetails.errorMessage": "Error message"

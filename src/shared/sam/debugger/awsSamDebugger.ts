@@ -56,7 +56,7 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
             return undefined
         }
 
-        vscode.window.showInformationMessage(localize('AWS.sam.debugger.notImplemented', 'Not implemented'))
+        vscode.window.showInformationMessage(localize('AWS.generic.notImplemented', 'Not implemented'))
 
         return undefined
     }
