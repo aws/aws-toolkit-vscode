@@ -14,9 +14,9 @@ import { CloudFormationTemplateRegistry } from '../../cloudformation/templateReg
 import { AwsSamDebuggerConfiguration, AwsSamDebuggerInvokeTargetTemplateFields } from './awsSamDebugConfiguration'
 
 export const AWS_SAM_DEBUG_TYPE = 'aws-sam'
-const DIRECT_INVOKE_TYPE = 'direct-invoke'
-const TEMPLATE_TARGET_TYPE = 'template'
-const CODE_TARGET_TYPE = 'code'
+export const DIRECT_INVOKE_TYPE = 'direct-invoke'
+export const TEMPLATE_TARGET_TYPE = 'template'
+export const CODE_TARGET_TYPE = 'code'
 
 const AWS_SAM_DEBUG_REQUEST_TYPES = [DIRECT_INVOKE_TYPE]
 const AWS_SAM_DEBUG_TARGET_TYPES = [TEMPLATE_TARGET_TYPE, CODE_TARGET_TYPE]
