@@ -24,8 +24,9 @@ import {
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
 import { TelemetryService } from '../telemetry/telemetryService'
+import { getStartPort } from '../utilities/debuggerUtils'
 import { dirnameWithTrailingSlash } from '../utilities/pathUtils'
-import { ChannelLogger, getChannelLogger, getStartPort } from '../utilities/vsCodeUtils'
+import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
 import { CodeLensProviderParams, getInvokeCmdKey, makeCodeLenses } from './codeLensUtils'
 import {
     executeSamBuild,

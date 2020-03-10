@@ -18,7 +18,8 @@ import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidat
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
-import { ChannelLogger, getChannelLogger, getStartPort } from '../utilities/vsCodeUtils'
+import { getStartPort } from '../utilities/debuggerUtils'
+import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
 import { CodeLensProviderParams, DRIVE_LETTER_REGEX, getInvokeCmdKey, makeCodeLenses } from './codeLensUtils'
 import {
     executeSamBuild,
