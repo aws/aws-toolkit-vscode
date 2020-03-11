@@ -10,6 +10,8 @@ import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeDirectoryNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.Result
+import software.aws.toolkits.telemetry.S3Telemetry
 
 class UploadObjectAction(private val project: Project, treeTable: S3TreeTable) :
     SingleS3ObjectAction(treeTable, message("s3.upload.object.action"), AllIcons.Actions.Upload) {
@@ -18,6 +20,12 @@ class UploadObjectAction(private val project: Project, treeTable: S3TreeTable) :
             FileChooserDescriptorFactory.createAllButJarContentsDescriptor().withDescription(message("s3.upload.object.action", treeTable.bucket.name))
         val chooserDialog = FileChooserFactory.getInstance().createFileChooser(descriptor, project, null)
         val filesChosen = chooserDialog.choose(project, null).toList()
+
+        // If there are no files chosen, the user has cancelled upload
+        if (filesChosen.isEmpty()) {
+            S3Telemetry.uploadObjects(project, Result.CANCELLED)
+            return
+        }
 
         treeTable.uploadAndRefresh(filesChosen, node)
     }
