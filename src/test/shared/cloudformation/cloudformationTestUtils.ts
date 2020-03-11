@@ -1,0 +1,71 @@
+/*!
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { writeFile } from 'fs-extra'
+
+import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
+
+export function createBaseTemplate(): CloudFormation.Template {
+    return {
+        Globals: {
+            Function: {
+                Timeout: 5
+            }
+        },
+        Resources: {
+            TestResource: createBaseResource()
+        }
+    }
+}
+
+export function createBaseResource(): CloudFormation.Resource {
+    return {
+        Type: CloudFormation.SERVERLESS_FUNCTION_TYPE,
+        Properties: {
+            Handler: 'handler',
+            CodeUri: 'codeuri',
+            Runtime: 'runtime',
+            Timeout: 12345,
+            Environment: {
+                Variables: {
+                    ENVVAR: 'envvar'
+                }
+            }
+        }
+    }
+}
+
+export async function strToYamlFile(str: string, file: string): Promise<void> {
+    await writeFile(file, str, 'utf8')
+}
+
+export function makeSampleSamTemplateYaml(
+    addGlobalsSection: boolean,
+    subValues: {
+        resourceName?: string
+        resourceType?: string
+        runtime?: string
+    } = {}
+): string {
+    const globalsYaml = `
+Globals:
+    Function:
+        Timeout: 5`
+
+    return `${addGlobalsSection ? globalsYaml : ''}
+Resources:
+    ${subValues.resourceName ? subValues.resourceName : 'TestResource'}:
+        Type: ${subValues.resourceType ? subValues.resourceType : CloudFormation.SERVERLESS_FUNCTION_TYPE}
+        Properties:
+            Handler: handler
+            CodeUri: codeuri
+            Runtime: ${subValues.runtime ? subValues.runtime : 'runtime'}
+            Timeout: 12345
+            Environment:
+                Variables:
+                    ENVVAR: envvar`
+}
+
+export const badYaml = '{ASD}ASD{asd}ASD:asd'

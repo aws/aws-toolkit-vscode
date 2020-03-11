@@ -2,6 +2,7 @@
  * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { getLogger, Loggable, LogLevel } from '../logger'
@@ -113,9 +114,4 @@ export function getChannelLogger(channel: vscode.OutputChannel): ChannelLogger {
                 templateTokens
             })
     })
-}
-
-export async function getDebugPort(): Promise<number> {
-    // TODO: Find available port
-    return 5858
 }
