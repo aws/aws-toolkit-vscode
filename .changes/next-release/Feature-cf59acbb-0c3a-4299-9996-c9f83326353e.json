@@ -1,4 +1,4 @@
 {
     "type": "Feature",
-    "description": "Toolkit dynamically chooses an available port when debugging SAM applications, starting at port 5858 and couting upwards until one is found"
+    "description": "Toolkit dynamically chooses an available port when debugging SAM applications, starting at port 5858 and counting upwards until one is found"
 }
