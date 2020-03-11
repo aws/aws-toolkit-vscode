@@ -552,6 +552,7 @@
         "lodash": "^4.17.15",
         "moment": "^2.24.0",
         "original-fs": "^1.1.0",
+        "portfinder": "^1.0.25",
         "request": "^2.88.0",
         "semver": "^5.6.0",
         "sleep-promise": "^8.0.1",
