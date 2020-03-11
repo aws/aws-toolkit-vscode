@@ -7,11 +7,11 @@ import * as assert from 'assert'
 import * as del from 'del'
 import * as path from 'path'
 
-import { writeFile } from 'fs-extra'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 import { fileExists, makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../../shared/systemUtilities'
 import { assertRejects } from '../utilities/assertUtils'
+import { createBaseResource, createBaseTemplate, makeSampleSamTemplateYaml, strToYamlFile } from './cloudformationTestUtils'
 
 describe('CloudFormation', () => {
     let tempFolder: string
@@ -30,61 +30,7 @@ describe('CloudFormation', () => {
         }
     })
 
-    function createBaseTemplate(): CloudFormation.Template {
-        return {
-            Globals: {
-                Function: {
-                    Timeout: 5
-                }
-            },
-            Resources: {
-                TestResource: createBaseResource()
-            }
-        }
-    }
-
-    function createBaseResource(): CloudFormation.Resource {
-        return {
-            Type: CloudFormation.SERVERLESS_FUNCTION_TYPE,
-            Properties: {
-                Handler: 'handler',
-                CodeUri: 'codeuri',
-                Runtime: 'runtime',
-                Timeout: 12345,
-                Environment: {
-                    Variables: {
-                        ENVVAR: 'envvar'
-                    }
-                }
-            }
-        }
-    }
-
-    async function strToYamlFile(str: string, file: string): Promise<void> {
-        await writeFile(file, str, 'utf8')
-    }
-
     describe('load', async () => {
-        const makeSampleSamTemplateYaml = (addGlobalsSection: boolean): string => {
-            const globalsYaml = `Globals:
-    Function:
-        Timeout: 5
-
-`
-
-            return `${addGlobalsSection ? globalsYaml : ''}Resources:
-    TestResource:
-        Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
-        Properties:
-            Handler: handler
-            CodeUri: codeuri
-            Runtime: runtime
-            Timeout: 12345
-            Environment:
-                Variables:
-                    ENVVAR: envvar`
-        }
-
         it('can successfully load a file', async () => {
             const yamlStr = makeSampleSamTemplateYaml(true)
 
