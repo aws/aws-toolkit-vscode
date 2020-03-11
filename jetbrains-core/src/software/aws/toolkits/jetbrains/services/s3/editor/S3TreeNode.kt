@@ -89,10 +89,6 @@ class S3TreeObjectNode(bucketName: String, parent: S3TreeDirectoryNode?, key: St
     init {
         fileType.takeIf { it !is UnknownFileType }?.icon.let { icon = it }
     }
-
-    companion object {
-        val MAX_FILE_SIZE_TO_OPEN_IN_IDE = 5_000_000
-    }
 }
 
 class S3TreeContinuationNode(bucketName: String, parent: S3TreeDirectoryNode?, key: String, val token: String) : S3TreeNode(bucketName, parent, key)

@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Correct the max file size that can be opened from the S3 browser to idea.max.content.load.filesize instead of a constant 5MB"
+}
