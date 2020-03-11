@@ -24,7 +24,7 @@ class CloudWatchLogsServiceNode(project: Project, service: AwsExplorerServiceNod
 class CloudWatchLogsNode(
     project: Project,
     val arn: String,
-    private val logGroupName: String
+    val logGroupName: String
 ) : AwsExplorerResourceNode<String>(
     project,
     CloudWatchLogsClient.SERVICE_NAME,
@@ -39,7 +39,6 @@ class CloudWatchLogsNode(
     override fun displayName() = logGroupName
 
     override fun onDoubleClick() {
-        // TODO pr's after this will fill it in
-        println("This will open another window")
+        CloudWatchLogWindow.getInstance(nodeProject)?.showLogGroup(logGroupName)
     }
 }

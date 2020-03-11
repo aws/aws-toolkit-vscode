@@ -286,7 +286,7 @@
 
         <group id="aws.toolkit.explorer.logs.group" popup="true" compact="false">
             <action id="cloudwatch.logs.open"
-                    class="software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.OpenLogGroups"/>
+                    class="software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.OpenLogGroup"/>
         </group>
 
         <group id="aws.toolkit.explorer.s3" popup="false" compact="false">

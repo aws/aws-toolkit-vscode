@@ -18,7 +18,7 @@ import javax.swing.Icon
 import javax.swing.JComponent
 
 interface ToolkitToolWindow {
-    fun addTab(title: String, component: JComponent, activate: Boolean = false, id: String = title): ToolkitToolWindowTab
+    fun addTab(title: String, component: JComponent, activate: Boolean = false, id: String = title, disposable: Disposable? = null): ToolkitToolWindowTab
     fun find(id: String): ToolkitToolWindowTab?
 }
 
@@ -33,7 +33,7 @@ class ToolkitToolWindowManager(private val project: Project) {
     inner class ManagedToolkitToolWindow(private val type: ToolkitToolWindowType) : ToolkitToolWindow {
         private val tabs = mutableMapOf<String, ManagedToolkitToolWindowTab>()
 
-        override fun addTab(title: String, component: JComponent, activate: Boolean, id: String): ToolkitToolWindowTab {
+        override fun addTab(title: String, component: JComponent, activate: Boolean, id: String, disposable: Disposable?): ToolkitToolWindowTab {
             val content = ContentImpl(component, title, true)
             val toolWindow = windowManager.getToolWindow(type.id)
                 ?: windowManager.registerToolWindow(type.id, true, type.anchor, project, true).also {
@@ -41,6 +41,7 @@ class ToolkitToolWindowManager(private val project: Project) {
                     it.stripeTitle = type.title
                 }
             Disposer.register(content, Disposable { closeWindowIfEmpty(toolWindow, type.id) })
+            disposable?.let { Disposer.register(content, it) }
             toolWindow.contentManager.addContent(content)
             return ManagedToolkitToolWindowTab(toolWindow, content).also {
                 tabs[id] = it

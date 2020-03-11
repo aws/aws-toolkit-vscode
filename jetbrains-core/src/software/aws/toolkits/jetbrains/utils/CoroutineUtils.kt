@@ -12,9 +12,10 @@ fun getCoroutineUiContext(
     modalityState: ModalityState = ModalityState.defaultModalityState(),
     disposable: Disposable? = null
 ) = AppUIExecutor.onUiThread(modalityState).let {
-        if (disposable == null) {
-            it
-        } else {
-            it.expireWith(disposable)
-        }
-    }.coroutineDispatchingContext()
+    if (disposable == null) {
+        it
+    } else {
+        // This is not actually scheduled for removal in 2019.3
+        it.expireWith(disposable)
+    }
+}.coroutineDispatchingContext()
