@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { sep } from 'path'
 import * as vscode from 'vscode'
 
 import * as nls from 'vscode-nls'
@@ -34,12 +35,19 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
             const templates = this.cftRegistry.registeredTemplates
 
             for (const templateDatum of templates) {
-                if (templateDatum.path.startsWith(folderPath) && templateDatum.template.Resources) {
+                const folderPathPieces = folderPath.split(sep)
+                const templatePathPieces = templateDatum.path.split(sep)
+                if (
+                    folderPathPieces.every((value, index) => {
+                        return value === templatePathPieces[index]
+                    }) &&
+                    templateDatum.template.Resources
+                ) {
                     for (const resourceKey of Object.keys(templateDatum.template.Resources)) {
                         const resource = templateDatum.template.Resources[resourceKey]
                         if (resource) {
                             debugConfigurations.push(
-                                createSamDebugConfigurationFromTemplate(resourceKey, templateDatum.path)
+                                createDirectInvokeSamDebugConfigurationFromTemplate(resourceKey, templateDatum.path)
                             )
                         }
                     }
@@ -87,7 +95,7 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
     }
 }
 
-function createSamDebugConfigurationFromTemplate(
+function createDirectInvokeSamDebugConfigurationFromTemplate(
     resourceName: string,
     templatePath: string
 ): AwsSamDebuggerConfiguration {
