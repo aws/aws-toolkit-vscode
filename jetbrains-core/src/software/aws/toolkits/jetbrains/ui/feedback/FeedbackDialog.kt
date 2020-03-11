@@ -38,7 +38,7 @@ class FeedbackDialog(private val project: Project) : DialogWrapper(project), Cor
 
             val sentiment = panel.sentiment ?: throw IllegalStateException("sentiment was null after validation")
             val comment = panel.comment ?: throw IllegalStateException("comment was null after validation")
-            launch(coroutineContext) {
+            launch {
                 val edtContext = getCoroutineUiContext(ModalityState.stateForComponent(panel.panel))
                 try {
                     TelemetryService.getInstance().sendFeedback(sentiment, comment)
