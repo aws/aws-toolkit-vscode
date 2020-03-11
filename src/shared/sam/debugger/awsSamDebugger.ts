@@ -4,14 +4,25 @@
  */
 
 import * as vscode from 'vscode'
-import { AwsSamDebuggerConfiguration } from './awsSamDebugConfiguration'
+
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
+import { samLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
+import { CloudFormation } from '../../cloudformation/cloudformation'
+import { CloudFormationTemplateRegistry } from '../../cloudformation/templateRegistry'
+import { AwsSamDebuggerConfiguration, AwsSamDebuggerInvokeTargetTemplateFields } from './awsSamDebugConfiguration'
 
 export const AWS_SAM_DEBUG_TYPE = 'aws-sam'
-const AWS_SAM_DEBUG_REQUEST_TYPES = new Set<string>(['direct-invoke'])
-const AWS_SAM_DEBUG_TARGET_TYPES = new Set<string>(['template', 'code'])
+export const DIRECT_INVOKE_TYPE = 'direct-invoke'
+export const TEMPLATE_TARGET_TYPE = 'template'
+export const CODE_TARGET_TYPE = 'code'
+
+const AWS_SAM_DEBUG_REQUEST_TYPES = [DIRECT_INVOKE_TYPE]
+const AWS_SAM_DEBUG_TARGET_TYPES = [TEMPLATE_TARGET_TYPE, CODE_TARGET_TYPE]
 
 export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurationProvider {
-    public constructor() {}
+    public constructor(private readonly cftRegistry = CloudFormationTemplateRegistry.getRegistry()) {}
 
     public async provideDebugConfigurations(
         folder: vscode.WorkspaceFolder | undefined,
@@ -25,18 +36,167 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
         debugConfiguration: AwsSamDebuggerConfiguration,
         token?: vscode.CancellationToken
     ): Promise<AwsSamDebuggerConfiguration | undefined> {
-        if (!AWS_SAM_DEBUG_REQUEST_TYPES.has(debugConfiguration.request)) {
-            vscode.window.showInformationMessage('Invalid request type')
+        let validityPair: { isValid: boolean; message?: string } = generalDebugConfigValidation(debugConfiguration)
+
+        if (!validityPair.isValid) {
+            if (validityPair.message) {
+                vscode.window.showErrorMessage(validityPair.message)
+            }
+
+            return undefined
         }
-        if (
-            debugConfiguration.invokeTarget &&
-            debugConfiguration.invokeTarget.target &&
-            !AWS_SAM_DEBUG_TARGET_TYPES.has(debugConfiguration.invokeTarget.target)
-        ) {
-            vscode.window.showInformationMessage('Invalid invokeTarget.target type')
+
+        if (debugConfiguration.invokeTarget.target === TEMPLATE_TARGET_TYPE) {
+            validityPair = templateDebugConfigValidation(debugConfiguration, this.cftRegistry)
+        } else if (debugConfiguration.invokeTarget.target === CODE_TARGET_TYPE) {
+            validityPair = codeDebugConfigValidation(debugConfiguration)
         }
-        vscode.window.showInformationMessage('Not implemented')
+
+        if (!validityPair.isValid) {
+            if (validityPair.message) {
+                vscode.window.showErrorMessage(validityPair.message)
+            }
+
+            return undefined
+        } else if (validityPair.message) {
+            vscode.window.showInformationMessage(validityPair.message)
+        }
+
+        vscode.window.showInformationMessage(localize('AWS.generic.notImplemented', 'Not implemented'))
 
         return undefined
     }
+}
+
+function generalDebugConfigValidation(
+    debugConfiguration: AwsSamDebuggerConfiguration
+): { isValid: boolean; message?: string } {
+    if (!AWS_SAM_DEBUG_REQUEST_TYPES.includes(debugConfiguration.request)) {
+        return {
+            isValid: false,
+            message: localize(
+                'AWS.sam.debugger.invalidRequest',
+                'Debug Configuration has an unsupported request type. Supported types: {0}',
+                AWS_SAM_DEBUG_REQUEST_TYPES.join(', ')
+            )
+        }
+    }
+
+    if (!AWS_SAM_DEBUG_TARGET_TYPES.includes(debugConfiguration.invokeTarget.target)) {
+        return {
+            isValid: false,
+            message: localize(
+                'AWS.sam.debugger.invalidTarget',
+                'Debug Configuration has an unsupported target type. Supported types: {0}',
+                AWS_SAM_DEBUG_TARGET_TYPES.join(', ')
+            )
+        }
+    }
+
+    return { isValid: true }
+}
+
+function templateDebugConfigValidation(
+    debugConfiguration: AwsSamDebuggerConfiguration,
+    cftRegistry: CloudFormationTemplateRegistry
+): { isValid: boolean; message?: string } {
+    const templateTarget = (debugConfiguration.invokeTarget as any) as AwsSamDebuggerInvokeTargetTemplateFields
+
+    const template = cftRegistry.getRegisteredTemplate(templateTarget.samTemplatePath)
+
+    if (!template) {
+        return {
+            isValid: false,
+            message: localize(
+                'AWS.sam.debugger.missingTemplate',
+                'Unable to find the Template file {0}',
+                templateTarget.samTemplatePath
+            )
+        }
+    }
+
+    const resources = template.template.Resources
+
+    if (!resources || !Object.keys(resources).includes(templateTarget.samTemplateResource)) {
+        return {
+            isValid: false,
+            message: localize(
+                'AWS.sam.debugger.missingResource',
+                'Unable to find the Template Resource {0} in Template file {1}',
+                templateTarget.samTemplateResource,
+                templateTarget.samTemplatePath
+            )
+        }
+    }
+
+    const resource = resources[templateTarget.samTemplateResource]
+
+    // TODO: Validate against `AWS::Lambda::Function`?
+    if (resource?.Type !== CloudFormation.SERVERLESS_FUNCTION_TYPE) {
+        return {
+            isValid: false,
+            message: localize(
+                'AWS.sam.debugger.resourceNotAFunction',
+                'Template Resource {0} in Template file {1} needs to be of type {2}',
+                templateTarget.samTemplateResource,
+                templateTarget.samTemplatePath,
+                CloudFormation.SERVERLESS_FUNCTION_TYPE
+            )
+        }
+    }
+
+    if (!resource?.Properties?.Runtime || !samLambdaRuntimes.has(resource?.Properties?.Runtime as string)) {
+        return {
+            isValid: false,
+            message: localize(
+                'AWS.sam.debugger.unsupportedRuntime',
+                'Runtime for Template Resource {0} in Template file {1} is either undefined or unsupported.',
+                templateTarget.samTemplateResource,
+                templateTarget.samTemplatePath
+            )
+        }
+    }
+
+    const templateEnv = resource?.Properties.Environment
+    if (templateEnv?.Variables) {
+        const templateEnvVars = Object.keys(templateEnv.Variables)
+        const missingVars: string[] = []
+        if (debugConfiguration.lambda && debugConfiguration.lambda.environmentVariables) {
+            for (const key of Object.keys(debugConfiguration.lambda.environmentVariables)) {
+                if (!templateEnvVars.includes(key)) {
+                    missingVars.push(key)
+                }
+            }
+        }
+        if (missingVars.length > 0) {
+            // this check doesn't affect template validity.
+            return {
+                isValid: true,
+                message: localize(
+                    'AWS.sam.debugger.extraEnvVars',
+                    'The following environment variables are not found in the targeted template and will not be overridden: {0}',
+                    missingVars.join(', ')
+                )
+            }
+        }
+    }
+
+    return { isValid: true }
+}
+
+function codeDebugConfigValidation(
+    debugConfiguration: AwsSamDebuggerConfiguration
+): { isValid: boolean; message?: string } {
+    if (!debugConfiguration.lambda?.runtime || !samLambdaRuntimes.has(debugConfiguration.lambda.runtime)) {
+        return {
+            isValid: false,
+            message: localize(
+                'AWS.sam.debugger.missingRuntime',
+                'Debug Configurations with an invoke target of "{0}" require a valid Lambda runtime value',
+                CODE_TARGET_TYPE
+            )
+        }
+    }
+
+    return { isValid: true }
 }

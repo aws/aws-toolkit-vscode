@@ -44,7 +44,15 @@ export namespace CloudFormation {
         Runtime?: string
         MemorySize?: number
         Timeout?: number
-        Environment?: unknown
+        Environment?: Environment
+    }
+
+    export interface Environment {
+        Variables?: Variables
+    }
+
+    export interface Variables {
+        [key: string]: any
     }
 
     export interface Resource {

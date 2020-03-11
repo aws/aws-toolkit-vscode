@@ -41,7 +41,14 @@ export async function strToYamlFile(str: string, file: string): Promise<void> {
     await writeFile(file, str, 'utf8')
 }
 
-export function makeSampleSamTemplateYaml(addGlobalsSection: boolean): string {
+export function makeSampleSamTemplateYaml(
+    addGlobalsSection: boolean,
+    subValues: {
+        resourceName?: string
+        resourceType?: string
+        runtime?: string
+    } = {}
+): string {
     const globalsYaml = `
 Globals:
     Function:
@@ -49,12 +56,12 @@ Globals:
 
     return `${addGlobalsSection ? globalsYaml : ''}
 Resources:
-    TestResource:
-        Type: ${CloudFormation.SERVERLESS_FUNCTION_TYPE}
+    ${subValues.resourceName ? subValues.resourceName : 'TestResource'}:
+        Type: ${subValues.resourceType ? subValues.resourceType : CloudFormation.SERVERLESS_FUNCTION_TYPE}
         Properties:
             Handler: handler
             CodeUri: codeuri
-            Runtime: runtime
+            Runtime: ${subValues.runtime ? subValues.runtime : 'runtime'}
             Timeout: 12345
             Environment:
                 Variables:
