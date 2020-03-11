@@ -21,6 +21,9 @@ function updateGraph(stateMachineData) {
     }
 
     console.log('Updating state machine: ' + stateMachineData)
+    statusInfoContainer.classList.remove('in-sync-asl', 'not-in-sync-asl', 'start-error-asl')
+    statusInfoContainer.classList.add('syncing-asl')
+
     try {
         graph = new sfn.StateMachineGraph(JSON.parse(stateMachineData), containerId, options)
         graph.render()
@@ -30,12 +33,13 @@ function updateGraph(stateMachineData) {
             text: 'Successfully updated state machine graph.',
             stateMachineData: stateMachineData
         })
-        statusInfoContainer.classList.remove('syncing-asl', 'not-in-sync-', 'start-error-asl')
+        statusInfoContainer.classList.remove('syncing-asl', 'not-in-sync-asl', 'start-error-asl')
         statusInfoContainer.classList.add('in-sync-asl')
         hasRenderedOnce = true
     } catch (err) {
         console.log('Error parsing state machine definition.')
         console.log(err)
+
         vscode.postMessage({
             command: 'updateResult',
             text: 'Error parsing state machine definition.',
