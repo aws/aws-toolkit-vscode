@@ -11,12 +11,13 @@ import { findFileInParentPaths } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
-import { getChannelLogger, getDebugPort, localize } from '../utilities/vsCodeUtils'
+import { getChannelLogger, localize } from '../utilities/vsCodeUtils'
 
 import { nodeJsRuntimes } from '../../lambda/models/samLambdaRuntime'
 import { getLogger } from '../logger'
 import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
+import { getStartPort } from '../utilities/debuggerUtils'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { CodeLensProviderParams, getInvokeCmdKey, makeCodeLenses } from './codeLensUtils'
 import { getHandlerRelativePath, LambdaLocalInvokeParams, LocalLambdaRunner } from './localLambdaRunner'
@@ -51,7 +52,7 @@ export function initialize({
         let debugPort: number | undefined
 
         if (params.isDebug) {
-            debugPort = await getDebugPort()
+            debugPort = await getStartPort()
         }
 
         const debugConfig: NodejsDebugConfiguration = {
