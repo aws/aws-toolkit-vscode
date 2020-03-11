@@ -18,7 +18,7 @@ describe('SamTemplateGenerator', () => {
     const sampleMemorySize: number = 256
     const sampleTimeout: number = 321
     const sampleRuntimeValue: string = 'sampleRuntime'
-    const sampleEnvironment: unknown = {}
+    const sampleEnvironment: CloudFormation.Environment = {}
     let templateFilename: string
     let tempFolder: string
 
