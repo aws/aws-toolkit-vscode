@@ -10,8 +10,8 @@ import { CredentialsProfileMru } from '../shared/credentials/credentialsProfileM
 import { SettingsConfiguration } from '../shared/settingsConfiguration'
 import { LoginManager } from './loginManager'
 import { CredentialsProviderId, fromString } from './providers/credentialsProviderId'
-import { SharedCredentialsProvider } from './providers/sharedCredentialsProvider'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
+import { SharedCredentialsProvider } from './providers/sharedCredentialsProvider'
 
 export interface CredentialsInitializeParameters {
     extensionContext: vscode.ExtensionContext
@@ -32,15 +32,10 @@ export async function loginWithMostRecentCredentials(
     toolkitSettings: SettingsConfiguration,
     loginManager: LoginManager
 ): Promise<void> {
-    const profiles = await CredentialsProviderManager.getInstance().getProfiles()
+    const profiles = await CredentialsProviderManager.getInstance().getCredentials()
     const profileNames = Object.keys(profiles)
     const previousCredentialsId = toolkitSettings.readSetting<string>(profileSettingKey, '')
-    if (profiles && profileNames.length === 1) {
-        // Auto-connect if there is exactly one profile, named "default".
-        await loginManager.login(profiles[profileNames[0]])
-        // Toast.
-        vscode.window.showInformationMessage(`Connected to "${profileNames[0]}"`)
-    } else if (previousCredentialsId) {
+    if (previousCredentialsId) {
         // Migrate from older Toolkits - If the last providerId isn't in the new CredentialProviderId format,
         // treat it like a Shared Crdentials Provider.
         const loginCredentialsId = tryMakeCredentialsProviderId(previousCredentialsId) ?? {
@@ -48,6 +43,11 @@ export async function loginWithMostRecentCredentials(
             credentialTypeId: previousCredentialsId
         }
         await loginManager.login(loginCredentialsId)
+    } else if (profiles && profileNames.length === 1) {
+        // Auto-connect if there is exactly one profile.
+        await loginManager.login(profiles[profileNames[0]])
+        // Toast.
+        vscode.window.showInformationMessage(`Connected to AWS as "${profileNames[0]}"`)
     } else {
         await loginManager.logout()
     }

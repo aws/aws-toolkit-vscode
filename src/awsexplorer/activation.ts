@@ -39,7 +39,7 @@ export async function activate(activateArguments: {
     awsContextTrees: AwsContextTreeCollection
     regionProvider: RegionProvider
 }): Promise<void> {
-    const awsExplorer = new AwsExplorer(activateArguments.awsContext, activateArguments.regionProvider)
+    const awsExplorer = new AwsExplorer(activateArguments.context, activateArguments.awsContext, activateArguments.regionProvider)
 
     activateArguments.context.subscriptions.push(
         vscode.window.registerTreeDataProvider(awsExplorer.viewProviderId, awsExplorer)

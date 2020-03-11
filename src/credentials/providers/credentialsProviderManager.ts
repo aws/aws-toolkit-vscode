@@ -5,7 +5,7 @@
 
 import { CredentialsProvider } from './credentialsProvider'
 import { CredentialsProviderFactory } from './credentialsProviderFactory'
-import { CredentialsProviderId, asString } from './credentialsProviderId'
+import { asString, CredentialsProviderId } from './credentialsProviderId'
 
 /**
  * Responsible for providing the Toolkit with all available CredentialsProviders.
@@ -30,11 +30,12 @@ export class CredentialsProviderManager {
      * Returns a map of profile names to credential ids from all credential
      * sources.
      */
-    public async getProfiles() {
+    public async getCredentials(): Promise<{ [key: string]: CredentialsProviderId }> {
         const m: { [key: string]: CredentialsProviderId } = {}
         for (const o of await this.getAllCredentialsProviders()) {
             m[asString(o.getCredentialsProviderId())] = o.getCredentialsProviderId()
         }
+
         return m
     }
 

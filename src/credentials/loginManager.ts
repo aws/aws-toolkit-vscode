@@ -27,7 +27,7 @@ export class LoginManager {
      * Establishes a Credentials for the Toolkit to use. Essentially the Toolkit becomes "logged in".
      * If an error occurs while trying to set up and verify these credentials, the Toolkit is "logged out".
      */
-    public async login(credentialsProviderId: CredentialsProviderId): Promise<string> {
+    public async login(credentialsProviderId: CredentialsProviderId): Promise<void> {
         let loginResult: Result = 'Succeeded'
         try {
             const provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(
@@ -56,7 +56,6 @@ export class LoginManager {
                 accountId: accountId,
                 defaultRegion: provider.getDefaultRegion()
             })
-            return storedCredentials.credentials.accessKeyId
         } catch (err) {
             loginResult = 'Failed'
             getLogger().error(
@@ -73,7 +72,6 @@ export class LoginManager {
         } finally {
             recordAwsSetCredentials({ result: loginResult })
         }
-        return ''
     }
 
     /**
