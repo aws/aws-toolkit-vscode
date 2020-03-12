@@ -197,6 +197,13 @@
                     "when": "false"
                 }
             ],
+            "editor/title": [
+                {
+                    "command": "aws.previewStateMachine",
+                    "when": "editorLangId == asl",
+                    "group": "navigation"
+                }
+            ],
             "view/title": [
                 {
                     "command": "aws.refreshAwsExplorer",
@@ -459,7 +466,11 @@
             {
                 "command": "aws.previewStateMachine",
                 "title": "%AWS.command.stepFunctions.previewStateMachine%",
-                "category": "AWS"
+                "category": "AWS",
+                "icon": {
+                    "light": "resources/light/stepfunctions/preview.svg",
+                    "dark": "resources/dark/stepfunctions/preview.svg"
+                }
             },
             {
                 "command": "aws.aboutToolkit",
