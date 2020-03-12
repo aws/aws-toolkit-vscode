@@ -55,7 +55,17 @@ Globals:
         Timeout: 5`
 
     return `${addGlobalsSection ? globalsYaml : ''}
-Resources:
+Resources:${makeSampleYamlResource(subValues)}`
+}
+
+export function makeSampleYamlResource(
+    subValues: {
+        resourceName?: string
+        resourceType?: string
+        runtime?: string
+    } = {}
+): string {
+    return `
     ${subValues.resourceName ? subValues.resourceName : 'TestResource'}:
         Type: ${subValues.resourceType ? subValues.resourceType : CloudFormation.SERVERLESS_FUNCTION_TYPE}
         Properties:
