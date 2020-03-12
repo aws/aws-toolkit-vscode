@@ -10,8 +10,8 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 
 export interface FeedbackMessage {
     command: string
-    comment?: string
-    sentiment?: string
+    comment: string
+    sentiment: string
 }
 
 export interface FeedbackPanel {
@@ -33,25 +33,18 @@ export function submitFeedbackListener(panel: FeedbackPanel, window: Window, tel
 
                 try {
                     await telemetry.postFeedback({
-                        comment: message.comment || '',
-                        sentiment: message.sentiment || ''
+                        comment: message.comment,
+                        sentiment: message.sentiment
                     })
                 } catch (err) {
                     const errorMessage = (err as Error).message || 'Failed to submit feedback'
-
                     logger.error(`Failed to submit ${message.sentiment} feedback: ${errorMessage}`)
-
                     panel.postMessage({ statusCode: 'Failure', error: errorMessage })
 
                     return
                 }
 
                 logger.info(`Successfully submitted ${message.sentiment} feedback`)
-                panel.postMessage({ statusCode: 'Success' })
-
-                return
-            case 'dispose':
-                logger.info('Feedback complete')
 
                 panel.dispose()
 

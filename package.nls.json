@@ -255,6 +255,7 @@
     "AWS.samcli.initWizard.schemas.failed_to_load_resources": "Error loading schemas in registry {0}.",
     "AWS.samcli.initWizard.source.error.notFound": "Project created successfully, but main source code file not found: {0}",
     "AWS.samcli.initWizard.source.error.notInWorkspace": "Could not open file '{0}'. If this file exists on disk, try adding it to your workspace.",
+    "AWS.submitFeedback.title": "Submit Quick Feedback",
     "AWS.wizard.selectedPreviously": "Selected Previously",
     "AWS.generic.response.no": "No",
     "AWS.generic.response.yes": "Yes",

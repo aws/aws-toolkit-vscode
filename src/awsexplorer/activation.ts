@@ -86,9 +86,22 @@ async function registerAwsExplorerCommands(
         })
     )
 
+    let submitFeedbackPanel: vscode.WebviewPanel | undefined
     context.subscriptions.push(
         vscode.commands.registerCommand('aws.submitFeedback', async () => {
-            await submitFeedback()
+            if (submitFeedbackPanel) {
+                submitFeedbackPanel.reveal(vscode.ViewColumn.One)
+            } else {
+                submitFeedbackPanel = await submitFeedback()
+
+                submitFeedbackPanel.onDidDispose(
+                    () => {
+                        submitFeedbackPanel = undefined
+                    },
+                    undefined,
+                    context.subscriptions
+                )
+            }
         })
     )
 

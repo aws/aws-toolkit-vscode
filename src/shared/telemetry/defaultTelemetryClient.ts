@@ -8,6 +8,7 @@ import * as os from 'os'
 import * as vscode from 'vscode'
 import { pluginVersion } from '../constants'
 import { ext } from '../extensionGlobals'
+import { getLogger } from '../logger'
 import * as ClientTelemetry from './clienttelemetry'
 import apiConfig = require('./service-2.json')
 import { TelemetryClient } from './telemetryClient'
@@ -19,6 +20,8 @@ export class DefaultTelemetryClient implements TelemetryClient {
     public static readonly DEFAULT_TELEMETRY_ENDPOINT = 'https://client-telemetry.us-east-1.amazonaws.com'
 
     private static readonly PRODUCT_NAME = 'AWS Toolkit For VS Code'
+
+    private readonly logger = getLogger()
 
     private constructor(private readonly clientId: string, private readonly client: ClientTelemetry) {}
 
@@ -46,11 +49,11 @@ export class DefaultTelemetryClient implements TelemetryClient {
                     MetricData: metricData
                 })
                 .promise()
-            console.info(`Successfully sent a telemetry batch of ${batch.length}`)
+            this.logger.info(`Successfully sent a telemetry batch of ${batch.length}`)
 
             return undefined
         } catch (err) {
-            console.error(`Batch error: ${err}`)
+            this.logger.error(`Batch error: ${err}`)
 
             return batch
         }
@@ -70,9 +73,9 @@ export class DefaultTelemetryClient implements TelemetryClient {
                     Sentiment: feedback.sentiment
                 })
                 .promise()
-            console.info('Successfully posted feedback')
+            this.logger.info('Successfully posted feedback')
         } catch (err) {
-            console.error(`Failed to post feedback: ${err}`)
+            this.logger.error(`Failed to post feedback: ${err}`)
             throw new Error(`Failed to post feedback: ${err}`)
         }
     }

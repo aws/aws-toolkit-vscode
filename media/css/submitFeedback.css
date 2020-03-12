@@ -15,15 +15,15 @@ input[type='submit']:disabled {
     opacity: 0.5;
 }
 
-input[type='submit']:disabled:hover {
-    background-color: var(--vscode-button-background);
-}
-
 textarea {
     background-color: var(--vscode-settings-textInputBackground);
     color: var(--vscode-settings-textInputForeground);
     border: 1px solid var(--vscode-settings-textInputBorder);
     resize: none;
+}
+
+body.vscode-dark textarea {
+    border: 1px solid transparent;
 }
 
 textarea:focus {

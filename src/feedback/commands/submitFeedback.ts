@@ -8,19 +8,22 @@ import _ = require('lodash')
 import * as vscode from 'vscode'
 import { ext } from '../../shared/extensionGlobals'
 import { ExtensionUtilities } from '../../shared/extensionUtilities'
-import { getLogger, Logger } from '../../shared/logger'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
+import { localize } from '../../shared/utilities/vsCodeUtils'
 import { FeedbackTemplates } from '../templates/feedbackTemplates'
 import { submitFeedbackListener } from './submitFeedbackListener'
 
-export async function submitFeedback(listener?: (message: any) => Promise<void>) {
-    const logger: Logger = getLogger()
-
+export async function submitFeedback(listener?: (message: any) => Promise<void>): Promise<vscode.WebviewPanel> {
     try {
-        const panel = vscode.window.createWebviewPanel('html', 'Submit Quick Feedback', vscode.ViewColumn.One, {
-            retainContextWhenHidden: true,
-            enableScripts: true
-        })
+        const panel = vscode.window.createWebviewPanel(
+            'html',
+            localize('AWS.submitFeedback.title', 'Submit Quick Feedback'),
+            vscode.ViewColumn.One,
+            {
+                retainContextWhenHidden: true,
+                enableScripts: true
+            }
+        )
         const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
 
         panel.webview.html = baseTemplateFn({
@@ -44,11 +47,13 @@ export async function submitFeedback(listener?: (message: any) => Promise<void>)
 
             const feedbackListener = listener === undefined ? createListener(panel) : listener
             panel.webview.onDidReceiveMessage(feedbackListener, undefined, ext.context.subscriptions)
+
+            return panel
         } catch (err) {
-            logger.error('Failed to create feedback web view', err as Error)
+            throw err
         }
     } catch (err) {
-        logger.error(err as Error)
+        throw err
     }
 }
 

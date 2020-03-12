@@ -18,12 +18,6 @@ console.log('Loaded!')
             handleMessageReceived: function(e) {
                 const message = e.data
                 switch (message.statusCode) {
-                    case 'Success':
-                        console.log('Sucessfully submitted feedback')
-                        vscode.postMessage({
-                            command: 'dispose'
-                        })
-                        break
                     case 'Failure':
                         console.error(`Failed to submit feedback: ${message.error}`)
                         this.error = message.error
