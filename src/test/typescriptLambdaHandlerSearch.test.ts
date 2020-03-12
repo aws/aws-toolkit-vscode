@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import * as path from 'path'
-import * as vscode from 'vscode'
+import { readFileAsString } from '../shared/filesystemUtilities'
 import { LambdaHandlerCandidate } from '../shared/lambdaHandlerSearch'
 import { TypescriptLambdaHandlerSearch } from '../shared/typescriptLambdaHandlerSearch'
 
@@ -73,7 +73,9 @@ describe('TypescriptLambdaHandlerSearch', () => {
         filename: string,
         expectedHandlerNames: Set<string>
     ): Promise<void> {
-        const search: TypescriptLambdaHandlerSearch = new TypescriptLambdaHandlerSearch(vscode.Uri.file(filename))
+        const fileContents = await readFileAsString(filename)
+
+        const search: TypescriptLambdaHandlerSearch = new TypescriptLambdaHandlerSearch(filename, fileContents)
 
         const handlers: LambdaHandlerCandidate[] = await search.findCandidateLambdaHandlers()
 

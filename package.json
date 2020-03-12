@@ -35,7 +35,7 @@
         "onCommand:aws.login",
         "onCommand:aws.credential.profile.create",
         "onCommand:aws.logout",
-        "onCommand:aws.reportIssue",
+        "onCommand:aws.createIssueOnGitHub",
         "onCommand:aws.showRegion",
         "onCommand:aws.hideRegion",
         "onView:aws.explorer",
@@ -242,7 +242,7 @@
                     "group": "z_externalLinks@2"
                 },
                 {
-                    "command": "aws.reportIssue",
+                    "command": "aws.createIssueOnGitHub",
                     "when": "view == aws.explorer",
                     "group": "z_externalLinks@3"
                 },
@@ -337,8 +337,8 @@
                 "category": "AWS"
             },
             {
-                "command": "aws.reportIssue",
-                "title": "%AWS.command.reportIssue%",
+                "command": "aws.createIssueOnGitHub",
+                "title": "%AWS.command.createIssueOnGitHub%",
                 "category": "AWS"
             },
             {
@@ -552,6 +552,7 @@
         "lodash": "^4.17.15",
         "moment": "^2.24.0",
         "original-fs": "^1.1.0",
+        "portfinder": "^1.0.25",
         "request": "^2.88.0",
         "semver": "^5.6.0",
         "sleep-promise": "^8.0.1",
