@@ -13,7 +13,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { FeedbackTemplates } from '../templates/feedbackTemplates'
 import { submitFeedbackListener } from './submitFeedbackListener'
 
-export async function submitFeedback(listener?: (message: any) => Promise<void>): Promise<vscode.WebviewPanel> {
+export function submitFeedback(listener?: (message: any) => Promise<void>): vscode.WebviewPanel {
     const panel = vscode.window.createWebviewPanel(
         'html',
         localize('AWS.submitFeedback.title', 'Submit Quick Feedback'),

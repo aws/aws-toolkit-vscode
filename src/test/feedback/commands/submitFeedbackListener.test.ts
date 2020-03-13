@@ -12,28 +12,18 @@ const SENTIMENT = 'Positive'
 const message = { command: 'submitFeedback', comment: COMMENT, sentiment: SENTIMENT }
 
 describe('submitFeedbackListener', () => {
-    let panel: FeedbackPanel
     let mockPanel: FeedbackPanel
-
-    let window: Window
     let mockWindow: Window
-
-    let telemetry: TelemetryService
     let mockTelemetry: TelemetryService
 
-    beforeEach(async () => {
+    beforeEach(() => {
         mockPanel = mock()
-        panel = instance(mockPanel)
-
         mockWindow = mock()
-        window = instance(mockWindow)
-
         mockTelemetry = mock()
-        telemetry = instance(mockTelemetry)
     })
 
     it('submits feedback, disposes, and shows message on success', async () => {
-        const listener = submitFeedbackListener(panel, window, telemetry)
+        const listener = submitFeedbackListener(instance(mockPanel), instance(mockWindow), instance(mockTelemetry))
         await listener(message)
 
         verify(mockTelemetry.postFeedback(deepEqual({ comment: COMMENT, sentiment: SENTIMENT }))).once()
@@ -47,7 +37,7 @@ describe('submitFeedbackListener', () => {
         // tslint:disable-next-line: no-unsafe-any
         when(mockTelemetry.postFeedback(anything())).thenThrow(new Error(error))
 
-        const listener = submitFeedbackListener(panel, window, telemetry)
+        const listener = submitFeedbackListener(instance(mockPanel), instance(mockWindow), instance(mockTelemetry))
         await listener(message)
 
         verify(mockPanel.postMessage(deepEqual({ statusCode: 'Failure', error: error }))).once()
