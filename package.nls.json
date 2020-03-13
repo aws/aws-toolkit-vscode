@@ -78,6 +78,8 @@
     "AWS.explorerNode.registry.error": "Error loading registry schema items",
     "AWS.explorerNode.registry.noSchemas": "[No Registry Schemas]",
     "AWS.explorerNode.registry.registryName.Not.Found": "Registry name not found",
+    "AWS.explorerNode.connecting.label": "Connecting...",
+    "AWS.explorerNode.connecting.tooltip": "Connecting...",
     "AWS.explorerNode.signIn": "Connect to AWS...",
     "AWS.explorerNode.signIn.tooltip": "Click here to select credentials for the AWS Toolkit",
     "AWS.lambda.explorerTitle": "Explorer",
