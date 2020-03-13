@@ -14,47 +14,39 @@ import { FeedbackTemplates } from '../templates/feedbackTemplates'
 import { submitFeedbackListener } from './submitFeedbackListener'
 
 export async function submitFeedback(listener?: (message: any) => Promise<void>): Promise<vscode.WebviewPanel> {
-    try {
-        const panel = vscode.window.createWebviewPanel(
-            'html',
-            localize('AWS.submitFeedback.title', 'Submit Quick Feedback'),
-            vscode.ViewColumn.One,
-            {
-                retainContextWhenHidden: true,
-                enableScripts: true
-            }
-        )
-        const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
-
-        panel.webview.html = baseTemplateFn({
-            content: '<h1>Loading...</h1>'
-        })
-
-        const feedbackTemplateFn = _.template(FeedbackTemplates.SUBMIT_TEMPLATE)
-
-        try {
-            const loadScripts = ExtensionUtilities.getScriptsForHtml(['submitFeedbackVue.js'])
-            const loadLibs = ExtensionUtilities.getLibrariesForHtml(['vue.min.js'])
-            const loadStylesheets = ExtensionUtilities.getCssForHtml(['submitFeedback.css'])
-
-            panel.webview.html = baseTemplateFn({
-                content: feedbackTemplateFn({
-                    Scripts: loadScripts,
-                    Libraries: loadLibs,
-                    Stylesheets: loadStylesheets
-                })
-            })
-
-            const feedbackListener = listener === undefined ? createListener(panel) : listener
-            panel.webview.onDidReceiveMessage(feedbackListener, undefined, ext.context.subscriptions)
-
-            return panel
-        } catch (err) {
-            throw err
+    const panel = vscode.window.createWebviewPanel(
+        'html',
+        localize('AWS.submitFeedback.title', 'Submit Quick Feedback'),
+        vscode.ViewColumn.One,
+        {
+            retainContextWhenHidden: true,
+            enableScripts: true
         }
-    } catch (err) {
-        throw err
-    }
+    )
+    const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
+
+    panel.webview.html = baseTemplateFn({
+        content: '<h1>Loading...</h1>'
+    })
+
+    const feedbackTemplateFn = _.template(FeedbackTemplates.SUBMIT_TEMPLATE)
+
+    const loadScripts = ExtensionUtilities.getScriptsForHtml(['submitFeedbackVue.js'])
+    const loadLibs = ExtensionUtilities.getLibrariesForHtml(['vue.min.js'])
+    const loadStylesheets = ExtensionUtilities.getCssForHtml(['submitFeedback.css'])
+
+    panel.webview.html = baseTemplateFn({
+        content: feedbackTemplateFn({
+            Scripts: loadScripts,
+            Libraries: loadLibs,
+            Stylesheets: loadStylesheets
+        })
+    })
+
+    const feedbackListener = listener === undefined ? createListener(panel) : listener
+    panel.webview.onDidReceiveMessage(feedbackListener, undefined, ext.context.subscriptions)
+
+    return panel
 }
 
 function createListener(panel: vscode.WebviewPanel) {
