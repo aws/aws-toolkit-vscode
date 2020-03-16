@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import { AwsTelemetryOptOut, TelemetryOptOutOptions } from '../../../shared/telemetry/awsTelemetryOptOut'
 import { TelemetryEvent } from '../../../shared/telemetry/telemetryEvent'
+import { TelemetryFeedback } from '../../../shared/telemetry/telemetryFeedback'
 import { TelemetryService } from '../../../shared/telemetry/telemetryService'
 import { TestSettingsConfiguration } from '../../../test/utilities/testSettingsConfiguration'
 
@@ -24,6 +25,9 @@ class MockTelemetryService implements TelemetryService {
         return
     }
     public async shutdown(): Promise<void> {
+        return
+    }
+    public async postFeedback(feedback: TelemetryFeedback): Promise<void> {
         return
     }
     public record(_event: TelemetryEvent): void {
