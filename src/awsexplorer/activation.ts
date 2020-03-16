@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 
+import { submitFeedback } from '../feedback/commands/submitFeedback'
 import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { deleteLambda } from '../lambda/commands/deleteLambda'
 import { invokeLambda } from '../lambda/commands/invokeLambda'
@@ -63,67 +64,102 @@ async function registerAwsExplorerCommands(
     awsExplorer: AwsExplorer,
     lambdaOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Lambda')
 ): Promise<void> {
-    context.subscriptions.push(vscode.commands.registerCommand('aws.showRegion', async () => {
-        try {
-            await ext.awsContextCommands.onCommandShowRegion()
-        } finally {
-            recordAwsShowRegion()
-            recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
-        }
-    }))
-
-    context.subscriptions.push(vscode.commands.registerCommand('aws.hideRegion', async (node?: RegionNode) => {
-        try {
-            await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
-        } finally {
-            recordAwsHideRegion()
-            recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
-        }
-    }))
-
-    context.subscriptions.push(vscode.commands.registerCommand('aws.refreshAwsExplorer', async () => {
-        recordAwsRefreshExplorer()
-        awsExplorer.refresh()
-    }))
-
-    context.subscriptions.push(vscode.commands.registerCommand(
-        'aws.deleteLambda',
-        async (node: LambdaFunctionNode) =>
-            await deleteLambda({
-                deleteParams: { functionName: node.configuration.FunctionName || '' },
-                lambdaClient: ext.toolkitClientBuilder.createLambdaClient(node.regionCode),
-                outputChannel: lambdaOutputChannel,
-                onRefresh: () => awsExplorer.refresh(node.parent)
-            })
-    ))
-
-    context.subscriptions.push(vscode.commands.registerCommand(
-        'aws.deleteCloudFormation',
-        async (node: CloudFormationStackNode) =>
-            await deleteCloudFormation(() => awsExplorer.refresh(node.parent), node)
-    ))
-
-    context.subscriptions.push(vscode.commands.registerCommand('aws.showErrorDetails', async (node: ErrorNode) => await showErrorDetails(node)))
-
-    context.subscriptions.push(vscode.commands.registerCommand(
-        'aws.invokeLambda',
-        async (node: LambdaFunctionNode) =>
-            await invokeLambda({
-                functionNode: node,
-                outputChannel: lambdaOutputChannel
-            })
-    ))
-
-    context.subscriptions.push(vscode.commands.registerCommand(
-        'aws.refreshAwsExplorerNode',
-        async (awsexplorer: AwsExplorer, element: AWSTreeNodeBase) => {
+    context.subscriptions.push(
+        vscode.commands.registerCommand('aws.showRegion', async () => {
             try {
-                awsexplorer.refresh(element)
+                await ext.awsContextCommands.onCommandShowRegion()
             } finally {
-                recordAwsRefreshExplorer()
+                recordAwsShowRegion()
+                recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
             }
-        }
-    ))
+        })
+    )
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('aws.hideRegion', async (node?: RegionNode) => {
+            try {
+                await ext.awsContextCommands.onCommandHideRegion(safeGet(node, x => x.regionCode))
+            } finally {
+                recordAwsHideRegion()
+                recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
+            }
+        })
+    )
+
+    let submitFeedbackPanel: vscode.WebviewPanel | undefined
+    context.subscriptions.push(
+        vscode.commands.registerCommand('aws.submitFeedback', () => {
+            if (submitFeedbackPanel) {
+                submitFeedbackPanel.reveal(submitFeedbackPanel.viewColumn || vscode.ViewColumn.One)
+            } else {
+                submitFeedbackPanel = submitFeedback()
+
+                submitFeedbackPanel.onDidDispose(
+                    () => {
+                        submitFeedbackPanel = undefined
+                    },
+                    undefined,
+                    context.subscriptions
+                )
+            }
+        })
+    )
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('aws.refreshAwsExplorer', async () => {
+            recordAwsRefreshExplorer()
+            awsExplorer.refresh()
+        })
+    )
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand(
+            'aws.deleteLambda',
+            async (node: LambdaFunctionNode) =>
+                await deleteLambda({
+                    deleteParams: { functionName: node.configuration.FunctionName || '' },
+                    lambdaClient: ext.toolkitClientBuilder.createLambdaClient(node.regionCode),
+                    outputChannel: lambdaOutputChannel,
+                    onRefresh: () => awsExplorer.refresh(node.parent)
+                })
+        )
+    )
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand(
+            'aws.deleteCloudFormation',
+            async (node: CloudFormationStackNode) =>
+                await deleteCloudFormation(() => awsExplorer.refresh(node.parent), node)
+        )
+    )
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('aws.showErrorDetails', async (node: ErrorNode) => await showErrorDetails(node))
+    )
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand(
+            'aws.invokeLambda',
+            async (node: LambdaFunctionNode) =>
+                await invokeLambda({
+                    functionNode: node,
+                    outputChannel: lambdaOutputChannel
+                })
+        )
+    )
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand(
+            'aws.refreshAwsExplorerNode',
+            async (awsexplorer: AwsExplorer, element: AWSTreeNodeBase) => {
+                try {
+                    awsexplorer.refresh(element)
+                } finally {
+                    recordAwsRefreshExplorer()
+                }
+            }
+        )
+    )
 }
 
 function updateAwsExplorerWhenAwsContextCredentialsChange(

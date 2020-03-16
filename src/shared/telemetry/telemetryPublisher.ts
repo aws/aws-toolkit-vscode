@@ -4,9 +4,12 @@
  */
 
 import { TelemetryEvent } from './telemetryEvent'
+import { TelemetryFeedback } from './telemetryFeedback'
 
 export interface TelemetryPublisher {
     init(): Promise<void>
+
+    postFeedback(feedback: TelemetryFeedback): Promise<void>
 
     enqueue(...events: TelemetryEvent[]): any
     flush(): Promise<any>
