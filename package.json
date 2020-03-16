@@ -1,7 +1,7 @@
 {
     "name": "aws-toolkit-vscode",
-    "displayName": "AWS Toolkit for Visual Studio Code",
-    "description": "An extension for working with Amazon Web Services in Visual Studio Code",
+    "displayName": "AWS Toolkit",
+    "description": "An extension for working with Amazon Web Servicese",
     "version": "1.8.0-SNAPSHOT",
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
@@ -117,9 +117,9 @@
                     "enum": [
                         "Enable",
                         "Disable",
-                        "Use the same setting as VS Code"
+                        "Use IDE settings"
                     ],
-                    "default": "Use the same setting as VS Code",
+                    "default": "Use IDE settings",
                     "markdownDescription": "%AWS.configuration.description.telemetry%"
                 }
             }
