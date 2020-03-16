@@ -4,7 +4,7 @@
 dependencies {
     compile(project(":resources"))
     compile(project(":telemetry-client"))
-    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.3")
+    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
     compile("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
     compile("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:$jacksonVersion")
     compile("software.amazon.awssdk:cognitoidentity:$awsSdkVersion")

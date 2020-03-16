@@ -42,7 +42,6 @@ class CloudWatchLogGroup(
     private val project: Project,
     private val logGroup: String
 ) : CoroutineScope by ApplicationThreadPoolScope("CloudWatchLogsGroup"), Disposable {
-    val title = message("cloudwatch.logs.log_group_title", logGroup.split("/").last())
     lateinit var content: JPanel
 
     private lateinit var refreshButton: JButton
@@ -58,7 +57,7 @@ class CloudWatchLogGroup(
 
     private fun createUIComponents() {
         tableModel = ListTableModel(
-            arrayOf(CloudWatchLogsStreamsColumn(), CloudWatchLogsStreamsColumnDate()),
+            arrayOf(LogStreamsStreamColumn(), LogStreamsDateColumn()),
             mutableListOf<LogStream>(),
             // To display and sort by different values, we sort the model's values instead
             -1,
@@ -82,6 +81,7 @@ class CloudWatchLogGroup(
         filterField.document.addDocumentListener(buildStreamSearchListener(groupTable))
 
         styleRefreshButton()
+        // addActions()
 
         launch { refreshLogStreams() }
     }
@@ -105,9 +105,7 @@ class CloudWatchLogGroup(
                 val row = table.selectedRow.takeIf { it >= 0 } ?: return false
                 val logStream = table.getValueAt(row, 0) as? String ?: return false
                 val window = CloudWatchLogWindow.getInstance(project)
-                launch {
-                    window.showLog(logGroup, logStream)
-                }
+                window.showLogStream(logGroup, logStream)
                 return true
             }
         }.installOn(table)
@@ -131,10 +129,23 @@ class CloudWatchLogGroup(
         }
     }
 
+    /*
+    private fun addActions() {
+        val actionGroup = DefaultActionGroup()
+        actionGroup.addAction(OpenLogStreamInEditor(project, logGroup, groupTable))
+        PopupHandler.installPopupHandler(
+            groupTable,
+            actionGroup,
+            ActionPlaces.EDITOR_POPUP,
+            ActionManager.getInstance()
+        )
+    }
+    */
+
     private suspend fun populateModel() = runUnlessDisposed(this) {
         try {
             val streams = client.describeLogStreamsPaginator(DescribeLogStreamsRequest.builder().logGroupName(logGroup).build())
-            streams.filterNotNull().firstOrNull()?.logStreams()?.sortedBy { it.lastEventTimestamp() }?.let {
+            streams.filterNotNull().firstOrNull()?.logStreams()?.sortedByDescending { it.lastEventTimestamp() }?.let {
                 withContext(edtContext) { tableModel.items = it }
             }
         } catch (e: Exception) {
@@ -147,6 +158,6 @@ class CloudWatchLogGroup(
     override fun dispose() {}
 
     companion object {
-        val LOG = getLogger<CloudWatchLogGroup>()
+        private val LOG = getLogger<CloudWatchLogGroup>()
     }
 }

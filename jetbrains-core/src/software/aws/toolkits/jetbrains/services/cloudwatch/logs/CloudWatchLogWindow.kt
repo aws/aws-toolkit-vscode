@@ -3,19 +3,15 @@
 
 package software.aws.toolkits.jetbrains.services.cloudwatch.logs
 
-import com.intellij.execution.filters.TextConsoleBuilderFactory
-import com.intellij.execution.ui.ConsoleViewContentType
-import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
-import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowManager
 import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowType
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.CloudWatchLogGroup
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.CloudWatchLogStream
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.resources.message
@@ -33,25 +29,30 @@ class CloudWatchLogWindow(private val project: Project) : CoroutineScope by Appl
             return@launch
         }
         val group = CloudWatchLogGroup(project, logGroup)
+        val title = message("cloudwatch.logs.log_group_title", logGroup.split("/").last())
         withContext(edtContext) {
-            toolWindow.addTab(title = group.title, component = group.content, activate = true, id = logGroup, disposable = group)
+            toolWindow.addTab(title, group.content, activate = true, id = logGroup, disposable = group)
         }
     }
 
-    // TODO this will be refactored out in the next PR
-    fun showLog(logGroup: String, logStream: String, fromHead: Boolean = true, title: String? = null) {
-        val client = project.awsClient<CloudWatchLogsClient>()
-        val console = TextConsoleBuilderFactory.getInstance().createBuilder(project).apply { setViewer(true) }.console
+    fun showLogStream(
+        logGroup: String,
+        logStream: String,
+        startTime: Long? = null,
+        duration: Long? = null
+    ) = launch {
         val id = "$logGroup/$logStream"
-        val displayName = title ?: id
-        runInEdt {
-            toolWindow.addTab(displayName, console.component, activate = true, id = id)
+        // dispose existing window if it exists to update. TODO add a refresh, duh
+        val existingWindow = toolWindow.find(id)
+        if (existingWindow != null) {
+            withContext(edtContext) {
+                existingWindow.dispose()
+            }
         }
-        val events = client.getLogEventsPaginator { it.logGroupName(logGroup).logStreamName(logStream).startFromHead(fromHead) }.events()
-        if (events.none()) {
-            console.print(message("ecs.service.logs.empty", "$logGroup/$logStream\n"), ConsoleViewContentType.NORMAL_OUTPUT)
-        } else {
-            events.forEach { console.print("${it.message()}\n", ConsoleViewContentType.NORMAL_OUTPUT) }
+        val title = message("cloudwatch.logs.log_stream_title", logStream)
+        val stream = CloudWatchLogStream(project, logGroup, logStream, startTime, duration)
+        withContext(edtContext) {
+            toolWindow.addTab(title, stream.content, activate = true, id = id, disposable = stream)
         }
     }
 

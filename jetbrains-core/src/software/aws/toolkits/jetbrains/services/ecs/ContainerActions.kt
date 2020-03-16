@@ -80,7 +80,7 @@ class ContainerLogsAction(
         val window = CloudWatchLogWindow.getInstance(project)
 
         AwsResourceCache.getInstance(project).getResource(EcsResources.listTaskIds(container.service.clusterArn(), container.service.serviceArn())).thenAccept {
-            it.firstOrNull()?.let { taskId -> window.showLog(logGroup, "$logPrefix/${container.containerDefinition.name()}/$taskId") }
+            it.firstOrNull()?.let { taskId -> window.showLogStream(logGroup, "$logPrefix/${container.containerDefinition.name()}/$taskId") }
                 ?: notifyError(message("ecs.service.logs.no_running_tasks"))
         }
     }
