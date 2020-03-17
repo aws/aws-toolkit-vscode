@@ -1,6 +1,6 @@
-# <a id="top"></a>AWS Toolkit for Visual Studio Code
+# <a id="top"></a>AWS Toolkit
 
-The _AWS Toolkit for Visual Studio Code (VS Code)_, or simply the _Toolkit_, is an extension that enables you to interact with certain services of [Amazon Web Services (AWS)](https://aws.amazon.com/what-is-aws/) from within the VS Code editor.
+The _AWS Toolkit_, or simply the _Toolkit_, is an extension that enables you to interact with certain services of [Amazon Web Services (AWS)](https://aws.amazon.com/what-is-aws/) from within the VS Code editor.
 
 The following screenshots show important parts of the Toolkit.
 
@@ -34,7 +34,7 @@ The following screenshots show important parts of the Toolkit.
 
 # <a id="feature-overview"></a>Feature Overview
 
-You can use the AWS Toolkit for VS Code to interact with several AWS resources in various ways.
+You can use the AWS Toolkit to interact with several AWS resources in various ways.
 
 These include the following:
 
@@ -58,7 +58,7 @@ See [Features](#features) below for high-level details, or jump right into the [
 
 # <a id="additional-setup-steps"></a>Setup
 
-To access most features of the AWS Toolkit for VS Code, you must complete the steps defined in the [Setting Up](https://docs.aws.amazon.com/console/toolkit-for-vscode/getting-started) topic of the user guide.
+To access most features of the AWS Toolkit, you must complete the steps defined in the [Setting Up](https://docs.aws.amazon.com/console/toolkit-for-vscode/getting-started) topic of the user guide.
 
 These steps include the following:
 
@@ -91,7 +91,7 @@ For complete setup instructions for these three components, see [Installing the 
 
 ## <a id="sam-and-lambda"></a>Serverless Applications, Lambda Functions, and CloudFormation Stacks
 
-The AWS Toolkit for VS Code enables you to develop [AWS serverless applications](https://aws.amazon.com/serverless/) locally. It also enables you to do the following through the [AWS Explorer](#ui-components-aws-expl):
+The AWS Toolkit enables you to develop [AWS serverless applications](https://aws.amazon.com/serverless/) locally. It also enables you to do the following through the [AWS Explorer](#ui-components-aws-expl):
 
 -   Deploy your locally-developed AWS serverless applications to an AWS account, into an [AWS CloudFormation](https://aws.amazon.com/cloudformation/) stack
 -   List and delete AWS CloudFormation stacks
@@ -127,7 +127,7 @@ The functions that have Codelenses are those that use AWS Lambda-function handle
 
 ## <a id="cdk-apps"></a>AWS CDK Applications
 
-The AWS Toolkit for VS Code enables you to work with [AWS Cloud Development Kit (AWS CDK)](https://aws.amazon.com/cdk/) applications. Using the [AWS CDK Explorer](#ui-components-cdk-expl) on the Toolkit, you can view CDK applications within your Workspace that have been synthesized.
+The AWS Toolkit enables you to work with [AWS Cloud Development Kit (AWS CDK)](https://aws.amazon.com/cdk/) applications. Using the [AWS CDK Explorer](#ui-components-cdk-expl) on the Toolkit, you can view CDK applications within your Workspace that have been synthesized.
 
 Example:
 
@@ -141,7 +141,7 @@ For full details, see the [AWS CDK Explorer](https://docs.aws.amazon.com/toolkit
 
 ## <a id="eventbridge"></a>Amazon EventBridge Schemas
 
-The AWS Toolkit for VS Code provides support for [Amazon EventBridge](https://aws.amazon.com/eventbridge) schemas. Using the [AWS Explorer](#ui-components-aws-expl) of the Toolkit, you can perform the following operations on these schemas:
+The AWS Toolkit provides support for [Amazon EventBridge](https://aws.amazon.com/eventbridge) schemas. Using the [AWS Explorer](#ui-components-aws-expl) of the Toolkit, you can perform the following operations on these schemas:
 
 -   View an available schema
 -   Search for an available schema
@@ -159,7 +159,7 @@ For full details, see [Working with Amazon EventBridge Schemas](https://docs.aws
 
 ## <a id="ecs-files"></a>Amazon ECS Task Definition Files
 
-The AWS Toolkit for VS Code provides support for [Amazon Elastic Container Service (Amazon ECS)](https://aws.amazon.com/ecs). With the Toolkit installed in VS Code, IntelliSense functionality is provided for Amazon ECS task-definition files that you are updating in the editor.
+The AWS Toolkit provides support for [Amazon Elastic Container Service (Amazon ECS)](https://aws.amazon.com/ecs). With the Toolkit installed in VS Code, IntelliSense functionality is provided for Amazon ECS task-definition files that you are updating in the editor.
 
 Example:
 
@@ -173,7 +173,7 @@ For full details, see [Working with Amazon Elastic Container Service](https://do
 
 # <a id="aws-commands"></a>Appendix A: AWS Commands
 
-The AWS Toolkit for VS Code has several features that you can access through the [Command Palette](#open-command-palette) (select **View**, then **Command Palette**):
+The AWS Toolkit has several features that you can access through the [Command Palette](#open-command-palette) (select **View**, then **Command Palette**):
 
 | AWS Command                            | Description                                                                                                                                                                                                               |
 | :------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -198,7 +198,7 @@ The AWS Toolkit for VS Code has several features that you can access through the
 
 # <a id="get-help"></a>Appendix B: Get Help
 
-For additional details on how to use the AWS Toolkit for VS Code, see the [user guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/welcome).
+For additional details on how to use the AWS Toolkit, see the [user guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/welcome).
 
 To report issues with the Toolkit or to propose Toolkit code changes, see the [aws/aws-toolkit-vscode](https://github.com/aws/aws-toolkit-vscode) repository on GitHub.
 
