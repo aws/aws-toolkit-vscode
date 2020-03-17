@@ -5,11 +5,11 @@ package software.aws.toolkits.jetbrains.services.cloudformation.stack
 import com.intellij.testFramework.ProjectRule
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.atLeast
+import com.nhaarman.mockitokotlin2.whenever
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.verify
 import software.amazon.awssdk.services.cloudformation.model.DescribeStackResourcesRequest
@@ -49,7 +49,7 @@ class UpdaterTest {
 
     @Before
     fun setUp() {
-        arrayOf(treeView, tableView).forEach { `when`(it.component).thenReturn(JLabel()) }
+        arrayOf(treeView, tableView).forEach { whenever(it.component).thenReturn(JLabel()) }
     }
 
     @Test
@@ -57,9 +57,9 @@ class UpdaterTest {
         val setStackStatus = createSemaphore()
         val fillResources = createSemaphore()
         val insertEvents = createSemaphore()
-        `when`(treeView.fillResources(any())).then { fillResources.release() }
-        `when`(treeView.setStackStatus(StackStatus.CREATE_COMPLETE)).then { setStackStatus.release() }
-        `when`(tableView.insertEvents(any(), any())).then { insertEvents.release() }
+        whenever(treeView.fillResources(any())).then { fillResources.release() }
+        whenever(treeView.setStackStatus(StackStatus.CREATE_COMPLETE)).then { setStackStatus.release() }
+        whenever(tableView.insertEvents(any(), any())).then { insertEvents.release() }
 
         val mockEventsGenerator = MockEventsGenerator()
 
@@ -79,10 +79,10 @@ class UpdaterTest {
         var availablePages = emptySet<Page>()
         SwingUtilities.invokeLater {
             val client = mockClientManagerRule.createMock(mockEventsGenerator) { mock ->
-                `when`(mock.describeStacks(any<DescribeStacksRequest>()))
+                whenever(mock.describeStacks(any<DescribeStacksRequest>()))
                     .thenReturn(StackStatus.CREATE_IN_PROGRESS.asResponse)
                     .thenReturn(StackStatus.CREATE_COMPLETE.asResponse)
-                `when`(mock.describeStackResources(any<DescribeStackResourcesRequest>()))
+                whenever(mock.describeStackResources(any<DescribeStackResourcesRequest>()))
                     .thenReturn(DescribeStackResourcesResponse.builder().stackResources(resources).build())
             }
             Updater(

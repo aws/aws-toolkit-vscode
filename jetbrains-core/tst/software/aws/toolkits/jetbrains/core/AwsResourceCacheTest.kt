@@ -100,7 +100,7 @@ class AwsResourceCacheTest {
 
     @Test
     fun exceptionsAreBubbledWhenNoEntry() {
-        doAnswer { throw Throwable("Bang!") }.`when`(mockResource).fetch(any(), any(), any())
+        doAnswer { throw Throwable("Bang!") }.whenever(mockResource).fetch(any(), any(), any())
         assertThat(sut.getResource(mockResource)).hasException.withFailMessage("Bang!")
     }
 
