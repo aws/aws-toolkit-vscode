@@ -130,43 +130,133 @@
                 "type": "aws-sam",
                 "configurationAttributes": {
                     "direct-invoke": {
-                        "required": [
-                            "invokeTarget"
-                        ],
+                        "$schema": "http://json-schema.org/draft-07/schema#",
+                        "title": "AwsSamDebuggerConfiguration",
+                        "definitions": {
+                            "jsonObject": {
+                                "title": "ReadonlyJsonObject",
+                                "additionalProperties": {
+                                    "type": [
+                                        "string",
+                                        "number",
+                                        "boolean"
+                                    ]
+                                },
+                                "type": "object"
+                            }
+                        },
+                        "additionalProperties": false,
                         "properties": {
+                            "aws": {
+                                "title": "AwsSamDebuggerAwsFields",
+                                "properties": {
+                                    "credentials": {
+                                        "type": "string"
+                                    },
+                                    "region": {
+                                        "type": "string"
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object"
+                            },
                             "invokeTarget": {
-                                "type": "object",
+                                "title": "AwsSamDebuggerInvokeTargetFields",
+                                "properties": {
+                                    "lambdaHandler": {
+                                        "description": "%AWS.configuration.description.awssam.debug.lambdaHandler%",
+                                        "type": "string"
+                                    },
+                                    "projectRoot": {
+                                        "description": "%AWS.configuration.description.awssam.debug.projectRoot",
+                                        "type": "string"
+                                    },
+                                    "samTemplatePath": {
+                                        "type": "string"
+                                    },
+                                    "samTemplateResource": {
+                                        "type": "string"
+                                    },
+                                    "target": {
+                                        "type": "string"
+                                    }
+                                },
+                                "additionalProperties": false,
                                 "required": [
                                     "target"
                                 ],
+                                "type": "object"
+                            },
+                            "lambda": {
+                                "title": "AwsSamDebuggerLambdaFields",
                                 "properties": {
-                                    "target": {
-                                        "type": "string",
-                                        "enum": [
-                                            "code",
-                                            "template"
-                                        ],
-                                        "description": "%AWS.configuration.description.awssam.debug.invokeTarget%"
+                                    "environmentVariables": {
+                                        "$ref": "#/definitions/jsonObject"
                                     },
-                                    "lambdaHandler": {
-                                        "type": "string",
-                                        "description": "%AWS.configuration.description.awssam.debug.lambdaHandler%"
+                                    "event": {
+                                        "properties": {
+                                            "json": {
+                                                "$ref": "#/definitions/jsonObject"
+                                            },
+                                            "path": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "additionalProperties": false,
+                                        "type": "object"
                                     },
-                                    "projectRoot": {
-                                        "type": "string",
-                                        "description": "%AWS.configuration.description.awssam.debug.projectRoot%"
+                                    "memoryMb": {
+                                        "type": "number"
                                     },
-                                    "samTemplatePath": {
-                                        "type": "string",
-                                        "description": "%AWS.configuration.description.awssam.debug.samTemplatePath%"
+                                    "runtime": {
+                                        "type": "string"
                                     },
-                                    "samTemplateResource": {
-                                        "type": "string",
-                                        "description": "%AWS.configuration.description.awssam.debug.samTemplateResource%"
+                                    "timeoutSec": {
+                                        "type": "number"
                                     }
-                                }
+                                },
+                                "additionalProperties": false,
+                                "type": "object"
+                            },
+                            "sam": {
+                                "title": "AwsSamDebuggerSamFields",
+                                "properties": {
+                                    "buildArguments": {
+                                        "type": "string"
+                                    },
+                                    "containerBuild": {
+                                        "type": "boolean"
+                                    },
+                                    "dockerNetwork": {
+                                        "type": "string"
+                                    },
+                                    "localArguments": {
+                                        "type": "string"
+                                    },
+                                    "skipNewImageCheck": {
+                                        "type": "boolean"
+                                    },
+                                    "template": {
+                                        "properties": {
+                                            "parameters": {
+                                                "$ref": "#/definitions/jsonObject"
+                                            }
+                                        },
+                                        "type": "object",
+                                        "additionalProperties": false
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object"
                             }
-                        }
+                        },
+                        "required": [
+                            "invokeTarget",
+                            "name",
+                            "request",
+                            "type"
+                        ],
+                        "type": "object"
                     }
                 }
             }
