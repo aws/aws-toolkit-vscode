@@ -12,6 +12,7 @@ import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.DataKey
 import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.actionSystem.Separator
 import com.intellij.openapi.actionSystem.ex.ActionManagerEx
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.components.ServiceManager
@@ -33,6 +34,7 @@ import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_N
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_RESOURCE_NODES
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_SERVICE_NODE
 import software.aws.toolkits.jetbrains.core.explorer.actions.CopyArnAction
+import software.aws.toolkits.jetbrains.core.explorer.actions.DeleteResourceAction
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRootNode
@@ -127,15 +129,23 @@ class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(t
                 // Build a right click menu based on the selected first node
                 // All nodes must be the same type (e.g. all S3 buckets, or a service node)
                 val explorerNode = getSelectedNodesSameType<AwsExplorerNode<*>>()?.get(0) ?: return
-                val additionalActions = mutableListOf<AnAction>()
                 val actionGroupName = (explorerNode as? ResourceActionNode)?.actionGroupName()
-                if (explorerNode is AwsExplorerResourceNode<*>) {
-                    additionalActions.add(CopyArnAction())
-                }
-                val actionGroup = DefaultActionGroup()
-                (actionGroupName?.let { actionManager.getAction(it) } as? ActionGroup)?.let { actionGroup.addAll(it) }
-                additionalActions.forEach { actionGroup.add(it) }
 
+                val totalActions = mutableListOf<AnAction>()
+
+                (actionGroupName?.let { actionManager.getAction(it) } as? ActionGroup)?.let { totalActions.addAll(it.getChildren(null)) }
+
+                if (explorerNode is AwsExplorerResourceNode<*>) {
+                    totalActions.add(CopyArnAction())
+                }
+
+                totalActions.find { it is DeleteResourceAction<*> }?.let {
+                    totalActions.remove(it)
+                    totalActions.add(Separator.create())
+                    totalActions.add(it)
+                }
+
+                val actionGroup = DefaultActionGroup(totalActions)
                 if (actionGroup.childrenCount > 0) {
                     val popupMenu = actionManager.createActionPopupMenu("ExplorerToolWindow", actionGroup)
                     popupMenu.component.show(comp, x, y)
