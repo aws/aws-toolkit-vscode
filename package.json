@@ -125,6 +125,52 @@
                 }
             }
         },
+        "debuggers": [
+            {
+                "type": "aws-sam",
+                "configurationAttributes": {
+                    "direct-invoke": {
+                        "required": [
+                            "invokeTarget"
+                        ],
+                        "properties": {
+                            "invokeTarget": {
+                                "type": "object",
+                                "required": [
+                                    "target"
+                                ],
+                                "properties": {
+                                    "target": {
+                                        "type": "string",
+                                        "enum": [
+                                            "code",
+                                            "template"
+                                        ],
+                                        "description": "%AWS.configuration.description.awssam.debug.invokeTarget%"
+                                    },
+                                    "lambdaHandler": {
+                                        "type": "string",
+                                        "description": "%AWS.configuration.description.awssam.debug.lambdaHandler%"
+                                    },
+                                    "projectRoot": {
+                                        "type": "string",
+                                        "description": "%AWS.configuration.description.awssam.debug.projectRoot%"
+                                    },
+                                    "samTemplatePath": {
+                                        "type": "string",
+                                        "description": "%AWS.configuration.description.awssam.debug.samTemplatePath%"
+                                    },
+                                    "samTemplateResource": {
+                                        "type": "string",
+                                        "description": "%AWS.configuration.description.awssam.debug.samTemplateResource%"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        ],
         "viewsContainers": {
             "activitybar": [
                 {
