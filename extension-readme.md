@@ -8,15 +8,15 @@ The following screenshots show important parts of the Toolkit.
 
 ### <a id="ui-components-aws-expl"></a>The AWS Explorer
 
-![Overview, AWS Explorer](./resources/marketplace/overview.png)
+![Overview, AWS Explorer](./resources/marketplace/./overview.png)
 
 ### <a id="ui-components-cdk-expl"></a>The AWS CDK Explorer
 
-![Overview, AWS CDK Explorer](./resources/marketplace/overview-cdk.png)
+![Overview, AWS CDK Explorer](./resources/marketplace/./overview-cdk.png)
 
 ### <a id="open-command-palette"></a>AWS Commands in the Command Palette
 
-![Command Palette](./resources/marketplace/open-command-palette.gif)
+![Command Palette](./resources/marketplace/./open-command-palette.gif)
 
 ---
 
@@ -101,13 +101,13 @@ The following example shows a highlight of this functionality.
 
 After you have [created a serverless application](https://docs.aws.amazon.com/console/toolkit-for-vscode/create-sam), you can locally run, debug, and further develop that application in the VS Code editor. For example:
 
-![Configure and Run 1](./resources/marketplace/sam-configure-and-run-still-1.png)
+![Configure and Run 1](./resources/marketplace/./sam-configure-and-run-still-1.png)
 
 Take special note of the _CodeLenses_ that enable you to run and debug the application locally.
 
 The status and results are shown in the **OUTPUT** panel when the **AWS Toolkit** output channel is selected.
 
-![Configure and Run 1](./resources/marketplace/sam-configure-and-run-still-2.png)
+![Configure and Run 2](./resources/marketplace/./sam-configure-and-run-still-2.png)
 
 When you're satisfied, you can [deploy your application](https://docs.aws.amazon.com/console/toolkit-for-vscode/deploy-serverless-app) to a CloudFormation stack and then [run the Lambda function](https://docs.aws.amazon.com/console/toolkit-for-vscode/remote-lambda) on AWS.
 
@@ -131,7 +131,7 @@ The AWS Toolkit for VS Code enables you to work with [AWS Cloud Development Kit 
 
 Example:
 
-![AWS CDK Tree View](./resources/marketplace/cdk-tree-view.png)
+![AWS CDK Tree View](./resources/marketplace/./cdk-tree-view.png)
 
 For full details, see the [AWS CDK Explorer](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/cdk-explorer.html) in the Toolkit's user guide.
 
@@ -149,7 +149,7 @@ The AWS Toolkit for VS Code provides support for [Amazon EventBridge](https://aw
 
 Example:
 
-![View Amazon EventBridge Schemas](./resources/marketplace/eventbridge-search.png)
+![View Amazon EventBridge Schemas](./resources/marketplace/./eventbridge-search.png)
 
 For full details, see [Working with Amazon EventBridge Schemas](https://docs.aws.amazon.com/console/toolkit-for-vscode/eventbridge-schemas) in the Toolkit's user guide.
 
@@ -163,7 +163,7 @@ The AWS Toolkit for VS Code provides support for [Amazon Elastic Container Servi
 
 Example:
 
-![Amazon ECS IntelliSense for Task Definition Files](./resources/marketplace/ecs-task-def-intellisense.png)
+![Amazon ECS IntelliSense for Task Definition Files](./resources/marketplace/./ecs-task-def-intellisense.png)
 
 For full details, see [Working with Amazon Elastic Container Service](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/ecs.html) in the Toolkit's user guide.
 

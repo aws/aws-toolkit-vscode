@@ -104,14 +104,18 @@ export async function showQuickStartWebview(context: vscode.ExtensionContext): P
  * Returns an unfocused vscode.WebviewPanel if the quick start page is renderable.
  *
  * @param context VS Code Extension Context
- * @param page Page to load (use for testing); default: `quickStart.html`
+ * @param page Page to load (use for testing)
  */
 export async function createQuickStartWebview(
     context: vscode.ExtensionContext,
-    page: string = 'quickStart.html'
+    page?: string
 ): Promise<vscode.WebviewPanel> {
+    let actualPage: string | undefined = page
+    if (!actualPage) {
+        actualPage = vscode.hasOwnProperty('cloud9') ? 'quickStartC9.html' : 'quickStartVSC.html'
+    }
     const html = convertExtensionRootTokensToPath(
-        await readFileAsString(path.join(context.extensionPath, page)),
+        await readFileAsString(path.join(context.extensionPath, actualPage)),
         context.extensionPath
     )
     // create hidden webview, leave it up to the caller to show

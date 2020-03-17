@@ -12,15 +12,31 @@ import * as path from 'path'
 /**
  * replaces relative paths with an `!!EXTENSIONROOT!!` token.
  * This makes it easier to swap in relative links when the extension loads.
+ * @param root Repository root
+ * @param inputFile Input .md file to swap to HTML
+ * @param outputFile Filepath to output HTML to
  */
-function translateReadmeToHtml(root: string) {
-    const fileText = fs.readFileSync(path.join(root, 'extension-readme.md')).toString()
+function translateReadmeToHtml(root: string, inputFile: string, outputFile: string) {
+    const fileText = fs.readFileSync(path.join(root, inputFile)).toString()
     const relativePathRegex = /]\(\.\//g
     const transformedText = fileText.replace(relativePathRegex, '](!!EXTENSIONROOT!!/')
 
     marked(transformedText, (err, result) => {
-        fs.writeFileSync(path.join(root, './quickStart.html'), result)
+        fs.writeFileSync(path.join(root, outputFile), result)
     })
+}
+
+/**
+ * Transforms the extension-readme file into one that can show Cloud9 images
+ * Additional transforms TBD (e.g. different doc links)
+ * @param root Repository root
+ */
+function generateC9Readme(root: string) {
+    const fileText = fs.readFileSync(path.join(root, 'extension-readme.md')).toString()
+    const samePathRegex = /\/.\//g
+    const c9TransformedText = fileText.replace(samePathRegex, '/c9/')
+
+    fs.writeFileSync(path.join(root, 'README.c9.md'), c9TransformedText)
 }
 
 /**
@@ -37,5 +53,7 @@ function generateFileHash(root: string) {
 
 const repoRoot = path.dirname(__dirname)
 
-translateReadmeToHtml(repoRoot)
+generateC9Readme(repoRoot)
+translateReadmeToHtml(repoRoot, 'extension-readme.md', 'quickStartVSC.html')
+translateReadmeToHtml(repoRoot, 'README.c9.md', 'quickStartC9.html')
 generateFileHash(repoRoot)
