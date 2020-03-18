@@ -178,7 +178,7 @@ async function promptQuickStart(): Promise<void> {
     const prompt = await vscode.window.showInformationMessage(
         localize(
             'AWS.message.prompt.quickStart.toastMessage',
-            'You are now using the AWS Toolkit for Visual Studio Code, version {0}',
+            'You are now using AWS Toolkit version {0}',
             pluginVersion
         ),
         view
@@ -235,7 +235,7 @@ export function getToolkitEnvironmentDetails(): string {
     const vsCodeVersion = vscode.version
     const envDetails = localize(
         'AWS.message.toolkitInfo',
-        'OS:  {0} {1} {2}\nVisual Studio Code Version:  {3}\nAWS Toolkit for Visual Studio Code Version:  {4}\n',
+        'OS:  {0} {1} {2}\nVisual Studio Code Version:  {3}\nAWS Toolkit Version:  {4}\n',
         osType,
         osArch,
         osRelease,
