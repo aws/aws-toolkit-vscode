@@ -7,8 +7,10 @@ import * as assert from 'assert'
 import AWS = require('aws-sdk')
 import { DefaultTelemetryPublisher } from '../../../shared/telemetry/defaultTelemetryPublisher'
 import { TelemetryClient } from '../../../shared/telemetry/telemetryClient'
+import { TelemetryFeedback } from '../../../shared/telemetry/telemetryFeedback'
 
 class MockTelemetryClient implements TelemetryClient {
+    public feedback?: TelemetryFeedback
     private readonly returnValue: any
 
     public constructor(returnValue?: any) {
@@ -18,9 +20,23 @@ class MockTelemetryClient implements TelemetryClient {
     public async postMetrics(payload: any) {
         return this.returnValue
     }
+
+    public async postFeedback(feedback: TelemetryFeedback) {
+        this.feedback = feedback
+    }
 }
 
 describe('DefaultTelemetryPublisher', () => {
+    it('posts feedback', async () => {
+        const client = new MockTelemetryClient()
+        const publisher = new DefaultTelemetryPublisher('', '', new AWS.Credentials('', ''), client)
+
+        const feedback = { comment: '', sentiment: '' }
+        await publisher.postFeedback(feedback)
+
+        assert.strictEqual(client.feedback, feedback)
+    })
+
     it('enqueues events', () => {
         const publisher = new DefaultTelemetryPublisher('', '', new AWS.Credentials('', ''), new MockTelemetryClient())
         publisher.enqueue(...[{ createTime: new Date(), data: [{ MetricName: 'name', Value: 1 }] }])

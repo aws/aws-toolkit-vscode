@@ -11,6 +11,7 @@ import { mkdir } from '../../shared/filesystem'
 import {
     fileExists,
     findFileInParentPaths,
+    isContainedWithinDirectory,
     makeTemporaryToolkitFolder,
     tempDirPath
 } from '../../shared/filesystemUtilities'
@@ -97,6 +98,36 @@ describe('filesystemUtilities', () => {
             await mkdir(childFolder)
 
             assert.strictEqual(await findFileInParentPaths(childFolder, targetFilename), targetFilePath)
+        })
+    })
+
+    describe('isContainedWithinDirectory', () => {
+        const basePath = path.join('this', 'is', 'the', 'way')
+        const extendedPath = path.join(basePath, 'forward')
+        const filename = 'yadayadayada.log'
+
+        it('returns true for the same dir', () => {
+            assert.ok(isContainedWithinDirectory(basePath, basePath))
+        })
+
+        it('returns true for a subdir', () => {
+            assert.ok(isContainedWithinDirectory(basePath, extendedPath))
+        })
+
+        it('returns true for a file in the same dir', () => {
+            assert.ok(isContainedWithinDirectory(basePath, path.join(basePath, filename)))
+        })
+
+        it('returns true for a file in a subdir', () => {
+            assert.ok(isContainedWithinDirectory(basePath, path.join(extendedPath, filename)))
+        })
+
+        it('returns false for a completely different dir', () => {
+            assert.ok(!isContainedWithinDirectory(basePath, path.join('what', 'are', 'you', 'looking', 'at')))
+        })
+
+        it('returns false for a similarly named dir', () => {
+            assert.ok(!isContainedWithinDirectory(basePath, `${basePath}point`))
         })
     })
 })
