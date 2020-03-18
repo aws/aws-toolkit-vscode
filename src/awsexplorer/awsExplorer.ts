@@ -18,10 +18,10 @@ import { RegionNode } from './regionNode'
 
 const ROOT_NODE_SIGN_IN = new AWSCommandTreeNode(
     undefined,
-    localize('AWS.explorerNode.signIn', 'Connect to AWS...'),
+    localize('AWS.explorerNode.connecting.label', 'Connecting...'),
     'aws.login',
     undefined,
-    localize('AWS.explorerNode.signIn.tooltip', 'Click here to select credentials for the AWS Toolkit')
+    localize('AWS.explorerNode.connecting.tooltip', 'Connecting...')
 )
 
 const ROOT_NODE_ADD_REGION = new AWSCommandTreeNode(
@@ -39,15 +39,25 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
     private readonly _onDidChangeTreeData: vscode.EventEmitter<AWSTreeNodeBase | undefined>
     private readonly regionNodes: Map<string, RegionNode>
 
-    public constructor(private readonly awsContext: AwsContext, private readonly regionProvider: RegionProvider) {
+    public constructor(
+            private readonly extContext: vscode.ExtensionContext,
+            private readonly awsContext: AwsContext,
+            private readonly regionProvider: RegionProvider) {
         this._onDidChangeTreeData = new vscode.EventEmitter<AWSTreeNodeBase | undefined>()
         this.onDidChangeTreeData = this._onDidChangeTreeData.event
         this.regionNodes = new Map<string, RegionNode>()
-
-        this.regionProvider.onRegionProviderUpdated(() => {
-            this.logger.verbose('Refreshing AWS Explorer due to Region Provider updates')
-            this.refresh()
-        })
+        this.extContext.subscriptions.push(
+            this.awsContext.onDidChangeContext((e) => {
+                if (!e.accountId) {
+                    ROOT_NODE_SIGN_IN.label = localize('AWS.explorerNode.signIn', 'Connect to AWS...')
+                    ROOT_NODE_SIGN_IN.tooltip = localize('AWS.explorerNode.signIn.tooltip', 'Click here to select credentials for the AWS Toolkit')
+                }
+            }))
+        this.extContext.subscriptions.push(
+            this.regionProvider.onRegionProviderUpdated(() => {
+                this.logger.verbose('Refreshing AWS Explorer due to Region Provider updates')
+                this.refresh()
+            }))
     }
 
     public getTreeItem(element: AWSTreeNodeBase): vscode.TreeItem {

@@ -11,6 +11,7 @@ const localize = nls.loadMessageBundle()
 import { samLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 import { CloudFormation } from '../../cloudformation/cloudformation'
 import { CloudFormationTemplateRegistry } from '../../cloudformation/templateRegistry'
+import { isContainedWithinDirectory } from '../../filesystemUtilities'
 import { AwsSamDebuggerConfiguration, AwsSamDebuggerInvokeTargetTemplateFields } from './awsSamDebugConfiguration'
 
 export const AWS_SAM_DEBUG_TYPE = 'aws-sam'
@@ -28,7 +29,26 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
         folder: vscode.WorkspaceFolder | undefined,
         token?: vscode.CancellationToken
     ): Promise<AwsSamDebuggerConfiguration[] | undefined> {
-        return undefined
+        if (folder) {
+            const debugConfigurations: AwsSamDebuggerConfiguration[] = []
+            const folderPath = folder.uri.fsPath
+            const templates = this.cftRegistry.registeredTemplates
+
+            for (const templateDatum of templates) {
+                if (isContainedWithinDirectory(folderPath, templateDatum.path) && templateDatum.template.Resources) {
+                    for (const resourceKey of Object.keys(templateDatum.template.Resources)) {
+                        const resource = templateDatum.template.Resources[resourceKey]
+                        if (resource) {
+                            debugConfigurations.push(
+                                createDirectInvokeSamDebugConfigurationFromTemplate(resourceKey, templateDatum.path)
+                            )
+                        }
+                    }
+                }
+            }
+
+            return debugConfigurations
+        }
     }
 
     public async resolveDebugConfiguration(
@@ -65,6 +85,22 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
         vscode.window.showInformationMessage(localize('AWS.generic.notImplemented', 'Not implemented'))
 
         return undefined
+    }
+}
+
+function createDirectInvokeSamDebugConfigurationFromTemplate(
+    resourceName: string,
+    templatePath: string
+): AwsSamDebuggerConfiguration {
+    return {
+        type: AWS_SAM_DEBUG_TYPE,
+        request: DIRECT_INVOKE_TYPE,
+        name: resourceName,
+        invokeTarget: {
+            target: TEMPLATE_TARGET_TYPE,
+            samTemplatePath: templatePath,
+            samTemplateResource: resourceName
+        }
     }
 }
 

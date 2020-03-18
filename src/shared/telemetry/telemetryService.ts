@@ -5,6 +5,7 @@
 
 import { AwsContext } from '../awsContext'
 import { TelemetryEvent } from './telemetryEvent'
+import { TelemetryFeedback } from './telemetryFeedback'
 
 export interface TelemetryService {
     telemetryEnabled: boolean
@@ -12,6 +13,7 @@ export interface TelemetryService {
 
     start(): Promise<void>
     shutdown(): Promise<void>
+    postFeedback(feedback: TelemetryFeedback): Promise<void>
     record(event: TelemetryEvent, awsContext?: AwsContext): void
     clearRecords(): void
     notifyOptOutOptionMade(): void
