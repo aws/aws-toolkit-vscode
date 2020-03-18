@@ -9,6 +9,7 @@ node_modules
 telemetryCache
 quickStart*.html
 README.cloud9.md
+extension-readme.md
 .gitcommit
 media/libs/
 

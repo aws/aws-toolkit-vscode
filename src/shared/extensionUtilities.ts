@@ -112,7 +112,7 @@ export async function createQuickStartWebview(
 ): Promise<vscode.WebviewPanel> {
     let actualPage: string | undefined = page
     if (!actualPage) {
-        actualPage = vscode.hasOwnProperty('cloud9') ? 'quickStartCloud9.html' : 'quickStartVSCode.html'
+        actualPage = vscode.hasOwnProperty('cloud9') ? 'quickStartCloud9.html' : 'quickStartVscode.html'
     }
     const html = convertExtensionRootTokensToPath(
         await readFileAsString(path.join(context.extensionPath, actualPage)),
