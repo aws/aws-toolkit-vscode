@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 
 import { nodeJsRuntimes } from '../../../../lambda/models/samLambdaRuntime'
 import { CloudFormationTemplateRegistry } from '../../../../shared/cloudformation/templateRegistry'
-import { rmrf } from '../../../../shared/filesystem'
+import { mkdir, rmrf } from '../../../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import {
     AWS_SAM_DEBUG_TYPE,
@@ -18,15 +18,20 @@ import {
     DIRECT_INVOKE_TYPE,
     TEMPLATE_TARGET_TYPE
 } from '../../../../shared/sam/debugger/awsSamDebugger'
-import { makeSampleSamTemplateYaml, strToYamlFile } from '../../cloudformation/cloudformationTestUtils'
+import {
+    makeSampleSamTemplateYaml,
+    makeSampleYamlResource,
+    strToYamlFile
+} from '../../cloudformation/cloudformationTestUtils'
 
 // TODO!!!!! Remove all tests prefaced with 'TEMP!!! - '
 describe('AwsSamDebugConfigurationProvider', async () => {
     let debugConfigProvider: AwsSamDebugConfigurationProvider
     let registry: CloudFormationTemplateRegistry
     let tempFolder: string
+    let tempFolderSimilarName: string | undefined
     let tempFile: vscode.Uri
-
+    let fakeWorkspaceFolder: vscode.WorkspaceFolder
     const validRuntime = [...nodeJsRuntimes.values()][0]
     const resourceName = 'myResource'
 
@@ -35,16 +40,90 @@ describe('AwsSamDebugConfigurationProvider', async () => {
         tempFile = vscode.Uri.file(path.join(tempFolder, 'test.yaml'))
         registry = new CloudFormationTemplateRegistry()
         debugConfigProvider = new AwsSamDebugConfigurationProvider(registry)
+        fakeWorkspaceFolder = {
+            uri: vscode.Uri.file(tempFolder),
+            name: 'It was me, fakeWorkspaceFolder!',
+            index: 0
+        }
+        tempFolderSimilarName = undefined
     })
 
     afterEach(async () => {
         await rmrf(tempFolder)
+        if (tempFolderSimilarName) {
+            await rmrf(tempFolderSimilarName)
+        }
     })
 
     describe('provideDebugConfig', async () => {
-        it('TEMP!!! - returns undefined when providing debug configurations', async () => {
+        it('returns undefined if no workspace folder is provided', async () => {
             const provided = await debugConfigProvider.provideDebugConfigurations(undefined)
             assert.strictEqual(provided, undefined)
+        })
+
+        it('returns a blank array if no templates are in the workspace', async () => {
+            const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
+            assert.deepStrictEqual(provided, [])
+        })
+
+        it('returns an array with a single item if a template with one resource is in the workspace', async () => {
+            await strToYamlFile(makeSampleSamTemplateYaml(true), tempFile.fsPath)
+            await registry.addTemplateToRegistry(tempFile)
+            const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
+            assert.notStrictEqual(provided, undefined)
+            if (provided) {
+                assert.strictEqual(provided.length, 1)
+                assert.strictEqual(provided[0].name, 'TestResource')
+            }
+        })
+
+        it('returns an array with multiple items if a template with more than one resource is in the workspace', async () => {
+            const resources = ['resource1', 'resource2']
+            const bigYamlStr = `${makeSampleSamTemplateYaml(true, {
+                resourceName: resources[0]
+            })}\n${makeSampleYamlResource({ resourceName: resources[1] })}`
+            await strToYamlFile(bigYamlStr, tempFile.fsPath)
+            await registry.addTemplateToRegistry(tempFile)
+            const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
+            assert.notStrictEqual(provided, undefined)
+            if (provided) {
+                assert.strictEqual(provided.length, 2)
+                assert.ok(resources.includes(provided[0].name))
+                assert.ok(resources.includes(provided[1].name))
+            }
+        })
+
+        it('only detects the specifically targeted workspace folder (and its subfolders)', async () => {
+            const resources = ['resource1', 'resource2']
+            const badResourceName = 'notIt'
+
+            const nestedDir = path.join(tempFolder, 'nested')
+            const nestedYaml = vscode.Uri.file(path.join(nestedDir, 'test.yaml'))
+            tempFolderSimilarName = tempFolder + 'SimilarName'
+            const similarNameYaml = vscode.Uri.file(path.join(tempFolderSimilarName, 'test.yaml'))
+
+            await mkdir(nestedDir)
+            await mkdir(tempFolderSimilarName)
+
+            await strToYamlFile(makeSampleSamTemplateYaml(true, { resourceName: resources[0] }), tempFile.fsPath)
+            await strToYamlFile(makeSampleSamTemplateYaml(true, { resourceName: resources[1] }), nestedYaml.fsPath)
+            await strToYamlFile(
+                makeSampleSamTemplateYaml(true, { resourceName: badResourceName }),
+                similarNameYaml.fsPath
+            )
+
+            await registry.addTemplateToRegistry(tempFile)
+            await registry.addTemplateToRegistry(nestedYaml)
+            await registry.addTemplateToRegistry(similarNameYaml)
+
+            const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
+            assert.notStrictEqual(provided, undefined)
+            if (provided) {
+                assert.strictEqual(provided.length, 2)
+                assert.ok(resources.includes(provided[0].name))
+                assert.ok(resources.includes(provided[1].name))
+                assert.ok(!resources.includes(badResourceName))
+            }
         })
     })
 

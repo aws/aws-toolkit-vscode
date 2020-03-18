@@ -15,6 +15,7 @@ import { rmrf } from '../shared/filesystem'
 import { getLogger } from '../shared/logger'
 import { setLogger } from '../shared/logger/logger'
 import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetryService'
+import { TelemetryFeedback } from '../shared/telemetry/telemetryFeedback'
 import { TelemetryPublisher } from '../shared/telemetry/telemetryPublisher'
 import { FakeExtensionContext } from './fakeExtensionContext'
 import { TestLogger } from './testLogger'
@@ -37,6 +38,7 @@ before(async () => {
     const mockAws = new FakeAwsContext()
     const mockPublisher: TelemetryPublisher = {
         async init() {},
+        async postFeedback(feedback: TelemetryFeedback): Promise<void> {},
         enqueue(...events: any[]) {},
         async flush() {}
     }

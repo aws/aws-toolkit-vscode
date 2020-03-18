@@ -10,6 +10,7 @@ import * as lolex from 'lolex'
 import * as sinon from 'sinon'
 import { AwsContext } from '../../../shared/awsContext'
 import { DefaultTelemetryService } from '../../../shared/telemetry/defaultTelemetryService'
+import { TelemetryFeedback } from '../../../shared/telemetry/telemetryFeedback'
 import { TelemetryPublisher } from '../../../shared/telemetry/telemetryPublisher'
 import { AccountStatus } from '../../../shared/telemetry/telemetryTypes'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
@@ -27,7 +28,13 @@ class MockTelemetryPublisher implements TelemetryPublisher {
     public enqueueCount = 0
     public enqueuedItems = 0
 
+    public feedback?: TelemetryFeedback
+
     public async init() {}
+
+    public async postFeedback(feedback: TelemetryFeedback): Promise<void> {
+        this.feedback = feedback
+    }
 
     public enqueue(...events: any[]) {
         this.enqueueCount++
@@ -72,6 +79,14 @@ describe('DefaultTelemetryService', () => {
     after(() => {
         clock.uninstall()
         sandbox.restore()
+    })
+
+    it('posts feedback', async () => {
+        service.telemetryEnabled = false
+        const feedback = { comment: '', sentiment: '' }
+        await service.postFeedback(feedback)
+
+        assert.strictEqual(mockPublisher.feedback, feedback)
     })
 
     it('publishes periodically if user has said ok', async () => {

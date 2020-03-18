@@ -1,7 +1,7 @@
 {
     "name": "aws-toolkit-vscode",
-    "displayName": "AWS Toolkit for Visual Studio Code",
-    "description": "An extension for working with Amazon Web Services in Visual Studio Code",
+    "displayName": "AWS Toolkit",
+    "description": "An extension for working with Amazon Web Services",
     "version": "1.8.0-SNAPSHOT",
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
@@ -36,6 +36,7 @@
         "onCommand:aws.credential.profile.create",
         "onCommand:aws.logout",
         "onCommand:aws.createIssueOnGitHub",
+        "onCommand:aws.submitFeedback",
         "onCommand:aws.showRegion",
         "onCommand:aws.hideRegion",
         "onView:aws.explorer",
@@ -119,9 +120,9 @@
                     "enum": [
                         "Enable",
                         "Disable",
-                        "Use the same setting as VS Code"
+                        "Use IDE settings"
                     ],
-                    "default": "Use the same setting as VS Code",
+                    "default": "Use IDE settings",
                     "markdownDescription": "%AWS.configuration.description.telemetry%"
                 }
             }
@@ -206,6 +207,11 @@
             ],
             "view/title": [
                 {
+                    "command": "aws.submitFeedback",
+                    "when": "view == aws.explorer",
+                    "group": "navigation@6"
+                },
+                {
                     "command": "aws.refreshAwsExplorer",
                     "when": "view == aws.explorer",
                     "group": "navigation@5"
@@ -254,6 +260,11 @@
                     "command": "aws.createIssueOnGitHub",
                     "when": "view == aws.explorer",
                     "group": "z_externalLinks@3"
+                },
+                {
+                    "command": "aws.submitFeedback",
+                    "when": "view == aws.explorer",
+                    "group": "z_externalLinks@4"
                 },
                 {
                     "command": "aws.refreshCdkExplorer",
@@ -384,6 +395,15 @@
                 "command": "aws.deploySamApplication",
                 "title": "%AWS.command.deploySamApplication%",
                 "category": "AWS"
+            },
+            {
+                "command": "aws.submitFeedback",
+                "title": "%AWS.command.submitFeedback%",
+                "category": "AWS",
+                "icon": {
+                    "dark": "third-party/resources/from-vscode/dark/feedback.svg",
+                    "light": "third-party/resources/from-vscode/light/feedback.svg"
+                }
             },
             {
                 "command": "aws.refreshAwsExplorer",
@@ -576,6 +596,7 @@
         "sinon": "^7.4.2",
         "terser-webpack-plugin": "^2.3.1",
         "ts-loader": "^6.2.0",
+        "ts-mockito": "^2.5.0",
         "ts-node": "^8.5.2",
         "tslint": "^5.20.1",
         "tslint-eslint-rules": "^5.4.0",

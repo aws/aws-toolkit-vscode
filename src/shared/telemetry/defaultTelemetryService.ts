@@ -14,6 +14,7 @@ import { DefaultTelemetryClient } from './defaultTelemetryClient'
 import { DefaultTelemetryPublisher } from './defaultTelemetryPublisher'
 import { recordSessionEnd, recordSessionStart } from './telemetry'
 import { TelemetryEvent } from './telemetryEvent'
+import { TelemetryFeedback } from './telemetryFeedback'
 import { TelemetryPublisher } from './telemetryPublisher'
 import { TelemetryService } from './telemetryService'
 import { ACCOUNT_METADATA_KEY, AccountStatus } from './telemetryTypes'
@@ -101,6 +102,18 @@ export class DefaultTelemetryService implements TelemetryService {
 
     public set flushPeriod(period: number) {
         this._flushPeriod = period
+    }
+
+    public async postFeedback(feedback: TelemetryFeedback): Promise<void> {
+        if (this.publisher === undefined) {
+            await this.createDefaultPublisherAndClient()
+        }
+
+        if (this.publisher === undefined) {
+            throw new Error('Failed to initialize telemetry publisher')
+        }
+
+        return this.publisher.postFeedback(feedback)
     }
 
     public record(event: TelemetryEvent, awsContext?: AwsContext): void {
