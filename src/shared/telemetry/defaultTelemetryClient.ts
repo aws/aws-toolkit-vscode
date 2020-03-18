@@ -8,16 +8,20 @@ import * as os from 'os'
 import * as vscode from 'vscode'
 import { pluginVersion } from '../constants'
 import { ext } from '../extensionGlobals'
+import { getLogger } from '../logger'
 import * as ClientTelemetry from './clienttelemetry'
 import apiConfig = require('./service-2.json')
 import { TelemetryClient } from './telemetryClient'
 import { TelemetryEvent, toMetricData } from './telemetryEvent'
+import { TelemetryFeedback } from './telemetryFeedback'
 
 export class DefaultTelemetryClient implements TelemetryClient {
     public static readonly DEFAULT_IDENTITY_POOL = 'us-east-1:820fd6d1-95c0-4ca4-bffb-3f01d32da842'
     public static readonly DEFAULT_TELEMETRY_ENDPOINT = 'https://client-telemetry.us-east-1.amazonaws.com'
 
     private static readonly PRODUCT_NAME = 'AWS Toolkit For VS Code'
+
+    private readonly logger = getLogger()
 
     private constructor(private readonly clientId: string, private readonly client: ClientTelemetry) {}
 
@@ -45,13 +49,34 @@ export class DefaultTelemetryClient implements TelemetryClient {
                     MetricData: metricData
                 })
                 .promise()
-            console.info(`Successfully sent a telemetry batch of ${batch.length}`)
+            this.logger.info(`Successfully sent a telemetry batch of ${batch.length}`)
 
             return undefined
         } catch (err) {
-            console.error(`Batch error: ${err}`)
+            this.logger.error(`Batch error: ${err}`)
 
             return batch
+        }
+    }
+
+    public async postFeedback(feedback: TelemetryFeedback): Promise<void> {
+        try {
+            await this.client
+                .postFeedback({
+                    AWSProduct: DefaultTelemetryClient.PRODUCT_NAME,
+                    AWSProductVersion: pluginVersion,
+                    OS: os.platform(),
+                    OSVersion: os.release(),
+                    ParentProduct: vscode.env.appName,
+                    ParentProductVersion: vscode.version,
+                    Comment: feedback.comment,
+                    Sentiment: feedback.sentiment
+                })
+                .promise()
+            this.logger.info('Successfully posted feedback')
+        } catch (err) {
+            this.logger.error(`Failed to post feedback: ${err}`)
+            throw new Error(`Failed to post feedback: ${err}`)
         }
     }
 

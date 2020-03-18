@@ -7,12 +7,8 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import { AwsExplorer } from '../../awsexplorer/awsExplorer'
 import { RegionNode } from '../../awsexplorer/regionNode'
-import {
-    DEFAULT_TEST_REGION_CODE,
-    DEFAULT_TEST_REGION_NAME,
-    FakeRegionProvider,
-    makeFakeAwsContextWithPlaceholderIds
-} from '../utilities/fakeAwsContext'
+import { FakeExtensionContext } from '../fakeExtensionContext'
+import { DEFAULT_TEST_REGION_CODE, DEFAULT_TEST_REGION_NAME, FakeRegionProvider, makeFakeAwsContextWithPlaceholderIds } from '../utilities/fakeAwsContext'
 
 describe('AwsExplorer', () => {
     let sandbox: sinon.SinonSandbox
@@ -29,7 +25,8 @@ describe('AwsExplorer', () => {
         const awsContext = makeFakeAwsContextWithPlaceholderIds(({} as any) as AWS.Credentials)
         const regionProvider = new FakeRegionProvider()
 
-        const awsExplorer = new AwsExplorer(awsContext, regionProvider)
+        const fakeContext = new FakeExtensionContext()
+        const awsExplorer = new AwsExplorer(fakeContext, awsContext, regionProvider)
 
         const treeNodes = await awsExplorer.getChildren()
         assert.ok(treeNodes)
@@ -48,7 +45,8 @@ describe('AwsExplorer', () => {
         const awsContext = makeFakeAwsContextWithPlaceholderIds(({} as any) as AWS.Credentials)
         const regionProvider = new FakeRegionProvider()
 
-        const awsExplorer = new AwsExplorer(awsContext, regionProvider)
+        const fakeContext = new FakeExtensionContext()
+        const awsExplorer = new AwsExplorer(fakeContext, awsContext, regionProvider)
 
         const refreshStub = sandbox.stub(awsExplorer, 'refresh')
 
