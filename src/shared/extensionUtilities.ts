@@ -16,6 +16,26 @@ import { getLogger } from './logger'
 
 const localize = nls.loadMessageBundle()
 
+export enum IDE {
+    vscode,
+    cloud9
+}
+
+export function getIdeType(): IDE {
+    if (vscode.hasOwnProperty('cloud9')) {
+        return IDE.cloud9
+    }
+
+    return IDE.vscode
+}
+
+/**
+ * Returns whether or not this is Cloud9
+ */
+export function isCloud9(): boolean {
+    return getIdeType() === IDE.cloud9
+}
+
 export class ExtensionUtilities {
     public static getLibrariesForHtml(names: string[]): ScriptResource[] {
         const basePath = path.join(ext.context.extensionPath, 'media', 'libs')
@@ -112,7 +132,7 @@ export async function createQuickStartWebview(
 ): Promise<vscode.WebviewPanel> {
     let actualPage: string | undefined = page
     if (!actualPage) {
-        actualPage = vscode.hasOwnProperty('cloud9') ? 'quickStartCloud9.html' : 'quickStartVscode.html'
+        actualPage = isCloud9() ? 'quickStartCloud9.html' : 'quickStartVscode.html'
     }
     const html = convertExtensionRootTokensToPath(
         await readFileAsString(path.join(context.extensionPath, actualPage)),
