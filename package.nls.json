@@ -149,7 +149,7 @@
     "AWS.message.prompt.region.hide.title": "Select a region to hide from the AWS Explorer",
     "AWS.message.prompt.region.show.title": "Select a region to show in the AWS Explorer",
     "AWS.message.prompt.copyButtonLabel": "Copy",
-    "AWS.message.toolkitInfo": "OS:  {0} {1} {2}\nVisual Studio Code Version:  {3}\nAWS Toolkit Version:  {4}\n",
+    "AWS.message.toolkitInfo": "OS:  {0} {1} {2}\n{3} Version:  {4}\nAWS Toolkit Version:  {5}\n",
     "AWS.output.building.sam.application": "Building SAM Application...",
     "AWS.output.building.sam.application.complete": "Build complete.",
     "AWS.output.sam.local.attaching": "Attaching debugger to SAM Application...",
