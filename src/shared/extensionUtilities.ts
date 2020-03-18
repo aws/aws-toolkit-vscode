@@ -29,6 +29,39 @@ export function getIdeType(): IDE {
     return IDE.vscode
 }
 
+interface IdeProperties {
+    shortName: string
+    longName: string
+    impactedFunctionalityReset: string
+    quickStartHtml: string
+}
+
+export function getIdeProperties(): IdeProperties {
+    switch (getIdeType()) {
+        case IDE.cloud9:
+            return {
+                shortName: 'Cloud9',
+                longName: 'AWS Cloud9',
+                impactedFunctionalityReset: localize(
+                    'AWS.error.impactedFunctionalityReset.cloud9',
+                    'Toolkit functionality may be impacted until Cloud9 is restarted.'
+                ),
+                quickStartHtml: 'quickStartCloud9.html'
+            }
+        // default is IDE.vscode
+        default:
+            return {
+                shortName: 'VS Code',
+                longName: 'Visual Studio Code',
+                impactedFunctionalityReset: localize(
+                    'AWS.error.impactedFunctionalityReset.vscode',
+                    'Toolkit functionality may be impacted until VS Code is restarted.'
+                ),
+                quickStartHtml: 'quickStartVscode.html'
+            }
+    }
+}
+
 /**
  * Returns whether or not this is Cloud9
  */
@@ -130,10 +163,7 @@ export async function createQuickStartWebview(
     context: vscode.ExtensionContext,
     page?: string
 ): Promise<vscode.WebviewPanel> {
-    let actualPage: string | undefined = page
-    if (!actualPage) {
-        actualPage = isCloud9() ? 'quickStartCloud9.html' : 'quickStartVscode.html'
-    }
+    const actualPage = page ? page : getIdeProperties().quickStartHtml
     const html = convertExtensionRootTokensToPath(
         await readFileAsString(path.join(context.extensionPath, actualPage)),
         context.extensionPath
@@ -259,7 +289,7 @@ export function getToolkitEnvironmentDetails(): string {
         osType,
         osArch,
         osRelease,
-        vscode.hasOwnProperty('cloud9') ? 'AWS Cloud9' : 'Visual Studio Code',
+        getIdeProperties().longName,
         vsCodeVersion,
         pluginVersion
     )

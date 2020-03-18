@@ -301,9 +301,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                     this,
                     localize(
                         'AWS.samcli.initWizard.location.select.folder.detail',
-                        // TODO: Do we need to specify IDE in this string? Will Cloud9 call it a workspace/support this?
-                        'The folder you select will be added to your {0} workspace.',
-                        vscode.hasOwnProperty('cloud9') ? 'AWS Cloud9' : 'VS Code'
+                        'The folder you select will be added to your workspace.'
                     )
                 )
             ])
