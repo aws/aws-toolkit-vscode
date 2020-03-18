@@ -15,6 +15,7 @@ import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.CloudWatc
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.resources.message
+import java.time.Duration
 
 class CloudWatchLogWindow(private val project: Project) : CoroutineScope by ApplicationThreadPoolScope("openLogGroup") {
     private val toolWindow = ToolkitToolWindowManager.getInstance(project, CW_LOGS_TOOL_WINDOW)
@@ -39,7 +40,7 @@ class CloudWatchLogWindow(private val project: Project) : CoroutineScope by Appl
         logGroup: String,
         logStream: String,
         startTime: Long? = null,
-        duration: Long? = null
+        duration: Duration? = null
     ) = launch {
         val id = "$logGroup/$logStream"
         // dispose existing window if it exists to update. TODO add a refresh, duh

@@ -18,6 +18,7 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.OutputLogEvent
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.resources.message
+import java.time.Duration
 
 class LogStreamActor(
     private val client: CloudWatchLogsAsyncClient,
@@ -46,14 +47,14 @@ class LogStreamActor(
         loadAndPopulate(request)
     }
 
-    suspend fun loadInitialRange(startTime: Long, duration: Long) {
+    suspend fun loadInitialRange(startTime: Long, duration: Duration) {
         val request = GetLogEventsRequest
             .builder()
             .logGroupName(logGroup)
             .logStreamName(logStream)
             .startFromHead(true)
-            .startTime(startTime - duration)
-            .endTime(startTime + duration)
+            .startTime(startTime - duration.toMillis())
+            .endTime(startTime + duration.toMillis())
             .build()
         loadAndPopulate(request)
     }

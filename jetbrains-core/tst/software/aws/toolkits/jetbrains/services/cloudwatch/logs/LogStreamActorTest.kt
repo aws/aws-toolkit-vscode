@@ -9,12 +9,12 @@ import com.intellij.util.ui.ListTableModel
 import com.nhaarman.mockitokotlin2.whenever
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.ClosedSendChannelException
+import kotlinx.coroutines.debug.junit4.CoroutinesTimeout
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestCoroutineScope
-import kotlinx.coroutines.withTimeout
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.After
@@ -27,6 +27,7 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.GetLogEventsResponse
 import software.amazon.awssdk.services.cloudwatchlogs.model.OutputLogEvent
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.resources.message
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
 // ExperimentalCoroutinesApi is needed for TestCoroutineScope
@@ -39,6 +40,10 @@ class LogStreamActorTest {
     @JvmField
     @Rule
     val mockClientManagerRule = MockClientManagerRule(projectRule)
+
+    @JvmField
+    @Rule
+    val timeout = CoroutinesTimeout.seconds(10)
 
     private val testCoroutineScope: TestCoroutineScope = TestCoroutineScope()
 
@@ -72,7 +77,7 @@ class LogStreamActorTest {
         val table = TableView<OutputLogEvent>(tableModel)
         val coroutine = LogStreamActor(mockClient, table, "abc", "def")
         runBlocking {
-            coroutine.loadInitialRange(0L, 0L)
+            coroutine.loadInitialRange(0L, Duration.ofMillis(0L))
         }
         assertThat(tableModel.items.size).isOne()
         assertThat(tableModel.items.first().message()).isEqualTo("message")
@@ -98,7 +103,7 @@ class LogStreamActorTest {
         val tableModel = ListTableModel<OutputLogEvent>()
         val table = TableView<OutputLogEvent>(tableModel)
         val coroutine = LogStreamActor(mockClient, table, "abc", "def")
-        assertThatThrownBy { runBlocking { coroutine.loadInitialRange(0L, 0L) } }.hasMessage("network broke")
+        assertThatThrownBy { runBlocking { coroutine.loadInitialRange(0L, Duration.ofMillis(0L)) } }.hasMessage("network broke")
         assertThat(tableModel.items).isEmpty()
         assertThat(table.emptyText.text).isEqualTo(message("cloudwatch.logs.no_events"))
     }
@@ -174,7 +179,7 @@ class LogStreamActorTest {
         assertThat(coroutine.isActive).isFalse()
     }
 
-    private suspend fun waitForModelToBeAtLeastSize(list: ListTableModel<OutputLogEvent>, size: Int) = withTimeout(100) {
+    private suspend fun waitForModelToBeAtLeastSize(list: ListTableModel<OutputLogEvent>, size: Int) {
         while (list.items.size < size) {
             delay(10)
         }
