@@ -148,12 +148,15 @@
                         "additionalProperties": false,
                         "properties": {
                             "aws": {
-                                "title": "AwsSamDebuggerAwsFields",
+                                "title": "AWS Connection",
+                                "description": "%AWS.configuration.description.awssam.debug.aws%",
                                 "properties": {
                                     "credentials": {
+                                        "description": "%AWS.configuration.description.awssam.debug.credentials%",
                                         "type": "string"
                                     },
                                     "region": {
+                                        "description": "%AWS.configuration.description.awssam.debug.region%",
                                         "type": "string"
                                     }
                                 },
@@ -161,23 +164,27 @@
                                 "type": "object"
                             },
                             "invokeTarget": {
-                                "title": "AwsSamDebuggerInvokeTargetFields",
+                                "title": "Invoke Target Properties",
+                                "description": "%AWS.configuration.description.awssam.debug.invokeTarget%",
                                 "properties": {
                                     "lambdaHandler": {
                                         "description": "%AWS.configuration.description.awssam.debug.lambdaHandler%",
                                         "type": "string"
                                     },
                                     "projectRoot": {
-                                        "description": "%AWS.configuration.description.awssam.debug.projectRoot",
+                                        "description": "%AWS.configuration.description.awssam.debug.projectRoot%",
                                         "type": "string"
                                     },
                                     "samTemplatePath": {
+                                        "description": "%AWS.configuration.description.awssam.debug.samTemplatePath%",
                                         "type": "string"
                                     },
                                     "samTemplateResource": {
+                                        "description": "%AWS.configuration.description.awssam.debug.samTemplateResource%",
                                         "type": "string"
                                     },
                                     "target": {
+                                        "description": "%AWS.configuration.description.awssam.debug.target%",
                                         "type": "string"
                                     }
                                 },
@@ -188,17 +195,22 @@
                                 "type": "object"
                             },
                             "lambda": {
-                                "title": "AwsSamDebuggerLambdaFields",
+                                "title": "Lambda Properties",
+                                "description": "%AWS.configuration.description.awssam.debug.lambda%",
                                 "properties": {
                                     "environmentVariables": {
+                                        "description": "%AWS.configuration.description.awssam.debug.envvars%",
                                         "$ref": "#/definitions/jsonObject"
                                     },
                                     "event": {
+                                        "description": "%AWS.configuration.description.awssam.debug.event%",
                                         "properties": {
                                             "json": {
+                                                "description": "%AWS.configuration.description.awssam.debug.event.json%",
                                                 "$ref": "#/definitions/jsonObject"
                                             },
                                             "path": {
+                                                "description": "%AWS.configuration.description.awssam.debug.event.path%",
                                                 "type": "string"
                                             }
                                         },
@@ -206,12 +218,15 @@
                                         "type": "object"
                                     },
                                     "memoryMb": {
+                                        "description": "%AWS.configuration.description.awssam.debug.memoryMb%",
                                         "type": "number"
                                     },
                                     "runtime": {
+                                        "description": "%AWS.configuration.description.awssam.debug.runtime%",
                                         "type": "string"
                                     },
                                     "timeoutSec": {
+                                        "description": "%AWS.configuration.description.awssam.debug.timeout%",
                                         "type": "number"
                                     }
                                 },
@@ -219,21 +234,27 @@
                                 "type": "object"
                             },
                             "sam": {
-                                "title": "AwsSamDebuggerSamFields",
+                                "title": "SAM CLI Properties",
+                                "description": "%AWS.configuration.description.awssam.debug.sam%",
                                 "properties": {
                                     "buildArguments": {
+                                        "description": "%AWS.configuration.description.awssam.debug.buildArguments%",
                                         "type": "string"
                                     },
                                     "containerBuild": {
+                                        "description": "%AWS.configuration.description.awssam.debug.containerBuild%",
                                         "type": "boolean"
                                     },
                                     "dockerNetwork": {
+                                        "description": "%AWS.configuration.description.awssam.debug.dockerNetwork%",
                                         "type": "string"
                                     },
                                     "localArguments": {
+                                        "description": "%AWS.configuration.description.awssam.debug.localArguments%",
                                         "type": "string"
                                     },
                                     "skipNewImageCheck": {
+                                        "description": "%AWS.configuration.description.awssam.debug.skipNewImageCheck%",
                                         "type": "boolean"
                                     },
                                     "template": {
@@ -633,7 +654,7 @@
         "compile": "webpack --mode development && npm run buildScripts",
         "recompile": "npm run clean && npm run compile",
         "watch": "npm run buildScripts && tsc -watch -p ./",
-        "postinstall": "ts-node ./build-scripts/generateServiceClient.ts && npm run generateTelemetry",
+        "postinstall": "ts-node ./build-scripts/generateServiceClient.ts && npm run generateTelemetry && npm run generateConfigurationAttributes",
         "testCompile": "tsc -p ./ && npm run buildScripts",
         "test": "npm run testCompile && ts-node ./test-scripts/test.ts",
         "integrationTest": "npm run testCompile && ts-node ./test-scripts/integrationTest.ts",
@@ -642,6 +663,7 @@
         "package": "vsce package",
         "install-plugin": "vsce package -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix",
         "generateTelemetry": "node node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts",
+        "generateConfigurationAttributes": "ts-node ./build-scripts/generateConfigurationAttributes.ts",
         "newChange": "ts-node ./build-scripts/newChange.ts",
         "createRelease": "ts-node ./build-scripts/createRelease.ts"
     },
@@ -671,6 +693,7 @@
         "glob": "^7.1.4",
         "husky": "^2.3.0",
         "istanbul": "^0.4.5",
+        "json-schema-to-typescript": "^8.2.0",
         "lolex": "^4.2.0",
         "marked": "^0.7.0",
         "mocha": "^6.2.0",
