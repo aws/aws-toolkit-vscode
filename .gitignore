@@ -7,7 +7,9 @@ node_modules
 **/.DS_Store
 .idea
 telemetryCache
-quickStart.html
+quickStart*.html
+README.cloud9.md
+extension-readme.md
 .gitcommit
 media/libs/
 
