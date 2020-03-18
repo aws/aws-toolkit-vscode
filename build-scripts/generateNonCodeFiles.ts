@@ -28,15 +28,15 @@ function translateReadmeToHtml(root: string, inputFile: string, outputFile: stri
 
 /**
  * Transforms the extension-readme file into one that can show Cloud9 images
- * Additional transforms TBD (e.g. different doc links)
+ * TODO: Different doc links? Transform can be done here.
  * @param root Repository root
  */
-function generateC9Readme(root: string) {
+function generateCloud9Readme(root: string) {
     const fileText = fs.readFileSync(path.join(root, 'extension-readme.md')).toString()
     const samePathRegex = /\/.\//g
-    const c9TransformedText = fileText.replace(samePathRegex, '/c9/')
+    const cloud9TransformedText = fileText.replace(samePathRegex, '/cloud9/')
 
-    fs.writeFileSync(path.join(root, 'README.c9.md'), c9TransformedText)
+    fs.writeFileSync(path.join(root, 'README.cloud9.md'), cloud9TransformedText)
 }
 
 /**
@@ -53,7 +53,7 @@ function generateFileHash(root: string) {
 
 const repoRoot = path.dirname(__dirname)
 
-generateC9Readme(repoRoot)
-translateReadmeToHtml(repoRoot, 'extension-readme.md', 'quickStartVSC.html')
-translateReadmeToHtml(repoRoot, 'README.c9.md', 'quickStartC9.html')
+generateCloud9Readme(repoRoot)
+translateReadmeToHtml(repoRoot, 'extension-readme.md', 'quickStartVSCode.html')
+translateReadmeToHtml(repoRoot, 'README.cloud9.md', 'quickStartCloud9.html')
 generateFileHash(repoRoot)

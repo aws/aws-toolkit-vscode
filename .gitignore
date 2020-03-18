@@ -8,7 +8,7 @@ node_modules
 .idea
 telemetryCache
 quickStart*.html
-README.c9.md
+README.cloud9.md
 .gitcommit
 media/libs/
 
