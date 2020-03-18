@@ -231,10 +231,11 @@ export function getToolkitEnvironmentDetails(): string {
     const vsCodeVersion = vscode.version
     const envDetails = localize(
         'AWS.message.toolkitInfo',
-        'OS:  {0} {1} {2}\nVisual Studio Code Version:  {3}\nAWS Toolkit Version:  {4}\n',
+        'OS:  {0} {1} {2}\n{3} Version:  {4}\nAWS Toolkit Version:  {5}\n',
         osType,
         osArch,
         osRelease,
+        vscode.hasOwnProperty('cloud9') ? 'AWS Cloud9' : 'Visual Studio Code',
         vsCodeVersion,
         pluginVersion
     )

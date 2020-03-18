@@ -300,8 +300,10 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                 new BrowseFolderQuickPickItem(
                     this,
                     localize(
-                        'AWS.samcli.initWizard.location.prompt',
-                        'The folder you select will be added to your VS Code workspace.'
+                        'AWS.samcli.initWizard.location.select.folder.detail',
+                        // TODO: Do we need to specify IDE in this string? Will Cloud9 call it a workspace/support this?
+                        'The folder you select will be added to your {0} workspace.',
+                        vscode.hasOwnProperty('cloud9') ? 'AWS Cloud9' : 'VS Code'
                     )
                 )
             ])

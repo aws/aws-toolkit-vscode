@@ -236,7 +236,9 @@ function makeEndpointsProvider(): EndpointsProvider {
         vscode.window.showErrorMessage(
             localize(
                 'AWS.error.endpoint.load.failure',
-                'The AWS Toolkit was unable to load endpoints data. Toolkit functionality may be impacted until VS Code is restarted.'
+                'The AWS Toolkit was unable to load endpoints data. Toolkit functionality may be impacted until {0}.',
+                // TODO: is 'AWS Cloud9 is restarted' the correct terminology?
+                vscode.hasOwnProperty('cloud9') ? 'AWS Cloud9 is restarted' : 'VS Code is restarted'
             )
         )
     })
