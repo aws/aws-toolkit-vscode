@@ -185,7 +185,11 @@
                                     },
                                     "target": {
                                         "description": "%AWS.configuration.description.awssam.debug.target%",
-                                        "type": "string"
+                                        "type": "string",
+                                        "enum": [
+                                            "code",
+                                            "template"
+                                        ]
                                     }
                                 },
                                 "additionalProperties": false,
@@ -206,7 +210,6 @@
                                         "description": "%AWS.configuration.description.awssam.debug.event%",
                                         "properties": {
                                             "json": {
-                                                "description": "%AWS.configuration.description.awssam.debug.event.json%",
                                                 "$ref": "#/definitions/jsonObject"
                                             },
                                             "path": {

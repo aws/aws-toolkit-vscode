@@ -2,6 +2,7 @@
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+/* tslint:disable */
 
 import * as fs from 'fs'
 // tslint:disable-next-line:no-implicit-dependencies
