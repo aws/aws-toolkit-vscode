@@ -158,5 +158,5 @@ async function getAssociatedSamTemplate(
         return template
     }
 
-    throw new Error(`Unable to find a sam template associated with handler '${handlerName}' in ${documentUri.fsPath}.`)
+    throw new Error(`Cannot find a SAM template associated with handler '${handlerName}' in: ${documentUri.fsPath}.`)
 }

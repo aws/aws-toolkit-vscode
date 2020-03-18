@@ -28,7 +28,7 @@ async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
         throw new Error( // TODO: Do we want to localize errors? This might be confusing if we need to review logs.
             localize(
                 'AWS.error.sam.local.package_json_not_found',
-                'Unable to find package.json related to {0}',
+                'Cannot find package.json related to: {0}',
                 filepath
             )
         )

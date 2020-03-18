@@ -146,7 +146,7 @@ function templateDebugConfigValidation(
             isValid: false,
             message: localize(
                 'AWS.sam.debugger.missingTemplate',
-                'Unable to find the Template file {0}',
+                'Cannot find template file: {0}',
                 templateTarget.samTemplatePath
             )
         }
@@ -159,7 +159,7 @@ function templateDebugConfigValidation(
             isValid: false,
             message: localize(
                 'AWS.sam.debugger.missingResource',
-                'Unable to find the Template Resource {0} in Template file {1}',
+                "Cannot find the template resource '{0}' in template file: {1}",
                 templateTarget.samTemplateResource,
                 templateTarget.samTemplatePath
             )

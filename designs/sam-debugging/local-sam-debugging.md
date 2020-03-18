@@ -172,7 +172,7 @@ The required fields are: type, request, invokeTarget
 {
     "configurations": [
         {
-            "name": "Debug HelloWorldResource", // Users name the entry; shown in Debug dropdown
+            "name": "Debug HelloWorldResource", // User-provided name, shown in Debug dropdown.
             "type": "aws-sam",
             // direct-invoke is the "aws-sam" variation for debugging SAM Template resources and Lambda handlers
             "request": "direct-invoke",

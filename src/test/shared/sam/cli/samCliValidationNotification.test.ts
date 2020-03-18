@@ -31,7 +31,7 @@ describe('makeSamCliValidationNotification', async () => {
         makeSamCliValidationNotification(
             new SamCliNotFoundError(),
             (message: string, actions: SamCliValidationNotificationAction[]): SamCliValidationNotification => {
-                assert.ok(message.indexOf('Unable to find SAM CLI') !== -1, `unexpected validation message: ${message}`)
+                assert.ok(message.indexOf('Cannot find SAM CLI') !== -1, `unexpected validation message: ${message}`)
                 assert.strictEqual(actions.length, 1, 'unexpected action count')
                 assert.strictEqual(
                     actions[0].label,
