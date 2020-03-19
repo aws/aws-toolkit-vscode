@@ -56,7 +56,7 @@ describe('CredentialsProviderManager', async () => {
         sut = new CredentialsProviderManager()
     })
 
-    it('getCredentials()', async () => {
+    it('getCredentialProviderNames()', async () => {
         const factoryA = new TestCredentialsProviderFactory('credentialTypeA', ['one'])
         const factoryB = new TestCredentialsProviderFactory('credentialTypeB', ['two', 'three'])
         sut.addProviderFactory(factoryA)
@@ -76,7 +76,7 @@ describe('CredentialsProviderManager', async () => {
             credentialTypeId: 'two',
           }
         }
-        assert.deepStrictEqual(expectedCredentials, await sut.getCredentials())
+        assert.deepStrictEqual(expectedCredentials, await sut.getCredentialProviderNames())
     })
 
     describe('getAllCredentialsProviders', async () => {

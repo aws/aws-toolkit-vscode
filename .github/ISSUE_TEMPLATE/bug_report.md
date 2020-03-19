@@ -30,10 +30,10 @@ Steps to reproduce the behavior:
 
 <!-- Tip: Use the 'About AWS Toolkit' option from the toolkit dropdown menu
  or 'AWS: About AWS Toolkit' in the Command Palette. -->
- 
+
 -   OS:
 -   Visual Studio Code Version:
--   AWS Toolkit for Visual Studio Code Version:
+-   AWS Toolkit Version:
 
 **Additional context**
 
