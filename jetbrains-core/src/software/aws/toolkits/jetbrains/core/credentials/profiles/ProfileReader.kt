@@ -50,11 +50,11 @@ private fun validateAssumeRoleProfile(profile: Profile, allProfiles: Map<String,
     val profileChain = linkedSetOf<String>()
     var currentProfile = profile
 
-    while (currentProfile.propertyExists(ProfileProperty.SOURCE_PROFILE)) {
+    while (currentProfile.propertyExists(ProfileProperty.ROLE_ARN)) {
         val currentProfileName = currentProfile.name()
         if (!profileChain.add(currentProfileName)) {
             val chain = profileChain.joinToString("->", postfix = "->$currentProfileName")
-            throw IllegalArgumentException(message("credentials.profile.circular_profiles", chain))
+            throw IllegalArgumentException(message("credentials.profile.circular_profiles", profile.name(), chain))
         }
 
         val sourceProfile = currentProfile.requiredProperty(ProfileProperty.SOURCE_PROFILE)

@@ -21,21 +21,21 @@ class ProfileReaderTest {
     @JvmField
     val systemPropertyHelper = SystemPropertyHelper()
 
-    private lateinit var profileFile: File
+    private lateinit var configFile: File
     private lateinit var credentialsFile: File
 
     @Before
     fun setUp() {
-        profileFile = temporaryFolder.newFile("config")
+        configFile = temporaryFolder.newFile("config")
         credentialsFile = temporaryFolder.newFile("credentials")
 
-        System.getProperties().setProperty("aws.configFile", profileFile.absolutePath)
+        System.getProperties().setProperty("aws.configFile", configFile.absolutePath)
         System.getProperties().setProperty("aws.sharedCredentialsFile", credentialsFile.absolutePath)
     }
 
     @Test
     fun testSourceProfileDoesNotExist() {
-        profileFile.writeText(
+        configFile.writeText(
             """
             [profile role]
             role_arn=arn1
@@ -47,14 +47,13 @@ class ProfileReaderTest {
 
         val (validProfiles, invalidProfiles) = validateAndGetProfiles()
         assertThat(validProfiles).isEmpty()
-        assertThat(invalidProfiles.mapValues { it.value.message })
-            .containsKey("role")
-            .containsValue("Profile 'role' references source profile 'source_profile' which does not exist")
+        assertThat(invalidProfiles.map { it.key to it.value.message })
+            .contains("role" to "Profile 'role' references source profile 'source_profile' which does not exist")
     }
 
     @Test
     fun testCircularChainProfiles() {
-        profileFile.writeText(
+        configFile.writeText(
             """
             [profile role]
             role_arn=arn1
@@ -76,8 +75,59 @@ class ProfileReaderTest {
 
         val (validProfiles, invalidProfiles) = validateAndGetProfiles()
         assertThat(validProfiles).isEmpty()
-        assertThat(invalidProfiles.mapValues { it.value.message })
-            .containsKey("role")
-            .containsValue("A circular profile dependency was found between role->source_profile->source_profile2->source_profile3->source_profile")
+        assertThat(invalidProfiles.map { it.key to it.value.message })
+            .contains("role" to "Profile 'role' is invalid due to a circular profile dependency was found between " +
+                "role->source_profile->source_profile2->source_profile3->source_profile")
+    }
+
+    @Test
+    fun testSelfReferencingChain() {
+        configFile.writeText(
+            """
+            [profile role]
+            role_arn=arn1
+            source_profile=role
+            """.trimIndent()
+        )
+
+        val (validProfiles, invalidProfiles) = validateAndGetProfiles()
+        assertThat(validProfiles).isEmpty()
+        assertThat(invalidProfiles.map { it.key to it.value.message })
+            .contains("role" to "Profile 'role' is invalid due to a circular profile dependency was found between role->role")
+    }
+
+    @Test
+    fun testAssumeRoleWithoutSourceProfile() {
+        configFile.writeText(
+            """
+            [profile role]
+            role_arn = arn:aws:iam::xxx:role/<role>
+            """.trimIndent()
+        )
+
+        val (validProfiles, invalidProfiles) = validateAndGetProfiles()
+        assertThat(validProfiles).isEmpty()
+        assertThat(invalidProfiles.map { it.key to it.value.message })
+            .contains("role" to "Profile 'role' is missing required property source_profile")
+    }
+
+    @Test
+    fun testNestedAssumeRoleWithoutSourceProfile() {
+        configFile.writeText(
+            """
+            [profile role]
+            role_arn=arn1
+            source_profile=source_profile
+
+            [profile source_profile]
+            role_arn=arn2
+            """.trimIndent()
+        )
+
+        val (validProfiles, invalidProfiles) = validateAndGetProfiles()
+        assertThat(validProfiles).isEmpty()
+        assertThat(invalidProfiles.map { it.key to it.value.message })
+            .contains("role" to "Profile 'source_profile' is missing required property source_profile")
+            .contains("source_profile" to "Profile 'source_profile' is missing required property source_profile")
     }
 }
