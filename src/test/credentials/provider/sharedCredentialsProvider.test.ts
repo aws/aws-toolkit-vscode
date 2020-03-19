@@ -11,7 +11,7 @@ import { assertThrowsError } from '../../shared/utilities/assertUtils'
 const MISSING_PROPERTIES_FRAGMENT = 'missing properties'
 
 describe('SharedCredentialsProvider', async () => {
-    it('constructor errs if profile does not exist', async () => {
+    it('constructor fails if profile does not exist', async () => {
         await assertThrowsError(async () => {
             // @ts-ignore - sut is unused, we expect the constructor to throw
             const sut = new SharedCredentialsProvider(
@@ -33,7 +33,7 @@ describe('SharedCredentialsProvider', async () => {
         })
     })
 
-    it('retrieves the default region from the profile', async () => {
+    it('gets profile properties', async () => {
         const sut = new SharedCredentialsProvider(
             'default',
             new Map<string, Profile>([
@@ -42,9 +42,10 @@ describe('SharedCredentialsProvider', async () => {
         )
 
         assert.strictEqual(sut.getDefaultRegion(), 'foo')
+        assert.strictEqual(sut.canAutoConnect(), true)
     })
 
-    it('returns undefined if the region does not have a default region', async () => {
+    it('profile properties may be undefined', async () => {
         const sut = new SharedCredentialsProvider(
             'default',
             new Map<string, Profile>([['default', { aws_access_key_id: 'x', aws_secret_access_key: 'y' }]])

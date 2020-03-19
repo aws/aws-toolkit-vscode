@@ -18,7 +18,8 @@ const SHARED_CREDENTIAL_PROPERTIES = {
     CREDENTIAL_PROCESS: 'credential_process',
     REGION: 'region',
     ROLE_ARN: 'role_arn',
-    SOURCE_PROFILE: 'source_profile'
+    SOURCE_PROFILE: 'source_profile',
+    MFA_SERIAL: 'mfa_serial',
 }
 
 /**
@@ -55,6 +56,15 @@ export class SharedCredentialsProvider implements CredentialsProvider {
 
     public getDefaultRegion(): string | undefined {
         return this.profile[SHARED_CREDENTIAL_PROPERTIES.REGION]
+    }
+
+    /**
+     * Decides if the credential is the kind that may be auto-connected at
+     * first use (in particular, credentials that may prompt, such as SSO/MFA,
+     * should _not_ attempt to auto-connect).
+     */
+    public canAutoConnect(): boolean {
+        return !this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.MFA_SERIAL)
     }
 
     /**

@@ -10,6 +10,16 @@ export interface CredentialsProviderId {
     readonly credentialTypeId: string
 }
 
+/**
+ * Gets a user-friendly string represention of the given `CredentialsProvider`.
+ *
+ * For use in e.g. the statusbar, selecting profiles in a menu, etc.
+ * Includes information related to the credentials type, as well as
+ * instance-identifying information.
+ *
+ * @param credentialsProviderId  Value to be formatted.
+ *
+ */
 export function asString(credentialsProviderId: CredentialsProviderId): string {
     return [credentialsProviderId.credentialType, credentialsProviderId.credentialTypeId].join(
         CREDENTIALS_PROVIDER_ID_SEPARATOR

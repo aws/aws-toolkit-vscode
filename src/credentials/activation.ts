@@ -32,9 +32,11 @@ export async function loginWithMostRecentCredentials(
     toolkitSettings: SettingsConfiguration,
     loginManager: LoginManager
 ): Promise<void> {
-    const profiles = await CredentialsProviderManager.getInstance().getCredentials()
-    const profileNames = Object.keys(profiles)
+    const manager = CredentialsProviderManager.getInstance()
+    const providerMap = await manager.getCredentialProviderNames()
+    const profileNames = Object.keys(providerMap)
     const previousCredentialsId = toolkitSettings.readSetting<string>(profileSettingKey, '')
+
     if (previousCredentialsId) {
         // Migrate from older Toolkits - If the last providerId isn't in the new CredentialProviderId format,
         // treat it like a Shared Crdentials Provider.
@@ -43,9 +45,11 @@ export async function loginWithMostRecentCredentials(
             credentialTypeId: previousCredentialsId
         }
         await loginManager.login(loginCredentialsId)
-    } else if (profiles && profileNames.length === 1) {
+    } else if (providerMap
+            && profileNames.length === 1
+            && (await manager.getCredentialsProvider(providerMap[profileNames[0]]))!.canAutoConnect()) {
         // Auto-connect if there is exactly one profile.
-        await loginManager.login(profiles[profileNames[0]])
+        await loginManager.login(providerMap[profileNames[0]])
         // Toast.
         vscode.window.showInformationMessage(`Connected to AWS as "${profileNames[0]}"`)
     } else {
