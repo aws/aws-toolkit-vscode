@@ -16,13 +16,15 @@ import { getLogger } from './logger'
 
 const localize = nls.loadMessageBundle()
 
+const CLOUD9_APPNAME = 'AWS Cloud9'
+
 export enum IDE {
     vscode,
     cloud9
 }
 
 export function getIdeType(): IDE {
-    if (vscode.hasOwnProperty('cloud9')) {
+    if (vscode.env.appName === CLOUD9_APPNAME) {
         return IDE.cloud9
     }
 
