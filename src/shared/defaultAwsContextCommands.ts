@@ -186,8 +186,8 @@ export class DefaultAWSContextCommands {
 
             return await this.promptAndCreateNewCredentialsFile()
         } else {
-            const profiles = await CredentialsProviderManager.getInstance().getCredentials()
-            const profileNames = Object.keys(profiles)
+            const providerMap = await CredentialsProviderManager.getInstance().getCredentialProviderNames()
+            const profileNames = Object.keys(providerMap)
 
             // If no credentials were found, the user should be
             // encouraged to define some.
