@@ -58,12 +58,10 @@ export async function activate(activateArguments: {
         channelLogger
     })
 
-    const provider = vscode.debug.registerDebugConfigurationProvider(
+    activateArguments.extensionContext.subscriptions.push(vscode.debug.registerDebugConfigurationProvider(
         AWS_SAM_DEBUG_TYPE,
         new AwsSamDebugConfigurationProvider()
-    )
-
-    activateArguments.extensionContext.subscriptions.push(provider)
+    ))
 
     activateArguments.extensionContext.subscriptions.push(
         vscode.languages.registerCompletionItemProvider(

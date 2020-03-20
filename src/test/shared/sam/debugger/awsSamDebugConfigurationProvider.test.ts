@@ -24,7 +24,6 @@ import {
     strToYamlFile
 } from '../../cloudformation/cloudformationTestUtils'
 
-// TODO!!!!! Remove all tests prefaced with 'TEMP!!! - '
 describe('AwsSamDebugConfigurationProvider', async () => {
     let debugConfigProvider: AwsSamDebugConfigurationProvider
     let registry: CloudFormationTemplateRegistry
@@ -71,10 +70,8 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             await registry.addTemplateToRegistry(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.notStrictEqual(provided, undefined)
-            if (provided) {
-                assert.strictEqual(provided.length, 1)
-                assert.strictEqual(provided[0].name, 'TestResource')
-            }
+            assert.strictEqual(provided!.length, 1)
+            assert.strictEqual(provided![0].name, 'TestResource')
         })
 
         it('returns an array with multiple items if a template with more than one resource is in the workspace', async () => {
@@ -127,7 +124,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
         })
     })
 
-    describe('resolveDebugConfiguration', async () => {
+    describe.only('resolveDebugConfiguration', async () => {
         it('returns undefined when resolving debug configurations with an invalid request type', async () => {
             const resolved = await debugConfigProvider.resolveDebugConfiguration(undefined, {
                 type: AWS_SAM_DEBUG_TYPE,
@@ -223,7 +220,35 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             assert.strictEqual(resolved, undefined)
         })
 
-        it('TEMP!!! - returns undefined when resolving a valid code debug configuration', async () => {
+        it('supports workspace-relative template path ("./foo.yaml")', async () => {
+            await strToYamlFile(makeSampleSamTemplateYaml(true), tempFile.fsPath)
+            // Register with *full* path.
+            await registry.addTemplateToRegistry(tempFile)
+            // Simulates launch.json:
+            //     "invokeTarget": {
+            //         "target": "./test.yaml",
+            //     },
+            const relPath = './' + path.relative(fakeWorkspaceFolder.uri.path, tempFile.path)
+
+            // Assert that the relative path correctly maps to the full path in the registry.
+            const name = 'Test rel path'
+            const resolved = await debugConfigProvider.resolveDebugConfiguration(
+                fakeWorkspaceFolder,
+                {
+                    type: AWS_SAM_DEBUG_TYPE,
+                    name: name,
+                    request: 'direct-invoke',
+                    invokeTarget: {
+                        target: TEMPLATE_TARGET_TYPE,
+                        samTemplatePath: relPath,
+                        samTemplateResource: 'TestResource',
+                        //lambdaHandler: 'sick handles',
+                        //projectRoot: 'root as in beer'
+                }
+            })
+            assert.strictEqual(resolved!.name, name)
+        })
+        it('target=code', async () => {
             const debugConfig = {
                 type: AWS_SAM_DEBUG_TYPE,
                 name: 'whats in a name',
@@ -239,11 +264,11 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             }
             assert.deepStrictEqual(
                 await debugConfigProvider.resolveDebugConfiguration(undefined, debugConfig),
-                undefined
+                debugConfig
             )
         })
 
-        it('TEMP!!! - returns undefined when resolving a valid template debug configuration', async () => {
+        it('target=template', async () => {
             const debugConfig = {
                 type: AWS_SAM_DEBUG_TYPE,
                 name: 'whats in a name',
@@ -261,11 +286,11 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             await registry.addTemplateToRegistry(tempFile)
             assert.deepStrictEqual(
                 await debugConfigProvider.resolveDebugConfiguration(undefined, debugConfig),
-                undefined
+                debugConfig
             )
         })
 
-        it('TEMP!!! - returns undefined when resolving a valid template debug configuration that specifies extraneous environment variables', async () => {
+        it('valid debugconfig with extraneous env vars', async () => {
             const debugConfig = {
                 type: AWS_SAM_DEBUG_TYPE,
                 name: 'whats in a name',
@@ -289,7 +314,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             await registry.addTemplateToRegistry(tempFile)
             assert.deepStrictEqual(
                 await debugConfigProvider.resolveDebugConfiguration(undefined, debugConfig),
-                undefined
+                debugConfig
             )
         })
     })

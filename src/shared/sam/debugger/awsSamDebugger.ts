@@ -68,7 +68,7 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
         }
 
         if (debugConfiguration.invokeTarget.target === TEMPLATE_TARGET_TYPE) {
-            validityPair = templateDebugConfigValidation(debugConfiguration, this.cftRegistry)
+            validityPair = templateDebugConfigValidation(folder, debugConfiguration, this.cftRegistry)
         } else if (debugConfiguration.invokeTarget.target === CODE_TARGET_TYPE) {
             validityPair = codeDebugConfigValidation(debugConfiguration)
         }
@@ -85,7 +85,7 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
 
         vscode.window.showInformationMessage(localize('AWS.generic.notImplemented', 'Not implemented'))
 
-        return undefined
+        return debugConfiguration
     }
 }
 
@@ -134,19 +134,22 @@ function generalDebugConfigValidation(
 }
 
 function templateDebugConfigValidation(
+    folder: vscode.WorkspaceFolder | undefined,
     debugConfiguration: AwsSamDebuggerConfiguration,
     cftRegistry: CloudFormationTemplateRegistry
 ): { isValid: boolean; message?: string } {
     const templateTarget = (debugConfiguration.invokeTarget as any) as AwsSamDebuggerInvokeTargetTemplateFields
 
-    const template = cftRegistry.getRegisteredTemplate(templateTarget.samTemplatePath)
+    const fullpath = require('path').resolve((
+        (folder?.uri) ? folder.uri.path + '/' : '') + templateTarget.samTemplatePath)
+    const template = cftRegistry.getRegisteredTemplate(fullpath)
 
     if (!template) {
         return {
             isValid: false,
             message: localize(
                 'AWS.sam.debugger.missingTemplate',
-                'Cannot find template file: {0}',
+                'Cannot find template file (must be workspace-relative, or absolute): {0}',
                 templateTarget.samTemplatePath
             )
         }
