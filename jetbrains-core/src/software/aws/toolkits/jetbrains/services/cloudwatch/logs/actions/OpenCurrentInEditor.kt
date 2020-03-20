@@ -28,20 +28,7 @@ class OpenCurrentInEditor(
 
     override fun actionPerformed(e: AnActionEvent) {
         launch {
-            actionPerformedSuspend(e)
+            OpenStreamInEditor.open(project, edt, logStream, logsTableModel.items.buildStringFromLogs())
         }
-    }
-
-    private suspend fun actionPerformedSuspend(e: AnActionEvent) {
-        val fileContent = buildString {
-            logsTableModel.items.forEach { log ->
-                val msg = log.message()
-                append(msg)
-                if (!msg.endsWith('\n')) {
-                    append('\n')
-                }
-            }
-        }
-        OpenStreamInEditor.open(project, edt, logStream, fileContent)
     }
 }

@@ -8,6 +8,7 @@ import com.intellij.openapi.fileTypes.PlainTextLanguage
 import com.intellij.openapi.project.Project
 import com.intellij.testFramework.ReadOnlyLightVirtualFile
 import kotlinx.coroutines.withContext
+import software.amazon.awssdk.services.cloudwatchlogs.model.OutputLogEvent
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import kotlin.coroutines.CoroutineContext
@@ -22,6 +23,16 @@ object OpenStreamInEditor {
                     notifyError(message("cloudwatch.logs.open_in_editor_failed"))
                 }
             }
+        }
+    }
+}
+
+fun List<OutputLogEvent>.buildStringFromLogs() = buildString {
+    this@buildStringFromLogs.forEach { log ->
+        val msg = log.message()
+        append(msg)
+        if (!msg.endsWith('\n')) {
+            append('\n')
         }
     }
 }
