@@ -62,7 +62,7 @@
     "AWS.command.showErrorDetails": "Show error details",
     "AWS.error.endpoint.load.failure": "The AWS Toolkit was unable to load endpoints data.",
     "AWS.error.impactedFunctionalityReset.vscode": "Toolkit functionality may be impacted until VS Code is restarted.",
-    "AWS.error.impactedFunctionalityReset.cloud9": "Toolkit functionality may be impacted until the Cloud9 browser tab is restarted.",
+    "AWS.error.impactedFunctionalityReset.cloud9": "Toolkit functionality may be impacted until the Cloud9 browser tab is refreshed.",
     "AWS.error.mfa.userCancelled": "User cancelled entering authentication code",
     "AWS.error.no.error.code": "No error code",
     "AWS.error.sam.local.package_json_not_found": "Unable to find package.json related to {0}",
