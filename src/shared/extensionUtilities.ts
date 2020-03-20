@@ -43,7 +43,7 @@ export function getIdeProperties(): IdeProperties {
             return {
                 shortName: 'Cloud9',
                 longName: 'AWS Cloud9',
-                commandPalette: 'Goto Anything Panel'
+                commandPalette: 'Go to Anything Panel'
             }
         // default is IDE.vscode
         default:
