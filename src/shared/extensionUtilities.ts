@@ -34,8 +34,7 @@ export function getIdeType(): IDE {
 interface IdeProperties {
     shortName: string
     longName: string
-    impactedFunctionalityReset: string
-    quickStartHtml: string
+    commandPalette: string
 }
 
 export function getIdeProperties(): IdeProperties {
@@ -44,22 +43,14 @@ export function getIdeProperties(): IdeProperties {
             return {
                 shortName: 'Cloud9',
                 longName: 'AWS Cloud9',
-                impactedFunctionalityReset: localize(
-                    'AWS.error.impactedFunctionalityReset.cloud9',
-                    'Toolkit functionality may be impacted until Cloud9 is restarted.'
-                ),
-                quickStartHtml: 'quickStartCloud9.html'
+                commandPalette: 'Goto Anything Panel'
             }
         // default is IDE.vscode
         default:
             return {
                 shortName: 'VS Code',
                 longName: 'Visual Studio Code',
-                impactedFunctionalityReset: localize(
-                    'AWS.error.impactedFunctionalityReset.vscode',
-                    'Toolkit functionality may be impacted until VS Code is restarted.'
-                ),
-                quickStartHtml: 'quickStartVscode.html'
+                commandPalette: 'Command Palette'
             }
     }
 }
@@ -165,7 +156,7 @@ export async function createQuickStartWebview(
     context: vscode.ExtensionContext,
     page?: string
 ): Promise<vscode.WebviewPanel> {
-    const actualPage = page ? page : getIdeProperties().quickStartHtml
+    const actualPage = page ? page : isCloud9() ? 'quickStartCloud9.html' : 'quickStartVscode.html'
     const html = convertExtensionRootTokensToPath(
         await readFileAsString(path.join(context.extensionPath, actualPage)),
         context.extensionPath
@@ -287,7 +278,7 @@ export function getToolkitEnvironmentDetails(): string {
     const vsCodeVersion = vscode.version
     const envDetails = localize(
         'AWS.message.toolkitInfo',
-        'OS:  {0} {1} {2}\n{3} Version:  {4}\nAWS Toolkit Version:  {5}\n',
+        'OS:  {0} {1} {2}\n{3} Extension Host Version:  {4}\nAWS Toolkit Version:  {5}\n',
         osType,
         osArch,
         osRelease,

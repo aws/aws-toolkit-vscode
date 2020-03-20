@@ -31,8 +31,8 @@ import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
 import { ext } from './shared/extensionGlobals'
 import {
     aboutToolkit,
-    getIdeProperties,
     getToolkitEnvironmentDetails,
+    isCloud9,
     showQuickStartWebview,
     toastNewUser
 } from './shared/extensionUtilities'
@@ -236,7 +236,15 @@ function makeEndpointsProvider(): EndpointsProvider {
 
         vscode.window.showErrorMessage(
             `${localize('AWS.error.endpoint.load.failure', 'The AWS Toolkit was unable to load endpoints data.')} ${
-                getIdeProperties().impactedFunctionalityReset
+                isCloud9()
+                    ? localize(
+                          'AWS.error.impactedFunctionalityReset.cloud9',
+                          'Toolkit functionality may be impacted until Cloud9 is restarted.'
+                      )
+                    : localize(
+                          'AWS.error.impactedFunctionalityReset.vscode',
+                          'Toolkit functionality may be impacted until VS Code is restarted.'
+                      )
             }`
         )
     })
