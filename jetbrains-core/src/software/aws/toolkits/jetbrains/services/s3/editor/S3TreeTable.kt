@@ -13,10 +13,10 @@ import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileWrapper
-import com.intellij.ui.Cell
 import com.intellij.ui.DoubleClickListener
-import com.intellij.ui.TableSpeedSearch
+import com.intellij.ui.TreeTableSpeedSearch
 import com.intellij.ui.treeStructure.treetable.TreeTable
+import com.intellij.util.containers.Convertor
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import software.aws.toolkits.core.utils.getLogger
@@ -144,13 +144,15 @@ class S3TreeTable(
     init {
         // Associate the drop target listener with this instance which will allow uploading by drag and drop
         DropTarget(this, dropTargetListener)
-        TableSpeedSearch(this) { obj: Any?, cell: Cell ->
-            when {
-                cell.column != 0 -> null // Only search the name column
-                obj == null -> ""
-                else -> obj.toString()
+        TreeTableSpeedSearch(this, Convertor { obj ->
+            val node = obj.lastPathComponent as DefaultMutableTreeNode
+            val userObject = node.userObject as? S3TreeNode ?: return@Convertor null
+            return@Convertor if (userObject !is S3TreeContinuationNode) {
+                userObject.name
+            } else {
+                null
             }
-        }
+        })
         loadMoreListener.installOn(this)
         openFileListener.installOn(this)
         super.addKeyListener(keyListener)
