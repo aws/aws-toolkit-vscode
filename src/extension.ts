@@ -239,7 +239,7 @@ function makeEndpointsProvider(): EndpointsProvider {
                 isCloud9()
                     ? localize(
                           'AWS.error.impactedFunctionalityReset.cloud9',
-                          'Toolkit functionality may be impacted until Cloud9 is restarted.'
+                          'Toolkit functionality may be impacted until the Cloud9 browser tab is restarted.'
                       )
                     : localize(
                           'AWS.error.impactedFunctionalityReset.vscode',
