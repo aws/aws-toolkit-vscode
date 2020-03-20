@@ -57,12 +57,6 @@ public class S3ViewerPanel {
         date.setText(S3Resources.formatDate(bucketVirtual.getS3Bucket().creationDate()));
 
         arnText.setText("arn:aws:s3:::" + bucketVirtual.getName());
-        bucketArn.setText("Bucket ARN:");
-        bucketName.setText("Bucket Name:");
-        creationDate.setText("Creation Date:");
-        date.setEditable(false);
-        arnText.setEditable(false);
-        name.setEditable(false);
 
         s3TreeNode = new S3TreeDirectoryNode(bucketVirtual, null, "");
 

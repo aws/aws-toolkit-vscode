@@ -14,7 +14,7 @@
         </constraints>
         <properties>
           <labelFor value="99e97"/>
-          <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="s3.create.bucket.name.label"/>
+          <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="s3.bucket.name.label"/>
         </properties>
       </component>
       <component id="99e97" class="javax.swing.JTextField" binding="bucketName">
