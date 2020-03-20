@@ -300,8 +300,8 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                 new BrowseFolderQuickPickItem(
                     this,
                     localize(
-                        'AWS.samcli.initWizard.location.prompt',
-                        'The folder you select will be added to your VS Code workspace.'
+                        'AWS.samcli.initWizard.location.select.folder.detail',
+                        'The folder you select will be added to your workspace.'
                     )
                 )
             ])

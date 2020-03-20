@@ -16,17 +16,43 @@ import { getLogger } from './logger'
 
 const localize = nls.loadMessageBundle()
 
+const CLOUD9_APPNAME = 'AWS Cloud9'
+
 export enum IDE {
     vscode,
     cloud9
 }
 
 export function getIdeType(): IDE {
-    if (vscode.hasOwnProperty('cloud9')) {
+    if (vscode.env.appName === CLOUD9_APPNAME) {
         return IDE.cloud9
     }
 
     return IDE.vscode
+}
+
+interface IdeProperties {
+    shortName: string
+    longName: string
+    commandPalette: string
+}
+
+export function getIdeProperties(): IdeProperties {
+    switch (getIdeType()) {
+        case IDE.cloud9:
+            return {
+                shortName: 'Cloud9',
+                longName: 'AWS Cloud9',
+                commandPalette: 'Go to Anything Panel'
+            }
+        // default is IDE.vscode
+        default:
+            return {
+                shortName: 'VS Code',
+                longName: 'Visual Studio Code',
+                commandPalette: 'Command Palette'
+            }
+    }
 }
 
 /**
@@ -130,10 +156,7 @@ export async function createQuickStartWebview(
     context: vscode.ExtensionContext,
     page?: string
 ): Promise<vscode.WebviewPanel> {
-    let actualPage: string | undefined = page
-    if (!actualPage) {
-        actualPage = isCloud9() ? 'quickStartCloud9.html' : 'quickStartVscode.html'
-    }
+    const actualPage = page ? page : isCloud9() ? 'quickStartCloud9.html' : 'quickStartVscode.html'
     const html = convertExtensionRootTokensToPath(
         await readFileAsString(path.join(context.extensionPath, actualPage)),
         context.extensionPath
@@ -255,10 +278,11 @@ export function getToolkitEnvironmentDetails(): string {
     const vsCodeVersion = vscode.version
     const envDetails = localize(
         'AWS.message.toolkitInfo',
-        'OS:  {0} {1} {2}\nVisual Studio Code Version:  {3}\nAWS Toolkit Version:  {4}\n',
+        'OS:  {0} {1} {2}\n{3} Extension Host Version:  {4}\nAWS Toolkit Version:  {5}\n',
         osType,
         osArch,
         osRelease,
+        getIdeProperties().longName,
         vsCodeVersion,
         pluginVersion
     )

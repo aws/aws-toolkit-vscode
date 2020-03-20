@@ -32,6 +32,7 @@ import { ext } from './shared/extensionGlobals'
 import {
     aboutToolkit,
     getToolkitEnvironmentDetails,
+    isCloud9,
     showQuickStartWebview,
     toastNewUser
 } from './shared/extensionUtilities'
@@ -234,10 +235,17 @@ function makeEndpointsProvider(): EndpointsProvider {
         getLogger().error('Failure while loading Endpoints Manifest', err)
 
         vscode.window.showErrorMessage(
-            localize(
-                'AWS.error.endpoint.load.failure',
-                'The AWS Toolkit was unable to load endpoints data. Toolkit functionality may be impacted until VS Code is restarted.'
-            )
+            `${localize('AWS.error.endpoint.load.failure', 'The AWS Toolkit was unable to load endpoints data.')} ${
+                isCloud9()
+                    ? localize(
+                          'AWS.error.impactedFunctionalityReset.cloud9',
+                          'Toolkit functionality may be impacted until the Cloud9 browser tab is refreshed.'
+                      )
+                    : localize(
+                          'AWS.error.impactedFunctionalityReset.vscode',
+                          'Toolkit functionality may be impacted until VS Code is restarted.'
+                      )
+            }`
         )
     })
 
