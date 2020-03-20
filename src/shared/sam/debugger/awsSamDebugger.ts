@@ -23,6 +23,21 @@ export const CODE_TARGET_TYPE: 'code' = 'code'
 const AWS_SAM_DEBUG_REQUEST_TYPES = [DIRECT_INVOKE_TYPE]
 const AWS_SAM_DEBUG_TARGET_TYPES = [TEMPLATE_TARGET_TYPE, CODE_TARGET_TYPE]
 
+/**
+ * `DebugConfigurationProvider` dynamically defines these aspects of a VSCode debugger:
+ *    - initial debug configurations for a newly created launch.json can be
+ *      generated dynamically, e.g. based on some contextual information
+ *      available in the workspace.
+ *    - To resolve a launch configuration before it is used to start a
+ *      new debug session.
+ *      Two resolve methods exist:
+ *      - resolveDebugConfiguration: called before variables are substituted in
+ *        the launch configuration.
+ *      - resolveDebugConfigurationWithSubstitutedVariables: called after all
+ *        variables have been substituted.
+ * 
+ * https://code.visualstudio.com/api/extension-guides/debugger-extension#using-a-debugconfigurationprovider
+ */
 export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurationProvider {
     public constructor(private readonly cftRegistry = CloudFormationTemplateRegistry.getRegistry()) {}
 
