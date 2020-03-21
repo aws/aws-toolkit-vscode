@@ -129,7 +129,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             const resolved = await debugConfigProvider.resolveDebugConfiguration(undefined, {
                 type: AWS_SAM_DEBUG_TYPE,
                 name: 'whats in a name',
-                request: 'not-direct-invoke',
+                request: 'notdirectinvoke',
                 invokeTarget: {
                     target: CODE_TARGET_TYPE,
                     lambdaHandler: 'sick handles',
@@ -237,7 +237,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 {
                     type: AWS_SAM_DEBUG_TYPE,
                     name: name,
-                    request: 'direct-invoke',
+                    request: 'launch',
                     invokeTarget: {
                         target: TEMPLATE_TARGET_TYPE,
                         samTemplatePath: relPath,

@@ -32,7 +32,8 @@ import { Timeout } from '../utilities/timeoutUtils'
 import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
 
 export interface LambdaLocalInvokeParams {
-    document: vscode.TextDocument
+    /** URI of the current editor document. */
+    uri: vscode.Uri
     range: vscode.Range
     handlerName: string
     isDebug: boolean
@@ -93,7 +94,7 @@ export class LocalLambdaRunner {
 
             const config = await getHandlerConfig({
                 handlerName: this.localInvokeParams.handlerName,
-                documentUri: this.localInvokeParams.document.uri,
+                documentUri: this.localInvokeParams.uri,
                 samTemplate: this.localInvokeParams.samTemplate
             })
 
@@ -186,7 +187,7 @@ export class LocalLambdaRunner {
         const environmentVariablePath = path.join(await this.getBaseBuildFolder(), 'env-vars.json')
         const config = await getHandlerConfig({
             handlerName: this.localInvokeParams.handlerName,
-            documentUri: this.localInvokeParams.document.uri,
+            documentUri: this.localInvokeParams.uri,
             samTemplate: this.localInvokeParams.samTemplate
         })
         const maxRetries: number = getAttachDebuggerMaxRetryLimit(this.configuration, MAX_DEBUGGER_RETRIES_DEFAULT)

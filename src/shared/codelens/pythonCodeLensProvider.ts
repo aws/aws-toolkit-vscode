@@ -204,7 +204,7 @@ export async function initialize({
         let lambdaDebugFilePath: string | undefined
 
         try {
-            const samProjectCodeRoot = await getSamProjectDirPathForFile(args.document.uri.fsPath)
+            const samProjectCodeRoot = await getSamProjectDirPathForFile(args.uri.fsPath)
             const baseBuildDir = await makeBuildDir()
 
             let debugPort: number | undefined
@@ -228,7 +228,7 @@ export async function initialize({
 
             const handlerFileRelativePath = getHandlerRelativePath({
                 codeRoot: samProjectCodeRoot,
-                filePath: args.document.uri.fsPath
+                filePath: args.uri.fsPath
             })
 
             const relativeOriginalFunctionHandler = getRelativeFunctionHandler({
@@ -267,7 +267,7 @@ export async function initialize({
 
             const config = await getHandlerConfig({
                 handlerName: args.handlerName,
-                documentUri: args.document.uri,
+                documentUri: args.uri,
                 samTemplate: vscode.Uri.file(args.samTemplate.fsPath)
             })
 
@@ -285,7 +285,7 @@ export async function initialize({
                 baseBuildDir,
                 originalSamTemplatePath: args.samTemplate.fsPath,
                 samTemplatePath,
-                documentUri: args.document.uri,
+                documentUri: args.uri,
                 originalHandlerName: args.handlerName,
                 handlerName,
                 runtime: args.runtime

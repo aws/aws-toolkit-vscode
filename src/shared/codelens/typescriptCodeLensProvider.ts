@@ -9,7 +9,7 @@ import { NodejsDebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { findFileInParentPaths } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
-import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
+import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES, SamLocalInvokeCommand } from '../sam/cli/samCliLocalInvoke'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { getChannelLogger, localize } from '../utilities/vsCodeUtils'
 
@@ -21,6 +21,9 @@ import { getStartPort } from '../utilities/debuggerUtils'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { CodeLensProviderParams, getInvokeCmdKey, makeCodeLenses } from './codeLensUtils'
 import { getHandlerRelativePath, LambdaLocalInvokeParams, LocalLambdaRunner } from './localLambdaRunner'
+import { SettingsConfiguration } from '../settingsConfiguration'
+import { SamCliProcessInvoker } from '../sam/cli/samCliInvokerUtils'
+import { TelemetryService } from '../telemetry/telemetryService'
 
 async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
     const packageJsonPath: string | undefined = await findFileInParentPaths(path.dirname(filepath), 'package.json')
@@ -37,6 +40,52 @@ async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
     return path.dirname(packageJsonPath)
 }
 
+export async function invokeLambda(params: LambdaLocalInvokeParams
+        & {
+            runtime: string,
+            settings: SettingsConfiguration,
+            processInvoker: SamCliProcessInvoker,
+            localInvokeCommand: SamLocalInvokeCommand,
+            telemetryService: TelemetryService,
+            outputChannel: vscode.OutputChannel,
+        }) {
+    const samProjectCodeRoot = await getSamProjectDirPathForFile(params.uri.fsPath)
+    let debugPort: number | undefined
+
+    if (params.isDebug) {
+        debugPort = await getStartPort()
+    }
+
+    const debugConfig: NodejsDebugConfiguration = {
+        type: 'node',
+        request: 'attach',
+        name: 'SamLocalDebug',
+        preLaunchTask: undefined,
+        address: 'localhost',
+        port: debugPort!,
+        localRoot: samProjectCodeRoot,
+        remoteRoot: '/var/task',
+        protocol: 'inspector',
+        skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js']
+    }
+
+    const localLambdaRunner: LocalLambdaRunner = new LocalLambdaRunner(
+        params.settings,
+        params,
+        debugPort,
+        params.runtime,
+        params.outputChannel,
+        params.processInvoker,
+        params.localInvokeCommand,
+        debugConfig,
+        samProjectCodeRoot,
+        params.telemetryService,
+    )
+
+    await localLambdaRunner.run()
+}
+
+
 export function initialize({
     context,
     configuration,
@@ -47,43 +96,6 @@ export function initialize({
     ]),
     telemetryService
 }: CodeLensProviderParams): void {
-    const invokeLambda = async (params: LambdaLocalInvokeParams & { runtime: string }) => {
-        const samProjectCodeRoot = await getSamProjectDirPathForFile(params.document.uri.fsPath)
-        let debugPort: number | undefined
-
-        if (params.isDebug) {
-            debugPort = await getStartPort()
-        }
-
-        const debugConfig: NodejsDebugConfiguration = {
-            type: 'node',
-            request: 'attach',
-            name: 'SamLocalDebug',
-            preLaunchTask: undefined,
-            address: 'localhost',
-            port: debugPort!,
-            localRoot: samProjectCodeRoot,
-            remoteRoot: '/var/task',
-            protocol: 'inspector',
-            skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js']
-        }
-
-        const localLambdaRunner: LocalLambdaRunner = new LocalLambdaRunner(
-            configuration,
-            params,
-            debugPort,
-            params.runtime,
-            toolkitOutputChannel,
-            processInvoker,
-            localInvokeCommand,
-            debugConfig,
-            samProjectCodeRoot,
-            telemetryService
-        )
-
-        await localLambdaRunner.run()
-    }
-
     const command = getInvokeCmdKey('javascript')
     context.subscriptions.push(
         vscode.commands.registerCommand(command, async (params: LambdaLocalInvokeParams) => {
@@ -99,7 +111,7 @@ export function initialize({
                 if (!nodeJsRuntimes.has(lambdaRuntime)) {
                     invokeResult = 'Failed'
                     logger.error(
-                        `Javascript local invoke on ${params.document.uri.fsPath} encountered` +
+                        `Javascript local invoke on ${params.uri.fsPath} encountered` +
                             ` unsupported runtime ${lambdaRuntime}`
                     )
 
@@ -114,7 +126,12 @@ export function initialize({
                 } else {
                     await invokeLambda({
                         runtime: lambdaRuntime,
-                        ...params
+                        settings: configuration,
+                        processInvoker: processInvoker,
+                        localInvokeCommand: localInvokeCommand,
+                        telemetryService: telemetryService,
+                        outputChannel: toolkitOutputChannel,
+                        ...params,
                     })
                 }
             } catch (err) {

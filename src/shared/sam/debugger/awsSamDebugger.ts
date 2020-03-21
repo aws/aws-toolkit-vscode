@@ -14,28 +14,28 @@ import { CloudFormationTemplateRegistry } from '../../cloudformation/templateReg
 import { isContainedWithinDirectory } from '../../filesystemUtilities'
 import { AwsSamDebuggerInvokeTargetTemplateFields } from './awsSamDebugConfiguration'
 import { AwsSamDebuggerConfiguration } from './awsSamDebugConfiguration.gen'
+import { getLogger } from '../../../../src/shared/logger'
+import * as path from 'path'
 
 export const AWS_SAM_DEBUG_TYPE = 'aws-sam'
-export const DIRECT_INVOKE_TYPE = 'direct-invoke'
+export const DIRECT_INVOKE_TYPE = 'launch'
 export const TEMPLATE_TARGET_TYPE: 'template' = 'template'
 export const CODE_TARGET_TYPE: 'code' = 'code'
 
-const AWS_SAM_DEBUG_REQUEST_TYPES = [DIRECT_INVOKE_TYPE]
+//const AWS_SAM_DEBUG_REQUEST_TYPES = [DIRECT_INVOKE_TYPE]
 const AWS_SAM_DEBUG_TARGET_TYPES = [TEMPLATE_TARGET_TYPE, CODE_TARGET_TYPE]
 
 /**
  * `DebugConfigurationProvider` dynamically defines these aspects of a VSCode debugger:
- *    - initial debug configurations for a newly created launch.json can be
- *      generated dynamically, e.g. based on some contextual information
- *      available in the workspace.
- *    - To resolve a launch configuration before it is used to start a
- *      new debug session.
- *      Two resolve methods exist:
+ *    - Initial debug configurations (for newly-created launch.json)
+ *    - To resolve a launch configuration before it is used to start a new
+ *      debug session.
+ *      Two "resolve" methods exist:
  *      - resolveDebugConfiguration: called before variables are substituted in
  *        the launch configuration.
  *      - resolveDebugConfigurationWithSubstitutedVariables: called after all
  *        variables have been substituted.
- * 
+ *
  * https://code.visualstudio.com/api/extension-guides/debugger-extension#using-a-debugconfigurationprovider
  */
 export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurationProvider {
@@ -45,35 +45,68 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
         folder: vscode.WorkspaceFolder | undefined,
         token?: vscode.CancellationToken
     ): Promise<AwsSamDebuggerConfiguration[] | undefined> {
+        const configs: AwsSamDebuggerConfiguration[] = []
         if (folder) {
-            const debugConfigurations: AwsSamDebuggerConfiguration[] = []
-            const folderPath = folder.uri.fsPath
             const templates = this.cftRegistry.registeredTemplates
 
             for (const templateDatum of templates) {
-                if (isContainedWithinDirectory(folderPath, templateDatum.path) && templateDatum.template.Resources) {
+                if (isContainedWithinDirectory(folder.uri.fsPath, templateDatum.path) && templateDatum.template.Resources) {
                     for (const resourceKey of Object.keys(templateDatum.template.Resources)) {
                         const resource = templateDatum.template.Resources[resourceKey]
                         if (resource) {
-                            debugConfigurations.push(
+                            configs.push(
                                 createDirectInvokeSamDebugConfigurationFromTemplate(resourceKey, templateDatum.path)
                             )
                         }
                     }
                 }
             }
+            getLogger().verbose(`provideDebugConfigurations: debugconfigs: ${configs}`)
 
-            return debugConfigurations
         }
+
+        // Stub non-template ("code") lambda config.
+        const config:AwsSamDebuggerConfiguration = {
+            type: AWS_SAM_DEBUG_TYPE,
+            request: DIRECT_INVOKE_TYPE,
+            name: 'AWS SAM resource',
+            invokeTarget: {
+                target: CODE_TARGET_TYPE,
+                // Magic: invokes getLambdaName() mapped in package.json.
+                lambdaHandler: '${command:AskForLocalLambda}',
+                // samTemplatePath: 'template.yaml',
+                // samTemplateResource: "TemplateResource"
+            },
+            lambda: {
+                runtime: 'nodejs12.x',
+                timeoutSec: 30,
+                memoryMb: 128,
+                environmentVariables: {
+                },
+            },
+        }
+        configs.push(config)
+
+        return configs
     }
 
     public async resolveDebugConfiguration(
         folder: vscode.WorkspaceFolder | undefined,
-        debugConfiguration: AwsSamDebuggerConfiguration,
+        config: AwsSamDebuggerConfiguration,
         token?: vscode.CancellationToken
     ): Promise<AwsSamDebuggerConfiguration | undefined> {
-        let validityPair: { isValid: boolean; message?: string } = generalDebugConfigValidation(debugConfiguration)
+        // Return initial (stub) config, if:
+        //   1. launch.json is missing or empty (like "debuggers.*.initialConfigurations" in package.json)
+        //   2. no template.yaml was discovered by provideDebugConfigurations()
+        if (!config.type && !config.request && !config.name) {
+            const editor = vscode.window.activeTextEditor;
+            if (editor) {  // && editor.document.languageId === 'markdown'
+                // TODO: return stub? Should already have been done by resolveDebugConfiguration()...
+            }
+            return undefined
+        }
 
+        let validityPair: { isValid: boolean; message?: string } = validateConfig(config)
         if (!validityPair.isValid) {
             if (validityPair.message) {
                 vscode.window.showErrorMessage(validityPair.message)
@@ -82,10 +115,10 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
             return undefined
         }
 
-        if (debugConfiguration.invokeTarget.target === TEMPLATE_TARGET_TYPE) {
-            validityPair = templateDebugConfigValidation(folder, debugConfiguration, this.cftRegistry)
-        } else if (debugConfiguration.invokeTarget.target === CODE_TARGET_TYPE) {
-            validityPair = codeDebugConfigValidation(debugConfiguration)
+        if (config.invokeTarget.target === TEMPLATE_TARGET_TYPE) {
+            validityPair = validateTemplateConfig(folder, config, this.cftRegistry)
+        } else if (config.invokeTarget.target === CODE_TARGET_TYPE) {
+            validityPair = validateCodeConfig(config)
         }
 
         if (!validityPair.isValid) {
@@ -98,9 +131,7 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
             vscode.window.showInformationMessage(validityPair.message)
         }
 
-        vscode.window.showInformationMessage(localize('AWS.generic.notImplemented', 'Not implemented'))
-
-        return debugConfiguration
+        return config
     }
 }
 
@@ -120,19 +151,22 @@ function createDirectInvokeSamDebugConfigurationFromTemplate(
     }
 }
 
-function generalDebugConfigValidation(
+/**
+ * Validates common debug configuration properties.
+ */
+function validateConfig(
     debugConfiguration: AwsSamDebuggerConfiguration
 ): { isValid: boolean; message?: string } {
-    if (!AWS_SAM_DEBUG_REQUEST_TYPES.includes(debugConfiguration.request)) {
-        return {
-            isValid: false,
-            message: localize(
-                'AWS.sam.debugger.invalidRequest',
-                'Debug Configuration has an unsupported request type. Supported types: {0}',
-                AWS_SAM_DEBUG_REQUEST_TYPES.join(', ')
-            )
-        }
-    }
+    // if (!AWS_SAM_DEBUG_REQUEST_TYPES.includes(debugConfiguration.request)) {
+    //     return {
+    //         isValid: false,
+    //         message: localize(
+    //             'AWS.sam.debugger.invalidRequest',
+    //             'Debug Configuration has an unsupported request type. Supported types: {0}',
+    //             AWS_SAM_DEBUG_REQUEST_TYPES.join(', ')
+    //         )
+    //     }
+    // }
 
     if (!AWS_SAM_DEBUG_TARGET_TYPES.includes(debugConfiguration.invokeTarget.target)) {
         return {
@@ -148,15 +182,15 @@ function generalDebugConfigValidation(
     return { isValid: true }
 }
 
-function templateDebugConfigValidation(
+function validateTemplateConfig(
     folder: vscode.WorkspaceFolder | undefined,
     debugConfiguration: AwsSamDebuggerConfiguration,
     cftRegistry: CloudFormationTemplateRegistry
 ): { isValid: boolean; message?: string } {
     const templateTarget = (debugConfiguration.invokeTarget as any) as AwsSamDebuggerInvokeTargetTemplateFields
 
-    const fullpath = require('path').resolve((
-        (folder?.uri) ? folder.uri.path + '/' : '') + templateTarget.samTemplatePath)
+    const fullpath = path.resolve((
+        (folder?.uri) ? folder.uri.path + '/' : ''), templateTarget.samTemplatePath)
     const template = cftRegistry.getRegisteredTemplate(fullpath)
 
     if (!template) {
@@ -172,12 +206,23 @@ function templateDebugConfigValidation(
 
     const resources = template.template.Resources
 
+    if (!templateTarget.samTemplateResource) {
+        return {
+            isValid: false,
+            message: localize(
+                'AWS.sam.debugger.missingField',
+                'Missing required field "{0}" in debug config',
+                'samTemplateResource'
+            )
+        }
+    }
+
     if (!resources || !Object.keys(resources).includes(templateTarget.samTemplateResource)) {
         return {
             isValid: false,
             message: localize(
                 'AWS.sam.debugger.missingResource',
-                "Cannot find the template resource '{0}' in template file: {1}",
+                'Cannot find the template resource "{0}" in template file: {1}',
                 templateTarget.samTemplateResource,
                 templateTarget.samTemplatePath
             )
@@ -236,10 +281,10 @@ function templateDebugConfigValidation(
         }
     }
 
-    return { isValid: true }
+    return { isValid: true, message: 'Valid........' }
 }
 
-function codeDebugConfigValidation(
+function validateCodeConfig(
     debugConfiguration: AwsSamDebuggerConfiguration
 ): { isValid: boolean; message?: string } {
     if (!debugConfiguration.lambda?.runtime || !samLambdaRuntimes.has(debugConfiguration.lambda.runtime)) {

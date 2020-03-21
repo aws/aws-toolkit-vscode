@@ -10,7 +10,7 @@
         "url": "https://github.com/aws/aws-toolkit-vscode"
     },
     "engines": {
-        "vscode": "^1.31.1"
+        "vscode": "^1.43.0"
     },
     "icon": "resources/aws-icon-256x256.png",
     "bugs": {
@@ -33,6 +33,7 @@
     "qna": "https://github.com/aws/aws-toolkit-vscode/issues",
     "activationEvents": [
         "onDebugResolve:aws-sam",
+        "onCommand:aws.lambda.getLambdaName",
         "onCommand:aws.login",
         "onCommand:aws.credential.profile.create",
         "onCommand:aws.logout",
@@ -126,12 +127,23 @@
                 }
             }
         },
+        "breakpoints": [
+            { "language": "markdown" },
+            { "language": "typescript" },
+            { "language": "javascript" },
+            { "language": "python" },
+            { "language": "csharp" }
+        ],
         "debuggers": [
             {
                 "type": "aws-sam",
+                "label": "AWS SAM template resource",
+                "request": "launch",
+                "variables": {
+                    "AskForLocalLambda": "aws.lambda.getLambdaName"
+                },
                 "configurationAttributes": {
-                    "direct-invoke": {
-                        "$schema": "http://json-schema.org/draft-07/schema#",
+                    "launch": {
                         "title": "AwsSamDebuggerConfiguration",
                         "definitions": {
                             "jsonObject": {
@@ -688,7 +700,7 @@
         "@types/sinon": "^7.0.13",
         "@types/tcp-port-used": "^1.0.0",
         "@types/uuid": "^3.4.4",
-        "@types/vscode": "^1.31.0",
+        "@types/vscode": "^1.43.0",
         "@types/xml2js": "^0.4.3",
         "decache": "^4.4.0",
         "glob": "^7.1.4",
@@ -722,6 +734,7 @@
         "adm-zip": "^0.4.13",
         "async-lock": "^1.1.3",
         "aws-sdk": "^2.581.0",
+        "await-notify": "1.0.1",
         "cloudformation-schema-js-yaml": "^1.0.1",
         "cross-spawn": "^6.0.5",
         "del": "^3.0.0",
@@ -742,6 +755,7 @@
         "triple-beam": "^1.3.0",
         "typescript": "^3.7.2",
         "uuid": "^3.3.2",
+        "vscode-debugadapter": "1.40.0-pre.2",
         "vscode-nls": "^4.1.1",
         "vue": "^2.5.16",
         "winston": "^3.2.1",

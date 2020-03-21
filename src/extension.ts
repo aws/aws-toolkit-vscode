@@ -41,7 +41,7 @@ import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import { EndpointsProvider } from './shared/regions/endpointsProvider'
 import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetcher'
 import { HttpResourceFetcher } from './shared/resourcefetcher/httpResourceFetcher'
-import { activate as activateServerless } from './shared/sam/activation'
+import { activate as activateSam } from './shared/sam/activation'
 import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
 import { AwsTelemetryOptOut } from './shared/telemetry/awsTelemetryOptOut'
 import { DefaultTelemetryService } from './shared/telemetry/defaultTelemetryService'
@@ -54,6 +54,7 @@ import {
 } from './shared/telemetry/telemetry'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { getChannelLogger } from './shared/utilities/vsCodeUtils'
+import { ExtContext } from './shared/extensions'
 
 let localize: nls.LocalizeFunc
 
@@ -103,6 +104,16 @@ export async function activate(context: vscode.ExtensionContext) {
             console.warn(`Exception while displaying opt-out message: ${err}`)
         })
         await ext.telemetry.start()
+
+        const extContext:ExtContext = {
+            ...context,
+            awsContext: awsContext,
+            regionProvider: regionProvider,
+            settings: toolkitSettings,
+            outputChannel: toolkitOutputChannel,
+            telemetryService: ext.telemetry,
+            chanLogger: getChannelLogger(toolkitOutputChannel),
+        }
 
         context.subscriptions.push(
             vscode.commands.registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())
@@ -159,25 +170,18 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateCloudFormationTemplateRegistry(context)
 
         await activateCdk({
-            extensionContext: context
+            extensionContext: extContext
         })
 
         await activateAwsExplorer({ awsContext, context, awsContextTrees, regionProvider })
 
         await activateSchemas({
-            context: context
+            context: extContext
         })
 
         await ExtensionDisposableFiles.initialize(context)
 
-        await activateServerless({
-            awsContext,
-            extensionContext: context,
-            outputChannel: toolkitOutputChannel,
-            regionProvider,
-            telemetryService: ext.telemetry,
-            toolkitSettings
-        })
+        await activateSam(extContext)
 
         toastNewUser(context)
 

@@ -27,7 +27,7 @@ import { SchemaItemNode } from '../explorer/schemaItemNode'
 
 export interface SchemaCodeDownloadWizardContext {
     readonly schemaLangs: Set<codeLang.SchemaCodeLangs>
-    readonly workspaceFolders: vscode.WorkspaceFolder[] | undefined
+    readonly workspaceFolders: ReadonlyArray<vscode.WorkspaceFolder> | undefined
 
     promptUserForVersion(currSchemaVersion?: string): Promise<string | undefined>
 

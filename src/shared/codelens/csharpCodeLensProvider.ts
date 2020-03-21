@@ -163,7 +163,7 @@ async function onLocalInvokeCommand(
 
         const baseBuildDir = await makeBuildDir()
         const codeUri = getCodeUri(resource, lambdaLocalInvokeParams.samTemplate)
-        const documentUri = lambdaLocalInvokeParams.document.uri
+        const documentUri = lambdaLocalInvokeParams.uri
         const handlerName = lambdaLocalInvokeParams.handlerName
 
         const inputTemplatePath = await makeInputTemplate({
