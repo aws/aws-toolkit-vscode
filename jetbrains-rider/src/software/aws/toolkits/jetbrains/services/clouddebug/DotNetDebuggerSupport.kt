@@ -80,7 +80,7 @@ class DotNetDebuggerSupport : DebuggerSupport() {
         val useDotnetCoreRuntime
             get() = Registry.`is`(USE_DOTNET_CORE_RUNTIME_FLAG_NAME) && isRider20193OrLater
 
-        val isRider20193OrLater = ApplicationInfo.getInstance().build >= BuildNumber.fromString("193.0")
+        val isRider20193OrLater = BuildNumber.fromString("193.0")?.let { ApplicationInfo.getInstance().build >= it } == true
     }
 
     private var exeRemotePath: String = ""
