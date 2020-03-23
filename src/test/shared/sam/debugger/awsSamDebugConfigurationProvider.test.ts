@@ -124,7 +124,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
         })
     })
 
-    describe.only('resolveDebugConfiguration', async () => {
+    describe('resolveDebugConfiguration', async () => {
         it('returns undefined when resolving debug configurations with an invalid request type', async () => {
             const resolved = await debugConfigProvider.resolveDebugConfiguration(undefined, {
                 type: AWS_SAM_DEBUG_TYPE,

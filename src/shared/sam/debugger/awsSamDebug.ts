@@ -1,16 +1,16 @@
 import { basename } from 'path';
-import { ExtContext } from '../../extensions';
 import * as vscode from 'vscode';
 import { Breakpoint, BreakpointEvent, Handles, InitializedEvent, Logger, logger, LoggingDebugSession, OutputEvent, ProgressEndEvent, ProgressStartEvent, ProgressUpdateEvent, Scope, Source, StackFrame, StoppedEvent, TerminatedEvent, Thread } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
-import { CodeLensProviderParams } from '../../../shared/codelens/codeLensUtils';
 import { getLogger } from '../../../shared/logger';
-import * as tsLensProvider from '../../codelens/typescriptCodeLensProvider';
-import { MockBreakpoint, MockRuntime } from './awsSamRuntime';
 import { LambdaLocalInvokeParams } from '../../codelens/localLambdaRunner';
+import * as tsLensProvider from '../../codelens/typescriptCodeLensProvider';
+import { ExtContext } from '../../extensions';
 import { DefaultValidatingSamCliProcessInvoker } from '../cli/defaultValidatingSamCliProcessInvoker';
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke';
-const { Subject } = require('await-notify');
+import { AwsSamDebuggerConfiguration } from './awsSamDebugConfiguration.gen';
+import { MockBreakpoint, MockRuntime } from './awsSamRuntime';
+import { CloudFormation } from '../../cloudformation/cloudformation'
 
 function timeout(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -19,9 +19,12 @@ function timeout(ms: number) {
 /**
  * SAM-specific launch attributes (which are not part of the DAP).
  * 
- * TODO: Schema for these attributes lives in package.json.
+ * Schema for these attributes lives in package.json
+ * ("configurationAttributes").
+ * 
+ * @see AwsSamDebugConfigurationProvider.resolveDebugConfiguration
  */
-interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
+export interface SamLaunchRequestArgs extends DebugProtocol.LaunchRequestArguments, AwsSamDebuggerConfiguration {
     /** An absolute path to the "program" to debug. */
     program: string;
     /** Automatically stop target after launch. If not specified, target does not stop. */
@@ -29,8 +32,8 @@ interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
     /** enable logging the Debug Adapter Protocol */
     trace?: boolean;
 
-    // TODO
-    fixme: CodeLensProviderParams
+    /** Resolved CFN template object. */
+    cfnTemplate?: CloudFormation.Template
 }
 
 export class MockDebugSession extends LoggingDebugSession {
@@ -39,7 +42,6 @@ export class MockDebugSession extends LoggingDebugSession {
     // a Mock runtime (or debugger)
     private _runtime: MockRuntime;
     private _variableHandles = new Handles<string>();
-    private _configurationDone = new Subject();
     private _cancelationTokens = new Map<number, boolean>();
     private _isLongrunning = new Map<number, boolean>();
     private _reportProgress = false;
@@ -51,7 +53,9 @@ export class MockDebugSession extends LoggingDebugSession {
      * Creates a new debug adapter used for one debug session.
      * We configure the default implementation of a debug adapter here.
      */
-    public constructor(readonly ctx:ExtContext) {
+    public constructor(
+        private readonly ctx:ExtContext,
+        ) {
         super("mock-debug.txt");
 
         // this debugger uses zero-based lines and columns
@@ -111,10 +115,10 @@ export class MockDebugSession extends LoggingDebugSession {
         // build and return the capabilities of this debug adapter:
         response.body = response.body || {};
 
-        // the adapter implements the configurationDoneRequest.
-        response.body.supportsConfigurationDoneRequest = true;
+        // Adapter implements configurationDoneRequest.
+        // response.body.supportsConfigurationDoneRequest = true;
 
-        // make VS Code to use 'evaluate' when hovering over source
+        // make VS Code to use `evaluate` when hovering over source
         response.body.supportsEvaluateForHovers = true;
 
         // make VS Code to show a 'step back' button
@@ -141,46 +145,32 @@ export class MockDebugSession extends LoggingDebugSession {
         this.sendEvent(new InitializedEvent());
     }
 
-    /**
-     * Called at the end of the configuration sequence.
-     * Indicates that all breakpoints etc. have been sent to the DA and that the 'launch' can start.
-     */
-    protected configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments): void {
-        super.configurationDoneRequest(response, args);
-
-        // notify the launchRequest that configuration has finished
-        this._configurationDone.notify();
-    }
-
-    protected async launchRequest(response: DebugProtocol.LaunchResponse, args: LaunchRequestArguments) {
+    protected async launchRequest(response: DebugProtocol.LaunchResponse, args: SamLaunchRequestArgs) {
 
         // make sure to 'Stop' the buffered logging if 'trace' is not set
         logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false);
 
         // wait until configuration has finished (and configurationDoneRequest has been called)
-        await this._configurationDone.wait(1000);
-
-        const providerParams: CodeLensProviderParams = {
-            context: this.ctx,
-            configuration: this.ctx.settings,
-            outputChannel: this.ctx.outputChannel,
-            telemetryService: this.ctx.telemetryService,
-        }
-        const docUri = vscode.Uri.parse('/Volumes/workplace/testsamnode12-3/testnode12-3/hello-world/app.js')
-        const cfnTemplateUri = vscode.Uri.parse('/Volumes/workplace/testsamnode12-3/testnode12-3/hello-world/template.yaml')
+        // await this._configurationDone.wait(1000);
+        
+        // TODO: support "code" (non-"template").
+        const cfnTemplateUri = vscode.Uri.parse(args.invokeTarget.samTemplatePath!!)
         const params:LambdaLocalInvokeParams = {
-            uri: docUri,
-            range: new vscode.Range(1,1,1,1),
-            handlerName: 'app.lambdaHandler',
+            // TODO: remove this (irrelevant for debug-config).
+            uri: vscode.window.activeTextEditor?.document.uri ?? cfnTemplateUri,
+            handlerName: args.invokeTarget.lambdaHandler ?? args.invokeTarget.samTemplateResource!!,
             isDebug: true,  //!!args.noDebug,
-            workspaceFolder: vscode.workspace.getWorkspaceFolder(docUri)!!,
+            workspaceFolder: vscode.workspace.getWorkspaceFolder(cfnTemplateUri)!!,
             samTemplate: cfnTemplateUri,
         }
+        
+        const lambdaRuntime = args.lambda?.runtime
+            ?? CloudFormation.getRuntime(args.cfnTemplate!!.Resources!!)
 
         // TODO: await?
         tsLensProvider.invokeLambda({
             ...params,
-            runtime: 'nodejs12.x',
+            runtime: lambdaRuntime,
             settings: this.ctx.settings,
             processInvoker: new DefaultValidatingSamCliProcessInvoker({}),
             localInvokeCommand: new DefaultSamLocalInvokeCommand(this.ctx.chanLogger, [
@@ -189,7 +179,6 @@ export class MockDebugSession extends LoggingDebugSession {
             telemetryService: this.ctx.telemetryService,
             outputChannel: this.ctx.outputChannel,
         })
-        tsLensProvider.initialize(providerParams)
         // start the program in the runtime
         this._runtime.start(args.program, !!args.stopOnEntry);
 

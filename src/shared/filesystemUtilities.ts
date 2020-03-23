@@ -78,14 +78,18 @@ export const makeTemporaryToolkitFolder = async (...relativePathParts: string[])
 }
 
 /**
- * Returns whether or not a directory/file is a contained within a parent directory.
- * Also returns true if parent directory === subdirectory
- * @param parentDirectory Parent directory
- * @param containedPath Path to directory that may or may not be contained within the parentDirectory
+ * Returns `true` if path `p` is contained by directory `d` (which includes the
+ * case where they are identical).
+ * 
+ * Only the logical structure is checked; the paths are not checked for
+ * existence on the filesystem.
+ * 
+ * @param d  Path to a directory.
+ * @param p  Path to file or directory to test.
  */
-export function isContainedWithinDirectory(parentDirectory: string, containedPath: string): boolean {
-    const parentDirPieces = parentDirectory.split(path.sep)
-    const containedPathPieces = containedPath.split(path.sep)
+export function isInDirectory(d: string, p: string): boolean {
+    const parentDirPieces = d.split(path.sep)
+    const containedPathPieces = p.split(path.sep)
 
     return parentDirPieces.every((value, index) => {
         return value === containedPathPieces[index]

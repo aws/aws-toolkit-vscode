@@ -11,7 +11,7 @@ const localize = nls.loadMessageBundle()
 import { samLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 import { CloudFormation } from '../../cloudformation/cloudformation'
 import { CloudFormationTemplateRegistry } from '../../cloudformation/templateRegistry'
-import { isContainedWithinDirectory } from '../../filesystemUtilities'
+import { isInDirectory } from '../../filesystemUtilities'
 import { AwsSamDebuggerInvokeTargetTemplateFields } from './awsSamDebugConfiguration'
 import { AwsSamDebuggerConfiguration } from './awsSamDebugConfiguration.gen'
 import { getLogger } from '../../../../src/shared/logger'
@@ -24,6 +24,10 @@ export const CODE_TARGET_TYPE: 'code' = 'code'
 
 //const AWS_SAM_DEBUG_REQUEST_TYPES = [DIRECT_INVOKE_TYPE]
 const AWS_SAM_DEBUG_TARGET_TYPES = [TEMPLATE_TARGET_TYPE, CODE_TARGET_TYPE]
+
+export interface Config2 extends AwsSamDebuggerConfiguration {
+    cfnTemplate?: CloudFormation.Template
+}
 
 /**
  * `DebugConfigurationProvider` dynamically defines these aspects of a VSCode debugger:
@@ -49,20 +53,28 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
         if (folder) {
             const templates = this.cftRegistry.registeredTemplates
 
-            for (const templateDatum of templates) {
-                if (isContainedWithinDirectory(folder.uri.fsPath, templateDatum.path) && templateDatum.template.Resources) {
-                    for (const resourceKey of Object.keys(templateDatum.template.Resources)) {
-                        const resource = templateDatum.template.Resources[resourceKey]
+            for (const template of templates) {
+                if (isInDirectory(folder.uri.fsPath, template.path) && template.template.Resources) {
+                    for (const resourceName of Object.keys(template.template.Resources)) {
+                        const resource = template.template.Resources[resourceName]
                         if (resource) {
                             configs.push(
-                                createDirectInvokeSamDebugConfigurationFromTemplate(resourceKey, templateDatum.path)
+                                {
+                                    type: AWS_SAM_DEBUG_TYPE,
+                                    request: DIRECT_INVOKE_TYPE,
+                                    name: resourceName,
+                                    invokeTarget: {
+                                        target: TEMPLATE_TARGET_TYPE,
+                                        samTemplatePath: template.path,
+                                        samTemplateResource: resourceName,
+                                    },
+                                }
                             )
                         }
                     }
                 }
             }
             getLogger().verbose(`provideDebugConfigurations: debugconfigs: ${configs}`)
-
         }
 
         // Stub non-template ("code") lambda config.
@@ -92,9 +104,9 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
 
     public async resolveDebugConfiguration(
         folder: vscode.WorkspaceFolder | undefined,
-        config: AwsSamDebuggerConfiguration,
+        config: Config2,
         token?: vscode.CancellationToken
-    ): Promise<AwsSamDebuggerConfiguration | undefined> {
+    ): Promise<Config2 | undefined> {
         // Return initial (stub) config, if:
         //   1. launch.json is missing or empty (like "debuggers.*.initialConfigurations" in package.json)
         //   2. no template.yaml was discovered by provideDebugConfigurations()
@@ -116,7 +128,13 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
         }
 
         if (config.invokeTarget.target === TEMPLATE_TARGET_TYPE) {
-            validityPair = validateTemplateConfig(folder, config, this.cftRegistry)
+            const templateTarget = (config.invokeTarget as any) as AwsSamDebuggerInvokeTargetTemplateFields
+            if (templateTarget.samTemplatePath) {
+                const fullpath = path.resolve((
+                    (folder?.uri) ? folder.uri.path + '/' : ''), templateTarget.samTemplatePath)
+                config.cfnTemplate = this.cftRegistry.getRegisteredTemplate(fullpath)?.template
+            }
+            validityPair = validateTemplateConfig(config, templateTarget.samTemplatePath, config.cfnTemplate)
         } else if (config.invokeTarget.target === CODE_TARGET_TYPE) {
             validityPair = validateCodeConfig(config)
         }
@@ -132,22 +150,6 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
         }
 
         return config
-    }
-}
-
-function createDirectInvokeSamDebugConfigurationFromTemplate(
-    resourceName: string,
-    templatePath: string
-): AwsSamDebuggerConfiguration {
-    return {
-        type: AWS_SAM_DEBUG_TYPE,
-        request: DIRECT_INVOKE_TYPE,
-        name: resourceName,
-        invokeTarget: {
-            target: TEMPLATE_TARGET_TYPE,
-            samTemplatePath: templatePath,
-            samTemplateResource: resourceName
-        }
     }
 }
 
@@ -183,17 +185,24 @@ function validateConfig(
 }
 
 function validateTemplateConfig(
-    folder: vscode.WorkspaceFolder | undefined,
     debugConfiguration: AwsSamDebuggerConfiguration,
-    cftRegistry: CloudFormationTemplateRegistry
+    cfnTemplatePath: string | undefined,
+    cfnTemplate: CloudFormation.Template | undefined,
 ): { isValid: boolean; message?: string } {
     const templateTarget = (debugConfiguration.invokeTarget as any) as AwsSamDebuggerInvokeTargetTemplateFields
+    
+    if (!cfnTemplatePath) {
+        return {
+            isValid: false,
+            message: localize(
+                'AWS.sam.debugger.missingField',
+                'Missing required field "{0}" in debug config',
+                'samTemplatePath'
+            )
+        }
+    }
 
-    const fullpath = path.resolve((
-        (folder?.uri) ? folder.uri.path + '/' : ''), templateTarget.samTemplatePath)
-    const template = cftRegistry.getRegisteredTemplate(fullpath)
-
-    if (!template) {
+    if (!cfnTemplate) {
         return {
             isValid: false,
             message: localize(
@@ -204,7 +213,7 @@ function validateTemplateConfig(
         }
     }
 
-    const resources = template.template.Resources
+    const resources = cfnTemplate.Resources
 
     if (!templateTarget.samTemplateResource) {
         return {

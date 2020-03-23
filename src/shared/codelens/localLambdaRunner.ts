@@ -34,7 +34,6 @@ import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
 export interface LambdaLocalInvokeParams {
     /** URI of the current editor document. */
     uri: vscode.Uri
-    range: vscode.Range
     handlerName: string
     isDebug: boolean
     workspaceFolder: vscode.WorkspaceFolder
@@ -145,7 +144,9 @@ export class LocalLambdaRunner {
     private async generateInputTemplate(rootCodeFolder: string): Promise<string> {
         const buildFolder: string = await this.getBaseBuildFolder()
 
-        const workspaceFolder = vscode.workspace.getWorkspaceFolder(this.localInvokeParams.workspaceFolder.uri)
+        const workspaceFolder = this.localInvokeParams.workspaceFolder
+            ? undefined
+            : vscode.workspace.getWorkspaceFolder(this.localInvokeParams.workspaceFolder!!.uri)
         let properties: CloudFormation.ResourceProperties | undefined
         let globals: CloudFormation.TemplateGlobals | undefined
         if (workspaceFolder) {
