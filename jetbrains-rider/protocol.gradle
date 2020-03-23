@@ -6,6 +6,7 @@ def protocolGroup = 'protocol'
 ext.csDaemonGeneratedOutput = new File(resharperPluginPath, "src/AWS.Daemon/Protocol")
 ext.csPsiGeneratedOutput = new File(resharperPluginPath, "src/AWS.Psi/Protocol")
 ext.csAwsSettingGeneratedOutput = new File(resharperPluginPath, "src/AWS.Settings/Protocol")
+ext.csAwsProjectGeneratedOutput = new File(resharperPluginPath, "src/AWS.Project/Protocol")
 
 ext.ktGeneratedOutput = new File(projectDir, "src/software/aws/toolkits/jetbrains/protocol")
 
@@ -127,11 +128,49 @@ task generateAwsSettingModel(type: tasks.getByName("rdgen").class) {
     }
 }
 
+task generateAwsProjectModel(type: tasks.getByName("rdgen").class) {
+    def projectModelSource = new File(modelDir, "project").canonicalPath
+
+    // NOTE: classpath is evaluated lazily, at execution time, because it comes from the unzipped
+    // intellij SDK, which is extracted in afterEvaluate
+    params {
+        verbose = true
+        hashFolder = rdgenDir
+
+        logger.info("Configuring rdgen params")
+        classpath {
+            logger.info("Calculating classpath for rdgen, intellij.ideaDependency is: ${intellij.ideaDependency}")
+            def sdkPath = intellij.ideaDependency.classes
+            def rdLibDirectory = new File(sdkPath, "lib/rd").canonicalFile
+
+            "$rdLibDirectory/rider-model.jar"
+        }
+        sources projectModelSource
+        packages = "protocol.model.project"
+
+        generator {
+            language = "kotlin"
+            transform = "asis"
+            root = "com.jetbrains.rider.model.nova.ide.IdeRoot"
+            namespace = "com.jetbrains.rider.model"
+            directory = "$ktGeneratedOutput"
+        }
+
+        generator {
+            language = "csharp"
+            transform = "reversed"
+            root = "com.jetbrains.rider.model.nova.ide.IdeRoot"
+            namespace = "JetBrains.Rider.Model"
+            directory = "$csAwsProjectGeneratedOutput"
+        }
+    }
+}
+
 task generateModel {
     group = protocolGroup
     description = 'Generates protocol models'
 
-    dependsOn generateDaemonModel, generatePsiModel, generateAwsSettingModel
+    dependsOn generateDaemonModel, generatePsiModel, generateAwsSettingModel, generateAwsProjectModel
 }
 
 task cleanProtocolModels {

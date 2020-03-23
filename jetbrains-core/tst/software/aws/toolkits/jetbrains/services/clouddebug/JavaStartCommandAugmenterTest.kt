@@ -7,6 +7,7 @@ import com.intellij.execution.configurations.RuntimeConfigurationException
 import org.assertj.core.api.Assertions
 import org.junit.Test
 import software.aws.toolkits.jetbrains.services.clouddebug.java.JvmDebuggerSupport
+import software.aws.toolkits.resources.message
 
 class JavaStartCommandAugmenterTest {
     private val augmenter = JvmDebuggerSupport()
@@ -20,6 +21,13 @@ class JavaStartCommandAugmenterTest {
     fun augmenterAddsPort() {
         val augmentedStatement = augmenter.augmentStatement("java -jar x.jar", listOf(123), "")
         Assertions.assertThat(augmentedStatement).contains("address=123").contains("-agentlib:jdwp")
+    }
+
+    @Test
+    fun augmenterEmptyPortsArray() {
+        Assertions.assertThatThrownBy { augmenter.augmentStatement("java -jar x.jar", listOf(), "") }
+            .isInstanceOf(IllegalStateException::class.java)
+            .hasMessage(message("cloud_debug.step.augment_statement.missing_debug_port"))
     }
 
     @Test

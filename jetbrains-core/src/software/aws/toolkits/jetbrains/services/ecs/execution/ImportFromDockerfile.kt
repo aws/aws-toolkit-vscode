@@ -53,7 +53,7 @@ class ImportFromDockerfile @JvmOverloads constructor(
             return
         }
 
-        details.command?.let { view.startCommand.text = it }
+        details.command?.let { view.startCommand.command = it }
         details.exposePorts.map { PortMapping(remotePort = it) }.takeIf { it.isNotEmpty() }?.let { view.portMappingsTable.setValues(it) }
         details.copyDirectives.map { ArtifactMapping(it.from, it.to) }.takeIf { it.isNotEmpty() }?.let { view.artifactMappingsTable.setValues(it) }
     }

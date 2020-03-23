@@ -11,16 +11,14 @@ import software.aws.toolkits.jetbrains.ui.LocalPathProjectBaseCellEditor
 import software.aws.toolkits.resources.message
 import javax.swing.table.TableCellEditor
 
-class ArtifactMappingsTable(private val project: Project) : ListTableWithButtons<ArtifactMapping>() {
-    private val pathCellEditor = LocalPathProjectBaseCellEditor(project)
-        .normalizePath(true)
-        .fileChooserDescriptor(FileChooserDescriptorFactory.createSingleFileDescriptor())
-    override fun isEmpty(element: ArtifactMapping): Boolean = element.localPath.isNullOrEmpty() ||
-        element.remotePath.isNullOrEmpty()
+class ArtifactMappingsTable(project: Project) : ContainerMappingTable<ArtifactMapping>(
+    emptyTableMainText = message("cloud_debug.ecs.run_config.container.artifacts.empty.text"),
+    addNewEntryText = message("cloud_debug.ecs.run_config.container.artifacts.add")
+) {
+
+    override fun isEmpty(element: ArtifactMapping): Boolean = element.localPath.isNullOrEmpty() || element.remotePath.isNullOrEmpty()
 
     override fun cloneElement(variable: ArtifactMapping): ArtifactMapping = variable.copy()
-
-    override fun canDeleteElement(selection: ArtifactMapping): Boolean = true
 
     override fun createElement(): ArtifactMapping = ArtifactMapping()
 
@@ -62,4 +60,8 @@ class ArtifactMappingsTable(private val project: Project) : ListTableWithButtons
 
         override fun getEditor(item: ArtifactMapping): TableCellEditor? = editor()
     }
+
+    private val pathCellEditor = LocalPathProjectBaseCellEditor(project)
+        .normalizePath(true)
+        .fileChooserDescriptor(FileChooserDescriptorFactory.createSingleFileDescriptor())
 }

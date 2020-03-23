@@ -46,6 +46,7 @@ import com.jetbrains.rider.run.IDebuggerOutputListener
 import com.jetbrains.rider.run.bindToSettings
 import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
+import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.trace
@@ -68,26 +69,31 @@ import kotlin.concurrent.schedule
 class DotNetDebuggerSupport : DebuggerSupport() {
 
     companion object {
-        private const val USE_DOTNET_CORE_RUNTIME_FLAG_NAME = "software.aws.toolkits.jetbrains.rider.debugger.useDotnetCoreRuntime"
+        private val logger = getLogger<DotNetSamDebugSupport>()
+
+        const val USE_DOTNET_CORE_RUNTIME_FLAG_NAME = "software.aws.toolkits.jetbrains.rider.debugger.useDotnetCoreRuntime"
         private const val DOTNET_EXECUTABLE = "dotnet"
+        private const val START_COMMAND_ASSEMBLY_PLACEHOLDER = "$DOTNET_EXECUTABLE <path_to_assembly>"
         private const val DEBUGGER_MODE = "server"
         private const val BUSYBOX_PATH = "/aws/cloud-debug/common/busybox"
 
         val useDotnetCoreRuntime
             get() = Registry.`is`(USE_DOTNET_CORE_RUNTIME_FLAG_NAME) && isRider20193OrLater
+
         val isRider20193OrLater = ApplicationInfo.getInstance().build >= BuildNumber.fromString("193.0")
     }
-
-    private val logger = getLogger<DotNetSamDebugSupport>()
 
     private var exeRemotePath: String = ""
 
     override val numberOfDebugPorts: Int
         get() = 2
 
-    override val platform: CloudDebuggingPlatform = CloudDebuggingPlatform.DOTNET
+    override val platform: CloudDebuggingPlatform
+        get() = CloudDebuggingPlatform.DOTNET
 
     private var localDebuggerPath: String = ""
+
+    override fun startupCommand(): CloudDebugStartupCommand = DotNetStartupCommand()
 
     override val debuggerPath = object : DebuggerPath {
         override fun getDebuggerPath(): String = localDebuggerPath
@@ -208,12 +214,19 @@ class DotNetDebuggerSupport : DebuggerSupport() {
         }
 
     override fun automaticallyAugmentable(input: List<String>): Boolean {
-        if (input.first().trim() != DOTNET_EXECUTABLE) {
-            throw RuntimeConfigurationError("Please specify 'dotnet' runtime as a first parameter")
-        }
+        if (input.first().trim() != DOTNET_EXECUTABLE)
+            throw RuntimeConfigurationError(message("cloud_debug.run_configuration.dotnet.start_command.miss_runtime", DOTNET_EXECUTABLE))
+
+        val restCommands = input.drop(1)
+        val path = restCommands.firstOrNull()?.trim()
+            ?: throw RuntimeConfigurationError(
+                message("cloud_debug.run_configuration.dotnet.start_command.miss_assembly_path", START_COMMAND_ASSEMBLY_PLACEHOLDER))
+
+        if (!path.contains(File.separatorChar))
+            throw RuntimeConfigurationError(message("cloud_debug.run_configuration.dotnet.start_command.assembly_path_not_valid", path))
 
         // Start command should follow the pattern 'dotnet <remote_path_to_assembly>'. Take a remote assembly path.
-        exeRemotePath = input[1].trim()
+        exeRemotePath = path
         return true
     }
 
@@ -222,6 +235,12 @@ class DotNetDebuggerSupport : DebuggerSupport() {
 
         val remoteDebuggerLogPath = "$debuggerRemoteDirPath/Logs"
         val remoteDebuggerRuntimeShPath = "$debuggerRemoteDirPath/runtime.sh"
+
+        if (ports.size < 2) {
+            val message = message("cloud_debug.step.dotnet.two_ports_required")
+            logger.debug { message }
+            throw IllegalStateException(message)
+        }
 
         val frontendPort = ports[0]
         val backendPort = ports[1]

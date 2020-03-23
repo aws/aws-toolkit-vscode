@@ -268,7 +268,7 @@ class EcsCloudDebugSettingsEditorPanel(private val project: Project) : Disposabl
     }
 
     private fun createTabInfo(containerName: String): TabInfo {
-        val containerSettings = PerContainerSettings(project, this)
+        val containerSettings = PerContainerSettings(project, containerName, this)
         return TabInfo(containerSettings.panel).apply {
             text = containerName
             `object` = containerSettings

@@ -166,6 +166,19 @@ class EcsCloudDebugRunConfigurationTest {
     }
 
     @Test
+    fun validateStartCommandShouldNotBeEmpty() {
+        val config = buildDefaultConfiguration().also { configuration ->
+            configuration.containerOptions().forEach {
+                it.value.startCommand = ""
+            }
+        }
+        assertThatThrownBy {
+            config.checkConfiguration()
+        }.isInstanceOf(RuntimeConfigurationError::class.java)
+            .hasMessage(message("cloud_debug.run_configuration.missing.start_command", config.containerOptions().keys.first()))
+    }
+
+    @Test
     fun validateRemoteDebuggingPortIsValid() {
         val config = buildDefaultConfiguration().also { configuration ->
             configuration.containerOptions().forEach {

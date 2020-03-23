@@ -19,7 +19,7 @@ import org.testng.annotations.BeforeClass
 //
 // To avoid such errors we need to explicitly set toolset and MSBuild to be selected on an instance.
 // Please use this class for any Highlighting tests
-open class AwsBaseTestWithMarkup : BaseTestWithMarkup() {
+open class AwsMarkupBaseTest : BaseTestWithMarkup() {
 
     @BeforeClass
     fun setUpBuildToolPath() {

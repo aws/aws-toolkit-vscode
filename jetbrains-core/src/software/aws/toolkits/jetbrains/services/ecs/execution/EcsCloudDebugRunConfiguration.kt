@@ -21,6 +21,7 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugConstants
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugConstants.DEFAULT_REMOTE_DEBUG_PORT
+import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebuggingPlatform
 import software.aws.toolkits.jetbrains.services.clouddebug.DebuggerSupport
 import software.aws.toolkits.jetbrains.services.clouddebug.actions.InstrumentResourceAction
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.CloudDebugRunState
@@ -98,25 +99,29 @@ class EcsCloudDebugRunConfiguration(project: Project, private val configFactory:
         val localPortSet: MutableMap<Int, String> = mutableMapOf()
         val remotePortSet: MutableMap<Int, String> = mutableMapOf()
         immutableSettings.containerOptions.forEach { (name, options) ->
-            // Make sure start command is not null or blank
-            if (options.startCommand.isBlank()) {
-                throw RuntimeConfigurationError(message("cloud_debug.run_configuration.missing.start_command", name))
-            }
+            checkStartupCommand(platform = options.platform, command = options.startCommand, containerName = name)
+            checkArtifactsMapping(name = name, artifactMappings = options.artifactMappings)
+            checkPortMappings(options = options, name = name, localPortSet = localPortSet, remotePortSet = remotePortSet)
+            checkPerContainerWarnings(options = options, name = name)
+        }
+    }
 
-            options.artifactMappings.groupBy { it.remotePath }.values.forEach {
-                if (it.size > 1) {
-                    throw RuntimeConfigurationError(
-                        message(
-                            "cloud_debug.run_configuration.duplicate_remote_artifact",
-                            name,
-                            it.first().remotePath
-                        )
+    private fun checkStartupCommand(platform: CloudDebuggingPlatform, command: String, containerName: String) {
+        val commandHelper = DebuggerSupport.debugger(platform).startupCommand()
+        commandHelper.validateStartupCommand(command, containerName)
+    }
+
+    private fun checkArtifactsMapping(name: String, artifactMappings: List<ImmutableArtifactMapping>) {
+        artifactMappings.groupBy { it.remotePath }.values.forEach {
+            if (it.size > 1) {
+                throw RuntimeConfigurationError(
+                    message(
+                        "cloud_debug.run_configuration.duplicate_remote_artifact",
+                        name,
+                        it.first().remotePath
                     )
-                }
+                )
             }
-
-            checkPortMappings(options, name, localPortSet, remotePortSet)
-            checkPerContainerWarnings(options, name)
         }
     }
 

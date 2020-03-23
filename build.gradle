@@ -265,17 +265,19 @@ check.dependsOn coverageReport
 // community edition
 if (gradle.startParameter.taskNames.contains("runIde")) {
     // Only disable this if running from root project
-    if (project.projectDir == project.rootProject.rootDir
+    if (gradle.startParameter.projectDir == project.rootProject.rootDir
         || System.properties.containsKey("idea.gui.tests.gradle.runner")) {
         println("Top level runIde selected, excluding sub-projects' runIde")
         gradle.taskGraph.whenReady { graph ->
             graph.allTasks.forEach {
                 if (gradle.startParameter.systemPropertiesArgs.getOrDefault("exec.args", "").contains("guitest")) {
-                    if (it.name == "runIde" && it.project != project(':jetbrains-core-gui')) {
+                    if (it.name == "runIde" &&
+                        it.project != project(':jetbrains-core-gui')) {
                         it.enabled = false
                     }
                 } else {
-                    if (it.name == "runIde" && it.project != project(':jetbrains-core')) {
+                    if (it.name == "runIde" &&
+                        it.project != project(':jetbrains-core')) {
                         it.enabled = false
                     }
                 }

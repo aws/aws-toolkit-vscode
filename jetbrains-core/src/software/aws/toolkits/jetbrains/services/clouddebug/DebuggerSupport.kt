@@ -78,18 +78,25 @@ abstract class DebuggerSupport {
      */
     protected abstract fun attachDebuggingArguments(input: List<String>, ports: List<Int>, debuggerPath: String): String
 
-    open fun augmentStatement(input: String, ports: List<Int>, debuggerPath: String): String =
-        "env ${CloudDebugConstants.REMOTE_DEBUG_PORT_ENV}=${ports.first()} ${attachDebuggingArguments(
-            ParametersListUtil.parse(input, true, false),
-            ports,
-            debuggerPath
+    open fun augmentStatement(input: String, ports: List<Int>, debuggerPath: String): String {
+        if (ports.isEmpty()) {
+            throw IllegalStateException(message("cloud_debug.step.augment_statement.missing_debug_port"))
+        }
+
+        return "env ${CloudDebugConstants.REMOTE_DEBUG_PORT_ENV}=${ports.first()} ${attachDebuggingArguments(
+            input = ParametersListUtil.parse(input, true, false),
+            ports = ports,
+            debuggerPath = debuggerPath
         )}"
+    }
 
     /**
      * Assuming the debugger implementation is per-language and not per-IDE, return the console that should be used for process output
      */
     open fun getConsoleView(environment: ExecutionEnvironment, layout: RunnerLayoutUi): ConsoleView =
         layout.findContent("ConsoleContent")?.component as? ConsoleView ?: createLogConsole(environment, layout)
+
+    open fun startupCommand(): CloudDebugStartupCommand = CloudDebugStartupCommand(platform)
 
     interface DebuggerPath {
         /**

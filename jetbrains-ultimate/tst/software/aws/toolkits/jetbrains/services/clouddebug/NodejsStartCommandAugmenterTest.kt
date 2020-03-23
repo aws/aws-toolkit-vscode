@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.clouddebug
 import org.assertj.core.api.Assertions
 import org.junit.Test
 import software.aws.toolkits.jetbrains.services.clouddebug.nodejs.NodeJsDebuggerSupport
+import software.aws.toolkits.resources.message
 
 class NodejsStartCommandAugmenterTest {
     val augmenter = NodeJsDebuggerSupport()
@@ -24,6 +25,13 @@ class NodejsStartCommandAugmenterTest {
             .contains("--inspect-brk=localhost:123")
         Assertions.assertThat(augmenter.augmentStatement("nodejs abc.js", listOf(123), ""))
             .contains("--inspect-brk=localhost:123")
+    }
+
+    @Test
+    fun augmenterEmptyPortsArray() {
+        Assertions.assertThatThrownBy { augmenter.augmentStatement("node abc.js", listOf(), "") }
+            .isInstanceOf(IllegalStateException::class.java)
+            .hasMessage(message("cloud_debug.step.augment_statement.missing_debug_port"))
     }
 
     @Test

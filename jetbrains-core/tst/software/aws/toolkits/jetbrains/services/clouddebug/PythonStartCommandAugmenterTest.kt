@@ -3,9 +3,11 @@
 
 package software.aws.toolkits.jetbrains.services.clouddebug
 
+import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import software.aws.toolkits.jetbrains.services.clouddebug.python.PythonDebuggerSupport
+import software.aws.toolkits.resources.message
 
 class PythonStartCommandAugmenterTest {
     private val augmenter = PythonDebuggerSupport()
@@ -54,6 +56,13 @@ class PythonStartCommandAugmenterTest {
     fun augmenterAddsPortAndPydevd() {
         val augmentedStatement = augmenter.augmentStatement("python3 test.py", listOf(123), "/abc/pydevd.py")
         assertThat(augmentedStatement).contains("--port 123").contains("/abc/pydevd.py")
+    }
+
+    @Test
+    fun augmenterEmptyPortsArray() {
+        Assertions.assertThatThrownBy { augmenter.augmentStatement("python3 test.py", listOf(), "/abc/pydevd.py") }
+            .isInstanceOf(IllegalStateException::class.java)
+            .hasMessage(message("cloud_debug.step.augment_statement.missing_debug_port"))
     }
 
     @Test
