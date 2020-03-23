@@ -13,15 +13,15 @@ import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.LogStream
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.WrappingLogStreamMessageColumn
 
 class TableUtilsTest {
-    private val event = OutputLogEvent.builder().message("aaaaaaaaaaaaaaaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaaaaaa").build()
+    private val event = OutputLogEvent.builder().message("aaaaaaaaaaaaaaaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaaaaaa").build().toLogStreamEntry()
 
     @Test
     fun wrappingColumnMakesTallComponent() {
-        val model = ListTableModel<OutputLogEvent>(LogStreamMessageColumn())
+        val model = ListTableModel<LogStreamEntry>(LogStreamMessageColumn())
         model.addRow(event)
         val table = TableView(model)
         val wrappingRenderer = WrappingLogStreamMessageColumn().getRenderer(event)
-        val wrappingComponent = wrappingRenderer?.getTableCellRendererComponent(table, event.message(), true, true, 0, 0)
+        val wrappingComponent = wrappingRenderer?.getTableCellRendererComponent(table, event.message, true, true, 0, 0)
         assertThat(wrappingComponent).isInstanceOf(JBTextArea::class.java)
         assertThat(wrappingComponent?.height).isNotZero()
         assertThat(wrappingComponent?.preferredSize?.height).isGreaterThan(wrappingComponent?.height)
@@ -34,11 +34,11 @@ class TableUtilsTest {
 
     @Test
     fun normalRendererDoesNotWrap() {
-        val model = ListTableModel<OutputLogEvent>(LogStreamMessageColumn())
+        val model = ListTableModel<LogStreamEntry>(LogStreamMessageColumn())
         model.addRow(event)
         val table = TableView(model)
         val renderer = table.getDefaultRenderer(LogStreamMessageColumn::class.java)
-        val component = renderer?.getTableCellRendererComponent(table, event.message(), true, true, 0, 0)
+        val component = renderer?.getTableCellRendererComponent(table, event.message, true, true, 0, 0)
         assertThat(component?.height).isZero()
         assertThat(component?.preferredSize?.height).isGreaterThan(10)
     }

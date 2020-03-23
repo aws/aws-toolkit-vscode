@@ -10,7 +10,6 @@ import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
-import com.intellij.openapi.application.impl.runUnlessDisposed
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.ui.DoubleClickListener
@@ -132,20 +131,18 @@ class CloudWatchLogGroup(
         tablePanel.toolbar = ActionManager.getInstance().createActionToolbar("CloudWatchLogStream", actionGroup, false).component
     }
 
-    private suspend fun populateModel() = runUnlessDisposed(this) {
-        try {
-            val streams = client.describeLogStreamsPaginator(DescribeLogStreamsRequest.builder().logGroupName(logGroup).build())
-            streams.filterNotNull().firstOrNull()?.logStreams()?.let {
-                withContext(edtContext) {
-                    tableModel.items = it
-                    groupTable.invalidate()
-                }
+    private suspend fun populateModel() = try {
+        val streams = client.describeLogStreamsPaginator(DescribeLogStreamsRequest.builder().logGroupName(logGroup).build())
+        streams.filterNotNull().firstOrNull()?.logStreams()?.let {
+            withContext(edtContext) {
+                tableModel.items = it
+                groupTable.invalidate()
             }
-        } catch (e: Exception) {
-            val errorMessage = message("cloudwatch.logs.failed_to_load_streams", logGroup)
-            LOG.error(e) { errorMessage }
-            notifyError(title = errorMessage, project = project)
         }
+    } catch (e: Exception) {
+        val errorMessage = message("cloudwatch.logs.failed_to_load_streams", logGroup)
+        LOG.error(e) { errorMessage }
+        notifyError(title = errorMessage, project = project)
     }
 
     override fun dispose() {}

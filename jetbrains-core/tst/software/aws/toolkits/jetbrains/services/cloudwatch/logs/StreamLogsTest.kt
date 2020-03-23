@@ -9,7 +9,6 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.debug.junit4.CoroutinesTimeout
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -26,23 +25,21 @@ class StreamLogsTest {
 
     @Test
     fun streamsWhenEnabled() {
-        val channel = Channel<LogStreamActor.Messages>()
-        val tailLogs = TailLogs(channel)
+        val channel = Channel<LogStreamActor.Message>()
+        val tailLogs = TailLogs { channel }
         runBlocking {
-            withTimeout(1500) {
-                tailLogs.setSelected(TestActionEvent(), true)
-                var response = channel.receive()
-                assertThat(response).isEqualTo(LogStreamActor.Messages.LOAD_FORWARD)
-                response = channel.receive()
-                assertThat(response).isEqualTo(LogStreamActor.Messages.LOAD_FORWARD)
-            }
+            tailLogs.setSelected(TestActionEvent(), true)
+            var response = channel.receive()
+            assertThat(response).isInstanceOf(LogStreamActor.Message.LOAD_FORWARD::class.java)
+            response = channel.receive()
+            assertThat(response).isInstanceOf(LogStreamActor.Message.LOAD_FORWARD::class.java)
         }
     }
 
     @Test
     fun cancelsOnChannelClose() {
-        val channel = Channel<LogStreamActor.Messages>()
-        val tailLogs = TailLogs(channel)
+        val channel = Channel<LogStreamActor.Message>()
+        val tailLogs = TailLogs { channel }
         channel.close()
         tailLogs.setSelected(TestActionEvent(), true)
         runBlocking {
@@ -56,8 +53,8 @@ class StreamLogsTest {
 
     @Test
     fun cancelsOnCancel() {
-        val channel = Channel<LogStreamActor.Messages>()
-        val tailLogs = TailLogs(channel)
+        val channel = Channel<LogStreamActor.Message>()
+        val tailLogs = TailLogs { channel }
         tailLogs.setSelected(TestActionEvent(), true)
         assertThat(tailLogs.logStreamingJob?.isActive).isTrue()
         tailLogs.setSelected(TestActionEvent(), false)

@@ -81,7 +81,7 @@ private class LogStreamDownloadTask(project: Project, val client: CloudWatchLogs
                 }
             }
             indicator.checkCanceled()
-            buffer.append(it.events().buildStringFromLogs())
+            buffer.append(it.events().buildStringFromLogsOutput())
             index++
         }
 
@@ -121,7 +121,7 @@ private class LogStreamDownloadTask(project: Project, val client: CloudWatchLogs
             val getRequest = client.getLogEventsPaginator(request)
             getRequest.stream().forEach {
                 indicator.checkCanceled()
-                val str = it.events().buildStringFromLogs()
+                val str = it.events().buildStringFromLogsOutput()
                 file.appendText(str)
             }
             notifyInfo(

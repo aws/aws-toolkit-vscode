@@ -9,7 +9,7 @@ import com.intellij.util.text.DateFormatUtil
 import com.intellij.util.ui.ColumnInfo
 import com.intellij.util.ui.ListTableModel
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogStream
-import software.amazon.awssdk.services.cloudwatchlogs.model.OutputLogEvent
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamEntry
 import software.aws.toolkits.resources.message
 import java.awt.Component
 import javax.swing.JTable
@@ -39,25 +39,25 @@ class LogGroupTableSorter(model: ListTableModel<LogStream>) : TableRowSorter<Lis
     }
 }
 
-class LogStreamDateColumn : ColumnInfo<OutputLogEvent, String>(message("general.time")) {
-    override fun valueOf(item: OutputLogEvent?): String? {
-        val timestamp = item?.timestamp() ?: return null
+class LogStreamDateColumn : ColumnInfo<LogStreamEntry, String>(message("general.time")) {
+    override fun valueOf(item: LogStreamEntry?): String? {
+        val timestamp = item?.timestamp ?: return null
         return DateFormatUtil.getDateTimeFormat().format(timestamp)
     }
 
-    override fun isCellEditable(item: OutputLogEvent?): Boolean = false
+    override fun isCellEditable(item: LogStreamEntry?): Boolean = false
 }
 
-class LogStreamMessageColumn : ColumnInfo<OutputLogEvent, String>(message("general.message")) {
-    override fun valueOf(item: OutputLogEvent?): String? = item?.message()
-    override fun isCellEditable(item: OutputLogEvent?): Boolean = false
+class LogStreamMessageColumn : ColumnInfo<LogStreamEntry, String>(message("general.message")) {
+    override fun valueOf(item: LogStreamEntry?): String? = item?.message
+    override fun isCellEditable(item: LogStreamEntry?): Boolean = false
 }
 
-class WrappingLogStreamMessageColumn : ColumnInfo<OutputLogEvent, String>(message("general.message")) {
+class WrappingLogStreamMessageColumn : ColumnInfo<LogStreamEntry, String>(message("general.message")) {
     private val renderer = WrappingLogStreamMessageRenderer()
-    override fun valueOf(item: OutputLogEvent?): String? = item?.message()
-    override fun isCellEditable(item: OutputLogEvent?): Boolean = false
-    override fun getRenderer(item: OutputLogEvent?): TableCellRenderer? = renderer
+    override fun valueOf(item: LogStreamEntry?): String? = item?.message
+    override fun isCellEditable(item: LogStreamEntry?): Boolean = false
+    override fun getRenderer(item: LogStreamEntry?): TableCellRenderer? = renderer
 }
 
 private class WrappingLogStreamMessageRenderer : TableCellRenderer {

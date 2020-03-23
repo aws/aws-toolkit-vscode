@@ -18,7 +18,7 @@ import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamActor
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.resources.message
 
-class TailLogs(private val channel: Channel<LogStreamActor.Messages>) :
+class TailLogs(private val channel: () -> Channel<LogStreamActor.Message>) :
     ToggleAction(message("cloudwatch.logs.tail"), null, AllIcons.RunConfigurations.Scroll_down),
     CoroutineScope by ApplicationThreadPoolScope("TailCloudWatchLogs"),
     DumbAware {
@@ -42,7 +42,7 @@ class TailLogs(private val channel: Channel<LogStreamActor.Messages>) :
         logStreamingJob = launch {
             while (true) {
                 try {
-                    channel.send(LogStreamActor.Messages.LOAD_FORWARD)
+                    channel().send(LogStreamActor.Message.LOAD_FORWARD())
                     delay(1000)
                 } catch (e: ClosedSendChannelException) {
                     // Channel is closed, so break out of the while loop and kill the coroutine

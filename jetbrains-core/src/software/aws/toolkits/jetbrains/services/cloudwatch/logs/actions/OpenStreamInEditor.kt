@@ -9,6 +9,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.testFramework.ReadOnlyLightVirtualFile
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.cloudwatchlogs.model.OutputLogEvent
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamEntry
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.toLogStreamEntry
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import kotlin.coroutines.CoroutineContext
@@ -27,9 +29,12 @@ object OpenStreamInEditor {
     }
 }
 
-fun List<OutputLogEvent>.buildStringFromLogs() = buildString {
+// This is named differently because buildStringFromLogs with two different lists has the same type on JVM, yay type erasure
+fun List<OutputLogEvent>.buildStringFromLogsOutput() = map { it.toLogStreamEntry() }.buildStringFromLogs()
+
+fun List<LogStreamEntry>.buildStringFromLogs() = buildString {
     this@buildStringFromLogs.forEach { log ->
-        val msg = log.message()
+        val msg = log.message
         append(msg)
         if (!msg.endsWith('\n')) {
             append('\n')
