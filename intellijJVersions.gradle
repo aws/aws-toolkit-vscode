@@ -163,6 +163,7 @@ def guiTestFramework() {
     return guiVersion
 }
 
+// https://www.myget.org/feed/rd-snapshots/package/maven/com.jetbrains.rd/rd-gen
 def rdGenVersion() {
     def rdGen = ideProduct("RD").rdGenVersion
     if (rdGen == null) {
@@ -171,6 +172,7 @@ def rdGenVersion() {
     return rdGen
 }
 
+// https://www.nuget.org/packages/JetBrains.Rider.SDK/
 def riderNugetSdkVersion() {
     def rdGen = ideProduct("RD").nugetVersion
     if (rdGen == null) {
