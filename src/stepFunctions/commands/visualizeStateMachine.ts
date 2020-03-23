@@ -98,6 +98,10 @@ async function setupWebviewPanel(
     function sendUpdateMessage(updatedTextDocument: vscode.TextDocument) {
         const isValid = isDocumentValid(documentUri)
 
+        if (!panel.webview) {
+            return
+        }
+
         logger.debug('Sending update message to webview.')
 
         panel.webview.postMessage({
