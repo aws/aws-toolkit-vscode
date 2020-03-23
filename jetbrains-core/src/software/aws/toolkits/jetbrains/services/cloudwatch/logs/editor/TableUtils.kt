@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor
 
+import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextArea
 import com.intellij.util.text.DateFormatUtil
 import com.intellij.util.ui.ColumnInfo
@@ -23,19 +24,18 @@ class LogStreamsStreamColumn : ColumnInfo<LogStream, String>(message("cloudwatch
 }
 
 class LogStreamsDateColumn : ColumnInfo<LogStream, String>(message("cloudwatch.logs.last_event_time")) {
-    override fun valueOf(item: LogStream?): String? {
-        val timestamp = item?.lastEventTimestamp() ?: return null
-        return DateFormatUtil.getDateTimeFormat().format(timestamp)
-    }
+    private val renderer = ResizingDateColumnRenderer()
+    override fun valueOf(item: LogStream?): String? = item?.lastEventTimestamp()?.toString()
 
     override fun isCellEditable(item: LogStream?): Boolean = false
+    override fun getRenderer(item: LogStream?): TableCellRenderer? = renderer
 }
 
 class LogGroupTableSorter(model: ListTableModel<LogStream>) : TableRowSorter<ListTableModel<LogStream>>(model) {
     init {
-        sortKeys = listOf(SortKey(1, SortOrder.UNSORTED))
+        sortKeys = listOf(SortKey(1, SortOrder.DESCENDING))
         setSortable(0, false)
-        setSortable(1, false)
+        setSortable(1, true)
     }
 }
 
@@ -69,6 +69,21 @@ private class WrappingLogStreamMessageRenderer : TableCellRenderer {
         component.setSize(table.columnModel.getColumn(column).width, component.preferredSize.height)
         if (table.getRowHeight(row) != component.preferredSize.height) {
             table.setRowHeight(row, component.preferredSize.height)
+        }
+        return component
+    }
+}
+
+private class ResizingDateColumnRenderer : TableCellRenderer {
+    override fun getTableCellRendererComponent(table: JTable, value: Any?, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component {
+        val component = JBLabel()
+        component.text = (value as? String)?.toLongOrNull()?.let {
+            DateFormatUtil.getDateTimeFormat().format(it)
+        }
+        if (component.preferredSize.width > table.columnModel.getColumn(column).preferredWidth) {
+            // add 20 pixels of padding
+            table.columnModel.getColumn(column).preferredWidth = component.preferredSize.width + 20
+            table.columnModel.getColumn(column).maxWidth = component.preferredSize.width + 20
         }
         return component
     }

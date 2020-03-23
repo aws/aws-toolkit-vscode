@@ -7,15 +7,21 @@ import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.application.impl.runUnlessDisposed
 import com.intellij.openapi.project.Project
-import com.intellij.ui.DocumentAdapter
+import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.ui.DoubleClickListener
+import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.PopupHandler
 import com.intellij.ui.ScrollPaneFactory
-import com.intellij.ui.components.JBTextField
+import com.intellij.ui.SideBorder
+import com.intellij.ui.TableSpeedSearch
+import com.intellij.ui.components.breadcrumbs.Breadcrumbs
 import com.intellij.ui.table.JBTable
+import com.intellij.ui.table.TableView
 import com.intellij.util.ui.ListTableModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -26,8 +32,6 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.LogStream
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.awsClient
-import software.aws.toolkits.jetbrains.core.credentials.activeCredentialProvider
-import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.OpenLogStreamInEditor
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
@@ -35,13 +39,7 @@ import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import java.awt.event.MouseEvent
-import javax.swing.JButton
-import javax.swing.JLabel
 import javax.swing.JPanel
-import javax.swing.JScrollPane
-import javax.swing.RowFilter
-import javax.swing.SortOrder
-import javax.swing.event.DocumentEvent
 
 class CloudWatchLogGroup(
     private val project: Project,
@@ -49,12 +47,10 @@ class CloudWatchLogGroup(
 ) : CoroutineScope by ApplicationThreadPoolScope("CloudWatchLogsGroup"), Disposable {
     lateinit var content: JPanel
 
-    private lateinit var refreshButton: JButton
-    private lateinit var locationInformation: JLabel
-    private lateinit var filterField: JBTextField
-    private lateinit var tableScroll: JScrollPane
+    private lateinit var tablePanel: SimpleToolWindowPanel
     private lateinit var groupTable: JBTable
     private lateinit var tableModel: ListTableModel<LogStream>
+    private lateinit var locationInformation: Breadcrumbs
 
     private val client: CloudWatchLogsClient = project.awsClient()
 
@@ -63,44 +59,32 @@ class CloudWatchLogGroup(
     private fun createUIComponents() {
         tableModel = ListTableModel(
             arrayOf(LogStreamsStreamColumn(), LogStreamsDateColumn()),
-            mutableListOf<LogStream>(),
-            // To display and sort by different values, we sort the model's values instead
-            -1,
-            SortOrder.UNSORTED
+            mutableListOf<LogStream>()
         )
-        groupTable = JBTable(tableModel).apply {
+        groupTable = TableView(tableModel).apply {
             setPaintBusy(true)
             autoscrolls = true
             emptyText.text = message("loading_resource.loading")
             tableHeader.reorderingAllowed = false
         }
         groupTable.rowSorter = LogGroupTableSorter(tableModel)
+        TableSpeedSearch(groupTable)
 
         addTableMouseListener(groupTable)
-        tableScroll = ScrollPaneFactory.createScrollPane(groupTable)
+        val scroll = ScrollPaneFactory.createScrollPane(groupTable)
+        tablePanel = SimpleToolWindowPanel(false, true)
+        tablePanel.setContent(scroll)
     }
 
     init {
-        locationInformation.text = "${project.activeCredentialProvider().displayName} => ${project.activeRegion().displayName} => $logGroup"
-        filterField.emptyText.text = message("cloudwatch.logs.filter_log_streams")
-        filterField.document.addDocumentListener(buildStreamSearchListener(groupTable))
+        val locationCrumbs = LocationCrumbs(project, logGroup)
+        locationInformation.crumbs = locationCrumbs.crumbs
+        locationInformation.border = IdeBorderFactory.createBorder(SideBorder.BOTTOM)
 
-        styleRefreshButton()
         addActions()
+        addToolbar()
 
         launch { refreshLogStreams() }
-    }
-
-    private fun buildStreamSearchListener(table: JBTable) = object : DocumentAdapter() {
-        override fun textChanged(e: DocumentEvent) {
-            val text = filterField.text
-            val sorter = (table.rowSorter as LogGroupTableSorter)
-            if (text.isNullOrBlank()) {
-                sorter.rowFilter = null
-            } else {
-                sorter.rowFilter = RowFilter.regexFilter(text)
-            }
-        }
     }
 
     private fun addTableMouseListener(table: JBTable) {
@@ -114,13 +98,6 @@ class CloudWatchLogGroup(
                 return true
             }
         }.installOn(table)
-    }
-
-    private fun styleRefreshButton() {
-        refreshButton.background = null
-        refreshButton.border = null
-        refreshButton.icon = AllIcons.Actions.Refresh
-        refreshButton.addActionListener { launch { refreshLogStreams() } }
     }
 
     private suspend fun refreshLogStreams() {
@@ -145,11 +122,24 @@ class CloudWatchLogGroup(
         )
     }
 
+    private fun addToolbar() {
+        val actionGroup = DefaultActionGroup()
+        actionGroup.addAction(object : AnAction(message("explorer.refresh.title"), null, AllIcons.Actions.Refresh) {
+            override fun actionPerformed(e: AnActionEvent) {
+                launch { refreshLogStreams() }
+            }
+        })
+        tablePanel.toolbar = ActionManager.getInstance().createActionToolbar("CloudWatchLogStream", actionGroup, false).component
+    }
+
     private suspend fun populateModel() = runUnlessDisposed(this) {
         try {
             val streams = client.describeLogStreamsPaginator(DescribeLogStreamsRequest.builder().logGroupName(logGroup).build())
-            streams.filterNotNull().firstOrNull()?.logStreams()?.sortedByDescending { it.lastEventTimestamp() }?.let {
-                withContext(edtContext) { tableModel.items = it }
+            streams.filterNotNull().firstOrNull()?.logStreams()?.let {
+                withContext(edtContext) {
+                    tableModel.items = it
+                    groupTable.invalidate()
+                }
             }
         } catch (e: Exception) {
             val errorMessage = message("cloudwatch.logs.failed_to_load_streams", logGroup)
