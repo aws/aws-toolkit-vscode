@@ -132,6 +132,8 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
             if (templateTarget.samTemplatePath) {
                 const fullpath = path.resolve((
                     (folder?.uri) ? folder.uri.path + '/' : ''), templateTarget.samTemplatePath)
+                // Normalize to absolute path for use in the runner.
+                config.invokeTarget.samTemplatePath = fullpath
                 config.cfnTemplate = this.cftRegistry.getRegisteredTemplate(fullpath)?.template
             }
             validityPair = validateTemplateConfig(config, templateTarget.samTemplatePath, config.cfnTemplate)
@@ -149,7 +151,9 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
             vscode.window.showInformationMessage(validityPair.message)
         }
 
+        getLogger().verbose(`validateTemplateConfig: resolved debug-config: ${config.name}`)
         config.request = 'launch'
+
         return config
     }
 }
@@ -186,11 +190,11 @@ function validateConfig(
 }
 
 function validateTemplateConfig(
-    debugConfiguration: AwsSamDebuggerConfiguration,
+    config: AwsSamDebuggerConfiguration,
     cfnTemplatePath: string | undefined,
     cfnTemplate: CloudFormation.Template | undefined,
 ): { isValid: boolean; message?: string } {
-    const templateTarget = (debugConfiguration.invokeTarget as any) as AwsSamDebuggerInvokeTargetTemplateFields
+    const templateTarget = (config.invokeTarget as any) as AwsSamDebuggerInvokeTargetTemplateFields
     
     if (!cfnTemplatePath) {
         return {
@@ -208,7 +212,7 @@ function validateTemplateConfig(
             isValid: false,
             message: localize(
                 'AWS.sam.debugger.missingTemplate',
-                'Cannot find template file (must be workspace-relative, or absolute): {0}',
+                'Invalid (or missing) template file (path must be workspace-relative, or absolute): {0}',
                 templateTarget.samTemplatePath
             )
         }
@@ -271,8 +275,8 @@ function validateTemplateConfig(
     if (templateEnv?.Variables) {
         const templateEnvVars = Object.keys(templateEnv.Variables)
         const missingVars: string[] = []
-        if (debugConfiguration.lambda && debugConfiguration.lambda.environmentVariables) {
-            for (const key of Object.keys(debugConfiguration.lambda.environmentVariables)) {
+        if (config.lambda && config.lambda.environmentVariables) {
+            for (const key of Object.keys(config.lambda.environmentVariables)) {
                 if (!templateEnvVars.includes(key)) {
                     missingVars.push(key)
                 }
@@ -291,7 +295,7 @@ function validateTemplateConfig(
         }
     }
 
-    return { isValid: true, message: 'Valid........' }
+    return { isValid: true }
 }
 
 function validateCodeConfig(

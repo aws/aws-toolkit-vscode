@@ -80,6 +80,7 @@ export async function invokeLambda(params: LambdaLocalInvokeParams
         debugConfig,
         samProjectCodeRoot,
         params.telemetryService,
+        params.samTemplate.fsPath,
     )
 
     await localLambdaRunner.run()

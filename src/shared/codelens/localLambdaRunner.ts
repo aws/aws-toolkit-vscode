@@ -69,7 +69,8 @@ export class LocalLambdaRunner {
         private readonly debugConfig: DebugConfiguration,
         private readonly codeRootDirectoryPath: string,
         private readonly telemetryService: TelemetryService,
-        private readonly channelLogger = getChannelLogger(outputChannel)
+        private readonly cfnTemplatePath: string | undefined,
+        private readonly channelLogger = getChannelLogger(outputChannel),
     ) {
         if (localInvokeParams.isDebug && !debugPort) {
             throw new Error('Debug port must be provided when launching in debug mode')
@@ -89,7 +90,8 @@ export class LocalLambdaRunner {
                 this.localInvokeParams.handlerName
             )
 
-            const inputTemplate: string = await this.generateInputTemplate(this.codeRootDirectoryPath)
+            const inputTemplate: string = this.cfnTemplatePath
+                ?? await this.generateInputTemplate(this.codeRootDirectoryPath)
 
             const config = await getHandlerConfig({
                 handlerName: this.localInvokeParams.handlerName,

@@ -42,8 +42,12 @@ export class CloudFormationTemplateRegistry {
      */
     public async addTemplateToRegistry(templateUri: vscode.Uri): Promise<void> {
         const pathAsString = templateUri.fsPath
-        const template = await CloudFormation.load(pathAsString)
-        this.templateRegistryData.set(pathAsString, template)
+        try {
+            const template = await CloudFormation.load(pathAsString)
+            this.templateRegistryData.set(pathAsString, template)
+        } catch (e) {
+            getLogger().verbose(`CloudFormationTemplateRegistry: invalid CFN template: ${e}`)
+        }
     }
 
     /**
