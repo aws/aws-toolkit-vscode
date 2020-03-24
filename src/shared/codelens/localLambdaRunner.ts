@@ -145,8 +145,8 @@ export class LocalLambdaRunner {
         const buildFolder: string = await this.getBaseBuildFolder()
 
         const workspaceFolder = this.localInvokeParams.workspaceFolder
-            ? undefined
-            : vscode.workspace.getWorkspaceFolder(this.localInvokeParams.workspaceFolder!!.uri)
+            ? vscode.workspace.getWorkspaceFolder(this.localInvokeParams.workspaceFolder.uri)
+            : undefined
         let properties: CloudFormation.ResourceProperties | undefined
         let globals: CloudFormation.TemplateGlobals | undefined
         if (workspaceFolder) {

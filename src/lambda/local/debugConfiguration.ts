@@ -11,7 +11,7 @@ const DOTNET_CORE_DEBUGGER_PATH = '/tmp/lambci_debug_files/vsdbg'
 
 export interface DebugConfiguration extends vscode.DebugConfiguration {
     readonly type: 'node' | 'python' | 'coreclr'
-    readonly request: 'attach'
+    readonly request: 'attach' | 'direct-invoke' | 'launch'
 }
 
 export interface NodejsDebugConfiguration extends DebugConfiguration {

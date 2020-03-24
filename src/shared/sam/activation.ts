@@ -19,7 +19,7 @@ import { TelemetryService } from '../telemetry/telemetryService'
 import { PromiseSharer } from '../utilities/promiseUtilities'
 import { initialize as initializeSamCliContext } from './cli/samCliContext'
 import { detectSamCli } from './cli/samCliDetection'
-import { MockDebugSession } from './debugger/awsSamDebug'
+import { SamDebugSession } from './debugger/awsSamDebug'
 import { AwsSamDebugConfigurationProvider, AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugger'
 
 /**
@@ -179,6 +179,6 @@ class InlineDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory 
      * https://code.visualstudio.com/updates/v1_42#_extension-authoring
      */
     createDebugAdapterDescriptor(_session: vscode.DebugSession): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
-        return new vscode.DebugAdapterInlineImplementation(new MockDebugSession(this.ctx));
+        return new vscode.DebugAdapterInlineImplementation(new SamDebugSession(this.ctx));
     }
 }
