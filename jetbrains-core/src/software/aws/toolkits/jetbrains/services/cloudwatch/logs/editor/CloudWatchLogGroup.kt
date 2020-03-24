@@ -13,10 +13,8 @@ import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.ui.DoubleClickListener
-import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.PopupHandler
 import com.intellij.ui.ScrollPaneFactory
-import com.intellij.ui.SideBorder
 import com.intellij.ui.TableSpeedSearch
 import com.intellij.ui.components.breadcrumbs.Breadcrumbs
 import com.intellij.ui.table.JBTable
@@ -78,7 +76,7 @@ class CloudWatchLogGroup(
     init {
         val locationCrumbs = LocationCrumbs(project, logGroup)
         locationInformation.crumbs = locationCrumbs.crumbs
-        locationInformation.border = IdeBorderFactory.createBorder(SideBorder.BOTTOM)
+        locationInformation.border = locationCrumbs.border
 
         addActions()
         addToolbar()

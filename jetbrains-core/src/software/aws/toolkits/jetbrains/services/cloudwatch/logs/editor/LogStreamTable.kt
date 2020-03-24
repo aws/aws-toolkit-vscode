@@ -7,6 +7,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.ScrollPaneFactory
+import com.intellij.ui.TableSpeedSearch
 import com.intellij.ui.table.TableView
 import com.intellij.util.ui.ListTableModel
 import kotlinx.coroutines.CoroutineScope
@@ -61,6 +62,7 @@ class LogStreamTable(
         logsTable.columnModel.getColumn(0).maxWidth = 150
         logsTable.autoResizeMode = JTable.AUTO_RESIZE_LAST_COLUMN
 
+        TableSpeedSearch(logsTable)
         component = ScrollPaneFactory.createScrollPane(logsTable)
 
         logStreamActor = when (type) {
