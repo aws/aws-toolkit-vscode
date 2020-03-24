@@ -11,7 +11,12 @@ import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 import { fileExists, makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../../shared/systemUtilities'
 import { assertRejects } from '../utilities/assertUtils'
-import { createBaseResource, createBaseTemplate, makeSampleSamTemplateYaml, strToYamlFile } from './cloudformationTestUtils'
+import {
+    createBaseResource,
+    createBaseTemplate,
+    makeSampleSamTemplateYaml,
+    strToYamlFile
+} from './cloudformationTestUtils'
 
 describe('CloudFormation', () => {
     let tempFolder: string

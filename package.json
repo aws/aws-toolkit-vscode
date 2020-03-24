@@ -50,7 +50,8 @@
         "onCommand:aws.github",
         "onView:aws.cdk.explorer",
         "onCommand:aws.refreshCdkExplorer",
-        "onCommand:aws.aboutToolkit"
+        "onCommand:aws.aboutToolkit",
+        "workspaceContains:**/*template.{yaml,yml,json}"
     ],
     "main": "./extensionMain",
     "contributes": {

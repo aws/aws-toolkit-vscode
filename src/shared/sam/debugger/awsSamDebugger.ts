@@ -88,7 +88,7 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
     }
 }
 
-function createDirectInvokeSamDebugConfigurationFromTemplate(
+export function createDirectInvokeSamDebugConfigurationFromTemplate(
     resourceName: string,
     templatePath: string
 ): AwsSamDebuggerConfiguration {

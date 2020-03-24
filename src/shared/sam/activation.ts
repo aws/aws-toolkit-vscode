@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { addSamDebugConfiguration } from '../../lambda/commands/addSamDebugConfiguration'
 import { createNewSamApplication, resumeCreateNewSamApp } from '../../lambda/commands/createNewSamApp'
 import { deploySamApplication, SamDeployWizardResponseProvider } from '../../lambda/commands/deploySamApplication'
 import { SamParameterCompletionItemProvider } from '../../lambda/config/samParameterCompletionItemProvider'
@@ -17,6 +18,7 @@ import { AwsContext } from '../awsContext'
 import { CodeLensProviderParams } from '../codelens/codeLensUtils'
 import * as csLensProvider from '../codelens/csharpCodeLensProvider'
 import * as pyLensProvider from '../codelens/pythonCodeLensProvider'
+import { SamTemplateCodeLensProvider } from '../codelens/samTemplateCodeLensProvider'
 import * as tsLensProvider from '../codelens/typescriptCodeLensProvider'
 import { RegionProvider } from '../regions/regionProvider'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
@@ -98,6 +100,7 @@ async function registerServerlessCommands(params: {
             await createNewSamApplication(params.channelLogger, params.awsContext, params.regionProvider)
         }),
         vscode.commands.registerCommand('aws.configureLambda', configureLocalLambda),
+        vscode.commands.registerCommand('aws.addSamDebugConfiguration', addSamDebugConfiguration),
         vscode.commands.registerCommand('aws.deploySamApplication', async () => {
             const samDeployWizardContext = new DefaultSamDeployWizardContext(params.regionProvider, params.awsContext)
             const samDeployWizard: SamDeployWizardResponseProvider = {
@@ -131,6 +134,24 @@ async function activateCodeLensProviders(
         outputChannel: toolkitOutputChannel,
         telemetryService
     }
+
+    disposables.push(
+        vscode.languages.registerCodeLensProvider(
+            [
+                {
+                    language: 'yaml',
+                    scheme: 'file',
+                    pattern: '**/*template.{yml,yaml}'
+                },
+                {
+                    language: 'json',
+                    scheme: 'file',
+                    pattern: '**/*template.json'
+                }
+            ],
+            new SamTemplateCodeLensProvider()
+        )
+    )
 
     tsLensProvider.initialize(providerParams)
 
