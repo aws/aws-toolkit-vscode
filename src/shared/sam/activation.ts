@@ -19,8 +19,8 @@ import { TelemetryService } from '../telemetry/telemetryService'
 import { PromiseSharer } from '../utilities/promiseUtilities'
 import { initialize as initializeSamCliContext } from './cli/samCliContext'
 import { detectSamCli } from './cli/samCliDetection'
-import { SamDebugSession } from './debugger/awsSamDebug'
-import { AwsSamDebugConfigurationProvider, AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugger'
+import { SamDebugSession } from './debugger/samDebugSession'
+import { SamDebugConfigProvider, AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugger'
 
 /**
  * Activate SAM-related functionality.
@@ -42,7 +42,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
     ctx.subscriptions.push(vscode.debug.registerDebugConfigurationProvider(
         AWS_SAM_DEBUG_TYPE,
-        new AwsSamDebugConfigurationProvider()
+        new SamDebugConfigProvider()
     ))
 
     // "Inline" DA type: runs inside the extension and directly talks to it.

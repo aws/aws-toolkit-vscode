@@ -13,7 +13,7 @@ import { mkdir, rmrf } from '../../../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import {
     AWS_SAM_DEBUG_TYPE,
-    AwsSamDebugConfigurationProvider,
+    SamDebugConfigProvider,
     CODE_TARGET_TYPE,
     DIRECT_INVOKE_TYPE,
     TEMPLATE_TARGET_TYPE
@@ -25,7 +25,7 @@ import {
 } from '../../cloudformation/cloudformationTestUtils'
 
 describe('AwsSamDebugConfigurationProvider', async () => {
-    let debugConfigProvider: AwsSamDebugConfigurationProvider
+    let debugConfigProvider: SamDebugConfigProvider
     let registry: CloudFormationTemplateRegistry
     let tempFolder: string
     let tempFolderSimilarName: string | undefined
@@ -38,7 +38,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
         tempFolder = await makeTemporaryToolkitFolder()
         tempFile = vscode.Uri.file(path.join(tempFolder, 'test.yaml'))
         registry = new CloudFormationTemplateRegistry()
-        debugConfigProvider = new AwsSamDebugConfigurationProvider(registry)
+        debugConfigProvider = new SamDebugConfigProvider(registry)
         fakeWorkspaceFolder = {
             uri: vscode.Uri.file(tempFolder),
             name: 'It was me, fakeWorkspaceFolder!',

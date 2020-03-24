@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { InitializedEvent, Logger, logger, LoggingDebugSession, } from 'vscode-debugadapter';
+import { InitializedEvent, Logger, logger, DebugSession, } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { LambdaLocalInvokeParams } from '../../codelens/localLambdaRunner';
 import * as tsLensProvider from '../../codelens/typescriptCodeLensProvider';
@@ -30,7 +30,14 @@ export interface SamLaunchRequestArgs extends DebugProtocol.LaunchRequestArgumen
     cfnTemplate?: CloudFormation.Template
 }
 
-export class SamDebugSession extends LoggingDebugSession {
+/**
+ * Wraps a DebugAdapter.
+ * 
+ * Currently implements launchRequest() and not much else, but could be
+ * expanded later. Note: the empty stubs are necessary, to avoid confusing
+ * the DAP client (vscode).
+ */
+export class SamDebugSession extends DebugSession {
     /**
      * Creates a new debug adapter used for one debug session.
      * We configure the default implementation of a debug adapter here.
@@ -38,11 +45,7 @@ export class SamDebugSession extends LoggingDebugSession {
     public constructor(
         private readonly ctx:ExtContext,
         ) {
-        super("mock-debug.txt");
-
-        // this debugger uses zero-based lines and columns
-        // this.setDebuggerLinesStartAt1(false);
-        // this.setDebuggerColumnsStartAt1(false);
+        super()
     }
 
     /**

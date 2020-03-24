@@ -14,7 +14,7 @@ import { CloudFormationTemplateRegistry } from '../../cloudformation/templateReg
 import { isInDirectory } from '../../filesystemUtilities'
 import { AwsSamDebuggerInvokeTargetTemplateFields } from './awsSamDebugConfiguration'
 import { AwsSamDebuggerConfiguration } from './awsSamDebugConfiguration.gen'
-import { getLogger } from '../../../../src/shared/logger'
+import { getLogger } from '../../logger'
 import * as path from 'path'
 
 export const AWS_SAM_DEBUG_TYPE = 'aws-sam'
@@ -38,7 +38,7 @@ const AWS_SAM_DEBUG_TARGET_TYPES = [TEMPLATE_TARGET_TYPE, CODE_TARGET_TYPE]
  *
  * https://code.visualstudio.com/api/extension-guides/debugger-extension#using-a-debugconfigurationprovider
  */
-export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurationProvider {
+export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider {
     public constructor(private readonly cftRegistry = CloudFormationTemplateRegistry.getRegistry()) {}
 
     public async provideDebugConfigurations(
