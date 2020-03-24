@@ -8,6 +8,7 @@ import { CloudFormationClient } from './cloudFormationClient'
 import { EcsClient } from './ecsClient'
 import { LambdaClient } from './lambdaClient'
 import { SchemaClient } from './schemaClient'
+import { StepFunctionsClient } from './stepFunctionsClient'
 import { StsClient } from './stsClient'
 
 export interface ToolkitClientBuilder {
@@ -18,6 +19,8 @@ export interface ToolkitClientBuilder {
     createEcsClient(regionCode: string): EcsClient
 
     createLambdaClient(regionCode: string): LambdaClient
+
+    createStepFunctionsClient(regionCode: string): StepFunctionsClient
 
     createStsClient(regionCode: string, credentials?: ServiceConfigurationOptions): StsClient
 }

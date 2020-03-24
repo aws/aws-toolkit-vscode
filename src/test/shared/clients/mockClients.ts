@@ -3,11 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CloudFormation, Lambda, Schemas, STS } from 'aws-sdk'
+import { CloudFormation, Lambda, Schemas, StepFunctions, STS } from 'aws-sdk'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { EcsClient } from '../../../shared/clients/ecsClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { SchemaClient } from '../../../shared/clients/schemaClient'
+import { StepFunctionsClient } from '../../../shared/clients/stepFunctionsClient'
 import { StsClient } from '../../../shared/clients/stsClient'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 
@@ -23,6 +24,8 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
         private readonly ecsClient: EcsClient = new MockEcsClient({}),
 
         private readonly lambdaClient: LambdaClient = new MockLambdaClient({}),
+
+        private readonly stepFunctionsClient: StepFunctionsClient = new MockStepFunctionsClient(),
 
         private readonly stsClient: StsClient = new MockStsClient({})
     ) {}
@@ -41,6 +44,10 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
 
     public createLambdaClient(regionCode: string): LambdaClient {
         return this.lambdaClient
+    }
+
+    public createStepFunctionsClient(regionCode: string): StepFunctionsClient {
+        return this.stepFunctionsClient
     }
 
     public createStsClient(regionCode: string): StsClient {
@@ -184,6 +191,26 @@ export class MockLambdaClient implements LambdaClient {
         this.invoke = invoke
         this.listFunctions = listFunctions
     }
+}
+
+export class MockStepFunctionsClient implements StepFunctionsClient {
+    public constructor(
+        public readonly regionCode: string = '',
+
+        public readonly listStateMachines: () => AsyncIterableIterator<StepFunctions.StateMachineListItem> = () =>
+            asyncGenerator([]),
+
+        public readonly getStateMachineDetails: (
+            arn: string
+        ) => Promise<StepFunctions.DescribeStateMachineOutput> = async (arn: string) => ({
+            stateMachineArn: '',
+            roleArn: '',
+            name: '',
+            definition: '',
+            type: '',
+            creationDate: new Date()
+        })
+    ) {}
 }
 
 export class MockStsClient implements StsClient {

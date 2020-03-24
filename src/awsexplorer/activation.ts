@@ -26,6 +26,8 @@ import {
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../shared/treeview/nodes/errorNode'
 import { showErrorDetails } from '../shared/treeview/webviews/showErrorDetails'
+import { downloadStateMachineDefinition } from '../stepFunctions/commands/downloadStateMachineDefinition'
+import { StateMachineNode } from '../stepFunctions/explorer/stepFunctionsNodes'
 import { AwsExplorer } from './awsExplorer'
 import { checkExplorerForDefaultRegion } from './defaultRegion'
 import { RegionNode } from './regionNode'
@@ -39,6 +41,7 @@ export async function activate(activateArguments: {
     context: vscode.ExtensionContext
     awsContextTrees: AwsContextTreeCollection
     regionProvider: RegionProvider
+    outputChannel: vscode.OutputChannel
 }): Promise<void> {
     const awsExplorer = new AwsExplorer(activateArguments.context, activateArguments.awsContext, activateArguments.regionProvider)
 
@@ -46,7 +49,7 @@ export async function activate(activateArguments: {
         vscode.window.registerTreeDataProvider(awsExplorer.viewProviderId, awsExplorer)
     )
 
-    await registerAwsExplorerCommands(activateArguments.context, awsExplorer)
+    await registerAwsExplorerCommands(activateArguments.context, awsExplorer, activateArguments.outputChannel)
 
     recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
 
@@ -62,6 +65,7 @@ export async function activate(activateArguments: {
 async function registerAwsExplorerCommands(
     context: vscode.ExtensionContext,
     awsExplorer: AwsExplorer,
+    toolkitOutputChannel: vscode.OutputChannel,
     lambdaOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Lambda')
 ): Promise<void> {
     context.subscriptions.push(
@@ -144,6 +148,17 @@ async function registerAwsExplorerCommands(
                 await invokeLambda({
                     functionNode: node,
                     outputChannel: lambdaOutputChannel
+                })
+        )
+    )
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand(
+            'aws.downloadStateMachineDefinition',
+            async (node: StateMachineNode) =>
+                await downloadStateMachineDefinition({
+                    stateMachineNode: node,
+                    outputChannel: toolkitOutputChannel
                 })
         )
     )

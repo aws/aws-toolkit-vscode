@@ -163,7 +163,13 @@ export async function activate(context: vscode.ExtensionContext) {
             extensionContext: context
         })
 
-        await activateAwsExplorer({ awsContext, context, awsContextTrees, regionProvider })
+        await activateAwsExplorer({
+            awsContext,
+            context,
+            awsContextTrees,
+            regionProvider,
+            outputChannel: toolkitOutputChannel
+        })
 
         await activateSchemas({
             context: context
@@ -214,6 +220,9 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
 
     ext.iconPaths.dark.schema = context.asAbsolutePath('resources/dark/schema.svg')
     ext.iconPaths.light.schema = context.asAbsolutePath('resources/light/schema.svg')
+
+    ext.iconPaths.dark.statemachine = context.asAbsolutePath('resources/dark/stepfunctions/preview.svg')
+    ext.iconPaths.light.statemachine = context.asAbsolutePath('resources/light/stepfunctions/preview.svg')
 }
 
 function initializeManifestPaths(extensionContext: vscode.ExtensionContext) {

@@ -7,6 +7,16 @@
         {
             "name": "stepfunctions_createStateMachineFromTemplate",
             "description": ""
+        },
+        {
+            "name": "stepfunctions_downloadStateMachineDefinition",
+            "description": "",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
         }
     ]
 }
