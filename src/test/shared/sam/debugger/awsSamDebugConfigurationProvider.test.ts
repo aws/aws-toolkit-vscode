@@ -142,6 +142,21 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             assert.strictEqual(resolved, undefined)
         })
 
+        it('returns undefined when resolving debug configurations with an invalid target type', async () => {
+            const tgt = 'not-code' as 'code'
+            const resolved = await debugConfigProvider.resolveDebugConfiguration(undefined, {
+                type: AWS_SAM_DEBUG_TYPE,
+                name: 'whats in a name',
+                request: DIRECT_INVOKE_TYPE,
+                invokeTarget: {
+                    target: tgt,
+                    lambdaHandler: 'sick handles',
+                    projectRoot: 'root as in beer'
+                }
+            })
+            assert.strictEqual(resolved, undefined)
+        })
+
         it("returns undefined when resolving template debug configurations with a template that isn't in the registry", async () => {
             const resolved = await debugConfigProvider.resolveDebugConfiguration(undefined, {
                 type: AWS_SAM_DEBUG_TYPE,

@@ -275,10 +275,7 @@
                             }
                         },
                         "required": [
-                            "invokeTarget",
-                            "name",
-                            "request",
-                            "type"
+                            "invokeTarget"
                         ],
                         "type": "object"
                     }
@@ -653,11 +650,11 @@
         "generateNonCodeFiles": "ts-node ./build-scripts/generateNonCodeFiles.ts",
         "reset": "node ./build-scripts/clean.js dist node_modules && npm install",
         "copyNonCodeFiles": "node ./build-scripts/copyNonCodeFiles.js",
-        "buildScripts": "npm run bundleDeps && npm run copyNonCodeFiles && npm run generateNonCodeFiles",
+        "buildScripts": "npm run bundleDeps && npm run copyNonCodeFiles && npm run generateNonCodeFiles && npm run generateConfigurationAttributes",
         "compile": "webpack --mode development && npm run buildScripts",
         "recompile": "npm run clean && npm run compile",
         "watch": "npm run buildScripts && tsc -watch -p ./",
-        "postinstall": "ts-node ./build-scripts/generateServiceClient.ts && npm run generateTelemetry && npm run generateConfigurationAttributes",
+        "postinstall": "ts-node ./build-scripts/generateServiceClient.ts && npm run generateTelemetry",
         "testCompile": "tsc -p ./ && npm run buildScripts",
         "test": "npm run testCompile && ts-node ./test-scripts/test.ts",
         "integrationTest": "npm run testCompile && ts-node ./test-scripts/integrationTest.ts",
