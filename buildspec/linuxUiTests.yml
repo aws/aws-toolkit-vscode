@@ -28,15 +28,17 @@ phases:
         aws_access_key_id=`jq -r '.Credentials.AccessKeyId' /tmp/.aws/creds.json`
         aws_secret_access_key=`jq -r '.Credentials.SecretAccessKey' /tmp/.aws/creds.json`
         aws_session_token=`jq -r '.Credentials.SessionToken' /tmp/.aws/creds.json`"
-      - pip install --user aws-sam-cli
+      - pip3 install --user --upgrade  aws-sam-cli
 
   build:
     commands:
+      - export SAM_CLI_EXEC=`which sam`
+      - echo "SAM CLI location $SAM_CLI_EXEC"
+      - $SAM_CLI_EXEC --version
       - Xvfb :99 -screen 0 1920x1080x24 &
       - export DISPLAY=:99
       - while [ ! -e /tmp/.X11-unix/X99 ]; do sleep 0.1; done
       - icewm &
-      - export SAM_CLI_EXEC=$(python -m site --user-base)/bin/sam
       - chmod +x gradlew
       - ./gradlew buildPlugin --console plain --info
       - >
