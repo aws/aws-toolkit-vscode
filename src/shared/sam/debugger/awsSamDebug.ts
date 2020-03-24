@@ -100,23 +100,29 @@ export class SamDebugSession extends LoggingDebugSession {
             isDebug: true,  //!!args.noDebug,
             workspaceFolder: vscode.workspace.getWorkspaceFolder(cfnTemplateUri)!!,
             samTemplate: cfnTemplateUri,
+            samTemplateResourceName: args.invokeTarget.samTemplateResource,
         }
         
         const lambdaRuntime = args.lambda?.runtime
             ?? CloudFormation.getRuntime(args.cfnTemplate!!.Resources!!)
 
-        // TODO: await?
-        await tsLensProvider.invokeLambda({
-            ...params,
-            runtime: lambdaRuntime,
-            settings: this.ctx.settings,
-            processInvoker: new DefaultValidatingSamCliProcessInvoker({}),
-            localInvokeCommand: new DefaultSamLocalInvokeCommand(this.ctx.chanLogger, [
-                WAIT_FOR_DEBUGGER_MESSAGES.NODEJS
-            ]),
-            telemetryService: this.ctx.telemetryService,
-            outputChannel: this.ctx.outputChannel,
-        })
+        try {
+            await tsLensProvider.invokeLambda({
+                ...params,
+                runtime: lambdaRuntime,
+                settings: this.ctx.settings,
+                processInvoker: new DefaultValidatingSamCliProcessInvoker({}),
+                localInvokeCommand: new DefaultSamLocalInvokeCommand(this.ctx.chanLogger, [
+                    WAIT_FOR_DEBUGGER_MESSAGES.NODEJS
+                ]),
+                telemetryService: this.ctx.telemetryService,
+                outputChannel: this.ctx.outputChannel,
+            })
+            response.success = true
+        } catch (e) {
+            response.success = false
+            response.message = `SAM invoke failed: ${e}`
+        }
 
         this.sendResponse(response);
     }

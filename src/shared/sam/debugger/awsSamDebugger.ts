@@ -22,12 +22,8 @@ export const DIRECT_INVOKE_TYPE = 'direct-invoke'
 export const TEMPLATE_TARGET_TYPE: 'template' = 'template'
 export const CODE_TARGET_TYPE: 'code' = 'code'
 
-//const AWS_SAM_DEBUG_REQUEST_TYPES = [DIRECT_INVOKE_TYPE]
+const AWS_SAM_DEBUG_REQUEST_TYPES = [DIRECT_INVOKE_TYPE]
 const AWS_SAM_DEBUG_TARGET_TYPES = [TEMPLATE_TARGET_TYPE, CODE_TARGET_TYPE]
-
-export interface Config2 extends AwsSamDebuggerConfiguration {
-    cfnTemplate?: CloudFormation.Template
-}
 
 /**
  * `DebugConfigurationProvider` dynamically defines these aspects of a VSCode debugger:
@@ -104,9 +100,9 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
 
     public async resolveDebugConfiguration(
         folder: vscode.WorkspaceFolder | undefined,
-        config: Config2,
+        config: AwsSamDebuggerConfiguration,
         token?: vscode.CancellationToken
-    ): Promise<Config2 | undefined> {
+    ): Promise<AwsSamDebuggerConfiguration | undefined> {
         // Return initial (stub) config, if:
         //   1. launch.json is missing or empty (like "debuggers.*.initialConfigurations" in package.json)
         //   2. no template.yaml was discovered by provideDebugConfigurations()
@@ -129,14 +125,15 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
 
         if (config.invokeTarget.target === TEMPLATE_TARGET_TYPE) {
             const templateTarget = (config.invokeTarget as any) as AwsSamDebuggerInvokeTargetTemplateFields
+            let cfnTemplate = undefined
             if (templateTarget.samTemplatePath) {
                 const fullpath = path.resolve((
                     (folder?.uri) ? folder.uri.path + '/' : ''), templateTarget.samTemplatePath)
                 // Normalize to absolute path for use in the runner.
                 config.invokeTarget.samTemplatePath = fullpath
-                config.cfnTemplate = this.cftRegistry.getRegisteredTemplate(fullpath)?.template
+                cfnTemplate = this.cftRegistry.getRegisteredTemplate(fullpath)?.template
             }
-            validityPair = validateTemplateConfig(config, templateTarget.samTemplatePath, config.cfnTemplate)
+            validityPair = validateTemplateConfig(config, templateTarget.samTemplatePath, cfnTemplate)
         } else if (config.invokeTarget.target === CODE_TARGET_TYPE) {
             validityPair = validateCodeConfig(config)
         }
@@ -164,16 +161,16 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
 function validateConfig(
     debugConfiguration: AwsSamDebuggerConfiguration
 ): { isValid: boolean; message?: string } {
-    // if (!AWS_SAM_DEBUG_REQUEST_TYPES.includes(debugConfiguration.request)) {
-    //     return {
-    //         isValid: false,
-    //         message: localize(
-    //             'AWS.sam.debugger.invalidRequest',
-    //             'Debug Configuration has an unsupported request type. Supported types: {0}',
-    //             AWS_SAM_DEBUG_REQUEST_TYPES.join(', ')
-    //         )
-    //     }
-    // }
+    if (!AWS_SAM_DEBUG_REQUEST_TYPES.includes(debugConfiguration.request)) {
+        return {
+            isValid: false,
+            message: localize(
+                'AWS.sam.debugger.invalidRequest',
+                'Debug Configuration has an unsupported request type. Supported types: {0}',
+                AWS_SAM_DEBUG_REQUEST_TYPES.join(', ')
+            )
+        }
+    }
 
     if (!AWS_SAM_DEBUG_TARGET_TYPES.includes(debugConfiguration.invokeTarget.target)) {
         return {

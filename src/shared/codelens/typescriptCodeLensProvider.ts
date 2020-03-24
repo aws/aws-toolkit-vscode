@@ -81,6 +81,7 @@ export async function invokeLambda(params: LambdaLocalInvokeParams
         samProjectCodeRoot,
         params.telemetryService,
         params.samTemplate.fsPath,
+        params.samTemplateResourceName,
     )
 
     await localLambdaRunner.run()

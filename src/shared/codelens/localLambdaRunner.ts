@@ -38,6 +38,7 @@ export interface LambdaLocalInvokeParams {
     isDebug: boolean
     workspaceFolder: vscode.WorkspaceFolder
     samTemplate: vscode.Uri
+    samTemplateResourceName: string | undefined
 }
 
 export interface SAMTemplateEnvironmentVariables {
@@ -70,6 +71,7 @@ export class LocalLambdaRunner {
         private readonly codeRootDirectoryPath: string,
         private readonly telemetryService: TelemetryService,
         private readonly cfnTemplatePath: string | undefined,
+        private readonly cfnResourceName: string | undefined,
         private readonly channelLogger = getChannelLogger(outputChannel),
     ) {
         if (localInvokeParams.isDebug && !debugPort) {
@@ -90,6 +92,10 @@ export class LocalLambdaRunner {
                 this.localInvokeParams.handlerName
             )
 
+            if (this.cfnTemplatePath && !this.cfnResourceName) {
+                throw Error('cfnTemplatePath given but cfnResourceName is missing')
+            }
+
             const inputTemplate: string = this.cfnTemplatePath
                 ?? await this.generateInputTemplate(this.codeRootDirectoryPath)
 
@@ -108,7 +114,8 @@ export class LocalLambdaRunner {
                 useContainer: config.useContainer
             })
 
-            await this.invokeLambdaFunction(samBuildTemplate)
+            await this.invokeLambdaFunction(samBuildTemplate,
+                this.cfnResourceName ?? TEMPLATE_RESOURCE_NAME)
         } catch (err) {
             const error = err as Error
             this.channelLogger.error(
@@ -180,7 +187,7 @@ export class LocalLambdaRunner {
      * Runs `sam local invoke` against the provided template file
      * @param samTemplatePath sam template to run locally
      */
-    private async invokeLambdaFunction(samTemplatePath: string): Promise<void> {
+    private async invokeLambdaFunction(samTemplatePath: string, cfnResourceName: string): Promise<void> {
         this.channelLogger.info(
             'AWS.output.starting.sam.app.locally',
             'Starting the SAM Application locally (see Terminal for output)'
@@ -199,7 +206,7 @@ export class LocalLambdaRunner {
         await writeFile(environmentVariablePath, JSON.stringify(getEnvironmentVariables(config)))
 
         const command = new SamCliLocalInvokeInvocation({
-            templateResourceName: TEMPLATE_RESOURCE_NAME,
+            templateResourceName: cfnResourceName,
             templatePath: samTemplatePath,
             eventPath,
             environmentVariablePath,
