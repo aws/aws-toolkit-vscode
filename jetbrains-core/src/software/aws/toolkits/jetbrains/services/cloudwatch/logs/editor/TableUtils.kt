@@ -12,8 +12,10 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.LogStream
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamEntry
 import software.aws.toolkits.resources.message
 import java.awt.Component
+import javax.swing.JLabel
 import javax.swing.JTable
 import javax.swing.SortOrder
+import javax.swing.table.DefaultTableCellRenderer
 import javax.swing.table.TableCellRenderer
 import javax.swing.table.TableRowSorter
 
@@ -40,32 +42,49 @@ class LogGroupTableSorter(model: ListTableModel<LogStream>) : TableRowSorter<Lis
 }
 
 class LogStreamDateColumn : ColumnInfo<LogStreamEntry, String>(message("general.time")) {
-    override fun valueOf(item: LogStreamEntry?): String? {
-        val timestamp = item?.timestamp ?: return null
-        return DateFormatUtil.getDateTimeFormat().format(timestamp)
-    }
+    private val renderer = ResizingDateColumnRenderer()
+    override fun valueOf(item: LogStreamEntry?): String? = item?.timestamp?.toString()
 
     override fun isCellEditable(item: LogStreamEntry?): Boolean = false
+    override fun getRenderer(item: LogStreamEntry?): TableCellRenderer? = renderer
 }
 
 class LogStreamMessageColumn : ColumnInfo<LogStreamEntry, String>(message("general.message")) {
-    override fun valueOf(item: LogStreamEntry?): String? = item?.message
-    override fun isCellEditable(item: LogStreamEntry?): Boolean = false
-}
-
-class WrappingLogStreamMessageColumn : ColumnInfo<LogStreamEntry, String>(message("general.message")) {
     private val renderer = WrappingLogStreamMessageRenderer()
+    fun wrap() {
+        renderer.wrap = true
+    }
+
+    fun unwrap() {
+        renderer.wrap = false
+    }
+
     override fun valueOf(item: LogStreamEntry?): String? = item?.message
     override fun isCellEditable(item: LogStreamEntry?): Boolean = false
     override fun getRenderer(item: LogStreamEntry?): TableCellRenderer? = renderer
 }
 
 private class WrappingLogStreamMessageRenderer : TableCellRenderer {
+    var wrap = false
+    // JBTextArea has a different font from JBLabel (the default in a table) so harvest the font off of it
+    private val font = JBLabel().font
+
     override fun getTableCellRendererComponent(table: JTable, value: Any?, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component {
         val component = JBTextArea()
-        component.wrapStyleWord = true
-        component.lineWrap = true
+
+        if (isSelected) {
+            component.foreground = table.selectionForeground
+            component.background = table.selectionBackground
+        } else {
+            component.foreground = table.foreground
+            component.background = table.background
+        }
+
+        component.wrapStyleWord = wrap
+        component.lineWrap = wrap
         component.text = (value as? String)?.trim()
+        component.font = font
+
         component.setSize(table.columnModel.getColumn(column).width, component.preferredSize.height)
         if (table.getRowHeight(row) != component.preferredSize.height) {
             table.setRowHeight(row, component.preferredSize.height)
@@ -75,8 +94,10 @@ private class WrappingLogStreamMessageRenderer : TableCellRenderer {
 }
 
 private class ResizingDateColumnRenderer : TableCellRenderer {
+    private val defaultRenderer = DefaultTableCellRenderer()
     override fun getTableCellRendererComponent(table: JTable, value: Any?, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component {
-        val component = JBLabel()
+        val defaultComponent = defaultRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column)
+        val component = defaultComponent as? JLabel ?: return defaultComponent
         component.text = (value as? String)?.toLongOrNull()?.let {
             DateFormatUtil.getDateTimeFormat().format(it)
         }

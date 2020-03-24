@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions
 
-import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -19,7 +18,7 @@ class ShowLogsAroundGroup(
     private val logGroup: String,
     private val logStream: String,
     private val treeTable: TableView<LogStreamEntry>
-) : ActionGroup(message("cloudwatch.logs.show_logs_around"), null, AllIcons.Ide.Link), DumbAware {
+) : ActionGroup(message("cloudwatch.logs.show_logs_around"), null, null), DumbAware {
     init {
         isPopup = true
     }
