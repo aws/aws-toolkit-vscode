@@ -13,7 +13,7 @@ import * as packageJson from '../package.json'
 const config = [
     {
         debugger: 'aws-sam',
-        requestType: 'launch' as 'launch',
+        requestType: 'direct-invoke' as 'direct-invoke',
         outputFile: 'src/shared/sam/debugger/awsSamDebugConfiguration.gen.ts',
         imports: ["import * as vscode from 'vscode'"],
         topLevelClass: 'AwsSamDebuggerConfiguration'

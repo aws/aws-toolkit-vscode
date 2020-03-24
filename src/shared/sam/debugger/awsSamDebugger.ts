@@ -18,7 +18,7 @@ import { getLogger } from '../../../../src/shared/logger'
 import * as path from 'path'
 
 export const AWS_SAM_DEBUG_TYPE = 'aws-sam'
-export const DIRECT_INVOKE_TYPE = 'launch'
+export const DIRECT_INVOKE_TYPE = 'direct-invoke'
 export const TEMPLATE_TARGET_TYPE: 'template' = 'template'
 export const CODE_TARGET_TYPE: 'code' = 'code'
 
@@ -149,6 +149,7 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
             vscode.window.showInformationMessage(validityPair.message)
         }
 
+        config.request = 'launch'
         return config
     }
 }
