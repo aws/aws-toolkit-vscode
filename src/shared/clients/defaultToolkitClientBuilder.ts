@@ -9,10 +9,12 @@ import { DefaultCloudFormationClient } from './defaultCloudFormationClient'
 import { DefaultEcsClient } from './defaultEcsClient'
 import { DefaultLambdaClient } from './defaultLambdaClient'
 import { DefaultSchemaClient } from './defaultSchemaClient'
+import { DefaultStepFunctionsClient } from './defaultStepFunctionsClient'
 import { DefaultStsClient } from './defaultStsClient'
 import { EcsClient } from './ecsClient'
 import { LambdaClient } from './lambdaClient'
 import { SchemaClient } from './schemaClient'
+import { StepFunctionsClient } from './stepFunctionsClient'
 import { StsClient } from './stsClient'
 import { ToolkitClientBuilder } from './toolkitClientBuilder'
 
@@ -31,6 +33,10 @@ export class DefaultToolkitClientBuilder implements ToolkitClientBuilder {
 
     public createLambdaClient(regionCode: string): LambdaClient {
         return new DefaultLambdaClient(regionCode)
+    }
+
+    public createStepFunctionsClient(regionCode: string): StepFunctionsClient {
+        return new DefaultStepFunctionsClient(regionCode)
     }
 
     public createStsClient(regionCode: string, credentials?: ServiceConfigurationOptions): StsClient {

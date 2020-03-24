@@ -2,10 +2,14 @@
  * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
 
+import { StepFunctions } from 'aws-sdk'
 import { writeFile } from 'fs-extra'
 import * as request from 'request'
-import { Memento } from 'vscode'
+import * as vscode from 'vscode'
+import { StepFunctionsClient } from '../shared/clients/stepFunctionsClient'
 import { ext } from '../shared/extensionGlobals'
 import { mkdir } from '../shared/filesystem'
 import { fileExists } from '../shared/filesystemUtilities'
@@ -18,7 +22,7 @@ export const SCRIPTS_LAST_DOWNLOADED_URL = 'SCRIPT_LAST_DOWNLOADED_URL'
 export const CSS_LAST_DOWNLOADED_URL = 'CSS_LAST_DOWNLOADED_URL'
 
 export interface UpdateCachedScriptOptions {
-    globalStorage: Memento
+    globalStorage: vscode.Memento
     lastDownloadedURLKey: string
     currentURL: string
     filePath: string
@@ -59,7 +63,7 @@ export default class StateMachineGraphCache {
         this.fileExists = fileExistsCustom ?? fileExists
     }
 
-    public async updateCache(globalStorage: Memento): Promise<void> {
+    public async updateCache(globalStorage: vscode.Memento): Promise<void> {
         const scriptUpdate = this.updateCachedFile({
             globalStorage,
             lastDownloadedURLKey: SCRIPTS_LAST_DOWNLOADED_URL,
@@ -136,4 +140,20 @@ async function httpsGetRequestWrapper(url: string): Promise<string> {
             }
         })
     })
+}
+
+export async function* listStateMachines(
+    client: StepFunctionsClient
+): AsyncIterableIterator<StepFunctions.StateMachineListItem> {
+    const status = vscode.window.setStatusBarMessage(
+        localize('AWS.message.statusBar.loading.statemachines', 'Loading State Machines...')
+    )
+
+    try {
+        yield* client.listStateMachines()
+    } finally {
+        if (!!status) {
+            status.dispose()
+        }
+    }
 }

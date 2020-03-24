@@ -44,6 +44,7 @@ export namespace ext {
 }
 
 export interface IconPaths {
+    statemachine: string
     help: string
     cloudFormation: string
     lambda: string
@@ -59,6 +60,7 @@ function makeIconPathsObject(): IconPaths {
         lambda: '',
         settings: '',
         registry: '',
-        schema: ''
+        schema: '',
+        statemachine: ''
     }
 }
