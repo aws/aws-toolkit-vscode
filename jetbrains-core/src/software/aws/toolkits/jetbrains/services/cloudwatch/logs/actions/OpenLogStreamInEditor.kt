@@ -25,7 +25,6 @@ import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.amazon.awssdk.services.cloudwatchlogs.model.GetLogEventsRequest
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
@@ -36,11 +35,11 @@ import java.time.Instant
 
 class OpenLogStreamInEditor(
     private val project: Project,
+    private val client: CloudWatchLogsClient,
     private val logGroup: String,
     private val groupTable: JBTable
 ) : AnAction(message("cloudwatch.logs.open_in_editor"), null, AllIcons.Actions.Menu_open), DumbAware {
     override fun actionPerformed(e: AnActionEvent) {
-        val client: CloudWatchLogsClient = project.awsClient()
         val row = groupTable.selectedRow.takeIf { it >= 0 } ?: return
         val logStream = groupTable.getValueAt(row, 0) as String
         ProgressManager.getInstance().run(LogStreamDownloadTask(project, client, logGroup, logStream))

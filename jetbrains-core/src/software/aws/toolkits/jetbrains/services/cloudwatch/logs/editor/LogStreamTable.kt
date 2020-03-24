@@ -12,6 +12,7 @@ import com.intellij.util.ui.ListTableModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
+import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamActor
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamEntry
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamFilterActor
@@ -25,6 +26,7 @@ import javax.swing.SortOrder
 
 class LogStreamTable(
     val project: Project,
+    val client: CloudWatchLogsAsyncClient,
     logGroup: String,
     logStream: String,
     type: TableType
@@ -62,8 +64,8 @@ class LogStreamTable(
         component = ScrollPaneFactory.createScrollPane(logsTable)
 
         logStreamActor = when (type) {
-            TableType.LIST -> LogStreamListActor(project, logsTable, logGroup, logStream)
-            TableType.FILTER -> LogStreamFilterActor(project, logsTable, logGroup, logStream)
+            TableType.LIST -> LogStreamListActor(project, client, logsTable, logGroup, logStream)
+            TableType.FILTER -> LogStreamFilterActor(project, client, logsTable, logGroup, logStream)
         }
         Disposer.register(this@LogStreamTable, logStreamActor)
         channel = logStreamActor.channel

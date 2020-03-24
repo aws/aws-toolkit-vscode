@@ -7,9 +7,9 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.table.TableView
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.future.asDeferred
 import kotlinx.coroutines.launch
@@ -19,7 +19,6 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.FilterLogEventsReque
 import software.amazon.awssdk.services.cloudwatchlogs.model.GetLogEventsRequest
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
@@ -28,6 +27,7 @@ import java.time.Duration
 
 sealed class LogStreamActor(
     private val project: Project,
+    protected val client: CloudWatchLogsAsyncClient,
     private val table: TableView<LogStreamEntry>,
     protected val logGroup: String,
     protected val logStream: String
@@ -35,12 +35,11 @@ sealed class LogStreamActor(
     val channel = Channel<Message>()
     private val tableErrorMessage = message("cloudwatch.logs.failed_to_load_stream", logStream)
 
-    protected val client: CloudWatchLogsAsyncClient = project.awsClient()
     protected var nextBackwardToken: String? = null
     protected var nextForwardToken: String? = null
     protected abstract val emptyText: String
 
-    private val edtContext = getCoroutineUiContext(disposable = this)
+    private val edtContext = getCoroutineUiContext(disposable = this@LogStreamActor)
     private val exceptionHandler = CoroutineExceptionHandler { _, e ->
         LOG.error(e) { "Exception thrown in the LogStreamActor not handled:" }
         notifyError(title = message("general.unknown_error"), project = project)
@@ -86,6 +85,8 @@ sealed class LogStreamActor(
                 table.listTableModel.addRows(items)
             }
             table.emptyText.text = emptyText
+        } catch (e: CancellationException) {
+            // CancellationException is fine, just ignore it
         } catch (e: Exception) {
             LOG.error(e) { tableErrorMessage }
             notifyError(title = tableErrorMessage, project = project)
@@ -104,7 +105,6 @@ sealed class LogStreamActor(
 
     override fun dispose() {
         channel.close()
-        cancel()
     }
 
     companion object {
@@ -114,10 +114,11 @@ sealed class LogStreamActor(
 
 class LogStreamFilterActor(
     project: Project,
+    client: CloudWatchLogsAsyncClient,
     table: TableView<LogStreamEntry>,
     logGroup: String,
     logStream: String
-) : LogStreamActor(project, table, logGroup, logStream) {
+) : LogStreamActor(project, client, table, logGroup, logStream) {
     override val emptyText = message("cloudwatch.logs.no_events_query", logStream)
 
     override suspend fun loadInitial() {
@@ -165,11 +166,12 @@ class LogStreamFilterActor(
 
 class LogStreamListActor(
     project: Project,
+    client: CloudWatchLogsAsyncClient,
     table: TableView<LogStreamEntry>,
     logGroup: String,
     logStream: String
 ) :
-    LogStreamActor(project, table, logGroup, logStream) {
+    LogStreamActor(project, client, table, logGroup, logStream) {
     override val emptyText = message("cloudwatch.logs.no_events")
     override suspend fun loadInitial() {
         val request = GetLogEventsRequest

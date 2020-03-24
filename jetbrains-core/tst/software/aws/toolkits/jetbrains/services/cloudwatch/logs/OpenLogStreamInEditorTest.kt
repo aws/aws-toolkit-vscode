@@ -25,7 +25,6 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.GetLogEventsResponse
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogStream
 import software.amazon.awssdk.services.cloudwatchlogs.model.OutputLogEvent
 import software.amazon.awssdk.services.cloudwatchlogs.paginators.GetLogEventsIterable
-import software.aws.toolkits.core.utils.delegateMock
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.OpenCurrentInEditor
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.OpenLogStreamInEditor
@@ -54,10 +53,9 @@ class OpenLogStreamInEditorTest {
 
     @Test
     fun testOpeningFileFromGroup() {
-        val cloudWatchMock = delegateMock<CloudWatchLogsClient>()
-        mockClientManagerRule.manager().register(CloudWatchLogsClient::class, cloudWatchMock)
-        whenever(cloudWatchMock.getLogEventsPaginator(Mockito.any<GetLogEventsRequest>()))
-            .thenReturn(object : GetLogEventsIterable(cloudWatchMock, null) {
+        val client = mockClientManagerRule.create<CloudWatchLogsClient>()
+        whenever(client.getLogEventsPaginator(Mockito.any<GetLogEventsRequest>()))
+            .thenReturn(object : GetLogEventsIterable(client, null) {
                 override fun iterator() = mutableListOf(
                     GetLogEventsResponse.builder().events(
                         OutputLogEvent.builder().message("abc").build(),
@@ -71,7 +69,7 @@ class OpenLogStreamInEditorTest {
         tableModel.addRow(LogStream.builder().logStreamName("54321").build())
         // select the first row
         table.setRowSelectionInterval(0, 0)
-        val action = OpenLogStreamInEditor(projectRule.project, "12345", table)
+        val action = OpenLogStreamInEditor(projectRule.project, client, "cloudWatchMock, 12345", table)
         action.actionPerformed(TestActionEvent())
         runBlocking {
             blockUntilFileOpen()

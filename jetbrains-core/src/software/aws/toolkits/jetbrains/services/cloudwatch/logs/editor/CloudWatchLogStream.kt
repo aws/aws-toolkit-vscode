@@ -15,6 +15,8 @@ import com.intellij.ui.components.JBTextField
 import com.intellij.ui.components.panels.Wrapper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient
+import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.activeCredentialProvider
 import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamActor
@@ -46,7 +48,8 @@ class CloudWatchLogStream(
 
     private val edtContext = getCoroutineUiContext(disposable = this)
 
-    private val logStreamTable: LogStreamTable = LogStreamTable(project, logGroup, logStream, LogStreamTable.TableType.LIST)
+    private val client: CloudWatchLogsAsyncClient = project.awsClient()
+    private val logStreamTable: LogStreamTable = LogStreamTable(project, client, logGroup, logStream, LogStreamTable.TableType.LIST)
     private var searchStreamTable: LogStreamTable? = null
 
     init {
@@ -88,7 +91,7 @@ class CloudWatchLogStream(
                     }
                 } else {
                     // This is thread safe because the actionPerformed is run on the UI thread
-                    val table = LogStreamTable(project, logGroup, logStream, LogStreamTable.TableType.FILTER)
+                    val table = LogStreamTable(project, client, logGroup, logStream, LogStreamTable.TableType.FILTER)
                     Disposer.register(this@CloudWatchLogStream, table)
                     searchStreamTable = table
                     launch(edtContext) {

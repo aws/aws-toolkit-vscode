@@ -10,7 +10,6 @@ import com.nhaarman.mockitokotlin2.whenever
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.debug.junit4.CoroutinesTimeout
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestCoroutineScope
 import org.assertj.core.api.Assertions.assertThat
@@ -24,7 +23,6 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.GetLogEventsRequest
 import software.amazon.awssdk.services.cloudwatchlogs.model.GetLogEventsResponse
 import software.amazon.awssdk.services.cloudwatchlogs.model.OutputLogEvent
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.utils.waitForFalse
 import software.aws.toolkits.jetbrains.utils.waitForModelToBeAtLeast
 import software.aws.toolkits.jetbrains.utils.waitForTrue
 import software.aws.toolkits.resources.message
@@ -55,12 +53,12 @@ class LogStreamListActorTest {
 
     @Test
     fun modelIsPopulated() {
-        val mockClient = mockClientManagerRule.create<CloudWatchLogsAsyncClient>()
-        whenever(mockClient.getLogEvents(Mockito.any<GetLogEventsRequest>()))
+        val client = mockClientManagerRule.create<CloudWatchLogsAsyncClient>()
+        whenever(client.getLogEvents(Mockito.any<GetLogEventsRequest>()))
             .thenReturn(CompletableFuture.completedFuture(GetLogEventsResponse.builder().events(OutputLogEvent.builder().message("message").build()).build()))
         val tableModel = ListTableModel<LogStreamEntry>()
         val table = TableView<LogStreamEntry>(tableModel)
-        val coroutine = LogStreamListActor(projectRule.project, table, "abc", "def")
+        val coroutine = LogStreamListActor(projectRule.project, client, table, "abc", "def")
         runBlocking {
             coroutine.channel.send(LogStreamActor.Message.LOAD_INITIAL())
             tableModel.waitForModelToBeAtLeast(1)
@@ -72,12 +70,12 @@ class LogStreamListActorTest {
 
     @Test
     fun modelIsPopulatedRange() {
-        val mockClient = mockClientManagerRule.create<CloudWatchLogsAsyncClient>()
-        whenever(mockClient.getLogEvents(Mockito.any<GetLogEventsRequest>()))
+        val client = mockClientManagerRule.create<CloudWatchLogsAsyncClient>()
+        whenever(client.getLogEvents(Mockito.any<GetLogEventsRequest>()))
             .thenReturn(CompletableFuture.completedFuture(GetLogEventsResponse.builder().events(OutputLogEvent.builder().message("message").build()).build()))
         val tableModel = ListTableModel<LogStreamEntry>()
         val table = TableView<LogStreamEntry>(tableModel)
-        val coroutine = LogStreamListActor(projectRule.project, table, "abc", "def")
+        val coroutine = LogStreamListActor(projectRule.project, client, table, "abc", "def")
         runBlocking {
             coroutine.channel.send(LogStreamActor.Message.LOAD_INITIAL_RANGE(0L, Duration.ofMillis(0)))
             tableModel.waitForModelToBeAtLeast(1)
@@ -91,11 +89,11 @@ class LogStreamListActorTest {
 
     @Test
     fun emptyTableOnExceptionThrown() {
-        val mockClient = mockClientManagerRule.create<CloudWatchLogsAsyncClient>()
-        whenever(mockClient.getLogEvents(Mockito.any<GetLogEventsRequest>())).then { throw IllegalStateException("network broke") }
+        val client = mockClientManagerRule.create<CloudWatchLogsAsyncClient>()
+        whenever(client.getLogEvents(Mockito.any<GetLogEventsRequest>())).then { throw IllegalStateException("network broke") }
         val tableModel = ListTableModel<LogStreamEntry>()
         val table = TableView<LogStreamEntry>(tableModel)
-        val coroutine = LogStreamListActor(projectRule.project, table, "abc", "def")
+        val coroutine = LogStreamListActor(projectRule.project, client, table, "abc", "def")
         runBlocking {
             coroutine.channel.send(LogStreamActor.Message.LOAD_INITIAL())
             waitForTrue { table.emptyText.text == message("cloudwatch.logs.failed_to_load_stream", "def") }
@@ -105,11 +103,11 @@ class LogStreamListActorTest {
 
     @Test
     fun emptyTableOnExceptionThrownRange() {
-        val mockClient = mockClientManagerRule.create<CloudWatchLogsAsyncClient>()
-        whenever(mockClient.getLogEvents(Mockito.any<GetLogEventsRequest>())).then { throw IllegalStateException("network broke") }
+        val client = mockClientManagerRule.create<CloudWatchLogsAsyncClient>()
+        whenever(client.getLogEvents(Mockito.any<GetLogEventsRequest>())).then { throw IllegalStateException("network broke") }
         val tableModel = ListTableModel<LogStreamEntry>()
         val table = TableView<LogStreamEntry>(tableModel)
-        val coroutine = LogStreamListActor(projectRule.project, table, "abc", "def")
+        val coroutine = LogStreamListActor(projectRule.project, client, table, "abc", "def")
         runBlocking {
             coroutine.channel.send(LogStreamActor.Message.LOAD_INITIAL_RANGE(0L, Duration.ofMillis(0)))
             waitForTrue { table.emptyText.text == message("cloudwatch.logs.failed_to_load_stream", "def") }
@@ -119,8 +117,8 @@ class LogStreamListActorTest {
 
     @Test
     fun loadingForwardAppendsToTable() {
-        val mockClient = mockClientManagerRule.create<CloudWatchLogsAsyncClient>()
-        whenever(mockClient.getLogEvents(Mockito.any<GetLogEventsRequest>()))
+        val client = mockClientManagerRule.create<CloudWatchLogsAsyncClient>()
+        whenever(client.getLogEvents(Mockito.any<GetLogEventsRequest>()))
             .thenReturn(
                 CompletableFuture.completedFuture(
                     GetLogEventsResponse.builder().events(OutputLogEvent.builder().message("message").build()).nextForwardToken(
@@ -138,7 +136,7 @@ class LogStreamListActorTest {
             )
         val tableModel = ListTableModel<LogStreamEntry>()
         val table = TableView<LogStreamEntry>(tableModel)
-        val coroutine = LogStreamListActor(projectRule.project, table, "abc", "def")
+        val coroutine = LogStreamListActor(projectRule.project, client, table, "abc", "def")
         runBlocking {
             coroutine.channel.send(LogStreamActor.Message.LOAD_INITIAL_RANGE(0L, Duration.ofMillis(0)))
             tableModel.waitForModelToBeAtLeast(1)
@@ -156,8 +154,8 @@ class LogStreamListActorTest {
 
     @Test
     fun loadingBackwardsPrependsToTable() {
-        val mockClient = mockClientManagerRule.create<CloudWatchLogsAsyncClient>()
-        whenever(mockClient.getLogEvents(Mockito.any<GetLogEventsRequest>()))
+        val client = mockClientManagerRule.create<CloudWatchLogsAsyncClient>()
+        whenever(client.getLogEvents(Mockito.any<GetLogEventsRequest>()))
             .thenReturn(
                 CompletableFuture.completedFuture(
                     GetLogEventsResponse.builder().events(OutputLogEvent.builder().message("message").build()).nextBackwardToken(
@@ -181,7 +179,7 @@ class LogStreamListActorTest {
             )
         val tableModel = ListTableModel<LogStreamEntry>()
         val table = TableView<LogStreamEntry>(tableModel)
-        val coroutine = LogStreamListActor(projectRule.project, table, "abc", "def")
+        val coroutine = LogStreamListActor(projectRule.project, client, table, "abc", "def")
         runBlocking {
             coroutine.channel.send(LogStreamActor.Message.LOAD_INITIAL_RANGE(0L, Duration.ofMillis(0)))
             tableModel.waitForModelToBeAtLeast(1)
@@ -202,10 +200,10 @@ class LogStreamListActorTest {
 
     @Test
     fun writeChannelAndCoroutineIsDisposed() {
-        mockClientManagerRule.create<CloudWatchLogsAsyncClient>()
+        val client = mockClientManagerRule.create<CloudWatchLogsAsyncClient>()
         val tableModel = ListTableModel<LogStreamEntry>()
         val table = TableView<LogStreamEntry>(tableModel)
-        val coroutine = LogStreamListActor(projectRule.project, table, "abc", "def")
+        val coroutine = LogStreamListActor(projectRule.project, client, table, "abc", "def")
         val channel = coroutine.channel
         coroutine.dispose()
         assertThatThrownBy {
@@ -213,18 +211,17 @@ class LogStreamListActorTest {
                 channel.send(LogStreamActor.Message.LOAD_BACKWARD())
             }
         }.isInstanceOf(ClosedSendChannelException::class.java)
-        assertThat(coroutine.isActive).isFalse()
     }
 
     @Test
     fun loadInitialFilterThrows() {
-        mockClientManagerRule.create<CloudWatchLogsAsyncClient>()
+        val client = mockClientManagerRule.create<CloudWatchLogsAsyncClient>()
         val tableModel = ListTableModel<LogStreamEntry>()
         val table = TableView<LogStreamEntry>(tableModel)
-        val actor = LogStreamListActor(projectRule.project, table, "abc", "def")
+        val actor = LogStreamListActor(projectRule.project, client, table, "abc", "def")
         runBlocking {
             actor.channel.send(LogStreamActor.Message.LOAD_INITIAL_FILTER("abc"))
-            waitForFalse { actor.isActive }
+            waitForTrue { actor.channel.isClosedForSend }
         }
     }
 }
