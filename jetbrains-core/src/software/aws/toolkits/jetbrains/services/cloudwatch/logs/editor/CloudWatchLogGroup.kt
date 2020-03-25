@@ -10,6 +10,7 @@ import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.ui.DoubleClickListener
@@ -30,7 +31,7 @@ import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow
-import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.OpenLogStreamInEditorAction
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.ExportActionGroup
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
@@ -110,7 +111,10 @@ class CloudWatchLogGroup(
 
     private fun addActions() {
         val actionGroup = DefaultActionGroup()
-        actionGroup.addAction(OpenLogStreamInEditorAction(project, client, logGroup, groupTable))
+        actionGroup.add(ExportActionGroup(project, client, logGroup) {
+            val row = groupTable.selectedRow.takeIf { it >= 0 } ?: return@ExportActionGroup null
+            groupTable.getValueAt(row, 0) as? String
+        })
         PopupHandler.installPopupHandler(
             groupTable,
             actionGroup,
@@ -121,7 +125,7 @@ class CloudWatchLogGroup(
 
     private fun addToolbar() {
         val actionGroup = DefaultActionGroup()
-        actionGroup.addAction(object : AnAction(message("explorer.refresh.title"), null, AllIcons.Actions.Refresh) {
+        actionGroup.addAction(object : AnAction(message("explorer.refresh.title"), null, AllIcons.Actions.Refresh), DumbAware {
             override fun actionPerformed(e: AnActionEvent) {
                 launch { refreshLogStreams() }
             }

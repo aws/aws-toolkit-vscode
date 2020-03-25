@@ -69,7 +69,7 @@ class OpenLogStreamInEditorActionTest {
         tableModel.addRow(LogStream.builder().logStreamName("54321").build())
         // select the first row
         table.setRowSelectionInterval(0, 0)
-        val action = OpenLogStreamInEditorAction(projectRule.project, client, "cloudWatchMock, 12345", table)
+        val action = OpenLogStreamInEditorAction(projectRule.project, client, "cloudWatchMock", "12345")
         action.actionPerformed(TestActionEvent())
         runBlocking {
             blockUntilFileOpen()
