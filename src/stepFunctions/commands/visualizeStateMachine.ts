@@ -140,7 +140,10 @@ async function setupWebviewPanel(
         ext.visualizationResourcePaths.visualizationLibraryCSS.with({ scheme: 'vscode-resource' }),
         ext.visualizationResourcePaths.stateMachineCustomThemeCSS.with({ scheme: 'vscode-resource' }),
         {
-            inSync: localize('AWS.stepFunctions.graph.status.inSync', 'Previewing ASL document. <a>View</a>'),
+            inSync: localize(
+                'AWS.stepFunctions.graph.status.inSync',
+                'Previewing ASL document. <a href="" style="text-decoration:none;">View</a>'
+            ),
             notInSync: localize('AWS.stepFunctions.graph.status.notInSync', 'Errors detected. Cannot preview.'),
             syncing: localize('AWS.stepFunctions.graph.status.syncing', 'Rendering ASL graph...')
         }
