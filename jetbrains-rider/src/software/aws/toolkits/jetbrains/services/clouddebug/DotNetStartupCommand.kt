@@ -86,7 +86,7 @@ class DotNetStartupCommand : CloudDebugStartupCommand(CloudDebuggingPlatform.DOT
                     }
 
                     // Path is generated from <remote_path> + <relative_assembly_path_with_basename>
-                    val command = "dotnet ${remoteBaseFile.resolve(relativeAssemblyPath)}"
+                    val command = "dotnet ${remoteBaseFile.resolve(relativeAssemblyPath).invariantSeparatorsPath}"
                     logger.info { "Generate a CloudDebug startup command: '$command'." }
                     onCommandGet(command)
                 }

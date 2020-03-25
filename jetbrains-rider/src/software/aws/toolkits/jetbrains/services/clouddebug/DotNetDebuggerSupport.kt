@@ -222,7 +222,7 @@ class DotNetDebuggerSupport : DebuggerSupport() {
             ?: throw RuntimeConfigurationError(
                 message("cloud_debug.run_configuration.dotnet.start_command.miss_assembly_path", START_COMMAND_ASSEMBLY_PLACEHOLDER))
 
-        if (!path.contains(File.separatorChar))
+        if (!path.contains('/'))
             throw RuntimeConfigurationError(message("cloud_debug.run_configuration.dotnet.start_command.assembly_path_not_valid", path))
 
         // Start command should follow the pattern 'dotnet <remote_path_to_assembly>'. Take a remote assembly path.

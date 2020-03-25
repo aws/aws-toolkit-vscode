@@ -3,8 +3,8 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.dotnet
 
+import base.AwsReuseSolutionTestBase
 import com.jetbrains.rider.test.asserts.shouldBe
-import com.jetbrains.rider.test.base.BaseTestWithSolution
 import com.jetbrains.rider.test.framework.frameworkLogger
 import org.testng.annotations.DataProvider
 import org.testng.annotations.Test
@@ -14,7 +14,7 @@ import software.aws.toolkits.jetbrains.services.lambda.Lambda
 /**
  * Tests to verify R# backend PSI element based on handler string
  */
-class DotNetLambdaHandlerResolverTest : BaseTestWithSolution() {
+class DotNetLambdaHandlerResolverTest : AwsReuseSolutionTestBase() {
 
     override fun getSolutionDirectoryName(): String = "SamHelloWorldApp"
 

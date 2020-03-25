@@ -5,10 +5,7 @@ package base
 
 import com.intellij.ide.GeneralSettings
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.SystemInfo
 import com.jetbrains.rider.test.base.BaseTestWithSolutionBase
-import com.jetbrains.rider.test.scriptingApi.setUpCustomToolset
-import com.jetbrains.rider.test.scriptingApi.setUpDotNetCoreCliPath
 import com.jetbrains.rider.test.scriptingApi.useCachedTemplates
 import org.testng.annotations.AfterClass
 import org.testng.annotations.BeforeClass
@@ -17,12 +14,6 @@ import java.io.File
 /**
  * Base test class that uses the same solution per test class.
  * Solution re-open logic takes time. We can avoid this by using the same solution instance per every test in a class
- *
- * When running with LOCAL_ENV_RUN flag set to true (for running tests outside of internal IntelliJ networks),
- * Rider will auto-detect and use Rider's bundled MSBuild that might be incompatible with full .NET framework installed
- * on Windows agent to open an empty solution. This cause the MSBuild error when loading a test project.
- *
- * To avoid such errors we need to explicitly set toolset and MSBuild to be selected on an instance.
  */
 abstract class AwsReuseSolutionTestBase : BaseTestWithSolutionBase() {
 
@@ -48,15 +39,6 @@ abstract class AwsReuseSolutionTestBase : BaseTestWithSolutionBase() {
     @BeforeClass(alwaysRun = true)
     fun setUpClassSolution() {
         openSolution(getSolutionDirectoryName())
-    }
-
-    @BeforeClass(alwaysRun = true)
-    fun setUpBuildToolPath() {
-        if (SystemInfo.isWindows) {
-            dotnetCoreCliPath = "C:\\Program Files\\dotnet\\dotnet.exe"
-            setUpDotNetCoreCliPath(dotnetCoreCliPath)
-            setUpCustomToolset("C:\\Program Files\\dotnet\\sdk\\2.2.104\\MSBuild.dll")
-        }
     }
 
     @AfterClass(alwaysRun = true)

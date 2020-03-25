@@ -3,7 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.execution.local
 
-import com.jetbrains.rider.test.base.BaseTestWithSolution
+import base.AwsReuseSolutionTestBase
 import org.testng.annotations.AfterMethod
 import org.testng.annotations.BeforeMethod
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
@@ -11,7 +11,7 @@ import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommonTestUtils
 
-abstract class LambdaRunConfigurationTestBase : BaseTestWithSolution() {
+abstract class LambdaRunConfigurationTestBase : AwsReuseSolutionTestBase() {
 
     companion object {
         protected const val HANDLER_EVALUATE_TIMEOUT_MS = 20000
@@ -24,7 +24,7 @@ abstract class LambdaRunConfigurationTestBase : BaseTestWithSolution() {
     protected val defaultHandler = "HelloWorld::HelloWorld.Function::FunctionHandler"
     protected val defaultInput = "inputText"
 
-    protected var validSam: String = ""
+    protected var validSam = ""
 
     @BeforeMethod
     fun setUpCredentialsManager() {

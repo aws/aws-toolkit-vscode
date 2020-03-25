@@ -5,7 +5,6 @@ package base
 
 import com.intellij.openapi.util.SystemInfo
 import com.jetbrains.rider.test.base.BaseTestWithMarkup
-import com.jetbrains.rider.test.base.PrepareTestEnvironment
 import com.jetbrains.rider.test.scriptingApi.setUpCustomToolset
 import com.jetbrains.rider.test.scriptingApi.setUpDotNetCoreCliPath
 import org.testng.annotations.BeforeClass
@@ -24,8 +23,8 @@ open class AwsMarkupBaseTest : BaseTestWithMarkup() {
     @BeforeClass
     fun setUpBuildToolPath() {
         if (SystemInfo.isWindows) {
-            PrepareTestEnvironment.dotnetCoreCliPath = "C:\\Program Files\\dotnet\\dotnet.exe"
-            setUpDotNetCoreCliPath(PrepareTestEnvironment.dotnetCoreCliPath)
+            dotnetCoreCliPath = "C:\\Program Files\\dotnet\\dotnet.exe"
+            setUpDotNetCoreCliPath(dotnetCoreCliPath)
             setUpCustomToolset("C:\\Program Files\\dotnet\\sdk\\2.2.104\\MSBuild.dll")
         }
     }
