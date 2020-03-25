@@ -7,12 +7,15 @@ env:
 
 phases:
   install:
+    runtime-versions:
+      java: openjdk11
+      dotnet: 2.2
+
     commands:
       - |
         if(-Not($Env:CODE_COV_TOKEN -eq $null)) {
             choco install -y --no-progress codecov
         }
-      - choco install -y --no-progress dotnetcore-sdk --version 2.2.104
       - choco install -y --no-progress netfx-4.6.1-devpack
 
   build:
