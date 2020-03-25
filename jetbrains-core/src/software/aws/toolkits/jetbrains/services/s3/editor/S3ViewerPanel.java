@@ -38,12 +38,9 @@ public class S3ViewerPanel {
     private Disposable disposable;
     private JPanel content;
     private JTextField name;
-    private JLabel creationDate;
     private JTextField date;
     private JPanel mainPanel;
     private JTextField arnText;
-    private JLabel bucketArn;
-    private JLabel bucketName;
     private S3TreeTable treeTable;
     private S3TreeNode s3TreeNode;
     private S3TreeTableModel model;

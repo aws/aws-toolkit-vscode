@@ -46,7 +46,7 @@
           <text value="bucketName"/>
         </properties>
       </component>
-      <component id="b3ec1" class="javax.swing.JLabel" binding="bucketName">
+      <component id="b3ec1" class="javax.swing.JLabel">
         <constraints>
           <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
@@ -54,7 +54,7 @@
           <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="s3.bucket.name.label"/>
         </properties>
       </component>
-      <component id="a463c" class="javax.swing.JLabel" binding="bucketArn">
+      <component id="a463c" class="javax.swing.JLabel">
         <constraints>
           <grid row="2" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
@@ -62,7 +62,7 @@
           <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="s3.bucket.arn.label"/>
         </properties>
       </component>
-      <component id="af06" class="javax.swing.JLabel" binding="creationDate">
+      <component id="af06" class="javax.swing.JLabel">
         <constraints>
           <grid row="3" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
