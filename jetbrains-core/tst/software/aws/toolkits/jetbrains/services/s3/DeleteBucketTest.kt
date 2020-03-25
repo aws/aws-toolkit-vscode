@@ -24,7 +24,7 @@ import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.services.s3.bucketActions.DeleteBucketAction
 import java.util.function.Consumer
 
-class DeleteBucketTestMock {
+class DeleteBucketTest {
 
     @Rule
     @JvmField
