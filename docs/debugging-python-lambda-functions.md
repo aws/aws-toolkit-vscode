@@ -24,7 +24,7 @@ Throughout these instructions, replace the following:
 
     ```bash
     # Bash
-    . ./.venv/Scripts/activate
+    . ./.venv/bin/activate
     python -m pip install -r <python project root>/requirements.txt
     ```
 

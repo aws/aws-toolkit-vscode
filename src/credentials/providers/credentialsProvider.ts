@@ -10,4 +10,5 @@ export interface CredentialsProvider {
     getDefaultRegion(): string | undefined
     getHashCode(): string
     getCredentials(): Promise<AWS.Credentials>
+    canAutoConnect(): boolean
 }

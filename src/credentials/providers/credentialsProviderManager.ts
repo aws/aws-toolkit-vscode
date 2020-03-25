@@ -27,10 +27,10 @@ export class CredentialsProviderManager {
     }
 
     /**
-     * Returns a map of profile names to credential ids from all credential
-     * sources.
+     * Returns a map of `CredentialsProviderId` "friendly names" to ids, from
+     * all credential sources.
      */
-    public async getCredentials(): Promise<{ [key: string]: CredentialsProviderId }> {
+    public async getCredentialProviderNames(): Promise<{ [key: string]: CredentialsProviderId }> {
         const m: { [key: string]: CredentialsProviderId } = {}
         for (const o of await this.getAllCredentialsProviders()) {
             m[asString(o.getCredentialsProviderId())] = o.getCredentialsProviderId()
