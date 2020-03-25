@@ -35,7 +35,7 @@
     "AWS.stepfunctions.template.mapState.label": "Map state",
     "AWS.stepfunctions.template.catchFailure.label": "Catch failure",
     "AWS.stepfunctions.template.choiceState.label": "Choice state",
-    "AWS.stepFunctions.graph.status.inSync": "Previewing ASL document. <a>View</a>",
+    "AWS.stepFunctions.graph.status.inSync": "Previewing ASL document. <a href=\"\" style=\"text-decoration:none;\">View</a>",
     "AWS.stepFunctions.graph.status.notInSync": "Errors detected. Cannot preview.",
     "AWS.stepFunctions.graph.status.syncing": "Rendering ASL graph...",
     "AWS.configuration.description.awssam.debug.invokeTarget": "Configures the application to launch",
