@@ -120,10 +120,10 @@ function run(testsRoot, clb): any {
 
     // 2020-03-24: Amazon addition.
     const testFile = process.env["TEST_FILE"]?.replace(/^src\/test\//, "")?.concat('.js')
-    // END 2020-03-24: Amazon addition.
 
     // Glob test files
     glob(testFile ?? "**/**.test.js", { cwd: testsRoot }, (error, files): any => {
+        // END 2020-03-24: Amazon addition.
         if (error) {
             return clb(error);
         }
