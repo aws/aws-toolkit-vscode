@@ -209,6 +209,14 @@ export class MockStepFunctionsClient implements StepFunctionsClient {
             definition: '',
             type: '',
             creationDate: new Date()
+        }),
+
+        public readonly executeStateMachine: (
+            arn: string,
+            input: string
+        ) => Promise<StepFunctions.StartExecutionOutput> = async (arn: string, input: string) => ({
+            executionArn: '',
+            startDate: new Date()
         })
     ) {}
 }

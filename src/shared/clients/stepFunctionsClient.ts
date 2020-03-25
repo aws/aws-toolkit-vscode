@@ -11,4 +11,6 @@ export interface StepFunctionsClient {
     listStateMachines(): AsyncIterableIterator<StepFunctions.StateMachineListItem>
 
     getStateMachineDetails(arn: string): Promise<StepFunctions.DescribeStateMachineOutput>
+
+    executeStateMachine(arn: string, input?: string): Promise<StepFunctions.StartExecutionOutput>
 }
