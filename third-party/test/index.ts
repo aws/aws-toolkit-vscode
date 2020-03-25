@@ -118,8 +118,12 @@ function run(testsRoot, clb): any {
         coverageRunner.setupCoverage();
     }
 
+    // 2020-03-24: Amazon addition.
+    const testFile = process.env["TEST_FILE"]?.replace(/^src\/test\//, "")?.concat('.js')
+    // END 2020-03-24: Amazon addition.
+
     // Glob test files
-    glob("**/**.test.js", { cwd: testsRoot }, (error, files): any => {
+    glob(testFile ?? "**/**.test.js", { cwd: testsRoot }, (error, files): any => {
         if (error) {
             return clb(error);
         }
