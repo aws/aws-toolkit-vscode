@@ -107,7 +107,7 @@ function createMessageReceivedFunc({
                         stateMachine.details.stateMachineArn,
                         message.value
                     )
-                    logger.error('Successfully started execution for Step Functions State Machine')
+                    logger.info('Successfully started execution for Step Functions State Machine')
                     outputChannel.appendLine(
                         localize('AWS.message.info.stepFunctions.executeStateMachine.started', 'Execution started')
                     )
