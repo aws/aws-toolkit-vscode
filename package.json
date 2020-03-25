@@ -319,6 +319,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.executeStateMachine",
+                    "when": "false"
+                },
+                {
                     "command": "aws.downloadSchemaItemCode",
                     "when": "false"
                 },
@@ -485,6 +489,11 @@
                     "group": "0@1"
                 },
                 {
+                    "command": "aws.executeStateMachine",
+                    "when": "view == aws.explorer && viewItem == awsStateMachineNode",
+                    "group": "1@1"
+                },
+                {
                     "command": "aws.downloadSchemaItemCode",
                     "when": "view == aws.explorer && viewItem == awsSchemaItemNode",
                     "group": "1@1"
@@ -593,6 +602,11 @@
             {
                 "command": "aws.downloadStateMachineDefinition",
                 "title": "%AWS.command.downloadStateMachineDefinition%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.executeStateMachine",
+                "title": "%AWS.command.executeStateMachine%",
                 "category": "AWS"
             },
             {

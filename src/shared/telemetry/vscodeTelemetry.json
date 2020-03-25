@@ -17,6 +17,20 @@
                     "type": "result"
                 }
             ]
+        },
+        {
+            "name": "stepfunctions_executeStateMachineView",
+            "description": ""
+        },
+        {
+            "name": "stepfunctions_executeStateMachine",
+            "description": "",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
         }
     ]
 }

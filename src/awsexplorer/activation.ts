@@ -27,6 +27,7 @@ import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../shared/treeview/nodes/errorNode'
 import { showErrorDetails } from '../shared/treeview/webviews/showErrorDetails'
 import { downloadStateMachineDefinition } from '../stepFunctions/commands/downloadStateMachineDefinition'
+import { executeStateMachine } from '../stepFunctions/commands/executeStateMachine'
 import { StateMachineNode } from '../stepFunctions/explorer/stepFunctionsNodes'
 import { AwsExplorer } from './awsExplorer'
 import { checkExplorerForDefaultRegion } from './defaultRegion'
@@ -43,7 +44,11 @@ export async function activate(activateArguments: {
     regionProvider: RegionProvider
     outputChannel: vscode.OutputChannel
 }): Promise<void> {
-    const awsExplorer = new AwsExplorer(activateArguments.context, activateArguments.awsContext, activateArguments.regionProvider)
+    const awsExplorer = new AwsExplorer(
+        activateArguments.context,
+        activateArguments.awsContext,
+        activateArguments.regionProvider
+    )
 
     activateArguments.context.subscriptions.push(
         vscode.window.registerTreeDataProvider(awsExplorer.viewProviderId, awsExplorer)
@@ -157,6 +162,17 @@ async function registerAwsExplorerCommands(
             'aws.downloadStateMachineDefinition',
             async (node: StateMachineNode) =>
                 await downloadStateMachineDefinition({
+                    stateMachineNode: node,
+                    outputChannel: toolkitOutputChannel
+                })
+        )
+    )
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand(
+            'aws.executeStateMachine',
+            async (node: StateMachineNode) =>
+                await executeStateMachine({
                     stateMachineNode: node,
                     outputChannel: toolkitOutputChannel
                 })
