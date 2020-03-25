@@ -272,6 +272,8 @@
                     class="software.aws.toolkits.jetbrains.services.lambda.actions.UpdateFunctionConfigurationAction"/>
             <action id="lambda.function.updateCode" class="software.aws.toolkits.jetbrains.services.lambda.actions.UpdateFunctionCodeAction"/>
             <separator/>
+            <action id="lambda.function.viewLogStream" class="software.aws.toolkits.jetbrains.services.lambda.actions.LambdaLogGroupAction"/>
+            <separator/>
             <action id="lambda.function.delete"
                     class="software.aws.toolkits.jetbrains.services.lambda.actions.DeleteFunctionAction"/>
         </group>
@@ -286,7 +288,7 @@
 
         <group id="aws.toolkit.explorer.logs.group" popup="true" compact="false">
             <action id="cloudwatch.logs.open"
-                    class="software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.OpenLogGroup"/>
+                    class="software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.OpenLogGroupAction"/>
         </group>
 
         <group id="aws.toolkit.explorer.s3" popup="false" compact="false">

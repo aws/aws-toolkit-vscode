@@ -12,7 +12,7 @@ import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
-import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.TailLogs
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.TailLogsAction
 
 class StreamLogsTest {
     @JvmField
@@ -26,7 +26,7 @@ class StreamLogsTest {
     @Test
     fun streamsWhenEnabled() {
         val channel = Channel<LogStreamActor.Message>()
-        val tailLogs = TailLogs { channel }
+        val tailLogs = TailLogsAction { channel }
         runBlocking {
             tailLogs.setSelected(TestActionEvent(), true)
             var response = channel.receive()
@@ -39,7 +39,7 @@ class StreamLogsTest {
     @Test
     fun cancelsOnChannelClose() {
         val channel = Channel<LogStreamActor.Message>()
-        val tailLogs = TailLogs { channel }
+        val tailLogs = TailLogsAction { channel }
         channel.close()
         tailLogs.setSelected(TestActionEvent(), true)
         runBlocking {
@@ -54,7 +54,7 @@ class StreamLogsTest {
     @Test
     fun cancelsOnCancel() {
         val channel = Channel<LogStreamActor.Message>()
-        val tailLogs = TailLogs { channel }
+        val tailLogs = TailLogsAction { channel }
         tailLogs.setSelected(TestActionEvent(), true)
         assertThat(tailLogs.logStreamingJob?.isActive).isTrue()
         tailLogs.setSelected(TestActionEvent(), false)

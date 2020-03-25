@@ -13,7 +13,7 @@ import com.intellij.util.ui.ListTableModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
-import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient
+import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamActor
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamEntry
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamFilterActor
@@ -29,7 +29,7 @@ import javax.swing.SortOrder
 
 class LogStreamTable(
     val project: Project,
-    val client: CloudWatchLogsAsyncClient,
+    val client: CloudWatchLogsClient,
     logGroup: String,
     logStream: String,
     type: TableType

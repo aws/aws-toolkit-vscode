@@ -14,7 +14,7 @@ import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamEntry
 import software.aws.toolkits.resources.message
 import java.time.Duration
 
-class ShowLogsAroundGroup(
+class ShowLogsAroundActionGroup(
     private val logGroup: String,
     private val logStream: String,
     private val treeTable: TableView<LogStreamEntry>
@@ -24,20 +24,19 @@ class ShowLogsAroundGroup(
     }
 
     override fun getChildren(e: AnActionEvent?): Array<AnAction> = arrayOf(
-        ShowLogsAround(logGroup, logStream, treeTable, message("general.time.one_minute"), Duration.ofMinutes(1)),
-        ShowLogsAround(logGroup, logStream, treeTable, message("general.time.five_minutes"), Duration.ofMinutes(5)),
-        ShowLogsAround(logGroup, logStream, treeTable, message("general.time.ten_minutes"), Duration.ofMinutes(10))
+        ShowLogsAroundAction(logGroup, logStream, treeTable, message("general.time.one_minute"), Duration.ofMinutes(1)),
+        ShowLogsAroundAction(logGroup, logStream, treeTable, message("general.time.five_minutes"), Duration.ofMinutes(5)),
+        ShowLogsAroundAction(logGroup, logStream, treeTable, message("general.time.ten_minutes"), Duration.ofMinutes(10))
     )
 }
 
-private class ShowLogsAround(
+private class ShowLogsAroundAction(
     private val logGroup: String,
     private val logStream: String,
     private val treeTable: TableView<LogStreamEntry>,
     timeMessage: String,
     private val duration: Duration
-) :
-    AnAction(timeMessage, null, null), DumbAware {
+) : AnAction(timeMessage, null, null), DumbAware {
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.getRequiredData(PlatformDataKeys.PROJECT)
         val window = CloudWatchLogWindow.getInstance(project)

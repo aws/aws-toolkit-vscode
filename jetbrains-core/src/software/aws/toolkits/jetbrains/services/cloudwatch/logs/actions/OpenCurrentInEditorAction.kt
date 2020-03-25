@@ -15,13 +15,13 @@ import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.resources.message
 
-class OpenCurrentInEditor(
+class OpenCurrentInEditorAction(
     private val project: Project,
     private val logStream: String,
     private val tableEntries: () -> List<LogStreamEntry>
 ) :
     AnAction(message("cloudwatch.logs.open_in_editor"), null, AllIcons.Actions.Menu_open),
-    CoroutineScope by ApplicationThreadPoolScope("OpenCurrentInEditor"),
+    CoroutineScope by ApplicationThreadPoolScope("OpenCurrentInEditorAction"),
     DumbAware {
     private val edt = getCoroutineUiContext()
 

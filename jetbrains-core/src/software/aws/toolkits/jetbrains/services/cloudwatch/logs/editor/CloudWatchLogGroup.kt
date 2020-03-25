@@ -30,7 +30,7 @@ import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow
-import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.OpenLogStreamInEditor
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.OpenLogStreamInEditorAction
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
@@ -110,7 +110,7 @@ class CloudWatchLogGroup(
 
     private fun addActions() {
         val actionGroup = DefaultActionGroup()
-        actionGroup.addAction(OpenLogStreamInEditor(project, client, logGroup, groupTable))
+        actionGroup.addAction(OpenLogStreamInEditorAction(project, client, logGroup, groupTable))
         PopupHandler.installPopupHandler(
             groupTable,
             actionGroup,

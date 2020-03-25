@@ -18,7 +18,7 @@ import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamActor
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.resources.message
 
-class TailLogs(private val channel: () -> Channel<LogStreamActor.Message>) :
+class TailLogsAction(private val channel: () -> Channel<LogStreamActor.Message>) :
     ToggleAction(message("cloudwatch.logs.tail"), null, AllIcons.RunConfigurations.Scroll_down),
     CoroutineScope by ApplicationThreadPoolScope("TailCloudWatchLogs"),
     DumbAware {

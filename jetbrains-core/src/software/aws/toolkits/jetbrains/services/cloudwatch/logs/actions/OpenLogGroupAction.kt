@@ -10,7 +10,7 @@ import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWin
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogsNode
 import software.aws.toolkits.resources.message
 
-class OpenLogGroup : SingleResourceNodeAction<CloudWatchLogsNode>(message("cloudwatch.logs.open")), DumbAware {
+class OpenLogGroupAction : SingleResourceNodeAction<CloudWatchLogsNode>(message("cloudwatch.logs.open")), DumbAware {
     override fun actionPerformed(selected: CloudWatchLogsNode, e: AnActionEvent) {
         CloudWatchLogWindow.getInstance(selected.nodeProject)?.showLogGroup(selected.logGroupName)
     }

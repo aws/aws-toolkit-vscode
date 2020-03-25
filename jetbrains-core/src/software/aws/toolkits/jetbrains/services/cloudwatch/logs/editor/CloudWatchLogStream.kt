@@ -16,13 +16,13 @@ import com.intellij.ui.SearchTextField
 import com.intellij.ui.components.breadcrumbs.Breadcrumbs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient
+import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamActor
-import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.OpenCurrentInEditor
-import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.ShowLogsAroundGroup
-import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.TailLogs
-import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.WrapLogs
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.OpenCurrentInEditorAction
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.ShowLogsAroundActionGroup
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.TailLogsAction
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.WrapLogsAction
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.resources.message
@@ -46,7 +46,7 @@ class CloudWatchLogStream(
 
     private val edtContext = getCoroutineUiContext(disposable = this)
 
-    private val client: CloudWatchLogsAsyncClient = project.awsClient()
+    private val client: CloudWatchLogsClient = project.awsClient()
     private val logStreamTable: LogStreamTable = LogStreamTable(project, client, logGroup, logStream, LogStreamTable.TableType.LIST)
     private var searchStreamTable: LogStreamTable? = null
 
@@ -115,11 +115,11 @@ class CloudWatchLogStream(
 
     private fun addAction() {
         val actionGroup = DefaultActionGroup()
-        actionGroup.add(OpenCurrentInEditor(project, logStream) {
+        actionGroup.add(OpenCurrentInEditorAction(project, logStream) {
             searchStreamTable?.logsTable?.listTableModel?.items ?: logStreamTable.logsTable.listTableModel.items
         })
         actionGroup.add(Separator())
-        actionGroup.add(ShowLogsAroundGroup(logGroup, logStream, logStreamTable.logsTable))
+        actionGroup.add(ShowLogsAroundActionGroup(logGroup, logStream, logStreamTable.logsTable))
         PopupHandler.installPopupHandler(
             logStreamTable.logsTable,
             actionGroup,
@@ -130,11 +130,11 @@ class CloudWatchLogStream(
 
     private fun addActionToolbar() {
         val actionGroup = DefaultActionGroup()
-        actionGroup.add(OpenCurrentInEditor(project, logStream) {
+        actionGroup.add(OpenCurrentInEditorAction(project, logStream) {
             searchStreamTable?.logsTable?.listTableModel?.items ?: logStreamTable.logsTable.listTableModel.items
         })
-        actionGroup.add(TailLogs { searchStreamTable?.channel ?: logStreamTable.channel })
-        actionGroup.add(WrapLogs { searchStreamTable?.logsTable ?: logStreamTable.logsTable })
+        actionGroup.add(TailLogsAction { searchStreamTable?.channel ?: logStreamTable.channel })
+        actionGroup.add(WrapLogsAction { searchStreamTable?.logsTable ?: logStreamTable.logsTable })
         val toolbar = ActionManager.getInstance().createActionToolbar("CloudWatchLogStream", actionGroup, false)
         tablePanel.toolbar = toolbar.component
     }

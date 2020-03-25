@@ -26,11 +26,11 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.LogStream
 import software.amazon.awssdk.services.cloudwatchlogs.model.OutputLogEvent
 import software.amazon.awssdk.services.cloudwatchlogs.paginators.GetLogEventsIterable
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.OpenCurrentInEditor
-import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.OpenLogStreamInEditor
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.OpenCurrentInEditorAction
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.OpenLogStreamInEditorAction
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.LogStreamsStreamColumn
 
-class OpenLogStreamInEditorTest {
+class OpenLogStreamInEditorActionTest {
     @JvmField
     @Rule
     val projectRule = ProjectRule()
@@ -69,7 +69,7 @@ class OpenLogStreamInEditorTest {
         tableModel.addRow(LogStream.builder().logStreamName("54321").build())
         // select the first row
         table.setRowSelectionInterval(0, 0)
-        val action = OpenLogStreamInEditor(projectRule.project, client, "cloudWatchMock, 12345", table)
+        val action = OpenLogStreamInEditorAction(projectRule.project, client, "cloudWatchMock, 12345", table)
         action.actionPerformed(TestActionEvent())
         runBlocking {
             blockUntilFileOpen()
@@ -90,7 +90,7 @@ class OpenLogStreamInEditorTest {
                 LogStreamEntry("ghi\n", 0L)
             )
         )
-        val action = OpenCurrentInEditor(projectRule.project, "12345") { tableModel.items }
+        val action = OpenCurrentInEditorAction(projectRule.project, "12345") { tableModel.items }
         action.actionPerformed(TestActionEvent())
         runBlocking {
             blockUntilFileOpen()

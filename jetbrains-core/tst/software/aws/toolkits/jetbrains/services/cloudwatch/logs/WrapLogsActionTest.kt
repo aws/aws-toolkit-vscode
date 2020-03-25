@@ -11,11 +11,11 @@ import com.intellij.util.ui.ListTableModel
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
-import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.WrapLogs
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.WrapLogsAction
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.LogStreamDateColumn
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.LogStreamMessageColumn
 
-class WrapLogsTest {
+class WrapLogsActionTest {
     @JvmField
     @Rule
     val projectRule = ProjectRule()
@@ -24,7 +24,7 @@ class WrapLogsTest {
     fun wrappingChangesModel() {
         val model = ListTableModel<LogStreamEntry>(LogStreamDateColumn(), LogStreamMessageColumn())
         val table = TableView<LogStreamEntry>(model)
-        val wrapLogsAction = WrapLogs { table }
+        val wrapLogsAction = WrapLogsAction { table }
         wrapLogsAction.setSelected(TestActionEvent(), true)
         val wrappedComponent = model.columnInfos[1].getRenderer(null)!!.getTableCellRendererComponent(table, 0, false, false, 0, 0)
         assertThat(wrappedComponent).isInstanceOf(JBTextArea::class.java)
