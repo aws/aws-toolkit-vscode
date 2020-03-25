@@ -19,16 +19,13 @@ import { getFamily, RuntimeFamily } from '../../../lambda/models/samLambdaRuntim
  * @see AwsSamDebuggerConfiguration
  * @see AwsSamDebugConfigurationProvider.resolveDebugConfiguration
  */
-export interface SamLaunchRequestArgs extends DebugProtocol.LaunchRequestArguments, AwsSamDebuggerConfiguration {
-    /** An absolute path to the "program" to debug. */
-    program: string;
-    /** Automatically stop target after launch. If not specified, target does not stop. */
-    stopOnEntry?: boolean;
-    /** enable logging the Debug Adapter Protocol */
-    trace?: boolean;
-
+export interface SamLaunchRequestArgs extends
+        DebugProtocol.LaunchRequestArguments,
+        AwsSamDebuggerConfiguration {
     /** Resolved CFN template object, provided by `resolveDebugConfiguration()`. */
     cfnTemplate?: CloudFormation.Template
+    runtime: string
+    runtimeFamily: RuntimeFamily
 }
 
 /**
@@ -97,42 +94,26 @@ export class SamDebugSession extends DebugSession {
         // wait until configuration has finished (and configurationDoneRequest has been called)
         // await this._configurationDone.wait(1000);
         
-        // TODO: support "code" (non-"template").
-        const cfnTemplateUri = vscode.Uri.parse(args.invokeTarget.samTemplatePath!!)
-        const params:LambdaLocalInvokeParams = {
-            // TODO: remove this (irrelevant for debug-config).
-            uri: vscode.window.activeTextEditor?.document.uri ?? cfnTemplateUri,
-            handlerName: args.invokeTarget.lambdaHandler ?? args.invokeTarget.samTemplateResource!!,
-            isDebug: true,  //!!args.noDebug,
-            workspaceFolder: vscode.workspace.getWorkspaceFolder(cfnTemplateUri)!!,
-            samTemplate: cfnTemplateUri,
-            samTemplateResourceName: args.invokeTarget.samTemplateResource,
-        }
-        
-        const runtime = args.lambda?.runtime
-            ?? CloudFormation.getRuntime(args.cfnTemplate!!.Resources!!)
-
-        const runtimeFamily = getFamily(runtime)
-        if (runtimeFamily === RuntimeFamily.NodeJS) {
+        if (args.runtimeFamily === RuntimeFamily.NodeJS) {
             try {
-                await tsLensProvider.invokeLambda({
-                    ...params,
-                    runtime: runtime,
-                    settings: this.ctx.settings,
-                    processInvoker: new DefaultValidatingSamCliProcessInvoker({}),
-                    localInvokeCommand: new DefaultSamLocalInvokeCommand(this.ctx.chanLogger, [
-                        WAIT_FOR_DEBUGGER_MESSAGES.NODEJS
-                    ]),
-                    telemetryService: this.ctx.telemetryService,
-                    outputChannel: this.ctx.outputChannel,
-                })
+                /* await tsLensProvider.invokeLambda({ */
+                /*     ...params, */
+                /*     runtime: runtime, */
+                /*     settings: this.ctx.settings, */
+                /*     processInvoker: new DefaultValidatingSamCliProcessInvoker({}), */
+                /*     localInvokeCommand: new DefaultSamLocalInvokeCommand(this.ctx.chanLogger, [ */
+                /*         WAIT_FOR_DEBUGGER_MESSAGES.NODEJS */
+                /*     ]), */
+                /*     telemetryService: this.ctx.telemetryService, */
+                /*     outputChannel: this.ctx.outputChannel, */
+                /* }) */
                 response.success = true
             } catch (e) {
                 response.success = false
                 response.message = `SAM invoke failed: ${e}`
             }
-        } else if (runtimeFamily === RuntimeFamily.Python) {
-        } else if (runtimeFamily === RuntimeFamily.DotNetCore) {
+        } else if (args.runtimeFamily === RuntimeFamily.Python) {
+        } else if (args.runtimeFamily === RuntimeFamily.DotNetCore) {
         }
 
         this.sendResponse(response);
