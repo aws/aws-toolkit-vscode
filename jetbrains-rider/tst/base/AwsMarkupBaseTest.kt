@@ -3,6 +3,8 @@
 
 package base
 
+import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.execution.util.ExecUtil
 import com.intellij.openapi.util.SystemInfo
 import com.jetbrains.rider.test.base.BaseTestWithMarkup
 import com.jetbrains.rider.test.scriptingApi.setUpCustomToolset
@@ -19,13 +21,23 @@ import org.testng.annotations.BeforeClass
 // To avoid such errors we need to explicitly set toolset and MSBuild to be selected on an instance.
 // Please use this class for any Highlighting tests
 open class AwsMarkupBaseTest : BaseTestWithMarkup() {
+    private val dotNetSdk by lazy {
+        val output = ExecUtil.execAndGetOutput(GeneralCommandLine("dotnet", "--version"))
+        if (output.exitCode == 0) {
+            "C:\\Program Files\\dotnet\\sdk\\${output.stdout.trim()}\\MSBuild.dll".also {
+                println("Using MSBuild.dll at $it")
+            }
+        } else {
+            throw IllegalStateException("Failed to locate dotnet version: ${output.stderr}")
+        }
+    }
 
     @BeforeClass
     fun setUpBuildToolPath() {
         if (SystemInfo.isWindows) {
             dotnetCoreCliPath = "C:\\Program Files\\dotnet\\dotnet.exe"
             setUpDotNetCoreCliPath(dotnetCoreCliPath)
-            setUpCustomToolset("C:\\Program Files\\dotnet\\sdk\\2.2.104\\MSBuild.dll")
+            setUpCustomToolset(dotNetSdk)
         }
     }
 }
