@@ -25,7 +25,7 @@ import { SettingsConfiguration } from '../settingsConfiguration'
 import { SamCliProcessInvoker } from '../sam/cli/samCliInvokerUtils'
 import { TelemetryService } from '../telemetry/telemetryService'
 
-async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
+export async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
     const packageJsonPath: string | undefined = await findFileInParentPaths(path.dirname(filepath), 'package.json')
     if (!packageJsonPath) {
         throw new Error( // TODO: Do we want to localize errors? This might be confusing if we need to review logs.

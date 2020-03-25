@@ -26,6 +26,8 @@ export interface SamLaunchRequestArgs extends
     cfnTemplate?: CloudFormation.Template
     runtime: string
     runtimeFamily: RuntimeFamily
+    handlerName: string
+    isDebug: boolean
 }
 
 /**
