@@ -175,6 +175,9 @@ export interface SamCliLocalInvokeInvocationArguments {
     debuggerPath?: string
 }
 
+/**
+ * An elaborate way to run `sam local`.
+ */
 export class SamCliLocalInvokeInvocation {
     private readonly templateResourceName: string
     private readonly templatePath: string

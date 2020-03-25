@@ -53,7 +53,9 @@ const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
 const MAX_DEBUGGER_RETRIES_DEFAULT: number = 30
 const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 200
 
-// TODO: Consider replacing LocalLambdaRunner use with associated duplicative functions
+/**
+ * DEPRECATED. Use `invokeLambdaFunction()` instead.
+ */
 export class LocalLambdaRunner {
     private _baseBuildFolder?: string
     private readonly _debugPort?: number
@@ -114,7 +116,7 @@ export class LocalLambdaRunner {
                 useContainer: config.useContainer
             })
 
-            await this.invokeLambdaFunction(samBuildTemplate,
+            await this.run2(samBuildTemplate,
                 this.cfnResourceName ?? TEMPLATE_RESOURCE_NAME)
         } catch (err) {
             const error = err as Error
@@ -183,11 +185,8 @@ export class LocalLambdaRunner {
         })
     }
 
-    /**
-     * Runs `sam local invoke` against the provided template file
-     * @param samTemplatePath sam template to run locally
-     */
-    private async invokeLambdaFunction(samTemplatePath: string, cfnResourceName: string): Promise<void> {
+    /** More indirection. */
+    private async run2(samTemplatePath: string, cfnResourceName: string): Promise<void> {
         this.channelLogger.info(
             'AWS.output.starting.sam.app.locally',
             'Starting the SAM Application locally (see Terminal for output)'
@@ -392,6 +391,9 @@ export interface InvokeLambdaFunctionContext {
     onWillAttachDebugger?(debugPort: number, timeoutDuration: number, channelLogger: ChannelLogger): Promise<void>
 }
 
+/**
+ * Prepares and invokes a lambda function via `sam local invoke`.
+ */
 export async function invokeLambdaFunction(
     invokeArgs: InvokeLambdaFunctionArguments,
     {

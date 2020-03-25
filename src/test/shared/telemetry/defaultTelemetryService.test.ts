@@ -10,8 +10,6 @@ import * as lolex from 'lolex'
 import * as sinon from 'sinon'
 import { AwsContext } from '../../../shared/awsContext'
 import { DefaultTelemetryService } from '../../../shared/telemetry/defaultTelemetryService'
-import { TelemetryFeedback } from '../../../shared/telemetry/telemetryFeedback'
-import { TelemetryPublisher } from '../../../shared/telemetry/telemetryPublisher'
 import { AccountStatus } from '../../../shared/telemetry/telemetryTypes'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 
@@ -22,40 +20,18 @@ import {
     FakeAwsContext,
     makeFakeAwsContextWithPlaceholderIds
 } from '../../utilities/fakeAwsContext'
-
-class MockTelemetryPublisher implements TelemetryPublisher {
-    public flushCount = 0
-    public enqueueCount = 0
-    public enqueuedItems = 0
-
-    public feedback?: TelemetryFeedback
-
-    public async init() {}
-
-    public async postFeedback(feedback: TelemetryFeedback): Promise<void> {
-        this.feedback = feedback
-    }
-
-    public enqueue(...events: any[]) {
-        this.enqueueCount++
-        this.enqueuedItems += events.length
-    }
-
-    public async flush() {
-        this.flushCount++
-    }
-}
+import { FakeTelemetryPublisher } from '../../fake/fakeTelemetryService'
 
 const originalTelemetryClient: TelemetryService = ext.telemetry
 let mockContext: FakeExtensionContext
 let mockAws: FakeAwsContext
-let mockPublisher: MockTelemetryPublisher
+let mockPublisher: FakeTelemetryPublisher
 let service: DefaultTelemetryService
 
 beforeEach(() => {
     mockContext = new FakeExtensionContext()
     mockAws = new FakeAwsContext()
-    mockPublisher = new MockTelemetryPublisher()
+    mockPublisher = new FakeTelemetryPublisher()
     service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
     ext.telemetry = service
 })

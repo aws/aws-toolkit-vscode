@@ -8,6 +8,7 @@ import { DefaultValidatingSamCliProcessInvoker } from '../cli/defaultValidatingS
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke';
 import { AwsSamDebuggerConfiguration } from './awsSamDebugConfiguration.gen';
 import { CloudFormation } from '../../cloudformation/cloudformation'
+import { getFamily, RuntimeFamily } from '../../../lambda/models/samLambdaRuntime';
 
 /**
  * SAM-specific launch attributes (which are not part of the DAP).
@@ -86,11 +87,13 @@ export class SamDebugSession extends DebugSession {
         this.sendEvent(new InitializedEvent());
     }
 
+    /**
+     * Invokes `sam build`, `sam invoke`, then attachs vscode debugger to the
+     * debugger port.
+     */
     protected async launchRequest(response: DebugProtocol.LaunchResponse, args: SamLaunchRequestArgs) {
-
         // make sure to 'Stop' the buffered logging if 'trace' is not set
         logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false);
-
         // wait until configuration has finished (and configurationDoneRequest has been called)
         // await this._configurationDone.wait(1000);
         
@@ -106,25 +109,30 @@ export class SamDebugSession extends DebugSession {
             samTemplateResourceName: args.invokeTarget.samTemplateResource,
         }
         
-        const lambdaRuntime = args.lambda?.runtime
+        const runtime = args.lambda?.runtime
             ?? CloudFormation.getRuntime(args.cfnTemplate!!.Resources!!)
 
-        try {
-            await tsLensProvider.invokeLambda({
-                ...params,
-                runtime: lambdaRuntime,
-                settings: this.ctx.settings,
-                processInvoker: new DefaultValidatingSamCliProcessInvoker({}),
-                localInvokeCommand: new DefaultSamLocalInvokeCommand(this.ctx.chanLogger, [
-                    WAIT_FOR_DEBUGGER_MESSAGES.NODEJS
-                ]),
-                telemetryService: this.ctx.telemetryService,
-                outputChannel: this.ctx.outputChannel,
-            })
-            response.success = true
-        } catch (e) {
-            response.success = false
-            response.message = `SAM invoke failed: ${e}`
+        const runtimeFamily = getFamily(runtime)
+        if (runtimeFamily === RuntimeFamily.NodeJS) {
+            try {
+                await tsLensProvider.invokeLambda({
+                    ...params,
+                    runtime: runtime,
+                    settings: this.ctx.settings,
+                    processInvoker: new DefaultValidatingSamCliProcessInvoker({}),
+                    localInvokeCommand: new DefaultSamLocalInvokeCommand(this.ctx.chanLogger, [
+                        WAIT_FOR_DEBUGGER_MESSAGES.NODEJS
+                    ]),
+                    telemetryService: this.ctx.telemetryService,
+                    outputChannel: this.ctx.outputChannel,
+                })
+                response.success = true
+            } catch (e) {
+                response.success = false
+                response.message = `SAM invoke failed: ${e}`
+            }
+        } else if (runtimeFamily === RuntimeFamily.Python) {
+        } else if (runtimeFamily === RuntimeFamily.DotNetCore) {
         }
 
         this.sendResponse(response);

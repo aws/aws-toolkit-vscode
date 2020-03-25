@@ -7,6 +7,7 @@ import * as assert from 'assert'
 import * as path from 'path'
 import * as vscode from 'vscode'
 
+import { FakeExtensionContext } from '../../../fakeExtensionContext'
 import { nodeJsRuntimes } from '../../../../lambda/models/samLambdaRuntime'
 import { CloudFormationTemplateRegistry } from '../../../../shared/cloudformation/templateRegistry'
 import { mkdir, rmrf } from '../../../../shared/filesystem'
@@ -35,10 +36,11 @@ describe('AwsSamDebugConfigurationProvider', async () => {
     const resourceName = 'myResource'
 
     beforeEach(async () => {
+        const fakeContext = new FakeExtensionContext()
         tempFolder = await makeTemporaryToolkitFolder()
         tempFile = vscode.Uri.file(path.join(tempFolder, 'test.yaml'))
         registry = new CloudFormationTemplateRegistry()
-        debugConfigProvider = new SamDebugConfigProvider(registry)
+        debugConfigProvider = new SamDebugConfigProvider(fakeContext)
         fakeWorkspaceFolder = {
             uri: vscode.Uri.file(tempFolder),
             name: 'It was me, fakeWorkspaceFolder!',

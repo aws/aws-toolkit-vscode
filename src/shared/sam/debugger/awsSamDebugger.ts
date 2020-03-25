@@ -45,6 +45,10 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         folder: vscode.WorkspaceFolder | undefined,
         token?: vscode.CancellationToken
     ): Promise<AwsSamDebuggerConfiguration[] | undefined> {
+        if (token?.isCancellationRequested) {
+            return undefined
+        }
+        
         const configs: AwsSamDebuggerConfiguration[] = []
         if (folder) {
             const templates = this.cftRegistry.registeredTemplates
@@ -103,6 +107,10 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         config: AwsSamDebuggerConfiguration,
         token?: vscode.CancellationToken
     ): Promise<AwsSamDebuggerConfiguration | undefined> {
+        if (token?.isCancellationRequested) {
+            return undefined
+        }
+        
         // Return initial (stub) config, if:
         //   1. launch.json is missing or empty (like "debuggers.*.initialConfigurations" in package.json)
         //   2. no template.yaml was discovered by provideDebugConfigurations()

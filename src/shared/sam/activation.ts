@@ -42,7 +42,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
     ctx.subscriptions.push(vscode.debug.registerDebugConfigurationProvider(
         AWS_SAM_DEBUG_TYPE,
-        new SamDebugConfigProvider()
+        new SamDebugConfigProvider(ctx)
     ))
 
     // "Inline" DA type: runs inside the extension and directly talks to it.
