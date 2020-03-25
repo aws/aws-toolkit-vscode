@@ -143,12 +143,13 @@ describe('AwsSamDebugConfigurationProvider', async () => {
         })
 
         it('returns undefined when resolving debug configurations with an invalid target type', async () => {
+            const tgt = 'not-code' as 'code'
             const resolved = await debugConfigProvider.resolveDebugConfiguration(undefined, {
                 type: AWS_SAM_DEBUG_TYPE,
                 name: 'whats in a name',
                 request: DIRECT_INVOKE_TYPE,
                 invokeTarget: {
-                    target: 'not-code',
+                    target: tgt,
                     lambdaHandler: 'sick handles',
                     projectRoot: 'root as in beer'
                 }

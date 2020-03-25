@@ -12,12 +12,13 @@ import { samLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 import { CloudFormation } from '../../cloudformation/cloudformation'
 import { CloudFormationTemplateRegistry } from '../../cloudformation/templateRegistry'
 import { isContainedWithinDirectory } from '../../filesystemUtilities'
-import { AwsSamDebuggerConfiguration, AwsSamDebuggerInvokeTargetTemplateFields } from './awsSamDebugConfiguration'
+import { AwsSamDebuggerInvokeTargetTemplateFields } from './awsSamDebugConfiguration'
+import { AwsSamDebuggerConfiguration } from './awsSamDebugConfiguration.gen'
 
 export const AWS_SAM_DEBUG_TYPE = 'aws-sam'
 export const DIRECT_INVOKE_TYPE = 'direct-invoke'
-export const TEMPLATE_TARGET_TYPE = 'template'
-export const CODE_TARGET_TYPE = 'code'
+export const TEMPLATE_TARGET_TYPE: 'template' = 'template'
+export const CODE_TARGET_TYPE: 'code' = 'code'
 
 const AWS_SAM_DEBUG_REQUEST_TYPES = [DIRECT_INVOKE_TYPE]
 const AWS_SAM_DEBUG_TARGET_TYPES = [TEMPLATE_TARGET_TYPE, CODE_TARGET_TYPE]
