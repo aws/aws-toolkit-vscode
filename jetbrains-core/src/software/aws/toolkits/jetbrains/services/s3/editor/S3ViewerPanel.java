@@ -9,20 +9,17 @@ import com.intellij.openapi.actionSystem.ActionPlaces;
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.actionSystem.Separator;
 import com.intellij.openapi.project.Project;
-import com.intellij.ui.ClickListener;
 import com.intellij.ui.PopupHandler;
 import com.intellij.ui.ScrollPaneFactory;
 import com.intellij.ui.treeStructure.SimpleTreeStructure;
 import com.intellij.util.ui.ColumnInfo;
 import java.awt.BorderLayout;
-import java.awt.event.MouseEvent;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableCellRenderer;
-import org.jetbrains.annotations.NotNull;
 import software.aws.toolkits.jetbrains.services.s3.objectActions.CopyPathAction;
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DeleteObjectAction;
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction;
@@ -82,8 +79,6 @@ public class S3ViewerPanel {
         treeTable.getColumnModel().getColumn(1).setMaxWidth(120);
 
         mainPanel.add(ScrollPaneFactory.createScrollPane(treeTable), BorderLayout.CENTER);
-
-        clearSelectionOnWhiteSpace();
     }
 
     private void createUIComponents() {
@@ -118,21 +113,5 @@ public class S3ViewerPanel {
         actionGroup.add(new Separator());
         actionGroup.add(new DeleteObjectAction(project, treeTable));
         PopupHandler.installPopupHandler(treeTable, actionGroup, ActionPlaces.EDITOR_POPUP, ActionManager.getInstance());
-    }
-
-    private void clearSelectionOnWhiteSpace() {
-        new ClickListener() {
-            @Override
-            public boolean onClick(@NotNull MouseEvent e, int clickCount) {
-                if (clickCount != 1) {
-                    return false;
-                }
-                if (treeTable.rowAtPoint(e.getPoint()) < 0) {
-                    treeTable.clearSelection();
-                    return true;
-                }
-                return false;
-            }
-        }.installOn(treeTable);
     }
 }

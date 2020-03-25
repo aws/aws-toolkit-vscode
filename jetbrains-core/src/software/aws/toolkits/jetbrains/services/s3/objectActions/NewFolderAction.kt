@@ -7,7 +7,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeDirectoryNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
 import software.aws.toolkits.jetbrains.services.s3.editor.getDirectoryKey
@@ -28,6 +27,4 @@ class NewFolderAction(private val project: Project, treeTable: S3TreeTable) : Si
             }
         }
     }
-
-    override fun enabled(node: S3TreeNode): Boolean = node is S3TreeDirectoryNode
 }
