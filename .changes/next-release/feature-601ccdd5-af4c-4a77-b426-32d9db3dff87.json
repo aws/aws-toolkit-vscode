@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Support for CloudWatch Logs. View, filter, and stream log streams as well as quickly view logs from Lambda or ECS Containers."
+}
