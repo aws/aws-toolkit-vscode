@@ -104,8 +104,8 @@ current region.
     enables an `Upload...` button.
     - If a non-folder object is selected, `Upload...` targets the object's parent folder.
 - S3 root node context-menu:
-  - (P0) `Create bucket`
-    - Invokes the `AWS: Create bucket` VSCode command which prompts for Bucket name.
+  - (P0) `New bucket`
+    - Invokes the `AWS: New bucket` VSCode command which prompts for Bucket name.
     - Public access is blocked by default. To enable public access, user must
       use the AWS web console.
 
