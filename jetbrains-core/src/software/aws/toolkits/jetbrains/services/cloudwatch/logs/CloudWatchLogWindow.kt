@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs
 
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
+import icons.AwsIcons
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -58,7 +59,12 @@ class CloudWatchLogWindow(private val project: Project) : CoroutineScope by Appl
     }
 
     companion object {
-        private val CW_LOGS_TOOL_WINDOW = ToolkitToolWindowType("AWS.CloudWatchLog", message("cloudwatch.logs.toolwindow"))
+        private val CW_LOGS_TOOL_WINDOW = ToolkitToolWindowType(
+            "AWS.CloudWatchLog",
+            message("cloudwatch.logs.toolwindow"),
+            AwsIcons.Resources.CLOUDWATCH_LOGS
+        )
+
         fun getInstance(project: Project) = ServiceManager.getService(project, CloudWatchLogWindow::class.java)
     }
 }

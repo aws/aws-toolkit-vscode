@@ -29,8 +29,7 @@ class CloudWatchLogsNode(
     project,
     CloudWatchLogsClient.SERVICE_NAME,
     logGroupName,
-    // TODO get icon for CloudWatch
-    AwsIcons.Logos.AWS
+    AwsIcons.Resources.CLOUDWATCH_LOGS
 ) {
     override fun resourceType() = "group"
 
