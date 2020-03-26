@@ -9,6 +9,7 @@ import * as path from 'path'
 import uuidv4 = require('uuid/v4')
 import { ExtensionContext } from 'vscode'
 import { AwsContext } from '../awsContext'
+import { getComputeRegion } from '../extensionUtilities'
 import { getLogger } from '../logger'
 import { DefaultTelemetryClient } from './defaultTelemetryClient'
 import { DefaultTelemetryPublisher } from './defaultTelemetryPublisher'
@@ -17,7 +18,7 @@ import { TelemetryEvent } from './telemetryEvent'
 import { TelemetryFeedback } from './telemetryFeedback'
 import { TelemetryPublisher } from './telemetryPublisher'
 import { TelemetryService } from './telemetryService'
-import { ACCOUNT_METADATA_KEY, AccountStatus } from './telemetryTypes'
+import { ACCOUNT_METADATA_KEY, AccountStatus, COMPUTE_REGION_KEY } from './telemetryTypes'
 
 export class DefaultTelemetryService implements TelemetryService {
     public static readonly TELEMETRY_COGNITO_ID_KEY = 'telemetryId'
@@ -120,9 +121,9 @@ export class DefaultTelemetryService implements TelemetryService {
         // record events only if telemetry is enabled or the user hasn't expressed a preference
         // events should only be flushed if the user has consented
         const actualAwsContext = awsContext || this.awsContext
-        const eventWithAccountMetadata = this.injectAccountMetadata(event, actualAwsContext)
+        const eventWithCommonMetadata = this.injectCommonMetadata(event, actualAwsContext)
         if (this.telemetryEnabled || !this._telemetryOptionExplicitlyStated) {
-            this._eventQueue.push(eventWithAccountMetadata)
+            this._eventQueue.push(eventWithCommonMetadata)
         }
     }
 
@@ -209,7 +210,7 @@ export class DefaultTelemetryService implements TelemetryService {
         }
     }
 
-    private injectAccountMetadata(event: TelemetryEvent, awsContext: AwsContext): TelemetryEvent {
+    private injectCommonMetadata(event: TelemetryEvent, awsContext: AwsContext): TelemetryEvent {
         let accountValue: string | AccountStatus
         // The AWS account ID is not set on session start. This matches JetBrains' functionality.
         if (event.data.every(item => item.MetricName === 'session_end' || item.MetricName === 'session_start')) {
@@ -232,13 +233,20 @@ export class DefaultTelemetryService implements TelemetryService {
                 accountValue = AccountStatus.NotSet
             }
         }
+
+        const commonMetadata = [{ Key: ACCOUNT_METADATA_KEY, Value: accountValue }]
+        const computeRegion = getComputeRegion()
+        if (computeRegion) {
+            commonMetadata.push({ Key: COMPUTE_REGION_KEY, Value: computeRegion })
+        }
+
         // event has data
         if (event.data) {
             for (const datum of event.data) {
                 if (datum.Metadata) {
-                    datum.Metadata.push({ Key: ACCOUNT_METADATA_KEY, Value: accountValue })
+                    datum.Metadata.push(...commonMetadata)
                 } else {
-                    datum.Metadata = [{ Key: ACCOUNT_METADATA_KEY, Value: accountValue }]
+                    datum.Metadata = commonMetadata
                 }
             }
         } else {
@@ -248,7 +256,7 @@ export class DefaultTelemetryService implements TelemetryService {
                 {
                     MetricName: 'noData',
                     Value: 0,
-                    Metadata: [{ Key: ACCOUNT_METADATA_KEY, Value: accountValue }]
+                    Metadata: commonMetadata
                 }
             ]
             event.data = data

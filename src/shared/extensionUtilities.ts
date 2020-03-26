@@ -62,6 +62,18 @@ export function isCloud9(): boolean {
     return getIdeType() === IDE.cloud9
 }
 
+/**
+ * Returns the compute region (e.g. Cloud9 region) or 'not-regional' if used in a non-regional setting.
+ * TODO: Implement this function!!!
+ */
+export function getComputeRegion(): string | undefined {
+    if (isCloud9()) {
+        return 'not-implemented'
+    }
+
+    return undefined
+}
+
 export class ExtensionUtilities {
     public static getLibrariesForHtml(names: string[]): ScriptResource[] {
         const basePath = path.join(ext.context.extensionPath, 'media', 'libs')
