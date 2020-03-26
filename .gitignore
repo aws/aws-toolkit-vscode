@@ -13,8 +13,8 @@ extension-readme.md
 .gitcommit
 media/libs/
 
-# Auto generated telemety defintion
-src/shared/telemetry/telemetry.gen.ts
+# Auto generated definitions
+src/**/*.gen.ts
 # Telemetry definition for testing adding telemetry
 src/shared/telemetry/vscodeTelemetry.json
 
