@@ -160,7 +160,7 @@ S3 objects and folders are listed as children of their respective parent bucket/
         - Default download location is also configurable as a global Toolkit
           option. This is not S3-specific, it is used for all `Download`
           experiences in the Toolkit.
-      - (P2) Loading bar or updating percentage.
+      - (P1) Loading bar or updating percentage.
     - (P1) Toolkit tracks current downloads so that they are cancellable.
       - User can cancel all downloads by clicking a button in the Toolkit
         explorer toolbar, or by the `AWS: Cancel downloads` VSCode command.
