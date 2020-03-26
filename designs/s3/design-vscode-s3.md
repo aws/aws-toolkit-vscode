@@ -147,12 +147,16 @@ S3 objects and folders are listed as children of their respective parent bucket/
   - (P0) `Download`
     - Does _not_ present a chooser.
     - Downloads immediately to the OS default location (typically `~/Downloads`).
-    - Present download status as a toaster message containing this info:
-      - Path to the download location.
-        - On completion, the path becomes a linkbutton, which onclick opens the file in VSCode.
+    - Present download status as a toaster message containing this info, for all in-progress downloads:
+      - Path to the download folder (linkbutton).
+        - On click: navigate to the folder in the VSCode file explorer.
+      - Path to the downloaded file location (linkbutton).
+        - On click: If the download is complete, open the file in VSCode. Else
+          show an error message indicating that the download is not complete.
       - `Choose location...` linkbutton.
         - User can change the download location via this link. This changes the
-          default location for future downloads.
+          default location for future downloads _and_ the current in-progress
+          downloads.
         - Default download location is also configurable as a global Toolkit
           option. This is not S3-specific, it is used for all `Download`
           experiences in the Toolkit.
