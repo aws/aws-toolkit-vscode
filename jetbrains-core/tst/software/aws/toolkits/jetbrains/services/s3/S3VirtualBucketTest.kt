@@ -9,12 +9,10 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.reset
 import com.nhaarman.mockitokotlin2.stub
 import com.nhaarman.mockitokotlin2.verify
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.core.sync.RequestBody
@@ -50,19 +48,11 @@ class S3VirtualBucketTest {
 
     @JvmField
     @Rule
-    val mockClientManagerRule = MockClientManagerRule(projectRule)
-
-    private val s3Client = delegateMock<S3Client>()
-    private val sut = S3VirtualBucket(Bucket.builder().name("TestBucket").build(), s3Client)
-
-    @Before
-    fun setup() {
-        reset(s3Client)
-        mockClientManagerRule.manager().register(S3Client::class, s3Client)
-    }
+    val mockClientManager = MockClientManagerRule(projectRule)
 
     @Test
     fun deleteObjects() {
+        val s3Client = mockClientManager.create<S3Client>()
         val deleteCaptor = argumentCaptor<DeleteObjectsRequest>()
 
         val objectsToDelete = mutableListOf<ObjectIdentifier>()
@@ -75,6 +65,7 @@ class S3VirtualBucketTest {
                     .deleted(listOf(DeletedObject.builder().deleteMarker(true).key("testKey").build()))).build()
         }
 
+        val sut = S3VirtualBucket(Bucket.builder().name("TestBucket").build(), s3Client)
         runBlocking {
             sut.deleteObjects(listOf("testKey"))
         }
@@ -86,6 +77,7 @@ class S3VirtualBucketTest {
 
     @Test
     fun renameObject() {
+        val s3Client = mockClientManager.create<S3Client>()
         val deleteCaptor = argumentCaptor<DeleteObjectRequest>()
         val copyCaptor = argumentCaptor<CopyObjectRequest>()
 
@@ -106,6 +98,7 @@ class S3VirtualBucketTest {
                 .build()
         }
 
+        val sut = S3VirtualBucket(Bucket.builder().name("TestBucket").build(), s3Client)
         runBlocking {
             sut.renameObject("key", "renamedKey")
         }
@@ -121,7 +114,9 @@ class S3VirtualBucketTest {
 
     @Test
     fun uploadObject() {
+        val s3Client = mockClientManager.create<S3Client>()
         val uploadCaptor = argumentCaptor<PutObjectRequest>()
+
         s3Client.stub {
             on {
                 putObject(uploadCaptor.capture(), any<RequestBody>())
@@ -134,6 +129,7 @@ class S3VirtualBucketTest {
         testFile.stub { on { length } doReturn 341 }
         testFile.stub { on { inputStream } doReturn ByteArrayInputStream("Hello".toByteArray()) }
 
+        val sut = S3VirtualBucket(Bucket.builder().name("TestBucket").build(), s3Client)
         runBlocking {
             sut.upload(projectRule.project, testFile.inputStream, testFile.length, "TestFile")
         }
@@ -147,7 +143,9 @@ class S3VirtualBucketTest {
 
     @Test
     fun downloadObject() {
+        val s3Client = mockClientManager.create<S3Client>()
         val downloadCaptor = argumentCaptor<GetObjectRequest>()
+
         s3Client.stub {
             on {
                 getObject(downloadCaptor.capture(), any<ResponseTransformer<GetObjectResponse, GetObjectResponse>>())
@@ -167,6 +165,7 @@ class S3VirtualBucketTest {
 
         val testFile = FileUtil.createTempFile("myfile", ".txt")
 
+        val sut = S3VirtualBucket(Bucket.builder().name("TestBucket").build(), s3Client)
         runBlocking {
             sut.download(projectRule.project, "key", testFile.outputStream())
         }
@@ -178,11 +177,14 @@ class S3VirtualBucketTest {
 
     @Test
     fun listObjects() {
+        val s3Client = mockClientManager.create<S3Client>()
         val requestCaptor = argumentCaptor<ListObjectsV2Request>()
+
         s3Client.stub {
             on { listObjectsV2(requestCaptor.capture()) } doReturn ListObjectsV2Response.builder().build()
         }
 
+        val sut = S3VirtualBucket(Bucket.builder().name("TestBucket").build(), s3Client)
         runBlocking {
             sut.listObjects("prefix/", "continuation")
         }

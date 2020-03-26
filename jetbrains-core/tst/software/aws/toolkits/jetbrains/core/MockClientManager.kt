@@ -32,13 +32,17 @@ class MockClientManager(project: Project) : AwsClientManager(project, AwsSdkClie
 
     override fun dispose() {
         super.dispose()
-        mockClients.clear()
+        reset()
     }
 
+    // Note: You must pass KClass of the interface, since we do not do instanceof checks, but == on the classes
+    // This will lead to comparing the anonymous mock proxy to the interface and it will fail
+    @Deprecated("Do not use, use MockClientManagerRule")
     fun register(clazz: KClass<out SdkClient>, sdkClient: SdkClient) {
         mockClients[Key(clazz)] = sdkClient
     }
 
+    @Deprecated("Do not use, use MockClientManagerRule")
     fun <T : SdkClient> register(clazz: KClass<out SdkClient>, sdkClient: T, region: AwsRegion, credProvider: ToolkitCredentialsProvider) {
         mockClients[Key(clazz, region, credProvider.id)] = sdkClient
     }
@@ -47,12 +51,10 @@ class MockClientManager(project: Project) : AwsClientManager(project, AwsSdkClie
         super.clear()
         mockClients.clear()
     }
-
-    companion object {
-        @JvmStatic
-        fun getInstance(project: Project): MockClientManager = ServiceManager.getService(project, ToolkitClientManager::class.java) as MockClientManager
-    }
 }
+
+// Scoped to this file only, users should be using MockClientManagerRule to enforce cleanup correctly
+private fun getMockInstance(project: Project): MockClientManager = ServiceManager.getService(project, ToolkitClientManager::class.java) as MockClientManager
 
 class MockClientManagerRule(private val project: () -> Project) : ExternalResource() {
     constructor(projectRule: ProjectRule) : this({ projectRule.project })
@@ -61,20 +63,24 @@ class MockClientManagerRule(private val project: () -> Project) : ExternalResour
     private lateinit var mockClientManager: MockClientManager
 
     override fun before() {
-        mockClientManager = MockClientManager.getInstance(project())
+        mockClientManager = getMockInstance(project())
     }
 
     override fun after() {
         mockClientManager.reset()
     }
 
-    fun manager() = mockClientManager
+    @PublishedApi
+    @Deprecated("Do not use, visible for inline")
+    internal fun manager() = mockClientManager
 
     inline fun <reified T : SdkClient> create(): T = delegateMock<T>().also {
+        @Suppress("DEPRECATION")
         manager().register(T::class, it)
     }
 
     inline fun <reified T : SdkClient> create(region: AwsRegion, credProvider: ToolkitCredentialsProvider): T = delegateMock<T>().also {
+        @Suppress("DEPRECATION")
         manager().register(T::class, it, region, credProvider)
     }
 }

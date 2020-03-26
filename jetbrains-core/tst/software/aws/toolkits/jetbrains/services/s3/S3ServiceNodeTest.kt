@@ -7,10 +7,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.Bucket
-import software.aws.toolkits.core.utils.delegateMock
-import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.MockResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
@@ -27,17 +24,10 @@ class S3ServiceNodeTest {
     @Rule
     val projectRule = ProjectRule()
 
-    @Rule
-    @JvmField
-    val mockClientManager = MockClientManagerRule { projectRule.project }
-
-    private val mockClient = delegateMock<S3Client>()
-
     @Before
     fun setUp() {
         resourceCache().clear()
         MockProjectAccountSettingsManager.getInstance(projectRule.project).reset()
-        mockClientManager.manager().register(S3Client::class, mockClient)
     }
 
     @Test
