@@ -153,6 +153,18 @@ async function setupWebviewPanel(
         }
     })
 
+    const onDidCloseTextDocumentDisposable = vscode.workspace.onDidCloseTextDocument(documentWillSaveEvent => {
+        if (!trackedDocumentDoesExist(documentUri)) {
+            panel.dispose()
+            vscode.window.showInformationMessage(
+                localize(
+                    'AWS.stepfunctions.visualisation.errors.rename',
+                    'State machine visualization closed due to file renaming or closure.'
+                )
+            )
+        }
+    })
+
     const updateOnChangeDisposable = vscode.workspace.onDidChangeTextDocument(async textDocumentEvent => {
         if (textDocumentEvent.document.uri.path === documentUri.path) {
             await debouncedUpdate(textDocumentEvent.document)
@@ -189,6 +201,7 @@ async function setupWebviewPanel(
     // When the panel is closed, dispose of any disposables/remove subscriptions
     panel.onDidDispose(() => {
         updateOnSaveDisposable.dispose()
+        onDidCloseTextDocumentDisposable.dispose()
         updateOnChangeDisposable.dispose()
         receiveMessageDisposable.dispose()
         debouncedUpdate.cancel()
@@ -196,6 +209,12 @@ async function setupWebviewPanel(
     })
 
     return panel
+}
+
+function trackedDocumentDoesExist(trackedDocumentURI: vscode.Uri): boolean {
+    const document = vscode.workspace.textDocuments.find(doc => doc.fileName === trackedDocumentURI.fsPath)
+
+    return document !== undefined
 }
 
 function makeWebviewTitle(sourceDocumentUri: vscode.Uri): string {
