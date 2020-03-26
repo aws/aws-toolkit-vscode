@@ -7,6 +7,7 @@ import { join } from 'path'
 import * as vscode from 'vscode'
 import { ext } from '../shared/extensionGlobals'
 import * as telemetry from '../shared/telemetry/telemetry'
+import { activate as activateASL } from './asl/client'
 import { createStateMachineFromTemplate } from './commands/createStateMachineFromTemplate'
 import { visualizeStateMachine } from './commands/visualizeStateMachine'
 
@@ -14,6 +15,7 @@ import { visualizeStateMachine } from './commands/visualizeStateMachine'
  * Activate Step Functions related functionality for the extension.
  */
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
+    await activateASL(extensionContext)
     await registerStepFunctionCommands(extensionContext)
 }
 
@@ -31,7 +33,7 @@ async function registerStepFunctionCommands(extensionContext: vscode.ExtensionCo
     )
 
     extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.aws.stepfunctions.createStateMachineFromTemplate', async () => {
+        vscode.commands.registerCommand('aws.stepfunctions.createStateMachineFromTemplate', async () => {
             try {
                 await createStateMachineFromTemplate(extensionContext)
             } finally {

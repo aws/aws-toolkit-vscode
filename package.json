@@ -52,7 +52,8 @@
         "onCommand:aws.stepfunctions.createStateMachineFromTemplate",
         "onView:aws.cdk.explorer",
         "onCommand:aws.refreshCdkExplorer",
-        "onCommand:aws.aboutToolkit"
+        "onCommand:aws.aboutToolkit",
+        "onLanguage:asl"
     ],
     "main": "./extensionMain",
     "contributes": {
@@ -124,6 +125,17 @@
                     ],
                     "default": "Use IDE settings",
                     "markdownDescription": "%AWS.configuration.description.telemetry%"
+                },
+                "aws.stepfunctions.asl.format.enable": {
+                    "type": "boolean",
+                    "scope": "window",
+                    "default": true,
+                    "description": "%AWS.stepFunctions.asl.format.enable.desc%"
+                },
+                "aws.stepfunctions.asl.maxItemsComputed": {
+                    "type": "number",
+                    "default": 5000,
+                    "description": "%AWS.stepFunctions.asl.maxItemsComputed.desc%"
                 }
             }
         },
@@ -705,18 +717,19 @@
                 ]
             }
         ],
-        "snippets": [
-            {
-                "language": "asl",
-                "path": "./snippets/stepFunctions.json"
-            }
-        ],
         "keybindings": [
             {
                 "command": "aws.previewStateMachine",
                 "key": "ctrl+shift+v",
                 "mac": "cmd+shift+v",
                 "when": "editorTextFocus && editorLangId == asl"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "asl",
+                "scopeName": "source.asl",
+                "path": "./syntaxes/ASL.tmLanguage"
             }
         ]
     },
@@ -767,6 +780,7 @@
         "@types/vscode": "^1.31.0",
         "@types/xml2js": "^0.4.3",
         "decache": "^4.4.0",
+        "filemanager-webpack-plugin": "^2.0.5",
         "glob": "^7.1.4",
         "husky": "^2.3.0",
         "istanbul": "^0.4.5",
@@ -796,6 +810,7 @@
     },
     "dependencies": {
         "adm-zip": "^0.4.13",
+        "amazon-states-language-service": "^0.0.4",
         "async-lock": "^1.1.3",
         "aws-sdk": "^2.581.0",
         "cloudformation-schema-js-yaml": "^1.0.1",
@@ -818,6 +833,9 @@
         "triple-beam": "^1.3.0",
         "typescript": "^3.7.2",
         "uuid": "^3.3.2",
+        "vscode-languageclient": "^6.1.1",
+        "vscode-languageserver": "^6.1.1",
+        "vscode-languageserver-textdocument": "^1.0.1",
         "vscode-nls": "^4.1.1",
         "vue": "^2.5.16",
         "winston": "^3.2.1",

@@ -21,6 +21,8 @@
     "AWS.configuration.description.samcli.debug.attach.timeout": "Maximum amount of time to wait for debugger to connect to a SAM Local debug run (in milliseconds)",
     "AWS.configuration.description.samcli.location": "Location of SAM CLI. SAM CLI is used to create, build, package, and deploy Serverless Applications. [Learn More](https://aws.amazon.com/serverless/sam/)",
     "AWS.configuration.description.telemetry": "Enable the AWS Toolkit to send usage data to AWS. `\"Use IDE settings\"` respects the value specified in \"`telemetry.enableTelemetry`\"",
+    "AWS.stepFunctions.asl.format.enable.desc": "Enables the default formatter used with Amazon States Language files",
+    "AWS.stepFunctions.asl.maxItemsComputed.desc": "The maximum number of outline symbols and folding regions computed (limited for performance reasons).",
     "AWS.stepfunctions.template.helloWorld.description": "A basic example using a Pass state.",
     "AWS.stepfunctions.template.retryFailure.description": "An example of a Task state using a retry policy to handle Lambda failures.",
     "AWS.stepfunctions.template.waitState.description": "Delays the state machine from continuing for a specified time.",
