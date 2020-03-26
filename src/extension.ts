@@ -186,7 +186,9 @@ export async function activate(context: vscode.ExtensionContext) {
             toolkitSettings
         })
 
-        await activateStepFunctions(context)
+        setImmediate(async () => {
+            await activateStepFunctions(context)
+        })
 
         toastNewUser(context)
 

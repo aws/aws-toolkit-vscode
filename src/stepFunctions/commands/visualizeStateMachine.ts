@@ -2,6 +2,13 @@
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import {
+    DiagnosticSeverity,
+    DocumentLanguageSettings,
+    getLanguageService,
+    TextDocument as ASLTextDocument
+} from 'amazon-states-language-service'
+
 import { debounce } from 'lodash'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
@@ -19,13 +26,23 @@ export interface messageObject {
     stateMachineData: string
 }
 
-// TODO: once the amazon-states-language-service is open sourced
-// it should be used directly here - diagnostics appear with a delay
-// and an invalid states machine still can be rendered
-function isDocumentValid(uri: vscode.Uri): boolean {
-    return !vscode.languages
-        .getDiagnostics(uri)
-        .some(diagnostic => diagnostic.severity === vscode.DiagnosticSeverity.Error)
+const documentSettings: DocumentLanguageSettings = { comments: 'error', trailingCommas: 'error' }
+const languageService = getLanguageService({})
+
+async function isDocumentValid(textDocument?: vscode.TextDocument): Promise<boolean> {
+    if (!textDocument) {
+        return false
+    }
+
+    const text = textDocument.getText()
+    const doc = ASLTextDocument.create(textDocument.uri.path, textDocument.languageId, textDocument.version, text)
+    // tslint:disable-next-line: no-inferred-empty-object-type
+    const jsonDocument = languageService.parseJSONDocument(doc)
+    const diagnostics = await languageService.doValidation(doc, jsonDocument, documentSettings)
+
+    const isValid = !diagnostics.some(diagnostic => diagnostic.severity === DiagnosticSeverity.Error)
+
+    return isValid
 }
 
 /**
@@ -77,7 +94,6 @@ async function setupWebviewPanel(
     textDocument: vscode.TextDocument
 ): Promise<vscode.WebviewPanel> {
     const logger: Logger = getLogger()
-    let lastUpdatedTextDocument: vscode.TextDocument
 
     // Create and show panel
     const panel = vscode.window.createWebviewPanel(
@@ -95,8 +111,8 @@ async function setupWebviewPanel(
         }
     )
 
-    function sendUpdateMessage(updatedTextDocument: vscode.TextDocument) {
-        const isValid = isDocumentValid(documentUri)
+    async function sendUpdateMessage(updatedTextDocument: vscode.TextDocument) {
+        const isValid = await isDocumentValid(updatedTextDocument)
 
         if (!panel.webview) {
             return
@@ -109,29 +125,9 @@ async function setupWebviewPanel(
             stateMachineData: updatedTextDocument.getText(),
             isValid
         })
-
-        lastUpdatedTextDocument = updatedTextDocument
-        wasDocumentValid = isValid
     }
 
     const debouncedUpdate = debounce(sendUpdateMessage, 500)
-    let wasDocumentValid = isDocumentValid(documentUri)
-
-    const interval = setInterval(() => {
-        if (!lastUpdatedTextDocument) {
-            return
-        }
-
-        const isValid = isDocumentValid(lastUpdatedTextDocument.uri)
-
-        // Diagnostics are validated with a delay
-        // We need to poll them to check if they are updated
-        if (isValid && !wasDocumentValid) {
-            sendUpdateMessage(lastUpdatedTextDocument)
-        }
-
-        wasDocumentValid = isValid
-    }, 500)
 
     // Set the initial html for the webpage
     panel.webview.html = getWebviewContent(
@@ -150,15 +146,15 @@ async function setupWebviewPanel(
     )
 
     // Add listener function to update the graph on document save
-    const updateOnSaveDisposable = vscode.workspace.onDidSaveTextDocument(savedTextDocument => {
+    const updateOnSaveDisposable = vscode.workspace.onDidSaveTextDocument(async savedTextDocument => {
         if (savedTextDocument && savedTextDocument.uri.path === documentUri.path) {
-            sendUpdateMessage(savedTextDocument)
+            await sendUpdateMessage(savedTextDocument)
         }
     })
 
-    const updateOnChangeDisposable = vscode.workspace.onDidChangeTextDocument(textDocumentEvent => {
+    const updateOnChangeDisposable = vscode.workspace.onDidChangeTextDocument(async textDocumentEvent => {
         if (textDocumentEvent.document.uri.path === documentUri.path) {
-            debouncedUpdate(textDocumentEvent.document)
+            await debouncedUpdate(textDocumentEvent.document)
         }
     })
 
@@ -174,7 +170,7 @@ async function setupWebviewPanel(
             case 'webviewRendered': {
                 // Webview has finished rendering, so now we can give it our
                 // initial state machine definition.
-                sendUpdateMessage(textDocument)
+                await sendUpdateMessage(textDocument)
                 break
             }
 
@@ -194,7 +190,6 @@ async function setupWebviewPanel(
         updateOnSaveDisposable.dispose()
         updateOnChangeDisposable.dispose()
         receiveMessageDisposable.dispose()
-        clearInterval(interval)
     })
 
     return panel

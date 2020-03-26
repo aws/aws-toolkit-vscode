@@ -116,7 +116,8 @@ body .status-info.start-error-asl {
     transform: translate(-50%, 50%);
 }
 
-.status-info.start-error-asl svg {
+.status-info.start-error-asl svg,
+.status-info.start-error-asl + .graph-buttons-container {
     display: none;
 }
 
