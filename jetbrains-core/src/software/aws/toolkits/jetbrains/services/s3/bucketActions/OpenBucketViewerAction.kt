@@ -10,5 +10,7 @@ import software.aws.toolkits.jetbrains.services.s3.openEditor
 import software.aws.toolkits.resources.message
 
 class OpenBucketViewerAction : SingleResourceNodeAction<S3BucketNode>(message("s3.open.viewer.bucket.action")), DumbAware {
-    override fun actionPerformed(selected: S3BucketNode, e: AnActionEvent) = openEditor(selected.nodeProject, selected.bucket)
+    override fun actionPerformed(selected: S3BucketNode, e: AnActionEvent) {
+        openEditor(selected.nodeProject, selected.bucket)
+    }
 }

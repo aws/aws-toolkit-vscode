@@ -3,6 +3,7 @@
 package software.aws.toolkits.jetbrains.services.s3
 
 import com.intellij.codeHighlighting.BackgroundEditorHighlighter
+import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorLocation
 import com.intellij.openapi.fileEditor.FileEditorManager
@@ -74,12 +75,18 @@ class S3ViewerEditor(project: Project, bucket: S3VirtualBucket) : UserDataHolder
     override fun setState(state: FileEditorState) {}
 }
 
-fun openEditor(project: Project, bucket: Bucket) {
-    try {
-        FileEditorManager.getInstance(project).openTextEditor(OpenFileDescriptor(project, S3VirtualBucket(bucket, project.awsClient())), true)
+fun openEditor(project: Project, bucket: Bucket): Editor? = try {
+    FileEditorManager.getInstance(project).openTextEditor(
+        OpenFileDescriptor(
+            project,
+            S3VirtualBucket(bucket, project.awsClient())
+        ),
+        true
+    ).also {
         S3Telemetry.openEditor(project, Result.SUCCEEDED)
-    } catch (e: Exception) {
-        e.notifyError(message("s3.open.viewer.bucket.failed"))
-        S3Telemetry.openEditor(project, Result.FAILED)
     }
+} catch (e: Exception) {
+    e.notifyError(message("s3.open.viewer.bucket.failed"))
+    S3Telemetry.openEditor(project, Result.FAILED)
+    null
 }
