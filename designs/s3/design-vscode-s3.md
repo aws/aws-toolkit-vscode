@@ -177,7 +177,7 @@ S3 objects and folders are listed as children of their respective parent bucket/
 
 ### S3 bucket properties
 
-Surface these important bucket properties in a clear yet uncluttered manner:
+Surface these important bucket properties in a conspicuous yet uncluttered manner:
 
 - (P1) _Public accessible_: show icon (same as AWS web console) next to bucket
   name indicating that it is publicly accessible.
@@ -198,7 +198,7 @@ versioning is enabled) are surfaced as follows:
     - (BLOCKED) grey-out or "disable" the menu item if bucket versioning is disabled or the item does not have previous versions available.
   - Show an icon (count? ellipsis?) next to the object name, to indicate
     that previous versions are available.  Example: `foo.txt (…)`
-  - versions are presented as children of the object (when requested by one of the above actions).
+  - Present versions as "children" of the object, but only when versions are explicitly requested by one of the above actions.
 
 ### ([BLOCKED](https://github.com/microsoft/vscode/issues/32592)) Drag-drop from client to server
 
@@ -223,8 +223,8 @@ versioning is enabled) are surfaced as follows:
 These concepts are out of scope in this proposal, but may be developed in later proposals:
 
 - Eager-load high-level properties such as "empty" or "count".
-  - This topic applies to all Toolkit service-integrations, so it will be
-    deferred to a separate proposal.
+  - This topic applies to all Toolkit service-integrations, so it is deferred
+    to a separate proposal.
 - "Sort" items by name or other properties.
 - "Move" objects or folders. To "move" an object, user must copy the object,
   then delete the original location.
@@ -238,9 +238,9 @@ These concepts are out of scope in this proposal, but may be developed in later 
   - VSCode "workspace" node for each S3 bucket.
   - [fs overlay](https://code.visualstudio.com/api/extension-guides/virtual-documents#file-system-api)
 - Pinning ([ref](https://github.com/aws/aws-toolkit-jetbrains/issues/90)):
-  ability to save AWS constructs to a "recent" or "favorites" area is useful,
-  but requires a holistic treatment: it makes sense for any AWS object, not
-  only S3.
+  ability to save AWS constructs to a "recent" or "favorites" area.
+  - This topic applies to all Toolkit service-integrations, so it is deferred
+    to a separate proposal.
 
 ## Definitions
 
