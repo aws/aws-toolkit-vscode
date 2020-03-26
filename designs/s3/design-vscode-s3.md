@@ -144,7 +144,7 @@ S3 objects and folders are listed as children of their respective parent bucket/
   - (P0) `Copy ARN`
   - (P0) `Copy URL`
   - (P0) `Copy name`
-  - (P0) `Download`
+  - (P1) `Download`
     - Does _not_ present a chooser.
     - Downloads immediately to the OS default location (typically `~/Downloads`).
     - Present download status as a toaster message containing this info, for all in-progress downloads:
