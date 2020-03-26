@@ -119,10 +119,12 @@ function run(testsRoot, clb): any {
     }
 
     // 2020-03-24: Amazon addition.
-    const testFile = process.env["TEST_FILE"]?.replace(/^src\/test\//, "")?.concat('.js')
-
+    // VSCode refuses to unset this value, so it gets set for each task and null is converted to a string
+    const testFile = process.env["TEST_FILE"] === 'null' ? undefined : process.env["TEST_FILE"]
+    const testFilePath = testFile?.replace(/^src\/test\//, "")?.concat('.js')
+    
     // Glob test files
-    glob(testFile ?? "**/**.test.js", { cwd: testsRoot }, (error, files): any => {
+    glob(testFilePath ?? "**/**.test.js", { cwd: testsRoot }, (error, files): any => {
         // END 2020-03-24: Amazon addition.
         if (error) {
             return clb(error);
