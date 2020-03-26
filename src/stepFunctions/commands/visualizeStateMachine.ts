@@ -94,6 +94,7 @@ async function setupWebviewPanel(
     textDocument: vscode.TextDocument
 ): Promise<vscode.WebviewPanel> {
     const logger: Logger = getLogger()
+    let isPanelDisposed = false
 
     // Create and show panel
     const panel = vscode.window.createWebviewPanel(
@@ -114,7 +115,7 @@ async function setupWebviewPanel(
     async function sendUpdateMessage(updatedTextDocument: vscode.TextDocument) {
         const isValid = await isDocumentValid(updatedTextDocument)
 
-        if (!panel.webview) {
+        if (isPanelDisposed || !panel.webview) {
             return
         }
 
@@ -190,6 +191,8 @@ async function setupWebviewPanel(
         updateOnSaveDisposable.dispose()
         updateOnChangeDisposable.dispose()
         receiveMessageDisposable.dispose()
+        debouncedUpdate.cancel()
+        isPanelDisposed = true
     })
 
     return panel
