@@ -114,7 +114,7 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
 }
 
 async function activateCodeLensProviders(
-    context: vscode.ExtensionContext,
+    context: ExtContext,
     configuration: SettingsConfiguration,
     toolkitOutputChannel: vscode.OutputChannel,
     telemetryService: TelemetryService

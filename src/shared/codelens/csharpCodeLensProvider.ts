@@ -32,13 +32,14 @@ import {
     executeSamBuild,
     ExecuteSamBuildArguments,
     invokeLambdaFunction,
-    InvokeLambdaFunctionArguments,
-    InvokeLambdaFunctionContext,
     LambdaLocalInvokeParams,
     makeBuildDir,
     makeInputTemplate,
     waitForDebugPort
 } from './localLambdaRunner'
+import { ExtContext } from '../extensions'
+import { SamLaunchRequestArgs } from '../sam/debugger/samDebugSession'
+import { RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 
 export const CSHARP_LANGUAGE = 'csharp'
 export const CSHARP_ALLFILES: vscode.DocumentFilter[] = [
@@ -72,6 +73,7 @@ export async function initialize({
     context.subscriptions.push(
         vscode.commands.registerCommand(getInvokeCmdKey(CSHARP_LANGUAGE), async (params: LambdaLocalInvokeParams) => {
             await onLocalInvokeCommand({
+                ctx: context,
                 lambdaLocalInvokeParams: params,
                 configuration,
                 toolkitOutputChannel,
@@ -118,6 +120,7 @@ function getCodeUri(resource: CloudFormation.Resource, samTemplateUri: vscode.Ur
  */
 async function onLocalInvokeCommand(
     {
+        ctx,
         configuration,
         toolkitOutputChannel,
         lambdaLocalInvokeParams,
@@ -127,6 +130,7 @@ async function onLocalInvokeCommand(
         loadCloudFormationTemplate = async _args => await CloudFormation.load(_args),
         getResourceFromTemplateResource = async _args => await CloudFormation.getResourceFromTemplateResources(_args)
     }: {
+        ctx: ExtContext
         configuration: SettingsConfiguration
         toolkitOutputChannel: vscode.OutputChannel
         lambdaLocalInvokeParams: LambdaLocalInvokeParams
@@ -175,7 +179,7 @@ async function onLocalInvokeCommand(
             properties: resource.Properties
         })
 
-        const config = await getHandlerConfig({
+        const uselessNoise = await getHandlerConfig({
             handlerName: handlerName,
             documentUri: documentUri,
             samTemplate: vscode.Uri.file(lambdaLocalInvokeParams.samTemplate.fsPath)
@@ -187,7 +191,7 @@ async function onLocalInvokeCommand(
             codeDir: codeUri,
             inputTemplatePath,
             samProcessInvoker: processInvoker,
-            useContainer: config.useContainer
+            useContainer: uselessNoise.useContainer
         }
         if (lambdaLocalInvokeParams.isDebug) {
             buildArgs.environmentVariables = {
@@ -196,54 +200,39 @@ async function onLocalInvokeCommand(
         }
         const samTemplatePath: string = await executeSamBuild(buildArgs)
 
-        const invokeArgs: InvokeLambdaFunctionArguments = {
-            baseBuildDir,
-            documentUri,
+        const launchConfig: SamLaunchRequestArgs = {
+            request: 'attach',
+            name: 'SamLocalDebug',
+            type: 'coreclr',
+            runtime: lambdaRuntime,
+            runtimeFamily: RuntimeFamily.DotNetCore,
+            handlerName: handlerName,
             originalHandlerName: handlerName,
-            handlerName,
+            isDebug: true,
+            documentUri: documentUri,
+            samTemplatePath: samTemplatePath,
             originalSamTemplatePath: lambdaLocalInvokeParams.samTemplate.fsPath,
-            samTemplatePath,
-            runtime: lambdaRuntime
+            debugPort: lambdaLocalInvokeParams.isDebug ? await getStartPort() : -1,
+            baseBuildDir: baseBuildDir,
+            invokeTarget: {
+                target: 'template',
+            },
         }
-
-        const invokeContext: InvokeLambdaFunctionContext = {
-            channelLogger,
-            configuration,
-            samLocalInvokeCommand: localInvokeCommand,
-            telemetryService
-        }
-
+        
         if (!lambdaLocalInvokeParams.isDebug) {
-            await invokeLambdaFunction(invokeArgs, invokeContext)
+            await invokeLambdaFunction(ctx, launchConfig)
         } else {
             const { debuggerPath } = await context.installDebugger({
                 lambdaRuntime: lambdaRuntime,
                 targetFolder: codeUri,
                 channelLogger
             })
-            const port = await getStartPort()
-            const debugConfig = makeCoreCLRDebugConfiguration({
-                port,
-                codeUri
-            })
+            const debugConfig = makeCoreCLRDebugConfiguration(launchConfig, launchConfig.debugPort, codeUri)
+            debugConfig.onWillAttachDebugger = waitForDebugPort
+            debugConfig.samLocalInvokeCommand = localInvokeCommand
+            debugConfig.debuggerPath = debuggerPath
 
-            await invokeLambdaFunction(
-                {
-                    ...invokeArgs,
-                    debugArgs: {
-                        debugConfig,
-                        debugPort: port,
-                        debuggerPath
-                    }
-                },
-                {
-                    channelLogger,
-                    configuration,
-                    samLocalInvokeCommand: localInvokeCommand,
-                    telemetryService,
-                    onWillAttachDebugger: waitForDebugPort
-                }
-            )
+            await invokeLambdaFunction(ctx, debugConfig)
         }
     } catch (err) {
         invokeResult = 'Failed'

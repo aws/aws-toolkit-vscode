@@ -14,11 +14,12 @@ import { SamLocalInvokeCommand } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { localize } from '../utilities/vsCodeUtils'
+import { ExtContext } from '../extensions'
 
 export type Language = 'python' | 'javascript' | 'csharp'
 
 export interface CodeLensProviderParams {
-    context: vscode.ExtensionContext
+    context: ExtContext
     configuration: SettingsConfiguration
     outputChannel: vscode.OutputChannel
     processInvoker?: SamCliProcessInvoker

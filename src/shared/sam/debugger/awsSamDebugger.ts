@@ -7,19 +7,17 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as nls from 'vscode-nls';
 import { getFamily, RuntimeFamily, samLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime';
-import { LambdaLocalInvokeParams } from '../../../shared/codelens/localLambdaRunner';
+import { invokeLambdaFunction } from '../../../shared/codelens/localLambdaRunner';
 import { CloudFormation } from '../../cloudformation/cloudformation';
 import { CloudFormationTemplateRegistry } from '../../cloudformation/templateRegistry';
 import * as tsLensProvider from '../../codelens/typescriptCodeLensProvider';
 import { isInDirectory } from '../../filesystemUtilities';
 import { getLogger } from '../../logger';
-import { AwsSamDebuggerInvokeTargetTemplateFields } from './awsSamDebugConfiguration';
-import { AwsSamDebuggerConfiguration, TemplateTargetProperties } from './awsSamDebugConfiguration'
+import { AwsSamDebuggerConfiguration } from './awsSamDebugConfiguration'
 import { ExtContext } from '../../extensions';
-import { DefaultValidatingSamCliProcessInvoker } from '../cli/defaultValidatingSamCliProcessInvoker';
-import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke';
 import { SamLaunchRequestArgs } from './samDebugSession';
 import { getStartPort } from '../../utilities/debuggerUtils';
+import { NodejsDebugConfiguration } from '../../../lambda/local/debugConfiguration';
 
 const localize = nls.loadMessageBundle()
 
@@ -85,6 +83,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         }
 
         // Stub non-template ("code") lambda config.
+        // TODO: generate config dynamically based on the current workspace.
         const config:AwsSamDebuggerConfiguration = {
             type: AWS_SAM_DEBUG_TYPE,
             request: DIRECT_INVOKE_TYPE,
@@ -134,21 +133,30 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         const runtime = config.lambda?.runtime
             ?? CloudFormation.getRuntime(config.cfnTemplate!!.Resources!!)
         const runtimeFamily = getFamily(runtime)
-        const resolvedConfig: SamLaunchRequestArgs = {
+        const handlerName = config.invokeTarget.lambdaHandler ?? config.invokeTarget.samTemplateResource!!
+        const launchConfig: SamLaunchRequestArgs = {
             ...config,
-            request: 'launch',
+            request: DIRECT_INVOKE_TYPE,
             runtime: runtime,
             runtimeFamily: runtimeFamily,
-            handlerName: config.invokeTarget.lambdaHandler ?? config.invokeTarget.samTemplateResource!!,
+            handlerName: handlerName,
+            originalHandlerName: handlerName,
             isDebug: true,  // TODO: get from ...?
+            documentUri: vscode.window.activeTextEditor?.document.uri
+                // XXX: don't know what URI to choose...
+                ?? vscode.Uri.parse(config.invokeTarget.samTemplatePath!!),
+            samTemplatePath: config.invokeTarget.samTemplatePath!!,
+            originalSamTemplatePath: config.invokeTarget.samTemplatePath!!,
+            debugPort: config.isDebug ? await getStartPort() : -1,
         }
+
         if (runtimeFamily === RuntimeFamily.NodeJS) {
-            await this.launchTypescript(resolvedConfig)
+            await this.launchTypescript(launchConfig)
         } else if (runtimeFamily === RuntimeFamily.Python) {
         } else if (runtimeFamily === RuntimeFamily.DotNetCore) {
         }
 
-        return resolvedConfig
+        return launchConfig
     }
 
     /**
@@ -162,103 +170,33 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
      * from a debug-config.
      */
     async launchTypescript(config: SamLaunchRequestArgs) {
-        const cfnTemplateUri = vscode.Uri.parse(config.invokeTarget.samTemplatePath!!)
-        const params:LambdaLocalInvokeParams = {
-            // TODO: remove this (irrelevant for debug-config).
-            uri: vscode.window.activeTextEditor?.document.uri ?? cfnTemplateUri,
-            handlerName: config.handlerName,
-            isDebug: config.isDebug,  //!!args.noDebug,
-            workspaceFolder: vscode.workspace.getWorkspaceFolder(cfnTemplateUri)!!,
-            samTemplate: cfnTemplateUri,
-            samTemplateResourceName: config.invokeTarget.samTemplateResource,
-        }
-        
-        await tsLensProvider.invokeLambda({
-            ...params,
-            runtime: config.runtime,
-            settings: this.ctx.settings,
-            processInvoker: new DefaultValidatingSamCliProcessInvoker({}),
-            localInvokeCommand: new DefaultSamLocalInvokeCommand(this.ctx.chanLogger, [
-                WAIT_FOR_DEBUGGER_MESSAGES.NODEJS
-            ]),
-            telemetryService: this.ctx.telemetryService,
-            outputChannel: this.ctx.outputChannel,
-        })
-            
-        const samProjectCodeRoot = await tsLensProvider.getSamProjectDirPathForFile(params.uri.fsPath)
-        let debugPort = params.isDebug ? await getStartPort() : undefined
+        const samProjectCodeRoot = await tsLensProvider.getSamProjectDirPathForFile(config.documentUri.fsPath)
 
-        const debugConfig: NodejsDebugConfiguration = {
+        const nodejsLaunchConfig: NodejsDebugConfiguration = {
+            ...config,  // Make a nodejs launch-config from the generic launch-config.
             type: 'node',
+            runtimeFamily: RuntimeFamily.NodeJS,
             request: 'attach',
             name: 'SamLocalDebug',
             preLaunchTask: undefined,
             address: 'localhost',
-            port: debugPort!,
+            port: config.debugPort,
             localRoot: samProjectCodeRoot,
             remoteRoot: '/var/task',
             protocol: 'inspector',
-            skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js']
+            skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
         }
+        // const cfnTemplateUri = vscode.Uri.parse(config.invokeTarget.samTemplatePath!!)
+        // const params:LambdaLocalInvokeParams = {
+        //     uri: config.documentUri,
+        //     handlerName: config.handlerName,
+        //     isDebug: config.isDebug,  //!!args.noDebug,
+        //     workspaceFolder: vscode.workspace.getWorkspaceFolder(cfnTemplateUri)!!,
+        //     samTemplate: cfnTemplateUri,
+        //     samTemplateResourceName: config.invokeTarget.samTemplateResource,
+        // }
 
-        const localLambdaRunner: LocalLambdaRunner = new LocalLambdaRunner(
-            params.settings,
-            params,
-            debugPort,
-            params.runtime,
-            params.outputChannel,
-            params.processInvoker,
-            params.localInvokeCommand,
-            debugConfig,
-            samProjectCodeRoot,
-            params.telemetryService,
-            params.samTemplate.fsPath,
-            params.samTemplateResourceName,
-        )
-
-        await localLambdaRunner.run()
-
-        try {
-            // Switch over to the output channel so the user has feedback that we're getting things ready
-            this.ctx.chanLogger.channel.show(true)
-            this.ctx.chanLogger.info( 'AWS.output.sam.local.start', 'Preparing to run {0} locally...',
-                this.localInvokeParams.handlerName)
-
-            if (this.cfnTemplatePath && !this.cfnResourceName) {
-                throw Error('cfnTemplatePath given but cfnResourceName is missing')
-            }
-
-            const inputTemplate: string = this.cfnTemplatePath
-                ?? await this.generateInputTemplate(this.codeRootDirectoryPath)
-
-            const config = await getHandlerConfig({
-                handlerName: this.localInvokeParams.handlerName,
-                documentUri: this.localInvokeParams.uri,
-                samTemplate: this.localInvokeParams.samTemplate
-            })
-
-            const samBuildTemplate: string = await executeSamBuild({
-                baseBuildDir: await this.getBaseBuildFolder(),
-                channelLogger: this.channelLogger,
-                codeDir: this.codeRootDirectoryPath,
-                inputTemplatePath: inputTemplate,
-                samProcessInvoker: this.processInvoker,
-                useContainer: config.useContainer
-            })
-
-            await this.run2(samBuildTemplate,
-                this.cfnResourceName ?? TEMPLATE_RESOURCE_NAME)
-        } catch (err) {
-            const error = err as Error
-            this.channelLogger.error(
-                'AWS.error.during.sam.local',
-                'An error occurred trying to run SAM Application locally: {0}',
-                error
-            )
-
-            return
-        }
-    }
+        await invokeLambdaFunction(this.ctx, nodejsLaunchConfig)
     }
 }
 
@@ -283,16 +221,15 @@ function validateConfig(
             'Debug Configuration has an unsupported target type. Supported types: {0}',
             AWS_SAM_DEBUG_TARGET_TYPES.join(', '))
     } else if (config.invokeTarget.target === TEMPLATE_TARGET_TYPE) {
-        const templateTarget = (config.invokeTarget as any) as AwsSamDebuggerInvokeTargetTemplateFields
         let cfnTemplate = undefined
-        if (templateTarget.samTemplatePath) {
+        if (config.invokeTarget.samTemplatePath) {
             const fullpath = path.resolve((
-                (folder?.uri) ? folder.uri.path + '/' : ''), templateTarget.samTemplatePath)
+                (folder?.uri) ? folder.uri.path + '/' : ''), config.invokeTarget.samTemplatePath)
             // Normalize to absolute path for use in the runner.
             config.invokeTarget.samTemplatePath = fullpath
             cfnTemplate = cftRegistry.getRegisteredTemplate(fullpath)?.template
         }
-        rv = validateTemplateConfig(config, templateTarget.samTemplatePath, cfnTemplate)
+        rv = validateTemplateConfig(config, config.invokeTarget.samTemplatePath, cfnTemplate)
     } else if (config.invokeTarget.target === CODE_TARGET_TYPE) {
         rv = validateCodeConfig(config)
     }
@@ -311,7 +248,7 @@ function validateTemplateConfig(
     cfnTemplatePath: string | undefined,
     cfnTemplate: CloudFormation.Template | undefined,
 ): { isValid: boolean; message?: string } {
-    const templateTarget = config.invokeTarget as TemplateTargetProperties
+    const templateTarget = config.invokeTarget
     
     if (!cfnTemplatePath) {
         return {

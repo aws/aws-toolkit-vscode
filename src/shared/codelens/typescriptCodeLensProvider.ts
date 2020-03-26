@@ -5,7 +5,6 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { NodejsDebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { findFileInParentPaths } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
@@ -13,14 +12,13 @@ import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES, SamLocalInvok
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { getChannelLogger, localize } from '../utilities/vsCodeUtils'
 
-import { nodeJsRuntimes } from '../../lambda/models/samLambdaRuntime'
+import { nodeJsRuntimes, } from '../../lambda/models/samLambdaRuntime'
 import { getLogger } from '../logger'
 import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
-import { getStartPort } from '../utilities/debuggerUtils'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { CodeLensProviderParams, getInvokeCmdKey, makeCodeLenses } from './codeLensUtils'
-import { getHandlerRelativePath, LambdaLocalInvokeParams, LocalLambdaRunner } from './localLambdaRunner'
+import { getHandlerRelativePath, LambdaLocalInvokeParams, } from './localLambdaRunner'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { SamCliProcessInvoker } from '../sam/cli/samCliInvokerUtils'
 import { TelemetryService } from '../telemetry/telemetryService'
@@ -49,42 +47,47 @@ export async function invokeLambda(params: LambdaLocalInvokeParams
             telemetryService: TelemetryService,
             outputChannel: vscode.OutputChannel,
         }) {
-    const samProjectCodeRoot = await getSamProjectDirPathForFile(params.uri.fsPath)
-    let debugPort: number | undefined
+    // const samProjectCodeRoot = await getSamProjectDirPathForFile(params.uri.fsPath)
+    // let debugPort: number | undefined
 
-    if (params.isDebug) {
-        debugPort = await getStartPort()
-    }
+    // if (params.isDebug) {
+    //     debugPort = await getStartPort()
+    // }
 
-    const debugConfig: NodejsDebugConfiguration = {
-        type: 'node',
-        request: 'attach',
-        name: 'SamLocalDebug',
-        preLaunchTask: undefined,
-        address: 'localhost',
-        port: debugPort!,
-        localRoot: samProjectCodeRoot,
-        remoteRoot: '/var/task',
-        protocol: 'inspector',
-        skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js']
-    }
+    // const debugConfig: NodejsDebugConfiguration = {
+    //     runtimeFamily: RuntimeFamily.NodeJS,
+    //     type: 'node',
+        
+    //     request: 'attach',
+    //     name: 'SamLocalDebug',
+    //     preLaunchTask: undefined,
+    //     address: 'localhost',
+    //     port: debugPort!,
+    //     localRoot: samProjectCodeRoot,
+    //     remoteRoot: '/var/task',
+    //     protocol: 'inspector',
+    //     skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
+    //     invokeTarget: {
+    //         target: 'code',
+    //     }
+    // }
 
-    const localLambdaRunner: LocalLambdaRunner = new LocalLambdaRunner(
-        params.settings,
-        params,
-        debugPort,
-        params.runtime,
-        params.outputChannel,
-        params.processInvoker,
-        params.localInvokeCommand,
-        debugConfig,
-        samProjectCodeRoot,
-        params.telemetryService,
-        params.samTemplate.fsPath,
-        params.samTemplateResourceName,
-    )
+    // const localLambdaRunner: LocalLambdaRunner = new LocalLambdaRunner(
+    //     params.settings,
+    //     params,
+    //     debugPort,
+    //     params.runtime,
+    //     params.outputChannel,
+    //     params.processInvoker,
+    //     params.localInvokeCommand,
+    //     debugConfig,
+    //     samProjectCodeRoot,
+    //     params.telemetryService,
+    //     params.samTemplate.fsPath,
+    //     params.samTemplateResourceName,
+    // )
 
-    await localLambdaRunner.run()
+    // await localLambdaRunner.run()
 }
 
 

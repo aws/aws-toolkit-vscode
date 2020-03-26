@@ -1,14 +1,12 @@
 import * as vscode from 'vscode';
 import { InitializedEvent, Logger, logger, DebugSession, } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
-import { LambdaLocalInvokeParams } from '../../codelens/localLambdaRunner';
-import * as tsLensProvider from '../../codelens/typescriptCodeLensProvider';
 import { ExtContext } from '../../extensions';
-import { DefaultValidatingSamCliProcessInvoker } from '../cli/defaultValidatingSamCliProcessInvoker';
-import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke';
 import { AwsSamDebuggerConfiguration } from './awsSamDebugConfiguration.gen';
 import { CloudFormation } from '../../cloudformation/cloudformation'
-import { getFamily, RuntimeFamily } from '../../../lambda/models/samLambdaRuntime';
+import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime';
+import { ChannelLogger } from '../../utilities/vsCodeUtils';
+import { SamLocalInvokeCommand } from '../cli/samCliLocalInvoke';
 
 /**
  * SAM-specific launch attributes (which are not part of the DAP).
@@ -22,12 +20,38 @@ import { getFamily, RuntimeFamily } from '../../../lambda/models/samLambdaRuntim
 export interface SamLaunchRequestArgs extends
         DebugProtocol.LaunchRequestArguments,
         AwsSamDebuggerConfiguration {
+    // readonly type: 'node' | 'python' | 'coreclr' | 'aws-sam'
+    readonly request: 'attach' | 'launch' | 'direct-invoke'
+
     /** Resolved CFN template object, provided by `resolveDebugConfiguration()`. */
     cfnTemplate?: CloudFormation.Template
     runtime: string
     runtimeFamily: RuntimeFamily
     handlerName: string
+    // TODO: remove this, use inherited `noDebug` field instead.
     isDebug: boolean
+
+    //
+    // From legacy interface: InvokeLambdaFunctionArguments
+    //
+    baseBuildDir?: string
+    /** URI of the current editor document. */
+    documentUri: vscode.Uri
+    originalHandlerName: string  // TODO: remove this hopefully
+    originalSamTemplatePath: string  // TODO: remove this hopefully
+    samTemplatePath: string
+
+    //
+    //  From legacy interface: InvokeLambdaFunctionContext
+    //
+    samLocalInvokeCommand?: SamLocalInvokeCommand
+    onWillAttachDebugger?(debugPort: number, timeoutDuration: number, channelLogger: ChannelLogger): Promise<void>
+
+    //
+    // From legacy interface: DebugLambdaFunctionArguments
+    //
+    debuggerPath?: string
+    debugPort: number
 }
 
 /**
@@ -118,6 +142,7 @@ export class SamDebugSession extends DebugSession {
         } else if (args.runtimeFamily === RuntimeFamily.DotNetCore) {
         }
 
+        this.ctx.outputChannel.append('SamDebugSession.launchRequest')
         this.sendResponse(response);
     }
 

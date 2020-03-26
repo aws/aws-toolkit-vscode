@@ -27,12 +27,12 @@ import {
     getLambdaInfoFromExistingTemplate,
     getRelativeFunctionHandler,
     invokeLambdaFunction,
-    InvokeLambdaFunctionArguments,
     LambdaLocalInvokeParams,
     makeBuildDir,
     makeInputTemplate
 } from './localLambdaRunner'
 import { PythonDebugAdapterHeartbeat } from './pythonDebugAdapterHeartbeat'
+import { RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 
 const PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MS = 1000
 export const PYTHON_LANGUAGE = 'python'
@@ -150,13 +150,10 @@ export function getLocalRootVariants(filePath: string): string[] {
     return [filePath]
 }
 
-function makeDebugConfig({
-    debugPort,
-    samProjectCodeRoot
-}: {
-    debugPort?: number
-    samProjectCodeRoot: string
-}): PythonDebugConfiguration {
+function makeDebugConfig(
+        port: number, samProjectCodeRoot: string, runtime: string,
+        handlerName: string, uri: vscode.Uri, inputTemplatePath: string)
+        : PythonDebugConfiguration {
     const pathMappings: PythonPathMapping[] = getLocalRootVariants(samProjectCodeRoot).map<PythonPathMapping>(
         variant => {
             return {
@@ -167,16 +164,28 @@ function makeDebugConfig({
     )
 
     return {
-        type: PYTHON_LANGUAGE,
+        type: 'python',
+        debugPort: port,
+        port: port,
+        runtime: runtime,
+        runtimeFamily: RuntimeFamily.Python,
+        handlerName: handlerName,
+        originalHandlerName: handlerName,
+        isDebug: true,
+        documentUri: uri,
+        samTemplatePath: inputTemplatePath,
+        originalSamTemplatePath: inputTemplatePath,
         request: 'attach',
         name: 'SamLocalDebug',
         host: 'localhost',
-        port: debugPort!,
         pathMappings,
         // Disable redirectOutput to prevent the Python Debugger from automatically writing stdout/stderr text
         // to the Debug Console. We're taking the child process stdout/stderr and explicitly writing that to
         // the Debug Console.
-        redirectOutput: false
+        redirectOutput: false,
+        invokeTarget: {
+            target: 'template',
+        },
     }
 }
 
@@ -265,7 +274,8 @@ export async function initialize({
                 )}`
             )
 
-            const config = await getHandlerConfig({
+            // TODO: remove this
+            const uselessNoise = await getHandlerConfig({
                 handlerName: args.handlerName,
                 documentUri: args.uri,
                 samTemplate: vscode.Uri.file(args.samTemplate.fsPath)
@@ -278,34 +288,19 @@ export async function initialize({
                 inputTemplatePath,
                 manifestPath,
                 samProcessInvoker: processInvoker,
-                useContainer: config.useContainer
+                useContainer: uselessNoise.useContainer
             })
 
-            const invokeArgs: InvokeLambdaFunctionArguments = {
-                baseBuildDir,
-                originalSamTemplatePath: args.samTemplate.fsPath,
-                samTemplatePath,
-                documentUri: args.uri,
-                originalHandlerName: args.handlerName,
-                handlerName,
-                runtime: args.runtime
-            }
+            const config: PythonDebugConfiguration = makeDebugConfig(
+                debugPort ?? -1, samProjectCodeRoot, args.runtime, args.handlerName,
+                args.uri, inputTemplatePath)
+            config.baseBuildDir = baseBuildDir
+            config.samTemplatePath = samTemplatePath
+            config.originalSamTemplatePath = args.samTemplate.fsPath
+            config.samLocalInvokeCommand = localInvokeCommand!
+            config.onWillAttachDebugger = waitForPythonDebugAdapter
 
-            if (args.isDebug) {
-                const debugConfig: PythonDebugConfiguration = makeDebugConfig({ debugPort, samProjectCodeRoot })
-                invokeArgs.debugArgs = {
-                    debugConfig,
-                    debugPort: debugConfig.port
-                }
-            }
-
-            await invokeLambdaFunction(invokeArgs, {
-                channelLogger,
-                configuration,
-                samLocalInvokeCommand: localInvokeCommand!,
-                telemetryService,
-                onWillAttachDebugger: waitForPythonDebugAdapter
-            })
+            await invokeLambdaFunction(context, config)
         } catch (err) {
             const error = err as Error
             channelLogger.error(

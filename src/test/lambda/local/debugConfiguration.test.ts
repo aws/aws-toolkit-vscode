@@ -6,18 +6,52 @@
 import * as assert from 'assert'
 import * as os from 'os'
 import * as path from 'path'
+import * as vscode from 'vscode'
 
 import {
     makeCoreCLRDebugConfiguration,
-    MakeCoreCLRDebugConfigurationArguments
 } from '../../../lambda/local/debugConfiguration'
+import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
+import { FakeExtensionContext } from '../../fakeExtensionContext'
+import { DefaultSamLocalInvokeCommand } from '../../../shared/sam/cli/samCliLocalInvoke'
+import { SamLaunchRequestArgs } from '../../../shared/sam/debugger/samDebugSession'
 
-describe('makeCoreCLRDebugConfiguration', async () => {
+describe.only('makeCoreCLRDebugConfiguration', async () => {
+    function makeFakeSamLaunchConfig() {
+        const fakeExtCtx = new FakeExtensionContext()
+        const config: SamLaunchRequestArgs = {
+            name: 'fake-launch-config',
+            runtimeFamily: RuntimeFamily.DotNetCore,
+            type: 'coreclr',
+            request: 'attach',
+            // cfnTemplate?: CloudFormation.Template
+            runtime: 'fakedotnet',
+            handlerName: 'fakehandlername',
+            isDebug: true,
+
+            baseBuildDir: '/fake/build/dir/',
+            documentUri: vscode.Uri.parse('/fake/path/foo.txt'),
+            originalHandlerName: 'fake-original-handler',
+            originalSamTemplatePath: '/fake/original/sam/path',
+            samTemplatePath: '/fake/sam/path',
+            samLocalInvokeCommand: new DefaultSamLocalInvokeCommand(fakeExtCtx.chanLogger),
+            
+            //debuggerPath?:
+            debugPort: 0,
+
+            invokeTarget: {
+                target: 'code',
+            },
+        }
+        return config
+    }
+    
     function makeConfig({
         codeUri = path.join('foo', 'bar'),
         port = 42
-    }: Partial<MakeCoreCLRDebugConfigurationArguments>) {
-        return makeCoreCLRDebugConfiguration({ codeUri, port })
+    }: {codeUri?:string, port?:number}) {
+        const fakeLaunchConfig = makeFakeSamLaunchConfig()
+        return makeCoreCLRDebugConfiguration(fakeLaunchConfig, port, codeUri)
     }
 
     it('uses the specified codeUri', async () => {

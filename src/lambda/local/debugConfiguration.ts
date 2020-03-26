@@ -4,18 +4,14 @@
  */
 
 import * as os from 'os'
-import * as vscode from 'vscode'
 import { DRIVE_LETTER_REGEX } from '../../shared/codelens/codeLensUtils'
+import { SamLaunchRequestArgs } from '../../shared/sam/debugger/samDebugSession'
+import { RuntimeFamily } from '../models/samLambdaRuntime'
 
 const DOTNET_CORE_DEBUGGER_PATH = '/tmp/lambci_debug_files/vsdbg'
 
-export interface DebugConfiguration extends vscode.DebugConfiguration {
-    readonly type: 'node' | 'python' | 'coreclr'
-    readonly request: 'attach' | 'launch'
-}
-
-export interface NodejsDebugConfiguration extends DebugConfiguration {
-    readonly type: 'node'
+export interface NodejsDebugConfiguration extends SamLaunchRequestArgs {
+    readonly runtimeFamily: RuntimeFamily.NodeJS
     readonly preLaunchTask?: string
     readonly address: 'localhost'
     readonly localRoot: string
@@ -29,20 +25,16 @@ export interface PythonPathMapping {
     remoteRoot: string
 }
 
-export interface PythonPathMapping {
-    localRoot: string
-    remoteRoot: string
-}
-
-export interface PythonDebugConfiguration extends DebugConfiguration {
-    readonly type: 'python'
+export interface PythonDebugConfiguration extends SamLaunchRequestArgs {
+    readonly runtimeFamily: RuntimeFamily.Python
     readonly host: string
+    // TODO: remove, use `debugPort` instead.
     readonly port: number
     readonly pathMappings: PythonPathMapping[]
 }
 
-export interface DotNetCoreDebugConfiguration extends DebugConfiguration {
-    type: 'coreclr'
+export interface DotNetCoreDebugConfiguration extends SamLaunchRequestArgs {
+    readonly runtimeFamily: RuntimeFamily.DotNetCore
     processId: string
     pipeTransport: PipeTransport
     windows: {
@@ -60,15 +52,12 @@ export interface PipeTransport {
     pipeCwd: string
 }
 
-export interface MakeCoreCLRDebugConfigurationArguments {
-    port: number
-    codeUri: string
-}
-
-export function makeCoreCLRDebugConfiguration({
-    codeUri,
-    port
-}: MakeCoreCLRDebugConfigurationArguments): DotNetCoreDebugConfiguration {
+/**
+ * Creates a CLR config composed from the given `config`.
+ */
+export function makeCoreCLRDebugConfiguration(
+        config: SamLaunchRequestArgs, port: number, codeUri: string)
+        : DotNetCoreDebugConfiguration {
     const pipeArgs = ['-c', `docker exec -i $(docker ps -q -f publish=${port}) \${debuggerCommand}`]
 
     if (os.platform() === 'win32') {
@@ -77,8 +66,9 @@ export function makeCoreCLRDebugConfiguration({
     }
 
     return {
+        ...config,
         name: 'SamLocalDebug',
-        type: 'coreclr',
+        runtimeFamily: RuntimeFamily.DotNetCore,
         request: 'attach',
         processId: '1',
         pipeTransport: {
@@ -97,6 +87,9 @@ export function makeCoreCLRDebugConfiguration({
         },
         sourceFileMap: {
             ['/var/task']: codeUri
+        },
+        invokeTarget: {
+            target: "code"
         }
     }
 }
