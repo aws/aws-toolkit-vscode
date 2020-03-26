@@ -99,7 +99,7 @@
     "AWS.command.quickStart": "View Quick Start",
     "AWS.command.quickStart.title": "AWS Toolkit - Quick Start",
     "AWS.command.quickStart.error": "There was an error retrieving the Quick Start page",
-    "AWS.command.stepFunctions.createStateMachineFromTemplate": "Create a new state machine from a starter template",
+    "AWS.command.stepFunctions.createStateMachineFromTemplate": "Create a new Step Functions state machine",
     "AWS.command.stepFunctions.previewStateMachine": "Preview state machine graph",
     "AWS.stepFunctions.graph.titlePrefix": "Graph: {0}",
     "AWS.credentials.statusbar.no.credentials": "(not connected)",
