@@ -11,7 +11,7 @@ buildscript {
         maven { setUrl("https://jitpack.io") }
     }
     dependencies {
-        classpath("software.aws.toolkits:telemetry-generator:0.0.17")
+        classpath("software.aws.toolkits:telemetry-generator:0.0.18")
     }
 }
 

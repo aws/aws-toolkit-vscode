@@ -99,7 +99,7 @@ class LogStreamTable(
         val actionGroup = DefaultActionGroup()
         actionGroup.add(OpenCurrentInEditorAction(project, logStream) { logsTable.listTableModel.items })
         actionGroup.add(Separator())
-        actionGroup.add(ShowLogsAroundActionGroup(logGroup, logStream, logsTable))
+        actionGroup.add(ShowLogsAroundActionGroup(project, logGroup, logStream, logsTable))
         PopupHandler.installPopupHandler(
             logsTable,
             actionGroup,

@@ -16,15 +16,17 @@ import software.aws.toolkits.resources.message
 import kotlin.coroutines.CoroutineContext
 
 object OpenStreamInEditor {
-    suspend fun open(project: Project, edt: CoroutineContext, logStream: String, fileContent: String) {
+    suspend fun open(project: Project, edt: CoroutineContext, logStream: String, fileContent: String): Boolean {
         val file = ReadOnlyLightVirtualFile(logStream, PlainTextLanguage.INSTANCE, fileContent)
-        withContext(edt) {
+        return withContext(edt) {
             // set virtual file to read only
             FileEditorManager.getInstance(project).openFile(file, true, true).ifEmpty {
                 if (!fileContent.isBlank()) {
                     notifyError(message("cloudwatch.logs.open_in_editor_failed"))
+                    return@withContext false
                 }
             }
+            true
         }
     }
 }

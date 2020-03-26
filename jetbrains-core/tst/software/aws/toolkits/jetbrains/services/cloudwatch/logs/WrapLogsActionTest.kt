@@ -23,8 +23,8 @@ class WrapLogsActionTest {
     @Test
     fun wrappingChangesModel() {
         val model = ListTableModel<LogStreamEntry>(LogStreamDateColumn(), LogStreamMessageColumn())
-        val table = TableView<LogStreamEntry>(model)
-        val wrapLogsAction = WrapLogsAction { table }
+        val table = TableView(model)
+        val wrapLogsAction = WrapLogsAction(projectRule.project) { table }
         wrapLogsAction.setSelected(TestActionEvent(), true)
         val wrappedComponent = model.columnInfos[1].getRenderer(null)!!.getTableCellRendererComponent(table, 0, false, false, 0, 0)
         assertThat(wrappedComponent).isInstanceOf(JBTextArea::class.java)

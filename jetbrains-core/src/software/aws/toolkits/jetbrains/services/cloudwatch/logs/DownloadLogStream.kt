@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.fileChooser.FileChooserFactory
 import com.intellij.openapi.fileChooser.FileSaverDescriptor
+import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
@@ -26,6 +27,8 @@ import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.CloudwatchlogsTelemetry
+import software.aws.toolkits.telemetry.Result
 import java.io.File
 import java.nio.file.Files
 import java.time.Instant
@@ -77,7 +80,18 @@ class LogStreamDownloadTask(project: Project, val client: CloudWatchLogsClient, 
             }
         }
 
-        OpenStreamInEditor.open(project, edt, logStream, buffer.toString())
+        val success = OpenStreamInEditor.open(project, edt, logStream, buffer.toString())
+        CloudwatchlogsTelemetry.openStreamInEditor(project, success)
+    }
+
+    override fun onThrowable(e: Throwable) {
+        LOG.error(e) { "LogStreamDownloadTask exception thrown" }
+        val result = if (e is ProcessCanceledException) {
+            Result.CANCELLED
+        } else {
+            Result.FAILED
+        }
+        CloudwatchlogsTelemetry.openStreamInEditor(project, result)
     }
 
     private suspend fun promptWriteToFile(): Int = withContext(edt) {
@@ -89,6 +103,10 @@ class LogStreamDownloadTask(project: Project, val client: CloudWatchLogsClient, 
             Messages.CANCEL_BUTTON,
             AllIcons.General.QuestionDialog
         )
+    }
+
+    companion object {
+        val LOG = getLogger<LogStreamDownloadTask>()
     }
 }
 
@@ -141,10 +159,22 @@ class LogStreamDownloadToFileTask(
                 title = message("aws.notification.title"),
                 content = message("cloudwatch.logs.saving_to_disk_succeeded", logStream, file.path)
             )
+            CloudwatchlogsTelemetry.downloadStreamToFile(project, success = true)
         } catch (e: Exception) {
             LOG.error(e) { "Exception thrown while downloading large log stream" }
             e.notifyError(project = project, title = message("cloudwatch.logs.saving_to_disk_failed", logStream))
+            CloudwatchlogsTelemetry.downloadStreamToFile(project, success = false)
         }
+    }
+
+    override fun onThrowable(e: Throwable) {
+        LogStreamDownloadTask.LOG.error(e) { "LogStreamDownloadToFileTask exception thrown" }
+        val result = if (e is ProcessCanceledException) {
+            Result.CANCELLED
+        } else {
+            Result.FAILED
+        }
+        CloudwatchlogsTelemetry.downloadStreamToFile(project, result)
     }
 
     companion object {

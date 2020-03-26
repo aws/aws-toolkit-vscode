@@ -36,6 +36,7 @@ import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.CloudwatchlogsTelemetry
 import java.awt.event.MouseEvent
 import javax.swing.JPanel
 
@@ -127,6 +128,7 @@ class CloudWatchLogGroup(
         val actionGroup = DefaultActionGroup()
         actionGroup.addAction(object : AnAction(message("explorer.refresh.title"), null, AllIcons.Actions.Refresh), DumbAware {
             override fun actionPerformed(e: AnActionEvent) {
+                CloudwatchlogsTelemetry.refreshGroup(project)
                 launch { refreshLogStreams() }
             }
         })

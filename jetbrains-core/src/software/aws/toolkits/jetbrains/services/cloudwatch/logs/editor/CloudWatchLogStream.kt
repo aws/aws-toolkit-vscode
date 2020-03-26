@@ -26,6 +26,7 @@ import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.WrapLogs
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.CloudwatchlogsTelemetry
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
 import java.time.Duration
@@ -91,6 +92,7 @@ class CloudWatchLogStream(
                     }
                 } else {
                     // This is thread safe because the actionPerformed is run on the UI thread
+                    CloudwatchlogsTelemetry.searchStream(project, true)
                     val table = LogStreamTable(project, client, logGroup, logStream, LogStreamTable.TableType.FILTER)
                     Disposer.register(this@CloudWatchLogStream, table)
                     searchStreamTable = table
@@ -111,8 +113,8 @@ class CloudWatchLogStream(
         actionGroup.add(OpenCurrentInEditorAction(project, logStream) {
             searchStreamTable?.logsTable?.listTableModel?.items ?: logStreamTable.logsTable.listTableModel.items
         })
-        actionGroup.add(TailLogsAction { searchStreamTable?.channel ?: logStreamTable.channel })
-        actionGroup.add(WrapLogsAction { searchStreamTable?.logsTable ?: logStreamTable.logsTable })
+        actionGroup.add(TailLogsAction(project) { searchStreamTable?.channel ?: logStreamTable.channel })
+        actionGroup.add(WrapLogsAction(project) { searchStreamTable?.logsTable ?: logStreamTable.logsTable })
         actionGroup.addAction(object : AnAction(message("explorer.refresh.title"), null, AllIcons.Actions.Refresh), DumbAware {
             override fun actionPerformed(e: AnActionEvent) {
                 launch { refreshTable() }
@@ -122,15 +124,14 @@ class CloudWatchLogStream(
         tablePanel.toolbar = toolbar.component
     }
 
-    private fun refreshTable() {
-        launch {
-            if (searchField.text.isNotEmpty() && searchStreamTable != null) {
-                searchStreamTable?.channel?.send(LogStreamActor.Message.LOAD_INITIAL_FILTER(searchField.text.trim()))
-            } else if (startTime != null && duration != null) {
-                logStreamTable.channel.send(LogStreamActor.Message.LOAD_INITIAL_RANGE(startTime, duration))
-            } else {
-                logStreamTable.channel.send(LogStreamActor.Message.LOAD_INITIAL())
-            }
+    private fun refreshTable() = launch {
+        CloudwatchlogsTelemetry.refreshStream(project)
+        if (searchField.text.isNotEmpty() && searchStreamTable != null) {
+            searchStreamTable?.channel?.send(LogStreamActor.Message.LOAD_INITIAL_FILTER(searchField.text.trim()))
+        } else if (startTime != null && duration != null) {
+            logStreamTable.channel.send(LogStreamActor.Message.LOAD_INITIAL_RANGE(startTime, duration))
+        } else {
+            logStreamTable.channel.send(LogStreamActor.Message.LOAD_INITIAL())
         }
     }
 

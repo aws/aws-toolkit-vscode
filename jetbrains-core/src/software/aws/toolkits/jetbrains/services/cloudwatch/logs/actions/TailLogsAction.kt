@@ -7,6 +7,7 @@ import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.ToggleAction
 import com.intellij.openapi.project.DumbAware
+import com.intellij.openapi.project.Project
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -17,8 +18,9 @@ import org.jetbrains.annotations.TestOnly
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamActor
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.CloudwatchlogsTelemetry
 
-class TailLogsAction(private val channel: () -> Channel<LogStreamActor.Message>) :
+class TailLogsAction(private val project: Project, private val channel: () -> Channel<LogStreamActor.Message>) :
     ToggleAction(message("cloudwatch.logs.tail"), null, AllIcons.RunConfigurations.Scroll_down),
     CoroutineScope by ApplicationThreadPoolScope("TailCloudWatchLogs"),
     DumbAware {
@@ -30,6 +32,7 @@ class TailLogsAction(private val channel: () -> Channel<LogStreamActor.Message>)
     override fun isSelected(e: AnActionEvent): Boolean = isSelected
 
     override fun setSelected(e: AnActionEvent, state: Boolean) {
+        CloudwatchlogsTelemetry.tailStream(project, enabled = state)
         isSelected = state
         if (state) {
             startTailing()

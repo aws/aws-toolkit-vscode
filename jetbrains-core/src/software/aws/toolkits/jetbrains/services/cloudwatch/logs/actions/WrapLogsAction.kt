@@ -7,12 +7,14 @@ import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.ToggleAction
 import com.intellij.openapi.project.DumbAware
+import com.intellij.openapi.project.Project
 import com.intellij.ui.table.TableView
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamEntry
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.LogStreamMessageColumn
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.CloudwatchlogsTelemetry
 
-class WrapLogsAction(private val getCurrentTableView: () -> TableView<LogStreamEntry>) :
+class WrapLogsAction(private val project: Project, private val getCurrentTableView: () -> TableView<LogStreamEntry>) :
     ToggleAction(message("cloudwatch.logs.wrap"), null, AllIcons.Actions.ToggleSoftWrap),
     DumbAware {
     private val messageColumn = 1
@@ -20,6 +22,7 @@ class WrapLogsAction(private val getCurrentTableView: () -> TableView<LogStreamE
     override fun isSelected(e: AnActionEvent): Boolean = isSelected
 
     override fun setSelected(e: AnActionEvent, state: Boolean) {
+        CloudwatchlogsTelemetry.wrapEvents(project, enabled = state)
         isSelected = state
         if (isSelected) {
             wrap()
