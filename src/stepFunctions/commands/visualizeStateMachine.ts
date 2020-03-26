@@ -100,7 +100,10 @@ async function setupWebviewPanel(
     const panel = vscode.window.createWebviewPanel(
         'stateMachineVisualization',
         makeWebviewTitle(documentUri),
-        vscode.ViewColumn.Beside,
+        {
+            preserveFocus: true,
+            viewColumn: vscode.ViewColumn.Beside
+        },
         {
             enableScripts: true,
             localResourceRoots: [
