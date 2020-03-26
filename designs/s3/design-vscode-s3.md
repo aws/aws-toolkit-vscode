@@ -29,6 +29,7 @@ From [the VSCode docs](https://code.visualstudio.com/api/extension-guides/webvie
 - (IMPL): item describes potential implementation details
 - (P0,…,PN): "phase 0", …, "phase n", where "phase 0" is the minimum viable product and later phases are iterations following an initial release
 - (BLOCKED): item requires features not yet available in VSCode
+- ([OUT-OF-SCOPE](#out-of-scope)): item is deferred to a separate proposal
 
 ## Experience
 
@@ -38,26 +39,21 @@ currently active profile and presents this data as a tree in the toolkit
 explorer, as is typical of existing toolkit features such as "Schemas" and
 "Lambda".
 
-- When a region is expanded, make an eager request to get the count of S3
-  buckets for that region.
+- When the current active profile changes, the tree is collapsed or refreshed
+  (following the common Toolkit behavior), discarding the current, local state.
+- When a bucket or object is created or deleted, only that node is added or
+  removed from the tree, _without disturbing the current layout of the tree_.
+- ([OUT-OF-SCOPE](#out-of-scope)) When a region is expanded, make an eager
+  request to get the count of S3 buckets for that region.
+  - Show the count of buckets next to the S3 node.
   - The goal is to avoid "frustrated clicks", where user must click on things
     only to discover that they're empty. (User _already_ expanded the Region
     node, why make them click on each service?)
   - Alternative (less-expensive): don't show the count, but _do_ show
-    a positive indication of "empty". Checking "non-empty" for all supported
-    services is relatively cheap.
+    a positive indication of "empty": remove the "expander" affordance, and/or
+    "grey-out". Checking "non-empty" for all supported services is relatively
+    cheap.
   - (IMPL) Do not block UI thread during these pre-emptive fetches.
-- Show the count of buckets next to the S3 node.
-- The S3 node is always present.
-- If there are no buckets in the region, indicate this "eagerly" to save
-  "frustrated clicks" (where user must do extra work to confirm absence):
-  - remove the "expander"
-    - (BLOCKED) "grey-out"/"disabled" style
-  - show a count of zero
-- When the current active profile changes, the tree is collapsed or refreshed
-  (following the common Toolkit behavior).
-- When a bucket or object is created or deleted, only that node is added or
-  removed from the tree, _without disturbing the current layout of the tree_.
 
 ![](design-vscode-s3-tree.png)
 
@@ -68,12 +64,23 @@ usefulness of a human-computer interface.  For resource efficiency, _paging_
 downloads only one "page" of items, and the user must take some action to get
 more items. Toolkit paging works like this:
 
-- `More...` action:
-  - If the number of items in a list exceeds the _page size_, add a clickable `More...` node at the end of the list
-  - `More...` action appends the next page of items to the existing list.
-- `Filter...` action:
+- (P0) `More...` action:
+  - Each node displaying a list of items includes a clickable `More...` node at
+    the end of the list, if the initial list request indicated that additional
+    pages are available.
+  - The `More...` action appends the next page of items to the existing list
+    (above the `More...` node, so it is always the last node in the list).
+    - Each `More...` node holds the current page, so if the user clicks it
+      again, the next page is retrieved.
+    https://docs.aws.amazon.com/AmazonS3/latest/dev/ListingKeysUsingAPIs.html
+    - (P1) If the "continuation key" expires, this is treated as an
+      re-authentication (entire S3 tree is refreshed).
+- (P1) `Filter...` action:
+  - _Server-side_ filter, as available in the respective API.
+    - S3 only supports prefix-filtering.
+  - Sigil indicates that a filter was applied to the current results.
   - Mouse-hover on a bucket/folder reveals [inline](https://code.visualstudio.com/api/extension-guides/tree-view#view-actions) `Filter...` button
-  - Context-menu (right-click) includes `Filter...` menu item
+  - Context-menu includes `Filter...` menu item
   - If user invokes `Filter...` on a bucket/folder, prompt for a string. The
     bucket/folder requests only items containing that string.
 
@@ -86,13 +93,25 @@ Buckets are listed as children of the "S3" root node.
   - (P0) When any S3 node (bucket/folder/object) is selected, Toolkit toolbar
     enables an "Upload..." button.
     - If a non-folder object is selected, "Upload..." targets the object's parent folder.
-- S3 root node context menu (right-click):
+- S3 root node context-menu:
   - (P0) Create bucket
-- Bucket node context menu (right-click):
+    - Invokes a "create bucket" VSCode command which prompts for Bucket name.
+    - Public access is blocked by default. To enable public access, user must
+      use the AWS web console.
+- Bucket node context-menu:
   - (P0) Copy ARN
   - (P0) Copy name
   - (P0) New folder...
   - (P0) Upload...
+    - Shows VSCode-standard "Open file..." dialog.
+    - Shows a progress dialog using VSCode conventions.
+    - When upload succeeds or fails, shows a toaster summarizing which uploads succeeded and failed.
+    - (P1) Allows multiple files and folders to be uploaded. Creates S3 folders
+      as needed to match the hierarchy of uploaded folders.
+    - (P2) [Auto-detects Content Type ](https://github.com/aws/aws-toolkit-visual-studio/issues/64)
+  - (P0) Upload to parent folder...
+    - Works like "Upload...", except targeting the parent of the current item.
+      This allows the user to avoid needing to navigate to the parent folder.
   - _Destructive operations (separator):_
     - (P1) Delete bucket
       - "super confirm": similar to AWS web console, show a prompt which requires typing the word "Delete"
@@ -102,8 +121,10 @@ Buckets are listed as children of the "S3" root node.
 S3 objects and folders are listed as children of their respective parent bucket/folder.
 
 - (P0) Clicking an object in the tree selects it, but does not perform any action.
+- (P1) Double-clicking an item downloads it and opens it in readonly mode.
+  - If item is 4MB+, prompt user to ask if download should begin.
 - (P2) User input activates standard VSCode local, as-you-type filtering.
-- S3 object node context menu (right-click):
+- S3 object node context-menu:
   - (P0) Copy ARN
   - (P0) Copy URL
   - (P0) Copy name
@@ -120,10 +141,16 @@ S3 objects and folders are listed as children of their respective parent bucket/
           option. This is not S3-specific, it is used for all "Download"
           experiences in the Toolkit.
       - (P2) Loading bar or updating percentage.
+    - (P1) Toolkit tracks current downloads so that they are cancellable.
+      - User can cancel all downloads by clicking a button in the Toolkit
+        explorer toolbar, or by a "AWS: Cancel downloads" VSCode command.
+    - (P2) User can download multiple files/folders by selecting them in the S3
+      tree and using the "Download" context-menu item.
   - (P0) Download as...
   - (P2) Edit
     - Downloads the object to a temp folder and opens it in a new VSCode editor tab.
     - Changes to text files (non-binary) are sync'd back to S3 via _filewatchers_ (IMPL).
+  - (P0) Upload... (similar UX as [S3 buckets](#s3-buckets) "Upload..." item)
   - _Destructive operations (separator):_
     - (P1) Delete object
       - If versioning is enabled, do _not_ prompt to confirm deletion.
@@ -151,7 +178,7 @@ versioning is enabled) are surfaced as follows:
 - (P1) _Versions_: if versioning is enabled on the bucket and an object has previous versions:
   - Mouse-hover on an item reveals an [inline](https://code.visualstudio.com/api/extension-guides/tree-view#view-actions) "Versions..." button
     <br><img src="design-s3-hover-versions.png" width="200"/>
-  - Context-menu (right-click) enables "Previous versions..." menu item
+  - Context-menu enables "Previous versions..." menu item
     - (BLOCKED) grey-out or "disable" the menu item if bucket versioning is disabled or the item does not have previous versions available.
   - Show an icon (count? ellipsis?) next to the object name, to indicate
     that previous versions are available.  Example: `foo.txt (…)`
@@ -179,19 +206,24 @@ versioning is enabled) are surfaced as follows:
 
 These concepts are out of scope in this proposal, but may be developed in later proposals:
 
-* "Sorting" items by name or other properties.
-* "Moving" objects or folders. To "move" an object, user must copy the object,
+- Eager-load high-level properties such as "empty" or "count".
+  - This topic applies to all Toolkit service-integrations, so it will be
+    deferred to a separate proposal.
+- "Sort" items by name or other properties.
+- "Move" objects or folders. To "move" an object, user must copy the object,
   then delete the original location.
-* List/browser view. The tree/explorer in the left-column is the idiomatic way
+- List/browser view. The tree/explorer in the left-column is the idiomatic way
   to explore data in VSCode. See how much leverage we can get out of that
   common interface before introducing bespoke UIs.
-- Sync local edits to S3:
+- Edit permissions and other properties of S3 buckets/objects.
+- Passive sync (automatically sync local edits to S3)
+  - Potentially "surprising", large investment, limited audience.
   - Local filewatcher to auto-upload S3 object when it is changed locally.
   - VSCode "workspace" node for each S3 bucket.
-* Readonly views: https://code.visualstudio.com/api/extension-guides/virtual-documents
+- Readonly views: https://code.visualstudio.com/api/extension-guides/virtual-documents
   - Use [fs overlay](https://code.visualstudio.com/api/extension-guides/virtual-documents#file-system-api)
     to "sync" local changes to S3.
-* Pinning ([ref](https://github.com/aws/aws-toolkit-jetbrains/issues/90)):
+- Pinning ([ref](https://github.com/aws/aws-toolkit-jetbrains/issues/90)):
   ability to save AWS constructs to a "recent" or "favorites" area is useful,
   but requires a holistic treatment: it makes sense for any AWS object, not
   only S3.
@@ -201,13 +233,14 @@ These concepts are out of scope in this proposal, but may be developed in later 
 We will revisit these concepts later, depending on larger discussions or
 third-party developments:
 
-* VSCode may offer a rich UI component framework in the future.
+- VSCode may offer a rich UI component framework in the future.
 
 ## Definitions
 
-* folder: S3 key/prefix which is treated like a folder in the AWS web console.
-* object: any file in a bucket. Each object has a key, which is a prefix + filename.
-* path: the full path to an object is bucket + prefix + filename.
+- folder: S3 key/prefix which is treated like a folder in the AWS web console.
+- object: any file in a bucket. Each object has a key, which is a prefix + filename.
+- path: the full path to an object is bucket + prefix + filename.
+- context-menu: menu displayed on right-click
 
 ## Comparison to other products
 
@@ -216,8 +249,7 @@ third-party developments:
 | AWS Toolkit for Visual Studio | Supported |
 | AWS Toolkit for JetBrains     | Supported |
 
-The JetBrains AWS Toolkit S3 tab (see below) exposes Size and Date fields and
-the list can be sorted on these columns. Implementing such a tab is a "phase 2"
-priority for the VSCode S3 experience.
+The JetBrains AWS Toolkit S3 tab (see below) exposes Size and Date fields as
+a table.
 
 ![](jetbrains-s3.png)
