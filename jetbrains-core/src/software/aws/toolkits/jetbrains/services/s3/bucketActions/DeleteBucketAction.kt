@@ -3,13 +3,13 @@
 
 package software.aws.toolkits.jetbrains.services.s3.bucketActions
 
-import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.testFramework.runInEdtAndWait
 import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.core.s3.deleteBucketAndContents
 import software.aws.toolkits.jetbrains.core.AwsClientManager
-import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
 import software.aws.toolkits.jetbrains.core.explorer.actions.DeleteResourceAction
+import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
 import software.aws.toolkits.jetbrains.services.s3.S3BucketNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3VirtualBucket
 import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
@@ -26,7 +26,8 @@ class DeleteBucketAction : DeleteResourceAction<S3BucketNode>(message("s3.delete
             val fileEditorManager = FileEditorManager.getInstance(selected.nodeProject)
             fileEditorManager.openFiles.forEach {
                 if (it is S3VirtualBucket && it.s3Bucket.name() == selected.displayName()) {
-                    runInEdt {
+                    // Wait so that we know it closes successfully, otherwise this operation is not a success
+                    runInEdtAndWait {
                         fileEditorManager.closeFile(it)
                     }
                 }
