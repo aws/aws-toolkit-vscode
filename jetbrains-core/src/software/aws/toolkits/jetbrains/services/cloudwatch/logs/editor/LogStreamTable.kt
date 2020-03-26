@@ -4,8 +4,13 @@
 package software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.ActionPlaces
+import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.actionSystem.Separator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
+import com.intellij.ui.PopupHandler
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.TableSpeedSearch
 import com.intellij.ui.table.TableView
@@ -18,6 +23,8 @@ import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamActor
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamEntry
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamFilterActor
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamListActor
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.OpenCurrentInEditorAction
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.ShowLogsAroundActionGroup
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.resources.message
 import java.awt.event.AdjustmentEvent
@@ -29,9 +36,9 @@ import javax.swing.SortOrder
 
 class LogStreamTable(
     val project: Project,
-    val client: CloudWatchLogsClient,
-    logGroup: String,
-    logStream: String,
+    client: CloudWatchLogsClient,
+    private val logGroup: String,
+    private val logStream: String,
     type: TableType
 ) : CoroutineScope by ApplicationThreadPoolScope("LogStreamTable"), Disposable {
 
@@ -46,7 +53,7 @@ class LogStreamTable(
     private val logStreamActor: LogStreamActor
 
     init {
-        val model = ListTableModel<LogStreamEntry>(
+        val model = ListTableModel(
             arrayOf(LogStreamDateColumn(), LogStreamMessageColumn()),
             mutableListOf<LogStreamEntry>(),
             // Don't sort in the model because the requests come sorted
@@ -85,6 +92,20 @@ class LogStreamTable(
                 }
             }
         })
+        addActionsToTable()
+    }
+
+    private fun addActionsToTable() {
+        val actionGroup = DefaultActionGroup()
+        actionGroup.add(OpenCurrentInEditorAction(project, logStream) { logsTable.listTableModel.items })
+        actionGroup.add(Separator())
+        actionGroup.add(ShowLogsAroundActionGroup(logGroup, logStream, logsTable))
+        PopupHandler.installPopupHandler(
+            logsTable,
+            actionGroup,
+            ActionPlaces.EDITOR_POPUP,
+            ActionManager.getInstance()
+        )
     }
 
     private fun JScrollBar.isAtBottom(): Boolean = value == (maximum - visibleAmount)

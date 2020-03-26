@@ -9,6 +9,6 @@ import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
 object CloudWatchResources {
     val LIST_LOG_GROUPS =
         ClientBackedCachedResource(CloudWatchLogsClient::class, "cwl.log_groups") {
-            describeLogGroups().logGroups().filterNotNull().toList()
+            describeLogGroupsPaginator().logGroups().filterNotNull().toList()
         }
 }

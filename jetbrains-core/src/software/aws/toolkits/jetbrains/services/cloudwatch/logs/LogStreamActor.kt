@@ -81,7 +81,7 @@ sealed class LogStreamActor(
         try {
             val items = loadBlock()
             withContext(edtContext) {
-                table.listTableModel.addRows(items)
+                table.listTableModel.items = items
             }
             table.emptyText.text = emptyText
         } catch (e: ResourceNotFoundException) {
