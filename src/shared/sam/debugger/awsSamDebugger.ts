@@ -14,7 +14,7 @@ import * as tsLensProvider from '../../codelens/typescriptCodeLensProvider';
 import { isInDirectory } from '../../filesystemUtilities';
 import { getLogger } from '../../logger';
 import { AwsSamDebuggerInvokeTargetTemplateFields } from './awsSamDebugConfiguration';
-import { AwsSamDebuggerConfiguration } from './awsSamDebugConfiguration.gen';
+import { AwsSamDebuggerConfiguration, TemplateTargetProperties } from './awsSamDebugConfiguration'
 import { ExtContext } from '../../extensions';
 import { DefaultValidatingSamCliProcessInvoker } from '../cli/defaultValidatingSamCliProcessInvoker';
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke';
@@ -22,7 +22,6 @@ import { SamLaunchRequestArgs } from './samDebugSession';
 import { getStartPort } from '../../utilities/debuggerUtils';
 
 const localize = nls.loadMessageBundle()
-
 
 export const AWS_SAM_DEBUG_TYPE = 'aws-sam'
 export const DIRECT_INVOKE_TYPE = 'direct-invoke'
@@ -312,7 +311,7 @@ function validateTemplateConfig(
     cfnTemplatePath: string | undefined,
     cfnTemplate: CloudFormation.Template | undefined,
 ): { isValid: boolean; message?: string } {
-    const templateTarget = (config.invokeTarget as any) as AwsSamDebuggerInvokeTargetTemplateFields
+    const templateTarget = config.invokeTarget as TemplateTargetProperties
     
     if (!cfnTemplatePath) {
         return {
@@ -337,7 +336,6 @@ function validateTemplateConfig(
     }
 
     const resources = cfnTemplate.Resources
-
     if (!templateTarget.samTemplateResource) {
         return {
             isValid: false,
