@@ -79,6 +79,7 @@ class CloudWatchLogGroup(
         val locationCrumbs = LocationCrumbs(project, logGroup)
         locationInformation.crumbs = locationCrumbs.crumbs
         locationInformation.border = locationCrumbs.border
+        locationInformation.installDoubleClickListener()
 
         addActions()
         addToolbar()
