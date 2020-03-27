@@ -14,16 +14,27 @@ coverage:
     project:
       default:
         threshold: 1
+      unittest:
+        threshold: 1
+        only_pulls: true
+        flags:
+          - "unittest"
     patch:
       default:
         threshold: 1
         only_pulls: true
+      unittest:
+        threshold: 1
+        only_pulls: true
+        flags:
+          - "unittest"
     changes: no
 
-comment: off
+comment: false
 
 ignore:
   - "ktlint-rules/**/*"
   - "resources/**/*"
   - "telemetry-client/**/*"
   - "jetbrains-rider/**/*.Generated.kt"
+  - "**/TelemetryDefinitions.kt"
