@@ -178,39 +178,64 @@
                                 "type": "object"
                             },
                             "invokeTarget": {
-                                "title": "Invoke Target Properties",
-                                "description": "%AWS.configuration.description.awssam.debug.invokeTarget%",
-                                "properties": {
-                                    "lambdaHandler": {
-                                        "description": "%AWS.configuration.description.awssam.debug.lambdaHandler%",
-                                        "type": "string"
+                                "oneOf": [
+                                    {
+                                        "title": "Template Target Properties",
+                                        "description": "%AWS.configuration.description.awssam.debug.invokeTarget%",
+                                        "properties": {
+                                            "samTemplatePath": {
+                                                "description": "%AWS.configuration.description.awssam.debug.samTemplatePath%",
+                                                "type": "string"
+                                            },
+                                            "samTemplateResource": {
+                                                "description": "%AWS.configuration.description.awssam.debug.samTemplateResource%",
+                                                "type": "string"
+                                            },
+                                            "target": {
+                                                "description": "%AWS.configuration.description.awssam.debug.target%",
+                                                "type": "string",
+                                                "enum": [
+                                                    "template"
+                                                ]
+                                            }
+                                        },
+                                        "additionalProperties": false,
+                                        "required": [
+                                            "samTemplatePath",
+                                            "samTemplateResource",
+                                            "target"
+                                        ],
+                                        "type": "object"
                                     },
-                                    "projectRoot": {
-                                        "description": "%AWS.configuration.description.awssam.debug.projectRoot%",
-                                        "type": "string"
-                                    },
-                                    "samTemplatePath": {
-                                        "description": "%AWS.configuration.description.awssam.debug.samTemplatePath%",
-                                        "type": "string"
-                                    },
-                                    "samTemplateResource": {
-                                        "description": "%AWS.configuration.description.awssam.debug.samTemplateResource%",
-                                        "type": "string"
-                                    },
-                                    "target": {
-                                        "description": "%AWS.configuration.description.awssam.debug.target%",
-                                        "type": "string",
-                                        "enum": [
-                                            "code",
-                                            "template"
-                                        ]
+                                    {
+                                        "title": "Code Target Properties",
+                                        "description": "%AWS.configuration.description.awssam.debug.invokeTarget%",
+                                        "properties": {
+                                            "lambdaHandler": {
+                                                "description": "%AWS.configuration.description.awssam.debug.lambdaHandler%",
+                                                "type": "string"
+                                            },
+                                            "projectRoot": {
+                                                "description": "%AWS.configuration.description.awssam.debug.projectRoot%",
+                                                "type": "string"
+                                            },
+                                            "target": {
+                                                "description": "%AWS.configuration.description.awssam.debug.target%",
+                                                "type": "string",
+                                                "enum": [
+                                                    "code"
+                                                ]
+                                            }
+                                        },
+                                        "additionalProperties": false,
+                                        "required": [
+                                            "lambdaHandler",
+                                            "projectRoot",
+                                            "target"
+                                        ],
+                                        "type": "object"
                                     }
-                                },
-                                "additionalProperties": false,
-                                "required": [
-                                    "target"
-                                ],
-                                "type": "object"
+                                ]
                             },
                             "lambda": {
                                 "title": "Lambda Properties",
