@@ -76,8 +76,8 @@ describe('SamTemplateCodeLensProvider', async () => {
         )
 
         const expectedInput: AddSamDebugConfigurationInput = {
-            samTemplateResourceName: 'newResource',
-            samTemplateUri: templateUri
+            resourceName: 'newResource',
+            templateUri: templateUri
         }
 
         const expectedCodeLens: vscode.CodeLens = new vscode.CodeLens(range, {

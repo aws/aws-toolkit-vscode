@@ -36,8 +36,8 @@ export class SamTemplateCodeLensProvider implements vscode.CodeLensProvider {
 
     private createCodeLens(functionResource: TemplateFunctionResource, templateUri: vscode.Uri): vscode.CodeLens {
         const input: AddSamDebugConfigurationInput = {
-            samTemplateResourceName: functionResource.name,
-            samTemplateUri: templateUri
+            resourceName: functionResource.name,
+            templateUri: templateUri
         }
 
         return new vscode.CodeLens(functionResource.range, {
