@@ -43,7 +43,8 @@ async function generateConfigurationAttributes(): Promise<void> {
         if (debuggerConfig === undefined) {
             continue
         }
-        const schema = debugConfiguration.configurationAttributes[debuggerConfig.requestType] as JSONSchema4
+        // JSONSchema4 impl doesn't like properties with type undefined, but the compilation works correctly
+        const schema = (debugConfiguration.configurationAttributes[debuggerConfig.requestType] as any) as JSONSchema4
         await compile(schema, 'DirectInvoke', { bannerComment: header })
             .then(ts => addBaseClass(ts, debuggerConfig.topLevelClass))
             .then(ts => fs.writeFileSync(debuggerConfig.outputFile, ts))
