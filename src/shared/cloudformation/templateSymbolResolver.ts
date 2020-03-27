@@ -36,7 +36,7 @@ export class TemplateSymbolResolver {
     public async getFunctionResources(): Promise<TemplateFunctionResource[]> {
         const symbols = await this.symbolProvider.getSymbols(this.document)
 
-        const resources = _(symbols).find({ name: 'Resources', kind: vscode.SymbolKind.Module })?.children || []
+        const resources = _(symbols).find({ name: 'Resources', kind: vscode.SymbolKind.Module })?.children ?? []
 
         return _(resources)
             .filter({ kind: vscode.SymbolKind.Module })
@@ -52,10 +52,9 @@ export class TemplateSymbolResolver {
             return false
         }
 
-        // tslint:disable-next-line: no-unsafe-any
-        const typeValue: string | undefined = safeLoad(this.symbolProvider.getText(typeSymbol, this.document)).Type
+        const parsedSymbol = safeLoad(this.symbolProvider.getText(typeSymbol, this.document)) as { Type: string }
 
-        return typeValue === CloudFormation.SERVERLESS_FUNCTION_TYPE
+        return parsedSymbol.Type === CloudFormation.SERVERLESS_FUNCTION_TYPE
     }
 }
 
@@ -66,7 +65,7 @@ class DefaultSymbolProvider implements TemplateSymbolProvider {
             document.uri
         )
 
-        return symbols || []
+        return symbols ?? []
     }
 
     public getText(symbol: vscode.DocumentSymbol, document: vscode.TextDocument): string {

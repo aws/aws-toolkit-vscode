@@ -4,8 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { LaunchConfiguration } from '../../shared/debug/launchConfiguration'
-import { createDirectInvokeSamDebugConfigurationFromTemplate } from '../../shared/sam/debugger/awsSamDebugger'
+import { LaunchConfiguration } from '../../../debug/launchConfiguration'
+import { createAwsSamDebugConfigurationForTemplate } from '../awsSamDebugConfiguration'
 
 export interface AddSamDebugConfigurationInput {
     samTemplateResourceName: string
@@ -20,9 +20,9 @@ export async function addSamDebugConfiguration({
     samTemplateUri: templateUri
 }: AddSamDebugConfigurationInput): Promise<void> {
     // tslint:disable-next-line: no-floating-promises
-    emitClickTelemetry()
+    emitCommandTelemetry()
 
-    const samDebugConfig = createDirectInvokeSamDebugConfigurationFromTemplate(resourceName, templateUri.fsPath)
+    const samDebugConfig = createAwsSamDebugConfigurationForTemplate(resourceName, templateUri.fsPath)
 
     const launchConfig = new LaunchConfiguration(templateUri)
     await launchConfig.addDebugConfiguration(samDebugConfig)
@@ -30,8 +30,10 @@ export async function addSamDebugConfiguration({
     await showDebugConfiguration()
 }
 
-async function showDebugConfiguration() {
-    return vscode.commands.executeCommand('workbench.action.debug.configure')
+async function showDebugConfiguration(): Promise<void> {
+    vscode.commands.executeCommand('workbench.action.debug.configure')
 }
 
-async function emitClickTelemetry() {}
+async function emitCommandTelemetry(): Promise<void> {
+    // TODO add new metric for when command is executed
+}

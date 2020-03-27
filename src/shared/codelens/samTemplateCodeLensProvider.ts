@@ -5,9 +5,10 @@
 
 import * as _ from 'lodash'
 import * as vscode from 'vscode'
-import { AddSamDebugConfigurationInput } from '../../lambda/commands/addSamDebugConfiguration'
+import { AddSamDebugConfigurationInput } from '../sam/debugger/commands/addSamDebugConfiguration'
 import { TemplateFunctionResource, TemplateSymbolResolver } from '../cloudformation/templateSymbolResolver'
 import { LaunchConfiguration } from '../debug/launchConfiguration'
+import { isTemplateTargetProperties, TemplateTargetProperties } from '../sam/debugger/awsSamDebugConfiguration'
 import { localize } from '../utilities/vsCodeUtils'
 
 /**
@@ -20,11 +21,7 @@ export class SamTemplateCodeLensProvider implements vscode.CodeLensProvider {
         symbolResolver = new TemplateSymbolResolver(document),
         launchConfig = new LaunchConfiguration(document.uri)
     ): Promise<vscode.CodeLens[]> {
-        // tslint:disable-next-line: no-floating-promises
-        this.emitClickTelemetry()
-
         const functionResources = await symbolResolver.getFunctionResources()
-
         if (_(functionResources).isEmpty()) {
             return []
         }
@@ -37,16 +34,14 @@ export class SamTemplateCodeLensProvider implements vscode.CodeLensProvider {
             .value()
     }
 
-    private async emitClickTelemetry() {}
-
-    private createCodeLens(functionResource: TemplateFunctionResource, templateUri: vscode.Uri) {
+    private createCodeLens(functionResource: TemplateFunctionResource, templateUri: vscode.Uri): vscode.CodeLens {
         const input: AddSamDebugConfigurationInput = {
             samTemplateResourceName: functionResource.name,
             samTemplateUri: templateUri
         }
 
         return new vscode.CodeLens(functionResource.range, {
-            title: localize('AWS.command.addSamDebugConfiguration', 'Add Debug Config'),
+            title: localize('AWS.command.addSamDebugConfiguration', 'Add Debug Configuration'),
             command: 'aws.addSamDebugConfiguration',
             arguments: [input]
         })
@@ -54,18 +49,18 @@ export class SamTemplateCodeLensProvider implements vscode.CodeLensProvider {
 }
 
 function getExistingDebuggedResources(templateUri: vscode.Uri, launchConfig: LaunchConfiguration): Set<string> {
-    const existingSamDebugConfigs = getExistingSamDebugConfigurations(templateUri, launchConfig)
+    const existingSamDebugTargets = getExistingSamDebugTargets(launchConfig)
 
-    return _(existingSamDebugConfigs)
-        .map(samConfig => samConfig.invokeTarget)
-        .map(samConfig => samConfig.samTemplateResource)
-        .compact()
+    return _(existingSamDebugTargets)
+        .filter(target => target.samTemplatePath === templateUri.fsPath)
+        .map(target => target.samTemplateResource)
         .thru(array => new Set(array))
         .value()
 }
 
-function getExistingSamDebugConfigurations(templateUri: vscode.Uri, launchConfig: LaunchConfiguration) {
-    const debugConfigs = launchConfig.getSamDebugConfigurations()
-
-    return debugConfigs.filter(config => config.invokeTarget.samTemplatePath === templateUri.fsPath)
+function getExistingSamDebugTargets(launchConfig: LaunchConfiguration): TemplateTargetProperties[] {
+    return _(launchConfig.getSamDebugConfigurations())
+        .map(samConfig => samConfig.invokeTarget)
+        .filter(isTemplateTargetProperties)
+        .value()
 }

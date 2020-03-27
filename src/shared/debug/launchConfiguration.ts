@@ -5,15 +5,18 @@
 
 import * as _ from 'lodash'
 import * as vscode from 'vscode'
-import { AwsSamDebuggerConfiguration } from '../sam/debugger/awsSamDebugConfiguration'
-import { AWS_SAM_DEBUG_TYPE } from '../sam/debugger/awsSamDebugger'
+import { AwsSamDebuggerConfiguration, isAwsSamDebugConfiguration } from '../sam/debugger/awsSamDebugConfiguration'
+import {
+    AwsSamDebugConfigurationValidator,
+    DefaultAwsSamDebugConfigurationValidator
+} from '../sam/debugger/awsSamDebugConfigurationValidator'
 
 /**
  * Reads and writes DebugConfigurations.
  */
 export interface DebugConfigurationSource {
     getDebugConfigurations(): vscode.DebugConfiguration[]
-    updateDebugConfigurations(value: vscode.DebugConfiguration[]): Promise<void>
+    setDebugConfigurations(value: vscode.DebugConfiguration[]): Promise<void>
 }
 
 /**
@@ -25,17 +28,21 @@ export class LaunchConfiguration {
      */
     public constructor(
         resource: vscode.Uri,
-        private readonly configSource: DebugConfigurationSource = new DefaultDebugConfigSource(resource)
+        private readonly configSource: DebugConfigurationSource = new DefaultDebugConfigSource(resource),
+        private readonly samValidator: AwsSamDebugConfigurationValidator = new DefaultAwsSamDebugConfigurationValidator()
     ) {}
 
     public getDebugConfigurations(): vscode.DebugConfiguration[] {
         return this.configSource.getDebugConfigurations()
     }
 
+    /**
+     * Returns all valid Sam Debug Configurations.
+     */
     public getSamDebugConfigurations(): AwsSamDebuggerConfiguration[] {
         return _(this.getDebugConfigurations())
-            .filter({ type: AWS_SAM_DEBUG_TYPE })
-            .map(config => config as AwsSamDebuggerConfiguration)
+            .filter(isAwsSamDebugConfiguration)
+            .filter(config => this.samValidator.isValidSamDebugConfiguration(config))
             .value()
     }
 
@@ -43,7 +50,7 @@ export class LaunchConfiguration {
      * Adds a debug configuration to the top of the list.
      */
     public async addDebugConfiguration(debugConfig: vscode.DebugConfiguration): Promise<void> {
-        await this.configSource.updateDebugConfigurations([debugConfig, ...this.getDebugConfigurations()])
+        await this.configSource.setDebugConfigurations([debugConfig, ...this.getDebugConfigurations()])
     }
 }
 
@@ -55,10 +62,10 @@ class DefaultDebugConfigSource implements DebugConfigurationSource {
     }
 
     public getDebugConfigurations(): vscode.DebugConfiguration[] {
-        return this.launch.get<vscode.DebugConfiguration[]>('configurations') || []
+        return this.launch.get<vscode.DebugConfiguration[]>('configurations') ?? []
     }
 
-    public async updateDebugConfigurations(value: vscode.DebugConfiguration[]): Promise<void> {
+    public async setDebugConfigurations(value: vscode.DebugConfiguration[]): Promise<void> {
         await this.launch.update('configurations', value)
     }
 }

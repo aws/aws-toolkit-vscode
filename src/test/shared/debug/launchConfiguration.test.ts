@@ -4,17 +4,18 @@
  */
 
 import * as assert from 'assert'
-import { deepEqual, instance, mock, when, verify } from 'ts-mockito'
+import { deepEqual, instance, mock, verify, when } from 'ts-mockito'
 import * as vscode from 'vscode'
 import { DebugConfigurationSource, LaunchConfiguration } from '../../../shared/debug/launchConfiguration'
 import { AwsSamDebuggerConfiguration } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
+import { AwsSamDebugConfigurationValidator } from '../../../shared/sam/debugger/awsSamDebugConfigurationValidator'
 
 const samDebugConfiguration: AwsSamDebuggerConfiguration = {
     type: 'aws-sam',
     name: 'name',
-    request: 'request',
+    request: 'direct-invoke',
     invokeTarget: {
-        target: 'target',
+        target: 'template',
         samTemplatePath: '/',
         samTemplateResource: 'resource'
     }
@@ -23,38 +24,56 @@ const samDebugConfiguration: AwsSamDebuggerConfiguration = {
 const debugConfigurations: vscode.DebugConfiguration[] = [
     samDebugConfiguration,
     {
-        type: 'not-aws-sam',
-        name: 'name',
-        request: 'request'
+        ...samDebugConfiguration,
+        type: 'not-aws-sam'
+    },
+    {
+        ...samDebugConfiguration,
+        request: 'invalid-request'
     }
 ]
 
-const TEMPLATE_URI = vscode.Uri.file('/')
+const templateUri = vscode.Uri.file('/')
 
 describe('LaunchConfiguration', () => {
     let mockConfigSource: DebugConfigurationSource
+    let mockSamValidator: AwsSamDebugConfigurationValidator
 
     beforeEach(() => {
         mockConfigSource = mock()
+        mockSamValidator = mock()
 
         when(mockConfigSource.getDebugConfigurations()).thenReturn(debugConfigurations)
+        when(mockSamValidator.isValidSamDebugConfiguration(deepEqual(samDebugConfiguration))).thenReturn(true)
     })
 
     it('gets debug configurations', () => {
-        const launchConfig = new LaunchConfiguration(TEMPLATE_URI, instance(mockConfigSource))
+        const launchConfig = new LaunchConfiguration(
+            templateUri,
+            instance(mockConfigSource),
+            instance(mockSamValidator)
+        )
         assert.deepStrictEqual(launchConfig.getDebugConfigurations(), debugConfigurations)
     })
 
     it('gets sam debug configurations', () => {
-        const launchConfig = new LaunchConfiguration(TEMPLATE_URI, instance(mockConfigSource))
+        const launchConfig = new LaunchConfiguration(
+            templateUri,
+            instance(mockConfigSource),
+            instance(mockSamValidator)
+        )
         assert.deepStrictEqual(launchConfig.getSamDebugConfigurations(), [samDebugConfiguration])
     })
 
     it('adds debug configurations', async () => {
-        const launchConfig = new LaunchConfiguration(TEMPLATE_URI, instance(mockConfigSource))
+        const launchConfig = new LaunchConfiguration(
+            templateUri,
+            instance(mockConfigSource),
+            instance(mockSamValidator)
+        )
         await launchConfig.addDebugConfiguration(samDebugConfiguration)
 
         const expected = [samDebugConfiguration, ...debugConfigurations]
-        verify(mockConfigSource.updateDebugConfigurations(deepEqual(expected))).once()
+        verify(mockConfigSource.setDebugConfigurations(deepEqual(expected))).once()
     })
 })

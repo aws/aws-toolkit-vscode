@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { addSamDebugConfiguration } from '../../lambda/commands/addSamDebugConfiguration'
+import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
 import { createNewSamApplication, resumeCreateNewSamApp } from '../../lambda/commands/createNewSamApp'
 import { deploySamApplication, SamDeployWizardResponseProvider } from '../../lambda/commands/deploySamApplication'
 import { SamParameterCompletionItemProvider } from '../../lambda/config/samParameterCompletionItemProvider'
@@ -27,7 +27,8 @@ import { PromiseSharer } from '../utilities/promiseUtilities'
 import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
 import { initialize as initializeSamCliContext } from './cli/samCliContext'
 import { detectSamCli } from './cli/samCliDetection'
-import { AWS_SAM_DEBUG_TYPE, AwsSamDebugConfigurationProvider } from './debugger/awsSamDebugger'
+import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
+import { AwsSamDebugConfigurationProvider } from './debugger/awsSamDebugConfigurationProvider'
 
 /**
  * Activate serverless related functionality for the extension.
@@ -142,11 +143,6 @@ async function activateCodeLensProviders(
                     language: 'yaml',
                     scheme: 'file',
                     pattern: '**/*template.{yml,yaml}'
-                },
-                {
-                    language: 'json',
-                    scheme: 'file',
-                    pattern: '**/*template.json'
                 }
             ],
             new SamTemplateCodeLensProvider()

@@ -309,7 +309,7 @@ describe('CloudFormation', () => {
             const resource = createBaseResource()
             const runtime = CloudFormation.getRuntime(resource)
 
-            assert.strictEqual(runtime, 'runtime')
+            assert.strictEqual(runtime, 'nodejs12.x')
         })
     })
 
@@ -332,7 +332,7 @@ describe('CloudFormation', () => {
             const resource = createBaseResource()
             const codeUri = CloudFormation.getCodeUri(resource)
 
-            assert.strictEqual(codeUri, 'codeuri')
+            assert.strictEqual(codeUri, '/')
         })
     })
 })

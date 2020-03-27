@@ -6,11 +6,11 @@
 import * as assert from 'assert'
 import { instance, mock, when } from 'ts-mockito'
 import * as vscode from 'vscode'
-import { AddSamDebugConfigurationInput } from '../../../lambda/commands/addSamDebugConfiguration'
 import { TemplateFunctionResource, TemplateSymbolResolver } from '../../../shared/cloudformation/templateSymbolResolver'
 import { SamTemplateCodeLensProvider } from '../../../shared/codelens/samTemplateCodeLensProvider'
 import { LaunchConfiguration } from '../../../shared/debug/launchConfiguration'
 import { AwsSamDebuggerConfiguration } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
+import { AddSamDebugConfigurationInput } from '../../../shared/sam/debugger/commands/addSamDebugConfiguration'
 
 const range = new vscode.Range(0, 0, 0, 0)
 const functionResources: TemplateFunctionResource[] = [
@@ -29,7 +29,7 @@ const debugConfigurations: AwsSamDebuggerConfiguration[] = [
         name: 'name',
         request: 'request',
         invokeTarget: {
-            target: 'target',
+            target: 'template',
             samTemplatePath: '/',
             samTemplateResource: 'existingResource'
         }
@@ -39,14 +39,13 @@ const debugConfigurations: AwsSamDebuggerConfiguration[] = [
         name: 'name',
         request: 'request',
         invokeTarget: {
-            target: 'target',
+            target: 'template',
             samTemplatePath: '/some/other/template/with/the/same/resource/name',
             samTemplateResource: 'newResource'
         }
     }
 ]
-
-const TEMPLATE_URI = vscode.Uri.file('/')
+const templateUri = vscode.Uri.file('/')
 
 describe('SamTemplateCodeLensProvider', async () => {
     const codeLensProvider = new SamTemplateCodeLensProvider()
@@ -62,7 +61,7 @@ describe('SamTemplateCodeLensProvider', async () => {
         mockSymbolResolver = mock()
         mockLaunchConfig = mock()
 
-        when(mockDocument.uri).thenReturn(TEMPLATE_URI)
+        when(mockDocument.uri).thenReturn(templateUri)
         when(mockLaunchConfig.getSamDebugConfigurations()).thenReturn(debugConfigurations)
     })
 
@@ -78,18 +77,16 @@ describe('SamTemplateCodeLensProvider', async () => {
 
         const expectedInput: AddSamDebugConfigurationInput = {
             samTemplateResourceName: 'newResource',
-            samTemplateUri: TEMPLATE_URI
+            samTemplateUri: templateUri
         }
 
-        const expectedCodeLenses: vscode.CodeLens[] = [
-            new vscode.CodeLens(range, {
-                title: 'Add Debug Config',
-                command: 'aws.addSamDebugConfiguration',
-                arguments: [expectedInput]
-            })
-        ]
+        const expectedCodeLens: vscode.CodeLens = new vscode.CodeLens(range, {
+            title: 'Add Debug Configuration',
+            command: 'aws.addSamDebugConfiguration',
+            arguments: [expectedInput]
+        })
 
-        assert.deepStrictEqual(codeLenses, expectedCodeLenses)
+        assert.deepStrictEqual(codeLenses, [expectedCodeLens])
     })
 
     it('provides no code lenses for a file with no resources', async () => {
