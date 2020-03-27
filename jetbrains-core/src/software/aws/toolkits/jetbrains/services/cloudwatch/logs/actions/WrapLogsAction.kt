@@ -24,24 +24,29 @@ class WrapLogsAction(private val project: Project, private val getCurrentTableVi
     override fun setSelected(e: AnActionEvent, state: Boolean) {
         CloudwatchlogsTelemetry.wrapEvents(project, enabled = state)
         isSelected = state
+        val tableView = getCurrentTableView()
         if (isSelected) {
-            wrap()
+            wrap(tableView)
         } else {
-            unwrap()
+            unwrap(tableView)
         }
     }
 
-    private fun wrap() {
-        (getCurrentTableView().listTableModel.columnInfos[messageColumn] as? LogStreamMessageColumn)?.wrap()
-        redrawTable()
+    private fun wrap(table: TableView<LogStreamEntry>) {
+        // The ExpandableItemsHandler also unwraps the box even if word wrap is turned
+        // on, so enable/disable it based on if we are wrapping or not
+        table.setExpandableItemsEnabled(false)
+        (table.listTableModel.columnInfos[messageColumn] as? LogStreamMessageColumn)?.wrap()
+        table.redrawTable()
     }
 
-    private fun unwrap() {
-        (getCurrentTableView().listTableModel.columnInfos[messageColumn] as? LogStreamMessageColumn)?.unwrap()
-        redrawTable()
+    private fun unwrap(table: TableView<LogStreamEntry>) {
+        table.setExpandableItemsEnabled(true)
+        (table.listTableModel.columnInfos[messageColumn] as? LogStreamMessageColumn)?.unwrap()
+        table.redrawTable()
     }
 
-    private fun redrawTable() {
-        getCurrentTableView().listTableModel.fireTableDataChanged()
+    private fun TableView<LogStreamEntry>.redrawTable() {
+        listTableModel.fireTableDataChanged()
     }
 }
