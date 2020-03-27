@@ -8,6 +8,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.Constraints
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
@@ -62,7 +63,7 @@ class CloudWatchLogStream(
         val locationCrumbs = LocationCrumbs(project, logGroup, logStream)
         locationInformation.crumbs = locationCrumbs.crumbs
         breadcrumbHolder.border = locationCrumbs.border
-        locationInformation.installDoubleClickListener()
+        locationInformation.installClickListener()
 
         Disposer.register(this, logStreamTable)
         searchField.textEditor.emptyText.text = message("cloudwatch.logs.filter_logs")
@@ -111,16 +112,16 @@ class CloudWatchLogStream(
 
     private fun addActionToolbar() {
         val actionGroup = DefaultActionGroup()
+        actionGroup.addAction(object : AnAction(message("explorer.refresh.title"), null, AllIcons.Actions.Refresh), DumbAware {
+            override fun actionPerformed(e: AnActionEvent) {
+                launch { refreshTable() }
+            }
+        }, Constraints.FIRST)
         actionGroup.add(OpenCurrentInEditorAction(project, logStream) {
             searchStreamTable?.logsTable?.listTableModel?.items ?: logStreamTable.logsTable.listTableModel.items
         })
         actionGroup.add(TailLogsAction(project) { searchStreamTable?.channel ?: logStreamTable.channel })
         actionGroup.add(WrapLogsAction(project) { searchStreamTable?.logsTable ?: logStreamTable.logsTable })
-        actionGroup.addAction(object : AnAction(message("explorer.refresh.title"), null, AllIcons.Actions.Refresh), DumbAware {
-            override fun actionPerformed(e: AnActionEvent) {
-                launch { refreshTable() }
-            }
-        })
         val toolbar = ActionManager.getInstance().createActionToolbar("CloudWatchLogStream", actionGroup, false)
         tablePanel.toolbar = toolbar.component
     }

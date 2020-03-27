@@ -9,6 +9,7 @@ import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.Constraints
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
@@ -17,7 +18,6 @@ import com.intellij.ui.DoubleClickListener
 import com.intellij.ui.PopupHandler
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.TableSpeedSearch
-import com.intellij.ui.components.breadcrumbs.Breadcrumbs
 import com.intellij.ui.table.JBTable
 import com.intellij.ui.table.TableView
 import com.intellij.util.ui.ListTableModel
@@ -49,7 +49,7 @@ class CloudWatchLogGroup(
     private lateinit var tablePanel: SimpleToolWindowPanel
     private lateinit var groupTable: JBTable
     private lateinit var tableModel: ListTableModel<LogStream>
-    private lateinit var locationInformation: Breadcrumbs
+    private lateinit var locationInformation: LocationBreadcrumbs
 
     private val client: CloudWatchLogsClient = project.awsClient()
 
@@ -79,7 +79,7 @@ class CloudWatchLogGroup(
         val locationCrumbs = LocationCrumbs(project, logGroup)
         locationInformation.crumbs = locationCrumbs.crumbs
         locationInformation.border = locationCrumbs.border
-        locationInformation.installDoubleClickListener()
+        locationInformation.installClickListener()
 
         addActions()
         addToolbar()
@@ -113,10 +113,10 @@ class CloudWatchLogGroup(
 
     private fun addActions() {
         val actionGroup = DefaultActionGroup()
-        actionGroup.add(ExportActionGroup(project, client, logGroup) {
+        actionGroup.addAction(ExportActionGroup(project, client, logGroup) {
             val row = groupTable.selectedRow.takeIf { it >= 0 } ?: return@ExportActionGroup null
             groupTable.getValueAt(row, 0) as? String
-        })
+        }, Constraints.FIRST)
         PopupHandler.installPopupHandler(
             groupTable,
             actionGroup,

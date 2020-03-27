@@ -58,14 +58,19 @@ class CloudWatchLogWindow(private val project: Project) : CoroutineScope by Appl
     ) = launch {
         var result = Result.SUCCEEDED
         try {
-            val id = "$logGroup/$logStream"
+            val id = "$logGroup/$logStream/$startTime/$duration"
             val existingWindow = toolWindow.find(id)
             if (existingWindow != null) {
                 withContext(edtContext) {
-                    existingWindow.dispose()
+                    existingWindow.show()
                 }
+                return@launch
             }
-            val title = message("cloudwatch.logs.log_stream_title", logStream)
+            val title = if (startTime != null) {
+                message("cloudwatch.logs.filtered_log_stream_title", logStream)
+            } else {
+                message("cloudwatch.logs.log_stream_title", logStream)
+            }
             val stream = CloudWatchLogStream(project, logGroup, logStream, startTime, duration)
             withContext(edtContext) {
                 toolWindow.addTab(title, stream.content, activate = true, id = id, disposable = stream)

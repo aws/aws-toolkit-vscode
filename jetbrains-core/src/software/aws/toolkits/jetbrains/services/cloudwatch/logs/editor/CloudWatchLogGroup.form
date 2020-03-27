@@ -9,7 +9,7 @@
       <color color="-16777216"/>
     </border>
     <children>
-      <component id="c43d5" class="com.intellij.ui.components.breadcrumbs.Breadcrumbs" binding="locationInformation">
+      <component id="c43d5" class="software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.LocationBreadcrumbs" binding="locationInformation">
         <constraints border-constraint="North"/>
         <properties/>
       </component>
