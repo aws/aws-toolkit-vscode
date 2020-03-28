@@ -15,12 +15,36 @@ import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { DefaultSamLocalInvokeCommand } from '../../../shared/sam/cli/samCliLocalInvoke'
 import { SamLaunchRequestArgs } from '../../../shared/sam/debugger/samDebugSession'
+import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
+import { rmrf } from '../../../shared/filesystem'
 
 describe.only('makeCoreCLRDebugConfiguration', async () => {
+    let tempFolder: string
+    let fakeWorkspaceFolder: vscode.WorkspaceFolder
+
+    beforeEach(async () => {
+        tempFolder = await makeTemporaryToolkitFolder()
+        fakeWorkspaceFolder = {
+            uri: vscode.Uri.file(tempFolder),
+            name: 'It was me, fakeWorkspaceFolder!',
+            index: 0
+        }
+    })
+
+    afterEach(async () => {
+        await rmrf(tempFolder)
+    })
+    
     function makeFakeSamLaunchConfig() {
         const fakeExtCtx = new FakeExtensionContext()
+        const fakeWorkspaceFolder = {
+            uri: vscode.Uri.file(tempFolder),
+            name: 'It was me, fakeWorkspaceFolder!',
+            index: 0
+        }
         const config: SamLaunchRequestArgs = {
             name: 'fake-launch-config',
+            workspaceFolder: fakeWorkspaceFolder,
             runtimeFamily: RuntimeFamily.DotNetCore,
             type: 'coreclr',
             request: 'attach',

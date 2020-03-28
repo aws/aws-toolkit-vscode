@@ -151,6 +151,7 @@ export function getLocalRootVariants(filePath: string): string[] {
 }
 
 function makeDebugConfig(
+        workspaceFolder: vscode.WorkspaceFolder,
         port: number, samProjectCodeRoot: string, runtime: string,
         handlerName: string, uri: vscode.Uri, inputTemplatePath: string)
         : PythonDebugConfiguration {
@@ -165,6 +166,7 @@ function makeDebugConfig(
 
     return {
         type: 'python',
+        workspaceFolder: workspaceFolder,
         debugPort: port,
         port: port,
         runtime: runtime,
@@ -191,14 +193,11 @@ function makeDebugConfig(
 
 export async function initialize({
     context,
-    configuration,
-    outputChannel: toolkitOutputChannel,
     processInvoker = new DefaultValidatingSamCliProcessInvoker({}),
-    telemetryService,
     localInvokeCommand
 }: CodeLensProviderParams): Promise<void> {
     const logger = getLogger()
-    const channelLogger = getChannelLogger(toolkitOutputChannel)
+    const channelLogger = getChannelLogger(context.outputChannel)
 
     if (!localInvokeCommand) {
         localInvokeCommand = new DefaultSamLocalInvokeCommand(channelLogger, [])
@@ -292,6 +291,7 @@ export async function initialize({
             })
 
             const config: PythonDebugConfiguration = makeDebugConfig(
+                args.workspaceFolder,
                 debugPort ?? -1, samProjectCodeRoot, args.runtime, args.handlerName,
                 args.uri, inputTemplatePath)
             config.baseBuildDir = baseBuildDir

@@ -8,20 +8,18 @@ import * as vscode from 'vscode'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { findFileInParentPaths } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
-import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES, SamLocalInvokeCommand } from '../sam/cli/samCliLocalInvoke'
+import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { getChannelLogger, localize } from '../utilities/vsCodeUtils'
 
-import { nodeJsRuntimes, } from '../../lambda/models/samLambdaRuntime'
+import { nodeJsRuntimes } from '../../lambda/models/samLambdaRuntime'
 import { getLogger } from '../logger'
 import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
+import { getStartPort } from '../utilities/debuggerUtils'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { CodeLensProviderParams, getInvokeCmdKey, makeCodeLenses } from './codeLensUtils'
-import { getHandlerRelativePath, LambdaLocalInvokeParams, } from './localLambdaRunner'
-import { SettingsConfiguration } from '../settingsConfiguration'
-import { SamCliProcessInvoker } from '../sam/cli/samCliInvokerUtils'
-import { TelemetryService } from '../telemetry/telemetryService'
+import { getHandlerRelativePath, LambdaLocalInvokeParams } from './localLambdaRunner'
 
 export async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
     const packageJsonPath: string | undefined = await findFileInParentPaths(path.dirname(filepath), 'package.json')
@@ -38,69 +36,53 @@ export async function getSamProjectDirPathForFile(filepath: string): Promise<str
     return path.dirname(packageJsonPath)
 }
 
-export async function invokeLambda(params: LambdaLocalInvokeParams
-        & {
-            runtime: string,
-            settings: SettingsConfiguration,
-            processInvoker: SamCliProcessInvoker,
-            localInvokeCommand: SamLocalInvokeCommand,
-            telemetryService: TelemetryService,
-            outputChannel: vscode.OutputChannel,
-        }) {
-    // const samProjectCodeRoot = await getSamProjectDirPathForFile(params.uri.fsPath)
-    // let debugPort: number | undefined
-
-    // if (params.isDebug) {
-    //     debugPort = await getStartPort()
-    // }
-
-    // const debugConfig: NodejsDebugConfiguration = {
-    //     runtimeFamily: RuntimeFamily.NodeJS,
-    //     type: 'node',
-        
-    //     request: 'attach',
-    //     name: 'SamLocalDebug',
-    //     preLaunchTask: undefined,
-    //     address: 'localhost',
-    //     port: debugPort!,
-    //     localRoot: samProjectCodeRoot,
-    //     remoteRoot: '/var/task',
-    //     protocol: 'inspector',
-    //     skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
-    //     invokeTarget: {
-    //         target: 'code',
-    //     }
-    // }
-
-    // const localLambdaRunner: LocalLambdaRunner = new LocalLambdaRunner(
-    //     params.settings,
-    //     params,
-    //     debugPort,
-    //     params.runtime,
-    //     params.outputChannel,
-    //     params.processInvoker,
-    //     params.localInvokeCommand,
-    //     debugConfig,
-    //     samProjectCodeRoot,
-    //     params.telemetryService,
-    //     params.samTemplate.fsPath,
-    //     params.samTemplateResourceName,
-    // )
-
-    // await localLambdaRunner.run()
-}
-
-
+/**
+ * LEGACY/DEPRECATED codelens-based debug entrypoint.
+ */
 export function initialize({
     context,
-    configuration,
-    outputChannel: toolkitOutputChannel,
     processInvoker = new DefaultValidatingSamCliProcessInvoker({}),
-    localInvokeCommand = new DefaultSamLocalInvokeCommand(getChannelLogger(toolkitOutputChannel), [
+    localInvokeCommand = new DefaultSamLocalInvokeCommand(getChannelLogger(context.outputChannel), [
         WAIT_FOR_DEBUGGER_MESSAGES.NODEJS
     ]),
-    telemetryService
 }: CodeLensProviderParams): void {
+    const invokeLambda = async (params: LambdaLocalInvokeParams & { runtime: string }) => {
+        // const samProjectCodeRoot = await getSamProjectDirPathForFile(params.uri.fsPath)
+        let debugPort: number | undefined
+
+        if (params.isDebug) {
+            debugPort = await getStartPort()
+        }
+
+        // const debugConfig: NodejsDebugConfiguration = {
+        //     type: 'node',
+        //     request: 'attach',
+        //     name: 'SamLocalDebug',
+        //     preLaunchTask: undefined,
+        //     address: 'localhost',
+        //     port: debugPort!,
+        //     localRoot: samProjectCodeRoot,
+        //     remoteRoot: '/var/task',
+        //     protocol: 'inspector',
+        //     skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js']
+        // }
+
+        // const localLambdaRunner: LocalLambdaRunner = new LocalLambdaRunner(
+        //     configuration,
+        //     params,
+        //     debugPort,
+        //     params.runtime,
+        //     toolkitOutputChannel,
+        //     processInvoker,
+        //     localInvokeCommand,
+        //     debugConfig,
+        //     samProjectCodeRoot,
+        //     telemetryService
+        // )
+
+        // await localLambdaRunner.run()
+    }
+
     const command = getInvokeCmdKey('javascript')
     context.subscriptions.push(
         vscode.commands.registerCommand(command, async (params: LambdaLocalInvokeParams) => {
@@ -131,12 +113,7 @@ export function initialize({
                 } else {
                     await invokeLambda({
                         runtime: lambdaRuntime,
-                        settings: configuration,
-                        processInvoker: processInvoker,
-                        localInvokeCommand: localInvokeCommand,
-                        telemetryService: telemetryService,
-                        outputChannel: toolkitOutputChannel,
-                        ...params,
+                        ...params
                     })
                 }
             } catch (err) {

@@ -21,9 +21,7 @@ import {
     SamLocalInvokeCommand,
     WAIT_FOR_DEBUGGER_MESSAGES
 } from '../sam/cli/samCliLocalInvoke'
-import { SettingsConfiguration } from '../settingsConfiguration'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
-import { TelemetryService } from '../telemetry/telemetryService'
 import { getStartPort } from '../utilities/debuggerUtils'
 import { dirnameWithTrailingSlash } from '../utilities/pathUtils'
 import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
@@ -62,11 +60,8 @@ export interface DotNetLambdaHandlerComponents {
 
 export async function initialize({
     context,
-    configuration,
-    outputChannel: toolkitOutputChannel,
     processInvoker = new DefaultSamCliProcessInvoker(),
-    telemetryService,
-    localInvokeCommand = new DefaultSamLocalInvokeCommand(getChannelLogger(toolkitOutputChannel), [
+    localInvokeCommand = new DefaultSamLocalInvokeCommand(getChannelLogger(context.outputChannel), [
         WAIT_FOR_DEBUGGER_MESSAGES.DOTNET
     ])
 }: CodeLensProviderParams): Promise<void> {
@@ -75,11 +70,8 @@ export async function initialize({
             await onLocalInvokeCommand({
                 ctx: context,
                 lambdaLocalInvokeParams: params,
-                configuration,
-                toolkitOutputChannel,
                 processInvoker,
                 localInvokeCommand,
-                telemetryService
             })
         })
     )
@@ -121,31 +113,25 @@ function getCodeUri(resource: CloudFormation.Resource, samTemplateUri: vscode.Ur
 async function onLocalInvokeCommand(
     {
         ctx,
-        configuration,
-        toolkitOutputChannel,
         lambdaLocalInvokeParams,
         processInvoker,
         localInvokeCommand,
-        telemetryService,
         loadCloudFormationTemplate = async _args => await CloudFormation.load(_args),
         getResourceFromTemplateResource = async _args => await CloudFormation.getResourceFromTemplateResources(_args)
     }: {
         ctx: ExtContext
-        configuration: SettingsConfiguration
-        toolkitOutputChannel: vscode.OutputChannel
         lambdaLocalInvokeParams: LambdaLocalInvokeParams
         processInvoker: SamCliProcessInvoker
         localInvokeCommand: SamLocalInvokeCommand
-        telemetryService: TelemetryService
         loadCloudFormationTemplate?(filename: string): Promise<CloudFormation.Template>
         getResourceFromTemplateResource?(args: {
             templateResources?: CloudFormation.TemplateResources
             handlerName: string
         }): Promise<CloudFormation.Resource>
     },
-    context: OnLocalInvokeCommandContext = new DefaultOnLocalInvokeCommandContext(toolkitOutputChannel)
+    context: OnLocalInvokeCommandContext = new DefaultOnLocalInvokeCommandContext(ctx.outputChannel)
 ): Promise<void> {
-    const channelLogger = getChannelLogger(toolkitOutputChannel)
+    const channelLogger = getChannelLogger(ctx.outputChannel)
     const template: CloudFormation.Template = await loadCloudFormationTemplate(
         lambdaLocalInvokeParams.samTemplate.fsPath
     )
@@ -202,6 +188,7 @@ async function onLocalInvokeCommand(
 
         const launchConfig: SamLaunchRequestArgs = {
             request: 'attach',
+            workspaceFolder: vscode.workspace.getWorkspaceFolder(documentUri)!!,
             name: 'SamLocalDebug',
             type: 'coreclr',
             runtime: lambdaRuntime,

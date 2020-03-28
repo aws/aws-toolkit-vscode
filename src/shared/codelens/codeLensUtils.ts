@@ -11,8 +11,6 @@ import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
 import { SamCliProcessInvoker } from '../sam/cli/samCliInvokerUtils'
 import { SamLocalInvokeCommand } from '../sam/cli/samCliLocalInvoke'
-import { SettingsConfiguration } from '../settingsConfiguration'
-import { TelemetryService } from '../telemetry/telemetryService'
 import { localize } from '../utilities/vsCodeUtils'
 import { ExtContext } from '../extensions'
 
@@ -20,11 +18,8 @@ export type Language = 'python' | 'javascript' | 'csharp'
 
 export interface CodeLensProviderParams {
     context: ExtContext
-    configuration: SettingsConfiguration
-    outputChannel: vscode.OutputChannel
     processInvoker?: SamCliProcessInvoker
     localInvokeCommand?: SamLocalInvokeCommand
-    telemetryService: TelemetryService
 }
 
 interface MakeConfigureCodeLensParams {

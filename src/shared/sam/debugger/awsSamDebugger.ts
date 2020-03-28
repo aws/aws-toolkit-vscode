@@ -134,16 +134,21 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             ?? CloudFormation.getRuntime(config.cfnTemplate!!.Resources!!)
         const runtimeFamily = getFamily(runtime)
         const handlerName = config.invokeTarget.lambdaHandler ?? config.invokeTarget.samTemplateResource!!
+        const documentUri = vscode.window.activeTextEditor?.document.uri
+            // XXX: don't know what URI to choose...
+            ?? vscode.Uri.parse(config.invokeTarget.samTemplatePath!!)
+        const workspaceFolder = folder
+            // XXX: when/why is workspace undefined?
+            ?? vscode.workspace.getWorkspaceFolder(documentUri)!!
         const launchConfig: SamLaunchRequestArgs = {
             ...config,
+            workspaceFolder: workspaceFolder,
             request: DIRECT_INVOKE_TYPE,
             runtime: runtime,
             runtimeFamily: runtimeFamily,
             handlerName: handlerName,
             originalHandlerName: handlerName,
-            documentUri: vscode.window.activeTextEditor?.document.uri
-                // XXX: don't know what URI to choose...
-                ?? vscode.Uri.parse(config.invokeTarget.samTemplatePath!!),
+            documentUri: documentUri,
             samTemplatePath: config.invokeTarget.samTemplatePath!!,
             originalSamTemplatePath: config.invokeTarget.samTemplatePath!!,
             debugPort: config.noDebug ? -1 : await getStartPort(),
@@ -201,7 +206,13 @@ function validateConfig(
     const cftRegistry = CloudFormationTemplateRegistry.getRegistry()
 
     let rv: { isValid: boolean; message?: string } = { isValid: false, message: undefined, }
-    if (!AWS_SAM_DEBUG_REQUEST_TYPES.includes(config.request)) {
+    if (!config.request) {
+        rv.message = localize(
+            'AWS.sam.debugger.missingField',
+            'Missing required field "{0}" in debug config',
+            'request'
+        )
+    } else if (!AWS_SAM_DEBUG_REQUEST_TYPES.includes(config.request)) {
         rv.message = localize(
             'AWS.sam.debugger.invalidRequest',
             'Debug Configuration has an unsupported request type. Supported types: {0}',

@@ -30,6 +30,8 @@ export interface SamLaunchRequestArgs extends
     handlerName: string
     /** vscode implicit field, set if user user invokes "Run (Start Without Debugging)". */
     noDebug?: boolean
+    workspaceFolder: vscode.WorkspaceFolder
+    
     /**
      * TODO: we could remove this after removing codelens-based debug support.
      */

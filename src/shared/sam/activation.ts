@@ -122,9 +122,6 @@ async function activateCodeLensProviders(
     const disposables: vscode.Disposable[] = []
     const providerParams: CodeLensProviderParams = {
         context,
-        configuration,
-        outputChannel: toolkitOutputChannel,
-        telemetryService
     }
 
     tsLensProvider.initialize(providerParams)
