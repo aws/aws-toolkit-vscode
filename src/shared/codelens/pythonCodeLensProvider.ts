@@ -171,7 +171,7 @@ function makeDebugConfig(
         runtimeFamily: RuntimeFamily.Python,
         handlerName: handlerName,
         originalHandlerName: handlerName,
-        isDebug: true,
+        noDebug: false,
         documentUri: uri,
         samTemplatePath: inputTemplatePath,
         originalSamTemplatePath: inputTemplatePath,

@@ -28,8 +28,12 @@ export interface SamLaunchRequestArgs extends
     runtime: string
     runtimeFamily: RuntimeFamily
     handlerName: string
-    // TODO: remove this, use inherited `noDebug` field instead.
-    isDebug: boolean
+    /** vscode implicit field, set if user user invokes "Run (Start Without Debugging)". */
+    noDebug?: boolean
+    /**
+     * TODO: we could remove this after removing codelens-based debug support.
+     */
+    // isLegacy: boolean
 
     //
     // From legacy interface: InvokeLambdaFunctionArguments

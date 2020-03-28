@@ -27,7 +27,7 @@ describe.only('makeCoreCLRDebugConfiguration', async () => {
             // cfnTemplate?: CloudFormation.Template
             runtime: 'fakedotnet',
             handlerName: 'fakehandlername',
-            isDebug: true,
+            noDebug: false,
 
             baseBuildDir: '/fake/build/dir/',
             documentUri: vscode.Uri.parse('/fake/path/foo.txt'),

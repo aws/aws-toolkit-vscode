@@ -141,13 +141,12 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             runtimeFamily: runtimeFamily,
             handlerName: handlerName,
             originalHandlerName: handlerName,
-            isDebug: true,  // TODO: get from ...?
             documentUri: vscode.window.activeTextEditor?.document.uri
                 // XXX: don't know what URI to choose...
                 ?? vscode.Uri.parse(config.invokeTarget.samTemplatePath!!),
             samTemplatePath: config.invokeTarget.samTemplatePath!!,
             originalSamTemplatePath: config.invokeTarget.samTemplatePath!!,
-            debugPort: config.isDebug ? await getStartPort() : -1,
+            debugPort: config.noDebug ? -1 : await getStartPort(),
         }
 
         if (runtimeFamily === RuntimeFamily.NodeJS) {
@@ -172,8 +171,9 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
     async launchTypescript(config: SamLaunchRequestArgs) {
         const samProjectCodeRoot = await tsLensProvider.getSamProjectDirPathForFile(config.documentUri.fsPath)
 
+        //  Make a nodejs launch-config from the generic config.
         const nodejsLaunchConfig: NodejsDebugConfiguration = {
-            ...config,  // Make a nodejs launch-config from the generic launch-config.
+            ...config,  // Compose.
             type: 'node',
             runtimeFamily: RuntimeFamily.NodeJS,
             request: 'attach',
@@ -186,15 +186,6 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             protocol: 'inspector',
             skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
         }
-        // const cfnTemplateUri = vscode.Uri.parse(config.invokeTarget.samTemplatePath!!)
-        // const params:LambdaLocalInvokeParams = {
-        //     uri: config.documentUri,
-        //     handlerName: config.handlerName,
-        //     isDebug: config.isDebug,  //!!args.noDebug,
-        //     workspaceFolder: vscode.workspace.getWorkspaceFolder(cfnTemplateUri)!!,
-        //     samTemplate: cfnTemplateUri,
-        //     samTemplateResourceName: config.invokeTarget.samTemplateResource,
-        // }
 
         await invokeLambdaFunction(this.ctx, nodejsLaunchConfig)
     }

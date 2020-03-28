@@ -208,7 +208,7 @@ async function onLocalInvokeCommand(
             runtimeFamily: RuntimeFamily.DotNetCore,
             handlerName: handlerName,
             originalHandlerName: handlerName,
-            isDebug: true,
+            noDebug: !lambdaLocalInvokeParams.isDebug,
             documentUri: documentUri,
             samTemplatePath: samTemplatePath,
             originalSamTemplatePath: lambdaLocalInvokeParams.samTemplate.fsPath,
