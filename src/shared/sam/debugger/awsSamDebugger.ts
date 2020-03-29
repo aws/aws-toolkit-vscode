@@ -3,21 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as path from 'path';
 import * as vscode from 'vscode';
 import * as nls from 'vscode-nls';
+import { getDefaultRuntime, NodejsDebugConfiguration, PythonDebugConfiguration } from '../../../lambda/local/debugConfiguration';
 import { getFamily, RuntimeFamily, samLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime';
 import { invokeLambdaFunction } from '../../../shared/codelens/localLambdaRunner';
 import { CloudFormation } from '../../cloudformation/cloudformation';
 import { CloudFormationTemplateRegistry } from '../../cloudformation/templateRegistry';
-import * as tsLensProvider from '../../codelens/typescriptCodeLensProvider';
+import * as pythonDebug from '../../codelens/pythonCodeLensProvider';
+import * as tsDebug from '../../codelens/typescriptCodeLensProvider';
+import * as csharpDebug from '../../codelens/csharpCodeLensProvider';
+import { ExtContext } from '../../extensions';
 import { isInDirectory } from '../../filesystemUtilities';
 import { getLogger } from '../../logger';
-import { AwsSamDebuggerConfiguration } from './awsSamDebugConfiguration'
-import { ExtContext } from '../../extensions';
-import { SamLaunchRequestArgs } from './samDebugSession';
 import { getStartPort } from '../../utilities/debuggerUtils';
-import { NodejsDebugConfiguration, getDefaultRuntime } from '../../../lambda/local/debugConfiguration';
+import { AwsSamDebuggerConfiguration } from './awsSamDebugConfiguration';
+import { SamLaunchRequestArgs } from './samDebugSession';
+import { tryGetAbsolutePath } from '../../utilities/workspaceUtils';
 
 const localize = nls.loadMessageBundle()
 
@@ -96,6 +98,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         if (token?.isCancellationRequested) {
             return undefined
         }
+        const cftRegistry = CloudFormationTemplateRegistry.getRegistry()
 
         // If "request" field is missing this means launch.json does not exist.
         // User/vscode expects us to dynamically decide defaults if possible.
@@ -106,7 +109,6 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             const configs: AwsSamDebuggerConfiguration[] | undefined =
                 await this.provideDebugConfigurations(folder, token)
             if (!configs || configs.length === 0) {
-                const cftRegistry = CloudFormationTemplateRegistry.getRegistry()
                 getLogger().error(`SAM debug: failed to generate config (found CFN templates: ${cftRegistry.registeredTemplates.length})`)
                 if (cftRegistry.registeredTemplates.length > 0) {
                     vscode.window.showErrorMessage(localize('AWS.sam.debugger.noTemplates', 'No SAM templates found in workspace'))
@@ -130,58 +132,26 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         // generate debugconfig
         // SAM build
         // SAM invoke
-        // TODO: support "code" (non-"template").
+        
+        const editor = vscode.window.activeTextEditor;
+        const fullpath = tryGetAbsolutePath(folder, config.invokeTarget.samTemplatePath!!)
+        const cfnTemplate = cftRegistry.getRegisteredTemplate(fullpath)?.template
+        // Normalize to absolute path for use in the runner.
+        config.invokeTarget.samTemplatePath = fullpath
+        const resource: CloudFormation.Resource | undefined = cfnTemplate?.Resources![config.invokeTarget.samTemplateResource!!]
+        const handlerName: string = config.invokeTarget.lambdaHandler ?? resource?.Properties?.Handler!!
+        
+        let runtime: string|undefined = config.lambda?.runtime
+            ?? resource?.Properties?.Runtime
+            ?? getDefaultRuntime(editor?.document?.languageId ?? 'unknown')
 
-
-        /*
-            const editor = vscode.window.activeTextEditor;
-            const runtime = getDefaultRuntime(editor?.document?.languageId ?? 'unknown')
-            const runtimeFamily = getFamily(runtime)
-            if (!configs || configs.length === 0) {
-                return undefined
-            }
-            const documentUri = editor?.document?.uri
-                ?? vscode.Uri.parse(configs[0].invokeTarget.samTemplatePath!!)
-            const workspaceFolder = folder
-                // XXX: when/why is workspace undefined?
-                ?? vscode.workspace.getWorkspaceFolder(documentUri)!!
-
-            // Stub non-template ("code") lambda config.
-            const initialConfig:SamLaunchRequestArgs = {
-                ...configs[0],
-                type: AWS_SAM_DEBUG_TYPE,
-                request: 'launch',
-                type: 'node',
-                documentUri: documentUri,
-                workspaceFolder: workspaceFolder,
-                samTemplatePath: configs[0].invokeTarget.samTemplatePath!!,
-                originalSamTemplatePath: configs[0].invokeTarget.samTemplatePath!!,
-                runtime: runtime,
-                runtimeFamily: runtimeFamily,
-                handlerName: 'unknown',
-                originalHandlerName: 'unknown',
-                name: 'AWS SAM resource',
-                invokeTarget: {
-                    target: CODE_TARGET_TYPE,
-                    // Magic: invokes getLambdaName() mapped in package.json.
-                    lambdaHandler: '${command:AskForLocalLambda}',
-                    // samTemplatePath: 'template.yaml',
-                    // samTemplateResource: "TemplateResource"
-                },
-                lambda: {
-                    runtime: 'nodejs12.x',
-                    timeoutSec: 30,
-                    memoryMb: 128,
-                    environmentVariables: {
-                    },
-                },
-            }
-            */
-
-        const runtime = config.lambda?.runtime
-            ?? CloudFormation.getRuntime(config.cfnTemplate!!.Resources!!)
+        if (!runtime) {
+            getLogger().error(`SAM debug: failed to launch config: ${config})`)
+            vscode.window.showErrorMessage(localize('AWS.sam.debugger.failedLaunch', 'AWS SAM failed to launch. Try creating launch.json'))
+            return undefined
+        }
+        
         const runtimeFamily = getFamily(runtime)
-        const handlerName = config.invokeTarget.lambdaHandler ?? config.invokeTarget.samTemplateResource!!
         const documentUri = vscode.window.activeTextEditor?.document.uri
             // XXX: don't know what URI to choose...
             ?? vscode.Uri.parse(config.invokeTarget.samTemplatePath!!)
@@ -190,8 +160,9 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             ?? vscode.workspace.getWorkspaceFolder(documentUri)!!
         const launchConfig: SamLaunchRequestArgs = {
             ...config,
-            workspaceFolder: workspaceFolder,
             request: 'attach',
+            samProjectCodeRoot: '',
+            workspaceFolder: workspaceFolder,
             runtime: runtime,
             runtimeFamily: runtimeFamily,
             handlerName: handlerName,
@@ -205,10 +176,27 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         if (runtimeFamily === RuntimeFamily.NodeJS) {
             await this.launchTypescript(launchConfig)
         } else if (runtimeFamily === RuntimeFamily.Python) {
+            await this.launchPython(launchConfig)
         } else if (runtimeFamily === RuntimeFamily.DotNetCore) {
+            launchConfig.type = 'coreclr'
+            // XXX: not used for dotnet codepath (yet)?
+            launchConfig.samProjectCodeRoot = await csharpDebug.getSamProjectDirPathForFile(config.documentUri.fsPath),
+            await this.launchDotnet(launchConfig)
         }
 
-        return launchConfig
+        if (launchConfig.type === AWS_SAM_DEBUG_TYPE || launchConfig.request == DIRECT_INVOKE_TYPE) {
+            // The "type" and "request" fields must be updated to non-AWS
+            // values, otherwise this will just cycle back (and it indicates a
+            // bug in the logic).
+            throw Error(`resolveDebugConfiguration: launchConfig was not correctly resolved before return: ${launchConfig}`)
+        }
+
+        // XXX: return undefined, because we already launched and invoked by now.
+        //
+        // TODO: In the future we may consider NOT launching, and instead do one of the following:
+        //  - return a config here for vscode to handle
+        //  - return a config here for SamDebugSession.ts to handle (custom debug adapter)
+        return undefined
     }
 
     /**
@@ -222,9 +210,10 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
      * from a debug-config.
      */
     async launchTypescript(config: SamLaunchRequestArgs) {
-        const samProjectCodeRoot = await tsLensProvider.getSamProjectDirPathForFile(config.documentUri.fsPath)
-
-        //  Make a nodejs launch-config from the generic config.
+        config.type = 'node'
+        config.samProjectCodeRoot = await tsDebug.getSamProjectDirPathForFile(config.documentUri.fsPath)
+        
+        //  Make a python launch-config from the generic config.
         const nodejsLaunchConfig: NodejsDebugConfiguration = {
             ...config,  // Compose.
             runtimeFamily: RuntimeFamily.NodeJS,
@@ -232,13 +221,57 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             preLaunchTask: undefined,
             address: 'localhost',
             port: config.debugPort!!,
-            localRoot: samProjectCodeRoot,
+            localRoot: config.samProjectCodeRoot,
             remoteRoot: '/var/task',
             protocol: 'inspector',
             skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
         }
 
         await invokeLambdaFunction(this.ctx, nodejsLaunchConfig)
+    }
+    
+    /**
+     * Launches a dotnet ("coreclr") lambda:
+     * 
+     * 1. prepares a bunch of arguments
+     * 2. does `sam build`
+     * 3. does `sam local invoke`
+     * 
+     * @param config  Launch-config generated by resolveDebugConfiguration()
+     * from a debug-config.
+     */
+    async launchDotnet(config: SamLaunchRequestArgs) {
+    }
+
+    /**
+     * Launches a Python lambda:
+     * 
+     * 1. prepares a bunch of arguments
+     * 2. does `sam build`
+     * 3. does `sam local invoke`
+     * 
+     * @param config  Launch-config generated by resolveDebugConfiguration()
+     * from a debug-config.
+     */
+    async launchPython(config: SamLaunchRequestArgs) {
+        config.type = 'python'
+        config.samProjectCodeRoot = await pythonDebug.getSamProjectDirPathForFile(config.documentUri.fsPath)
+        
+        //  Make a Python launch-config from the generic config.
+        const launchConfig: PythonDebugConfiguration = {
+            ...config,  // Compose
+            ...await pythonDebug.makePythonDebugConfig(
+                !config.noDebug,
+                config.workspaceFolder,
+                config.samProjectCodeRoot,
+                config.runtime,
+                config.handlerName,
+                config.documentUri,
+                config.samTemplatePath!!
+            ),
+        }
+
+        await pythonDebug.invokePythonLambda(this.ctx, launchConfig)
     }
 }
 
@@ -271,8 +304,7 @@ function validateConfig(
     } else if (config.invokeTarget.target === TEMPLATE_TARGET_TYPE) {
         let cfnTemplate = undefined
         if (config.invokeTarget.samTemplatePath) {
-            const fullpath = path.resolve((
-                (folder?.uri) ? folder.uri.path + '/' : ''), config.invokeTarget.samTemplatePath)
+            const fullpath = tryGetAbsolutePath(folder, config.invokeTarget.samTemplatePath)
             // Normalize to absolute path for use in the runner.
             config.invokeTarget.samTemplatePath = fullpath
             cfnTemplate = cftRegistry.getRegisteredTemplate(fullpath)?.template

@@ -3,7 +3,6 @@ import { InitializedEvent, Logger, logger, DebugSession, } from 'vscode-debugada
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { ExtContext } from '../../extensions';
 import { AwsSamDebuggerConfiguration } from './awsSamDebugConfiguration.gen';
-import { CloudFormation } from '../../cloudformation/cloudformation'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime';
 import { ChannelLogger } from '../../utilities/vsCodeUtils';
 import { SamLocalInvokeCommand } from '../cli/samCliLocalInvoke';
@@ -23,23 +22,13 @@ export interface SamLaunchRequestArgs extends
     // readonly type: 'node' | 'python' | 'coreclr' | 'aws-sam'
     readonly request: 'attach' | 'launch' | 'direct-invoke'
 
-    /** Resolved CFN template object, provided by `resolveDebugConfiguration()`. */
-    cfnTemplate?: CloudFormation.Template
     runtime: string
     runtimeFamily: RuntimeFamily
     handlerName: string
-    /** vscode implicit field, set if user user invokes "Run (Start Without Debugging)". */
-    noDebug?: boolean
     workspaceFolder: vscode.WorkspaceFolder
+    samProjectCodeRoot: string
+    outFilePath?: string
     
-    /**
-     * TODO: we could remove this after removing codelens-based debug support.
-     */
-    // isLegacy: boolean
-
-    //
-    // From legacy interface: InvokeLambdaFunctionArguments
-    //
     baseBuildDir?: string
     /** URI of the current editor document. */
     documentUri: vscode.Uri
@@ -48,16 +37,19 @@ export interface SamLaunchRequestArgs extends
     samTemplatePath: string
 
     //
-    //  From legacy interface: InvokeLambdaFunctionContext
+    // Debug properties (when user runs with debugging enabled).
+    //
+    /** vscode implicit field, set if user user invokes "Run (Start Without Debugging)". */
+    noDebug?: boolean
+    debuggerPath?: string
+    debugPort?: number
+
+    //
+    //  Invocation properties (for "execute" phase, after "config" phase).
+    //  Non-serializable...
     //
     samLocalInvokeCommand?: SamLocalInvokeCommand
     onWillAttachDebugger?(debugPort: number, timeoutDuration: number, channelLogger: ChannelLogger): Promise<void>
-
-    //
-    // From legacy interface: DebugLambdaFunctionArguments
-    //
-    debuggerPath?: string
-    debugPort?: number
 }
 
 /**

@@ -29,9 +29,10 @@ export interface PythonPathMapping {
 export interface PythonDebugConfiguration extends SamLaunchRequestArgs {
     readonly runtimeFamily: RuntimeFamily.Python
     readonly host: string
-    // TODO: remove, use `debugPort` instead.
+    // TODO: remove, use `debugPort` instead?
     readonly port: number
     readonly pathMappings: PythonPathMapping[]
+    readonly manifestPath: string
 }
 
 export interface DotNetCoreDebugConfiguration extends SamLaunchRequestArgs {
@@ -116,7 +117,7 @@ export function getRuntimeFamily(langId: string): string {
  * Guesses a reasonable default runtime value from a vscode document
  * languageId.
  */
-export function getDefaultRuntime(langId: string): string {
+export function getDefaultRuntime(langId: string): string | undefined {
     switch(langId) {
         case 'typescript':
         case 'javascript':
@@ -126,6 +127,6 @@ export function getDefaultRuntime(langId: string): string {
         case 'python':
             return pythonRuntimes.first()
         default:
-            return nodeJsRuntimes.first()
+            return undefined
     }
 }

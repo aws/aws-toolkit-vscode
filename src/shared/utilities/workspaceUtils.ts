@@ -4,15 +4,18 @@
  */
 
 import * as vscode from 'vscode'
+import * as path from 'path'
 import { getLogger } from '../logger'
 
 /**
- * VS Code API for updateWorkspaceFolders does not define a type for this parameter,
- * so we will as a convenience.
+ * Resolves `relPath` against parent `workspaceFolder`.
+ * 
+ * Returns `relPath` if `relPath` is already absolute or the operation fails.
  */
-export interface NewWorkspaceFolder {
-    uri: vscode.Uri
-    name?: string
+export function tryGetAbsolutePath(folder: vscode.WorkspaceFolder | undefined, relPath: string): string{
+    return path.resolve((
+        (folder?.uri) ? folder.uri.path + '/' : ''),
+        relPath)
 }
 
 /**
@@ -30,7 +33,7 @@ export interface NewWorkspaceFolder {
  *
  * @returns true if folder was added, false otherwise
  */
-export async function addFolderToWorkspace(folder: NewWorkspaceFolder): Promise<boolean> {
+export async function addFolderToWorkspace(folder: { uri: vscode.Uri; name?: string }): Promise<boolean> {
     const disposables: vscode.Disposable[] = []
     const logger = getLogger()
 

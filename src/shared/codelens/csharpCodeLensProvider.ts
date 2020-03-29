@@ -13,19 +13,15 @@ import { DefaultDockerClient, DockerClient } from '../clients/dockerClient'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { mkdir } from '../filesystem'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
-import { getLogger } from '../logger'
 import { DefaultSamCliProcessInvoker } from '../sam/cli/samCliInvoker'
-import { SamCliProcessInvoker } from '../sam/cli/samCliInvokerUtils'
 import {
     DefaultSamLocalInvokeCommand,
-    SamLocalInvokeCommand,
     WAIT_FOR_DEBUGGER_MESSAGES
 } from '../sam/cli/samCliLocalInvoke'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
 import { getStartPort } from '../utilities/debuggerUtils'
 import { dirnameWithTrailingSlash } from '../utilities/pathUtils'
 import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
-import { CodeLensProviderParams, getInvokeCmdKey, makeCodeLenses } from './codeLensUtils'
 import {
     executeSamBuild,
     ExecuteSamBuildArguments,
@@ -56,25 +52,6 @@ export interface DotNetLambdaHandlerComponents {
     method: string
     // Range of the function representing the Lambda Handler
     handlerRange: vscode.Range
-}
-
-export async function initialize({
-    context,
-    processInvoker = new DefaultSamCliProcessInvoker(),
-    localInvokeCommand = new DefaultSamLocalInvokeCommand(getChannelLogger(context.outputChannel), [
-        WAIT_FOR_DEBUGGER_MESSAGES.DOTNET
-    ])
-}: CodeLensProviderParams): Promise<void> {
-    context.subscriptions.push(
-        vscode.commands.registerCommand(getInvokeCmdKey(CSHARP_LANGUAGE), async (params: LambdaLocalInvokeParams) => {
-            await onLocalInvokeCommand({
-                ctx: context,
-                lambdaLocalInvokeParams: params,
-                processInvoker,
-                localInvokeCommand,
-            })
-        })
-    )
 }
 
 export interface OnLocalInvokeCommandContext {
@@ -110,19 +87,15 @@ function getCodeUri(resource: CloudFormation.Resource, samTemplateUri: vscode.Ur
  * @param taskInvoker - SAM CLI Task invoker
  * @param telemetryService - Telemetry service for metrics
  */
-async function onLocalInvokeCommand(
+export async function onLocalInvokeCommand(
     {
         ctx,
         lambdaLocalInvokeParams,
-        processInvoker,
-        localInvokeCommand,
         loadCloudFormationTemplate = async _args => await CloudFormation.load(_args),
         getResourceFromTemplateResource = async _args => await CloudFormation.getResourceFromTemplateResources(_args)
     }: {
         ctx: ExtContext
         lambdaLocalInvokeParams: LambdaLocalInvokeParams
-        processInvoker: SamCliProcessInvoker
-        localInvokeCommand: SamLocalInvokeCommand
         loadCloudFormationTemplate?(filename: string): Promise<CloudFormation.Template>
         getResourceFromTemplateResource?(args: {
             templateResources?: CloudFormation.TemplateResources
@@ -131,6 +104,10 @@ async function onLocalInvokeCommand(
     },
     context: OnLocalInvokeCommandContext = new DefaultOnLocalInvokeCommandContext(ctx.outputChannel)
 ): Promise<void> {
+    const processInvoker = new DefaultSamCliProcessInvoker()
+    const localInvokeCommand = new DefaultSamLocalInvokeCommand(getChannelLogger(ctx.outputChannel), [
+        WAIT_FOR_DEBUGGER_MESSAGES.DOTNET
+    ])
     const channelLogger = getChannelLogger(ctx.outputChannel)
     const template: CloudFormation.Template = await loadCloudFormationTemplate(
         lambdaLocalInvokeParams.samTemplate.fsPath
@@ -189,6 +166,7 @@ async function onLocalInvokeCommand(
         const launchConfig: SamLaunchRequestArgs = {
             request: 'attach',
             workspaceFolder: vscode.workspace.getWorkspaceFolder(documentUri)!!,
+            samProjectCodeRoot: 'unknown',
             name: 'SamLocalDebug',
             type: 'coreclr',
             runtime: lambdaRuntime,
@@ -235,32 +213,6 @@ async function onLocalInvokeCommand(
             debug: lambdaLocalInvokeParams.isDebug
         })
     }
-}
-
-export async function makeCSharpCodeLensProvider(): Promise<vscode.CodeLensProvider> {
-    const logger = getLogger()
-
-    const codeLensProvider: vscode.CodeLensProvider = {
-        provideCodeLenses: async (
-            document: vscode.TextDocument,
-            token: vscode.CancellationToken
-        ): Promise<vscode.CodeLens[]> => {
-            const handlers: LambdaHandlerCandidate[] = await getLambdaHandlerCandidates(document)
-            logger.debug(
-                'csharpCodeLensProvider.makeCSharpCodeLensProvider handlers:',
-                JSON.stringify(handlers, undefined, 2)
-            )
-
-            return makeCodeLenses({
-                document,
-                handlers,
-                token,
-                language: 'csharp'
-            })
-        }
-    }
-
-    return codeLensProvider
 }
 
 export async function getLambdaHandlerCandidates(document: vscode.TextDocument): Promise<LambdaHandlerCandidate[]> {
@@ -470,4 +422,8 @@ async function _installDebugger(
 
         throw err
     }
+}
+
+export const getSamProjectDirPathForFile = async (filepath: string): Promise<string> => {
+    return path.dirname(filepath)
 }

@@ -40,6 +40,7 @@ describe.only('makeCoreCLRDebugConfiguration', async () => {
         const config: SamLaunchRequestArgs = {
             name: 'fake-launch-config',
             workspaceFolder: fakeWorkspaceFolder,
+            samProjectCodeRoot: fakeWorkspaceFolder.uri.fsPath,
             runtimeFamily: RuntimeFamily.DotNetCore,
             type: 'coreclr',
             request: 'attach',

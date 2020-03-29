@@ -9,18 +9,17 @@ import { deploySamApplication, SamDeployWizardResponseProvider } from '../../lam
 import { SamParameterCompletionItemProvider } from '../../lambda/config/samParameterCompletionItemProvider'
 import { configureLocalLambda } from '../../lambda/local/configureLocalLambda'
 import { DefaultSamDeployWizardContext, SamDeployWizard, SamDeployWizardResponse } from '../../lambda/wizards/samDeployWizard'
-import { CodeLensProviderParams } from '../codelens/codeLensUtils'
+import * as codelensUtils from '../codelens/codeLensUtils'
 import * as csLensProvider from '../codelens/csharpCodeLensProvider'
 import * as pyLensProvider from '../codelens/pythonCodeLensProvider'
-import * as tsLensProvider from '../codelens/typescriptCodeLensProvider'
 import { ExtContext } from '../extensions'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { PromiseSharer } from '../utilities/promiseUtilities'
 import { initialize as initializeSamCliContext } from './cli/samCliContext'
 import { detectSamCli } from './cli/samCliDetection'
+import { AWS_SAM_DEBUG_TYPE, SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { SamDebugSession } from './debugger/samDebugSession'
-import { SamDebugConfigProvider, AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugger'
 
 /**
  * Activate SAM-related functionality.
@@ -120,11 +119,8 @@ async function activateCodeLensProviders(
     telemetryService: TelemetryService
 ): Promise<vscode.Disposable[]> {
     const disposables: vscode.Disposable[] = []
-    const providerParams: CodeLensProviderParams = {
-        context,
-    }
 
-    tsLensProvider.initialize(providerParams)
+    codelensUtils.initializeTypescriptCodelens(context)
 
     disposables.push(
         vscode.languages.registerCodeLensProvider(
@@ -135,23 +131,23 @@ async function activateCodeLensProviders(
                     scheme: 'file'
                 }
             ],
-            tsLensProvider.makeTypescriptCodeLensProvider()
+            codelensUtils.makeTypescriptCodeLensProvider()
         )
     )
 
-    await pyLensProvider.initialize(providerParams)
+    await codelensUtils.initializePythonCodelens(context)
     disposables.push(
         vscode.languages.registerCodeLensProvider(
             pyLensProvider.PYTHON_ALLFILES,
-            await pyLensProvider.makePythonCodeLensProvider(new DefaultSettingsConfiguration('python'))
+            await codelensUtils.makePythonCodeLensProvider(new DefaultSettingsConfiguration('python'))
         )
     )
 
-    await csLensProvider.initialize(providerParams)
+    await codelensUtils.initializeCsharpCodelens(context)
     disposables.push(
         vscode.languages.registerCodeLensProvider(
             csLensProvider.CSHARP_ALLFILES,
-            await csLensProvider.makeCSharpCodeLensProvider()
+            await codelensUtils.makeCSharpCodeLensProvider()
         )
     )
 
