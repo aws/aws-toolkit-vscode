@@ -430,7 +430,7 @@ export async function invokeLambdaFunction(
     if (!config.noDebug) {
         if (config.onWillAttachDebugger) {
             messageUserWaitingToAttach(ctx.chanLogger)
-            await config.onWillAttachDebugger(config.debugPort, timer.remainingTime, ctx.chanLogger)
+            await config.onWillAttachDebugger(config.debugPort!!, timer.remainingTime, ctx.chanLogger)
         }
 
         // HACK: remove non-serializable properties before attaching.

@@ -194,6 +194,8 @@
     "AWS.running.command": "Running command: {0}",
     "AWS.sam.debugger.invalidRequest": "Debug Configuration has an unsupported request type. Supported types: {0}",
     "AWS.sam.debugger.invalidTarget": "Debug Configuration has an unsupported target type. Supported types: {0}",
+    "AWS.sam.debugger.noTemplates": "No SAM templates found in workspace",
+    "AWS.sam.debugger.failedLaunch": "AWS SAM failed to launch. Try creating launch.json",
     "AWS.sam.debugger.missingTemplate": "Cannot find template file (must be workspace-relative, or absolute): {0}",
     "AWS.sam.debugger.missingResource": "Cannot find template resource \"{0}\" in template file: {1}",
     "AWS.sam.debugger.missingField": "Missing required field \"{0}\" in debug config",

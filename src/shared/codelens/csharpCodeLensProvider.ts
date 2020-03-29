@@ -214,7 +214,7 @@ async function onLocalInvokeCommand(
                 targetFolder: codeUri,
                 channelLogger
             })
-            const debugConfig = makeCoreCLRDebugConfiguration(launchConfig, launchConfig.debugPort, codeUri)
+            const debugConfig = makeCoreCLRDebugConfiguration(launchConfig, launchConfig.debugPort!!, codeUri)
             debugConfig.onWillAttachDebugger = waitForDebugPort
             debugConfig.samLocalInvokeCommand = localInvokeCommand
             debugConfig.debuggerPath = debuggerPath

@@ -37,11 +37,6 @@ describe.only('makeCoreCLRDebugConfiguration', async () => {
     
     function makeFakeSamLaunchConfig() {
         const fakeExtCtx = new FakeExtensionContext()
-        const fakeWorkspaceFolder = {
-            uri: vscode.Uri.file(tempFolder),
-            name: 'It was me, fakeWorkspaceFolder!',
-            index: 0
-        }
         const config: SamLaunchRequestArgs = {
             name: 'fake-launch-config',
             workspaceFolder: fakeWorkspaceFolder,

@@ -16,7 +16,6 @@ import { nodeJsRuntimes } from '../../lambda/models/samLambdaRuntime'
 import { getLogger } from '../logger'
 import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
-import { getStartPort } from '../utilities/debuggerUtils'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { CodeLensProviderParams, getInvokeCmdKey, makeCodeLenses } from './codeLensUtils'
 import { getHandlerRelativePath, LambdaLocalInvokeParams } from './localLambdaRunner'
@@ -48,11 +47,11 @@ export function initialize({
 }: CodeLensProviderParams): void {
     const invokeLambda = async (params: LambdaLocalInvokeParams & { runtime: string }) => {
         // const samProjectCodeRoot = await getSamProjectDirPathForFile(params.uri.fsPath)
-        let debugPort: number | undefined
+        // let debugPort: number | undefined
 
-        if (params.isDebug) {
-            debugPort = await getStartPort()
-        }
+        // if (params.isDebug) {
+        //     debugPort = await getStartPort()
+        // }
 
         // const debugConfig: NodejsDebugConfiguration = {
         //     type: 'node',

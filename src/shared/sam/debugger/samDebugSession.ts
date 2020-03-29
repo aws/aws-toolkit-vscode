@@ -57,7 +57,7 @@ export interface SamLaunchRequestArgs extends
     // From legacy interface: DebugLambdaFunctionArguments
     //
     debuggerPath?: string
-    debugPort: number
+    debugPort?: number
 }
 
 /**

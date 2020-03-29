@@ -6,7 +6,8 @@
 import * as os from 'os'
 import { DRIVE_LETTER_REGEX } from '../../shared/codelens/codeLensUtils'
 import { SamLaunchRequestArgs } from '../../shared/sam/debugger/samDebugSession'
-import { RuntimeFamily } from '../models/samLambdaRuntime'
+import { RuntimeFamily, dotNetRuntimes, pythonRuntimes } from '../models/samLambdaRuntime'
+import { nodeJsRuntimes } from '../../lambda/models/samLambdaRuntime'
 
 const DOTNET_CORE_DEBUGGER_PATH = '/tmp/lambci_debug_files/vsdbg'
 
@@ -91,5 +92,40 @@ export function makeCoreCLRDebugConfiguration(
         invokeTarget: {
             target: "code"
         }
+    }
+}
+
+/**
+ * Gets a `RuntimeFamily` from a vscode document languageId.
+ */
+export function getRuntimeFamily(langId: string): string {
+    switch(langId) {
+        case 'typescript':
+        case 'javascript':
+            return 'node'
+        case 'csharp':
+            return 'coreclr'
+        case 'python':
+            return 'python'
+        default:
+            return 'unknown'
+    }
+}
+
+/**
+ * Guesses a reasonable default runtime value from a vscode document
+ * languageId.
+ */
+export function getDefaultRuntime(langId: string): string {
+    switch(langId) {
+        case 'typescript':
+        case 'javascript':
+            return nodeJsRuntimes.first()
+        case 'csharp':
+            return dotNetRuntimes.first()
+        case 'python':
+            return pythonRuntimes.first()
+        default:
+            return nodeJsRuntimes.first()
     }
 }
