@@ -119,7 +119,7 @@ rules:
             - never-prefix
     interface-over-type-literal: true
     jsdoc-format: true
-    newline-before-return: true
+    newline-before-return: false
     new-parens: true
     no-boolean-literal-compare: true
     no-consecutive-blank-lines: true
@@ -139,7 +139,7 @@ rules:
             - check-open-brace
             - check-whitespace
     one-variable-per-declaration: true
-    ordered-imports: true
+    ordered-imports: false
     prefer-method-signature: true
     prefer-switch: true
     prefer-template:
