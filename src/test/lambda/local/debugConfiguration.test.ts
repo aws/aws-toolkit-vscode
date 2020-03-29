@@ -34,7 +34,7 @@ describe.only('makeCoreCLRDebugConfiguration', async () => {
     afterEach(async () => {
         await rmrf(tempFolder)
     })
-    
+
     function makeFakeSamLaunchConfig() {
         const fakeExtCtx = new FakeExtensionContext()
         const config: SamLaunchRequestArgs = {
@@ -55,7 +55,7 @@ describe.only('makeCoreCLRDebugConfiguration', async () => {
             originalSamTemplatePath: '/fake/original/sam/path',
             samTemplatePath: '/fake/sam/path',
             samLocalInvokeCommand: new DefaultSamLocalInvokeCommand(fakeExtCtx.chanLogger),
-            
+
             //debuggerPath?:
             debugPort: 0,
 
@@ -65,7 +65,7 @@ describe.only('makeCoreCLRDebugConfiguration', async () => {
         }
         return config
     }
-    
+
     function makeConfig({
         codeUri = path.join('foo', 'bar'),
         port = 42

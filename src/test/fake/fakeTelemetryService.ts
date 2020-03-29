@@ -1,3 +1,8 @@
+/*!
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { TelemetryPublisher } from '../../shared/telemetry/telemetryPublisher'
 import { TelemetryFeedback } from '../../shared/telemetry/telemetryFeedback'
 

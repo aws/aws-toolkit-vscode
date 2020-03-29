@@ -397,7 +397,7 @@ export async function invokeLambdaFunction(
                 WAIT_FOR_DEBUGGER_MESSAGES.NODEJS
             ])
     }
-    
+
     const eventPath: string = path.join(config.baseBuildDir!!, 'event.json')
     const environmentVariablePath = path.join(config.baseBuildDir!!, 'env-vars.json')
     const config2 = await getHandlerConfig({

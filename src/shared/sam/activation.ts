@@ -155,7 +155,7 @@ async function activateCodeLensProviders(
 }
 
 class InlineDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory {
-    constructor(readonly ctx:ExtContext) {}
+    public constructor(readonly ctx:ExtContext) {}
 
     /**
      * The inline implementation implements the Debug Adapter Protocol.
@@ -171,7 +171,7 @@ class InlineDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory 
      *
      * https://code.visualstudio.com/updates/v1_42#_extension-authoring
      */
-    createDebugAdapterDescriptor(_session: vscode.DebugSession): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
+    public createDebugAdapterDescriptor(_session: vscode.DebugSession): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
         return new vscode.DebugAdapterInlineImplementation(new SamDebugSession(this.ctx));
     }
 }

@@ -80,10 +80,10 @@ export const makeTemporaryToolkitFolder = async (...relativePathParts: string[])
 /**
  * Returns `true` if path `p` is contained by directory `d` (which includes the
  * case where they are identical).
- * 
+ *
  * Only the logical structure is checked; the paths are not checked for
  * existence on the filesystem.
- * 
+ *
  * @param d  Path to a directory.
  * @param p  Path to file or directory to test.
  */

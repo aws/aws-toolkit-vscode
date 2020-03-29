@@ -91,7 +91,7 @@ export function makeCoreCLRDebugConfiguration(
             ['/var/task']: codeUri
         },
         invokeTarget: {
-            target: "code"
+            target: 'code'
         }
     }
 }

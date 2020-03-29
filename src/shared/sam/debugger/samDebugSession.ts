@@ -1,3 +1,8 @@
+/*!
+ * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import * as vscode from 'vscode';
 import { InitializedEvent, Logger, logger, DebugSession, } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
@@ -9,10 +14,10 @@ import { SamLocalInvokeCommand } from '../cli/samCliLocalInvoke';
 
 /**
  * SAM-specific launch attributes (which are not part of the DAP).
- * 
+ *
  * Schema for these attributes lives in package.json
  * ("configurationAttributes").
- * 
+ *
  * @see AwsSamDebuggerConfiguration
  * @see AwsSamDebugConfigurationProvider.resolveDebugConfiguration
  */
@@ -28,7 +33,7 @@ export interface SamLaunchRequestArgs extends
     workspaceFolder: vscode.WorkspaceFolder
     samProjectCodeRoot: string
     outFilePath?: string
-    
+
     baseBuildDir?: string
     /** URI of the current editor document. */
     documentUri: vscode.Uri
@@ -54,7 +59,7 @@ export interface SamLaunchRequestArgs extends
 
 /**
  * Wraps a DebugAdapter.
- * 
+ *
  * Currently implements launchRequest() and not much else, but could be
  * expanded later. Note: the empty stubs are necessary, to avoid confusing
  * the DAP client (vscode).
@@ -92,7 +97,7 @@ export class SamDebugSession extends DebugSession {
 
         // make VS Code to support completion in REPL
         response.body.supportsCompletionsRequest = true;
-        response.body.completionTriggerCharacters = [ ".", "[" ];
+        response.body.completionTriggerCharacters = [ '.', '[' ];
 
         // make VS Code to send cancelRequests
         response.body.supportsCancelRequest = true;
@@ -117,27 +122,34 @@ export class SamDebugSession extends DebugSession {
         logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false);
         // wait until configuration has finished (and configurationDoneRequest has been called)
         // await this._configurationDone.wait(1000);
-        
-        if (args.runtimeFamily === RuntimeFamily.NodeJS) {
-            try {
-                /* await tsLensProvider.invokeLambda({ */
-                /*     ...params, */
-                /*     runtime: runtime, */
-                /*     settings: this.ctx.settings, */
-                /*     processInvoker: new DefaultValidatingSamCliProcessInvoker({}), */
-                /*     localInvokeCommand: new DefaultSamLocalInvokeCommand(this.ctx.chanLogger, [ */
-                /*         WAIT_FOR_DEBUGGER_MESSAGES.NODEJS */
-                /*     ]), */
-                /*     telemetryService: this.ctx.telemetryService, */
-                /*     outputChannel: this.ctx.outputChannel, */
-                /* }) */
-                response.success = true
-            } catch (e) {
-                response.success = false
-                response.message = `SAM invoke failed: ${e}`
+
+        switch(args.runtimeFamily) {
+            case RuntimeFamily.NodeJS: {
+                try {
+                    /* await tsLensProvider.invokeLambda({ */
+                    /*     ...params, */
+                    /*     runtime: runtime, */
+                    /*     settings: this.ctx.settings, */
+                    /*     processInvoker: new DefaultValidatingSamCliProcessInvoker({}), */
+                    /*     localInvokeCommand: new DefaultSamLocalInvokeCommand(this.ctx.chanLogger, [ */
+                    /*         WAIT_FOR_DEBUGGER_MESSAGES.NODEJS */
+                    /*     ]), */
+                    /*     telemetryService: this.ctx.telemetryService, */
+                    /*     outputChannel: this.ctx.outputChannel, */
+                    /* }) */
+                    response.success = true
+                } catch (e) {
+                    response.success = false
+                    response.message = `SAM invoke failed: ${e}`
+                }
+                break;
             }
-        } else if (args.runtimeFamily === RuntimeFamily.Python) {
-        } else if (args.runtimeFamily === RuntimeFamily.DotNetCore) {
+            case RuntimeFamily.Python:
+                // TODO
+                break;
+            case RuntimeFamily.DotNetCore:
+                // TODO
+                break;
         }
 
         this.ctx.outputChannel.append('SamDebugSession.launchRequest')

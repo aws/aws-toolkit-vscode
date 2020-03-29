@@ -288,7 +288,6 @@ export async function invokePythonLambda(
     }
 }
 
-
 export async function waitForPythonDebugAdapter(
     debugPort: number,
     timeoutDurationMillis: number,
@@ -356,4 +355,3 @@ export async function activatePythonExtensionIfInstalled() {
         await extension.activate()
     }
 }
-

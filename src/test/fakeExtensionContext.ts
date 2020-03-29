@@ -34,13 +34,14 @@ export class FakeExtensionContext implements ExtContext {
     public storagePath: string | undefined
     public globalStoragePath: string = '.'
     public logPath: string = ''
-    private _extensionPath: string = ''
     public awsContext: AwsContext = new FakeAwsContext()
     public regionProvider: RegionProvider = new FakeRegionProvider()
     public settings: SettingsConfiguration = new DefaultSettingsConfiguration('aws')
     public outputChannel = new MockOutputChannel()
     public telemetryService: TelemetryService
     public chanLogger: ChannelLogger
+
+    private _extensionPath: string = ''
 
     public constructor(preload?: FakeExtensionState) {
         if (preload) {

@@ -128,11 +128,21 @@
             }
         },
         "breakpoints": [
-            { "language": "markdown" },
-            { "language": "typescript" },
-            { "language": "javascript" },
-            { "language": "python" },
-            { "language": "csharp" }
+            {
+                "language": "markdown"
+            },
+            {
+                "language": "typescript"
+            },
+            {
+                "language": "javascript"
+            },
+            {
+                "language": "python"
+            },
+            {
+                "language": "csharp"
+            }
         ],
         "debuggers": [
             {

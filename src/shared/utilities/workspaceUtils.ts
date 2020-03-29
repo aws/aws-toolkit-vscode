@@ -9,10 +9,10 @@ import { getLogger } from '../logger'
 
 /**
  * Resolves `relPath` against parent `workspaceFolder`.
- * 
+ *
  * Returns `relPath` if `relPath` is already absolute or the operation fails.
  */
-export function tryGetAbsolutePath(folder: vscode.WorkspaceFolder | undefined, relPath: string): string{
+export function tryGetAbsolutePath(folder: vscode.WorkspaceFolder | undefined, relPath: string): string {
     return path.resolve((
         (folder?.uri) ? folder.uri.path + '/' : ''),
         relPath)

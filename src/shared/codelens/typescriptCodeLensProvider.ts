@@ -10,7 +10,6 @@ import { normalizeSeparator } from '../utilities/pathUtils'
 import { localize } from '../utilities/vsCodeUtils'
 import { getHandlerRelativePath } from './localLambdaRunner'
 
-
 export async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
     const packageJsonPath: string | undefined = await findFileInParentPaths(path.dirname(filepath), 'package.json')
     if (!packageJsonPath) {
