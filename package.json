@@ -789,6 +789,7 @@
         "typescript": "^3.7.2",
         "uuid": "^3.3.2",
         "vscode-debugadapter": "1.40.0-pre.2",
+        "vscode-debugprotocol": "1.40.0-pre.1",
         "vscode-nls": "^4.1.1",
         "vue": "^2.5.16",
         "winston": "^3.2.1",

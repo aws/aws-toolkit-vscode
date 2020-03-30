@@ -3,13 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as os from 'os'
-import { DRIVE_LETTER_REGEX } from '../../shared/codelens/codeLensUtils'
-import { SamLaunchRequestArgs } from '../../shared/sam/debugger/samDebugSession'
-import { RuntimeFamily, dotNetRuntimes, pythonRuntimes } from '../models/samLambdaRuntime'
 import { nodeJsRuntimes } from '../../lambda/models/samLambdaRuntime'
+import { SamLaunchRequestArgs } from '../../shared/sam/debugger/samDebugSession'
+import { dotNetRuntimes, pythonRuntimes, RuntimeFamily } from '../models/samLambdaRuntime'
 
-const DOTNET_CORE_DEBUGGER_PATH = '/tmp/lambci_debug_files/vsdbg'
+export const DOTNET_CORE_DEBUGGER_PATH = '/tmp/lambci_debug_files/vsdbg'
 
 export interface NodejsDebugConfiguration extends SamLaunchRequestArgs {
     readonly runtimeFamily: RuntimeFamily.NodeJS
@@ -55,48 +53,6 @@ export interface PipeTransport {
 }
 
 /**
- * Creates a CLR config composed from the given `config`.
- */
-export function makeCoreCLRDebugConfiguration(
-        config: SamLaunchRequestArgs, port: number, codeUri: string)
-        : DotNetCoreDebugConfiguration {
-    const pipeArgs = ['-c', `docker exec -i $(docker ps -q -f publish=${port}) \${debuggerCommand}`]
-
-    if (os.platform() === 'win32') {
-        // Coerce drive letter to uppercase. While Windows is case-insensitive, sourceFileMap is case-sensitive.
-        codeUri = codeUri.replace(DRIVE_LETTER_REGEX, match => match.toUpperCase())
-    }
-
-    return {
-        ...config,
-        name: 'SamLocalDebug',
-        runtimeFamily: RuntimeFamily.DotNetCore,
-        request: 'attach',
-        processId: '1',
-        pipeTransport: {
-            pipeProgram: 'sh',
-            pipeArgs,
-            debuggerPath: DOTNET_CORE_DEBUGGER_PATH,
-            pipeCwd: codeUri
-        },
-        windows: {
-            pipeTransport: {
-                pipeProgram: 'powershell',
-                pipeArgs,
-                debuggerPath: DOTNET_CORE_DEBUGGER_PATH,
-                pipeCwd: codeUri
-            }
-        },
-        sourceFileMap: {
-            ['/var/task']: codeUri
-        },
-        invokeTarget: {
-            target: 'code'
-        }
-    }
-}
-
-/**
  * Gets a `RuntimeFamily` from a vscode document languageId.
  */
 export function getRuntimeFamily(langId: string): string {
@@ -128,5 +84,11 @@ export function getDefaultRuntime(langId: string): string | undefined {
             return pythonRuntimes.first()
         default:
             return undefined
+    }
+}
+
+export function assertTargetKind(config: SamLaunchRequestArgs, expectedTarget: 'code' | 'template'): void {
+    if (config.invokeTarget.target !== expectedTarget) {
+        throw Error(`SAM debug: invalid config: ${config}`)
     }
 }

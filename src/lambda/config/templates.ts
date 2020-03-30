@@ -53,6 +53,9 @@ export function generateDefaultHandlerConfig(): HandlerConfig {
     }
 }
 
+/**
+ * TODO: remove? still needed?
+ */
 export async function getHandlerConfig(params: {
     handlerName: string
     documentUri: vscode.Uri

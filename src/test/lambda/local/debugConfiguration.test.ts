@@ -8,15 +8,13 @@ import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
 
-import {
-    makeCoreCLRDebugConfiguration,
-} from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { DefaultSamLocalInvokeCommand } from '../../../shared/sam/cli/samCliLocalInvoke'
 import { SamLaunchRequestArgs } from '../../../shared/sam/debugger/samDebugSession'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { rmrf } from '../../../shared/filesystem'
+import { makeCoreCLRDebugConfiguration } from '../../../shared/codelens/csharpCodeLensProvider'
 
 describe.only('makeCoreCLRDebugConfiguration', async () => {
     let tempFolder: string
@@ -61,21 +59,23 @@ describe.only('makeCoreCLRDebugConfiguration', async () => {
 
             invokeTarget: {
                 target: 'code',
+                lambdaHandler: 'fakehandlername',
+                projectRoot: fakeWorkspaceFolder.uri.fsPath,
             },
         }
         return config
     }
 
-    function makeConfig({
+    async function makeConfig({
         codeUri = path.join('foo', 'bar'),
         port = 42
     }: {codeUri?:string, port?:number}) {
         const fakeLaunchConfig = makeFakeSamLaunchConfig()
-        return makeCoreCLRDebugConfiguration(fakeLaunchConfig, port, codeUri)
+        return makeCoreCLRDebugConfiguration(fakeLaunchConfig, codeUri)
     }
 
     it('uses the specified codeUri', async () => {
-        const config = makeConfig({})
+        const config = await makeConfig({})
 
         assert.strictEqual(config.sourceFileMap['/var/task'], path.join('foo', 'bar'))
     })
@@ -83,33 +83,33 @@ describe.only('makeCoreCLRDebugConfiguration', async () => {
     describe('windows', async () => {
         if (os.platform() === 'win32') {
             it('massages drive letters to uppercase', async () => {
-                const config = makeConfig({ codeUri: 'c:\\foo\\bar' })
+                const config = await makeConfig({ codeUri: 'c:\\foo\\bar' })
 
                 assert.strictEqual(config.windows.pipeTransport.pipeCwd, 'C:\\foo\\bar')
             })
         }
 
         it('uses powershell', async () => {
-            const config = makeConfig({})
+            const config = await makeConfig({})
 
             assert.strictEqual(config.windows.pipeTransport.pipeProgram, 'powershell')
         })
 
         it('uses the specified port', async () => {
-            const config = makeConfig({ port: 538 })
+            const config = await makeConfig({ port: 538 })
 
             assert.strictEqual(config.windows.pipeTransport.pipeArgs.some(arg => arg.includes('538')), true)
         })
     })
     describe('*nix', async () => {
         it('uses the default shell', async () => {
-            const config = makeConfig({})
+            const config = await makeConfig({})
 
             assert.strictEqual(config.pipeTransport.pipeProgram, 'sh')
         })
 
         it('uses the specified port', async () => {
-            const config = makeConfig({ port: 538 })
+            const config = await makeConfig({ port: 538 })
 
             assert.strictEqual(config.pipeTransport.pipeArgs.some(arg => arg.includes('538')), true)
         })

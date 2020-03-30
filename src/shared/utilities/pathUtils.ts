@@ -5,6 +5,8 @@
 
 import * as _path from 'path'
 
+export const DRIVE_LETTER_REGEX = /^\w\:/
+
 export function getNormalizedRelativePath(from: string, to: string): string {
     return normalizeSeparator(_path.relative(from, to))
 }
@@ -20,4 +22,15 @@ export function dirnameWithTrailingSlash(path: string): string {
     }
 
     return dirname
+}
+
+export function getLocalRootVariants(filePath: string): string[] {
+    if (process.platform === 'win32' && DRIVE_LETTER_REGEX.test(filePath)) {
+        return [
+            filePath.replace(DRIVE_LETTER_REGEX, match => match.toLowerCase()),
+            filePath.replace(DRIVE_LETTER_REGEX, match => match.toUpperCase())
+        ]
+    }
+
+    return [filePath]
 }

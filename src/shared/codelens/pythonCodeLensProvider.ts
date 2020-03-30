@@ -17,9 +17,10 @@ import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidat
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
 import { getStartPort } from '../utilities/debuggerUtils'
 import { ChannelLogger } from '../utilities/vsCodeUtils'
-import { DRIVE_LETTER_REGEX } from './codeLensUtils'
 import { executeSamBuild, getHandlerRelativePath, getLambdaInfoFromExistingTemplate, getRelativeFunctionHandler, invokeLambdaFunction, makeBuildDir, makeInputTemplate } from './localLambdaRunner'
 import { PythonDebugAdapterHeartbeat } from './pythonDebugAdapterHeartbeat'
+import { getLocalRootVariants } from '../utilities/pathUtils'
+import { SamLaunchRequestArgs } from '../sam/debugger/samDebugSession'
 
 const PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MS = 1000
 export const PYTHON_LANGUAGE = 'python'
@@ -126,27 +127,23 @@ def ${debugHandlerFunctionName}(event, context):
     }
 }
 
-export function getLocalRootVariants(filePath: string): string[] {
-    if (process.platform === 'win32' && DRIVE_LETTER_REGEX.test(filePath)) {
-        return [
-            filePath.replace(DRIVE_LETTER_REGEX, match => match.toLowerCase()),
-            filePath.replace(DRIVE_LETTER_REGEX, match => match.toUpperCase())
-        ]
-    }
-
-    return [filePath]
-}
-
+/**
+ * Gathers and sets launch-config info by inspecting the workspace and creating
+ * temp files/directories as needed.
+ *
+ * Does NOT execute/invoke SAM, docker, etc.
+ */
 export async function makePythonDebugConfig(
+        fromConfig: SamLaunchRequestArgs | undefined,
         isDebug: boolean,
         workspaceFolder: vscode.WorkspaceFolder,
-        samProjectCodeRoot: string,
         runtime: string,
         handlerName: string,
         uri: vscode.Uri,
         samTemplatePath: string | undefined,
         )
         : Promise<PythonDebugConfiguration> {
+    const samProjectCodeRoot = await getSamProjectDirPathForFile(uri.fsPath)
     const baseBuildDir = await makeBuildDir()
     const handlerFileRelativePath = getHandlerRelativePath({
         codeRoot: samProjectCodeRoot,
@@ -166,8 +163,8 @@ export async function makePythonDebugConfig(
         workspaceUri: workspaceFolder.uri,
         relativeOriginalFunctionHandler
     })
-    const inputTemplatePath = samTemplatePath  // Indirect ("template") invoke-target. 
-        ?? await makeInputTemplate({  // Direct ("code") invoke-target. 
+    const inputTemplatePath = samTemplatePath  // Indirect ("template") invoke-target.
+        ?? await makeInputTemplate({  // Direct ("code") invoke-target.
             baseBuildDir,
             codeDir: samProjectCodeRoot,
             relativeFunctionHandler,
@@ -183,7 +180,7 @@ export async function makePythonDebugConfig(
             }
         }
     )
-    
+
     let debugPort: number | undefined
     let manifestPath: string | undefined
     let outFilePath: string | undefined
@@ -205,6 +202,8 @@ export async function makePythonDebugConfig(
 
     return {
         type: 'python',
+        request: 'attach',
+        runtimeFamily: RuntimeFamily.Python,
         workspaceFolder: workspaceFolder,
         samProjectCodeRoot: samProjectCodeRoot,
         outFilePath: outFilePath,
@@ -213,14 +212,12 @@ export async function makePythonDebugConfig(
         debugPort: debugPort,
         port: debugPort ?? -1,
         runtime: runtime,
-        runtimeFamily: RuntimeFamily.Python,
         handlerName: handlerName,
         originalHandlerName: handlerName,
         noDebug: false,
         documentUri: uri,
         samTemplatePath: inputTemplatePath,
         originalSamTemplatePath: inputTemplatePath,
-        request: 'attach',
         name: 'SamLocalDebug',
         host: 'localhost',
         pathMappings,
@@ -228,9 +225,12 @@ export async function makePythonDebugConfig(
         // to the Debug Console. We're taking the child process stdout/stderr and explicitly writing that to
         // the Debug Console.
         redirectOutput: false,
-        invokeTarget: {
-            target: 'template',
-        },
+        invokeTarget: fromConfig?.invokeTarget
+            ?? {
+                target: 'template',
+                samTemplatePath: 'python-TODO',
+                samTemplateResource: 'python-TODO',
+            },
     }
 }
 
@@ -245,9 +245,11 @@ export async function invokePythonLambda(
     ctx.chanLogger.channel.show(true)
     ctx.chanLogger.info('AWS.output.sam.local.start', 'Preparing to run {0} locally...', config.handlerName)
 
-    const localInvokeCommand = new DefaultSamLocalInvokeCommand(ctx.chanLogger, [])
+    config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand(ctx.chanLogger, [
+        // TODO: enable this?
+        // WAIT_FOR_DEBUGGER_MESSAGES.PYTHON,
+    ])
     const processInvoker = new DefaultValidatingSamCliProcessInvoker({})
-    let lambdaDebugFilePath: string | undefined
 
     try {
         // logger.debug(
@@ -269,8 +271,11 @@ export async function invokePythonLambda(
             samProcessInvoker: processInvoker,
             useContainer: config.sam?.containerBuild || false
         })
+        if (config.invokeTarget.target === 'template') {
+            // XXX: reassignment
+            config.invokeTarget.samTemplatePath = config.samTemplatePath
+        }
 
-        config.samLocalInvokeCommand = localInvokeCommand!
         config.onWillAttachDebugger = waitForPythonDebugAdapter
 
         await invokeLambdaFunction(ctx, config)
@@ -282,8 +287,8 @@ export async function invokePythonLambda(
             error
         )
     } finally {
-        if (lambdaDebugFilePath) {
-            await deleteFile(lambdaDebugFilePath)
+        if (config.outFilePath) {
+            await deleteFile(config.outFilePath)
         }
     }
 }

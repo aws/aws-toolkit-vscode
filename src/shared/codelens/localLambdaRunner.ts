@@ -3,36 +3,29 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { writeFile } from 'fs-extra'
 import * as path from 'path'
 import * as tcpPortUsed from 'tcp-port-used'
 import * as vscode from 'vscode'
 import { detectLocalLambdas, LocalLambda } from '../../lambda/local/detectLocalLambdas'
+import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { CloudFormation } from '../cloudformation/cloudformation'
+import { ExtContext } from '../extensions'
 import { makeTemporaryToolkitFolder } from '../filesystemUtilities'
+import { getLogger } from '../logger'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from '../sam/cli/samCliBuild'
 import { SamCliProcessInvoker } from '../sam/cli/samCliInvokerUtils'
-import {
-    SamCliLocalInvokeInvocation,
-    SamCliLocalInvokeInvocationArguments,
-    SamLocalInvokeCommand,
-    DefaultSamLocalInvokeCommand,
-    WAIT_FOR_DEBUGGER_MESSAGES
-} from '../sam/cli/samCliLocalInvoke'
+import { SamCliLocalInvokeInvocation, SamCliLocalInvokeInvocationArguments } from '../sam/cli/samCliLocalInvoke'
+import { TemplateTargetProperties } from '../sam/debugger/awsSamDebugConfiguration'
+import { SamLaunchRequestArgs } from '../sam/debugger/samDebugSession'
 import { SettingsConfiguration } from '../settingsConfiguration'
-import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
-import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
-
-import { writeFile } from 'fs-extra'
-import { getHandlerConfig, HandlerConfig } from '../../lambda/config/templates'
-import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
-import { getLogger } from '../logger'
 import { recordSamAttachDebugger, Runtime } from '../telemetry/telemetry'
 import { TelemetryService } from '../telemetry/telemetryService'
+import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
+import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { Timeout } from '../utilities/timeoutUtils'
-import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
-import { ExtContext } from '../extensions'
-import { SamLaunchRequestArgs } from '../sam/debugger/samDebugSession'
+import { ChannelLogger } from '../utilities/vsCodeUtils'
 
 export interface LambdaLocalInvokeParams {
     /** URI of the current editor document. */
@@ -57,197 +50,38 @@ const MAX_DEBUGGER_RETRIES_DEFAULT: number = 30
 const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 200
 
 /**
- * DEPRECATED. Use `invokeLambdaFunction()` instead.
+ * Geenrates a SAM Template that will be passed in to sam build.
+ *
+ * Tries to detect local lambdas, then calls `makeInputTemplate()`.
  */
-export class LocalLambdaRunner {
-    private _baseBuildFolder?: string
-    private readonly _debugPort?: number
+export async function generateInputTemplate(config: SamLaunchRequestArgs): Promise<string> {
+    const buildFolder: string = config.baseBuildDir!!
+    let properties: CloudFormation.ResourceProperties | undefined
+    let globals: CloudFormation.TemplateGlobals | undefined
+    if (config.workspaceFolder) {
+        const lambdas = await detectLocalLambdas([config.workspaceFolder])
+        const existingLambda = lambdas.find(lambda => lambda.handler === config.handlerName)
 
-    public constructor(
-        private readonly configuration: SettingsConfiguration,
-        private readonly localInvokeParams: LambdaLocalInvokeParams,
-        debugPort: number | undefined,
-        private readonly runtime: string,
-        // @ts-ignore noUnusedLocals
-        private readonly outputChannel: vscode.OutputChannel,
-        private readonly processInvoker: SamCliProcessInvoker,
-        private readonly localInvokeCommand: SamLocalInvokeCommand,
-        private readonly debugConfig: SamLaunchRequestArgs,
-        private readonly codeRootDirectoryPath: string,
-        private readonly telemetryService: TelemetryService,
-        private readonly cfnTemplatePath: string | undefined,
-        private readonly cfnResourceName: string | undefined,
-        private readonly channelLogger = getChannelLogger(outputChannel),
-    ) {
-        if (localInvokeParams.isDebug && !debugPort) {
-            throw new Error('Debug port must be provided when launching in debug mode')
-        }
-
-        this._debugPort = debugPort
-    }
-
-    public async run(): Promise<void> {
-        try {
-            // Switch over to the output channel so the user has feedback that we're getting things ready
-            this.channelLogger.channel.show(true)
-
-            this.channelLogger.info(
-                'AWS.output.sam.local.start',
-                'Preparing to run {0} locally...',
-                this.localInvokeParams.handlerName
-            )
-
-            if (this.cfnTemplatePath && !this.cfnResourceName) {
-                throw Error('cfnTemplatePath given but cfnResourceName is missing')
+        if (existingLambda) {
+            if (existingLambda.resource && existingLambda.resource.Properties) {
+                properties = existingLambda.resource.Properties
             }
 
-            const inputTemplate: string = this.cfnTemplatePath
-                ?? await this.generateInputTemplate(this.codeRootDirectoryPath)
-
-            const config = await getHandlerConfig({
-                handlerName: this.localInvokeParams.handlerName,
-                documentUri: this.localInvokeParams.uri,
-                samTemplate: this.localInvokeParams.samTemplate
-            })
-
-            if (!this._baseBuildFolder) {
-                this._baseBuildFolder = await this.getBaseBuildFolder()
-            }
-            const samBuildTemplate: string = await executeSamBuild({
-                baseBuildDir: this._baseBuildFolder,
-                channelLogger: this.channelLogger,
-                codeDir: this.codeRootDirectoryPath,
-                inputTemplatePath: inputTemplate,
-                samProcessInvoker: this.processInvoker,
-                useContainer: config.useContainer
-            })
-
-            await this.run2(samBuildTemplate,
-                this.cfnResourceName ?? TEMPLATE_RESOURCE_NAME)
-        } catch (err) {
-            const error = err as Error
-            this.channelLogger.error(
-                'AWS.error.during.sam.local',
-                'An error occurred trying to run SAM Application locally: {0}',
-                error
-            )
-
-            return
-        }
-    }
-
-    public get debugPort(): number {
-        if (!this._debugPort) {
-            throw new Error('Debug port was expected but is undefined')
-        }
-
-        return this._debugPort
-    }
-
-    private async getBaseBuildFolder(): Promise<string> {
-        // TODO: Clean up folder structure
-        if (!this._baseBuildFolder) {
-            this._baseBuildFolder = await makeTemporaryToolkitFolder()
-            ExtensionDisposableFiles.getInstance().addFolder(this._baseBuildFolder)
-        }
-
-        return this._baseBuildFolder
-    }
-    /**
-     * Create the SAM Template that will be passed in to sam build.
-     * @returns Path to the generated template file
-     */
-    private async generateInputTemplate(rootCodeFolder: string): Promise<string> {
-        const buildFolder: string = await this.getBaseBuildFolder()
-
-        const workspaceFolder = this.localInvokeParams.workspaceFolder
-            ? vscode.workspace.getWorkspaceFolder(this.localInvokeParams.workspaceFolder.uri)
-            : undefined
-        let properties: CloudFormation.ResourceProperties | undefined
-        let globals: CloudFormation.TemplateGlobals | undefined
-        if (workspaceFolder) {
-            const lambdas = await detectLocalLambdas([workspaceFolder])
-            const existingLambda = lambdas.find(lambda => lambda.handler === this.localInvokeParams.handlerName)
-
-            if (existingLambda) {
-                if (existingLambda.resource && existingLambda.resource.Properties) {
-                    properties = existingLambda.resource.Properties
-                }
-
-                if (existingLambda.templateGlobals) {
-                    globals = existingLambda.templateGlobals
-                }
-            }
-        }
-
-        return await makeInputTemplate({
-            baseBuildDir: buildFolder,
-            codeDir: rootCodeFolder,
-            relativeFunctionHandler: this.localInvokeParams.handlerName,
-            globals,
-            properties,
-            runtime: this.runtime
-        })
-    }
-
-    /** More indirection. */
-    private async run2(samTemplatePath: string, cfnResourceName: string): Promise<void> {
-        this.channelLogger.info(
-            'AWS.output.starting.sam.app.locally',
-            'Starting the SAM Application locally (see Terminal for output)'
-        )
-
-        const eventPath: string = path.join(await this.getBaseBuildFolder(), 'event.json')
-        const environmentVariablePath = path.join(await this.getBaseBuildFolder(), 'env-vars.json')
-        const config = await getHandlerConfig({
-            handlerName: this.localInvokeParams.handlerName,
-            documentUri: this.localInvokeParams.uri,
-            samTemplate: this.localInvokeParams.samTemplate
-        })
-        const maxRetries: number = getAttachDebuggerMaxRetryLimit(this.configuration, MAX_DEBUGGER_RETRIES_DEFAULT)
-
-        await writeFile(eventPath, JSON.stringify(config.event || {}))
-        await writeFile(environmentVariablePath, JSON.stringify(getEnvironmentVariables(config)))
-
-        const command = new SamCliLocalInvokeInvocation({
-            templateResourceName: cfnResourceName,
-            templatePath: samTemplatePath,
-            eventPath,
-            environmentVariablePath,
-            debugPort: !!this._debugPort ? this._debugPort.toString() : undefined,
-            invoker: this.localInvokeCommand,
-            dockerNetwork: config.dockerNetwork
-        })
-
-        const timer = createInvokeTimer(this.configuration)
-        await command.execute(timer)
-
-        if (this.localInvokeParams.isDebug) {
-            messageUserWaitingToAttach(this.channelLogger)
-            await waitForDebugPort(this.debugPort, timer.remainingTime, this.channelLogger)
-
-            const attachResults = await attachDebugger({
-                debugConfig: this.debugConfig,
-                maxRetries,
-                retryDelayMillis: ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
-                channelLogger: this.channelLogger,
-                onRecordAttachDebuggerMetric: (attachResult: boolean | undefined, attempts: number): void => {
-                    recordAttachDebuggerMetric({
-                        telemetryService: this.telemetryService,
-                        result: attachResult,
-                        attempts,
-                        durationMillis: timer.elapsedTime,
-                        runtime: this.runtime
-                    })
-                }
-            })
-
-            if (attachResults.success) {
-                await showDebugConsole()
+            if (existingLambda.templateGlobals) {
+                globals = existingLambda.templateGlobals
             }
         }
     }
-} // end class LocalLambdaRunner
+
+    return await makeInputTemplate({
+        baseBuildDir: buildFolder,
+        codeDir: config.samProjectCodeRoot,
+        relativeFunctionHandler: config.handlerName,
+        globals,
+        properties,
+        runtime: config.runtime
+    })
+}
 
 export const makeBuildDir = async (): Promise<string> => {
     const buildDir = await makeTemporaryToolkitFolder()
@@ -381,44 +215,24 @@ export async function invokeLambdaFunction(
         'AWS.output.starting.sam.app.locally',
         'Starting the SAM Application locally (see Terminal for output)'
     )
-    getLogger().debug(`localLambdaRunner.invokeLambdaFunction: ${JSON.stringify(config, undefined, 2)}`)
-
-    if (!config.baseBuildDir) {
-        config.baseBuildDir = await makeTemporaryToolkitFolder()
-        ExtensionDisposableFiles.getInstance().addFolder(config.baseBuildDir)
-    }
-    if (config.runtimeFamily === RuntimeFamily.DotNetCore) {
-        // TODO
-    } else if (config.runtimeFamily === RuntimeFamily.Python) {
-        // TODO
-    } else if (config.runtimeFamily === RuntimeFamily.NodeJS) {
-        config.samLocalInvokeCommand = config.samLocalInvokeCommand
-            ?? new DefaultSamLocalInvokeCommand(getChannelLogger(ctx.outputChannel), [
-                WAIT_FOR_DEBUGGER_MESSAGES.NODEJS
-            ])
-    }
+    getLogger().debug(`localLambdaRunner.invokeLambdaFunction: ${config.name}`)
 
     const eventPath: string = path.join(config.baseBuildDir!!, 'event.json')
     const environmentVariablePath = path.join(config.baseBuildDir!!, 'env-vars.json')
-    const config2 = await getHandlerConfig({
-        handlerName: config.originalHandlerName,
-        documentUri: config.documentUri,
-        samTemplate: vscode.Uri.file(config.originalSamTemplatePath)
-    })
     const maxRetries: number = getAttachDebuggerMaxRetryLimit(ctx.settings, MAX_DEBUGGER_RETRIES_DEFAULT)
 
-    await writeFile(eventPath, JSON.stringify(config2.event || {}))
-    await writeFile(environmentVariablePath, JSON.stringify(getEnvironmentVariables(config2)))
+    await writeFile(eventPath, JSON.stringify(config.lambda?.event || {}))
+    await writeFile(environmentVariablePath, JSON.stringify(config.lambda?.environmentVariables ?? {}))
 
     const localInvokeArgs: SamCliLocalInvokeInvocationArguments = {
-        templateResourceName: config.invokeTarget.samTemplateResource
-            ? config.invokeTarget.samTemplateResource
+        templateResourceName: (config.invokeTarget as TemplateTargetProperties)?.samTemplateResource
+            ? (config.invokeTarget as TemplateTargetProperties).samTemplateResource
             : TEMPLATE_RESOURCE_NAME,
         templatePath: config.samTemplatePath,
         eventPath,
         environmentVariablePath,
         invoker: config.samLocalInvokeCommand!!,  // ?? new DefaultValidatingSamCliProcessInvoker({})
-        dockerNetwork: config.dockerNetwork,
+        dockerNetwork: config.sam?.dockerNetwork,
         debugPort: config.debugPort?.toString(),
         debuggerPath: config.debuggerPath,
     }
@@ -456,18 +270,6 @@ export async function invokeLambdaFunction(
         if (attachResults.success) {
             await showDebugConsole()
         }
-    }
-}
-
-const getEnvironmentVariables = (
-    config: Pick<HandlerConfig, 'environmentVariables'>
-): SAMTemplateEnvironmentVariables => {
-    if (!!config.environmentVariables) {
-        return {
-            [TEMPLATE_RESOURCE_NAME]: config.environmentVariables
-        }
-    } else {
-        return {}
     }
 }
 

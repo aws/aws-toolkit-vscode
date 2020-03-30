@@ -32,8 +32,6 @@ interface MakeConfigureCodeLensParams {
     language: Language
 }
 
-export const DRIVE_LETTER_REGEX = /^\w\:/
-
 export async function makeCodeLenses({
     document,
     token,
@@ -259,12 +257,10 @@ export async function initializePythonCodelens(context: ExtContext): Promise<voi
                     })
                     lambdaRuntime = CloudFormation.getRuntime(resource)
 
-
-                    const samProjectCodeRoot = await pythonDebug.getSamProjectDirPathForFile(params.uri.fsPath)
                     const config: PythonDebugConfiguration = await pythonDebug.makePythonDebugConfig(
+                        undefined,
                         params.isDebug,
                         params.workspaceFolder,
-                        samProjectCodeRoot,
                         lambdaRuntime,
                         params.handlerName,
                         params.uri,
@@ -293,10 +289,11 @@ export async function initializePythonCodelens(context: ExtContext): Promise<voi
 export async function initializeCsharpCodelens(context: ExtContext): Promise<void> {
     context.subscriptions.push(
         vscode.commands.registerCommand(getInvokeCmdKey(csharpDebug.CSHARP_LANGUAGE), async (params: LambdaLocalInvokeParams) => {
-            await csharpDebug.onLocalInvokeCommand({
-                ctx: context,
-                lambdaLocalInvokeParams: params,
-            })
+            // await csharpDebug.invokeCsharpLambda({
+            //     ctx: context,
+            //     config: undefined,
+            //     lambdaLocalInvokeParams: params,
+            // })
         })
     )
 }

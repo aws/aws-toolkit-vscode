@@ -39,6 +39,11 @@ export interface SamLaunchRequestArgs extends
     documentUri: vscode.Uri
     originalHandlerName: string  // TODO: remove this hopefully
     originalSamTemplatePath: string  // TODO: remove this hopefully
+    /**
+     * SAM template absolute path used for SAM CLI invoke.
+     * - For `target=code` this is the _generated_ template path.
+     * - For `target=template` this is the template found in the workspace.
+     */
     samTemplatePath: string
 
     //

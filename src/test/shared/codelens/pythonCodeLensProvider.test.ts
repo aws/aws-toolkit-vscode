@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { getLocalRootVariants } from '../../../shared/codelens/pythonCodeLensProvider'
+import { getLocalRootVariants } from '../../../shared/utilities/pathUtils'
 
 describe('getLocalRootVariants', async () => {
     if (process.platform === 'win32') {
