@@ -48,7 +48,7 @@ export interface CreateNewSamAppWizardContext {
     promptUserForSchema(currRegion: string, currRegistry: string, currSchema?: string): Promise<string | undefined>
 
     promptUserForLocation(): Promise<vscode.Uri | undefined>
-    promptUserForName(): Promise<string | undefined>
+    promptUserForName(defaultValue: string): Promise<string | undefined>
 
     showOpenDialog(options: vscode.OpenDialogOptions): Thenable<vscode.Uri[] | undefined>
 }
@@ -344,7 +344,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
         return pickerResponse.getUri()
     }
 
-    public async promptUserForName(): Promise<string | undefined> {
+    public async promptUserForName(defaultValue: string): Promise<string | undefined> {
         const inputBox = input.createInputBox({
             options: {
                 title: localize('AWS.samcli.initWizard.name.prompt', 'Enter a name for your new application'),
@@ -352,8 +352,9 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back]
         })
+        inputBox.value = defaultValue
 
-        return await input.promptUser({
+        return input.promptUser({
             inputBox: inputBox,
             onValidateInput: (value: string) => {
                 if (!value) {
@@ -482,7 +483,9 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
     }
 
     private readonly NAME: WizardStep = async () => {
-        this.name = await this.context.promptUserForName()
+        this.name = await this.context.promptUserForName(
+            this.name ?? (this.location ? path.basename(this.location.path) : '')
+        )
 
         return this.name ? undefined : this.LOCATION
     }
