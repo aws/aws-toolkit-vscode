@@ -178,14 +178,17 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
         if (!this.iamRoles || this.iamRoles.length === 0) {
             roles = [
                 {
-                    label: 'No roles could be found',
+                    label: localize('AWS.stepFunctions.publishWizard.iamRole.noRoles.label', 'No roles could be found'),
                     alwaysShow: true,
                     arn: undefined,
-                    detail: 'Create an IAM role before proceeding. See documentation for details.'
+                    detail: localize(
+                        'AWS.stepFunctions.publishWizard.iamRole.noRoles.detail',
+                        'Create an IAM role before proceeding. See documentation for details.'
+                    )
                 }
             ]
         } else {
-            roles = this.iamRoles?.map(iamRole => ({
+            roles = this.iamRoles.map(iamRole => ({
                 label: iamRole.RoleName,
                 alwaysShow: iamRole.Arn === currRoleArn,
                 arn: iamRole.Arn,
@@ -236,14 +239,20 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
         if (!this.stateMachines || this.stateMachines.length === 0) {
             stateMachines = [
                 {
-                    label: 'No state machines could be found',
+                    label: localize(
+                        'AWS.stepFunctions.publishWizard.stateMachineNameToUpdate.noStateMachines.label',
+                        'No state machines could be found'
+                    ),
                     alwaysShow: true,
                     arn: undefined,
-                    detail: 'Create a state machine before proceeding. See documentation for details.'
+                    detail: localize(
+                        'AWS.stepFunctions.publishWizard.stateMachineNameToUpdate.noStateMachines.detail',
+                        'Create a state machine before proceeding. See documentation for details.'
+                    )
                 }
             ]
         } else {
-            stateMachines = this.stateMachines?.map(stateMachine => ({
+            stateMachines = this.stateMachines.map(stateMachine => ({
                 label: stateMachine.name,
                 alwaysShow: false,
                 arn: stateMachine.stateMachineArn,
