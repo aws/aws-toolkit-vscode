@@ -51,6 +51,22 @@ export class DefaultStepFunctionsClient implements StepFunctionsClient {
         return response
     }
 
+    public async createStateMachine(
+        params: StepFunctions.CreateStateMachineInput
+    ): Promise<StepFunctions.CreateStateMachineOutput> {
+        const client = await this.createSdkClient()
+
+        return client.createStateMachine(params).promise()
+    }
+
+    public async updateStateMachine(
+        params: StepFunctions.UpdateStateMachineInput
+    ): Promise<StepFunctions.UpdateStateMachineOutput> {
+        const client = await this.createSdkClient()
+
+        return client.updateStateMachine(params).promise()
+    }
+
     private async createSdkClient(): Promise<StepFunctions> {
         return await ext.sdkClientBuilder.createAndConfigureServiceClient(
             options => new StepFunctions(options),

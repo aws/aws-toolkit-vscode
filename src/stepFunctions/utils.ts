@@ -5,7 +5,7 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { StepFunctions } from 'aws-sdk'
+import { IAM, StepFunctions } from 'aws-sdk'
 import { writeFile } from 'fs-extra'
 import * as request from 'request'
 import * as vscode from 'vscode'
@@ -40,7 +40,7 @@ export interface StateMachineGraphCacheOptions {
     fileExists?(path: string): Promise<boolean>
 }
 
-export default class StateMachineGraphCache {
+export class StateMachineGraphCache {
     protected makeDir: (path: string) => Promise<void>
     protected writeFile: (path: string, data: string, encoding: string) => Promise<void>
     protected getFileData: (url: string) => Promise<string>
@@ -156,4 +156,15 @@ export async function* listStateMachines(
             status.dispose()
         }
     }
+}
+
+/**
+ * Checks if the given IAM Role is assumable by AWS Step Functions.
+ * @param role The IAM role to check
+ */
+export function isStepFunctionsRole(role: IAM.Role): boolean {
+    const STEP_FUNCTIONS_SEVICE_PRINCIPAL: string = 'states.amazonaws.com'
+    const assumeRolePolicyDocument: string | undefined = role.AssumeRolePolicyDocument
+
+    return !!assumeRolePolicyDocument?.includes(STEP_FUNCTIONS_SEVICE_PRINCIPAL)
 }

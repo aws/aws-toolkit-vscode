@@ -187,7 +187,7 @@ export async function activate(context: vscode.ExtensionContext) {
         })
 
         setImmediate(async () => {
-            await activateStepFunctions(context)
+            await activateStepFunctions(context, awsContext, toolkitOutputChannel)
         })
 
         toastNewUser(context)

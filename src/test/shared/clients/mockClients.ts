@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CloudFormation, Lambda, Schemas, StepFunctions, STS } from 'aws-sdk'
+import { CloudFormation, IAM, Lambda, Schemas, StepFunctions, STS } from 'aws-sdk'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { EcsClient } from '../../../shared/clients/ecsClient'
+import { IamClient } from '../../../shared/clients/iamClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { SchemaClient } from '../../../shared/clients/schemaClient'
 import { StepFunctionsClient } from '../../../shared/clients/stepFunctionsClient'
@@ -23,6 +24,8 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
 
         private readonly ecsClient: EcsClient = new MockEcsClient({}),
 
+        private readonly iamClient: IamClient = new MockIamClient({}),
+
         private readonly lambdaClient: LambdaClient = new MockLambdaClient({}),
 
         private readonly stepFunctionsClient: StepFunctionsClient = new MockStepFunctionsClient(),
@@ -36,6 +39,10 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
 
     public createSchemaClient(regionCode: string): SchemaClient {
         return this.schemaClient
+    }
+
+    public createIamClient(): IamClient {
+        return this.iamClient
     }
 
     public createEcsClient(regionCode: string): EcsClient {
@@ -169,6 +176,14 @@ export class MockEcsClient implements EcsClient {
     }
 }
 
+export class MockIamClient implements IamClient {
+    public readonly listRoles: () => Promise<IAM.ListRolesResponse>
+
+    public constructor({ listRoles = async () => ({ Roles: [] }) }: { listRoles?(): Promise<IAM.ListRolesResponse> }) {
+        this.listRoles = listRoles
+    }
+}
+
 export class MockLambdaClient implements LambdaClient {
     public readonly regionCode: string
     public readonly deleteFunction: (name: string) => Promise<void>
@@ -217,6 +232,23 @@ export class MockStepFunctionsClient implements StepFunctionsClient {
         ) => Promise<StepFunctions.StartExecutionOutput> = async (arn: string, input: string) => ({
             executionArn: '',
             startDate: new Date()
+        }),
+
+        public readonly createStateMachine: (
+            params: StepFunctions.CreateStateMachineInput
+        ) => Promise<StepFunctions.CreateStateMachineOutput> = async (
+            params: StepFunctions.CreateStateMachineInput
+        ) => ({
+            stateMachineArn: '',
+            creationDate: new Date()
+        }),
+
+        public readonly updateStateMachine: (
+            params: StepFunctions.UpdateStateMachineInput
+        ) => Promise<StepFunctions.UpdateStateMachineOutput> = async (
+            params: StepFunctions.UpdateStateMachineInput
+        ) => ({
+            updateDate: new Date()
         })
     ) {}
 }

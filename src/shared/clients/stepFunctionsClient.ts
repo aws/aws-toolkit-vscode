@@ -13,4 +13,8 @@ export interface StepFunctionsClient {
     getStateMachineDetails(arn: string): Promise<StepFunctions.DescribeStateMachineOutput>
 
     executeStateMachine(arn: string, input?: string): Promise<StepFunctions.StartExecutionOutput>
+
+    createStateMachine(params: StepFunctions.CreateStateMachineInput): Promise<StepFunctions.CreateStateMachineOutput>
+
+    updateStateMachine(params: StepFunctions.UpdateStateMachineInput): Promise<StepFunctions.UpdateStateMachineOutput>
 }

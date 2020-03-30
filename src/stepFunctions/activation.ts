@@ -5,21 +5,31 @@
 
 import { join } from 'path'
 import * as vscode from 'vscode'
+import { AwsContext } from '../shared/awsContext'
 import { ext } from '../shared/extensionGlobals'
 import * as telemetry from '../shared/telemetry/telemetry'
 import { activate as activateASL } from './asl/client'
 import { createStateMachineFromTemplate } from './commands/createStateMachineFromTemplate'
+import { publishStateMachine } from './commands/publishStateMachine'
 import { visualizeStateMachine } from './commands/visualizeStateMachine'
 
 /**
  * Activate Step Functions related functionality for the extension.
  */
-export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
+export async function activate(
+    extensionContext: vscode.ExtensionContext,
+    awsContext: AwsContext,
+    outputChannel: vscode.OutputChannel
+): Promise<void> {
     await activateASL(extensionContext)
-    await registerStepFunctionCommands(extensionContext)
+    await registerStepFunctionCommands(extensionContext, awsContext, outputChannel)
 }
 
-async function registerStepFunctionCommands(extensionContext: vscode.ExtensionContext): Promise<void> {
+async function registerStepFunctionCommands(
+    extensionContext: vscode.ExtensionContext,
+    awsContext: AwsContext,
+    outputChannel: vscode.OutputChannel
+): Promise<void> {
     initalizeWebviewPaths(extensionContext)
 
     extensionContext.subscriptions.push(
@@ -39,6 +49,12 @@ async function registerStepFunctionCommands(extensionContext: vscode.ExtensionCo
             } finally {
                 telemetry.recordStepfunctionsCreateStateMachineFromTemplate()
             }
+        })
+    )
+
+    extensionContext.subscriptions.push(
+        vscode.commands.registerCommand('aws.stepfunctions.publishStateMachine', async () => {
+            await publishStateMachine(awsContext, outputChannel)
         })
     )
 }

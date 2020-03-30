@@ -4,8 +4,9 @@
  */
 
 import * as assert from 'assert'
+import { IAM } from 'aws-sdk'
 import * as sinon from 'sinon'
-import StateMachineGraphCache from '../../stepFunctions/utils'
+import { isStepFunctionsRole, StateMachineGraphCache } from '../../stepFunctions/utils'
 
 const REQUEST_BODY = 'request body string'
 const ASSET_URL = 'https://something'
@@ -162,5 +163,57 @@ describe('StateMachineGraphCache', () => {
             assert.ok(writeFile.calledWith(FILE_PATH, REQUEST_BODY))
             assert.ok(makeDir.calledWith(dirPath))
         })
+    })
+})
+
+describe('isStepFunctionsRole', () => {
+    const baseIamRole: IAM.Role = {
+        Path: '',
+        RoleName: '',
+        RoleId: 'myRole',
+        Arn: 'arn:aws:iam::123456789012:role/myRole',
+        CreateDate: new Date()
+    }
+
+    it('return true if the Step Functions service principal is in the AssumeRolePolicyDocument', () => {
+        const role: IAM.Role = {
+            ...baseIamRole,
+            AssumeRolePolicyDocument: JSON.stringify({
+                Version: '2012-10-17',
+                Statement: [
+                    {
+                        Effect: 'Allow',
+                        Principal: {
+                            Service: ['states.amazonaws.com']
+                        },
+                        Action: ['sts:AssumeRole']
+                    }
+                ]
+            })
+        }
+        assert.ok(isStepFunctionsRole(role))
+    })
+
+    it('returns false if the role does not have an AssumeRolePolicyDocument', () => {
+        assert.ok(!isStepFunctionsRole(baseIamRole))
+    })
+
+    it("returns false if the AssumeRolePolicyDocument does not contain Step Functions' service principal", () => {
+        const role: IAM.Role = {
+            ...baseIamRole,
+            AssumeRolePolicyDocument: JSON.stringify({
+                Version: '2012-10-17',
+                Statement: [
+                    {
+                        Effect: 'Allow',
+                        Principal: {
+                            Service: ['lambda.amazonaws.com']
+                        },
+                        Action: ['sts:AssumeRole']
+                    }
+                ]
+            })
+        }
+        assert.ok(!isStepFunctionsRole(role))
     })
 })
