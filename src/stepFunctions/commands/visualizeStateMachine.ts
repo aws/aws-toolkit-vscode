@@ -17,7 +17,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { ext } from '../../shared/extensionGlobals'
 import { getLogger, Logger } from '../../shared/logger'
-import StateMachineGraphCache from '../utils'
+import { StateMachineGraphCache } from '../utils'
 
 export interface messageObject {
     command: string
@@ -66,8 +66,8 @@ export async function visualizeStateMachine(globalStorage: vscode.Memento): Prom
         documentUri = activeTextEditor.document.uri
         textDocument = activeTextEditor.document
     } else {
-        logger.error('Could not grab active text editor for state machine render.')
-        throw new Error('Could not grab active text editor for state machine render.')
+        logger.error('Could not get active text editor for state machine render.')
+        throw new Error('Could not get active text editor for state machine render.')
     }
 
     try {

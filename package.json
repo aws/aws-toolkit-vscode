@@ -50,6 +50,7 @@
         "onCommand:aws.github",
         "onCommand:aws.previewStateMachine",
         "onCommand:aws.stepfunctions.createStateMachineFromTemplate",
+        "onCommand:aws.stepfunctions.publishStateMachine",
         "onView:aws.cdk.explorer",
         "onCommand:aws.refreshCdkExplorer",
         "onCommand:aws.aboutToolkit",
@@ -703,6 +704,11 @@
             {
                 "command": "aws.stepfunctions.createStateMachineFromTemplate",
                 "title": "%AWS.command.stepFunctions.createStateMachineFromTemplate%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.stepfunctions.publishStateMachine",
+                "title": "%AWS.command.stepFunctions.publishStateMachine%",
                 "category": "AWS"
             },
             {

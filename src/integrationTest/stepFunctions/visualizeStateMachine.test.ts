@@ -171,7 +171,7 @@ describe('visualizeStateMachine', async () => {
         const err = await assertThrowsError(
             async () => await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.previewStateMachine')
         )
-        assert.deepStrictEqual(err.message, 'Could not grab active text editor for state machine render.')
+        assert.deepStrictEqual(err.message, 'Could not get active text editor for state machine render.')
     })
 
     it('doesnt update the graph if a seperate file is opened or modified', async () => {
