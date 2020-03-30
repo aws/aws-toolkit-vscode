@@ -175,7 +175,7 @@ class MockCreateNewSamAppWizardContext implements CreateNewSamAppWizardContext {
         }
     }
 
-    public async promptUserForName(): Promise<string | undefined> {
+    public async promptUserForName(defaultValue: string): Promise<string | undefined> {
         return this.getUserInput(this.inputBoxResult, 'inputBoxResult')
     }
 
