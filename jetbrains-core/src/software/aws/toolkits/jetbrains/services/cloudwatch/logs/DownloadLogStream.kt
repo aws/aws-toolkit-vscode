@@ -137,10 +137,10 @@ class LogStreamDownloadToFileTask(
     }
 
     private suspend fun promptToDownload(indicator: ProgressIndicator, request: GetLogEventsRequest, buffer: String) {
-        val descriptor = FileSaverDescriptor(message("s3.download.object.action"), message("s3.download.object.description"))
+        val descriptor = FileSaverDescriptor(message("cloudwatch.logs.download"), message("cloudwatch.logs.download.description"))
         val saveLocation = withContext(edt) {
             val destination = FileChooserFactory.getInstance().createSaveFileDialog(descriptor, project)
-            destination.save(null, null)
+            destination.save(null, logStream)
         }
         if (saveLocation != null) {
             streamLogStreamToFile(indicator, request, saveLocation.file, buffer)
