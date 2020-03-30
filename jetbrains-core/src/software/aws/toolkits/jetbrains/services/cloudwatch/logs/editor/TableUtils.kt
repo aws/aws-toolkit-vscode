@@ -113,6 +113,9 @@ private class ResizingDateColumnRenderer : TableCellRenderer {
         wrapper.add(component, BorderLayout.NORTH)
         // Make sure the background matches for selection
         wrapper.background = component.background
+        // if a component is selected, it puts a border on it, move the border to the wrapper instead
+        wrapper.border = component.border
+        component.border = null
         return wrapper
     }
 }
