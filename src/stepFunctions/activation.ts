@@ -13,6 +13,9 @@ import { createStateMachineFromTemplate } from './commands/createStateMachineFro
 import { publishStateMachine } from './commands/publishStateMachine'
 import { visualizeStateMachine } from './commands/visualizeStateMachine'
 
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 /**
  * Activate Step Functions related functionality for the extension.
  */
@@ -23,6 +26,7 @@ export async function activate(
 ): Promise<void> {
     await activateASL(extensionContext)
     await registerStepFunctionCommands(extensionContext, awsContext, outputChannel)
+    initializeCodeLens(extensionContext)
 }
 
 async function registerStepFunctionCommands(
@@ -91,4 +95,38 @@ function initalizeWebviewPaths(context: vscode.ExtensionContext) {
     ext.visualizationResourcePaths.stateMachineCustomThemeCSS = vscode.Uri.file(
         context.asAbsolutePath(join('media', 'css', 'stateMachineRender.css'))
     )
+}
+
+function initializeCodeLens(context: vscode.ExtensionContext) {
+    class StepFunctionsCodeLensProvider implements vscode.CodeLensProvider {
+        public async provideCodeLenses(document: vscode.TextDocument): Promise<vscode.CodeLens[]> {
+            const topOfDocument = new vscode.Range(0, 0, 0, 0)
+
+            const renderCommand: vscode.Command = {
+                command: 'aws.previewStateMachine',
+                title: localize('AWS.stepFunctions.render', 'Render graph')
+            }
+
+            const publishCommand: vscode.Command = {
+                command: 'aws.stepfunctions.publishStateMachine',
+                title: localize('AWS.stepFunctions.publish', 'Publish to Step Functions')
+            }
+
+            const renderCodeLens = new vscode.CodeLens(topOfDocument, renderCommand)
+            const publishCodeLens = new vscode.CodeLens(topOfDocument, publishCommand)
+
+            return [publishCodeLens, renderCodeLens]
+        }
+    }
+
+    const docSelector = {
+        language: 'asl'
+    }
+
+    const codeLensProviderDisposable = vscode.languages.registerCodeLensProvider(
+        docSelector,
+        new StepFunctionsCodeLensProvider()
+    )
+
+    context.subscriptions.push(codeLensProviderDisposable)
 }
