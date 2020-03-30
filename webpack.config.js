@@ -6,6 +6,7 @@ const path = require('path')
 const webpack = require('webpack')
 const fs = require('fs')
 const TerserPlugin = require('terser-webpack-plugin')
+const FileManagerPlugin = require('filemanager-webpack-plugin')
 const { NLSBundlePlugin } = require('vscode-nls-dev/lib/webpack-bundler')
 const packageJsonFile = path.join(__dirname, 'package.json')
 const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, 'utf8'))
@@ -14,10 +15,13 @@ const packageId = `${packageJson.publisher}.${packageJson.name}`
 /**@type {import('webpack').Configuration}*/
 const config = {
     target: 'node',
-    entry: './src/extension.ts',
+    entry: {
+        extension: './src/extension.ts',
+        aslServer: './src/stepFunctions/asl/aslServer.ts'
+    },
     output: {
         path: path.resolve(__dirname, 'dist'),
-        filename: 'extension.js',
+        filename: '[name].js',
         libraryTarget: 'commonjs2',
         devtoolModuleFilenameTemplate: '../[resource-path]'
     },
@@ -64,6 +68,28 @@ const config = {
         new NLSBundlePlugin(packageId),
         new webpack.DefinePlugin({
             PLUGINVERSION: JSON.stringify(packageJson.version)
+        }),
+        // @ts-ignore
+        new FileManagerPlugin({
+            onStart: {
+                mkdir: [path.resolve(__dirname, 'dist/src/stepFunctions/asl/')]
+            },
+            onEnd: {
+                move: [
+                    {
+                        source: path.resolve(__dirname, 'dist/aslServer.js'),
+                        destination: path.resolve(__dirname, 'dist/src/stepFunctions/asl/aslServer.js')
+                    },
+                    {
+                        source: path.resolve(__dirname, 'dist/aslServer.js.LICENSE'),
+                        destination: path.resolve(__dirname, 'dist/src/stepFunctions/asl/aslServer.js.LICENSE')
+                    },
+                    {
+                        source: path.resolve(__dirname, 'dist/aslServer.js.map'),
+                        destination: path.resolve(__dirname, 'dist/src/stepFunctions/asl/aslServer.js.map')
+                    }
+                ]
+            }
         })
     ],
     optimization: {

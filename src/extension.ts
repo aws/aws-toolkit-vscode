@@ -54,6 +54,7 @@ import {
 } from './shared/telemetry/telemetry'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { getChannelLogger } from './shared/utilities/vsCodeUtils'
+import { activate as activateStepFunctions } from './stepFunctions/activation'
 
 let localize: nls.LocalizeFunc
 
@@ -162,7 +163,13 @@ export async function activate(context: vscode.ExtensionContext) {
             extensionContext: context
         })
 
-        await activateAwsExplorer({ awsContext, context, awsContextTrees, regionProvider })
+        await activateAwsExplorer({
+            awsContext,
+            context,
+            awsContextTrees,
+            regionProvider,
+            outputChannel: toolkitOutputChannel
+        })
 
         await activateSchemas({
             context: context
@@ -177,6 +184,10 @@ export async function activate(context: vscode.ExtensionContext) {
             regionProvider,
             telemetryService: ext.telemetry,
             toolkitSettings
+        })
+
+        setImmediate(async () => {
+            await activateStepFunctions(context, awsContext, toolkitOutputChannel)
         })
 
         toastNewUser(context)
@@ -211,6 +222,9 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
 
     ext.iconPaths.dark.schema = context.asAbsolutePath('resources/dark/schema.svg')
     ext.iconPaths.light.schema = context.asAbsolutePath('resources/light/schema.svg')
+
+    ext.iconPaths.dark.statemachine = context.asAbsolutePath('resources/dark/stepfunctions/preview.svg')
+    ext.iconPaths.light.statemachine = context.asAbsolutePath('resources/light/stepfunctions/preview.svg')
 }
 
 function initializeManifestPaths(extensionContext: vscode.ExtensionContext) {
