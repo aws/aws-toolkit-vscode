@@ -11,8 +11,10 @@ import com.intellij.util.ui.ListTableModel
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogStream
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamEntry
 import software.aws.toolkits.resources.message
+import java.awt.BorderLayout
 import java.awt.Component
 import javax.swing.JLabel
+import javax.swing.JPanel
 import javax.swing.JTable
 import javax.swing.SortOrder
 import javax.swing.table.DefaultTableCellRenderer
@@ -96,6 +98,8 @@ private class WrappingLogStreamMessageRenderer : TableCellRenderer {
 private class ResizingDateColumnRenderer : TableCellRenderer {
     private val defaultRenderer = DefaultTableCellRenderer()
     override fun getTableCellRendererComponent(table: JTable, value: Any?, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component {
+        // This wrapper will let us force the component to be at the top instead of in the middle for linewraps
+        val wrapper = JPanel(BorderLayout())
         val defaultComponent = defaultRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column)
         val component = defaultComponent as? JLabel ?: return defaultComponent
         component.text = (value as? String)?.toLongOrNull()?.let {
@@ -106,6 +110,9 @@ private class ResizingDateColumnRenderer : TableCellRenderer {
             table.columnModel.getColumn(column).preferredWidth = component.preferredSize.width + 20
             table.columnModel.getColumn(column).maxWidth = component.preferredSize.width + 20
         }
-        return component
+        wrapper.add(component, BorderLayout.NORTH)
+        // Make sure the background matches for selection
+        wrapper.background = component.background
+        return wrapper
     }
 }
