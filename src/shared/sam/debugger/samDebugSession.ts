@@ -31,11 +31,20 @@ export interface SamLaunchRequestArgs extends
     runtimeFamily: RuntimeFamily
     handlerName: string
     workspaceFolder: vscode.WorkspaceFolder
-    samProjectCodeRoot: string
+    /**
+     * Absolute path to the SAM project root, calculated from any of:
+     *  - `codeUri` in `template.yaml`
+     *  - `projectRoot` for the case of `target=code`
+     *  - provider-specific heuristic (last resort)
+     */
+    codeRoot: string
     outFilePath?: string
 
     baseBuildDir?: string
-    /** URI of the current editor document. */
+    /**
+     * URI of the current editor document.
+     * Used as a last resort for deciding `codeRoot` (when there is no `launch.json` nor `template.yaml`)
+     */
     documentUri: vscode.Uri
     originalHandlerName: string  // TODO: remove this hopefully
     originalSamTemplatePath: string  // TODO: remove this hopefully

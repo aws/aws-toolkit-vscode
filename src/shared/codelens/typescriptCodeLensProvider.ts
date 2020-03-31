@@ -74,13 +74,21 @@ export async function makeTypescriptConfig(
         )
         : Promise<NodejsDebugConfiguration> {
 
-    config.samProjectCodeRoot = await getSamProjectDirPathForFile(config.documentUri.fsPath)
+    if (!config.codeRoot) {
+        // Last-resort attempt to discover the project root (when there is no
+        // `launch.json` nor `template.yaml`).
+        config.codeRoot = await getSamProjectDirPathForFile(
+            config?.samTemplatePath ?? config.documentUri!!.fsPath)
+        if (!config.codeRoot) {
+            // TODO: return error and show it at the caller.
+            throw Error('missing launch.json, template.yaml, and failed to discover project root')
+        }
+    }
+
     config.baseBuildDir = await makeBuildDir()
 
-    if (!config.samTemplatePath) {
-        assertTargetKind(config, 'code')
-        config.samTemplatePath = await generateInputTemplate(config)
-    }
+    // Always generate a temporary template.yaml, don't use workspace one directly.
+    config.samTemplatePath = await generateInputTemplate(config)
 
     //  Make a python launch-config from the generic config.
     const nodejsLaunchConfig: NodejsDebugConfiguration = {
@@ -92,7 +100,7 @@ export async function makeTypescriptConfig(
         preLaunchTask: undefined,
         address: 'localhost',
         port: config.debugPort!!,
-        localRoot: config.samProjectCodeRoot,
+        localRoot: config.codeRoot,
         remoteRoot: '/var/task',
         protocol: 'inspector',
         skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
@@ -121,7 +129,7 @@ export async function invokeTypescriptLambda(
     config.samTemplatePath = await executeSamBuild({
         baseBuildDir: config.baseBuildDir!!,
         channelLogger: ctx.chanLogger,
-        codeDir: config.samProjectCodeRoot,
+        codeDir: config.codeRoot,
         inputTemplatePath: config.samTemplatePath,
         samProcessInvoker: processInvoker,
         useContainer: config.sam?.containerBuild

@@ -14,7 +14,7 @@ import { getLogger } from '../logger'
  */
 export function tryGetAbsolutePath(folder: vscode.WorkspaceFolder | undefined, relPath: string): string {
     return path.resolve((
-        (folder?.uri) ? folder.uri.path + '/' : ''),
+        (folder?.uri) ? folder.uri.fsPath + '/' : ''),
         relPath)
 }
 

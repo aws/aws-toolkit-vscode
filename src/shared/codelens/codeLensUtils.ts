@@ -18,7 +18,6 @@ import { LambdaLocalInvokeParams } from './localLambdaRunner'
 import { ExtContext } from '../extensions'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
-import { PythonDebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { nodeJsRuntimes } from '../../lambda/models/samLambdaRuntime'
 
 export type Language = 'python' | 'javascript' | 'csharp'
@@ -248,39 +247,7 @@ export async function initializePythonCodelens(context: ExtContext): Promise<voi
         vscode.commands.registerCommand(
             getInvokeCmdKey('python'),
             async (params: LambdaLocalInvokeParams): Promise<void> => {
-                let invokeResult: Result = 'Succeeded'
-                let lambdaRuntime = 'unknown'
-                try {
-                    const resource = await CloudFormation.getResourceFromTemplate({
-                        handlerName: params.handlerName,
-                        templatePath: params.samTemplate.fsPath
-                    })
-                    lambdaRuntime = CloudFormation.getRuntime(resource)
-
-                    const config: PythonDebugConfiguration = await pythonDebug.makePythonDebugConfig(
-                        undefined,
-                        params.isDebug,
-                        params.workspaceFolder,
-                        lambdaRuntime,
-                        params.handlerName,
-                        params.uri,
-                        undefined,
-                    )
-
-                    await pythonDebug.invokePythonLambda(
-                        context,
-                        config,
-                    )
-                } catch (err) {
-                    invokeResult = 'Failed'
-                    throw err
-                } finally {
-                    recordLambdaInvokeLocal({
-                        result: invokeResult,
-                        runtime: lambdaRuntime as Runtime,
-                        debug: params.isDebug
-                    })
-                }
+                // TODO: restore or remove
             }
         )
     )

@@ -134,19 +134,28 @@ def ${debugHandlerFunctionName}(event, context):
  * Does NOT execute/invoke SAM, docker, etc.
  */
 export async function makePythonDebugConfig(
-        fromConfig: SamLaunchRequestArgs | undefined,
+        config: SamLaunchRequestArgs,
         isDebug: boolean,
-        workspaceFolder: vscode.WorkspaceFolder,
         runtime: string,
         handlerName: string,
         uri: vscode.Uri,
-        samTemplatePath: string | undefined,
         )
         : Promise<PythonDebugConfiguration> {
-    const samProjectCodeRoot = await getSamProjectDirPathForFile(uri.fsPath)
+
+    if (!config.codeRoot) {
+        // Last-resort attempt to discover the project root (when there is no
+        // `launch.json` nor `template.yaml`).
+        config.codeRoot = await getSamProjectDirPathForFile(
+            config?.samTemplatePath ?? config.documentUri!!.fsPath)
+        if (!config.codeRoot) {
+            // TODO: return error and show it at the caller.
+            throw Error('missing launch.json, template.yaml, and failed to discover project root')
+        }
+    }
+
     const baseBuildDir = await makeBuildDir()
     const handlerFileRelativePath = getHandlerRelativePath({
-        codeRoot: samProjectCodeRoot,
+        codeRoot: config.codeRoot,
         filePath: uri.fsPath
     })
     const relativeFunctionHandler = getRelativeFunctionHandler({
@@ -160,19 +169,18 @@ export async function makePythonDebugConfig(
         handlerFileRelativePath
     })
     const lambdaInfo = await getLambdaInfoFromExistingTemplate({
-        workspaceUri: workspaceFolder.uri,
+        workspaceUri: config.workspaceFolder.uri,
         relativeOriginalFunctionHandler
     })
-    const inputTemplatePath = samTemplatePath  // Indirect ("template") invoke-target.
-        ?? await makeInputTemplate({  // Direct ("code") invoke-target.
+    const inputTemplatePath = await makeInputTemplate({  // Direct ("code") invoke-target.
             baseBuildDir,
-            codeDir: samProjectCodeRoot,
+            codeDir: config.codeRoot,
             relativeFunctionHandler,
             globals: lambdaInfo && lambdaInfo.templateGlobals ? lambdaInfo.templateGlobals : undefined,
             properties: lambdaInfo && lambdaInfo.resource.Properties ? lambdaInfo.resource.Properties : undefined,
             runtime: runtime
         })
-    const pathMappings: PythonPathMapping[] = getLocalRootVariants(samProjectCodeRoot).map<PythonPathMapping>(
+    const pathMappings: PythonPathMapping[] = getLocalRootVariants(config.codeRoot).map<PythonPathMapping>(
         variant => {
             return {
                 localRoot: variant,
@@ -189,48 +197,45 @@ export async function makePythonDebugConfig(
         const rv = await makeLambdaDebugFile({
             handlerName: handlerName,
             debugPort: debugPort,
-            outputDir: samProjectCodeRoot
+            outputDir: config.codeRoot
         })
         outFilePath = rv.outFilePath
         // XXX: Reassign handler name.
         handlerName = rv.debugHandlerName
         manifestPath = await makePythonDebugManifest({
-            samProjectCodeRoot,
+            samProjectCodeRoot: config.codeRoot,
             outputDir: baseBuildDir
         })
     }
 
     return {
+        ...config,
         type: 'python',
         request: 'attach',
         runtimeFamily: RuntimeFamily.Python,
-        workspaceFolder: workspaceFolder,
-        samProjectCodeRoot: samProjectCodeRoot,
         outFilePath: outFilePath,
         baseBuildDir: baseBuildDir,
+        noDebug: false,
+        documentUri: uri,
+        samTemplatePath: inputTemplatePath,
+        originalSamTemplatePath: inputTemplatePath,
+        name: 'SamLocalDebug',
+
+        //
+        // Python-specific fields.
+        //
         manifestPath: manifestPath ?? 'unknown',
         debugPort: debugPort,
         port: debugPort ?? -1,
         runtime: runtime,
         handlerName: handlerName,
         originalHandlerName: handlerName,
-        noDebug: false,
-        documentUri: uri,
-        samTemplatePath: inputTemplatePath,
-        originalSamTemplatePath: inputTemplatePath,
-        name: 'SamLocalDebug',
         host: 'localhost',
         pathMappings,
         // Disable redirectOutput to prevent the Python Debugger from automatically writing stdout/stderr text
         // to the Debug Console. We're taking the child process stdout/stderr and explicitly writing that to
         // the Debug Console.
         redirectOutput: false,
-        invokeTarget: fromConfig?.invokeTarget
-            ?? {
-                target: 'template',
-                samTemplatePath: 'python-TODO',
-                samTemplateResource: 'python-TODO',
-            },
     }
 }
 
@@ -265,7 +270,7 @@ export async function invokePythonLambda(
         config.samTemplatePath = await executeSamBuild({
             baseBuildDir: config.baseBuildDir!!,
             channelLogger: ctx.chanLogger,
-            codeDir: config.samProjectCodeRoot,
+            codeDir: config.codeRoot,
             inputTemplatePath: inputTemplatePath,
             manifestPath: config.manifestPath,
             samProcessInvoker: processInvoker,

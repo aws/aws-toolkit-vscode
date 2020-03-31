@@ -73,8 +73,19 @@ function getCodeUri(resource: CloudFormation.Resource, samTemplateUri: vscode.Ur
 export async function makeCsharpConfig(
         config: SamLaunchRequestArgs,
         ): Promise<SamLaunchRequestArgs> {
+
     // TODO: walk the tree to find .sln, .csproj ...
-    config.samProjectCodeRoot = await getSamProjectDirPathForFile(config.samTemplatePath)
+    if (!config.codeRoot) {
+        // Last-resort attempt to discover the project root (when there is no
+        // `launch.json` nor `template.yaml`).
+        config.codeRoot = await getSamProjectDirPathForFile(
+            config?.samTemplatePath ?? config.documentUri!!.fsPath)
+        if (!config.codeRoot) {
+            // TODO: return error and show it at the caller.
+            throw Error('missing launch.json, template.yaml, and failed to discover project root')
+        }
+    }
+
     const baseBuildDir = await makeBuildDir()
     const template: CloudFormation.Template = await CloudFormation.load(
         config.samTemplatePath
@@ -109,7 +120,7 @@ export async function makeCsharpConfig(
 
     if (!config.noDebug) {
         config = await makeCoreCLRDebugConfiguration(
-            config, config.samProjectCodeRoot)
+            config, config.codeRoot)
     }
 
     return config
@@ -137,7 +148,7 @@ export async function invokeCsharpLambda(
         const buildArgs: ExecuteSamBuildArguments = {
             baseBuildDir: config.baseBuildDir!!,
             channelLogger: ctx.chanLogger,
-            codeDir: config.samProjectCodeRoot,
+            codeDir: config.codeRoot,
             inputTemplatePath: config.samTemplatePath,
             samProcessInvoker: processInvoker,
             useContainer: config.sam?.containerBuild
@@ -396,7 +407,7 @@ export async function makeCoreCLRDebugConfiguration(
     }
     config.debugPort = config.debugPort ?? await getStartPort()
     const pipeArgs = ['-c', `docker exec -i $(docker ps -q -f publish=${config.debugPort}) \${debuggerCommand}`]
-    config.debuggerPath = getDebuggerPath(config.samProjectCodeRoot)
+    config.debuggerPath = getDebuggerPath(config.codeRoot)
     await ensureDebuggerPathExists(config.debuggerPath)
 
     if (os.platform() === 'win32') {

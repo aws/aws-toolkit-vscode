@@ -75,7 +75,7 @@ export async function generateInputTemplate(config: SamLaunchRequestArgs): Promi
 
     return await makeInputTemplate({
         baseBuildDir: buildFolder,
-        codeDir: config.samProjectCodeRoot,
+        codeDir: config.codeRoot,
         relativeFunctionHandler: config.handlerName,
         globals,
         properties,
