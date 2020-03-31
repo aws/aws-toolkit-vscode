@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs
 
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
+import com.intellij.util.text.DateFormatUtil
 import icons.AwsIcons
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -66,8 +67,10 @@ class CloudWatchLogWindow(private val project: Project) : CoroutineScope by Appl
                 }
                 return@launch
             }
-            val title = if (startTime != null) {
-                message("cloudwatch.logs.filtered_log_stream_title", logStream)
+            val title = if (startTime != null && duration != null) {
+                message("cloudwatch.logs.filtered_log_stream_title", logStream,
+                    DateFormatUtil.getDateTimeFormat().format(startTime - duration.toMillis()),
+                    DateFormatUtil.getDateTimeFormat().format(startTime + duration.toMillis()))
             } else {
                 message("cloudwatch.logs.log_stream_title", logStream)
             }
