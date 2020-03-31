@@ -51,7 +51,7 @@ export class StepFunctionsNode extends AWSTreeNodeBase {
                     localize('AWS.explorerNode.stepfunctions.noStateMachine', '[No State Machines found]')
                 ),
             sort: (nodeA: StateMachineNode, nodeB: StateMachineNode) =>
-                nodeA.functionName.localeCompare(nodeB.functionName)
+                nodeA.functionName.localeCompare(nodeB.functionName),
         })
     }
 
@@ -81,7 +81,7 @@ export class StateMachineNode extends AWSTreeNodeBase {
         this.update(details)
         this.iconPath = {
             dark: vscode.Uri.file(ext.iconPaths.dark.statemachine),
-            light: vscode.Uri.file(ext.iconPaths.light.statemachine)
+            light: vscode.Uri.file(ext.iconPaths.light.statemachine),
         }
     }
 

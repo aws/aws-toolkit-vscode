@@ -87,7 +87,7 @@ describe('detectLocalLambdas', () => {
         workspaceFolders.push({
             uri: Uri.file(workspacePaths[1]),
             name: path.basename(workspacePaths[1]),
-            index: 1
+            index: 1,
         })
 
         const templatePath1 = path.join(workspaceFolders[0].uri.fsPath, 'template.yaml')

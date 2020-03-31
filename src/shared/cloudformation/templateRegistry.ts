@@ -55,7 +55,7 @@ export class CloudFormationTemplateRegistry {
         if (template) {
             return {
                 path,
-                template
+                template,
             }
         }
     }

@@ -11,7 +11,7 @@ const DEFAULT_FOLDER_DEPTH = 4
 
 export async function* detectLocalTemplates({
     workspaceUris,
-    folderDepth = getFolderDepth()
+    folderDepth = getFolderDepth(),
 }: {
     workspaceUris: vscode.Uri[]
     folderDepth?: number

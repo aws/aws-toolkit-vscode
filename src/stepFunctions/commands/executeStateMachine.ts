@@ -15,7 +15,7 @@ import { getLogger, Logger } from '../../shared/logger'
 import {
     recordStepfunctionsExecuteStateMachine,
     recordStepfunctionsExecuteStateMachineView,
-    Result
+    Result,
 } from '../../shared/telemetry/telemetry'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
 import { StateMachineNode } from '../explorer/stepFunctionsNodes'
@@ -37,7 +37,7 @@ export async function executeStateMachine(params: {
     try {
         const view = vscode.window.createWebviewPanel('html', 'Start Execution', vscode.ViewColumn.One, {
             // Enable scripts in the webview
-            enableScripts: true
+            enableScripts: true,
         })
 
         const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
@@ -51,15 +51,15 @@ export async function executeStateMachine(params: {
                 StateMachineName: stateMachineNode.details.name,
                 Scripts: loadScripts,
                 Libraries: loadLibs,
-                Stylesheets: loadStylesheets
-            })
+                Stylesheets: loadStylesheets,
+            }),
         })
 
         view.webview.onDidReceiveMessage(
             createMessageReceivedFunc({
                 stateMachine: stateMachineNode,
                 outputChannel: params.outputChannel,
-                onPostMessage: message => view.webview.postMessage(message)
+                onPostMessage: message => view.webview.postMessage(message),
             }),
             undefined,
             ext.context.subscriptions
@@ -71,7 +71,7 @@ export async function executeStateMachine(params: {
 
 function createMessageReceivedFunc({
     stateMachine: stateMachine,
-    outputChannel
+    outputChannel,
 }: {
     stateMachine: StateMachineNode
     outputChannel: vscode.OutputChannel

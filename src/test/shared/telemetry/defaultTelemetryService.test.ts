@@ -20,7 +20,7 @@ import { TelemetryService } from '../../../shared/telemetry/telemetryService'
 import {
     DEFAULT_TEST_ACCOUNT_ID,
     FakeAwsContext,
-    makeFakeAwsContextWithPlaceholderIds
+    makeFakeAwsContextWithPlaceholderIds,
 } from '../../utilities/fakeAwsContext'
 
 class MockTelemetryPublisher implements TelemetryPublisher {
@@ -196,7 +196,7 @@ describe('DefaultTelemetryService', () => {
 
     it('events created with a bad active account produce metadata mentioning the bad account', async () => {
         const mockAwsBad = ({
-            getCredentialAccountId: () => 'this is bad!'
+            getCredentialAccountId: () => 'this is bad!',
         } as any) as AwsContext
         service = new DefaultTelemetryService(mockContext, mockAwsBad, mockPublisher)
         ext.telemetry = service

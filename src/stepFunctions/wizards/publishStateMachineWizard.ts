@@ -12,7 +12,7 @@ import {
     sfnCreateIamRoleUrl,
     sfnCreateStateMachineNameParamUrl,
     sfnDeveloperGuideUrl,
-    sfnUpdateStateMachineUrl
+    sfnUpdateStateMachineUrl,
 } from '../../shared/constants'
 import { ext } from '../../shared/extensionGlobals'
 import { createHelpButton } from '../../shared/ui/buttons'
@@ -36,7 +36,7 @@ export interface PublishStateMachineWizardContext {
 
 export enum PublishStateMachineAction {
     QuickCreate,
-    QuickUpdate
+    QuickUpdate,
 }
 
 export interface PublishStateMachineWizardResponse {
@@ -90,7 +90,7 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
                     'AWS.stepFunctions.publishWizard.publishAction.quickCreate.detail',
                     'Create a state machine from the ASL definition using default settings'
                 ),
-                action: PublishStateMachineAction.QuickCreate
+                action: PublishStateMachineAction.QuickCreate,
             },
             {
                 label: localize('AWS.stepFunctions.publishWizard.publishAction.quickUpdate.label', 'Quick Update'),
@@ -98,8 +98,8 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
                     'AWS.stepFunctions.publishWizard.publishAction.quickUpdate.detail',
                     'Update an existing state machine with the ASL definition'
                 ),
-                action: PublishStateMachineAction.QuickUpdate
-            }
+                action: PublishStateMachineAction.QuickUpdate,
+            },
         ].map((item: PublishActionQuickPickItem) => {
             if (item.action === currPublishAction) {
                 item.description = localize('AWS.wizard.selectedPreviously', 'Selected Previously')
@@ -115,10 +115,10 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
                     'AWS.stepFunctions.publishWizard.publishAction.title',
                     'Publish to AWS Step Functions ({0})',
                     this.defaultRegion
-                )
+                ),
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
-            items: publishItems
+            items: publishItems,
         })
 
         const choices = await picker.promptUser({
@@ -129,7 +129,7 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
                 } else if (button === this.helpButton) {
                     vscode.env.openExternal(vscode.Uri.parse(sfnDeveloperGuideUrl))
                 }
-            }
+            },
         })
         const val = picker.verifySinglePickerOutput(choices)
 
@@ -140,9 +140,9 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
         const inputBox = input.createInputBox({
             options: {
                 title: localize('AWS.stepFunctions.publishWizard.stateMachineName.title', 'Name your state machine'),
-                ignoreFocusOut: true
+                ignoreFocusOut: true,
             },
-            buttons: [this.helpButton, vscode.QuickInputButtons.Back]
+            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
         })
 
         return await input.promptUser({
@@ -163,7 +163,7 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
                 } else if (button === this.helpButton) {
                     vscode.env.openExternal(vscode.Uri.parse(sfnCreateStateMachineNameParamUrl))
                 }
-            }
+            },
         })
     }
 
@@ -184,8 +184,8 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
                     detail: localize(
                         'AWS.stepFunctions.publishWizard.iamRole.noRoles.detail',
                         'Create an IAM role before proceeding. See documentation for details.'
-                    )
-                }
+                    ),
+                },
             ]
         } else {
             roles = this.iamRoles.map(iamRole => ({
@@ -195,7 +195,7 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
                 description:
                     iamRole.Arn === currRoleArn
                         ? localize('AWS.wizard.selectedPreviously', 'Selected Previously')
-                        : iamRole.Arn
+                        : iamRole.Arn,
             }))
         }
 
@@ -207,10 +207,10 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
                     'Select execution role ({0})',
                     this.defaultRegion
                 ),
-                value: currRoleArn ? currRoleArn : ''
+                value: currRoleArn ? currRoleArn : '',
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
-            items: roles
+            items: roles,
         })
 
         const choices = await picker.promptUser({
@@ -221,7 +221,7 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
                 } else if (button === this.helpButton) {
                     vscode.env.openExternal(vscode.Uri.parse(sfnCreateIamRoleUrl))
                 }
-            }
+            },
         })
         const val = picker.verifySinglePickerOutput<AwsResourceQuickPickItem>(choices)
 
@@ -248,15 +248,15 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
                     detail: localize(
                         'AWS.stepFunctions.publishWizard.stateMachineNameToUpdate.noStateMachines.detail',
                         'Create a state machine before proceeding. See documentation for details.'
-                    )
-                }
+                    ),
+                },
             ]
         } else {
             stateMachines = this.stateMachines.map(stateMachine => ({
                 label: stateMachine.name,
                 alwaysShow: false,
                 arn: stateMachine.stateMachineArn,
-                description: stateMachine.stateMachineArn
+                description: stateMachine.stateMachineArn,
             }))
         }
 
@@ -267,10 +267,10 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
                     'AWS.stepFunctions.publishWizard.stateMachineNameToUpdate.title',
                     'Select state machine to update ({0})',
                     this.defaultRegion
-                )
+                ),
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
-            items: stateMachines
+            items: stateMachines,
         })
 
         const choices = await picker.promptUser({
@@ -281,7 +281,7 @@ export class DefaultPublishStateMachineWizardContext extends WizardContext imple
                 } else if (button === this.helpButton) {
                     vscode.env.openExternal(vscode.Uri.parse(sfnUpdateStateMachineUrl))
                 }
-            }
+            },
         })
         const val = picker.verifySinglePickerOutput<AwsResourceQuickPickItem>(choices)
 
@@ -312,8 +312,8 @@ export class PublishStateMachineWizard extends MultiStepWizard<PublishStateMachi
                 return {
                     createResponse: {
                         name: this.name,
-                        roleArn: this.roleArn
-                    }
+                        roleArn: this.roleArn,
+                    },
                 }
 
             case PublishStateMachineAction.QuickUpdate:
@@ -323,8 +323,8 @@ export class PublishStateMachineWizard extends MultiStepWizard<PublishStateMachi
 
                 return {
                     updateResponse: {
-                        stateMachineArn: this.stateMachineArn
-                    }
+                        stateMachineArn: this.stateMachineArn,
+                    },
                 }
 
             default:

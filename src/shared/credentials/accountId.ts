@@ -14,7 +14,7 @@ export async function getAccountId(credentials: AWS.Credentials, region: string)
         getLogger().verbose(`Getting AccountId from region ${region}`)
 
         const sts = ext.toolkitClientBuilder.createStsClient(region, {
-            credentials: credentials
+            credentials: credentials,
         })
 
         const response = await sts.getCallerIdentity()

@@ -12,7 +12,7 @@ import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuild
 import { ext } from '../../../shared/extensionGlobals'
 import {
     assertNodeListOnlyContainsErrorNode,
-    assertNodeListOnlyContainsPlaceholderNode
+    assertNodeListOnlyContainsPlaceholderNode,
 } from '../../lambda/explorer/explorerNodeAssertions'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 
@@ -83,15 +83,15 @@ describe('SchemasNode', () => {
                 return asyncGenerator<Schemas.RegistrySummary>(
                     registryNames.map<Schemas.RegistrySummary>(name => {
                         return {
-                            RegistryName: name
+                            RegistryName: name,
                         }
                     })
                 )
-            })
+            }),
         }
 
         const clientBuilder = {
-            createSchemaClient: sandbox.stub().returns(schemaClient)
+            createSchemaClient: sandbox.stub().returns(schemaClient),
         }
 
         ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder

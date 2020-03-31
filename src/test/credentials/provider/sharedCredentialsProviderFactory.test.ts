@@ -21,11 +21,11 @@ describe('SharedCredentialsProviderFactory', async () => {
 
     const validProfile: Profile = {
         aws_access_key_id: 'x',
-        aws_secret_access_key: 'y'
+        aws_secret_access_key: 'y',
     }
 
     const inValidProfile: Profile = {
-        aws_access_key_id: 'x'
+        aws_access_key_id: 'x',
     }
 
     const validProfileName1 = 'default'
@@ -38,7 +38,7 @@ describe('SharedCredentialsProviderFactory', async () => {
         sharedCredentialsLastModifiedMillis = 1
         sandbox.stub(fs, 'stat').callsFake(async () => {
             return ({
-                mtimeMs: sharedCredentialsLastModifiedMillis
+                mtimeMs: sharedCredentialsLastModifiedMillis,
             } as any) as fs.Stats
         })
 
@@ -67,7 +67,7 @@ describe('SharedCredentialsProviderFactory', async () => {
             providers.find(p =>
                 isEqual(p.getCredentialsProviderId(), {
                     credentialType: 'profile',
-                    credentialTypeId: validProfileName1
+                    credentialTypeId: validProfileName1,
                 })
             ),
             'Expected to find the first profile'
@@ -76,7 +76,7 @@ describe('SharedCredentialsProviderFactory', async () => {
             providers.find(p =>
                 isEqual(p.getCredentialsProviderId(), {
                     credentialType: 'profile',
-                    credentialTypeId: validProfileName2
+                    credentialTypeId: validProfileName2,
                 })
             ),
 
@@ -97,7 +97,7 @@ describe('SharedCredentialsProviderFactory', async () => {
         assert.strictEqual(
             sut.getProvider({
                 credentialType: 'default',
-                credentialTypeId: invalidProfileName
+                credentialTypeId: invalidProfileName,
             }),
             undefined
         )

@@ -20,8 +20,8 @@ describe('defaultEcsClient', async () => {
             const targetArr = ['cluster1', 'cluster2', 'cluster3']
             testClient.listClustersResponses = [
                 {
-                    clusterArns: targetArr
-                }
+                    clusterArns: targetArr,
+                },
             ]
             const iterator = testClient.listClusters()
             const arr = []
@@ -38,15 +38,15 @@ describe('defaultEcsClient', async () => {
             testClient.listClustersResponses = [
                 {
                     clusterArns: targetArr1,
-                    nextToken: 'what else you got'
+                    nextToken: 'what else you got',
                 },
                 {
                     clusterArns: targetArr2,
-                    nextToken: 'may i have some more'
+                    nextToken: 'may i have some more',
                 },
                 {
-                    clusterArns: targetArr3
-                }
+                    clusterArns: targetArr3,
+                },
             ]
             const iterator = testClient.listClusters()
             const arr = []
@@ -73,8 +73,8 @@ describe('defaultEcsClient', async () => {
             const targetArr = ['service1', 'service2', 'service3']
             testClient.listServicesResponses = [
                 {
-                    serviceArns: targetArr
-                }
+                    serviceArns: targetArr,
+                },
             ]
             const iterator = testClient.listServices('mycluster')
             const arr = []
@@ -91,15 +91,15 @@ describe('defaultEcsClient', async () => {
             testClient.listServicesResponses = [
                 {
                     serviceArns: targetArr1,
-                    nextToken: 'theres more where that came from'
+                    nextToken: 'theres more where that came from',
                 },
                 {
                     serviceArns: targetArr2,
-                    nextToken: 'theres still more where that came from'
+                    nextToken: 'theres still more where that came from',
                 },
                 {
-                    serviceArns: targetArr3
-                }
+                    serviceArns: targetArr3,
+                },
             ]
             const iterator = testClient.listServices('yourcluster')
             const arr = []
@@ -126,8 +126,8 @@ describe('defaultEcsClient', async () => {
             const targetArr = ['fam1', 'fam2', 'fam3']
             testClient.listTaskDefinitionFamiliesResponses = [
                 {
-                    families: targetArr
-                }
+                    families: targetArr,
+                },
             ]
             const iterator = testClient.listTaskDefinitionFamilies()
             const arr = []
@@ -144,15 +144,15 @@ describe('defaultEcsClient', async () => {
             testClient.listTaskDefinitionFamiliesResponses = [
                 {
                     families: targetArr1,
-                    nextToken: 'there i go, turn the page'
+                    nextToken: 'there i go, turn the page',
                 },
                 {
                     families: targetArr2,
-                    nextToken: 'you can write a book with all these pages'
+                    nextToken: 'you can write a book with all these pages',
                 },
                 {
-                    families: targetArr3
-                }
+                    families: targetArr3,
+                },
             ]
             const iterator = testClient.listTaskDefinitionFamilies()
             const arr = []

@@ -19,13 +19,13 @@ describe('getAccountId', () => {
         regionCode: 'abc',
         getCallerIdentity: () => {
             throw new Error('This test was not initialized')
-        }
+        },
     }
 
     const clientBuilder = {
         createStsClient: (): StsClient => {
             throw new Error('This test was not initialized')
-        }
+        },
     }
     let createStsClientStub: sinon.SinonStub<[], StsClient>
 
@@ -43,7 +43,7 @@ describe('getAccountId', () => {
 
     it('returns an account id (happy path)', async () => {
         const mockResponse: AWS.STS.GetCallerIdentityResponse = {
-            Account: 'some valid account id'
+            Account: 'some valid account id',
         }
 
         sandbox.stub(stsClient, 'getCallerIdentity').resolves(mockResponse)
@@ -55,7 +55,7 @@ describe('getAccountId', () => {
 
     it('returns undefined if getCallerIdentity returns an undefined account', async () => {
         const mockResponse: AWS.STS.GetCallerIdentityResponse = {
-            Account: undefined
+            Account: undefined,
         }
 
         sandbox.stub(stsClient, 'getCallerIdentity').resolves(mockResponse)

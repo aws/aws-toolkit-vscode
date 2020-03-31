@@ -11,7 +11,7 @@ import {
     GetOverriddenParametersContext,
     getParameterNames,
     getParameters,
-    GetParametersContext
+    GetParametersContext,
 } from '../../../lambda/utilities/parameterUtils'
 import { getNormalizedRelativePath } from '../../../shared/utilities/pathUtils'
 
@@ -19,7 +19,7 @@ describe('parameterUtils', async () => {
     describe('getParameters', async () => {
         it('returns an empty map if template has no parameters section', async () => {
             const context: GetParametersContext = {
-                loadTemplate: async () => ({})
+                loadTemplate: async () => ({}),
             }
 
             const actual = await getParameters(vscode.Uri.file(''), context)
@@ -29,8 +29,8 @@ describe('parameterUtils', async () => {
         it('returns an empty map if parameters section is empty', async () => {
             const context: GetParametersContext = {
                 loadTemplate: async () => ({
-                    Parameters: {}
-                })
+                    Parameters: {},
+                }),
             }
 
             const actual = await getParameters(vscode.Uri.file(''), context)
@@ -42,10 +42,10 @@ describe('parameterUtils', async () => {
                 loadTemplate: async () => ({
                     Parameters: {
                         MyParam: {
-                            Type: 'String'
-                        }
-                    }
-                })
+                            Type: 'String',
+                        },
+                    },
+                }),
             }
 
             const actual = await getParameters(vscode.Uri.file(''), context)
@@ -62,10 +62,10 @@ describe('parameterUtils', async () => {
                     Parameters: {
                         MyParam: {
                             Type: 'String',
-                            Default: false
-                        }
-                    }
-                })
+                            Default: false,
+                        },
+                    },
+                }),
             }
 
             const actual = await getParameters(vscode.Uri.file(''), context)
@@ -82,10 +82,10 @@ describe('parameterUtils', async () => {
                     Parameters: {
                         MyParam: {
                             Type: 'String',
-                            Default: true
-                        }
-                    }
-                })
+                            Default: true,
+                        },
+                    },
+                }),
             }
 
             const actual = await getParameters(vscode.Uri.file(''), context)
@@ -100,7 +100,7 @@ describe('parameterUtils', async () => {
     describe('getParameterNames', async () => {
         it('returns an empty array if no parameters were found', async () => {
             const context: GetParametersContext = {
-                loadTemplate: async () => ({})
+                loadTemplate: async () => ({}),
             }
 
             const actual = await getParameterNames(vscode.Uri.file(''), context)
@@ -112,13 +112,13 @@ describe('parameterUtils', async () => {
                 loadTemplate: async () => ({
                     Parameters: {
                         MyParam1: {
-                            Type: 'String'
+                            Type: 'String',
                         },
                         MyParam2: {
-                            Type: 'String'
-                        }
-                    }
-                })
+                            Type: 'String',
+                        },
+                    },
+                }),
             }
 
             const actual = await getParameterNames(vscode.Uri.file(''), context)
@@ -137,8 +137,8 @@ describe('parameterUtils', async () => {
             const context: GetOverriddenParametersContext = {
                 getWorkspaceFolder: uri => undefined,
                 loadTemplatesConfig: async () => ({
-                    templates: {}
-                })
+                    templates: {},
+                }),
             }
 
             try {
@@ -155,11 +155,11 @@ describe('parameterUtils', async () => {
         it('returns undefined if no config is found for this template', async () => {
             const context: GetOverriddenParametersContext = {
                 getWorkspaceFolder: () => ({
-                    uri: workspaceFolderUri
+                    uri: workspaceFolderUri,
                 }),
                 loadTemplatesConfig: async () => ({
-                    templates: {}
-                })
+                    templates: {},
+                }),
             }
 
             const actual = await getOverriddenParameters(templateUri, context)
@@ -169,13 +169,13 @@ describe('parameterUtils', async () => {
         it('returns undefined if config for this template does not contain `parameterOverrides`', async () => {
             const context: GetOverriddenParametersContext = {
                 getWorkspaceFolder: () => ({
-                    uri: workspaceFolderUri
+                    uri: workspaceFolderUri,
                 }),
                 loadTemplatesConfig: async () => ({
                     templates: {
-                        [templateId]: {}
-                    }
-                })
+                        [templateId]: {},
+                    },
+                }),
             }
 
             const actual = await getOverriddenParameters(templateUri, context)
@@ -185,15 +185,15 @@ describe('parameterUtils', async () => {
         it('returns an empty map if this template contains an empty `parameterOverrides`', async () => {
             const context: GetOverriddenParametersContext = {
                 getWorkspaceFolder: () => ({
-                    uri: vscode.Uri.file(workspaceFolderUri.fsPath)
+                    uri: vscode.Uri.file(workspaceFolderUri.fsPath),
                 }),
                 loadTemplatesConfig: async () => ({
                     templates: {
                         [templateId]: {
-                            parameterOverrides: {}
-                        }
-                    }
-                })
+                            parameterOverrides: {},
+                        },
+                    },
+                }),
             }
 
             const actual = await getOverriddenParameters(templateUri, context)
@@ -204,18 +204,18 @@ describe('parameterUtils', async () => {
         it('returns a map of parameter names to their overridden values', async () => {
             const context: GetOverriddenParametersContext = {
                 getWorkspaceFolder: () => ({
-                    uri: workspaceFolderUri
+                    uri: workspaceFolderUri,
                 }),
                 loadTemplatesConfig: async () => ({
                     templates: {
                         [templateId]: {
                             parameterOverrides: {
                                 MyParamName1: 'MyParamValue1',
-                                MyParamName2: 'MyParamValue2'
-                            }
-                        }
-                    }
-                })
+                                MyParamName2: 'MyParamValue2',
+                            },
+                        },
+                    },
+                }),
             }
 
             const actual = await getOverriddenParameters(templateUri, context)

@@ -17,7 +17,7 @@ describe('deleteLambda', async () => {
 
             // expected results
             expectedDeleteCallCount: 0,
-            expectedRefreshCallCount: 0
+            expectedRefreshCallCount: 0,
         })
     })
 
@@ -29,7 +29,7 @@ describe('deleteLambda', async () => {
 
             // expected results
             expectedDeleteCallCount: 1,
-            expectedRefreshCallCount: 1
+            expectedRefreshCallCount: 1,
         })
     })
 
@@ -41,7 +41,7 @@ describe('deleteLambda', async () => {
 
             // expected results
             expectedDeleteCallCount: 0,
-            expectedRefreshCallCount: 0
+            expectedRefreshCallCount: 0,
         })
     })
 
@@ -64,7 +64,7 @@ describe('deleteLambda', async () => {
                     outputChannel.value && outputChannel.value.indexOf(expectedMessagePart) > 0,
                     `output channel should contain "${expectedMessagePart}"`
                 )
-            }
+            },
         })
     })
 
@@ -95,7 +95,7 @@ describe('deleteLambda', async () => {
                 if (params.errorToThrowDuringDelete) {
                     throw params.errorToThrowDuringDelete
                 }
-            }
+            },
         })
         const outputChannel = new MockOutputChannel()
 
@@ -105,7 +105,7 @@ describe('deleteLambda', async () => {
                 lambdaClient,
                 outputChannel,
                 onRefresh: () => (refreshCallCount += 1),
-                onConfirm: async () => params.onConfirm()
+                onConfirm: async () => params.onConfirm(),
             })
         } catch (err) {
             const error = err as Error

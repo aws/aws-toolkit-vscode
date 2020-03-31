@@ -15,21 +15,21 @@ describe('EndpointsProvider', async () => {
         partitions: [
             {
                 partition: 'aws',
-                partitionName: 'Standard'
-            }
-        ]
+                partitionName: 'Standard',
+            },
+        ],
     })
 
     const fetcher1: ResourceFetcher = {
-        get: async () => data1
+        get: async () => data1,
     }
 
     const fetcher2: ResourceFetcher = {
-        get: async () => data2
+        get: async () => data2,
     }
 
     const undefinedFetcher: ResourceFetcher = {
-        get: async () => undefined
+        get: async () => undefined,
     }
 
     it('loads from local fetcher', async () => {

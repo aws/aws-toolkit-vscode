@@ -21,7 +21,7 @@ describe('createQuickPick', async () => {
         const items: vscode.QuickPickItem[] = [{ label: 'item one' }, { label: 'item two' }, { label: 'item triangle' }]
 
         testPicker = picker.createQuickPick({
-            items: items
+            items: items,
         })
 
         assert.deepStrictEqual(testPicker.items, items)
@@ -33,8 +33,8 @@ describe('createQuickPick', async () => {
                 label: 'label',
                 detail: 'detail',
                 alwaysShow: true,
-                description: 'description'
-            }
+                description: 'description',
+            },
         ]
 
         testPicker = picker.createQuickPick({ items: items })
@@ -46,7 +46,7 @@ describe('createQuickPick', async () => {
         const buttons: vscode.QuickInputButton[] = [vscode.QuickInputButtons.Back]
 
         testPicker = picker.createQuickPick({
-            buttons: buttons
+            buttons: buttons,
         })
 
         assert.deepStrictEqual(testPicker.buttons, buttons)
@@ -59,11 +59,11 @@ describe('createQuickPick', async () => {
             matchOnDescription: true,
             matchOnDetail: true,
             ignoreFocusOut: true,
-            value: 'test value'
+            value: 'test value',
         }
 
         testPicker = picker.createQuickPick({
-            options: options
+            options: options,
         })
 
         assertPickerOptions(testPicker, options)
@@ -73,11 +73,11 @@ describe('createQuickPick', async () => {
         const options = {
             matchOnDescription: false,
             matchOnDetail: false,
-            ignoreFocusOut: false
+            ignoreFocusOut: false,
         }
 
         testPicker = picker.createQuickPick({
-            options: options
+            options: options,
         })
 
         assertPickerOptions(testPicker, options)
@@ -87,7 +87,7 @@ describe('createQuickPick', async () => {
         const options = {}
 
         testPicker = picker.createQuickPick({
-            options: options
+            options: options,
         })
 
         assertPickerOptions(testPicker, options)
@@ -168,7 +168,7 @@ describe('promptUser', async () => {
         const selectedItem = [samplePicker.items[0]]
 
         const promptPromise = picker.promptUser({
-            picker: samplePicker
+            picker: samplePicker,
         })
 
         samplePicker.accept(selectedItem)
@@ -180,7 +180,7 @@ describe('promptUser', async () => {
 
     it('Hide returns undefined', async () => {
         const promptPromise = picker.promptUser({
-            picker: samplePicker
+            picker: samplePicker,
         })
 
         samplePicker.hide()
@@ -205,7 +205,7 @@ describe('promptUser', async () => {
                 )
 
                 samplePicker.hide()
-            }
+            },
         })
 
         samplePicker.pressButton(samplePicker.buttons[0])
@@ -234,7 +234,7 @@ describe('promptUser', async () => {
                 )
 
                 samplePicker.accept(selectedItem)
-            }
+            },
         })
 
         samplePicker.pressButton(samplePicker.buttons[0])
@@ -261,7 +261,7 @@ describe('promptUser', async () => {
 
                 // do something that is not accept/cancel
                 handledButtonPress = true
-            }
+            },
         })
 
         samplePicker.pressButton(buttonOfInterest)

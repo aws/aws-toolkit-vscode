@@ -19,33 +19,33 @@ const sampleEndpoints = {
             partitionName: 'Standard',
             regions: {
                 region1: {
-                    description: 'aws region one'
+                    description: 'aws region one',
                 },
                 region2: {
-                    description: 'aws region two'
+                    description: 'aws region two',
                 },
                 region3: {
-                    description: 'aws region three'
-                }
-            }
+                    description: 'aws region three',
+                },
+            },
         },
         {
             partition: 'aws-cn',
             partitionName: 'China',
             regions: {
                 awscnregion1: {
-                    description: 'aws-cn region one'
-                }
-            }
-        }
-    ]
+                    description: 'aws-cn region one',
+                },
+            },
+        },
+    ],
 }
 
 describe('DefaultRegionProvider', async () => {
     const resourceFetcher: ResourceFetcher = {
         get: async () => {
             return JSON.stringify(sampleEndpoints)
-        }
+        },
     }
 
     describe('isServiceInRegion', async () => {
@@ -68,8 +68,8 @@ describe('DefaultRegionProvider', async () => {
                         regions: [
                             {
                                 id: regionCode,
-                                name: ''
-                            }
+                                name: '',
+                            },
                         ],
                         services: [
                             {
@@ -77,13 +77,13 @@ describe('DefaultRegionProvider', async () => {
                                 endpoints: [
                                     {
                                         regionId: regionCode,
-                                        data: {}
-                                    }
-                                ]
-                            }
-                        ]
-                    }
-                ]
+                                        data: {},
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                ],
             }
 
             endpointsProvider = new EndpointsProvider(resourceFetcher, resourceFetcher)

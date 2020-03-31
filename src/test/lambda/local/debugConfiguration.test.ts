@@ -9,13 +9,13 @@ import * as path from 'path'
 
 import {
     makeCoreCLRDebugConfiguration,
-    MakeCoreCLRDebugConfigurationArguments
+    MakeCoreCLRDebugConfigurationArguments,
 } from '../../../lambda/local/debugConfiguration'
 
 describe('makeCoreCLRDebugConfiguration', async () => {
     function makeConfig({
         codeUri = path.join('foo', 'bar'),
-        port = 42
+        port = 42,
     }: Partial<MakeCoreCLRDebugConfigurationArguments>) {
         return makeCoreCLRDebugConfiguration({ codeUri, port })
     }
@@ -44,7 +44,10 @@ describe('makeCoreCLRDebugConfiguration', async () => {
         it('uses the specified port', async () => {
             const config = makeConfig({ port: 538 })
 
-            assert.strictEqual(config.windows.pipeTransport.pipeArgs.some(arg => arg.includes('538')), true)
+            assert.strictEqual(
+                config.windows.pipeTransport.pipeArgs.some(arg => arg.includes('538')),
+                true
+            )
         })
     })
     describe('*nix', async () => {
@@ -57,7 +60,10 @@ describe('makeCoreCLRDebugConfiguration', async () => {
         it('uses the specified port', async () => {
             const config = makeConfig({ port: 538 })
 
-            assert.strictEqual(config.pipeTransport.pipeArgs.some(arg => arg.includes('538')), true)
+            assert.strictEqual(
+                config.pipeTransport.pipeArgs.some(arg => arg.includes('538')),
+                true
+            )
         })
     })
 })

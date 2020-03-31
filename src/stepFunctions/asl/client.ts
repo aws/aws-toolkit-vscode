@@ -25,7 +25,7 @@ import {
     TextDocument,
     TextEdit,
     window,
-    workspace
+    workspace,
 } from 'vscode'
 
 import {
@@ -36,7 +36,7 @@ import {
     LanguageClientOptions,
     NotificationType,
     ServerOptions,
-    TransportKind
+    TransportKind,
 } from 'vscode-languageclient'
 
 namespace ResultLimitReachedNotification {
@@ -65,12 +65,12 @@ export async function activate(extensionContext: ExtensionContext) {
     // Otherwise the run options are used
     const serverOptions: ServerOptions = {
         run: { module: serverModule, transport: TransportKind.ipc },
-        debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions }
+        debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions },
     }
 
     const documentSelector = [
         { schema: 'file', language: 'asl' },
-        { schema: 'untitled', language: 'asl' }
+        { schema: 'untitled', language: 'asl' },
     ]
 
     // Options to control the language client
@@ -79,19 +79,19 @@ export async function activate(extensionContext: ExtensionContext) {
         documentSelector,
         initializationOptions: {
             handledSchemaProtocols: ['file', 'untitled'], // language server only loads file-URI. Fetching schemas with other protocols ('http'...) are made on the client.
-            provideFormatter: false // tell the server to not provide formatting capability and ignore the `aws.stepfunctions.asl.format.enable` setting.
+            provideFormatter: false, // tell the server to not provide formatting capability and ignore the `aws.stepfunctions.asl.format.enable` setting.
         },
         synchronize: {
             // Synchronize the setting section 'json' to the server
             configurationSection: ['asl'],
-            fileEvents: workspace.createFileSystemWatcher('**/*.{asl.json,asl}')
+            fileEvents: workspace.createFileSystemWatcher('**/*.{asl.json,asl}'),
         },
         middleware: {
             workspace: {
                 didChangeConfiguration: () =>
-                    client.sendNotification(DidChangeConfigurationNotification.type, { settings: getSettings() })
-            }
-        }
+                    client.sendNotification(DidChangeConfigurationNotification.type, { settings: getSettings() }),
+            },
+        },
     }
 
     // Create the language client and start the client.
@@ -110,8 +110,8 @@ export async function activate(extensionContext: ExtensionContext) {
         wordPattern: /("(?:[^\\\"]*(?:\\.)?)*"?)|[^\s{}\[\],:]+/,
         indentationRules: {
             increaseIndentPattern: /({+(?=([^"]*"[^"]*")*[^"}]*$))|(\[+(?=([^"]*"[^"]*")*[^"\]]*$))/,
-            decreaseIndentPattern: /^\s*[}\]],?\s*$/
-        }
+            decreaseIndentPattern: /^\s*[}\]],?\s*$/,
+        },
     }
     languages.setLanguageConfiguration('asl', languageConfiguration)
 
@@ -131,7 +131,7 @@ export async function activate(extensionContext: ExtensionContext) {
                     const params: DocumentRangeFormattingParams = {
                         textDocument: client.code2ProtocolConverter.asTextDocumentIdentifier(document),
                         range: client.code2ProtocolConverter.asRange(range),
-                        options: client.code2ProtocolConverter.asFormattingOptions(options)
+                        options: client.code2ProtocolConverter.asFormattingOptions(options),
                     }
 
                     return client.sendRequest(DocumentRangeFormattingRequest.type, params, token).then(
@@ -143,7 +143,7 @@ export async function activate(extensionContext: ExtensionContext) {
                             return Promise.resolve([])
                         }
                     )
-                }
+                },
             })
         }
     }
@@ -178,7 +178,7 @@ function getSettings(): Settings {
 
     return {
         asl: {
-            resultLimit
-        }
+            resultLimit,
+        },
     }
 }

@@ -75,7 +75,7 @@ export class MockCloudFormationClient implements CloudFormationClient {
         public readonly describeStackResources: (
             name: string
         ) => Promise<CloudFormation.DescribeStackResourcesOutput> = async (name: string) => ({
-            StackResources: []
+            StackResources: [],
         })
     ) {}
 }
@@ -99,7 +99,7 @@ export class MockSchemaClient implements SchemaClient {
             schemaName: string,
             schemaVersion?: string
         ) => ({
-            Content: ''
+            Content: '',
         }),
 
         public readonly getCodeBindingSource: (
@@ -162,7 +162,7 @@ export class MockEcsClient implements EcsClient {
         regionCode = '',
         listClusters = () => asyncGenerator([]),
         listServices = (cluster: string) => asyncGenerator([]),
-        listTaskDefinitionFamilies = () => asyncGenerator([])
+        listTaskDefinitionFamilies = () => asyncGenerator([]),
     }: {
         regionCode?: string
         listClusters?(): AsyncIterableIterator<string>
@@ -194,7 +194,7 @@ export class MockLambdaClient implements LambdaClient {
         regionCode = '',
         deleteFunction = async (name: string) => {},
         invoke = async (name: string, payload?: Lambda._Blob) => ({}),
-        listFunctions = () => asyncGenerator([])
+        listFunctions = () => asyncGenerator([]),
     }: {
         regionCode?: string
         deleteFunction?(name: string): Promise<void>
@@ -223,7 +223,7 @@ export class MockStepFunctionsClient implements StepFunctionsClient {
             name: '',
             definition: '',
             type: '',
-            creationDate: new Date()
+            creationDate: new Date(),
         }),
 
         public readonly executeStateMachine: (
@@ -231,7 +231,7 @@ export class MockStepFunctionsClient implements StepFunctionsClient {
             input: string
         ) => Promise<StepFunctions.StartExecutionOutput> = async (arn: string, input: string) => ({
             executionArn: '',
-            startDate: new Date()
+            startDate: new Date(),
         }),
 
         public readonly createStateMachine: (
@@ -240,7 +240,7 @@ export class MockStepFunctionsClient implements StepFunctionsClient {
             params: StepFunctions.CreateStateMachineInput
         ) => ({
             stateMachineArn: '',
-            creationDate: new Date()
+            creationDate: new Date(),
         }),
 
         public readonly updateStateMachine: (
@@ -248,7 +248,7 @@ export class MockStepFunctionsClient implements StepFunctionsClient {
         ) => Promise<StepFunctions.UpdateStateMachineOutput> = async (
             params: StepFunctions.UpdateStateMachineInput
         ) => ({
-            updateDate: new Date()
+            updateDate: new Date(),
         })
     ) {}
 }
@@ -259,7 +259,7 @@ export class MockStsClient implements StsClient {
 
     public constructor({
         regionCode = '',
-        getCallerIdentity = async () => ({})
+        getCallerIdentity = async () => ({}),
     }: {
         regionCode?: string
         getCallerIdentity?(): Promise<STS.GetCallerIdentityResponse>

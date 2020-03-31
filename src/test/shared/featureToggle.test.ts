@@ -4,16 +4,11 @@
  */
 
 import * as assert from 'assert'
-import {
-    ActiveFeatureKeys,
-    FeatureToggle
-} from '../../shared/featureToggle'
+import { ActiveFeatureKeys, FeatureToggle } from '../../shared/featureToggle'
 import { TestSettingsConfiguration } from '../utilities/testSettingsConfiguration'
 
 describe('FeatureToggle', async () => {
-
     describe('isFeatureActive', async () => {
-
         it('returns true if feature is declared active and is present in settings.json', async () => {
             // simulate settings.json
             const config = new TestSettingsConfiguration()
@@ -26,36 +21,30 @@ describe('FeatureToggle', async () => {
             assert.ok(features.isFeatureActive(flag))
         })
 
-        it(
-            'returns false for features that are not declared as active feature keys but are present in settings.json',
-            async () => {
-                // simulate settings.json
-                const config = new TestSettingsConfiguration()
-                const flag = 'myFlag'
-                const notFlag = 'notMyFlag'
-                await config.writeSetting('experimentalFeatureFlags', [flag, notFlag])
+        it('returns false for features that are not declared as active feature keys but are present in settings.json', async () => {
+            // simulate settings.json
+            const config = new TestSettingsConfiguration()
+            const flag = 'myFlag'
+            const notFlag = 'notMyFlag'
+            await config.writeSetting('experimentalFeatureFlags', [flag, notFlag])
 
-                // simulate active feature flags
-                const features = new FeatureToggle(config, [flag])
-                assert.strictEqual(features.isFeatureActive(notFlag), false)
-            }
-        )
+            // simulate active feature flags
+            const features = new FeatureToggle(config, [flag])
+            assert.strictEqual(features.isFeatureActive(notFlag), false)
+        })
 
-        it(
-            'returns false for features that are declared as active feature keys but are not active in settings.json',
-            async () => {
-                // simulate settings.json
-                const config = new TestSettingsConfiguration()
-                const flag = 'myFlag'
-                const notFlag = 'notMyFlag'
-                await config.writeSetting('experimentalFeatureFlags', [flag])
+        it('returns false for features that are declared as active feature keys but are not active in settings.json', async () => {
+            // simulate settings.json
+            const config = new TestSettingsConfiguration()
+            const flag = 'myFlag'
+            const notFlag = 'notMyFlag'
+            await config.writeSetting('experimentalFeatureFlags', [flag])
 
-                // simulate active feature flags
-                const features = new FeatureToggle(config, [flag, notFlag])
+            // simulate active feature flags
+            const features = new FeatureToggle(config, [flag, notFlag])
 
-                assert.strictEqual(features.isFeatureActive(notFlag), false)
-            }
-        )
+            assert.strictEqual(features.isFeatureActive(notFlag), false)
+        })
 
         it('throws an error if too many features are registered', () => {
             const config = new TestSettingsConfiguration()

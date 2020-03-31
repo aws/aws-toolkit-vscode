@@ -41,7 +41,7 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
     public constructor(logLevel: LogLevel) {
         this.logger = winston.createLogger({
             format: winston.format.combine(WinstonToolkitLogger.LOG_FORMAT),
-            level: logLevel
+            level: logLevel,
         })
     }
 
@@ -59,7 +59,7 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
     public logToOutputChannel(outputChannel: vscode.OutputChannel): void {
         this.logger.add(
             new OutputChannelTransport({
-                outputChannel
+                outputChannel,
             })
         )
     }

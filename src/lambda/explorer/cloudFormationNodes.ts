@@ -46,7 +46,7 @@ export class CloudFormationNode extends AWSTreeNodeBase {
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.cloudformation.noStacks', '[No Stacks found]')),
             sort: (nodeA: CloudFormationStackNode, nodeB: CloudFormationStackNode) =>
-                nodeA.stackName.localeCompare(nodeB.stackName)
+                nodeA.stackName.localeCompare(nodeB.stackName),
         })
     }
 
@@ -78,7 +78,7 @@ export class CloudFormationStackNode extends AWSTreeNodeBase {
         this.functionNodes = new Map<string, LambdaFunctionNode>()
         this.iconPath = {
             dark: vscode.Uri.file(ext.iconPaths.dark.cloudFormation),
-            light: vscode.Uri.file(ext.iconPaths.light.cloudFormation)
+            light: vscode.Uri.file(ext.iconPaths.light.cloudFormation),
         }
     }
 
@@ -109,7 +109,7 @@ export class CloudFormationStackNode extends AWSTreeNodeBase {
                     localize('AWS.explorerNode.cloudFormation.noFunctions', '[Stack has no Lambda Functions]')
                 ),
             sort: (nodeA: LambdaFunctionNode, nodeB: LambdaFunctionNode) =>
-                nodeA.functionName.localeCompare(nodeB.functionName)
+                nodeA.functionName.localeCompare(nodeB.functionName),
         })
     }
 

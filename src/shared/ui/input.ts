@@ -26,7 +26,7 @@ export interface AdditionalInputBoxOptions {
  */
 export function createInputBox({
     options,
-    buttons
+    buttons,
 }: {
     options?: vscode.InputBoxOptions & AdditionalInputBoxOptions
     buttons?: vscode.QuickInputButton[]
@@ -66,7 +66,7 @@ export function createInputBox({
 export async function promptUser({
     inputBox,
     onValidateInput,
-    onDidTriggerButton
+    onDidTriggerButton,
 }: {
     inputBox: vscode.InputBox
     onValidateInput?(value: string): string | undefined

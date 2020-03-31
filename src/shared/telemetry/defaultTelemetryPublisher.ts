@@ -94,10 +94,10 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
         const region = identityPool.split(':')[0]
         try {
             const res = await new CognitoIdentity({
-                region: region
+                region: region,
             })
                 .getId({
-                    IdentityPoolId: identityPool
+                    IdentityPoolId: identityPool,
                 })
                 .promise()
             const err = res.$response.error
@@ -111,7 +111,7 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
 
             return {
                 cognitoIdentityId: identityId,
-                publisher: DefaultTelemetryPublisher.fromIdentityId(clientId, identityId)
+                publisher: DefaultTelemetryPublisher.fromIdentityId(clientId, identityId),
             }
         } catch (err) {
             return Promise.reject(`Failed to get an Cognito identity for telemetry: ${err}`)

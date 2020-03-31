@@ -18,7 +18,7 @@ describe('StateMachineGraphCache', () => {
         it('downloads a file when it is not in cache and stores it', async () => {
             const globalStorage = {
                 update: sinon.spy(),
-                get: sinon.stub().returns(undefined)
+                get: sinon.stub().returns(undefined),
             }
 
             const getFileData = sinon.stub().resolves(REQUEST_BODY)
@@ -37,14 +37,14 @@ describe('StateMachineGraphCache', () => {
                 writeFile,
                 cssFilePath: '',
                 jsFilePath: '',
-                dirPath: ''
+                dirPath: '',
             })
 
             await cache.updateCachedFile({
                 globalStorage,
                 lastDownloadedURLKey: STORAGE_KEY,
                 currentURL: ASSET_URL,
-                filePath: FILE_PATH
+                filePath: FILE_PATH,
             })
 
             assert.ok(globalStorage.update.calledWith(STORAGE_KEY, ASSET_URL))
@@ -54,7 +54,7 @@ describe('StateMachineGraphCache', () => {
         it('downloads and stores a file when cached file exists but url has been updated', async () => {
             const globalStorage = {
                 update: sinon.spy(),
-                get: sinon.stub().returns('https://old-url')
+                get: sinon.stub().returns('https://old-url'),
             }
 
             const getFileData = sinon.stub().resolves(REQUEST_BODY)
@@ -73,14 +73,14 @@ describe('StateMachineGraphCache', () => {
                 writeFile,
                 cssFilePath: '',
                 jsFilePath: '',
-                dirPath: ''
+                dirPath: '',
             })
 
             await cache.updateCachedFile({
                 globalStorage,
                 lastDownloadedURLKey: STORAGE_KEY,
                 currentURL: ASSET_URL,
-                filePath: FILE_PATH
+                filePath: FILE_PATH,
             })
 
             assert.ok(globalStorage.update.calledWith(STORAGE_KEY, ASSET_URL))
@@ -90,7 +90,7 @@ describe('StateMachineGraphCache', () => {
         it('it does not store data when file exists and url for it is same', async () => {
             const globalStorage = {
                 update: sinon.spy(),
-                get: sinon.stub().returns(ASSET_URL)
+                get: sinon.stub().returns(ASSET_URL),
             }
 
             const getFileData = sinon.stub().resolves(REQUEST_BODY)
@@ -109,14 +109,14 @@ describe('StateMachineGraphCache', () => {
                 writeFile,
                 cssFilePath: '',
                 jsFilePath: '',
-                dirPath: ''
+                dirPath: '',
             })
 
             await cache.updateCachedFile({
                 globalStorage,
                 lastDownloadedURLKey: STORAGE_KEY,
                 currentURL: ASSET_URL,
-                filePath: FILE_PATH
+                filePath: FILE_PATH,
             })
 
             assert.ok(globalStorage.update.notCalled)
@@ -126,7 +126,7 @@ describe('StateMachineGraphCache', () => {
         it('creates assets directory when it does not exist', async () => {
             const globalStorage = {
                 update: sinon.spy(),
-                get: sinon.stub().returns(undefined)
+                get: sinon.stub().returns(undefined),
             }
 
             const getFileData = sinon.stub().resolves(REQUEST_BODY)
@@ -149,14 +149,14 @@ describe('StateMachineGraphCache', () => {
                 makeDir,
                 cssFilePath: '',
                 jsFilePath: '',
-                dirPath
+                dirPath,
             })
 
             await cache.updateCachedFile({
                 globalStorage,
                 lastDownloadedURLKey: STORAGE_KEY,
                 currentURL: ASSET_URL,
-                filePath: FILE_PATH
+                filePath: FILE_PATH,
             })
 
             assert.ok(globalStorage.update.calledWith(STORAGE_KEY, ASSET_URL))
@@ -172,7 +172,7 @@ describe('isStepFunctionsRole', () => {
         RoleName: '',
         RoleId: 'myRole',
         Arn: 'arn:aws:iam::123456789012:role/myRole',
-        CreateDate: new Date()
+        CreateDate: new Date(),
     }
 
     it('return true if the Step Functions service principal is in the AssumeRolePolicyDocument', () => {
@@ -184,12 +184,12 @@ describe('isStepFunctionsRole', () => {
                     {
                         Effect: 'Allow',
                         Principal: {
-                            Service: ['states.amazonaws.com']
+                            Service: ['states.amazonaws.com'],
                         },
-                        Action: ['sts:AssumeRole']
-                    }
-                ]
-            })
+                        Action: ['sts:AssumeRole'],
+                    },
+                ],
+            }),
         }
         assert.ok(isStepFunctionsRole(role))
     })
@@ -207,12 +207,12 @@ describe('isStepFunctionsRole', () => {
                     {
                         Effect: 'Allow',
                         Principal: {
-                            Service: ['lambda.amazonaws.com']
+                            Service: ['lambda.amazonaws.com'],
                         },
-                        Action: ['sts:AssumeRole']
-                    }
-                ]
-            })
+                        Action: ['sts:AssumeRole'],
+                    },
+                ],
+            }),
         }
         assert.ok(!isStepFunctionsRole(role))
     })

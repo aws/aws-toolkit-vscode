@@ -20,7 +20,7 @@ describe('DefaultDockerClient', async () => {
         return {
             command,
             image,
-            ...rest
+            ...rest,
         }
     }
 
@@ -33,7 +33,7 @@ describe('DefaultDockerClient', async () => {
                     assert.ok(args)
                     assert.ok(args!.length)
                     assert.strictEqual(args![0], 'run')
-                }
+                },
             })
 
             await client.invoke(makeInvokeArgs({}))
@@ -47,7 +47,7 @@ describe('DefaultDockerClient', async () => {
                 async run(args): Promise<void> {
                     spawnCount++
                     assert.strictEqual(args && args.some(arg => arg === 'myimage'), true)
-                }
+                },
             })
 
             await client.invoke(makeInvokeArgs({}))
@@ -61,12 +61,12 @@ describe('DefaultDockerClient', async () => {
                 async run(args): Promise<void> {
                     spawnCount++
                     assert.strictEqual(args && args.some(arg => arg === '--rm'), true)
-                }
+                },
             })
 
             await client.invoke(
                 makeInvokeArgs({
-                    removeOnExit: true
+                    removeOnExit: true,
                 })
             )
 
@@ -90,7 +90,7 @@ describe('DefaultDockerClient', async () => {
                     const flagValueIndex = flagIndex + 1
                     assert.ok(flagValueIndex < args!.length)
                     assert.strictEqual(args![flagValueIndex], `type=bind,src=${source},dst=${destination}`)
-                }
+                },
             })
 
             await client.invoke(
@@ -98,8 +98,8 @@ describe('DefaultDockerClient', async () => {
                     mount: {
                         type: 'bind',
                         source,
-                        destination
-                    }
+                        destination,
+                    },
                 })
             )
 
@@ -128,15 +128,15 @@ describe('DefaultDockerClient', async () => {
                         assert.ok(argIndex < args!.length)
                         assert.strictEqual(args![argIndex], value)
                     })
-                }
+                },
             })
 
             await client.invoke(
                 makeInvokeArgs({
                     entryPoint: {
                         command: 'mycommand',
-                        args: entryPointArgs
-                    }
+                        args: entryPointArgs,
+                    },
                 })
             )
 

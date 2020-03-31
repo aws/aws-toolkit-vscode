@@ -22,6 +22,6 @@ export interface IconPaths {
 function makeIconPathsObject(): IconPaths {
     return {
         cdk: '',
-        cloudFormation: ''
+        cloudFormation: '',
     }
 }

@@ -9,7 +9,7 @@ import {
     getConfigFilename,
     getCredentialsFilename,
     loadSharedCredentialsProfiles,
-    updateAwsSdkLoadConfigEnvironmentVariable
+    updateAwsSdkLoadConfigEnvironmentVariable,
 } from '../sharedCredentials'
 import { BaseCredentialsProviderFactory } from './credentialsProviderFactory'
 import { SharedCredentialsProvider } from './sharedCredentialsProvider'

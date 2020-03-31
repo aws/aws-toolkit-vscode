@@ -104,12 +104,12 @@ function initializeCodeLens(context: vscode.ExtensionContext) {
 
             const renderCommand: vscode.Command = {
                 command: 'aws.previewStateMachine',
-                title: localize('AWS.stepFunctions.render', 'Render graph')
+                title: localize('AWS.stepFunctions.render', 'Render graph'),
             }
 
             const publishCommand: vscode.Command = {
                 command: 'aws.stepfunctions.publishStateMachine',
-                title: localize('AWS.stepFunctions.publish', 'Publish to Step Functions')
+                title: localize('AWS.stepFunctions.publish', 'Publish to Step Functions'),
             }
 
             const renderCodeLens = new vscode.CodeLens(topOfDocument, renderCommand)
@@ -120,7 +120,7 @@ function initializeCodeLens(context: vscode.ExtensionContext) {
     }
 
     const docSelector = {
-        language: 'asl'
+        language: 'asl',
     }
 
     const codeLensProviderDisposable = vscode.languages.registerCodeLensProvider(

@@ -94,6 +94,6 @@ export function getLanguageModelCache<T>(
                 languageModels = {}
                 nModels = 0
             }
-        }
+        },
     }
 }
