@@ -106,7 +106,7 @@ describe('UserCredentialsUtils', () => {
             const creds = {
                 accessKey: '123',
                 profileName: profileName,
-                secretKey: 'ABC'
+                secretKey: 'ABC',
             }
             await UserCredentialsUtils.generateCredentialsFile(
                 path.join(__dirname, '..', '..', '..', '..', '..'),

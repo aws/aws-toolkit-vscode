@@ -12,7 +12,7 @@ import {
     ParameterPromptResult,
     SamDeployWizard,
     SamDeployWizardContext,
-    validateS3Bucket
+    validateS3Bucket,
 } from '../../../lambda/wizards/samDeployWizard'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 
@@ -23,7 +23,7 @@ interface QuickPickUriResponseItem extends vscode.QuickPickItem {
 function createQuickPickUriResponseItem(uri: vscode.Uri): QuickPickUriResponseItem {
     return {
         label: '',
-        uri: uri
+        uri: uri,
     }
 }
 
@@ -34,7 +34,7 @@ interface QuickPickRegionResponseItem extends vscode.QuickPickItem {
 function createQuickPickRegionResponseItem(detail: string): QuickPickRegionResponseItem {
     return {
         label: '',
-        detail: detail
+        detail: detail,
     }
 }
 
@@ -106,7 +106,7 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
     }
 
     public async promptUserForStackName({
-        validateInput
+        validateInput,
     }: {
         validateInput(value: string): string | undefined
     }): Promise<string | undefined> {
@@ -199,7 +199,7 @@ describe('SamDeployWizard', async () => {
             templatePath = path.join('my', 'template'),
             region = 'us-east-1',
             s3Bucket = 'mys3bucket',
-            stackName = 'mystackname'
+            stackName = 'mystackname',
         }: Pick<
             SamDeployWizardContext,
             'getParameters' | 'getOverriddenParameters' | 'promptUserForParametersIfApplicable'
@@ -221,7 +221,7 @@ describe('SamDeployWizard', async () => {
                 promptUserForSamTemplate: async () => vscode.Uri.file(templatePath),
                 promptUserForRegion: async () => region,
                 promptUserForS3Bucket: async () => s3Bucket,
-                promptUserForStackName: async () => stackName
+                promptUserForStackName: async () => stackName,
             }
         }
 
@@ -234,7 +234,7 @@ describe('SamDeployWizard', async () => {
                     },
                     promptUserForParametersIfApplicable: async () => {
                         throw new Error('Should skip configuring overrides')
-                    }
+                    },
                 })
 
                 const wizard = new SamDeployWizard(context)
@@ -253,7 +253,7 @@ describe('SamDeployWizard', async () => {
                     getOverriddenParameters: async () => new Map<string, string>(),
                     promptUserForParametersIfApplicable: async () => {
                         throw new Error('Should skip configuring overrides')
-                    }
+                    },
                 })
 
                 const wizard = new SamDeployWizard(context)
@@ -269,7 +269,7 @@ describe('SamDeployWizard', async () => {
                     getParameters: async () =>
                         new Map<string, { required: boolean }>([['myParam', { required: false }]]),
                     getOverriddenParameters: async () => undefined,
-                    promptUserForParametersIfApplicable: async () => ParameterPromptResult.Continue
+                    promptUserForParametersIfApplicable: async () => ParameterPromptResult.Continue,
                 })
 
                 const wizard = new SamDeployWizard(context)
@@ -294,7 +294,7 @@ describe('SamDeployWizard', async () => {
                         configureParameterOverridesArgs.push(options)
 
                         return ParameterPromptResult.Cancel
-                    }
+                    },
                 })
 
                 const wizard = new SamDeployWizard(context)
@@ -322,7 +322,7 @@ describe('SamDeployWizard', async () => {
                         configureParameterOverridesArgs.push(options)
 
                         return ParameterPromptResult.Cancel
-                    }
+                    },
                 })
 
                 const wizard = new SamDeployWizard(context)
@@ -349,7 +349,7 @@ describe('SamDeployWizard', async () => {
                         configureParameterOverridesArgs.push(options)
 
                         return ParameterPromptResult.Cancel
-                    }
+                    },
                 })
 
                 const wizard = new SamDeployWizard(context)
@@ -376,7 +376,7 @@ describe('SamDeployWizard', async () => {
                         configureParameterOverridesArgs.push(options)
 
                         return ParameterPromptResult.Cancel
-                    }
+                    },
                 })
 
                 const wizard = new SamDeployWizard(context)
@@ -431,11 +431,11 @@ describe('SamDeployWizard', async () => {
                     [[vscode.Uri.file(workspaceFolderPath1)], [vscode.Uri.file(workspaceFolderPath2)]],
                     [
                         createQuickPickUriResponseItem(vscode.Uri.file(templatePath1)),
-                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath2))
+                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath2)),
                     ],
                     [
                         undefined, // First time we ask about the S3 Bucket, cancel back to the template step
-                        createQuickPickRegionResponseItem(region)
+                        createQuickPickRegionResponseItem(region),
                     ],
                     ['mys3bucketname'],
                     ['myStackName']
@@ -466,12 +466,12 @@ describe('SamDeployWizard', async () => {
                     [[vscode.Uri.file(workspaceFolderPath1)], [vscode.Uri.file(workspaceFolderPath2)]],
                     [
                         createQuickPickUriResponseItem(vscode.Uri.file(templatePath1)),
-                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath2))
+                        createQuickPickUriResponseItem(vscode.Uri.file(templatePath2)),
                     ],
                     [createQuickPickRegionResponseItem(region1), createQuickPickRegionResponseItem(region2)],
                     [
                         undefined, // First time we ask about the S3 Bucket, cancel back to the region step
-                        'mys3bucketname'
+                        'mys3bucketname',
                     ],
                     ['myStackName']
                 )

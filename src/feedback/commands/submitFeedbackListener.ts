@@ -34,7 +34,7 @@ export function submitFeedbackListener(panel: FeedbackPanel, window: Window, tel
                 try {
                     await telemetry.postFeedback({
                         comment: message.comment,
-                        sentiment: message.sentiment
+                        sentiment: message.sentiment,
                     })
                 } catch (err) {
                     const errorMessage = (err as Error).message || 'Failed to submit feedback'

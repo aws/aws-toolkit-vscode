@@ -54,11 +54,11 @@ export class ChildProcess {
                         exitCode: code,
                         stdout: stdoutChunks.join().trim(),
                         stderr: stderrChunks.join().trim(),
-                        error: childProcessError
+                        error: childProcessError,
                     }
 
                     resolve(processResult)
-                }
+                },
             }).catch(reject)
 
             if (!this.childProcess) {

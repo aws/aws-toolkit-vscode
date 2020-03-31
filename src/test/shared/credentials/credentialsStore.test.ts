@@ -15,7 +15,7 @@ describe('CredentialsStore', async () => {
     const sampleCredentials = ({} as any) as AWS.Credentials
     const sampleCredentialsProviderId: CredentialsProviderId = {
         credentialType: 'test',
-        credentialTypeId: 'someId'
+        credentialTypeId: 'someId',
     }
 
     beforeEach(async () => {
@@ -30,7 +30,7 @@ describe('CredentialsStore', async () => {
     function makeSampleCredentialsProvider(credentialsHashCode: number = 0): CredentialsProvider {
         return ({
             getCredentials: () => sampleCredentials,
-            getHashCode: () => credentialsHashCode
+            getHashCode: () => credentialsHashCode,
         } as any) as CredentialsProvider
     }
 

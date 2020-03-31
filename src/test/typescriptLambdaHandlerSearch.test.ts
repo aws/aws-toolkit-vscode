@@ -21,7 +21,7 @@ describe('TypescriptLambdaHandlerSearch', () => {
             'sampleFunctions.exportedViaDeclaration',
             'sampleFunctions.exportedArrowFunction',
             'sampleFunctions.exportedArrowViaDeclaration',
-            'sampleFunctions.exportedArrowViaDeclarationAlt'
+            'sampleFunctions.exportedArrowViaDeclarationAlt',
         ])
 
         await testTypescriptLambdaHandlerSearch(filename, expectedHandlerNames)
@@ -55,7 +55,7 @@ describe('TypescriptLambdaHandlerSearch', () => {
             'sampleFunctions.directExportsArrowFunction',
             'sampleFunctions.directExportsArrowFunctionAsync',
             'sampleFunctions.directExportsFunction',
-            'sampleFunctions.directExportsFunctionAsync'
+            'sampleFunctions.directExportsFunctionAsync',
         ])
 
         await testTypescriptLambdaHandlerSearch(filename, expectedHandlerNames)

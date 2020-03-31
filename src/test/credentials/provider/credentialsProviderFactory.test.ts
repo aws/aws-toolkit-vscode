@@ -92,13 +92,13 @@ describe('BaseCredentialsProviderFactory', async () => {
     function makeSampleCredentialsProviderId(testProviderId: string): CredentialsProviderId {
         return {
             credentialType: 'test',
-            credentialTypeId: testProviderId
+            credentialTypeId: testProviderId,
         }
     }
 
     function makeSampleCredentialsProvider(testProviderId: string): CredentialsProvider {
         return ({
-            getCredentialsProviderId: () => makeSampleCredentialsProviderId(testProviderId)
+            getCredentialsProviderId: () => makeSampleCredentialsProviderId(testProviderId),
         } as any) as CredentialsProvider
     }
 })

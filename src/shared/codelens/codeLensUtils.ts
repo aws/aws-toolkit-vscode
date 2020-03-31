@@ -35,7 +35,7 @@ export async function makeCodeLenses({
     document,
     token,
     handlers,
-    language
+    language,
 }: {
     document: vscode.TextDocument
     token: vscode.CancellationToken
@@ -71,7 +71,7 @@ export async function makeCodeLenses({
                 range,
                 workspaceFolder,
                 samTemplate: associatedTemplate,
-                language
+                language,
             }
             lenses.push(makeLocalInvokeCodeLens({ ...baseParams, isDebug: false }))
             lenses.push(makeLocalInvokeCodeLens({ ...baseParams, isDebug: true }))
@@ -102,7 +102,7 @@ function makeLocalInvokeCodeLens(
     const command: vscode.Command = {
         arguments: [params],
         command: getInvokeCmdKey(params.language),
-        title
+        title,
     }
 
     return new vscode.CodeLens(params.range, command)
@@ -113,7 +113,7 @@ function makeConfigureCodeLens({
     handlerName,
     range,
     workspaceFolder,
-    samTemplate
+    samTemplate,
 }: MakeConfigureCodeLensParams): vscode.CodeLens {
     // Handler will be the fully-qualified name, so we also allow '.' & ':' & '/' despite it being forbidden in handler names.
     if (/[^\w\-\.\:\/]/.test(handlerName)) {
@@ -122,7 +122,7 @@ function makeConfigureCodeLens({
     const command = {
         arguments: [workspaceFolder, handlerName, samTemplate],
         command: 'aws.configureLambda',
-        title: localize('AWS.command.configureLambda', 'Configure')
+        title: localize('AWS.command.configureLambda', 'Configure'),
     }
 
     return new vscode.CodeLens(range, command)
@@ -134,7 +134,7 @@ async function getAssociatedSamTemplate(
     handlerName: string
 ): Promise<vscode.Uri> {
     const templates = detectLocalTemplates({
-        workspaceUris: [workspaceFolderUri]
+        workspaceUris: [workspaceFolderUri],
     })
 
     for await (const template of templates) {
@@ -142,7 +142,7 @@ async function getAssociatedSamTemplate(
             // Throws if template does not contain a resource for this handler.
             await CloudFormation.getResourceFromTemplate({
                 templatePath: template.fsPath,
-                handlerName
+                handlerName,
             })
         } catch {
             continue
@@ -182,9 +182,9 @@ export async function makePythonCodeLensProvider(
                 document,
                 handlers,
                 token,
-                language: 'python'
+                language: 'python',
             })
-        }
+        },
     }
 }
 
@@ -197,18 +197,15 @@ export async function makeCSharpCodeLensProvider(): Promise<vscode.CodeLensProvi
             token: vscode.CancellationToken
         ): Promise<vscode.CodeLens[]> => {
             const handlers: LambdaHandlerCandidate[] = await csharpDebug.getLambdaHandlerCandidates(document)
-            logger.debug(
-                'makeCSharpCodeLensProvider handlers:',
-                JSON.stringify(handlers, undefined, 2)
-            )
+            logger.debug('makeCSharpCodeLensProvider handlers:', JSON.stringify(handlers, undefined, 2))
 
             return makeCodeLenses({
                 document,
                 handlers,
                 token,
-                language: 'csharp'
+                language: 'csharp',
             })
-        }
+        },
     }
 
     return codeLensProvider
@@ -236,9 +233,9 @@ export function makeTypescriptCodeLensProvider(): vscode.CodeLensProvider {
                 document,
                 handlers,
                 token,
-                language: 'javascript'
+                language: 'javascript',
             })
-        }
+        },
     }
 }
 
@@ -255,13 +252,16 @@ export async function initializePythonCodelens(context: ExtContext): Promise<voi
 
 export async function initializeCsharpCodelens(context: ExtContext): Promise<void> {
     context.subscriptions.push(
-        vscode.commands.registerCommand(getInvokeCmdKey(csharpDebug.CSHARP_LANGUAGE), async (params: LambdaLocalInvokeParams) => {
-            // await csharpDebug.invokeCsharpLambda({
-            //     ctx: context,
-            //     config: undefined,
-            //     lambdaLocalInvokeParams: params,
-            // })
-        })
+        vscode.commands.registerCommand(
+            getInvokeCmdKey(csharpDebug.CSHARP_LANGUAGE),
+            async (params: LambdaLocalInvokeParams) => {
+                // await csharpDebug.invokeCsharpLambda({
+                //     ctx: context,
+                //     config: undefined,
+                //     lambdaLocalInvokeParams: params,
+                // })
+            }
+        )
     )
 }
 
@@ -276,11 +276,9 @@ export function initializeTypescriptCodelens(context: ExtContext): void {
     const invokeLambda = async (params: LambdaLocalInvokeParams & { runtime: string }) => {
         // const samProjectCodeRoot = await getSamProjectDirPathForFile(params.uri.fsPath)
         // let debugPort: number | undefined
-
         // if (params.isDebug) {
         //     debugPort = await getStartPort()
         // }
-
         // const debugConfig: NodejsDebugConfiguration = {
         //     type: 'node',
         //     request: 'attach',
@@ -293,7 +291,6 @@ export function initializeTypescriptCodelens(context: ExtContext): void {
         //     protocol: 'inspector',
         //     skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js']
         // }
-
         // const localLambdaRunner: LocalLambdaRunner = new LocalLambdaRunner(
         //     configuration,
         //     params,
@@ -306,7 +303,6 @@ export function initializeTypescriptCodelens(context: ExtContext): void {
         //     samProjectCodeRoot,
         //     telemetryService
         // )
-
         // await localLambdaRunner.run()
     }
 
@@ -317,7 +313,7 @@ export function initializeTypescriptCodelens(context: ExtContext): void {
 
             const resource = await CloudFormation.getResourceFromTemplate({
                 handlerName: params.handlerName,
-                templatePath: params.samTemplate.fsPath
+                templatePath: params.samTemplate.fsPath,
             })
             const lambdaRuntime = CloudFormation.getRuntime(resource)
             let invokeResult: Result = 'Succeeded'
@@ -340,7 +336,7 @@ export function initializeTypescriptCodelens(context: ExtContext): void {
                 } else {
                     await invokeLambda({
                         runtime: lambdaRuntime,
-                        ...params
+                        ...params,
                     })
                 }
             } catch (err) {
@@ -350,7 +346,7 @@ export function initializeTypescriptCodelens(context: ExtContext): void {
                 recordLambdaInvokeLocal({
                     result: invokeResult,
                     runtime: lambdaRuntime as Runtime,
-                    debug: params.isDebug
+                    debug: params.isDebug,
                 })
             }
         })

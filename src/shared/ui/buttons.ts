@@ -16,8 +16,8 @@ export function createHelpButton(tooltip?: string): QuickInputButton {
     return {
         iconPath: {
             light: Uri.file(ext.iconPaths.light.help),
-            dark: Uri.file(ext.iconPaths.dark.help)
+            dark: Uri.file(ext.iconPaths.dark.help),
         },
-        tooltip
+        tooltip,
     }
 }

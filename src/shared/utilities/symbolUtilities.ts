@@ -14,7 +14,7 @@ export async function loadSymbols({
     uri,
     context,
     maxRetries = 10,
-    retryDelayMillis = 200
+    retryDelayMillis = 200,
 }: {
     uri: vscode.Uri
     context: LoadSymbolsContext
@@ -39,7 +39,7 @@ export async function loadSymbols({
         uri,
         context,
         maxRetries: maxRetries - 1,
-        retryDelayMillis
+        retryDelayMillis,
     })
 }
 

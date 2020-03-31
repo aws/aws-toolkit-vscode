@@ -17,7 +17,7 @@ export class DefaultLambdaClient implements LambdaClient {
 
         const response = await sdkClient
             .deleteFunction({
-                FunctionName: name
+                FunctionName: name,
             })
             .promise()
 
@@ -33,7 +33,7 @@ export class DefaultLambdaClient implements LambdaClient {
             .invoke({
                 FunctionName: name,
                 LogType: 'Tail',
-                Payload: payload
+                Payload: payload,
             })
             .promise()
 

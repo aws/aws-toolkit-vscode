@@ -79,7 +79,7 @@ export async function generateInputTemplate(config: SamLaunchRequestArgs): Promi
         relativeFunctionHandler: config.handlerName,
         globals,
         properties,
-        runtime: config.runtime
+        runtime: config.runtime,
     })
 }
 
@@ -183,7 +183,7 @@ export async function executeSamBuild({
     manifestPath,
     environmentVariables,
     samProcessInvoker,
-    useContainer
+    useContainer,
 }: ExecuteSamBuildArguments): Promise<string> {
     channelLogger.info('AWS.output.building.sam.application', 'Building SAM Application...')
 
@@ -196,7 +196,7 @@ export async function executeSamBuild({
         invoker: samProcessInvoker,
         manifestPath,
         environmentVariables,
-        useContainer
+        useContainer,
     }
     await new SamCliBuildInvocation(samCliArgs).execute()
 
@@ -208,9 +208,7 @@ export async function executeSamBuild({
 /**
  * Prepares and invokes a lambda function via `sam local invoke`.
  */
-export async function invokeLambdaFunction(
-        ctx: ExtContext,
-        config: SamLaunchRequestArgs): Promise<void> {
+export async function invokeLambdaFunction(ctx: ExtContext, config: SamLaunchRequestArgs): Promise<void> {
     ctx.chanLogger.info(
         'AWS.output.starting.sam.app.locally',
         'Starting the SAM Application locally (see Terminal for output)'
@@ -231,7 +229,7 @@ export async function invokeLambdaFunction(
         templatePath: config.samTemplatePath,
         eventPath,
         environmentVariablePath,
-        invoker: config.samLocalInvokeCommand!!,  // ?? new DefaultValidatingSamCliProcessInvoker({})
+        invoker: config.samLocalInvokeCommand!!, // ?? new DefaultValidatingSamCliProcessInvoker({})
         dockerNetwork: config.sam?.dockerNetwork,
         debugPort: config.debugPort?.toString(),
         debuggerPath: config.debuggerPath,
@@ -262,9 +260,9 @@ export async function invokeLambdaFunction(
                     result: attachResult,
                     attempts,
                     durationMillis: timer.elapsedTime,
-                    runtime: config.runtime
+                    runtime: config.runtime,
                 })
-            }
+            },
         })
 
         if (attachResults.success) {
@@ -342,7 +340,7 @@ export async function attachDebugger({
     }
 
     return {
-        success: isDebuggerAttached
+        success: isDebuggerAttached,
     }
 }
 
@@ -378,7 +376,7 @@ function recordAttachDebuggerMetric(params: RecordAttachDebuggerMetricContext) {
         runtime: params.runtime as Runtime,
         result: params.result ? 'Succeeded' : 'Failed',
         attempts: params.attempts,
-        duration: params.durationMillis
+        duration: params.durationMillis,
     })
 }
 

@@ -107,8 +107,8 @@ describe('SamTemplateGenerator', () => {
         await makeMinimalTemplate()
             .withGlobals({
                 Function: {
-                    Timeout: 5
-                }
+                    Timeout: 5,
+                },
             })
             .generate(templateFilename)
 

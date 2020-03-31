@@ -71,7 +71,7 @@ describe('detectCdkProjects', () => {
         workspaceFolders.push({
             uri: vscode.Uri.file(workspacePaths[1]),
             name: path.basename(workspacePaths[1]),
-            index: 1
+            index: 1,
         })
 
         const projectPath1 = path.join(workspaceFolders[0].uri.fsPath, 'cdk.json')

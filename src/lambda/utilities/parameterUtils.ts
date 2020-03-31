@@ -28,7 +28,7 @@ export async function getParameters(
 
         result.set(name, {
             // Explicitly compare with undefined, as a valid default value may be falsy.
-            required: parameter.Default === undefined
+            required: parameter.Default === undefined,
         })
     }
 

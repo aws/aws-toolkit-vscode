@@ -21,7 +21,7 @@ export class PropertyNode extends AWSTreeNodeBase {
         this.contextValue = 'awsCdkPropertyNode'
         this.iconPath = {
             dark: vscode.Uri.file(ext.iconPaths.dark.settings),
-            light: vscode.Uri.file(ext.iconPaths.light.settings)
+            light: vscode.Uri.file(ext.iconPaths.light.settings),
         }
     }
 

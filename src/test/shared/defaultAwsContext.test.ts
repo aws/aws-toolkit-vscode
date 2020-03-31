@@ -77,7 +77,7 @@ describe('DefaultAwsContext', () => {
         fakeMementoStorage[regionSettingKey] = [testRegion1Value]
 
         const fakeExtensionContext = new FakeExtensionContext({
-            globalState: fakeMementoStorage
+            globalState: fakeMementoStorage,
         })
 
         const testContext = new DefaultAwsContext(fakeExtensionContext)
@@ -91,7 +91,7 @@ describe('DefaultAwsContext', () => {
         fakeMementoStorage[regionSettingKey] = [testRegion1Value, testRegion2Value]
 
         const fakeExtensionContext = new FakeExtensionContext({
-            globalState: fakeMementoStorage
+            globalState: fakeMementoStorage,
         })
 
         const testContext = new DefaultAwsContext(fakeExtensionContext)
@@ -157,7 +157,7 @@ describe('DefaultAwsContext', () => {
         return {
             credentials: ({} as any) as AWS.Credentials,
             credentialsId: 'qwerty',
-            accountId: testAccountIdValue
+            accountId: testAccountIdValue,
         }
     }
 })

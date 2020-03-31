@@ -30,7 +30,7 @@ export async function runSamCliInit(initArguments: SamCliInitArgs, context: SamC
         '--app-template',
         getSamCliTemplateParameter(initArguments.template),
         '--dependency-manager',
-        initArguments.dependencyManager
+        initArguments.dependencyManager,
     ]
 
     if (initArguments.extraContent!) {
@@ -39,7 +39,7 @@ export async function runSamCliInit(initArguments: SamCliInitArgs, context: SamC
 
     const childProcessResult = await context.invoker.invoke({
         spawnOptions: { cwd: initArguments.location },
-        arguments: args
+        arguments: args,
     })
 
     logAndThrowIfUnexpectedExitCode(childProcessResult, 0)

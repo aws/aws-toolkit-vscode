@@ -13,7 +13,7 @@ import {
     findFileInParentPaths,
     isInDirectory,
     makeTemporaryToolkitFolder,
-    tempDirPath
+    tempDirPath,
 } from '../../shared/filesystemUtilities'
 
 describe('filesystemUtilities', () => {

@@ -19,7 +19,7 @@ import { CredentialSelectionState } from './credentials/credentialSelectionState
 import {
     credentialProfileSelector,
     DefaultCredentialSelectionDataProvider,
-    promptToDefineCredentialsProfile
+    promptToDefineCredentialsProfile,
 } from './credentials/defaultCredentialSelectionDataProvider'
 import { UserCredentialsUtils } from './credentials/userCredentialsUtils'
 import { ext } from './extensionGlobals'
@@ -132,7 +132,7 @@ export class DefaultAWSContextCommands {
                 await UserCredentialsUtils.generateCredentialsFile(ext.context.extensionPath, {
                     profileName: state.profileName,
                     accessKey: state.accesskey,
-                    secretKey: state.secretKey
+                    secretKey: state.secretKey,
                 })
 
                 return state.profileName
@@ -233,7 +233,7 @@ export class DefaultAWSContextCommands {
             await window.showTextDocument(Uri.file(filename), {
                 preserveFocus: preserveFocus,
                 preview: false,
-                viewColumn: viewColumn
+                viewColumn: viewColumn,
             })
 
             preserveFocus = true
@@ -293,20 +293,20 @@ export class DefaultAWSContextCommands {
             })
             .map(r => ({
                 label: r.name,
-                detail: r.id
+                detail: r.id,
             }))
 
         const picker = createQuickPick({
             options: {
                 placeHolder: localize('AWS.message.selectRegion', 'Select an AWS region'),
                 title: title,
-                matchOnDetail: true
+                matchOnDetail: true,
             },
-            items: regionsToShow
+            items: regionsToShow,
         })
 
         const response = await promptUser<QuickPickItem>({
-            picker: picker
+            picker: picker,
         })
 
         if (response?.length === 1) {

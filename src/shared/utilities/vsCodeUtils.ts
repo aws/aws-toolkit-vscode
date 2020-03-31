@@ -27,7 +27,7 @@ export interface TemplateHandler {
 export function processTemplate<T extends TemplateParams>({
     nlsKey,
     nlsTemplate,
-    templateTokens = []
+    templateTokens = [],
 }: T): { errors: Error[]; prettyMessage: string } {
     const prettyTokens: Exclude<Loggable, Error>[] = []
     const errors: Error[] = []
@@ -45,7 +45,7 @@ export function processTemplate<T extends TemplateParams>({
 
     return {
         errors,
-        prettyMessage
+        prettyMessage,
     }
 }
 
@@ -83,35 +83,35 @@ export function getChannelLogger(channel: vscode.OutputChannel): ChannelLogger {
                 level: 'verbose',
                 nlsKey,
                 nlsTemplate,
-                templateTokens
+                templateTokens,
             }),
         debug: (nlsKey: string, nlsTemplate: string, ...templateTokens: Loggable[]) =>
             log({
                 level: 'debug',
                 nlsKey,
                 nlsTemplate,
-                templateTokens
+                templateTokens,
             }),
         info: (nlsKey: string, nlsTemplate: string, ...templateTokens: Loggable[]) =>
             log({
                 level: 'info',
                 nlsKey,
                 nlsTemplate,
-                templateTokens
+                templateTokens,
             }),
         warn: (nlsKey: string, nlsTemplate: string, ...templateTokens: Loggable[]) =>
             log({
                 level: 'warn',
                 nlsKey,
                 nlsTemplate,
-                templateTokens
+                templateTokens,
             }),
         error: (nlsKey: string, nlsTemplate: string, ...templateTokens: Loggable[]) =>
             log({
                 level: 'error',
                 nlsKey,
                 nlsTemplate,
-                templateTokens
-            })
+                templateTokens,
+            }),
     })
 }

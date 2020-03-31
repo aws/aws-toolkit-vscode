@@ -24,13 +24,13 @@ describe('symbolUtilities', async () => {
             const context: LoadSymbolsContext = {
                 async executeCommand<T>(command: string, ...args: any[]): Promise<T | undefined> {
                     return ([makeSymbol('MyName')] as unknown) as T
-                }
+                },
             }
 
             const actual = await loadSymbols({
                 uri: vscode.Uri.file(''),
                 context,
-                maxRetries: 0
+                maxRetries: 0,
             })
 
             assert.ok(actual)
@@ -46,13 +46,13 @@ describe('symbolUtilities', async () => {
                     executeCommandArgs.push({ command, uri: args[0] as vscode.Uri })
 
                     return undefined
-                }
+                },
             }
 
             const actual = await loadSymbols({
                 uri: vscode.Uri.file(''),
                 context,
-                maxRetries: 0
+                maxRetries: 0,
             })
 
             assert.strictEqual(actual, undefined)
@@ -70,13 +70,13 @@ describe('symbolUtilities', async () => {
                     executeCommandArgs.push({ command, uri: args[0] as vscode.Uri })
 
                     return executeReturnValues.pop() as T | undefined
-                }
+                },
             }
 
             const actual = await loadSymbols({
                 uri: vscode.Uri.file(''),
                 context,
-                maxRetries: 2
+                maxRetries: 2,
             })
 
             assert.ok(actual)
@@ -97,13 +97,13 @@ describe('symbolUtilities', async () => {
                     executeCommandArgs.push({ command, uri: args[0] as vscode.Uri })
 
                     return undefined
-                }
+                },
             }
 
             const actual = await loadSymbols({
                 uri: vscode.Uri.file(''),
                 context,
-                maxRetries: 2
+                maxRetries: 2,
             })
 
             assert.strictEqual(actual, undefined)

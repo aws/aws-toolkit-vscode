@@ -33,11 +33,11 @@ export async function runSamCliPackage(
             '--output-template-file',
             packageArguments.destinationTemplateFile,
             '--region',
-            packageArguments.region
+            packageArguments.region,
         ],
         spawnOptions: {
-            env: packageArguments.environmentVariables
-        }
+            env: packageArguments.environmentVariables,
+        },
     })
 
     logAndThrowIfUnexpectedExitCode(childProcessResult, 0)

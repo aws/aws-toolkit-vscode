@@ -21,8 +21,8 @@ class TestCredentialsProviderFactory implements CredentialsProviderFactory {
                 return ({
                     getCredentialsProviderId: () => ({
                         credentialType: this.credentialType,
-                        credentialTypeId: subId
-                    })
+                        credentialTypeId: subId,
+                    }),
                 } as any) as CredentialsProvider
             })
         )
@@ -63,18 +63,18 @@ describe('CredentialsProviderManager', async () => {
         sut.addProviderFactory(factoryB)
 
         const expectedCredentials = {
-          'credentialTypeA:one': {
-            credentialType: 'credentialTypeA',
-            credentialTypeId: 'one',
-          },
-          'credentialTypeB:three': {
-            credentialType: 'credentialTypeB',
-            credentialTypeId: 'three',
-          },
-          'credentialTypeB:two': {
-            credentialType: 'credentialTypeB',
-            credentialTypeId: 'two',
-          }
+            'credentialTypeA:one': {
+                credentialType: 'credentialTypeA',
+                credentialTypeId: 'one',
+            },
+            'credentialTypeB:three': {
+                credentialType: 'credentialTypeB',
+                credentialTypeId: 'three',
+            },
+            'credentialTypeB:two': {
+                credentialType: 'credentialTypeB',
+                credentialTypeId: 'two',
+            },
         }
         assert.deepStrictEqual(expectedCredentials, await sut.getCredentialProviderNames())
     })
@@ -94,7 +94,7 @@ describe('CredentialsProviderManager', async () => {
                 providers.some(x =>
                     isEqual(x.getCredentialsProviderId(), {
                         credentialType: 'credentialTypeA',
-                        credentialTypeId: 'one'
+                        credentialTypeId: 'one',
                     })
                 ),
                 'Manager did not return the first provider'
@@ -103,7 +103,7 @@ describe('CredentialsProviderManager', async () => {
                 providers.some(x =>
                     isEqual(x.getCredentialsProviderId(), {
                         credentialType: 'credentialTypeB',
-                        credentialTypeId: 'two'
+                        credentialTypeId: 'two',
                     })
                 ),
                 'Manager did not return the second provider'
@@ -112,7 +112,7 @@ describe('CredentialsProviderManager', async () => {
                 providers.some(x =>
                     isEqual(x.getCredentialsProviderId(), {
                         credentialType: 'credentialTypeB',
-                        credentialTypeId: 'three'
+                        credentialTypeId: 'three',
                     })
                 ),
                 'Manager did not return the third provider'
@@ -125,7 +125,7 @@ describe('CredentialsProviderManager', async () => {
             const factoryA = new TestCredentialsProviderFactory('profile', ['default'])
             const expectedCredentialsProviderId: CredentialsProviderId = {
                 credentialType: 'profile',
-                credentialTypeId: 'default'
+                credentialTypeId: 'default',
             }
 
             sut.addProviderFactory(factoryA)
@@ -147,7 +147,7 @@ describe('CredentialsProviderManager', async () => {
 
             const provider = await sut.getCredentialsProvider({
                 credentialType: 'profile',
-                credentialTypeId: 'default'
+                credentialTypeId: 'default',
             })
 
             assert.strictEqual(provider, undefined, 'Manager was not supposed to return a provider')
@@ -160,7 +160,7 @@ describe('CredentialsProviderManager', async () => {
 
             const provider = await sut.getCredentialsProvider({
                 credentialType: 'profile',
-                credentialTypeId: 'default'
+                credentialTypeId: 'default',
             })
 
             assert.strictEqual(provider, undefined, 'Manager was not supposed to return a provider')

@@ -20,13 +20,13 @@ export function submitFeedback(listener?: (message: any) => Promise<void>): vsco
         vscode.ViewColumn.One,
         {
             retainContextWhenHidden: true,
-            enableScripts: true
+            enableScripts: true,
         }
     )
     const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
 
     panel.webview.html = baseTemplateFn({
-        content: '<h1>Loading...</h1>'
+        content: '<h1>Loading...</h1>',
     })
 
     const feedbackTemplateFn = _.template(FeedbackTemplates.SUBMIT_TEMPLATE)
@@ -39,8 +39,8 @@ export function submitFeedback(listener?: (message: any) => Promise<void>): vsco
         content: feedbackTemplateFn({
             Scripts: loadScripts,
             Libraries: loadLibs,
-            Stylesheets: loadStylesheets
-        })
+            Stylesheets: loadStylesheets,
+        }),
     })
 
     const feedbackListener = listener === undefined ? createListener(panel) : listener
@@ -53,11 +53,11 @@ function createListener(panel: vscode.WebviewPanel) {
     const feedbackPanel = {
         postMessage: (message: any) => panel.webview.postMessage(message),
         // tslint:disable-next-line: no-unsafe-any
-        dispose: () => panel.dispose()
+        dispose: () => panel.dispose(),
     }
 
     const window = {
-        showInformationMessage: (message: string) => vscode.window.showInformationMessage(message)
+        showInformationMessage: (message: string) => vscode.window.showInformationMessage(message),
     }
 
     return submitFeedbackListener(feedbackPanel, window, ext.telemetry)

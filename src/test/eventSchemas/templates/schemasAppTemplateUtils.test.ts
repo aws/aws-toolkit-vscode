@@ -12,7 +12,7 @@ import {
     AWS_EVENT_SCHEMA_CONTENT,
     CUSTOMER_UPLOADED_SCHEMA,
     CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES,
-    PARTNER_SCHEMA_CONTENT
+    PARTNER_SCHEMA_CONTENT,
 } from './schemasExamples'
 
 const AWS_SCHEMA_NAME = 'aws.ec2@EC2InstanceStateChangeNotification'
@@ -47,7 +47,7 @@ describe('Build template parameters for AwsEventSchema', async () => {
     it('should build correct template parameters for aws event schema', async () => {
         const schemaResponse: Schemas.DescribeSchemaResponse = {
             Content: AWS_EVENT_SCHEMA_CONTENT,
-            SchemaVersion: SCHEMA_VERSION
+            SchemaVersion: SCHEMA_VERSION,
         }
         sandbox.stub(schemaClient, 'describeSchema').returns(Promise.resolve(schemaResponse))
 
@@ -97,7 +97,7 @@ describe('Build template parameters for PartnerSchema', async () => {
     it('should build correct template parameters for partner schema', async () => {
         const schemaResponse: Schemas.DescribeSchemaResponse = {
             Content: PARTNER_SCHEMA_CONTENT,
-            SchemaVersion: SCHEMA_VERSION
+            SchemaVersion: SCHEMA_VERSION,
         }
         sandbox.stub(schemaClient, 'describeSchema').returns(Promise.resolve(schemaResponse))
 
@@ -148,7 +148,7 @@ describe('Build template parameters for CustomerUploadedSchema', async () => {
     it('should build correct template parameters for customer uploaded schema with single type', async () => {
         const schemaResponse: Schemas.DescribeSchemaResponse = {
             Content: CUSTOMER_UPLOADED_SCHEMA,
-            SchemaVersion: SCHEMA_VERSION
+            SchemaVersion: SCHEMA_VERSION,
         }
         sandbox.stub(schemaClient, 'describeSchema').returns(Promise.resolve(schemaResponse))
 
@@ -194,7 +194,7 @@ describe('Build template parameters for CustomerUploadedSchemaMultipleTypes', as
     it('should  build correct template parameters for customer uploaded schema with multiple types', async () => {
         const schemaResponse: Schemas.DescribeSchemaResponse = {
             Content: CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES,
-            SchemaVersion: SCHEMA_VERSION
+            SchemaVersion: SCHEMA_VERSION,
         }
         sandbox.stub(schemaClient, 'describeSchema').returns(Promise.resolve(schemaResponse))
 

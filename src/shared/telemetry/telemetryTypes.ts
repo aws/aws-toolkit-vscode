@@ -8,17 +8,17 @@ export const ACCOUNT_METADATA_KEY = 'awsAccount'
 export enum AccountStatus {
     NotApplicable = 'n/a',
     NotSet = 'not-set',
-    Invalid = 'invalid'
+    Invalid = 'invalid',
 }
 
 export const METADATA_FIELD_NAME = {
     RESULT: 'result',
     DURATION: 'duration',
-    REASON: 'reason'
+    REASON: 'reason',
 }
 
 export enum MetadataResult {
     Pass = 'Succeeded',
     Fail = 'Failed',
-    Cancel = 'Cancelled'
+    Cancel = 'Cancelled',
 }

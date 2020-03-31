@@ -90,10 +90,10 @@ describe('PropertyNode', () => {
 
     it('returns a nested property node with nested object as child property nodes', async () => {
         const nestedObject = {
-            evenMoreNested: 'nestedValue'
+            evenMoreNested: 'nestedValue',
         }
         const value = {
-            nestedKey: nestedObject
+            nestedKey: nestedObject,
         }
 
         const children: { [key: string]: any } = { key: value }

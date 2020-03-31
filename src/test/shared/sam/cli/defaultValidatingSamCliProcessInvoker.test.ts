@@ -8,7 +8,7 @@ import { DefaultValidatingSamCliProcessInvoker } from '../../../../shared/sam/cl
 import { SamCliConfiguration } from '../../../../shared/sam/cli/samCliConfiguration'
 import {
     resolveSamCliProcessInvokerContext,
-    SamCliProcessInvokerContext
+    SamCliProcessInvokerContext,
 } from '../../../../shared/sam/cli/samCliInvoker'
 import { SamCliProcessInvoker } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import {
@@ -16,7 +16,7 @@ import {
     SamCliNotFoundError,
     SamCliValidator,
     SamCliValidatorResult,
-    SamCliVersionValidation
+    SamCliVersionValidation,
 } from '../../../../shared/sam/cli/samCliValidator'
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
 import { assertThrowsError } from '../../utilities/assertUtils'
@@ -32,24 +32,24 @@ describe('DefaultValidatingSamCliProcessInvoker', async () => {
     before(async () => {
         processInvokerContext = resolveSamCliProcessInvokerContext({
             cliConfig: ({
-                getSamCliLocation: () => 'filler'
-            } as any) as SamCliConfiguration
+                getSamCliLocation: () => 'filler',
+            } as any) as SamCliConfiguration,
         })
     })
 
     const versionValidationTestScenarios = [
         {
             situation: 'SAM CLI Version is too low',
-            versionValidation: SamCliVersionValidation.VersionTooLow
+            versionValidation: SamCliVersionValidation.VersionTooLow,
         },
         {
             situation: 'SAM CLI Version is too high',
-            versionValidation: SamCliVersionValidation.VersionTooHigh
+            versionValidation: SamCliVersionValidation.VersionTooHigh,
         },
         {
             situation: 'SAM CLI Version is unparsable',
-            versionValidation: SamCliVersionValidation.VersionNotParseable
-        }
+            versionValidation: SamCliVersionValidation.VersionNotParseable,
+        },
     ]
 
     versionValidationTestScenarios.forEach(test => {
@@ -60,16 +60,16 @@ describe('DefaultValidatingSamCliProcessInvoker', async () => {
                         samCliFound: true,
                         versionValidation: {
                             version: '1.2.3',
-                            validation: test.versionValidation
-                        }
+                            validation: test.versionValidation,
+                        },
                     }
-                }
+                },
             }
 
             const invoker = new DefaultValidatingSamCliProcessInvoker({
                 invoker: errorInvoker,
                 invokerContext: processInvokerContext,
-                validator
+                validator,
             })
 
             const error: Error = await assertThrowsError(
@@ -92,15 +92,15 @@ describe('DefaultValidatingSamCliProcessInvoker', async () => {
         const validator: SamCliValidator = {
             detectValidSamCli: async (): Promise<SamCliValidatorResult> => {
                 return {
-                    samCliFound: false
+                    samCliFound: false,
                 }
-            }
+            },
         }
 
         const invoker = new DefaultValidatingSamCliProcessInvoker({
             invoker: errorInvoker,
             invokerContext: processInvokerContext,
-            validator
+            validator,
         })
 
         const error: Error = await assertThrowsError(
@@ -116,15 +116,15 @@ describe('DefaultValidatingSamCliProcessInvoker', async () => {
             detectValidSamCli: async (): Promise<SamCliValidatorResult> => {
                 return {
                     samCliFound: true,
-                    versionValidation: undefined
+                    versionValidation: undefined,
                 }
-            }
+            },
         }
 
         const invoker = new DefaultValidatingSamCliProcessInvoker({
             invoker: errorInvoker,
             invokerContext: processInvokerContext,
-            validator
+            validator,
         })
 
         await assertThrowsError(async () => await invoker.invoke(), 'Expected invoke to throw an error')
@@ -144,16 +144,16 @@ describe('DefaultValidatingSamCliProcessInvoker', async () => {
                 return {
                     samCliFound: true,
                     versionValidation: {
-                        validation: SamCliVersionValidation.Valid
-                    }
+                        validation: SamCliVersionValidation.Valid,
+                    },
                 }
-            }
+            },
         }
 
         const invoker = new DefaultValidatingSamCliProcessInvoker({
             invoker: samCliInvoker,
             invokerContext: processInvokerContext,
-            validator
+            validator,
         })
 
         await invoker.invoke()

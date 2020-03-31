@@ -66,7 +66,7 @@ export class PythonDebugAdapterHeartbeat {
             // If we get a response, we know the Adapter is up and running.
             // See Base protocol: https://microsoft.github.io/debug-adapter-protocol/overview
             const json = JSON.stringify({
-                type: 'request'
+                type: 'request',
             })
             const writeResult = this.socket.write(`Content-Length: ${json.length}\r\n\r\n${json}`)
             this.logger.verbose(`Data written to Debug Adapter, write result: ${writeResult}`)

@@ -8,7 +8,7 @@ import { SpawnOptions } from 'child_process'
 import {
     eventBridgeStarterAppTemplate,
     getSamCliTemplateParameter,
-    helloWorldTemplate
+    helloWorldTemplate,
 } from '../../../../lambda/models/samTemplates'
 import { SamCliContext } from '../../../../shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../../../shared/sam/cli/samCliInit'
@@ -17,7 +17,7 @@ import {
     MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
     SamCliValidator,
     SamCliValidatorResult,
-    SamCliVersionValidation
+    SamCliVersionValidation,
 } from '../../../../shared/sam/cli/samCliValidator'
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
 import { getTestLogger } from '../../../globalSetup.test'
@@ -27,7 +27,7 @@ import {
     assertErrorContainsBadExitMessage,
     assertLogContainsBadExitInformation,
     BadExitCodeSamCliProcessInvoker,
-    TestSamCliProcessInvoker
+    TestSamCliProcessInvoker,
 } from './testSamCliProcessInvoker'
 
 import { SchemaTemplateExtraContext } from '../../../../eventSchemas/templates/schemasAppTemplateUtils'
@@ -61,8 +61,8 @@ describe('runSamCliInit', async () => {
                 samCliFound: true,
                 versionValidation: {
                     version: this.version,
-                    validation: SamCliVersionValidation.Valid
-                }
+                    validation: SamCliVersionValidation.Valid,
+                },
             }
         }
     }
@@ -76,7 +76,7 @@ describe('runSamCliInit', async () => {
         location: '/some/path/to/code.js',
         runtime: 'nodejs8.10',
         template: helloWorldTemplate,
-        dependencyManager: sampleDependencyManager
+        dependencyManager: sampleDependencyManager,
     }
 
     describe('runSamCliInit with HelloWorld template', async () => {
@@ -90,7 +90,7 @@ describe('runSamCliInit', async () => {
 
             const context: SamCliContext = {
                 validator: defaultFakeValidator,
-                invoker: processInvoker
+                invoker: processInvoker,
             }
 
             await runSamCliInit(sampleSamInitArgs, context)
@@ -105,7 +105,7 @@ describe('runSamCliInit', async () => {
 
             const context: SamCliContext = {
                 validator: defaultFakeValidator,
-                invoker: processInvoker
+                invoker: processInvoker,
             }
 
             await runSamCliInit(sampleSamInitArgs, context)
@@ -120,7 +120,7 @@ describe('runSamCliInit', async () => {
 
             const context: SamCliContext = {
                 validator: defaultFakeValidator,
-                invoker: processInvoker
+                invoker: processInvoker,
             }
 
             await runSamCliInit(sampleSamInitArgs, context)
@@ -135,7 +135,7 @@ describe('runSamCliInit', async () => {
 
             const context: SamCliContext = {
                 validator: defaultFakeValidator,
-                invoker: processInvoker
+                invoker: processInvoker,
             }
 
             await runSamCliInit(sampleSamInitArgs, context)
@@ -145,7 +145,7 @@ describe('runSamCliInit', async () => {
             const badExitCodeProcessInvoker = new BadExitCodeSamCliProcessInvoker({})
             const context: SamCliContext = {
                 validator: defaultFakeValidator,
-                invoker: badExitCodeProcessInvoker
+                invoker: badExitCodeProcessInvoker,
             }
 
             const error = await assertThrowsError(async () => {
@@ -169,7 +169,7 @@ describe('runSamCliInit', async () => {
 
             const context: SamCliContext = {
                 validator: new FakeSamCliValidator(),
-                invoker: processInvoker
+                invoker: processInvoker,
             }
 
             await runSamCliInit(sampleSamInitArgs, context)
@@ -185,7 +185,7 @@ describe('runSamCliInit', async () => {
 
             const context: SamCliContext = {
                 validator: new FakeSamCliValidator(),
-                invoker: processInvoker
+                invoker: processInvoker,
             }
 
             await runSamCliInit(sampleSamInitArgs, context)
@@ -200,7 +200,7 @@ describe('runSamCliInit', async () => {
 
             const context: SamCliContext = {
                 validator: new FakeSamCliValidator(),
-                invoker: processInvoker
+                invoker: processInvoker,
             }
 
             await runSamCliInit(sampleSamInitArgs, context)
@@ -214,7 +214,7 @@ describe('runSamCliInit', async () => {
             AWS_Schema_root: 'test',
             AWS_Schema_source: 'AWS',
             AWS_Schema_detail_type: 'ec2',
-            user_agent: 'testAgent'
+            user_agent: 'testAgent',
         }
 
         const samInitArgsWithExtraContent: SamCliInitArgs = {
@@ -223,7 +223,7 @@ describe('runSamCliInit', async () => {
             runtime: 'python3.6',
             template: eventBridgeStarterAppTemplate,
             extraContent: extraContent,
-            dependencyManager: sampleDependencyManager
+            dependencyManager: sampleDependencyManager,
         }
 
         it('Passes --extra-context for eventBridgeStarterAppTemplate', async () => {
@@ -240,7 +240,7 @@ describe('runSamCliInit', async () => {
 
             const context: SamCliContext = {
                 validator: new FakeSamCliValidator(),
-                invoker: processInvoker
+                invoker: processInvoker,
             }
 
             await runSamCliInit(samInitArgsWithExtraContent, context)

@@ -8,7 +8,11 @@ import { createNewSamApplication, resumeCreateNewSamApp } from '../../lambda/com
 import { deploySamApplication, SamDeployWizardResponseProvider } from '../../lambda/commands/deploySamApplication'
 import { SamParameterCompletionItemProvider } from '../../lambda/config/samParameterCompletionItemProvider'
 import { configureLocalLambda } from '../../lambda/local/configureLocalLambda'
-import { DefaultSamDeployWizardContext, SamDeployWizard, SamDeployWizardResponse } from '../../lambda/wizards/samDeployWizard'
+import {
+    DefaultSamDeployWizardContext,
+    SamDeployWizard,
+    SamDeployWizardResponse,
+} from '../../lambda/wizards/samDeployWizard'
 import * as codelensUtils from '../codelens/codeLensUtils'
 import * as csLensProvider from '../codelens/csharpCodeLensProvider'
 import * as pyLensProvider from '../codelens/pythonCodeLensProvider'
@@ -25,24 +29,17 @@ import { SamDebugSession } from './debugger/samDebugSession'
  * Activate SAM-related functionality.
  */
 export async function activate(ctx: ExtContext): Promise<void> {
-
     initializeSamCliContext({ settingsConfiguration: ctx.settings })
 
     ctx.subscriptions.push(
-        ...(await activateCodeLensProviders(
-            ctx,
-            ctx.settings,
-            ctx.outputChannel,
-            ctx.telemetryService
-        ))
+        ...(await activateCodeLensProviders(ctx, ctx.settings, ctx.outputChannel, ctx.telemetryService))
     )
 
     await registerServerlessCommands(ctx)
 
-    ctx.subscriptions.push(vscode.debug.registerDebugConfigurationProvider(
-        AWS_SAM_DEBUG_TYPE,
-        new SamDebugConfigProvider(ctx)
-    ))
+    ctx.subscriptions.push(
+        vscode.debug.registerDebugConfigurationProvider(AWS_SAM_DEBUG_TYPE, new SamDebugConfigProvider(ctx))
+    )
 
     // "Inline" DA type: runs inside the extension and directly talks to it.
     //
@@ -51,16 +48,16 @@ export async function activate(ctx: ExtContext): Promise<void> {
     // https://code.visualstudio.com/api/extension-guides/debugger-extension#alternative-approach-to-develop-a-debugger-extension
     //
     // XXX: requires the "debuggers.*.label" attribute in package.json!
-    ctx.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory(
-        AWS_SAM_DEBUG_TYPE,
-        new InlineDebugAdapterFactory(ctx)))
+    ctx.subscriptions.push(
+        vscode.debug.registerDebugAdapterDescriptorFactory(AWS_SAM_DEBUG_TYPE, new InlineDebugAdapterFactory(ctx))
+    )
 
     ctx.subscriptions.push(
         vscode.languages.registerCompletionItemProvider(
             {
                 language: 'json',
                 scheme: 'file',
-                pattern: '**/.aws/parameters.json'
+                pattern: '**/.aws/parameters.json',
             },
             new SamParameterCompletionItemProvider(),
             '"'
@@ -99,7 +96,7 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
                     const wizard = new SamDeployWizard(samDeployWizardContext)
 
                     return wizard.run()
-                }
+                },
             }
 
             await deploySamApplication(
@@ -128,8 +125,8 @@ async function activateCodeLensProviders(
             [
                 {
                     language: 'javascript',
-                    scheme: 'file'
-                }
+                    scheme: 'file',
+                },
             ],
             codelensUtils.makeTypescriptCodeLensProvider()
         )
@@ -155,7 +152,7 @@ async function activateCodeLensProviders(
 }
 
 class InlineDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory {
-    public constructor(readonly ctx:ExtContext) {}
+    public constructor(readonly ctx: ExtContext) {}
 
     /**
      * The inline implementation implements the Debug Adapter Protocol.
@@ -171,7 +168,9 @@ class InlineDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory 
      *
      * https://code.visualstudio.com/updates/v1_42#_extension-authoring
      */
-    public createDebugAdapterDescriptor(_session: vscode.DebugSession): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
-        return new vscode.DebugAdapterInlineImplementation(new SamDebugSession(this.ctx));
+    public createDebugAdapterDescriptor(
+        _session: vscode.DebugSession
+    ): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
+        return new vscode.DebugAdapterInlineImplementation(new SamDebugSession(this.ctx))
     }
 }
