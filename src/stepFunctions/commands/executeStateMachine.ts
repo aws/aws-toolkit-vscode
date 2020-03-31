@@ -105,7 +105,7 @@ function createMessageReceivedFunc({
                     )
                     const startExecResponse = await client.executeStateMachine(
                         stateMachine.details.stateMachineArn,
-                        message.value
+                        message.value || undefined
                     )
                     logger.info('Successfully started execution for Step Functions State Machine')
                     outputChannel.appendLine(
