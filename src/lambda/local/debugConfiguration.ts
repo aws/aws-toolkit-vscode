@@ -67,7 +67,7 @@ export interface MakeCoreCLRDebugConfigurationArguments {
 
 export function makeCoreCLRDebugConfiguration({
     codeUri,
-    port
+    port,
 }: MakeCoreCLRDebugConfigurationArguments): DotNetCoreDebugConfiguration {
     const pipeArgs = ['-c', `docker exec -i $(docker ps -q -f publish=${port}) \${debuggerCommand}`]
 
@@ -85,18 +85,18 @@ export function makeCoreCLRDebugConfiguration({
             pipeProgram: 'sh',
             pipeArgs,
             debuggerPath: DOTNET_CORE_DEBUGGER_PATH,
-            pipeCwd: codeUri
+            pipeCwd: codeUri,
         },
         windows: {
             pipeTransport: {
                 pipeProgram: 'powershell',
                 pipeArgs,
                 debuggerPath: DOTNET_CORE_DEBUGGER_PATH,
-                pipeCwd: codeUri
-            }
+                pipeCwd: codeUri,
+            },
         },
         sourceFileMap: {
-            ['/var/task']: codeUri
-        }
+            ['/var/task']: codeUri,
+        },
     }
 }

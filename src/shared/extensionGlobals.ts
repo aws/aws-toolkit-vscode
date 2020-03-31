@@ -61,6 +61,6 @@ function makeIconPathsObject(): IconPaths {
         settings: '',
         registry: '',
         schema: '',
-        statemachine: ''
+        statemachine: '',
     }
 }

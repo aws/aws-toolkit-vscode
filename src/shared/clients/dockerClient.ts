@@ -61,7 +61,7 @@ class DefaultDockerInvokeContext implements DockerInvokeContext {
                             `${JSON.stringify(
                                 {
                                     exitCode: code,
-                                    stdErr: stderr
+                                    stdErr: stderr,
                                 },
                                 undefined,
                                 4
@@ -71,7 +71,7 @@ class DefaultDockerInvokeContext implements DockerInvokeContext {
                     }
 
                     resolve()
-                }
+                },
             })
         })
     }

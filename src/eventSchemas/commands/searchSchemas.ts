@@ -45,7 +45,7 @@ export async function createSearchSchemasWebView(params: { node: RegistryItemNod
             {
                 enableScripts: true,
                 retainContextWhenHidden: true,
-                localResourceRoots: [vscode.Uri.file(path.join(ext.context.extensionPath, 'media'))]
+                localResourceRoots: [vscode.Uri.file(path.join(ext.context.extensionPath, 'media'))],
             }
         )
         const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
@@ -64,8 +64,8 @@ export async function createSearchSchemasWebView(params: { node: RegistryItemNod
                 VersionPrefix: localize('AWS.schemas.search.version.prefix', 'Search matched version:'),
                 Scripts: loadScripts,
                 Libraries: loadLibs,
-                Stylesheets: loadStylesheets
-            })
+                Stylesheets: loadStylesheets,
+            }),
         })
 
         view.webview.postMessage({
@@ -73,7 +73,7 @@ export async function createSearchSchemasWebView(params: { node: RegistryItemNod
             noSchemasFound: localize('AWS.schemas.search.no_results', 'No schemas found'),
             searching: localize('AWS.schemas.search.searching', 'Searching for schemas...'),
             loading: localize('AWS.schemas.search.loading', 'Loading...'),
-            select: localize('AWS.schemas.search.select', 'Select a schema')
+            select: localize('AWS.schemas.search.select', 'Select a schema'),
         })
 
         view.webview.onDidReceiveMessage(
@@ -81,7 +81,7 @@ export async function createSearchSchemasWebView(params: { node: RegistryItemNod
                 registryNames: registryNames,
                 schemaClient: client,
                 telemetryService: ext.telemetry,
-                onPostMessage: message => view.webview.postMessage(message)
+                onPostMessage: message => view.webview.postMessage(message),
             }),
             undefined,
             ext.context.subscriptions
@@ -167,7 +167,7 @@ export function createMessageReceivedFunc({
                 restParams.onPostMessage({
                     command: 'showSchemaContent',
                     results: prettySchema,
-                    version: selectedVersion
+                    version: selectedVersion,
                 })
 
                 //if versionList is intialized, dropdown needs to be populated
@@ -185,14 +185,14 @@ export function createMessageReceivedFunc({
                 restParams.onPostMessage({
                     command: 'showSearchSchemaList',
                     results: results,
-                    resultsNotFound: results.length === 0
+                    resultsNotFound: results.length === 0,
                 })
 
                 return
 
             case 'downloadCodeBindings':
                 const schemaItem: Schemas.SchemaSummary = {
-                    SchemaName: getSchemaNameFromTitle(message.schemaSummary!.Title)
+                    SchemaName: getSchemaNameFromTitle(message.schemaSummary!.Title),
                 }
                 const schemaItemNode = new SchemaItemNode(
                     schemaItem,
@@ -264,7 +264,7 @@ export function getSchemaVersionedSummary(searchSummary: Schemas.SearchSchemaSum
         Title: prefix.concat(searchSchemaSummary.SchemaName!),
         VersionList: searchSchemaSummary
             .SchemaVersions!.map(summary => summary.SchemaVersion!)
-            .sort(sortNumericStringsInDescendingOrder)
+            .sort(sortNumericStringsInDescendingOrder),
     }))
 
     return results

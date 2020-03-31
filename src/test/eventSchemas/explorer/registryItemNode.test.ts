@@ -27,7 +27,7 @@ describe('RegistryItemNode', () => {
         setupTestIconPaths()
         fakeRegistry = {
             RegistryName: 'myRegistry',
-            RegistryArn: 'arn:aws:schemas:us-west-2:434418839121:registry/myRegistry'
+            RegistryArn: 'arn:aws:schemas:us-west-2:434418839121:registry/myRegistry',
         }
     })
 
@@ -64,7 +64,7 @@ describe('RegistryItemNode', () => {
 
             async *listSchemas(registryName: string, version: string): AsyncIterableIterator<Schemas.SchemaSummary> {
                 yield* []
-            }
+            },
         } as any) as SchemaClient
 
         ext.toolkitClientBuilder = new SchemaMockToolkitClientBuilder(schemaClient)
@@ -85,7 +85,7 @@ describe('RegistryItemNode', () => {
                         schemaItemArray.map<Schemas.SchemaSummary>(schema => {
                             return {
                                 SchemaArn: schema.SchemaArn,
-                                SchemaName: schema.SchemaName
+                                SchemaName: schema.SchemaName,
                             }
                         })
                     )
@@ -97,17 +97,17 @@ describe('RegistryItemNode', () => {
 
         const schema1Item: Schemas.SchemaSummary = {
             SchemaArn: 'arn:schema1',
-            SchemaName: 'schema1Name'
+            SchemaName: 'schema1Name',
         }
 
         const schema2Item: Schemas.SchemaSummary = {
             SchemaArn: 'arn:schema1',
-            SchemaName: 'schema2Name'
+            SchemaName: 'schema2Name',
         }
 
         const schema3Item: Schemas.SchemaSummary = {
             SchemaArn: 'arn:schema1',
-            SchemaName: 'schema3Name'
+            SchemaName: 'schema3Name',
         }
 
         const schemaItems: Schemas.SchemaSummary[] = [schema1Item, schema2Item, schema3Item]
@@ -150,7 +150,7 @@ describe('DefaultRegistryNode', () => {
                 return asyncGenerator<Schemas.RegistrySummary>(
                     registryNames.map<Schemas.RegistrySummary>(name => {
                         return {
-                            RegistryName: name
+                            RegistryName: name,
                         }
                     })
                 )

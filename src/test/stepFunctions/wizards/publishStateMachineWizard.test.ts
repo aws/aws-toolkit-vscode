@@ -7,7 +7,7 @@ import {
     PublishStateMachineAction,
     PublishStateMachineWizard,
     PublishStateMachineWizardContext,
-    PublishStateMachineWizardResponse
+    PublishStateMachineWizardResponse,
 } from '../../../stepFunctions/wizards/publishStateMachineWizard'
 
 describe('PublishStateMachineWizard', async () => {
@@ -55,7 +55,7 @@ describe('PublishStateMachineWizard', async () => {
     describe('Quick update', async () => {
         it('exits gracefully if cancelled', async () => {
             const context: PublishStateMachineWizardContext = new MockPublishStateMachineWizardContext([
-                PublishStateMachineAction.QuickUpdate
+                PublishStateMachineAction.QuickUpdate,
             ])
             const wizard = new PublishStateMachineWizard(context)
             const result: PublishStateMachineWizardResponse | undefined = await wizard.run()

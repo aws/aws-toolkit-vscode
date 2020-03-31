@@ -37,7 +37,7 @@ describe('ChildProcess', async () => {
                 validateChildProcessResult({
                     childProcessResult: result,
                     expectedExitCode: 0,
-                    expectedOutput: 'hi'
+                    expectedOutput: 'hi',
                 })
             })
 
@@ -56,7 +56,7 @@ describe('ChildProcess', async () => {
                 validateChildProcessResult({
                     childProcessResult: result,
                     expectedExitCode: 0,
-                    expectedOutput: 'hi'
+                    expectedOutput: 'hi',
                 })
             })
 
@@ -91,7 +91,7 @@ describe('ChildProcess', async () => {
                 validateChildProcessResult({
                     childProcessResult: result,
                     expectedExitCode: 0,
-                    expectedOutput: 'hi'
+                    expectedOutput: 'hi',
                 })
             })
 
@@ -137,7 +137,7 @@ describe('ChildProcess', async () => {
             validateChildProcessResult({
                 childProcessResult: result,
                 expectedExitCode: 0,
-                expectedOutput: 'hi'
+                expectedOutput: 'hi',
             })
         })
 
@@ -155,7 +155,7 @@ describe('ChildProcess', async () => {
         function validateChildProcessResult({
             childProcessResult,
             expectedExitCode,
-            expectedOutput
+            expectedOutput,
         }: {
             childProcessResult: ChildProcessResult
             expectedExitCode: number
@@ -185,7 +185,7 @@ describe('ChildProcess', async () => {
                     onClose: (code, signal) => {
                         assert.strictEqual(code, 0, 'Unexpected close code')
                         resolve()
-                    }
+                    },
                 })
             })
         }
@@ -294,7 +294,7 @@ describe('ChildProcess', async () => {
                     onClose: (code, signal) => {
                         assert.notStrictEqual(code, 0, 'Expected an error close code')
                         resolve()
-                    }
+                    },
                 })
             })
         })

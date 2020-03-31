@@ -28,7 +28,7 @@ export class SamParameterCompletionItemProvider implements vscode.CompletionItem
             executeCommand: vscode.commands.executeCommand,
             logger: getLogger(),
             getWorkspaceFolder: vscode.workspace.getWorkspaceFolder,
-            loadTemplate: CloudFormation.load
+            loadTemplate: CloudFormation.load,
         }
     ) {}
 
@@ -51,7 +51,7 @@ export class SamParameterCompletionItemProvider implements vscode.CompletionItem
         const symbols: vscode.DocumentSymbol[] | undefined = await loadSymbols({
             uri: document.uri,
             context: this.context,
-            maxRetries: 0
+            maxRetries: 0,
         })
         if (!symbols) {
             return []
@@ -60,7 +60,7 @@ export class SamParameterCompletionItemProvider implements vscode.CompletionItem
         const templateUri = await getTemplateUri({
             workspaceUri: workspaceFolder.uri,
             symbols,
-            position
+            position,
         })
         if (!templateUri) {
             return []
@@ -76,7 +76,7 @@ export class SamParameterCompletionItemProvider implements vscode.CompletionItem
                     kind: vscode.CompletionItemKind.Reference,
                     label: name,
                     insertText: name,
-                    range: new vscode.Range(position, position)
+                    range: new vscode.Range(position, position),
                 }
 
                 return completionItem
@@ -100,7 +100,7 @@ export class SamParameterCompletionItemProvider implements vscode.CompletionItem
 async function getTemplateUri({
     workspaceUri,
     symbols,
-    position
+    position,
 }: {
     workspaceUri: vscode.Uri
     symbols: vscode.DocumentSymbol[]

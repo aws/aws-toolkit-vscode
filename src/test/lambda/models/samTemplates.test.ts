@@ -10,7 +10,7 @@ import {
     getTemplateDescription,
     helloWorldOption,
     repromptUserForTemplate,
-    validTemplateOptions
+    validTemplateOptions,
 } from '../../../lambda/models/samTemplates'
 import { assertThrowsError } from '../../../test/shared/utilities/assertUtils'
 

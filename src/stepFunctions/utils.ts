@@ -68,7 +68,7 @@ export class StateMachineGraphCache {
             globalStorage,
             lastDownloadedURLKey: SCRIPTS_LAST_DOWNLOADED_URL,
             currentURL: VISUALIZATION_SCRIPT_URL,
-            filePath: this.jsFilePath
+            filePath: this.jsFilePath,
         }).catch(error => {
             this.logger.error('Failed to update State Machine Graph script assets')
             this.logger.error(error as Error)
@@ -80,7 +80,7 @@ export class StateMachineGraphCache {
             globalStorage,
             lastDownloadedURLKey: CSS_LAST_DOWNLOADED_URL,
             currentURL: VISUALIZATION_CSS_URL,
-            filePath: this.cssFilePath
+            filePath: this.cssFilePath,
         }).catch(error => {
             this.logger.error('Failed to update State Machine Graph css assets')
             this.logger.error(error as Error)

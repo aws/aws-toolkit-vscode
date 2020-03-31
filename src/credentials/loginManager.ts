@@ -54,7 +54,7 @@ export class LoginManager {
                 credentials: storedCredentials.credentials,
                 credentialsId: asString(credentialsProviderId),
                 accountId: accountId,
-                defaultRegion: provider.getDefaultRegion()
+                defaultRegion: provider.getDefaultRegion(),
             })
         } catch (err) {
             loginResult = 'Failed'

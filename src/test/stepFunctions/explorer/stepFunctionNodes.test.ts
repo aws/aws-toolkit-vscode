@@ -11,11 +11,11 @@ import { ext } from '../../../shared/extensionGlobals'
 import {
     CONTEXT_VALUE_STATE_MACHINE,
     StateMachineNode,
-    StepFunctionsNode
+    StepFunctionsNode,
 } from '../../../stepFunctions/explorer/stepFunctionsNodes'
 import {
     assertNodeListOnlyContainsErrorNode,
-    assertNodeListOnlyContainsPlaceholderNode
+    assertNodeListOnlyContainsPlaceholderNode,
 } from '../../lambda/explorer/explorerNodeAssertions'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 
@@ -101,15 +101,15 @@ describe('StepFunctionsNode', () => {
                             name: name,
                             stateMachineArn: 'arn:aws:states:us-east-1:123412341234:stateMachine:' + name,
                             type: 'STANDARD',
-                            creationDate: new Date()
+                            creationDate: new Date(),
                         }
                     })
                 )
-            })
+            }),
         }
 
         const clientBuilder = {
-            createStepFunctionsClient: sandbox.stub().returns(stepFunctionsClient)
+            createStepFunctionsClient: sandbox.stub().returns(stepFunctionsClient),
         }
 
         ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder

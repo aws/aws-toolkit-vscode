@@ -24,7 +24,7 @@ import {
     endpointsFileUrl,
     extensionSettingsPrefix,
     githubCreateIssueUrl,
-    githubUrl
+    githubUrl,
 } from './shared/constants'
 import { DefaultAwsContext } from './shared/defaultAwsContext'
 import { DefaultAWSContextCommands } from './shared/defaultAwsContextCommands'
@@ -33,7 +33,7 @@ import {
     aboutToolkit,
     getToolkitEnvironmentDetails,
     showQuickStartWebview,
-    toastNewUser
+    toastNewUser,
 } from './shared/extensionUtilities'
 import { getLogger } from './shared/logger'
 import { activate as activateLogger } from './shared/logger/activation'
@@ -50,7 +50,7 @@ import {
     recordAwsHelp,
     recordAwsHelpQuickstart,
     recordAwsReportPluginIssue,
-    recordAwsShowExtensionSource
+    recordAwsShowExtensionSource,
 } from './shared/telemetry/telemetry'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { getChannelLogger } from './shared/utilities/vsCodeUtils'
@@ -96,7 +96,7 @@ export async function activate(context: vscode.ExtensionContext) {
         await initializeCredentials({
             extensionContext: context,
             awsContext: awsContext,
-            settingsConfiguration: toolkitSettings
+            settingsConfiguration: toolkitSettings,
         })
 
         ext.telemetry = new DefaultTelemetryService(context, awsContext)
@@ -160,7 +160,7 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateCloudFormationTemplateRegistry(context)
 
         await activateCdk({
-            extensionContext: context
+            extensionContext: context,
         })
 
         await activateAwsExplorer({
@@ -168,11 +168,11 @@ export async function activate(context: vscode.ExtensionContext) {
             context,
             awsContextTrees,
             regionProvider,
-            outputChannel: toolkitOutputChannel
+            outputChannel: toolkitOutputChannel,
         })
 
         await activateSchemas({
-            context: context
+            context: context,
         })
 
         await ExtensionDisposableFiles.initialize(context)
@@ -183,7 +183,7 @@ export async function activate(context: vscode.ExtensionContext) {
             outputChannel: toolkitOutputChannel,
             regionProvider,
             telemetryService: ext.telemetry,
-            toolkitSettings
+            toolkitSettings,
         })
 
         setImmediate(async () => {

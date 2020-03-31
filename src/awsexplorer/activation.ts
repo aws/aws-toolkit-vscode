@@ -21,7 +21,7 @@ import {
     recordAwsHideRegion,
     recordAwsRefreshExplorer,
     recordAwsShowRegion,
-    recordVscodeActiveRegions
+    recordVscodeActiveRegions,
 } from '../shared/telemetry/telemetry'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../shared/treeview/nodes/errorNode'
@@ -129,7 +129,7 @@ async function registerAwsExplorerCommands(
                     deleteParams: { functionName: node.configuration.FunctionName || '' },
                     lambdaClient: ext.toolkitClientBuilder.createLambdaClient(node.regionCode),
                     outputChannel: lambdaOutputChannel,
-                    onRefresh: () => awsExplorer.refresh(node.parent)
+                    onRefresh: () => awsExplorer.refresh(node.parent),
                 })
         )
     )
@@ -152,7 +152,7 @@ async function registerAwsExplorerCommands(
             async (node: LambdaFunctionNode) =>
                 await invokeLambda({
                     functionNode: node,
-                    outputChannel: lambdaOutputChannel
+                    outputChannel: lambdaOutputChannel,
                 })
         )
     )
@@ -163,7 +163,7 @@ async function registerAwsExplorerCommands(
             async (node: StateMachineNode) =>
                 await downloadStateMachineDefinition({
                     stateMachineNode: node,
-                    outputChannel: toolkitOutputChannel
+                    outputChannel: toolkitOutputChannel,
                 })
         )
     )
@@ -174,7 +174,7 @@ async function registerAwsExplorerCommands(
             async (node: StateMachineNode) =>
                 await executeStateMachine({
                     stateMachineNode: node,
-                    outputChannel: toolkitOutputChannel
+                    outputChannel: toolkitOutputChannel,
                 })
         )
     )

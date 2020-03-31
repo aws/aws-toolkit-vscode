@@ -8,7 +8,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import {
     SamParameterCompletionItemProvider,
-    SamParameterCompletionItemProviderContext
+    SamParameterCompletionItemProviderContext,
 } from '../../../lambda/config/samParameterCompletionItemProvider'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 import { Logger } from '../../../shared/logger'
@@ -16,7 +16,7 @@ import { Logger } from '../../../shared/logger'
 function createTemplatesSymbol({
     uri = vscode.Uri.file(path.join('my', 'template', 'uri')),
     includeOverrides = false,
-    parameterName
+    parameterName,
 }: {
     uri?: vscode.Uri
     includeOverrides?: boolean
@@ -80,11 +80,11 @@ class MockSamParameterCompletionItemProviderContext implements SamParameterCompl
 
     public constructor({
         logger = {
-            warn(...message: (Error | string)[]) {}
+            warn(...message: (Error | string)[]) {},
         },
         getWorkspaceFolder = uri => undefined,
         executeCommand = async (command, ...rest) => undefined,
-        loadTemplate = async () => ({})
+        loadTemplate = async () => ({}),
     }: Partial<SamParameterCompletionItemProviderContext>) {
         this.logger = logger
         this.getWorkspaceFolder = getWorkspaceFolder
@@ -101,13 +101,13 @@ describe('SamParameterCompletionItemProvider', async () => {
                 logger: {
                     warn(...message: (Error | string)[]) {
                         warnArgs.push(message)
-                    }
-                }
+                    },
+                },
             })
         )
 
         const document: vscode.TextDocument = ({
-            uri: vscode.Uri.file(path.join('my', 'path'))
+            uri: vscode.Uri.file(path.join('my', 'path')),
         } as any) as vscode.TextDocument
         const actualItems = await provider.provideCompletionItems(
             document,
@@ -130,12 +130,12 @@ describe('SamParameterCompletionItemProvider', async () => {
         const provider = new SamParameterCompletionItemProvider(
             new MockSamParameterCompletionItemProviderContext({
                 executeCommand: async () => undefined,
-                getWorkspaceFolder: () => (({ uri: vscode.Uri.file('') } as any) as vscode.WorkspaceFolder)
+                getWorkspaceFolder: () => (({ uri: vscode.Uri.file('') } as any) as vscode.WorkspaceFolder),
             })
         )
 
         const document: vscode.TextDocument = ({
-            uri: vscode.Uri.file(path.join('my', 'path'))
+            uri: vscode.Uri.file(path.join('my', 'path')),
         } as any) as vscode.TextDocument
         const actualItems = await provider.provideCompletionItems(
             document,
@@ -152,12 +152,12 @@ describe('SamParameterCompletionItemProvider', async () => {
         const provider = new SamParameterCompletionItemProvider(
             new MockSamParameterCompletionItemProviderContext({
                 executeCommand: async <T>() => ([] as any) as T,
-                getWorkspaceFolder: () => (({ uri: vscode.Uri.file('') } as any) as vscode.WorkspaceFolder)
+                getWorkspaceFolder: () => (({ uri: vscode.Uri.file('') } as any) as vscode.WorkspaceFolder),
             })
         )
 
         const document: vscode.TextDocument = ({
-            uri: vscode.Uri.file(path.join('my', 'path'))
+            uri: vscode.Uri.file(path.join('my', 'path')),
         } as any) as vscode.TextDocument
         const actualItems = await provider.provideCompletionItems(
             document,
@@ -173,7 +173,7 @@ describe('SamParameterCompletionItemProvider', async () => {
     it('suggests all parameter names if user has not started typing the parameter name', async () => {
         const templatesSymbol = createTemplatesSymbol({
             includeOverrides: true,
-            parameterName: 'myParamName'
+            parameterName: 'myParamName',
         })
 
         const provider = new SamParameterCompletionItemProvider(
@@ -183,20 +183,20 @@ describe('SamParameterCompletionItemProvider', async () => {
                 loadTemplate: async () => ({
                     Parameters: {
                         MyParamName1: {
-                            Type: 'String'
+                            Type: 'String',
                         },
                         MyParamName2: {
-                            Type: 'String'
-                        }
-                    }
-                })
+                            Type: 'String',
+                        },
+                    },
+                }),
             })
         )
 
         const document: vscode.TextDocument = ({
             uri: vscode.Uri.file(path.join('.aws', 'templates.json')),
             getWordRangeAtPosition: () => new vscode.Range(3, 0, 3, 10),
-            getText: () => ''
+            getText: () => '',
         } as any) as vscode.TextDocument
 
         const actualItems = await provider.provideCompletionItems(
@@ -215,7 +215,7 @@ describe('SamParameterCompletionItemProvider', async () => {
     it('suggests only matching parameter names if user has started typing the parameter name', async () => {
         const templatesSymbol = createTemplatesSymbol({
             includeOverrides: true,
-            parameterName: 'myParamName'
+            parameterName: 'myParamName',
         })
 
         const provider = new SamParameterCompletionItemProvider(
@@ -225,23 +225,23 @@ describe('SamParameterCompletionItemProvider', async () => {
                 loadTemplate: async () => ({
                     Parameters: {
                         MyParamName1: {
-                            Type: 'String'
+                            Type: 'String',
                         },
                         MyParamName2: {
-                            Type: 'String'
+                            Type: 'String',
                         },
                         MyOtherParamName: {
-                            Type: 'String'
-                        }
-                    }
-                })
+                            Type: 'String',
+                        },
+                    },
+                }),
             })
         )
 
         const document: vscode.TextDocument = ({
             uri: vscode.Uri.file(path.join('.aws', 'templates.json')),
             getWordRangeAtPosition: () => new vscode.Range(3, 0, 3, 10),
-            getText: () => 'MyParamName'
+            getText: () => 'MyParamName',
         } as any) as vscode.TextDocument
 
         const actualItems = await provider.provideCompletionItems(
@@ -261,7 +261,7 @@ describe('SamParameterCompletionItemProvider', async () => {
         const provider = new SamParameterCompletionItemProvider(
             new MockSamParameterCompletionItemProviderContext({
                 executeCommand: async <T>() => undefined,
-                getWorkspaceFolder: () => (({ uri: vscode.Uri.file('') } as any) as vscode.WorkspaceFolder)
+                getWorkspaceFolder: () => (({ uri: vscode.Uri.file('') } as any) as vscode.WorkspaceFolder),
             })
         )
 
@@ -279,7 +279,7 @@ describe('SamParameterCompletionItemProvider', async () => {
     it('recovers gracefully if cursor is not within the `templates` property', async () => {
         const templatesSymbol = createTemplatesSymbol({
             includeOverrides: true,
-            parameterName: 'myParamName'
+            parameterName: 'myParamName',
         })
 
         const provider = new SamParameterCompletionItemProvider(
@@ -289,23 +289,23 @@ describe('SamParameterCompletionItemProvider', async () => {
                 loadTemplate: async () => ({
                     Parameters: {
                         MyParamName1: {
-                            Type: 'String'
+                            Type: 'String',
                         },
                         MyParamName2: {
-                            Type: 'String'
+                            Type: 'String',
                         },
                         MyOtherParamName: {
-                            Type: 'String'
-                        }
-                    }
-                })
+                            Type: 'String',
+                        },
+                    },
+                }),
             })
         )
 
         const document: vscode.TextDocument = ({
             uri: vscode.Uri.file(path.join('.aws', 'templates.json')),
             getWordRangeAtPosition: () => new vscode.Range(3, 0, 3, 10),
-            getText: () => 'MyParamName'
+            getText: () => 'MyParamName',
         } as any) as vscode.TextDocument
 
         const actualItems = await provider.provideCompletionItems(
@@ -328,23 +328,23 @@ describe('SamParameterCompletionItemProvider', async () => {
                 loadTemplate: async () => ({
                     Parameters: {
                         MyParamName1: {
-                            Type: 'String'
+                            Type: 'String',
                         },
                         MyParamName2: {
-                            Type: 'String'
+                            Type: 'String',
                         },
                         MyOtherParamName: {
-                            Type: 'String'
-                        }
-                    }
-                })
+                            Type: 'String',
+                        },
+                    },
+                }),
             })
         )
 
         const document: vscode.TextDocument = ({
             uri: vscode.Uri.file(path.join('.aws', 'templates.json')),
             getWordRangeAtPosition: () => new vscode.Range(3, 0, 3, 10),
-            getText: () => 'MyParamName'
+            getText: () => 'MyParamName',
         } as any) as vscode.TextDocument
 
         const actualItems = await provider.provideCompletionItems(
@@ -361,7 +361,7 @@ describe('SamParameterCompletionItemProvider', async () => {
     it('recovers gracefully if cursor is not within the `parameterOverrides` property', async () => {
         const templatesSymbol = createTemplatesSymbol({
             includeOverrides: true,
-            parameterName: 'myParamName'
+            parameterName: 'myParamName',
         })
 
         const provider = new SamParameterCompletionItemProvider(
@@ -371,23 +371,23 @@ describe('SamParameterCompletionItemProvider', async () => {
                 loadTemplate: async () => ({
                     Parameters: {
                         MyParamName1: {
-                            Type: 'String'
+                            Type: 'String',
                         },
                         MyParamName2: {
-                            Type: 'String'
+                            Type: 'String',
                         },
                         MyOtherParamName: {
-                            Type: 'String'
-                        }
-                    }
-                })
+                            Type: 'String',
+                        },
+                    },
+                }),
             })
         )
 
         const document: vscode.TextDocument = ({
             uri: vscode.Uri.file(path.join('.aws', 'templates.json')),
             getWordRangeAtPosition: () => new vscode.Range(3, 0, 3, 10),
-            getText: () => 'MyParamName'
+            getText: () => 'MyParamName',
         } as any) as vscode.TextDocument
 
         const actualItems = await provider.provideCompletionItems(
@@ -404,7 +404,7 @@ describe('SamParameterCompletionItemProvider', async () => {
     it('recovers gracefully if cursor is not within a property name within `parameterOverrides`', async () => {
         const templatesSymbol = createTemplatesSymbol({
             includeOverrides: true,
-            parameterName: 'myParamName'
+            parameterName: 'myParamName',
         })
 
         const provider = new SamParameterCompletionItemProvider(
@@ -414,23 +414,23 @@ describe('SamParameterCompletionItemProvider', async () => {
                 loadTemplate: async () => ({
                     Parameters: {
                         MyParamName1: {
-                            Type: 'String'
+                            Type: 'String',
                         },
                         MyParamName2: {
-                            Type: 'String'
+                            Type: 'String',
                         },
                         MyOtherParamName: {
-                            Type: 'String'
-                        }
-                    }
-                })
+                            Type: 'String',
+                        },
+                    },
+                }),
             })
         )
 
         const document: vscode.TextDocument = ({
             uri: vscode.Uri.file(path.join('.aws', 'templates.json')),
             getWordRangeAtPosition: () => new vscode.Range(3, 0, 3, 10),
-            getText: () => 'MyParamName'
+            getText: () => 'MyParamName',
         } as any) as vscode.TextDocument
 
         const actualItems = await provider.provideCompletionItems(

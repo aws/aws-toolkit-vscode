@@ -39,7 +39,7 @@ export class RegionNode extends AWSTreeNodeBase {
             { serviceId: 'cloudformation', createFn: () => new CloudFormationNode(this.regionCode) },
             { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },
             { serviceId: 'schemas', createFn: () => new SchemasNode(this.regionCode) },
-            { serviceId: 'states', createFn: () => new StepFunctionsNode(this.regionCode) }
+            { serviceId: 'states', createFn: () => new StepFunctionsNode(this.regionCode) },
         ]
 
         for (const serviceCandidate of serviceCandidates) {

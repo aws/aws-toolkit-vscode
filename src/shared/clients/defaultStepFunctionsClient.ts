@@ -30,7 +30,7 @@ export class DefaultStepFunctionsClient implements StepFunctionsClient {
         const client = await this.createSdkClient()
 
         const request: StepFunctions.DescribeStateMachineInput = {
-            stateMachineArn: arn
+            stateMachineArn: arn,
         }
 
         const response: StepFunctions.DescribeStateMachineOutput = await client.describeStateMachine(request).promise()
@@ -43,7 +43,7 @@ export class DefaultStepFunctionsClient implements StepFunctionsClient {
 
         const request: StepFunctions.StartExecutionInput = {
             stateMachineArn: arn,
-            input: input
+            input: input,
         }
 
         const response: StepFunctions.StartExecutionOutput = await client.startExecution(request).promise()

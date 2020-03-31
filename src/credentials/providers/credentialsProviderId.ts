@@ -35,7 +35,7 @@ export function fromString(credentialsProviderId: string): CredentialsProviderId
 
     return {
         credentialType: credentialsProviderId.substring(0, separatorPos),
-        credentialTypeId: credentialsProviderId.substring(separatorPos + 1)
+        credentialTypeId: credentialsProviderId.substring(separatorPos + 1),
     }
 }
 

@@ -41,7 +41,7 @@ export class CredentialsStore {
         if (!credentials) {
             credentials = {
                 credentials: await credentialsProvider.getCredentials(),
-                credentialsHashCode: credentialsProvider.getHashCode()
+                credentialsHashCode: credentialsProvider.getHashCode(),
             }
 
             this.credentialsCache[asString(credentialsProviderId)] = credentials

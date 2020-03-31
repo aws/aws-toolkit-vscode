@@ -34,7 +34,7 @@ export namespace CloudFormation {
             Handler,
             CodeUri,
             Runtime,
-            ...rest
+            ...rest,
         }
     }
 
@@ -156,7 +156,7 @@ export namespace CloudFormation {
 
         const templateAsYaml: string = await filesystemUtilities.readFileAsString(filename)
         const template = yaml.safeLoad(templateAsYaml, {
-            schema: schema as yaml.SchemaDefinition
+            schema: schema as yaml.SchemaDefinition,
         }) as Template
         validateTemplate(template)
 
@@ -229,7 +229,7 @@ export namespace CloudFormation {
     export async function getResourceFromTemplate(
         {
             templatePath,
-            handlerName
+            handlerName,
         }: {
             templatePath: string
             handlerName: string
@@ -240,7 +240,7 @@ export namespace CloudFormation {
 
         return getResourceFromTemplateResources({
             templateResources: template.Resources,
-            handlerName
+            handlerName,
         })
     }
 
@@ -254,7 +254,7 @@ export namespace CloudFormation {
             .filter(key =>
                 matchesHandler({
                     resource: resources[key],
-                    handlerName: params.handlerName
+                    handlerName: params.handlerName,
                 })
             )
             .map(key => resources[key]!)

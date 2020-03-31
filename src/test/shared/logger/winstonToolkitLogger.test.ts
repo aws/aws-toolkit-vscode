@@ -40,32 +40,32 @@ describe('WinstonToolkitLogger', () => {
             name: 'logs debug',
             logMessage: (logger: WinstonToolkitLogger, message: string) => {
                 logger.debug(message)
-            }
+            },
         },
         {
             name: 'logs verbose',
             logMessage: (logger: WinstonToolkitLogger, message: string) => {
                 logger.verbose(message)
-            }
+            },
         },
         {
             name: 'logs info',
             logMessage: (logger: WinstonToolkitLogger, message: string) => {
                 logger.info(message)
-            }
+            },
         },
         {
             name: 'logs warn',
             logMessage: (logger: WinstonToolkitLogger, message: string) => {
                 logger.warn(message)
-            }
+            },
         },
         {
             name: 'logs error',
             logMessage: (logger: WinstonToolkitLogger, message: string) => {
                 logger.error(message)
-            }
-        }
+            },
+        },
     ]
 
     describe('logs to a file', async () => {

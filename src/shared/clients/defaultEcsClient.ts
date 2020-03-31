@@ -25,7 +25,7 @@ export class DefaultEcsClient implements EcsClient {
     public async *listServices(cluster: string): AsyncIterableIterator<string> {
         const sdkClient = await this.createSdkClient()
         const request: ECS.ListServicesRequest = {
-            cluster
+            cluster,
         }
         do {
             const response = await this.invokeListServices(request, sdkClient)

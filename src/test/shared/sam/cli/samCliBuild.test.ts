@@ -19,7 +19,7 @@ import {
     assertErrorContainsBadExitMessage,
     assertLogContainsBadExitInformation,
     BadExitCodeSamCliProcessInvoker,
-    TestSamCliProcessInvoker
+    TestSamCliProcessInvoker,
 } from './testSamCliProcessInvoker'
 
 describe('SamCliBuildInvocation', async () => {
@@ -46,7 +46,7 @@ describe('SamCliBuildInvocation', async () => {
     const badExitCodeProcessInvoker = new BadExitCodeSamCliProcessInvoker({})
     const nonRelevantArg = 'arg is not of interest to this test'
     const fakeFileFunctions: FileFunctions = {
-        fileExists: async (filePath: string): Promise<boolean> => true
+        fileExists: async (filePath: string): Promise<boolean> => true,
     }
 
     beforeEach(async () => {
@@ -69,7 +69,7 @@ describe('SamCliBuildInvocation', async () => {
             buildDir: nonRelevantArg,
             baseDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
-            invoker: processInvoker
+            invoker: processInvoker,
         }).execute()
     })
 
@@ -84,7 +84,7 @@ describe('SamCliBuildInvocation', async () => {
             buildDir: expectedBuildDir,
             baseDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
-            invoker: processInvoker
+            invoker: processInvoker,
         }).execute()
     })
 
@@ -99,7 +99,7 @@ describe('SamCliBuildInvocation', async () => {
             buildDir: nonRelevantArg,
             baseDir: expectedBaseDir,
             templatePath: placeholderTemplateFile,
-            invoker: processInvoker
+            invoker: processInvoker,
         }).execute()
     })
 
@@ -111,7 +111,7 @@ describe('SamCliBuildInvocation', async () => {
         await new SamCliBuildInvocation({
             buildDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
-            invoker: processInvoker
+            invoker: processInvoker,
         }).execute()
     })
 
@@ -124,7 +124,7 @@ describe('SamCliBuildInvocation', async () => {
             buildDir: nonRelevantArg,
             baseDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
-            invoker: processInvoker
+            invoker: processInvoker,
         }).execute()
     })
 
@@ -137,7 +137,7 @@ describe('SamCliBuildInvocation', async () => {
             buildDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
             invoker: processInvoker,
-            useContainer: true
+            useContainer: true,
         }).execute()
     })
 
@@ -150,7 +150,7 @@ describe('SamCliBuildInvocation', async () => {
             buildDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
             invoker: processInvoker,
-            useContainer: false
+            useContainer: false,
         }).execute()
     })
 
@@ -162,7 +162,7 @@ describe('SamCliBuildInvocation', async () => {
         await new SamCliBuildInvocation({
             buildDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
-            invoker: processInvoker
+            invoker: processInvoker,
         }).execute()
     })
 
@@ -177,7 +177,7 @@ describe('SamCliBuildInvocation', async () => {
             buildDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
             invoker: processInvoker,
-            manifestPath: expectedArg
+            manifestPath: expectedArg,
         }).execute()
     })
 
@@ -189,7 +189,7 @@ describe('SamCliBuildInvocation', async () => {
         await new SamCliBuildInvocation({
             buildDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
-            invoker: processInvoker
+            invoker: processInvoker,
         }).execute()
     })
 
@@ -204,7 +204,7 @@ describe('SamCliBuildInvocation', async () => {
             buildDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
             invoker: processInvoker,
-            dockerNetwork: expectedDockerNetwork
+            dockerNetwork: expectedDockerNetwork,
         }).execute()
     })
 
@@ -216,7 +216,7 @@ describe('SamCliBuildInvocation', async () => {
         await new SamCliBuildInvocation({
             buildDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
-            invoker: processInvoker
+            invoker: processInvoker,
         }).execute()
     })
 
@@ -229,7 +229,7 @@ describe('SamCliBuildInvocation', async () => {
             buildDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
             invoker: processInvoker,
-            skipPullImage: true
+            skipPullImage: true,
         }).execute()
     })
 
@@ -242,7 +242,7 @@ describe('SamCliBuildInvocation', async () => {
             buildDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
             invoker: processInvoker,
-            skipPullImage: false
+            skipPullImage: false,
         }).execute()
     })
 
@@ -254,7 +254,7 @@ describe('SamCliBuildInvocation', async () => {
         await new SamCliBuildInvocation({
             buildDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
-            invoker: processInvoker
+            invoker: processInvoker,
         }).execute()
     })
 
@@ -264,10 +264,10 @@ describe('SamCliBuildInvocation', async () => {
                 {
                     buildDir: nonRelevantArg,
                     templatePath: placeholderTemplateFile,
-                    invoker: badExitCodeProcessInvoker
+                    invoker: badExitCodeProcessInvoker,
                 },
                 {
-                    file: fakeFileFunctions
+                    file: fakeFileFunctions,
                 }
             ).execute()
         }, 'Expected an error to be thrown')

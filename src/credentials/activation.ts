@@ -42,12 +42,14 @@ export async function loginWithMostRecentCredentials(
         // treat it like a Shared Crdentials Provider.
         const loginCredentialsId = tryMakeCredentialsProviderId(previousCredentialsId) ?? {
             credentialType: SharedCredentialsProvider.getCredentialsType(),
-            credentialTypeId: previousCredentialsId
+            credentialTypeId: previousCredentialsId,
         }
         await loginManager.login(loginCredentialsId)
-    } else if (providerMap
-            && profileNames.length === 1
-            && (await manager.getCredentialsProvider(providerMap[profileNames[0]]))!.canAutoConnect()) {
+    } else if (
+        providerMap &&
+        profileNames.length === 1 &&
+        (await manager.getCredentialsProvider(providerMap[profileNames[0]]))!.canAutoConnect()
+    ) {
         // Auto-connect if there is exactly one profile.
         await loginManager.login(providerMap[profileNames[0]])
         // Toast.

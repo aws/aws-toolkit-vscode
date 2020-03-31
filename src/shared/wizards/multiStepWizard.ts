@@ -80,7 +80,7 @@ export class BrowseFolderQuickPickItem implements FolderQuickPickItem {
             openLabel: localize('AWS.samcli.initWizard.name.browse.openLabel', 'Open'),
             canSelectFiles: false,
             canSelectFolders: true,
-            canSelectMany: false
+            canSelectMany: false,
         })
 
         if (!result || !result.length) {

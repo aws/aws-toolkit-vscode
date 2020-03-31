@@ -99,8 +99,8 @@ function createDirectInvokeSamDebugConfigurationFromTemplate(
         invokeTarget: {
             target: TEMPLATE_TARGET_TYPE,
             samTemplatePath: templatePath,
-            samTemplateResource: resourceName
-        }
+            samTemplateResource: resourceName,
+        },
     }
 }
 
@@ -114,7 +114,7 @@ function generalDebugConfigValidation(
                 'AWS.sam.debugger.invalidRequest',
                 'Debug Configuration has an unsupported request type. Supported types: {0}',
                 AWS_SAM_DEBUG_REQUEST_TYPES.join(', ')
-            )
+            ),
         }
     }
 
@@ -125,7 +125,7 @@ function generalDebugConfigValidation(
                 'AWS.sam.debugger.invalidTarget',
                 'Debug Configuration has an unsupported target type. Supported types: {0}',
                 AWS_SAM_DEBUG_TARGET_TYPES.join(', ')
-            )
+            ),
         }
     }
 
@@ -147,7 +147,7 @@ function templateDebugConfigValidation(
                 'AWS.sam.debugger.missingTemplate',
                 'Unable to find the Template file {0}',
                 templateTarget.samTemplatePath
-            )
+            ),
         }
     }
 
@@ -161,7 +161,7 @@ function templateDebugConfigValidation(
                 'Unable to find the Template Resource {0} in Template file {1}',
                 templateTarget.samTemplateResource,
                 templateTarget.samTemplatePath
-            )
+            ),
         }
     }
 
@@ -177,7 +177,7 @@ function templateDebugConfigValidation(
                 templateTarget.samTemplateResource,
                 templateTarget.samTemplatePath,
                 CloudFormation.SERVERLESS_FUNCTION_TYPE
-            )
+            ),
         }
     }
 
@@ -189,7 +189,7 @@ function templateDebugConfigValidation(
                 'Runtime for Template Resource {0} in Template file {1} is either undefined or unsupported.',
                 templateTarget.samTemplateResource,
                 templateTarget.samTemplatePath
-            )
+            ),
         }
     }
 
@@ -212,7 +212,7 @@ function templateDebugConfigValidation(
                     'AWS.sam.debugger.extraEnvVars',
                     'The following environment variables are not found in the targeted template and will not be overridden: {0}',
                     missingVars.join(', ')
-                )
+                ),
             }
         }
     }
@@ -230,7 +230,7 @@ function codeDebugConfigValidation(
                 'AWS.sam.debugger.missingRuntime',
                 'Debug Configurations with an invoke target of "{0}" require a valid Lambda runtime value',
                 CODE_TARGET_TYPE
-            )
+            ),
         }
     }
 

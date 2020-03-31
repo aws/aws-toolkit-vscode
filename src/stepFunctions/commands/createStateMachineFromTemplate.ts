@@ -25,7 +25,7 @@ const STARTER_TEMPLATES: StateMachineTemplateQuickPickItem[] = [
             'AWS.stepfunctions.template.helloWorld.description',
             'A basic example using a Pass state.'
         ),
-        fileName: 'HelloWorld.asl.json'
+        fileName: 'HelloWorld.asl.json',
     },
     {
         label: localize('AWS.stepfunctions.template.retryFailure.label', 'Retry failure'),
@@ -33,7 +33,7 @@ const STARTER_TEMPLATES: StateMachineTemplateQuickPickItem[] = [
             'AWS.stepfunctions.template.retryFailure.description',
             'An example of a Task state using a retry policy to handle Lambda failures.'
         ),
-        fileName: 'RetryFailure.asl.json'
+        fileName: 'RetryFailure.asl.json',
     },
     {
         label: localize('AWS.stepfunctions.template.waitState.label', 'Wait state'),
@@ -41,7 +41,7 @@ const STARTER_TEMPLATES: StateMachineTemplateQuickPickItem[] = [
             'AWS.stepfunctions.template.waitState.description',
             'Delays the state machine from continuing for a specified time.'
         ),
-        fileName: 'WaitState.asl.json'
+        fileName: 'WaitState.asl.json',
     },
     {
         label: localize('AWS.stepfunctions.template.parallel.label', 'Parallel'),
@@ -49,7 +49,7 @@ const STARTER_TEMPLATES: StateMachineTemplateQuickPickItem[] = [
             'AWS.stepfunctions.template.parallel.description',
             'Used to create parallel branches of execution in your state machine.'
         ),
-        fileName: 'Parallel.asl.json'
+        fileName: 'Parallel.asl.json',
     },
     {
         label: localize('AWS.stepfunctions.template.mapState.label', 'Map state'),
@@ -57,7 +57,7 @@ const STARTER_TEMPLATES: StateMachineTemplateQuickPickItem[] = [
             'AWS.stepfunctions.template.mapState.description',
             'Use a Map state to dynamically process data in an array.'
         ),
-        fileName: 'MapState.asl.json'
+        fileName: 'MapState.asl.json',
     },
     {
         label: localize('AWS.stepfunctions.template.catchFailure.label', 'Catch failure'),
@@ -65,7 +65,7 @@ const STARTER_TEMPLATES: StateMachineTemplateQuickPickItem[] = [
             'AWS.stepfunctions.template.catchFailure.description',
             'An example of a Task state using Catchers to handle Lambda failures.'
         ),
-        fileName: 'CatchFailure.asl.json'
+        fileName: 'CatchFailure.asl.json',
     },
     {
         label: localize('AWS.stepfunctions.template.choiceState.label', 'Choice state'),
@@ -73,8 +73,8 @@ const STARTER_TEMPLATES: StateMachineTemplateQuickPickItem[] = [
             'AWS.stepfunctions.template.choiceState.description',
             'Adds branching logic to a state machine.'
         ),
-        fileName: 'ChoiceState.asl.json'
-    }
+        fileName: 'ChoiceState.asl.json',
+    },
 ]
 
 export async function createStateMachineFromTemplate(context: vscode.ExtensionContext) {
@@ -83,17 +83,17 @@ export async function createStateMachineFromTemplate(context: vscode.ExtensionCo
     const quickPick = picker.createQuickPick<StateMachineTemplateQuickPickItem>({
         options: {
             ignoreFocusOut: true,
-            title: localize('AWS.message.prompt.selectStateMachineTemplate.placeholder', 'Select a starter template')
+            title: localize('AWS.message.prompt.selectStateMachineTemplate.placeholder', 'Select a starter template'),
         },
         buttons: [vscode.QuickInputButtons.Back],
-        items: STARTER_TEMPLATES
+        items: STARTER_TEMPLATES,
     })
 
     const choices = await picker.promptUser({
         picker: quickPick,
         onDidTriggerButton: (_, resolve) => {
             resolve(undefined)
-        }
+        },
     })
 
     const selection = picker.verifySinglePickerOutput(choices)
@@ -126,7 +126,7 @@ async function getTextDocumentForSelectedItem(
 ): Promise<vscode.TextDocument> {
     const options = {
         content: await readFileAsString(path.join(extensionPath, 'templates', item.fileName)),
-        language: 'asl'
+        language: 'asl',
     }
 
     return await vscode.workspace.openTextDocument(options)

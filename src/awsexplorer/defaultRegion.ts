@@ -29,7 +29,7 @@ enum OnDefaultRegionMissingOperation {
     /**
      * Do nothing
      */
-    Ignore = 'ignore'
+    Ignore = 'ignore',
 }
 
 class DefaultRegionMissingPromptItems {
@@ -84,7 +84,7 @@ export async function checkExplorerForDefaultRegion(
             DefaultRegionMissingPromptItems.add,
             DefaultRegionMissingPromptItems.alwaysAdd,
             DefaultRegionMissingPromptItems.ignore,
-            DefaultRegionMissingPromptItems.alwaysIgnore
+            DefaultRegionMissingPromptItems.alwaysIgnore,
         ],
         {
             placeHolder: localize(
@@ -92,7 +92,7 @@ export async function checkExplorerForDefaultRegion(
                 // prettier-ignore
                 "This profile's default region ({0}) is currently hidden. Would you like to show it in the Explorer?",
                 profileRegion
-            )
+            ),
         }
     )
 

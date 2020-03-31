@@ -16,7 +16,7 @@ import {
     PublishStateMachineWizardContext,
     PublishStateMachineWizardCreateResponse,
     PublishStateMachineWizardResponse,
-    PublishStateMachineWizardUpdateResponse
+    PublishStateMachineWizardUpdateResponse,
 } from '../wizards/publishStateMachineWizard'
 
 const DEFAULT_REGION: string = 'us-east-1'
@@ -89,7 +89,7 @@ async function createStateMachine(
         const result = await client.createStateMachine({
             definition,
             name: wizardResponse.name,
-            roleArn: wizardResponse.roleArn
+            roleArn: wizardResponse.roleArn,
         })
         outputChannel.appendLine(
             localize(
@@ -135,7 +135,7 @@ async function updateStateMachine(
     try {
         await client.updateStateMachine({
             definition,
-            stateMachineArn: wizardResponse.stateMachineArn
+            stateMachineArn: wizardResponse.stateMachineArn,
         })
         outputChannel.appendLine(
             localize(

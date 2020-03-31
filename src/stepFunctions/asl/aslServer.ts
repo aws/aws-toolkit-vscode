@@ -16,7 +16,7 @@ import {
     DocumentLanguageSettings,
     getLanguageService,
     JSONDocument,
-    TextDocument
+    TextDocument,
 } from 'amazon-states-language-service'
 import {
     createConnection,
@@ -29,7 +29,7 @@ import {
     RequestType,
     ServerCapabilities,
     TextDocuments,
-    TextDocumentSyncKind
+    TextDocumentSyncKind,
 } from 'vscode-languageserver'
 
 import { posix } from 'path'
@@ -62,14 +62,14 @@ console.error = connection.console.error.bind(connection.console)
 const workspaceContext = {
     resolveRelativePath: (relativePath: string, resource: string) => {
         return URL.resolve(resource, relativePath)
-    }
+    },
 }
 
 // create the JSON language service
 let languageService = getLanguageService({
     workspaceContext,
     contributions: [],
-    clientCapabilities: ClientCapabilities.LATEST
+    clientCapabilities: ClientCapabilities.LATEST,
 })
 
 // Create a text document manager.
@@ -94,7 +94,7 @@ connection.onInitialize(
         languageService = getLanguageService({
             workspaceContext,
             contributions: [],
-            clientCapabilities: params.capabilities
+            clientCapabilities: params.capabilities,
         })
 
         // tslint:disable: no-unsafe-any
@@ -132,7 +132,7 @@ connection.onInitialize(
             documentRangeFormattingProvider: params.initializationOptions.provideFormatter === true,
             colorProvider: {},
             foldingRangeProvider: true,
-            selectionRangeProvider: true
+            selectionRangeProvider: true,
         }
 
         return { capabilities }
@@ -206,7 +206,7 @@ connection.onDidChangeConfiguration(change => {
         if (enableFormatter) {
             if (!formatterRegistration) {
                 formatterRegistration = connection.client.register(DocumentRangeFormattingRequest.type, {
-                    documentSelector: [{ language: 'asl' }]
+                    documentSelector: [{ language: 'asl' }],
                 })
             }
         } else if (formatterRegistration) {
@@ -387,12 +387,12 @@ connection.onDocumentSymbol((documentSymbolParams, token) => {
                 if (hierarchicalDocumentSymbolSupport) {
                     return languageService.findDocumentSymbols2(document, jsonDocument, {
                         resultLimit,
-                        onResultLimitExceeded
+                        onResultLimitExceeded,
                     })
                 } else {
                     return languageService.findDocumentSymbols(document, jsonDocument, {
                         resultLimit,
-                        onResultLimitExceeded
+                        onResultLimitExceeded,
                     })
                 }
             }
@@ -436,7 +436,7 @@ connection.onDocumentColor((params, token) => {
 
                 return languageService.findDocumentColors(document, jsonDocument, {
                     resultLimit,
-                    onResultLimitExceeded
+                    onResultLimitExceeded,
                 })
             }
 
@@ -479,7 +479,7 @@ connection.onFoldingRanges((params, token) => {
 
                 return languageService.getFoldingRanges(document, {
                     rangeLimit: foldingRangeLimit,
-                    onRangeLimitExceeded
+                    onRangeLimitExceeded,
                 })
             }
 

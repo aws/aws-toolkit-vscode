@@ -6,7 +6,7 @@ import {
     DiagnosticSeverity,
     DocumentLanguageSettings,
     getLanguageService,
-    TextDocument as ASLTextDocument
+    TextDocument as ASLTextDocument,
 } from 'amazon-states-language-service'
 
 import { debounce } from 'lodash'
@@ -102,16 +102,16 @@ async function setupWebviewPanel(
         makeWebviewTitle(documentUri),
         {
             preserveFocus: true,
-            viewColumn: vscode.ViewColumn.Beside
+            viewColumn: vscode.ViewColumn.Beside,
         },
         {
             enableScripts: true,
             localResourceRoots: [
                 ext.visualizationResourcePaths.localWebviewScriptsPath,
                 ext.visualizationResourcePaths.visualizationLibraryCachePath,
-                ext.visualizationResourcePaths.stateMachineCustomThemePath
+                ext.visualizationResourcePaths.stateMachineCustomThemePath,
             ],
-            retainContextWhenHidden: true
+            retainContextWhenHidden: true,
         }
     )
 
@@ -127,7 +127,7 @@ async function setupWebviewPanel(
         panel.webview.postMessage({
             command: 'update',
             stateMachineData: updatedTextDocument.getText(),
-            isValid
+            isValid,
         })
     }
 
@@ -145,7 +145,7 @@ async function setupWebviewPanel(
                 'Previewing ASL document. <a href="" style="text-decoration:none;">View</a>'
             ),
             notInSync: localize('AWS.stepFunctions.graph.status.notInSync', 'Errors detected. Cannot preview.'),
-            syncing: localize('AWS.stepFunctions.graph.status.syncing', 'Rendering ASL graph...')
+            syncing: localize('AWS.stepFunctions.graph.status.syncing', 'Rendering ASL graph...'),
         }
     )
 

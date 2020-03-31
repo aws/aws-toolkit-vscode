@@ -14,7 +14,7 @@ import { SamCliProcessInvoker } from '../sam/cli/samCliInvokerUtils'
 import {
     SamCliLocalInvokeInvocation,
     SamCliLocalInvokeInvocationArguments,
-    SamLocalInvokeCommand
+    SamLocalInvokeCommand,
 } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
@@ -94,7 +94,7 @@ export class LocalLambdaRunner {
             const config = await getHandlerConfig({
                 handlerName: this.localInvokeParams.handlerName,
                 documentUri: this.localInvokeParams.document.uri,
-                samTemplate: this.localInvokeParams.samTemplate
+                samTemplate: this.localInvokeParams.samTemplate,
             })
 
             const samBuildTemplate: string = await executeSamBuild({
@@ -103,7 +103,7 @@ export class LocalLambdaRunner {
                 codeDir: this.codeRootDirectoryPath,
                 inputTemplatePath: inputTemplate,
                 samProcessInvoker: this.processInvoker,
-                useContainer: config.useContainer
+                useContainer: config.useContainer,
             })
 
             await this.invokeLambdaFunction(samBuildTemplate)
@@ -168,7 +168,7 @@ export class LocalLambdaRunner {
             relativeFunctionHandler: this.localInvokeParams.handlerName,
             globals,
             properties,
-            runtime: this.runtime
+            runtime: this.runtime,
         })
     }
 
@@ -187,7 +187,7 @@ export class LocalLambdaRunner {
         const config = await getHandlerConfig({
             handlerName: this.localInvokeParams.handlerName,
             documentUri: this.localInvokeParams.document.uri,
-            samTemplate: this.localInvokeParams.samTemplate
+            samTemplate: this.localInvokeParams.samTemplate,
         })
         const maxRetries: number = getAttachDebuggerMaxRetryLimit(this.configuration, MAX_DEBUGGER_RETRIES_DEFAULT)
 
@@ -201,7 +201,7 @@ export class LocalLambdaRunner {
             environmentVariablePath,
             debugPort: !!this._debugPort ? this._debugPort.toString() : undefined,
             invoker: this.localInvokeCommand,
-            dockerNetwork: config.dockerNetwork
+            dockerNetwork: config.dockerNetwork,
         })
 
         const timer = createInvokeTimer(this.configuration)
@@ -222,9 +222,9 @@ export class LocalLambdaRunner {
                         result: attachResult,
                         attempts,
                         durationMillis: timer.elapsedTime,
-                        runtime: this.runtime
+                        runtime: this.runtime,
                     })
-                }
+                },
             })
 
             if (attachResults.success) {
@@ -334,7 +334,7 @@ export async function executeSamBuild({
     manifestPath,
     environmentVariables,
     samProcessInvoker,
-    useContainer
+    useContainer,
 }: ExecuteSamBuildArguments): Promise<string> {
     channelLogger.info('AWS.output.building.sam.application', 'Building SAM Application...')
 
@@ -347,7 +347,7 @@ export async function executeSamBuild({
         invoker: samProcessInvoker,
         manifestPath,
         environmentVariables,
-        useContainer
+        useContainer,
     }
     await new SamCliBuildInvocation(samCliArgs).execute()
 
@@ -388,7 +388,7 @@ export async function invokeLambdaFunction(
         configuration,
         samLocalInvokeCommand,
         telemetryService,
-        onWillAttachDebugger
+        onWillAttachDebugger,
     }: InvokeLambdaFunctionContext
 ): Promise<void> {
     channelLogger.info(
@@ -402,7 +402,7 @@ export async function invokeLambdaFunction(
     const config = await getHandlerConfig({
         handlerName: invokeArgs.originalHandlerName,
         documentUri: invokeArgs.documentUri,
-        samTemplate: vscode.Uri.file(invokeArgs.originalSamTemplatePath)
+        samTemplate: vscode.Uri.file(invokeArgs.originalSamTemplatePath),
     })
     const maxRetries: number = getAttachDebuggerMaxRetryLimit(configuration, MAX_DEBUGGER_RETRIES_DEFAULT)
 
@@ -415,7 +415,7 @@ export async function invokeLambdaFunction(
         eventPath,
         environmentVariablePath,
         invoker: samLocalInvokeCommand,
-        dockerNetwork: config.dockerNetwork
+        dockerNetwork: config.dockerNetwork,
     }
 
     const debugArgs = invokeArgs.debugArgs
@@ -445,9 +445,9 @@ export async function invokeLambdaFunction(
                     result: attachResult,
                     attempts,
                     durationMillis: timer.elapsedTime,
-                    runtime: invokeArgs.runtime
+                    runtime: invokeArgs.runtime,
                 })
-            }
+            },
         })
 
         if (attachResults.success) {
@@ -461,7 +461,7 @@ const getEnvironmentVariables = (
 ): SAMTemplateEnvironmentVariables => {
     if (!!config.environmentVariables) {
         return {
-            [TEMPLATE_RESOURCE_NAME]: config.environmentVariables
+            [TEMPLATE_RESOURCE_NAME]: config.environmentVariables,
         }
     } else {
         return {}
@@ -537,7 +537,7 @@ export async function attachDebugger({
     }
 
     return {
-        success: isDebuggerAttached
+        success: isDebuggerAttached,
     }
 }
 
@@ -573,7 +573,7 @@ function recordAttachDebuggerMetric(params: RecordAttachDebuggerMetricContext) {
         runtime: params.runtime as Runtime,
         result: params.result ? 'Succeeded' : 'Failed',
         attempts: params.attempts,
-        duration: params.durationMillis
+        duration: params.durationMillis,
     })
 }
 

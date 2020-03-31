@@ -13,7 +13,7 @@ import {
     getPageHeader,
     getRegistryNames,
     getSearchListForSingleRegistry,
-    getSearchResults
+    getSearchResults,
 } from '../../../eventSchemas/commands/searchSchemas'
 import { RegistryItemNode } from '../../../eventSchemas/explorer/registryItemNode'
 import { SchemasNode } from '../../../eventSchemas/explorer/schemasNode'
@@ -43,27 +43,27 @@ describe('Search Schemas', () => {
     const fakeRegion = 'testRegion'
 
     const versionSummary1: Schemas.SearchSchemaVersionSummary = {
-        SchemaVersion: '1'
+        SchemaVersion: '1',
     }
     const versionSummary2: Schemas.SearchSchemaVersionSummary = {
-        SchemaVersion: '2'
+        SchemaVersion: '2',
     }
     const searchSummary1: Schemas.SearchSchemaSummary = {
         RegistryName: TEST_REGISTRY,
         SchemaName: 'testSchema1',
-        SchemaVersions: [versionSummary1, versionSummary2]
+        SchemaVersions: [versionSummary1, versionSummary2],
     }
 
     const searchSummary2: Schemas.SearchSchemaSummary = {
         RegistryName: TEST_REGISTRY,
         SchemaName: 'testSchema2',
-        SchemaVersions: [versionSummary1]
+        SchemaVersions: [versionSummary1],
     }
 
     const searchSummary3: Schemas.SearchSchemaSummary = {
         RegistryName: TEST_REGISTRY2,
         SchemaName: 'testSchema3',
-        SchemaVersions: [versionSummary1]
+        SchemaVersions: [versionSummary1],
     }
 
     describe('getSearchListForSingleRegistry', () => {
@@ -180,7 +180,7 @@ describe('Search Schemas', () => {
         })
 
         const mockTelemetryService = ({
-            record: () => {}
+            record: () => {},
         } as any) as TelemetryService
 
         const singleRegistryName = [TEST_REGISTRY]
@@ -188,19 +188,19 @@ describe('Search Schemas', () => {
         const AWS_EVENT_SCHEMA_RAW =
             '{"openapi":"3.0.0","info":{"version":"1.0.0","title":"Event"},"paths":{},"components":{"schemas":{"Event":{"type":"object"}}}}'
         const schemaResponse: Schemas.DescribeSchemaResponse = {
-            Content: AWS_EVENT_SCHEMA_RAW
+            Content: AWS_EVENT_SCHEMA_RAW,
         }
 
         it('shows schema content for latest matching schema version by default', async () => {
             const versionedSummary = {
                 RegistryName: TEST_REGISTRY,
                 Title: getPageHeader(singleRegistryName),
-                VersionList: ['3', '2', '1']
+                VersionList: ['3', '2', '1'],
             }
             const fakeMessage: CommandMessage = {
                 command: 'fetchSchemaContent',
                 version: undefined,
-                schemaSummary: versionedSummary
+                schemaSummary: versionedSummary,
             }
 
             sandbox.stub(schemaClient, 'describeSchema').returns(Promise.resolve(schemaResponse))
@@ -208,19 +208,19 @@ describe('Search Schemas', () => {
             const expectedArgument1 = {
                 command: 'showSchemaContent',
                 results: JSON.stringify(JSON.parse(schemaResponse.Content!), undefined, getTabSizeSetting()),
-                version: '3'
+                version: '3',
             }
 
             const expectedArgument2 = {
                 command: 'setVersionsDropdown',
-                results: fakeMessage.schemaSummary!.VersionList
+                results: fakeMessage.schemaSummary!.VersionList,
             }
 
             const returnedFunc = createMessageReceivedFunc({
                 registryNames: singleRegistryName,
                 schemaClient: schemaClient,
                 telemetryService: mockTelemetryService,
-                onPostMessage: postMessageSpy
+                onPostMessage: postMessageSpy,
             })
 
             await returnedFunc(fakeMessage)
@@ -246,12 +246,12 @@ describe('Search Schemas', () => {
             const versionedSummary = {
                 RegistryName: TEST_REGISTRY,
                 Title: getPageHeader(multipleRegistryNames),
-                VersionList: ['1']
+                VersionList: ['1'],
             }
             const fakeMessage: CommandMessage = {
                 command: 'fetchSchemaContent',
                 version: '1',
-                schemaSummary: versionedSummary
+                schemaSummary: versionedSummary,
             }
 
             sandbox.stub(schemaClient, 'describeSchema').returns(Promise.resolve(schemaResponse))
@@ -259,14 +259,14 @@ describe('Search Schemas', () => {
             const expectedArgument = {
                 command: 'showSchemaContent',
                 results: JSON.stringify(JSON.parse(schemaResponse.Content!), undefined, getTabSizeSetting()),
-                version: '1'
+                version: '1',
             }
 
             const returnedFunc = createMessageReceivedFunc({
                 registryNames: multipleRegistryNames,
                 schemaClient: schemaClient,
                 telemetryService: mockTelemetryService,
-                onPostMessage: postMessageSpy
+                onPostMessage: postMessageSpy,
             })
 
             await returnedFunc(fakeMessage)
@@ -289,18 +289,18 @@ describe('Search Schemas', () => {
             const expectResults1 = {
                 RegistryName: TEST_REGISTRY,
                 Title: TEST_REGISTRY + '/testSchema1',
-                VersionList: ['2', '1']
+                VersionList: ['2', '1'],
             }
             const expectResults2 = {
                 RegistryName: TEST_REGISTRY,
                 Title: TEST_REGISTRY + '/testSchema2',
-                VersionList: ['1']
+                VersionList: ['1'],
             }
 
             const expectedArgument = {
                 command: 'showSearchSchemaList',
                 results: [expectResults1, expectResults2],
-                resultsNotFound: false
+                resultsNotFound: false,
             }
 
             const searchSummaryList = [searchSummary1, searchSummary2]
@@ -313,7 +313,7 @@ describe('Search Schemas', () => {
                 registryNames: multipleRegistryNames,
                 schemaClient: schemaClient,
                 telemetryService: mockTelemetryService,
-                onPostMessage: postMessageSpy
+                onPostMessage: postMessageSpy,
             })
 
             await returnedFunc(fakeMessage)
@@ -333,7 +333,7 @@ describe('Search Schemas', () => {
                 registryNames: multipleRegistryNames,
                 schemaClient: schemaClient,
                 telemetryService: mockTelemetryService,
-                onPostMessage: postMessageSpy
+                onPostMessage: postMessageSpy,
             })
 
             const error = await assertThrowsError(async () => returnedFunc(fakeMessage))
@@ -354,7 +354,7 @@ describe('Search Schemas', () => {
         it('should return list with single registry name for registryItemNode', async () => {
             const fakeRegistryNew = {
                 RegistryName: TEST_REGISTRY,
-                RegistryArn: 'arn:aws:schemas:us-west-2:19930409:registry/testRegistry'
+                RegistryArn: 'arn:aws:schemas:us-west-2:19930409:registry/testRegistry',
             }
 
             const registryItemNode = new RegistryItemNode(fakeRegion, fakeRegistryNew)

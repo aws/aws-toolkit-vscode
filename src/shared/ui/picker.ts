@@ -31,7 +31,7 @@ export interface AdditionalQuickPickOptions {
 export function createQuickPick<T extends vscode.QuickPickItem>({
     options,
     items,
-    buttons
+    buttons,
 }: {
     options?: vscode.QuickPickOptions & AdditionalQuickPickOptions
     items?: T[]
@@ -81,7 +81,7 @@ export function createQuickPick<T extends vscode.QuickPickItem>({
  */
 export async function promptUser<T extends vscode.QuickPickItem>({
     picker,
-    onDidTriggerButton
+    onDidTriggerButton,
 }: {
     picker: vscode.QuickPick<T>
     onDidTriggerButton?(

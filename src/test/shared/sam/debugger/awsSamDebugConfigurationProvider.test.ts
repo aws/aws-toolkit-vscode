@@ -16,12 +16,12 @@ import {
     AwsSamDebugConfigurationProvider,
     CODE_TARGET_TYPE,
     DIRECT_INVOKE_TYPE,
-    TEMPLATE_TARGET_TYPE
+    TEMPLATE_TARGET_TYPE,
 } from '../../../../shared/sam/debugger/awsSamDebugger'
 import {
     makeSampleSamTemplateYaml,
     makeSampleYamlResource,
-    strToYamlFile
+    strToYamlFile,
 } from '../../cloudformation/cloudformationTestUtils'
 
 // TODO!!!!! Remove all tests prefaced with 'TEMP!!! - '
@@ -43,7 +43,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
         fakeWorkspaceFolder = {
             uri: vscode.Uri.file(tempFolder),
             name: 'It was me, fakeWorkspaceFolder!',
-            index: 0
+            index: 0,
         }
         tempFolderSimilarName = undefined
     })
@@ -80,7 +80,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
         it('returns an array with multiple items if a template with more than one resource is in the workspace', async () => {
             const resources = ['resource1', 'resource2']
             const bigYamlStr = `${makeSampleSamTemplateYaml(true, {
-                resourceName: resources[0]
+                resourceName: resources[0],
             })}\n${makeSampleYamlResource({ resourceName: resources[1] })}`
             await strToYamlFile(bigYamlStr, tempFile.fsPath)
             await registry.addTemplateToRegistry(tempFile)
@@ -136,8 +136,8 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 invokeTarget: {
                     target: CODE_TARGET_TYPE,
                     lambdaHandler: 'sick handles',
-                    projectRoot: 'root as in beer'
-                }
+                    projectRoot: 'root as in beer',
+                },
             })
             assert.strictEqual(resolved, undefined)
         })
@@ -151,8 +151,8 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 invokeTarget: {
                     target: tgt,
                     lambdaHandler: 'sick handles',
-                    projectRoot: 'root as in beer'
-                }
+                    projectRoot: 'root as in beer',
+                },
             })
             assert.strictEqual(resolved, undefined)
         })
@@ -165,8 +165,8 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 invokeTarget: {
                     target: TEMPLATE_TARGET_TYPE,
                     samTemplatePath: 'not here',
-                    samTemplateResource: 'you lack resources'
-                }
+                    samTemplateResource: 'you lack resources',
+                },
             })
             assert.strictEqual(resolved, undefined)
         })
@@ -181,8 +181,8 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 invokeTarget: {
                     target: TEMPLATE_TARGET_TYPE,
                     samTemplatePath: tempFile.fsPath,
-                    samTemplateResource: 'you lack resources'
-                }
+                    samTemplateResource: 'you lack resources',
+                },
             })
             assert.strictEqual(resolved, undefined)
         })
@@ -200,8 +200,8 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 invokeTarget: {
                     target: TEMPLATE_TARGET_TYPE,
                     samTemplatePath: tempFile.fsPath,
-                    samTemplateResource: resourceName
-                }
+                    samTemplateResource: resourceName,
+                },
             })
             assert.strictEqual(resolved, undefined)
         })
@@ -214,11 +214,11 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 invokeTarget: {
                     target: CODE_TARGET_TYPE,
                     lambdaHandler: 'sick handles',
-                    projectRoot: 'root as in beer'
+                    projectRoot: 'root as in beer',
                 },
                 lambda: {
-                    runtime: 'COBOL'
-                }
+                    runtime: 'COBOL',
+                },
             })
             assert.strictEqual(resolved, undefined)
         })
@@ -231,11 +231,11 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 invokeTarget: {
                     target: CODE_TARGET_TYPE,
                     lambdaHandler: 'sick handles',
-                    projectRoot: 'root as in beer'
+                    projectRoot: 'root as in beer',
                 },
                 lambda: {
-                    runtime: validRuntime
-                }
+                    runtime: validRuntime,
+                },
             }
             assert.deepStrictEqual(
                 await debugConfigProvider.resolveDebugConfiguration(undefined, debugConfig),
@@ -251,8 +251,8 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 invokeTarget: {
                     target: TEMPLATE_TARGET_TYPE,
                     samTemplatePath: tempFile.fsPath,
-                    samTemplateResource: resourceName
-                }
+                    samTemplateResource: resourceName,
+                },
             }
             await strToYamlFile(
                 makeSampleSamTemplateYaml(true, { resourceName, runtime: validRuntime }),
@@ -273,14 +273,14 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 invokeTarget: {
                     target: TEMPLATE_TARGET_TYPE,
                     samTemplatePath: tempFile.fsPath,
-                    samTemplateResource: resourceName
+                    samTemplateResource: resourceName,
                 },
                 lambda: {
                     environmentVariables: {
                         var1: 2,
-                        var2: '1'
-                    }
-                }
+                        var2: '1',
+                    },
+                },
             }
             await strToYamlFile(
                 makeSampleSamTemplateYaml(true, { resourceName, runtime: validRuntime }),

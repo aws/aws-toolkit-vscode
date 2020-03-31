@@ -44,7 +44,7 @@ describe('ConstructNode', () => {
             id: label,
             path: constructTreePath,
             children: treeUtils.generateTreeChildResource(),
-            attributes: treeUtils.generateAttributes()
+            attributes: treeUtils.generateAttributes(),
         }
 
         const testNode = new ConstructNode(
@@ -89,7 +89,7 @@ describe('ConstructNode', () => {
         const treeEntity: ConstructTreeEntity = {
             id: label,
             path: constructTreePath,
-            children: treeUtils.generateTreeChildResource()
+            children: treeUtils.generateTreeChildResource(),
         }
         const testNode = new ConstructNode(
             new FakeParentNode(cdkJsonPath),
@@ -111,7 +111,7 @@ describe('ConstructNode', () => {
         const treeEntity: ConstructTreeEntity = {
             id: label,
             path: constructTreePath,
-            children: childWithAttributes
+            children: childWithAttributes,
         }
 
         const testNode = new ConstructNode(
@@ -130,7 +130,7 @@ describe('ConstructNode', () => {
         const treeEntity: ConstructTreeEntity = {
             id: label,
             path: constructTreePath,
-            attributes: treeUtils.generateAttributes()
+            attributes: treeUtils.generateAttributes(),
         }
 
         const testNode = new ConstructNode(
@@ -150,7 +150,7 @@ describe('ConstructNode', () => {
             id: label,
             path: constructTreePath,
             children: { child: treeUtils.generateConstructTreeEntity(label, constructTreePath) },
-            attributes: treeUtils.generateAttributes()
+            attributes: treeUtils.generateAttributes(),
         }
 
         const testNode = new ConstructNode(

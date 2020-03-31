@@ -18,12 +18,12 @@ describe('LoginManager', async () => {
     const awsContext = ({
         setCredentials: () => {
             throw new Error('This test was not initialized')
-        }
+        },
     } as any) as AwsContext
     const sampleCredentials = ({} as any) as AWS.Credentials
     const sampleCredentialsProviderId: CredentialsProviderId = {
         credentialType: 'test',
-        credentialTypeId: 'someId'
+        credentialTypeId: 'someId',
     }
 
     let loginManager: LoginManager
