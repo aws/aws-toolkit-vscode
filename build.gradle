@@ -134,7 +134,7 @@ subprojects {
         jacoco {
             // don't instrument sdk, icons, ktlint, etc.
             includes = ["software.aws.toolkits.*"]
-            excludes = ["software.aws.toolkits.ktlint"]
+            excludes = ["software.aws.toolkits.ktlint.*"]
         }
 
         reports {
@@ -167,7 +167,9 @@ subprojects {
         classpath = sourceSets.integrationTest.runtimeClasspath
 
         jacoco {
-            excludes = ["com.sun.*"] // See https://groups.google.com/forum/#!topic/jacoco/H0gDwxNuhK4
+            // don't instrument sdk, icons, ktlint, etc.
+            includes = ["software.aws.toolkits.*"]
+            excludes = ["software.aws.toolkits.ktlint.*"]
         }
 
         mustRunAfter tasks.test
