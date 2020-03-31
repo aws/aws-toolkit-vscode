@@ -35,7 +35,7 @@ export async function downloadStateMachineDefinition(params: {
         let filePath = path.join(wsPath, params.stateMachineNode.details.name + '.asl.json')
         const fileInfo = await vscode.window.showSaveDialog({ defaultUri: vscode.Uri.file(filePath) })
         if (fileInfo) {
-            filePath = fileInfo.path
+            filePath = fileInfo.fsPath
             fs.writeFileSync(filePath, stateMachineDetails.definition, 'utf8')
             const openPath = vscode.Uri.file(filePath)
             const doc = await vscode.workspace.openTextDocument(openPath)
