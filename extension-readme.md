@@ -50,6 +50,8 @@ These include the following:
 
 -   Amazon Elastic Container Service (Amazon ECS) task definition files
 
+-   Amazon Step Functions state machines
+
 See [Features](#features) below for high-level details, or jump right into the [_AWS Toolkit for Visual Studio Code User Guide_](https://docs.aws.amazon.com/console/toolkit-for-vscode/welcome).
 
 { [Return to Contents](#contents) } or { [Return to Top](#top) }
@@ -84,6 +86,7 @@ For complete setup instructions for these three components, see [Installing the 
 -   [AWS CDK Applications](#cdk-apps)
 -   [Amazon EventBridge Schemas](#eventbridge)
 -   [Amazon ECS Task Definition Files](#ecs-files)
+-   [Amazon Step Functions](#sfn-files)
 
 { [Return to Contents](#contents) } or { [Return to Top](#top) }
 
@@ -166,6 +169,24 @@ Example:
 ![Amazon ECS IntelliSense for Task Definition Files](./resources/marketplace/ecs-task-def-intellisense.png)
 
 For full details, see [Working with Amazon Elastic Container Service](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/ecs.html) in the Toolkit's user guide.
+
+{ [Return to Features](#features) } or { [Return to Top](#top) }
+
+---
+
+## <a id="sfn-files"></a>Amazon Step Functions
+
+The AWS Toolkit provides support for [Amazon Step Functions](https://docs.aws.amazon.com/step-functions). With the Toolkit installed in VS Code, working with state machines is a more streamlined process.
+
+-   Create, update, execute, and download state machines.
+-   See live graph visualizations of your state machine.
+-   Take advantage of features such as code completion and validation, and code snippets.
+
+Example:
+
+![Amazon Step Functions](./resources/marketplace/sfn-state-machine.png)
+
+For full details, see [Working with AWS Step Functions](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/stepfunctions.html) in the Toolkit's user guide.
 
 { [Return to Features](#features) } or { [Return to Top](#top) }
 
