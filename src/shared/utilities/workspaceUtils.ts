@@ -13,9 +13,7 @@ import { getLogger } from '../logger'
  * Returns `relPath` if `relPath` is already absolute or the operation fails.
  */
 export function tryGetAbsolutePath(folder: vscode.WorkspaceFolder | undefined, relPath: string): string {
-    return path.resolve((
-        (folder?.uri) ? folder.uri.fsPath + '/' : ''),
-        relPath)
+    return path.resolve(folder?.uri ? folder.uri.fsPath + '/' : '', relPath)
 }
 
 /**

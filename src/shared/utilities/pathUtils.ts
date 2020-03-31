@@ -28,7 +28,7 @@ export function getLocalRootVariants(filePath: string): string[] {
     if (process.platform === 'win32' && DRIVE_LETTER_REGEX.test(filePath)) {
         return [
             filePath.replace(DRIVE_LETTER_REGEX, match => match.toLowerCase()),
-            filePath.replace(DRIVE_LETTER_REGEX, match => match.toUpperCase())
+            filePath.replace(DRIVE_LETTER_REGEX, match => match.toUpperCase()),
         ]
     }
 

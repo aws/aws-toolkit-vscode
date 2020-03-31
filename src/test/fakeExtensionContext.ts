@@ -50,8 +50,7 @@ export class FakeExtensionContext implements ExtContext {
         }
         this.chanLogger = new FakeChannelLogger()
         const fakeTelemetryPublisher = new FakeTelemetryPublisher()
-        this.telemetryService = new DefaultTelemetryService(
-            this, this.awsContext, fakeTelemetryPublisher)
+        this.telemetryService = new DefaultTelemetryService(this, this.awsContext, fakeTelemetryPublisher)
     }
 
     public get extensionPath(): string {
