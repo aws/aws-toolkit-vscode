@@ -841,7 +841,7 @@
     },
     "dependencies": {
         "adm-zip": "^0.4.13",
-        "amazon-states-language-service": "^1.0.0",
+        "amazon-states-language-service": "^1.0.1",
         "async-lock": "^1.1.3",
         "aws-sdk": "^2.581.0",
         "cloudformation-schema-js-yaml": "^1.0.1",
