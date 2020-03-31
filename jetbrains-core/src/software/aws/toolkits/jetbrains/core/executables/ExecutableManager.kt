@@ -23,6 +23,7 @@ import java.nio.file.Paths
 import java.nio.file.attribute.FileTime
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
+import java.util.concurrent.ConcurrentHashMap
 
 // A startup activity to load the executable manager at startup. This validates the executables if they exist on disk
 // which allows us to use them without explicitly loading loading them.
@@ -52,25 +53,32 @@ inline fun <reified T : ExecutableType<*>> ExecutableManager.getExecutable() = g
 inline fun <reified T : ExecutableType<*>> ExecutableManager.getExecutableIfPresent() = getExecutableIfPresent(ExecutableType.getInstance<T>())
 inline fun <reified T : ExecutableType<*>> ExecutableManager.setExecutablePath(path: Path) = setExecutablePath(ExecutableType.getInstance<T>(), path)
 
+private typealias ExecutableData = Triple<ExecutableState, ExecutableInstance?, FileTime?>
+
 @State(name = "executables", storages = [Storage("aws.xml")])
 class DefaultExecutableManager : PersistentStateComponent<ExecutableStateList>, ExecutableManager {
-    private val internalState = mutableMapOf<String, Triple<ExecutableState, ExecutableInstance?, FileTime?>>()
+    private var internalState = ConcurrentHashMap<String, ExecutableData>()
 
     override fun getState(): ExecutableStateList = ExecutableStateList(internalState.values.map { it.first }.toList())
 
     override fun loadState(state: ExecutableStateList) {
-        internalState.clear()
+        val newState = ConcurrentHashMap<String, ExecutableData>()
+
         state.value.forEach {
             val id = it.id ?: return@forEach
-            internalState[id] = Triple(it, null, null)
+            newState[id] = Triple(it, null, null)
         }
+
+        internalState = newState
+
         ExecutableType.executables().forEach {
             getExecutable(it)
         }
     }
 
     override fun getExecutableIfPresent(type: ExecutableType<*>): ExecutableInstance {
-        val instance = internalState[type.id]?.second?.takeIf {
+        val executableData = internalState[type.id]
+        val instance = executableData?.second?.takeIf {
             when (it) {
                 is ExecutableWithPath -> it.executablePath.exists()
                 else -> true
@@ -90,7 +98,7 @@ class DefaultExecutableManager : PersistentStateComponent<ExecutableStateList>, 
         // Check if the set executable was modified. If it was, start an update in the background. Overlapping
         // runs of update are eventually consistent, and called often, so we do not have to keep track of the future
         val lastModified = (instance as ExecutableWithPath).executablePath.lastModifiedOrNull()
-        if (lastModified != internalState[type.id]?.third) {
+        if (lastModified != executableData.third) {
             getExecutable(type).exceptionally {
                 LOG.warn(it) { "Error thrown while updating executable cache" }
                 null
