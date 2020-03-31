@@ -15,6 +15,10 @@ textarea[readonly] {
     background-color: var(--vscode-textCodeBlock-background);
 }
 
+::placeholder {
+    opacity: 0.5;
+}
+
 input[type='submit'] {
     background-color: var(--vscode-button-background);
     border: none;
