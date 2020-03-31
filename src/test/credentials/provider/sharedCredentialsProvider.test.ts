@@ -29,7 +29,7 @@ describe('SharedCredentialsProvider', async () => {
 
         assert.deepStrictEqual(sut.getCredentialsProviderId(), {
             credentialType: 'profile',
-            credentialTypeId: 'default'
+            credentialTypeId: 'default',
         })
     })
 
@@ -37,7 +37,7 @@ describe('SharedCredentialsProvider', async () => {
         const sut = new SharedCredentialsProvider(
             'default',
             new Map<string, Profile>([
-                ['default', { aws_access_key_id: 'x', aws_secret_access_key: 'y', region: 'foo' }]
+                ['default', { aws_access_key_id: 'x', aws_secret_access_key: 'y', region: 'foo' }],
             ])
         )
 
@@ -70,7 +70,7 @@ describe('SharedCredentialsProvider', async () => {
             new Map<string, Profile>([
                 ['profileA', { role_arn: 'x', source_profile: 'profileB' }],
                 ['profileB', { role_arn: 'x', source_profile: 'profileC' }],
-                ['profileC', { role_arn: 'x', source_profile: 'profileA' }]
+                ['profileC', { role_arn: 'x', source_profile: 'profileA' }],
             ])
         )
 
@@ -131,7 +131,7 @@ describe('SharedCredentialsProvider', async () => {
         const sut = new SharedCredentialsProvider(
             'default',
             new Map<string, Profile>([
-                ['default', { aws_access_key_id: 'x', aws_secret_access_key: 'y', aws_session_token: 'z' }]
+                ['default', { aws_access_key_id: 'x', aws_secret_access_key: 'y', aws_session_token: 'z' }],
             ])
         )
 
@@ -161,7 +161,7 @@ describe('SharedCredentialsProvider', async () => {
             'default',
             new Map<string, Profile>([
                 ['default', { role_arn: 'x', source_profile: 'B' }],
-                ['B', { aws_access_key_id: 'x', aws_secret_access_key: 'y' }]
+                ['B', { aws_access_key_id: 'x', aws_secret_access_key: 'y' }],
             ])
         )
 

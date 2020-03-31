@@ -40,7 +40,7 @@ describe('DefaultAwsClientBuilder', () => {
         it('does not override custom user-agent if specified in options', async () => {
             const builder = new DefaultAWSClientBuilder(new FakeAwsContext())
             const service = await builder.createAndConfigureServiceClient(opts => new FakeService(opts), {
-                customUserAgent: 'CUSTOM USER AGENT'
+                customUserAgent: 'CUSTOM USER AGENT',
             })
 
             assert.strictEqual(service.config.customUserAgent, 'CUSTOM USER AGENT')

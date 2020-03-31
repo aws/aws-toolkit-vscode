@@ -10,7 +10,7 @@ import * as sinon from 'sinon'
 import {
     CloudFormationNode,
     CloudFormationStackNode,
-    CONTEXT_VALUE_CLOUDFORMATION_LAMBDA_FUNCTION
+    CONTEXT_VALUE_CLOUDFORMATION_LAMBDA_FUNCTION,
 } from '../../../lambda/explorer/cloudFormationNodes'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
@@ -21,7 +21,7 @@ import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/u
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import {
     assertNodeListOnlyContainsErrorNode,
-    assertNodeListOnlyContainsPlaceholderNode
+    assertNodeListOnlyContainsPlaceholderNode,
 } from './explorerNodeAssertions'
 
 const FAKE_REGION_CODE = 'someregioncode'
@@ -45,7 +45,7 @@ describe('CloudFormationStackNode', () => {
             CreationTime: new Date(),
             StackId: '1',
             StackName: 'myStack',
-            StackStatus: 'UPDATE_COMPLETE'
+            StackStatus: 'UPDATE_COMPLETE',
         }
     })
 
@@ -143,18 +143,18 @@ describe('CloudFormationStackNode', () => {
         const lambdaClient = {
             listFunctions: sandbox.stub().callsFake(() => {
                 throw new Error('loading failure')
-            })
+            }),
         }
 
         const cloudFormationClient = {
             describeStackResources: sandbox.stub().callsFake(() => {
                 throw new Error('loading failure')
-            })
+            }),
         }
 
         const clientBuilder = {
             createCloudFormationClient: sandbox.stub().returns(cloudFormationClient),
-            createLambdaClient: sandbox.stub().returns(lambdaClient)
+            createLambdaClient: sandbox.stub().returns(lambdaClient),
         }
 
         ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
@@ -175,11 +175,11 @@ describe('CloudFormationStackNode', () => {
                 return asyncGenerator<Lambda.FunctionConfiguration>(
                     lambdaFunctionNames.map<Lambda.FunctionConfiguration>(name => {
                         return {
-                            FunctionName: name
+                            FunctionName: name,
                         }
                     })
                 )
-            })
+            }),
         }
 
         const cloudFormationClient = {
@@ -188,16 +188,16 @@ describe('CloudFormationStackNode', () => {
                     StackResources: cloudFormationStacklambdaFunctionNames.map(name => {
                         return {
                             ResourceType: 'Lambda::Function',
-                            PhysicalResourceId: name
+                            PhysicalResourceId: name,
                         }
-                    })
+                    }),
                 }
-            })
+            }),
         }
 
         const clientBuilder = {
             createCloudFormationClient: sandbox.stub().returns(cloudFormationClient),
-            createLambdaClient: sandbox.stub().returns(lambdaClient)
+            createLambdaClient: sandbox.stub().returns(lambdaClient),
         }
 
         ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
@@ -220,7 +220,7 @@ describe('CloudFormationNode', () => {
         const cloudFormationClient = makeCloudFormationClient(inputStackNames)
 
         const clientBuilder = {
-            createCloudFormationClient: sandbox.stub().returns(cloudFormationClient)
+            createCloudFormationClient: sandbox.stub().returns(cloudFormationClient),
         }
 
         ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
@@ -241,7 +241,7 @@ describe('CloudFormationNode', () => {
         const cloudFormationClient = makeCloudFormationClient(inputStackNames)
 
         const clientBuilder = {
-            createCloudFormationClient: sandbox.stub().returns(cloudFormationClient)
+            createCloudFormationClient: sandbox.stub().returns(cloudFormationClient),
         }
 
         ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
@@ -259,7 +259,7 @@ describe('CloudFormationNode', () => {
         const cloudFormationClient = makeCloudFormationClient([])
 
         const clientBuilder = {
-            createCloudFormationClient: sandbox.stub().returns(cloudFormationClient)
+            createCloudFormationClient: sandbox.stub().returns(cloudFormationClient),
         }
 
         ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
@@ -290,11 +290,11 @@ describe('CloudFormationNode', () => {
                             StackId: name,
                             StackName: name,
                             CreationTime: new Date(),
-                            StackStatus: 'CREATE_COMPLETE'
+                            StackStatus: 'CREATE_COMPLETE',
                         }
                     })
                 )
-            })
+            }),
         }
     }
 })

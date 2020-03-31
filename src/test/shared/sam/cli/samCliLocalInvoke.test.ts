@@ -11,7 +11,7 @@ import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtiliti
 import {
     SamCliLocalInvokeInvocation,
     SamLocalInvokeCommand,
-    SamLocalInvokeCommandArgs
+    SamLocalInvokeCommandArgs,
 } from '../../../../shared/sam/cli/samCliLocalInvoke'
 import { assertArgIsPresent, assertArgNotPresent, assertArgsContainArgument } from './samCliTestUtils'
 
@@ -55,7 +55,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
             templatePath: placeholderTemplateFile,
             eventPath: placeholderEventFile,
             environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker
+            invoker: taskInvoker,
         }).execute()
     })
 
@@ -72,7 +72,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
             templatePath: placeholderTemplateFile,
             eventPath: placeholderEventFile,
             environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker
+            invoker: taskInvoker,
         }).execute()
     })
 
@@ -88,7 +88,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
             templatePath: placeholderTemplateFile,
             eventPath: placeholderEventFile,
             environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker
+            invoker: taskInvoker,
         }).execute()
     })
 
@@ -104,7 +104,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
             templatePath: placeholderTemplateFile,
             eventPath: placeholderEventFile,
             environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker
+            invoker: taskInvoker,
         }).execute()
     })
 
@@ -121,7 +121,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
             templatePath: placeholderTemplateFile,
             eventPath: placeholderEventFile,
             environmentVariablePath: expectedEnvVarsPath,
-            invoker: taskInvoker
+            invoker: taskInvoker,
         }).execute()
     })
 
@@ -139,7 +139,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
             eventPath: placeholderEventFile,
             environmentVariablePath: nonRelevantArg,
             debugPort: expectedDebugPort,
-            invoker: taskInvoker
+            invoker: taskInvoker,
         }).execute()
     })
 
@@ -156,7 +156,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
             eventPath: placeholderEventFile,
             environmentVariablePath: nonRelevantArg,
             debugPort: undefined,
-            invoker: taskInvoker
+            invoker: taskInvoker,
         }).execute()
     })
 
@@ -174,7 +174,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
             eventPath: placeholderEventFile,
             environmentVariablePath: nonRelevantArg,
             invoker: taskInvoker,
-            dockerNetwork: expectedDockerNetwork
+            dockerNetwork: expectedDockerNetwork,
         }).execute()
     })
 
@@ -191,7 +191,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
             eventPath: placeholderEventFile,
             environmentVariablePath: nonRelevantArg,
             invoker: taskInvoker,
-            dockerNetwork: undefined
+            dockerNetwork: undefined,
         }).execute()
     })
 
@@ -208,7 +208,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
             eventPath: placeholderEventFile,
             environmentVariablePath: nonRelevantArg,
             invoker: taskInvoker,
-            skipPullImage: true
+            skipPullImage: true,
         }).execute()
     })
 
@@ -225,7 +225,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
             eventPath: placeholderEventFile,
             environmentVariablePath: nonRelevantArg,
             invoker: taskInvoker,
-            skipPullImage: false
+            skipPullImage: false,
         }).execute()
     })
 
@@ -242,7 +242,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
             eventPath: placeholderEventFile,
             environmentVariablePath: nonRelevantArg,
             invoker: taskInvoker,
-            skipPullImage: undefined
+            skipPullImage: undefined,
         }).execute()
     })
 
@@ -261,7 +261,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
             eventPath: placeholderEventFile,
             environmentVariablePath: nonRelevantArg,
             invoker: taskInvoker,
-            debuggerPath: expectedDebuggerPath
+            debuggerPath: expectedDebuggerPath,
         }).execute()
     })
 
@@ -277,7 +277,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
             templatePath: placeholderTemplateFile,
             eventPath: placeholderEventFile,
             environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker
+            invoker: taskInvoker,
         }).execute()
     })
 })

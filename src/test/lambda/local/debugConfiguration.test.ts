@@ -25,7 +25,7 @@ describe.only('makeCoreCLRDebugConfiguration', async () => {
         fakeWorkspaceFolder = {
             uri: vscode.Uri.file(tempFolder),
             name: 'It was me, fakeWorkspaceFolder!',
-            index: 0
+            index: 0,
         }
     })
 
@@ -66,10 +66,7 @@ describe.only('makeCoreCLRDebugConfiguration', async () => {
         return config
     }
 
-    async function makeConfig({
-        codeUri = path.join('foo', 'bar'),
-        port = 42
-    }: {codeUri?:string, port?:number}) {
+    async function makeConfig({ codeUri = path.join('foo', 'bar'), port = 42 }: { codeUri?: string; port?: number }) {
         const fakeLaunchConfig = makeFakeSamLaunchConfig()
         return makeCoreCLRDebugConfiguration(fakeLaunchConfig, codeUri)
     }
@@ -98,7 +95,10 @@ describe.only('makeCoreCLRDebugConfiguration', async () => {
         it('uses the specified port', async () => {
             const config = await makeConfig({ port: 538 })
 
-            assert.strictEqual(config.windows.pipeTransport.pipeArgs.some(arg => arg.includes('538')), true)
+            assert.strictEqual(
+                config.windows.pipeTransport.pipeArgs.some(arg => arg.includes('538')),
+                true
+            )
         })
     })
     describe('*nix', async () => {
@@ -111,7 +111,10 @@ describe.only('makeCoreCLRDebugConfiguration', async () => {
         it('uses the specified port', async () => {
             const config = await makeConfig({ port: 538 })
 
-            assert.strictEqual(config.pipeTransport.pipeArgs.some(arg => arg.includes('538')), true)
+            assert.strictEqual(
+                config.pipeTransport.pipeArgs.some(arg => arg.includes('538')),
+                true
+            )
         })
     })
 })

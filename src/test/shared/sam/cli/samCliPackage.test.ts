@@ -11,7 +11,7 @@ import { assertArgsContainArgument, MockSamCliProcessInvoker } from './samCliTes
 import {
     assertErrorContainsBadExitMessage,
     assertLogContainsBadExitInformation,
-    BadExitCodeSamCliProcessInvoker
+    BadExitCodeSamCliProcessInvoker,
 } from './testSamCliProcessInvoker'
 
 describe('SamCliPackageInvocation', async () => {
@@ -21,7 +21,7 @@ describe('SamCliPackageInvocation', async () => {
         destinationTemplateFile: 'output',
         environmentVariables: {},
         region: 'region',
-        s3Bucket: 'bucket'
+        s3Bucket: 'bucket',
     }
 
     beforeEach(() => {

@@ -72,9 +72,9 @@ export class SamTemplateGenerator {
             Resources: {
                 [this.resourceName!]: {
                     Type: CloudFormation.SERVERLESS_FUNCTION_TYPE,
-                    Properties: CloudFormation.validateProperties(this.properties)
-                }
-            }
+                    Properties: CloudFormation.validateProperties(this.properties),
+                },
+            },
         }
 
         if (this.globals) {

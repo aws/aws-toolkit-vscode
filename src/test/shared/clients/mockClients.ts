@@ -3,11 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CloudFormation, Lambda, Schemas, STS } from 'aws-sdk'
+import { CloudFormation, IAM, Lambda, Schemas, StepFunctions, STS } from 'aws-sdk'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { EcsClient } from '../../../shared/clients/ecsClient'
+import { IamClient } from '../../../shared/clients/iamClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { SchemaClient } from '../../../shared/clients/schemaClient'
+import { StepFunctionsClient } from '../../../shared/clients/stepFunctionsClient'
 import { StsClient } from '../../../shared/clients/stsClient'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 
@@ -22,7 +24,11 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
 
         private readonly ecsClient: EcsClient = new MockEcsClient({}),
 
+        private readonly iamClient: IamClient = new MockIamClient({}),
+
         private readonly lambdaClient: LambdaClient = new MockLambdaClient({}),
+
+        private readonly stepFunctionsClient: StepFunctionsClient = new MockStepFunctionsClient(),
 
         private readonly stsClient: StsClient = new MockStsClient({})
     ) {}
@@ -35,12 +41,20 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
         return this.schemaClient
     }
 
+    public createIamClient(): IamClient {
+        return this.iamClient
+    }
+
     public createEcsClient(regionCode: string): EcsClient {
         return this.ecsClient
     }
 
     public createLambdaClient(regionCode: string): LambdaClient {
         return this.lambdaClient
+    }
+
+    public createStepFunctionsClient(regionCode: string): StepFunctionsClient {
+        return this.stepFunctionsClient
     }
 
     public createStsClient(regionCode: string): StsClient {
@@ -61,7 +75,7 @@ export class MockCloudFormationClient implements CloudFormationClient {
         public readonly describeStackResources: (
             name: string
         ) => Promise<CloudFormation.DescribeStackResourcesOutput> = async (name: string) => ({
-            StackResources: []
+            StackResources: [],
         })
     ) {}
 }
@@ -85,7 +99,7 @@ export class MockSchemaClient implements SchemaClient {
             schemaName: string,
             schemaVersion?: string
         ) => ({
-            Content: ''
+            Content: '',
         }),
 
         public readonly getCodeBindingSource: (
@@ -148,7 +162,7 @@ export class MockEcsClient implements EcsClient {
         regionCode = '',
         listClusters = () => asyncGenerator([]),
         listServices = (cluster: string) => asyncGenerator([]),
-        listTaskDefinitionFamilies = () => asyncGenerator([])
+        listTaskDefinitionFamilies = () => asyncGenerator([]),
     }: {
         regionCode?: string
         listClusters?(): AsyncIterableIterator<string>
@@ -162,6 +176,14 @@ export class MockEcsClient implements EcsClient {
     }
 }
 
+export class MockIamClient implements IamClient {
+    public readonly listRoles: () => Promise<IAM.ListRolesResponse>
+
+    public constructor({ listRoles = async () => ({ Roles: [] }) }: { listRoles?(): Promise<IAM.ListRolesResponse> }) {
+        this.listRoles = listRoles
+    }
+}
+
 export class MockLambdaClient implements LambdaClient {
     public readonly regionCode: string
     public readonly deleteFunction: (name: string) => Promise<void>
@@ -172,7 +194,7 @@ export class MockLambdaClient implements LambdaClient {
         regionCode = '',
         deleteFunction = async (name: string) => {},
         invoke = async (name: string, payload?: Lambda._Blob) => ({}),
-        listFunctions = () => asyncGenerator([])
+        listFunctions = () => asyncGenerator([]),
     }: {
         regionCode?: string
         deleteFunction?(name: string): Promise<void>
@@ -186,13 +208,58 @@ export class MockLambdaClient implements LambdaClient {
     }
 }
 
+export class MockStepFunctionsClient implements StepFunctionsClient {
+    public constructor(
+        public readonly regionCode: string = '',
+
+        public readonly listStateMachines: () => AsyncIterableIterator<StepFunctions.StateMachineListItem> = () =>
+            asyncGenerator([]),
+
+        public readonly getStateMachineDetails: (
+            arn: string
+        ) => Promise<StepFunctions.DescribeStateMachineOutput> = async (arn: string) => ({
+            stateMachineArn: '',
+            roleArn: '',
+            name: '',
+            definition: '',
+            type: '',
+            creationDate: new Date(),
+        }),
+
+        public readonly executeStateMachine: (
+            arn: string,
+            input: string
+        ) => Promise<StepFunctions.StartExecutionOutput> = async (arn: string, input: string) => ({
+            executionArn: '',
+            startDate: new Date(),
+        }),
+
+        public readonly createStateMachine: (
+            params: StepFunctions.CreateStateMachineInput
+        ) => Promise<StepFunctions.CreateStateMachineOutput> = async (
+            params: StepFunctions.CreateStateMachineInput
+        ) => ({
+            stateMachineArn: '',
+            creationDate: new Date(),
+        }),
+
+        public readonly updateStateMachine: (
+            params: StepFunctions.UpdateStateMachineInput
+        ) => Promise<StepFunctions.UpdateStateMachineOutput> = async (
+            params: StepFunctions.UpdateStateMachineInput
+        ) => ({
+            updateDate: new Date(),
+        })
+    ) {}
+}
+
 export class MockStsClient implements StsClient {
     public readonly regionCode: string
     public readonly getCallerIdentity: () => Promise<STS.GetCallerIdentityResponse>
 
     public constructor({
         regionCode = '',
-        getCallerIdentity = async () => ({})
+        getCallerIdentity = async () => ({}),
     }: {
         regionCode?: string
         getCallerIdentity?(): Promise<STS.GetCallerIdentityResponse>

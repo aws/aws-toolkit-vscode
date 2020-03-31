@@ -40,7 +40,7 @@ describe('CredentialsProviderId', async () => {
         it('converts a CredentialsProviderId to a string', async () => {
             const id = asString({
                 credentialType: 'profile',
-                credentialTypeId: 'default'
+                credentialTypeId: 'default',
             })
 
             assert.strictEqual(id, 'profile:default')
@@ -53,11 +53,11 @@ describe('CredentialsProviderId', async () => {
                 isEqual(
                     {
                         credentialType: 'test',
-                        credentialTypeId: 'hello'
+                        credentialTypeId: 'hello',
                     },
                     {
                         credentialType: 'test',
-                        credentialTypeId: 'hello'
+                        credentialTypeId: 'hello',
                     }
                 ),
                 true
@@ -69,11 +69,11 @@ describe('CredentialsProviderId', async () => {
                 isEqual(
                     {
                         credentialType: 'test',
-                        credentialTypeId: 'hello'
+                        credentialTypeId: 'hello',
                     },
                     {
                         credentialType: 'test2',
-                        credentialTypeId: 'hello'
+                        credentialTypeId: 'hello',
                     }
                 ),
                 false
@@ -85,11 +85,11 @@ describe('CredentialsProviderId', async () => {
                 isEqual(
                     {
                         credentialType: 'test',
-                        credentialTypeId: 'hello'
+                        credentialTypeId: 'hello',
                     },
                     {
                         credentialType: 'test',
-                        credentialTypeId: 'hello2'
+                        credentialTypeId: 'hello2',
                     }
                 ),
                 false

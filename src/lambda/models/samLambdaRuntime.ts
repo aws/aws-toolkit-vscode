@@ -29,7 +29,7 @@ export function getDependencyManager(runtime: Runtime): DependencyManager {
 export enum RuntimeFamily {
     Python,
     NodeJS,
-    DotNetCore
+    DotNetCore,
 }
 
 export function getFamily(runtime: string | undefined): RuntimeFamily {

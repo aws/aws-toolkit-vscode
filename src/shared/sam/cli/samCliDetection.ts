@@ -73,7 +73,7 @@ function notifyUserSamCliNotDetected(samCliConfig: SamCliConfiguration): void {
                     canSelectFiles: true,
                     canSelectFolders: false,
                     canSelectMany: false,
-                    openLabel: 'Apply location to Settings'
+                    openLabel: 'Apply location to Settings',
                 })
 
                 if (!!location && location.length === 1) {

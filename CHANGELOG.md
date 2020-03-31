@@ -1,3 +1,11 @@
+## 1.8.0 2020-03-31
+
+- **Bug Fix** SAM applications deployed through the toolkit now support IAM resources with custom names
+- **Bug Fix** Fix issue where CodeLenses appeared on wrong lines in .js files when adding or removing lines
+- **Feature** Toolkit dynamically chooses an available port when debugging SAM applications, starting at port 5858 and counting upwards until one is found
+- **Feature** Rebranding the toolkit as the "AWS Toolkit"
+- **Feature** New Step Function capabilities: Step Function state machine resources are now shown in the AWS Explorer. Language support (auto-completion, validation) for authoring state machine files. State machines can be created from starting templates. State machines can be downloaded from, published to, and executed within an account.
+
 ## 1.7.0 2020-02-18
 
 - **Feature** The Toolkit now supports China and GovCloud regions. If you have a shared credentials profile based in one of these regions, you can add a "region" property to that profile, and the Toolkit will know to use a different region set.

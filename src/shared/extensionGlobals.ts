@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ExtensionContext, OutputChannel } from 'vscode'
+import { ExtensionContext, OutputChannel, Uri } from 'vscode'
 import { AWSClientBuilder } from './awsClientBuilder'
 import { AWSContextCommands } from './awsContextCommands'
 import { ToolkitClientBuilder } from './clients/toolkitClientBuilder'
@@ -27,6 +27,16 @@ export namespace ext {
         export const light: IconPaths = makeIconPathsObject()
     }
 
+    export namespace visualizationResourcePaths {
+        export let localWebviewScriptsPath: Uri
+        export let webviewBodyScript: Uri
+        export let visualizationLibraryCachePath: Uri
+        export let visualizationLibraryScript: Uri
+        export let visualizationLibraryCSS: Uri
+        export let stateMachineCustomThemePath: Uri
+        export let stateMachineCustomThemeCSS: Uri
+    }
+
     export namespace manifestPaths {
         export let endpoints: string = ''
         export let lambdaSampleRequests: string = ''
@@ -34,6 +44,7 @@ export namespace ext {
 }
 
 export interface IconPaths {
+    statemachine: string
     help: string
     cloudFormation: string
     lambda: string
@@ -49,6 +60,7 @@ function makeIconPathsObject(): IconPaths {
         lambda: '',
         settings: '',
         registry: '',
-        schema: ''
+        schema: '',
+        statemachine: '',
     }
 }

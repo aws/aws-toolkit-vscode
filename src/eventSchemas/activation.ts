@@ -14,24 +14,33 @@ import { SchemasNode } from '../eventSchemas/explorer/schemasNode'
 /**
  * Activate Schemas functionality for the extension.
  */
-export async function activate(activateArguments: {
-    context: vscode.ExtensionContext
-}): Promise<void> {
+export async function activate(activateArguments: { context: vscode.ExtensionContext }): Promise<void> {
     await registerSchemasCommands(activateArguments.context)
 }
 
 async function registerSchemasCommands(context: vscode.ExtensionContext): Promise<void> {
-    context.subscriptions.push(vscode.commands.registerCommand('aws.viewSchemaItem', async (node: SchemaItemNode) => await viewSchemaItem(node)))
-    context.subscriptions.push(vscode.commands.registerCommand(
-        'aws.downloadSchemaItemCode',
-        async (node: SchemaItemNode) => await downloadSchemaItemCode(node)
-    ))
-    context.subscriptions.push(vscode.commands.registerCommand(
-        'aws.searchSchema',
-        async (node: SchemasNode) => await createSearchSchemasWebView({ node: node })
-    ))
-    context.subscriptions.push(vscode.commands.registerCommand(
-        'aws.searchSchemaPerRegistry',
-        async (node: RegistryItemNode) => await createSearchSchemasWebView({ node: node })
-    ))
+    context.subscriptions.push(
+        vscode.commands.registerCommand(
+            'aws.viewSchemaItem',
+            async (node: SchemaItemNode) => await viewSchemaItem(node)
+        )
+    )
+    context.subscriptions.push(
+        vscode.commands.registerCommand(
+            'aws.downloadSchemaItemCode',
+            async (node: SchemaItemNode) => await downloadSchemaItemCode(node)
+        )
+    )
+    context.subscriptions.push(
+        vscode.commands.registerCommand(
+            'aws.searchSchema',
+            async (node: SchemasNode) => await createSearchSchemasWebView({ node: node })
+        )
+    )
+    context.subscriptions.push(
+        vscode.commands.registerCommand(
+            'aws.searchSchemaPerRegistry',
+            async (node: RegistryItemNode) => await createSearchSchemasWebView({ node: node })
+        )
+    )
 }

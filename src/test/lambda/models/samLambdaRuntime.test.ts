@@ -9,7 +9,7 @@ import {
     compareSamLambdaRuntime,
     getDependencyManager,
     getFamily,
-    samLambdaRuntimes
+    samLambdaRuntimes,
 } from '../../../lambda/models/samLambdaRuntime'
 
 describe('compareSamLambdaRuntime', async () => {
@@ -19,7 +19,7 @@ describe('compareSamLambdaRuntime', async () => {
     }[] = [
         { lowerRuntime: 'nodejs8.10', higherRuntime: 'nodejs10.x' },
         { lowerRuntime: 'nodejs8.10', higherRuntime: 'nodejs12.x' },
-        { lowerRuntime: 'nodejs10.x', higherRuntime: 'nodejs12.x' }
+        { lowerRuntime: 'nodejs10.x', higherRuntime: 'nodejs12.x' },
     ]
 
     scenarios.forEach(scenario => {

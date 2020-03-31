@@ -12,7 +12,7 @@ import {
     localize,
     processTemplate,
     TemplateHandler,
-    TemplateParams
+    TemplateParams,
 } from '../../../shared/utilities/vsCodeUtils'
 import { getTestLogger } from '../../globalSetup.test'
 import { MockOutputChannel } from '../../mockOutputChannel'
@@ -29,44 +29,44 @@ const testData: TestData[] = [
         title: 'logs w/o template params',
         nlsKey: 'silly.key1',
         nlsTemplate: 'Yay',
-        templateTokens: undefined
+        templateTokens: undefined,
     },
     {
         title: 'logs with 1 string template param',
         nlsKey: 'silly.key2',
         nlsTemplate: "Nice to meet you '{0}'",
-        templateTokens: ['bob']
+        templateTokens: ['bob'],
     },
     {
         title: 'logs with 2 string template params',
         nlsKey: 'silly.key3',
         nlsTemplate: "Hey '{0}', meet '{1}'",
-        templateTokens: ['bob', 'joe']
+        templateTokens: ['bob', 'joe'],
     },
     {
         title: 'logs with 3 string template params',
         nlsKey: 'silly.key4',
         nlsTemplate: "Hey '{0}', meet '{1}' and '{2}",
-        templateTokens: ['bob', 'joe', 'kim']
+        templateTokens: ['bob', 'joe', 'kim'],
     },
     {
         title: 'logs with 2 template params: errro, string',
         nlsKey: 'silly.key5',
         nlsTemplate: "Oh no '{1}', we found an error: '{0}'",
-        templateTokens: [new Error('Stock market crash'), 'joe']
+        templateTokens: [new Error('Stock market crash'), 'joe'],
     },
     {
         title: 'logs with 2 template params: error, error',
         nlsKey: 'silly.key6',
         nlsTemplate: "1st Error '{0}'; 2nd error: '{1}'",
-        templateTokens: [new Error('Error zero'), new Error('Error one')]
+        templateTokens: [new Error('Error zero'), new Error('Error one')],
     },
     {
         title: 'logs with 3 template params: string, error, error',
         nlsKey: 'silly.key7',
         nlsTemplate: "Oh my '{0}', there are errors: 1st Error '{1}'; 2nd error: '{2}'",
-        templateTokens: ['Bob', new Error('Error zero'), new Error('Error one')]
-    }
+        templateTokens: ['Bob', new Error('Error zero'), new Error('Error one')],
+    },
 ]
 
 describe('getChannelLogger', function() {

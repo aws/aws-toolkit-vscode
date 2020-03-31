@@ -11,7 +11,7 @@ import * as vscode from 'vscode'
 import {
     deploySamApplication,
     SamDeployWizardResponseProvider,
-    WindowFunctions
+    WindowFunctions,
 } from '../../../lambda/commands/deploySamApplication'
 import { SamDeployWizardResponse } from '../../../lambda/wizards/samDeployWizard'
 import { AwsContext } from '../../../shared/awsContext'
@@ -21,7 +21,7 @@ import { SamCliProcessInvoker } from '../../../shared/sam/cli/samCliInvokerUtils
 import {
     SamCliValidator,
     SamCliValidatorResult,
-    SamCliVersionValidation
+    SamCliVersionValidation,
 } from '../../../shared/sam/cli/samCliValidator'
 import { ChildProcessResult } from '../../../shared/utilities/childProcess'
 import { getTestLogger } from '../../globalSetup.test'
@@ -32,11 +32,11 @@ describe('deploySamApplication', async () => {
     // Bad Validator
 
     const badValidatorResult: SamCliValidatorResult = {
-        samCliFound: false
+        samCliFound: false,
     }
 
     const badValidator: SamCliValidator = {
-        detectValidSamCli: async (): Promise<SamCliValidatorResult> => badValidatorResult
+        detectValidSamCli: async (): Promise<SamCliValidatorResult> => badValidatorResult,
     }
 
     // Bad Invoker
@@ -45,7 +45,7 @@ describe('deploySamApplication', async () => {
 
     const invalidSamCliContext: SamCliContext = {
         invoker: badSamCliProcessInvoker,
-        validator: badValidator
+        validator: badValidator,
     }
 
     // Good Validator
@@ -53,12 +53,12 @@ describe('deploySamApplication', async () => {
     const goodValidatorResult: SamCliValidatorResult = {
         samCliFound: true,
         versionValidation: {
-            validation: SamCliVersionValidation.Valid
-        }
+            validation: SamCliVersionValidation.Valid,
+        },
     }
 
     const goodValidator: SamCliValidator = {
-        detectValidSamCli: async (): Promise<SamCliValidatorResult> => goodValidatorResult
+        detectValidSamCli: async (): Promise<SamCliValidatorResult> => goodValidatorResult,
     }
 
     // Good Invoker
@@ -75,7 +75,7 @@ describe('deploySamApplication', async () => {
     const goodSamCliContext = (): SamCliContext => {
         return {
             invoker: goodSamCliProcessInvoker,
-            validator: goodValidator
+            validator: goodValidator,
         }
     }
 
@@ -101,14 +101,14 @@ describe('deploySamApplication', async () => {
     const window: WindowFunctions = {
         setStatusBarMessage,
         showErrorMessage: showMessage,
-        showInformationMessage: showMessage
+        showInformationMessage: showMessage,
     }
 
     // Other support stubs
     const placeholderCredentials = ({} as any) as AWS.Credentials
     let testCredentials: AWS.Credentials | undefined
     const awsContext: Pick<AwsContext, 'getCredentials'> = {
-        getCredentials: async () => testCredentials
+        getCredentials: async () => testCredentials,
     }
 
     let channelLogger: FakeChannelLogger
@@ -117,7 +117,7 @@ describe('deploySamApplication', async () => {
     const samDeployWizard: SamDeployWizardResponseProvider = {
         getSamDeployWizardResponse: async (): Promise<SamDeployWizardResponse | undefined> => {
             return samDeployWizardResponse
-        }
+        },
     }
 
     let tempToolkitFolder: string
@@ -135,7 +135,7 @@ describe('deploySamApplication', async () => {
             region: 'region',
             s3Bucket: 'bucket',
             stackName: 'stack',
-            template: vscode.Uri.file(templatePath)
+            template: vscode.Uri.file(templatePath),
         }
 
         runningDeployProcess = undefined
@@ -150,11 +150,11 @@ describe('deploySamApplication', async () => {
             {
                 samCliContext: goodSamCliContext(),
                 channelLogger,
-                samDeployWizard
+                samDeployWizard,
             },
             {
                 awsContext,
-                window
+                window,
             }
         )
 
@@ -169,11 +169,11 @@ describe('deploySamApplication', async () => {
             {
                 samCliContext: goodSamCliContext(),
                 channelLogger,
-                samDeployWizard
+                samDeployWizard,
             },
             {
                 awsContext,
-                window
+                window,
             }
         )
 
@@ -185,11 +185,11 @@ describe('deploySamApplication', async () => {
             {
                 samCliContext: invalidSamCliContext,
                 channelLogger,
-                samDeployWizard
+                samDeployWizard,
             },
             {
                 awsContext,
-                window
+                window,
             }
         )
 
@@ -203,11 +203,11 @@ describe('deploySamApplication', async () => {
             {
                 samCliContext: goodSamCliContext(),
                 channelLogger,
-                samDeployWizard
+                samDeployWizard,
             },
             {
                 awsContext,
-                window
+                window,
             }
         )
 
@@ -223,7 +223,7 @@ describe('deploySamApplication', async () => {
 
                 return new FakeChildProcessResult({
                     exitCode: isDeployInvoke ? -1 : 0,
-                    error: isDeployInvoke ? new Error('broken build') : undefined
+                    error: isDeployInvoke ? new Error('broken build') : undefined,
                 })
             }
         )
@@ -232,11 +232,11 @@ describe('deploySamApplication', async () => {
             {
                 samCliContext: goodSamCliContext(),
                 channelLogger,
-                samDeployWizard
+                samDeployWizard,
             },
             {
                 awsContext,
-                window
+                window,
             }
         )
 
@@ -255,7 +255,7 @@ describe('deploySamApplication', async () => {
 
                 return new FakeChildProcessResult({
                     exitCode: isDeployInvoke ? -1 : 0,
-                    error: isDeployInvoke ? new Error('broken package') : undefined
+                    error: isDeployInvoke ? new Error('broken package') : undefined,
                 })
             }
         )
@@ -264,11 +264,11 @@ describe('deploySamApplication', async () => {
             {
                 samCliContext: goodSamCliContext(),
                 channelLogger,
-                samDeployWizard
+                samDeployWizard,
             },
             {
                 awsContext,
-                window
+                window,
             }
         )
 
@@ -287,7 +287,7 @@ describe('deploySamApplication', async () => {
 
                 return new FakeChildProcessResult({
                     exitCode: isDeployInvoke ? -1 : 0,
-                    error: isDeployInvoke ? new Error('broken deploy') : undefined
+                    error: isDeployInvoke ? new Error('broken deploy') : undefined,
                 })
             }
         )
@@ -296,11 +296,11 @@ describe('deploySamApplication', async () => {
             {
                 samCliContext: goodSamCliContext(),
                 channelLogger,
-                samDeployWizard
+                samDeployWizard,
             },
             {
                 awsContext,
-                window
+                window,
             }
         )
 

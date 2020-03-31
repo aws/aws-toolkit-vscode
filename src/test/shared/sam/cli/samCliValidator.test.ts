@@ -10,7 +10,7 @@ import {
     MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE,
     MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
     SamCliValidatorContext,
-    SamCliVersionValidation
+    SamCliVersionValidation,
 } from '../../../../shared/sam/cli/samCliValidator'
 
 describe('DefaultSamCliValidator', async () => {
@@ -28,7 +28,7 @@ describe('DefaultSamCliValidator', async () => {
             this.getInfoCallCount++
 
             return {
-                version: this.samCliVersion
+                version: this.samCliVersion,
             }
         }
     }
@@ -37,28 +37,28 @@ describe('DefaultSamCliValidator', async () => {
         {
             situation: 'SAM CLI Version is valid',
             version: MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
-            expectedVersionValidation: SamCliVersionValidation.Valid
+            expectedVersionValidation: SamCliVersionValidation.Valid,
         },
         {
             situation: 'SAM CLI Version is too low',
             version: '0.1.0',
-            expectedVersionValidation: SamCliVersionValidation.VersionTooLow
+            expectedVersionValidation: SamCliVersionValidation.VersionTooLow,
         },
         {
             situation: 'SAM CLI Version is too high',
             version: MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE,
-            expectedVersionValidation: SamCliVersionValidation.VersionTooHigh
+            expectedVersionValidation: SamCliVersionValidation.VersionTooHigh,
         },
         {
             situation: 'SAM CLI Version is unparsable - empty string',
             version: '',
-            expectedVersionValidation: SamCliVersionValidation.VersionNotParseable
+            expectedVersionValidation: SamCliVersionValidation.VersionNotParseable,
         },
         {
             situation: 'SAM CLI Version is unparsable - random text',
             version: 'what.in.tarnation',
-            expectedVersionValidation: SamCliVersionValidation.VersionNotParseable
-        }
+            expectedVersionValidation: SamCliVersionValidation.VersionNotParseable,
+        },
     ]
 
     describe('detectValidSamCli', async () => {

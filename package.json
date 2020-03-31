@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "An extension for working with Amazon Web Services",
-    "version": "1.8.0-SNAPSHOT",
+    "version": "1.9.0-SNAPSHOT",
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {
@@ -50,9 +50,13 @@
         "onCommand:aws.quickStart",
         "onCommand:aws.help",
         "onCommand:aws.github",
+        "onCommand:aws.previewStateMachine",
+        "onCommand:aws.stepfunctions.createStateMachineFromTemplate",
+        "onCommand:aws.stepfunctions.publishStateMachine",
         "onView:aws.cdk.explorer",
         "onCommand:aws.refreshCdkExplorer",
-        "onCommand:aws.aboutToolkit"
+        "onCommand:aws.aboutToolkit",
+        "onLanguage:asl"
     ],
     "main": "./extensionMain",
     "contributes": {
@@ -124,6 +128,17 @@
                     ],
                     "default": "Use IDE settings",
                     "markdownDescription": "%AWS.configuration.description.telemetry%"
+                },
+                "aws.stepfunctions.asl.format.enable": {
+                    "type": "boolean",
+                    "scope": "window",
+                    "default": true,
+                    "description": "%AWS.stepFunctions.asl.format.enable.desc%"
+                },
+                "aws.stepfunctions.asl.maxItemsComputed": {
+                    "type": "number",
+                    "default": 5000,
+                    "description": "%AWS.stepFunctions.asl.maxItemsComputed.desc%"
                 }
             }
         },
@@ -360,6 +375,14 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.downloadStateMachineDefinition",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.executeStateMachine",
+                    "when": "false"
+                },
+                {
                     "command": "aws.downloadSchemaItemCode",
                     "when": "false"
                 },
@@ -398,6 +421,13 @@
                 {
                     "command": "aws.showErrorDetails",
                     "when": "false"
+                }
+            ],
+            "editor/title": [
+                {
+                    "command": "aws.previewStateMachine",
+                    "when": "editorLangId == asl",
+                    "group": "navigation"
                 }
             ],
             "view/title": [
@@ -514,6 +544,16 @@
                     "group": "0@1"
                 },
                 {
+                    "command": "aws.downloadStateMachineDefinition",
+                    "when": "view == aws.explorer && viewItem == awsStateMachineNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.executeStateMachine",
+                    "when": "view == aws.explorer && viewItem == awsStateMachineNode",
+                    "group": "1@1"
+                },
+                {
                     "command": "aws.downloadSchemaItemCode",
                     "when": "view == aws.explorer && viewItem == awsSchemaItemNode",
                     "group": "1@1"
@@ -620,6 +660,16 @@
                 "category": "AWS"
             },
             {
+                "command": "aws.downloadStateMachineDefinition",
+                "title": "%AWS.command.downloadStateMachineDefinition%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.executeStateMachine",
+                "title": "%AWS.command.executeStateMachine%",
+                "category": "AWS"
+            },
+            {
                 "command": "aws.viewSchemaItem",
                 "title": "%AWS.command.viewSchemaItem%",
                 "category": "AWS"
@@ -674,6 +724,25 @@
                 }
             },
             {
+                "command": "aws.stepfunctions.createStateMachineFromTemplate",
+                "title": "%AWS.command.stepFunctions.createStateMachineFromTemplate%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.stepfunctions.publishStateMachine",
+                "title": "%AWS.command.stepFunctions.publishStateMachine%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.previewStateMachine",
+                "title": "%AWS.command.stepFunctions.previewStateMachine%",
+                "category": "AWS",
+                "icon": {
+                    "light": "resources/light/stepfunctions/preview.svg",
+                    "dark": "resources/dark/stepfunctions/preview.svg"
+                }
+            },
+            {
                 "command": "aws.aboutToolkit",
                 "title": "%AWS.command.aboutToolkit%",
                 "category": "AWS"
@@ -687,6 +756,33 @@
             {
                 "fileMatch": "*ecs-task-def.json",
                 "url": "https://ecs-intellisense.s3-us-west-2.amazonaws.com/task-definition/schema.json"
+            }
+        ],
+        "languages": [
+            {
+                "id": "asl",
+                "extensions": [
+                    ".asl.json",
+                    ".asl"
+                ],
+                "aliases": [
+                    "Amazon States Language"
+                ]
+            }
+        ],
+        "keybindings": [
+            {
+                "command": "aws.previewStateMachine",
+                "key": "ctrl+shift+v",
+                "mac": "cmd+shift+v",
+                "when": "editorTextFocus && editorLangId == asl"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "asl",
+                "scopeName": "source.asl",
+                "path": "./syntaxes/ASL.tmLanguage"
             }
         ]
     },
@@ -737,6 +833,7 @@
         "@types/vscode": "^1.43.0",
         "@types/xml2js": "^0.4.3",
         "decache": "^4.4.0",
+        "filemanager-webpack-plugin": "^2.0.5",
         "glob": "^7.1.4",
         "husky": "^2.3.0",
         "istanbul": "^0.4.5",
@@ -766,6 +863,7 @@
     },
     "dependencies": {
         "adm-zip": "^0.4.13",
+        "amazon-states-language-service": "^1.0.1",
         "async-lock": "^1.1.3",
         "aws-sdk": "^2.581.0",
         "cloudformation-schema-js-yaml": "^1.0.1",
@@ -790,6 +888,9 @@
         "uuid": "^3.3.2",
         "vscode-debugadapter": "1.40.0-pre.2",
         "vscode-debugprotocol": "1.40.0-pre.1",
+        "vscode-languageclient": "^6.1.1",
+        "vscode-languageserver": "^6.1.1",
+        "vscode-languageserver-textdocument": "^1.0.1",
         "vscode-nls": "^4.1.1",
         "vue": "^2.5.16",
         "winston": "^3.2.1",
@@ -798,7 +899,7 @@
     },
     "prettier": {
         "printWidth": 120,
-        "trailingComma": "none",
+        "trailingComma": "es5",
         "tabWidth": 4,
         "singleQuote": true,
         "semi": false,

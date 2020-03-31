@@ -11,12 +11,12 @@ export function createBaseTemplate(): CloudFormation.Template {
     return {
         Globals: {
             Function: {
-                Timeout: 5
-            }
+                Timeout: 5,
+            },
         },
         Resources: {
-            TestResource: createBaseResource()
-        }
+            TestResource: createBaseResource(),
+        },
     }
 }
 
@@ -30,10 +30,10 @@ export function createBaseResource(): CloudFormation.Resource {
             Timeout: 12345,
             Environment: {
                 Variables: {
-                    ENVVAR: 'envvar'
-                }
-            }
-        }
+                    ENVVAR: 'envvar',
+                },
+            },
+        },
     }
 }
 

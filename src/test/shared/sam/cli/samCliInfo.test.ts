@@ -13,7 +13,7 @@ import {
     assertLogContainsBadExitInformation,
     BadExitCodeSamCliProcessInvoker,
     FakeChildProcessResult,
-    TestSamCliProcessInvoker
+    TestSamCliProcessInvoker,
 } from './testSamCliProcessInvoker'
 
 describe('SamCliInfoInvocation', async () => {
@@ -60,7 +60,7 @@ describe('SamCliInfoInvocation', async () => {
         const invoker: TestSamCliProcessInvoker = new TestSamCliProcessInvoker(
             (spawnOptions, args: any[]): ChildProcessResult => {
                 return new FakeChildProcessResult({
-                    stdout: '{"version": "1.2.3"}'
+                    stdout: '{"version": "1.2.3"}',
                 })
             }
         )
@@ -75,7 +75,7 @@ describe('SamCliInfoInvocation', async () => {
         const invoker: TestSamCliProcessInvoker = new TestSamCliProcessInvoker(
             (spawnOptions, args: any[]): ChildProcessResult => {
                 return new FakeChildProcessResult({
-                    stdout: 'unexpected output'
+                    stdout: 'unexpected output',
                 })
             }
         )

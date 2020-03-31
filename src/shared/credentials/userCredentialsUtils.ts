@@ -81,7 +81,7 @@ export class UserCredentialsUtils {
 
         await writeFile(getCredentialsFilename(), credentialsFileContents, {
             encoding: 'utf8',
-            mode: 0o100600 // basic file (type 100) with 600 permissions
+            mode: 0o100600, // basic file (type 100) with 600 permissions
         })
     }
 }

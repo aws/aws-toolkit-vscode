@@ -17,7 +17,15 @@ import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidat
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
 import { getStartPort } from '../utilities/debuggerUtils'
 import { ChannelLogger } from '../utilities/vsCodeUtils'
-import { executeSamBuild, getHandlerRelativePath, getLambdaInfoFromExistingTemplate, getRelativeFunctionHandler, invokeLambdaFunction, makeBuildDir, makeInputTemplate } from './localLambdaRunner'
+import {
+    executeSamBuild,
+    getHandlerRelativePath,
+    getLambdaInfoFromExistingTemplate,
+    getRelativeFunctionHandler,
+    invokeLambdaFunction,
+    makeBuildDir,
+    makeInputTemplate,
+} from './localLambdaRunner'
 import { PythonDebugAdapterHeartbeat } from './pythonDebugAdapterHeartbeat'
 import { getLocalRootVariants } from '../utilities/pathUtils'
 import { SamLaunchRequestArgs } from '../sam/debugger/samDebugSession'
@@ -27,8 +35,8 @@ export const PYTHON_LANGUAGE = 'python'
 export const PYTHON_ALLFILES: vscode.DocumentFilter[] = [
     {
         scheme: 'file',
-        language: PYTHON_LANGUAGE
-    }
+        language: PYTHON_LANGUAGE,
+    },
 ]
 
 // TODO: Fix this! Implement a more robust/flexible solution. This is just a basic minimal proof of concept.
@@ -49,7 +57,7 @@ export async function getLambdaHandlerCandidates(uri: vscode.Uri): Promise<Lambd
             return {
                 filename,
                 handlerName: `${path.parse(filename).name}.${symbol.name}`,
-                range: symbol.range
+                range: symbol.range,
             }
         })
 }
@@ -119,7 +127,7 @@ def ${debugHandlerFunctionName}(event, context):
 
         return {
             outFilePath,
-            debugHandlerName: `${debugHandlerFileName}.${debugHandlerFunctionName}`
+            debugHandlerName: `${debugHandlerFileName}.${debugHandlerFunctionName}`,
         }
     } catch (err) {
         logger.error('makeLambdaDebugFile failed:', err as Error)
@@ -134,19 +142,16 @@ def ${debugHandlerFunctionName}(event, context):
  * Does NOT execute/invoke SAM, docker, etc.
  */
 export async function makePythonDebugConfig(
-        config: SamLaunchRequestArgs,
-        isDebug: boolean,
-        runtime: string,
-        handlerName: string,
-        uri: vscode.Uri,
-        )
-        : Promise<PythonDebugConfiguration> {
-
+    config: SamLaunchRequestArgs,
+    isDebug: boolean,
+    runtime: string,
+    handlerName: string,
+    uri: vscode.Uri
+): Promise<PythonDebugConfiguration> {
     if (!config.codeRoot) {
         // Last-resort attempt to discover the project root (when there is no
         // `launch.json` nor `template.yaml`).
-        config.codeRoot = await getSamProjectDirPathForFile(
-            config?.samTemplatePath ?? config.documentUri!!.fsPath)
+        config.codeRoot = await getSamProjectDirPathForFile(config?.samTemplatePath ?? config.documentUri!!.fsPath)
         if (!config.codeRoot) {
             // TODO: return error and show it at the caller.
             throw Error('missing launch.json, template.yaml, and failed to discover project root')
@@ -156,38 +161,37 @@ export async function makePythonDebugConfig(
     const baseBuildDir = await makeBuildDir()
     const handlerFileRelativePath = getHandlerRelativePath({
         codeRoot: config.codeRoot,
-        filePath: uri.fsPath
+        filePath: uri.fsPath,
     })
     const relativeFunctionHandler = getRelativeFunctionHandler({
         handlerName: handlerName,
         runtime: runtime,
-        handlerFileRelativePath
+        handlerFileRelativePath,
     })
     const relativeOriginalFunctionHandler = getRelativeFunctionHandler({
         handlerName: handlerName,
         runtime: runtime,
-        handlerFileRelativePath
+        handlerFileRelativePath,
     })
     const lambdaInfo = await getLambdaInfoFromExistingTemplate({
         workspaceUri: config.workspaceFolder.uri,
-        relativeOriginalFunctionHandler
+        relativeOriginalFunctionHandler,
     })
-    const inputTemplatePath = await makeInputTemplate({  // Direct ("code") invoke-target.
-            baseBuildDir,
-            codeDir: config.codeRoot,
-            relativeFunctionHandler,
-            globals: lambdaInfo && lambdaInfo.templateGlobals ? lambdaInfo.templateGlobals : undefined,
-            properties: lambdaInfo && lambdaInfo.resource.Properties ? lambdaInfo.resource.Properties : undefined,
-            runtime: runtime
-        })
-    const pathMappings: PythonPathMapping[] = getLocalRootVariants(config.codeRoot).map<PythonPathMapping>(
-        variant => {
-            return {
-                localRoot: variant,
-                remoteRoot: '/var/task'
-            }
+    const inputTemplatePath = await makeInputTemplate({
+        // Direct ("code") invoke-target.
+        baseBuildDir,
+        codeDir: config.codeRoot,
+        relativeFunctionHandler,
+        globals: lambdaInfo && lambdaInfo.templateGlobals ? lambdaInfo.templateGlobals : undefined,
+        properties: lambdaInfo && lambdaInfo.resource.Properties ? lambdaInfo.resource.Properties : undefined,
+        runtime: runtime,
+    })
+    const pathMappings: PythonPathMapping[] = getLocalRootVariants(config.codeRoot).map<PythonPathMapping>(variant => {
+        return {
+            localRoot: variant,
+            remoteRoot: '/var/task',
         }
-    )
+    })
 
     let debugPort: number | undefined
     let manifestPath: string | undefined
@@ -197,14 +201,14 @@ export async function makePythonDebugConfig(
         const rv = await makeLambdaDebugFile({
             handlerName: handlerName,
             debugPort: debugPort,
-            outputDir: config.codeRoot
+            outputDir: config.codeRoot,
         })
         outFilePath = rv.outFilePath
         // XXX: Reassign handler name.
         handlerName = rv.debugHandlerName
         manifestPath = await makePythonDebugManifest({
             samProjectCodeRoot: config.codeRoot,
-            outputDir: baseBuildDir
+            outputDir: baseBuildDir,
         })
     }
 
@@ -242,10 +246,7 @@ export async function makePythonDebugConfig(
 /**
  * Launches and attaches debugger to a SAM Python project.
  */
-export async function invokePythonLambda(
-        ctx: ExtContext,
-        config: PythonDebugConfiguration,
-        ) {
+export async function invokePythonLambda(ctx: ExtContext, config: PythonDebugConfiguration) {
     // Switch over to the output channel so the user has feedback that we're getting things ready
     ctx.chanLogger.channel.show(true)
     ctx.chanLogger.info('AWS.output.sam.local.start', 'Preparing to run {0} locally...', config.handlerName)
@@ -274,7 +275,7 @@ export async function invokePythonLambda(
             inputTemplatePath: inputTemplatePath,
             manifestPath: config.manifestPath,
             samProcessInvoker: processInvoker,
-            useContainer: config.sam?.containerBuild || false
+            useContainer: config.sam?.containerBuild || false,
         })
         if (config.invokeTarget.target === 'template') {
             // XXX: reassignment

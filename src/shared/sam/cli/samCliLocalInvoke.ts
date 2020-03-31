@@ -18,7 +18,7 @@ const localize = nls.loadMessageBundle()
 export const WAIT_FOR_DEBUGGER_MESSAGES = {
     PYTHON: 'Waiting for debugger to attach...',
     NODEJS: 'Debugger listening on',
-    DOTNET: 'Waiting for the debugger to attach...'
+    DOTNET: 'Waiting for the debugger to attach...',
 }
 
 export interface SamLocalInvokeCommandArgs {
@@ -43,7 +43,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
         private readonly channelLogger: ChannelLogger,
         private readonly debuggerAttachCues: string[] = [
             WAIT_FOR_DEBUGGER_MESSAGES.PYTHON,
-            WAIT_FOR_DEBUGGER_MESSAGES.NODEJS
+            WAIT_FOR_DEBUGGER_MESSAGES.NODEJS,
         ]
     ) {}
 
@@ -97,7 +97,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                     )
                     debuggerPromiseClosed = true
                     reject(error)
-                }
+                },
             })
 
             if (!params.isDebug || this.debuggerAttachCues.length === 0) {
@@ -217,7 +217,7 @@ export class SamCliLocalInvokeInvocation {
             '--event',
             this.eventPath,
             '--env-vars',
-            this.environmentVariablePath
+            this.environmentVariablePath,
         ]
 
         this.addArgumentIf(args, !!this.debugPort, '-d', this.debugPort!)
@@ -229,7 +229,7 @@ export class SamCliLocalInvokeInvocation {
             command: 'sam',
             args,
             isDebug: !!this.debugPort,
-            timeout
+            timeout,
         })
     }
 

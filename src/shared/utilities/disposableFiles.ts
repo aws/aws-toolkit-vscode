@@ -36,7 +36,7 @@ export class DisposableFiles implements vscode.Disposable {
                     nobrace: false,
                     nodir: true,
                     noext: true,
-                    noglobstar: true
+                    noglobstar: true,
                 })
 
                 this._folderPaths.forEach(folder => {
@@ -47,7 +47,7 @@ export class DisposableFiles implements vscode.Disposable {
                             nobrace: false,
                             nodir: false,
                             noext: true,
-                            noglobstar: true
+                            noglobstar: true,
                         })
                     }
                 })

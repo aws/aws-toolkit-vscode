@@ -7,6 +7,6 @@ import { runTests } from './testRunner'
 
 export async function run(): Promise<void> {
     await runTests({
-        rootTestsPath: __dirname
+        rootTestsPath: __dirname,
     })
 }

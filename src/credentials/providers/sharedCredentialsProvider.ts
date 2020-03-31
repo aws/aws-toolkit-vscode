@@ -46,7 +46,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     public getCredentialsProviderId(): CredentialsProviderId {
         return {
             credentialType: SharedCredentialsProvider.getCredentialsType(),
-            credentialTypeId: this.profileName
+            credentialTypeId: this.profileName,
         }
     }
 
@@ -207,7 +207,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             new AWS.SharedIniFileCredentials({
                 profile: this.profileName,
                 tokenCodeFn: async (mfaSerial, callback) =>
-                    await getMfaTokenFromUser(mfaSerial, this.profileName, callback)
+                    await getMfaTokenFromUser(mfaSerial, this.profileName, callback),
             })
     }
 

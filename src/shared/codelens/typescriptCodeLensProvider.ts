@@ -8,9 +8,16 @@ import { findFileInParentPaths } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { localize } from '../utilities/vsCodeUtils'
-import { executeSamBuild, generateInputTemplate, getHandlerRelativePath, waitForDebugPort, makeBuildDir, invokeLambdaFunction } from './localLambdaRunner'
+import {
+    executeSamBuild,
+    generateInputTemplate,
+    getHandlerRelativePath,
+    waitForDebugPort,
+    makeBuildDir,
+    invokeLambdaFunction,
+} from './localLambdaRunner'
 import { ExtContext } from '../extensions'
-import { NodejsDebugConfiguration, assertTargetKind } from '../../lambda/local/debugConfiguration'
+import { NodejsDebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
 import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
 import { SamLaunchRequestArgs } from '../sam/debugger/samDebugSession'
@@ -20,11 +27,7 @@ export async function getSamProjectDirPathForFile(filepath: string): Promise<str
     const packageJsonPath: string | undefined = await findFileInParentPaths(path.dirname(filepath), 'package.json')
     if (!packageJsonPath) {
         throw new Error( // TODO: Do we want to localize errors? This might be confusing if we need to review logs.
-            localize(
-                'AWS.error.sam.local.package_json_not_found',
-                'Cannot find package.json related to: {0}',
-                filepath
-            )
+            localize('AWS.error.sam.local.package_json_not_found', 'Cannot find package.json related to: {0}', filepath)
         )
     }
 
@@ -36,7 +39,10 @@ export async function getSamProjectDirPathForFile(filepath: string): Promise<str
  * @param handlers Handlers to apply relative paths to
  * @param parentDocumentPath Path to the file containing these Lambda Handlers
  */
-export async function decorateHandlerNames(handlers: LambdaHandlerCandidate[], parentDocumentPath: string): Promise<void> {
+export async function decorateHandlerNames(
+    handlers: LambdaHandlerCandidate[],
+    parentDocumentPath: string
+): Promise<void> {
     const parentDir = path.dirname(parentDocumentPath)
     const packageJsonPath = await findFileInParentPaths(parentDir, 'package.json')
 
@@ -46,7 +52,7 @@ export async function decorateHandlerNames(handlers: LambdaHandlerCandidate[], p
 
     const relativePath = getHandlerRelativePath({
         codeRoot: path.dirname(packageJsonPath),
-        filePath: parentDocumentPath
+        filePath: parentDocumentPath,
     })
 
     handlers.forEach(handler => {
@@ -63,22 +69,19 @@ export async function decorateHandlerNames(handlers: LambdaHandlerCandidate[], p
  * Does NOT execute/invoke SAM, docker, etc.
  */
 export async function makeTypescriptConfig(
-        config: SamLaunchRequestArgs,
-        // isDebug: boolean,
-        // workspaceFolder: vscode.WorkspaceFolder,
-        // samProjectCodeRoot: string,
-        // runtime: string,
-        // handlerName: string,
-        // uri: vscode.Uri,
-        // samTemplatePath: string | undefined,
-        )
-        : Promise<NodejsDebugConfiguration> {
-
+    config: SamLaunchRequestArgs
+    // isDebug: boolean,
+    // workspaceFolder: vscode.WorkspaceFolder,
+    // samProjectCodeRoot: string,
+    // runtime: string,
+    // handlerName: string,
+    // uri: vscode.Uri,
+    // samTemplatePath: string | undefined,
+): Promise<NodejsDebugConfiguration> {
     if (!config.codeRoot) {
         // Last-resort attempt to discover the project root (when there is no
         // `launch.json` nor `template.yaml`).
-        config.codeRoot = await getSamProjectDirPathForFile(
-            config?.samTemplatePath ?? config.documentUri!!.fsPath)
+        config.codeRoot = await getSamProjectDirPathForFile(config?.samTemplatePath ?? config.documentUri!!.fsPath)
         if (!config.codeRoot) {
             // TODO: return error and show it at the caller.
             throw Error('missing launch.json, template.yaml, and failed to discover project root')
@@ -92,7 +95,7 @@ export async function makeTypescriptConfig(
 
     //  Make a python launch-config from the generic config.
     const nodejsLaunchConfig: NodejsDebugConfiguration = {
-        ...config,  // Compose.
+        ...config, // Compose.
         type: 'node',
         request: 'attach',
         runtimeFamily: RuntimeFamily.NodeJS,
@@ -112,18 +115,13 @@ export async function makeTypescriptConfig(
 /**
  * Launches and attaches debugger to a SAM Node project.
  */
-export async function invokeTypescriptLambda(
-        ctx: ExtContext,
-        config: NodejsDebugConfiguration,
-        ) {
+export async function invokeTypescriptLambda(ctx: ExtContext, config: NodejsDebugConfiguration) {
     // Switch over to the output channel so the user has feedback that we're getting things ready
     ctx.chanLogger.channel.show(true)
     ctx.chanLogger.info('AWS.output.sam.local.start', 'Preparing to run {0} locally...', config.handlerName)
 
     const processInvoker = new DefaultValidatingSamCliProcessInvoker({})
-    config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand(ctx.chanLogger, [
-        WAIT_FOR_DEBUGGER_MESSAGES.NODEJS
-    ])
+    config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand(ctx.chanLogger, [WAIT_FOR_DEBUGGER_MESSAGES.NODEJS])
 
     // XXX: reassignment
     config.samTemplatePath = await executeSamBuild({
@@ -132,7 +130,7 @@ export async function invokeTypescriptLambda(
         codeDir: config.codeRoot,
         inputTemplatePath: config.samTemplatePath,
         samProcessInvoker: processInvoker,
-        useContainer: config.sam?.containerBuild
+        useContainer: config.sam?.containerBuild,
     })
     if (config.invokeTarget.target === 'template') {
         // XXX: reassignment

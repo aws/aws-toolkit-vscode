@@ -93,7 +93,7 @@ describe('AppNode', () => {
         const appLocation: app.CdkAppLocation = {
             cdkJsonPath: cdkJsonPath,
             treePath: treePath,
-            workspaceFolder: mockWorkspaceFolder
+            workspaceFolder: mockWorkspaceFolder,
         }
 
         return new appNode.AppNode(appLocation)

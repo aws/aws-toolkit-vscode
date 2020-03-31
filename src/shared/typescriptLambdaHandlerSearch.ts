@@ -9,7 +9,7 @@ import { LambdaHandlerCandidate, LambdaHandlerSearch } from './lambdaHandlerSear
 
 const getRange = (node: ts.Node) => ({
     positionStart: node.getStart(),
-    positionEnd: node.end
+    positionEnd: node.end,
 })
 
 /**
@@ -150,7 +150,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                 return {
                     filename: this.filename,
                     handlerName: `${this._baseFilename}.${exportsTarget}`,
-                    range: getRange(candidate)
+                    range: getRange(candidate),
                 }
             })
     }
@@ -171,7 +171,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                             handlers.push({
                                 filename: this.filename,
                                 handlerName: `${this._baseFilename}.${exportedFunction}`,
-                                range: getRange(clause)
+                                range: getRange(clause),
                             })
                         }
                     }
@@ -197,7 +197,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                 handlers.push({
                     filename: this.filename,
                     handlerName: `${this._baseFilename}.${exportNode.name.getText()}`,
-                    range: getRange(exportNode)
+                    range: getRange(exportNode),
                 })
             } else if (ts.isVariableStatement(exportNode)) {
                 exportNode.declarationList.forEachChild(declaration => {
@@ -210,7 +210,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                         handlers.push({
                             filename: this.filename,
                             handlerName: `${this._baseFilename}.${declaration.name.getText()}`,
-                            range: getRange(declaration)
+                            range: getRange(declaration),
                         })
                     }
                 })

@@ -74,7 +74,7 @@ export function loadEndpoints(json: string): Endpoints | undefined {
         const manifestEndpoints = JSON.parse(json) as ManifestEndpoints
 
         return {
-            partitions: manifestEndpoints.partitions?.map(convertToPartition) ?? []
+            partitions: manifestEndpoints.partitions?.map(convertToPartition) ?? [],
         }
     } catch (err) {
         const logger = getLogger()
@@ -90,7 +90,7 @@ function convertToPartition(partition: ManifestPartition): Partition {
         id: partition.partition,
         name: partition.partitionName,
         regions: convertJsonMap(partition.regions, convertToRegion),
-        services: convertJsonMap(partition.services, convertToService)
+        services: convertJsonMap(partition.services, convertToService),
     }
 }
 
@@ -108,7 +108,7 @@ function convertJsonMap<TIn, TOut>(
 function convertToRegion(id: string, region: ManifestRegion): Region {
     return {
         id: id,
-        name: region.description
+        name: region.description,
     }
 }
 
@@ -117,13 +117,13 @@ function convertToService(id: string, service: ManifestService): Service {
         id: id,
         isRegionalized: service.isRegionalized,
         partitionEndpoint: service.partitionEndpoint,
-        endpoints: convertJsonMap(service.endpoints, convertToServiceEndpoint)
+        endpoints: convertJsonMap(service.endpoints, convertToServiceEndpoint),
     }
 }
 
 function convertToServiceEndpoint(id: string, data: any): ServiceEndpoints {
     return {
         regionId: id,
-        data: data
+        data: data,
     }
 }

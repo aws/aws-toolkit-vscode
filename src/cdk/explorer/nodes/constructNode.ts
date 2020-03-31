@@ -40,12 +40,12 @@ export class ConstructNode extends AWSTreeNodeBase {
         if (this.type) {
             this.iconPath = {
                 dark: vscode.Uri.file(cdk.iconPaths.dark.cloudFormation),
-                light: vscode.Uri.file(cdk.iconPaths.light.cloudFormation)
+                light: vscode.Uri.file(cdk.iconPaths.light.cloudFormation),
             }
         } else {
             this.iconPath = {
                 dark: vscode.Uri.file(cdk.iconPaths.dark.cdk),
-                light: vscode.Uri.file(cdk.iconPaths.light.cdk)
+                light: vscode.Uri.file(cdk.iconPaths.light.cdk),
             }
         }
     }

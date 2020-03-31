@@ -7,7 +7,7 @@ import { ChildProcessResult } from '../../utilities/childProcess'
 import {
     DefaultSamCliProcessInvoker,
     resolveSamCliProcessInvokerContext,
-    SamCliProcessInvokerContext
+    SamCliProcessInvokerContext,
 } from './samCliInvoker'
 import { SamCliProcessInvokeOptions, SamCliProcessInvoker } from './samCliInvokerUtils'
 import { throwAndNotifyIfInvalid } from './samCliValidationUtils'
@@ -15,7 +15,7 @@ import {
     DefaultSamCliValidator,
     DefaultSamCliValidatorContext,
     SamCliValidator,
-    SamCliValidatorResult
+    SamCliValidatorResult,
 } from './samCliValidator'
 
 /**

@@ -12,7 +12,7 @@ import { ChannelLogger } from './utilities/vsCodeUtils'
 
 export const VSCODE_EXTENSION_ID = {
     awstoolkit: 'amazonwebservices.aws-toolkit-vscode',
-    python: 'ms-python.python'
+    python: 'ms-python.python',
 }
 
 /**

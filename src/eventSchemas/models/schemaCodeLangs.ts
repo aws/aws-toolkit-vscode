@@ -15,17 +15,17 @@ export const schemaCodeLangs: Set<SchemaCodeLangs> = Set([JAVA, PYTHON, TYPESCRI
 
 const javaDetail = {
     apiValue: 'Java8',
-    extension: '.java'
+    extension: '.java',
 }
 
 const pythonDetail = {
     apiValue: 'Python36',
-    extension: '.py'
+    extension: '.py',
 }
 
 const typescriptDetail = {
     apiValue: 'TypeScript3',
-    extension: '.ts'
+    extension: '.ts',
 }
 
 export function getLanguageDetails(

@@ -20,14 +20,14 @@ import { getLanguageDetails } from '../models/schemaCodeLangs'
 import {
     DefaultSchemaCodeDownloadWizardContext,
     SchemaCodeDownloadWizard,
-    SchemaCodeDownloadWizardResponse
+    SchemaCodeDownloadWizardResponse,
 } from '../wizards/schemaCodeDownloadWizard'
 
 import * as admZip from 'adm-zip'
 
 enum CodeGenerationStatus {
     CREATE_COMPLETE = 'CREATE_COMPLETE',
-    CREATE_IN_PROGRESS = 'CREATE_IN_PROGRESS'
+    CREATE_IN_PROGRESS = 'CREATE_IN_PROGRESS',
 }
 
 const RETRY_INTERVAL_MS = 2000
@@ -61,7 +61,7 @@ export async function downloadSchemaItemCode(node: SchemaItemNode) {
             language: getLanguageDetails(wizardResponse.language).apiValue,
             schemaVersion: wizardResponse.schemaVersion,
             destinationDirectory: wizardResponse.location,
-            schemaCoreCodeFileName: coreFileName
+            schemaCoreCodeFileName: coreFileName,
         }
         const schemaCodeDownloader = createSchemaCodeDownloaderObject(node.client)
         const coreCodeFilePath = await schemaCodeDownloader.downloadCode(request)
@@ -190,7 +190,7 @@ export class CodeGenerator {
             const error = err as Error
             if (error.stack && error.stack!.includes('ConflictException')) {
                 response = {
-                    Status: CodeGenerationStatus.CREATE_IN_PROGRESS
+                    Status: CodeGenerationStatus.CREATE_IN_PROGRESS,
                 }
             } else {
                 getLogger().error(error)

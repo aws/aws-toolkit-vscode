@@ -37,7 +37,7 @@ export class AppNode extends AWSTreeNodeBase {
 
         this.iconPath = {
             dark: vscode.Uri.file(cdk.iconPaths.dark.cdk),
-            light: vscode.Uri.file(cdk.iconPaths.light.cdk)
+            light: vscode.Uri.file(cdk.iconPaths.light.cdk),
         }
     }
 
@@ -71,7 +71,7 @@ export class AppNode extends AWSTreeNodeBase {
                     new PlaceholderNode(
                         this,
                         localize('Aws.cdk.explorerNode.app.noStacks', '[No stacks in this CDK App]')
-                    )
+                    ),
                 ]
             }
 
@@ -86,7 +86,7 @@ export class AppNode extends AWSTreeNodeBase {
                         'Aws.cdk.explorerNode.app.noConstructTree',
                         '[Unable to load construct tree for this App. Run `cdk synth`]'
                     )
-                )
+                ),
             ]
         }
     }

@@ -10,7 +10,7 @@ import { isLoggableError } from '../../../../shared/logger/loggableType'
 import {
     makeRequiredSamCliProcessInvokeOptions,
     SamCliProcessInvokeOptions,
-    SamCliProcessInvoker
+    SamCliProcessInvoker,
 } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
 import { TestLogger } from '../../../testLogger'
@@ -35,7 +35,7 @@ export class BadExitCodeSamCliProcessInvoker extends TestSamCliProcessInvoker {
         exitCode = -1,
         error = new Error('Bad Result'),
         stdout = 'stdout message',
-        stderr = 'stderr message'
+        stderr = 'stderr message',
     }: {
         exitCode?: number
         error?: Error
@@ -57,7 +57,7 @@ export class BadExitCodeSamCliProcessInvoker extends TestSamCliProcessInvoker {
             exitCode: this.exitCode,
             error: this.error,
             stdout: this.stdout,
-            stderr: this.stderr
+            stderr: this.stderr,
         }
 
         return result
@@ -94,11 +94,11 @@ export async function assertLogContainsBadExitInformation(
     const expectedTexts = [
         {
             text: `Unexpected exitcode (${errantChildProcessResult.exitCode}), expecting (${expectedExitCode})`,
-            verifyMessage: 'Log message missing for exit code'
+            verifyMessage: 'Log message missing for exit code',
         },
         { text: `Error: ${errantChildProcessResult.error}`, verifyMessage: 'Log message missing for error' },
         { text: `stderr: ${errantChildProcessResult.stderr}`, verifyMessage: 'Log message missing for stderr' },
-        { text: `stdout: ${errantChildProcessResult.stdout}`, verifyMessage: 'Log message missing for stdout' }
+        { text: `stdout: ${errantChildProcessResult.stdout}`, verifyMessage: 'Log message missing for stdout' },
     ]
 
     const logText = logger

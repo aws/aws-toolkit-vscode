@@ -11,7 +11,7 @@ describe('CompositeResourceFetcher', async () => {
 
     it('loads from a resource fetcher', async () => {
         const fetcher = {
-            get: async () => expectedContents
+            get: async () => expectedContents,
         }
 
         const sut = new CompositeResourceFetcher(fetcher)
@@ -22,17 +22,17 @@ describe('CompositeResourceFetcher', async () => {
 
     it('loads from the first resource fetcher to return contents', async () => {
         const fetcher1 = {
-            get: async () => undefined
+            get: async () => undefined,
         }
 
         const fetcher2 = {
-            get: async () => expectedContents
+            get: async () => expectedContents,
         }
 
         const fetcher3 = {
             get: async () => {
                 assert.fail('This should never be called')
-            }
+            },
         }
 
         const sut = new CompositeResourceFetcher(fetcher1, fetcher2, fetcher3)
@@ -45,11 +45,11 @@ describe('CompositeResourceFetcher', async () => {
         const fetcher1 = {
             get: async () => {
                 assert.fail('Error, load from the next fetcher')
-            }
+            },
         }
 
         const fetcher2 = {
-            get: async () => expectedContents
+            get: async () => expectedContents,
         }
 
         const sut = new CompositeResourceFetcher(fetcher1, fetcher2)
@@ -65,7 +65,7 @@ describe('CompositeResourceFetcher', async () => {
                 timesCalled++
 
                 return undefined
-            }
+            },
         }
 
         const sut = new CompositeResourceFetcher(fetcher, fetcher)

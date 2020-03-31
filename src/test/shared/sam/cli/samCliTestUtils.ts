@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import {
     makeRequiredSamCliProcessInvokeOptions,
     SamCliProcessInvokeOptions,
-    SamCliProcessInvoker
+    SamCliProcessInvoker,
 } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
 
@@ -20,7 +20,7 @@ export class MockSamCliProcessInvoker implements SamCliProcessInvoker {
         this.validateArgs(invokeSettings.arguments)
 
         return ({
-            exitCode: 0
+            exitCode: 0,
         } as any) as ChildProcessResult
     }
 }

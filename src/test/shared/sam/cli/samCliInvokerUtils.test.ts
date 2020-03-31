@@ -15,7 +15,7 @@ describe('logAndThrowIfUnexpectedExitCode', async () => {
                 exitCode: 123,
                 error: undefined,
                 stderr: '',
-                stdout: ''
+                stdout: '',
             },
             123
         )
@@ -27,7 +27,7 @@ describe('logAndThrowIfUnexpectedExitCode', async () => {
             exitCode: 123,
             error: exitError,
             stderr: 'stderr text',
-            stdout: 'stdout text'
+            stdout: 'stdout text',
         }
 
         const error = await assertThrowsError(async () => {
