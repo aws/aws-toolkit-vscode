@@ -1,4 +1,4 @@
 {
-	"type": "Feature",
-	"description": "Add visualization of Step Functions state machines."
+    "type": "Feature",
+    "description": "New Step Function capabilities: Step Function state machine resources are now shown in the AWS Explorer. Language support (auto-completion, validation) for authoring state machine files. State machines can be created from starting templates. State machines can be downloaded from, published to, and executed within an account."
 }
