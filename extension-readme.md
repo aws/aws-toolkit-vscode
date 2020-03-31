@@ -50,7 +50,7 @@ These include the following:
 
 -   Amazon Elastic Container Service (Amazon ECS) task definition files
 
--   Amazon Step Functions state machines
+-   AWS Step Functions state machines
 
 See [Features](#features) below for high-level details, or jump right into the [_AWS Toolkit for Visual Studio Code User Guide_](https://docs.aws.amazon.com/console/toolkit-for-vscode/welcome).
 
@@ -86,7 +86,7 @@ For complete setup instructions for these three components, see [Installing the 
 -   [AWS CDK Applications](#cdk-apps)
 -   [Amazon EventBridge Schemas](#eventbridge)
 -   [Amazon ECS Task Definition Files](#ecs-files)
--   [Amazon Step Functions](#sfn-files)
+-   [AWS Step Functions](#sfn-files)
 
 { [Return to Contents](#contents) } or { [Return to Top](#top) }
 
@@ -174,9 +174,9 @@ For full details, see [Working with Amazon Elastic Container Service](https://do
 
 ---
 
-## <a id="sfn-files"></a>Amazon Step Functions
+## <a id="sfn-files"></a>AWS Step Functions
 
-The AWS Toolkit provides support for [Amazon Step Functions](https://docs.aws.amazon.com/step-functions). With the Toolkit installed in VS Code, working with state machines is a more streamlined process.
+The AWS Toolkit provides support for [AWS Step Functions](https://docs.aws.amazon.com/step-functions). With the Toolkit installed in VS Code, working with state machines is a more streamlined process.
 
 -   Create, update, execute, and download state machines.
 -   See live graph visualizations of your state machine.
@@ -184,7 +184,7 @@ The AWS Toolkit provides support for [Amazon Step Functions](https://docs.aws.am
 
 Example:
 
-![Amazon Step Functions](./resources/marketplace/sfn-state-machine.png)
+![AWS Step Functions](./resources/marketplace/sfn-state-machine.png)
 
 For full details, see [Working with AWS Step Functions](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/stepfunctions.html) in the Toolkit's user guide.
 
@@ -196,22 +196,25 @@ For full details, see [Working with AWS Step Functions](https://docs.aws.amazon.
 
 The AWS Toolkit has several features that you can access through the [Command Palette](#open-command-palette) (select **View**, then **Command Palette**):
 
-| AWS Command                            | Description                                                                                                                                                                                                               |
-| :------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **AWS: Create Credentials Profile**    | Creates an AWS credentials profile. For more information, see [Setting Up Your AWS Credentials](https://docs.aws.amazon.com/console/toolkit-for-vscode/setup-credentials) in the user guide.                              |
-| **AWS: Connect to AWS**                | Connects the Toolkit to an AWS account. For more information, see [Connecting to AWS](https://docs.aws.amazon.com/console/toolkit-for-vscode/connect) in the user guide.                                                  |
-| **AWS: Create New SAM Application**    | Generates a set of code files for a new AWS serverless application. For more information, see [Creating a Serverless Application](https://docs.aws.amazon.com/console/toolkit-for-vscode/create-sam) in the user guide.   |
-| **AWS: Deploy SAM Application**        | Deploys a local serverless application to an AWS account. For more information, see [Deploying a Serverless Application](https://docs.aws.amazon.com/console/toolkit-for-vscode/deploy-serverless-app) in the user guide. |
-| **AWS: Detect SAM CLI**                | Checks whether the Toolkit can communicate correctly with the AWS SAM CLI that is installed.                                                                                                                              |
-| **AWS: Focus on Explorer View**        | Opens the **AWS: Explorer** Side Bar, which we will simply call [_the **AWS Explorer**_](#ui-components-aws-expl), and then moves the focus there.                                                                        |
-| **AWS: Hide region from the Explorer** | Hides an AWS Region from the **AWS Explorer**.                                                                                                                                                                            |
-| **AWS: Report an Issue**               | In the [GitHub repository](https://github.com/aws/aws-toolkit-vscode) for the Toolkit, opens the page to [create a new issue](https://github.com/aws/aws-toolkit-vscode/issues/new/choose).                               |
-| **AWS: Show region in the Explorer**   | Displays an AWS Region in the **AWS Explorer**.                                                                                                                                                                           |
-| **AWS: Sign out**                      | Disconnects the Toolkit from the currently-connected AWS account.                                                                                                                                                         |
-| **AWS: View AWS Toolkit Logs**         | Displays log files that contain general Toolkit diagnostic information.                                                                                                                                                   |
-| **AWS: View Quick Start**              | Open this quick-start guide.                                                                                                                                                                                              |
-| **AWS: View Documentation**            | Opens the [user guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/welcome) for the Toolkit.                                                                                                                   |
-| **AWS: View Source on GitHub**         | Opens the [GitHub repository](https://github.com/aws/aws-toolkit-vscode) for the Toolkit.                                                                                                                                 |
+| AWS Command                                        | Description                                                                                                                                                                                                                                                                                                    |
+| :------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **AWS: Create Credentials Profile**                | Creates an AWS credentials profile. For more information, see [Setting Up Your AWS Credentials](https://docs.aws.amazon.com/console/toolkit-for-vscode/setup-credentials) in the user guide.                                                                                                                   |
+| **AWS: Connect to AWS**                            | Connects the Toolkit to an AWS account. For more information, see [Connecting to AWS](https://docs.aws.amazon.com/console/toolkit-for-vscode/connect) in the user guide.                                                                                                                                       |
+| **AWS: Create a new Step Functions state machine** | Generates a new Amazon States Language definition to use as the definition for a new Step Functions state machine. For more information, see [State Machine Templates](https://docs.aws.amazon.com//toolkit-for-vscode/latest/userguide/bulding-stepfunctions.html#templates-stepfunctions) in the user guide. |
+| **AWS: Create New SAM Application**                | Generates a set of code files for a new AWS serverless application. For more information, see [Creating a Serverless Application](https://docs.aws.amazon.com/console/toolkit-for-vscode/create-sam) in the user guide.                                                                                        |
+| **AWS: Deploy SAM Application**                    | Deploys a local serverless application to an AWS account. For more information, see [Deploying a Serverless Application](https://docs.aws.amazon.com/console/toolkit-for-vscode/deploy-serverless-app) in the user guide.                                                                                      |
+| **AWS: Detect SAM CLI**                            | Checks whether the Toolkit can communicate correctly with the AWS SAM CLI that is installed.                                                                                                                                                                                                                   |
+| **AWS: Focus on Explorer View**                    | Opens the **AWS: Explorer** Side Bar, which we will simply call [_the **AWS Explorer**_](#ui-components-aws-expl), and then moves the focus there.                                                                                                                                                             |
+| **AWS: Hide region from the Explorer**             | Hides an AWS Region from the **AWS Explorer**.                                                                                                                                                                                                                                                                 |
+| **AWS: Publish state machine to Step Functions**   | Creates or updates a remote state machine using the local Amazon States Language definition file. For more information, see [Work With State Machines in VS Code](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/bulding-stepfunctions.html#starting-stepfunctions) in the user guide.        |
+| **AWS: Render state machine graph**                | Renders the state machine definition into a graph visualization. For more information, see [State Machine Graph Visualization](https://docs.aws.amazon.com//toolkit-for-vscode/latest/userguide/bulding-stepfunctions.html#bulding-stepfunctions-visualizations) in the user guide.                            |
+| **AWS: Report an Issue**                           | In the [GitHub repository](https://github.com/aws/aws-toolkit-vscode) for the Toolkit, opens the page to [create a new issue](https://github.com/aws/aws-toolkit-vscode/issues/new/choose).                                                                                                                    |
+| **AWS: Show region in the Explorer**               | Displays an AWS Region in the **AWS Explorer**.                                                                                                                                                                                                                                                                |
+| **AWS: Sign out**                                  | Disconnects the Toolkit from the currently-connected AWS account.                                                                                                                                                                                                                                              |
+| **AWS: View AWS Toolkit Logs**                     | Displays log files that contain general Toolkit diagnostic information.                                                                                                                                                                                                                                        |
+| **AWS: View Quick Start**                          | Open this quick-start guide.                                                                                                                                                                                                                                                                                   |
+| **AWS: View Documentation**                        | Opens the [user guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/welcome) for the Toolkit.                                                                                                                                                                                                        |
+| **AWS: View Source on GitHub**                     | Opens the [GitHub repository](https://github.com/aws/aws-toolkit-vscode) for the Toolkit.                                                                                                                                                                                                                      |
 
 { [Return to Contents](#contents) } or { [Return to Top](#top) }
 
