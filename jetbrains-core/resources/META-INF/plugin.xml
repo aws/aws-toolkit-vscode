@@ -88,6 +88,10 @@
         <xi:fallback/>
     </xi:include>
 
+    <xi:include href="/META-INF/plugin-extra.xml" xpointer="xpointer(/idea-plugin/*)">
+        <xi:fallback/>
+    </xi:include>
+
     <application-components>
         <component>
             <interface-class>software.aws.toolkits.jetbrains.components.telemetry.TelemetryComponent</interface-class>

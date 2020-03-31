@@ -18,9 +18,12 @@ buildscript {
 
 apply from: 'intellijJVersions.gradle'
 
+def ideVersion = shortenVersion(resolveIdeProfileName())
+
 group 'software.aws.toolkits'
 // please check changelog generation logic if this format is changed
-version toolkitVersion + "-" + shortenVersion(resolveIdeProfileName())
+version "$toolkitVersion-$ideVersion".toString()
+
 
 repositories {
     maven { url "https://www.jetbrains.com/intellij-repository/snapshots/" }
@@ -94,15 +97,15 @@ subprojects {
     }
 
     sourceSets {
-        main.java.srcDir 'src'
-        main.resources.srcDir 'resources'
-        test.java.srcDir 'tst'
-        test.resources.srcDir 'tst-resources'
+        main.java.srcDirs = ['src', "src-$ideVersion"]
+        main.resources.srcDirs = ['resources', "resources-$ideVersion"]
+        test.java.srcDirs = ['tst', "tst-$ideVersion"]
+        test.resources.srcDirs = ['tst-resources', "tst-resources-$ideVersion"]
         integrationTest {
             compileClasspath += main.output + test.output
             runtimeClasspath += main.output + test.output
-            java.srcDir 'it'
-            resources.srcDir 'it-resources'
+            java.srcDirs = ['it', "it-$ideVersion"]
+            resources.srcDirs = ['it-resources', "it-resources-$ideVersion"]
         }
     }
 
@@ -142,11 +145,18 @@ subprojects {
 
     idea {
         module {
+            sourceDirs += file("src-$ideVersion")
+            resourceDirs += file("resources-$ideVersion")
+            testSourceDirs += file("tst-$ideVersion")
+            testResourceDirs += file("tst-resources-$ideVersion")
+
             sourceDirs -= file("it")
             testSourceDirs += file("it")
+            testSourceDirs += file("it-$ideVersion")
 
             resourceDirs -= file("it-resources")
             testResourceDirs += file("it-resources")
+            testResourceDirs += file("it-resources-$ideVersion")
         }
     }
 

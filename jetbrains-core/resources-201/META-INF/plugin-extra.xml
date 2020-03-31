@@ -1,0 +1,8 @@
+<!-- Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude">
+    <extensions defaultExtensionNs="com.intellij">
+    	<!-- 201 only extension point registrations go here -->
+    </extensions>
+</idea-plugin>
