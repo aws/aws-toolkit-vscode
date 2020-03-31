@@ -29,7 +29,7 @@ class CloudWatchLogsNode(
     project,
     CloudWatchLogsClient.SERVICE_NAME,
     logGroupName,
-    AwsIcons.Resources.CLOUDWATCH_LOGS
+    AwsIcons.Resources.CloudWatch.LOG_GROUP
 ) {
     override fun resourceType() = "group"
 

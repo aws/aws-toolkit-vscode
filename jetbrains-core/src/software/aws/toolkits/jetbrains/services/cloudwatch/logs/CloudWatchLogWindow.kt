@@ -91,7 +91,7 @@ class CloudWatchLogWindow(private val project: Project) : CoroutineScope by Appl
         private val CW_LOGS_TOOL_WINDOW = ToolkitToolWindowType(
             "AWS.CloudWatchLog",
             message("cloudwatch.logs.toolwindow"),
-            AwsIcons.Resources.CLOUDWATCH_LOGS
+            AwsIcons.Resources.CloudWatch.LOGS
         )
 
         fun getInstance(project: Project) = ServiceManager.getService(project, CloudWatchLogWindow::class.java)
