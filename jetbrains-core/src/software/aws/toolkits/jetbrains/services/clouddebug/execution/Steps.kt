@@ -25,13 +25,13 @@ import software.aws.toolkits.jetbrains.services.clouddebug.CliOutputParser
 import software.aws.toolkits.jetbrains.services.clouddebug.asLogEvent
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.steps.CloudDebugCliValidate
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.Result
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
-import software.aws.toolkits.telemetry.Result
 
 abstract class Step {
     protected abstract val stepName: String
@@ -199,6 +199,8 @@ abstract class CliBasedStep : Step() {
                 messageEmitter.emitMessage(logEvent.text, level == Level.ERROR)
                 logEvent.level?.let { previousLevel.set(it) }
             }
+            // output to the log for diagnostic and integrations tests
+            LOG.info { event.text.trim() }
         }
     }
 
