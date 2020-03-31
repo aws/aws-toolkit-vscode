@@ -191,7 +191,7 @@ export async function executeSamBuild({
 
     const samCliArgs: SamCliBuildInvocationArguments = {
         buildDir: samBuildOutputFolder,
-        baseDir: codeDir,
+        baseDir: path.dirname(inputTemplatePath),
         templatePath: inputTemplatePath,
         invoker: samProcessInvoker,
         manifestPath,
@@ -208,9 +208,7 @@ export async function executeSamBuild({
 /**
  * Prepares and invokes a lambda function via `sam local invoke`.
  */
-export async function invokeLambdaFunction(
-        ctx: ExtContext,
-        config: SamLaunchRequestArgs): Promise<void> {
+export async function invokeLambdaFunction(ctx: ExtContext, config: SamLaunchRequestArgs): Promise<void> {
     ctx.chanLogger.info(
         'AWS.output.starting.sam.app.locally',
         'Starting the SAM Application locally (see Terminal for output)'
@@ -231,10 +229,10 @@ export async function invokeLambdaFunction(
         templatePath: config.samTemplatePath,
         eventPath,
         environmentVariablePath,
-        invoker: config.samLocalInvokeCommand!!,  // ?? new DefaultValidatingSamCliProcessInvoker({})
+        invoker: config.samLocalInvokeCommand!!, // ?? new DefaultValidatingSamCliProcessInvoker({})
         dockerNetwork: config.sam?.dockerNetwork,
         debugPort: config.debugPort?.toString(),
-        debuggerPath: config.debuggerPath,
+        debuggerPath: config.debuggerPath
     }
     const command = new SamCliLocalInvokeInvocation(localInvokeArgs)
 
