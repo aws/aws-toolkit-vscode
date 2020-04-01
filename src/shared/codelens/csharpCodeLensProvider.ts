@@ -7,7 +7,7 @@ import { access } from 'fs-extra'
 import * as path from 'path'
 import * as os from 'os'
 import * as vscode from 'vscode'
-import { DOTNET_CORE_DEBUGGER_PATH, DotNetCoreDebugConfiguration, assertTargetKind } from '../../lambda/local/debugConfiguration'
+import { DOTNET_CORE_DEBUGGER_PATH, DotNetCoreDebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { DefaultDockerClient, DockerClient } from '../clients/dockerClient'
 import { CloudFormation } from '../cloudformation/cloudformation'
@@ -21,7 +21,14 @@ import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry
 import { getStartPort } from '../utilities/debuggerUtils'
 import { dirnameWithTrailingSlash, DRIVE_LETTER_REGEX } from '../utilities/pathUtils'
 import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
-import { executeSamBuild, ExecuteSamBuildArguments, invokeLambdaFunction, makeBuildDir, makeInputTemplate, waitForDebugPort } from './localLambdaRunner'
+import {
+    executeSamBuild,
+    ExecuteSamBuildArguments,
+    invokeLambdaFunction,
+    makeBuildDir,
+    makeInputTemplate,
+    waitForDebugPort
+} from './localLambdaRunner'
 
 export const CSHARP_LANGUAGE = 'csharp'
 export const CSHARP_ALLFILES: vscode.DocumentFilter[] = [
@@ -70,16 +77,12 @@ function getCodeUri(resource: CloudFormation.Resource, samTemplateUri: vscode.Ur
  *
  * Does NOT execute/invoke SAM, docker, etc.
  */
-export async function makeCsharpConfig(
-        config: SamLaunchRequestArgs,
-        ): Promise<SamLaunchRequestArgs> {
-
+export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<SamLaunchRequestArgs> {
     // TODO: walk the tree to find .sln, .csproj ...
     if (!config.codeRoot) {
         // Last-resort attempt to discover the project root (when there is no
         // `launch.json` nor `template.yaml`).
-        config.codeRoot = await getSamProjectDirPathForFile(
-            config?.samTemplatePath ?? config.documentUri!!.fsPath)
+        config.codeRoot = await getSamProjectDirPathForFile(config?.samTemplatePath ?? config.documentUri!!.fsPath)
         if (!config.codeRoot) {
             // TODO: return error and show it at the caller.
             throw Error('missing launch.json, template.yaml, and failed to discover project root')
@@ -87,9 +90,7 @@ export async function makeCsharpConfig(
     }
 
     const baseBuildDir = await makeBuildDir()
-    const template: CloudFormation.Template = await CloudFormation.load(
-        config.samTemplatePath
-    )
+    const template: CloudFormation.Template = await CloudFormation.load(config.samTemplatePath)
     const resource = await CloudFormation.getResourceFromTemplateResources({
         templateResources: template.Resources,
         handlerName: config.handlerName
@@ -97,17 +98,14 @@ export async function makeCsharpConfig(
     const codeUri = getCodeUri(resource, vscode.Uri.parse(config.samTemplatePath!!))
     const handlerName = config.handlerName
 
-    if (!config.samTemplatePath) {
-        assertTargetKind(config, 'code')
-        config.samTemplatePath = await makeInputTemplate({
-            baseBuildDir,
-            codeDir: codeUri,
-            relativeFunctionHandler: handlerName,
-            runtime: config.runtime,
-            globals: template.Globals,
-            properties: resource.Properties
-        })
-    }
+    config.samTemplatePath = await makeInputTemplate({
+        baseBuildDir,
+        codeDir: codeUri,
+        relativeFunctionHandler: handlerName,
+        runtime: config.runtime,
+        globals: template.Globals,
+        properties: resource.Properties
+    })
 
     config = {
         ...config,
@@ -115,12 +113,11 @@ export async function makeCsharpConfig(
         request: 'attach',
         runtimeFamily: RuntimeFamily.DotNetCore,
         name: 'SamLocalDebug',
-        baseBuildDir: baseBuildDir,
+        baseBuildDir: baseBuildDir
     }
 
     if (!config.noDebug) {
-        config = await makeCoreCLRDebugConfiguration(
-            config, config.codeRoot)
+        config = await makeCoreCLRDebugConfiguration(config, config.codeRoot)
     }
 
     return config
@@ -129,10 +126,7 @@ export async function makeCsharpConfig(
 /**
  * Launches and attaches debugger to a SAM dotnet (csharp) project.
  */
-export async function invokeCsharpLambda(
-    ctx: ExtContext,
-    config: SamLaunchRequestArgs,
-): Promise<void> {
+export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchRequestArgs): Promise<void> {
     const invokeCtx: OnLocalInvokeCommandContext = new DefaultOnLocalInvokeCommandContext(ctx.outputChannel)
     const processInvoker = new DefaultSamCliProcessInvoker()
     const localInvokeCommand = new DefaultSamLocalInvokeCommand(getChannelLogger(ctx.outputChannel), [
@@ -148,7 +142,7 @@ export async function invokeCsharpLambda(
         const buildArgs: ExecuteSamBuildArguments = {
             baseBuildDir: config.baseBuildDir!!,
             channelLogger: ctx.chanLogger,
-            codeDir: config.codeRoot,
+            codeDir: path.dirname(config.samTemplatePath),
             inputTemplatePath: config.samTemplatePath,
             samProcessInvoker: processInvoker,
             useContainer: config.sam?.containerBuild
@@ -170,7 +164,7 @@ export async function invokeCsharpLambda(
             await invokeCtx.installDebugger({
                 debuggerPath: config.debuggerPath!!,
                 lambdaRuntime: config.runtime,
-                channelLogger: ctx.chanLogger,
+                channelLogger: ctx.chanLogger
             })
             config.onWillAttachDebugger = waitForDebugPort
             config.samLocalInvokeCommand = localInvokeCommand
@@ -356,7 +350,7 @@ async function ensureDebuggerPathExists(debuggerPath: string): Promise<void> {
 
 async function _installDebugger(
     { debuggerPath, lambdaRuntime, channelLogger }: InstallDebuggerArgs,
-    { dockerClient }: { dockerClient: DockerClient },
+    { dockerClient }: { dockerClient: DockerClient }
 ): Promise<void> {
     await ensureDebuggerPathExists(debuggerPath)
 
@@ -400,12 +394,13 @@ export const getSamProjectDirPathForFile = async (filepath: string): Promise<str
  * Creates a CLR launch-config composed with the given `config`.
  */
 export async function makeCoreCLRDebugConfiguration(
-        config: SamLaunchRequestArgs,
-        codeUri: string) : Promise<DotNetCoreDebugConfiguration> {
+    config: SamLaunchRequestArgs,
+    codeUri: string
+): Promise<DotNetCoreDebugConfiguration> {
     if (!!config.noDebug) {
         throw Error(`SAM debug: invalid config ${config}`)
     }
-    config.debugPort = config.debugPort ?? await getStartPort()
+    config.debugPort = config.debugPort ?? (await getStartPort())
     const pipeArgs = ['-c', `docker exec -i $(docker ps -q -f publish=${config.debugPort}) \${debuggerCommand}`]
     config.debuggerPath = getDebuggerPath(config.codeRoot)
     await ensureDebuggerPathExists(config.debuggerPath)
@@ -437,6 +432,6 @@ export async function makeCoreCLRDebugConfiguration(
         },
         sourceFileMap: {
             ['/var/task']: codeUri
-        },
+        }
     }
 }

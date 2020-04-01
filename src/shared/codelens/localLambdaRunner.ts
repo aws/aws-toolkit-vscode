@@ -16,7 +16,7 @@ import { getLogger } from '../logger'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from '../sam/cli/samCliBuild'
 import { SamCliProcessInvoker } from '../sam/cli/samCliInvokerUtils'
 import { SamCliLocalInvokeInvocation, SamCliLocalInvokeInvocationArguments } from '../sam/cli/samCliLocalInvoke'
-import { TemplateTargetProperties } from '../sam/debugger/awsSamDebugConfiguration'
+// import { TemplateTargetProperties } from '../sam/debugger/awsSamDebugConfiguration'
 import { SamLaunchRequestArgs } from '../sam/debugger/samDebugSession'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { recordSamAttachDebugger, Runtime } from '../telemetry/telemetry'
@@ -97,12 +97,12 @@ export function getHandlerRelativePath(params: { codeRoot: string; filePath: str
 export function getRelativeFunctionHandler(params: {
     handlerName: string
     runtime: string
-    handlerFileRelativePath: string
+    handlerRelativePath: string
 }): string {
     // Make function handler relative to baseDir
     let relativeFunctionHandler: string
     if (shouldAppendRelativePathToFunctionHandler(params.runtime)) {
-        relativeFunctionHandler = normalizeSeparator(path.join(params.handlerFileRelativePath, params.handlerName))
+        relativeFunctionHandler = normalizeSeparator(path.join(params.handlerRelativePath, params.handlerName))
     } else {
         relativeFunctionHandler = params.handlerName
     }
@@ -208,9 +208,7 @@ export async function executeSamBuild({
 /**
  * Prepares and invokes a lambda function via `sam local invoke`.
  */
-export async function invokeLambdaFunction(
-        ctx: ExtContext,
-        config: SamLaunchRequestArgs): Promise<void> {
+export async function invokeLambdaFunction(ctx: ExtContext, config: SamLaunchRequestArgs): Promise<void> {
     ctx.chanLogger.info(
         'AWS.output.starting.sam.app.locally',
         'Starting the SAM Application locally (see Terminal for output)'
@@ -225,16 +223,17 @@ export async function invokeLambdaFunction(
     await writeFile(environmentVariablePath, JSON.stringify(config.lambda?.environmentVariables ?? {}))
 
     const localInvokeArgs: SamCliLocalInvokeInvocationArguments = {
-        templateResourceName: (config.invokeTarget as TemplateTargetProperties)?.samTemplateResource
-            ? (config.invokeTarget as TemplateTargetProperties).samTemplateResource
-            : TEMPLATE_RESOURCE_NAME,
+        // templateResourceName: (config.invokeTarget as TemplateTargetProperties)?.samTemplateResource
+        //     ? (config.invokeTarget as TemplateTargetProperties).samTemplateResource
+        //     : TEMPLATE_RESOURCE_NAME,
+        templateResourceName: TEMPLATE_RESOURCE_NAME,
         templatePath: config.samTemplatePath,
         eventPath,
         environmentVariablePath,
-        invoker: config.samLocalInvokeCommand!!,  // ?? new DefaultValidatingSamCliProcessInvoker({})
+        invoker: config.samLocalInvokeCommand!!, // ?? new DefaultValidatingSamCliProcessInvoker({})
         dockerNetwork: config.sam?.dockerNetwork,
         debugPort: config.debugPort?.toString(),
-        debuggerPath: config.debuggerPath,
+        debuggerPath: config.debuggerPath
     }
     const command = new SamCliLocalInvokeInvocation(localInvokeArgs)
 
