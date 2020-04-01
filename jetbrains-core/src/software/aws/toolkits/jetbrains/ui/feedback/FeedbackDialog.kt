@@ -21,6 +21,8 @@ import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.FeedbackTelemetry
+import software.aws.toolkits.telemetry.Result
 
 class FeedbackDialog(private val project: Project) : DialogWrapper(project), CoroutineScope by ApplicationThreadPoolScope("FeedbackDialog") {
     val panel = SubmitFeedbackPanel(initiallyPositive = true)
@@ -35,6 +37,7 @@ class FeedbackDialog(private val project: Project) : DialogWrapper(project), Cor
         if (okAction.isEnabled) {
             setOKButtonText(message("feedback.submitting"))
             isOKActionEnabled = false
+            var result = Result.SUCCEEDED
 
             val sentiment = panel.sentiment ?: throw IllegalStateException("sentiment was null after validation")
             val comment = panel.comment ?: throw IllegalStateException("comment was null after validation")
@@ -52,6 +55,9 @@ class FeedbackDialog(private val project: Project) : DialogWrapper(project), Cor
                         setOKButtonText(message("feedback.submit_button"))
                         isOKActionEnabled = true
                     }
+                    result = Result.FAILED
+                } finally {
+                    FeedbackTelemetry.result(project, result = result)
                 }
             }
         }
@@ -61,6 +67,7 @@ class FeedbackDialog(private val project: Project) : DialogWrapper(project), Cor
         super.doCancelAction()
         // kill any remaining coroutines
         coroutineContext.cancel()
+        FeedbackTelemetry.result(project, result = Result.CANCELLED)
     }
 
     public override fun doValidate(): ValidationInfo? {
