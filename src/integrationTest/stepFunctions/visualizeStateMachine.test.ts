@@ -9,9 +9,11 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 import { spy } from 'sinon'
 import * as vscode from 'vscode'
+import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { messageObject } from '../../stepFunctions/commands/visualizeStateMachine'
 import { assertThrowsError } from '../../test/shared/utilities/assertUtils'
+import { activateExtension } from '../integrationTestsUtilities'
 
 const sampleStateMachine = `
 	 {
@@ -83,6 +85,12 @@ async function waitUntilWebviewIsVisible(webviewPanel: vscode.WebviewPanel | und
 }
 
 describe('visualizeStateMachine', async () => {
+    before(async function() {
+        // tslint:disable-next-line:no-invalid-this
+        this.timeout(600000)
+        await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
+    })
+
     beforeEach(async () => {
         // Make a temp folder for all these tests
         tempFolder = await makeTemporaryToolkitFolder()
@@ -105,7 +113,7 @@ describe('visualizeStateMachine', async () => {
         const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.previewStateMachine')
 
         assert.ok(result)
-    })
+    }).timeout(15000) // Give the first test that calls aws.previewStateMachine a chance to download the visualizer
 
     it('correctly displays content when given a sample state machine', async () => {
         const fileName = 'mysamplestatemachine.json'
