@@ -11,6 +11,8 @@ dependencies {
     compile("software.amazon.awssdk:ecs:$awsSdkVersion")
     compile("software.amazon.awssdk:s3:$awsSdkVersion")
     compile("software.amazon.awssdk:sts:$awsSdkVersion")
+
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
 }
 
 configurations {

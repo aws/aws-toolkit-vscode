@@ -8,6 +8,7 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException
 import software.aws.toolkits.core.s3.deleteBucketAndContents
 import software.aws.toolkits.core.utils.RuleUtils
+import software.aws.toolkits.core.utils.Waiters.waitUntilBlocking
 
 class S3TemporaryBucketRule(private val s3Client: S3Client) : ExternalResource() {
     private val buckets = mutableListOf<String>()
@@ -18,7 +19,14 @@ class S3TemporaryBucketRule(private val s3Client: S3Client) : ExternalResource()
     fun createBucket(prefix: String = RuleUtils.prefixFromCallingClass()): String {
         val bucketName: String = RuleUtils.randomName(prefix)
         s3Client.createBucket { it.bucket(bucketName) }
+
+        // Wait for bucket to be ready
+        waitUntilBlocking(exceptionsToIgnore = setOf(NoSuchBucketException::class)) {
+            s3Client.headBucket { it.bucket(bucketName) }
+        }
+
         buckets.add(bucketName)
+
         return bucketName
     }
 
