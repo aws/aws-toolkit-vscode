@@ -252,6 +252,10 @@
     </extensions>
 
     <actions>
+        <group id="aws.toolkit.explorer.ecs.cluster" popup="true" compact="false">
+            <action id="ecs.service.showLogGroup" class="software.aws.toolkits.jetbrains.services.ecs.actions.EcsLogGroupAction"/>
+            <separator/>
+        </group>
 
         <group id="aws.toolkit.explorer.ecs.service" popup="true" compact="false">
             <reference ref="RunContextGroupInner"/>
