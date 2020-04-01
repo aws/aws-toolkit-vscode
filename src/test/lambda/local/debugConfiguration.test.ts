@@ -55,7 +55,6 @@ describe.only('makeCoreCLRDebugConfiguration', async () => {
             samLocalInvokeCommand: new DefaultSamLocalInvokeCommand(fakeExtCtx.chanLogger),
 
             //debuggerPath?:
-            debugPort: 0,
 
             invokeTarget: {
                 target: 'code',
@@ -66,7 +65,7 @@ describe.only('makeCoreCLRDebugConfiguration', async () => {
         return config
     }
 
-    async function makeConfig({ codeUri = path.join('foo', 'bar'), port = 42 }: { codeUri?: string; port?: number }) {
+    async function makeConfig({ codeUri = path.join('foo', 'bar') }: { codeUri?: string; port?: number }) {
         const fakeLaunchConfig = makeFakeSamLaunchConfig()
         return makeCoreCLRDebugConfiguration(fakeLaunchConfig, codeUri)
     }
@@ -93,10 +92,10 @@ describe.only('makeCoreCLRDebugConfiguration', async () => {
         })
 
         it('uses the specified port', async () => {
-            const config = await makeConfig({ port: 538 })
+            const config = await makeConfig({})
 
             assert.strictEqual(
-                config.windows.pipeTransport.pipeArgs.some(arg => arg.includes('538')),
+                config.windows.pipeTransport.pipeArgs.some(arg => arg.includes(config.debugPort!!.toString())),
                 true
             )
         })
@@ -109,10 +108,10 @@ describe.only('makeCoreCLRDebugConfiguration', async () => {
         })
 
         it('uses the specified port', async () => {
-            const config = await makeConfig({ port: 538 })
+            const config = await makeConfig({})
 
             assert.strictEqual(
-                config.pipeTransport.pipeArgs.some(arg => arg.includes('538')),
+                config.pipeTransport.pipeArgs.some(arg => arg.includes(config.debugPort!!.toString())),
                 true
             )
         })
