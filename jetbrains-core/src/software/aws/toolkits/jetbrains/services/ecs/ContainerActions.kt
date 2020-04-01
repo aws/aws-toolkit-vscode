@@ -62,7 +62,7 @@ class ServiceContainerActions : SingleExplorerNodeActionGroup<EcsServiceNode>("C
 class ContainerLogsAction(
     private val project: Project,
     private val container: ContainerDetails
-) : AnAction(message("ecs.service.logs.action_label"), null, AwsIcons.Resources.CloudWatch.LOGS) {
+) : AnAction(message("ecs.service.container_logs.action_label"), null, AwsIcons.Resources.CloudWatch.LOGS) {
 
     private val logConfiguration: Pair<String, String>? by lazy {
         container.containerDefinition.logConfiguration().takeIf { it.logDriver() == LogDriver.AWSLOGS }?.options()?.let {

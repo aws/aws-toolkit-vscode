@@ -18,7 +18,7 @@ import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 
 class LambdaLogGroupAction :
-    SingleExplorerNodeAction<LambdaFunctionNode>(message("lambda.logs.action_label"), null, AwsIcons.Resources.CloudWatch.LOGS),
+    SingleExplorerNodeAction<LambdaFunctionNode>(message("cloudwatch.logs.view_log_streams"), null, AwsIcons.Resources.CloudWatch.LOGS),
     CoroutineScope by ApplicationThreadPoolScope("LambdaLogGroupAction"),
     DumbAware {
     override fun actionPerformed(selected: LambdaFunctionNode, e: AnActionEvent) {

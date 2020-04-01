@@ -75,6 +75,20 @@ class CloudWatchLogStream(
     }
 
     private fun addSearchListener() {
+        searchField.textEditor.addPropertyChangeListener {
+            // If the text field is emptied, like what the x button does, clear the table and dispose the old one if it exists
+            if (searchField.text.isEmpty()) {
+                val oldTable = searchStreamTable
+                searchStreamTable = null
+                launch(edtContext) {
+                    tablePanel.setContent(logStreamTable.component)
+                    // Dispose the old one if it was not null
+                    oldTable?.let { launch { Disposer.dispose(it) } }
+                }
+            }
+        }
+        // Add action listener on enter to search. This is needed so we don't make a super costly call
+        // for every letter that is typed in
         searchField.textEditor.addActionListener(object : ActionListener {
             private var lastText = ""
             override fun actionPerformed(e: ActionEvent?) {
@@ -84,15 +98,8 @@ class CloudWatchLogStream(
                 }
                 lastText = searchFieldText
                 val oldTable = searchStreamTable
-                // If it is empty, replace the table with the original table
-                if (searchFieldText.isEmpty()) {
-                    searchStreamTable = null
-                    launch(edtContext) {
-                        tablePanel.setContent(logStreamTable.component)
-                        // Dispose the old one if it was not null
-                        oldTable?.let { launch { Disposer.dispose(it) } }
-                    }
-                } else {
+                // If it is not empty do a search
+                if (searchFieldText.isNotEmpty()) {
                     // This is thread safe because the actionPerformed is run on the UI thread
                     CloudwatchlogsTelemetry.searchStream(project, true)
                     val table = LogStreamTable(project, client, logGroup, logStream, LogStreamTable.TableType.FILTER)
