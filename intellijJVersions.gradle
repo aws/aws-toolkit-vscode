@@ -70,9 +70,9 @@ static def ideProfiles() {
                     ]
                 ],
                 "RD": [
-                    sdkVersion: "RD-2019.3",
-                    rdGenVersion: "0.193.51",
-                    nugetVersion: "2019.3.0",
+                    sdkVersion: "RD-2019.3.4",
+                    rdGenVersion: "0.193.146",
+                    nugetVersion: "2019.3.4",
                     plugins: [
                         "yaml"
                     ]
