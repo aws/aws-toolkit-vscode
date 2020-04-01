@@ -56,7 +56,7 @@ export interface PipeTransport {
  * Gets a `RuntimeFamily` from a vscode document languageId.
  */
 export function getRuntimeFamily(langId: string): string {
-    switch(langId) {
+    switch (langId) {
         case 'typescript':
         case 'javascript':
             return 'node'
@@ -74,7 +74,7 @@ export function getRuntimeFamily(langId: string): string {
  * languageId.
  */
 export function getDefaultRuntime(langId: string): string | undefined {
-    switch(langId) {
+    switch (langId) {
         case 'typescript':
         case 'javascript':
             return nodeJsRuntimes.first()

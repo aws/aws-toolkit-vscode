@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode';
-import { InitializedEvent, Logger, logger, DebugSession, } from 'vscode-debugadapter';
-import { DebugProtocol } from 'vscode-debugprotocol';
-import { ExtContext } from '../../extensions';
-import { AwsSamDebuggerConfiguration } from './awsSamDebugConfiguration.gen';
-import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime';
-import { ChannelLogger } from '../../utilities/vsCodeUtils';
-import { SamLocalInvokeCommand } from '../cli/samCliLocalInvoke';
+import * as vscode from 'vscode'
+import { InitializedEvent, Logger, logger, DebugSession } from 'vscode-debugadapter'
+import { DebugProtocol } from 'vscode-debugprotocol'
+import { ExtContext } from '../../extensions'
+import { AwsSamDebuggerConfiguration } from './awsSamDebugConfiguration.gen'
+import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
+import { ChannelLogger } from '../../utilities/vsCodeUtils'
+import { SamLocalInvokeCommand } from '../cli/samCliLocalInvoke'
 
 /**
  * SAM-specific launch attributes (which are not part of the DAP).
@@ -21,9 +21,7 @@ import { SamLocalInvokeCommand } from '../cli/samCliLocalInvoke';
  * @see AwsSamDebuggerConfiguration
  * @see AwsSamDebugConfigurationProvider.resolveDebugConfiguration
  */
-export interface SamLaunchRequestArgs extends
-        DebugProtocol.LaunchRequestArguments,
-        AwsSamDebuggerConfiguration {
+export interface SamLaunchRequestArgs extends DebugProtocol.LaunchRequestArguments, AwsSamDebuggerConfiguration {
     // readonly type: 'node' | 'python' | 'coreclr' | 'aws-sam'
     readonly request: 'attach' | 'launch' | 'direct-invoke'
 
@@ -46,8 +44,8 @@ export interface SamLaunchRequestArgs extends
      * Used as a last resort for deciding `codeRoot` (when there is no `launch.json` nor `template.yaml`)
      */
     documentUri: vscode.Uri
-    originalHandlerName: string  // TODO: remove this hopefully
-    originalSamTemplatePath: string  // TODO: remove this hopefully
+    originalHandlerName: string // TODO: remove this hopefully
+    originalSamTemplatePath: string // TODO: remove this hopefully
     /**
      * SAM template absolute path used for SAM CLI invoke.
      * - For `target=code` this is the _generated_ template path.
@@ -83,9 +81,7 @@ export class SamDebugSession extends DebugSession {
      * Creates a new debug adapter used for one debug session.
      * We configure the default implementation of a debug adapter here.
      */
-    public constructor(
-        private readonly ctx:ExtContext,
-        ) {
+    public constructor(private readonly ctx: ExtContext) {
         super()
     }
 
@@ -93,38 +89,41 @@ export class SamDebugSession extends DebugSession {
      * The 'initialize' request is the first request called by the frontend
      * to interrogate the features the debug adapter provides.
      */
-    protected initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): void {
+    protected initializeRequest(
+        response: DebugProtocol.InitializeResponse,
+        args: DebugProtocol.InitializeRequestArguments
+    ): void {
         // build and return the capabilities of this debug adapter:
-        response.body = response.body || {};
+        response.body = response.body || {}
 
         // Adapter implements configurationDoneRequest.
         // response.body.supportsConfigurationDoneRequest = true;
 
         // make VS Code to use `evaluate` when hovering over source
-        response.body.supportsEvaluateForHovers = true;
+        response.body.supportsEvaluateForHovers = true
 
         // make VS Code to show a 'step back' button
-        response.body.supportsStepBack = true;
+        response.body.supportsStepBack = true
 
         // make VS Code to support data breakpoints
-        response.body.supportsDataBreakpoints = true;
+        response.body.supportsDataBreakpoints = true
 
         // make VS Code to support completion in REPL
-        response.body.supportsCompletionsRequest = true;
-        response.body.completionTriggerCharacters = [ '.', '[' ];
+        response.body.supportsCompletionsRequest = true
+        response.body.completionTriggerCharacters = ['.', '[']
 
         // make VS Code to send cancelRequests
-        response.body.supportsCancelRequest = true;
+        response.body.supportsCancelRequest = true
 
         // make VS Code send the breakpointLocations request
-        response.body.supportsBreakpointLocationsRequest = true;
+        response.body.supportsBreakpointLocationsRequest = true
 
-        this.sendResponse(response);
+        this.sendResponse(response)
 
         // since this debug adapter can accept configuration requests like 'setBreakpoint' at any time,
         // we request them early by sending an 'initializeRequest' to the frontend.
         // The frontend will end the configuration sequence by calling 'configurationDone' request.
-        this.sendEvent(new InitializedEvent());
+        this.sendEvent(new InitializedEvent())
     }
 
     /**
@@ -133,11 +132,11 @@ export class SamDebugSession extends DebugSession {
      */
     protected async launchRequest(response: DebugProtocol.LaunchResponse, args: SamLaunchRequestArgs) {
         // make sure to 'Stop' the buffered logging if 'trace' is not set
-        logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false);
+        logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false)
         // wait until configuration has finished (and configurationDoneRequest has been called)
         // await this._configurationDone.wait(1000);
 
-        switch(args.runtimeFamily) {
+        switch (args.runtimeFamily) {
             case RuntimeFamily.NodeJS: {
                 try {
                     /* await tsLensProvider.invokeLambda({ */
@@ -156,25 +155,32 @@ export class SamDebugSession extends DebugSession {
                     response.success = false
                     response.message = `SAM invoke failed: ${e}`
                 }
-                break;
+                break
             }
             case RuntimeFamily.Python:
                 // TODO
-                break;
+                break
             case RuntimeFamily.DotNetCore:
                 // TODO
-                break;
+                break
         }
 
         this.ctx.outputChannel.append('SamDebugSession.launchRequest')
-        this.sendResponse(response);
+        this.sendResponse(response)
     }
 
-    protected setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): void {
+    protected setBreakPointsRequest(
+        response: DebugProtocol.SetBreakpointsResponse,
+        args: DebugProtocol.SetBreakpointsArguments
+    ): void {
         // this.sendResponse(response);
     }
 
-    protected breakpointLocationsRequest(response: DebugProtocol.BreakpointLocationsResponse, args: DebugProtocol.BreakpointLocationsArguments, request?: DebugProtocol.Request): void {
+    protected breakpointLocationsRequest(
+        response: DebugProtocol.BreakpointLocationsResponse,
+        args: DebugProtocol.BreakpointLocationsArguments,
+        request?: DebugProtocol.Request
+    ): void {
         // this.sendResponse(response);
     }
 
@@ -182,7 +188,10 @@ export class SamDebugSession extends DebugSession {
         // this.sendResponse(response);
     }
 
-    protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments): void {
+    protected stackTraceRequest(
+        response: DebugProtocol.StackTraceResponse,
+        args: DebugProtocol.StackTraceArguments
+    ): void {
         // this.sendResponse(response);
     }
 
@@ -196,14 +205,20 @@ export class SamDebugSession extends DebugSession {
         // this.sendResponse(response);
     }
 
-    protected async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments, request?: DebugProtocol.Request) {
-    }
+    protected async variablesRequest(
+        response: DebugProtocol.VariablesResponse,
+        args: DebugProtocol.VariablesArguments,
+        request?: DebugProtocol.Request
+    ) {}
 
     protected continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments): void {
         // this.sendResponse(response);
     }
 
-    protected reverseContinueRequest(response: DebugProtocol.ReverseContinueResponse, args: DebugProtocol.ReverseContinueArguments) : void {
+    protected reverseContinueRequest(
+        response: DebugProtocol.ReverseContinueResponse,
+        args: DebugProtocol.ReverseContinueArguments
+    ): void {
         // this.sendResponse(response);
     }
 
@@ -219,14 +234,22 @@ export class SamDebugSession extends DebugSession {
         // this.sendResponse(response);
     }
 
-    protected dataBreakpointInfoRequest(response: DebugProtocol.DataBreakpointInfoResponse, args: DebugProtocol.DataBreakpointInfoArguments): void {
-    }
+    protected dataBreakpointInfoRequest(
+        response: DebugProtocol.DataBreakpointInfoResponse,
+        args: DebugProtocol.DataBreakpointInfoArguments
+    ): void {}
 
-    protected setDataBreakpointsRequest(response: DebugProtocol.SetDataBreakpointsResponse, args: DebugProtocol.SetDataBreakpointsArguments): void {
+    protected setDataBreakpointsRequest(
+        response: DebugProtocol.SetDataBreakpointsResponse,
+        args: DebugProtocol.SetDataBreakpointsArguments
+    ): void {
         // this.sendResponse(response);
     }
 
-    protected completionsRequest(response: DebugProtocol.CompletionsResponse, args: DebugProtocol.CompletionsArguments): void {
+    protected completionsRequest(
+        response: DebugProtocol.CompletionsResponse,
+        args: DebugProtocol.CompletionsArguments
+    ): void {
         // response.body = {
         //     targets: [
         //         {
