@@ -43,9 +43,9 @@ export function initialize({
     outputChannel: toolkitOutputChannel,
     processInvoker = new DefaultValidatingSamCliProcessInvoker({}),
     localInvokeCommand = new DefaultSamLocalInvokeCommand(getChannelLogger(toolkitOutputChannel), [
-        WAIT_FOR_DEBUGGER_MESSAGES.NODEJS
+        WAIT_FOR_DEBUGGER_MESSAGES.NODEJS,
     ]),
-    telemetryService
+    telemetryService,
 }: CodeLensProviderParams): void {
     const invokeLambda = async (params: LambdaLocalInvokeParams & { runtime: string }) => {
         const samProjectCodeRoot = await getSamProjectDirPathForFile(params.document.uri.fsPath)
@@ -65,7 +65,7 @@ export function initialize({
             localRoot: samProjectCodeRoot,
             remoteRoot: '/var/task',
             protocol: 'inspector',
-            skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js']
+            skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
         }
 
         const localLambdaRunner: LocalLambdaRunner = new LocalLambdaRunner(
@@ -91,7 +91,7 @@ export function initialize({
 
             const resource = await CloudFormation.getResourceFromTemplate({
                 handlerName: params.handlerName,
-                templatePath: params.samTemplate.fsPath
+                templatePath: params.samTemplate.fsPath,
             })
             const lambdaRuntime = CloudFormation.getRuntime(resource)
             let invokeResult: Result = 'Succeeded'
@@ -114,7 +114,7 @@ export function initialize({
                 } else {
                     await invokeLambda({
                         runtime: lambdaRuntime,
-                        ...params
+                        ...params,
                     })
                 }
             } catch (err) {
@@ -124,7 +124,7 @@ export function initialize({
                 recordLambdaInvokeLocal({
                     result: invokeResult,
                     runtime: lambdaRuntime as Runtime,
-                    debug: params.isDebug
+                    debug: params.isDebug,
                 })
             }
         })
@@ -153,9 +153,9 @@ export function makeTypescriptCodeLensProvider(): vscode.CodeLensProvider {
                 document,
                 handlers,
                 token,
-                language: 'javascript'
+                language: 'javascript',
             })
-        }
+        },
     }
 }
 
@@ -174,7 +174,7 @@ async function decorateHandlerNames(handlers: LambdaHandlerCandidate[], parentDo
 
     const relativePath = getHandlerRelativePath({
         codeRoot: path.dirname(packageJsonPath),
-        filePath: parentDocumentPath
+        filePath: parentDocumentPath,
     })
 
     handlers.forEach(handler => {

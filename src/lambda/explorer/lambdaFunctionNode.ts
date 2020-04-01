@@ -19,7 +19,7 @@ export class LambdaFunctionNode extends AWSTreeNodeBase {
         this.update(configuration)
         this.iconPath = {
             dark: Uri.file(ext.iconPaths.dark.lambda),
-            light: Uri.file(ext.iconPaths.light.lambda)
+            light: Uri.file(ext.iconPaths.light.lambda),
         }
     }
 

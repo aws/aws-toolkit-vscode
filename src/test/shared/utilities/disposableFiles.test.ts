@@ -101,7 +101,7 @@ describe('ExtensionDisposableFiles', async () => {
 
     beforeEach(() => {
         extensionContext = ({
-            subscriptions: []
+            subscriptions: [],
         } as any) as vscode.ExtensionContext
     })
 

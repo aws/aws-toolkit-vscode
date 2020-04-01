@@ -44,7 +44,7 @@ export class SchemasNode extends AWSTreeNodeBase {
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.schemas.noRegistry', '[No Schema Registries]')),
             sort: (nodeA: RegistryItemNode, nodeB: RegistryItemNode) =>
-                nodeA.registryName.localeCompare(nodeB.registryName)
+                nodeA.registryName.localeCompare(nodeB.registryName),
         })
     }
 

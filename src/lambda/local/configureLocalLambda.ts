@@ -14,7 +14,7 @@ import {
     getTemplatesConfigPath,
     showTemplatesConfigurationError,
     TemplatesConfigFieldTypeError,
-    TemplatesConfigPopulator
+    TemplatesConfigPopulator,
 } from '../config/templates'
 
 export interface ConfigureLocalLambdaContext {
@@ -51,8 +51,8 @@ export async function configureLocalLambda(
             formattingOptions: {
                 insertSpaces: true,
                 tabSize: getTabSize(editor),
-                eol: editor.document.eol === vscode.EndOfLine.CRLF ? '\r\n' : '\n'
-            }
+                eol: editor.document.eol === vscode.EndOfLine.CRLF ? '\r\n' : '\n',
+            },
         })
             .ensureTemplateHandlerPropertiesExist(templateRelativePath, handler)
             .getResults()
@@ -72,7 +72,7 @@ export async function configureLocalLambda(
         }
 
         await context.showTextDocument(editor.document, {
-            selection: await getEventRange(editor, templateRelativePath, handler, context)
+            selection: await getEventRange(editor, templateRelativePath, handler, context),
         })
     } catch (e) {
         configureResult = 'Failed'

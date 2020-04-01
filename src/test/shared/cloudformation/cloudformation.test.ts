@@ -11,7 +11,12 @@ import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 import { fileExists, makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../../shared/systemUtilities'
 import { assertRejects } from '../utilities/assertUtils'
-import { createBaseResource, createBaseTemplate, makeSampleSamTemplateYaml, strToYamlFile } from './cloudformationTestUtils'
+import {
+    createBaseResource,
+    createBaseTemplate,
+    makeSampleSamTemplateYaml,
+    strToYamlFile,
+} from './cloudformationTestUtils'
 
 describe('CloudFormation', () => {
     let tempFolder: string
@@ -75,8 +80,8 @@ describe('CloudFormation', () => {
                     MyParam3: { Type: 'List<Number>' },
                     MyParam4: { Type: 'CommaDelimitedList' },
                     MyParam5: { Type: 'AWS::EC2::AvailabilityZone::Name' },
-                    MyParam6: { Type: 'AWS::SSM::Parameter::Value<AWS::EC2::AvailabilityZone::Name>' }
-                }
+                    MyParam6: { Type: 'AWS::SSM::Parameter::Value<AWS::EC2::AvailabilityZone::Name>' },
+                },
             }
 
             assert.deepStrictEqual(loadedTemplate, expectedTemplate)
@@ -184,20 +189,20 @@ describe('CloudFormation', () => {
             title: 'existing lambda, single runtime',
             handlerName: 'app.lambda_handler',
             templateFileName: 'template_python2.7.yaml',
-            expectedRuntime: 'python2.7'
+            expectedRuntime: 'python2.7',
         },
         {
             title: '2nd existing lambda, multiple runtimes',
             handlerName: 'app.lambda_handler2',
             templateFileName: 'template_python_mixed.yaml',
-            expectedRuntime: 'python2.7'
+            expectedRuntime: 'python2.7',
         },
         {
             title: '1st existing lambda, multiple runtimes',
             handlerName: 'app.lambda_handler3',
             templateFileName: 'template_python_mixed.yaml',
-            expectedRuntime: 'python3.6'
-        }
+            expectedRuntime: 'python3.6',
+        },
     ]
 
     const templateWithNonExistingHandlerScenarios = [
@@ -205,14 +210,14 @@ describe('CloudFormation', () => {
             title: 'non-existing lambda, single runtime',
             handlerName: 'app.handler_that_does_not_exist',
             templateFileName: 'template_python2.7.yaml',
-            expectedRuntime: undefined
+            expectedRuntime: undefined,
         },
         {
             title: 'non-existing lambda, multiple runtimes',
             handlerName: 'app.handler_that_does_not_exist',
             templateFileName: 'template_python_mixed.yaml',
-            expectedRuntime: undefined
-        }
+            expectedRuntime: undefined,
+        },
     ]
 
     const makeTemplatePath = (templateFileName: string): string => {
@@ -226,7 +231,7 @@ describe('CloudFormation', () => {
 
                 const resource = await CloudFormation.getResourceFromTemplate({
                     templatePath,
-                    handlerName: scenario.handlerName
+                    handlerName: scenario.handlerName,
                 })
 
                 assert.ok(resource)
@@ -244,7 +249,7 @@ describe('CloudFormation', () => {
                 await assertRejects(async () => {
                     await CloudFormation.getResourceFromTemplate({
                         templatePath,
-                        handlerName: scenario.handlerName
+                        handlerName: scenario.handlerName,
                     })
                 })
             })
@@ -259,7 +264,7 @@ describe('CloudFormation', () => {
 
                 const resource = await CloudFormation.getResourceFromTemplateResources({
                     templateResources: template.Resources,
-                    handlerName: scenario.handlerName
+                    handlerName: scenario.handlerName,
                 })
 
                 assert.ok(resource)
@@ -278,7 +283,7 @@ describe('CloudFormation', () => {
                 await assertRejects(async () => {
                     await CloudFormation.getResourceFromTemplateResources({
                         templateResources: template.Resources,
-                        handlerName: scenario.handlerName
+                        handlerName: scenario.handlerName,
                     })
                 })
             })

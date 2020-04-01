@@ -11,12 +11,12 @@ import { SchemaClient } from '../../../src/shared/clients/schemaClient'
 import { createSchemaCodeDownloaderObject } from '../..//eventSchemas/commands/downloadSchemaItemCode'
 import {
     SchemaCodeDownloader,
-    SchemaCodeDownloadRequestDetails
+    SchemaCodeDownloadRequestDetails,
 } from '../../eventSchemas/commands/downloadSchemaItemCode'
 import { getApiValueForSchemasDownload } from '../../eventSchemas/models/schemaCodeLangs'
 import {
     buildSchemaTemplateParameters,
-    SchemaTemplateParameters
+    SchemaTemplateParameters,
 } from '../../eventSchemas/templates/schemasAppTemplateUtils'
 import { ActivationLaunchPath } from '../../shared/activationLaunchPath'
 import { AwsContext } from '../../shared/awsContext'
@@ -38,7 +38,7 @@ import { eventBridgeStarterAppTemplate } from '../models/samTemplates'
 import {
     CreateNewSamAppWizard,
     CreateNewSamAppWizardResponse,
-    DefaultCreateNewSamAppWizardContext
+    DefaultCreateNewSamAppWizardContext,
 } from '../wizards/samInitWizard'
 
 export async function resumeCreateNewSamApp(activationLaunchPath: ActivationLaunchPath = new ActivationLaunchPath()) {
@@ -122,7 +122,7 @@ export async function createNewSamApplication(
             location: config.location.fsPath,
             runtime: config.runtime,
             dependencyManager,
-            template: config.template
+            template: config.template,
         }
 
         let request: SchemaCodeDownloadRequestDetails
@@ -156,7 +156,7 @@ export async function createNewSamApplication(
                 schemaName: config.schemaName!,
                 language: getApiValueForSchemasDownload(config.runtime),
                 schemaVersion: schemaTemplateParameters!.SchemaVersion,
-                destinationDirectory: vscode.Uri.file(destinationDirectory)
+                destinationDirectory: vscode.Uri.file(destinationDirectory),
             }
             schemaCodeDownloader = createSchemaCodeDownloaderObject(client!)
             channelLogger.info(
@@ -181,7 +181,7 @@ export async function createNewSamApplication(
         activationLaunchPath.setLaunchPath(uri.fsPath)
         await addWorkspaceFolder({
             uri: config.location,
-            name: path.basename(config.location.fsPath)
+            name: path.basename(config.location.fsPath),
         })
 
         await vscode.window.showTextDocument(uri)
@@ -210,7 +210,7 @@ export async function createNewSamApplication(
             result: createResult,
             reason: reason,
             runtime: createRuntime,
-            name: config?.name
+            name: config?.name,
         })
     }
 }

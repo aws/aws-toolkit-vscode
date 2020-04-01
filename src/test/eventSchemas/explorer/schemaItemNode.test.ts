@@ -24,7 +24,7 @@ describe('SchemaItemNode', () => {
         setupTestIconPaths()
         fakeSchemaItem = {
             SchemaName: 'testSchemaName',
-            SchemaArn: 'testARN'
+            SchemaArn: 'testARN',
         }
     })
 
@@ -78,7 +78,7 @@ describe('RegistryItemNode', () => {
     before(async () => {
         fakeRegistry = {
             RegistryName: 'testRegistry',
-            RegistryArn: 'arn:aws:schemas:us-west-2:19930409:registry/testRegistry'
+            RegistryArn: 'arn:aws:schemas:us-west-2:19930409:registry/testRegistry',
         }
     })
 
@@ -90,7 +90,7 @@ describe('RegistryItemNode', () => {
                     schemaNames.map<Schemas.SchemaSummary>(name => {
                         return {
                             SchemaArn: name,
-                            SchemaName: name
+                            SchemaName: name,
                         }
                     })
                 )

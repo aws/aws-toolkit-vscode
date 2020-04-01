@@ -18,7 +18,7 @@ export class AWSCommandTreeNode extends AWSTreeNodeBase {
         this.command = {
             title: label || '',
             command: commandId,
-            arguments: commandArguments
+            arguments: commandArguments,
         }
         this.tooltip = tooltip
         this.contextValue = 'awsCommandNode'

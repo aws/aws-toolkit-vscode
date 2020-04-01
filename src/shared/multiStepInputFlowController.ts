@@ -52,7 +52,7 @@ export class MultiStepInputFlowController {
         activeItem,
         placeholder,
         buttons,
-        shouldResume
+        shouldResume,
     }: P) {
         const disposables: Disposable[] = []
         try {
@@ -104,7 +104,7 @@ export class MultiStepInputFlowController {
         validate,
         buttons,
         ignoreFocusOut,
-        shouldResume
+        shouldResume,
     }: P) {
         const disposables: Disposable[] = []
         try {

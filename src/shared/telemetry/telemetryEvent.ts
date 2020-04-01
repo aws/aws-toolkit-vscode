@@ -35,7 +35,7 @@ export function toMetricData(array: TelemetryEvent[]): MetricDatum[] {
                             EpochTimestamp: metricEvent.createTime.getTime(),
                             Unit: datum.Unit ?? 'None',
                             Value: datum.Value,
-                            Metadata: datum.Metadata
+                            Metadata: datum.Metadata,
                         }
                     })
             )

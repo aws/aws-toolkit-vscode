@@ -30,7 +30,7 @@ interface ProfileEntry {
 export class DefaultCredentialSelectionDataProvider implements CredentialSelectionDataProvider {
     private static readonly defaultCredentialsProfileName = asString({
         credentialType: SharedCredentialsProvider.getCredentialsType(),
-        credentialTypeId: 'default'
+        credentialTypeId: 'default',
     })
 
     private readonly _credentialsMru: CredentialsProfileMru
@@ -50,7 +50,7 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
             placeholder: localize('AWS.placeHolder.selectProfile', 'Select a credential profile'),
             items: this.getProfileSelectionList(),
             activeItem: state.credentialProfile,
-            shouldResume: this.shouldResume.bind(this)
+            shouldResume: this.shouldResume.bind(this),
         })
     }
 
@@ -65,7 +65,7 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
             value: '',
             prompt: localize('AWS.placeHolder.newProfileName', 'Choose a unique name for the new profile'),
             validate: this.validateNameIsUnique.bind(this),
-            shouldResume: this.shouldResume.bind(this)
+            shouldResume: this.shouldResume.bind(this),
         })
     }
 
@@ -81,7 +81,7 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
             prompt: localize('AWS.placeHolder.inputAccessKey', 'Input the AWS Access Key'),
             validate: this.validateAccessKey.bind(this),
             ignoreFocusOut: true,
-            shouldResume: this.shouldResume.bind(this)
+            shouldResume: this.shouldResume.bind(this),
         })
     }
 
@@ -97,7 +97,7 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
             prompt: localize('AWS.placeHolder.inputSecretKey', 'Input the AWS Secret Key'),
             validate: this.validateSecretKey.bind(this),
             ignoreFocusOut: true,
-            shouldResume: this.shouldResume.bind(this)
+            shouldResume: this.shouldResume.bind(this),
         })
     }
 

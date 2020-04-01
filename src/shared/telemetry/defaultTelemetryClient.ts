@@ -46,7 +46,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
                     OSVersion: os.release(),
                     ParentProduct: vscode.env.appName,
                     ParentProductVersion: vscode.version,
-                    MetricData: metricData
+                    MetricData: metricData,
                 })
                 .promise()
             this.logger.info(`Successfully sent a telemetry batch of ${batch.length}`)
@@ -70,7 +70,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
                     ParentProduct: vscode.env.appName,
                     ParentProductVersion: vscode.version,
                     Comment: feedback.comment,
-                    Sentiment: feedback.sentiment
+                    Sentiment: feedback.sentiment,
                 })
                 .promise()
             this.logger.info('Successfully posted feedback')
@@ -95,7 +95,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
                 region: region,
                 credentials: credentials,
                 correctClockSkew: true,
-                endpoint: DefaultTelemetryClient.DEFAULT_TELEMETRY_ENDPOINT
+                endpoint: DefaultTelemetryClient.DEFAULT_TELEMETRY_ENDPOINT,
             })
         )
     }

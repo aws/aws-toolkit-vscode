@@ -256,8 +256,8 @@ export class DefaultTelemetryService implements TelemetryService {
                 {
                     MetricName: 'noData',
                     Value: 0,
-                    Metadata: commonMetadata
-                }
+                    Metadata: commonMetadata,
+                },
             ]
             event.data = data
         }

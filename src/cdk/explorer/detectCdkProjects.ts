@@ -41,7 +41,7 @@ async function detectCdkProjectsFromWorkspaceFolder(
 }
 
 export async function* detectLocalCdkProjects({
-    workspaceUris
+    workspaceUris,
 }: {
     workspaceUris: vscode.Uri[]
 }): AsyncIterableIterator<vscode.Uri> {

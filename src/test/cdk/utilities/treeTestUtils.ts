@@ -20,8 +20,8 @@ export async function createWorkspaceFolder(
         workspaceFolder: {
             uri: Uri.file(workspacePath),
             name: path.basename(workspacePath),
-            index: 0
-        }
+            index: 0,
+        },
     }
 }
 
@@ -35,7 +35,7 @@ export function generateConstructTreeEntity(label: string, treePath: string, chi
     return {
         id: label,
         path: treePath,
-        children: children ? generateTreeChildResource() : {}
+        children: children ? generateTreeChildResource() : {},
     }
 }
 
@@ -43,8 +43,8 @@ export function generateTreeChildResource(): { [key: string]: any } {
     return {
         Resource: {
             id: 'Resource',
-            path: 'MyStack/MyQueue/Resource'
-        }
+            path: 'MyStack/MyQueue/Resource',
+        },
     }
 }
 
@@ -52,8 +52,8 @@ export function generateAttributes(): { [key: string]: any } {
     return {
         'aws:cdk:cloudformation:type': 'AWS::SNS::Topic',
         'aws:cdk:cloudformation:props': {
-            topicName: 'CoolTopic'
-        }
+            topicName: 'CoolTopic',
+        },
     }
 }
 
@@ -66,10 +66,10 @@ export function getTreeWithNoStack(): ConstructTree {
             children: {
                 Tree: {
                     id: 'Tree',
-                    path: 'Tree'
-                }
-            }
-        }
+                    path: 'Tree',
+                },
+            },
+        },
     }
 }
 
@@ -82,7 +82,7 @@ export function getTree(): ConstructTree {
             children: {
                 Tree: {
                     id: 'Tree',
-                    path: 'Tree'
+                    path: 'Tree',
                 },
                 TestStack: {
                     id: 'TestStack',
@@ -98,15 +98,15 @@ export function getTree(): ConstructTree {
                                     attributes: {
                                         'aws:cdk:cloudformation:type': 'AWS::SQS::Queue',
                                         'aws:cdk:cloudformation:props': {
-                                            visibilityTimeout: 300
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+                                            visibilityTimeout: 300,
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
     }
 }

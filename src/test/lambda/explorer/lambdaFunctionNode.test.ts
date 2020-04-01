@@ -20,7 +20,7 @@ describe('LambdaFunctionNode', () => {
         setupTestIconPaths()
         fakeFunctionConfig = {
             FunctionName: 'testFunctionName',
-            FunctionArn: 'testFunctionARN'
+            FunctionArn: 'testFunctionARN',
         }
 
         testNode = new LambdaFunctionNode(parentNode, 'someregioncode', fakeFunctionConfig)

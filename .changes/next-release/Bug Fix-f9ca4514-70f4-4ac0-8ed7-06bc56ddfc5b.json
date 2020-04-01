@@ -1,4 +1,0 @@
-{
-    "type": "Bug Fix",
-    "description": "Fix issue where CodeLenses appeared on wrong lines in .js files when adding or removing lines"
-}

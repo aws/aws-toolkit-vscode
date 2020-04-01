@@ -30,7 +30,7 @@ import {
     InvokeLambdaFunctionArguments,
     LambdaLocalInvokeParams,
     makeBuildDir,
-    makeInputTemplate
+    makeInputTemplate,
 } from './localLambdaRunner'
 import { PythonDebugAdapterHeartbeat } from './pythonDebugAdapterHeartbeat'
 
@@ -39,8 +39,8 @@ export const PYTHON_LANGUAGE = 'python'
 export const PYTHON_ALLFILES: vscode.DocumentFilter[] = [
     {
         scheme: 'file',
-        language: PYTHON_LANGUAGE
-    }
+        language: PYTHON_LANGUAGE,
+    },
 ]
 
 // TODO: Fix this! Implement a more robust/flexible solution. This is just a basic minimal proof of concept.
@@ -61,7 +61,7 @@ async function getLambdaHandlerCandidates(uri: vscode.Uri): Promise<LambdaHandle
             return {
                 filename,
                 handlerName: `${path.parse(filename).name}.${symbol.name}`,
-                range: symbol.range
+                range: symbol.range,
             }
         })
 }
@@ -131,7 +131,7 @@ def ${debugHandlerFunctionName}(event, context):
 
         return {
             outFilePath,
-            debugHandlerName: `${debugHandlerFileName}.${debugHandlerFunctionName}`
+            debugHandlerName: `${debugHandlerFileName}.${debugHandlerFunctionName}`,
         }
     } catch (err) {
         logger.error('makeLambdaDebugFile failed:', err as Error)
@@ -143,7 +143,7 @@ export function getLocalRootVariants(filePath: string): string[] {
     if (process.platform === 'win32' && DRIVE_LETTER_REGEX.test(filePath)) {
         return [
             filePath.replace(DRIVE_LETTER_REGEX, match => match.toLowerCase()),
-            filePath.replace(DRIVE_LETTER_REGEX, match => match.toUpperCase())
+            filePath.replace(DRIVE_LETTER_REGEX, match => match.toUpperCase()),
         ]
     }
 
@@ -152,7 +152,7 @@ export function getLocalRootVariants(filePath: string): string[] {
 
 function makeDebugConfig({
     debugPort,
-    samProjectCodeRoot
+    samProjectCodeRoot,
 }: {
     debugPort?: number
     samProjectCodeRoot: string
@@ -161,7 +161,7 @@ function makeDebugConfig({
         variant => {
             return {
                 localRoot: variant,
-                remoteRoot: '/var/task'
+                remoteRoot: '/var/task',
             }
         }
     )
@@ -176,7 +176,7 @@ function makeDebugConfig({
         // Disable redirectOutput to prevent the Python Debugger from automatically writing stdout/stderr text
         // to the Debug Console. We're taking the child process stdout/stderr and explicitly writing that to
         // the Debug Console.
-        redirectOutput: false
+        redirectOutput: false,
     }
 }
 
@@ -186,7 +186,7 @@ export async function initialize({
     outputChannel: toolkitOutputChannel,
     processInvoker = new DefaultValidatingSamCliProcessInvoker({}),
     telemetryService,
-    localInvokeCommand
+    localInvokeCommand,
 }: CodeLensProviderParams): Promise<void> {
     const logger = getLogger()
     const channelLogger = getChannelLogger(toolkitOutputChannel)
@@ -216,36 +216,36 @@ export async function initialize({
                 const { debugHandlerName, outFilePath } = await makeLambdaDebugFile({
                     handlerName: args.handlerName,
                     debugPort: debugPort,
-                    outputDir: samProjectCodeRoot
+                    outputDir: samProjectCodeRoot,
                 })
                 lambdaDebugFilePath = outFilePath
                 handlerName = debugHandlerName
                 manifestPath = await makePythonDebugManifest({
                     samProjectCodeRoot,
-                    outputDir: baseBuildDir
+                    outputDir: baseBuildDir,
                 })
             }
 
             const handlerFileRelativePath = getHandlerRelativePath({
                 codeRoot: samProjectCodeRoot,
-                filePath: args.document.uri.fsPath
+                filePath: args.document.uri.fsPath,
             })
 
             const relativeOriginalFunctionHandler = getRelativeFunctionHandler({
                 handlerName: args.handlerName,
                 runtime: args.runtime,
-                handlerFileRelativePath
+                handlerFileRelativePath,
             })
 
             const relativeFunctionHandler = getRelativeFunctionHandler({
                 handlerName: handlerName,
                 runtime: args.runtime,
-                handlerFileRelativePath
+                handlerFileRelativePath,
             })
 
             const lambdaInfo = await getLambdaInfoFromExistingTemplate({
                 workspaceUri: args.workspaceFolder.uri,
-                relativeOriginalFunctionHandler
+                relativeOriginalFunctionHandler,
             })
 
             const inputTemplatePath = await makeInputTemplate({
@@ -254,7 +254,7 @@ export async function initialize({
                 relativeFunctionHandler,
                 globals: lambdaInfo && lambdaInfo.templateGlobals ? lambdaInfo.templateGlobals : undefined,
                 properties: lambdaInfo && lambdaInfo.resource.Properties ? lambdaInfo.resource.Properties : undefined,
-                runtime: args.runtime
+                runtime: args.runtime,
             })
 
             logger.debug(
@@ -268,7 +268,7 @@ export async function initialize({
             const config = await getHandlerConfig({
                 handlerName: args.handlerName,
                 documentUri: args.document.uri,
-                samTemplate: vscode.Uri.file(args.samTemplate.fsPath)
+                samTemplate: vscode.Uri.file(args.samTemplate.fsPath),
             })
 
             const samTemplatePath: string = await executeSamBuild({
@@ -278,7 +278,7 @@ export async function initialize({
                 inputTemplatePath,
                 manifestPath,
                 samProcessInvoker: processInvoker,
-                useContainer: config.useContainer
+                useContainer: config.useContainer,
             })
 
             const invokeArgs: InvokeLambdaFunctionArguments = {
@@ -288,14 +288,14 @@ export async function initialize({
                 documentUri: args.document.uri,
                 originalHandlerName: args.handlerName,
                 handlerName,
-                runtime: args.runtime
+                runtime: args.runtime,
             }
 
             if (args.isDebug) {
                 const debugConfig: PythonDebugConfiguration = makeDebugConfig({ debugPort, samProjectCodeRoot })
                 invokeArgs.debugArgs = {
                     debugConfig,
-                    debugPort: debugConfig.port
+                    debugPort: debugConfig.port,
                 }
             }
 
@@ -304,7 +304,7 @@ export async function initialize({
                 configuration,
                 samLocalInvokeCommand: localInvokeCommand!,
                 telemetryService,
-                onWillAttachDebugger: waitForPythonDebugAdapter
+                onWillAttachDebugger: waitForPythonDebugAdapter,
             })
         } catch (err) {
             const error = err as Error
@@ -329,13 +329,13 @@ export async function initialize({
                 try {
                     const resource = await CloudFormation.getResourceFromTemplate({
                         handlerName: params.handlerName,
-                        templatePath: params.samTemplate.fsPath
+                        templatePath: params.samTemplate.fsPath,
                     })
                     lambdaRuntime = CloudFormation.getRuntime(resource)
 
                     await invokeLambda({
                         runtime: lambdaRuntime,
-                        ...params
+                        ...params,
                     })
                 } catch (err) {
                     invokeResult = 'Failed'
@@ -344,7 +344,7 @@ export async function initialize({
                     recordLambdaInvokeLocal({
                         result: invokeResult,
                         runtime: lambdaRuntime as Runtime,
-                        debug: params.isDebug
+                        debug: params.isDebug,
                     })
                 }
             }
@@ -447,8 +447,8 @@ export async function makePythonCodeLensProvider(
                 document,
                 handlers,
                 token,
-                language: 'python'
+                language: 'python',
             })
-        }
+        },
     }
 }

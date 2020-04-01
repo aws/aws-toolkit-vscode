@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import {
     getApiValueForSchemasDownload,
     getLanguageDetails,
-    schemaCodeLangs
+    schemaCodeLangs,
 } from '../../../eventSchemas/models/schemaCodeLangs'
 import { samLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 import { assertThrowsError } from '../../../test/shared/utilities/assertUtils'

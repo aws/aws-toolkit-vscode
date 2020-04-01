@@ -61,7 +61,7 @@ async function detectLambdasFromTemplate(
             templatePath,
             templateGlobals: template.Globals,
             handler: getHandler(resources[key]!),
-            resource: resources[key]!
+            resource: resources[key]!,
         }))
 }
 

@@ -18,7 +18,7 @@ import {
     MultiStepWizard,
     WizardContext,
     WizardStep,
-    WorkspaceFolderQuickPickItem
+    WorkspaceFolderQuickPickItem,
 } from '../../shared/wizards/multiStepWizard'
 
 import * as codeLang from '../models/schemaCodeLangs'
@@ -56,15 +56,15 @@ export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implem
                     'AWS.schemas.downloadCodeBindings.initWizard.language.prompt',
                     'Select a code binding language'
                 ),
-                value: currLanguage ? currLanguage : ''
+                value: currLanguage ? currLanguage : '',
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: this.schemaLangs.toArray().map(language => ({
                 label: language,
                 alwaysShow: language === currLanguage,
                 description:
-                    language === currLanguage ? localize('AWS.wizard.selectedPreviously', 'Selected Previously') : ''
-            }))
+                    language === currLanguage ? localize('AWS.wizard.selectedPreviously', 'Selected Previously') : '',
+            })),
         })
 
         const choices = await picker.promptUser({
@@ -75,7 +75,7 @@ export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implem
                 } else if (button === this.helpButton) {
                     vscode.env.openExternal(vscode.Uri.parse(eventBridgeSchemasDocUrl))
                 }
-            }
+            },
         })
         const val = picker.verifySinglePickerOutput(choices)
 
@@ -93,7 +93,7 @@ export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implem
                     'Select a version for schema {0} :',
                     this.node.schemaName
                 ),
-                value: currSchemaVersion ? currSchemaVersion : ''
+                value: currSchemaVersion ? currSchemaVersion : '',
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: versions!.map(schemaVersion => ({
@@ -102,8 +102,8 @@ export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implem
                 description:
                     schemaVersion === currSchemaVersion
                         ? localize('AWS.wizard.selectedPreviously', 'Selected Previously')
-                        : ''
-            }))
+                        : '',
+            })),
         })
 
         const choices = await picker.promptUser({
@@ -114,7 +114,7 @@ export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implem
                 } else if (button === this.helpButton) {
                     vscode.env.openExternal(vscode.Uri.parse(eventBridgeSchemasDocUrl))
                 }
-            }
+            },
         })
         const val = picker.verifySinglePickerOutput(choices)
 
@@ -131,7 +131,7 @@ export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implem
                         'AWS.schemas.downloadCodeBindings.initWizard.location.select.folder.detail',
                         'Code bindings will be downloaded to selected folder.'
                     )
-                )
+                ),
             ])
 
         const quickPick = picker.createQuickPick({
@@ -140,10 +140,10 @@ export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implem
                 title: localize(
                     'AWS.schemas.downloadCodeBindings.initWizard.location.prompt',
                     'Select a workspace folder to download code bindings'
-                )
+                ),
             },
             items: items,
-            buttons: [this.helpButton, vscode.QuickInputButtons.Back]
+            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
         })
 
         const choices = await picker.promptUser({
@@ -154,7 +154,7 @@ export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implem
                 } else if (button === this.helpButton) {
                     vscode.env.openExternal(vscode.Uri.parse(eventBridgeSchemasDocUrl))
                 }
-            }
+            },
         })
         const pickerResponse = picker.verifySinglePickerOutput<FolderQuickPickItem>(choices)
 
@@ -200,7 +200,7 @@ export class SchemaCodeDownloadWizard extends MultiStepWizard<SchemaCodeDownload
         return {
             schemaVersion: this.schemaVersion,
             language: this.language,
-            location: this.location
+            location: this.location,
         }
     }
 

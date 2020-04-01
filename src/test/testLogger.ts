@@ -44,7 +44,7 @@ export class TestLogger implements Logger {
         entries.forEach(entry => {
             this.loggedEntries.push({
                 logLevel,
-                entry
+                entry,
             })
         })
     }

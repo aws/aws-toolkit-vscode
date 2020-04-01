@@ -40,7 +40,7 @@ before(async () => {
         async init() {},
         async postFeedback(feedback: TelemetryFeedback): Promise<void> {},
         enqueue(...events: any[]) {},
-        async flush() {}
+        async flush() {},
     }
     const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
     ext.telemetry = service

@@ -17,7 +17,7 @@ import {
     generateDotNetLambdaHandler,
     getLambdaHandlerComponents,
     isPublicClassSymbol,
-    isPublicMethodSymbol
+    isPublicMethodSymbol,
 } from '../../../shared/codelens/csharpCodeLensProvider'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 
@@ -34,33 +34,33 @@ describe('findParentProjectFile', async () => {
         {
             scenario: 'locates project in same folder',
             findFilesResult: [projectInSameFolderUri],
-            expectedResult: projectInSameFolderUri
+            expectedResult: projectInSameFolderUri,
         },
         {
             scenario: 'locates project in parent folder',
             findFilesResult: [projectInParentFolderUri],
-            expectedResult: projectInParentFolderUri
+            expectedResult: projectInParentFolderUri,
         },
         {
             scenario: 'locates project two parent folders up',
             findFilesResult: [projectInParentParentFolderUri],
-            expectedResult: projectInParentParentFolderUri
+            expectedResult: projectInParentParentFolderUri,
         },
         {
             scenario: 'selects project in same folder over parent folder',
             findFilesResult: [projectInSameFolderUri, projectInParentFolderUri],
-            expectedResult: projectInSameFolderUri
+            expectedResult: projectInSameFolderUri,
         },
         {
             scenario: 'returns undefined when no project files are located',
             findFilesResult: [],
-            expectedResult: undefined
+            expectedResult: undefined,
         },
         {
             scenario: 'returns undefined when no project files are located in parent chain',
             findFilesResult: [projectOutOfParentChainUri],
-            expectedResult: undefined
-        }
+            expectedResult: undefined,
+        },
     ]
 
     testScenarios.forEach(test => {
@@ -119,7 +119,7 @@ describe('isPublicClassSymbol', async () => {
         const doc = {
             getText: (range?: vscode.Range): string => {
                 return 'public class Function {}'
-            }
+            },
         }
 
         const isPublic = isPublicClassSymbol(doc, sampleClassSymbol)
@@ -138,7 +138,7 @@ describe('isPublicClassSymbol', async () => {
         const doc = {
             getText: (range?: vscode.Range): string => {
                 return 'public class Function {}'
-            }
+            },
         }
 
         const isPublic = isPublicClassSymbol(doc, symbol)
@@ -147,7 +147,7 @@ describe('isPublicClassSymbol', async () => {
 
     it('returns false when class is not public', async () => {
         const doc = {
-            getText: (range?: vscode.Range): string => 'private class '
+            getText: (range?: vscode.Range): string => 'private class ',
         }
 
         const isPublic = isPublicClassSymbol(doc, sampleClassSymbol)
@@ -167,26 +167,26 @@ describe('isPublicMethodSymbol', async () => {
     const validPublicMethodTests = [
         {
             scenario: 'signature all on one line',
-            functionSignature: generateFunctionSignature('public', 'FunctionHandler')
+            functionSignature: generateFunctionSignature('public', 'FunctionHandler'),
         },
         {
             scenario: 'signature across many lines',
-            functionSignature: generateFunctionSignature('public', 'FunctionHandler', true, true, true)
+            functionSignature: generateFunctionSignature('public', 'FunctionHandler', true, true, true),
         },
         {
             scenario: 'method name on another line',
-            functionSignature: generateFunctionSignature('public', 'FunctionHandler', true)
+            functionSignature: generateFunctionSignature('public', 'FunctionHandler', true),
         },
         {
             scenario: 'args on many lines',
-            functionSignature: generateFunctionSignature('public', 'FunctionHandler', false, true)
-        }
+            functionSignature: generateFunctionSignature('public', 'FunctionHandler', false, true),
+        },
     ]
 
     validPublicMethodTests.forEach(test => {
         it(`returns true for a public method symbol when ${test.scenario}`, async () => {
             const doc = {
-                getText: (range?: vscode.Range): string => generateFunctionDeclaration(test.functionSignature)
+                getText: (range?: vscode.Range): string => generateFunctionDeclaration(test.functionSignature),
             }
 
             const isPublic = isPublicMethodSymbol(doc, sampleMethodSymbol)
@@ -206,7 +206,7 @@ describe('isPublicMethodSymbol', async () => {
         const doc = {
             getText: (range?: vscode.Range): string => {
                 throw new Error('getText is unused')
-            }
+            },
         }
 
         const isPublic = isPublicMethodSymbol(doc, symbol)
@@ -216,7 +216,7 @@ describe('isPublicMethodSymbol', async () => {
     it('returns false when the method is not public', async () => {
         const doc = {
             getText: (range?: vscode.Range): string =>
-                generateFunctionDeclaration(generateFunctionSignature('private', 'FunctionHandler'))
+                generateFunctionDeclaration(generateFunctionSignature('private', 'FunctionHandler')),
         }
 
         const isPublic = isPublicMethodSymbol(doc, sampleMethodSymbol)
@@ -234,7 +234,7 @@ describe('isPublicMethodSymbol', async () => {
 
         const doc = {
             getText: (range?: vscode.Range): string =>
-                generateFunctionDeclaration(generateFunctionSignature('private', symbol.name))
+                generateFunctionDeclaration(generateFunctionSignature('private', symbol.name)),
         }
 
         const isPublic = isPublicMethodSymbol(doc, symbol)
@@ -291,7 +291,7 @@ describe('generateDotNetLambdaHandler', async () => {
             namespace: 'myNamespace',
             class: 'myClass',
             method: 'foo',
-            handlerRange: undefined!
+            handlerRange: undefined!,
         }
 
         const handlerName = generateDotNetLambdaHandler(components)

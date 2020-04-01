@@ -60,7 +60,7 @@ function makeSamCliContext(): SamCliContext {
     )
 
     const invokerContext: SamCliProcessInvokerContext = {
-        cliConfig: samCliConfiguration
+        cliConfig: samCliConfiguration,
     }
     const invoker = new DefaultSamCliProcessInvoker(invokerContext)
 
@@ -69,7 +69,7 @@ function makeSamCliContext(): SamCliContext {
 
     const context: SamCliContext = {
         invoker,
-        validator
+        validator,
     }
 
     return context

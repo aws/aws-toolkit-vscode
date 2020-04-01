@@ -105,12 +105,12 @@ export class SamCliBuildInvocation {
 
         const env: NodeJS.ProcessEnv = {
             ...process.env,
-            ...this.environmentVariables
+            ...this.environmentVariables,
         }
 
         const childProcessResult = await this.invoker.invoke({
             spawnOptions: { env },
-            arguments: invokeArgs
+            arguments: invokeArgs,
         })
 
         logAndThrowIfUnexpectedExitCode(childProcessResult, 0)
@@ -135,6 +135,6 @@ export class SamCliBuildInvocation {
 
 function getDefaultFileFunctions(): FileFunctions {
     return {
-        fileExists
+        fileExists,
     }
 }

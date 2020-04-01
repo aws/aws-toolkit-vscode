@@ -9,7 +9,7 @@ import {
     InvalidSamCliVersionError,
     SamCliNotFoundError,
     SamCliValidatorResult,
-    SamCliVersionValidation
+    SamCliVersionValidation,
 } from './samCliValidator'
 
 export function throwIfInvalid(validationResult: SamCliValidatorResult): void {

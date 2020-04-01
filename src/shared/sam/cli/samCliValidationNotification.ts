@@ -14,7 +14,7 @@ import {
     MINIMUM_SAM_CLI_VERSION_INCLUSIVE,
     SamCliNotFoundError,
     SamCliVersionValidation,
-    SamCliVersionValidatorResult
+    SamCliVersionValidatorResult,
 } from './samCliValidator'
 
 const localize = nls.loadMessageBundle()
@@ -40,7 +40,7 @@ const actionGoToSamCli: SamCliValidationNotificationAction = {
     label: localize('AWS.samcli.userChoice.visit.install.url', 'Get SAM CLI'),
     invoke: async () => {
         await vscode.env.openExternal(vscode.Uri.parse(samAboutInstallUrl))
-    }
+    },
 }
 
 const actionGoToVsCodeMarketplace: SamCliValidationNotificationAction = {
@@ -48,7 +48,7 @@ const actionGoToVsCodeMarketplace: SamCliValidationNotificationAction = {
     invoke: async () => {
         // TODO : Switch to the Extension panel in VS Code instead
         await vscode.env.openExternal(vscode.Uri.parse(vscodeMarketplaceUrl))
-    }
+    },
 }
 
 // Notifications

@@ -16,7 +16,7 @@ export class DefaultCloudFormationClient implements CloudFormationClient {
 
         await client
             .deleteStack({
-                StackName: name
+                StackName: name,
             })
             .promise()
     }
@@ -27,7 +27,7 @@ export class DefaultCloudFormationClient implements CloudFormationClient {
         const client = await this.createSdkClient()
 
         const request: CloudFormation.ListStacksInput = {
-            StackStatusFilter: statusFilter
+            StackStatusFilter: statusFilter,
         }
 
         do {
@@ -46,7 +46,7 @@ export class DefaultCloudFormationClient implements CloudFormationClient {
 
         return await client
             .describeStackResources({
-                StackName: name
+                StackName: name,
             })
             .promise()
     }

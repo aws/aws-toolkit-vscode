@@ -19,7 +19,7 @@ import { SamCliProcessInvoker } from '../sam/cli/samCliInvokerUtils'
 import {
     DefaultSamLocalInvokeCommand,
     SamLocalInvokeCommand,
-    WAIT_FOR_DEBUGGER_MESSAGES
+    WAIT_FOR_DEBUGGER_MESSAGES,
 } from '../sam/cli/samCliLocalInvoke'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
@@ -37,15 +37,15 @@ import {
     LambdaLocalInvokeParams,
     makeBuildDir,
     makeInputTemplate,
-    waitForDebugPort
+    waitForDebugPort,
 } from './localLambdaRunner'
 
 export const CSHARP_LANGUAGE = 'csharp'
 export const CSHARP_ALLFILES: vscode.DocumentFilter[] = [
     {
         scheme: 'file',
-        language: CSHARP_LANGUAGE
-    }
+        language: CSHARP_LANGUAGE,
+    },
 ]
 
 const REGEXP_RESERVED_WORD_PUBLIC = /\bpublic\b/
@@ -66,8 +66,8 @@ export async function initialize({
     processInvoker = new DefaultSamCliProcessInvoker(),
     telemetryService,
     localInvokeCommand = new DefaultSamLocalInvokeCommand(getChannelLogger(toolkitOutputChannel), [
-        WAIT_FOR_DEBUGGER_MESSAGES.DOTNET
-    ])
+        WAIT_FOR_DEBUGGER_MESSAGES.DOTNET,
+    ]),
 }: CodeLensProviderParams): Promise<void> {
     context.subscriptions.push(
         vscode.commands.registerCommand(getInvokeCmdKey(CSHARP_LANGUAGE), async (params: LambdaLocalInvokeParams) => {
@@ -77,7 +77,7 @@ export async function initialize({
                 toolkitOutputChannel,
                 processInvoker,
                 localInvokeCommand,
-                telemetryService
+                telemetryService,
             })
         })
     )
@@ -125,7 +125,7 @@ async function onLocalInvokeCommand(
         localInvokeCommand,
         telemetryService,
         loadCloudFormationTemplate = async _args => await CloudFormation.load(_args),
-        getResourceFromTemplateResource = async _args => await CloudFormation.getResourceFromTemplateResources(_args)
+        getResourceFromTemplateResource = async _args => await CloudFormation.getResourceFromTemplateResources(_args),
     }: {
         configuration: SettingsConfiguration
         toolkitOutputChannel: vscode.OutputChannel
@@ -147,7 +147,7 @@ async function onLocalInvokeCommand(
     )
     const resource = await getResourceFromTemplateResource({
         templateResources: template.Resources,
-        handlerName: lambdaLocalInvokeParams.handlerName
+        handlerName: lambdaLocalInvokeParams.handlerName,
     })
     let invokeResult: Result = 'Succeeded'
     const lambdaRuntime = CloudFormation.getRuntime(resource)
@@ -172,13 +172,13 @@ async function onLocalInvokeCommand(
             relativeFunctionHandler: handlerName,
             runtime: lambdaRuntime,
             globals: template.Globals,
-            properties: resource.Properties
+            properties: resource.Properties,
         })
 
         const config = await getHandlerConfig({
             handlerName: handlerName,
             documentUri: documentUri,
-            samTemplate: vscode.Uri.file(lambdaLocalInvokeParams.samTemplate.fsPath)
+            samTemplate: vscode.Uri.file(lambdaLocalInvokeParams.samTemplate.fsPath),
         })
 
         const buildArgs: ExecuteSamBuildArguments = {
@@ -187,11 +187,11 @@ async function onLocalInvokeCommand(
             codeDir: codeUri,
             inputTemplatePath,
             samProcessInvoker: processInvoker,
-            useContainer: config.useContainer
+            useContainer: config.useContainer,
         }
         if (lambdaLocalInvokeParams.isDebug) {
             buildArgs.environmentVariables = {
-                SAM_BUILD_MODE: 'debug'
+                SAM_BUILD_MODE: 'debug',
             }
         }
         const samTemplatePath: string = await executeSamBuild(buildArgs)
@@ -203,14 +203,14 @@ async function onLocalInvokeCommand(
             handlerName,
             originalSamTemplatePath: lambdaLocalInvokeParams.samTemplate.fsPath,
             samTemplatePath,
-            runtime: lambdaRuntime
+            runtime: lambdaRuntime,
         }
 
         const invokeContext: InvokeLambdaFunctionContext = {
             channelLogger,
             configuration,
             samLocalInvokeCommand: localInvokeCommand,
-            telemetryService
+            telemetryService,
         }
 
         if (!lambdaLocalInvokeParams.isDebug) {
@@ -219,12 +219,12 @@ async function onLocalInvokeCommand(
             const { debuggerPath } = await context.installDebugger({
                 lambdaRuntime: lambdaRuntime,
                 targetFolder: codeUri,
-                channelLogger
+                channelLogger,
             })
             const port = await getStartPort()
             const debugConfig = makeCoreCLRDebugConfiguration({
                 port,
-                codeUri
+                codeUri,
             })
 
             await invokeLambdaFunction(
@@ -233,15 +233,15 @@ async function onLocalInvokeCommand(
                     debugArgs: {
                         debugConfig,
                         debugPort: port,
-                        debuggerPath
-                    }
+                        debuggerPath,
+                    },
                 },
                 {
                     channelLogger,
                     configuration,
                     samLocalInvokeCommand: localInvokeCommand,
                     telemetryService,
-                    onWillAttachDebugger: waitForDebugPort
+                    onWillAttachDebugger: waitForDebugPort,
                 }
             )
         }
@@ -256,7 +256,7 @@ async function onLocalInvokeCommand(
         recordLambdaInvokeLocal({
             result: invokeResult,
             runtime: lambdaRuntime as Runtime,
-            debug: lambdaLocalInvokeParams.isDebug
+            debug: lambdaLocalInvokeParams.isDebug,
         })
     }
 }
@@ -279,9 +279,9 @@ export async function makeCSharpCodeLensProvider(): Promise<vscode.CodeLensProvi
                 document,
                 handlers,
                 token,
-                language: 'csharp'
+                language: 'csharp',
             })
-        }
+        },
     }
 
     return codeLensProvider
@@ -306,7 +306,7 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
             return {
                 filename: document.uri.fsPath,
                 handlerName,
-                range: lambdaHandlerComponents.handlerRange
+                range: lambdaHandlerComponents.handlerRange,
             }
         }
     )
@@ -347,7 +347,7 @@ export function getLambdaHandlerComponents(
                         .map(classSymbol => {
                             return {
                                 namespace: namespaceSymbol,
-                                class: classSymbol
+                                class: classSymbol,
                             }
                         })
                 )
@@ -366,7 +366,7 @@ export function getLambdaHandlerComponents(
                                 namespace: lambdaHandlerComponents.namespace.name,
                                 class: document.getText(lambdaHandlerComponents.class.selectionRange),
                                 method: document.getText(methodSymbol.selectionRange),
-                                handlerRange: methodSymbol.range
+                                handlerRange: methodSymbol.range,
                             }
                         })
                 )
@@ -476,12 +476,12 @@ async function _installDebugger(
             mount: {
                 type: 'bind',
                 source: vsdbgPath,
-                destination: '/vsdbg'
+                destination: '/vsdbg',
             },
             entryPoint: {
                 command: 'bash',
-                args: ['-c', 'curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg']
-            }
+                args: ['-c', 'curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg'],
+            },
         })
 
         return { debuggerPath: vsdbgPath }
