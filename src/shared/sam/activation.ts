@@ -11,7 +11,7 @@ import { configureLocalLambda } from '../../lambda/local/configureLocalLambda'
 import {
     DefaultSamDeployWizardContext,
     SamDeployWizard,
-    SamDeployWizardResponse
+    SamDeployWizardResponse,
 } from '../../lambda/wizards/samDeployWizard'
 import { AwsContext } from '../awsContext'
 import { CodeLensProviderParams } from '../codelens/codeLensUtils'
@@ -55,7 +55,7 @@ export async function activate(activateArguments: {
         awsContext: activateArguments.awsContext,
         extensionContext: activateArguments.extensionContext,
         regionProvider: activateArguments.regionProvider,
-        channelLogger
+        channelLogger,
     })
 
     const provider = vscode.debug.registerDebugConfigurationProvider(
@@ -70,7 +70,7 @@ export async function activate(activateArguments: {
             {
                 language: 'json',
                 scheme: 'file',
-                pattern: '**/.aws/parameters.json'
+                pattern: '**/.aws/parameters.json',
             },
             new SamParameterCompletionItemProvider(),
             '"'
@@ -105,7 +105,7 @@ async function registerServerlessCommands(params: {
                     const wizard = new SamDeployWizard(samDeployWizardContext)
 
                     return wizard.run()
-                }
+                },
             }
 
             await deploySamApplication(
@@ -129,7 +129,7 @@ async function activateCodeLensProviders(
         context,
         configuration,
         outputChannel: toolkitOutputChannel,
-        telemetryService
+        telemetryService,
     }
 
     tsLensProvider.initialize(providerParams)
@@ -140,8 +140,8 @@ async function activateCodeLensProviders(
             [
                 {
                     language: 'javascript',
-                    scheme: 'file'
-                }
+                    scheme: 'file',
+                },
             ],
             tsLensProvider.makeTypescriptCodeLensProvider()
         )

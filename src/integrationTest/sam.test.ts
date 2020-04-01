@@ -36,13 +36,13 @@ const scenarios: TestScenario[] = [
         runtime: 'nodejs10.x',
         path: 'hello-world/app.js',
         debugSessionType: 'node2',
-        language: 'javascript'
+        language: 'javascript',
     },
     { runtime: 'nodejs12.x', path: 'hello-world/app.js', debugSessionType: 'node2', language: 'javascript' },
     { runtime: 'python2.7', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
     { runtime: 'python3.6', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
     { runtime: 'python3.7', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
-    { runtime: 'python3.8', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' }
+    { runtime: 'python3.8', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
     // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr' }
 ]
 
@@ -355,7 +355,7 @@ describe('SAM Integration Tests', async () => {
                 location: location,
                 template: helloWorldTemplate,
                 runtime: scenario.runtime,
-                dependencyManager: getDependencyManager(scenario.runtime)
+                dependencyManager: getDependencyManager(scenario.runtime),
             }
             const samCliContext = getSamCliContext()
             await runSamCliInit(initArguments, samCliContext)

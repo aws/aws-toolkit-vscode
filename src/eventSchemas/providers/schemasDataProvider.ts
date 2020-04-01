@@ -103,7 +103,7 @@ export class SchemasDataProvider {
         const regionData: regionRegistryMap = {
             region: region,
             registryNames: registryNames,
-            registrySchemasMapList: registrySchemasMapList
+            registrySchemasMapList: registrySchemasMapList,
         }
 
         const cachedCredential = this.cache.credentialsRegionDataList.filter(x => x.credentials === credentials).shift()
@@ -112,7 +112,7 @@ export class SchemasDataProvider {
         if (!cachedCredential) {
             const regionDataWithCredentials: credentialsRegionDataListMap = {
                 credentials: credentials!,
-                regionDataList: [regionData]
+                regionDataList: [regionData],
             }
             this.cache.credentialsRegionDataList.push(regionDataWithCredentials)
         }

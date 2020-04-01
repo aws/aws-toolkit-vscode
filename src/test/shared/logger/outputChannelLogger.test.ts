@@ -16,7 +16,7 @@ describe('OutputChannelTransport', async () => {
     it('logs content', async () => {
         const loggedMessage = 'This is my logged message'
         const transport = new OutputChannelTransport({
-            outputChannel
+            outputChannel,
         })
 
         // OutputChannel is logged to in async manner
@@ -31,7 +31,7 @@ describe('OutputChannelTransport', async () => {
         transport.log(
             {
                 level: 'info',
-                message: loggedMessage
+                message: loggedMessage,
             },
             async () => {
                 // Test will timeout if expected text is not encountered

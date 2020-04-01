@@ -30,7 +30,7 @@ export async function showErrorDetails(element: ErrorNode) {
 
         const showErrorDetailsTemplateFn = _.template(ErrorTemplates.SHOW_ERROR_DETAILS)
         view.webview.html = baseTemplateFn({
-            content: showErrorDetailsTemplateFn(element)
+            content: showErrorDetailsTemplateFn(element),
         })
     } catch (err) {
         const error = err as Error

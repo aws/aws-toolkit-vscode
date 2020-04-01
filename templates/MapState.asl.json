@@ -1,0 +1,27 @@
+{
+    "Comment": "An example of the Amazon States Language using a map state to process elements of an array with a max concurrency of 2.",
+    "StartAt": "Map",
+    "States": {
+        "Map": {
+            "Type": "Map",
+            "ItemsPath": "$.array",
+            "ResultPath": "$.array",
+            "MaxConcurrency": 2,
+            "Next": "Final State",
+            "Iterator": {
+                "StartAt": "Pass",
+                "States": {
+                    "Pass": {
+                        "Type": "Pass",
+                        "Result": "Done!",
+                        "End": true
+                    }
+                }
+            }
+        },
+        "Final State": {
+            "Type": "Pass",
+            "End": true
+        }
+    }
+}

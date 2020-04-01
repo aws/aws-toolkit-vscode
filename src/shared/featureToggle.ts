@@ -11,8 +11,7 @@ import { SettingsConfiguration } from './settingsConfiguration'
 // Features that do not follow this scheme will not work.
 // You cannot have more active features than FeatureToggle.maxFeatures (default: 5)
 // Any features that are flagged in the code but not added here will always return false.
-export enum ActiveFeatureKeys {
-}
+export enum ActiveFeatureKeys {}
 
 /**
  * This class handles feature access for unreleased or gated features.
@@ -41,15 +40,11 @@ export enum ActiveFeatureKeys {
  * ```
  */
 export class FeatureToggle {
-
     private readonly enabledFeatures: Set<string>
 
     private readonly maxFeatures: number = 5
 
-    public constructor (
-        configuration: SettingsConfiguration,
-        overrideKeys?: string[]
-    ) {
+    public constructor(configuration: SettingsConfiguration, overrideKeys?: string[]) {
         this.enabledFeatures = new Set()
 
         let keys: string[] = []

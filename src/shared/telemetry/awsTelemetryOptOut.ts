@@ -13,7 +13,7 @@ const localize = nls.loadMessageBundle()
 export enum TelemetryOptOutOptions {
     Enable,
     Disable,
-    SameAsVsCode
+    SameAsVsCode,
 }
 
 export class AwsTelemetryOptOut {

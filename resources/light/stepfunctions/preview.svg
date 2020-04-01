@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16px" height="16px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 63.1 (92452) - https://sketch.com -->
+    <title>graph-preview-light-4</title>
+    <desc>Created with Sketch.</desc>
+    <g id="graph-preview-light-4" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <rect id="Rectangle-Copy-5" stroke="#424242" stroke-linejoin="round" x="0.5" y="6.5" width="6" height="3"></rect>
+        <rect id="Rectangle-Copy-6" stroke="#424242" stroke-linejoin="round" x="9.5" y="6.5" width="6" height="3"></rect>
+        <circle id="Oval" stroke="#424242" cx="8" cy="2" r="1.5"></circle>
+        <circle id="Oval-Copy" stroke="#424242" cx="8" cy="14" r="1.5"></circle>
+        <polyline id="Path-3" stroke="#424242" stroke-linejoin="round" points="8 3 8 4.36175952 4 4.36175952 4 6.01752124"></polyline>
+        <polyline id="Path-3-Copy" stroke="#424242" stroke-linejoin="round" transform="translate(10.000000, 4.508761) scale(-1, 1) translate(-10.000000, -4.508761) " points="12 3 12 4.36175952 8 4.36175952 8 6.01752124"></polyline>
+        <polyline id="Path-3-Copy-2" stroke="#424242" stroke-linejoin="round" transform="translate(10.000000, 11.500000) rotate(-180.000000) translate(-10.000000, -11.500000) " points="12 10 12 11.3538525 8 11.3538525 8 13"></polyline>
+        <polyline id="Path-3-Copy-3" stroke="#424242" stroke-linejoin="round" transform="translate(6.000000, 11.500000) scale(-1, 1) rotate(-180.000000) translate(-6.000000, -11.500000) " points="8 10 8 11.3538525 4 11.3538525 4 13"></polyline>
+    </g>
+</svg>

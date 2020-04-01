@@ -52,7 +52,7 @@ export interface ConstructTreeEntity {
  */
 export enum CfnResourceKeys {
     TYPE = 'aws:cdk:cloudformation:type',
-    PROPS = 'aws:cdk:cloudformation:props'
+    PROPS = 'aws:cdk:cloudformation:props',
 }
 
 /**

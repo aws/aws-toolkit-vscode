@@ -11,7 +11,7 @@ import {
     recordCdkExplorerEnabled,
     recordCdkHelp,
     recordCdkProvideFeedback,
-    recordCdkRefreshExplorer
+    recordCdkRefreshExplorer,
 } from '../shared/telemetry/telemetry'
 import { AwsCdkExplorer } from './explorer/awsCdkExplorer'
 import { AppNode } from './explorer/nodes/appNode'
@@ -30,7 +30,7 @@ export async function activate(activateArguments: { extensionContext: vscode.Ext
     await registerCdkCommands(activateArguments.extensionContext, explorer)
     const view = vscode.window.createTreeView(explorer.viewProviderId, {
         treeDataProvider: explorer,
-        showCollapseAll: true
+        showCollapseAll: true,
     })
     activateArguments.extensionContext.subscriptions.push(view)
 
@@ -65,19 +65,25 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
 }
 
 async function registerCdkCommands(context: vscode.ExtensionContext, explorer: AwsCdkExplorer): Promise<void> {
-    context.subscriptions.push(vscode.commands.registerCommand('aws.cdk.provideFeedback', async () => {
-        vscode.env.openExternal(vscode.Uri.parse(cdkProvideFeedbackUrl))
-        recordCdkProvideFeedback()
-    }))
-    context.subscriptions.push(vscode.commands.registerCommand('aws.cdk.help', async () => {
-        vscode.env.openExternal(vscode.Uri.parse(cdkDocumentationUrl))
-        recordCdkHelp()
-    }))
-    context.subscriptions.push(vscode.commands.registerCommand('aws.refreshCdkExplorer', async () => {
-        try {
-            explorer.refresh()
-        } finally {
-            recordCdkRefreshExplorer()
-        }
-    }))
+    context.subscriptions.push(
+        vscode.commands.registerCommand('aws.cdk.provideFeedback', async () => {
+            vscode.env.openExternal(vscode.Uri.parse(cdkProvideFeedbackUrl))
+            recordCdkProvideFeedback()
+        })
+    )
+    context.subscriptions.push(
+        vscode.commands.registerCommand('aws.cdk.help', async () => {
+            vscode.env.openExternal(vscode.Uri.parse(cdkDocumentationUrl))
+            recordCdkHelp()
+        })
+    )
+    context.subscriptions.push(
+        vscode.commands.registerCommand('aws.refreshCdkExplorer', async () => {
+            try {
+                explorer.refresh()
+            } finally {
+                recordCdkRefreshExplorer()
+            }
+        })
+    )
 }

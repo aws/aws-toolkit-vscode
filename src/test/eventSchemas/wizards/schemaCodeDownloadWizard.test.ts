@@ -10,7 +10,7 @@ import * as vscode from 'vscode'
 import { JAVA, PYTHON, SchemaCodeLangs } from '../../../eventSchemas/models/schemaCodeLangs'
 import {
     SchemaCodeDownloadWizard,
-    SchemaCodeDownloadWizardContext
+    SchemaCodeDownloadWizardContext,
 } from '../../../eventSchemas/wizards/schemaCodeDownloadWizard'
 
 function isMultiDimensionalArray(array: any[] | any[][] | undefined): boolean {
@@ -249,7 +249,7 @@ describe('SchemaCodeDownloadWizard', async () => {
                 workspaceFolderPaths.map(p => ({
                     uri: vscode.Uri.file(p),
                     name: path.basename(p),
-                    index: index++
+                    index: index++,
                 })),
                 Set<SchemaCodeLangs>([JAVA]),
                 'myName',

@@ -40,24 +40,30 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
     private readonly regionNodes: Map<string, RegionNode>
 
     public constructor(
-            private readonly extContext: vscode.ExtensionContext,
-            private readonly awsContext: AwsContext,
-            private readonly regionProvider: RegionProvider) {
+        private readonly extContext: vscode.ExtensionContext,
+        private readonly awsContext: AwsContext,
+        private readonly regionProvider: RegionProvider
+    ) {
         this._onDidChangeTreeData = new vscode.EventEmitter<AWSTreeNodeBase | undefined>()
         this.onDidChangeTreeData = this._onDidChangeTreeData.event
         this.regionNodes = new Map<string, RegionNode>()
         this.extContext.subscriptions.push(
-            this.awsContext.onDidChangeContext((e) => {
+            this.awsContext.onDidChangeContext(e => {
                 if (!e.accountId) {
                     ROOT_NODE_SIGN_IN.label = localize('AWS.explorerNode.signIn', 'Connect to AWS...')
-                    ROOT_NODE_SIGN_IN.tooltip = localize('AWS.explorerNode.signIn.tooltip', 'Click here to select credentials for the AWS Toolkit')
+                    ROOT_NODE_SIGN_IN.tooltip = localize(
+                        'AWS.explorerNode.signIn.tooltip',
+                        'Click here to select credentials for the AWS Toolkit'
+                    )
                 }
-            }))
+            })
+        )
         this.extContext.subscriptions.push(
             this.regionProvider.onRegionProviderUpdated(() => {
                 this.logger.verbose('Refreshing AWS Explorer due to Region Provider updates')
                 this.refresh()
-            }))
+            })
+        )
     }
 
     public getTreeItem(element: AWSTreeNodeBase): vscode.TreeItem {
@@ -127,7 +133,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
                 throw error
             },
             getNoChildrenPlaceholderNode: async () => ROOT_NODE_ADD_REGION,
-            sort: (nodeA: RegionNode, nodeB: RegionNode) => nodeA.regionName.localeCompare(nodeB.regionName)
+            sort: (nodeA: RegionNode, nodeB: RegionNode) => nodeA.regionName.localeCompare(nodeB.regionName),
         })
     }
 }

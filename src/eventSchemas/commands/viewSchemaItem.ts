@@ -47,7 +47,7 @@ export async function showSchemaContent(
 ): Promise<void> {
     const prettySchemaContent = schemaFormatter(rawSchemaContent, tabSize)
     const newDoc = await vscode.workspace.openTextDocument({
-        language: 'json'
+        language: 'json',
     })
     const editor = await vscode.window.showTextDocument(newDoc, vscode.ViewColumn.One, false)
     await editor.edit(edit => edit.insert(new vscode.Position(/*line*/ 0, /*character*/ 0), prettySchemaContent))

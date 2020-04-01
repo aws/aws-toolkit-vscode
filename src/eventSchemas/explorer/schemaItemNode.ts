@@ -23,7 +23,7 @@ export class SchemaItemNode extends AWSTreeNodeBase {
         this.contextValue = 'awsSchemaItemNode'
         this.iconPath = {
             dark: Uri.file(ext.iconPaths.dark.schema),
-            light: Uri.file(ext.iconPaths.light.schema)
+            light: Uri.file(ext.iconPaths.light.schema),
         }
     }
 

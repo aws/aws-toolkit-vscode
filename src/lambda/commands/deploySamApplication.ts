@@ -49,7 +49,7 @@ export async function deploySamApplication(
     {
         samCliContext = getSamCliContext(),
         channelLogger,
-        samDeployWizard
+        samDeployWizard,
     }: {
         samCliContext?: SamCliContext
         channelLogger: ChannelLogger
@@ -57,7 +57,7 @@ export async function deploySamApplication(
     },
     {
         awsContext,
-        window = getDefaultWindowFunctions()
+        window = getDefaultWindowFunctions(),
     }: {
         awsContext: Pick<AwsContext, 'getCredentials'>
         window?: WindowFunctions
@@ -85,20 +85,20 @@ export async function deploySamApplication(
             parameterOverrides: deployWizardResponse.parameterOverrides,
             environmentVariables: asEnvironmentVariables(credentials),
             region: deployWizardResponse.region,
-            sourceTemplatePath: deployWizardResponse.template.fsPath
+            sourceTemplatePath: deployWizardResponse.template.fsPath,
         }
 
         const deployApplicationPromise = deploy({
             deployParameters,
             channelLogger,
             invoker: samCliContext.invoker,
-            window
+            window,
         }).then(
             async () =>
                 // The parent method will exit shortly, and the status bar will run this promise
                 // Cleanup has to be chained into the promise as a result.
                 await del(deployParameters.deployRootFolder, {
-                    force: true
+                    force: true,
                 })
         )
 
@@ -145,7 +145,7 @@ async function buildOperation(params: {
         buildDir: buildDestination,
         baseDir: undefined,
         templatePath: params.deployParameters.sourceTemplatePath,
-        invoker: params.invoker
+        invoker: params.invoker,
     })
 
     await build.execute()
@@ -171,7 +171,7 @@ async function packageOperation(params: {
             destinationTemplateFile: packageTemplatePath,
             environmentVariables: params.deployParameters.environmentVariables,
             region: params.deployParameters.region,
-            s3Bucket: params.deployParameters.packageBucketName
+            s3Bucket: params.deployParameters.packageBucketName,
         },
         params.invoker
     )
@@ -197,7 +197,7 @@ async function deployOperation(params: {
                 environmentVariables: params.deployParameters.environmentVariables,
                 templateFile: packageTemplatePath,
                 region: params.deployParameters.region,
-                stackName: params.deployParameters.destinationStackName
+                stackName: params.deployParameters.destinationStackName,
             },
             params.invoker
         )
@@ -287,6 +287,6 @@ function getDefaultWindowFunctions(): WindowFunctions {
     return {
         setStatusBarMessage: vscode.window.setStatusBarMessage,
         showErrorMessage: vscode.window.showErrorMessage,
-        showInformationMessage: vscode.window.showInformationMessage
+        showInformationMessage: vscode.window.showInformationMessage,
     }
 }

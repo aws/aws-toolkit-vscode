@@ -73,7 +73,7 @@ describe('localLambdaRunner', async () => {
                 channelLogger,
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsTrue,
-                onWillRetry
+                onWillRetry,
             })
 
             assert.strictEqual(actualRetries, 0, 'Did not expect any retries when attaching debugger succeeds')
@@ -85,7 +85,7 @@ describe('localLambdaRunner', async () => {
                 channelLogger,
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsTrue,
-                onWillRetry
+                onWillRetry,
             })
 
             assert.ok(
@@ -104,7 +104,7 @@ describe('localLambdaRunner', async () => {
                 onRecordAttachDebuggerMetric: (attachResult: boolean | undefined, attempts: number) => {
                     assert.ok(attachResult, 'Expected to be logging an attach success metric')
                     assert.strictEqual(attempts, 1, 'Unexpected Attempt count')
-                }
+                },
             })
         })
 
@@ -114,7 +114,7 @@ describe('localLambdaRunner', async () => {
                 channelLogger,
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsTrue,
-                onWillRetry
+                onWillRetry,
             })
 
             assert.ok(results.success, 'Expected attach results to be successful')
@@ -126,7 +126,7 @@ describe('localLambdaRunner', async () => {
                 channelLogger,
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsFalse,
-                onWillRetry
+                onWillRetry,
             })
 
             assert.strictEqual(actualRetries, 0, 'Did not expect any retries when attaching debugger fails')
@@ -138,7 +138,7 @@ describe('localLambdaRunner', async () => {
                 channelLogger,
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsFalse,
-                onWillRetry
+                onWillRetry,
             })
 
             assert.ok(
@@ -156,7 +156,7 @@ describe('localLambdaRunner', async () => {
                 onWillRetry,
                 onRecordAttachDebuggerMetric: (attachResult: boolean | undefined, attempts: number) => {
                     assert.strictEqual(attachResult, false, 'Expected to be logging an attach failure metric')
-                }
+                },
             })
         })
 
@@ -166,7 +166,7 @@ describe('localLambdaRunner', async () => {
                 channelLogger,
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsFalse,
-                onWillRetry
+                onWillRetry,
             })
 
             assert.strictEqual(results.success, false, 'Expected attach results to fail')
@@ -180,7 +180,7 @@ describe('localLambdaRunner', async () => {
                 channelLogger,
                 maxRetries: maxRetries,
                 onStartDebugging: startDebuggingReturnsUndefined,
-                onWillRetry
+                onWillRetry,
             })
 
             assert.strictEqual(actualRetries, maxRetries, 'Unexpected Retry count')
@@ -194,7 +194,7 @@ describe('localLambdaRunner', async () => {
                 channelLogger,
                 maxRetries,
                 onStartDebugging: startDebuggingReturnsUndefined,
-                onWillRetry
+                onWillRetry,
             })
 
             assert.ok(
@@ -213,7 +213,7 @@ describe('localLambdaRunner', async () => {
                     assert.strictEqual(actualRetries, 2, 'Metrics should only be recorded once')
                     assert.notStrictEqual(attachResult, undefined, 'attachResult should not be undefined')
                 },
-                onWillRetry
+                onWillRetry,
             })
         })
 
@@ -231,7 +231,7 @@ describe('localLambdaRunner', async () => {
 
                     return retVal!
                 },
-                onWillRetry
+                onWillRetry,
             })
 
             assert.ok(results.success, 'Expected attach results to succeed')
@@ -251,7 +251,7 @@ describe('localLambdaRunner', async () => {
 
                     return retVal!
                 },
-                onWillRetry
+                onWillRetry,
             })
 
             assert.strictEqual(results.success, false, 'Expected attach results to fail')
@@ -264,7 +264,7 @@ describe('localLambdaRunner', async () => {
                 channelLogger,
                 maxRetries,
                 onStartDebugging: startDebuggingReturnsUndefined,
-                onWillRetry
+                onWillRetry,
             })
 
             assert.strictEqual(results.success, false, 'Expected attach results to fail')
@@ -287,14 +287,14 @@ describe('localLambdaRunner', async () => {
             exitCode: 1,
             error: new Error('you are already dead'),
             stdout: 'friendly failure message',
-            stderr: 'big ugly failure message'
+            stderr: 'big ugly failure message',
         }
 
         const successfulChildProcess: ChildProcessResult = {
             exitCode: 0,
             error: undefined,
             stdout: 'everything sunny all the time always',
-            stderr: 'nothing to report'
+            stderr: 'nothing to report',
         }
 
         const generateSamBuildParams = (isSuccessfulBuild: boolean) => {
@@ -307,8 +307,8 @@ describe('localLambdaRunner', async () => {
                 manifestPath: undefined,
                 samProcessInvoker: {
                     invoke: async (): Promise<ChildProcessResult> =>
-                        isSuccessfulBuild ? successfulChildProcess : failedChildProcess
-                }
+                        isSuccessfulBuild ? successfulChildProcess : failedChildProcess,
+                },
             }
         }
 

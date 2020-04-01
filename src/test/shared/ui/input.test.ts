@@ -21,7 +21,7 @@ describe('createInputBox', async () => {
         const buttons: vscode.QuickInputButton[] = [vscode.QuickInputButtons.Back]
 
         testInput = input.createInputBox({
-            buttons: buttons
+            buttons: buttons,
         })
 
         assert.deepStrictEqual(testInput.buttons, buttons)
@@ -31,11 +31,11 @@ describe('createInputBox', async () => {
         const options = {
             title: 'title',
             placeHolder: 'placeholder',
-            ignoreFocusOut: true
+            ignoreFocusOut: true,
         }
 
         testInput = input.createInputBox({
-            options: options
+            options: options,
         })
 
         assertInputBoxOptions(testInput, options)
@@ -43,11 +43,11 @@ describe('createInputBox', async () => {
 
     it('Sets boolean Options to false values', async () => {
         const options = {
-            ignoreFocusOut: false
+            ignoreFocusOut: false,
         }
 
         testInput = input.createInputBox({
-            options: options
+            options: options,
         })
 
         assertInputBoxOptions(testInput, options)
@@ -57,7 +57,7 @@ describe('createInputBox', async () => {
         const options = {}
 
         testInput = input.createInputBox({
-            options: options
+            options: options,
         })
 
         assertInputBoxOptions(testInput, options)
@@ -112,7 +112,7 @@ describe('promptUser', async () => {
 
     it('Accepted value is returned', async () => {
         const promptPromise = input.promptUser({
-            inputBox: sampleInput
+            inputBox: sampleInput,
         })
 
         sampleInput.accept('hello world')
@@ -125,7 +125,7 @@ describe('promptUser', async () => {
 
     it('Hide returns undefined', async () => {
         const promptPromise = input.promptUser({
-            inputBox: sampleInput
+            inputBox: sampleInput,
         })
 
         sampleInput.hide()
@@ -150,7 +150,7 @@ describe('promptUser', async () => {
                 )
 
                 sampleInput.hide()
-            }
+            },
         })
 
         sampleInput.pressButton(sampleInput.buttons[0])
@@ -179,7 +179,7 @@ describe('promptUser', async () => {
                 )
 
                 sampleInput.accept(expectedValue)
-            }
+            },
         })
 
         sampleInput.pressButton(sampleInput.buttons[0])
@@ -207,7 +207,7 @@ describe('promptUser', async () => {
 
                 // do something that is not accept/cancel
                 handledButtonPress = true
-            }
+            },
         })
 
         sampleInput.pressButton(buttonOfInterest)

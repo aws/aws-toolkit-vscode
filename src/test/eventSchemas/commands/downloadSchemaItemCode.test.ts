@@ -16,7 +16,7 @@ import {
     CodeGenerationStatusPoller,
     CodeGenerator,
     SchemaCodeDownloader,
-    SchemaCodeDownloadRequestDetails
+    SchemaCodeDownloadRequestDetails,
 } from '../../../eventSchemas/commands/downloadSchemaItemCode'
 
 import { MockSchemaClient } from '../../shared/clients/mockClients'
@@ -44,7 +44,7 @@ describe('CodeDownloader', () => {
             language: language,
             schemaVersion: schemaVersion,
             destinationDirectory: destinationDirectory,
-            schemaCoreCodeFileName: testSchemaName.concat('.java')
+            schemaCoreCodeFileName: testSchemaName.concat('.java'),
         }
     })
 
@@ -64,7 +64,7 @@ describe('CodeDownloader', () => {
         it('should return an error if the response body is not Buffer', async () => {
             const erroMessage = 'Response body should be Buffer type'
             const response: Schemas.GetCodeBindingSourceResponse = {
-                Body: 'Invalied body'
+                Body: 'Invalied body',
             }
             sandbox.stub(schemaClient, 'getCodeBindingSource').returns(Promise.resolve(response))
 
@@ -76,7 +76,7 @@ describe('CodeDownloader', () => {
         it('should return arrayBuffer for valid Body type', async () => {
             const myBuffer = Buffer.from('TEST STRING')
             const response: Schemas.GetCodeBindingSourceResponse = {
-                Body: myBuffer
+                Body: myBuffer,
             }
 
             sandbox.stub(schemaClient, 'getCodeBindingSource').returns(Promise.resolve(response))
@@ -121,7 +121,7 @@ describe('CodeGenerator', () => {
             language: language,
             schemaVersion: schemaVersion,
             destinationDirectory: destinationDirectory,
-            schemaCoreCodeFileName: testSchemaName.concat('.java')
+            schemaCoreCodeFileName: testSchemaName.concat('.java'),
         }
     })
 
@@ -138,7 +138,7 @@ describe('CodeGenerator', () => {
     enum CodeGenerationStatus {
         CREATE_COMPLETE = 'CREATE_COMPLETE',
         CREATE_IN_PROGRESS = 'CREATE_IN_PROGRESS',
-        CREATE_FAILED = 'CREATE_FAILED'
+        CREATE_FAILED = 'CREATE_FAILED',
     }
 
     const schemaClient = new MockSchemaClient()
@@ -147,7 +147,7 @@ describe('CodeGenerator', () => {
     describe('codeGenerator', async () => {
         it('should return the current status of code generation', async () => {
             const response: Schemas.PutCodeBindingResponse = {
-                Status: CodeGenerationStatus.CREATE_IN_PROGRESS
+                Status: CodeGenerationStatus.CREATE_IN_PROGRESS,
             }
             sandbox.stub(schemaClient, 'putCodeBinding').returns(Promise.resolve(response))
 
@@ -163,7 +163,7 @@ describe('CodeGenerator', () => {
         // Return CREATE_IN_PROGRESS and keep polling in this case
         it('should return valid code generation status if it gets ConflictException', async () => {
             const response: Schemas.PutCodeBindingResponse = {
-                Status: CodeGenerationStatus.CREATE_IN_PROGRESS
+                Status: CodeGenerationStatus.CREATE_IN_PROGRESS,
             }
 
             const error = new Error('ConflictException occured')
@@ -194,7 +194,7 @@ describe('CodeGeneratorStatusPoller', () => {
             language: language,
             schemaVersion: schemaVersion,
             destinationDirectory: destinationDirectory,
-            schemaCoreCodeFileName: testSchemaName.concat('.java')
+            schemaCoreCodeFileName: testSchemaName.concat('.java'),
         }
     })
 
@@ -214,7 +214,7 @@ describe('CodeGeneratorStatusPoller', () => {
     enum CodeGenerationStatus {
         CREATE_COMPLETE = 'CREATE_COMPLETE',
         CREATE_IN_PROGRESS = 'CREATE_IN_PROGRESS',
-        CREATE_FAILED = 'CREATE_FAILED'
+        CREATE_FAILED = 'CREATE_FAILED',
     }
 
     const schemaClient = new MockSchemaClient()
@@ -223,10 +223,10 @@ describe('CodeGeneratorStatusPoller', () => {
     describe('getCurrentStatus', async () => {
         it('should return the current status of code generation', async () => {
             const firstStatus: Schemas.DescribeCodeBindingResponse = {
-                Status: CodeGenerationStatus.CREATE_IN_PROGRESS
+                Status: CodeGenerationStatus.CREATE_IN_PROGRESS,
             }
             const secondStatus: Schemas.DescribeCodeBindingResponse = {
-                Status: CodeGenerationStatus.CREATE_COMPLETE
+                Status: CodeGenerationStatus.CREATE_COMPLETE,
             }
 
             const clientStub = sandbox.stub(schemaClient, 'describeCodeBinding')
@@ -244,7 +244,7 @@ describe('CodeGeneratorStatusPoller', () => {
     describe('codeGeneratorStatusPoller', async () => {
         it('fails if code generation status is invalid without retry', async () => {
             const schemaResponse: Schemas.DescribeCodeBindingResponse = {
-                Status: CodeGenerationStatus.CREATE_FAILED
+                Status: CodeGenerationStatus.CREATE_FAILED,
             }
 
             const statusPoll = sandbox
@@ -266,7 +266,7 @@ describe('CodeGeneratorStatusPoller', () => {
 
         it('times out after max attempts if status is still in progress', async () => {
             const schemaResponse: Schemas.DescribeCodeBindingResponse = {
-                Status: CodeGenerationStatus.CREATE_IN_PROGRESS
+                Status: CodeGenerationStatus.CREATE_IN_PROGRESS,
             }
 
             const statusPoll = sandbox
@@ -291,7 +291,7 @@ describe('CodeGeneratorStatusPoller', () => {
 
         it('succeeds when code is previously generated without retry', async () => {
             const schemaResponse: Schemas.DescribeCodeBindingResponse = {
-                Status: CodeGenerationStatus.CREATE_COMPLETE
+                Status: CodeGenerationStatus.CREATE_COMPLETE,
             }
 
             const statusPoll = sandbox
@@ -343,7 +343,7 @@ describe('SchemaCodeDownload', () => {
             language: language,
             schemaVersion: schemaVersion,
             destinationDirectory: destinationDirectory,
-            schemaCoreCodeFileName: testSchemaName.concat('.java')
+            schemaCoreCodeFileName: testSchemaName.concat('.java'),
         }
 
         fileName = testSchemaName.concat('.java')
@@ -404,7 +404,7 @@ describe('SchemaCodeDownload', () => {
             sandbox.stub(poller, 'pollForCompletion').returns(Promise.resolve('CREATE_COMPLETE'))
             const codeDownloaderStub = sandbox.stub(downloader, 'download')
             const codeGeneratorResponse: Schemas.PutCodeBindingResponse = {
-                Status: 'CREATE_IN_PROGRESS'
+                Status: 'CREATE_IN_PROGRESS',
             }
             sandbox.stub(generator, 'generate').returns(Promise.resolve(codeGeneratorResponse))
 
@@ -514,7 +514,7 @@ describe('CodeExtractor', () => {
                 language: language,
                 schemaVersion: schemaVersion,
                 destinationDirectory: destinationDirectoryUri,
-                schemaCoreCodeFileName: 'testSchema.java'
+                schemaCoreCodeFileName: 'testSchema.java',
             }
         })
 

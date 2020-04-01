@@ -14,7 +14,7 @@ import {
     createQuickStartWebview,
     isDifferentVersion,
     safeGet,
-    setMostRecentVersion
+    setMostRecentVersion,
 } from '../../shared/extensionUtilities'
 import * as filesystemUtilities from '../../shared/filesystemUtilities'
 import { FakeExtensionContext } from '../fakeExtensionContext'

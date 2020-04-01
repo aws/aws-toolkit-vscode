@@ -18,6 +18,14 @@
             "preLaunchTask": "npm: watch"
         },
         {
+            "name": "Attach to ASL Server",
+            "type": "node",
+            "request": "attach",
+            "port": 6009,
+            "restart": true,
+            "outFiles": ["${workspaceRoot}/dist/src/stepFunctions/amazonStatesLanguage/server.js"]
+        },
+        {
             "name": "Extension (webpack)",
             "type": "extensionHost",
             "request": "launch",

@@ -25,12 +25,12 @@ describe('getRegionsForActiveCredentials', async () => {
     const samplePartitionRegions: Region[] = [
         {
             id: 'region1',
-            name: 'one'
+            name: 'one',
         },
         {
             id: 'region2',
-            name: 'two'
-        }
+            name: 'two',
+        },
     ]
 
     beforeEach(() => {
@@ -45,12 +45,12 @@ describe('getRegionsForActiveCredentials', async () => {
         fnGetRegions.returns(samplePartitionRegions)
 
         awsContext = ({
-            getCredentialDefaultRegion: fnGetCredentialDefaultRegion
+            getCredentialDefaultRegion: fnGetCredentialDefaultRegion,
         } as any) as AwsContext
 
         regionProvider = ({
             getPartitionId: fnGetPartitionId,
-            getRegions: fnGetRegions
+            getRegions: fnGetRegions,
         } as any) as RegionProvider
     })
 

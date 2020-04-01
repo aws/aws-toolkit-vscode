@@ -16,11 +16,11 @@ describe('TelemetryEventArray', () => {
                     data: [
                         {
                             MetricName: 'namespace',
-                            Value: 1
+                            Value: 1,
                         },
                         {
                             MetricName: 'namespace_even#t1',
-                            Value: 1
+                            Value: 1,
                         },
                         {
                             MetricName: 'namespace_event:2',
@@ -28,11 +28,11 @@ describe('TelemetryEventArray', () => {
                             Unit: 'Percent',
                             metadata: [
                                 { Key: 'key', Value: 'value' },
-                                { Key: 'key2', Value: 'value2' }
-                            ]
-                        }
-                    ]
-                }
+                                { Key: 'key2', Value: 'value2' },
+                            ],
+                        },
+                    ],
+                },
             ]
 
             eventArray.push(...metricEvents)
@@ -48,7 +48,7 @@ describe('TelemetryEventArray', () => {
             const eventArray = []
             const metricEvent = {
                 createTime: new Date(),
-                data: [{ MetricName: 'namespace', Value: 1 }]
+                data: [{ MetricName: 'namespace', Value: 1 }],
             }
             eventArray.push(metricEvent)
             const data = toMetricData(eventArray)
@@ -70,16 +70,16 @@ describe('TelemetryEventArray', () => {
                         Unit: 'Percent',
                         Metadata: [
                             { Key: 'key', Value: 'value' },
-                            { Key: 'key2', Value: 'value2' }
-                        ]
+                            { Key: 'key2', Value: 'value2' },
+                        ],
                     },
                     {
                         MetricName: 'namespace_event3',
                         Unit: 'Percent',
                         Value: 0.333,
-                        Metadata: [{ Key: 'key3', Value: 'value3' }]
-                    }
-                ]
+                        Metadata: [{ Key: 'key3', Value: 'value3' }],
+                    },
+                ],
             }
             eventArray.push(metricEvent)
             const data = toMetricData(eventArray)
@@ -93,15 +93,15 @@ describe('TelemetryEventArray', () => {
                 data: [
                     {
                         MetricName: undefined,
-                        Value: 1
+                        Value: 1,
                     },
                     {
                         MetricName: 'namespace_event3',
                         Unit: 'Percent',
                         Value: 0.333,
-                        Metadata: [{ Key: 'key3', Value: 'value3' }]
-                    }
-                ]
+                        Metadata: [{ Key: 'key3', Value: 'value3' }],
+                    },
+                ],
             }
             eventArray.push(metricEvent)
             const data = toMetricData(eventArray)
@@ -115,7 +115,7 @@ describe('TelemetryEventArray', () => {
                 data: [
                     {
                         MetricName: 'namespace_event1',
-                        Value: 1
+                        Value: 1,
                     },
                     {
                         MetricName: 'namespace_event2',
@@ -123,16 +123,16 @@ describe('TelemetryEventArray', () => {
                         Unit: 'Percent',
                         Metadata: [
                             { Key: 'key', Value: 'value' },
-                            { Key: 'key2', Value: 'value2' }
-                        ]
+                            { Key: 'key2', Value: 'value2' },
+                        ],
                     },
                     {
                         MetricName: 'namespace_event3',
                         Unit: 'Percent',
                         Value: 0.333,
-                        Metadata: [{ Key: 'key3', Value: 'value3' }]
-                    }
-                ]
+                        Metadata: [{ Key: 'key3', Value: 'value3' }],
+                    },
+                ],
             }
             eventArray.push(metricEvent)
             const data = toMetricData(eventArray)
@@ -154,7 +154,7 @@ describe('TelemetryEventArray', () => {
 
             const expectedMetadata1 = [
                 { Key: 'key', Value: 'value' },
-                { Key: 'key2', Value: 'value2' }
+                { Key: 'key2', Value: 'value2' },
             ]
             const expectedMetadata2 = [{ Key: 'key3', Value: 'value3' }]
 

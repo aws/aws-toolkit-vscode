@@ -23,7 +23,7 @@ export type SamTemplate =
 export const validTemplateOptions: Set<SamTemplate> = Set<SamTemplate>([
     helloWorldTemplate,
     eventBridgeHelloWorldTemplate,
-    eventBridgeStarterAppTemplate
+    eventBridgeStarterAppTemplate,
 ])
 
 export const helloWorldOption: Set<SamTemplate> = Set<SamTemplate>([helloWorldTemplate])

@@ -32,7 +32,7 @@ export class RegistryItemNode extends AWSTreeNodeBase {
         this.schemaNodes = new Map<string, SchemaItemNode>()
         this.iconPath = {
             dark: vscode.Uri.file(ext.iconPaths.dark.registry),
-            light: vscode.Uri.file(ext.iconPaths.light.registry)
+            light: vscode.Uri.file(ext.iconPaths.light.registry),
         }
     }
 
@@ -58,7 +58,7 @@ export class RegistryItemNode extends AWSTreeNodeBase {
                 ),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(this, localize('AWS.explorerNode.registry.noSchemas', '[No Registry Schemas]')),
-            sort: (nodeA: SchemaItemNode, nodeB: SchemaItemNode) => nodeA.schemaName.localeCompare(nodeB.schemaName)
+            sort: (nodeA: SchemaItemNode, nodeB: SchemaItemNode) => nodeA.schemaName.localeCompare(nodeB.schemaName),
         })
     }
 

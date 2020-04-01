@@ -32,7 +32,7 @@ export class DefaultSchemaClient implements SchemaClient {
         const client = await this.createSdkClient()
 
         const request: Schemas.ListSchemasRequest = {
-            RegistryName: registryName
+            RegistryName: registryName,
         }
 
         do {
@@ -57,7 +57,7 @@ export class DefaultSchemaClient implements SchemaClient {
             .describeSchema({
                 RegistryName: registryName,
                 SchemaName: schemaName,
-                SchemaVersion: schemaVersion
+                SchemaVersion: schemaVersion,
             })
             .promise()
     }
@@ -70,7 +70,7 @@ export class DefaultSchemaClient implements SchemaClient {
 
         const request: Schemas.ListSchemaVersionsRequest = {
             RegistryName: registryName,
-            SchemaName: schemaName
+            SchemaName: schemaName,
         }
 
         do {
@@ -92,7 +92,7 @@ export class DefaultSchemaClient implements SchemaClient {
 
         const request: Schemas.SearchSchemasRequest = {
             Keywords: keywords,
-            RegistryName: registryName
+            RegistryName: registryName,
         }
 
         do {
@@ -119,7 +119,7 @@ export class DefaultSchemaClient implements SchemaClient {
                 Language: language,
                 RegistryName: registryName,
                 SchemaName: schemaName,
-                SchemaVersion: schemaVersion
+                SchemaVersion: schemaVersion,
             })
             .promise()
     }
@@ -137,7 +137,7 @@ export class DefaultSchemaClient implements SchemaClient {
                 Language: language,
                 RegistryName: registryName,
                 SchemaName: schemaName,
-                SchemaVersion: schemaVersion
+                SchemaVersion: schemaVersion,
             })
             .promise()
     }
@@ -154,7 +154,7 @@ export class DefaultSchemaClient implements SchemaClient {
                 Language: language,
                 RegistryName: registryName,
                 SchemaName: schemaName,
-                SchemaVersion: schemaVersion
+                SchemaVersion: schemaVersion,
             })
             .promise()
     }

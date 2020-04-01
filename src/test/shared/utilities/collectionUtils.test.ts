@@ -18,7 +18,7 @@ import {
     toMap,
     toMapAsync,
     union,
-    updateInPlace
+    updateInPlace,
 } from '../../../shared/utilities/collectionUtils'
 
 import { asyncGenerator } from '../../utilities/collectionUtils'

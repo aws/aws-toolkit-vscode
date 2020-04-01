@@ -1,0 +1,36 @@
+{
+    "Comment": "An example of the Amazon States Language using wait states",
+    "StartAt": "FirstState",
+    "States": {
+        "FirstState": {
+            "Type": "Task",
+            "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:FUNCTION_NAME",
+            "Next": "wait_using_seconds"
+        },
+        "wait_using_seconds": {
+            "Type": "Wait",
+            "Seconds": 10,
+            "Next": "wait_using_timestamp"
+        },
+        "wait_using_timestamp": {
+            "Type": "Wait",
+            "Timestamp": "2015-09-04T01:59:00Z",
+            "Next": "wait_using_timestamp_path"
+        },
+        "wait_using_timestamp_path": {
+            "Type": "Wait",
+            "TimestampPath": "$.expirydate",
+            "Next": "wait_using_seconds_path"
+        },
+        "wait_using_seconds_path": {
+            "Type": "Wait",
+            "SecondsPath": "$.expiryseconds",
+            "Next": "FinalState"
+        },
+        "FinalState": {
+            "Type": "Task",
+            "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:FUNCTION_NAME",
+            "End": true
+        }
+    }
+}
