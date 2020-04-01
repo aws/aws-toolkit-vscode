@@ -10,12 +10,14 @@ import org.assertj.core.api.ObjectAssert
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import software.aws.toolkits.core.utils.test.retryableAssert
 import software.aws.toolkits.core.utils.writeText
 import software.aws.toolkits.jetbrains.utils.isInstanceOf
 import software.aws.toolkits.jetbrains.utils.value
 import software.aws.toolkits.jetbrains.utils.wait
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.time.Duration
 import java.util.concurrent.atomic.AtomicInteger
 
 class ExecutableManagerTest {
@@ -110,8 +112,68 @@ class ExecutableManagerTest {
     }
 
     @Test
-    fun validationExceptionsArePropagated() {
+    fun updatingExecutableRevalidates() {
+        val executable = tempFolder.newFile()
+        val type = object : DummyExecutableType("dummy"), AutoResolvable, Validatable {
+            var runtimeException = true
+            override fun resolve(): Path = executable.toPath()
+            override fun validate(path: Path) {
+                if (runtimeException) {
+                    throw RuntimeException("blah")
+                }
+            }
+        }
 
+        assertThat(sut.getExecutable(type).value).isInstanceOf(ExecutableInstance.InvalidExecutable::class.java)
+        type.runtimeException = false
+        assertThat(sut.getExecutable(type)).wait().isCompletedWithValueMatching { (it as ExecutableInstance.Executable).executablePath == executable.toPath() }
+    }
+
+    @Test
+    fun savedUnresolvedPathOverwrittenWithValid() {
+        val executable = tempFolder.newFile()
+        val type = object : DummyExecutableType("dummy"), AutoResolvable, Validatable {
+            override fun resolve(): Path = executable.toPath()
+            override fun validate(path: Path) {}
+        }
+
+        sut.loadState(ExecutableStateList(listOf(ExecutableState(type.id, "/very/invalid/path"))))
+        val invalidExecutableInstance = sut.getExecutableIfPresent(type)
+        assertThat(invalidExecutableInstance).isInstanceOf(ExecutableInstance.UnresolvedExecutable::class.java)
+        val validExecutableInstance = sut.getExecutable(type).value
+        assertThat(validExecutableInstance).isInstanceOf(ExecutableInstance.Executable::class.java)
+        assertThat((validExecutableInstance as ExecutableInstance.Executable).autoResolved).isTrue()
+    }
+
+    @Test
+    fun updatedExecutableNoLongerAutoResolved() {
+        val executable = tempFolder.newFile()
+        executable.setLastModified(0L)
+        val type = object : DummyExecutableType("dummy"), AutoResolvable, Validatable {
+            override fun validate(path: Path) {}
+            override fun resolve(): Path? = executable.toPath()
+        }
+
+        retryableAssert(timeout = Duration.ofMillis(100), interval = Duration.ofMillis(20)) {
+            assertThat(sut.getExecutable(type).value).isInstanceOfSatisfying(ExecutableInstance.Executable::class.java) {
+                assertThat(it.executablePath).isEqualTo(executable.toPath())
+                assertThat(it.autoResolved).isTrue()
+            }
+        }
+        assertThat(sut.getExecutable(type).value).isInstanceOfSatisfying(ExecutableInstance.Executable::class.java) {
+            assertThat(it.executablePath).isEqualTo(executable.toPath())
+            assertThat(it.autoResolved).isTrue()
+        }
+        retryableAssert(timeout = Duration.ofMillis(100), interval = Duration.ofMillis(20)) {
+            assertThat(sut.setExecutablePath(type, executable.toPath()).value).isInstanceOfSatisfying(ExecutableInstance.Executable::class.java) {
+                assertThat(it.executablePath).isEqualTo(executable.toPath())
+                assertThat(it.autoResolved).isFalse()
+            }
+        }
+    }
+
+    @Test
+    fun validationExceptionsArePropagated() {
         val executable = tempFolder.newFile()
 
         val type = object : DummyExecutableType("dummy"), Validatable {
@@ -153,6 +215,23 @@ class ExecutableManagerTest {
     }
 
     @Test
+    fun getIfPresentRevalidatesExecutable() {
+        val executable = tempFolder.newFile()
+        val type = object : DummyExecutableType("dummy"), AutoResolvable, Validatable {
+            override fun resolve(): Path = executable.toPath()
+            override fun validate(path: Path) {}
+        }
+
+        sut.loadState(ExecutableStateList(listOf(ExecutableState(type.id, "/very/invalid/path"))))
+        assertThat(sut.getExecutableIfPresent(type)).isInstanceOf(ExecutableInstance.UnresolvedExecutable::class.java)
+        retryableAssert(maxAttempts = 20, interval = Duration.ofMillis(10)) {
+            assertThat(sut.getExecutableIfPresent(type)).isInstanceOfSatisfying(ExecutableInstance.Executable::class.java) {
+                assertThat(it.executablePath).isEqualTo(executable.toPath())
+            }
+        }
+    }
+
+    @Test
     fun canGetExecutableSynchronouslyOnlyIfPresent() {
         val type = DummyExecutableType("dummy")
         val executable = tempFolder.newFile()
@@ -176,8 +255,8 @@ class ExecutableManagerTest {
 
         sut.setExecutablePath(type, Paths.get(executable)).value
 
-        // as there was not a valid path set, invalid executable is allowed to be set
-        assertThat(sut.getExecutable(type).value).isInstanceOf(ExecutableInstance.InvalidExecutable::class.java)
+        // path does not exist so it's unresolved
+        assertThat(sut.getExecutable(type).value).isInstanceOf(ExecutableInstance.UnresolvedExecutable::class.java)
     }
 
     @Test
