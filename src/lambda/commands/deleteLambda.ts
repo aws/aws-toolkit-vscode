@@ -70,7 +70,7 @@ export async function deleteLambda({
         recordLambdaDelete({
             createTime: startTime,
             duration: millisecondsSince(startTime),
-            result: deleteResult
+            result: deleteResult,
         })
     }
 }

@@ -27,15 +27,15 @@ import {
     invokeLambdaFunction,
     makeBuildDir,
     makeInputTemplate,
-    waitForDebugPort
+    waitForDebugPort,
 } from './localLambdaRunner'
 
 export const CSHARP_LANGUAGE = 'csharp'
 export const CSHARP_ALLFILES: vscode.DocumentFilter[] = [
     {
         scheme: 'file',
-        language: CSHARP_LANGUAGE
-    }
+        language: CSHARP_LANGUAGE,
+    },
 ]
 
 const REGEXP_RESERVED_WORD_PUBLIC = /\bpublic\b/
@@ -93,7 +93,7 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
     const template: CloudFormation.Template = await CloudFormation.load(config.samTemplatePath)
     const resource = await CloudFormation.getResourceFromTemplateResources({
         templateResources: template.Resources,
-        handlerName: config.handlerName
+        handlerName: config.handlerName,
     })
     const codeUri = getCodeUri(resource, vscode.Uri.parse(config.samTemplatePath!!))
     const handlerName = config.handlerName
@@ -104,7 +104,7 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
         relativeFunctionHandler: handlerName,
         runtime: config.runtime,
         globals: template.Globals,
-        properties: resource.Properties
+        properties: resource.Properties,
     })
 
     config = {
@@ -113,7 +113,7 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
         request: 'attach',
         runtimeFamily: RuntimeFamily.DotNetCore,
         name: 'SamLocalDebug',
-        baseBuildDir: baseBuildDir
+        baseBuildDir: baseBuildDir,
     }
 
     if (!config.noDebug) {
@@ -130,7 +130,7 @@ export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchReque
     const invokeCtx: OnLocalInvokeCommandContext = new DefaultOnLocalInvokeCommandContext(ctx.outputChannel)
     const processInvoker = new DefaultSamCliProcessInvoker()
     const localInvokeCommand = new DefaultSamLocalInvokeCommand(getChannelLogger(ctx.outputChannel), [
-        WAIT_FOR_DEBUGGER_MESSAGES.DOTNET
+        WAIT_FOR_DEBUGGER_MESSAGES.DOTNET,
     ])
     let invokeResult: Result = 'Succeeded'
 
@@ -145,11 +145,11 @@ export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchReque
             codeDir: path.dirname(config.samTemplatePath),
             inputTemplatePath: config.samTemplatePath,
             samProcessInvoker: processInvoker,
-            useContainer: config.sam?.containerBuild
+            useContainer: config.sam?.containerBuild,
         }
         if (!config.noDebug) {
             buildArgs.environmentVariables = {
-                SAM_BUILD_MODE: 'debug'
+                SAM_BUILD_MODE: 'debug',
             }
         }
 
@@ -164,7 +164,7 @@ export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchReque
             await invokeCtx.installDebugger({
                 debuggerPath: config.debuggerPath!!,
                 lambdaRuntime: config.runtime,
-                channelLogger: ctx.chanLogger
+                channelLogger: ctx.chanLogger,
             })
             config.onWillAttachDebugger = waitForDebugPort
             config.samLocalInvokeCommand = localInvokeCommand
@@ -182,7 +182,7 @@ export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchReque
         recordLambdaInvokeLocal({
             result: invokeResult,
             runtime: config.runtime as Runtime,
-            debug: !config.noDebug
+            debug: !config.noDebug,
         })
     }
 }
@@ -206,7 +206,7 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
             return {
                 filename: document.uri.fsPath,
                 handlerName,
-                range: lambdaHandlerComponents.handlerRange
+                range: lambdaHandlerComponents.handlerRange,
             }
         }
     )
@@ -247,7 +247,7 @@ export function getLambdaHandlerComponents(
                         .map(classSymbol => {
                             return {
                                 namespace: namespaceSymbol,
-                                class: classSymbol
+                                class: classSymbol,
                             }
                         })
                 )
@@ -266,7 +266,7 @@ export function getLambdaHandlerComponents(
                                 namespace: lambdaHandlerComponents.namespace.name,
                                 class: document.getText(lambdaHandlerComponents.class.selectionRange),
                                 method: document.getText(methodSymbol.selectionRange),
-                                handlerRange: methodSymbol.range
+                                handlerRange: methodSymbol.range,
                             }
                         })
                 )
@@ -368,12 +368,12 @@ async function _installDebugger(
             mount: {
                 type: 'bind',
                 source: debuggerPath,
-                destination: '/vsdbg'
+                destination: '/vsdbg',
             },
             entryPoint: {
                 command: 'bash',
-                args: ['-c', 'curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg']
-            }
+                args: ['-c', 'curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg'],
+            },
         })
     } catch (err) {
         channelLogger.info(
@@ -420,18 +420,18 @@ export async function makeCoreCLRDebugConfiguration(
             pipeProgram: 'sh',
             pipeArgs,
             debuggerPath: DOTNET_CORE_DEBUGGER_PATH,
-            pipeCwd: codeUri
+            pipeCwd: codeUri,
         },
         windows: {
             pipeTransport: {
                 pipeProgram: 'powershell',
                 pipeArgs,
                 debuggerPath: DOTNET_CORE_DEBUGGER_PATH,
-                pipeCwd: codeUri
-            }
+                pipeCwd: codeUri,
+            },
         },
         sourceFileMap: {
-            ['/var/task']: codeUri
-        }
+            ['/var/task']: codeUri,
+        },
     }
 }

@@ -9,7 +9,7 @@ import {
     getTemplatesConfigPath,
     load,
     LoadTemplatesConfigContext,
-    TemplatesConfigPopulator
+    TemplatesConfigPopulator,
 } from '../../../lambda/config/templates'
 
 class MockLoadTemplatesConfigContext {
@@ -20,7 +20,7 @@ class MockLoadTemplatesConfigContext {
     public constructor({
         fileExists = async _path => true,
         readFile = async _path => '',
-        saveDocumentIfDirty = async _path => {}
+        saveDocumentIfDirty = async _path => {},
     }: Partial<LoadTemplatesConfigContext>) {
         this.fileExists = fileExists
         this.readFile = readFile
@@ -39,7 +39,7 @@ describe('templates', async () => {
             }`
 
             const context = new MockLoadTemplatesConfigContext({
-                readFile: async pathLike => rawJson
+                readFile: async pathLike => rawJson,
             })
 
             const config = await load('', context)
@@ -66,7 +66,7 @@ describe('templates', async () => {
             }`
 
             const context = new MockLoadTemplatesConfigContext({
-                readFile: async pathLike => rawJson
+                readFile: async pathLike => rawJson,
             })
 
             const config = await load('', context)
@@ -93,7 +93,7 @@ describe('templates', async () => {
 
         it('returns minimal config on missing file', async () => {
             const context = new MockLoadTemplatesConfigContext({
-                fileExists: async pathLike => false
+                fileExists: async pathLike => false,
             })
 
             const config = await load('', context)
@@ -107,7 +107,7 @@ describe('templates', async () => {
             const context = new MockLoadTemplatesConfigContext({
                 readFile: async pathLike => {
                     throw new Error('oh no')
-                }
+                },
             })
 
             try {
@@ -124,7 +124,7 @@ describe('templates', async () => {
 
         it('gracefully handles invalid JSON', async () => {
             const context = new MockLoadTemplatesConfigContext({
-                readFile: async pathLike => '{'
+                readFile: async pathLike => '{',
             })
 
             try {
@@ -156,7 +156,7 @@ describe('templates', async () => {
             }`
 
             const context = new MockLoadTemplatesConfigContext({
-                readFile: async pathLike => rawJson
+                readFile: async pathLike => rawJson,
             })
 
             const config = await load('', context)
@@ -177,7 +177,7 @@ describe('templates', async () => {
                     readArgs.push(pathLike)
 
                     return '{}'
-                }
+                },
             })
 
             await load(path.join('my', 'path'), context)
@@ -203,7 +203,7 @@ describe('templates', async () => {
                         // If we throw here, the exception will be swallowed by `load`'s error handling.
                         readBeforeSave = true
                     }
-                }
+                },
             })
 
             await load(path.join('my', 'path'), context)
@@ -227,8 +227,8 @@ describe('TemplatesConfigPopulator', async () => {
     const testModificationOptions = {
         formattingOptions: {
             tabSize: 4,
-            insertSpaces: true
-        }
+            insertSpaces: true,
+        },
     }
 
     it('handles ModificationOptions', async () => {
@@ -243,8 +243,8 @@ describe('TemplatesConfigPopulator', async () => {
         const results = new TemplatesConfigPopulator(inputJson, {
             formattingOptions: {
                 tabSize: 8,
-                insertSpaces: true
-            }
+                insertSpaces: true,
+            },
         })
             .ensureTemplateSectionExists('someprocessor')
             .getResults()
@@ -319,7 +319,7 @@ describe('TemplatesConfigPopulator', async () => {
                     message: 'Invalid configuration',
                     jsonPath: ['templates'],
                     expectedTypes: ['object', 'null'],
-                    actualType: 'number'
+                    actualType: 'number',
                 }
             )
         })
@@ -365,7 +365,7 @@ describe('TemplatesConfigPopulator', async () => {
                     message: 'Invalid configuration',
                     jsonPath: ['templates', 'someprocessor'],
                     expectedTypes: ['object', 'null'],
-                    actualType: 'boolean'
+                    actualType: 'boolean',
                 }
             )
         })
@@ -388,7 +388,7 @@ describe('TemplatesConfigPopulator', async () => {
                     message: 'Invalid configuration',
                     jsonPath: ['templates', 'someprocessor', 'handlers'],
                     expectedTypes: ['object', 'null'],
-                    actualType: 'array'
+                    actualType: 'array',
                 }
             )
         })
@@ -413,7 +413,7 @@ describe('TemplatesConfigPopulator', async () => {
                     message: 'Invalid configuration',
                     jsonPath: ['templates', 'someprocessor', 'handlers', 'processor'],
                     expectedTypes: ['object', 'null'],
-                    actualType: 'string'
+                    actualType: 'string',
                 }
             )
         })
@@ -521,7 +521,7 @@ describe('TemplatesConfigPopulator', async () => {
                     message: 'Invalid configuration',
                     jsonPath: ['templates', 'someprocessor', 'handlers', 'processor'],
                     expectedTypes: ['object', 'null'],
-                    actualType: 'string'
+                    actualType: 'string',
                 }
             )
         })
@@ -548,7 +548,7 @@ describe('TemplatesConfigPopulator', async () => {
                     message: 'Invalid configuration',
                     jsonPath: ['templates', 'someprocessor', 'handlers', 'processor', 'event'],
                     expectedTypes: ['object', 'null'],
-                    actualType: 'number'
+                    actualType: 'number',
                 }
             )
         })

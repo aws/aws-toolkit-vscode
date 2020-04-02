@@ -48,13 +48,13 @@ export async function loadSharedConfigFiles(init: SharedConfigInit = {}): Promis
     const [configFile, credentialsFile] = await Promise.all([
         /* tslint:disable await-promise */
         loadConfigFile(init.configFilepath),
-        loadCredentialsFile(init.filepath)
+        loadCredentialsFile(init.filepath),
         /* tslint:enable await-promise */
     ])
 
     return {
         credentialsFile,
-        configFile
+        configFile,
     }
 }
 

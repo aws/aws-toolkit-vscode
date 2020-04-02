@@ -13,7 +13,7 @@ import {
     getTemplatesConfigPath,
     showTemplatesConfigurationError,
     TemplatesConfigFieldTypeError,
-    TemplatesConfigPopulator
+    TemplatesConfigPopulator,
 } from './templates'
 
 export interface ConfigureParameterOverridesContext {
@@ -36,7 +36,7 @@ class DefaultConfigureParameterOverridesContext implements ConfigureParameterOve
 export async function configureParameterOverrides(
     {
         templateUri,
-        requiredParameterNames = []
+        requiredParameterNames = [],
     }: {
         templateUri: vscode.Uri
         requiredParameterNames?: Iterable<string>
@@ -59,8 +59,8 @@ export async function configureParameterOverrides(
             formattingOptions: {
                 insertSpaces: true,
                 tabSize: getTabSize(editor),
-                eol: editor.document.eol === vscode.EndOfLine.CRLF ? '\r\n' : '\n'
-            }
+                eol: editor.document.eol === vscode.EndOfLine.CRLF ? '\r\n' : '\n',
+            },
         })
 
         for (const parameterName of requiredParameterNames) {
@@ -87,10 +87,10 @@ export async function configureParameterOverrides(
             selection: await getParameterOverridesRange(
                 {
                     editor,
-                    relativeTemplatePath
+                    relativeTemplatePath,
                 },
                 context
-            )
+            ),
         })
     } catch (err) {
         if (err instanceof TemplatesConfigFieldTypeError) {
@@ -104,7 +104,7 @@ export async function configureParameterOverrides(
 async function getParameterOverridesRange(
     {
         editor,
-        relativeTemplatePath
+        relativeTemplatePath,
     }: {
         editor: vscode.TextEditor
         relativeTemplatePath: string

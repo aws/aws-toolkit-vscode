@@ -97,8 +97,10 @@ async function ensureLogFolderExists(logFolder: string): Promise<void> {
 }
 
 async function registerLoggerCommands(context: vscode.ExtensionContext): Promise<void> {
-    context.subscriptions.push(vscode.commands.registerCommand('aws.viewLogs', async () => {
-        await vscode.window.showTextDocument(vscode.Uri.file(path.normalize(LOG_PATH)))
-        recordVscodeViewLogs()
-    }))
+    context.subscriptions.push(
+        vscode.commands.registerCommand('aws.viewLogs', async () => {
+            await vscode.window.showTextDocument(vscode.Uri.file(path.normalize(LOG_PATH)))
+            recordVscodeViewLogs()
+        })
+    )
 }

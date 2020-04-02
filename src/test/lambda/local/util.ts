@@ -23,8 +23,8 @@ export async function createWorkspaceFolder(
         workspaceFolder: {
             uri: Uri.file(workspacePath),
             name: path.basename(workspacePath),
-            index: 0
-        }
+            index: 0,
+        },
     }
 }
 

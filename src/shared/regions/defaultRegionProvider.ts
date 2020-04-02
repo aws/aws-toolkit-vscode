@@ -64,7 +64,7 @@ export class DefaultRegionProvider implements RegionProvider {
                 this.regionIdToRegionData.set(region.id, {
                     partitionId: partition.id,
                     region: region,
-                    serviceIds: []
+                    serviceIds: [],
                 })
             )
 

@@ -84,7 +84,7 @@ describe('viewSchemaItem', async () => {
     const testSchemaName = 'testSchema'
     const testRegistryName = 'testRegistry'
     const fakeSchema = {
-        SchemaName: testSchemaName
+        SchemaName: testSchemaName,
     }
     const expectedSchema = JSON.stringify(JSON.parse(AWS_EVENT_SCHEMA_RAW), undefined, getTabSizeSetting())
 
@@ -98,11 +98,11 @@ describe('viewSchemaItem', async () => {
 
     function stubTextEditInsert() {
         const textEdit = ({
-            insert: () => {}
+            insert: () => {},
         } as any) as vscode.TextEditorEdit
 
         const textEditor = ({
-            edit: () => {}
+            edit: () => {},
         } as any) as vscode.TextEditor
 
         sinon.stub(textEditor, 'edit').callsFake(async editBuilder => {
@@ -119,7 +119,7 @@ describe('viewSchemaItem', async () => {
 
     function generateSchemaItemNode(): SchemaItemNode {
         const schemaResponse: Schemas.DescribeSchemaResponse = {
-            Content: AWS_EVENT_SCHEMA_RAW
+            Content: AWS_EVENT_SCHEMA_RAW,
         }
         const schemaClient = new MockSchemaClient()
         sandbox.stub(schemaClient, 'describeSchema').returns(Promise.resolve(schemaResponse))

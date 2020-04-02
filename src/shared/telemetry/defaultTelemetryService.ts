@@ -248,8 +248,8 @@ export class DefaultTelemetryService implements TelemetryService {
                 {
                     MetricName: 'noData',
                     Value: 0,
-                    Metadata: [{ Key: ACCOUNT_METADATA_KEY, Value: accountValue }]
-                }
+                    Metadata: [{ Key: ACCOUNT_METADATA_KEY, Value: accountValue }],
+                },
             ]
             event.data = data
         }

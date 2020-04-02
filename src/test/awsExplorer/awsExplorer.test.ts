@@ -8,7 +8,12 @@ import * as sinon from 'sinon'
 import { AwsExplorer } from '../../awsexplorer/awsExplorer'
 import { RegionNode } from '../../awsexplorer/regionNode'
 import { FakeExtensionContext } from '../fakeExtensionContext'
-import { DEFAULT_TEST_REGION_CODE, DEFAULT_TEST_REGION_NAME, FakeRegionProvider, makeFakeAwsContextWithPlaceholderIds } from '../utilities/fakeAwsContext'
+import {
+    DEFAULT_TEST_REGION_CODE,
+    DEFAULT_TEST_REGION_NAME,
+    FakeRegionProvider,
+    makeFakeAwsContextWithPlaceholderIds,
+} from '../utilities/fakeAwsContext'
 
 describe('AwsExplorer', () => {
     let sandbox: sinon.SinonSandbox

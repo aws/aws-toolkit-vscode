@@ -13,7 +13,7 @@ import { ext } from '../../../shared/extensionGlobals'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 import {
     assertNodeListOnlyContainsErrorNode,
-    assertNodeListOnlyContainsPlaceholderNode
+    assertNodeListOnlyContainsPlaceholderNode,
 } from './explorerNodeAssertions'
 
 const FAKE_REGION_CODE = 'someregioncode'
@@ -95,15 +95,15 @@ describe('LambdaNode', () => {
                 return asyncGenerator<Lambda.FunctionConfiguration>(
                     lambdaFunctionNames.map<Lambda.FunctionConfiguration>(name => {
                         return {
-                            FunctionName: name
+                            FunctionName: name,
                         }
                     })
                 )
-            })
+            }),
         }
 
         const clientBuilder = {
-            createLambdaClient: sandbox.stub().returns(lambdaClient)
+            createLambdaClient: sandbox.stub().returns(lambdaClient),
         }
 
         ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder

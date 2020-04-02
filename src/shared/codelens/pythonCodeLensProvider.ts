@@ -22,7 +22,7 @@ import {
     getLambdaInfoFromExistingTemplate,
     invokeLambdaFunction,
     makeBuildDir,
-    makeInputTemplate
+    makeInputTemplate,
 } from './localLambdaRunner'
 import { PythonDebugAdapterHeartbeat } from './pythonDebugAdapterHeartbeat'
 import { getLocalRootVariants } from '../utilities/pathUtils'
@@ -33,8 +33,8 @@ export const PYTHON_LANGUAGE = 'python'
 export const PYTHON_ALLFILES: vscode.DocumentFilter[] = [
     {
         scheme: 'file',
-        language: PYTHON_LANGUAGE
-    }
+        language: PYTHON_LANGUAGE,
+    },
 ]
 
 // TODO: Fix this! Implement a more robust/flexible solution. This is just a basic minimal proof of concept.
@@ -55,7 +55,7 @@ export async function getLambdaHandlerCandidates(uri: vscode.Uri): Promise<Lambd
             return {
                 filename,
                 handlerName: `${path.parse(filename).name}.${symbol.name}`,
-                range: symbol.range
+                range: symbol.range,
             }
         })
 }
@@ -125,7 +125,7 @@ def ${debugHandlerFunctionName}(event, context):
 
         return {
             outFilePath,
-            debugHandlerName: `${debugHandlerFileName}.${debugHandlerFunctionName}`
+            debugHandlerName: `${debugHandlerFileName}.${debugHandlerFunctionName}`,
         }
     } catch (err) {
         logger.error('makeLambdaDebugFile failed:', err as Error)
@@ -164,14 +164,14 @@ export async function makePythonDebugConfig(
         const rv = await makeLambdaDebugFile({
             handlerName: handlerName,
             debugPort: debugPort,
-            outputDir: config.codeRoot
+            outputDir: config.codeRoot,
         })
         outFilePath = rv.outFilePath
         // XXX: Reassign handler name.
         handlerName = rv.debugHandlerName
         manifestPath = await makePythonDebugManifest({
             samProjectCodeRoot: config.codeRoot,
-            outputDir: baseBuildDir
+            outputDir: baseBuildDir,
         })
     }
 
@@ -189,7 +189,7 @@ export async function makePythonDebugConfig(
     // })
     const lambdaInfo = await getLambdaInfoFromExistingTemplate({
         workspaceUri: config.workspaceFolder.uri,
-        relativeOriginalFunctionHandler
+        relativeOriginalFunctionHandler,
     })
     const inputTemplatePath = await makeInputTemplate({
         // Direct ("code") invoke-target.
@@ -198,12 +198,12 @@ export async function makePythonDebugConfig(
         relativeFunctionHandler,
         globals: lambdaInfo && lambdaInfo.templateGlobals ? lambdaInfo.templateGlobals : undefined,
         properties: lambdaInfo && lambdaInfo.resource.Properties ? lambdaInfo.resource.Properties : undefined,
-        runtime: runtime
+        runtime: runtime,
     })
     const pathMappings: PythonPathMapping[] = getLocalRootVariants(config.codeRoot).map<PythonPathMapping>(variant => {
         return {
             localRoot: variant,
-            remoteRoot: '/var/task'
+            remoteRoot: '/var/task',
         }
     })
 
@@ -233,7 +233,7 @@ export async function makePythonDebugConfig(
         // Disable redirectOutput to prevent the Python Debugger from automatically writing stdout/stderr text
         // to the Debug Console. We're taking the child process stdout/stderr and explicitly writing that to
         // the Debug Console.
-        redirectOutput: false
+        redirectOutput: false,
     }
 }
 
@@ -269,7 +269,7 @@ export async function invokePythonLambda(ctx: ExtContext, config: PythonDebugCon
             inputTemplatePath: inputTemplatePath,
             manifestPath: config.manifestPath,
             samProcessInvoker: processInvoker,
-            useContainer: config.sam?.containerBuild || false
+            useContainer: config.sam?.containerBuild || false,
         })
         if (config.invokeTarget.target === 'template') {
             // XXX: reassignment

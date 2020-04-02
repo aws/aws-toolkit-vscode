@@ -25,9 +25,10 @@ export async function runSamCliDeploy(
         '--stack-name',
         deployArguments.stackName,
         '--capabilities',
-        'CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM',
+        'CAPABILITY_IAM',
+        'CAPABILITY_NAMED_IAM',
         '--region',
-        deployArguments.region
+        deployArguments.region,
     ]
     if (deployArguments.parameterOverrides.size > 0) {
         const overrides = [...map(deployArguments.parameterOverrides.entries(), ([key, value]) => `${key}=${value}`)]
@@ -36,7 +37,7 @@ export async function runSamCliDeploy(
 
     const childProcessResult = await invoker.invoke({
         arguments: args,
-        spawnOptions: { env: deployArguments.environmentVariables }
+        spawnOptions: { env: deployArguments.environmentVariables },
     })
 
     logAndThrowIfUnexpectedExitCode(childProcessResult, 0)

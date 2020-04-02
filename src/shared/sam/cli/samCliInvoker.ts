@@ -11,7 +11,7 @@ import { DefaultSamCliConfiguration, SamCliConfiguration } from './samCliConfigu
 import {
     makeRequiredSamCliProcessInvokeOptions,
     SamCliProcessInvokeOptions,
-    SamCliProcessInvoker
+    SamCliProcessInvoker,
 } from './samCliInvokerUtils'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
 
@@ -32,7 +32,7 @@ export function resolveSamCliProcessInvokerContext(
     const defaults = new DefaultSamCliProcessInvokerContext()
 
     return {
-        cliConfig: params.cliConfig || defaults.cliConfig
+        cliConfig: params.cliConfig || defaults.cliConfig,
     }
 }
 

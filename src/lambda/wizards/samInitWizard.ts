@@ -25,7 +25,7 @@ import {
     MultiStepWizard,
     WizardContext,
     WizardStep,
-    WorkspaceFolderQuickPickItem
+    WorkspaceFolderQuickPickItem,
 } from '../../shared/wizards/multiStepWizard'
 import { compareSamLambdaRuntime, samLambdaRuntimes } from '../models/samLambdaRuntime'
 import {
@@ -33,7 +33,7 @@ import {
     getSamTemplateWizardOption,
     getTemplateDescription,
     repromptUserForTemplate,
-    SamTemplate
+    SamTemplate,
 } from '../models/samTemplates'
 
 export interface CreateNewSamAppWizardContext {
@@ -71,7 +71,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
             options: {
                 ignoreFocusOut: true,
                 title: localize('AWS.samcli.initWizard.runtime.prompt', 'Select a SAM Application Runtime'),
-                value: currRuntime ? currRuntime : ''
+                value: currRuntime ? currRuntime : '',
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: this.lambdaRuntimes
@@ -81,8 +81,8 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                     label: runtime,
                     alwaysShow: runtime === currRuntime,
                     description:
-                        runtime === currRuntime ? localize('AWS.wizard.selectedPreviously', 'Selected Previously') : ''
-                }))
+                        runtime === currRuntime ? localize('AWS.wizard.selectedPreviously', 'Selected Previously') : '',
+                })),
         })
 
         const choices = await picker.promptUser({
@@ -93,7 +93,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                 } else if (button === this.helpButton) {
                     vscode.env.openExternal(vscode.Uri.parse(samInitDocUrl))
                 }
-            }
+            },
         })
         const val = picker.verifySinglePickerOutput(choices)
 
@@ -109,7 +109,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
             options: {
                 ignoreFocusOut: true,
                 title: localize('AWS.samcli.initWizard.template.prompt', 'Select a SAM Application Template'),
-                value: currTemplate
+                value: currTemplate,
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: templates.toArray().map(template => ({
@@ -118,8 +118,8 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                 detail:
                     template === currTemplate
                         ? localize('AWS.wizard.selectedPreviously', 'Selected Previously')
-                        : getTemplateDescription(template)
-            }))
+                        : getTemplateDescription(template),
+            })),
         })
 
         const choices = await picker.promptUser({
@@ -130,7 +130,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                 } else if (button === this.helpButton) {
                     vscode.env.openExternal(vscode.Uri.parse(samInitDocUrl))
                 }
-            }
+            },
         })
         const val = picker.verifySinglePickerOutput(choices)
 
@@ -157,7 +157,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
             options: {
                 ignoreFocusOut: true,
                 title: localize('AWS.samcli.initWizard.schemas.region.prompt', 'Select an EventBridge Schemas Region'),
-                value: currRegion ? currRegion : ''
+                value: currRegion ? currRegion : '',
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: this.schemasRegions.map(region => ({
@@ -165,8 +165,8 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                 detail: region.id,
                 alwaysShow: region.id === currRegion,
                 description:
-                    region.id === currRegion ? localize('AWS.wizard.selectedPreviously', 'Selected Previously') : ''
-            }))
+                    region.id === currRegion ? localize('AWS.wizard.selectedPreviously', 'Selected Previously') : '',
+            })),
         })
 
         const choices = await picker.promptUser({
@@ -177,7 +177,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                 } else if (button === this.helpButton) {
                     vscode.env.openExternal(vscode.Uri.parse(eventBridgeSchemasDocUrl))
                 }
-            }
+            },
         })
         const val = picker.verifySinglePickerOutput(choices)
 
@@ -204,15 +204,15 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
             options: {
                 ignoreFocusOut: true,
                 title: localize('AWS.samcli.initWizard.schemas.registry.prompt', 'Select a Registry'),
-                value: currRegistry ? currRegistry : ''
+                value: currRegistry ? currRegistry : '',
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: registryNames!.map(registry => ({
                 label: registry,
                 alwaysShow: registry === currRegistry,
                 description:
-                    registry === currRegistry ? localize('AWS.wizard.selectedPreviously', 'Selected Previously') : ''
-            }))
+                    registry === currRegistry ? localize('AWS.wizard.selectedPreviously', 'Selected Previously') : '',
+            })),
         })
 
         const choices = await picker.promptUser({
@@ -223,7 +223,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                 } else if (button === this.helpButton) {
                     vscode.env.openExternal(vscode.Uri.parse(eventBridgeSchemasDocUrl))
                 }
-            }
+            },
         })
         const val = picker.verifySinglePickerOutput(choices)
 
@@ -267,15 +267,15 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
             options: {
                 ignoreFocusOut: true,
                 title: localize('AWS.samcli.initWizard.schemas.schema.prompt', 'Select a Schema'),
-                value: currSchema ? currSchema : ''
+                value: currSchema ? currSchema : '',
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: schemas!.map(schema => ({
                 label: schema.SchemaName!,
                 alwaysShow: schema.SchemaName === currSchema,
                 description:
-                    schema === currSchema ? localize('AWS.wizard.selectedPreviously', 'Selected Previously') : ''
-            }))
+                    schema === currSchema ? localize('AWS.wizard.selectedPreviously', 'Selected Previously') : '',
+            })),
         })
 
         const choices = await picker.promptUser({
@@ -286,7 +286,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                 } else if (button === this.helpButton) {
                     vscode.env.openExternal(vscode.Uri.parse(eventBridgeSchemasDocUrl))
                 }
-            }
+            },
         })
         const val = picker.verifySinglePickerOutput(choices)
 
@@ -303,7 +303,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                         'AWS.samcli.initWizard.location.prompt',
                         'The folder you select will be added to your VS Code workspace.'
                     )
-                )
+                ),
             ])
 
         const quickPick = picker.createQuickPick({
@@ -312,10 +312,10 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                 title: localize(
                     'AWS.samcli.initWizard.location.prompt',
                     'Select a workspace folder for your new project'
-                )
+                ),
             },
             items: items,
-            buttons: [this.helpButton, vscode.QuickInputButtons.Back]
+            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
         })
 
         const choices = await picker.promptUser({
@@ -326,7 +326,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                 } else if (button === this.helpButton) {
                     vscode.env.openExternal(vscode.Uri.parse(samInitDocUrl))
                 }
-            }
+            },
         })
         const pickerResponse = picker.verifySinglePickerOutput<FolderQuickPickItem>(choices)
 
@@ -348,9 +348,9 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
         const inputBox = input.createInputBox({
             options: {
                 title: localize('AWS.samcli.initWizard.name.prompt', 'Enter a name for your new application'),
-                ignoreFocusOut: true
+                ignoreFocusOut: true,
             },
-            buttons: [this.helpButton, vscode.QuickInputButtons.Back]
+            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
         })
         inputBox.value = defaultValue
 
@@ -377,7 +377,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
                 } else if (button === this.helpButton) {
                     vscode.env.openExternal(vscode.Uri.parse(samInitDocUrl))
                 }
-            }
+            },
         })
     }
 }
@@ -427,7 +427,7 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
             registryName: this.registryName,
             schemaName: this.schemaName,
             location: this.location,
-            name: this.name
+            name: this.name,
         }
     }
 

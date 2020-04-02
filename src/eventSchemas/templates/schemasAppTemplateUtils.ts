@@ -71,12 +71,12 @@ export async function buildSchemaTemplateParameters(schemaName: string, registry
         // tslint:disable-next-line: no-unsafe-any
         AWS_Schema_detail_type: detailType,
         // Need to provide user agent to SAM CLI so that it will enable appTemplate-based
-        user_agent: 'AWSToolkit'
+        user_agent: 'AWSToolkit',
     }
 
     const schemaTemplateParameters: SchemaTemplateParameters = {
         SchemaVersion: latestSchemaVersion!,
-        templateExtraContent: templateExtraContent
+        templateExtraContent: templateExtraContent,
     }
 
     return schemaTemplateParameters

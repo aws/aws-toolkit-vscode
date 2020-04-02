@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "SAM applications deployed through the toolkit now support IAM resources with custom names"
-}

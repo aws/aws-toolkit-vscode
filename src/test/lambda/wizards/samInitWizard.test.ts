@@ -12,7 +12,7 @@ import {
     eventBridgeHelloWorldTemplate,
     eventBridgeStarterAppTemplate,
     helloWorldTemplate,
-    SamTemplate
+    SamTemplate,
 } from '../../../lambda/models/samTemplates'
 import { CreateNewSamAppWizard, CreateNewSamAppWizardContext } from '../../../lambda/wizards/samInitWizard'
 
@@ -463,7 +463,7 @@ describe('CreateNewSamAppWizard', async () => {
                 workspaceFolderPaths.map(p => ({
                     uri: vscode.Uri.file(p),
                     name: path.basename(p),
-                    index: index++
+                    index: index++,
                 })),
                 Set<Runtime>(['nodejs8.10']),
                 'myName',
@@ -507,7 +507,7 @@ describe('CreateNewSamAppWizard', async () => {
                 ['', 'myName'],
                 [
                     [vscode.Uri.file(path.join('my', 'quick', 'pick', 'result', '1'))],
-                    [vscode.Uri.file(path.join('my', 'quick', 'pick', 'result', '2'))]
+                    [vscode.Uri.file(path.join('my', 'quick', 'pick', 'result', '2'))],
                 ],
                 Set<SamTemplate>([helloWorldTemplate]),
                 [],

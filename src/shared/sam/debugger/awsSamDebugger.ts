@@ -9,7 +9,7 @@ import * as nls from 'vscode-nls'
 import {
     getDefaultRuntime,
     NodejsDebugConfiguration,
-    PythonDebugConfiguration
+    PythonDebugConfiguration,
 } from '../../../lambda/local/debugConfiguration'
 import { getFamily, RuntimeFamily, samLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 import { CloudFormation } from '../../cloudformation/cloudformation'
@@ -77,8 +77,8 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                                 invokeTarget: {
                                     target: TEMPLATE_TARGET_TYPE,
                                     samTemplatePath: template.path,
-                                    samTemplateResource: resourceName
-                                }
+                                    samTemplateResource: resourceName,
+                                },
                             })
                         }
                     }
@@ -136,7 +136,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
 
             config = {
                 ...config,
-                ...configs[0]
+                ...configs[0],
             }
             getLogger().info(`SAM debug: generated config (no launch.json): ${JSON.stringify(config)}`)
         } else if (!validateConfig(folder, config)) {
@@ -193,7 +193,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             documentUri: documentUri,
             samTemplatePath: templateInvoke?.samTemplatePath,
             originalSamTemplatePath: templateInvoke?.samTemplatePath,
-            debugPort: config.noDebug ? -1 : await getStartPort()
+            debugPort: config.noDebug ? -1 : await getStartPort(),
         }
 
         switch (runtimeFamily) {
@@ -343,7 +343,7 @@ function validateTemplateConfig(
                 'AWS.sam.debugger.missingField',
                 'Missing required field "{0}" in debug config',
                 'samTemplatePath'
-            )
+            ),
         }
     }
 
@@ -354,7 +354,7 @@ function validateTemplateConfig(
                 'AWS.sam.debugger.missingTemplate',
                 'Invalid (or missing) template file (path must be workspace-relative, or absolute): {0}',
                 templateTarget.samTemplatePath
-            )
+            ),
         }
     }
 
@@ -366,7 +366,7 @@ function validateTemplateConfig(
                 'AWS.sam.debugger.missingField',
                 'Missing required field "{0}" in debug config',
                 'samTemplateResource'
-            )
+            ),
         }
     }
 
@@ -378,7 +378,7 @@ function validateTemplateConfig(
                 'Cannot find the template resource "{0}" in template file: {1}',
                 templateTarget.samTemplateResource,
                 templateTarget.samTemplatePath
-            )
+            ),
         }
     }
 
@@ -394,7 +394,7 @@ function validateTemplateConfig(
                 templateTarget.samTemplateResource,
                 templateTarget.samTemplatePath,
                 CloudFormation.SERVERLESS_FUNCTION_TYPE
-            )
+            ),
         }
     }
 
@@ -406,7 +406,7 @@ function validateTemplateConfig(
                 'Runtime for Template Resource {0} in Template file {1} is either undefined or unsupported.',
                 templateTarget.samTemplateResource,
                 templateTarget.samTemplatePath
-            )
+            ),
         }
     }
 
@@ -429,7 +429,7 @@ function validateTemplateConfig(
                     'AWS.sam.debugger.extraEnvVars',
                     'The following environment variables are not found in the targeted template and will not be overridden: {0}',
                     missingVars.join(', ')
-                )
+                ),
             }
         }
     }
@@ -445,7 +445,7 @@ function validateCodeConfig(debugConfiguration: AwsSamDebuggerConfiguration): { 
                 'AWS.sam.debugger.missingRuntime',
                 'Debug Configurations with an invoke target of "{0}" require a valid Lambda runtime value',
                 CODE_TARGET_TYPE
-            )
+            ),
         }
     }
 

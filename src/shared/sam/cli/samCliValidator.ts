@@ -36,7 +36,7 @@ export enum SamCliVersionValidation {
     Valid = 'Valid',
     VersionTooLow = 'VersionTooLow',
     VersionTooHigh = 'VersionTooHigh',
-    VersionNotParseable = 'VersionNotParseable'
+    VersionNotParseable = 'VersionNotParseable',
 }
 
 export interface SamCliVersionValidatorResult {
@@ -67,7 +67,7 @@ export class DefaultSamCliValidator implements SamCliValidator {
 
     public async detectValidSamCli(): Promise<SamCliValidatorResult> {
         const result: SamCliValidatorResult = {
-            samCliFound: false
+            samCliFound: false,
         }
 
         const samCliLocation = this.context.samCliLocation
@@ -92,7 +92,7 @@ export class DefaultSamCliValidator implements SamCliValidator {
 
         return {
             version,
-            validation: DefaultSamCliValidator.validateSamCliVersion(version)
+            validation: DefaultSamCliValidator.validateSamCliVersion(version),
         }
     }
 

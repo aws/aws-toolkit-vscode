@@ -95,7 +95,7 @@ export class DefaultAwsContext implements AwsContext {
     private emitEvent() {
         this._onDidChangeContext.fire({
             profileName: this.currentCredentials?.credentialsId,
-            accountId: this.currentCredentials?.accountId
+            accountId: this.currentCredentials?.accountId,
         })
     }
 }

@@ -12,7 +12,7 @@ describe('updateCredentialsStatusBarItem', async () => {
 
     beforeEach(async () => {
         statusBarItem = ({
-            text: ''
+            text: '',
         } as any) as vscode.StatusBarItem
     })
 

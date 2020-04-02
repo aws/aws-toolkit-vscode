@@ -11,12 +11,12 @@ import {
     assertArgIsPresent,
     assertArgNotPresent,
     assertArgsContainArgument,
-    MockSamCliProcessInvoker
+    MockSamCliProcessInvoker,
 } from './samCliTestUtils'
 import {
     assertErrorContainsBadExitMessage,
     assertLogContainsBadExitInformation,
-    BadExitCodeSamCliProcessInvoker
+    BadExitCodeSamCliProcessInvoker,
 } from './testSamCliProcessInvoker'
 
 describe('runSamCliDeploy', async () => {
@@ -55,7 +55,7 @@ describe('runSamCliDeploy', async () => {
             makeSampleSamCliDeployParameters(
                 new Map<string, string>([
                     ['key1', 'value1'],
-                    ['key2', 'value2']
+                    ['key2', 'value2'],
                 ])
             ),
             invoker
@@ -101,7 +101,7 @@ describe('runSamCliDeploy', async () => {
             parameterOverrides: parameterOverrides,
             region: fakeRegion,
             stackName: fakeStackName,
-            templateFile: fakeTemplateFile
+            templateFile: fakeTemplateFile,
         }
     }
 })

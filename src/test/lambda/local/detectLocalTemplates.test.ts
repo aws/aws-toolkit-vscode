@@ -54,7 +54,7 @@ describe('detectLocalTemplates', async () => {
         await writeFile(normalizePath(workspaceFolderChildPath, 'template.yaml'), '')
 
         const result = detectLocalTemplates({
-            workspaceUris: [vscode.Uri.file(workspaceFolderPath)]
+            workspaceUris: [vscode.Uri.file(workspaceFolderPath)],
         })
 
         const templates: vscode.Uri[] = []

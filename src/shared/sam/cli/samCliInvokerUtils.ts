@@ -19,7 +19,7 @@ export function makeRequiredSamCliProcessInvokeOptions(
 
     return {
         spawnOptions: options.spawnOptions || {},
-        arguments: options.arguments || []
+        arguments: options.arguments || [],
     }
 }
 

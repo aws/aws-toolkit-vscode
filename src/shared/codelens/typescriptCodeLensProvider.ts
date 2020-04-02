@@ -14,7 +14,7 @@ import {
     getHandlerRelativePath,
     waitForDebugPort,
     makeBuildDir,
-    invokeLambdaFunction
+    invokeLambdaFunction,
 } from './localLambdaRunner'
 import { ExtContext } from '../extensions'
 import { NodejsDebugConfiguration } from '../../lambda/local/debugConfiguration'
@@ -52,7 +52,7 @@ export async function decorateHandlerNames(
 
     const relativePath = getHandlerRelativePath({
         codeRoot: path.dirname(packageJsonPath),
-        filePath: parentDocumentPath
+        filePath: parentDocumentPath,
     })
 
     handlers.forEach(handler => {
@@ -106,7 +106,7 @@ export async function makeTypescriptConfig(
         localRoot: config.codeRoot,
         remoteRoot: '/var/task',
         protocol: 'inspector',
-        skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js']
+        skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
     }
 
     return nodejsLaunchConfig
@@ -130,7 +130,7 @@ export async function invokeTypescriptLambda(ctx: ExtContext, config: NodejsDebu
         codeDir: config.codeRoot,
         inputTemplatePath: config.samTemplatePath,
         samProcessInvoker: processInvoker,
-        useContainer: config.sam?.containerBuild
+        useContainer: config.sam?.containerBuild,
     })
     if (config.invokeTarget.target === 'template') {
         // XXX: reassignment

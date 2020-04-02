@@ -60,7 +60,7 @@ describe('SamCliConfiguration', () => {
                 timesCalled++
 
                 return Promise.resolve(fakeCliLocation)
-            }
+            },
         })
 
         await samCliConfig.initialize()
@@ -76,7 +76,7 @@ describe('SamCliConfiguration', () => {
                 timesCalled++
 
                 return Promise.resolve(undefined)
-            }
+            },
         })
 
         await samCliConfig.initialize()
@@ -90,7 +90,7 @@ describe('SamCliConfiguration', () => {
         const samCliConfig: SamCliConfiguration = new DefaultSamCliConfiguration(settingsConfiguration, {
             getLocation: async (): Promise<string | undefined> => {
                 return Promise.resolve(fakeCliLocation)
-            }
+            },
         })
 
         await samCliConfig.initialize()
@@ -102,7 +102,7 @@ describe('SamCliConfiguration', () => {
         const samCliConfig: SamCliConfiguration = new DefaultSamCliConfiguration(settingsConfiguration, {
             getLocation: async (): Promise<string | undefined> => {
                 return Promise.resolve(undefined)
-            }
+            },
         })
 
         await samCliConfig.initialize()

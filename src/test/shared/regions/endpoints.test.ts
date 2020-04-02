@@ -15,45 +15,45 @@ const sampleEndpoints = {
             partitionName: 'Standard',
             regions: {
                 region1: {
-                    description: 'aws region one'
+                    description: 'aws region one',
                 },
                 region2: {
-                    description: 'aws region two'
+                    description: 'aws region two',
                 },
                 region3: {
-                    description: 'aws region three'
-                }
+                    description: 'aws region three',
+                },
             },
-            services: {}
+            services: {},
         },
         {
             partition: 'aws-cn',
             partitionName: 'China',
             regions: {
                 awscnregion1: {
-                    description: 'aws-cn region one'
-                }
+                    description: 'aws-cn region one',
+                },
             },
-            services: {}
+            services: {},
         },
         {
             partition: 'fake',
             partitionName: 'Fake Region',
             regions: {
                 fakeregion1: {
-                    description: 'fake region one'
-                }
+                    description: 'fake region one',
+                },
             },
             services: {
                 foo: {
                     isRegionalized: true,
                     endpoints: {
-                        someregion: {}
-                    }
-                }
-            }
-        }
-    ]
+                        someregion: {},
+                    },
+                },
+            },
+        },
+    ],
 }
 
 describe('loadEndpoints', async () => {

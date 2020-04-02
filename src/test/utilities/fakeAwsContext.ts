@@ -33,8 +33,8 @@ export class FakeRegionProvider implements RegionProvider {
             return [
                 {
                     id: DEFAULT_TEST_REGION_CODE,
-                    name: DEFAULT_TEST_REGION_NAME
-                }
+                    name: DEFAULT_TEST_REGION_NAME,
+                },
             ]
         }
 
@@ -99,7 +99,7 @@ export function makeFakeAwsContextWithPlaceholderIds(credentials: AWS.Credential
             credentials: credentials,
             credentialsId: DEFAULT_TEST_PROFILE_NAME,
             accountId: DEFAULT_TEST_ACCOUNT_ID,
-            defaultRegion: DEFAULT_TEST_REGION_CODE
-        }
+            defaultRegion: DEFAULT_TEST_REGION_CODE,
+        },
     })
 }

@@ -40,7 +40,7 @@ describe('AwsCdkExplorer', () => {
         const appLocation: CdkAppLocation = {
             workspaceFolder: workspaceFolder,
             cdkJsonPath: 'cdkJson.fsPath',
-            treePath: 'treeJsonPath'
+            treePath: 'treeJsonPath',
         }
         sandbox.stub(detectCdkProjects, 'detectCdkProjects').resolves([appLocation])
 

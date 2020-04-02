@@ -57,13 +57,13 @@ export async function invokeLambda(params: {
             vscode.ViewColumn.One,
             {
                 // Enable scripts in the webview
-                enableScripts: true
+                enableScripts: true,
             }
         )
         const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
 
         view.webview.html = baseTemplateFn({
-            content: '<h1>Loading...</h1>'
+            content: '<h1>Loading...</h1>',
         })
 
         // ideally need to get the client from the explorer, but the context will do for now
@@ -100,15 +100,15 @@ export async function invokeLambda(params: {
                     FunctionName: functionNode.configuration.FunctionName,
                     InputSamples: inputs,
                     Scripts: loadScripts,
-                    Libraries: loadLibs
-                })
+                    Libraries: loadLibs,
+                }),
             })
 
             view.webview.onDidReceiveMessage(
                 createMessageReceivedFunc({
                     fn: functionNode,
                     outputChannel: params.outputChannel,
-                    onPostMessage: message => view.webview.postMessage(message)
+                    onPostMessage: message => view.webview.postMessage(message),
                 }),
                 undefined,
                 ext.context.subscriptions
@@ -123,7 +123,7 @@ export async function invokeLambda(params: {
     } finally {
         recordLambdaInvokeRemote({
             result: invokeResult,
-            runtime: functionNode.configuration.Runtime as Runtime
+            runtime: functionNode.configuration.Runtime as Runtime,
         })
     }
 }

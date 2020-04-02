@@ -9,7 +9,7 @@ import * as sinon from 'sinon'
 import {
     Cache,
     credentialsRegionDataListMap,
-    SchemasDataProvider
+    SchemasDataProvider,
 } from '../../../eventSchemas/providers/schemasDataProvider'
 import { MockSchemaClient } from '../../shared/clients/mockClients'
 import { asyncGenerator } from '../../utilities/collectionUtils'
@@ -23,7 +23,7 @@ describe('schemasDataProvider', () => {
         sandbox = sinon.createSandbox()
         const regionDataWithCredentials: credentialsRegionDataListMap = {
             credentials: testCredentials,
-            regionDataList: []
+            regionDataList: [],
         }
         cacheData = new Cache([regionDataWithCredentials])
         dataProviderObject = new SchemasDataProvider(cacheData)

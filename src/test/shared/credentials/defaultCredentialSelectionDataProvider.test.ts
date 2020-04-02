@@ -9,7 +9,7 @@ import { CredentialSelectionDataProvider } from '../../../shared/credentials/cre
 import { CredentialSelectionState } from '../../../shared/credentials/credentialSelectionState'
 import {
     credentialProfileSelector,
-    promptToDefineCredentialsProfile
+    promptToDefineCredentialsProfile,
 } from '../../../shared/credentials/defaultCredentialSelectionDataProvider'
 import { MultiStepInputFlowController } from '../../../shared/multiStepInputFlowController'
 

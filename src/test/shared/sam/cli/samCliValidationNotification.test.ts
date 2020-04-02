@@ -8,21 +8,21 @@ import * as assert from 'assert'
 import {
     makeSamCliValidationNotification,
     SamCliValidationNotification,
-    SamCliValidationNotificationAction
+    SamCliValidationNotificationAction,
 } from '../../../../shared/sam/cli/samCliValidationNotification'
 import {
     InvalidSamCliError,
     InvalidSamCliVersionError,
     SamCliNotFoundError,
     SamCliVersionValidation,
-    SamCliVersionValidatorResult
+    SamCliVersionValidatorResult,
 } from '../../../../shared/sam/cli/samCliValidator'
 
 describe('makeSamCliValidationNotification', async () => {
     const fakeSamCliValidationNotification: SamCliValidationNotification = {
         show: () => {
             throw new Error('show is unused')
-        }
+        },
     }
     const actionLabelUpdateSamCli = 'Get SAM CLI'
     const actionLabelUpdateToolkit = 'Visit Marketplace'
@@ -49,27 +49,27 @@ describe('makeSamCliValidationNotification', async () => {
             situation: 'SAM CLI Version is too low',
             versionValidation: SamCliVersionValidation.VersionTooLow,
             messageFragment: 'Please update your SAM CLI.',
-            actionLabel: actionLabelUpdateSamCli
+            actionLabel: actionLabelUpdateSamCli,
         },
         {
             situation: 'SAM CLI Version is too high',
             versionValidation: SamCliVersionValidation.VersionTooHigh,
             messageFragment: 'Please check the Marketplace for an updated Toolkit.',
-            actionLabel: actionLabelUpdateToolkit
+            actionLabel: actionLabelUpdateToolkit,
         },
         {
             situation: 'SAM CLI Version is unparsable',
             versionValidation: SamCliVersionValidation.VersionNotParseable,
             messageFragment: 'Please update your SAM CLI.',
-            actionLabel: actionLabelUpdateSamCli
-        }
+            actionLabel: actionLabelUpdateSamCli,
+        },
     ]
 
     versionValidationTestScenarios.forEach(test => {
         it(`handles InvalidSamCliVersionError - ${test.situation}`, async () => {
             const validatorResult: SamCliVersionValidatorResult = {
                 version: '1.2.3',
-                validation: test.versionValidation
+                validation: test.versionValidation,
             }
             const error = new InvalidSamCliVersionError(validatorResult)
 

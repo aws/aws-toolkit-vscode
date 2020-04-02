@@ -79,7 +79,7 @@ export async function generateInputTemplate(config: SamLaunchRequestArgs): Promi
         relativeFunctionHandler: config.handlerName,
         globals,
         properties,
-        runtime: config.runtime
+        runtime: config.runtime,
     })
 }
 
@@ -183,7 +183,7 @@ export async function executeSamBuild({
     manifestPath,
     environmentVariables,
     samProcessInvoker,
-    useContainer
+    useContainer,
 }: ExecuteSamBuildArguments): Promise<string> {
     channelLogger.info('AWS.output.building.sam.application', 'Building SAM Application...')
 
@@ -196,7 +196,7 @@ export async function executeSamBuild({
         invoker: samProcessInvoker,
         manifestPath,
         environmentVariables,
-        useContainer
+        useContainer,
     }
     await new SamCliBuildInvocation(samCliArgs).execute()
 
@@ -233,7 +233,7 @@ export async function invokeLambdaFunction(ctx: ExtContext, config: SamLaunchReq
         invoker: config.samLocalInvokeCommand!!, // ?? new DefaultValidatingSamCliProcessInvoker({})
         dockerNetwork: config.sam?.dockerNetwork,
         debugPort: config.debugPort?.toString(),
-        debuggerPath: config.debuggerPath
+        debuggerPath: config.debuggerPath,
     }
     const command = new SamCliLocalInvokeInvocation(localInvokeArgs)
 
@@ -261,9 +261,9 @@ export async function invokeLambdaFunction(ctx: ExtContext, config: SamLaunchReq
                     result: attachResult,
                     attempts,
                     durationMillis: timer.elapsedTime,
-                    runtime: config.runtime
+                    runtime: config.runtime,
                 })
-            }
+            },
         })
 
         if (attachResults.success) {
@@ -341,7 +341,7 @@ export async function attachDebugger({
     }
 
     return {
-        success: isDebuggerAttached
+        success: isDebuggerAttached,
     }
 }
 
@@ -377,7 +377,7 @@ function recordAttachDebuggerMetric(params: RecordAttachDebuggerMetricContext) {
         runtime: params.runtime as Runtime,
         result: params.result ? 'Succeeded' : 'Failed',
         attempts: params.attempts,
-        duration: params.durationMillis
+        duration: params.durationMillis,
     })
 }
 

@@ -55,7 +55,7 @@ describe('TreeInspector', () => {
         const construct: ConstructTreeEntity = {
             id: testLabel,
             path: treePath,
-            attributes: { 'aws:cdk:cloudformation:type': testType }
+            attributes: { 'aws:cdk:cloudformation:type': testType },
         }
 
         const type = treeInspector.getTypeAttributeOrDefault(construct, '')
@@ -86,7 +86,7 @@ describe('TreeInspector', () => {
         const construct: ConstructTreeEntity = {
             id: 'test-label',
             path: 'a rare path',
-            attributes: treeUtils.generateAttributes()
+            attributes: treeUtils.generateAttributes(),
         }
 
         const props = treeInspector.getProperties(construct)
@@ -97,7 +97,7 @@ describe('TreeInspector', () => {
     it('returns undefined when construct does not have attributes', async () => {
         const construct: ConstructTreeEntity = {
             id: 'no',
-            path: 'attributes'
+            path: 'attributes',
         }
 
         const props = treeInspector.getProperties(construct)
@@ -109,7 +109,7 @@ describe('TreeInspector', () => {
         const construct: ConstructTreeEntity = {
             id: 'no-cloudformation',
             path: 'attributes',
-            attributes: { random: 'stuff' }
+            attributes: { random: 'stuff' },
         }
 
         const props = treeInspector.getProperties(construct)

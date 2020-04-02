@@ -5,6 +5,6 @@
 
 if (!Symbol.asyncIterator) {
     Object.defineProperty(Symbol, 'asyncIterator', {
-        value: Symbol.for('Symbol.asyncIterator')
+        value: Symbol.for('Symbol.asyncIterator'),
     })
 }
