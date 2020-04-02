@@ -166,7 +166,7 @@ class LogStreamFilterActorTest {
         val table = TableView(tableModel)
         val actor = LogStreamFilterActor(projectRule.project, client, table, "abc", "def")
         runBlocking {
-            actor.channel.send(LogStreamActor.Message.LOAD_INITIAL_RANGE(0, Duration.ofMillis(0)))
+            actor.channel.send(LogStreamActor.Message.LOAD_INITIAL_RANGE(LogStreamEntry("@@@", 0), Duration.ofMillis(0)))
             waitForTrue { actor.channel.isClosedForSend }
         }
     }

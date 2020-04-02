@@ -46,6 +46,6 @@ private class ShowLogsAround(
         val project = e.getRequiredData(PlatformDataKeys.PROJECT)
         val window = CloudWatchLogWindow.getInstance(project)
         val selectedObject = treeTable.listTableModel.getItem(treeTable.selectedRow) ?: return
-        window.showLogStream(logGroup, logStream, selectedObject.timestamp, duration)
+        window.showLogStream(logGroup, logStream, selectedObject, duration)
     }
 }

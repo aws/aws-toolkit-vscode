@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamActor
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamEntry
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.OpenCurrentInEditorAction
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.TailLogsAction
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.WrapLogsAction
@@ -37,7 +38,7 @@ class CloudWatchLogStream(
     private val project: Project,
     private val logGroup: String,
     private val logStream: String,
-    private val startTime: Long? = null,
+    private val previousEvent: LogStreamEntry? = null,
     private val duration: Duration? = null
 ) : CoroutineScope by ApplicationThreadPoolScope("CloudWatchLogStream"), Disposable {
     lateinit var content: JPanel
@@ -77,6 +78,9 @@ class CloudWatchLogStream(
     private fun addSearchListener() {
         searchField.textEditor.addPropertyChangeListener {
             // If the text field is emptied, like what the x button does, clear the table and dispose the old one if it exists
+            // This leads to a weird UX where we search if enter is pressed but if the text in the box is deleted we clear the
+            // search state.
+            // TODO can we do better?
             if (searchField.text.isEmpty()) {
                 val oldTable = searchStreamTable
                 searchStreamTable = null
@@ -121,7 +125,8 @@ class CloudWatchLogStream(
         val actionGroup = DefaultActionGroup()
         actionGroup.addAction(object : AnAction(message("explorer.refresh.title"), null, AllIcons.Actions.Refresh), DumbAware {
             override fun actionPerformed(e: AnActionEvent) {
-                launch { refreshTable() }
+                refreshTable()
+                CloudwatchlogsTelemetry.refreshStream(project)
             }
         }, Constraints.FIRST)
         actionGroup.add(OpenCurrentInEditorAction(project, logStream) {
@@ -134,11 +139,10 @@ class CloudWatchLogStream(
     }
 
     private fun refreshTable() = launch {
-        CloudwatchlogsTelemetry.refreshStream(project)
         if (searchField.text.isNotEmpty() && searchStreamTable != null) {
             searchStreamTable?.channel?.send(LogStreamActor.Message.LOAD_INITIAL_FILTER(searchField.text.trim()))
-        } else if (startTime != null && duration != null) {
-            logStreamTable.channel.send(LogStreamActor.Message.LOAD_INITIAL_RANGE(startTime, duration))
+        } else if (previousEvent != null && duration != null) {
+            logStreamTable.channel.send(LogStreamActor.Message.LOAD_INITIAL_RANGE(previousEvent, duration))
         } else {
             logStreamTable.channel.send(LogStreamActor.Message.LOAD_INITIAL())
         }

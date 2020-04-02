@@ -54,12 +54,12 @@ class CloudWatchLogWindow(private val project: Project) : CoroutineScope by Appl
     fun showLogStream(
         logGroup: String,
         logStream: String,
-        startTime: Long? = null,
+        previousEvent: LogStreamEntry? = null,
         duration: Duration? = null
     ) = launch {
         var result = Result.SUCCEEDED
         try {
-            val id = "$logGroup/$logStream/$startTime/$duration"
+            val id = "$logGroup/$logStream/${previousEvent?.timestamp}/${previousEvent?.message}/$duration"
             val existingWindow = toolWindow.find(id)
             if (existingWindow != null) {
                 withContext(edtContext) {
@@ -67,14 +67,16 @@ class CloudWatchLogWindow(private val project: Project) : CoroutineScope by Appl
                 }
                 return@launch
             }
-            val title = if (startTime != null && duration != null) {
-                message("cloudwatch.logs.filtered_log_stream_title", logStream,
-                    DateFormatUtil.getDateTimeFormat().format(startTime - duration.toMillis()),
-                    DateFormatUtil.getDateTimeFormat().format(startTime + duration.toMillis()))
+            val title = if (previousEvent != null && duration != null) {
+                message(
+                    "cloudwatch.logs.filtered_log_stream_title", logStream,
+                    DateFormatUtil.getDateTimeFormat().format(previousEvent.timestamp - duration.toMillis()),
+                    DateFormatUtil.getDateTimeFormat().format(previousEvent.timestamp + duration.toMillis())
+                )
             } else {
                 message("cloudwatch.logs.log_stream_title", logStream)
             }
-            val stream = CloudWatchLogStream(project, logGroup, logStream, startTime, duration)
+            val stream = CloudWatchLogStream(project, logGroup, logStream, previousEvent, duration)
             withContext(edtContext) {
                 toolWindow.addTab(title, stream.content, activate = true, id = id, disposable = stream)
             }

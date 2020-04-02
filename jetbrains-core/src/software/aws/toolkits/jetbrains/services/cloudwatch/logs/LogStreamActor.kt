@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
+import com.intellij.ui.TableUtil
 import com.intellij.ui.table.TableView
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -47,7 +48,7 @@ sealed class LogStreamActor(
 
     sealed class Message {
         class LOAD_INITIAL : Message()
-        class LOAD_INITIAL_RANGE(val startTime: Long, val duration: Duration) : Message()
+        class LOAD_INITIAL_RANGE(val previousEvent: LogStreamEntry, val duration: Duration) : Message()
         class LOAD_INITIAL_FILTER(val queryString: String) : Message()
         class LOAD_FORWARD : Message()
         class LOAD_BACKWARD : Message()
@@ -70,19 +71,35 @@ sealed class LogStreamActor(
                     val items = loadMore(nextBackwardToken, saveBackwardToken = true)
                     withContext(edtContext) { table.listTableModel.items = items + table.listTableModel.items }
                 }
-                is Message.LOAD_INITIAL -> loadInitial()
-                is Message.LOAD_INITIAL_RANGE -> loadInitialRange(message.startTime, message.duration)
-                is Message.LOAD_INITIAL_FILTER -> loadInitialFilter(message.queryString)
+                is Message.LOAD_INITIAL -> {
+                    loadInitial()
+                    // make sure the scroll pane is at the top after loading. Needed for Refresh!
+                    val rect = table.getCellRect(0, 0, true)
+                    withContext(edtContext) {
+                        table.scrollRectToVisible(rect)
+                    }
+                }
+                is Message.LOAD_INITIAL_RANGE -> {
+                    loadInitialRange(message.previousEvent.timestamp, message.duration)
+                    val item = table.listTableModel.items.firstOrNull { it == message.previousEvent }
+                    val index = table.listTableModel.indexOf(item).takeIf { it > 0 } ?: return
+                    withContext(edtContext) {
+                        table.setRowSelectionInterval(index, index)
+                        TableUtil.scrollSelectionToVisible(table)
+                    }
+                }
+                is Message.LOAD_INITIAL_FILTER -> {
+                    loadInitialFilter(message.queryString)
+                }
             }
         }
     }
 
     protected suspend fun loadAndPopulate(loadBlock: suspend () -> List<LogStreamEntry>) {
         try {
+            tableLoading()
             val items = loadBlock()
-            withContext(edtContext) {
-                table.listTableModel.items = items
-            }
+            table.listTableModel.items = items
             table.emptyText.text = emptyText
         } catch (e: ResourceNotFoundException) {
             withContext(edtContext) {
@@ -95,9 +112,7 @@ sealed class LogStreamActor(
                 notifyError(title = tableErrorMessage, project = project)
             }
         } finally {
-            withContext(edtContext) {
-                table.setPaintBusy(false)
-            }
+            tableDoneLoading()
         }
     }
 
@@ -105,6 +120,16 @@ sealed class LogStreamActor(
     protected abstract suspend fun loadInitialRange(startTime: Long, duration: Duration)
     protected abstract suspend fun loadInitialFilter(queryString: String)
     protected abstract suspend fun loadMore(nextToken: String?, saveForwardToken: Boolean = false, saveBackwardToken: Boolean = false): List<LogStreamEntry>
+
+    private suspend fun tableLoading() = withContext(edtContext) {
+        table.setPaintBusy(true)
+        table.emptyText.text = message("loading_resource.loading")
+    }
+
+    private suspend fun tableDoneLoading() = withContext(edtContext) {
+        table.tableViewModel.fireTableDataChanged()
+        table.setPaintBusy(false)
+    }
 
     override fun dispose() {
         channel.close()
@@ -186,16 +211,22 @@ class LogStreamListActor(
         loadAndPopulate { getLogEvents(request, saveForwardToken = true, saveBackwardToken = true) }
     }
 
-    override suspend fun loadInitialRange(startTime: Long, duration: Duration) {
-        val request = GetLogEventsRequest
-            .builder()
-            .logGroupName(logGroup)
-            .logStreamName(logStream)
-            .startFromHead(true)
-            .startTime(startTime - duration.toMillis())
-            .endTime(startTime + duration.toMillis())
-            .build()
-        loadAndPopulate { getLogEvents(request, saveForwardToken = true, saveBackwardToken = true) }
+    override suspend fun loadInitialRange(startTime: Long, duration: Duration) = loadAndPopulate {
+        val events = mutableListOf<LogStreamEntry>()
+        client.getLogEventsPaginator {
+            it.logGroupName(logGroup)
+                .logStreamName(logStream)
+                .startFromHead(true)
+                .startTime(startTime - duration.toMillis())
+                .endTime(startTime + duration.toMillis())
+        }.stream().forEach { response ->
+            if (nextBackwardToken == null) {
+                nextBackwardToken = response.nextBackwardToken()
+            }
+            nextForwardToken = response.nextForwardToken()
+            events.addAll(response.events().mapNotNull { it.toLogStreamEntry() })
+        }
+        return@loadAndPopulate events
     }
 
     override suspend fun loadInitialFilter(queryString: String) {

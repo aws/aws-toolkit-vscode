@@ -47,7 +47,7 @@ class CloudWatchLogGroup(
     lateinit var content: JPanel
 
     private lateinit var tablePanel: SimpleToolWindowPanel
-    private lateinit var groupTable: JBTable
+    private lateinit var groupTable: TableView<LogStream>
     private lateinit var tableModel: ListTableModel<LogStream>
     private lateinit var locationInformation: LocationBreadcrumbs
 
@@ -106,8 +106,9 @@ class CloudWatchLogGroup(
         }
         populateModel()
         withContext(edtContext) {
-            groupTable.emptyText.text = message("cloudwatch.logs.no_log_groups")
+            groupTable.emptyText.text = message("cloudwatch.logs.no_log_streams")
             groupTable.setPaintBusy(false)
+            groupTable.tableViewModel.fireTableDataChanged()
         }
     }
 
@@ -136,13 +137,10 @@ class CloudWatchLogGroup(
         tablePanel.toolbar = ActionManager.getInstance().createActionToolbar("CloudWatchLogStream", actionGroup, false).component
     }
 
-    private suspend fun populateModel() = try {
+    private fun populateModel() = try {
         val streams = client.describeLogStreamsPaginator(DescribeLogStreamsRequest.builder().logGroupName(logGroup).build())
         streams.filterNotNull().firstOrNull()?.logStreams()?.let {
-            withContext(edtContext) {
-                tableModel.items = it
-                groupTable.invalidate()
-            }
+            tableModel.items = it
         }
     } catch (e: Exception) {
         val errorMessage = message("cloudwatch.logs.failed_to_load_streams", logGroup)

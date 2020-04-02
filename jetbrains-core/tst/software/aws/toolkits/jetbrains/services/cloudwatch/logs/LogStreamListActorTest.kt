@@ -22,6 +22,7 @@ import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.amazon.awssdk.services.cloudwatchlogs.model.GetLogEventsRequest
 import software.amazon.awssdk.services.cloudwatchlogs.model.GetLogEventsResponse
 import software.amazon.awssdk.services.cloudwatchlogs.model.OutputLogEvent
+import software.amazon.awssdk.services.cloudwatchlogs.paginators.GetLogEventsIterable
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.utils.waitForModelToBeAtLeast
 import software.aws.toolkits.jetbrains.utils.waitForTrue
@@ -70,13 +71,20 @@ class LogStreamListActorTest {
     @Test
     fun modelIsPopulatedRange() {
         val client = mockClientManagerRule.create<CloudWatchLogsClient>()
-        whenever(client.getLogEvents(Mockito.any<GetLogEventsRequest>()))
-            .thenReturn(GetLogEventsResponse.builder().events(OutputLogEvent.builder().message("message").build()).build())
+        whenever(client.getLogEventsPaginator(Mockito.any<GetLogEventsRequest>()))
+            .thenReturn(object : GetLogEventsIterable(client, null) {
+                override fun iterator() = mutableListOf(
+                    GetLogEventsResponse.builder().events(
+                        OutputLogEvent.builder().message("message").build()
+                    ).build()
+                ).iterator()
+            })
+
         val tableModel = ListTableModel<LogStreamEntry>()
         val table = TableView(tableModel)
         val coroutine = LogStreamListActor(projectRule.project, client, table, "abc", "def")
         runBlocking {
-            coroutine.channel.send(LogStreamActor.Message.LOAD_INITIAL_RANGE(0L, Duration.ofMillis(0)))
+            coroutine.channel.send(LogStreamActor.Message.LOAD_INITIAL_RANGE(LogStreamEntry("@@@", 0), Duration.ofMillis(0)))
             tableModel.waitForModelToBeAtLeast(1)
             waitForTrue { table.emptyText.text == message("cloudwatch.logs.no_events") }
         }
@@ -111,7 +119,7 @@ class LogStreamListActorTest {
         val table = TableView(tableModel)
         val coroutine = LogStreamListActor(projectRule.project, client, table, "abc", "def")
         runBlocking {
-            coroutine.channel.send(LogStreamActor.Message.LOAD_INITIAL_RANGE(0L, Duration.ofMillis(0)))
+            coroutine.channel.send(LogStreamActor.Message.LOAD_INITIAL_RANGE(LogStreamEntry("@@@", 0), Duration.ofMillis(0)))
             waitForTrue { table.emptyText.text == message("cloudwatch.logs.failed_to_load_stream", "def") }
         }
         assertThat(tableModel.items).isEmpty()
@@ -128,7 +136,7 @@ class LogStreamListActorTest {
         val table = TableView(tableModel)
         val coroutine = LogStreamListActor(projectRule.project, client, table, "abc", "def")
         runBlocking {
-            coroutine.channel.send(LogStreamActor.Message.LOAD_INITIAL_RANGE(0L, Duration.ofMillis(0)))
+            coroutine.channel.send(LogStreamActor.Message.LOAD_INITIAL())
             tableModel.waitForModelToBeAtLeast(1)
         }
         assertThat(tableModel.items.size).isOne()
@@ -155,7 +163,7 @@ class LogStreamListActorTest {
         val table = TableView(tableModel)
         val coroutine = LogStreamListActor(projectRule.project, client, table, "abc", "def")
         runBlocking {
-            coroutine.channel.send(LogStreamActor.Message.LOAD_INITIAL_RANGE(0L, Duration.ofMillis(0)))
+            coroutine.channel.send(LogStreamActor.Message.LOAD_INITIAL())
             tableModel.waitForModelToBeAtLeast(1)
         }
         assertThat(tableModel.items.size).isOne()

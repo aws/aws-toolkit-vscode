@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextArea
 import com.intellij.util.text.DateFormatUtil
+import com.intellij.util.text.SyncDateFormat
 import com.intellij.util.ui.ColumnInfo
 import com.intellij.util.ui.ListTableModel
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogStream
@@ -13,6 +14,7 @@ import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamEntry
 import software.aws.toolkits.resources.message
 import java.awt.BorderLayout
 import java.awt.Component
+import java.text.SimpleDateFormat
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JTable
@@ -28,7 +30,7 @@ class LogStreamsStreamColumn : ColumnInfo<LogStream, String>(message("cloudwatch
 }
 
 class LogStreamsDateColumn : ColumnInfo<LogStream, String>(message("cloudwatch.logs.last_event_time")) {
-    private val renderer = ResizingDateColumnRenderer()
+    private val renderer = ResizingDateColumnRenderer(showSeconds = false)
     override fun valueOf(item: LogStream?): String? = item?.lastEventTimestamp()?.toString()
 
     override fun isCellEditable(item: LogStream?): Boolean = false
@@ -44,7 +46,7 @@ class LogGroupTableSorter(model: ListTableModel<LogStream>) : TableRowSorter<Lis
 }
 
 class LogStreamDateColumn : ColumnInfo<LogStreamEntry, String>(message("general.time")) {
-    private val renderer = ResizingDateColumnRenderer()
+    private val renderer = ResizingDateColumnRenderer(showSeconds = true)
     override fun valueOf(item: LogStreamEntry?): String? = item?.timestamp?.toString()
 
     override fun isCellEditable(item: LogStreamEntry?): Boolean = false
@@ -68,6 +70,7 @@ class LogStreamMessageColumn : ColumnInfo<LogStreamEntry, String>(message("gener
 
 private class WrappingLogStreamMessageRenderer : TableCellRenderer {
     var wrap = false
+
     // JBTextArea has a different font from JBLabel (the default in a table) so harvest the font off of it
     private val font = JBLabel().font
 
@@ -95,20 +98,26 @@ private class WrappingLogStreamMessageRenderer : TableCellRenderer {
     }
 }
 
-private class ResizingDateColumnRenderer : TableCellRenderer {
+private class ResizingDateColumnRenderer(showSeconds: Boolean) : TableCellRenderer {
     private val defaultRenderer = DefaultTableCellRenderer()
+    private val formatter: SyncDateFormat = if (showSeconds) {
+        SyncDateFormat(SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS"))
+    } else {
+        DateFormatUtil.getDateTimeFormat()
+    }
+
     override fun getTableCellRendererComponent(table: JTable, value: Any?, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component {
         // This wrapper will let us force the component to be at the top instead of in the middle for linewraps
         val wrapper = JPanel(BorderLayout())
         val defaultComponent = defaultRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column)
         val component = defaultComponent as? JLabel ?: return defaultComponent
         component.text = (value as? String)?.toLongOrNull()?.let {
-            DateFormatUtil.getDateTimeFormat().format(it)
+            formatter.format(it)
         }
         if (component.preferredSize.width > table.columnModel.getColumn(column).preferredWidth) {
-            // add 20 pixels of padding
-            table.columnModel.getColumn(column).preferredWidth = component.preferredSize.width + 20
-            table.columnModel.getColumn(column).maxWidth = component.preferredSize.width + 20
+            // add 3 pixels of padding. No padding makes it go into ... mode cutting off the end
+            table.columnModel.getColumn(column).preferredWidth = component.preferredSize.width + 3
+            table.columnModel.getColumn(column).maxWidth = component.preferredSize.width + 3
         }
         wrapper.add(component, BorderLayout.NORTH)
         // Make sure the background matches for selection

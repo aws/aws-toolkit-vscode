@@ -61,13 +61,16 @@ class LogStreamTable(
             SortOrder.UNSORTED
         )
         logsTable = TableView(model).apply {
-            setPaintBusy(true)
             autoscrolls = true
-            emptyText.text = message("loading_resource.loading")
             tableHeader.reorderingAllowed = false
+            autoResizeMode = JTable.AUTO_RESIZE_LAST_COLUMN
+            setPaintBusy(true)
+            emptyText.text = message("loading_resource.loading")
         }
-        logsTable.autoResizeMode = JTable.AUTO_RESIZE_LAST_COLUMN
 
+        // TODO this also searches the date column which we don't want to do. however,
+        // The converter for TableSpeedSearch takes a string which we can't do much with
+        // unless we want to detect it's a timestamp but it might detect messages too
         TableSpeedSearch(logsTable)
         component = ScrollPaneFactory.createScrollPane(logsTable)
 
