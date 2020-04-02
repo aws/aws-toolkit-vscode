@@ -152,7 +152,7 @@ function configureToolkitLogging() {
     }
 }
 
-describe.skip('SAM Integration Tests', async () => {
+describe('SAM Integration Tests', async () => {
     const samApplicationName = 'testProject'
     let testSuiteRoot: string
 
