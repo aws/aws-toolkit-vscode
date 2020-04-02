@@ -124,6 +124,12 @@ function run(testsRoot, clb): any {
     const testFile = process.env["TEST_FILE"] === 'null' ? undefined : process.env["TEST_FILE"]
     const testFilePath = testFile?.replace(/^src\/test\//, "")?.concat('.js')
 
+    const globalSetupPath = paths.join(testsRoot, 'globalSetup.test.js')
+    if (testFilePath && fs.existsSync(globalSetupPath)) {
+        // XXX: explicitly add globalSetup, other tests depend on it.
+        mocha.addFile(globalSetupPath);
+    }
+
     // Glob test files
     glob(testFilePath ?? "**/**.test.js", { cwd: testsRoot }, (error, files): any => {
         // END 2020-03-24: Amazon addition.
