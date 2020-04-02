@@ -9,6 +9,7 @@ import com.intellij.openapi.module.ModuleTypeManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.projectRoots.impl.ProjectJdkImpl
 import com.intellij.openapi.roots.ModuleRootModificationUtil
+import com.intellij.openapi.util.SystemInfo
 import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.builders.ModuleFixtureBuilder
 import com.intellij.testFramework.fixtures.CodeInsightTestFixture
@@ -26,6 +27,9 @@ import com.jetbrains.python.sdk.PythonSdkAdditionalData
 import com.jetbrains.python.sdk.PythonSdkType
 import com.jetbrains.python.sdk.flavors.CPythonSdkFlavor
 import org.jetbrains.annotations.NotNull
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.attribute.PosixFilePermission
 
 /**
  * JUnit test Rule that will create a Light [Project] and [CodeInsightTestFixture] with Python support. Projects are
@@ -49,6 +53,28 @@ class PythonCodeInsightTestFixtureRule : CodeInsightTestFixtureRule() {
         val module = newFixture.module
 
         val projectRoot = newFixture.tempDirFixture.getFile(".")!!
+
+        if (SystemInfo.isUnix) {
+            val path = Paths.get(projectRoot.path)
+
+            // TODO: Investigate this more. On 2020.1 this folder has strict permissions
+            // on code build (due to root?) that prevents it from mounting into docker for sam
+            Files.setPosixFilePermissions(
+                path,
+                setOf(
+                    PosixFilePermission.OWNER_EXECUTE,
+                    PosixFilePermission.OWNER_WRITE,
+                    PosixFilePermission.OWNER_READ,
+                    PosixFilePermission.GROUP_READ,
+                    PosixFilePermission.GROUP_WRITE,
+                    PosixFilePermission.GROUP_EXECUTE,
+                    PosixFilePermission.OTHERS_READ,
+                    PosixFilePermission.OTHERS_WRITE,
+                    PosixFilePermission.OTHERS_EXECUTE
+                )
+            )
+        }
+
         PsiTestUtil.addContentRoot(module, projectRoot)
 
         ModuleRootModificationUtil.setModuleSdk(module, PyTestSdk("3.6.0"))

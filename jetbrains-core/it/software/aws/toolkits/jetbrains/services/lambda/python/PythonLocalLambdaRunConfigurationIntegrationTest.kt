@@ -29,7 +29,7 @@ import software.aws.toolkits.jetbrains.utils.rules.addBreakpoint
 import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
 
 @RunWith(Parameterized::class)
-class PythonLocalLamdaRunConfigurationIntegrationTest(private val runtime: Runtime) {
+class PythonLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runtime) {
     companion object {
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
