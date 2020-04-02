@@ -38,20 +38,25 @@ const AWS_SAM_DEBUG_TARGET_TYPES = [TEMPLATE_TARGET_TYPE, CODE_TARGET_TYPE]
 
 /**
  * `DebugConfigurationProvider` dynamically defines these aspects of a VSCode debugger:
- *    - Initial debug configurations (for newly-created launch.json)
- *    - To resolve a launch configuration before it is used to start a new
- *      debug session.
- *      Two "resolve" methods exist:
- *      - resolveDebugConfiguration: called before variables are substituted in
- *        the launch configuration.
- *      - resolveDebugConfigurationWithSubstitutedVariables: called after all
- *        variables have been substituted.
+ * - Initial debug configurations (for newly-created launch.json)
+ * - To resolve a launch configuration before it is used to start a new
+ *   debug session.
+ *   Two "resolve" methods exist:
+ *   - resolveDebugConfiguration: called before variables are substituted in
+ *     the launch configuration.
+ *   - resolveDebugConfigurationWithSubstitutedVariables: called after all
+ *     variables have been substituted.
  *
  * https://code.visualstudio.com/api/extension-guides/debugger-extension#using-a-debugconfigurationprovider
  */
 export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider {
     public constructor(readonly ctx: ExtContext) {}
 
+    /**
+     * @param folder  Workspace folder
+     * @param token  Cancellation token
+     * @param returnConfig  Return the resolve config (used in tests)
+     */
     public async provideDebugConfigurations(
         folder: vscode.WorkspaceFolder | undefined,
         token?: vscode.CancellationToken
@@ -96,11 +101,17 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
      * - "Launch" means `sam build` followed by `sam local invoke`.
      * - If launch.json is missing, this function attempts to generate a
      *   debug-config dynamically.
+     *
+     * @param folder  Workspace folder
+     * @param config User-provided config (from launch.json)
+     * @param token  Cancellation token
+     * @param returnConfig  Return the resolved config (used in tests)
      */
     public async resolveDebugConfiguration(
         folder: vscode.WorkspaceFolder | undefined,
         config: AwsSamDebuggerConfiguration,
-        token?: vscode.CancellationToken
+        token?: vscode.CancellationToken,
+        returnConfig?: boolean
     ): Promise<SamLaunchRequestArgs | undefined> {
         if (token?.isCancellationRequested) {
             return undefined
@@ -224,7 +235,10 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         // TODO: In the future we may consider NOT launching, and instead do one of the following:
         //  - return a config here for vscode to handle
         //  - return a config here for SamDebugSession.ts to handle (custom debug adapter)
-        return undefined
+        if (returnConfig === false) {
+            return undefined
+        }
+        return launchConfig
     }
 
     /**

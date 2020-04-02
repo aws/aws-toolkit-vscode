@@ -71,7 +71,7 @@ export function makeSampleYamlResource(
         Properties:
             Handler: handler
             CodeUri: codeuri
-            Runtime: ${subValues.runtime ? subValues.runtime : 'nodejs12.x'}
+            Runtime: ${subValues.runtime ? subValues.runtime : 'runtime'}
             Timeout: 12345
             Environment:
                 Variables:
