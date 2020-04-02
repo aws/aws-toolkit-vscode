@@ -26,6 +26,9 @@ import com.intellij.openapi.util.Key
 import com.intellij.openapi.wm.ToolWindowId
 import com.intellij.openapi.wm.ToolWindowManager
 import org.slf4j.event.Level
+import software.aws.toolkits.core.utils.debug
+import software.aws.toolkits.core.utils.error
+import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
@@ -94,9 +97,11 @@ abstract class PseCliAction(val project: Project, val actionName: String, privat
                         } else {
                             val error = (it as? ExecutableInstance.BadExecutable)?.validationError ?: message("general.unknown_error")
                             val errorMessage = message("cloud_debug.step.clouddebug.install.fail", error)
+                            val exception = Exception(errorMessage)
+                            LOG.error(exception) { "Setting cloud-debug executable failed" }
                             notifyError(message("aws.notification.title"), errorMessage, project)
                             produceTelemetry(startTime, Result.FAILED, null)
-                            messageEmitter.finishExceptionally(Exception(errorMessage))
+                            messageEmitter.finishExceptionally(exception)
                             null
                         }
                     }.toCompletableFuture().join() ?: run {
@@ -124,6 +129,8 @@ abstract class PseCliAction(val project: Project, val actionName: String, privat
                                 @Suppress("DEPRECATION")
                                 messageEmitter.emitMessage(text, level == Level.ERROR)
                                 indicator.text2 = text
+                                // output to the log for diagnostic and integrations tests
+                                LOG.debug { event.text.trim() }
                             }
                         }
 
@@ -135,6 +142,8 @@ abstract class PseCliAction(val project: Project, val actionName: String, privat
                                 messageEmitter.emitMessage("Error details:\n", true)
                                 cliOutput.get()?.let { CliOutputParser.parseErrorOutput(it) }?.errors?.forEach {
                                     messageEmitter.emitMessage("\t- $it\n", true)
+                                    // output to the log for diagnostic and integrations tests
+                                    LOG.debug { "Error details:\n $it" }
                                 }
                                 FailureResultImpl()
                             }
@@ -190,5 +199,9 @@ abstract class PseCliAction(val project: Project, val actionName: String, privat
                 }
             }
         )
+    }
+
+    companion object {
+        val LOG = getLogger<PseCliAction>()
     }
 }

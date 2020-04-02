@@ -200,7 +200,7 @@ abstract class CliBasedStep : Step() {
                 logEvent.level?.let { previousLevel.set(it) }
             }
             // output to the log for diagnostic and integrations tests
-            LOG.info { event.text.trim() }
+            LOG.debug { event.text.trim() }
         }
     }
 

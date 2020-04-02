@@ -141,7 +141,8 @@ abstract class LambdaBuilder {
             val processHandler = ProcessHandlerFactory.getInstance().createColoredProcessHandler(commandLine)
             processHandler.addProcessListener(object : ProcessAdapter() {
                 override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
-                    // output to the log for diagnostic and integrations tests
+                    // TODO find a way to show this in the UI
+                    // log output is for diagnostic and integrations tests as well
                     LOG.info { event.text.trim() }
                 }
 
