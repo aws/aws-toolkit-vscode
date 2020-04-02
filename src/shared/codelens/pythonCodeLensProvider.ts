@@ -177,22 +177,11 @@ export async function makePythonDebugConfig(
 
     const relativeOriginalFunctionHandler = config.handlerName
     const relativeFunctionHandler = handlerName
-    // const relativeFunctionHandler = getRelativeFunctionHandler({
-    //     handlerName,
-    //     runtime,
-    //     handlerRelativePath
-    // })
-    // const relativeOriginalFunctionHandler = getRelativeFunctionHandler({
-    //     handlerName,
-    //     runtime,
-    //     handlerRelativePath
-    // })
     const lambdaInfo = await getLambdaInfoFromExistingTemplate({
         workspaceUri: config.workspaceFolder.uri,
         relativeOriginalFunctionHandler,
     })
     const inputTemplatePath = await makeInputTemplate({
-        // Direct ("code") invoke-target.
         baseBuildDir,
         codeDir: config.codeRoot,
         relativeFunctionHandler,

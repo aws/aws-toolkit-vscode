@@ -16,7 +16,6 @@ import { getLogger } from '../logger'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from '../sam/cli/samCliBuild'
 import { SamCliProcessInvoker } from '../sam/cli/samCliInvokerUtils'
 import { SamCliLocalInvokeInvocation, SamCliLocalInvokeInvocationArguments } from '../sam/cli/samCliLocalInvoke'
-// import { TemplateTargetProperties } from '../sam/debugger/awsSamDebugConfiguration'
 import { SamLaunchRequestArgs } from '../sam/debugger/samDebugSession'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { recordSamAttachDebugger, Runtime } from '../telemetry/telemetry'
@@ -223,9 +222,6 @@ export async function invokeLambdaFunction(ctx: ExtContext, config: SamLaunchReq
     await writeFile(environmentVariablePath, JSON.stringify(config.lambda?.environmentVariables ?? {}))
 
     const localInvokeArgs: SamCliLocalInvokeInvocationArguments = {
-        // templateResourceName: (config.invokeTarget as TemplateTargetProperties)?.samTemplateResource
-        //     ? (config.invokeTarget as TemplateTargetProperties).samTemplateResource
-        //     : TEMPLATE_RESOURCE_NAME,
         templateResourceName: TEMPLATE_RESOURCE_NAME,
         templatePath: config.samTemplatePath,
         eventPath,
