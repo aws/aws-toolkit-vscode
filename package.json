@@ -337,7 +337,7 @@
                             "lambda": {
                                 "runtime": "${2:Lambda Runtime}",
                                 "event": {
-                                    "json": []
+                                    "json": {}
                                 }
                             }
                         }
