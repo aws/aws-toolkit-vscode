@@ -36,10 +36,11 @@ describe('AwsSamDebugConfigurationProvider', async () => {
     const resourceName = 'myResource'
 
     beforeEach(async () => {
-        const fakeContext = new FakeExtensionContext()
+        const fakeContext = await FakeExtensionContext.getNew()
+
         tempFolder = await makeTemporaryToolkitFolder()
         tempFile = vscode.Uri.file(path.join(tempFolder, 'test.yaml'))
-        registry = new CloudFormationTemplateRegistry()
+        registry = CloudFormationTemplateRegistry.getRegistry()
         debugConfigProvider = new SamDebugConfigProvider(fakeContext)
         fakeWorkspaceFolder = {
             uri: vscode.Uri.file(tempFolder),
@@ -57,17 +58,14 @@ describe('AwsSamDebugConfigurationProvider', async () => {
     })
 
     describe('provideDebugConfig', async () => {
-        it('returns undefined if no workspace folder is provided', async () => {
-            const provided = await debugConfigProvider.provideDebugConfigurations(undefined)
-            assert.strictEqual(provided, undefined)
+        it('failure modes', async () => {
+            // No workspace folder:
+            assert.deepStrictEqual(await debugConfigProvider.provideDebugConfigurations(undefined), [])
+            // Workspace with no templates:
+            assert.deepStrictEqual(await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder), [])
         })
 
-        it('returns a blank array if no templates are in the workspace', async () => {
-            const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
-            assert.deepStrictEqual(provided, [])
-        })
-
-        it('returns an array with a single item if a template with one resource is in the workspace', async () => {
+        it('returns one item if a template with one resource is in the workspace', async () => {
             await strToYamlFile(makeSampleSamTemplateYaml(true), tempFile.fsPath)
             await registry.addTemplateToRegistry(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
@@ -76,7 +74,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             assert.strictEqual(provided![0].name, 'TestResource')
         })
 
-        it('returns an array with multiple items if a template with more than one resource is in the workspace', async () => {
+        it('returns multiple items if a template with multiple resources is in the workspace', async () => {
             const resources = ['resource1', 'resource2']
             const bigYamlStr = `${makeSampleSamTemplateYaml(true, {
                 resourceName: resources[0],

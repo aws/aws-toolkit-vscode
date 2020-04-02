@@ -15,6 +15,7 @@ import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetrySer
 import { FakeTelemetryPublisher } from './fake/fakeTelemetryService'
 import { FakeChannelLogger } from './shared/fakeChannelLogger'
 import { ChannelLogger } from '../shared/utilities/vsCodeUtils'
+import { ExtensionDisposableFiles } from '../shared/utilities/disposableFiles'
 
 export interface FakeMementoStorage {
     [key: string]: any
@@ -63,6 +64,12 @@ export class FakeExtensionContext implements ExtContext {
 
     public asAbsolutePath(relativePath: string): string {
         return relativePath
+    }
+
+    static async getNew(): Promise<FakeExtensionContext> {
+        const ctx = new FakeExtensionContext()
+        await ExtensionDisposableFiles.initialize(ctx)
+        return ctx
     }
 }
 
