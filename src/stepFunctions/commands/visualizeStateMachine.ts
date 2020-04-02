@@ -286,7 +286,7 @@ class aslVisualization {
             <link rel="stylesheet" href='${vsCodeCustomStyling}'>
             <script src='${graphStateMachineLibrary}'></script>
         </head>
-    
+
         <body>
             <div id="svgcontainer" class="workflowgraph">
                 <svg></svg>
@@ -320,7 +320,7 @@ class aslVisualization {
                     </svg>
                 </button>
             </div>
-    
+
             <script src='${webviewBodyScript}'></script>
         </body>
     </html>`
