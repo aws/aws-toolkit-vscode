@@ -11,6 +11,7 @@ object AwsToolkit {
 
     const val PLUGIN_NAME = "AWS Toolkit For JetBrains"
 
+    // Replace with PluginManagerCore FIX_WHEN_MIN_IS_193
     val PLUGIN_VERSION: String by lazy {
         PluginManager.getPlugin(PluginId.getId(PLUGIN_ID))?.version ?: "Unknown"
     }
