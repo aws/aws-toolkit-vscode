@@ -7,11 +7,7 @@ import { access } from 'fs-extra'
 import * as path from 'path'
 import * as os from 'os'
 import * as vscode from 'vscode'
-import {
-    DOTNET_CORE_DEBUGGER_PATH,
-    DotNetCoreDebugConfiguration,
-    assertTargetKind,
-} from '../../lambda/local/debugConfiguration'
+import { DOTNET_CORE_DEBUGGER_PATH, DotNetCoreDebugConfiguration } from '../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { DefaultDockerClient, DockerClient } from '../clients/dockerClient'
 import { CloudFormation } from '../cloudformation/cloudformation'
@@ -102,17 +98,14 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
     const codeUri = getCodeUri(resource, vscode.Uri.parse(config.samTemplatePath!!))
     const handlerName = config.handlerName
 
-    if (!config.samTemplatePath) {
-        assertTargetKind(config, 'code')
-        config.samTemplatePath = await makeInputTemplate({
-            baseBuildDir,
-            codeDir: codeUri,
-            relativeFunctionHandler: handlerName,
-            runtime: config.runtime,
-            globals: template.Globals,
-            properties: resource.Properties,
-        })
-    }
+    config.samTemplatePath = await makeInputTemplate({
+        baseBuildDir,
+        codeDir: codeUri,
+        relativeFunctionHandler: handlerName,
+        runtime: config.runtime,
+        globals: template.Globals,
+        properties: resource.Properties,
+    })
 
     config = {
         ...config,
@@ -149,7 +142,7 @@ export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchReque
         const buildArgs: ExecuteSamBuildArguments = {
             baseBuildDir: config.baseBuildDir!!,
             channelLogger: ctx.chanLogger,
-            codeDir: config.codeRoot,
+            codeDir: path.dirname(config.samTemplatePath),
             inputTemplatePath: config.samTemplatePath,
             samProcessInvoker: processInvoker,
             useContainer: config.sam?.containerBuild,

@@ -275,8 +275,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             config,
             !config.noDebug,
             config.runtime,
-            config.handlerName,
-            config.documentUri
+            config.handlerName
         )
         await pythonDebug.invokePythonLambda(this.ctx, launchConfig)
         return launchConfig
