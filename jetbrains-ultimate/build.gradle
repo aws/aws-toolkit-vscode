@@ -20,7 +20,7 @@ intellij {
 }
 
 test {
-    systemProperty("log.dir", "${org.jetbrains.intellij.Utils.systemDir(intellij.sandboxDirectory, true)}/logs")
+    systemProperty("log.dir", "${org.jetbrains.intellij.Utils.systemDir(project.intellij.sandboxDirectory, true)}/logs")
 }
 
 runIde {

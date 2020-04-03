@@ -172,6 +172,10 @@ subprojects {
             excludes = ["software.aws.toolkits.ktlint.*"]
         }
 
+        project.plugins.withId("org.jetbrains.intellij") {
+            systemProperty("log.dir", "${org.jetbrains.intellij.Utils.systemDir(project.intellij.sandboxDirectory, true)}/logs")
+        }
+
         mustRunAfter tasks.test
     }
 

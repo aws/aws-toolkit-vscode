@@ -15,6 +15,9 @@
         </layout>
     </appender>
 
+    <logger name="software.aws.toolkits">
+        <level value="debug"/>
+    </logger>
     <root>
         <priority value="info"/>
         <appender-ref ref="console"/>
