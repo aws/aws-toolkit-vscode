@@ -37,6 +37,8 @@ import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CloudwatchlogsTelemetry
+import java.awt.event.KeyAdapter
+import java.awt.event.KeyEvent
 import java.awt.event.MouseEvent
 import javax.swing.JPanel
 
@@ -70,6 +72,7 @@ class CloudWatchLogGroup(
         TableSpeedSearch(groupTable)
 
         addTableMouseListener(groupTable)
+        addKeyListener(groupTable)
         val scroll = ScrollPaneFactory.createScrollPane(groupTable)
         tablePanel = SimpleToolWindowPanel(false, true)
         tablePanel.setContent(scroll)
@@ -87,12 +90,24 @@ class CloudWatchLogGroup(
         launch { refreshLogStreams() }
     }
 
+    private fun addKeyListener(table: JBTable) {
+        table.addKeyListener(object : KeyAdapter() {
+            override fun keyTyped(e: KeyEvent) {
+                val logStream = table.getSelectedRowLogStream() ?: return
+                if (!e.isConsumed && e.keyCode == KeyEvent.VK_ENTER) {
+                    e.consume()
+                    val window = CloudWatchLogWindow.getInstance(project)
+                    window.showLogStream(logGroup, logStream)
+                }
+            }
+        })
+    }
+
     private fun addTableMouseListener(table: JBTable) {
         object : DoubleClickListener() {
             override fun onDoubleClick(e: MouseEvent?): Boolean {
                 e ?: return false
-                val row = table.selectedRow.takeIf { it >= 0 } ?: return false
-                val logStream = table.getValueAt(row, 0) as? String ?: return false
+                val logStream = table.getSelectedRowLogStream() ?: return false
                 val window = CloudWatchLogWindow.getInstance(project)
                 window.showLogStream(logGroup, logStream)
                 return true
@@ -146,6 +161,11 @@ class CloudWatchLogGroup(
         val errorMessage = message("cloudwatch.logs.failed_to_load_streams", logGroup)
         LOG.error(e) { errorMessage }
         notifyError(title = errorMessage, project = project)
+    }
+
+    private fun JBTable.getSelectedRowLogStream(): String? {
+        val row = selectedRow.takeIf { it >= 0 } ?: return null
+        return getValueAt(row, 0) as? String
     }
 
     override fun dispose() {}

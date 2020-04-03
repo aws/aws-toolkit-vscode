@@ -3,8 +3,10 @@
 
 package software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor
 
+import com.intellij.ui.SimpleColoredComponent
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextArea
+import com.intellij.ui.speedSearch.SpeedSearchUtil
 import com.intellij.util.text.DateFormatUtil
 import com.intellij.util.text.SyncDateFormat
 import com.intellij.util.ui.ColumnInfo
@@ -24,9 +26,25 @@ import javax.swing.table.TableCellRenderer
 import javax.swing.table.TableRowSorter
 
 class LogStreamsStreamColumn : ColumnInfo<LogStream, String>(message("cloudwatch.logs.log_streams")) {
+    private val renderer = LogStreamsStreamColumnRenderer()
     override fun valueOf(item: LogStream?): String? = item?.logStreamName()
 
     override fun isCellEditable(item: LogStream?): Boolean = false
+    override fun getRenderer(item: LogStream?): TableCellRenderer? = renderer
+}
+
+class LogStreamsStreamColumnRenderer() : TableCellRenderer {
+    override fun getTableCellRendererComponent(table: JTable?, value: Any?, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component {
+        val component = SimpleColoredComponent()
+        component.append((value as? String)?.trim() ?: "")
+        if (table == null) {
+            return component
+        }
+        component.setSelectionHighlighting(table, isSelected)
+        SpeedSearchUtil.applySpeedSearchHighlighting(table, component, true, isSelected)
+
+        return component
+    }
 }
 
 class LogStreamsDateColumn : ColumnInfo<LogStream, String>(message("cloudwatch.logs.last_event_time")) {
@@ -74,21 +92,17 @@ private class WrappingLogStreamMessageRenderer : TableCellRenderer {
     // JBTextArea has a different font from JBLabel (the default in a table) so harvest the font off of it
     private val font = JBLabel().font
 
-    override fun getTableCellRendererComponent(table: JTable, value: Any?, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component {
+    override fun getTableCellRendererComponent(table: JTable?, value: Any?, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component {
         val component = JBTextArea()
-
-        if (isSelected) {
-            component.foreground = table.selectionForeground
-            component.background = table.selectionBackground
-        } else {
-            component.foreground = table.foreground
-            component.background = table.background
+        if (table == null) {
+            return component
         }
 
         component.wrapStyleWord = wrap
         component.lineWrap = wrap
         component.text = (value as? String)?.trim()
         component.font = font
+        component.setSelectionHighlighting(table, isSelected)
 
         component.setSize(table.columnModel.getColumn(column).width, component.preferredSize.height)
         if (table.getRowHeight(row) != component.preferredSize.height) {
@@ -106,10 +120,13 @@ private class ResizingDateColumnRenderer(showSeconds: Boolean) : TableCellRender
         DateFormatUtil.getDateTimeFormat()
     }
 
-    override fun getTableCellRendererComponent(table: JTable, value: Any?, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component {
+    override fun getTableCellRendererComponent(table: JTable?, value: Any?, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component {
         // This wrapper will let us force the component to be at the top instead of in the middle for linewraps
         val wrapper = JPanel(BorderLayout())
         val defaultComponent = defaultRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column)
+        if (table == null) {
+            return defaultComponent
+        }
         val component = defaultComponent as? JLabel ?: return defaultComponent
         component.text = (value as? String)?.toLongOrNull()?.let {
             formatter.format(it)
@@ -126,5 +143,15 @@ private class ResizingDateColumnRenderer(showSeconds: Boolean) : TableCellRender
         wrapper.border = component.border
         component.border = null
         return wrapper
+    }
+}
+
+private fun Component.setSelectionHighlighting(table: JTable, isSelected: Boolean) {
+    if (isSelected) {
+        foreground = table.selectionForeground
+        background = table.selectionBackground
+    } else {
+        foreground = table.foreground
+        background = table.background
     }
 }
