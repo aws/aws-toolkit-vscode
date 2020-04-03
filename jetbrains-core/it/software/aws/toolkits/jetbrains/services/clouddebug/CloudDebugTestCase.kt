@@ -91,7 +91,7 @@ abstract class CloudDebugTestCase(private val taskDefName: String) {
     private fun createService(): Service {
         val cfnOutputs = cfnRule.outputs
         val service = ecsRule.createService {
-            it.desiredCount(1)
+            it.desiredCount(0)
             it.taskDefinition(taskDefName)
             it.cluster("CloudDebugTestECSCluster")
             it.launchType(LaunchType.FARGATE)
