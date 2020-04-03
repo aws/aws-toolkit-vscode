@@ -121,9 +121,9 @@ class CloudWatchLogGroup(
         }
         populateModel()
         withContext(edtContext) {
+            groupTable.tableViewModel.fireTableDataChanged()
             groupTable.emptyText.text = message("cloudwatch.logs.no_log_streams")
             groupTable.setPaintBusy(false)
-            groupTable.tableViewModel.fireTableDataChanged()
         }
     }
 
@@ -154,9 +154,7 @@ class CloudWatchLogGroup(
 
     private fun populateModel() = try {
         val streams = client.describeLogStreamsPaginator(DescribeLogStreamsRequest.builder().logGroupName(logGroup).build())
-        streams.filterNotNull().firstOrNull()?.logStreams()?.let {
-            tableModel.items = it
-        }
+        tableModel.items = streams.asSequence().flatMap { it.logStreams().asSequence() }.toList()
     } catch (e: Exception) {
         val errorMessage = message("cloudwatch.logs.failed_to_load_streams", logGroup)
         LOG.error(e) { errorMessage }
