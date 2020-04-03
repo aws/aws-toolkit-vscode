@@ -37,6 +37,10 @@ class MockCredentialsManager : CredentialManager() {
         return credentialIdentifier
     }
 
+    fun removeCredentials(credentialIdentifier: ToolkitCredentialsIdentifier) {
+        removeProvider(credentialIdentifier)
+    }
+
     override fun factoryMapping(): Map<String, CredentialProviderFactory> = mapOf(MockCredentialProviderFactory.id to MockCredentialProviderFactory)
 
     companion object {
