@@ -60,9 +60,8 @@ if (!tty.getWindowSize) {
 // 2020-02-05: Amazon addition.
 export function defaultMochaOptions(useColors: boolean = true): MochaOptions {
     const outputFile = resolve(process.env["TEST_REPORT_DIR"] || ".test-reports", "report.xml")
-    return {
+    const o: MochaOptions = {
         ui: "bdd",
-        useColors: useColors,
         reporter: "mocha-multi-reporters",
         reporterOptions: {
             reporterEnabled: "mocha-junit-reporter, spec",
@@ -71,6 +70,8 @@ export function defaultMochaOptions(useColors: boolean = true): MochaOptions {
             }
         }
     }
+    ;(o as any).color = useColors
+    return o
 }
 
 let mocha = new Mocha(defaultMochaOptions());
@@ -122,7 +123,13 @@ function run(testsRoot, clb): any {
     // VSCode refuses to unset this value, so it gets set for each task and null is converted to a string
     const testFile = process.env["TEST_FILE"] === 'null' ? undefined : process.env["TEST_FILE"]
     const testFilePath = testFile?.replace(/^src\/test\//, "")?.concat('.js')
-    
+
+    const globalSetupPath = paths.join(testsRoot, 'globalSetup.test.js')
+    if (testFilePath && fs.existsSync(globalSetupPath)) {
+        // XXX: explicitly add globalSetup, other tests depend on it.
+        mocha.addFile(globalSetupPath);
+    }
+
     // Glob test files
     glob(testFilePath ?? "**/**.test.js", { cwd: testsRoot }, (error, files): any => {
         // END 2020-03-24: Amazon addition.

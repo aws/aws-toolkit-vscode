@@ -5,6 +5,7 @@
 
 import { _Blob } from 'aws-sdk/clients/lambda'
 import { getLogger, Logger } from '../../shared/logger'
+import * as telemetry from '../../shared/telemetry/telemetry'
 import { TelemetryService } from '../../shared/telemetry/telemetryService'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 
@@ -23,7 +24,7 @@ export interface Window {
     showInformationMessage(message: string): Thenable<string | undefined>
 }
 
-export function submitFeedbackListener(panel: FeedbackPanel, window: Window, telemetry: TelemetryService) {
+export function submitFeedbackListener(panel: FeedbackPanel, window: Window, telemetryService: TelemetryService) {
     const logger: Logger = getLogger()
 
     return async (message: FeedbackMessage) => {
@@ -32,7 +33,7 @@ export function submitFeedbackListener(panel: FeedbackPanel, window: Window, tel
                 logger.info(`Submitting ${message.sentiment} feedback`)
 
                 try {
-                    await telemetry.postFeedback({
+                    await telemetryService.postFeedback({
                         comment: message.comment,
                         sentiment: message.sentiment,
                     })
@@ -41,10 +42,14 @@ export function submitFeedbackListener(panel: FeedbackPanel, window: Window, tel
                     logger.error(`Failed to submit ${message.sentiment} feedback: ${errorMessage}`)
                     panel.postMessage({ statusCode: 'Failure', error: errorMessage })
 
+                    telemetry.recordFeedbackResult({ result: 'Failed' })
+
                     return
                 }
 
                 logger.info(`Successfully submitted ${message.sentiment} feedback`)
+
+                telemetry.recordFeedbackResult({ result: 'Succeeded' })
 
                 panel.dispose()
 
