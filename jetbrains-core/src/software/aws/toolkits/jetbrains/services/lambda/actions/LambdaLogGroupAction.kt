@@ -1,4 +1,4 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.lambda.actions
@@ -31,7 +31,7 @@ class LambdaLogGroupAction :
                 val window = CloudWatchLogWindow.getInstance(project)
                 window.showLogGroup(logGroup)
             } else {
-                notifyError(message("lambda.logs.does_not_exist"))
+                notifyError(message("lambda.logs.does_not_exist"), selected.functionName())
             }
         }
     }

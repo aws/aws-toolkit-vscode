@@ -1,4 +1,4 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.ecs
@@ -21,6 +21,7 @@ import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWin
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.checkIfLogStreamExists
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
 import software.aws.toolkits.jetbrains.utils.notifyError
+import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 
 class ContainerActions(
@@ -83,18 +84,27 @@ class ContainerLogsAction(
 
         val window = CloudWatchLogWindow.getInstance(project)
 
-        AwsResourceCache.getInstance(project).getResource(EcsResources.listTaskIds(container.service.clusterArn(), container.service.serviceArn())).thenAccept {
-            val taskId = it.firstOrNull()
-            if (taskId == null) {
-                notifyError(message("ecs.service.logs.no_running_tasks"))
-                return@thenAccept
+        AwsResourceCache.getInstance(project)
+            .getResource(EcsResources.listTaskIds(container.service.clusterArn(), container.service.serviceArn()))
+            .thenAccept { tasks ->
+                when {
+                    tasks.isEmpty() -> notifyInfo(message("ecs.service.logs.no_running_tasks"))
+                    tasks.size == 1 && showSingleStream(
+                        window,
+                        logGroup,
+                        "$logPrefix/${container.containerDefinition.name()}/${tasks.first()}"
+                    ) -> return@thenAccept
+                }
+                window.showLogGroup(logGroup)
             }
-            val logStream = "$logPrefix/${container.containerDefinition.name()}/$taskId"
-            if (!project.awsClient<CloudWatchLogsClient>().checkIfLogStreamExists(logGroup, logStream)) {
-                notifyError(message("ecs.service.logs.no_log_stream"))
-                return@thenAccept
-            }
-            window.showLogStream(logGroup, logStream)
+    }
+
+    private fun showSingleStream(window: CloudWatchLogWindow, logGroup: String, logStream: String): Boolean {
+        if (!project.awsClient<CloudWatchLogsClient>().checkIfLogStreamExists(logGroup, logStream)) {
+            notifyInfo(message("ecs.service.logs.no_log_stream"))
+            return false
         }
+        window.showLogStream(logGroup, logStream)
+        return true
     }
 }
