@@ -233,7 +233,7 @@ class CredentialManagerTest {
         override fun createAwsCredentialProvider(
             providerId: ToolkitCredentialsIdentifier,
             region: AwsRegion,
-            sdkClient: SdkHttpClient
+            sdkHttpClientSupplier: () -> SdkHttpClient
         ): AwsCredentialsProvider = credentialsMapping.getValue(providerId.id).getValue(region)
 
         private fun createCredentialIdentifier(providerId: String): TestCredentialProviderIdentifier = TestCredentialProviderIdentifier(providerId, id)

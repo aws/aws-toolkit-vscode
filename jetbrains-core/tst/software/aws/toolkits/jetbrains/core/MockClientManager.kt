@@ -15,7 +15,7 @@ import software.aws.toolkits.core.utils.delegateMock
 import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
 import kotlin.reflect.KClass
 
-class MockClientManager(project: Project) : AwsClientManager(project, AwsSdkClient.getInstance()) {
+class MockClientManager(project: Project) : AwsClientManager(project) {
     private data class Key(
         val clazz: KClass<out SdkClient>,
         val region: AwsRegion? = null,

@@ -27,7 +27,7 @@ import kotlin.reflect.KClass
 /**
  * An SPI for caching of AWS clients inside of a toolkit
  */
-abstract class ToolkitClientManager(private val sdkHttpClient: SdkHttpClient) {
+abstract class ToolkitClientManager {
     data class AwsClientKey(
         val credentialProviderId: String,
         val region: AwsRegion,
@@ -36,6 +36,7 @@ abstract class ToolkitClientManager(private val sdkHttpClient: SdkHttpClient) {
 
     private val cachedClients = ConcurrentHashMap<AwsClientKey, SdkClient>()
 
+    protected abstract val sdkHttpClient: SdkHttpClient
     protected abstract val userAgent: String
 
     inline fun <reified T : SdkClient> getClient(

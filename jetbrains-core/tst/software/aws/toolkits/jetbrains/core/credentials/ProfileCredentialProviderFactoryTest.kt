@@ -182,11 +182,7 @@ class ProfileCredentialProviderFactoryTest {
 
         val providerFactory = createProviderFactory()
         val validProfile = findCredentialIdentifier(BAR_PROFILE_NAME)
-        val credentialsProvider = providerFactory.createAwsCredentialProvider(
-            validProfile,
-            MockRegionProvider.getInstance().defaultRegion(),
-            mockSdkHttpClient
-        ).resolveCredentials()
+        val credentialsProvider = providerFactory.createProvider(validProfile).resolveCredentials()
 
         assertThat(credentialsProvider).isInstanceOfSatisfying(AwsBasicCredentials::class.java) {
             assertThat(it.accessKeyId()).isEqualTo("BarAccessKey")
@@ -200,11 +196,7 @@ class ProfileCredentialProviderFactoryTest {
 
         val providerFactory = createProviderFactory()
         val validProfile = findCredentialIdentifier(FOO_PROFILE_NAME)
-        val credentialsProvider = providerFactory.createAwsCredentialProvider(
-            validProfile,
-            MockRegionProvider.getInstance().defaultRegion(),
-            mockSdkHttpClient
-        ).resolveCredentials()
+        val credentialsProvider = providerFactory.createProvider(validProfile).resolveCredentials()
 
         assertThat(credentialsProvider).isInstanceOfSatisfying(AwsSessionCredentials::class.java) {
             assertThat(it.accessKeyId()).isEqualTo("FooAccessKey")
@@ -244,11 +236,7 @@ class ProfileCredentialProviderFactoryTest {
         val providerFactory = createProviderFactory()
         println(credentialChangeEvent.allValues)
         val validProfile = findCredentialIdentifier("role")
-        val credentialsProvider = providerFactory.createAwsCredentialProvider(
-            validProfile,
-            MockRegionProvider.getInstance().defaultRegion(),
-            mockSdkHttpClient
-        ).resolveCredentials()
+        val credentialsProvider = providerFactory.createProvider(validProfile).resolveCredentials()
 
         assertThat(credentialsProvider).isInstanceOfSatisfying(AwsSessionCredentials::class.java) {
             assertThat(it.accessKeyId()).isEqualTo("AccessKey")
@@ -290,11 +278,7 @@ class ProfileCredentialProviderFactoryTest {
 
         val providerFactory = createProviderFactory()
         val validProfile = findCredentialIdentifier("role")
-        val credentialsProvider = providerFactory.createAwsCredentialProvider(
-            validProfile,
-            MockRegionProvider.getInstance().defaultRegion(),
-            mockSdkHttpClient
-        ).resolveCredentials()
+        val credentialsProvider = providerFactory.createProvider(validProfile).resolveCredentials()
 
         assertThat(credentialsProvider).isInstanceOfSatisfying(AwsSessionCredentials::class.java) {
             assertThat(it.accessKeyId()).isEqualTo("AccessKey")
@@ -346,11 +330,7 @@ class ProfileCredentialProviderFactoryTest {
 
         val providerFactory = createProviderFactory()
         val validProfile = findCredentialIdentifier("role")
-        val credentialsProvider = providerFactory.createAwsCredentialProvider(
-            validProfile,
-            MockRegionProvider.getInstance().defaultRegion(),
-            mockSdkHttpClient
-        ).resolveCredentials()
+        val credentialsProvider = providerFactory.createProvider(validProfile).resolveCredentials()
 
         assertThat(credentialsProvider).isInstanceOfSatisfying(AwsSessionCredentials::class.java) {
             assertThat(it.accessKeyId()).isEqualTo("AccessKey")
@@ -374,11 +354,7 @@ class ProfileCredentialProviderFactoryTest {
 
         val providerFactory = createProviderFactory()
         val validProfile = findCredentialIdentifier("foo")
-        val credentialsProvider = providerFactory.createAwsCredentialProvider(
-            validProfile,
-            MockRegionProvider.getInstance().defaultRegion(),
-            mockSdkHttpClient
-        )
+        val credentialsProvider = providerFactory.createProvider(validProfile)
 
         verify(profileLoadCallback).invoke(
             check {
@@ -425,11 +401,7 @@ class ProfileCredentialProviderFactoryTest {
 
         val providerFactory = createProviderFactory()
         val validProfile = findCredentialIdentifier("foo")
-        val credentialsProvider = providerFactory.createAwsCredentialProvider(
-            validProfile,
-            MockRegionProvider.getInstance().defaultRegion(),
-            mockSdkHttpClient
-        )
+        val credentialsProvider = providerFactory.createProvider(validProfile)
 
         assertThat(credentialsProvider.resolveCredentials()).isInstanceOfSatisfying(AwsSessionCredentials::class.java) {
             assertThat(it.accessKeyId()).isEqualTo("FooAccessKey")
@@ -440,7 +412,7 @@ class ProfileCredentialProviderFactoryTest {
         profileFile.writeToFile("")
 
         assertThatThrownBy {
-            providerFactory.createAwsCredentialProvider(validProfile, MockRegionProvider.getInstance().defaultRegion(), mockSdkHttpClient)
+            providerFactory.createProvider(validProfile)
         }.isInstanceOf(IllegalStateException::class.java)
 
         verify(profileLoadCallback).invoke(
@@ -476,11 +448,7 @@ class ProfileCredentialProviderFactoryTest {
         )
 
         val validProfile = findCredentialIdentifier("foo")
-        val credentialsProvider = providerFactory.createAwsCredentialProvider(
-            validProfile,
-            MockRegionProvider.getInstance().defaultRegion(),
-            mockSdkHttpClient
-        )
+        val credentialsProvider = providerFactory.createProvider(validProfile)
 
         assertThat(credentialsProvider.resolveCredentials()).isInstanceOfSatisfying(AwsSessionCredentials::class.java) {
             assertThat(it.accessKeyId()).isEqualTo("FooAccessKey")
@@ -529,11 +497,7 @@ class ProfileCredentialProviderFactoryTest {
         )
 
         val validProfile = findCredentialIdentifier("foo")
-        val credentialsProvider = providerFactory.createAwsCredentialProvider(
-            validProfile,
-            MockRegionProvider.getInstance().defaultRegion(),
-            mockSdkHttpClient
-        )
+        val credentialsProvider = providerFactory.createProvider(validProfile)
 
         assertThat(credentialsProvider.resolveCredentials()).isInstanceOfSatisfying(AwsSessionCredentials::class.java) {
             assertThat(it.accessKeyId()).isEqualTo("FooAccessKey")
@@ -555,11 +519,7 @@ class ProfileCredentialProviderFactoryTest {
 
         val providerFactory = createProviderFactory()
         val validProfile = findCredentialIdentifier("foo")
-        val credentialsProvider = providerFactory.createAwsCredentialProvider(
-            validProfile,
-            MockRegionProvider.getInstance().defaultRegion(),
-            mockSdkHttpClient
-        )
+        val credentialsProvider = providerFactory.createProvider(validProfile)
 
         assertThat(credentialsProvider.resolveCredentials()).isInstanceOfSatisfying(AwsSessionCredentials::class.java) {
             assertThat(it.accessKeyId()).isEqualTo("FooAccessKey")
@@ -570,7 +530,7 @@ class ProfileCredentialProviderFactoryTest {
         VfsTestUtil.deleteFile(LocalFileSystem.getInstance().findFileByIoFile(profileFile)!!)
 
         assertThatThrownBy {
-            providerFactory.createAwsCredentialProvider(validProfile, MockRegionProvider.getInstance().defaultRegion(), mockSdkHttpClient)
+            providerFactory.createProvider(validProfile)
         }.isInstanceOf(IllegalStateException::class.java)
 
         verify(profileLoadCallback).invoke(
@@ -642,6 +602,12 @@ class ProfileCredentialProviderFactoryTest {
             override fun abort() {}
         }
     }
+
+    private fun ProfileCredentialProviderFactory.createProvider(validProfile: ToolkitCredentialsIdentifier) = this.createAwsCredentialProvider(
+        validProfile,
+        MockRegionProvider.getInstance().defaultRegion(),
+        sdkHttpClientSupplier = { mockSdkHttpClient }
+    )
 
     private companion object {
         val TEST_PROFILE_FILE_CONTENTS = """

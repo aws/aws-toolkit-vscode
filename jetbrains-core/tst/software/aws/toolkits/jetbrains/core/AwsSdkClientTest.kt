@@ -9,6 +9,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.stubFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import com.github.tomakehurst.wiremock.junit.WireMockRule
+import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.ApplicationRule
 import com.intellij.util.net.ssl.CertificateManager
 import org.assertj.core.api.Assertions.assertThat
@@ -47,10 +48,14 @@ class AwsSdkClientTest {
 
         val request = mockSdkRequest("https://localhost:" + wireMock.httpsPort())
 
-        val httpClient = AwsSdkClient.getInstance().sdkHttpClient
-        val response = httpClient.prepareRequest(
-            HttpExecuteRequest.builder().request(request).build()
-        ).call()
+        val awsSdkClient = AwsSdkClient()
+        val response = try {
+            awsSdkClient.sdkHttpClient.prepareRequest(
+                HttpExecuteRequest.builder().request(request).build()
+            ).call()
+        } finally {
+            Disposer.dispose(awsSdkClient)
+        }
 
         assertThat(response.httpResponse().isSuccessful).isTrue()
 

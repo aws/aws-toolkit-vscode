@@ -81,7 +81,7 @@ abstract class CredentialManager : SimpleModificationTracker() {
                     ?: throw CredentialProviderNotFoundException("No provider found with ID ${providerId.id}")
 
                 try {
-                    providerFactory.createAwsCredentialProvider(providerId, region, AwsSdkClient.getInstance().sdkHttpClient)
+                    providerFactory.createAwsCredentialProvider(providerId, region) { AwsSdkClient.getInstance().sdkHttpClient }
                 } catch (e: Exception) {
                     throw CredentialProviderNotFoundException("Failed to create underlying AwsCredentialProvider", e)
                 }

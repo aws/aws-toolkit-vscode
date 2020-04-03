@@ -5,7 +5,9 @@ package software.aws.toolkits.jetbrains.core
 
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.application.WriteAction
+import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.ApplicationRule
+import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.util.net.HttpConfigurable
 import com.nhaarman.mockitokotlin2.any
@@ -30,7 +32,13 @@ class AwsSdkClientProxyTest {
     @JvmField
     val application = ApplicationRule()
 
+    @Rule
+    @JvmField
+    val disposableRule = DisposableRule()
+
     private val proxyServletSpy = spy(ConnectHandler())
+
+    private lateinit var awsSdkClient: AwsSdkClient
 
     private val proxyServer = Server().also {
         it.addConnector(ServerConnector(it))
@@ -44,6 +52,9 @@ class AwsSdkClientProxyTest {
 
     @Before
     fun setUp() {
+        awsSdkClient = AwsSdkClient()
+        Disposer.register(disposableRule.disposable, awsSdkClient)
+
         val httpConfigurable = HttpConfigurable.getInstance()
         httpConfigurable.USE_HTTP_PROXY = true
         httpConfigurable.PROXY_HOST = "localhost"

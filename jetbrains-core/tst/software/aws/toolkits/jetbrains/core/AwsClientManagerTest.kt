@@ -148,7 +148,7 @@ class AwsClientManagerTest {
     }
 
     // Test against real version so bypass ServiceManager for the client manager
-    private fun getClientManager(project: Project = projectRule.project) = AwsClientManager(project, AwsSdkClient.getInstance())
+    private fun getClientManager(project: Project = projectRule.project) = AwsClientManager(project)
 
     class DummyServiceClient(val httpClient: SdkHttpClient) : TestClient() {
         companion object {

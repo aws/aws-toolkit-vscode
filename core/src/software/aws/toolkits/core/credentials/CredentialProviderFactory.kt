@@ -26,5 +26,9 @@ interface CredentialProviderFactory {
     /**
      * Creates an [AwsCredentialsProvider] for the specified [ToolkitCredentialsIdentifier] scoped to the specified [region]
      */
-    fun createAwsCredentialProvider(providerId: ToolkitCredentialsIdentifier, region: AwsRegion, sdkClient: SdkHttpClient): AwsCredentialsProvider
+    fun createAwsCredentialProvider(
+        providerId: ToolkitCredentialsIdentifier,
+        region: AwsRegion,
+        sdkHttpClientSupplier: () -> SdkHttpClient
+    ): AwsCredentialsProvider
 }

@@ -153,7 +153,7 @@ class ProfileCredentialProviderFactory : CredentialProviderFactory, Disposable {
     override fun createAwsCredentialProvider(
         providerId: ToolkitCredentialsIdentifier,
         region: AwsRegion,
-        sdkClient: SdkHttpClient
+        sdkHttpClientSupplier: () -> SdkHttpClient
     ): AwsCredentialsProvider {
         val profileProviderId = providerId as? ProfileCredentialsIdentifier
             ?: throw IllegalStateException("ProfileCredentialProviderFactory can only handle ProfileCredentialsIdentifier, but got ${providerId::class}")
@@ -161,7 +161,7 @@ class ProfileCredentialProviderFactory : CredentialProviderFactory, Disposable {
         val profile = profileHolder.getProfile(profileProviderId.profileName)
             ?: throw IllegalStateException("Profile ${profileProviderId.profileName} looks to have been removed")
 
-        return createAwsCredentialProvider(profile, region, sdkClient)
+        return createAwsCredentialProvider(profile, region, sdkHttpClientSupplier())
     }
 
     private fun createAwsCredentialProvider(
