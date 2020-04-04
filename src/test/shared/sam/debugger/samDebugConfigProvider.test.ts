@@ -25,6 +25,21 @@ import {
     strToYamlFile,
 } from '../../cloudformation/cloudformationTestUtils'
 
+/** Gets the full path to the project root directory. */
+function getProjectDir(): string {
+    return path.join(__dirname, '../../../../')
+}
+
+/** Creates a `WorkspaceFolder` for use in tests. */
+function getWorkspaceFolder(dir: string): vscode.WorkspaceFolder {
+    const folder = {
+        uri: vscode.Uri.file(dir),
+        name: 'test-workspace-folder',
+        index: 0,
+    }
+    return folder
+}
+
 describe('AwsSamDebugConfigurationProvider', async () => {
     let debugConfigProvider: SamDebugConfigProvider
     let registry: CloudFormationTemplateRegistry
@@ -246,24 +261,78 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             })
             assert.strictEqual(resolved!.name, name)
         })
+
         it('target=code', async () => {
-            const debugConfig = {
+            const appDir = path.join(getProjectDir(), 'integrationTest-samples/js-manifest-in-root/')
+            const folder = getWorkspaceFolder(appDir)
+            const c = {
                 type: AWS_SAM_DEBUG_TYPE,
                 name: 'whats in a name',
                 request: DIRECT_INVOKE_TYPE,
                 invokeTarget: {
                     target: CODE_TARGET_TYPE,
-                    lambdaHandler: 'sick handles',
-                    projectRoot: 'root as in beer',
+                    lambdaHandler: 'my.test.handler',
+                    projectRoot: 'src',
                 },
                 lambda: {
                     runtime: validRuntime,
                 },
             }
-            assert.deepStrictEqual(
-                await debugConfigProvider.resolveDebugConfiguration(undefined, debugConfig),
-                debugConfig
-            )
+            ;(c as any).configOnly = true
+            const actual = (await debugConfigProvider.resolveDebugConfiguration(folder, c))!!
+            const expected = {
+                type: 'node', // Input "aws-sam", output "node".
+                workspaceFolder: {
+                    index: 0,
+                    name: 'test-workspace-folder',
+                    uri: {
+                        fsPath: appDir,
+                    },
+                },
+                baseBuildDir: '/tmp/aws-toolkit-vscode/vsctkRhVRJW',
+                codeRoot: path.join(appDir, 'src'), // Normalized to absolute path.
+                debugPort: 5858,
+                documentUri: undefined, // TODO: remove or test.
+                handlerName: 'my.test.handler',
+                invokeTarget: {
+                    lambdaHandler: 'my.test.handler',
+                    projectRoot: 'src',
+                    target: 'code',
+                },
+                lambda: {
+                    runtime: 'nodejs12.x',
+                },
+                localRoot: path.join(appDir, 'src'), // Normalized to absolute path.
+                name: 'SamLocalDebug', // "name": "whats in a name"
+                originalHandlerName: 'my.test.handler',
+                originalSamTemplatePath: undefined,
+
+                //
+                // Node-related fields
+                //
+                address: 'localhost',
+                port: 5858,
+                preLaunchTask: undefined,
+                protocol: 'inspector',
+                remoteRoot: '/var/task',
+                request: 'attach', // Input "direct-invoke", output "attach".
+                runtime: 'nodejs12.x',
+                runtimeFamily: 1,
+                samTemplatePath: '/tmp/aws-toolkit-vscode/vsctkRhVRJW/input/input-template.yaml',
+                skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
+            }
+
+            assert.strictEqual(actual.workspaceFolder.name, expected.workspaceFolder.name)
+            assert.strictEqual(actual.workspaceFolder.uri.fsPath, expected.workspaceFolder.uri.fsPath)
+            for (let o of [actual, expected]) {
+                delete o.documentUri
+                delete o.baseBuildDir
+                delete o.samTemplatePath
+                delete o.originalSamTemplatePath
+                delete o.workspaceFolder
+                delete (o as any).configOnly
+            }
+            assert.deepStrictEqual(actual, expected)
         })
 
         it('target=template', async () => {

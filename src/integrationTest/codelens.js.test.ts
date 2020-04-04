@@ -15,7 +15,7 @@ const CODELENS_TEST_TIMEOUT_MILLIS = 10000
 
 const workspaceFolder = getTestWorkspaceFolder()
 
-describe('SAM Local CodeLenses (JS)', async () => {
+describe('SAM Local (JS)', async () => {
     // TODO : Extend this test suite out to work for different projects with different file configurations
     before(async function() {
         // tslint:disable-next-line:no-invalid-this
