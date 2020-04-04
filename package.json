@@ -403,6 +403,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.copyArn",
+                    "when": "false"
+                },
+                {
                     "command": "aws.downloadSchemaItemCode",
                     "when": "false"
                 },
@@ -574,6 +578,11 @@
                     "group": "1@1"
                 },
                 {
+                    "command": "aws.copyArn",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudFormationNode)$/",
+                    "group": "2@1"
+                },
+                {
                     "command": "aws.downloadSchemaItemCode",
                     "when": "view == aws.explorer && viewItem == awsSchemaItemNode",
                     "group": "1@1"
@@ -687,6 +696,11 @@
             {
                 "command": "aws.executeStateMachine",
                 "title": "%AWS.command.executeStateMachine%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.copyArn",
+                "title": "%AWS.command.copyArn%",
                 "category": "AWS"
             },
             {

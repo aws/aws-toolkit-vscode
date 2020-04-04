@@ -12,6 +12,7 @@ import * as vscode from 'vscode'
 import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { ext } from '../../shared/extensionGlobals'
+import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
@@ -63,7 +64,7 @@ export class CloudFormationNode extends AWSTreeNodeBase {
     }
 }
 
-export class CloudFormationStackNode extends AWSTreeNodeBase {
+export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResourceNode {
     private readonly functionNodes: Map<string, LambdaFunctionNode>
 
     public constructor(
@@ -84,6 +85,10 @@ export class CloudFormationStackNode extends AWSTreeNodeBase {
 
     public get stackId(): CloudFormation.StackId | undefined {
         return this.stackSummary.StackId
+    }
+
+    public getArn(): string {
+        return this.stackId || ''
     }
 
     public get stackName(): CloudFormation.StackName {
