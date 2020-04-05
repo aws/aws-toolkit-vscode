@@ -29,11 +29,11 @@ export interface messageObject {
 const documentSettings: DocumentLanguageSettings = { comments: 'error', trailingCommas: 'error' }
 const languageService = getLanguageService({})
 
-export class aslVisualizationManager {
-    private readonly managedVisualizations: Set<aslVisualization>
+export class AslVisualizationManager {
+    private readonly managedVisualizations: Set<AslVisualization>
 
     public constructor() {
-        this.managedVisualizations = new Set<aslVisualization>()
+        this.managedVisualizations = new Set<AslVisualization>()
     }
 
     public async visualizeStateMachine(globalStorage: vscode.Memento): Promise<vscode.WebviewPanel | void> {
@@ -63,7 +63,7 @@ export class aslVisualizationManager {
         if (existingVisualization) {
             existingVisualization.showPanel()
 
-            return existingVisualization.getWebviewPanel()
+            return existingVisualization.getPanel()
         }
 
         // Existing visualization does not exist, construct new visualization
@@ -86,18 +86,18 @@ export class aslVisualizationManager {
         return
     }
 
-    public removeClosedPanel(visToDelete: aslVisualization): void {
-        this.managedVisualizations.delete(visToDelete)
-    }
-
-    private createNewVisualization(textDocument: vscode.TextDocument): vscode.WebviewPanel {
-        const newVisualization = new aslVisualization(textDocument, this)
+    private createNewVisualization(textDocument: vscode.TextDocument): vscode.WebviewPanel | void {
+        const newVisualization = new AslVisualization(textDocument)
         this.managedVisualizations.add(newVisualization)
 
-        return newVisualization.getWebviewPanel()
+        newVisualization.onVisualizationDispose(() => {
+            this.managedVisualizations.delete(newVisualization)
+        })
+
+        return newVisualization.getPanel()
     }
 
-    private getExistingVisualization(uriToFind: vscode.Uri): aslVisualization | void {
+    private getExistingVisualization(uriToFind: vscode.Uri): AslVisualization | void {
         for (const vis of this.managedVisualizations) {
             if (vis.documentURI.path === uriToFind.path) {
                 return vis
@@ -108,50 +108,49 @@ export class aslVisualizationManager {
     }
 }
 
-class aslVisualization {
+class AslVisualization {
     public readonly documentURI: vscode.Uri
     public readonly webviewPanel: vscode.WebviewPanel
-    private readonly visualizationManager: aslVisualizationManager
+    public onVisualizationDisposeEmitter = new vscode.EventEmitter<void>()
+    public readonly onVisualizationDispose = this.onVisualizationDisposeEmitter.event
+    private readonly disposables: vscode.Disposable[]
+    private isPanelDisposed: boolean
 
-    public constructor(textDocument: vscode.TextDocument, visualizationManager: aslVisualizationManager) {
+    public constructor(textDocument: vscode.TextDocument) {
         this.documentURI = textDocument.uri
-        this.visualizationManager = visualizationManager
+        this.isPanelDisposed = false
+        this.disposables = []
         this.webviewPanel = this.setupWebviewPanel(textDocument)
     }
 
-    public getWebviewPanel(): vscode.WebviewPanel {
-        return this.webviewPanel
+    public getPanel(): vscode.WebviewPanel | void {
+        if (this.webviewPanel && !this.isPanelDisposed) {
+            return this.webviewPanel
+        }
+    }
+
+    public getWebview(): vscode.Webview | void {
+        if (this.webviewPanel && this.webviewPanel.webview && !this.isPanelDisposed) {
+            return this.webviewPanel.webview
+        }
+    }
+
+    public getOnVisualizationDisposeEvent(): vscode.Event<void> {
+        return this.onVisualizationDispose
     }
 
     public showPanel(): void {
-        this.webviewPanel.reveal()
+        if (this.webviewPanel && !this.isPanelDisposed) {
+            this.webviewPanel.reveal()
+        }
     }
 
     private setupWebviewPanel(textDocument: vscode.TextDocument): vscode.WebviewPanel {
         const documentUri = textDocument.uri
         const logger: Logger = getLogger()
-        let isPanelDisposed = false
 
         // Create and show panel
         const panel = this.createVisualizationWebviewPanel(documentUri)
-
-        async function sendUpdateMessage(updatedTextDocument: vscode.TextDocument) {
-            const isValid = await aslVisualization.isDocumentValid(updatedTextDocument)
-
-            if (isPanelDisposed || !panel.webview) {
-                return
-            }
-
-            logger.debug('Sending update message to webview.')
-
-            panel.webview.postMessage({
-                command: 'update',
-                stateMachineData: updatedTextDocument.getText(),
-                isValid,
-            })
-        }
-
-        const debouncedUpdate = debounce(sendUpdateMessage, 500)
 
         // Set the initial html for the webpage
         panel.webview.html = this.getWebviewContent(
@@ -170,76 +169,96 @@ class aslVisualization {
         )
 
         // Add listener function to update the graph on document save
-        const updateOnSaveDisposable = vscode.workspace.onDidSaveTextDocument(async savedTextDocument => {
-            if (savedTextDocument && savedTextDocument.uri.path === documentUri.path) {
-                await sendUpdateMessage(savedTextDocument)
-            }
-        })
+        this.disposables.push(
+            vscode.workspace.onDidSaveTextDocument(async savedTextDocument => {
+                if (savedTextDocument && savedTextDocument.uri.path === documentUri.path) {
+                    await sendUpdateMessage(savedTextDocument)
+                }
+            })
+        )
 
         // If documentUri being tracked is no longer found (due to file closure or rename), close the panel.
-        const onDidCloseTextDocumentDisposable = vscode.workspace.onDidCloseTextDocument(documentWillSaveEvent => {
-            if (!this.trackedDocumentDoesExist(documentUri)) {
-                panel.dispose()
-                vscode.window.showInformationMessage(
-                    localize(
-                        'AWS.stepfunctions.visualisation.errors.rename',
-                        'State machine visualization closed due to file renaming or closure.'
+        this.disposables.push(
+            vscode.workspace.onDidCloseTextDocument(documentWillSaveEvent => {
+                if (!this.trackedDocumentDoesExist(documentUri)) {
+                    panel.dispose()
+                    vscode.window.showInformationMessage(
+                        localize(
+                            'AWS.stepfunctions.visualisation.errors.rename',
+                            'State machine visualization closed due to file renaming or closure.'
+                        )
                     )
-                )
-            }
-        })
+                }
+            })
+        )
 
-        const updateOnChangeDisposable = vscode.workspace.onDidChangeTextDocument(async textDocumentEvent => {
-            if (textDocumentEvent.document.uri.path === documentUri.path) {
-                await debouncedUpdate(textDocumentEvent.document)
+        const sendUpdateMessage = async (updatedTextDocument: vscode.TextDocument) => {
+            const isValid = await AslVisualization.isDocumentValid(updatedTextDocument)
+            const webview = this.getWebview()
+            if (this.isPanelDisposed || !webview) {
+                return
             }
-        })
+
+            logger.debug('Sending update message to webview.')
+
+            webview.postMessage({
+                command: 'update',
+                stateMachineData: updatedTextDocument.getText(),
+                isValid,
+            })
+        }
+        const debouncedUpdate = debounce(sendUpdateMessage, 500).bind(this)
+
+        this.disposables.push(
+            vscode.workspace.onDidChangeTextDocument(async textDocumentEvent => {
+                if (textDocumentEvent.document.uri.path === documentUri.path) {
+                    await debouncedUpdate(textDocumentEvent.document)
+                }
+            })
+        )
 
         // Handle messages from the webview
-        const receiveMessageDisposable = panel.webview.onDidReceiveMessage(async (message: messageObject) => {
-            switch (message.command) {
-                case 'updateResult':
-                    logger.debug(message.text)
-                    if (message.error) {
-                        logger.error(message.error)
+        this.disposables.push(
+            panel.webview.onDidReceiveMessage(async (message: messageObject) => {
+                switch (message.command) {
+                    case 'updateResult':
+                        logger.debug(message.text)
+                        if (message.error) {
+                            logger.error(message.error)
+                        }
+                        break
+                    case 'webviewRendered': {
+                        // Webview has finished rendering, so now we can give it our
+                        // initial state machine definition.
+                        await sendUpdateMessage(textDocument)
+                        break
                     }
-                    break
-                case 'webviewRendered': {
-                    // Webview has finished rendering, so now we can give it our
-                    // initial state machine definition.
-                    await sendUpdateMessage(textDocument)
-                    break
-                }
 
-                case 'viewDocument':
-                    try {
-                        const document = await vscode.workspace.openTextDocument(documentUri)
-                        vscode.window.showTextDocument(document, vscode.ViewColumn.One)
-                    } catch (e) {
-                        logger.error(e as Error)
-                    }
-                    break
-            }
-        })
+                    case 'viewDocument':
+                        try {
+                            const document = await vscode.workspace.openTextDocument(documentUri)
+                            vscode.window.showTextDocument(document, vscode.ViewColumn.One)
+                        } catch (e) {
+                            logger.error(e as Error)
+                        }
+                        break
+                }
+            })
+        )
 
         // When the panel is closed, dispose of any disposables/remove subscriptions
         panel.onDidDispose(() => {
-            updateOnSaveDisposable.dispose()
-            onDidCloseTextDocumentDisposable.dispose()
-            updateOnChangeDisposable.dispose()
-            receiveMessageDisposable.dispose()
+            this.isPanelDisposed = true
             debouncedUpdate.cancel()
-            isPanelDisposed = true
-            this.visualizationManager.removeClosedPanel(this)
+            this.onVisualizationDisposeEmitter.fire()
+            this.onVisualizationDisposeEmitter.dispose()
+
+            for (const disposable of this.disposables) {
+                disposable.dispose()
+            }
         })
 
         return panel
-    }
-
-    private trackedDocumentDoesExist(trackedDocumentURI: vscode.Uri): boolean {
-        const document = vscode.workspace.textDocuments.find(doc => doc.fileName === trackedDocumentURI.fsPath)
-
-        return document !== undefined
     }
 
     private createVisualizationWebviewPanel(documentUri: vscode.Uri): vscode.WebviewPanel {
@@ -324,6 +343,12 @@ class aslVisualization {
             <script src='${webviewBodyScript}'></script>
         </body>
     </html>`
+    }
+
+    private trackedDocumentDoesExist(trackedDocumentURI: vscode.Uri): boolean {
+        const document = vscode.workspace.textDocuments.find(doc => doc.fileName === trackedDocumentURI.fsPath)
+
+        return document !== undefined
     }
 
     private static async isDocumentValid(textDocument?: vscode.TextDocument): Promise<boolean> {
