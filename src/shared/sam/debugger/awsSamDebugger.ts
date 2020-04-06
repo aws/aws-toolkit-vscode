@@ -232,10 +232,10 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 //  Make a Python launch-config from the generic config.
                 const c: PythonDebugConfiguration = await pythonDebug.makePythonDebugConfig(
                     launchConfig,
-                    !config.noDebug,
-                    config.runtime,
-                    config.handlerName,
-                    config.documentUri
+                    !launchConfig.noDebug,
+                    launchConfig.runtime,
+                    launchConfig.handlerName,
+                    launchConfig.documentUri
                 )
                 launchConfig = c
                 if (!configOnly) {

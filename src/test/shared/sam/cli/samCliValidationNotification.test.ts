@@ -48,19 +48,19 @@ describe('makeSamCliValidationNotification', async () => {
         {
             situation: 'SAM CLI Version is too low',
             versionValidation: SamCliVersionValidation.VersionTooLow,
-            messageFragment: 'Please update your SAM CLI.',
+            messageFragment: 'Update your SAM CLI.',
             actionLabel: actionLabelUpdateSamCli,
         },
         {
             situation: 'SAM CLI Version is too high',
             versionValidation: SamCliVersionValidation.VersionTooHigh,
-            messageFragment: 'Please check the Marketplace for an updated Toolkit.',
+            messageFragment: 'Check the Marketplace for an updated AWS Toolkit.',
             actionLabel: actionLabelUpdateToolkit,
         },
         {
             situation: 'SAM CLI Version is unparsable',
             versionValidation: SamCliVersionValidation.VersionNotParseable,
-            messageFragment: 'Please update your SAM CLI.',
+            messageFragment: 'Update your SAM CLI.',
             actionLabel: actionLabelUpdateSamCli,
         },
     ]

@@ -24,6 +24,7 @@ import {
     makeSampleYamlResource,
     strToYamlFile,
 } from '../../cloudformation/cloudformationTestUtils'
+import { SamLaunchRequestArgs } from '../../../../shared/sam/debugger/samDebugSession'
 
 /** Gets the full path to the project root directory. */
 function getProjectDir(): string {
@@ -38,6 +39,27 @@ function getWorkspaceFolder(dir: string): vscode.WorkspaceFolder {
         index: 0,
     }
     return folder
+}
+
+/**
+ * Asserts the contents of a "launch config" (the result of
+ * `resolveDebugConfiguration()` invoked on a user-provided "debug config").
+ */
+function assertEqualLaunchConfigs(actual: SamLaunchRequestArgs, expected: SamLaunchRequestArgs, appDir: string) {
+    assert.strictEqual(actual.workspaceFolder.name, expected.workspaceFolder.name)
+    assert.strictEqual(actual.workspaceFolder.uri.fsPath, expected.workspaceFolder.uri.fsPath)
+    // Build dir is a generated temp dir, check that it looks reasonable.
+    assert.ok(actual.baseBuildDir && actual.baseBuildDir.length > 9)
+    // Remove noisy properties before doing a deep-compare.
+    for (const o of [actual, expected]) {
+        delete (o as any).documentUri
+        delete (o as any).baseBuildDir
+        delete (o as any).samTemplatePath
+        delete (o as any).originalSamTemplatePath
+        delete (o as any).workspaceFolder
+        delete (o as any).configOnly
+    }
+    assert.deepStrictEqual(actual, expected)
 }
 
 describe('AwsSamDebugConfigurationProvider', async () => {
@@ -236,7 +258,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
         })
 
         it('supports workspace-relative template path ("./foo.yaml")', async () => {
-            await strToYamlFile(makeSampleSamTemplateYaml(true), tempFile.fsPath)
+            await strToYamlFile(makeSampleSamTemplateYaml(true, { runtime: 'nodejs12.x' }), tempFile.fsPath)
             // Register with *full* path.
             await registry.addTemplateToRegistry(tempFile)
             // Simulates launch.json:
@@ -248,6 +270,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             // Assert that the relative path correctly maps to the full path in the registry.
             const name = 'Test rel path'
             const resolved = await debugConfigProvider.resolveDebugConfiguration(fakeWorkspaceFolder, {
+                configOnly: true,
                 type: AWS_SAM_DEBUG_TYPE,
                 name: name,
                 request: 'direct-invoke',
@@ -259,7 +282,8 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                     //projectRoot: 'root as in beer'
                 },
             })
-            assert.strictEqual(resolved!.name, name)
+            // TODO: why not respect caller-chosen name?
+            assert.strictEqual(resolved!.name, 'SamLocalDebug')
         })
 
         it('target=code', async () => {
@@ -280,19 +304,17 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             }
             ;(c as any).configOnly = true
             const actual = (await debugConfigProvider.resolveDebugConfiguration(folder, c))!!
-            const expected = {
+            const expected: SamLaunchRequestArgs = {
                 type: 'node', // Input "aws-sam", output "node".
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
-                    uri: {
-                        fsPath: appDir,
-                    },
+                    uri: vscode.Uri.parse(appDir),
                 },
-                baseBuildDir: '/tmp/aws-toolkit-vscode/vsctkRhVRJW',
+                baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
                 codeRoot: path.join(appDir, 'src'), // Normalized to absolute path.
                 debugPort: 5858,
-                documentUri: undefined, // TODO: remove or test.
+                documentUri: vscode.Uri.parse(''), // TODO: remove or test.
                 handlerName: 'my.test.handler',
                 invokeTarget: {
                     lambdaHandler: 'my.test.handler',
@@ -305,7 +327,8 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 localRoot: path.join(appDir, 'src'), // Normalized to absolute path.
                 name: 'SamLocalDebug', // "name": "whats in a name"
                 originalHandlerName: 'my.test.handler',
-                originalSamTemplatePath: undefined,
+                originalSamTemplatePath: '?',
+                samTemplatePath: path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml'),
 
                 //
                 // Node-related fields
@@ -318,25 +341,17 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'nodejs12.x',
                 runtimeFamily: 1,
-                samTemplatePath: '/tmp/aws-toolkit-vscode/vsctkRhVRJW/input/input-template.yaml',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
             }
 
-            assert.strictEqual(actual.workspaceFolder.name, expected.workspaceFolder.name)
-            assert.strictEqual(actual.workspaceFolder.uri.fsPath, expected.workspaceFolder.uri.fsPath)
-            for (let o of [actual, expected]) {
-                delete o.documentUri
-                delete o.baseBuildDir
-                delete o.samTemplatePath
-                delete o.originalSamTemplatePath
-                delete o.workspaceFolder
-                delete (o as any).configOnly
-            }
-            assert.deepStrictEqual(actual, expected)
+            assertEqualLaunchConfigs(actual, expected, appDir)
         })
 
         it('target=template', async () => {
-            const debugConfig = {
+            const appDir = path.join(getProjectDir(), 'integrationTest-samples/js-manifest-in-root/')
+            const folder = getWorkspaceFolder(appDir)
+            const c = {
+                configOnly: true,
                 type: AWS_SAM_DEBUG_TYPE,
                 name: 'whats in a name',
                 request: DIRECT_INVOKE_TYPE,
@@ -346,19 +361,64 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                     samTemplateResource: resourceName,
                 },
             }
+            ;(c as any).configOnly = true
             await strToYamlFile(
-                makeSampleSamTemplateYaml(true, { resourceName, runtime: validRuntime }),
+                makeSampleSamTemplateYaml(true, {
+                    resourceName: resourceName,
+                    runtime: validRuntime,
+                    handler: 'my.test.handler',
+                }),
                 tempFile.fsPath
             )
             await registry.addTemplateToRegistry(tempFile)
-            assert.deepStrictEqual(
-                await debugConfigProvider.resolveDebugConfiguration(undefined, debugConfig),
-                debugConfig
-            )
+            const actual = (await debugConfigProvider.resolveDebugConfiguration(folder, c))!!
+            const tempDir = path.dirname(actual.codeRoot)
+
+            const expected: SamLaunchRequestArgs = {
+                type: 'node', // Input "aws-sam", output "node".
+                workspaceFolder: {
+                    index: 0,
+                    name: 'test-workspace-folder',
+                    uri: vscode.Uri.parse(appDir),
+                },
+                baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
+                codeRoot: path.join(tempDir, 'codeuri'), // Normalized to absolute path.
+                debugPort: 5858,
+                documentUri: vscode.Uri.parse(''), // TODO: remove or test.
+                handlerName: 'my.test.handler',
+                invokeTarget: {
+                    target: 'template',
+                    samTemplatePath: path.join(tempDir ?? '?', 'test.yaml'),
+                    samTemplateResource: 'myResource',
+                },
+                localRoot: path.join(tempDir, 'codeuri'), // Normalized to absolute path.
+                name: 'SamLocalDebug', // "name": "whats in a name"
+                originalHandlerName: 'my.test.handler',
+                originalSamTemplatePath: '?',
+                samTemplatePath: path.join(tempDir ?? '?', 'input/input-template.yaml'),
+
+                //
+                // Node-related fields
+                //
+                address: 'localhost',
+                port: 5858,
+                preLaunchTask: undefined,
+                protocol: 'inspector',
+                remoteRoot: '/var/task',
+                request: 'attach', // Input "direct-invoke", output "attach".
+                runtime: 'nodejs12.x',
+                runtimeFamily: 1,
+                skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
+            }
+
+            assertEqualLaunchConfigs(actual, expected, appDir)
         })
 
-        it('valid debugconfig with extraneous env vars', async () => {
-            const debugConfig = {
+        it('debugconfig with extraneous env vars', async () => {
+            const appDir = path.join(getProjectDir(), 'integrationTest-samples/js-manifest-in-root/')
+            const folder = getWorkspaceFolder(appDir)
+            const c = {
+                configOnly: true,
                 type: AWS_SAM_DEBUG_TYPE,
                 name: 'whats in a name',
                 request: DIRECT_INVOKE_TYPE,
@@ -374,15 +434,63 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                     },
                 },
             }
+            ;(c as any).configOnly = true
             await strToYamlFile(
-                makeSampleSamTemplateYaml(true, { resourceName, runtime: validRuntime }),
+                makeSampleSamTemplateYaml(true, {
+                    resourceName: resourceName,
+                    runtime: validRuntime,
+                    handler: 'my.test.handler',
+                }),
                 tempFile.fsPath
             )
             await registry.addTemplateToRegistry(tempFile)
-            assert.deepStrictEqual(
-                await debugConfigProvider.resolveDebugConfiguration(undefined, debugConfig),
-                debugConfig
-            )
+            const actual = (await debugConfigProvider.resolveDebugConfiguration(folder, c))!!
+            const tempDir = path.dirname(actual.codeRoot)
+
+            const expected: SamLaunchRequestArgs = {
+                type: 'node', // Input "aws-sam", output "node".
+                workspaceFolder: {
+                    index: 0,
+                    name: 'test-workspace-folder',
+                    uri: vscode.Uri.parse(appDir),
+                },
+                baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
+                codeRoot: path.join(tempDir, 'codeuri'), // Normalized to absolute path.
+                debugPort: 5858,
+                documentUri: vscode.Uri.parse(''), // TODO: remove or test.
+                handlerName: 'my.test.handler',
+                invokeTarget: {
+                    target: 'template',
+                    samTemplatePath: path.join(tempDir ?? '?', 'test.yaml'),
+                    samTemplateResource: 'myResource',
+                },
+                lambda: {
+                    environmentVariables: {
+                        var1: 2,
+                        var2: '1',
+                    },
+                },
+                localRoot: path.join(tempDir, 'codeuri'), // Normalized to absolute path.
+                name: 'SamLocalDebug', // "name": "whats in a name"
+                originalHandlerName: 'my.test.handler',
+                originalSamTemplatePath: '?',
+                samTemplatePath: path.join(tempDir ?? '?', 'input/input-template.yaml'),
+
+                //
+                // Node-related fields
+                //
+                address: 'localhost',
+                port: 5858,
+                preLaunchTask: undefined,
+                protocol: 'inspector',
+                remoteRoot: '/var/task',
+                request: 'attach', // Input "direct-invoke", output "attach".
+                runtime: 'nodejs12.x',
+                runtimeFamily: 1,
+                skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
+            }
+
+            assertEqualLaunchConfigs(actual, expected, appDir)
         })
     })
 })

@@ -66,7 +66,7 @@ export class FakeExtensionContext implements ExtContext {
         return relativePath
     }
 
-    static async getNew(): Promise<FakeExtensionContext> {
+    public static async getNew(): Promise<FakeExtensionContext> {
         const ctx = new FakeExtensionContext()
         await ExtensionDisposableFiles.initialize(ctx)
         return ctx
