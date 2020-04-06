@@ -122,7 +122,7 @@ class S3TreeTable(
                     FileTypeChooser.getKnownFileTypeOrAssociate(it, project) ?: return@runInEdt
                     // set virtual file to read only
                     FileEditorManager.getInstance(project).openFile(it, true, true).ifEmpty {
-                        notifyError(message("s3.open.viewer.failed"))
+                        notifyError(project = project, content = message("s3.open.viewer.failed"))
                     }
                 }
             }
