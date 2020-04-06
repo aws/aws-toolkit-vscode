@@ -10,7 +10,7 @@
             "type": "extensionHost",
             "request": "launch",
             "runtimeExecutable": "${execPath}",
-            "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
+            "args": ["--disable-extensions", "--extensionDevelopmentPath=${workspaceFolder}"],
             "env": {
                 "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true"
             },
@@ -40,6 +40,7 @@
             "request": "launch",
             "runtimeExecutable": "${execPath}",
             "args": [
+                "--disable-extensions",
                 "--extensionDevelopmentPath=${workspaceFolder}",
                 "--extensionTestsPath=${workspaceFolder}/dist/src/test/index.js"
             ],
@@ -56,6 +57,7 @@
             "request": "launch",
             "runtimeExecutable": "${execPath}",
             "args": [
+                "--disable-extensions",
                 "--extensionDevelopmentPath=${workspaceFolder}",
                 "--extensionTestsPath=${workspaceFolder}/dist/src/test/index.js"
             ],
@@ -73,6 +75,7 @@
             "runtimeExecutable": "${execPath}",
             "args": [
                 "${workspaceFolder}/dist/src/integrationTest-samples/",
+                "--disable-extensions",
                 "--extensionDevelopmentPath=${workspaceFolder}",
                 "--extensionTestsPath=${workspaceFolder}/dist/src/integrationTest/index.js"
             ],
