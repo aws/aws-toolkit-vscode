@@ -1,0 +1,4 @@
+{
+  "type" : "removal",
+  "description" : "Removed the ability to create a new SAM project for dotnet core 2.0 since it is a deprecated runtime"
+}

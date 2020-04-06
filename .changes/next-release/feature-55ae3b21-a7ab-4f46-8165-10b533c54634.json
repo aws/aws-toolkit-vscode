@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Add support for creating and running Lambdas with dotnet core 3.1. Debug support will come in a future release"
+}

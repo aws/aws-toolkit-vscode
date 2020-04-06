@@ -66,7 +66,7 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
             val runtimeGroup = runtimeValue?.runtimeGroup ?: return false
 
             return SamDebugSupport.supportedRuntimeGroups.contains(runtimeGroup) &&
-                SamDebugSupport.getInstance(runtimeGroup)?.isSupported() ?: false
+                SamDebugSupport.getInstance(runtimeGroup)?.isSupported(runtimeValue) ?: false
         }
 
         return false

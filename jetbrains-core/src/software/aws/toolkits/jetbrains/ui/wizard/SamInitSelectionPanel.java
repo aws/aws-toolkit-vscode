@@ -11,6 +11,7 @@ import com.intellij.uiDesigner.core.GridConstraints;
 import java.awt.Dimension;
 import java.awt.event.ItemEvent;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -32,6 +33,7 @@ import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance;
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager;
 import software.aws.toolkits.jetbrains.core.executables.ExecutableType;
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder;
+import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup;
 import software.aws.toolkits.jetbrains.services.lambda.SamNewProjectSettings;
 import software.aws.toolkits.jetbrains.services.lambda.SamProjectTemplate;
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable;
@@ -79,12 +81,15 @@ public class SamInitSelectionPanel implements ValidatablePanel {
         this.currentAwsCredentialSelectorLabel = null;
         this.currentAwsCredentialSelector = null;
 
-        LambdaBuilder.Companion.getSupportedRuntimeGroups()
-                               .stream()
-                               .flatMap(x -> x.getRuntimes().stream())
-                               .sorted()
-                               .filter(runtimeFilter)
-                               .forEach(y -> runtimeComboBox.addItem(y));
+        // TODO: Move this to Kotlin...
+        // Source all templates, find all the runtimes they support, then filter those by what the IDE supports
+        Set<RuntimeGroup> supportedRuntimeGroups = LambdaBuilder.Companion.getSupportedRuntimeGroups();
+        SamProjectTemplate.SAM_TEMPLATES.stream()
+                                        .flatMap(template -> template.supportedRuntimes().stream())
+                                        .sorted()
+                                        .filter(runtimeFilter)
+                                        .filter(r -> supportedRuntimeGroups.contains(RuntimeGroup.find(runtimeGroup -> runtimeGroup.getRuntimes().contains(r))))
+                                        .forEach(y -> runtimeComboBox.addItem(y));
 
         SamInitProjectBuilderCommon.setupSamSelectionElements(samExecutableField, editSamExecutableButton, samLabel);
 

@@ -27,9 +27,6 @@ import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutableIfPresent
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
-import software.aws.toolkits.jetbrains.services.lambda.SamNewProjectSettings
-import software.aws.toolkits.jetbrains.services.lambda.SdkSettings
-import software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetSamProjectTemplate
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 import software.aws.toolkits.jetbrains.utils.DotNetRuntimeUtils
 import software.aws.toolkits.resources.message
@@ -52,20 +49,15 @@ class DotNetSamProjectGenerator(
     createProject = true,
     item = context.item
 ) {
-
     companion object {
         private const val SAM_HELLO_WORLD_PROJECT_NAME = "HelloWorld"
     }
 
-    private val samSettings = SamNewProjectSettings(
-        runtime = DotNetRuntimeUtils.getCurrentDotNetCoreRuntime(),
-        template = DotNetSamProjectTemplate(),
-        sdkSettings = object : SdkSettings {},
-        schemaParameters = null
-    )
-
     private val generator = SamProjectGenerator()
-    private val samPanel = SamInitSelectionPanel(generator) { RuntimeGroup.DOTNET.runtimes.contains(it) }
+    private val samPanel = SamInitSelectionPanel(generator) {
+        // Only show templates for DotNet in Rider
+        RuntimeGroup.DOTNET.runtimes.contains(it)
+    }
 
     private val projectStructurePanel: JTabbedPane
 
@@ -158,7 +150,8 @@ class DotNetSamProjectGenerator(
     }
 
     override fun expand() {
-        val selectedRuntime = samSettings.runtime
+        val samSettings = samPanel.newProjectSettings
+
         val solutionDirectory = getSolutionDirectory()
             ?: throw Exception(message("sam.init.error.no.solution.basepath"))
 
@@ -172,7 +165,7 @@ class DotNetSamProjectGenerator(
 
         val progressManager = ProgressManager.getInstance()
         progressManager.runProcessWithProgressSynchronously({
-            samSettings.template.build(context.project, selectedRuntime, samSettings.schemaParameters, outDirVf)
+            samSettings.template.build(context.project, samSettings.runtime, samSettings.schemaParameters, outDirVf)
         }, message("sam.init.generating.template"), false, null)
 
         // Create solution file

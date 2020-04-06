@@ -10,6 +10,7 @@ import com.intellij.util.net.NetUtils
 import com.intellij.xdebugger.XDebugProcessStarter
 import org.jetbrains.concurrency.Promise
 import org.jetbrains.concurrency.resolvedPromise
+import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPointObject
 
 interface SamDebugSupport {
@@ -37,7 +38,7 @@ interface SamDebugSupport {
         debugPorts: List<Int>
     ): XDebugProcessStarter?
 
-    fun isSupported(): Boolean = true
+    fun isSupported(runtime: Runtime): Boolean = true // Default behavior is all runtimes in the runtime group are supported
 
     fun getDebugPorts(): List<Int> = listOf(NetUtils.tryToFindAvailableSocketPort())
 

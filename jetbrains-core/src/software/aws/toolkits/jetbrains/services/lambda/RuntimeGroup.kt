@@ -51,6 +51,7 @@ enum class RuntimeGroup {
         /**
          * Lazily apply the predicate to each [RuntimeGroup] and return the first match (or null)
          */
+        @JvmStatic
         fun find(predicate: (RuntimeGroup) -> Boolean): RuntimeGroup? = RuntimeGroup.values().asSequence().filter(predicate).firstOrNull()
 
         fun determineRuntime(project: Project?): Runtime? = project?.let { _ ->

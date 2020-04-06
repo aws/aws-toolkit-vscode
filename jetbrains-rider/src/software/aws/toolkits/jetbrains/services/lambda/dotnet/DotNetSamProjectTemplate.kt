@@ -14,7 +14,7 @@ class DotNetSamProjectTemplate : SamProjectTemplate() {
 
     override fun getDescription(): String? = message("sam.init.template.hello_world.description")
 
-    override fun supportedRuntimes(): Set<Runtime> = setOf(Runtime.DOTNETCORE2_0, Runtime.DOTNETCORE2_1)
+    override fun supportedRuntimes(): Set<Runtime> = setOf(Runtime.DOTNETCORE2_1, Runtime.DOTNETCORE3_1)
 
     override fun templateParameters(): TemplateParameters = AppBasedTemplate("hello-world", "cli-package")
 }

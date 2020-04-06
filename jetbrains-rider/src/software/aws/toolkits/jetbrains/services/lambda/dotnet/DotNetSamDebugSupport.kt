@@ -33,6 +33,7 @@ import com.jetbrains.rider.run.IDebuggerOutputListener
 import com.jetbrains.rider.run.bindToSettings
 import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
+import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.trace
@@ -85,7 +86,12 @@ class DotNetSamDebugSupport : SamDebugSupport {
     /**
      * Check whether the JatBrains.Rider.Worker.Launcher app (that is required to run Debugger) is downloaded into Rider SDK.
      */
-    override fun isSupported(): Boolean {
+    override fun isSupported(runtime: Runtime): Boolean {
+        // TODO: Remove when SAM adds debug support
+        if (runtime == Runtime.DOTNETCORE3_1) {
+            return false
+        }
+
         val debugLauncherFile = File(DotNetDebuggerUtils.debuggerBinDir, "${DotNetDebuggerUtils.dotnetCoreDebuggerLauncherName}.dll")
 
         val debuggerLauncherExists = debugLauncherFile.exists()

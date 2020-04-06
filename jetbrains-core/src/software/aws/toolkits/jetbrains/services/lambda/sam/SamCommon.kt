@@ -10,7 +10,6 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
-import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutableIfPresent
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
@@ -21,8 +20,6 @@ import java.nio.file.Paths
 
 class SamCommon {
     companion object {
-        private val logger = getLogger<SamCommon>()
-
         val mapper = jacksonObjectMapper()
         const val SAM_BUILD_DIR = ".aws-sam"
         const val SAM_INFO_VERSION_KEY = "version"

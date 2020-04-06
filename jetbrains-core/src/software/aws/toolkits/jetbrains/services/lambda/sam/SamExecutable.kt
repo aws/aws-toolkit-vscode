@@ -18,7 +18,7 @@ class SamExecutable : ExecutableType<SemVer>, AutoResolvable, Validatable {
     override val id: String = "samCli"
 
     // inclusive
-    val samMinVersion = SemVer("0.38.0", 0, 38, 0)
+    val samMinVersion = SemVer("0.47.0", 0, 47, 0)
     // exclusive
     val samMaxVersion = SemVer("0.50.0", 0, 50, 0)
 
