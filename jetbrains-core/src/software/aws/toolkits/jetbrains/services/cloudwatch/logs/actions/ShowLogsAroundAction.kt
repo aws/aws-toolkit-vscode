@@ -45,7 +45,11 @@ private class ShowLogsAround(
         CloudwatchlogsTelemetry.showEventsAround(project, success = true, value = duration.toMillis().toDouble())
         val project = e.getRequiredData(PlatformDataKeys.PROJECT)
         val window = CloudWatchLogWindow.getInstance(project)
-        val selectedObject = treeTable.listTableModel.getItem(treeTable.selectedRow) ?: return
+        val selectedRow = treeTable.selectedRow
+        if (selectedRow >= treeTable.listTableModel.rowCount || selectedRow < 0) {
+            return
+        }
+        val selectedObject = treeTable.listTableModel.getItem(selectedRow) ?: return
         window.showLogStream(logGroup, logStream, selectedObject, duration)
     }
 }

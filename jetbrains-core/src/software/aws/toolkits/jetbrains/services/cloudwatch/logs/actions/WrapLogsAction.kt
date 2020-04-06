@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.ToggleAction
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.ui.table.TableView
@@ -47,6 +48,16 @@ class WrapLogsAction(private val project: Project, private val getCurrentTableVi
     }
 
     private fun TableView<LogStreamEntry>.redrawTable() {
-        listTableModel.fireTableDataChanged()
+        val selection = selectedRows
+        val row = rowAtPoint(visibleRect.location).takeIf { it >= 0 } ?: 0
+        runInEdt {
+            listTableModel.fireTableDataChanged()
+            // maintain the top cell at the top
+            scrollRectToVisible(getCellRect(row, 0, true))
+            // reselect because fireTableDataChanged unselects. Selection can be non-contiguous
+            selection.forEach {
+                addRowSelectionInterval(it, it)
+            }
+        }
     }
 }

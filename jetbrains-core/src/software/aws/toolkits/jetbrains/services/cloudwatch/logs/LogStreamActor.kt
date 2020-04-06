@@ -43,6 +43,7 @@ sealed class LogStreamActor(
     private val exceptionHandler = CoroutineExceptionHandler { _, e ->
         LOG.error(e) { "Exception thrown in the LogStreamActor not handled:" }
         notifyError(title = message("general.unknown_error"), project = project)
+        table.setPaintBusy(false)
         Disposer.dispose(this)
     }
 
@@ -64,12 +65,34 @@ sealed class LogStreamActor(
         for (message in channel) {
             when (message) {
                 is Message.LOAD_FORWARD -> if (!nextForwardToken.isNullOrEmpty()) {
+                    withContext(edtContext) { table.setPaintBusy(true) }
                     val items = loadMore(nextForwardToken, saveForwardToken = true)
-                    withContext(edtContext) { table.listTableModel.addRows(items) }
+                    withContext(edtContext) {
+                        table.listTableModel.addRows(items)
+                        table.setPaintBusy(false)
+                    }
                 }
                 is Message.LOAD_BACKWARD -> if (!nextBackwardToken.isNullOrEmpty()) {
+                    withContext(edtContext) { table.setPaintBusy(true) }
                     val items = loadMore(nextBackwardToken, saveBackwardToken = true)
-                    withContext(edtContext) { table.listTableModel.items = items + table.listTableModel.items }
+                    if (items.isNotEmpty()) {
+                        // Selected rows can be non contiguous so we have to save every row selected
+                        val newSelection = table.selectedRows.map { it + items.size }
+                        val viewRect = table.visibleRect
+                        table.listTableModel.items = items + table.listTableModel.items
+                        withContext(edtContext) {
+                            table.tableViewModel.fireTableDataChanged()
+                            val offset = table.getCellRect(items.size, 0, true)
+                            // Move the view box down y - cell height amount to stay in the same place
+                            viewRect.y = (viewRect.y + offset.y - offset.height)
+                            table.scrollRectToVisible(viewRect)
+                            // Re-add the selection
+                            newSelection.forEach {
+                                table.addRowSelectionInterval(it, it)
+                            }
+                        }
+                    }
+                    withContext(edtContext) { table.setPaintBusy(false) }
                 }
                 is Message.LOAD_INITIAL -> {
                     loadInitial()
