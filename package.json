@@ -162,7 +162,7 @@
         "debuggers": [
             {
                 "type": "aws-sam",
-                "label": "AWS SAM template resource",
+                "label": "%AWS.configuration.description.awssam.debug.label%",
                 "variables": {
                     "AskForLocalLambda": "aws.lambda.getLambdaName"
                 },
@@ -341,7 +341,48 @@
                         ],
                         "type": "object"
                     }
-                }
+                },
+                "configurationSnippets": [
+                    {
+                        "label": "%AWS.configuration.description.awssam.debug.snippets.lambdaCode.label%",
+                        "description": "%AWS.configuration.description.awssam.debug.snippets.lambdaCode.description%",
+                        "body": {
+                            "type": "aws-sam",
+                            "request": "direct-invoke",
+                            "name": "${3:Invoke Lambda}",
+                            "invokeTarget": {
+                                "target": "code",
+                                "lambdaHandler": "${1:Function Handler}",
+                                "projectRoot": "^\"\\${workspaceFolder}\""
+                            },
+                            "lambda": {
+                                "runtime": "${2:Lambda Runtime}",
+                                "event": {
+                                    "json": {}
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "label": "%AWS.configuration.description.awssam.debug.snippets.lambdaTemplate.label%",
+                        "description": "%AWS.configuration.description.awssam.debug.snippets.lambdaTemplate.description%",
+                        "body": {
+                            "type": "aws-sam",
+                            "request": "direct-invoke",
+                            "name": "${3:Invoke Lambda}",
+                            "invokeTarget": {
+                                "target": "template",
+                                "samTemplatePath": "${1:Template Location}",
+                                "samTemplateResource": "${2:Function Logical ID}"
+                            },
+                            "lambda": {
+                                "event": {
+                                    "json": {}
+                                }
+                            }
+                        }
+                    }
+                ]
             }
         ],
         "viewsContainers": {
@@ -811,7 +852,7 @@
         "createRelease": "ts-node ./build-scripts/createRelease.ts"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "0.0.8",
+        "@aws-toolkits/telemetry": "0.0.19",
         "@types/adm-zip": "^0.4.32",
         "@types/async-lock": "^1.1.0",
         "@types/cross-spawn": "^6.0.0",

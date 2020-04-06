@@ -437,8 +437,9 @@ function validateCodeConfig(debugConfiguration: AwsSamDebuggerConfiguration): { 
             isValid: false,
             message: localize(
                 'AWS.sam.debugger.missingRuntime',
-                'Debug Configurations with an invoke target of "{0}" require a valid Lambda runtime value',
-                CODE_TARGET_TYPE
+                'Debug Configurations with an invoke target of "{0}" require a valid Lambda runtime value, expected one of [{1}]',
+                CODE_TARGET_TYPE,
+                Array.from(samLambdaRuntimes).join(', ')
             ),
         }
     }
