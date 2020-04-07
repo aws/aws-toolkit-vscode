@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix a situation where a valid SAM executable would not be recognized as valid"
-}

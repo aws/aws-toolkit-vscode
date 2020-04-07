@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix issue #1011, python test files will no longer be recognized as lambda handlers"
-}

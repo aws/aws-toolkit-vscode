@@ -1,3 +1,18 @@
+# _1.12_ (2020-04-07)
+- **(Breaking Change)** Minimum SAM CLI version has been increased to 0.47.0
+- **(Feature)** Support for CloudWatch Logs. View, filter, and stream log streams as well as quickly view logs from Lambda or ECS Containers.
+- **(Feature)** Add support for creating and running Lambdas with dotnet core 3.1. Debug support will come in a future release
+- **(Feature)** Add mechanism for users to submit feedback from within the toolkit
+- **(Feature)** Support for the 2020.1 family of IDEs
+- **(Bug Fix)** Fix issue [#1011](https://github.com/aws/aws-toolkit-jetbrains/issues/1011), python test files will no longer be recognized as lambda handlers
+- **(Bug Fix)** Fix a situation where a valid SAM executable would not be recognized as valid
+- **(Bug Fix)** Fix several issues with updating the SAM cli while the IDE is open
+- **(Bug Fix)** Close the S3 bucket viewer when you delete the bucket
+- **(Bug Fix)** Correct the max file size that can be opened from the S3 browser to idea.max.content.load.filesize instead of a constant 5MB
+- **(Bug Fix)** Fix stack overflow when a profile has a `role_arn` but not a `source_profile`
+- **(Bug Fix)** Fix SpeedSearch not working in S3 Bucket viewer
+- **(Removal)** Removed the ability to create a new SAM project for dotnet core 2.0 since it is a deprecated runtime
+
 # _1.11_ (2020-02-25)
 - **(Breaking Change)** Remove NodeJS 8.10 from the new project wizard since the runtime is deprecated
 - **(Feature)** IDE trust manager is now used to connect to AWS allowing configuration of untrusted certificates through the UI

@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Close the S3 bucket viewer when you delete the bucket"
-}

@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix stack overflow when a profile has a `role_arn` but not a `source_profile`"
-}

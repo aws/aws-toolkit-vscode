@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix SpeedSearch not working in S3 Bucket viewer"
-}

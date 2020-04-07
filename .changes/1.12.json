@@ -1,0 +1,44 @@
+{
+  "date" : "2020-04-07",
+  "version" : "1.12",
+  "entries" : [ {
+    "type" : "breaking",
+    "description" : "Minimum SAM CLI version has been increased to 0.47.0"
+  }, {
+    "type" : "feature",
+    "description" : "Support for CloudWatch Logs. View, filter, and stream log streams as well as quickly view logs from Lambda or ECS Containers."
+  }, {
+    "type" : "feature",
+    "description" : "Add support for creating and running Lambdas with dotnet core 3.1. Debug support will come in a future release"
+  }, {
+    "type" : "feature",
+    "description" : "Add mechanism for users to submit feedback from within the toolkit"
+  }, {
+    "type" : "feature",
+    "description" : "Support for the 2020.1 family of IDEs"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix issue #1011, python test files will no longer be recognized as lambda handlers"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix a situation where a valid SAM executable would not be recognized as valid"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix several issues with updating the SAM cli while the IDE is open"
+  }, {
+    "type" : "bugfix",
+    "description" : "Close the S3 bucket viewer when you delete the bucket"
+  }, {
+    "type" : "bugfix",
+    "description" : "Correct the max file size that can be opened from the S3 browser to idea.max.content.load.filesize instead of a constant 5MB"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix stack overflow when a profile has a `role_arn` but not a `source_profile`"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix SpeedSearch not working in S3 Bucket viewer"
+  }, {
+    "type" : "removal",
+    "description" : "Removed the ability to create a new SAM project for dotnet core 2.0 since it is a deprecated runtime"
+  } ]
+}
