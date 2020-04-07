@@ -16,7 +16,7 @@ import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { rmrf } from '../../../shared/filesystem'
 import { makeCoreCLRDebugConfiguration } from '../../../shared/codelens/csharpCodeLensProvider'
 
-describe.only('makeCoreCLRDebugConfiguration', async () => {
+describe('makeCoreCLRDebugConfiguration', async () => {
     let tempFolder: string
     let fakeWorkspaceFolder: vscode.WorkspaceFolder
 

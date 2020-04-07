@@ -259,7 +259,7 @@ export function getLambdaHandlerComponents(
                 accumulator.push(
                     ...lambdaHandlerComponents.class.children
                         .filter(classChildSymbol => classChildSymbol.kind === vscode.SymbolKind.Method)
-                        .filter(methodSymbol => isPublicMethodSymbol(document, methodSymbol))
+                        .filter(methodSymbol => isValidLambdaHandler(document, methodSymbol))
                         .map(methodSymbol => {
                             return {
                                 assembly,
@@ -311,7 +311,12 @@ export function isPublicClassSymbol(
     return false
 }
 
-export function isPublicMethodSymbol(
+/**
+ * Returns whether or not a method is a valid Lambda handler
+ * @param document VS Code document
+ * @param symbol VS Code DocumentSymbol to evaluate
+ */
+export function isValidLambdaHandler(
     document: Pick<vscode.TextDocument, 'getText'>,
     symbol: vscode.DocumentSymbol
 ): boolean {
@@ -320,7 +325,36 @@ export function isPublicMethodSymbol(
         const signatureBeforeMethodNameRange = new vscode.Range(symbol.range.start, symbol.selectionRange.start)
         const signatureBeforeMethodName: string = document.getText(signatureBeforeMethodNameRange)
 
-        return REGEXP_RESERVED_WORD_PUBLIC.test(signatureBeforeMethodName)
+        if (REGEXP_RESERVED_WORD_PUBLIC.test(signatureBeforeMethodName)) {
+            return isValidMethodSignature(symbol)
+        }
+    }
+
+    return false
+}
+
+/**
+ * Returns whether or not a VS Code DocumentSymbol is a method that could be a Lambda handler
+ * * has one or more parameters
+ * * if there is more than one parameter, the second parameter is an ILambdaContext object
+ *   * does not check for extension/implementation of ILambdaContext
+ * @param symbol VS Code DocumentSymbol to analyze
+ */
+export function isValidMethodSignature(symbol: vscode.DocumentSymbol): boolean {
+    const parametersRegExp = /\(.*\)/
+    const lambdaContextType = 'ILambdaContext '
+
+    if (symbol.kind === vscode.SymbolKind.Method) {
+        const parametersArr = parametersRegExp.exec(symbol.name)
+        // reject if there are no parameters
+        if (!parametersArr) {
+            return false
+        }
+        // don't worry about removing parenthesis
+        const individualParams = parametersArr[0].split(',')
+        if (individualParams.length === 1 || individualParams[1].valueOf().includes(lambdaContextType)) {
+            return true
+        }
     }
 
     return false
