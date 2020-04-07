@@ -345,19 +345,43 @@ export function isValidMethodSignature(symbol: vscode.DocumentSymbol): boolean {
     const lambdaContextType = 'ILambdaContext '
 
     if (symbol.kind === vscode.SymbolKind.Method) {
+        // public void methodName(Foo<Bar, Baz> x, ILambdaContext y) -> (Foo<Bar, Baz> x, ILambdaContext y)
         const parametersArr = parametersRegExp.exec(symbol.name)
         // reject if there are no parameters
         if (!parametersArr) {
             return false
         }
-        // don't worry about removing parenthesis
-        const individualParams = parametersArr[0].split(',')
-        if (individualParams.length === 1 || individualParams[1].valueOf().includes(lambdaContextType)) {
+        // remove generics from parameter string so we can do a predictable split on comma
+        const strippedStr = stripGenericsFromParams(parametersArr[0])
+        const individualParams = strippedStr.split(',')
+        if (
+            individualParams.length === 1 ||
+            individualParams[1]
+                .valueOf()
+                .trimLeft()
+                .startsWith(lambdaContextType)
+        ) {
             return true
         }
     }
 
     return false
+}
+
+/**
+ * Strips any generics from a string in order to ensure predictable commas for a string of parameters.
+ * e.g.: `'(Foo<Bar, Baz> x, ILambdaContext y)' -> '(Foo x, ILambdaContext y)'`
+ * Implements a fairly rough English-centric approximation of the C# identifier spec:
+ * * can start with a letter, underscore, or @ sign
+ * * all other characters are letters, numbers, underscores, or periods
+ *
+ * Actual spec: https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/lexical-structure#identifiers
+ * @param input String to remove generics from
+ */
+function stripGenericsFromParams(input: string): string {
+    const cSharpGenericIdentifierRegex = /(?:<{1}(?:\s*[a-zA-Z_@][a-zA-Z0-9._]*[\s,]?)*>{1})/g
+
+    return input.replace(cSharpGenericIdentifierRegex, '')
 }
 
 export function generateDotNetLambdaHandler(components: DotNetLambdaHandlerComponents): string {

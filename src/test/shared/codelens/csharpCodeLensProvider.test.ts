@@ -17,7 +17,7 @@ import {
     generateDotNetLambdaHandler,
     getLambdaHandlerComponents,
     isPublicClassSymbol,
-    isPublicMethodSymbol,
+    isValidLambdaHandler,
 } from '../../../shared/codelens/csharpCodeLensProvider'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 
@@ -189,7 +189,7 @@ describe('isPublicMethodSymbol', async () => {
                 getText: (range?: vscode.Range): string => generateFunctionDeclaration(test.functionSignature),
             }
 
-            const isPublic = isPublicMethodSymbol(doc, sampleMethodSymbol)
+            const isPublic = isValidLambdaHandler(doc, sampleMethodSymbol)
             assert.strictEqual(isPublic, true, 'Expected symbol to be a public method')
         })
     })
@@ -209,7 +209,7 @@ describe('isPublicMethodSymbol', async () => {
             },
         }
 
-        const isPublic = isPublicMethodSymbol(doc, symbol)
+        const isPublic = isValidLambdaHandler(doc, symbol)
         assert.strictEqual(isPublic, false, 'Expected symbol not to be a public method')
     })
 
@@ -219,7 +219,7 @@ describe('isPublicMethodSymbol', async () => {
                 generateFunctionDeclaration(generateFunctionSignature('private', 'FunctionHandler')),
         }
 
-        const isPublic = isPublicMethodSymbol(doc, sampleMethodSymbol)
+        const isPublic = isValidLambdaHandler(doc, sampleMethodSymbol)
         assert.strictEqual(isPublic, false, 'Expected symbol not to be a public method')
     })
 
@@ -237,7 +237,7 @@ describe('isPublicMethodSymbol', async () => {
                 generateFunctionDeclaration(generateFunctionSignature('private', symbol.name)),
         }
 
-        const isPublic = isPublicMethodSymbol(doc, symbol)
+        const isPublic = isValidLambdaHandler(doc, symbol)
         assert.strictEqual(isPublic, false, 'Expected symbol not to be a public method')
     })
 
