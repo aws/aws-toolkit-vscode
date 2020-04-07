@@ -19,9 +19,7 @@ import { getStartPort } from '../utilities/debuggerUtils'
 import { ChannelLogger } from '../utilities/vsCodeUtils'
 import {
     executeSamBuild,
-    getHandlerRelativePath,
     getLambdaInfoFromExistingTemplate,
-    getRelativeFunctionHandler,
     invokeLambdaFunction,
     makeBuildDir,
     makeInputTemplate,
@@ -145,8 +143,7 @@ export async function makePythonDebugConfig(
     config: SamLaunchRequestArgs,
     isDebug: boolean,
     runtime: string,
-    handlerName: string,
-    uri: vscode.Uri
+    handlerName: string
 ): Promise<PythonDebugConfiguration> {
     if (!config.codeRoot) {
         // Last-resort attempt to discover the project root (when there is no
@@ -159,40 +156,6 @@ export async function makePythonDebugConfig(
     }
 
     const baseBuildDir = await makeBuildDir()
-    const handlerFileRelativePath = getHandlerRelativePath({
-        codeRoot: config.codeRoot,
-        filePath: uri.fsPath,
-    })
-    const relativeFunctionHandler = getRelativeFunctionHandler({
-        handlerName: handlerName,
-        runtime: runtime,
-        handlerFileRelativePath,
-    })
-    const relativeOriginalFunctionHandler = getRelativeFunctionHandler({
-        handlerName: handlerName,
-        runtime: runtime,
-        handlerFileRelativePath,
-    })
-    const lambdaInfo = await getLambdaInfoFromExistingTemplate({
-        workspaceUri: config.workspaceFolder.uri,
-        relativeOriginalFunctionHandler,
-    })
-    const inputTemplatePath = await makeInputTemplate({
-        // Direct ("code") invoke-target.
-        baseBuildDir,
-        codeDir: config.codeRoot,
-        relativeFunctionHandler,
-        globals: lambdaInfo && lambdaInfo.templateGlobals ? lambdaInfo.templateGlobals : undefined,
-        properties: lambdaInfo && lambdaInfo.resource.Properties ? lambdaInfo.resource.Properties : undefined,
-        runtime: runtime,
-    })
-    const pathMappings: PythonPathMapping[] = getLocalRootVariants(config.codeRoot).map<PythonPathMapping>(variant => {
-        return {
-            localRoot: variant,
-            remoteRoot: '/var/task',
-        }
-    })
-
     let debugPort: number | undefined
     let manifestPath: string | undefined
     let outFilePath: string | undefined
@@ -212,6 +175,27 @@ export async function makePythonDebugConfig(
         })
     }
 
+    const relativeOriginalFunctionHandler = config.handlerName
+    const relativeFunctionHandler = handlerName
+    const lambdaInfo = await getLambdaInfoFromExistingTemplate({
+        workspaceUri: config.workspaceFolder.uri,
+        relativeOriginalFunctionHandler,
+    })
+    const inputTemplatePath = await makeInputTemplate({
+        baseBuildDir,
+        codeDir: config.codeRoot,
+        relativeFunctionHandler,
+        globals: lambdaInfo && lambdaInfo.templateGlobals ? lambdaInfo.templateGlobals : undefined,
+        properties: lambdaInfo && lambdaInfo.resource.Properties ? lambdaInfo.resource.Properties : undefined,
+        runtime: runtime,
+    })
+    const pathMappings: PythonPathMapping[] = getLocalRootVariants(config.codeRoot).map<PythonPathMapping>(variant => {
+        return {
+            localRoot: variant,
+            remoteRoot: '/var/task',
+        }
+    })
+
     return {
         ...config,
         type: 'python',
@@ -220,7 +204,6 @@ export async function makePythonDebugConfig(
         outFilePath: outFilePath,
         baseBuildDir: baseBuildDir,
         noDebug: false,
-        documentUri: uri,
         samTemplatePath: inputTemplatePath,
         originalSamTemplatePath: inputTemplatePath,
         name: 'SamLocalDebug',
@@ -271,7 +254,7 @@ export async function invokePythonLambda(ctx: ExtContext, config: PythonDebugCon
         config.samTemplatePath = await executeSamBuild({
             baseBuildDir: config.baseBuildDir!!,
             channelLogger: ctx.chanLogger,
-            codeDir: config.codeRoot,
+            codeDir: config.invokeTarget.target === 'template' ? path.dirname(config.codeRoot) : config.codeRoot,
             inputTemplatePath: inputTemplatePath,
             manifestPath: config.manifestPath,
             samProcessInvoker: processInvoker,

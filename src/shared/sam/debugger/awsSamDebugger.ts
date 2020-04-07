@@ -234,8 +234,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                     launchConfig,
                     !launchConfig.noDebug,
                     launchConfig.runtime,
-                    launchConfig.handlerName,
-                    launchConfig.documentUri
+                    launchConfig.handlerName
                 )
                 launchConfig = c
                 if (!configOnly) {
