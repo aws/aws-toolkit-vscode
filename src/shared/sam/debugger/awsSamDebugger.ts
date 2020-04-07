@@ -4,12 +4,19 @@
  */
 
 import * as vscode from 'vscode'
-import * as path from 'path'
 import * as nls from 'vscode-nls'
 import {
     getDefaultRuntime,
     NodejsDebugConfiguration,
     PythonDebugConfiguration,
+    DIRECT_INVOKE_TYPE,
+    AWS_SAM_DEBUG_TYPE,
+    TEMPLATE_TARGET_TYPE,
+    CODE_TARGET_TYPE,
+    AWS_SAM_DEBUG_TARGET_TYPES,
+    getHandlerName,
+    getCodeRoot,
+    getTemplateResource,
 } from '../../../lambda/local/debugConfiguration'
 import { getFamily, RuntimeFamily, samLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 import { CloudFormation } from '../../cloudformation/cloudformation'
@@ -24,17 +31,11 @@ import { getStartPort } from '../../utilities/debuggerUtils'
 import { AwsSamDebuggerConfiguration } from './awsSamDebugConfiguration'
 import { SamLaunchRequestArgs } from './samDebugSession'
 import { tryGetAbsolutePath } from '../../utilities/workspaceUtils'
-import { CodeTargetProperties, TemplateTargetProperties } from './awsSamDebugConfiguration.gen'
+import { TemplateTargetProperties } from './awsSamDebugConfiguration.gen'
 
 const localize = nls.loadMessageBundle()
 
-export const AWS_SAM_DEBUG_TYPE = 'aws-sam'
-export const DIRECT_INVOKE_TYPE = 'direct-invoke'
-export const TEMPLATE_TARGET_TYPE: 'template' = 'template'
-export const CODE_TARGET_TYPE: 'code' = 'code'
-
 const AWS_SAM_DEBUG_REQUEST_TYPES = [DIRECT_INVOKE_TYPE]
-const AWS_SAM_DEBUG_TARGET_TYPES = [TEMPLATE_TARGET_TYPE, CODE_TARGET_TYPE]
 
 /**
  * `DebugConfigurationProvider` dynamically defines these aspects of a VSCode debugger:
@@ -55,7 +56,6 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
     /**
      * @param folder  Workspace folder
      * @param token  Cancellation token
-     * @param returnConfig  Return the resolve config (used in tests)
      */
     public async provideDebugConfigurations(
         folder: vscode.WorkspaceFolder | undefined,
@@ -444,65 +444,4 @@ function validateCodeConfig(debugConfiguration: AwsSamDebuggerConfiguration): { 
     }
 
     return { isValid: true }
-}
-
-function getCodeRoot(
-    folder: vscode.WorkspaceFolder | undefined,
-    config: AwsSamDebuggerConfiguration
-): string | undefined {
-    switch (config.invokeTarget.target) {
-        case 'code': {
-            const codeInvoke = config.invokeTarget as CodeTargetProperties
-            return tryGetAbsolutePath(folder, codeInvoke.projectRoot)
-        }
-        case 'template': {
-            const templateInvoke = config.invokeTarget as TemplateTargetProperties
-            const templateResource = getTemplateResource(config)
-            if (!templateResource?.Properties) {
-                return undefined
-            }
-            const templateDir = path.dirname(templateInvoke.samTemplatePath)
-            return path.resolve(templateDir ?? '', templateResource?.Properties?.CodeUri)
-        }
-        default: {
-            throw Error('invalid invokeTarget') // Must not happen.
-        }
-    }
-}
-
-function getHandlerName(config: AwsSamDebuggerConfiguration): string {
-    switch (config.invokeTarget.target) {
-        case 'code': {
-            const codeInvoke = config.invokeTarget as CodeTargetProperties
-            return codeInvoke.lambdaHandler
-        }
-        case 'template': {
-            const templateResource = getTemplateResource(config)
-            return templateResource?.Properties?.Handler!!
-        }
-        default: {
-            // Should never happen.
-            vscode.window.showErrorMessage(
-                localize(
-                    'AWS.sam.debugger.invalidTarget',
-                    'Debug Configuration has an unsupported target type. Supported types: {0}',
-                    AWS_SAM_DEBUG_TARGET_TYPES.join(', ')
-                )
-            )
-            return ''
-        }
-    }
-}
-
-function getTemplateResource(config: AwsSamDebuggerConfiguration): CloudFormation.Resource | undefined {
-    if (config.invokeTarget.target !== 'template') {
-        return undefined
-    }
-    const templateInvoke = config.invokeTarget as TemplateTargetProperties
-    const cftRegistry = CloudFormationTemplateRegistry.getRegistry()
-    const cfnTemplate = cftRegistry.getRegisteredTemplate(templateInvoke.samTemplatePath)?.template
-    const templateResource: CloudFormation.Resource | undefined = cfnTemplate?.Resources![
-        templateInvoke.samTemplateResource!!
-    ]
-    return templateResource
 }

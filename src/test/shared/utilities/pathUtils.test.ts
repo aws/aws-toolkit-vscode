@@ -9,6 +9,7 @@ import {
     dirnameWithTrailingSlash,
     getNormalizedRelativePath,
     normalizeSeparator,
+    removeDriveLetter,
 } from '../../../shared/utilities/pathUtils'
 
 describe('getNormalizedRelativePath', async () => {
@@ -39,4 +40,17 @@ describe('dirnameWithTrailingSlash', async () => {
 
         assert.strictEqual(actualResult, expectedResult, 'Expected path to contain trailing slash')
     })
+})
+
+it('removeDriveLetter', () => {
+    assert.strictEqual(removeDriveLetter('c:\\foo\\bar.txt'), '\\foo\\bar.txt')
+    assert.strictEqual(removeDriveLetter('C:\\foo\\bar.txt'), '\\foo\\bar.txt')
+    assert.strictEqual(removeDriveLetter('c:/foo/bar.txt'), '/foo/bar.txt')
+    assert.strictEqual(removeDriveLetter('c:/foo'), '/foo')
+    assert.strictEqual(removeDriveLetter('/foo/bar.txt'), '/foo/bar.txt')
+    assert.strictEqual(removeDriveLetter('/foo/bar'), '/foo/bar')
+    assert.strictEqual(removeDriveLetter('/foo/'), '/foo/')
+    assert.strictEqual(removeDriveLetter('//'), '//')
+    assert.strictEqual(removeDriveLetter('/'), '/')
+    assert.strictEqual(removeDriveLetter(''), '')
 })

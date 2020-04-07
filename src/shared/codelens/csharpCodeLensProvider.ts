@@ -7,10 +7,15 @@ import { access } from 'fs-extra'
 import * as path from 'path'
 import * as os from 'os'
 import * as vscode from 'vscode'
-import { DOTNET_CORE_DEBUGGER_PATH, DotNetCoreDebugConfiguration } from '../../lambda/local/debugConfiguration'
+import {
+    DOTNET_CORE_DEBUGGER_PATH,
+    DotNetCoreDebugConfiguration,
+    getCodeRoot,
+    getTemplateResource,
+    getTemplate,
+} from '../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { DefaultDockerClient, DockerClient } from '../clients/dockerClient'
-import { CloudFormation } from '../cloudformation/cloudformation'
 import { ExtContext } from '../extensions'
 import { mkdir } from '../filesystem'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
@@ -65,12 +70,6 @@ class DefaultOnLocalInvokeCommandContext implements OnLocalInvokeCommandContext 
     }
 }
 
-function getCodeUri(resource: CloudFormation.Resource, samTemplateUri: vscode.Uri) {
-    const rawCodeUri = CloudFormation.getCodeUri(resource)
-
-    return path.isAbsolute(rawCodeUri) ? rawCodeUri : path.join(path.dirname(samTemplateUri.fsPath), rawCodeUri)
-}
-
 /**
  * Gathers and sets launch-config info by inspecting the workspace and creating
  * temp files/directories as needed.
@@ -90,21 +89,18 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
     }
 
     const baseBuildDir = await makeBuildDir()
-    const template: CloudFormation.Template = await CloudFormation.load(config.samTemplatePath)
-    const resource = await CloudFormation.getResourceFromTemplateResources({
-        templateResources: template.Resources,
-        handlerName: config.handlerName,
-    })
-    const codeUri = getCodeUri(resource, vscode.Uri.parse(config.samTemplatePath!!))
+    const template = getTemplate(config)
+    const resource = getTemplateResource(config)
+    const codeUri = getCodeRoot(config.workspaceFolder, config)
     const handlerName = config.handlerName
 
     config.samTemplatePath = await makeInputTemplate({
         baseBuildDir,
-        codeDir: codeUri,
+        codeDir: codeUri!!,
         relativeFunctionHandler: handlerName,
         runtime: config.runtime,
-        globals: template.Globals,
-        properties: resource.Properties,
+        globals: template?.Globals,
+        properties: resource?.Properties,
     })
 
     config = {

@@ -22,8 +22,9 @@ import { TelemetryService } from '../telemetry/telemetryService'
 import { PromiseSharer } from '../utilities/promiseUtilities'
 import { initialize as initializeSamCliContext } from './cli/samCliContext'
 import { detectSamCli } from './cli/samCliDetection'
-import { AWS_SAM_DEBUG_TYPE, SamDebugConfigProvider } from './debugger/awsSamDebugger'
+import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { SamDebugSession } from './debugger/samDebugSession'
+import { AWS_SAM_DEBUG_TYPE } from '../../lambda/local/debugConfiguration'
 
 /**
  * Activate SAM-related functionality.

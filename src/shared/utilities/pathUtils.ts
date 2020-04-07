@@ -34,3 +34,14 @@ export function getLocalRootVariants(filePath: string): string[] {
 
     return [filePath]
 }
+
+/**
+ * "c:/foo.bar" => "/foo.bar"
+ */
+export function removeDriveLetter(f: string): string {
+    if (!f || f.length < 2 || !DRIVE_LETTER_REGEX.test(f.substring(0, 2))) {
+        return f
+    }
+
+    return f.substring(2)
+}

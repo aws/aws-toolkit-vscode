@@ -8,23 +8,24 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 
 import { FakeExtensionContext } from '../../../fakeExtensionContext'
-import { nodeJsRuntimes } from '../../../../lambda/models/samLambdaRuntime'
+import * as lambdaModel from '../../../../lambda/models/samLambdaRuntime'
 import { CloudFormationTemplateRegistry } from '../../../../shared/cloudformation/templateRegistry'
 import { mkdir, rmrf } from '../../../../shared/filesystem'
+import * as pathutil from '../../../../shared/utilities/pathUtils'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
-import {
-    AWS_SAM_DEBUG_TYPE,
-    SamDebugConfigProvider,
-    CODE_TARGET_TYPE,
-    DIRECT_INVOKE_TYPE,
-    TEMPLATE_TARGET_TYPE,
-} from '../../../../shared/sam/debugger/awsSamDebugger'
+import { SamDebugConfigProvider } from '../../../../shared/sam/debugger/awsSamDebugger'
 import {
     makeSampleSamTemplateYaml,
     makeSampleYamlResource,
     strToYamlFile,
 } from '../../cloudformation/cloudformationTestUtils'
 import { SamLaunchRequestArgs } from '../../../../shared/sam/debugger/samDebugSession'
+import {
+    DIRECT_INVOKE_TYPE,
+    AWS_SAM_DEBUG_TYPE,
+    TEMPLATE_TARGET_TYPE,
+    CODE_TARGET_TYPE,
+} from '../../../../lambda/local/debugConfiguration'
 
 /** Gets the full path to the project root directory. */
 function getProjectDir(): string {
@@ -47,7 +48,10 @@ function getWorkspaceFolder(dir: string): vscode.WorkspaceFolder {
  */
 function assertEqualLaunchConfigs(actual: SamLaunchRequestArgs, expected: SamLaunchRequestArgs, appDir: string) {
     assert.strictEqual(actual.workspaceFolder.name, expected.workspaceFolder.name)
-    assert.strictEqual(actual.workspaceFolder.uri.fsPath, expected.workspaceFolder.uri.fsPath)
+    assert.strictEqual(
+        pathutil.removeDriveLetter(actual.workspaceFolder.uri.fsPath),
+        pathutil.removeDriveLetter(expected.workspaceFolder.uri.fsPath)
+    )
     // Build dir is a generated temp dir, check that it looks reasonable.
     assert.ok(actual.baseBuildDir && actual.baseBuildDir.length > 9)
     // Remove noisy properties before doing a deep-compare.
@@ -69,7 +73,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
     let tempFolderSimilarName: string | undefined
     let tempFile: vscode.Uri
     let fakeWorkspaceFolder: vscode.WorkspaceFolder
-    const validRuntime = [...nodeJsRuntimes.values()][0]
+    const validRuntime = [...lambdaModel.nodeJsRuntimes.values()][0]
     const resourceName = 'myResource'
 
     beforeEach(async () => {
@@ -306,6 +310,9 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             const actual = (await debugConfigProvider.resolveDebugConfiguration(folder, c))!!
             const expected: SamLaunchRequestArgs = {
                 type: 'node', // Input "aws-sam", output "node".
+                request: 'attach', // Input "direct-invoke", output "attach".
+                runtime: 'nodejs12.x',
+                runtimeFamily: 1,
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -338,9 +345,6 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 preLaunchTask: undefined,
                 protocol: 'inspector',
                 remoteRoot: '/var/task',
-                request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'nodejs12.x',
-                runtimeFamily: 1,
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
             }
 
@@ -376,6 +380,9 @@ describe('AwsSamDebugConfigurationProvider', async () => {
 
             const expected: SamLaunchRequestArgs = {
                 type: 'node', // Input "aws-sam", output "node".
+                request: 'attach', // Input "direct-invoke", output "attach".
+                runtime: 'nodejs12.x',
+                runtimeFamily: 1,
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -405,16 +412,13 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 preLaunchTask: undefined,
                 protocol: 'inspector',
                 remoteRoot: '/var/task',
-                request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'nodejs12.x',
-                runtimeFamily: 1,
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
         })
 
-        it.skip('target=code: dotnet/csharp', async () => {
+        it('target=code: dotnet/csharp', async () => {
             const appDir = path.join(getProjectDir(), 'integrationTest-samples/csharp-plain-sam-app/')
             const folder = getWorkspaceFolder(appDir)
             const c = {
@@ -433,47 +437,62 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             ;(c as any).configOnly = true
             const actual = (await debugConfigProvider.resolveDebugConfiguration(folder, c))!!
             const expected: SamLaunchRequestArgs = {
-                type: 'node', // Input "aws-sam", output "node".
+                request: 'attach', // Input "direct-invoke", output "attach".
+                runtime: 'dotnetcore2.1', // lambdaModel.dotNetRuntimes[0],
+                runtimeFamily: 2,
+                type: 'coreclr', // Input "aws-sam", output "coreclr".
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
                     uri: vscode.Uri.parse(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
-                codeRoot: path.join(appDir, 'src'), // Normalized to absolute path.
+                codeRoot: path.join(appDir, 'src/HelloWorld'), // Normalized to absolute path.
                 debugPort: 5858,
                 documentUri: vscode.Uri.parse(''), // TODO: remove or test.
-                handlerName: 'my.test.handler',
+                handlerName: 'HelloWorld::HelloWorld.Function::FunctionHandler',
                 invokeTarget: {
-                    lambdaHandler: 'my.test.handler',
-                    projectRoot: 'src',
+                    lambdaHandler: 'HelloWorld::HelloWorld.Function::FunctionHandler',
+                    projectRoot: 'src/HelloWorld/',
                     target: 'code',
                 },
                 lambda: {
-                    runtime: 'nodejs12.x',
+                    runtime: 'dotnetcore2.1',
                 },
-                localRoot: path.join(appDir, 'src'), // Normalized to absolute path.
                 name: 'SamLocalDebug', // "name": "whats in a name"
-                originalHandlerName: 'my.test.handler',
+                originalHandlerName: 'HelloWorld::HelloWorld.Function::FunctionHandler',
                 originalSamTemplatePath: '?',
                 samTemplatePath: path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml'),
 
                 //
-                // Node-related fields
+                // Csharp-related fields
                 //
-                address: 'localhost',
-                port: 5858,
-                preLaunchTask: undefined,
-                protocol: 'inspector',
-                remoteRoot: '/var/task',
-                request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'nodejs12.x',
-                runtimeFamily: 1,
-                skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
+                debuggerPath: path.join(path.join(appDir, 'src/HelloWorld'), '.vsdbg'),
+                processId: '1',
+                pipeTransport: {
+                    debuggerPath: '/tmp/lambci_debug_files/vsdbg',
+                    // tslint:disable-next-line: no-invalid-template-strings
+                    pipeArgs: ['-c', 'docker exec -i $(docker ps -q -f publish=5858) ${debuggerCommand}'],
+                    pipeCwd: path.join(appDir, 'src/HelloWorld'),
+                    pipeProgram: 'sh',
+                },
+                sourceFileMap: {
+                    '/var/task': path.join(appDir, 'src/HelloWorld'),
+                },
+                windows: {
+                    pipeTransport: {
+                        debuggerPath: '/tmp/lambci_debug_files/vsdbg',
+                        // tslint:disable-next-line: no-invalid-template-strings
+                        pipeArgs: ['-c', 'docker exec -i $(docker ps -q -f publish=5858) ${debuggerCommand}'],
+                        pipeCwd: path.join(appDir, 'src/HelloWorld'),
+                        pipeProgram: 'powershell',
+                    },
+                },
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
         })
+
         it('debugconfig with extraneous env vars', async () => {
             const appDir = path.join(getProjectDir(), 'integrationTest-samples/js-manifest-in-root/')
             const folder = getWorkspaceFolder(appDir)
