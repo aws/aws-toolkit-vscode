@@ -286,7 +286,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             assert.strictEqual(resolved!.name, 'SamLocalDebug')
         })
 
-        it('target=code', async () => {
+        it('target=code: javascript', async () => {
             const appDir = path.join(getProjectDir(), 'integrationTest-samples/js-manifest-in-root/')
             const folder = getWorkspaceFolder(appDir)
             const c = {
@@ -347,7 +347,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             assertEqualLaunchConfigs(actual, expected, appDir)
         })
 
-        it('target=template', async () => {
+        it('target=template: javascript', async () => {
             const appDir = path.join(getProjectDir(), 'integrationTest-samples/js-manifest-in-root/')
             const folder = getWorkspaceFolder(appDir)
             const c = {
@@ -414,6 +414,66 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             assertEqualLaunchConfigs(actual, expected, appDir)
         })
 
+        it.skip('target=code: dotnet/csharp', async () => {
+            const appDir = path.join(getProjectDir(), 'integrationTest-samples/csharp-plain-sam-app/')
+            const folder = getWorkspaceFolder(appDir)
+            const c = {
+                type: AWS_SAM_DEBUG_TYPE,
+                name: 'Test debugconfig',
+                request: DIRECT_INVOKE_TYPE,
+                invokeTarget: {
+                    target: CODE_TARGET_TYPE,
+                    lambdaHandler: 'HelloWorld::HelloWorld.Function::FunctionHandler',
+                    projectRoot: 'src/HelloWorld/',
+                },
+                lambda: {
+                    runtime: 'dotnetcore2.1',
+                },
+            }
+            ;(c as any).configOnly = true
+            const actual = (await debugConfigProvider.resolveDebugConfiguration(folder, c))!!
+            const expected: SamLaunchRequestArgs = {
+                type: 'node', // Input "aws-sam", output "node".
+                workspaceFolder: {
+                    index: 0,
+                    name: 'test-workspace-folder',
+                    uri: vscode.Uri.parse(appDir),
+                },
+                baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
+                codeRoot: path.join(appDir, 'src'), // Normalized to absolute path.
+                debugPort: 5858,
+                documentUri: vscode.Uri.parse(''), // TODO: remove or test.
+                handlerName: 'my.test.handler',
+                invokeTarget: {
+                    lambdaHandler: 'my.test.handler',
+                    projectRoot: 'src',
+                    target: 'code',
+                },
+                lambda: {
+                    runtime: 'nodejs12.x',
+                },
+                localRoot: path.join(appDir, 'src'), // Normalized to absolute path.
+                name: 'SamLocalDebug', // "name": "whats in a name"
+                originalHandlerName: 'my.test.handler',
+                originalSamTemplatePath: '?',
+                samTemplatePath: path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml'),
+
+                //
+                // Node-related fields
+                //
+                address: 'localhost',
+                port: 5858,
+                preLaunchTask: undefined,
+                protocol: 'inspector',
+                remoteRoot: '/var/task',
+                request: 'attach', // Input "direct-invoke", output "attach".
+                runtime: 'nodejs12.x',
+                runtimeFamily: 1,
+                skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
+            }
+
+            assertEqualLaunchConfigs(actual, expected, appDir)
+        })
         it('debugconfig with extraneous env vars', async () => {
             const appDir = path.join(getProjectDir(), 'integrationTest-samples/js-manifest-in-root/')
             const folder = getWorkspaceFolder(appDir)
