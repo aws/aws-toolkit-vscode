@@ -1,5 +1,8 @@
 node_modules/**
 **/*.json
 **/*.gen.ts
+**/*.d.ts
 src/test
+src/integrationTest
+test-scripts
 third-party
