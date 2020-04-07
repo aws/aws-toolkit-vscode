@@ -19,8 +19,6 @@ module.exports = {
         // TODO reenable this rule
         'no-async-promise-executor': 'off',
         // TODO reenable this rule
-        '@typescript-eslint/ban-types': 'off',
-        // TODO reenable this rule
         '@typescript-eslint/no-misused-promises': 'off',
         // TODO reenable this rule
         '@typescript-eslint/ban-types': 'off',
