@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.lambda.python
 import com.intellij.openapi.roots.ModuleRootModificationUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.NavigatablePsiElement
+import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.runInEdtAndWait
 import com.jetbrains.python.psi.PyFunction
 import org.assertj.core.api.Assertions.assertThat
@@ -13,6 +14,8 @@ import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.Lambda
+import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
+import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addFileToModule
 
@@ -150,10 +153,69 @@ class PythonLambdaHandlerResolverTest {
         assertHandler("hello_world.foo_bar.app.handle", true)
     }
 
+    @Test
+    fun foundHandlersNotPythonFileInvalid() {
+        createHandler("hello_world/foo_bar/app.java")
+
+        assertHandler("hello_world/foo_bar/app.handle", false)
+    }
+
+    @Test
+    fun foundHandlersAreDeterminedValid() {
+        createHandler("hello_world/foo_bar/app.py")
+
+        assertHandlerDetermineHandlers("hello_world/foo_bar/app.handle", false)
+    }
+
+    @Test
+    fun pyTestHandlersAreDeterminedInvalid() {
+        createPyTestHandler("hello_world/foo_bar/app.py")
+
+        assertHandlerDetermineHandlers("hello_world/foo_bar/app.test_handle", true)
+    }
+
+    @Test
+    fun testDirectoryHandlerHandlersAreDeterminedInvalid() {
+        val vfs = createHandler("hello_world/foo_bar/app.py")
+        PsiTestUtil.addSourceRoot(projectRule.module, vfs.parent, true)
+
+        assertHandlerDetermineHandlers("hello_world/foo_bar/app.handle", true)
+    }
+
+    @Test
+    fun foundHandlersOneArugmentIsDeterminedInvalid() {
+        createInvalidHandler("hello_world/foo_bar/app.py", 1)
+
+        assertHandlerDetermineHandlers("hello_world/foo_bar/app.handle", true)
+    }
+
+    @Test
+    fun foundHandlersThreeArugmentsIsDeterminedInvalid() {
+        createInvalidHandler("hello_world/foo_bar/app.py", 3)
+
+        assertHandlerDetermineHandlers("hello_world/foo_bar/app.handle", true)
+    }
+
     private fun createHandler(path: String): VirtualFile = projectRule.fixture.addFileToProject(
         path,
         """
         def handle(event, context):
+            return "HelloWorld"
+        """.trimIndent()
+    ).virtualFile
+
+    private fun createPyTestHandler(path: String): VirtualFile = projectRule.fixture.addFileToProject(
+        path,
+        """
+        def test_handle(event, context):
+            return "HelloWorld"
+        """.trimIndent()
+    ).virtualFile
+
+    private fun createInvalidHandler(path: String, numberArguments: Int): VirtualFile = projectRule.fixture.addFileToProject(
+        path,
+        """
+        def handle(${(1..numberArguments).joinToString(", ") { "a$it" } }):
             return "HelloWorld"
         """.trimIndent()
     ).virtualFile
@@ -180,6 +242,22 @@ class PythonLambdaHandlerResolverTest {
         }
     }
 
+    private fun assertHandlerDetermineHandlers(handler: String, shouldBeFilteredOut: Boolean) {
+        runInEdtAndWait {
+            val elementSet = findHandler(handler)
+            assertThat(elementSet).hasSize(1)
+            assertThat(elementSet[0]).isInstanceOf(PyFunction::class.java)
+            val pyElement = elementSet[0] as PyFunction
+            val elements = getHandlerResolver().determineHandlers(pyElement.identifyingElement!!, pyElement.containingFile.virtualFile)
+            if (shouldBeFilteredOut) {
+                assertThat(elements).isEmpty()
+            } else {
+                assertThat(elements).hasSize(1)
+            }
+        }
+    }
+
+    private fun getHandlerResolver() = Runtime.PYTHON3_6.runtimeGroup?.let { LambdaHandlerResolver.getInstance(it) }!!
     private fun findHandler(handler: String): Array<NavigatablePsiElement> =
         Lambda.findPsiElementsForHandler(projectRule.project, Runtime.PYTHON3_6, handler)
 }

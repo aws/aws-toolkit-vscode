@@ -7,6 +7,7 @@ import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleUtilCore
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootManager
+import com.intellij.openapi.roots.TestSourcesFilter
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.NavigatablePsiElement
 import com.intellij.psi.PsiDirectory
@@ -104,8 +105,18 @@ class PythonLambdaHandlerResolver : LambdaHandlerResolver {
         if (element.node?.elementType != PyTokenTypes.IDENTIFIER) {
             return null
         }
+        val project = element.project
         val function = element.parent as? PyFunction ?: return null
-        if (function.parent is PyFile && function.parameterList.parameters.size == 2) {
+        val virtualFile = element.containingFile.virtualFile ?: return null
+
+        if (function.parent is PyFile &&
+            function.parameterList.parameters.size == 2 &&
+            // Ignore files that are considered test sources. Ignore the IDE warning, it uses IDE extension points.
+            !TestSourcesFilter.isTestSources(virtualFile, project) &&
+            // ignore pytest tests: they start with test_ by convention:
+            // https://pytest.readthedocs.io/en/reorganize-docs/new-docs/user/naming_conventions.html#id1
+            function.name?.startsWith("test_") != true
+        ) {
             return function.qualifiedName
         }
         return null
