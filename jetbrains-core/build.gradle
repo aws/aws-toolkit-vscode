@@ -47,12 +47,6 @@ test {
     systemProperty("log.dir", "${org.jetbrains.intellij.Utils.systemDir(project.intellij.sandboxDirectory, true)}/logs")
 }
 
-task testJar (type: Jar) {
-    archiveBaseName = "${project.name}-test"
-    from sourceSets.test.output
-    from sourceSets.integrationTest.output
-}
-
 task pluginChangeLog(type: GenerateChangeLog) {
     includeUnreleased = true
     generateGithub = false
@@ -66,10 +60,6 @@ jar {
     from(pluginChangeLog.jetbrainsChangeNotesFile) {
         into "META-INF"
     }
-}
-
-artifacts {
-    testArtifacts testJar
 }
 
 dependencies {

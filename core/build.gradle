@@ -14,17 +14,3 @@ dependencies {
 
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
 }
-
-configurations {
-    testRuntimeClasspath.extendsFrom(compileOnly)
-    testArtifacts
-}
-
-task testJar (type: Jar) {
-    archiveBaseName = "${project.name}-test"
-    from sourceSets.test.output
-}
-
-artifacts {
-    testArtifacts testJar
-}
