@@ -1,0 +1,5 @@
+node_modules/**
+**/*.json
+**/*.gen.ts
+src/test
+third-party
