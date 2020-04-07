@@ -76,7 +76,7 @@ module.exports = {
         'no-constant-condition': ['error', { checkLoops: false }],
         'no-empty': 'off',
         'header/header': [
-            2,
+            'error',
             'block',
             {
                 pattern:

@@ -859,7 +859,6 @@
         "eslint": "^6.8.0",
         "eslint-config-prettier": "^6.10.1",
         "eslint-plugin-header": "^3.0.0",
-        "eslint-plugin-import": "^2.20.2",
         "eslint-plugin-no-null": "^1.0.2",
         "filemanager-webpack-plugin": "^2.0.5",
         "glob": "^7.1.4",
