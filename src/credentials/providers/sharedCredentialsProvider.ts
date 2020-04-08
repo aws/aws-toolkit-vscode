@@ -142,7 +142,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             const profileName = profile[SHARED_CREDENTIAL_PROPERTIES.SOURCE_PROFILE]!
 
             // Cycle
-            if (profilesTraversed.indexOf(profileName) !== -1) {
+            if (profilesTraversed.includes(profileName)) {
                 profilesTraversed.push(profileName)
 
                 return `Cycle detected within Shared Credentials Profiles. Reference chain: ${profilesTraversed.join(

@@ -567,7 +567,7 @@ export function validateS3Bucket(value: string): string | undefined {
         )
     }
 
-    if (value[value.length - 1] === '-') {
+    if (value.endsWith('-')) {
         return localize('AWS.samcli.deploy.s3Bucket.error.endsWithDash', 'S3 bucket name may not end with a dash')
     }
 
