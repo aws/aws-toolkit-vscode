@@ -89,6 +89,7 @@ public class SamInitSelectionPanel implements ValidatablePanel {
                                         .sorted()
                                         .filter(runtimeFilter)
                                         .filter(r -> supportedRuntimeGroups.contains(RuntimeGroup.find(runtimeGroup -> runtimeGroup.getRuntimes().contains(r))))
+                                        .distinct()
                                         .forEach(y -> runtimeComboBox.addItem(y));
 
         SamInitProjectBuilderCommon.setupSamSelectionElements(samExecutableField, editSamExecutableButton, samLabel);
