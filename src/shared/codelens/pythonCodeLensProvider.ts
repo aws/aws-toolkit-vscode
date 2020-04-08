@@ -155,6 +155,7 @@ export async function makePythonDebugConfig(
             throw Error('missing launch.json, template.yaml, and failed to discover project root')
         }
     }
+    config.codeRoot = pathutil.normalize(config.codeRoot)
 
     const baseBuildDir = await makeBuildDir()
     let debugPort: number | undefined

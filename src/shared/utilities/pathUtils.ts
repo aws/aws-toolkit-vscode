@@ -35,9 +35,9 @@ export function dirnameWithTrailingSlash(path: string): string {
 
 /**
  * Normalizes path `p`:
- * - Lowercases drive-letter (Windows).
  * - Replaces backslashes "\\" with "/".
  * - Removes redundant path separators (except initial double-slash for UNC-style paths).
+ * - Uppercases drive-letter (Windows, useful for `sourceFileMap` emitted by `makeCoreCLRDebugConfiguration()`).
  * - ...and returns the result of `path.normalize()`.
  */
 export function normalize(p: string): string {
@@ -49,7 +49,7 @@ export function normalize(p: string): string {
         return normalizeSeparator(p)
     }
 
-    return normalizeSeparator(_path.normalize(firstChar.toLowerCase() + p.substring(1)))
+    return normalizeSeparator(_path.normalize(firstChar.toUpperCase() + p.substring(1)))
 }
 
 export function getLocalRootVariants(filePath: string): string[] {

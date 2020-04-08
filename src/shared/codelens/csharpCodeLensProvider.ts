@@ -88,6 +88,7 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
             throw Error('missing launch.json, template.yaml, and failed to discover project root')
         }
     }
+    config.codeRoot = pathutil.normalize(config.codeRoot)
 
     const baseBuildDir = await makeBuildDir()
     const template = getTemplate(config)
@@ -402,10 +403,8 @@ export async function makeCoreCLRDebugConfiguration(
     config.debuggerPath = pathutil.normalize(getDebuggerPath(config.codeRoot))
     await ensureDebuggerPathExists(config.debuggerPath)
 
-    if (os.platform() === 'win32') {
-        // Coerce drive letter to uppercase. While Windows is case-insensitive, sourceFileMap is case-sensitive.
-        codeUri = codeUri.replace(DRIVE_LETTER_REGEX, match => match.toUpperCase())
-    }
+    // Windows: sourceFileMap expects uppercase drive letter.
+    codeUri = pathutil.normalize(codeUri)
 
     return {
         ...config,

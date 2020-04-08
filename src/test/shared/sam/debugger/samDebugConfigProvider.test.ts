@@ -43,25 +43,41 @@ function getWorkspaceFolder(dir: string): vscode.WorkspaceFolder {
 }
 
 /**
+ * Asserts that filepaths are equal, after normalizing for platform differences.
+ */
+function assertEqualPaths(actual: string, expected: string) {
+    assert.strictEqual(
+        pathutil.removeDriveLetter(pathutil.normalize(actual)),
+        pathutil.removeDriveLetter(pathutil.normalize(expected))
+    )
+}
+
+/**
  * Asserts the contents of a "launch config" (the result of
  * `resolveDebugConfiguration()` invoked on a user-provided "debug config").
  */
 function assertEqualLaunchConfigs(actual: SamLaunchRequestArgs, expected: SamLaunchRequestArgs, appDir: string) {
     assert.strictEqual(actual.workspaceFolder.name, expected.workspaceFolder.name)
-    assert.strictEqual(
-        pathutil.removeDriveLetter(pathutil.normalize(actual.workspaceFolder.uri.fsPath)),
-        pathutil.removeDriveLetter(pathutil.normalize(expected.workspaceFolder.uri.fsPath))
-    )
+
+    // Compare filepaths (before removing them for deep-compare).
+    assertEqualPaths(actual.workspaceFolder.uri.fsPath, expected.workspaceFolder.uri.fsPath)
+    assertEqualPaths(actual.codeRoot, expected.codeRoot)
+    assertEqualPaths((actual as any).localRoot ?? '', (expected as any).localRoot ?? '')
+    assertEqualPaths((actual as any).debuggerPath ?? '', (expected as any).debuggerPath ?? '')
+
     // Build dir is a generated temp dir, check that it looks reasonable.
     assert.ok(actual.baseBuildDir && actual.baseBuildDir.length > 9)
     // Remove noisy properties before doing a deep-compare.
     for (const o of [actual, expected]) {
-        delete (o as any).documentUri
-        delete (o as any).baseBuildDir
-        delete (o as any).samTemplatePath
-        delete (o as any).originalSamTemplatePath
-        delete (o as any).workspaceFolder
+        delete o.documentUri
+        delete o.baseBuildDir
+        delete o.samTemplatePath
+        delete o.originalSamTemplatePath
+        delete o.workspaceFolder
+        delete o.codeRoot
         delete (o as any).configOnly
+        delete (o as any).localRoot // Node-only
+        delete (o as any).debuggerPath // Dotnet-only
     }
     assert.deepStrictEqual(actual, expected)
 }

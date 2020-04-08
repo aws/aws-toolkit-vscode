@@ -69,10 +69,11 @@ describe('pathUtils', async () => {
     })
 
     it('normalize()', () => {
-        assert.strictEqual(normalize('c:\\foo\\bar.txt'), 'c:/foo/bar.txt')
-        assert.strictEqual(normalize('C:\\foo\\bar.txt'), 'c:/foo/bar.txt')
-        assert.strictEqual(normalize('c:/foo/bar.txt'), 'c:/foo/bar.txt')
-        assert.strictEqual(normalize('c:/foo'), 'c:/foo')
+        assert.strictEqual(normalize('../../FOO/BAR'), '../../FOO/BAR')
+        assert.strictEqual(normalize('c:\\foo\\bar.txt'), 'C:/foo/bar.txt')
+        assert.strictEqual(normalize('C:\\foo\\bar.txt'), 'C:/foo/bar.txt')
+        assert.strictEqual(normalize('c:/foo/bar.txt'), 'C:/foo/bar.txt')
+        assert.strictEqual(normalize('c:/foo'), 'C:/foo')
         assert.strictEqual(normalize('/foo/bar.txt'), '/foo/bar.txt')
         assert.strictEqual(normalize('/foo/bar'), '/foo/bar')
         assert.strictEqual(normalize('\\foo/bar\\'), '/foo/bar/')

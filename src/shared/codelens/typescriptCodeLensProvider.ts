@@ -90,6 +90,7 @@ export async function makeTypescriptConfig(
             throw Error('missing launch.json, template.yaml, and failed to discover project root')
         }
     }
+    config.codeRoot = pathutil.normalize(config.codeRoot)
 
     config.baseBuildDir = await makeBuildDir()
 
