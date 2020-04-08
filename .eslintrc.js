@@ -69,11 +69,12 @@ module.exports = {
         // TODO rennable this rule
         '@typescript-eslint/explicit-function-return-type': 'off',
         // TODO rennable this rule
-        //'no-null/no-null': 2,
+        'no-null/no-null': 'off',
         '@typescript-eslint/no-empty-function': 'off',
         '@typescript-eslint/no-unused-vars': 'off',
         // Do not check loops so while(true) works. Potentially reevalute this.
         'no-constant-condition': ['error', { checkLoops: false }],
+        'sort-imports': 'error',
         'no-empty': 'off',
         'header/header': [
             'error',
