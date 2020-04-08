@@ -5,6 +5,10 @@ module.exports = {
         project: './tsconfig.json',
         tsconfigRootDir: __dirname,
     },
+    env: {
+        node: true,
+        mocha: true,
+    },
     plugins: ['@typescript-eslint', 'header', 'no-null'],
     extends: [
         'eslint:recommended',
