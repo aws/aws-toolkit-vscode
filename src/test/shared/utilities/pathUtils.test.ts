@@ -37,6 +37,7 @@ describe('dirnameWithTrailingSlash', async () => {
 
 describe('pathUtils', async () => {
     it('normalizeSeparator()', () => {
+        assert.strictEqual(normalizeSeparator('a/b/c'), 'a/b/c')
         assert.strictEqual(normalizeSeparator('a\\b\\c'), 'a/b/c')
         assert.strictEqual(normalizeSeparator('a\\\\b\\c\\/\\'), 'a/b/c/')
         assert.strictEqual(normalizeSeparator('/a\\\\b\\c\\/\\/'), '/a/b/c/')
@@ -83,6 +84,7 @@ describe('pathUtils', async () => {
         assert.strictEqual(normalize('\\\\UNC\\path'), '//UNC/path')
         assert.strictEqual(normalize('/'), '/')
         assert.strictEqual(normalize(''), '')
+        assert.strictEqual(normalize('a/b/c'), 'a/b/c')
 
         // Preserves double-slash at start (UNC path).
         assert.strictEqual(

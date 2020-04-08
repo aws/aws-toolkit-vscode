@@ -5,16 +5,17 @@
 
 import { access } from 'fs-extra'
 import * as path from 'path'
-import * as os from 'os'
 import * as vscode from 'vscode'
+import * as os from 'os'
 import {
-    DOTNET_CORE_DEBUGGER_PATH,
     DotNetCoreDebugConfiguration,
+    DOTNET_CORE_DEBUGGER_PATH,
     getCodeRoot,
-    getTemplateResource,
     getTemplate,
+    getTemplateResource,
 } from '../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
+import * as pathutil from '../../shared/utilities/pathUtils'
 import { DefaultDockerClient, DockerClient } from '../clients/dockerClient'
 import { ExtContext } from '../extensions'
 import { mkdir } from '../filesystem'
@@ -24,7 +25,7 @@ import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam
 import { SamLaunchRequestArgs } from '../sam/debugger/samDebugSession'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
 import { getStartPort } from '../utilities/debuggerUtils'
-import { dirnameWithTrailingSlash, DRIVE_LETTER_REGEX } from '../utilities/pathUtils'
+import { dirnameWithTrailingSlash } from '../utilities/pathUtils'
 import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
 import {
     executeSamBuild,
@@ -34,7 +35,6 @@ import {
     makeInputTemplate,
     waitForDebugPort,
 } from './localLambdaRunner'
-import * as pathutil from '../../shared/utilities/pathUtils'
 
 export const CSHARP_LANGUAGE = 'csharp'
 export const CSHARP_ALLFILES: vscode.DocumentFilter[] = [
@@ -403,8 +403,10 @@ export async function makeCoreCLRDebugConfiguration(
     config.debuggerPath = pathutil.normalize(getDebuggerPath(config.codeRoot))
     await ensureDebuggerPathExists(config.debuggerPath)
 
-    // Windows: sourceFileMap expects uppercase drive letter.
-    codeUri = pathutil.normalize(codeUri)
+    if (os.platform() === 'win32') {
+        // Coerce drive letter to uppercase. While Windows is case-insensitive, sourceFileMap is case-sensitive.
+        codeUri = codeUri.replace(pathutil.DRIVE_LETTER_REGEX, match => match.toUpperCase())
+    }
 
     return {
         ...config,

@@ -7,6 +7,10 @@ import * as _path from 'path'
 
 export const DRIVE_LETTER_REGEX = /^\w\:/
 
+function isUncPath(path: string) {
+    return /^\s*[\/\\]{2}[^\/\\]+/.test(path)
+}
+
 export function getNormalizedRelativePath(from: string, to: string): string {
     return normalizeSeparator(_path.relative(from, to))
 }
@@ -16,9 +20,8 @@ export function getNormalizedRelativePath(from: string, to: string): string {
  * - Removes redundant path separators (except initial double-slash for UNC-style paths).
  */
 export function normalizeSeparator(p: string) {
-    const isUncPath = /^\s*[\/\\]{2}[^\/\\]+/.test(p)
     const normalized = p.replace(/[\/\\]+/g, '/')
-    if (isUncPath) {
+    if (isUncPath(p)) {
         return '/' + normalized
     }
     return normalized
@@ -37,7 +40,7 @@ export function dirnameWithTrailingSlash(path: string): string {
  * Normalizes path `p`:
  * - Replaces backslashes "\\" with "/".
  * - Removes redundant path separators (except initial double-slash for UNC-style paths).
- * - Uppercases drive-letter (Windows, useful for `sourceFileMap` emitted by `makeCoreCLRDebugConfiguration()`).
+ * - Uppercases drive-letter (Windows).
  * - ...and returns the result of `path.normalize()`.
  */
 export function normalize(p: string): string {
@@ -45,11 +48,13 @@ export function normalize(p: string): string {
         return p
     }
     const firstChar = p.substring(0, 1)
-    if (firstChar === '/' || firstChar === '\\') {
+    if (DRIVE_LETTER_REGEX.test(p.substring(0, 2))) {
+        return normalizeSeparator(_path.normalize(firstChar.toUpperCase() + p.substring(1)))
+    }
+    if (isUncPath(p)) {
         return normalizeSeparator(p)
     }
-
-    return normalizeSeparator(_path.normalize(firstChar.toUpperCase() + p.substring(1)))
+    return normalizeSeparator(_path.normalize(p))
 }
 
 export function getLocalRootVariants(filePath: string): string[] {

@@ -77,7 +77,7 @@ export class FakeExtensionContext implements ExtContext {
         try {
             ExtensionDisposableFiles.getInstance().dispose()
         } catch {
-            ExtensionDisposableFiles.initialize(ctx)
+            await ExtensionDisposableFiles.initialize(ctx)
         }
         return ctx
     }

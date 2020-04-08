@@ -120,7 +120,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
          * 1. Disables the EXECUTE phase.
          * 2. Returns the config.
          */
-        const configOnly = !!(config as any).configOnly
+        const noInvoke = !!config.__noInvoke
         const cftRegistry = CloudFormationTemplateRegistry.getRegistry()
 
         // If "request" field is missing this means launch.json does not exist.
@@ -226,7 +226,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 {
                     const c: NodejsDebugConfiguration = await tsDebug.makeTypescriptConfig(launchConfig)
                     launchConfig = c
-                    if (!configOnly) {
+                    if (!noInvoke) {
                         await tsDebug.invokeTypescriptLambda(this.ctx, c)
                     }
                 }
@@ -240,7 +240,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                     launchConfig.handlerName
                 )
                 launchConfig = c
-                if (!configOnly) {
+                if (!noInvoke) {
                     await pythonDebug.invokePythonLambda(this.ctx, c)
                 }
                 break
@@ -248,7 +248,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             case RuntimeFamily.DotNetCore: {
                 const c = await csharpDebug.makeCsharpConfig(launchConfig)
                 launchConfig = c
-                if (!configOnly) {
+                if (!noInvoke) {
                     await csharpDebug.invokeCsharpLambda(this.ctx, c)
                 }
                 break
@@ -271,7 +271,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         // TODO: In the future we may consider NOT launching, and instead do one of the following:
         //  - return a config here for vscode to handle
         //  - return a config here for SamDebugSession.ts to handle (custom debug adapter)
-        if (!configOnly) {
+        if (!noInvoke) {
             return undefined
         }
         return launchConfig
