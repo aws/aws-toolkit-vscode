@@ -66,9 +66,19 @@ export class FakeExtensionContext implements ExtContext {
         return relativePath
     }
 
+    /**
+     * Creates a new `ExtContext` for use in tests.
+     *
+     *  Disposes any existing `ExtensionDisposableFiles` and creates a new one
+     *  with the new `ExtContext`.
+     */
     public static async getNew(): Promise<FakeExtensionContext> {
         const ctx = new FakeExtensionContext()
-        await ExtensionDisposableFiles.initialize(ctx)
+        try {
+            ExtensionDisposableFiles.getInstance().dispose()
+        } catch {
+            ExtensionDisposableFiles.initialize(ctx)
+        }
         return ctx
     }
 }

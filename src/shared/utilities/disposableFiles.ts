@@ -71,7 +71,7 @@ export class ExtensionDisposableFiles extends DisposableFiles {
 
     public static async initialize(extensionContext: vscode.ExtensionContext): Promise<void> {
         if (!!ExtensionDisposableFiles.INSTANCE) {
-            return
+            throw new Error('ExtensionDisposableFiles already initialized')
         }
 
         const toolkitTempFolder: string = await makeTemporaryToolkitFolder()
