@@ -10,6 +10,7 @@ import {
     getNormalizedRelativePath,
     normalizeSeparator,
     removeDriveLetter,
+    normalize,
 } from '../../../shared/utilities/pathUtils'
 
 describe('getNormalizedRelativePath', async () => {
@@ -24,14 +25,6 @@ describe('getNormalizedRelativePath', async () => {
     })
 })
 
-describe('normalizeSeparator', async () => {
-    it('normalizes separators', async () => {
-        const actual = normalizeSeparator(`a${path.sep}b${path.sep}c`)
-
-        assert.strictEqual(actual, 'a/b/c')
-    })
-})
-
 describe('dirnameWithTrailingSlash', async () => {
     it('Adds a trailing slash to a parent folder', async () => {
         const expectedResult = path.join('src', 'processors') + path.sep
@@ -42,15 +35,58 @@ describe('dirnameWithTrailingSlash', async () => {
     })
 })
 
-it('removeDriveLetter', () => {
-    assert.strictEqual(removeDriveLetter('c:\\foo\\bar.txt'), '\\foo\\bar.txt')
-    assert.strictEqual(removeDriveLetter('C:\\foo\\bar.txt'), '\\foo\\bar.txt')
-    assert.strictEqual(removeDriveLetter('c:/foo/bar.txt'), '/foo/bar.txt')
-    assert.strictEqual(removeDriveLetter('c:/foo'), '/foo')
-    assert.strictEqual(removeDriveLetter('/foo/bar.txt'), '/foo/bar.txt')
-    assert.strictEqual(removeDriveLetter('/foo/bar'), '/foo/bar')
-    assert.strictEqual(removeDriveLetter('/foo/'), '/foo/')
-    assert.strictEqual(removeDriveLetter('//'), '//')
-    assert.strictEqual(removeDriveLetter('/'), '/')
-    assert.strictEqual(removeDriveLetter(''), '')
+describe('pathUtils', async () => {
+    it('normalizeSeparator()', () => {
+        assert.strictEqual(normalizeSeparator('a\\b\\c'), 'a/b/c')
+        assert.strictEqual(normalizeSeparator('a\\\\b\\c\\/\\'), 'a/b/c/')
+        assert.strictEqual(normalizeSeparator('/a\\\\b\\c\\/\\/'), '/a/b/c/')
+        assert.strictEqual(normalizeSeparator('//\\\\\\\\/\\//'), '/')
+        assert.strictEqual(normalizeSeparator('a\\b\\c'), 'a/b/c')
+        assert.strictEqual(normalizeSeparator('//////'), '/')
+        assert.strictEqual(normalizeSeparator('//UNC///////path'), '//UNC/path')
+        assert.strictEqual(normalizeSeparator('\\\\UNC\\path'), '//UNC/path')
+        assert.strictEqual(normalizeSeparator('/'), '/')
+        assert.strictEqual(normalizeSeparator(''), '')
+
+        // Preserves double-slash at start (UNC path).
+        assert.strictEqual(
+            normalizeSeparator('\\\\codebuild\\tmp\\output\\js-manifest-in-root\\'),
+            '//codebuild/tmp/output/js-manifest-in-root/'
+        )
+    })
+
+    it('removeDriveLetter()', () => {
+        assert.strictEqual(removeDriveLetter('c:\\foo\\bar.txt'), '\\foo\\bar.txt')
+        assert.strictEqual(removeDriveLetter('C:\\foo\\bar.txt'), '\\foo\\bar.txt')
+        assert.strictEqual(removeDriveLetter('c:/foo/bar.txt'), '/foo/bar.txt')
+        assert.strictEqual(removeDriveLetter('c:/foo'), '/foo')
+        assert.strictEqual(removeDriveLetter('/foo/bar.txt'), '/foo/bar.txt')
+        assert.strictEqual(removeDriveLetter('/foo/bar'), '/foo/bar')
+        assert.strictEqual(removeDriveLetter('/foo/'), '/foo/')
+        assert.strictEqual(removeDriveLetter('//'), '//')
+        assert.strictEqual(removeDriveLetter('/'), '/')
+        assert.strictEqual(removeDriveLetter(''), '')
+    })
+
+    it('normalize()', () => {
+        assert.strictEqual(normalize('c:\\foo\\bar.txt'), 'c:/foo/bar.txt')
+        assert.strictEqual(normalize('C:\\foo\\bar.txt'), 'c:/foo/bar.txt')
+        assert.strictEqual(normalize('c:/foo/bar.txt'), 'c:/foo/bar.txt')
+        assert.strictEqual(normalize('c:/foo'), 'c:/foo')
+        assert.strictEqual(normalize('/foo/bar.txt'), '/foo/bar.txt')
+        assert.strictEqual(normalize('/foo/bar'), '/foo/bar')
+        assert.strictEqual(normalize('\\foo/bar\\'), '/foo/bar/')
+        assert.strictEqual(normalize('/foo/'), '/foo/')
+        assert.strictEqual(normalize('//////'), '/')
+        assert.strictEqual(normalize('//UNC///////path'), '//UNC/path')
+        assert.strictEqual(normalize('\\\\UNC\\path'), '//UNC/path')
+        assert.strictEqual(normalize('/'), '/')
+        assert.strictEqual(normalize(''), '')
+
+        // Preserves double-slash at start (UNC path).
+        assert.strictEqual(
+            normalize('\\\\codebuild\\tmp\\output\\js-manifest-in-root\\'),
+            '//codebuild/tmp/output/js-manifest-in-root/'
+        )
+    })
 })

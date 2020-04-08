@@ -17,6 +17,7 @@ import { tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { CloudFormation } from '../../shared/cloudformation/cloudformation'
 import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
+import * as pathutil from '../../shared/utilities/pathUtils'
 
 export const DOTNET_CORE_DEBUGGER_PATH = '/tmp/lambci_debug_files/vsdbg'
 export const AWS_SAM_DEBUG_TYPE = 'aws-sam'
@@ -116,7 +117,7 @@ export function getCodeRoot(
     switch (config.invokeTarget.target) {
         case 'code': {
             const codeInvoke = config.invokeTarget as CodeTargetProperties
-            return tryGetAbsolutePath(folder, codeInvoke.projectRoot)
+            return pathutil.normalize(tryGetAbsolutePath(folder, codeInvoke.projectRoot))
         }
         case 'template': {
             const templateInvoke = config.invokeTarget as TemplateTargetProperties
@@ -125,7 +126,7 @@ export function getCodeRoot(
                 return undefined
             }
             const templateDir = path.dirname(templateInvoke.samTemplatePath)
-            return path.resolve(templateDir ?? '', templateResource?.Properties?.CodeUri)
+            return pathutil.normalize(path.resolve(templateDir ?? '', templateResource?.Properties?.CodeUri))
         }
         default: {
             throw Error('invalid invokeTarget') // Must not happen.

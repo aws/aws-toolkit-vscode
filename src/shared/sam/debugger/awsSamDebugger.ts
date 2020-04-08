@@ -32,6 +32,7 @@ import { AwsSamDebuggerConfiguration } from './awsSamDebugConfiguration'
 import { SamLaunchRequestArgs } from './samDebugSession'
 import { tryGetAbsolutePath } from '../../utilities/workspaceUtils'
 import { TemplateTargetProperties } from './awsSamDebugConfiguration.gen'
+import * as pathutil from '../../utilities/pathUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -170,7 +171,9 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         if (templateInvoke?.samTemplatePath) {
             // Normalize to absolute path.
             // TODO: If path is relative, it is relative to launch.json (i.e. .vscode directory).
-            templateInvoke.samTemplatePath = tryGetAbsolutePath(folder, templateInvoke.samTemplatePath)
+            templateInvoke.samTemplatePath = pathutil.normalize(
+                tryGetAbsolutePath(folder, templateInvoke.samTemplatePath)
+            )
         }
 
         const runtime: string | undefined =
@@ -206,8 +209,8 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             handlerName: handlerName,
             originalHandlerName: handlerName,
             documentUri: documentUri,
-            samTemplatePath: templateInvoke?.samTemplatePath,
-            originalSamTemplatePath: templateInvoke?.samTemplatePath,
+            samTemplatePath: pathutil.normalize(templateInvoke?.samTemplatePath),
+            originalSamTemplatePath: pathutil.normalize(templateInvoke?.samTemplatePath),
             debugPort: config.noDebug ? -1 : await getStartPort(),
         }
 

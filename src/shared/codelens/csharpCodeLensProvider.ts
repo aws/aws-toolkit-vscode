@@ -34,6 +34,7 @@ import {
     makeInputTemplate,
     waitForDebugPort,
 } from './localLambdaRunner'
+import * as pathutil from '../../shared/utilities/pathUtils'
 
 export const CSHARP_LANGUAGE = 'csharp'
 export const CSHARP_ALLFILES: vscode.DocumentFilter[] = [
@@ -81,7 +82,7 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
     if (!config.codeRoot) {
         // Last-resort attempt to discover the project root (when there is no
         // `launch.json` nor `template.yaml`).
-        config.codeRoot = await getSamProjectDirPathForFile(config?.samTemplatePath ?? config.documentUri!!.fsPath)
+        config.codeRoot = getSamProjectDirPathForFile(config?.samTemplatePath ?? config.documentUri!!.fsPath)
         if (!config.codeRoot) {
             // TODO: return error and show it at the caller.
             throw Error('missing launch.json, template.yaml, and failed to discover project root')
@@ -382,8 +383,8 @@ async function _installDebugger(
     }
 }
 
-export const getSamProjectDirPathForFile = async (filepath: string): Promise<string> => {
-    return path.dirname(filepath)
+function getSamProjectDirPathForFile(filepath: string): string {
+    return pathutil.normalize(path.dirname(filepath))
 }
 
 /**
@@ -398,7 +399,7 @@ export async function makeCoreCLRDebugConfiguration(
     }
     config.debugPort = config.debugPort ?? (await getStartPort())
     const pipeArgs = ['-c', `docker exec -i $(docker ps -q -f publish=${config.debugPort}) \${debuggerCommand}`]
-    config.debuggerPath = getDebuggerPath(config.codeRoot)
+    config.debuggerPath = pathutil.normalize(getDebuggerPath(config.codeRoot))
     await ensureDebuggerPathExists(config.debuggerPath)
 
     if (os.platform() === 'win32') {

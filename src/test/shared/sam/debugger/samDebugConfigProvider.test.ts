@@ -49,8 +49,8 @@ function getWorkspaceFolder(dir: string): vscode.WorkspaceFolder {
 function assertEqualLaunchConfigs(actual: SamLaunchRequestArgs, expected: SamLaunchRequestArgs, appDir: string) {
     assert.strictEqual(actual.workspaceFolder.name, expected.workspaceFolder.name)
     assert.strictEqual(
-        pathutil.removeDriveLetter(actual.workspaceFolder.uri.fsPath),
-        pathutil.removeDriveLetter(expected.workspaceFolder.uri.fsPath)
+        pathutil.removeDriveLetter(pathutil.normalize(actual.workspaceFolder.uri.fsPath)),
+        pathutil.removeDriveLetter(pathutil.normalize(expected.workspaceFolder.uri.fsPath))
     )
     // Build dir is a generated temp dir, check that it looks reasonable.
     assert.ok(actual.baseBuildDir && actual.baseBuildDir.length > 9)
