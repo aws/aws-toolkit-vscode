@@ -131,9 +131,14 @@ export class StateMachineGraphCache {
 }
 
 async function httpsGetRequestWrapper(url: string): Promise<string> {
+    const logger = getLogger()
+    logger.verbose(`Step Functions is getting content from ${url}`)
+
     return new Promise((resolve, reject) => {
         request.get(url, function(error, response) {
+            logger.verbose(`Step Functions finished getting content from ${url}`)
             if (error) {
+                logger.verbose(`Step Functions was unable to get content from ${url}`, error as Error)
                 reject(error)
             } else {
                 resolve((response.body as any) as string)

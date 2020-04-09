@@ -22,6 +22,7 @@ import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam
 import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
 import { SamLaunchRequestArgs } from '../sam/debugger/samDebugSession'
 import { RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
+import * as pathutil from '../../shared/utilities/pathUtils'
 
 export async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
     const packageJsonPath: string | undefined = await findFileInParentPaths(path.dirname(filepath), 'package.json')
@@ -81,17 +82,20 @@ export async function makeTypescriptConfig(
     if (!config.codeRoot) {
         // Last-resort attempt to discover the project root (when there is no
         // `launch.json` nor `template.yaml`).
-        config.codeRoot = await getSamProjectDirPathForFile(config?.samTemplatePath ?? config.documentUri!!.fsPath)
+        config.codeRoot = pathutil.normalize(
+            await getSamProjectDirPathForFile(config?.samTemplatePath ?? config.documentUri!!.fsPath)
+        )
         if (!config.codeRoot) {
             // TODO: return error and show it at the caller.
             throw Error('missing launch.json, template.yaml, and failed to discover project root')
         }
     }
+    config.codeRoot = pathutil.normalize(config.codeRoot)
 
     config.baseBuildDir = await makeBuildDir()
 
     // Always generate a temporary template.yaml, don't use workspace one directly.
-    config.samTemplatePath = await generateInputTemplate(config)
+    config.samTemplatePath = pathutil.normalize(await generateInputTemplate(config))
 
     //  Make a python launch-config from the generic config.
     const nodejsLaunchConfig: NodejsDebugConfiguration = {

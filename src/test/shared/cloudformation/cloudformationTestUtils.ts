@@ -47,6 +47,7 @@ export function makeSampleSamTemplateYaml(
         resourceName?: string
         resourceType?: string
         runtime?: string
+        handler?: string
     } = {}
 ): string {
     const globalsYaml = `
@@ -63,15 +64,16 @@ export function makeSampleYamlResource(
         resourceName?: string
         resourceType?: string
         runtime?: string
+        handler?: string
     } = {}
 ): string {
     return `
     ${subValues.resourceName ? subValues.resourceName : 'TestResource'}:
         Type: ${subValues.resourceType ? subValues.resourceType : CloudFormation.SERVERLESS_FUNCTION_TYPE}
         Properties:
-            Handler: handler
+            Handler: ${subValues.handler ? subValues.handler : 'handler'}
             CodeUri: codeuri
-            Runtime: ${subValues.runtime ? subValues.runtime : 'nodejs12.x'}
+            Runtime: ${subValues.runtime ? subValues.runtime : 'runtime'}
             Timeout: 12345
             Environment:
                 Variables:

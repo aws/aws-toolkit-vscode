@@ -40,12 +40,15 @@ export class CloudFormationTemplateRegistry {
      * Adds template to registry. Wipes any existing template in its place with newly-parsed copy of the data.
      * @param templateUri vscode.Uri containing the template to load in
      */
-    public async addTemplateToRegistry(templateUri: vscode.Uri): Promise<void> {
+    public async addTemplateToRegistry(templateUri: vscode.Uri, quiet?: boolean): Promise<void> {
         const pathAsString = templateUri.fsPath
         try {
             const template = await CloudFormation.load(pathAsString)
             this.templateRegistryData.set(pathAsString, template)
         } catch (e) {
+            if (!quiet) {
+                throw e
+            }
             getLogger().verbose(`CloudFormationTemplateRegistry: invalid CFN template: ${e}`)
         }
     }
