@@ -30,10 +30,14 @@ const documentSettings: DocumentLanguageSettings = { comments: 'error', trailing
 const languageService = getLanguageService({})
 
 export class AslVisualizationManager {
-    private readonly managedVisualizations: Set<AslVisualization>
+    protected readonly managedVisualizations: Set<AslVisualization>
 
     public constructor() {
         this.managedVisualizations = new Set<AslVisualization>()
+    }
+
+    public getManagedVisualizations() {
+        return this.managedVisualizations
     }
 
     public async visualizeStateMachine(globalStorage: vscode.Memento): Promise<vscode.WebviewPanel | void> {
@@ -47,11 +51,9 @@ export class AslVisualizationManager {
          */
         const activeTextEditor: vscode.TextEditor | undefined = vscode.window.activeTextEditor
 
-        let documentUri: vscode.Uri
         let textDocument: vscode.TextDocument
 
         if (activeTextEditor) {
-            documentUri = activeTextEditor.document.uri
             textDocument = activeTextEditor.document
         } else {
             logger.error('Could not get active text editor for state machine render.')
@@ -59,7 +61,7 @@ export class AslVisualizationManager {
         }
 
         // Attempt to retrieve existing visualization if it exists.
-        const existingVisualization = this.getExistingVisualization(documentUri)
+        const existingVisualization = this.getExistingVisualization(textDocument)
         if (existingVisualization) {
             existingVisualization.showPanel()
 
@@ -86,20 +88,24 @@ export class AslVisualizationManager {
         return
     }
 
+    public deleteVisualization(visualizationToDelete: AslVisualization) {
+        this.managedVisualizations.delete(visualizationToDelete)
+    }
+
     private createNewVisualization(textDocument: vscode.TextDocument): vscode.WebviewPanel | void {
         const newVisualization = new AslVisualization(textDocument)
         this.managedVisualizations.add(newVisualization)
 
         newVisualization.onVisualizationDispose(() => {
-            this.managedVisualizations.delete(newVisualization)
+            this.deleteVisualization(newVisualization)
         })
 
         return newVisualization.getPanel()
     }
 
-    private getExistingVisualization(uriToFind: vscode.Uri): AslVisualization | void {
+    private getExistingVisualization(documentToFind: vscode.TextDocument): AslVisualization | void {
         for (const vis of this.managedVisualizations) {
-            if (vis.documentURI.path === uriToFind.path) {
+            if (vis.documentUri.path === documentToFind.uri.path) {
                 return vis
             }
         }
@@ -108,16 +114,16 @@ export class AslVisualizationManager {
     }
 }
 
-class AslVisualization {
-    public readonly documentURI: vscode.Uri
+export class AslVisualization {
+    public readonly documentUri: vscode.Uri
     public readonly webviewPanel: vscode.WebviewPanel
     public onVisualizationDisposeEmitter = new vscode.EventEmitter<void>()
     public readonly onVisualizationDispose = this.onVisualizationDisposeEmitter.event
-    private readonly disposables: vscode.Disposable[]
-    private isPanelDisposed: boolean
+    protected readonly disposables: vscode.Disposable[]
+    protected isPanelDisposed: boolean
 
     public constructor(textDocument: vscode.TextDocument) {
-        this.documentURI = textDocument.uri
+        this.documentUri = textDocument.uri
         this.isPanelDisposed = false
         this.disposables = []
         this.webviewPanel = this.setupWebviewPanel(textDocument)
@@ -248,14 +254,13 @@ class AslVisualization {
 
         // When the panel is closed, dispose of any disposables/remove subscriptions
         panel.onDidDispose(() => {
-            this.isPanelDisposed = true
-            debouncedUpdate.cancel()
             this.onVisualizationDisposeEmitter.fire()
-            this.onVisualizationDisposeEmitter.dispose()
-
             for (const disposable of this.disposables) {
                 disposable.dispose()
             }
+            debouncedUpdate.cancel()
+            this.onVisualizationDisposeEmitter.dispose()
+            this.isPanelDisposed = true
         })
 
         return panel
