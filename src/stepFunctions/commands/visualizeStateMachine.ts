@@ -96,7 +96,7 @@ export class AslVisualizationManager {
         const newVisualization = new AslVisualization(textDocument)
         this.managedVisualizations.add(newVisualization)
 
-        newVisualization.onVisualizationDispose(() => {
+        newVisualization.onVisualizationDispose()(() => {
             this.deleteVisualization(newVisualization)
         })
 
@@ -117,16 +117,20 @@ export class AslVisualizationManager {
 export class AslVisualization {
     public readonly documentUri: vscode.Uri
     public readonly webviewPanel: vscode.WebviewPanel
-    public onVisualizationDisposeEmitter = new vscode.EventEmitter<void>()
-    public readonly onVisualizationDispose = this.onVisualizationDisposeEmitter.event
     protected readonly disposables: vscode.Disposable[]
     protected isPanelDisposed: boolean
+    private readonly onVisualizationDisposeEmitter = new vscode.EventEmitter<void>()
+    //private readonly onVisualizationDispose = this.onVisualizationDisposeEmitter.event
 
     public constructor(textDocument: vscode.TextDocument) {
         this.documentUri = textDocument.uri
         this.isPanelDisposed = false
         this.disposables = []
         this.webviewPanel = this.setupWebviewPanel(textDocument)
+    }
+
+    public onVisualizationDispose() {
+        return this.onVisualizationDisposeEmitter.event
     }
 
     public getPanel(): vscode.WebviewPanel | void {
@@ -139,10 +143,6 @@ export class AslVisualization {
         if (this.webviewPanel && this.webviewPanel.webview && !this.isPanelDisposed) {
             return this.webviewPanel.webview
         }
-    }
-
-    public getOnVisualizationDisposeEvent(): vscode.Event<void> {
-        return this.onVisualizationDispose
     }
 
     public showPanel(): void {
