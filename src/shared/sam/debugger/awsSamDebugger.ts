@@ -6,33 +6,33 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import {
+    AWS_SAM_DEBUG_TARGET_TYPES,
+    AWS_SAM_DEBUG_TYPE,
+    CODE_TARGET_TYPE,
+    DIRECT_INVOKE_TYPE,
+    getCodeRoot,
     getDefaultRuntime,
+    getHandlerName,
+    getTemplateResource,
     NodejsDebugConfiguration,
     PythonDebugConfiguration,
-    DIRECT_INVOKE_TYPE,
-    AWS_SAM_DEBUG_TYPE,
     TEMPLATE_TARGET_TYPE,
-    CODE_TARGET_TYPE,
-    AWS_SAM_DEBUG_TARGET_TYPES,
-    getHandlerName,
-    getCodeRoot,
-    getTemplateResource,
 } from '../../../lambda/local/debugConfiguration'
 import { getFamily, RuntimeFamily, samLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 import { CloudFormation } from '../../cloudformation/cloudformation'
-import { CloudFormationTemplateRegistry } from '../../cloudformation/templateRegistry'
+import { CloudFormationTemplateRegistry, getResourcesFromTemplateDatum } from '../../cloudformation/templateRegistry'
+import * as csharpDebug from '../../codelens/csharpCodeLensProvider'
 import * as pythonDebug from '../../codelens/pythonCodeLensProvider'
 import * as tsDebug from '../../codelens/typescriptCodeLensProvider'
-import * as csharpDebug from '../../codelens/csharpCodeLensProvider'
 import { ExtContext } from '../../extensions'
 import { isInDirectory } from '../../filesystemUtilities'
 import { getLogger } from '../../logger'
 import { getStartPort } from '../../utilities/debuggerUtils'
-import { AwsSamDebuggerConfiguration } from './awsSamDebugConfiguration'
-import { SamLaunchRequestArgs } from './samDebugSession'
-import { tryGetAbsolutePath } from '../../utilities/workspaceUtils'
-import { TemplateTargetProperties } from './awsSamDebugConfiguration.gen'
 import * as pathutil from '../../utilities/pathUtils'
+import { tryGetAbsolutePath } from '../../utilities/workspaceUtils'
+import { AwsSamDebuggerConfiguration, ReadonlyJsonObject } from './awsSamDebugConfiguration'
+import { TemplateTargetProperties } from './awsSamDebugConfiguration.gen'
+import { SamLaunchRequestArgs } from './samDebugSession'
 
 const localize = nls.loadMessageBundle()
 
@@ -69,24 +69,14 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
 
         const configs: AwsSamDebuggerConfiguration[] = []
         if (folder) {
+            const folderPath = folder.uri.fsPath
             const templates = cftRegistry.registeredTemplates
 
-            for (const template of templates) {
-                if (isInDirectory(folder.uri.fsPath, template.path) && template.template.Resources) {
-                    for (const resourceName of Object.keys(template.template.Resources)) {
-                        const resource = template.template.Resources[resourceName]
-                        if (resource) {
-                            configs.push({
-                                type: AWS_SAM_DEBUG_TYPE,
-                                request: DIRECT_INVOKE_TYPE,
-                                name: resourceName,
-                                invokeTarget: {
-                                    target: TEMPLATE_TARGET_TYPE,
-                                    samTemplatePath: template.path,
-                                    samTemplateResource: resourceName,
-                                },
-                            })
-                        }
+            for (const templateDatum of templates) {
+                if (isInDirectory(folderPath, templateDatum.path)) {
+                    const resources = getResourcesFromTemplateDatum(templateDatum)
+                    for (const resourceKey of resources.keys()) {
+                        configs.push(createDirectInvokeSamDebugConfiguration(resourceKey, templateDatum.path))
                     }
                 }
             }
@@ -278,6 +268,45 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
     }
 }
 
+export function createDirectInvokeSamDebugConfiguration(
+    resourceName: string,
+    templatePath: string,
+    additionalFields?: {
+        eventJson?: ReadonlyJsonObject
+        environmentVariables?: ReadonlyJsonObject
+        dockerNetwork?: string
+        useContainer?: boolean
+    }
+): AwsSamDebuggerConfiguration {
+    let response: AwsSamDebuggerConfiguration = {
+        type: AWS_SAM_DEBUG_TYPE,
+        request: DIRECT_INVOKE_TYPE,
+        name: resourceName,
+        invokeTarget: {
+            target: TEMPLATE_TARGET_TYPE,
+            samTemplatePath: templatePath,
+            samTemplateResource: resourceName,
+        },
+    }
+
+    if (additionalFields) {
+        response = {
+            ...response,
+            lambda: {
+                event: {
+                    json: additionalFields.eventJson,
+                },
+                environmentVariables: additionalFields.environmentVariables,
+            },
+            sam: {
+                dockerNetwork: additionalFields.dockerNetwork,
+                containerBuild: additionalFields.useContainer,
+            },
+        }
+    }
+
+    return response
+}
 /**
  * Validates debug configuration properties.
  */
