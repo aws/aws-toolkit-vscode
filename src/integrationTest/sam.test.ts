@@ -276,7 +276,7 @@ describe('SAM Integration Tests', async () => {
                     assertCodeLensReferencesSamTemplate(codeLens, samTemplatePath)
                 }).timeout(TIMEOUT)
 
-                it('invokes the Run Local CodeLens', async () => {
+                it.skip('invokes the Run Local CodeLens', async () => {
                     const codeLens = await getRunLocalCodeLens(samAppCodeUri, scenario.language)
                     assert.ok(codeLens, 'expected to find a CodeLens')
 
@@ -287,7 +287,7 @@ describe('SAM Integration Tests', async () => {
                     )
                 }).timeout(TIMEOUT)
 
-                it('invokes the Debug Local CodeLens', async () => {
+                it.skip('invokes the Debug Local CodeLens', async () => {
                     assert.strictEqual(
                         vscode.debug.activeDebugSession,
                         undefined,
