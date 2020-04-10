@@ -113,7 +113,7 @@ describe('getChannelLogger', function() {
 
                     it('writes to the output channel', async () => {
                         assert(
-                            outputChannel.value.indexOf(expectedPrettyMsg) >= 0,
+                            outputChannel.value.includes(expectedPrettyMsg),
                             `channel missing msg: ${expectedPrettyMsg} in ${outputChannel.value}` +
                                 ` input: ${JSON.stringify({ ...scenario, expectedPrettyTokens })}`
                         )

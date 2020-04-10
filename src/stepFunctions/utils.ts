@@ -141,7 +141,7 @@ async function httpsGetRequestWrapper(url: string): Promise<string> {
                 logger.verbose(`Step Functions was unable to get content from ${url}`, error as Error)
                 reject(error)
             } else {
-                resolve((response.body as any) as string)
+                resolve(response.body as string)
             }
         })
     })
