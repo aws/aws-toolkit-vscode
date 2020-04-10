@@ -14,31 +14,23 @@ import software.aws.toolkits.jetbrains.services.s3.S3BucketNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3VirtualBucket
 import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
 import software.aws.toolkits.jetbrains.utils.TaggingResourceType
-import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
-import software.aws.toolkits.telemetry.S3Telemetry
 
 class DeleteBucketAction : DeleteResourceAction<S3BucketNode>(message("s3.delete.bucket.action"), TaggingResourceType.S3_BUCKET) {
     override fun performDelete(selected: S3BucketNode) {
-        try {
-            val client: S3Client = AwsClientManager.getInstance(selected.nodeProject).getClient()
+        val client: S3Client = AwsClientManager.getInstance(selected.nodeProject).getClient()
 
-            val fileEditorManager = FileEditorManager.getInstance(selected.nodeProject)
-            fileEditorManager.openFiles.forEach {
-                if (it is S3VirtualBucket && it.s3Bucket.name() == selected.displayName()) {
-                    // Wait so that we know it closes successfully, otherwise this operation is not a success
-                    runInEdtAndWait {
-                        fileEditorManager.closeFile(it)
-                    }
+        val fileEditorManager = FileEditorManager.getInstance(selected.nodeProject)
+        fileEditorManager.openFiles.forEach {
+            if (it is S3VirtualBucket && it.s3Bucket.name() == selected.displayName()) {
+                // Wait so that we know it closes successfully, otherwise this operation is not a success
+                runInEdtAndWait {
+                    fileEditorManager.closeFile(it)
                 }
             }
-
-            client.deleteBucketAndContents(selected.displayName())
-            selected.nodeProject.refreshAwsTree(S3Resources.LIST_BUCKETS)
-            S3Telemetry.deleteBucket(selected.nodeProject, success = true)
-        } catch (e: Exception) {
-            notifyError(message("s3.delete.bucket_failed", selected.bucket.name(), e.message ?: ""))
-            S3Telemetry.deleteBucket(selected.nodeProject, success = false)
         }
+
+        client.deleteBucketAndContents(selected.displayName())
+        selected.nodeProject.refreshAwsTree(S3Resources.LIST_BUCKETS)
     }
 }

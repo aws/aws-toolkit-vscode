@@ -45,10 +45,10 @@ abstract class DeleteResourceAction<in T : AwsExplorerResourceNode<*>>(text: Str
                 ApplicationManager.getApplication().executeOnPooledThread {
                     try {
                         performDelete(selected)
-                        notifyInfo(message("delete_resource.deleted", resourceType, resourceName))
+                        notifyInfo(project = selected.project, title = message("delete_resource.deleted", resourceType, resourceName))
                         AwsTelemetry.deleteResource(selected.project, ServiceType.from(selected.serviceId), success = true)
                     } catch (e: Exception) {
-                        e.notifyError(message("delete_resource.delete_failed", resourceType, resourceName), selected.project)
+                        e.notifyError(project = selected.project, title = message("delete_resource.delete_failed", resourceType, resourceName))
                         AwsTelemetry.deleteResource(selected.project, ServiceType.from(selected.serviceId), success = false)
                     }
                 }
