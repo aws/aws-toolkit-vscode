@@ -10,6 +10,7 @@ import { LaunchConfiguration } from '../debug/launchConfiguration'
 import { isTemplateTargetProperties, TemplateTargetProperties } from '../sam/debugger/awsSamDebugConfiguration'
 import { AddSamDebugConfigurationInput } from '../sam/debugger/commands/addSamDebugConfiguration'
 import { localize } from '../utilities/vsCodeUtils'
+import * as pathutils from '../utilities/pathUtils'
 
 /**
  * Provides Code Lenses for generating debug configurations for SAM templates.
@@ -52,7 +53,7 @@ function getExistingDebuggedResources(templateUri: vscode.Uri, launchConfig: Lau
     const existingSamDebugTargets = getExistingSamDebugTargets(launchConfig)
 
     return _(existingSamDebugTargets)
-        .filter(target => target.samTemplatePath === templateUri.fsPath)
+        .filter(target => pathutils.normalize(target.samTemplatePath) === pathutils.normalize(templateUri.fsPath))
         .map(target => target.samTemplateResource)
         .thru(array => new Set(array))
         .value()
