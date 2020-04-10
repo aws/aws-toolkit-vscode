@@ -19,6 +19,8 @@ import { ext } from '../../shared/extensionGlobals'
 import { getLogger, Logger } from '../../shared/logger'
 import { StateMachineGraphCache } from '../utils'
 
+const ARN_REGEX_STRING = String.raw`^arn:aws([a-z]|\-)*:(states|lambda):([a-z]|\d|\-)*:([0-9]{12})?:.+:.+$`
+
 export interface messageObject {
     command: string
     text: string
@@ -38,7 +40,9 @@ async function isDocumentValid(textDocument?: vscode.TextDocument): Promise<bool
     const doc = ASLTextDocument.create(textDocument.uri.path, textDocument.languageId, textDocument.version, text)
     // tslint:disable-next-line: no-inferred-empty-object-type
     const jsonDocument = languageService.parseJSONDocument(doc)
-    const diagnostics = await languageService.doValidation(doc, jsonDocument, documentSettings)
+    const diagnostics = (await languageService.doValidation(doc, jsonDocument, documentSettings))
+        // Invalid ARN strings shouldn't prevent rendering of the state machine graph
+        .filter(diagnostic => !diagnostic.message.includes(ARN_REGEX_STRING))
 
     const isValid = !diagnostics.some(diagnostic => diagnostic.severity === DiagnosticSeverity.Error)
 
