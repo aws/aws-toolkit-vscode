@@ -327,7 +327,7 @@ function assertErrorLogsContain(text: string, exactMatch: boolean) {
     assert.ok(
         getTestLogger()
             .getLoggedEntries('error')
-            .some(e => e instanceof Error && (exactMatch ? e.message === text : e.message.indexOf(text) !== -1)),
+            .some(e => e instanceof Error && (exactMatch ? e.message === text : e.message.includes(text))),
         `Expected to find ${text} in the error logs`
     )
 }

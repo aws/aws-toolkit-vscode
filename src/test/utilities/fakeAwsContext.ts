@@ -42,7 +42,7 @@ export class FakeRegionProvider implements RegionProvider {
     }
 
     public isServiceInRegion(serviceId: string, regionId: string): boolean {
-        return this.servicesNotInRegion.indexOf(serviceId) === -1
+        return !this.servicesNotInRegion.includes(serviceId)
     }
 }
 

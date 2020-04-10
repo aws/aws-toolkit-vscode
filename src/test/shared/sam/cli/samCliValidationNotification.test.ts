@@ -6,17 +6,17 @@
 import * as assert from 'assert'
 
 import {
-    makeSamCliValidationNotification,
-    SamCliValidationNotification,
-    SamCliValidationNotificationAction,
-} from '../../../../shared/sam/cli/samCliValidationNotification'
-import {
     InvalidSamCliError,
     InvalidSamCliVersionError,
     SamCliNotFoundError,
     SamCliVersionValidation,
     SamCliVersionValidatorResult,
 } from '../../../../shared/sam/cli/samCliValidator'
+import {
+    SamCliValidationNotification,
+    SamCliValidationNotificationAction,
+    makeSamCliValidationNotification,
+} from '../../../../shared/sam/cli/samCliValidationNotification'
 
 describe('makeSamCliValidationNotification', async () => {
     const fakeSamCliValidationNotification: SamCliValidationNotification = {
@@ -31,7 +31,7 @@ describe('makeSamCliValidationNotification', async () => {
         makeSamCliValidationNotification(
             new SamCliNotFoundError(),
             (message: string, actions: SamCliValidationNotificationAction[]): SamCliValidationNotification => {
-                assert.ok(message.indexOf('Unable to find SAM CLI') !== -1, `unexpected validation message: ${message}`)
+                assert.ok(message.includes('Unable to find SAM CLI'), `unexpected validation message: ${message}`)
                 assert.strictEqual(actions.length, 1, 'unexpected action count')
                 assert.strictEqual(
                     actions[0].label,
@@ -77,8 +77,7 @@ describe('makeSamCliValidationNotification', async () => {
                 error,
                 (message: string, actions: SamCliValidationNotificationAction[]): SamCliValidationNotification => {
                     assert.ok(
-                        message.indexOf(test.messageFragment) !== -1 &&
-                            message.indexOf(validatorResult.version!) !== -1,
+                        message.includes(test.messageFragment) && message.includes(validatorResult.version!),
                         `unexpected validation message: ${message}`
                     )
                     assert.strictEqual(actions.length, 1, 'unexpected action count')
@@ -99,7 +98,7 @@ describe('makeSamCliValidationNotification', async () => {
             new InvalidSamCliError('different error'),
             (message: string, actions: SamCliValidationNotificationAction[]): SamCliValidationNotification => {
                 assert.ok(
-                    message.indexOf('An unexpected issue') !== -1 && message.indexOf('different error') !== -1,
+                    message.includes('An unexpected issue') && message.includes('different error'),
                     `unexpected validation message: ${message}`
                 )
                 assert.strictEqual(actions.length, 0, 'unexpected actions found')
