@@ -98,6 +98,7 @@
     "AWS.command.deleteLambda": "Delete",
     "AWS.command.deleteLambda.confirm": "Are you sure you want to delete lambda function '{0}'?",
     "AWS.command.deleteLambda.error": "There was an error deleting lambda function '{0}'",
+    "AWS.command.addSamDebugConfiguration": "Add Debug Configuration",
     "AWS.command.deploySamApplication": "Deploy SAM Application",
     "AWS.command.aboutToolkit": "About AWS Toolkit",
     "AWS.command.invokeLambda": "Invoke on AWS",
