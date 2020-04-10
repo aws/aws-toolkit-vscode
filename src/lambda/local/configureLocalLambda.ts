@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+
 import { getLogger, Logger } from '../../shared/logger'
 import { recordLambdaConfigure, Result } from '../../shared/telemetry/telemetry'
 import { getNormalizedRelativePath } from '../../shared/utilities/pathUtils'

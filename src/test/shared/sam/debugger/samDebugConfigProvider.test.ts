@@ -4,31 +4,37 @@
  */
 
 import * as assert from 'assert'
+import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import * as os from 'os'
-
-import { FakeExtensionContext } from '../../../fakeExtensionContext'
+import {
+    AWS_SAM_DEBUG_TYPE,
+    CODE_TARGET_TYPE,
+    DIRECT_INVOKE_TYPE,
+    DotNetCoreDebugConfiguration,
+    TEMPLATE_TARGET_TYPE,
+} from '../../../../lambda/local/debugConfiguration'
 import * as lambdaModel from '../../../../lambda/models/samLambdaRuntime'
 import { CloudFormationTemplateRegistry } from '../../../../shared/cloudformation/templateRegistry'
 import { mkdir, rmrf } from '../../../../shared/filesystem'
-import * as pathutil from '../../../../shared/utilities/pathUtils'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
-import { SamDebugConfigProvider } from '../../../../shared/sam/debugger/awsSamDebugger'
+import {
+    TemplateTargetProperties,
+    AwsSamDebuggerConfiguration,
+} from '../../../../shared/sam/debugger/awsSamDebugConfiguration'
+import {
+    createDirectInvokeSamDebugConfiguration,
+    SamDebugConfigProvider,
+} from '../../../../shared/sam/debugger/awsSamDebugger'
+import { SamLaunchRequestArgs } from '../../../../shared/sam/debugger/samDebugSession'
+import * as pathutil from '../../../../shared/utilities/pathUtils'
+import { FakeExtensionContext } from '../../../fakeExtensionContext'
+import * as testutil from '../../../testUtil'
 import {
     makeSampleSamTemplateYaml,
     makeSampleYamlResource,
     strToYamlFile,
 } from '../../cloudformation/cloudformationTestUtils'
-import { SamLaunchRequestArgs } from '../../../../shared/sam/debugger/samDebugSession'
-import {
-    DIRECT_INVOKE_TYPE,
-    AWS_SAM_DEBUG_TYPE,
-    TEMPLATE_TARGET_TYPE,
-    CODE_TARGET_TYPE,
-    DotNetCoreDebugConfiguration,
-} from '../../../../lambda/local/debugConfiguration'
-import * as testutil from '../../../testUtil'
 
 /**
  * Asserts the contents of a "launch config" (the result of
@@ -76,7 +82,6 @@ describe('AwsSamDebugConfigurationProvider', async () => {
 
     beforeEach(async () => {
         const fakeContext = await FakeExtensionContext.getNew()
-
         tempFolder = await makeTemporaryToolkitFolder()
         tempFile = vscode.Uri.file(path.join(tempFolder, 'test.yaml'))
         registry = CloudFormationTemplateRegistry.getRegistry()
@@ -194,32 +199,31 @@ describe('AwsSamDebugConfigurationProvider', async () => {
         })
 
         it("returns undefined when resolving template debug configurations with a template that isn't in the registry", async () => {
-            const resolved = await debugConfigProvider.resolveDebugConfiguration(undefined, {
-                type: AWS_SAM_DEBUG_TYPE,
-                name: 'whats in a name',
-                request: DIRECT_INVOKE_TYPE,
-                invokeTarget: {
-                    target: TEMPLATE_TARGET_TYPE,
-                    samTemplatePath: 'not here',
-                    samTemplateResource: 'you lack resources',
-                },
-            })
+            const resolved = await debugConfigProvider.resolveDebugConfiguration(
+                undefined,
+                createBaseTemplateConfig({})
+            )
             assert.strictEqual(resolved, undefined)
         })
 
         it("returns undefined when resolving template debug configurations with a template that doesn't have the set resource", async () => {
-            await strToYamlFile(makeSampleSamTemplateYaml(true), tempFile.fsPath)
-            await registry.addTemplateToRegistry(tempFile)
-            const resolved = await debugConfigProvider.resolveDebugConfiguration(undefined, {
-                type: AWS_SAM_DEBUG_TYPE,
-                name: 'whats in a name',
-                request: DIRECT_INVOKE_TYPE,
-                invokeTarget: {
-                    target: TEMPLATE_TARGET_TYPE,
+            await createAndRegisterYaml({}, tempFile, registry)
+            const resolved = await debugConfigProvider.resolveDebugConfiguration(
+                undefined,
+                createBaseTemplateConfig({ samTemplatePath: tempFile.fsPath })
+            )
+            assert.strictEqual(resolved, undefined)
+        })
+
+        it('returns undefined when resolving template debug configurations with a resource that has an invalid runtime in template', async () => {
+            await createAndRegisterYaml({ resourceName, runtime: 'moreLikeRanOutOfTime' }, tempFile, registry)
+            const resolved = await debugConfigProvider.resolveDebugConfiguration(
+                undefined,
+                createBaseTemplateConfig({
                     samTemplatePath: tempFile.fsPath,
-                    samTemplateResource: 'you lack resources',
-                },
-            })
+                    samTemplateResource: resourceName,
+                })
+            )
             assert.strictEqual(resolved, undefined)
         })
 
@@ -244,14 +248,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
 
         it('returns undefined when resolving code debug configurations with invalid runtimes', async () => {
             const resolved = await debugConfigProvider.resolveDebugConfiguration(undefined, {
-                type: AWS_SAM_DEBUG_TYPE,
-                name: 'whats in a name',
-                request: DIRECT_INVOKE_TYPE,
-                invokeTarget: {
-                    target: CODE_TARGET_TYPE,
-                    lambdaHandler: 'sick handles',
-                    projectRoot: 'root as in beer',
-                },
+                ...createBaseCodeConfig({}),
                 lambda: {
                     runtime: 'COBOL',
                 },
@@ -588,3 +585,83 @@ describe('AwsSamDebugConfigurationProvider', async () => {
         })
     })
 })
+
+describe('createDirectInvokeSamDebugConfiguration', () => {
+    const name = 'my body is a template'
+    const templatePath = path.join('two', 'roads', 'diverged', 'in', 'a', 'yellow', 'wood')
+
+    it('creates a template-type SAM debugger configuration with minimal configurations', () => {
+        const config = createDirectInvokeSamDebugConfiguration(name, templatePath)
+        assert.strictEqual(config.invokeTarget.target, TEMPLATE_TARGET_TYPE)
+        const invokeTarget = config.invokeTarget as TemplateTargetProperties
+        assert.strictEqual(config.name, name)
+        assert.strictEqual(invokeTarget.samTemplateResource, name)
+        assert.strictEqual(invokeTarget.samTemplatePath, templatePath)
+        assert.ok(!config.hasOwnProperty('lambda'))
+    })
+
+    it('creates a template-type SAM debugger configuration with additional params', () => {
+        const params = {
+            eventJson: {
+                event: 'uneventufl',
+            },
+            environmentVariables: {
+                varial: 'invert to fakie',
+            },
+            dockerNetwork: 'rockerFretwork',
+        }
+        const config = createDirectInvokeSamDebugConfiguration(name, templatePath, params)
+        assert.deepStrictEqual(config.lambda?.event?.json, params.eventJson)
+        assert.deepStrictEqual(config.lambda?.environmentVariables, params.environmentVariables)
+        assert.strictEqual(config.sam?.dockerNetwork, params.dockerNetwork)
+        assert.strictEqual(config.sam?.containerBuild, undefined)
+    })
+})
+
+function createBaseCodeConfig(params: {
+    name?: string
+    lambdaHandler?: string
+    projectRoot?: string
+}): AwsSamDebuggerConfiguration {
+    return {
+        type: AWS_SAM_DEBUG_TYPE,
+        name: params.name ?? 'whats in a name',
+        request: DIRECT_INVOKE_TYPE,
+        invokeTarget: {
+            target: CODE_TARGET_TYPE,
+            lambdaHandler: params.lambdaHandler ?? 'sick handles',
+            projectRoot: params.projectRoot ?? 'root as in beer',
+        },
+    }
+}
+
+function createBaseTemplateConfig(params: {
+    name?: string
+    samTemplatePath?: string
+    samTemplateResource?: string
+}): AwsSamDebuggerConfiguration {
+    return {
+        type: AWS_SAM_DEBUG_TYPE,
+        name: params.name ?? 'whats in a name',
+        request: DIRECT_INVOKE_TYPE,
+        invokeTarget: {
+            target: TEMPLATE_TARGET_TYPE,
+            samTemplatePath: params.samTemplatePath ?? 'somewhere else',
+            samTemplateResource: params.samTemplateResource ?? 'you lack resources',
+        },
+    }
+}
+
+async function createAndRegisterYaml(
+    subValues: {
+        resourceName?: string
+        resourceType?: string
+        runtime?: string
+        handler?: string
+    },
+    file: vscode.Uri,
+    registry: CloudFormationTemplateRegistry
+) {
+    await strToYamlFile(makeSampleSamTemplateYaml(true, subValues), file.fsPath)
+    await registry.addTemplateToRegistry(file)
+}
