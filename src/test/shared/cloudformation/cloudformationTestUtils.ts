@@ -25,8 +25,8 @@ export function createBaseResource(): CloudFormation.Resource {
         Type: CloudFormation.SERVERLESS_FUNCTION_TYPE,
         Properties: {
             Handler: 'handler',
-            CodeUri: 'codeuri',
-            Runtime: 'runtime',
+            CodeUri: '/',
+            Runtime: 'nodejs12.x',
             Timeout: 12345,
             Environment: {
                 Variables: {
@@ -48,6 +48,7 @@ export function makeSampleSamTemplateYaml(
         resourceType?: string
         runtime?: string
         handler?: string
+        codeUri?: string
     } = {}
 ): string {
     const globalsYaml = `
@@ -65,6 +66,7 @@ export function makeSampleYamlResource(
         resourceType?: string
         runtime?: string
         handler?: string
+        codeUri?: string
     } = {}
 ): string {
     return `
@@ -72,8 +74,8 @@ export function makeSampleYamlResource(
         Type: ${subValues.resourceType ? subValues.resourceType : CloudFormation.SERVERLESS_FUNCTION_TYPE}
         Properties:
             Handler: ${subValues.handler ? subValues.handler : 'handler'}
-            CodeUri: codeuri
-            Runtime: ${subValues.runtime ? subValues.runtime : 'runtime'}
+            CodeUri: ${subValues.codeUri ? subValues.codeUri : '/'}
+            Runtime: ${subValues.runtime ? subValues.runtime : 'nodejs12.x'}
             Timeout: 12345
             Environment:
                 Variables:
