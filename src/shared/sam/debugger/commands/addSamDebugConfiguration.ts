@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { LaunchConfiguration } from '../../../debug/launchConfiguration'
-import { createAwsSamDebugConfigurationForTemplate } from '../awsSamDebugConfiguration'
+import { createAwsSamDebugConfig } from '../awsSamDebugConfiguration'
 
 export interface AddSamDebugConfigurationInput {
     resourceName: string
@@ -22,7 +22,7 @@ export async function addSamDebugConfiguration({
     // tslint:disable-next-line: no-floating-promises
     emitCommandTelemetry()
 
-    const samDebugConfig = createAwsSamDebugConfigurationForTemplate(resourceName, templateUri.fsPath)
+    const samDebugConfig = createAwsSamDebugConfig(resourceName, templateUri.fsPath)
 
     const launchConfig = new LaunchConfiguration(templateUri)
     await launchConfig.addDebugConfiguration(samDebugConfig)

@@ -8,6 +8,7 @@ import {
     AwsSamDebuggerConfiguration,
     CodeTargetProperties,
     TemplateTargetProperties,
+    ReadonlyJsonObject,
 } from './awsSamDebugConfiguration.gen'
 
 export * from './awsSamDebugConfiguration.gen'
@@ -33,18 +34,42 @@ export function isCodeTargetProperties(props: TargetProperties): props is CodeTa
     return props.target === CODE_TARGET_TYPE
 }
 
-export function createAwsSamDebugConfigurationForTemplate(
+export function createAwsSamDebugConfig(
     resourceName: string,
-    templatePath: string
+    templatePath: string,
+    additionalFields?: {
+        eventJson?: ReadonlyJsonObject
+        environmentVariables?: ReadonlyJsonObject
+        dockerNetwork?: string
+        useContainer?: boolean
+    }
 ): AwsSamDebuggerConfiguration {
-    return {
+    let response: AwsSamDebuggerConfiguration = {
         type: AWS_SAM_DEBUG_TYPE,
         request: DIRECT_INVOKE_TYPE,
         name: resourceName,
         invokeTarget: {
             target: TEMPLATE_TARGET_TYPE,
-            samTemplateResource: resourceName,
             samTemplatePath: templatePath,
+            samTemplateResource: resourceName,
         },
     }
+
+    if (additionalFields) {
+        response = {
+            ...response,
+            lambda: {
+                event: {
+                    json: additionalFields.eventJson,
+                },
+                environmentVariables: additionalFields.environmentVariables,
+            },
+            sam: {
+                dockerNetwork: additionalFields.dockerNetwork,
+                containerBuild: additionalFields.useContainer,
+            },
+        }
+    }
+
+    return response
 }

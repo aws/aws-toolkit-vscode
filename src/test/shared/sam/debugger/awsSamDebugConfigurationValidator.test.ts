@@ -4,6 +4,7 @@
  */
 
 import * as assert from 'assert'
+import * as vscode from 'vscode'
 import { instance, mock, when } from 'ts-mockito'
 
 import { CloudFormation } from '../../../../shared/cloudformation/cloudformation'
@@ -54,41 +55,27 @@ describe('DefaultAwsSamDebugConfigurationValidator', () => {
     const templateData = createTemplateData()
 
     const mockRegistry: CloudFormationTemplateRegistry = mock()
+    const mockFolder: vscode.WorkspaceFolder = mock()
 
     let validator: DefaultAwsSamDebugConfigurationValidator
 
     beforeEach(() => {
         when(mockRegistry.getRegisteredTemplate('/')).thenReturn(templateData)
 
-        validator = new DefaultAwsSamDebugConfigurationValidator(instance(mockRegistry))
-    })
-
-    it('returns valid when resolving a valid template debug configuration', () => {
-        const result = validator.validateSamDebugConfiguration(templateConfig)
-        assert.strictEqual(result.isValid, true)
-    })
-
-    it('returns valid when resolving a valid template debug configuration that specifies extraneous environment variables', () => {
-        templateConfig.lambda = {
-            environmentVariables: {
-                EXTRANEOUS: 'envvar',
-            },
-        }
-        const result = validator.validateSamDebugConfiguration(templateConfig)
-        assert.strictEqual(result.isValid, true)
+        validator = new DefaultAwsSamDebugConfigurationValidator(instance(mockRegistry), instance(mockFolder))
     })
 
     it('returns invalid when resolving debug configurations with an invalid request type', () => {
         templateConfig.request = 'not-direct-invoke'
 
-        const result = validator.validateSamDebugConfiguration(templateConfig)
+        const result = validator.validate(templateConfig)
         assert.strictEqual(result.isValid, false)
     })
 
     it('returns invalid when resolving debug configurations with an invalid target type', () => {
         templateConfig.invokeTarget.target = 'not-valid' as any
 
-        const result = validator.validateSamDebugConfiguration(templateConfig as any)
+        const result = validator.validate(templateConfig as any)
         assert.strictEqual(result.isValid, false)
     })
 
@@ -96,9 +83,9 @@ describe('DefaultAwsSamDebugConfigurationValidator', () => {
         const mockEmptyRegistry: CloudFormationTemplateRegistry = mock()
         when(mockEmptyRegistry.getRegisteredTemplate('/')).thenReturn(undefined)
 
-        validator = new DefaultAwsSamDebugConfigurationValidator(instance(mockEmptyRegistry))
+        validator = new DefaultAwsSamDebugConfigurationValidator(instance(mockEmptyRegistry), instance(mockFolder))
 
-        const result = validator.validateSamDebugConfiguration(templateConfig)
+        const result = validator.validate(templateConfig)
         assert.strictEqual(result.isValid, false)
     })
 
@@ -106,7 +93,7 @@ describe('DefaultAwsSamDebugConfigurationValidator', () => {
         const target = templateConfig.invokeTarget as TemplateTargetProperties
         target.samTemplateResource = 'wrong'
 
-        const result = validator.validateSamDebugConfiguration(templateConfig)
+        const result = validator.validate(templateConfig)
         assert.strictEqual(result.isValid, false)
     })
 
@@ -114,7 +101,7 @@ describe('DefaultAwsSamDebugConfigurationValidator', () => {
         const target = templateConfig.invokeTarget as TemplateTargetProperties
         target.samTemplateResource = 'OtherResource'
 
-        const result = validator.validateSamDebugConfiguration(templateConfig)
+        const result = validator.validate(templateConfig)
         assert.strictEqual(result.isValid, false)
     })
 
@@ -123,14 +110,14 @@ describe('DefaultAwsSamDebugConfigurationValidator', () => {
             ?.Properties as CloudFormation.ResourceProperties
         properties.Runtime = 'invalid'
 
-        const result = validator.validateSamDebugConfiguration(templateConfig)
+        const result = validator.validate(templateConfig)
         assert.strictEqual(result.isValid, false)
     })
 
     it('returns invalid when resolving code debug configurations with invalid runtimes', () => {
         codeConfig.lambda = { runtime: 'asd' }
 
-        const result = validator.validateSamDebugConfiguration(codeConfig)
+        const result = validator.validate(codeConfig)
         assert.strictEqual(result.isValid, false)
     })
 })

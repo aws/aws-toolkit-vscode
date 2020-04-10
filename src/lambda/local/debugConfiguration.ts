@@ -12,6 +12,7 @@ import {
     CodeTargetProperties,
     TemplateTargetProperties,
     AwsSamDebuggerConfiguration,
+    AWS_SAM_DEBUG_TARGET_TYPES,
 } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import { tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
@@ -20,11 +21,6 @@ import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/temp
 import * as pathutil from '../../shared/utilities/pathUtils'
 
 export const DOTNET_CORE_DEBUGGER_PATH = '/tmp/lambci_debug_files/vsdbg'
-export const AWS_SAM_DEBUG_TYPE = 'aws-sam'
-export const DIRECT_INVOKE_TYPE = 'direct-invoke'
-export const TEMPLATE_TARGET_TYPE: 'template' = 'template'
-export const CODE_TARGET_TYPE: 'code' = 'code'
-export const AWS_SAM_DEBUG_TARGET_TYPES = [TEMPLATE_TARGET_TYPE, CODE_TARGET_TYPE]
 
 export interface NodejsDebugConfiguration extends SamLaunchRequestArgs {
     readonly runtimeFamily: RuntimeFamily.NodeJS

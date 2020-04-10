@@ -10,6 +10,7 @@ import {
     AwsSamDebugConfigurationValidator,
     DefaultAwsSamDebugConfigurationValidator,
 } from '../sam/debugger/awsSamDebugConfigurationValidator'
+import { CloudFormationTemplateRegistry } from '../cloudformation/templateRegistry'
 
 /**
  * Reads and writes DebugConfigurations.
@@ -29,7 +30,10 @@ export class LaunchConfiguration {
     public constructor(
         resource: vscode.Uri,
         private readonly configSource: DebugConfigurationSource = new DefaultDebugConfigSource(resource),
-        private readonly samValidator: AwsSamDebugConfigurationValidator = new DefaultAwsSamDebugConfigurationValidator()
+        private readonly samValidator: AwsSamDebugConfigurationValidator = new DefaultAwsSamDebugConfigurationValidator(
+            CloudFormationTemplateRegistry.getRegistry(),
+            vscode.workspace.getWorkspaceFolder(resource)
+        )
     ) {}
 
     public getDebugConfigurations(): vscode.DebugConfiguration[] {
@@ -42,7 +46,7 @@ export class LaunchConfiguration {
     public getSamDebugConfigurations(): AwsSamDebuggerConfiguration[] {
         return _(this.getDebugConfigurations())
             .filter(isAwsSamDebugConfiguration)
-            .filter(config => this.samValidator.isValidSamDebugConfiguration(config))
+            .filter(config => this.samValidator.validate(config)?.isValid)
             .value()
     }
 
