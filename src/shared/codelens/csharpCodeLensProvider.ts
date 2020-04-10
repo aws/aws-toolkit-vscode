@@ -5,12 +5,18 @@
 
 import { access } from 'fs-extra'
 import * as path from 'path'
-import * as os from 'os'
 import * as vscode from 'vscode'
-import { DOTNET_CORE_DEBUGGER_PATH, DotNetCoreDebugConfiguration } from '../../lambda/local/debugConfiguration'
+import * as os from 'os'
+import {
+    DotNetCoreDebugConfiguration,
+    DOTNET_CORE_DEBUGGER_PATH,
+    getCodeRoot,
+    getTemplate,
+    getTemplateResource,
+} from '../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
+import * as pathutil from '../../shared/utilities/pathUtils'
 import { DefaultDockerClient, DockerClient } from '../clients/dockerClient'
-import { CloudFormation } from '../cloudformation/cloudformation'
 import { ExtContext } from '../extensions'
 import { mkdir } from '../filesystem'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
@@ -19,7 +25,7 @@ import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam
 import { SamLaunchRequestArgs } from '../sam/debugger/samDebugSession'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
 import { getStartPort } from '../utilities/debuggerUtils'
-import { dirnameWithTrailingSlash, DRIVE_LETTER_REGEX } from '../utilities/pathUtils'
+import { dirnameWithTrailingSlash } from '../utilities/pathUtils'
 import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
 import {
     executeSamBuild,
@@ -65,12 +71,6 @@ class DefaultOnLocalInvokeCommandContext implements OnLocalInvokeCommandContext 
     }
 }
 
-function getCodeUri(resource: CloudFormation.Resource, samTemplateUri: vscode.Uri) {
-    const rawCodeUri = CloudFormation.getCodeUri(resource)
-
-    return path.isAbsolute(rawCodeUri) ? rawCodeUri : path.join(path.dirname(samTemplateUri.fsPath), rawCodeUri)
-}
-
 /**
  * Gathers and sets launch-config info by inspecting the workspace and creating
  * temp files/directories as needed.
@@ -82,29 +82,27 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
     if (!config.codeRoot) {
         // Last-resort attempt to discover the project root (when there is no
         // `launch.json` nor `template.yaml`).
-        config.codeRoot = await getSamProjectDirPathForFile(config?.samTemplatePath ?? config.documentUri!!.fsPath)
+        config.codeRoot = getSamProjectDirPathForFile(config?.samTemplatePath ?? config.documentUri!!.fsPath)
         if (!config.codeRoot) {
             // TODO: return error and show it at the caller.
             throw Error('missing launch.json, template.yaml, and failed to discover project root')
         }
     }
+    config.codeRoot = pathutil.normalize(config.codeRoot)
 
     const baseBuildDir = await makeBuildDir()
-    const template: CloudFormation.Template = await CloudFormation.load(config.samTemplatePath)
-    const resource = await CloudFormation.getResourceFromTemplateResources({
-        templateResources: template.Resources,
-        handlerName: config.handlerName,
-    })
-    const codeUri = getCodeUri(resource, vscode.Uri.parse(config.samTemplatePath!!))
+    const template = getTemplate(config)
+    const resource = getTemplateResource(config)
+    const codeUri = getCodeRoot(config.workspaceFolder, config)
     const handlerName = config.handlerName
 
     config.samTemplatePath = await makeInputTemplate({
         baseBuildDir,
-        codeDir: codeUri,
+        codeDir: codeUri!!,
         relativeFunctionHandler: handlerName,
         runtime: config.runtime,
-        globals: template.Globals,
-        properties: resource.Properties,
+        globals: template?.Globals,
+        properties: resource?.Properties,
     })
 
     config = {
@@ -444,8 +442,8 @@ async function _installDebugger(
     }
 }
 
-export const getSamProjectDirPathForFile = async (filepath: string): Promise<string> => {
-    return path.dirname(filepath)
+function getSamProjectDirPathForFile(filepath: string): string {
+    return pathutil.normalize(path.dirname(filepath))
 }
 
 /**
@@ -460,12 +458,12 @@ export async function makeCoreCLRDebugConfiguration(
     }
     config.debugPort = config.debugPort ?? (await getStartPort())
     const pipeArgs = ['-c', `docker exec -i $(docker ps -q -f publish=${config.debugPort}) \${debuggerCommand}`]
-    config.debuggerPath = getDebuggerPath(config.codeRoot)
+    config.debuggerPath = pathutil.normalize(getDebuggerPath(config.codeRoot))
     await ensureDebuggerPathExists(config.debuggerPath)
 
     if (os.platform() === 'win32') {
         // Coerce drive letter to uppercase. While Windows is case-insensitive, sourceFileMap is case-sensitive.
-        codeUri = codeUri.replace(DRIVE_LETTER_REGEX, match => match.toUpperCase())
+        codeUri = codeUri.replace(pathutil.DRIVE_LETTER_REGEX, match => match.toUpperCase())
     }
 
     return {

@@ -15,6 +15,7 @@ import { SamLaunchRequestArgs } from '../../../shared/sam/debugger/samDebugSessi
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { rmrf } from '../../../shared/filesystem'
 import { makeCoreCLRDebugConfiguration } from '../../../shared/codelens/csharpCodeLensProvider'
+import * as testutil from '../../testUtil'
 
 describe('makeCoreCLRDebugConfiguration', async () => {
     let tempFolder: string
@@ -73,7 +74,7 @@ describe('makeCoreCLRDebugConfiguration', async () => {
     it('uses the specified codeUri', async () => {
         const config = await makeConfig({})
 
-        assert.strictEqual(config.sourceFileMap['/var/task'], path.join('foo', 'bar'))
+        testutil.assertEqualPaths(config.sourceFileMap['/var/task'], path.join('foo', 'bar'))
     })
 
     describe('windows', async () => {
@@ -81,7 +82,7 @@ describe('makeCoreCLRDebugConfiguration', async () => {
             it('massages drive letters to uppercase', async () => {
                 const config = await makeConfig({ codeUri: 'c:\\foo\\bar' })
 
-                assert.strictEqual(config.windows.pipeTransport.pipeCwd, 'C:\\foo\\bar')
+                testutil.assertEqualPaths(config.windows.pipeTransport.pipeCwd, 'C:/foo/bar')
             })
         }
 

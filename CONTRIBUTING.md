@@ -73,7 +73,6 @@ of the top-level directory:
 
     rootTestsPath: __dirname + '/shared/sam/debugger/'
 
-
 #### Checking coverage report
 
 After running the tests, the coverage report can be found at ./coverage/index.html

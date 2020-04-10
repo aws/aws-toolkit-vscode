@@ -25,6 +25,7 @@ import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { Timeout } from '../utilities/timeoutUtils'
 import { ChannelLogger } from '../utilities/vsCodeUtils'
+import * as pathutil from '../../shared/utilities/pathUtils'
 
 export interface LambdaLocalInvokeParams {
     /** URI of the current editor document. */
@@ -86,7 +87,7 @@ export const makeBuildDir = async (): Promise<string> => {
     const buildDir = await makeTemporaryToolkitFolder()
     ExtensionDisposableFiles.getInstance().addFolder(buildDir)
 
-    return buildDir
+    return pathutil.normalize(buildDir)
 }
 
 export function getHandlerRelativePath(params: { codeRoot: string; filePath: string }): string {
@@ -160,7 +161,7 @@ export async function makeInputTemplate(params: {
 
     await newTemplate.generate(inputTemplatePath)
 
-    return inputTemplatePath
+    return pathutil.normalize(inputTemplatePath)
 }
 
 export interface ExecuteSamBuildArguments {

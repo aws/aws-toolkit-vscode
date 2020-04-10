@@ -4,13 +4,20 @@
  */
 
 import * as assert from 'assert'
+import { writeFile } from 'fs-extra'
 import * as path from 'path'
+import * as vscode from 'vscode'
 import {
+    getExistingConfiguration,
     getTemplatesConfigPath,
     load,
     LoadTemplatesConfigContext,
     TemplatesConfigPopulator,
 } from '../../../lambda/config/templates'
+import { CloudFormationTemplateRegistry } from '../../../shared/cloudformation/templateRegistry'
+import { mkdir, rmrf } from '../../../shared/filesystem'
+import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
+import { makeSampleSamTemplateYaml } from '../../shared/cloudformation/cloudformationTestUtils'
 
 class MockLoadTemplatesConfigContext {
     public readonly fileExists: (path: string) => Thenable<boolean>
@@ -754,5 +761,78 @@ describe('TemplatesConfigPopulator', async () => {
             const populator = new TemplatesConfigPopulator(inputJson, testModificationOptions)
             assert.throws(() => populator.ensureTemplateParameterOverrideExists('someprocessor', 'myParam'))
         })
+    })
+})
+
+describe('getExistingConfiguration', async () => {
+    let registry: CloudFormationTemplateRegistry
+    let tempFolder: string
+    let tempTemplateFile: vscode.Uri
+    let tempConfigFile: string
+    let fakeWorkspaceFolder: vscode.WorkspaceFolder
+    let tempConfigFolder: string
+    const matchedHandler = "it'sTheSameHandler"
+
+    beforeEach(async () => {
+        tempFolder = await makeTemporaryToolkitFolder()
+        tempTemplateFile = vscode.Uri.file(path.join(tempFolder, 'test.yaml'))
+        registry = new CloudFormationTemplateRegistry()
+        fakeWorkspaceFolder = {
+            uri: vscode.Uri.file(tempFolder),
+            name: 'workspaceFolderMimic',
+            index: 0,
+        }
+        tempConfigFolder = path.join(tempFolder, '.aws')
+        await mkdir(tempConfigFolder)
+        tempConfigFile = path.join(tempConfigFolder, 'templates.json')
+    })
+
+    afterEach(async () => {
+        await rmrf(tempFolder)
+    })
+
+    it("returns undefined if the legacy config file doesn't exist", async () => {
+        const val = await getExistingConfiguration(
+            fakeWorkspaceFolder,
+            'handlerDoesNotMatter',
+            tempTemplateFile,
+            registry
+        )
+        assert.strictEqual(val, undefined)
+    })
+
+    it('returns undefined if the legacy config file is not valid JSON', async () => {
+        await writeFile(tempTemplateFile.fsPath, makeSampleSamTemplateYaml(true, { handler: matchedHandler }), 'utf8')
+        await writeFile(tempConfigFile, makeSampleSamTemplateYaml(true, { handler: matchedHandler }), 'utf8')
+        await registry.addTemplateToRegistry(tempTemplateFile)
+        const val = await getExistingConfiguration(fakeWorkspaceFolder, matchedHandler, tempTemplateFile, registry)
+        assert.strictEqual(val, undefined)
+    })
+
+    it('returns data from the legacy config file', async () => {
+        await writeFile(tempTemplateFile.fsPath, makeSampleSamTemplateYaml(true, { handler: matchedHandler }), 'utf8')
+        const configData = {
+            templates: {
+                'test.yaml': {
+                    handlers: {
+                        [matchedHandler]: {
+                            event: { asdf: 'asdf' },
+                            environmentVariables: {},
+                            useContainer: false,
+                        },
+                    },
+                },
+            },
+        }
+        await writeFile(tempConfigFile, JSON.stringify(configData), 'utf8')
+        await registry.addTemplateToRegistry(tempTemplateFile)
+        const val = await getExistingConfiguration(fakeWorkspaceFolder, matchedHandler, tempTemplateFile, registry)
+        assert.ok(val)
+        if (val) {
+            assert.deepStrictEqual(val.environmentVariables, {})
+            assert.deepStrictEqual(val.eventJson, { asdf: 'asdf' })
+            assert.strictEqual(val.dockerNetwork, undefined)
+            assert.strictEqual(val.useContainer, false)
+        }
     })
 })
