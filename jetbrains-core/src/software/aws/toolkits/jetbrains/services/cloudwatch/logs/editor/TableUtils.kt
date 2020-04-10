@@ -28,6 +28,8 @@ import javax.swing.JPanel
 import javax.swing.JTable
 import javax.swing.JTextArea
 import javax.swing.SortOrder
+import javax.swing.border.CompoundBorder
+import javax.swing.border.EmptyBorder
 import javax.swing.table.DefaultTableCellRenderer
 import javax.swing.table.TableCellRenderer
 import javax.swing.table.TableRowSorter
@@ -152,8 +154,14 @@ private class ResizingDateColumnRenderer(showSeconds: Boolean) : TableCellRender
         // Make sure the background matches for selection
         wrapper.background = component.background
         // if a component is selected, it puts a border on it, move the border to the wrapper instead
-        wrapper.border = component.border
-        component.border = null
+        if (isSelected) {
+            // this border has an outside and inside border, take only the outside border
+            wrapper.border = (component.border as? CompoundBorder)?.outsideBorder
+            // Push the text up to compensate for the new border
+            component.border = EmptyBorder(-1, 0, 0, 0)
+        } else {
+            component.border = null
+        }
         return wrapper
     }
 }
