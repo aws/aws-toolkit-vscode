@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Add capabilities check boxes to serverless deploy (issue #1394)"
+}

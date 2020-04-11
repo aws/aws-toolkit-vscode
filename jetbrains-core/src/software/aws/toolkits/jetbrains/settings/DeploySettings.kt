@@ -9,6 +9,7 @@ import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleServiceManager
 import com.intellij.openapi.project.rootManager
 import com.intellij.openapi.vfs.VirtualFile
+import software.aws.toolkits.jetbrains.services.lambda.deploy.CreateCapabilities
 import java.nio.file.Paths
 
 @State(name = "deploySettings")
@@ -41,6 +42,11 @@ class DeploySettings : PersistentStateComponent<DeployConfigs> {
         state.samConfigs.computeIfAbsent(samPath) { DeploySamConfig() }.useContainer = value
     }
 
+    fun enabledCapabilities(samPath: String): List<CreateCapabilities>? = state.samConfigs[samPath]?.enabledCapabilities
+    fun setEnabledCapabilities(samPath: String, value: List<CreateCapabilities>) {
+        state.samConfigs.computeIfAbsent(samPath) { DeploySamConfig() }.enabledCapabilities = value
+    }
+
     companion object {
         @JvmStatic
         fun getInstance(module: Module): DeploySettings? = ModuleServiceManager.getService(module, DeploySettings::class.java)
@@ -55,7 +61,8 @@ data class DeploySamConfig(
     var stackName: String? = null,
     var bucketName: String? = null,
     var autoExecute: Boolean = false,
-    var useContainer: Boolean = false
+    var useContainer: Boolean = false,
+    var enabledCapabilities: List<CreateCapabilities>? = null
 )
 
 /**

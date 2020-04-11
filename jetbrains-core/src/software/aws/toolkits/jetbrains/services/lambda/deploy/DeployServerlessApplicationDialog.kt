@@ -97,6 +97,7 @@ class DeployServerlessApplicationDialog(
         view.requireReview.isSelected = !(settings?.samAutoExecute(samPath) ?: true)
 
         view.useContainer.isSelected = (settings?.samUseContainer(samPath) ?: false)
+        view.capabilities.selected = settings?.enabledCapabilities(samPath) ?: CreateCapabilities.values().filter { it.defaultEnabled }
     }
 
     override fun createCenterPanel(): JComponent? = view.content
@@ -139,6 +140,9 @@ class DeployServerlessApplicationDialog(
 
     val useContainer: Boolean
         get() = view.useContainer.isSelected
+
+    val capabilities: List<CreateCapabilities>
+        get() = view.capabilities.selected
 
     private fun updateStackEnabledStates() {
         view.newStackName.isEnabled = view.createStack.isSelected
