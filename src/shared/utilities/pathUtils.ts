@@ -3,12 +3,33 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as os from 'os'
 import * as _path from 'path'
 
 export const DRIVE_LETTER_REGEX = /^\w\:/
 
 function isUncPath(path: string) {
     return /^\s*[\/\\]{2}[^\/\\]+/.test(path)
+}
+
+/**
+ * Decides if `path1` is logically equivalent to `path2`, after resolving to
+ * absolute paths (relative to `logicalRoot`) and normalizing for
+ * case-insensitive filesystems, path separators, etc.
+ *
+ * @param logicalRoot Resolve relative paths against this directory
+ * @param path1 Path to compare
+ * @param path2 Path to compare
+ */
+export function areEqual(logicalRoot: string | undefined, path1: string, path2: string): boolean {
+    const fullPath1 = _path.resolve(logicalRoot ? logicalRoot + '/' : '', path1)
+    const fullPath2 = _path.resolve(logicalRoot ? logicalRoot + '/' : '', path2)
+    const normalized1 = normalize(fullPath1)
+    const normalized2 = normalize(fullPath2)
+    if (os.platform() === 'win32') {
+        return normalized1.toLowerCase() === normalized2.toLowerCase()
+    }
+    return normalized1 === normalized2
 }
 
 export function getNormalizedRelativePath(from: string, to: string): string {

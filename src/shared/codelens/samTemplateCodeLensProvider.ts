@@ -51,9 +51,10 @@ export class SamTemplateCodeLensProvider implements vscode.CodeLensProvider {
 
 function getExistingDebuggedResources(templateUri: vscode.Uri, launchConfig: LaunchConfiguration): Set<string> {
     const existingSamDebugTargets = getExistingSamDebugTargets(launchConfig)
+    const folder = vscode.workspace.getWorkspaceFolder(templateUri)
 
     return _(existingSamDebugTargets)
-        .filter(target => pathutils.normalize(target.samTemplatePath) === pathutils.normalize(templateUri.fsPath))
+        .filter(target => pathutils.areEqual(folder?.uri.fsPath, target.samTemplatePath, templateUri.fsPath))
         .map(target => target.samTemplateResource)
         .thru(array => new Set(array))
         .value()

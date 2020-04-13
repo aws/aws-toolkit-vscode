@@ -4,6 +4,7 @@
  */
 
 import * as assert from 'assert'
+import * as os from 'os'
 import * as path from 'path'
 import {
     dirnameWithTrailingSlash,
@@ -11,31 +12,41 @@ import {
     normalizeSeparator,
     removeDriveLetter,
     normalize,
+    areEqual,
 } from '../../../shared/utilities/pathUtils'
 
-describe('getNormalizedRelativePath', async () => {
-    it('returns expected path', async () => {
+describe('pathUtils', async () => {
+    it('getNormalizedRelativePath()', async () => {
         const workspaceFolderPath = path.join('my', 'workspace')
         const expectedRelativePath = path.join('processors', 'template.yaml')
         const templatePath = path.join(workspaceFolderPath, expectedRelativePath)
-
         const relativePath = getNormalizedRelativePath(workspaceFolderPath, templatePath)
-
         assert.strictEqual(relativePath, expectedRelativePath.replace(path.sep, path.posix.sep))
     })
-})
 
-describe('dirnameWithTrailingSlash', async () => {
-    it('Adds a trailing slash to a parent folder', async () => {
+    it('dirnameWithTrailingSlash()', async () => {
         const expectedResult = path.join('src', 'processors') + path.sep
         const input = path.join(expectedResult, 'app.js')
         const actualResult = dirnameWithTrailingSlash(input)
-
         assert.strictEqual(actualResult, expectedResult, 'Expected path to contain trailing slash')
     })
-})
 
-describe('pathUtils', async () => {
+    it('areEqual()', () => {
+        const workspaceFolderPath = path.join('/my', 'workspace')
+        assert.ok(areEqual(undefined, 'a/b/c', 'a/b/c'))
+        assert.ok(areEqual(workspaceFolderPath, '/my/workspace/foo', './foo'))
+        assert.ok(areEqual(workspaceFolderPath, '/my/workspace/foo', 'foo/bar/baz/../../'))
+        assert.ok(areEqual(workspaceFolderPath, '/my/workspace/foo//', './foo/////'))
+        assert.ok(!areEqual(workspaceFolderPath, '/my/workspace/foo/', '../foo/'))
+        assert.ok(!areEqual(workspaceFolderPath, '/my/workspace/foo/', './foo/bar/'))
+        if (os.platform() === 'win32') {
+            assert.ok(areEqual(workspaceFolderPath, 'C:/my/workspace/foo', 'c:\\my\\WORKSPACE\\FOO'))
+            assert.ok(areEqual(workspaceFolderPath, 'C:/my/workspace/foo', '.\\FOO'))
+            assert.ok(!areEqual(workspaceFolderPath, 'C:/my/workspace/foo', '..\\..\\FOO'))
+            assert.ok(!areEqual(workspaceFolderPath, 'C:/my/workspace/foo', 'C:/my/workspac/e/foo'))
+        }
+    })
+
     it('normalizeSeparator()', () => {
         assert.strictEqual(normalizeSeparator('a/b/c'), 'a/b/c')
         assert.strictEqual(normalizeSeparator('a\\b\\c'), 'a/b/c')
