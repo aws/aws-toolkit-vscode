@@ -65,7 +65,7 @@ describe('SamTemplateCodeLensProvider', async () => {
         when(mockLaunchConfig.getSamDebugConfigurations()).thenReturn(debugConfigurations)
     })
 
-    it('provides a code lens for a file with a new resource', async () => {
+    it('provides a CodeLens for a file with a new resource', async () => {
         when(mockSymbolResolver.getFunctionResources()).thenResolve(functionResources)
 
         const codeLenses = await codeLensProvider.provideCodeLenses(
