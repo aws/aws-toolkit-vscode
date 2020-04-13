@@ -156,11 +156,6 @@ describe('isPublicClassSymbol', async () => {
 })
 
 describe('isPublicMethodSymbol', async () => {
-    // params: {
-    //     access: 'public' | 'private',
-    //     beforeFunctionName: boolean = false,
-    //     afterSignature: boolean = false
-    // }
     const validPublicMethodTests = [
         {
             scenario: 'signature all on one line',
