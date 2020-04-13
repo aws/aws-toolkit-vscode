@@ -311,7 +311,7 @@ Javascript:
 
 C#:
 
--   public functions within public classes
+-   public functions within public classes that have one parameter or a second parameter of type `ILambdaContext`
 
 ### Comparison to other AWS Toolkits
 

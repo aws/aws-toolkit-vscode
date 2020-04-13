@@ -39,7 +39,7 @@ export const PYTHON_ALLFILES: vscode.DocumentFilter[] = [
 ]
 
 // TODO: Fix this! Implement a more robust/flexible solution. This is just a basic minimal proof of concept.
-export const getSamProjectDirPathForFile = async (filepath: string): Promise<string> => {
+export async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
     return path.dirname(filepath)
 }
 
@@ -50,22 +50,25 @@ export async function getLambdaHandlerCandidates(uri: vscode.Uri): Promise<Lambd
         (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', uri)) ??
         []
 
-    return symbols
-        .filter(sym => sym.kind === vscode.SymbolKind.Function)
-        .map<LambdaHandlerCandidate>(symbol => {
-            return {
-                filename,
-                handlerName: `${path.parse(filename).name}.${symbol.name}`,
-                range: symbol.range,
-            }
-        })
+    return symbols.filter(isTopLevelFunction).map<LambdaHandlerCandidate>(symbol => {
+        return {
+            filename,
+            handlerName: `${path.parse(filename).name}.${symbol.name}`,
+            range: symbol.range,
+        }
+    })
+}
+
+function isTopLevelFunction(symbol: vscode.DocumentSymbol) {
+    // if the function is indented at all, it is not classified as being a top-level function in the eyes of Python
+    return symbol.kind === vscode.SymbolKind.Function && symbol.range.start.character === 0
 }
 
 // Add create debugging manifest/requirements.txt containing ptvsd
-const makePythonDebugManifest = async (params: {
+async function makePythonDebugManifest(params: {
     samProjectCodeRoot: string
     outputDir: string
-}): Promise<string | undefined> => {
+}): Promise<string | undefined> {
     let manifestText = ''
     const manfestPath = path.join(params.samProjectCodeRoot, 'requirements.txt')
     if (await fileExists(manfestPath)) {
@@ -83,12 +86,11 @@ const makePythonDebugManifest = async (params: {
     // else we don't need to override the manifest. nothing to return
 }
 
-// tslint:disable:no-trailing-whitespace
-const makeLambdaDebugFile = async (params: {
+async function makeLambdaDebugFile(params: {
     handlerName: string
     debugPort: number
     outputDir: string
-}): Promise<{ outFilePath: string; debugHandlerName: string }> => {
+}): Promise<{ outFilePath: string; debugHandlerName: string }> {
     if (!params.outputDir) {
         throw new Error('Must specify outputDir')
     }

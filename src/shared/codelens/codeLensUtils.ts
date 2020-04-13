@@ -70,7 +70,7 @@ export async function makeCodeLenses({
                 handlerName: handler.handlerName,
                 range,
                 workspaceFolder,
-                samTemplate: associatedTemplate,
+                samTemplate: associatedTemplate, // TODO: Remove this assignment (or make optional) following merge of PR #971
                 language,
             }
             lenses.push(makeLocalInvokeCodeLens({ ...baseParams, isDebug: false }))
