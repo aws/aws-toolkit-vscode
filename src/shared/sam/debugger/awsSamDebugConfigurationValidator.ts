@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { samLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 import { CloudFormation } from '../../cloudformation/cloudformation'
 import { CloudFormationTemplateRegistry } from '../../cloudformation/templateRegistry'
@@ -12,10 +13,10 @@ import {
     AWS_SAM_DEBUG_TARGET_TYPES,
     AwsSamDebuggerConfiguration,
     CODE_TARGET_TYPE,
-    isCodeTargetProperties,
-    isTemplateTargetProperties,
     TemplateTargetProperties,
+    TEMPLATE_TARGET_TYPE,
 } from './awsSamDebugConfiguration'
+import { tryGetAbsolutePath } from '../../utilities/workspaceUtils'
 
 export interface ValidationResult {
     isValid: boolean
@@ -23,85 +24,106 @@ export interface ValidationResult {
 }
 
 export interface AwsSamDebugConfigurationValidator {
-    validateSamDebugConfiguration(debugConfiguration: AwsSamDebuggerConfiguration): ValidationResult
-    isValidSamDebugConfiguration(debugConfiguration: AwsSamDebuggerConfiguration): boolean
+    validate(config: AwsSamDebuggerConfiguration): ValidationResult
 }
 
 export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConfigurationValidator {
-    public constructor(private readonly cftRegistry = CloudFormationTemplateRegistry.getRegistry()) {}
+    public constructor(
+        private readonly cftRegistry = CloudFormationTemplateRegistry.getRegistry(),
+        private readonly workspaceFolder: vscode.WorkspaceFolder | undefined
+    ) {}
 
-    public validateSamDebugConfiguration(debugConfiguration: AwsSamDebuggerConfiguration): ValidationResult {
-        const generalValidationResult = this.generalDebugConfigValidation(debugConfiguration)
-        if (!generalValidationResult.isValid) {
-            return generalValidationResult
-        }
-
-        if (isTemplateTargetProperties(debugConfiguration.invokeTarget)) {
-            return this.templateDebugConfigValidation(debugConfiguration, this.cftRegistry)
-        } else if (isCodeTargetProperties(debugConfiguration.invokeTarget)) {
-            return this.codeDebugConfigValidation(debugConfiguration)
-        }
-
-        return { isValid: false, message: localize('AWS.generic.notImplemented', 'Not implemented') }
-    }
-
-    public isValidSamDebugConfiguration(debugConfiguration: AwsSamDebuggerConfiguration): boolean {
-        return this.validateSamDebugConfiguration(debugConfiguration).isValid
-    }
-
-    private generalDebugConfigValidation(debugConfiguration: AwsSamDebuggerConfiguration): ValidationResult {
-        if (!AWS_SAM_DEBUG_REQUEST_TYPES.includes(debugConfiguration.request)) {
-            return {
-                isValid: false,
-                message: localize(
-                    'AWS.sam.debugger.invalidRequest',
-                    'Debug Configuration has an unsupported request type. Supported types: {0}',
-                    AWS_SAM_DEBUG_REQUEST_TYPES.join(', ')
-                ),
+    /**
+     * Validates debug configuration properties.
+     */
+    public validate(config: AwsSamDebuggerConfiguration): ValidationResult {
+        let rv: { isValid: boolean; message?: string } = { isValid: false, message: undefined }
+        if (!config.request) {
+            rv.message = localize(
+                'AWS.sam.debugger.missingField',
+                'Missing required field "{0}" in debug config',
+                'request'
+            )
+        } else if (!AWS_SAM_DEBUG_REQUEST_TYPES.includes(config.request)) {
+            rv.message = localize(
+                'AWS.sam.debugger.invalidRequest',
+                'Debug Configuration has an unsupported request type. Supported types: {0}',
+                AWS_SAM_DEBUG_REQUEST_TYPES.join(', ')
+            )
+        } else if (!AWS_SAM_DEBUG_TARGET_TYPES.includes(config.invokeTarget.target)) {
+            rv.message = localize(
+                'AWS.sam.debugger.invalidTarget',
+                'Debug Configuration has an unsupported target type. Supported types: {0}',
+                AWS_SAM_DEBUG_TARGET_TYPES.join(', ')
+            )
+        } else if (config.invokeTarget.target === TEMPLATE_TARGET_TYPE) {
+            let cfnTemplate
+            if (config.invokeTarget.samTemplatePath) {
+                const fullpath = tryGetAbsolutePath(this.workspaceFolder, config.invokeTarget.samTemplatePath)
+                // Normalize to absolute path for use in the runner.
+                config.invokeTarget.samTemplatePath = fullpath
+                cfnTemplate = this.cftRegistry.getRegisteredTemplate(fullpath)?.template
             }
+            rv = this.validateTemplateConfig(config, config.invokeTarget.samTemplatePath, cfnTemplate)
+        } else if (config.invokeTarget.target === CODE_TARGET_TYPE) {
+            rv = this.validateCodeConfig(config)
         }
 
-        if (!AWS_SAM_DEBUG_TARGET_TYPES.includes(debugConfiguration.invokeTarget.target)) {
-            return {
-                isValid: false,
-                message: localize(
-                    'AWS.sam.debugger.invalidTarget',
-                    'Debug Configuration has an unsupported target type. Supported types: {0}',
-                    AWS_SAM_DEBUG_TARGET_TYPES.join(', ')
-                ),
-            }
+        if (!rv.isValid && !rv.message) {
+            // Missing message, should never happen.
+            throw Error(`invalid debug-config: ${rv.message}`)
         }
 
-        return { isValid: true }
+        return rv
     }
 
-    private templateDebugConfigValidation(
-        debugConfiguration: AwsSamDebuggerConfiguration,
-        cftRegistry: CloudFormationTemplateRegistry
+    private validateTemplateConfig(
+        config: AwsSamDebuggerConfiguration,
+        cfnTemplatePath: string | undefined,
+        cfnTemplate: CloudFormation.Template | undefined
     ): ValidationResult {
-        const templateTarget = debugConfiguration.invokeTarget as TemplateTargetProperties
+        const templateTarget = config.invokeTarget as TemplateTargetProperties
 
-        const template = cftRegistry.getRegisteredTemplate(templateTarget.samTemplatePath)
+        if (!cfnTemplatePath) {
+            return {
+                isValid: false,
+                message: localize(
+                    'AWS.sam.debugger.missingField',
+                    'Missing required field "{0}" in debug config',
+                    'samTemplatePath'
+                ),
+            }
+        }
 
-        if (!template) {
+        if (!cfnTemplate) {
             return {
                 isValid: false,
                 message: localize(
                     'AWS.sam.debugger.missingTemplate',
-                    'Unable to find the Template file {0}',
+                    'Invalid (or missing) template file (path must be workspace-relative, or absolute): {0}',
                     templateTarget.samTemplatePath
                 ),
             }
         }
 
-        const resources = template.template.Resources
+        const resources = cfnTemplate.Resources
+        if (!templateTarget.samTemplateResource) {
+            return {
+                isValid: false,
+                message: localize(
+                    'AWS.sam.debugger.missingField',
+                    'Missing required field "{0}" in debug config',
+                    'samTemplateResource'
+                ),
+            }
+        }
 
         if (!resources || !Object.keys(resources).includes(templateTarget.samTemplateResource)) {
             return {
                 isValid: false,
                 message: localize(
                     'AWS.sam.debugger.missingResource',
-                    'Unable to find the Template Resource {0} in Template file {1}',
+                    'Cannot find the template resource "{0}" in template file: {1}',
                     templateTarget.samTemplateResource,
                     templateTarget.samTemplatePath
                 ),
@@ -140,8 +162,8 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
         if (templateEnv?.Variables) {
             const templateEnvVars = Object.keys(templateEnv.Variables)
             const missingVars: string[] = []
-            if (debugConfiguration.lambda && debugConfiguration.lambda.environmentVariables) {
-                for (const key of Object.keys(debugConfiguration.lambda.environmentVariables)) {
+            if (config.lambda && config.lambda.environmentVariables) {
+                for (const key of Object.keys(config.lambda.environmentVariables)) {
                     if (!templateEnvVars.includes(key)) {
                         missingVars.push(key)
                     }
@@ -163,14 +185,15 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
         return { isValid: true }
     }
 
-    private codeDebugConfigValidation(debugConfiguration: AwsSamDebuggerConfiguration): ValidationResult {
+    private validateCodeConfig(debugConfiguration: AwsSamDebuggerConfiguration): ValidationResult {
         if (!debugConfiguration.lambda?.runtime || !samLambdaRuntimes.has(debugConfiguration.lambda.runtime)) {
             return {
                 isValid: false,
                 message: localize(
                     'AWS.sam.debugger.missingRuntime',
-                    'Debug Configurations with an invoke target of "{0}" require a valid Lambda runtime value',
-                    CODE_TARGET_TYPE
+                    'Debug Configurations with an invoke target of "{0}" require a valid Lambda runtime value, expected one of [{1}]',
+                    CODE_TARGET_TYPE,
+                    Array.from(samLambdaRuntimes).join(', ')
                 ),
             }
         }

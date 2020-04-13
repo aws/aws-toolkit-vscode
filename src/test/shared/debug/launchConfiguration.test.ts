@@ -44,7 +44,7 @@ describe('LaunchConfiguration', () => {
         mockSamValidator = mock()
 
         when(mockConfigSource.getDebugConfigurations()).thenReturn(debugConfigurations)
-        when(mockSamValidator.isValidSamDebugConfiguration(deepEqual(samDebugConfiguration))).thenReturn(true)
+        when(mockSamValidator.validate(deepEqual(samDebugConfiguration))).thenReturn({ isValid: true })
     })
 
     it('gets debug configurations', () => {

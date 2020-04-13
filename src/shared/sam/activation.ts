@@ -8,7 +8,6 @@ import { createNewSamApplication, resumeCreateNewSamApp } from '../../lambda/com
 import { deploySamApplication, SamDeployWizardResponseProvider } from '../../lambda/commands/deploySamApplication'
 import { SamParameterCompletionItemProvider } from '../../lambda/config/samParameterCompletionItemProvider'
 import { configureLocalLambda } from '../../lambda/local/configureLocalLambda'
-import { AWS_SAM_DEBUG_TYPE } from '../../lambda/local/debugConfiguration'
 import {
     DefaultSamDeployWizardContext,
     SamDeployWizard,
@@ -27,6 +26,7 @@ import { detectSamCli } from './cli/samCliDetection'
 import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
 import { SamDebugSession } from './debugger/samDebugSession'
+import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
 
 /**
  * Activate SAM-related functionality.
