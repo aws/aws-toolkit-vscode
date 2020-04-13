@@ -8,6 +8,7 @@ import { createNewSamApplication, resumeCreateNewSamApp } from '../../lambda/com
 import { deploySamApplication, SamDeployWizardResponseProvider } from '../../lambda/commands/deploySamApplication'
 import { SamParameterCompletionItemProvider } from '../../lambda/config/samParameterCompletionItemProvider'
 import { configureLocalLambda } from '../../lambda/local/configureLocalLambda'
+import { AWS_SAM_DEBUG_TYPE } from '../../lambda/local/debugConfiguration'
 import {
     DefaultSamDeployWizardContext,
     SamDeployWizard,
@@ -16,6 +17,7 @@ import {
 import * as codelensUtils from '../codelens/codeLensUtils'
 import * as csLensProvider from '../codelens/csharpCodeLensProvider'
 import * as pyLensProvider from '../codelens/pythonCodeLensProvider'
+import { SamTemplateCodeLensProvider } from '../codelens/samTemplateCodeLensProvider'
 import { ExtContext } from '../extensions'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
 import { TelemetryService } from '../telemetry/telemetryService'
@@ -23,8 +25,8 @@ import { PromiseSharer } from '../utilities/promiseUtilities'
 import { initialize as initializeSamCliContext } from './cli/samCliContext'
 import { detectSamCli } from './cli/samCliDetection'
 import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
+import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
 import { SamDebugSession } from './debugger/samDebugSession'
-import { AWS_SAM_DEBUG_TYPE } from '../../lambda/local/debugConfiguration'
 
 /**
  * Activate SAM-related functionality.
@@ -90,6 +92,7 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
             await createNewSamApplication(ctx.chanLogger, ctx.awsContext, ctx.regionProvider)
         }),
         vscode.commands.registerCommand('aws.configureLambda', configureLocalLambda),
+        vscode.commands.registerCommand('aws.addSamDebugConfiguration', addSamDebugConfiguration),
         vscode.commands.registerCommand('aws.deploySamApplication', async () => {
             const samDeployWizardContext = new DefaultSamDeployWizardContext(ctx.regionProvider, ctx.awsContext)
             const samDeployWizard: SamDeployWizardResponseProvider = {
@@ -119,6 +122,19 @@ async function activateCodeLensProviders(
     const disposables: vscode.Disposable[] = []
 
     codelensUtils.initializeTypescriptCodelens(context)
+
+    disposables.push(
+        vscode.languages.registerCodeLensProvider(
+            [
+                {
+                    language: 'yaml',
+                    scheme: 'file',
+                    pattern: '**/*template.{yml,yaml}',
+                },
+            ],
+            new SamTemplateCodeLensProvider()
+        )
+    )
 
     disposables.push(
         vscode.languages.registerCodeLensProvider(

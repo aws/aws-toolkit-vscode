@@ -370,6 +370,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                     resourceName: resourceName,
                     runtime: validRuntime,
                     handler: 'my.test.handler',
+                    codeUri: 'codeuri',
                 }),
                 tempFile.fsPath
             )
@@ -531,6 +532,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                     resourceName: resourceName,
                     runtime: validRuntime,
                     handler: 'my.test.handler',
+                    codeUri: 'codeuri',
                 }),
                 tempFile.fsPath
             )
