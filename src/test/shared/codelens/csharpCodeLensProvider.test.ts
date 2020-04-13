@@ -156,37 +156,67 @@ describe('isPublicClassSymbol', async () => {
 })
 
 describe('isPublicMethodSymbol', async () => {
-    const sampleMethodSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
-        'FunctionHandler(APIGatewayProxyRequest apigProxyEvent, ILambdaContext context)',
-        '',
-        vscode.SymbolKind.Method,
-        fakeRange,
-        fakeRange
-    )
-
+    // params: {
+    //     access: 'public' | 'private',
+    //     beforeFunctionName: boolean = false,
+    //     afterSignature: boolean = false
+    // }
     const validPublicMethodTests = [
         {
             scenario: 'signature all on one line',
-            functionSignature: generateFunctionSignature('public', 'FunctionHandler'),
+            functionHandler: generateFunctionHandler('FunctionHandler', 'APIGatewayProxyResponse', 'ILambdaContext'),
+            functionSignatureParams: { access: 'public' },
         },
         {
             scenario: 'signature across many lines',
-            functionSignature: generateFunctionSignature('public', 'FunctionHandler', true, true, true),
+            functionHandler: generateFunctionHandler(
+                'FunctionHandler',
+                'APIGatewayProxyResponse',
+                'ILambdaContext',
+                true
+            ),
+            functionSignatureParams: { access: 'public', beforeFunctionName: true, afterSignature: true },
         },
         {
             scenario: 'method name on another line',
-            functionSignature: generateFunctionSignature('public', 'FunctionHandler', true),
+            functionHandler: generateFunctionHandler('FunctionHandler', 'APIGatewayProxyResponse', 'ILambdaContext'),
+            functionSignatureParams: { access: 'public', beforeFunctionName: true },
         },
         {
             scenario: 'args on many lines',
-            functionSignature: generateFunctionSignature('public', 'FunctionHandler', false, true),
+            functionHandler: generateFunctionHandler(
+                'FunctionHandler',
+                'APIGatewayProxyResponse',
+                'ILambdaContext',
+                true
+            ),
+            functionSignatureParams: { access: 'public' },
+        },
+        {
+            scenario: 'first arg is generic',
+            functionHandler: generateFunctionHandler(
+                'FunctionHandler',
+                'APIGatewayProxyResponse<string, int, boolean>',
+                'ILambdaContext'
+            ),
+            functionSignatureParams: { access: 'public' },
         },
     ]
 
     validPublicMethodTests.forEach(test => {
+        const sampleMethodSymbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
+            'FunctionHandler(APIGatewayProxyRequest apigProxyEvent, ILambdaContext context)',
+            '',
+            vscode.SymbolKind.Method,
+            fakeRange,
+            fakeRange
+        )
         it(`returns true for a public method symbol when ${test.scenario}`, async () => {
             const doc = {
-                getText: (range?: vscode.Range): string => generateFunctionDeclaration(test.functionSignature),
+                getText: (range?: vscode.Range): string =>
+                    generateFunctionDeclaration(
+                        generateFunctionSignature(test.functionHandler, test.functionSignatureParams)
+                    ),
             }
 
             const isPublic = isValidLambdaHandler(doc, sampleMethodSymbol)
@@ -196,11 +226,11 @@ describe('isPublicMethodSymbol', async () => {
 
     it('returns false for a symbol that is not a method', async () => {
         const symbol = new vscode.DocumentSymbol(
-            sampleMethodSymbol.name,
-            sampleMethodSymbol.detail,
+            'FunctionHandler(APIGatewayProxyRequest apigProxyEvent, ILambdaContext context)',
+            '',
             vscode.SymbolKind.Class,
-            sampleMethodSymbol.range,
-            sampleMethodSymbol.selectionRange
+            fakeRange,
+            fakeRange
         )
 
         const doc = {
@@ -214,27 +244,56 @@ describe('isPublicMethodSymbol', async () => {
     })
 
     it('returns false when the method is not public', async () => {
+        const handler = generateFunctionHandler('FunctionHandler', 'APIGatewayProxyResponse', 'ILambdaContext')
+        const symbol = new vscode.DocumentSymbol(handler, '', vscode.SymbolKind.Method, fakeRange, fakeRange)
         const doc = {
             getText: (range?: vscode.Range): string =>
-                generateFunctionDeclaration(generateFunctionSignature('private', 'FunctionHandler')),
+                generateFunctionDeclaration(
+                    generateFunctionSignature(
+                        generateFunctionHandler('FunctionHandler', 'APIGatewayProxyResponse', 'ILambdaContext'),
+                        { access: 'private' }
+                    )
+                ),
         }
 
-        const isPublic = isValidLambdaHandler(doc, sampleMethodSymbol)
+        const isPublic = isValidLambdaHandler(doc, symbol)
         assert.strictEqual(isPublic, false, 'Expected symbol not to be a public method')
     })
 
     it('returns false when a private method name contains the word public in it', async () => {
-        const symbol = new vscode.DocumentSymbol(
-            'notpublicmethod',
-            sampleMethodSymbol.detail,
+        const symbol = new vscode.DocumentSymbol('notpublicmethod', '', vscode.SymbolKind.Method, fakeRange, fakeRange)
+
+        const doc = {
+            getText: (range?: vscode.Range): string =>
+                generateFunctionDeclaration(
+                    generateFunctionSignature(
+                        generateFunctionHandler('FunctionHandler', 'APIGatewayProxyResponse', 'ILambdaContext'),
+                        { access: 'private' }
+                    )
+                ),
+        }
+
+        const isPublic = isValidLambdaHandler(doc, symbol)
+        assert.strictEqual(isPublic, false, 'Expected symbol not to be a public method')
+    })
+
+    it('returns false when the second parameter is not an ILambdaContext', async () => {
+        const symbol: vscode.DocumentSymbol = new vscode.DocumentSymbol(
+            'FunctionHandler(APIGatewayProxyRequest apigProxyEvent, string context)',
+            '',
             vscode.SymbolKind.Method,
-            sampleMethodSymbol.range,
-            sampleMethodSymbol.selectionRange
+            fakeRange,
+            fakeRange
         )
 
         const doc = {
             getText: (range?: vscode.Range): string =>
-                generateFunctionDeclaration(generateFunctionSignature('private', symbol.name)),
+                generateFunctionDeclaration(
+                    generateFunctionSignature(
+                        generateFunctionHandler('FunctionHandler', 'APIGatewayProxyResponse', 'string'),
+                        { access: 'public' }
+                    )
+                ),
         }
 
         const isPublic = isValidLambdaHandler(doc, symbol)
@@ -269,18 +328,29 @@ describe('isPublicMethodSymbol', async () => {
      * to a Method Symbol's range. Used with generateFunctionDeclaration.
      */
     function generateFunctionSignature(
-        access: 'public' | 'private',
-        functionName: string,
-        beforeFunctionName: boolean = false,
-        beforeArgument: boolean = false,
-        afterSignature: boolean = false
+        functionHandler: string,
+        params: {
+            access: string
+            beforeFunctionName?: boolean
+            afterSignature?: boolean
+        }
     ): string {
-        const beforeFunctionText = beforeFunctionName ? os.EOL : ''
-        const beforeArgumentText = beforeArgument ? os.EOL : ''
-        const afterSignatureText = afterSignature ? os.EOL : ''
+        const beforeFunctionText = params.beforeFunctionName ? os.EOL : ''
+        const afterSignatureText = params.afterSignature ? os.EOL : ''
 
         // tslint:disable-next-line:max-line-length
-        return `${access} APIGatewayProxyResponse ${beforeFunctionText}${functionName}(${beforeArgumentText}APIGatewayProxyRequest apigProxyEvent, ${beforeArgumentText}ILambdaContext context)${afterSignatureText}`
+        return `${params.access} APIGatewayProxyResponse ${beforeFunctionText}${functionHandler}${afterSignatureText}`
+    }
+
+    function generateFunctionHandler(
+        functionName: string,
+        param1: string,
+        param2: string,
+        beforeArgument: boolean = false
+    ): string {
+        const beforeArgumentText = beforeArgument ? os.EOL : ''
+
+        return `${functionName}(${beforeArgumentText}${param1} apigProxyEvent, ${beforeArgumentText}${param2} context)`
     }
 })
 
