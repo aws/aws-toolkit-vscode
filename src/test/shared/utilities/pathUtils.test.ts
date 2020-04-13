@@ -42,7 +42,7 @@ describe('pathUtils', async () => {
         if (os.platform() === 'win32') {
             assert.ok(areEqual(workspaceFolderPath, 'C:/my/workspace/foo', 'c:\\my\\WORKSPACE\\FOO'))
             assert.ok(areEqual(workspaceFolderPath, 'C:/my/workspace/foo', '.\\FOO'))
-            assert.ok(areEqual(workspaceFolderPath, 'C:/my/workspace/foo', '..\\..\\FOO\\bar\\baz'))
+            assert.ok(!areEqual(workspaceFolderPath, 'C:/my/workspace/foo', '..\\..\\FOO'))
             assert.ok(!areEqual(workspaceFolderPath, 'C:/my/workspace/foo', 'C:/my/workspac/e/foo'))
         }
     })
