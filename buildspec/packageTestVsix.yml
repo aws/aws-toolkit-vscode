@@ -9,11 +9,14 @@ phases:
     install:
         runtime-versions:
             nodejs: 10
-
-    build:
+            
+    pre_build:
         commands:
             # --unsafe-perm is needed because we run as root
             - npm install --unsafe-perm
+            
+    build:
+        commands:
             - cp ./extension-readme.md ./README.md
             - npm run package
 
