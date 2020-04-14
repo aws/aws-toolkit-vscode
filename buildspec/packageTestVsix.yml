@@ -1,0 +1,23 @@
+version: 0.2
+
+env:
+    variables:
+        # needed or else webpack will cause it to run out of memory
+        NODE_OPTIONS: '--max-old-space-size=8192'
+
+phases:
+    install:
+        runtime-versions:
+            nodejs: 10
+
+    build:
+        commands:
+            # --unsafe-perm is needed because we run as root
+            - npm install --unsafe-perm
+            - cp ./extension-readme.md ./README.md
+            - npm run package
+
+artifacts:
+    files:
+        - aws-toolkit-vscode*
+    discard-paths: true
