@@ -148,19 +148,6 @@
                     "direct-invoke": {
                         "$schema": "http://json-schema.org/draft-07/schema#",
                         "title": "AwsSamDebuggerConfiguration",
-                        "definitions": {
-                            "jsonObject": {
-                                "title": "ReadonlyJsonObject",
-                                "additionalProperties": {
-                                    "type": [
-                                        "string",
-                                        "number",
-                                        "boolean"
-                                    ]
-                                },
-                                "type": "object"
-                            }
-                        },
                         "additionalProperties": false,
                         "properties": {
                             "aws": {
@@ -245,13 +232,27 @@
                                 "properties": {
                                     "environmentVariables": {
                                         "description": "%AWS.configuration.description.awssam.debug.envvars%",
-                                        "$ref": "#/definitions/jsonObject"
+                                        "additionalProperties": {
+                                            "type": [
+                                                "string",
+                                                "number",
+                                                "boolean"
+                                            ]
+                                        },
+                                        "type": "object"
                                     },
                                     "event": {
                                         "description": "%AWS.configuration.description.awssam.debug.event%",
                                         "properties": {
                                             "json": {
-                                                "$ref": "#/definitions/jsonObject"
+                                                "additionalProperties": {
+                                                    "type": [
+                                                        "string",
+                                                        "number",
+                                                        "boolean"
+                                                    ]
+                                                },
+                                                "type": "object"
                                             },
                                             "path": {
                                                 "description": "%AWS.configuration.description.awssam.debug.event.path%",
@@ -304,7 +305,14 @@
                                     "template": {
                                         "properties": {
                                             "parameters": {
-                                                "$ref": "#/definitions/jsonObject"
+                                                "additionalProperties": {
+                                                    "type": [
+                                                        "string",
+                                                        "number",
+                                                        "boolean"
+                                                    ]
+                                                },
+                                                "type": "object"
                                             }
                                         },
                                         "type": "object",
