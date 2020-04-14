@@ -1,3 +1,8 @@
+/*!
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 //@ts-check
 
 'use strict'
@@ -8,6 +13,7 @@ const fs = require('fs')
 const TerserPlugin = require('terser-webpack-plugin')
 const FileManagerPlugin = require('filemanager-webpack-plugin')
 const { NLSBundlePlugin } = require('vscode-nls-dev/lib/webpack-bundler')
+const CircularDependencyPlugin = require('circular-dependency-plugin')
 const packageJsonFile = path.join(__dirname, 'package.json')
 const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, 'utf8'))
 const packageId = `${packageJson.publisher}.${packageJson.name}`
@@ -90,6 +96,10 @@ const config = {
                     },
                 ],
             },
+        }),
+        new CircularDependencyPlugin({
+            exclude: /node_modules/,
+            failOnError: true,
         }),
     ],
     optimization: {

@@ -142,7 +142,7 @@ function createMessageReceivedFunc({
 
     return async (message: CommandMessage) => {
         switch (message.command) {
-            case 'sampleRequestSelected':
+            case 'sampleRequestSelected': {
                 logger.info(`Requesting ${message.value}`)
                 const sampleUrl = `${sampleRequestPath}${message.value}`
 
@@ -153,7 +153,7 @@ function createMessageReceivedFunc({
                 restParams.onPostMessage({ command: 'loadedSample', sample: sample })
 
                 return
-
+            }
             case 'invokeLambda':
                 logger.info('invoking lambda function with the following payload:')
                 logger.info(String(message.value))

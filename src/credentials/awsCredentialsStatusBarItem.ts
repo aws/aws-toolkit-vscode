@@ -36,7 +36,7 @@ export async function initializeAwsCredentialsStatusBarItem(
 export function updateCredentialsStatusBarItem(statusBarItem: vscode.StatusBarItem, credentialsId?: string) {
     statusBarItem.text = localize(
         'AWS.credentials.statusbar.text',
-        'AWS Credentials: {0}',
+        'AWS: {0}',
         credentialsId ?? STATUSBAR_TEXT_NO_CREDENTIALS
     )
 }
