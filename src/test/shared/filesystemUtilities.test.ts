@@ -4,6 +4,7 @@
  */
 
 import * as assert from 'assert'
+import * as os from 'os'
 import * as del from 'del'
 import { writeFile } from 'fs-extra'
 import * as path from 'path'
@@ -113,5 +114,15 @@ describe('filesystemUtilities', () => {
         assert.ok(!isInDirectory(basePath, path.join('what', 'are', 'you', 'looking', 'at')))
         assert.ok(!isInDirectory(basePath, `${basePath}point`))
         assert.ok(isInDirectory('/foo/bar/baz/', '/foo/bar/baz/a.txt'))
+        assert.ok(isInDirectory('/foo/bar/baz/', ''))
+        assert.ok(isInDirectory('/', ''))
+        assert.ok(isInDirectory('', 'foo'))
+        assert.ok(isInDirectory('foo', 'foo'))
+
+        if (os.platform() === 'win32') {
+            assert.ok(isInDirectory('/foo/bar/baz/', '/FOO/BAR/BAZ/A.TXT'))
+        } else {
+            assert.ok(!isInDirectory('/foo/bar/baz/', '/FOO/BAR/BAZ/A.TXT'))
+        }
     })
 })

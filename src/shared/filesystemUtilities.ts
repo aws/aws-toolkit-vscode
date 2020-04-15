@@ -7,6 +7,7 @@ import { access, mkdtemp, readFile } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import { mkdir } from './filesystem'
+import * as pathutils from './utilities/pathUtils'
 
 const DEFAULT_ENCODING: BufferEncoding = 'utf8'
 
@@ -88,14 +89,20 @@ export const makeTemporaryToolkitFolder = async (...relativePathParts: string[])
  * @param p  Path to file or directory to test.
  */
 export function isInDirectory(d: string, p: string): boolean {
-    const parentDirPieces = d.split(path.sep)
-    const containedPathPieces = p.split(path.sep)
+    if (d === '' || p === '') {
+        return true
+    }
+    const parentDirPieces = pathutils.normalizeSeparator(d).split('/')
+    const containedPathPieces = pathutils.normalizeSeparator(p).split('/')
     // Remove final empty element(s), if `d` ends with slash(es).
     while (parentDirPieces.length > 0 && parentDirPieces[parentDirPieces.length - 1] === '') {
         parentDirPieces.pop()
     }
+    const caseInsensitive = os.platform() === 'win32'
 
     return parentDirPieces.every((value, index) => {
-        return value === containedPathPieces[index]
+        return caseInsensitive
+            ? value.toLowerCase() === containedPathPieces[index].toLowerCase()
+            : value === containedPathPieces[index]
     })
 }
