@@ -11,7 +11,7 @@ import { mkdir } from '../../shared/filesystem'
 import {
     fileExists,
     findFileInParentPaths,
-    isContainedWithinDirectory,
+    isInDirectory,
     makeTemporaryToolkitFolder,
     tempDirPath,
 } from '../../shared/filesystemUtilities'
@@ -101,33 +101,17 @@ describe('filesystemUtilities', () => {
         })
     })
 
-    describe('isContainedWithinDirectory', () => {
+    it('isInDirectory()', () => {
         const basePath = path.join('this', 'is', 'the', 'way')
         const extendedPath = path.join(basePath, 'forward')
         const filename = 'yadayadayada.log'
 
-        it('returns true for the same dir', () => {
-            assert.ok(isContainedWithinDirectory(basePath, basePath))
-        })
-
-        it('returns true for a subdir', () => {
-            assert.ok(isContainedWithinDirectory(basePath, extendedPath))
-        })
-
-        it('returns true for a file in the same dir', () => {
-            assert.ok(isContainedWithinDirectory(basePath, path.join(basePath, filename)))
-        })
-
-        it('returns true for a file in a subdir', () => {
-            assert.ok(isContainedWithinDirectory(basePath, path.join(extendedPath, filename)))
-        })
-
-        it('returns false for a completely different dir', () => {
-            assert.ok(!isContainedWithinDirectory(basePath, path.join('what', 'are', 'you', 'looking', 'at')))
-        })
-
-        it('returns false for a similarly named dir', () => {
-            assert.ok(!isContainedWithinDirectory(basePath, `${basePath}point`))
-        })
+        assert.ok(isInDirectory(basePath, basePath))
+        assert.ok(isInDirectory(basePath, extendedPath))
+        assert.ok(isInDirectory(basePath, path.join(basePath, filename)))
+        assert.ok(isInDirectory(basePath, path.join(extendedPath, filename)))
+        assert.ok(!isInDirectory(basePath, path.join('what', 'are', 'you', 'looking', 'at')))
+        assert.ok(!isInDirectory(basePath, `${basePath}point`))
+        assert.ok(isInDirectory('/foo/bar/baz/', '/foo/bar/baz/a.txt'))
     })
 })
