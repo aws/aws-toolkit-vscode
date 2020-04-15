@@ -106,6 +106,12 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         if (token?.isCancellationRequested) {
             return undefined
         }
+        if (!folder) {
+            vscode.window.showErrorMessage(
+                localize('AWS.sam.debugger.noWorkspace', 'AWS SAM debug: choose a workspace, then try again')
+            )
+            return undefined
+        }
         /**
          * XXX: Temporary magic field for testing.
          * 1. Disables the EXECUTE phase.
@@ -149,7 +155,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 ...config,
                 ...configs[0],
             }
-            getLogger().info(`SAM debug: generated config (no launch.json): ${JSON.stringify(config)}`)
+            getLogger().verbose(`SAM debug: generated config (no launch.json): ${JSON.stringify(config)}`)
         } else {
             const rv = configValidator.validate(config)
             if (!rv.isValid) {
@@ -158,7 +164,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             } else if (rv.message) {
                 vscode.window.showInformationMessage(rv.message)
             }
-            getLogger().info(`SAM debug: config: ${JSON.stringify(config.name)}`)
+            getLogger().verbose(`SAM debug: config: ${JSON.stringify(config.name)}`)
         }
 
         const editor = vscode.window.activeTextEditor

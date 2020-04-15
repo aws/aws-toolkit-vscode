@@ -6,7 +6,7 @@
 import * as os from 'os'
 import * as _path from 'path'
 
-export const DRIVE_LETTER_REGEX = /^\w\:/
+export const DRIVE_LETTER_REGEX = /^[a-zA-Z]\:/
 
 function isUncPath(path: string) {
     return /^\s*[\/\\]{2}[^\/\\]+/.test(path)

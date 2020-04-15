@@ -33,7 +33,6 @@
     "qna": "https://github.com/aws/aws-toolkit-vscode/issues",
     "activationEvents": [
         "onDebugResolve:aws-sam",
-        "onCommand:aws.lambda.getLambdaName",
         "onCommand:aws.login",
         "onCommand:aws.credential.profile.create",
         "onCommand:aws.logout",
@@ -142,32 +141,13 @@
                 }
             }
         },
-        "breakpoints": [
-            {
-                "language": "markdown"
-            },
-            {
-                "language": "typescript"
-            },
-            {
-                "language": "javascript"
-            },
-            {
-                "language": "python"
-            },
-            {
-                "language": "csharp"
-            }
-        ],
         "debuggers": [
             {
                 "type": "aws-sam",
                 "label": "%AWS.configuration.description.awssam.debug.label%",
-                "variables": {
-                    "AskForLocalLambda": "aws.lambda.getLambdaName"
-                },
                 "configurationAttributes": {
                     "direct-invoke": {
+                        "$schema": "http://json-schema.org/draft-07/schema#",
                         "title": "AwsSamDebuggerConfiguration",
                         "additionalProperties": false,
                         "properties": {

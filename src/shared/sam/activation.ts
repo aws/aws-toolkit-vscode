@@ -79,15 +79,6 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
             async () =>
                 await PromiseSharer.getExistingPromiseOrCreate('samcli.detect', async () => await detectSamCli(true))
         ),
-        vscode.commands.registerCommand('aws.lambda.getLambdaName', async () => {
-            return 'foo'
-            // try {
-            //     await ext.awsContextCommands.onCommandShowRegion()
-            // } finally {
-            //     recordAwsShowRegion()
-            //     recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
-            // }
-        }),
         vscode.commands.registerCommand('aws.lambda.createNewSamApp', async () => {
             await createNewSamApplication(ctx.chanLogger, ctx.awsContext, ctx.regionProvider)
         }),

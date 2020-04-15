@@ -5,7 +5,7 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { nodeJsRuntimes } from '../../lambda/models/samLambdaRuntime'
+import { nodeJsRuntimes, compareSamLambdaRuntime } from '../../lambda/models/samLambdaRuntime'
 import { SamLaunchRequestArgs } from '../../shared/sam/debugger/samDebugSession'
 import { dotNetRuntimes, pythonRuntimes, RuntimeFamily } from '../models/samLambdaRuntime'
 import {
@@ -66,23 +66,6 @@ export interface PipeTransport {
 }
 
 /**
- * Gets a `RuntimeFamily` from a vscode document languageId.
- */
-export function getRuntimeFamily(langId: string): string {
-    switch (langId) {
-        case 'typescript':
-        case 'javascript':
-            return 'node'
-        case 'csharp':
-            return 'coreclr'
-        case 'python':
-            return 'python'
-        default:
-            return 'unknown'
-    }
-}
-
-/**
  * Guesses a reasonable default runtime value from a vscode document
  * languageId.
  */
@@ -90,11 +73,11 @@ export function getDefaultRuntime(langId: string): string | undefined {
     switch (langId) {
         case 'typescript':
         case 'javascript':
-            return nodeJsRuntimes.first()
+            return nodeJsRuntimes.sort(compareSamLambdaRuntime).first()
         case 'csharp':
-            return dotNetRuntimes.first()
+            return dotNetRuntimes.sort(compareSamLambdaRuntime).first()
         case 'python':
-            return pythonRuntimes.first()
+            return pythonRuntimes.sort(compareSamLambdaRuntime).first()
         default:
             return undefined
     }
@@ -102,7 +85,9 @@ export function getDefaultRuntime(langId: string): string | undefined {
 
 export function assertTargetKind(config: SamLaunchRequestArgs, expectedTarget: 'code' | 'template'): void {
     if (config.invokeTarget.target !== expectedTarget) {
-        throw Error(`SAM debug: invalid config: ${config}`)
+        throw Error(
+            `SAM debug: invalid config (expected target: ${expectedTarget}): ${JSON.stringify(config, undefined, 2)}`
+        )
     }
 }
 
