@@ -90,12 +90,15 @@ export function getLocalRootVariants(filePath: string): string[] {
 }
 
 /**
- * "c:/foo.bar" => "/foo.bar"
+ * Returns the driveletter of `path` after resolving to absolute.
+ *
+ * "c:/foo.bar" => "c"
  */
-export function removeDriveLetter(f: string): string {
-    if (!f || f.length < 2 || !DRIVE_LETTER_REGEX.test(f.substring(0, 2))) {
-        return f
+export function getDriveLetter(path: string): string {
+    const fullpath = _path.resolve(path)
+    if (!fullpath || fullpath.length < 2 || !DRIVE_LETTER_REGEX.test(fullpath.substring(0, 2))) {
+        return ''
     }
 
-    return f.substring(2)
+    return fullpath.substring(0, 1)
 }

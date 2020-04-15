@@ -329,12 +329,12 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
-                    uri: vscode.Uri.parse(appDir),
+                    uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
                 codeRoot: pathutil.normalize(path.join(appDir, 'src')), // Normalized to absolute path.
                 debugPort: 5858,
-                documentUri: vscode.Uri.parse(''), // TODO: remove or test.
+                documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'my.test.handler',
                 invokeTarget: {
                     lambdaHandler: 'my.test.handler',
@@ -402,12 +402,12 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
-                    uri: vscode.Uri.parse(appDir),
+                    uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
                 codeRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
                 debugPort: 5858,
-                documentUri: vscode.Uri.parse(''), // TODO: remove or test.
+                documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'my.test.handler',
                 invokeTarget: {
                     target: 'template',
@@ -465,12 +465,12 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
-                    uri: vscode.Uri.parse(appDir),
+                    uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
                 codeRoot: pathutil.normalize(path.join(appDir, 'src/HelloWorld')), // Normalized to absolute path.
                 debugPort: 5858,
-                documentUri: vscode.Uri.parse(''), // TODO: remove or test.
+                documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'HelloWorld::HelloWorld.Function::FunctionHandler',
                 invokeTarget: {
                     lambdaHandler: 'HelloWorld::HelloWorld.Function::FunctionHandler',
@@ -561,12 +561,12 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
-                    uri: vscode.Uri.parse(appDir),
+                    uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
                 codeRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
                 debugPort: 5858,
-                documentUri: vscode.Uri.parse(''), // TODO: remove or test.
+                documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'my.test.handler',
                 invokeTarget: {
                     target: 'template',
@@ -665,7 +665,7 @@ async function getConfig(
     const appDir = pathutil.normalize(path.join(testutil.getProjectDir(), rootFolder))
     const folder = testutil.getWorkspaceFolder(appDir)
     const templateFile = pathutil.normalize(path.join(appDir, 'template.yaml'))
-    await registry.addTemplateToRegistry(vscode.Uri.parse(templateFile))
+    await registry.addTemplateToRegistry(vscode.Uri.file(templateFile))
 
     // Generate config(s) from a sample project.
     const configs = await debugConfigProvider.provideDebugConfigurations(folder)
