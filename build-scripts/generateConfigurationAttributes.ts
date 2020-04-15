@@ -2,10 +2,8 @@
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-/* tslint:disable */
 
 import * as fs from 'fs'
-// tslint:disable-next-line:no-implicit-dependencies
 import { JSONSchema4 } from 'json-schema'
 import { compile } from 'json-schema-to-typescript'
 import * as packageJson from '../package.json'
@@ -16,12 +14,11 @@ const config = [
         requestType: 'direct-invoke' as 'direct-invoke',
         outputFile: 'src/shared/sam/debugger/awsSamDebugConfiguration.gen.ts',
         imports: ["import * as vscode from 'vscode'"],
-        topLevelClass: 'AwsSamDebuggerConfiguration'
-    }
+        topLevelClass: 'AwsSamDebuggerConfiguration',
+    },
 ]
 
 const header = `
-/* tslint:disable */
 /*!
  * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -34,6 +31,10 @@ const header = `
 
 import * as vscode from 'vscode'
 `
+
+function addBaseClass(generated: string, topLevelClass: string): string {
+    return generated.replace(topLevelClass, `${topLevelClass} extends vscode.DebugConfiguration`)
+}
 
 async function generateConfigurationAttributes(): Promise<void> {
     for (const debugConfiguration of packageJson.contributes.debuggers) {
@@ -51,11 +52,6 @@ async function generateConfigurationAttributes(): Promise<void> {
     }
 }
 
-function addBaseClass(generated: string, topLevelClass: string): string {
-    return generated.replace(topLevelClass, `${topLevelClass} extends vscode.DebugConfiguration`)
-}
-
-// tslint:disable-next-line:no-floating-promises
 ;(async () => {
     await generateConfigurationAttributes()
 })()

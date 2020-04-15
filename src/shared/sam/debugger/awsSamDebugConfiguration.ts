@@ -8,7 +8,6 @@ import {
     AwsSamDebuggerConfiguration,
     CodeTargetProperties,
     TemplateTargetProperties,
-    ReadonlyJsonObject,
 } from './awsSamDebugConfiguration.gen'
 
 export * from './awsSamDebugConfiguration.gen'
@@ -21,6 +20,10 @@ export const AWS_SAM_DEBUG_REQUEST_TYPES = [DIRECT_INVOKE_TYPE]
 export const AWS_SAM_DEBUG_TARGET_TYPES = [TEMPLATE_TARGET_TYPE, CODE_TARGET_TYPE]
 
 export type TargetProperties = AwsSamDebuggerConfiguration['invokeTarget']
+
+export interface ReadonlyJsonObject {
+    readonly [key: string]: string | number | boolean
+}
 
 export function isAwsSamDebugConfiguration(config: vscode.DebugConfiguration): config is AwsSamDebuggerConfiguration {
     return config.type === AWS_SAM_DEBUG_TYPE

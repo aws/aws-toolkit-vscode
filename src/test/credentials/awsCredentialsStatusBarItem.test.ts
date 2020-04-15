@@ -21,7 +21,7 @@ describe('updateCredentialsStatusBarItem', async () => {
 
         updateCredentialsStatusBarItem(statusBarItem, credentialId)
         assert.ok(
-            statusBarItem.text.indexOf(credentialId) >= 0,
+            statusBarItem.text.includes(credentialId),
             'expected statusbar item text to contain the credentials id'
         )
     })
@@ -29,7 +29,7 @@ describe('updateCredentialsStatusBarItem', async () => {
     it('updates text with placeholder when there is no credentials id', async () => {
         updateCredentialsStatusBarItem(statusBarItem, undefined)
         assert.ok(
-            statusBarItem.text.indexOf('(not connected)') >= 0,
+            statusBarItem.text.includes('(not connected)'),
             'expected statusbar item text to indicate that no credentials are in use'
         )
     })

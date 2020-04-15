@@ -59,7 +59,7 @@ describe('filesystemUtilities', () => {
             foldersToCleanUp.push(path.join(tempDirPath, 'nestedSubfolder'))
 
             assert(
-                nestedTempDirPath.indexOf(tempDirPath) === 0,
+                nestedTempDirPath.startsWith(tempDirPath),
                 `expected nestedTempDirPath ('${nestedTempDirPath}') to be in tempDirPath ('${tempDirPath}')`
             )
             const tmpDirExists = await fileExists(nestedTempDirPath)

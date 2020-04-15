@@ -1,0 +1,7 @@
+node_modules/**
+third-party
+**/*.json
+# TODO turn on below
+**/*.gen.ts
+**/*.d.ts
+test-scripts

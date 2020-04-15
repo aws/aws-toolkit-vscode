@@ -160,7 +160,7 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
 
         // Add default if it hasn't been, and is an existing profile name
         const defaultProfileName = DefaultCredentialSelectionDataProvider.defaultCredentialsProfileName
-        if (!orderedNames.has(defaultProfileName) && this.existingProfileNames.indexOf(defaultProfileName) !== -1) {
+        if (!orderedNames.has(defaultProfileName) && this.existingProfileNames.includes(defaultProfileName)) {
             orderedProfiles.push({ profileName: defaultProfileName, isRecentlyUsed: false })
             orderedNames.add(DefaultCredentialSelectionDataProvider.defaultCredentialsProfileName)
         }
@@ -181,7 +181,7 @@ export class DefaultCredentialSelectionDataProvider implements CredentialSelecti
     private getMostRecentlyUsedProfileNames(): string[] {
         const mru = this._credentialsMru.getMruList()
 
-        return mru.filter(x => this.existingProfileNames.indexOf(x) !== -1)
+        return mru.filter(x => this.existingProfileNames.includes(x))
     }
 }
 

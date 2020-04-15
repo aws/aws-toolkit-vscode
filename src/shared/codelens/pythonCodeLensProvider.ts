@@ -76,7 +76,7 @@ async function makePythonDebugManifest(params: {
     }
     getLogger().debug(`pythonCodeLensProvider.makePythonDebugManifest params: ${JSON.stringify(params, undefined, 2)}`)
     // TODO: Make this logic more robust. What if other module names include ptvsd?
-    if (manifestText.indexOf('ptvsd') < 0) {
+    if (!manifestText.includes('ptvsd')) {
         manifestText += `${os.EOL}ptvsd>4.2,<5`
         const debugManifestPath = path.join(params.outputDir, 'debug-requirements.txt')
         await writeFile(debugManifestPath, manifestText)

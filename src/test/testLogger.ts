@@ -36,7 +36,7 @@ export class TestLogger implements Logger {
 
     public getLoggedEntries(...logLevels: LogLevel[]): Loggable[] {
         return this.loggedEntries
-            .filter(loggedEntry => logLevels.length === 0 || logLevels.indexOf(loggedEntry.logLevel) !== -1)
+            .filter(loggedEntry => logLevels.length === 0 || logLevels.includes(loggedEntry.logLevel))
             .map(loggedEntry => loggedEntry.entry)
     }
 
