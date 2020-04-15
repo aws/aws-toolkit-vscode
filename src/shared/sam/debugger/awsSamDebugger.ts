@@ -201,16 +201,12 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             vscode.window.activeTextEditor?.document.uri ??
             // XXX: don't know what URI to choose...
             vscode.Uri.parse(templateInvoke.samTemplatePath!!)
-        const workspaceFolder =
-            folder ??
-            // XXX: when/why is `folder` undefined?
-            vscode.workspace.getWorkspaceFolder(documentUri)!!
 
         let launchConfig: SamLaunchRequestArgs = {
             ...config,
             request: 'attach',
             codeRoot: codeRoot ?? '',
-            workspaceFolder: workspaceFolder,
+            workspaceFolder: folder,
             runtime: runtime,
             runtimeFamily: runtimeFamily,
             handlerName: handlerName,
