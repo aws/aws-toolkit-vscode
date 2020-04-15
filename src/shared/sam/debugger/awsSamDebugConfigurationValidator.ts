@@ -37,7 +37,7 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
      * Validates debug configuration properties.
      */
     public validate(config: AwsSamDebuggerConfiguration): ValidationResult {
-        let rv: { isValid: boolean; message?: string } = { isValid: false, message: undefined }
+        let rv: ValidationResult = { isValid: false, message: undefined }
         if (!config.request) {
             rv.message = localize(
                 'AWS.sam.debugger.missingField',

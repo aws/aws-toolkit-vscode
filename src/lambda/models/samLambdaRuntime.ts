@@ -27,15 +27,13 @@ export function getDependencyManager(runtime: Runtime): DependencyManager {
 }
 
 export enum RuntimeFamily {
+    Unknown,
     Python,
     NodeJS,
     DotNetCore,
 }
 
-export function getFamily(runtime: string | undefined): RuntimeFamily {
-    if (!runtime) {
-        throw new Error(`Unrecognized runtime: '${runtime}'`)
-    }
+export function getFamily(runtime: string): RuntimeFamily {
     if (nodeJsRuntimes.has(runtime)) {
         return RuntimeFamily.NodeJS
     } else if (pythonRuntimes.has(runtime)) {
@@ -43,7 +41,7 @@ export function getFamily(runtime: string | undefined): RuntimeFamily {
     } else if (dotNetRuntimes.has(runtime)) {
         return RuntimeFamily.DotNetCore
     }
-    throw new Error(`Unrecognized runtime: '${runtime}'`)
+    return RuntimeFamily.Unknown
 }
 
 // This allows us to do things like "sort" nodejs10.x after nodejs8.10

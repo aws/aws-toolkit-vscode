@@ -10,6 +10,7 @@ import {
     getDependencyManager,
     getFamily,
     samLambdaRuntimes,
+    RuntimeFamily,
 } from '../../../lambda/models/samLambdaRuntime'
 
 describe('compareSamLambdaRuntime', async () => {
@@ -43,10 +44,12 @@ describe('getDependencyManager', async () => {
 })
 
 describe('getFamily', async () => {
-    it('all runtimes are handled', async () => {
+    it('unknown runtime name', async () => {
+        assert.strictEqual(getFamily('foo'), RuntimeFamily.Unknown)
+    })
+    it('handles all known runtimes', async () => {
         samLambdaRuntimes.forEach(runtime => {
-            // Checking that call does not throw
-            getFamily(runtime)
+            assert.notEqual(getFamily(runtime), RuntimeFamily.Unknown)
         })
     })
 })

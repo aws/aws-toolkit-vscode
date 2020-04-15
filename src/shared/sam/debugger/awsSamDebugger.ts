@@ -81,7 +81,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                     }
                 }
             }
-            getLogger().verbose(`provideDebugConfigurations: debugconfigs: ${configs}`)
+            getLogger().verbose(`provideDebugConfigurations: debugconfigs: ${JSON.stringify(configs)}`)
         }
 
         return configs
@@ -107,6 +107,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             return undefined
         }
         if (!folder) {
+            getLogger().error(`SAM debug: no workspace folder`)
             vscode.window.showErrorMessage(
                 localize('AWS.sam.debugger.noWorkspace', 'AWS SAM debug: choose a workspace, then try again')
             )
@@ -159,6 +160,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         } else {
             const rv = configValidator.validate(config)
             if (!rv.isValid) {
+                getLogger().error(`SAM debug: invalid config: ${rv.message!!}`)
                 vscode.window.showErrorMessage(rv.message!!)
                 return undefined
             } else if (rv.message) {
@@ -258,8 +260,13 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 }
                 break
             }
-            default:
-                throw Error('unknown RuntimeFamily')
+            default: {
+                getLogger().error(`SAM debug: unknown runtime: ${runtime})`)
+                vscode.window.showErrorMessage(
+                    localize('AWS.sam.debugger.invalidRuntime', 'AWS SAM debug: unknown runtime: {0}', runtime)
+                )
+                return undefined
+            }
         }
 
         if (launchConfig.type === AWS_SAM_DEBUG_TYPE || launchConfig.request === DIRECT_INVOKE_TYPE) {
