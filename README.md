@@ -9,7 +9,7 @@ The AWS Toolkit for Visual Studio Code is an extension for working with AWS serv
 
 The Toolkit is available from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/itemdetails?itemName=AmazonWebServices.aws-toolkit-vscode).
 
-This is an open source project because we want you to be involved. We love issues, feature requests, code reviews, pull 
+This is an open source project because we want you to be involved. We love issues, feature requests, code reviews, pull
 requests or any positive contribution. See [CONTRIBUTING](CONTRIBUTING.md) for how to help.
 
 ## Documentation
@@ -21,10 +21,10 @@ requests or any positive contribution. See [CONTRIBUTING](CONTRIBUTING.md) for h
 
 We want your feedback!
 
-- Upvote 👍 [feature requests](https://github.com/aws/aws-toolkit-vscode/issues?q=is%3Aissue+is%3Aopen+label%3Afeature-request+sort%3Areactions-%2B1-desc)
-- [Ask a question](https://github.com/aws/aws-toolkit-vscode/issues/new?labels=guidance&template=guidance_request.md)
-- [Request a new feature](https://github.com/aws/aws-toolkit-vscode/issues/new?labels=feature-request&template=feature_request.md)
-- [File an issue](https://github.com/aws/aws-toolkit-vscode/issues/new?labels=bug&template=bug_report.md)
+-   Upvote 👍 [feature requests](https://github.com/aws/aws-toolkit-vscode/issues?q=is%3Aissue+is%3Aopen+label%3Afeature-request+sort%3Areactions-%2B1-desc)
+-   [Ask a question](https://github.com/aws/aws-toolkit-vscode/issues/new?labels=guidance&template=guidance_request.md)
+-   [Request a new feature](https://github.com/aws/aws-toolkit-vscode/issues/new?labels=feature-request&template=feature_request.md)
+-   [File an issue](https://github.com/aws/aws-toolkit-vscode/issues/new?labels=bug&template=bug_report.md)
 
 ## Debugging from the Debug panel
 
