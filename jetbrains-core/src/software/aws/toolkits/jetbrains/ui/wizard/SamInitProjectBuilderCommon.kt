@@ -7,6 +7,7 @@ package software.aws.toolkits.jetbrains.ui.wizard
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.options.ShowSettingsUtil
+import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.DefaultProjectFactory
 import com.intellij.openapi.ui.ValidationInfo
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
@@ -56,14 +57,15 @@ fun setupSamSelectionElements(samExecutableField: JTextField, editButton: JButto
     samExecutableField.toolTipText = toolTipText
     editButton.toolTipText = toolTipText
 
-    ExecutableManager.getInstance().getExecutable<SamExecutable>().thenAccept {
-        val validSamPath = when (it) {
-            is ExecutableInstance.Executable -> true
-            else -> false
+    ProgressManager.getInstance().runProcessWithProgressSynchronously({
+        try {
+            val validSamPath = when (ExecutableManager.getInstance().getExecutable<SamExecutable>().toCompletableFuture().get()) {
+                is ExecutableInstance.Executable -> true
+                else -> false
+            }
+            updateUi(validSamPath)
+        } catch (e: Throwable) {
+            updateUi(validSamPath = false)
         }
-        updateUi(validSamPath)
-    }.exceptionally {
-        updateUi(validSamPath = false)
-        null
-    }
+    }, message("lambda.run_configuration.sam.validating"), false, null)
 }
