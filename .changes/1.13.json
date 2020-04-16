@@ -1,0 +1,14 @@
+{
+  "date" : "2020-04-16",
+  "version" : "1.13",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "On refresh, AWS explorer tree nodes will no longer be collapsed"
+  }, {
+    "type" : "feature",
+    "description" : "Add capabilities check boxes to serverless deploy (issue #1394)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix duplicate entries in SAM Init panel (issue #1695)"
+  } ]
+}

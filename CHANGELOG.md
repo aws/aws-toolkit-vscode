@@ -1,3 +1,8 @@
+# _1.13_ (2020-04-16)
+- **(Feature)** On refresh, AWS explorer tree nodes will no longer be collapsed
+- **(Feature)** Add capabilities check boxes to serverless deploy (issue [#1394](https://github.com/aws/aws-toolkit-jetbrains/issues/1394))
+- **(Bug Fix)** Fix duplicate entries in SAM Init panel (issue [#1695](https://github.com/aws/aws-toolkit-jetbrains/issues/1695))
+
 # _1.12_ (2020-04-07)
 - **(Breaking Change)** Minimum SAM CLI version has been increased to 0.47.0
 - **(Feature)** Support for CloudWatch Logs. View, filter, and stream log streams as well as quickly view logs from Lambda or ECS Containers.

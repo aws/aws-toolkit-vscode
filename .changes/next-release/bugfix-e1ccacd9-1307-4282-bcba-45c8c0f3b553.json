@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix duplicate entries in SAM Init panel (issue #1695)"
-}
