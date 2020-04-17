@@ -2,6 +2,7 @@
 out/
 target/
 .idea
+!.run/
 build/
 *.iml
 .DS_Store
