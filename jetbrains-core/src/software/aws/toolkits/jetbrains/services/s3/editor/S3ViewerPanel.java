@@ -15,11 +15,13 @@ import com.intellij.ui.treeStructure.SimpleTreeStructure;
 import com.intellij.util.ui.ColumnInfo;
 import java.awt.BorderLayout;
 import javax.swing.JComponent;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableCellRenderer;
+import software.aws.toolkits.core.region.AwsRegion;
+import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager;
+import software.aws.toolkits.jetbrains.services.s3.S3UtilsKt;
 import software.aws.toolkits.jetbrains.services.s3.objectActions.CopyPathAction;
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DeleteObjectAction;
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction;
@@ -50,7 +52,8 @@ public class S3ViewerPanel {
         name.setText(bucketVirtual.getName());
         date.setText(S3Resources.formatDate(bucketVirtual.getS3Bucket().creationDate()));
 
-        arnText.setText("arn:aws:s3:::" + bucketVirtual.getName());
+        AwsRegion activeRegion = ProjectAccountSettingsManager.getInstance(project).getActiveRegion();
+        arnText.setText(S3UtilsKt.bucketArn(bucketVirtual.getName(), activeRegion));
 
         s3TreeNode = new S3TreeDirectoryNode(bucketVirtual, null, "");
 

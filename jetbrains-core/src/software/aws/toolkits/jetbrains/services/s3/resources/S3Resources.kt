@@ -23,7 +23,7 @@ import java.time.format.DateTimeFormatter
 
 object S3Resources {
     private val LOG = getLogger<S3Resources>()
-    private val regions by lazy { AwsRegionProvider.getInstance().regions() }
+    private val regions by lazy { AwsRegionProvider.getInstance().allRegions() }
 
     val LIST_REGIONALIZED_BUCKETS = ClientBackedCachedResource(S3Client::class, "s3.list_buckets") {
         listBuckets().buckets().mapNotNull { bucket ->

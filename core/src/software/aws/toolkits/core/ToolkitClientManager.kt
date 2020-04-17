@@ -19,6 +19,7 @@ import software.amazon.awssdk.services.s3.internal.handlers.EndpointAddressInter
 import software.amazon.awssdk.services.s3.internal.handlers.PutObjectInterceptor
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.core.region.ToolkitRegionProvider
 import java.lang.reflect.Modifier
 import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
@@ -59,8 +60,10 @@ abstract class ToolkitClientManager {
             serviceClass = clz
         )
 
-        if (key.region != AwsRegion.GLOBAL && GLOBAL_SERVICES.contains(key.serviceClass.simpleName)) {
-            return cachedClients.computeIfAbsent(key.copy(region = AwsRegion.GLOBAL)) { createNewClient(it, AwsRegion.GLOBAL, credProvider) } as T
+        val serviceId = key.serviceClass.java.getField("SERVICE_NAME").get(null) as String
+        if (serviceId !in GLOBAL_SERVICE_BLACKLIST && getRegionProvider().isServiceGlobal(region, serviceId)) {
+            val globalRegion = getRegionProvider().getGlobalRegionForService(region, serviceId)
+            return cachedClients.computeIfAbsent(key.copy(region = globalRegion)) { createNewClient(it, globalRegion, credProvider) } as T
         }
 
         return cachedClients.computeIfAbsent(key) { createNewClient(it, region, credProvider) } as T
@@ -70,6 +73,8 @@ abstract class ToolkitClientManager {
      * Get the current active credential provider for the toolkit
      */
     protected abstract fun getCredentialsProvider(): ToolkitCredentialsProvider
+
+    protected abstract fun getRegionProvider(): ToolkitRegionProvider
 
     /**
      * Get the current active region for the toolkit
@@ -110,7 +115,10 @@ abstract class ToolkitClientManager {
     }
 
     companion object {
-        private val GLOBAL_SERVICES = setOf("IamClient")
+        private val GLOBAL_SERVICE_BLACKLIST = setOf(
+            // sts is regionalized but does not identify as such in metadata
+            "sts"
+        )
 
         fun <T : SdkClient> createNewClient(
             sdkClass: KClass<T>,

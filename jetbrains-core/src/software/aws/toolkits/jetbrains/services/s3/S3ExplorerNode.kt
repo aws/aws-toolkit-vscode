@@ -8,6 +8,7 @@ import icons.AwsIcons
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.Bucket
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
+import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
@@ -24,7 +25,7 @@ class S3BucketNode(project: Project, val bucket: Bucket) :
 
     override fun resourceType(): String = "bucket"
 
-    override fun resourceArn() = "arn:aws:s3:::${bucket.name()}"
+    override fun resourceArn() = bucketArn(bucket.name(), nodeProject.activeRegion())
 
     override fun isAlwaysShowPlus(): Boolean = false
 

@@ -37,6 +37,7 @@ import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionMode.U
 import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionMode.UPDATE_CONFIGURATION
 import software.aws.toolkits.jetbrains.services.lambda.validOrNull
 import software.aws.toolkits.jetbrains.services.s3.CreateS3BucketDialog
+import software.aws.toolkits.jetbrains.utils.lambdaTracingConfigIsAvailable
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.jetbrains.utils.ui.blankAsNull
@@ -144,7 +145,7 @@ class EditFunctionDialog(
 
         val regionProvider = AwsRegionProvider.getInstance()
         val settings = ProjectAccountSettingsManager.getInstance(project)
-        view.setXrayControlVisibility(mode != UPDATE_CODE && regionProvider.isServiceSupported(settings.activeRegion, "xray"))
+        view.setXrayControlVisibility(mode != UPDATE_CODE && lambdaTracingConfigIsAvailable(settings.activeRegion))
 
         view.iamRole.selectedItem = role
 

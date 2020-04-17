@@ -122,7 +122,8 @@ fun FunctionConfiguration.toDataClass() = LambdaFunction(
     envVariables = this.environment()?.variables(),
     timeout = this.timeout(),
     memorySize = this.memorySize(),
-    xrayEnabled = this.tracingConfig().mode() == TracingMode.ACTIVE,
+    // TODO: make non-nullable when available in all partitions
+    xrayEnabled = this.tracingConfig()?.mode() == TracingMode.ACTIVE,
     role = IamRole(this.role())
 )
 
@@ -136,6 +137,7 @@ fun CreateFunctionResponse.toDataClass() = LambdaFunction(
     envVariables = this.environment()?.variables(),
     timeout = this.timeout(),
     memorySize = this.memorySize(),
-    xrayEnabled = this.tracingConfig().mode() == TracingMode.ACTIVE,
+    // TODO: make non-nullable when available in all partitions
+    xrayEnabled = this.tracingConfig()?.mode() == TracingMode.ACTIVE,
     role = IamRole(this.role())
 )

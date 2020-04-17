@@ -29,7 +29,7 @@ data class Partition(
 data class PartitionRegion(val description: String)
 
 data class Service(val endpoints: Map<String, Endpoint>, val isRegionalized: Boolean?, val partitionEndpoint: String?) {
-    val isGlobal = isRegionalized == false
+    val isGlobal = isRegionalized != true && partitionEndpoint != null
 }
 
 class Endpoint

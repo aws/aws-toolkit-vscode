@@ -88,8 +88,7 @@ class AwsRegionProviderTest {
     }
 
     @Test
-    // TODO: Remove when regions() method is removed
-    fun backwardsCompatibilityIsNotLost() {
+    fun allRegionsWorks() {
         val regionProvider = createRegionDataProvider(
             """
             {
@@ -135,7 +134,9 @@ class AwsRegionProviderTest {
         )
 
         val awsRegionProvider = AwsRegionProvider(regionProvider)
-        assertThat(awsRegionProvider.regions()).doesNotContainKey("cn-north-1").containsKey("us-west-2")
+        assertThat(awsRegionProvider.allRegions())
+            .containsKey("cn-north-1")
+            .containsKey("us-west-2")
     }
 
     @Test

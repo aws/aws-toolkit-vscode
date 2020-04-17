@@ -7,6 +7,7 @@ import com.intellij.openapi.components.ServiceManager
 import software.amazon.awssdk.regions.providers.AwsProfileRegionProvider
 import software.amazon.awssdk.regions.providers.AwsRegionProviderChain
 import software.amazon.awssdk.regions.providers.SystemSettingsRegionProvider
+import software.aws.toolkits.core.region.AwsPartition
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.region.PartitionParser
 import software.aws.toolkits.core.region.ServiceEndpointResource
@@ -31,6 +32,9 @@ class AwsRegionProvider constructor(remoteResourceResolverProvider: RemoteResour
     }
 
     override fun partitionData(): Map<String, PartitionData> = partitions
+
+    override fun defaultPartition(): AwsPartition = partitions()[DEFAULT_PARTITION]
+        ?: throw IllegalStateException("Could not find default partition: $DEFAULT_PARTITION")
 
     override fun defaultRegion(): AwsRegion = try {
         // Querying the instance metadata is expensive due to high timeouts and retries

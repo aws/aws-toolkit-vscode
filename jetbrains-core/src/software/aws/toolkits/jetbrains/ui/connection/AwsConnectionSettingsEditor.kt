@@ -82,7 +82,7 @@ abstract class AwsConnectionsRunConfigurationBase<T : BaseAwsConnectionOptions>(
     } ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_credentials_specified"))
 
     protected fun resolveRegion() = regionId()?.let {
-        AwsRegionProvider.getInstance().regions()[it]
+        AwsRegionProvider.getInstance().allRegions()[it]
     } ?: throw RuntimeConfigurationError(message("configure.validate.no_region_specified"))
 
     final override fun readExternal(element: Element) {

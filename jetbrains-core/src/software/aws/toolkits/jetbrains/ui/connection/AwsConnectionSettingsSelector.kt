@@ -19,7 +19,7 @@ class AwsConnectionSettingsSelector(
     val view = AwsConnectionSettings()
 
     init {
-        view.region.setRegions(regionProvider.regions().values.toMutableList())
+        view.region.setRegions(regionProvider.allRegions().values.toMutableList())
         view.credentialProvider.setCredentialsProviders(credentialManager.getCredentialIdentifiers())
 
         val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)

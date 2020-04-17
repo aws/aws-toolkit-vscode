@@ -18,8 +18,7 @@ abstract class ToolkitRegionProvider {
     /**
      * Returns a map of region ID([AwsRegion.id]) to [AwsRegion]
      */
-    @Deprecated("Not partition aware")
-    fun regions(): Map<String, AwsRegion> = partitionData()[DEFAULT_PARTITION]?.regions?.asSequence()?.associate { it.key to it.value } ?: emptyMap()
+    fun allRegions(): Map<String, AwsRegion> = partitionData().flatMap { it.value.regions.asIterable() }.associate { it.key to it.value }
 
     /**
      * Returns a map of region ID([AwsRegion.id]) to [AwsRegion] for the specified partition
@@ -38,10 +37,15 @@ abstract class ToolkitRegionProvider {
      */
     abstract fun defaultRegion(): AwsRegion
 
-    @Deprecated("This loads the default region if specified region doesn't exist which does not make sense")
-    fun lookupRegionById(regionId: String?): AwsRegion = regions()[regionId] ?: defaultRegion()
+    /**
+     * Returns the default partition to use based on the environment
+     */
+    abstract fun defaultPartition(): AwsPartition
 
-    fun isServiceGlobal(region: AwsRegion, serviceId: String): Boolean {
+    @Deprecated("This loads the default region if specified region doesn't exist which does not make sense")
+    fun lookupRegionById(regionId: String?): AwsRegion = allRegions()[regionId] ?: defaultRegion()
+
+    open fun isServiceGlobal(region: AwsRegion, serviceId: String): Boolean {
         val partition = partitionData()[region.partitionId] ?: throw IllegalStateException("Partition data is missing for ${region.partitionId}")
         val service = partition.services[serviceId] ?: throw IllegalStateException("Unknown service $serviceId in ${region.partitionId}")
         return service.isGlobal
@@ -70,9 +74,5 @@ abstract class ToolkitRegionProvider {
         val currentPartition = partitionData()[region.partitionId] ?: return false
         val service = currentPartition.services[serviceName] ?: return false
         return service.isGlobal || service.endpoints.containsKey(region.id)
-    }
-
-    companion object {
-        private const val DEFAULT_PARTITION = "aws"
     }
 }

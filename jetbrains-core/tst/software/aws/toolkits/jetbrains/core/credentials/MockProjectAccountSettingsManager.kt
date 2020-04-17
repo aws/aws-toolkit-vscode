@@ -23,8 +23,8 @@ class MockProjectAccountSettingsManager(project: Project) : ProjectAccountSettin
     fun reset() {
         recentlyUsedRegions.clear()
         recentlyUsedProfiles.clear()
-
-        changeConnectionSettings(MockCredentialsManager.DUMMY_PROVIDER_IDENTIFIER, AwsRegionProvider.getInstance().defaultRegion())
+        val regionProvider = AwsRegionProvider.getInstance()
+        changeConnectionSettings(MockCredentialsManager.DUMMY_PROVIDER_IDENTIFIER, regionProvider.defaultPartition(), regionProvider.defaultRegion())
 
         waitUntilStable()
     }

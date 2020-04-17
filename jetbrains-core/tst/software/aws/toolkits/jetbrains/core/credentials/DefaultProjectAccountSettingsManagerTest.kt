@@ -237,6 +237,7 @@ class DefaultProjectAccountSettingsManagerTest {
 
         val region = mockRegionManager.lookupRegionById(MockRegionProvider.getInstance().defaultRegion().id)
         assertThat(manager.selectedRegion).isEqualTo(region)
+        assertThat(manager.selectedPartition?.id).isEqualTo(region.partitionId)
         assertThat(manager.recentlyUsedRegions()).element(0).isEqualTo(region)
     }
 

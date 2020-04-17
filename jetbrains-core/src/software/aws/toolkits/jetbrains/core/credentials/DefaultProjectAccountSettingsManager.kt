@@ -50,9 +50,10 @@ class DefaultProjectAccountSettingsManager(private val project: Project) : Proje
             }
 
             val regionId = state.activeRegion ?: AwsRegionProvider.getInstance().defaultRegion().id
-            val region = AwsRegionProvider.getInstance().regions()[regionId]
+            val region = AwsRegionProvider.getInstance().allRegions()[regionId]
+            val partition = region?.partitionId?.let { AwsRegionProvider.getInstance().partitions()[it] }
 
-            changeConnectionSettings(credentials, region)
+            changeConnectionSettings(credentials, partition, region)
         }
     }
 }

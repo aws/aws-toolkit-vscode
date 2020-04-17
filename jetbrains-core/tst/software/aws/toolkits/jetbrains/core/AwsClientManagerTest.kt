@@ -23,6 +23,8 @@ import software.amazon.awssdk.core.client.config.SdkClientOption
 import software.amazon.awssdk.core.signer.Signer
 import software.amazon.awssdk.http.SdkHttpClient
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.core.region.Endpoint
+import software.aws.toolkits.core.region.Service
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionState
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
@@ -50,12 +52,14 @@ class AwsClientManagerTest {
     fun setUp() {
         mockCredentialManager = MockCredentialsManager.getInstance()
         mockCredentialManager.reset()
+        MockRegionProvider.getInstance().reset()
         MockProjectAccountSettingsManager.getInstance(projectRule.project).reset()
     }
 
     @After
     fun tearDown() {
         MockProjectAccountSettingsManager.getInstance(projectRule.project).reset()
+        MockRegionProvider.getInstance().reset()
         mockCredentialManager.reset()
     }
 
@@ -133,6 +137,15 @@ class AwsClientManagerTest {
     }
 
     @Test
+    fun clientInterfaceWithoutNameFieldFailsDescriptively() {
+        val sut = getClientManager()
+
+        assertThatThrownBy { sut.getClient<NoServiceNameClient>() }
+            .isInstanceOf(NoSuchFieldException::class.java)
+            .hasMessageContaining("SERVICE_NAME")
+    }
+
+    @Test
     fun newClientCreatedWhenRegionChanges() {
         val sut = getClientManager()
         val first = sut.getClient<DummyServiceClient>()
@@ -145,6 +158,21 @@ class AwsClientManagerTest {
         val afterRegionUpdate = sut.getClient<DummyServiceClient>()
 
         assertThat(afterRegionUpdate).isNotSameAs(first)
+    }
+
+    @Test
+    fun globalServicesCanBeGivenAnyRegion() {
+        val sut = getClientManager()
+        MockRegionProvider.getInstance().addService("DummyService", Service(
+            endpoints = mapOf("global" to Endpoint()),
+            isRegionalized = false,
+            partitionEndpoint = "global"
+        ))
+        val first = sut.getClient<DummyServiceClient>(regionOverride = AwsRegion("us-east-1", "us-east-1", "aws"))
+        val second = sut.getClient<DummyServiceClient>(regionOverride = AwsRegion("us-west-2", "us-west-2", "aws"))
+
+        assertThat(first.serviceName()).isEqualTo("dummyClient")
+        assertThat(second).isSameAs(first)
     }
 
     // Test against real version so bypass ServiceManager for the client manager
@@ -183,7 +211,13 @@ class AwsClientManagerTest {
         override fun buildClient() = SecondDummyServiceClient(syncClientConfiguration().option(SdkClientOption.SYNC_HTTP_CLIENT))
     }
 
-    class InvalidServiceClient : SdkClient {
+    class InvalidServiceClient : TestClient() {
+        override fun close() {}
+
+        override fun serviceName() = "invalidClient"
+    }
+
+    class NoServiceNameClient : SdkClient {
         override fun close() {}
 
         override fun serviceName() = "invalidClient"
@@ -196,6 +230,12 @@ class AwsClientManagerTest {
 
         override fun close() {
             closed = true
+        }
+
+        companion object {
+            @Suppress("unused")
+            @JvmField
+            val SERVICE_NAME = "DummyService"
         }
     }
 
