@@ -50,7 +50,7 @@ const MAX_DEBUGGER_RETRIES_DEFAULT: number = 30
 const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 200
 
 /**
- * Geenrates a SAM Template that will be passed in to sam build.
+ * Generates a SAM Template that will be passed to `sam build`.
  *
  * Tries to detect local lambdas, then calls `makeInputTemplate()`.
  */

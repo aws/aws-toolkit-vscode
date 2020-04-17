@@ -28,8 +28,5 @@ export function getWorkspaceFolder(dir: string): vscode.WorkspaceFolder {
  * Asserts that filepaths are equal, after normalizing for platform differences.
  */
 export function assertEqualPaths(actual: string, expected: string) {
-    assert.strictEqual(
-        pathutil.normalize(pathutil.removeDriveLetter(actual)),
-        pathutil.normalize(pathutil.removeDriveLetter(expected))
-    )
+    assert.strictEqual(pathutil.normalize(actual), pathutil.normalize(expected))
 }

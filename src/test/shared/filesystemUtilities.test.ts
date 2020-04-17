@@ -4,6 +4,7 @@
  */
 
 import * as assert from 'assert'
+import * as os from 'os'
 import * as del from 'del'
 import { writeFile } from 'fs-extra'
 import * as path from 'path'
@@ -101,33 +102,29 @@ describe('filesystemUtilities', () => {
         })
     })
 
-    describe('isInDirectory', () => {
+    it('isInDirectory()', () => {
         const basePath = path.join('this', 'is', 'the', 'way')
         const extendedPath = path.join(basePath, 'forward')
         const filename = 'yadayadayada.log'
 
-        it('returns true for the same dir', () => {
-            assert.ok(isInDirectory(basePath, basePath))
-        })
+        assert.ok(isInDirectory(basePath, basePath))
+        assert.ok(isInDirectory(basePath, extendedPath))
+        assert.ok(isInDirectory(basePath, path.join(basePath, filename)))
+        assert.ok(isInDirectory(basePath, path.join(extendedPath, filename)))
+        assert.ok(!isInDirectory(basePath, path.join('what', 'are', 'you', 'looking', 'at')))
+        assert.ok(!isInDirectory(basePath, `${basePath}point`))
+        assert.ok(isInDirectory('/foo/bar/baz/', '/foo/bar/baz/a.txt'))
+        assert.ok(isInDirectory('/foo/bar/baz/', ''))
+        assert.ok(isInDirectory('/', ''))
+        assert.ok(isInDirectory('', 'foo'))
+        assert.ok(isInDirectory('foo', 'foo'))
 
-        it('returns true for a subdir', () => {
-            assert.ok(isInDirectory(basePath, extendedPath))
-        })
-
-        it('returns true for a file in the same dir', () => {
-            assert.ok(isInDirectory(basePath, path.join(basePath, filename)))
-        })
-
-        it('returns true for a file in a subdir', () => {
-            assert.ok(isInDirectory(basePath, path.join(extendedPath, filename)))
-        })
-
-        it('returns false for a completely different dir', () => {
-            assert.ok(!isInDirectory(basePath, path.join('what', 'are', 'you', 'looking', 'at')))
-        })
-
-        it('returns false for a similarly named dir', () => {
-            assert.ok(!isInDirectory(basePath, `${basePath}point`))
-        })
+        if (os.platform() === 'win32') {
+            assert.ok(isInDirectory('/foo/bar/baz/', '/FOO/BAR/BAZ/A.TXT'))
+            assert.ok(isInDirectory('C:\\foo\\bar\\baz\\', 'C:/FOO/BAR/BAZ/A.TXT'))
+            assert.ok(isInDirectory('C:\\foo\\bar\\baz', 'C:\\foo\\bar\\baz\\a.txt'))
+        } else {
+            assert.ok(!isInDirectory('/foo/bar/baz/', '/FOO/BAR/BAZ/A.TXT'))
+        }
     })
 })

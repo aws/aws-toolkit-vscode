@@ -7,7 +7,6 @@ import * as path from 'path'
 import { findFileInParentPaths } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { normalizeSeparator } from '../utilities/pathUtils'
-import { localize } from '../utilities/vsCodeUtils'
 import {
     executeSamBuild,
     generateInputTemplate,
@@ -27,9 +26,7 @@ import * as pathutil from '../../shared/utilities/pathUtils'
 export async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
     const packageJsonPath: string | undefined = await findFileInParentPaths(path.dirname(filepath), 'package.json')
     if (!packageJsonPath) {
-        throw new Error( // TODO: Do we want to localize errors? This might be confusing if we need to review logs.
-            localize('AWS.error.sam.local.package_json_not_found', 'Cannot find package.json related to: {0}', filepath)
-        )
+        throw new Error(`Cannot find package.json for: ${filepath}`)
     }
 
     return path.dirname(packageJsonPath)
@@ -69,16 +66,7 @@ export async function decorateHandlerNames(
  *
  * Does NOT execute/invoke SAM, docker, etc.
  */
-export async function makeTypescriptConfig(
-    config: SamLaunchRequestArgs
-    // isDebug: boolean,
-    // workspaceFolder: vscode.WorkspaceFolder,
-    // samProjectCodeRoot: string,
-    // runtime: string,
-    // handlerName: string,
-    // uri: vscode.Uri,
-    // samTemplatePath: string | undefined,
-): Promise<NodejsDebugConfiguration> {
+export async function makeTypescriptConfig(config: SamLaunchRequestArgs): Promise<NodejsDebugConfiguration> {
     if (!config.codeRoot) {
         // Last-resort attempt to discover the project root (when there is no
         // `launch.json` nor `template.yaml`).

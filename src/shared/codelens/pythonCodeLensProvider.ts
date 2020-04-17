@@ -245,13 +245,6 @@ export async function invokePythonLambda(ctx: ExtContext, config: PythonDebugCon
     const processInvoker = new DefaultValidatingSamCliProcessInvoker({})
 
     try {
-        // logger.debug(
-        //     `pythonCodeLensProvider.invokeLambda: ${JSON.stringify(
-        //         { samProjectCodeRoot, config.samTemplatePath!!, handlerName, manifestPath },
-        //         undefined,
-        //         2
-        //     )}`
-        // )
         const inputTemplatePath = config.samTemplatePath!!
 
         // XXX: reassignment

@@ -10,9 +10,9 @@ import {
     dirnameWithTrailingSlash,
     getNormalizedRelativePath,
     normalizeSeparator,
-    removeDriveLetter,
     normalize,
     areEqual,
+    getDriveLetter,
 } from '../../../shared/utilities/pathUtils'
 
 describe('pathUtils', async () => {
@@ -40,9 +40,10 @@ describe('pathUtils', async () => {
         assert.ok(!areEqual(workspaceFolderPath, '/my/workspace/foo/', '../foo/'))
         assert.ok(!areEqual(workspaceFolderPath, '/my/workspace/foo/', './foo/bar/'))
         if (os.platform() === 'win32') {
+            const driveletter = getDriveLetter('.')
             assert.ok(areEqual(workspaceFolderPath, 'C:/my/workspace/foo', 'c:\\my\\WORKSPACE\\FOO'))
-            assert.ok(areEqual(workspaceFolderPath, 'C:/my/workspace/foo', '.\\FOO'))
-            assert.ok(!areEqual(workspaceFolderPath, 'C:/my/workspace/foo', '..\\..\\FOO'))
+            assert.ok(areEqual(workspaceFolderPath, `${driveletter}:/my/workspace/foo`, '.\\FOO'))
+            assert.ok(!areEqual(workspaceFolderPath, `${driveletter}:/my/workspace/foo`, '..\\..\\FOO'))
             assert.ok(!areEqual(workspaceFolderPath, 'C:/my/workspace/foo', 'C:/my/workspac/e/foo'))
         }
     })
@@ -65,19 +66,6 @@ describe('pathUtils', async () => {
             normalizeSeparator('\\\\codebuild\\tmp\\output\\js-manifest-in-root\\'),
             '//codebuild/tmp/output/js-manifest-in-root/'
         )
-    })
-
-    it('removeDriveLetter()', () => {
-        assert.strictEqual(removeDriveLetter('c:\\foo\\bar.txt'), '\\foo\\bar.txt')
-        assert.strictEqual(removeDriveLetter('C:\\foo\\bar.txt'), '\\foo\\bar.txt')
-        assert.strictEqual(removeDriveLetter('c:/foo/bar.txt'), '/foo/bar.txt')
-        assert.strictEqual(removeDriveLetter('c:/foo'), '/foo')
-        assert.strictEqual(removeDriveLetter('/foo/bar.txt'), '/foo/bar.txt')
-        assert.strictEqual(removeDriveLetter('/foo/bar'), '/foo/bar')
-        assert.strictEqual(removeDriveLetter('/foo/'), '/foo/')
-        assert.strictEqual(removeDriveLetter('//'), '//')
-        assert.strictEqual(removeDriveLetter('/'), '/')
-        assert.strictEqual(removeDriveLetter(''), '')
     })
 
     it('normalize()', () => {

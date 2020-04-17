@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../logger/logger'
 import { CloudFormation } from './cloudformation'
+import * as pathutils from '../utilities/pathUtils'
 
 export interface TemplateDatum {
     path: string
@@ -41,7 +42,7 @@ export class CloudFormationTemplateRegistry {
      * @param templateUri vscode.Uri containing the template to load in
      */
     public async addTemplateToRegistry(templateUri: vscode.Uri, quiet?: boolean): Promise<void> {
-        const pathAsString = templateUri.fsPath
+        const pathAsString = pathutils.normalize(templateUri.fsPath)
         try {
             const template = await CloudFormation.load(pathAsString)
             this.templateRegistryData.set(pathAsString, template)
@@ -58,11 +59,12 @@ export class CloudFormationTemplateRegistry {
      * @param path Path to template of interest
      */
     public getRegisteredTemplate(path: string): TemplateDatum | undefined {
-        const template = this.templateRegistryData.get(path)
+        const normalizedPath = pathutils.normalize(path)
+        const template = this.templateRegistryData.get(normalizedPath)
         if (template) {
             return {
-                path,
-                template,
+                path: normalizedPath,
+                template: template,
             }
         }
     }
@@ -88,7 +90,7 @@ export class CloudFormationTemplateRegistry {
      * @param templateUri vscode.Uri containing template to remove
      */
     public removeTemplateFromRegistry(templateUri: vscode.Uri): void {
-        const pathAsString = templateUri.fsPath
+        const pathAsString = pathutils.normalize(templateUri.fsPath)
         this.templateRegistryData.delete(pathAsString)
     }
 

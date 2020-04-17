@@ -165,6 +165,29 @@ describe('AwsSamDebugConfigurationProvider', async () => {
     })
 
     describe('resolveDebugConfiguration', async () => {
+        it('failure modes', async () => {
+            const config = await getConfig(
+                debugConfigProvider,
+                registry,
+                'integrationTest-samples/csharp2.1-plain-sam-app/'
+            )
+
+            // No workspace folder:
+            assert.deepStrictEqual(
+                await debugConfigProvider.resolveDebugConfiguration(undefined, config.config),
+                undefined
+            )
+
+            // Unknown runtime:
+            config.config.lambda = {
+                runtime: 'happy-runtime-42',
+            }
+            assert.deepStrictEqual(
+                await debugConfigProvider.resolveDebugConfiguration(config.folder, config.config),
+                undefined
+            )
+        })
+
         it('returns undefined when resolving debug configurations with an invalid request type', async () => {
             const resolved = await debugConfigProvider.resolveDebugConfiguration(undefined, {
                 type: AWS_SAM_DEBUG_TYPE,
@@ -195,10 +218,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
         })
 
         it("returns undefined when resolving template debug configurations with a template that isn't in the registry", async () => {
-            const resolved = await debugConfigProvider.resolveDebugConfiguration(
-                undefined,
-                createBaseTemplateConfig({})
-            )
+            const resolved = await debugConfigProvider.resolveDebugConfiguration(undefined, createFakeConfig({}))
             assert.strictEqual(resolved, undefined)
         })
 
@@ -206,7 +226,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             await createAndRegisterYaml({}, tempFile, registry)
             const resolved = await debugConfigProvider.resolveDebugConfiguration(
                 undefined,
-                createBaseTemplateConfig({ samTemplatePath: tempFile.fsPath })
+                createFakeConfig({ samTemplatePath: tempFile.fsPath })
             )
             assert.strictEqual(resolved, undefined)
         })
@@ -215,7 +235,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             await createAndRegisterYaml({ resourceName, runtime: 'moreLikeRanOutOfTime' }, tempFile, registry)
             const resolved = await debugConfigProvider.resolveDebugConfiguration(
                 undefined,
-                createBaseTemplateConfig({
+                createFakeConfig({
                     samTemplatePath: tempFile.fsPath,
                     samTemplateResource: resourceName,
                 })
@@ -309,12 +329,12 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
-                    uri: vscode.Uri.parse(appDir),
+                    uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
                 codeRoot: pathutil.normalize(path.join(appDir, 'src')), // Normalized to absolute path.
                 debugPort: 5858,
-                documentUri: vscode.Uri.parse(''), // TODO: remove or test.
+                documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'my.test.handler',
                 invokeTarget: {
                     lambdaHandler: 'my.test.handler',
@@ -382,12 +402,12 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
-                    uri: vscode.Uri.parse(appDir),
+                    uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
                 codeRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
                 debugPort: 5858,
-                documentUri: vscode.Uri.parse(''), // TODO: remove or test.
+                documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'my.test.handler',
                 invokeTarget: {
                     target: 'template',
@@ -445,12 +465,12 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
-                    uri: vscode.Uri.parse(appDir),
+                    uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
                 codeRoot: pathutil.normalize(path.join(appDir, 'src/HelloWorld')), // Normalized to absolute path.
                 debugPort: 5858,
-                documentUri: vscode.Uri.parse(''), // TODO: remove or test.
+                documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'HelloWorld::HelloWorld.Function::FunctionHandler',
                 invokeTarget: {
                     lambdaHandler: 'HelloWorld::HelloWorld.Function::FunctionHandler',
@@ -541,12 +561,12 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
-                    uri: vscode.Uri.parse(appDir),
+                    uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
                 codeRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
                 debugPort: 5858,
-                documentUri: vscode.Uri.parse(''), // TODO: remove or test.
+                documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'my.test.handler',
                 invokeTarget: {
                     target: 'template',
@@ -633,8 +653,35 @@ function createBaseCodeConfig(params: {
     }
 }
 
-function createBaseTemplateConfig(params: {
+/**
+ * Gets a basic launch.json config for testing purposes, by generating the
+ * config from a sample project located at `rootFolder`.
+ */
+async function getConfig(
+    debugConfigProvider: SamDebugConfigProvider,
+    registry: CloudFormationTemplateRegistry,
+    rootFolder: string
+): Promise<{ config: AwsSamDebuggerConfiguration; folder: vscode.WorkspaceFolder }> {
+    const appDir = pathutil.normalize(path.join(testutil.getProjectDir(), rootFolder))
+    const folder = testutil.getWorkspaceFolder(appDir)
+    const templateFile = pathutil.normalize(path.join(appDir, 'template.yaml'))
+    await registry.addTemplateToRegistry(vscode.Uri.file(templateFile))
+
+    // Generate config(s) from a sample project.
+    const configs = await debugConfigProvider.provideDebugConfigurations(folder)
+    if (!configs || configs.length === 0) {
+        throw Error(`failed to generate config from: ${rootFolder}`)
+    }
+    ;(configs[0] as any).__noInvoke = true
+    return {
+        config: configs[0],
+        folder: folder,
+    }
+}
+
+function createFakeConfig(params: {
     name?: string
+    target?: string
     samTemplatePath?: string
     samTemplateResource?: string
 }): AwsSamDebuggerConfiguration {
@@ -642,11 +689,18 @@ function createBaseTemplateConfig(params: {
         type: AWS_SAM_DEBUG_TYPE,
         name: params.name ?? 'whats in a name',
         request: DIRECT_INVOKE_TYPE,
-        invokeTarget: {
-            target: TEMPLATE_TARGET_TYPE,
-            samTemplatePath: params.samTemplatePath ?? 'somewhere else',
-            samTemplateResource: params.samTemplateResource ?? 'you lack resources',
-        },
+        invokeTarget:
+            !params.target || params.target === TEMPLATE_TARGET_TYPE
+                ? {
+                      target: TEMPLATE_TARGET_TYPE,
+                      samTemplatePath: params.samTemplatePath ?? 'somewhere else',
+                      samTemplateResource: params.samTemplateResource ?? 'you lack resources',
+                  }
+                : {
+                      target: CODE_TARGET_TYPE,
+                      lambdaHandler: 'test-handler',
+                      projectRoot: 'test-project-root',
+                  },
     }
 }
 

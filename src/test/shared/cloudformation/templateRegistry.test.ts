@@ -16,6 +16,7 @@ import { rmrf } from '../../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { assertThrowsError } from '../utilities/assertUtils'
 import { badYaml, makeSampleSamTemplateYaml, strToYamlFile } from './cloudformationTestUtils'
+import { assertEqualPaths } from '../../testUtil'
 
 describe('CloudFormation Template Registry', async () => {
     const goodYaml1 = makeSampleSamTemplateYaml(false)
@@ -185,7 +186,7 @@ describe('parseCloudFormationResources', () => {
 function assertValidTestTemplate(data: TemplateDatum | undefined, filename: string): void {
     assert.ok(data)
     if (data) {
-        assert.strictEqual(data.path, filename)
+        assertEqualPaths(data.path, filename)
         assert.ok(data.template.Resources?.TestResource)
     }
 }

@@ -81,7 +81,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                     }
                 }
             }
-            getLogger().verbose(`provideDebugConfigurations: debugconfigs: ${configs}`)
+            getLogger().verbose(`provideDebugConfigurations: debugconfigs: ${JSON.stringify(configs)}`)
         }
 
         return configs
@@ -104,6 +104,13 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         token?: vscode.CancellationToken
     ): Promise<SamLaunchRequestArgs | undefined> {
         if (token?.isCancellationRequested) {
+            return undefined
+        }
+        if (!folder) {
+            getLogger().error(`SAM debug: no workspace folder`)
+            vscode.window.showErrorMessage(
+                localize('AWS.sam.debugger.noWorkspace', 'AWS SAM debug: choose a workspace, then try again')
+            )
             return undefined
         }
         /**
@@ -149,16 +156,17 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 ...config,
                 ...configs[0],
             }
-            getLogger().info(`SAM debug: generated config (no launch.json): ${JSON.stringify(config)}`)
+            getLogger().verbose(`SAM debug: generated config (no launch.json): ${JSON.stringify(config)}`)
         } else {
             const rv = configValidator.validate(config)
             if (!rv.isValid) {
+                getLogger().error(`SAM debug: invalid config: ${rv.message!!}`)
                 vscode.window.showErrorMessage(rv.message!!)
                 return undefined
             } else if (rv.message) {
                 vscode.window.showInformationMessage(rv.message)
             }
-            getLogger().info(`SAM debug: config: ${JSON.stringify(config.name)}`)
+            getLogger().verbose(`SAM debug: config: ${JSON.stringify(config.name)}`)
         }
 
         const editor = vscode.window.activeTextEditor
@@ -193,16 +201,12 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             vscode.window.activeTextEditor?.document.uri ??
             // XXX: don't know what URI to choose...
             vscode.Uri.parse(templateInvoke.samTemplatePath!!)
-        const workspaceFolder =
-            folder ??
-            // XXX: when/why is `folder` undefined?
-            vscode.workspace.getWorkspaceFolder(documentUri)!!
 
         let launchConfig: SamLaunchRequestArgs = {
             ...config,
             request: 'attach',
             codeRoot: codeRoot ?? '',
-            workspaceFolder: workspaceFolder,
+            workspaceFolder: folder,
             runtime: runtime,
             runtimeFamily: runtimeFamily,
             handlerName: handlerName,
@@ -252,8 +256,13 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 }
                 break
             }
-            default:
-                throw Error('unknown RuntimeFamily')
+            default: {
+                getLogger().error(`SAM debug: unknown runtime: ${runtime})`)
+                vscode.window.showErrorMessage(
+                    localize('AWS.sam.debugger.invalidRuntime', 'AWS SAM debug: unknown runtime: {0}', runtime)
+                )
+                return undefined
+            }
         }
 
         if (launchConfig.type === AWS_SAM_DEBUG_TYPE || launchConfig.request === DIRECT_INVOKE_TYPE) {
