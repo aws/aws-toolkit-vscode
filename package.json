@@ -839,7 +839,7 @@
         "createRelease": "ts-node ./build-scripts/createRelease.ts"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "0.0.19",
+        "@aws-toolkits/telemetry": "0.0.21",
         "@types/adm-zip": "^0.4.32",
         "@types/async-lock": "^1.1.0",
         "@types/cross-spawn": "^6.0.0",
