@@ -10,7 +10,7 @@
         "url": "https://github.com/aws/aws-toolkit-vscode"
     },
     "engines": {
-        "vscode": "^1.31.1"
+        "vscode": "^1.42.0"
     },
     "icon": "resources/aws-icon-256x256.png",
     "bugs": {
