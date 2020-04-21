@@ -331,7 +331,7 @@ export function filterTelemetryCacheEvents(input: any): TelemetryEvent[] {
 
                 if (data?.Metadata?.some(m => m?.Value === undefined || m.Value === '')) {
                     getLogger().warn(
-                        `Item in telemetry cache: ${item}\n has metadata field with null or empty value! skipping!`
+                        `telemetry: skipping cached item with null/empty metadata field:\n${item}`
                     )
 
                     return false
