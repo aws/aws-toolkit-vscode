@@ -9,6 +9,7 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
 import { extensionSettingsPrefix } from '../shared/constants'
+import { createQuickPick, promptUser } from '../shared/ui/picker'
 import { AwsExplorer } from './awsExplorer'
 
 /**
@@ -79,27 +80,37 @@ export async function checkExplorerForDefaultRegion(
     }
 
     // Ask user what to do
-    const regionHiddenResponse = await vscode.window.showQuickPick(
-        [
-            DefaultRegionMissingPromptItems.add,
-            DefaultRegionMissingPromptItems.alwaysAdd,
-            DefaultRegionMissingPromptItems.ignore,
-            DefaultRegionMissingPromptItems.alwaysIgnore,
-        ],
-        {
-            placeHolder: localize(
+    const items = [
+        DefaultRegionMissingPromptItems.add,
+        DefaultRegionMissingPromptItems.alwaysAdd,
+        DefaultRegionMissingPromptItems.ignore,
+        DefaultRegionMissingPromptItems.alwaysIgnore,
+    ].map<vscode.QuickPickItem>(item => {
+        return {
+            label: item,
+        }
+    })
+
+    const picker = createQuickPick({
+        options: {
+            canPickMany: false,
+            ignoreFocusOut: true,
+            title: localize(
                 'AWS.message.prompt.defaultRegionHidden',
-                // prettier-ignore
                 "This profile's default region ({0}) is currently hidden. Would you like to show it in the Explorer?",
                 profileRegion
             ),
-        }
-    )
+        },
+        items: items,
+    })
+    const response = await promptUser({ picker: picker })
 
     // User Cancelled
-    if (!regionHiddenResponse) {
+    if (!response || response.length === 0) {
         return
     }
+
+    const regionHiddenResponse = response[0].label
 
     switch (regionHiddenResponse) {
         case DefaultRegionMissingPromptItems.add:

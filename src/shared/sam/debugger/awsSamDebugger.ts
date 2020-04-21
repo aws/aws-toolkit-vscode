@@ -11,7 +11,7 @@ const localize = nls.loadMessageBundle()
 import { samLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 import { CloudFormation } from '../../cloudformation/cloudformation'
 import { CloudFormationTemplateRegistry } from '../../cloudformation/templateRegistry'
-import { isContainedWithinDirectory } from '../../filesystemUtilities'
+import { isInDirectory } from '../../filesystemUtilities'
 import { AwsSamDebuggerConfiguration, TemplateTargetProperties } from './awsSamDebugConfiguration'
 
 export const AWS_SAM_DEBUG_TYPE = 'aws-sam'
@@ -35,7 +35,7 @@ export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurati
             const templates = this.cftRegistry.registeredTemplates
 
             for (const templateDatum of templates) {
-                if (isContainedWithinDirectory(folderPath, templateDatum.path) && templateDatum.template.Resources) {
+                if (isInDirectory(folderPath, templateDatum.path) && templateDatum.template.Resources) {
                     for (const resourceKey of Object.keys(templateDatum.template.Resources)) {
                         const resource = templateDatum.template.Resources[resourceKey]
                         if (resource) {

@@ -10,11 +10,10 @@ import { SettingsConfiguration } from '../settingsConfiguration'
 import { TelemetryService } from './telemetryService'
 const localize = nls.loadMessageBundle()
 
-export enum TelemetryOptOutOptions {
-    Enable,
-    Disable,
-    SameAsVsCode,
-}
+// SETTINGS_TELEMETRY_VALUE_XXX must be kept in sync with package.json "aws.telemetry" configuration values
+export const SETTINGS_TELEMETRY_VALUE_ENABLE = 'Enable'
+export const SETTINGS_TELEMETRY_VALUE_DISABLE = 'Disable'
+export const SETTINGS_TELEMETRY_VALUE_USEIDE = 'Use IDE settings'
 
 export class AwsTelemetryOptOut {
     private static readonly AWS_TELEMETRY_KEY = 'telemetry'
@@ -29,41 +28,42 @@ export class AwsTelemetryOptOut {
         private readonly getVSCodeTelemetrySetting: () => boolean = () =>
             !!vscode.workspace.getConfiguration('telemetry').get<boolean>('enableTelemetry')
     ) {
+        // TODO : update telemetry configuration when aws.telemetry changes (so that we can enable/disable without a restart)
         vscode.workspace.onDidChangeConfiguration(async event => {
             // if telemetry.enableTelemetry changed and user has not expressed a preference
             if (
                 event.affectsConfiguration('telemetry.enableTelemetry') &&
-                this.settings.readSetting(AwsTelemetryOptOut.AWS_TELEMETRY_KEY) === undefined
+                this.settings.readSetting(AwsTelemetryOptOut.AWS_TELEMETRY_KEY) === SETTINGS_TELEMETRY_VALUE_USEIDE
             ) {
-                await this.updateTelemetryConfiguration(TelemetryOptOutOptions.SameAsVsCode)
+                await this.updateTelemetryConfiguration(SETTINGS_TELEMETRY_VALUE_USEIDE)
             }
         })
     }
 
-    public async updateTelemetryConfiguration(response: TelemetryOptOutOptions) {
-        switch (response) {
-            case TelemetryOptOutOptions.Enable:
+    public async updateTelemetryConfiguration(telemetrySettingsValue: string) {
+        switch (telemetrySettingsValue) {
+            case SETTINGS_TELEMETRY_VALUE_ENABLE:
                 await this.settings.writeSetting(
                     AwsTelemetryOptOut.AWS_TELEMETRY_KEY,
-                    true,
+                    telemetrySettingsValue,
                     vscode.ConfigurationTarget.Global
                 )
                 this.service.telemetryEnabled = true
                 break
 
-            case TelemetryOptOutOptions.Disable:
+            case SETTINGS_TELEMETRY_VALUE_DISABLE:
                 await this.settings.writeSetting(
                     AwsTelemetryOptOut.AWS_TELEMETRY_KEY,
-                    false,
+                    telemetrySettingsValue,
                     vscode.ConfigurationTarget.Global
                 )
                 this.service.telemetryEnabled = false
                 break
 
-            case TelemetryOptOutOptions.SameAsVsCode:
+            default:
                 await this.settings.writeSetting(
                     AwsTelemetryOptOut.AWS_TELEMETRY_KEY,
-                    undefined,
+                    SETTINGS_TELEMETRY_VALUE_USEIDE,
                     vscode.ConfigurationTarget.Global
                 )
                 const vsCodeTelemetryEnabled = this.getVSCodeTelemetrySetting()
@@ -80,39 +80,47 @@ export class AwsTelemetryOptOut {
      * Ensure that you handle this suitably.
      */
     public async ensureUserNotified(): Promise<void> {
-        let response: string | undefined
+        let optInSetting: string = SETTINGS_TELEMETRY_VALUE_USEIDE
         if (!ext.context.globalState.get<boolean>(AwsTelemetryOptOut.TELEMETRY_OPT_OUT_SHOWN)) {
-            response = await this.showNotification()
+            optInSetting = await this.promptForTelemetryOptIn()
             await ext.context.globalState.update(AwsTelemetryOptOut.TELEMETRY_OPT_OUT_SHOWN, true)
         } else {
-            response = this.settings.readSetting<string>(AwsTelemetryOptOut.AWS_TELEMETRY_KEY)
+            optInSetting =
+                this.settings.readSetting<string>(AwsTelemetryOptOut.AWS_TELEMETRY_KEY) ??
+                SETTINGS_TELEMETRY_VALUE_USEIDE
         }
-        const enumValue = this.responseToOptionEnumValue(response)
 
-        await this.updateTelemetryConfiguration(enumValue)
+        await this.updateTelemetryConfiguration(optInSetting)
         this.service.notifyOptOutOptionMade()
     }
 
-    public async showNotification(): Promise<string | undefined> {
+    /**
+     * Prompts user to Enable/Disable/Defer on Telemetry
+     * Returns a valid settings value
+     */
+    public async promptForTelemetryOptIn(): Promise<string> {
         const notificationMessage: string = localize(
             'AWS.telemetry.notificationMessage',
             // prettier-ignore
             'Please help improve the AWS Toolkit by enabling it to send usage data to AWS. You can always change your mind later by going to the "AWS Configuration" section in your user settings.'
         )
 
-        return vscode.window.showInformationMessage(notificationMessage, this.responseYes, this.responseNo)
-    }
+        const response = await vscode.window.showInformationMessage(
+            notificationMessage,
+            this.responseYes,
+            this.responseNo
+        )
 
-    private responseToOptionEnumValue(response: string | undefined) {
         switch (response) {
             case this.responseYes:
-                return TelemetryOptOutOptions.Enable
+                return SETTINGS_TELEMETRY_VALUE_ENABLE
 
             case this.responseNo:
-                return TelemetryOptOutOptions.Disable
+                return SETTINGS_TELEMETRY_VALUE_DISABLE
 
+            // undefined == user discarded notice
             default:
-                return TelemetryOptOutOptions.SameAsVsCode
+                return SETTINGS_TELEMETRY_VALUE_USEIDE
         }
     }
 }
