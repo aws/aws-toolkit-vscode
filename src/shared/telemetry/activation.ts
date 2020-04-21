@@ -19,8 +19,8 @@ const SETTINGS_TELEMETRY_VALUE_ENABLE = 'Enable'
 const SETTINGS_TELEMETRY_VALUE_DISABLE = 'Disable'
 const SETTINGS_TELEMETRY_VALUE_USEIDE = 'Use IDE settings'
 
-const responseEnable = localize('AWS.telemetry.notificationYes', 'Enable')
-const responseDisable = localize('AWS.telemetry.notificationNo', 'Disable')
+export const responseEnable = localize('AWS.telemetry.notificationYes', 'Enable')
+export const responseDisable = localize('AWS.telemetry.notificationNo', 'Disable')
 
 const AWS_TELEMETRY_KEY = 'telemetry'
 const TELEMETRY_OPT_OUT_SHOWN = 'awsTelemetryOptOutShown'
@@ -42,7 +42,7 @@ export async function activate(activateArguments: {
     if (hasUserSeenTelemetryNotice(activateArguments.extensionContext)) {
         ext.telemetry.notifyOptOutOptionMade()
     } else {
-        promptForTelemetryOptIn(activateArguments.toolkitSettings)
+        promptForTelemetryOptIn(activateArguments.extensionContext, activateArguments.toolkitSettings)
     }
 
     // When there are configuration changes, update the telemetry service appropriately
@@ -80,8 +80,8 @@ function hasUserSeenTelemetryNotice(extensionContext: vscode.ExtensionContext): 
     return extensionContext.globalState.get<boolean>(TELEMETRY_OPT_OUT_SHOWN, false)
 }
 
-async function setHasUserSeenTelemetryNotice(): Promise<void> {
-    await ext.context.globalState.update(TELEMETRY_OPT_OUT_SHOWN, true)
+async function setHasUserSeenTelemetryNotice(extensionContext: vscode.ExtensionContext): Promise<void> {
+    await extensionContext.globalState.update(TELEMETRY_OPT_OUT_SHOWN, true)
     getLogger().verbose('Telemetry notice has been shown')
 }
 
@@ -89,7 +89,7 @@ async function setHasUserSeenTelemetryNotice(): Promise<void> {
  * Prompts user to Enable/Disable/Defer on Telemetry, then
  * handles the response appropriately.
  */
-function promptForTelemetryOptIn(toolkitSettings: SettingsConfiguration) {
+function promptForTelemetryOptIn(extensionContext: vscode.ExtensionContext, toolkitSettings: SettingsConfiguration) {
     getLogger().verbose('Showing telemetry notice')
 
     const notificationMessage: string = localize(
@@ -99,24 +99,32 @@ function promptForTelemetryOptIn(toolkitSettings: SettingsConfiguration) {
     )
 
     // Don't wait for a response
-    vscode.window.showInformationMessage(notificationMessage, responseEnable, responseDisable).then(async response => {
-        try {
-            getLogger().verbose(`Telemetry notice response: ${response}`)
+    vscode.window
+        .showInformationMessage(notificationMessage, responseEnable, responseDisable)
+        .then(async response => handleTelemetryNoticeResponse(response, extensionContext, toolkitSettings))
+}
 
-            if (!response) {
-                // undefined == user discarded notice
-                return
-            }
+export async function handleTelemetryNoticeResponse(
+    response: string | undefined,
+    extensionContext: vscode.ExtensionContext,
+    toolkitSettings: SettingsConfiguration
+) {
+    try {
+        getLogger().verbose(`Telemetry notice response: ${response}`)
 
-            const setting =
-                response !== responseDisable ? SETTINGS_TELEMETRY_VALUE_ENABLE : SETTINGS_TELEMETRY_VALUE_DISABLE
-            getLogger().verbose(`Applying telemetry setting: ${setting}`)
-            await toolkitSettings.writeSetting<string>(AWS_TELEMETRY_KEY, setting, vscode.ConfigurationTarget.Global)
-
-            setHasUserSeenTelemetryNotice()
-            ext.telemetry.notifyOptOutOptionMade()
-        } catch (err) {
-            getLogger().error('Error while handling reponse from telemetry notice', err as Error)
+        if (!response) {
+            // undefined == user discarded notice
+            return
         }
-    })
+
+        const setting =
+            response === responseDisable ? SETTINGS_TELEMETRY_VALUE_DISABLE : SETTINGS_TELEMETRY_VALUE_ENABLE
+        getLogger().verbose(`Applying telemetry setting: ${setting}`)
+        await toolkitSettings.writeSetting<string>(AWS_TELEMETRY_KEY, setting, vscode.ConfigurationTarget.Global)
+
+        setHasUserSeenTelemetryNotice(extensionContext)
+        ext.telemetry.notifyOptOutOptionMade()
+    } catch (err) {
+        getLogger().error('Error while handling reponse from telemetry notice', err as Error)
+    }
 }
