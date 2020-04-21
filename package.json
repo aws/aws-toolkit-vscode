@@ -579,7 +579,7 @@
                 },
                 {
                     "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudFormationNode)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode)$/",
                     "group": "1@1"
                 },
                 {
