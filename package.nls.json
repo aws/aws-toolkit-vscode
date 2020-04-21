@@ -259,6 +259,7 @@
     "AWS.sam.debugger.missingField": "Missing required field \"{0}\" in debug config",
     "AWS.sam.debugger.resourceNotAFunction": "Template Resource {0} in Template file {1} needs to be of type {2}",
     "AWS.sam.debugger.unsupportedRuntime": "Runtime for Template Resource {0} in Template file {1} is either undefined or unsupported.",
+    "AWS.sam.debugger.useExistingConfig": "The Toolkit has detected an existing legacy configuration for this function handler. Would you like it added to your Debug Configuration?",
     "AWS.sam.debugger.extraEnvVars": "The following environment variables are not found in the targeted template and will not be overridden: {0}",
     "AWS.sam.debugger.missingRuntime": "Debug Configurations with an invoke target of \"{0}\" require a valid Lambda runtime value, expected one of [{1}]",
     "AWS.sam.local.invoke.python.server.not.available": "Unable to communicate with the Python Debug Adapter. The debugger might not successfully attach to your SAM Application.",

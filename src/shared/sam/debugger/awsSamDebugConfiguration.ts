@@ -37,10 +37,10 @@ export function isCodeTargetProperties(props: TargetProperties): props is CodeTa
     return props.target === CODE_TARGET_TYPE
 }
 
-export function createAwsSamDebugConfig(
+export function createTemplateAwsSamDebugConfig(
     resourceName: string,
     templatePath: string,
-    additionalFields?: {
+    preloadedConfig?: {
         eventJson?: ReadonlyJsonObject
         environmentVariables?: ReadonlyJsonObject
         dockerNetwork?: string
@@ -58,19 +58,58 @@ export function createAwsSamDebugConfig(
         },
     }
 
-    if (additionalFields) {
+    if (preloadedConfig) {
+        let addition: {
+            lambda?: {
+                event?: {
+                    json: ReadonlyJsonObject
+                }
+                environmentVariables?: ReadonlyJsonObject
+            }
+            sam?: {
+                dockerNetwork?: string
+                containerBuild?: boolean
+            }
+        } = {}
+        if (preloadedConfig.eventJson) {
+            addition = {
+                ...addition,
+                lambda: {
+                    event: {
+                        json: preloadedConfig.eventJson,
+                    },
+                },
+            }
+        }
+        if (preloadedConfig.environmentVariables) {
+            addition = {
+                ...addition,
+                lambda: {
+                    ...addition.lambda,
+                    environmentVariables: preloadedConfig.environmentVariables,
+                },
+            }
+        }
+        if (preloadedConfig.dockerNetwork) {
+            addition = {
+                ...addition,
+                sam: {
+                    dockerNetwork: preloadedConfig.dockerNetwork,
+                },
+            }
+        }
+        if (preloadedConfig.useContainer) {
+            addition = {
+                ...addition,
+                sam: {
+                    ...addition.sam,
+                    containerBuild: preloadedConfig.useContainer,
+                },
+            }
+        }
         response = {
             ...response,
-            lambda: {
-                event: {
-                    json: additionalFields.eventJson,
-                },
-                environmentVariables: additionalFields.environmentVariables,
-            },
-            sam: {
-                dockerNetwork: additionalFields.dockerNetwork,
-                containerBuild: additionalFields.useContainer,
-            },
+            ...addition,
         }
     }
 

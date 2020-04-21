@@ -792,12 +792,7 @@ describe('getExistingConfiguration', async () => {
     })
 
     it("returns undefined if the legacy config file doesn't exist", async () => {
-        const val = await getExistingConfiguration(
-            fakeWorkspaceFolder,
-            'handlerDoesNotMatter',
-            tempTemplateFile,
-            registry
-        )
+        const val = await getExistingConfiguration(fakeWorkspaceFolder, 'handlerDoesNotMatter', tempTemplateFile)
         assert.strictEqual(val, undefined)
     })
 
@@ -805,7 +800,7 @@ describe('getExistingConfiguration', async () => {
         await writeFile(tempTemplateFile.fsPath, makeSampleSamTemplateYaml(true, { handler: matchedHandler }), 'utf8')
         await writeFile(tempConfigFile, makeSampleSamTemplateYaml(true, { handler: matchedHandler }), 'utf8')
         await registry.addTemplateToRegistry(tempTemplateFile)
-        const val = await getExistingConfiguration(fakeWorkspaceFolder, matchedHandler, tempTemplateFile, registry)
+        const val = await getExistingConfiguration(fakeWorkspaceFolder, matchedHandler, tempTemplateFile)
         assert.strictEqual(val, undefined)
     })
 
@@ -826,7 +821,7 @@ describe('getExistingConfiguration', async () => {
         }
         await writeFile(tempConfigFile, JSON.stringify(configData), 'utf8')
         await registry.addTemplateToRegistry(tempTemplateFile)
-        const val = await getExistingConfiguration(fakeWorkspaceFolder, matchedHandler, tempTemplateFile, registry)
+        const val = await getExistingConfiguration(fakeWorkspaceFolder, matchedHandler, tempTemplateFile)
         assert.ok(val)
         if (val) {
             assert.deepStrictEqual(val.environmentVariables, {})

@@ -28,7 +28,7 @@ import {
     AwsSamDebuggerConfiguration,
     AWS_SAM_DEBUG_TYPE,
     DIRECT_INVOKE_TYPE,
-    createAwsSamDebugConfig,
+    createTemplateAwsSamDebugConfig,
 } from './awsSamDebugConfiguration'
 import { TemplateTargetProperties } from './awsSamDebugConfiguration.gen'
 import {
@@ -77,7 +77,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 if (isInDirectory(folderPath, templateDatum.path)) {
                     const resources = getResourcesFromTemplateDatum(templateDatum)
                     for (const resourceKey of resources.keys()) {
-                        configs.push(createAwsSamDebugConfig(resourceKey, templateDatum.path))
+                        configs.push(createTemplateAwsSamDebugConfig(resourceKey, templateDatum.path))
                     }
                 }
             }

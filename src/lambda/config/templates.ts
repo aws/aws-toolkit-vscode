@@ -11,7 +11,6 @@ import * as os from 'os'
 import * as _path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
 import { mkdir } from '../../shared/filesystem'
 import * as fsUtils from '../../shared/filesystemUtilities'
 import { getLogger, Logger } from '../../shared/logger'
@@ -412,8 +411,7 @@ export class TemplatesConfigPopulator {
 export async function getExistingConfiguration(
     workspaceFolder: vscode.WorkspaceFolder,
     handler: string,
-    samTemplate: vscode.Uri,
-    registry: CloudFormationTemplateRegistry = CloudFormationTemplateRegistry.getRegistry()
+    samTemplate: vscode.Uri
 ): Promise<
     | {
           eventJson?: ReadonlyJsonObject

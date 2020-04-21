@@ -19,7 +19,7 @@ import {
     CODE_TARGET_TYPE,
     DIRECT_INVOKE_TYPE,
     TEMPLATE_TARGET_TYPE,
-    createAwsSamDebugConfig,
+    createTemplateAwsSamDebugConfig,
 } from '../../../../shared/sam/debugger/awsSamDebugConfiguration'
 import { SamDebugConfigProvider } from '../../../../shared/sam/debugger/awsSamDebugger'
 import { SamLaunchRequestArgs } from '../../../../shared/sam/debugger/samDebugSession'
@@ -604,12 +604,12 @@ describe('AwsSamDebugConfigurationProvider', async () => {
     })
 })
 
-describe('createAwsSamDebugConfig', () => {
+describe('createTemplateAwsSamDebugConfig', () => {
     const name = 'my body is a template'
     const templatePath = path.join('two', 'roads', 'diverged', 'in', 'a', 'yellow', 'wood')
 
     it('creates a template-type SAM debugger configuration with minimal configurations', () => {
-        const config = createAwsSamDebugConfig(name, templatePath)
+        const config = createTemplateAwsSamDebugConfig(name, templatePath)
         assert.strictEqual(config.invokeTarget.target, TEMPLATE_TARGET_TYPE)
         const invokeTarget = config.invokeTarget as TemplateTargetProperties
         assert.strictEqual(config.name, name)
@@ -628,7 +628,7 @@ describe('createAwsSamDebugConfig', () => {
             },
             dockerNetwork: 'rockerFretwork',
         }
-        const config = createAwsSamDebugConfig(name, templatePath, params)
+        const config = createTemplateAwsSamDebugConfig(name, templatePath, params)
         assert.deepStrictEqual(config.lambda?.event?.json, params.eventJson)
         assert.deepStrictEqual(config.lambda?.environmentVariables, params.environmentVariables)
         assert.strictEqual(config.sam?.dockerNetwork, params.dockerNetwork)
@@ -718,12 +718,12 @@ async function createAndRegisterYaml(
     await registry.addTemplateToRegistry(file)
 }
 
-describe('createAwsSamDebugConfig', () => {
+describe('createTemplateAwsSamDebugConfig', () => {
     const name = 'my body is a template'
     const templatePath = path.join('two', 'roads', 'diverged', 'in', 'a', 'yellow', 'wood')
 
     it('creates a template-type SAM debugger configuration with minimal configurations', () => {
-        const config = createAwsSamDebugConfig(name, templatePath)
+        const config = createTemplateAwsSamDebugConfig(name, templatePath)
         assert.strictEqual(config.invokeTarget.target, TEMPLATE_TARGET_TYPE)
         const invokeTarget = config.invokeTarget as TemplateTargetProperties
         assert.strictEqual(config.name, name)
@@ -742,7 +742,7 @@ describe('createAwsSamDebugConfig', () => {
             },
             dockerNetwork: 'rockerFretwork',
         }
-        const config = createAwsSamDebugConfig(name, templatePath, params)
+        const config = createTemplateAwsSamDebugConfig(name, templatePath, params)
         assert.deepStrictEqual(config.lambda?.event?.json, params.eventJson)
         assert.deepStrictEqual(config.lambda?.environmentVariables, params.environmentVariables)
         assert.strictEqual(config.sam?.dockerNetwork, params.dockerNetwork)

@@ -5,7 +5,10 @@
 
 import * as vscode from 'vscode'
 import { LaunchConfiguration } from '../../../debug/launchConfiguration'
-import { createAwsSamDebugConfig } from '../awsSamDebugConfiguration'
+import { createTemplateAwsSamDebugConfig } from '../awsSamDebugConfiguration'
+import { CloudFormationTemplateRegistry } from '../../../cloudformation/templateRegistry'
+import { getExistingConfiguration } from '../../../../lambda/config/templates'
+import { localize } from '../../../utilities/vsCodeUtils'
 
 export interface AddSamDebugConfigurationInput {
     resourceName: string
@@ -22,7 +25,40 @@ export async function addSamDebugConfiguration({
     // tslint:disable-next-line: no-floating-promises
     emitCommandTelemetry()
 
-    const samDebugConfig = createAwsSamDebugConfig(resourceName, templateUri.fsPath)
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(templateUri)
+    let preloadedConfig = undefined
+
+    if (workspaceFolder) {
+        const registry = CloudFormationTemplateRegistry.getRegistry()
+        const templateDatum = registry.getRegisteredTemplate(templateUri.fsPath)
+        if (templateDatum) {
+            const resource = templateDatum.template.Resources![resourceName]
+            if (resource && resource.Properties) {
+                const existingConfig = await getExistingConfiguration(
+                    workspaceFolder,
+                    resource.Properties.Handler,
+                    templateUri
+                )
+                if (existingConfig) {
+                    const responseYes: string = localize('AWS.generic.response.yes', 'Yes')
+                    const responseNo: string = localize('AWS.generic.response.no', 'No')
+                    const prompt = await vscode.window.showInformationMessage(
+                        localize(
+                            'AWS.sam.debugger.useExistingConfig',
+                            'The Toolkit has detected an existing legacy configuration for this function handler. Would you like it added to your Debug Configuration?'
+                        ),
+                        responseYes,
+                        responseNo
+                    )
+                    if (prompt === responseYes) {
+                        preloadedConfig = existingConfig
+                    }
+                }
+            }
+        }
+    }
+
+    const samDebugConfig = createTemplateAwsSamDebugConfig(resourceName, templateUri.fsPath, preloadedConfig)
 
     const launchConfig = new LaunchConfiguration(templateUri)
     await launchConfig.addDebugConfiguration(samDebugConfig)
