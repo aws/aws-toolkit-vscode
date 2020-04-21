@@ -35,6 +35,10 @@ export class LambdaFunctionNode extends AWSTreeNodeBase implements AWSResourceNo
     }
 
     public getArn(): string {
-        return this.configuration.FunctionArn || ''
+        if (this.configuration.FunctionArn === undefined) {
+            throw new Error('FunctionArn expected but not found')
+        }
+
+        return this.configuration.FunctionArn
     }
 }

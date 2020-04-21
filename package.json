@@ -545,12 +545,12 @@
                 {
                     "command": "aws.deleteLambda",
                     "when": "view == aws.explorer && viewItem == awsRegionFunctionNode",
-                    "group": "1@1"
+                    "group": "2@1"
                 },
                 {
                     "command": "aws.deleteCloudFormation",
                     "when": "view == aws.explorer && viewItem == awsCloudFormationNode",
-                    "group": "0@5"
+                    "group": "2@5"
                 },
                 {
                     "command": "aws.searchSchema",
@@ -575,12 +575,12 @@
                 {
                     "command": "aws.executeStateMachine",
                     "when": "view == aws.explorer && viewItem == awsStateMachineNode",
-                    "group": "1@1"
+                    "group": "0@2"
                 },
                 {
                     "command": "aws.copyArn",
                     "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudFormationNode)$/",
-                    "group": "2@1"
+                    "group": "1@1"
                 },
                 {
                     "command": "aws.downloadSchemaItemCode",

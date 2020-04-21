@@ -4,8 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
 
 import { submitFeedback } from '../feedback/commands/submitFeedback'
 import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
@@ -33,6 +31,7 @@ import { downloadStateMachineDefinition } from '../stepFunctions/commands/downlo
 import { executeStateMachine } from '../stepFunctions/commands/executeStateMachine'
 import { StateMachineNode } from '../stepFunctions/explorer/stepFunctionsNodes'
 import { AwsExplorer } from './awsExplorer'
+import { copyArnCommand } from './commands/copyArn'
 import { checkExplorerForDefaultRegion } from './defaultRegion'
 import { RegionNode } from './regionNode'
 
@@ -183,10 +182,7 @@ async function registerAwsExplorerCommands(
     )
 
     context.subscriptions.push(
-        vscode.commands.registerCommand(
-            'aws.copyArn',
-            async (node: AWSResourceNode) => await copyArnToClipboard(node.getArn())
-        )
+        vscode.commands.registerCommand('aws.copyArn', async (node: AWSResourceNode) => await copyArnCommand(node))
     )
 
     context.subscriptions.push(
@@ -218,9 +214,4 @@ function updateAwsExplorerWhenAwsContextCredentialsChange(
             }
         })
     )
-}
-
-async function copyArnToClipboard(arn: string) {
-    await vscode.env.clipboard.writeText(arn)
-    vscode.window.setStatusBarMessage(localize('AWS.explorerNode.copiedArn', 'Copied ARN to clipboard'), 2000)
 }
