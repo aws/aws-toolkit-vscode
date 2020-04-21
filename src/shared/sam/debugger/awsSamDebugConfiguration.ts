@@ -59,18 +59,8 @@ export function createTemplateAwsSamDebugConfig(
     }
 
     if (preloadedConfig) {
-        let addition: {
-            lambda?: {
-                event?: {
-                    json: ReadonlyJsonObject
-                }
-                environmentVariables?: ReadonlyJsonObject
-            }
-            sam?: {
-                dockerNetwork?: string
-                containerBuild?: boolean
-            }
-        } = {}
+        let addition: Partial<AwsSamDebuggerConfiguration> = {}
+
         if (preloadedConfig.eventJson) {
             addition = {
                 ...addition,
