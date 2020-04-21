@@ -89,6 +89,10 @@ export class DefaultTelemetryService implements TelemetryService {
         return this._telemetryEnabled
     }
     public set telemetryEnabled(value: boolean) {
+        if (this._telemetryEnabled !== value) {
+            getLogger().verbose(`Telemetry is now ${value ? 'enabled' : 'disabled'}`)
+        }
+
         // clear the queue on explicit disable
         if (!value) {
             this.clearRecords()
@@ -330,9 +334,7 @@ export function filterTelemetryCacheEvents(input: any): TelemetryEvent[] {
                 }
 
                 if (data?.Metadata?.some(m => m?.Value === undefined || m.Value === '')) {
-                    getLogger().warn(
-                        `telemetry: skipping cached item with null/empty metadata field:\n${item}`
-                    )
+                    getLogger().warn(`telemetry: skipping cached item with null/empty metadata field:\n${item}`)
 
                     return false
                 }
