@@ -89,11 +89,9 @@ export class DefaultTelemetryService implements TelemetryService {
         return this._telemetryEnabled
     }
     public set telemetryEnabled(value: boolean) {
-        if (this._telemetryEnabled === value) {
-            return
+        if (this._telemetryEnabled !== value) {
+            getLogger().verbose(`Telemetry is now ${value ? 'enabled' : 'disabled'}`)
         }
-
-        getLogger().verbose(`Telemetry is now ${value ? 'enabled' : 'disabled'}`)
 
         // clear the queue on explicit disable
         if (!value) {
