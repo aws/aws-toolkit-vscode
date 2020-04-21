@@ -14,8 +14,11 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
+import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeLogStreamsRequest
 import software.amazon.awssdk.services.cloudwatchlogs.model.FilterLogEventsRequest
 import software.amazon.awssdk.services.cloudwatchlogs.model.GetLogEventsRequest
+import software.amazon.awssdk.services.cloudwatchlogs.model.LogStream
+import software.amazon.awssdk.services.cloudwatchlogs.model.OrderBy
 import software.amazon.awssdk.services.cloudwatchlogs.model.ResourceNotFoundException
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
@@ -25,21 +28,20 @@ import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import java.time.Duration
 
-sealed class LogStreamActor(
+sealed class LogActor<T>(
     private val project: Project,
     protected val client: CloudWatchLogsClient,
-    private val table: TableView<LogStreamEntry>,
-    protected val logGroup: String,
-    protected val logStream: String
+    private val table: TableView<T>
 ) : CoroutineScope by ApplicationThreadPoolScope("CloudWatchLogsStream"), Disposable {
     val channel = Channel<Message>()
-    private val tableErrorMessage = message("cloudwatch.logs.failed_to_load_stream", logStream)
 
     protected var nextBackwardToken: String? = null
     protected var nextForwardToken: String? = null
     protected abstract val emptyText: String
+    protected abstract val tableErrorMessage: String
+    protected abstract val notFoundText: String
 
-    private val edtContext = getCoroutineUiContext(disposable = this@LogStreamActor)
+    private val edtContext = getCoroutineUiContext(disposable = this@LogActor)
     private val exceptionHandler = CoroutineExceptionHandler { _, e ->
         LOG.error(e) { "Exception thrown in the LogStreamActor not handled:" }
         notifyError(title = message("general.unknown_error"), project = project)
@@ -118,7 +120,7 @@ sealed class LogStreamActor(
         }
     }
 
-    protected suspend fun loadAndPopulate(loadBlock: suspend () -> List<LogStreamEntry>) {
+    protected suspend fun loadAndPopulate(loadBlock: suspend () -> List<T>) {
         try {
             tableLoading()
             val items = loadBlock()
@@ -126,7 +128,7 @@ sealed class LogStreamActor(
             table.emptyText.text = emptyText
         } catch (e: ResourceNotFoundException) {
             withContext(edtContext) {
-                table.emptyText.text = message("cloudwatch.logs.log_stream_does_not_exist", logStream)
+                table.emptyText.text = notFoundText
             }
         } catch (e: Exception) {
             LOG.error(e) { tableErrorMessage }
@@ -139,10 +141,19 @@ sealed class LogStreamActor(
         }
     }
 
-    protected abstract suspend fun loadInitial()
-    protected abstract suspend fun loadInitialRange(startTime: Long, duration: Duration)
-    protected abstract suspend fun loadInitialFilter(queryString: String)
-    protected abstract suspend fun loadMore(nextToken: String?, saveForwardToken: Boolean = false, saveBackwardToken: Boolean = false): List<LogStreamEntry>
+    protected open suspend fun loadInitial() {
+        throw IllegalStateException("Table does not support loadInitial")
+    }
+
+    protected open suspend fun loadInitialRange(startTime: Long, duration: Duration) {
+        throw IllegalStateException("Table does not support loadInitialRange")
+    }
+
+    protected open suspend fun loadInitialFilter(queryString: String) {
+        throw IllegalStateException("Table does not support loadInitialFilter")
+    }
+
+    protected abstract suspend fun loadMore(nextToken: String?, saveForwardToken: Boolean = false, saveBackwardToken: Boolean = false): List<T>
 
     private suspend fun tableLoading() = withContext(edtContext) {
         table.setPaintBusy(true)
@@ -159,7 +170,7 @@ sealed class LogStreamActor(
     }
 
     companion object {
-        private val LOG = getLogger<LogStreamActor>()
+        private val LOG = getLogger<LogActor<*>>()
     }
 }
 
@@ -167,14 +178,12 @@ class LogStreamFilterActor(
     project: Project,
     client: CloudWatchLogsClient,
     table: TableView<LogStreamEntry>,
-    logGroup: String,
-    logStream: String
-) : LogStreamActor(project, client, table, logGroup, logStream) {
+    private val logGroup: String,
+    private val logStream: String
+) : LogActor<LogStreamEntry>(project, client, table) {
     override val emptyText = message("cloudwatch.logs.no_events_query", logStream)
-
-    override suspend fun loadInitial() {
-        throw IllegalStateException("FilterActor can only loadInitialFilter")
-    }
+    override val tableErrorMessage = message("cloudwatch.logs.failed_to_load_stream", logStream)
+    override val notFoundText = message("cloudwatch.logs.log_stream_does_not_exist", logStream)
 
     override suspend fun loadInitialFilter(queryString: String) {
         val request = FilterLogEventsRequest
@@ -184,10 +193,6 @@ class LogStreamFilterActor(
             .filterPattern(queryString)
             .build()
         loadAndPopulate { getSearchLogEvents(request) }
-    }
-
-    override suspend fun loadInitialRange(startTime: Long, duration: Duration) {
-        throw IllegalStateException("FilterActor can only loadInitialFilter")
     }
 
     override suspend fun loadMore(nextToken: String?, saveForwardToken: Boolean, saveBackwardToken: Boolean): List<LogStreamEntry> {
@@ -219,11 +224,14 @@ class LogStreamListActor(
     project: Project,
     client: CloudWatchLogsClient,
     table: TableView<LogStreamEntry>,
-    logGroup: String,
-    logStream: String
+    private val logGroup: String,
+    private val logStream: String
 ) :
-    LogStreamActor(project, client, table, logGroup, logStream) {
+    LogActor<LogStreamEntry>(project, client, table) {
     override val emptyText = message("cloudwatch.logs.no_events")
+    override val tableErrorMessage = message("cloudwatch.logs.failed_to_load_stream", logStream)
+    override val notFoundText = message("cloudwatch.logs.log_stream_does_not_exist", logStream)
+
     override suspend fun loadInitial() {
         val request = GetLogEventsRequest
             .builder()
@@ -252,10 +260,6 @@ class LogStreamListActor(
         return@loadAndPopulate events
     }
 
-    override suspend fun loadInitialFilter(queryString: String) {
-        throw IllegalStateException("GetActor can not loadInitialFilter")
-    }
-
     override suspend fun loadMore(nextToken: String?, saveForwardToken: Boolean, saveBackwardToken: Boolean): List<LogStreamEntry> {
         val request = GetLogEventsRequest
             .builder()
@@ -281,6 +285,51 @@ class LogStreamListActor(
         if (saveBackwardToken) {
             nextBackwardToken = response.nextBackwardToken()
         }
+
+        return events
+    }
+}
+
+class LogGroupActor(
+    project: Project,
+    client: CloudWatchLogsClient,
+    table: TableView<LogStream>,
+    private val logGroup: String
+) : LogActor<LogStream>(project, client, table) {
+    override val emptyText = message("cloudwatch.logs.no_log_streams")
+    override val tableErrorMessage = message("cloudwatch.logs.failed_to_load_streams", logGroup)
+    override val notFoundText = message("cloudwatch.logs.log_group_does_not_exist", logGroup)
+
+    override suspend fun loadInitial() {
+        // With this order by we can't filter (API limitation), but it wouldn't make sense to order by name
+        val request = DescribeLogStreamsRequest.builder()
+            .logGroupName(logGroup)
+            .descending(true)
+            .orderBy(OrderBy.LAST_EVENT_TIME)
+            .build()
+        loadAndPopulate { getLogStreams(request) }
+    }
+
+    override suspend fun loadMore(nextToken: String?, saveForwardToken: Boolean, saveBackwardToken: Boolean): List<LogStream> {
+        // loading backwards doesn't make sense in this context, so just skip the event
+        if (saveBackwardToken) {
+            return listOf()
+        }
+
+        val request = DescribeLogStreamsRequest.builder()
+            .logGroupName(logGroup)
+            .nextToken(nextToken)
+            .descending(true)
+            .orderBy(OrderBy.LAST_EVENT_TIME)
+            .build()
+
+        return getLogStreams(request)
+    }
+
+    private fun getLogStreams(request: DescribeLogStreamsRequest): List<LogStream> {
+        val response = client.describeLogStreams(request)
+        val events = response.logStreams().filterNotNull()
+        nextForwardToken = response.nextToken()
 
         return events
     }

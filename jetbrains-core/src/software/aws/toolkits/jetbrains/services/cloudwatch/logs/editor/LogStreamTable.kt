@@ -19,18 +19,17 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
-import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamActor
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogActor
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamEntry
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamFilterActor
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamListActor
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.CopyFromTableAction
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.ShowLogsAroundActionGroup
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
+import software.aws.toolkits.jetbrains.utils.ui.bottomReached
+import software.aws.toolkits.jetbrains.utils.ui.topReached
 import software.aws.toolkits.resources.message
-import java.awt.event.AdjustmentEvent
-import java.awt.event.AdjustmentListener
 import javax.swing.JComponent
-import javax.swing.JScrollBar
 import javax.swing.JTable
 import javax.swing.SortOrder
 
@@ -48,9 +47,9 @@ class LogStreamTable(
     }
 
     val component: JComponent
-    val channel: Channel<LogStreamActor.Message>
+    val channel: Channel<LogActor.Message>
     val logsTable: TableView<LogStreamEntry>
-    private val logStreamActor: LogStreamActor
+    private val logStreamActor: LogActor<LogStreamEntry>
 
     init {
         val model = ListTableModel(
@@ -63,16 +62,16 @@ class LogStreamTable(
         logsTable = TableView(model).apply {
             autoscrolls = true
             tableHeader.reorderingAllowed = false
+            tableHeader.resizingAllowed = false
             autoResizeMode = JTable.AUTO_RESIZE_LAST_COLUMN
             setPaintBusy(true)
             emptyText.text = message("loading_resource.loading")
         }
 
-        // TODO this also searches the date column which we don't want to do. however,
+        // TODO this also searches the date column which we don't want to do.
         // The converter for TableSpeedSearch takes a string which we can't do much with
         // unless we want to detect it's a timestamp but it might detect messages too
         TableSpeedSearch(logsTable)
-        component = ScrollPaneFactory.createScrollPane(logsTable)
 
         logStreamActor = when (type) {
             TableType.LIST -> LogStreamListActor(project, client, logsTable, logGroup, logStream)
@@ -81,20 +80,19 @@ class LogStreamTable(
         Disposer.register(this@LogStreamTable, logStreamActor)
         channel = logStreamActor.channel
 
-        component.verticalScrollBar.addAdjustmentListener(object : AdjustmentListener {
-            var lastAdjustment = component.verticalScrollBar.minimum
-            override fun adjustmentValueChanged(e: AdjustmentEvent?) {
-                if (e == null || logsTable.model.rowCount == 0 || e.value == lastAdjustment) {
-                    return
-                }
-                lastAdjustment = e.value
-                if (component.verticalScrollBar.isAtBottom()) {
-                    launch { logStreamActor.channel.send(LogStreamActor.Message.LOAD_FORWARD()) }
-                } else if (component.verticalScrollBar.isAtTop()) {
-                    launch { logStreamActor.channel.send(LogStreamActor.Message.LOAD_BACKWARD()) }
+        component = ScrollPaneFactory.createScrollPane(logsTable).also {
+            it.topReached {
+                if (logsTable.rowCount != 0) {
+                    launch { logStreamActor.channel.send(LogActor.Message.LOAD_BACKWARD()) }
                 }
             }
-        })
+            it.bottomReached {
+                if (logsTable.rowCount != 0) {
+                    launch { logStreamActor.channel.send(LogActor.Message.LOAD_FORWARD()) }
+                }
+            }
+        }
+
         addActionsToTable()
     }
 
@@ -111,9 +109,6 @@ class LogStreamTable(
             ActionManager.getInstance()
         )
     }
-
-    private fun JScrollBar.isAtBottom(): Boolean = value == (maximum - visibleAmount)
-    private fun JScrollBar.isAtTop(): Boolean = value == minimum
 
     override fun dispose() {}
 }

@@ -70,7 +70,7 @@ class LogGroupTableSorter(model: ListTableModel<LogStream>) : TableRowSorter<Lis
     init {
         sortKeys = listOf(SortKey(1, SortOrder.DESCENDING))
         setSortable(0, false)
-        setSortable(1, true)
+        setSortable(1, false)
     }
 }
 

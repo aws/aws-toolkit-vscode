@@ -60,7 +60,7 @@ class LogStreamListActorTest {
         val table = TableView(tableModel)
         val coroutine = LogStreamListActor(projectRule.project, client, table, "abc", "def")
         runBlocking {
-            coroutine.channel.send(LogStreamActor.Message.LOAD_INITIAL())
+            coroutine.channel.send(LogActor.Message.LOAD_INITIAL())
             tableModel.waitForModelToBeAtLeast(1)
             waitForTrue { table.emptyText.text == message("cloudwatch.logs.no_events") }
         }
@@ -84,7 +84,7 @@ class LogStreamListActorTest {
         val table = TableView(tableModel)
         val coroutine = LogStreamListActor(projectRule.project, client, table, "abc", "def")
         runBlocking {
-            coroutine.channel.send(LogStreamActor.Message.LOAD_INITIAL_RANGE(LogStreamEntry("@@@", 0), Duration.ofMillis(0)))
+            coroutine.channel.send(LogActor.Message.LOAD_INITIAL_RANGE(LogStreamEntry("@@@", 0), Duration.ofMillis(0)))
             tableModel.waitForModelToBeAtLeast(1)
             waitForTrue { table.emptyText.text == message("cloudwatch.logs.no_events") }
         }
@@ -102,7 +102,7 @@ class LogStreamListActorTest {
         val table = TableView(tableModel)
         val coroutine = LogStreamListActor(projectRule.project, client, table, "abc", "def")
         runBlocking {
-            coroutine.channel.send(LogStreamActor.Message.LOAD_INITIAL())
+            coroutine.channel.send(LogActor.Message.LOAD_INITIAL())
             waitForTrue {
                 println(table.emptyText.text)
                 table.emptyText.text == message("cloudwatch.logs.failed_to_load_stream", "def")
@@ -119,7 +119,7 @@ class LogStreamListActorTest {
         val table = TableView(tableModel)
         val coroutine = LogStreamListActor(projectRule.project, client, table, "abc", "def")
         runBlocking {
-            coroutine.channel.send(LogStreamActor.Message.LOAD_INITIAL_RANGE(LogStreamEntry("@@@", 0), Duration.ofMillis(0)))
+            coroutine.channel.send(LogActor.Message.LOAD_INITIAL_RANGE(LogStreamEntry("@@@", 0), Duration.ofMillis(0)))
             waitForTrue { table.emptyText.text == message("cloudwatch.logs.failed_to_load_stream", "def") }
         }
         assertThat(tableModel.items).isEmpty()
@@ -136,14 +136,14 @@ class LogStreamListActorTest {
         val table = TableView(tableModel)
         val coroutine = LogStreamListActor(projectRule.project, client, table, "abc", "def")
         runBlocking {
-            coroutine.channel.send(LogStreamActor.Message.LOAD_INITIAL())
+            coroutine.channel.send(LogActor.Message.LOAD_INITIAL())
             tableModel.waitForModelToBeAtLeast(1)
         }
         assertThat(tableModel.items.size).isOne()
         assertThat(tableModel.items.first().message).isEqualTo("message")
         runBlocking {
-            coroutine.channel.send(LogStreamActor.Message.LOAD_FORWARD())
-            coroutine.channel.send(LogStreamActor.Message.LOAD_FORWARD())
+            coroutine.channel.send(LogActor.Message.LOAD_FORWARD())
+            coroutine.channel.send(LogActor.Message.LOAD_FORWARD())
             tableModel.waitForModelToBeAtLeast(2)
         }
         assertThat(tableModel.items.size).isEqualTo(2)
@@ -163,14 +163,14 @@ class LogStreamListActorTest {
         val table = TableView(tableModel)
         val coroutine = LogStreamListActor(projectRule.project, client, table, "abc", "def")
         runBlocking {
-            coroutine.channel.send(LogStreamActor.Message.LOAD_INITIAL())
+            coroutine.channel.send(LogActor.Message.LOAD_INITIAL())
             tableModel.waitForModelToBeAtLeast(1)
         }
         assertThat(tableModel.items.size).isOne()
         assertThat(tableModel.items.first().message).isEqualTo("message")
         runBlocking {
-            coroutine.channel.send(LogStreamActor.Message.LOAD_BACKWARD())
-            coroutine.channel.send(LogStreamActor.Message.LOAD_BACKWARD())
+            coroutine.channel.send(LogActor.Message.LOAD_BACKWARD())
+            coroutine.channel.send(LogActor.Message.LOAD_BACKWARD())
             tableModel.waitForModelToBeAtLeast(2)
         }
         assertThat(tableModel.items.size).isEqualTo(2)
@@ -190,7 +190,7 @@ class LogStreamListActorTest {
         coroutine.dispose()
         assertThatThrownBy {
             runBlocking {
-                channel.send(LogStreamActor.Message.LOAD_BACKWARD())
+                channel.send(LogActor.Message.LOAD_BACKWARD())
             }
         }.isInstanceOf(ClosedSendChannelException::class.java)
     }
@@ -202,7 +202,7 @@ class LogStreamListActorTest {
         val table = TableView(tableModel)
         val actor = LogStreamListActor(projectRule.project, client, table, "abc", "def")
         runBlocking {
-            actor.channel.send(LogStreamActor.Message.LOAD_INITIAL_FILTER("abc"))
+            actor.channel.send(LogActor.Message.LOAD_INITIAL_FILTER("abc"))
             waitForTrue { actor.channel.isClosedForSend }
         }
     }
