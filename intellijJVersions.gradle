@@ -84,7 +84,7 @@ static def ideProfiles() {
             "untilVersion": "201.*",
             "products": [
                 "IC": [
-                    sdkVersion: "IC-201.6668.13-EAP-SNAPSHOT",
+                    sdkVersion: "IC-2020.1",
                     plugins: [
                         "terminal",
                         "yaml",
@@ -98,7 +98,7 @@ static def ideProfiles() {
                     ]
                 ],
                 "IU": [
-                    sdkVersion: "IU-201.6668.13-EAP-SNAPSHOT",
+                    sdkVersion: "IU-2020.1",
                     plugins: [
                         "terminal",
                         "platform-images", // Used by a bunch of plugins
@@ -112,9 +112,9 @@ static def ideProfiles() {
                     ]
                 ],
                 "RD": [
-                    sdkVersion: "RD-2020.1-SNAPSHOT",
-                    rdGenVersion: "0.201.69",
-                    nugetVersion: "2020.1.0-eap05",
+                    sdkVersion: "RD-2020.1",
+                    rdGenVersion: "0.201.78",
+                    nugetVersion: "2020.1.0",
                     plugins: [
                         "yaml"
                     ]
