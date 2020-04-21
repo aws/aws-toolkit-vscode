@@ -411,6 +411,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.copyArn",
+                    "when": "false"
+                },
+                {
                     "command": "aws.downloadSchemaItemCode",
                     "when": "false"
                 },
@@ -549,12 +553,12 @@
                 {
                     "command": "aws.deleteLambda",
                     "when": "view == aws.explorer && viewItem == awsRegionFunctionNode",
-                    "group": "1@1"
+                    "group": "2@1"
                 },
                 {
                     "command": "aws.deleteCloudFormation",
                     "when": "view == aws.explorer && viewItem == awsCloudFormationNode",
-                    "group": "0@5"
+                    "group": "2@5"
                 },
                 {
                     "command": "aws.searchSchema",
@@ -579,6 +583,11 @@
                 {
                     "command": "aws.executeStateMachine",
                     "when": "view == aws.explorer && viewItem == awsStateMachineNode",
+                    "group": "0@2"
+                },
+                {
+                    "command": "aws.copyArn",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode)$/",
                     "group": "1@1"
                 },
                 {
@@ -695,6 +704,11 @@
             {
                 "command": "aws.executeStateMachine",
                 "title": "%AWS.command.executeStateMachine%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.copyArn",
+                "title": "%AWS.command.copyArn%",
                 "category": "AWS"
             },
             {
