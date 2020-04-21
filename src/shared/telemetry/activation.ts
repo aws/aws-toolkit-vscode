@@ -108,9 +108,10 @@ function promptForTelemetryOptIn(toolkitSettings: SettingsConfiguration) {
                 return
             }
 
-            const setting = response !== SETTINGS_TELEMETRY_VALUE_DISABLE
+            const setting =
+                response !== responseDisable ? SETTINGS_TELEMETRY_VALUE_ENABLE : SETTINGS_TELEMETRY_VALUE_DISABLE
             getLogger().verbose(`Applying telemetry setting: ${setting}`)
-            await toolkitSettings.writeSetting(AWS_TELEMETRY_KEY, setting, vscode.ConfigurationTarget.Global)
+            await toolkitSettings.writeSetting<string>(AWS_TELEMETRY_KEY, setting, vscode.ConfigurationTarget.Global)
 
             setHasUserSeenTelemetryNotice()
             ext.telemetry.notifyOptOutOptionMade()
