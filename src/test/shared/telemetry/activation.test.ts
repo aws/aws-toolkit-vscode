@@ -4,54 +4,62 @@
  */
 
 import * as assert from 'assert'
+import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import {
     handleTelemetryNoticeResponse,
-    responseDisable,
-    responseEnable,
     isTelemetryEnabled,
+    TELEMETRY_OPT_OUT_SHOWN,
+    noticeResponseViewSettings,
+    noticeResponseOk,
 } from '../../../shared/telemetry/activation'
-import { SettingsConfiguration, DefaultSettingsConfiguration } from '../../../shared/settingsConfiguration'
-import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
+import { DefaultSettingsConfiguration } from '../../../shared/settingsConfiguration'
 import { extensionSettingsPrefix } from '../../../shared/constants'
 
 describe('handleTelemetryNoticeResponse', () => {
     let extensionContext: vscode.ExtensionContext
-    let toolkitSettings: SettingsConfiguration
+    let sandbox: sinon.SinonSandbox
+
+    before(() => {
+        sandbox = sinon.createSandbox()
+    })
+
+    after(() => {
+        sandbox.restore()
+    })
 
     beforeEach(() => {
         extensionContext = new FakeExtensionContext()
-        toolkitSettings = new TestSettingsConfiguration()
     })
 
     it('does nothing when notice is discarded', async () => {
-        await handleTelemetryNoticeResponse(undefined, extensionContext, toolkitSettings)
+        await handleTelemetryNoticeResponse(undefined, extensionContext)
 
-        assert.strictEqual(toolkitSettings.readSetting('telemetry'), undefined, 'Settings should not have been written')
         assert.strictEqual(
-            extensionContext.globalState.get('awsTelemetryOptOutShown'),
+            extensionContext.globalState.get(TELEMETRY_OPT_OUT_SHOWN),
             undefined,
             'Expected opt out shown state to remain unchanged'
         )
     })
 
-    it('handles Enabled response', async () => {
-        await handleTelemetryNoticeResponse(responseEnable, extensionContext, toolkitSettings)
+    it('handles View Settings response', async () => {
+        const executeCommand = sandbox.stub(vscode.commands, 'executeCommand')
 
-        assert.strictEqual(toolkitSettings.readSetting('telemetry'), true, 'Expected enabled setting')
+        await handleTelemetryNoticeResponse(noticeResponseViewSettings, extensionContext)
+
+        assert.ok(executeCommand.calledOnce, 'Expected to trigger View Settings')
         assert.strictEqual(
-            extensionContext.globalState.get('awsTelemetryOptOutShown'),
+            extensionContext.globalState.get(TELEMETRY_OPT_OUT_SHOWN),
             true,
             'Expected opt out shown state to be set'
         )
     })
 
-    it('handles Disabled response', async () => {
-        await handleTelemetryNoticeResponse(responseDisable, extensionContext, toolkitSettings)
+    it('handles Ok response', async () => {
+        await handleTelemetryNoticeResponse(noticeResponseOk, extensionContext)
 
-        assert.strictEqual(toolkitSettings.readSetting('telemetry'), false, 'Expected disabled setting')
         assert.strictEqual(
             extensionContext.globalState.get('awsTelemetryOptOutShown'),
             true,
