@@ -20,7 +20,7 @@
     "AWS.configuration.description.samcli.debug.attach.retry.maximum": "If the Toolkit is unable to attach a debugger, this is the number of times to retry before giving up.",
     "AWS.configuration.description.samcli.debug.attach.timeout": "Maximum amount of time to wait for debugger to connect to a SAM Local debug run (in milliseconds)",
     "AWS.configuration.description.samcli.location": "Location of SAM CLI. SAM CLI is used to create, build, package, and deploy Serverless Applications. [Learn More](https://aws.amazon.com/serverless/sam/)",
-    "AWS.configuration.description.telemetry": "Enable the AWS Toolkit to send usage data to AWS. `\"Use IDE settings\"` respects the value specified in \"`telemetry.enableTelemetry`\"",
+    "AWS.configuration.description.telemetry": "Enable AWS Toolkit to send usage data to AWS.",
     "AWS.stepFunctions.asl.format.enable.desc": "Enables the default formatter used with Amazon States Language files",
     "AWS.stepFunctions.asl.maxItemsComputed.desc": "The maximum number of outline symbols and folding regions computed (limited for performance reasons).",
     "AWS.stepFunctions.publish": "Publish to Step Functions",

@@ -14,10 +14,7 @@ import { TelemetryService } from './telemetryService'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-// SETTINGS_TELEMETRY_VALUE_XXX must be kept in sync with package.json "aws.telemetry" configuration values
-const SETTINGS_TELEMETRY_VALUE_ENABLE = 'Enable'
-const SETTINGS_TELEMETRY_VALUE_DISABLE = 'Disable'
-const SETTINGS_TELEMETRY_VALUE_USEIDE = 'Use IDE settings'
+const LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE = 'Disable'
 
 export const responseEnable = localize('AWS.telemetry.notificationYes', 'Enable')
 export const responseDisable = localize('AWS.telemetry.notificationNo', 'Disable')
@@ -60,24 +57,27 @@ export async function activate(activateArguments: {
     )
 }
 
-export function getTelemetryEnabledSetting(toolkitSettings: SettingsConfiguration): string {
-    return toolkitSettings.readSetting<string>(AWS_TELEMETRY_KEY) ?? SETTINGS_TELEMETRY_VALUE_USEIDE
+export function isTelemetryEnabled(toolkitSettings: SettingsConfiguration): boolean {
+    // Setting used to be an enum, but is now a boolean.
+    // We don't have api-based strong type support, so we have to process this value manually.
+    const value = toolkitSettings.readSetting<any>(AWS_TELEMETRY_KEY)
+
+    // Handle original opt-out value (setting used to be a tri-state string value)
+    if (value === LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE) {
+        return false
+    }
+
+    // Current value is expected to be a boolean
+    if (typeof value === 'boolean') {
+        return value
+    }
+
+    // Treat anything else (unexpected values, datatypes, or undefined) as opt-in
+    return true
 }
 
 function applyTelemetryEnabledState(telemetry: TelemetryService, toolkitSettings: SettingsConfiguration) {
-    const optInSetting = getTelemetryEnabledSetting(toolkitSettings)
-
-    if (optInSetting === SETTINGS_TELEMETRY_VALUE_ENABLE) {
-        telemetry.telemetryEnabled = true
-    } else if (optInSetting === SETTINGS_TELEMETRY_VALUE_DISABLE) {
-        telemetry.telemetryEnabled = false
-    } else {
-        telemetry.telemetryEnabled = isVsCodeTelemetryEnabled()
-    }
-}
-
-function isVsCodeTelemetryEnabled(): boolean {
-    return vscode.workspace.getConfiguration('telemetry').get<boolean>('enableTelemetry', true)
+    telemetry.telemetryEnabled = isTelemetryEnabled(toolkitSettings)
 }
 
 function hasUserSeenTelemetryNotice(extensionContext: vscode.ExtensionContext): boolean {
@@ -121,10 +121,9 @@ export async function handleTelemetryNoticeResponse(
             return
         }
 
-        const setting =
-            response === responseDisable ? SETTINGS_TELEMETRY_VALUE_DISABLE : SETTINGS_TELEMETRY_VALUE_ENABLE
+        const setting = response !== responseDisable
         getLogger().verbose(`Applying telemetry setting: ${setting}`)
-        await toolkitSettings.writeSetting<string>(AWS_TELEMETRY_KEY, setting, vscode.ConfigurationTarget.Global)
+        await toolkitSettings.writeSetting<boolean>(AWS_TELEMETRY_KEY, setting, vscode.ConfigurationTarget.Global)
 
         setHasUserSeenTelemetryNotice(extensionContext)
         ext.telemetry.notifyOptOutOptionMade()
