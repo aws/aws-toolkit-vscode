@@ -634,27 +634,6 @@ describe('createTemplateAwsSamDebugConfig', () => {
         assert.strictEqual(config.sam?.dockerNetwork, params.dockerNetwork)
         assert.strictEqual(config.sam?.containerBuild, undefined)
     })
-
-    it("doesn't add a `lambda` section if no `lambda` params are provided", () => {
-        const params = {
-            dockerNetwork: 'rockerFretwork',
-        }
-        const config = createTemplateAwsSamDebugConfig(name, templatePath, params)
-        assert.strictEqual(config.hasOwnProperty('lambda'), false)
-        assert.strictEqual(config.sam?.dockerNetwork, params.dockerNetwork)
-        assert.strictEqual(config.sam?.containerBuild, undefined)
-    })
-
-    it("doesn't add a `sam` section if no `sam` params are provided", () => {
-        const params = {
-            environmentVariables: {
-                varial: 'invert to fakie',
-            },
-        }
-        const config = createTemplateAwsSamDebugConfig(name, templatePath, params)
-        assert.strictEqual(config.hasOwnProperty('sam'), false)
-        assert.deepStrictEqual(config.lambda?.environmentVariables, params.environmentVariables)
-    })
 })
 
 function createBaseCodeConfig(params: {

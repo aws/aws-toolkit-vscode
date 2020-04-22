@@ -47,11 +47,15 @@ export async function addSamDebugConfiguration({
                             'AWS.sam.debugger.useExistingConfig',
                             'The Toolkit has detected an existing legacy configuration for this function handler. Would you like it added to your Debug Configuration?'
                         ),
+                        { modal: true },
                         responseYes,
                         responseNo
                     )
                     if (prompt === responseYes) {
                         preloadedConfig = existingConfig
+                    } else if (!prompt) {
+                        // User selected "Cancel". Abandon config creation
+                        return
                     }
                 }
             }
