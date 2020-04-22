@@ -51,11 +51,11 @@ export async function addSamDebugConfiguration({
                         responseYes,
                         responseNo
                     )
-                    if (prompt === responseYes) {
-                        preloadedConfig = existingConfig
-                    } else if (!prompt) {
+                    if (!prompt) {
                         // User selected "Cancel". Abandon config creation
                         return
+                    } else if (prompt === responseYes) {
+                        preloadedConfig = existingConfig
                     }
                 }
             }
