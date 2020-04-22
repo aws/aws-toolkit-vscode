@@ -60,8 +60,12 @@ export async function activate(activateArguments: {
     )
 }
 
+export function getTelemetryEnabledSetting(toolkitSettings: SettingsConfiguration): string {
+    return toolkitSettings.readSetting<string>(AWS_TELEMETRY_KEY) ?? SETTINGS_TELEMETRY_VALUE_USEIDE
+}
+
 function applyTelemetryEnabledState(telemetry: TelemetryService, toolkitSettings: SettingsConfiguration) {
-    const optInSetting = toolkitSettings.readSetting<string>(AWS_TELEMETRY_KEY) ?? SETTINGS_TELEMETRY_VALUE_USEIDE
+    const optInSetting = getTelemetryEnabledSetting(toolkitSettings)
 
     if (optInSetting === SETTINGS_TELEMETRY_VALUE_ENABLE) {
         telemetry.telemetryEnabled = true
