@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "SAM Apps that are in SAM Templates are now run/debugged through the Run panel via `aws-sam` Launch Configurations."
+}

@@ -37,17 +37,17 @@ export function isCodeTargetProperties(props: TargetProperties): props is CodeTa
     return props.target === CODE_TARGET_TYPE
 }
 
-export function createAwsSamDebugConfig(
+export function createTemplateAwsSamDebugConfig(
     resourceName: string,
     templatePath: string,
-    additionalFields?: {
+    preloadedConfig?: {
         eventJson?: ReadonlyJsonObject
         environmentVariables?: ReadonlyJsonObject
         dockerNetwork?: string
         useContainer?: boolean
     }
 ): AwsSamDebuggerConfiguration {
-    let response: AwsSamDebuggerConfiguration = {
+    const response: AwsSamDebuggerConfiguration = {
         type: AWS_SAM_DEBUG_TYPE,
         request: DIRECT_INVOKE_TYPE,
         name: resourceName,
@@ -58,19 +58,27 @@ export function createAwsSamDebugConfig(
         },
     }
 
-    if (additionalFields) {
-        response = {
+    if (preloadedConfig) {
+        return {
             ...response,
-            lambda: {
-                event: {
-                    json: additionalFields.eventJson,
-                },
-                environmentVariables: additionalFields.environmentVariables,
-            },
-            sam: {
-                dockerNetwork: additionalFields.dockerNetwork,
-                containerBuild: additionalFields.useContainer,
-            },
+            lambda:
+                preloadedConfig.environmentVariables || preloadedConfig.eventJson
+                    ? {
+                          event: preloadedConfig.eventJson
+                              ? {
+                                    json: preloadedConfig.eventJson,
+                                }
+                              : undefined,
+                          environmentVariables: preloadedConfig.environmentVariables,
+                      }
+                    : undefined,
+            sam:
+                preloadedConfig.dockerNetwork || preloadedConfig.useContainer
+                    ? {
+                          dockerNetwork: preloadedConfig.dockerNetwork,
+                          containerBuild: preloadedConfig.useContainer,
+                      }
+                    : undefined,
         }
     }
 
