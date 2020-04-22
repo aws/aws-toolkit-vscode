@@ -11,9 +11,11 @@ import { FakeExtensionContext } from '../../fakeExtensionContext'
 import {
     handleTelemetryNoticeResponse,
     isTelemetryEnabled,
-    TELEMETRY_OPT_OUT_SHOWN,
     noticeResponseViewSettings,
     noticeResponseOk,
+    TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED,
+    hasUserSeenTelemetryNotice,
+    setHasUserSeenTelemetryNotice,
 } from '../../../shared/telemetry/activation'
 import { DefaultSettingsConfiguration } from '../../../shared/settingsConfiguration'
 import { extensionSettingsPrefix } from '../../../shared/constants'
@@ -38,7 +40,7 @@ describe('handleTelemetryNoticeResponse', () => {
         await handleTelemetryNoticeResponse(undefined, extensionContext)
 
         assert.strictEqual(
-            extensionContext.globalState.get(TELEMETRY_OPT_OUT_SHOWN),
+            extensionContext.globalState.get(TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED),
             undefined,
             'Expected opt out shown state to remain unchanged'
         )
@@ -51,8 +53,8 @@ describe('handleTelemetryNoticeResponse', () => {
 
         assert.ok(executeCommand.calledOnce, 'Expected to trigger View Settings')
         assert.strictEqual(
-            extensionContext.globalState.get(TELEMETRY_OPT_OUT_SHOWN),
-            true,
+            extensionContext.globalState.get(TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED),
+            2,
             'Expected opt out shown state to be set'
         )
     })
@@ -61,8 +63,8 @@ describe('handleTelemetryNoticeResponse', () => {
         await handleTelemetryNoticeResponse(noticeResponseOk, extensionContext)
 
         assert.strictEqual(
-            extensionContext.globalState.get('awsTelemetryOptOutShown'),
-            true,
+            extensionContext.globalState.get(TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED),
+            2,
             'Expected opt out shown state to be set'
         )
     })
@@ -103,6 +105,43 @@ describe('isTelemetryEnabled', () => {
 
             const isEnabled = isTelemetryEnabled(toolkitSettings)
             assert.strictEqual(isEnabled, scenario.expectedIsEnabledValue)
+        })
+    })
+})
+
+describe('hasUserSeenTelemetryNotice', async () => {
+    let extensionContext: vscode.ExtensionContext
+    let sandbox: sinon.SinonSandbox
+
+    before(() => {
+        sandbox = sinon.createSandbox()
+    })
+
+    after(() => {
+        sandbox.restore()
+    })
+
+    beforeEach(() => {
+        extensionContext = new FakeExtensionContext()
+    })
+
+    it('is affected by setHasUserSeenTelemetryNotice', async () => {
+        assert.ok(!hasUserSeenTelemetryNotice(extensionContext))
+        await setHasUserSeenTelemetryNotice(extensionContext)
+        assert.ok(hasUserSeenTelemetryNotice(extensionContext))
+    })
+
+    const scenarios = [
+        { currentState: undefined, expectedHasSeen: false, desc: 'never seen before' },
+        { currentState: 0, expectedHasSeen: false, desc: 'seen an older version' },
+        { currentState: 2, expectedHasSeen: true, desc: 'seen the current version' },
+        { currentState: 9999, expectedHasSeen: true, desc: 'seen a future version' },
+    ]
+
+    scenarios.forEach(scenario => {
+        it(scenario.desc, async () => {
+            await extensionContext.globalState.update(TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED, scenario.currentState)
+            assert.strictEqual(hasUserSeenTelemetryNotice(extensionContext), scenario.expectedHasSeen)
         })
     })
 })

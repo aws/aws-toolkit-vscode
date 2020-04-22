@@ -25,7 +25,13 @@ export const noticeResponseViewSettings = localize('AWS.telemetry.notificationVi
 export const noticeResponseOk = localize('AWS.telemetry.notificationOk', 'OK')
 
 const AWS_TELEMETRY_KEY = 'telemetry'
-export const TELEMETRY_OPT_OUT_SHOWN = 'awsTelemetryOptOutShown'
+export const TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED = 'awsTelemetryNoticeVersionAck'
+// Telemetry Notice Versions
+// Versioning the users' notice acknowledgement is forward looking, and allows us to better
+// track scenarios when we may need to re-prompt the user about telemetry.
+// Version 1 was the original notice, allowing users to enable/disable/defer telemetry
+// Version 2 states that there is metrics gathering, which can be adjusted in the options
+const CURRENT_TELEMETRY_NOTICE_VERSION = 2
 
 /**
  * Sets up the Metrics system and initializes ext.telemetry
@@ -83,12 +89,15 @@ function applyTelemetryEnabledState(telemetry: TelemetryService, toolkitSettings
     telemetry.telemetryEnabled = isTelemetryEnabled(toolkitSettings)
 }
 
-function hasUserSeenTelemetryNotice(extensionContext: vscode.ExtensionContext): boolean {
-    return extensionContext.globalState.get<boolean>(TELEMETRY_OPT_OUT_SHOWN, false)
+export function hasUserSeenTelemetryNotice(extensionContext: vscode.ExtensionContext): boolean {
+    return (
+        extensionContext.globalState.get<number>(TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED, 0) >=
+        CURRENT_TELEMETRY_NOTICE_VERSION
+    )
 }
 
-async function setHasUserSeenTelemetryNotice(extensionContext: vscode.ExtensionContext): Promise<void> {
-    await extensionContext.globalState.update(TELEMETRY_OPT_OUT_SHOWN, true)
+export async function setHasUserSeenTelemetryNotice(extensionContext: vscode.ExtensionContext): Promise<void> {
+    await extensionContext.globalState.update(TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED, CURRENT_TELEMETRY_NOTICE_VERSION)
     getLogger().verbose('Telemetry notice has been shown')
 }
 
