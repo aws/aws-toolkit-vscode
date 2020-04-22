@@ -27,10 +27,7 @@ export class DefaultTelemetryService implements TelemetryService {
 
     public startTime: Date
     public readonly persistFilePath: string
-    // start off disabled
-    // this flag will only ever be true if the user has made a decision
     private _telemetryEnabled: boolean = false
-    private _telemetryOptionExplicitlyStated = false
 
     private _flushPeriod: number
     private _timer?: NodeJS.Timer
@@ -57,10 +54,6 @@ export class DefaultTelemetryService implements TelemetryService {
         if (publisher !== undefined) {
             this.publisher = publisher
         }
-    }
-
-    public notifyOptOutOptionMade() {
-        this._telemetryOptionExplicitlyStated = true
     }
 
     public async start(): Promise<void> {
@@ -121,11 +114,9 @@ export class DefaultTelemetryService implements TelemetryService {
     }
 
     public record(event: TelemetryEvent, awsContext?: AwsContext): void {
-        // record events only if telemetry is enabled or the user hasn't expressed a preference
-        // events should only be flushed if the user has consented
-        const actualAwsContext = awsContext || this.awsContext
-        const eventWithAccountMetadata = this.injectAccountMetadata(event, actualAwsContext)
-        if (this.telemetryEnabled || !this._telemetryOptionExplicitlyStated) {
+        if (this.telemetryEnabled) {
+            const actualAwsContext = awsContext || this.awsContext
+            const eventWithAccountMetadata = this.injectAccountMetadata(event, actualAwsContext)
             this._eventQueue.push(eventWithAccountMetadata)
         }
     }
@@ -148,9 +139,6 @@ export class DefaultTelemetryService implements TelemetryService {
                 await this.publisher.flush()
                 this.clearRecords()
             }
-        } else if (this._telemetryOptionExplicitlyStated) {
-            // explicitly clear the queue if user has disabled telemetry
-            this.clearRecords()
         }
     }
 
