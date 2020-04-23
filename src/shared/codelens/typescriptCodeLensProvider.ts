@@ -10,7 +10,6 @@ import { normalizeSeparator } from '../utilities/pathUtils'
 import {
     executeSamBuild,
     generateInputTemplate,
-    getHandlerRelativePath,
     waitForDebugPort,
     makeBuildDir,
     invokeLambdaFunction,
@@ -48,10 +47,7 @@ export async function decorateHandlerNames(
         return
     }
 
-    const relativePath = getHandlerRelativePath({
-        codeRoot: path.dirname(packageJsonPath),
-        filePath: parentDocumentPath,
-    })
+    const relativePath = path.relative(path.dirname(packageJsonPath), path.dirname(parentDocumentPath))
 
     handlers.forEach(handler => {
         const handlerName = handler.handlerName

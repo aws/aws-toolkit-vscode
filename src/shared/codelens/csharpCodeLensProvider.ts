@@ -211,6 +211,8 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
 }
 
 async function getAssemblyName(sourceCodeUri: vscode.Uri): Promise<string | undefined> {
+    // Limitation: If more than one .csproj file exists in the same directory,
+    // and the directory is the closest to the source file, the csproj file used will be random
     const projectFile = await findParentProjectFile(sourceCodeUri, '**/*.csproj')
     if (!projectFile) {
         return undefined

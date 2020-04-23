@@ -30,7 +30,6 @@ interface MakeConfigureCodeLensParams {
     handlerName: string
     range: vscode.Range
     workspaceFolder: vscode.WorkspaceFolder
-    samTemplate: vscode.Uri
     language: Language
 }
 
@@ -63,23 +62,15 @@ export async function makeCodeLenses({
                   )
 
         try {
-            const associatedTemplate = await getAssociatedSamTemplate(
-                document.uri,
-                workspaceFolder.uri,
-                handler.handlerName
-            )
             const baseParams: MakeConfigureCodeLensParams = {
                 document,
                 handlerName: handler.handlerName,
                 range,
                 workspaceFolder,
-                samTemplate: associatedTemplate, // TODO: Remove this assignment (or make optional) following merge of PR #971
                 language,
             }
             lenses.push(makeLocalInvokeCodeLens({ ...baseParams, isDebug: false }))
             lenses.push(makeLocalInvokeCodeLens({ ...baseParams, isDebug: true }))
-
-            lenses.push(makeConfigureCodeLens(baseParams))
         } catch (err) {
             getLogger().error(
                 `Could not generate 'configure' code lens for handler '${handler.handlerName}'`,
@@ -95,6 +86,7 @@ export function getInvokeCmdKey(language: Language) {
     return `aws.lambda.local.invoke.${language}`
 }
 
+// TODO: Morph into new debug config codelens
 function makeLocalInvokeCodeLens(
     params: MakeConfigureCodeLensParams & { isDebug: boolean; language: Language }
 ): vscode.CodeLens {
@@ -111,26 +103,7 @@ function makeLocalInvokeCodeLens(
     return new vscode.CodeLens(params.range, command)
 }
 
-function makeConfigureCodeLens({
-    document,
-    handlerName,
-    range,
-    workspaceFolder,
-    samTemplate,
-}: MakeConfigureCodeLensParams): vscode.CodeLens {
-    // Handler will be the fully-qualified name, so we also allow '.' & ':' & '/' despite it being forbidden in handler names.
-    if (/[^\w\-\.\:\/]/.test(handlerName)) {
-        throw new Error(`Invalid handler name: '${handlerName}'`)
-    }
-    const command = {
-        arguments: [workspaceFolder, handlerName, samTemplate],
-        command: 'aws.configureLambda',
-        title: localize('AWS.command.configureLambda', 'Configure'),
-    }
-
-    return new vscode.CodeLens(range, command)
-}
-
+// TODO: Keep around if we want a linkage back to the template file?
 async function getAssociatedSamTemplate(
     documentUri: vscode.Uri,
     workspaceFolderUri: vscode.Uri,

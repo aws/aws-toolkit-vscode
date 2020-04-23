@@ -51,6 +51,7 @@ export async function getLambdaHandlerCandidates(uri: vscode.Uri): Promise<Lambd
     }
     const filename = uri.fsPath
     const parsedPath = path.parse(filename)
+    // Python handler paths are period separated and don't include the file extension
     const handlerPath = path
         .relative(path.parse(requirementsFile.fsPath).dir, path.join(parsedPath.dir, parsedPath.name))
         .split(path.sep)
@@ -63,7 +64,7 @@ export async function getLambdaHandlerCandidates(uri: vscode.Uri): Promise<Lambd
     return symbols.filter(isTopLevelFunction).map<LambdaHandlerCandidate>(symbol => {
         return {
             filename,
-            handlerName: `${handlerPath}${path.parse(filename).name}.${symbol.name}`,
+            handlerName: `${handlerPath}.${symbol.name}`,
             range: symbol.range,
         }
     })
@@ -106,7 +107,10 @@ async function makeLambdaDebugFile(params: {
     }
     const logger = getLogger()
 
-    const [handlerFilePrefix, handlerFunctionName] = params.handlerName.split('.')
+    const splitHandlerName = params.handlerName.split('.')
+    const handlerFunctionName = splitHandlerName.pop()
+    const handlerFileImportPath = splitHandlerName.join('.')
+    const handlerFilePrefix = splitHandlerName.join('_')
     const debugHandlerFileName = `${handlerFilePrefix}___vsctk___debug`
     const debugHandlerFunctionName = 'lambda_handler'
     // TODO: Sanitize handlerFilePrefix, handlerFunctionName, debugHandlerFunctionName
@@ -118,7 +122,7 @@ async function makeLambdaDebugFile(params: {
 
 import ptvsd
 import sys
-from ${handlerFilePrefix} import ${handlerFunctionName} as _handler
+from ${handlerFileImportPath} import ${handlerFunctionName} as _handler
 
 
 def ${debugHandlerFunctionName}(event, context):

@@ -90,10 +90,6 @@ export const makeBuildDir = async (): Promise<string> => {
     return pathutil.normalize(buildDir)
 }
 
-export function getHandlerRelativePath(params: { codeRoot: string; filePath: string }): string {
-    return path.relative(params.codeRoot, path.dirname(params.filePath))
-}
-
 export function getRelativeFunctionHandler(params: {
     handlerName: string
     runtime: string
