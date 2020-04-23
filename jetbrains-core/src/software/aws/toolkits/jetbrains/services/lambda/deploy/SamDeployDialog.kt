@@ -27,8 +27,8 @@ import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutable
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.SamTelemetry
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -177,6 +177,12 @@ class SamDeployDialog(
                 doOKAction()
             }
         }
+
+        SamTelemetry.deploy(
+            project = project,
+            success = true,
+            version = SamCommon.getVersionString()
+        )
     }
 
     private fun handleError(error: Throwable): String {
@@ -188,6 +194,12 @@ class SamDeployDialog(
             ExceptionUtil.getMessage(error) ?: message("general.unknown_error")
         }
         setErrorText(message)
+
+        SamTelemetry.deploy(
+            project = project,
+            success = false,
+            version = SamCommon.getVersionString()
+        )
 
         progressIndicator.cancel()
         cancelAction.isEnabled = true
@@ -240,16 +252,7 @@ class SamDeployDialog(
             }
         }
 
-        return future.whenComplete { _, exception ->
-            TelemetryService.getInstance().record(project) {
-                datum("SamDeploy.$title") {
-                    count()
-                    // exception can be null but is not annotated as nullable
-                    metadata("hasException", exception != null)
-                    metadata("samVersion", SamCommon.getVersionString())
-                }
-            }
-        }
+        return future
     }
 
     private fun createProcess(command: GeneralCommandLine): OSProcessHandler =

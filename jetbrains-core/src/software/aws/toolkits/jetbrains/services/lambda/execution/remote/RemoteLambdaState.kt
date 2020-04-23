@@ -23,6 +23,8 @@ import software.amazon.awssdk.services.lambda.model.LogType
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.utils.formatText
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.LambdaTelemetry
+import software.aws.toolkits.telemetry.Result
 import java.io.OutputStream
 import java.nio.charset.StandardCharsets
 import java.util.Base64
@@ -66,6 +68,7 @@ class RemoteLambdaState(
     private fun invokeLambda(lambdaProcess: ProcessHandler) {
         val client = AwsClientManager.getInstance(environment.project)
             .getClient<LambdaClient>(settings.credentialProvider, settings.region)
+        var result = Result.SUCCEEDED
 
         lambdaProcess.notifyTextAvailable(
             message("lambda.execute.invoke", settings.functionName) + '\n',
@@ -103,6 +106,7 @@ class RemoteLambdaState(
                 lambdaProcess.destroyProcess()
             }
         } catch (e: Exception) {
+            result = Result.FAILED
             runInEdt {
                 lambdaProcess.notifyTextAvailable(
                     message("lambda.execute.service_error", e.message ?: "Unknown") + '\n',
@@ -111,6 +115,11 @@ class RemoteLambdaState(
 
                 lambdaProcess.destroyProcess()
             }
+        } finally {
+            LambdaTelemetry.invokeRemote(
+                project = environment.project,
+                result = result
+            )
         }
     }
 
