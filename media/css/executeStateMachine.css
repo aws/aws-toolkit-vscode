@@ -19,6 +19,10 @@ textarea[readonly] {
     opacity: 0.5;
 }
 
+body.vscode-light ::placeholder {
+    opacity: 0.3;
+}
+
 input[type='submit'] {
     background-color: var(--vscode-button-background);
     border: none;

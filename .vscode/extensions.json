@@ -7,7 +7,7 @@
         "davidanson.vscode-markdownlint",
         "dbaeumer.vscode-eslint",
         "eg2.vscode-npm-script",
-        "ms-vscode.vscode-typescript-tslint-plugin",
-        "ms-python.python"
+        "ms-python.python",
+        "dbaeumer.vscode-eslint"
     ]
 }

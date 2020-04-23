@@ -3,4 +3,4 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-declare var PLUGINVERSION: string
+declare let PLUGINVERSION: string

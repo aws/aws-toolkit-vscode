@@ -10,7 +10,7 @@
         "url": "https://github.com/aws/aws-toolkit-vscode"
     },
     "engines": {
-        "vscode": "^1.31.1"
+        "vscode": "^1.42.0"
     },
     "icon": "resources/aws-icon-256x256.png",
     "bugs": {
@@ -115,16 +115,8 @@
                     "markdownDescription": "%AWS.configuration.description.logLevel%"
                 },
                 "aws.telemetry": {
-                    "type": [
-                        "string",
-                        "null"
-                    ],
-                    "enum": [
-                        "Enable",
-                        "Disable",
-                        "Use IDE settings"
-                    ],
-                    "default": "Use IDE settings",
+                    "type": "boolean",
+                    "default": true,
                     "markdownDescription": "%AWS.configuration.description.telemetry%"
                 },
                 "aws.stepfunctions.asl.format.enable": {
@@ -143,23 +135,11 @@
         "debuggers": [
             {
                 "type": "aws-sam",
+                "label": "%AWS.configuration.description.awssam.debug.label%",
                 "configurationAttributes": {
                     "direct-invoke": {
                         "$schema": "http://json-schema.org/draft-07/schema#",
                         "title": "AwsSamDebuggerConfiguration",
-                        "definitions": {
-                            "jsonObject": {
-                                "title": "ReadonlyJsonObject",
-                                "additionalProperties": {
-                                    "type": [
-                                        "string",
-                                        "number",
-                                        "boolean"
-                                    ]
-                                },
-                                "type": "object"
-                            }
-                        },
                         "additionalProperties": false,
                         "properties": {
                             "aws": {
@@ -244,13 +224,27 @@
                                 "properties": {
                                     "environmentVariables": {
                                         "description": "%AWS.configuration.description.awssam.debug.envvars%",
-                                        "$ref": "#/definitions/jsonObject"
+                                        "additionalProperties": {
+                                            "type": [
+                                                "string",
+                                                "number",
+                                                "boolean"
+                                            ]
+                                        },
+                                        "type": "object"
                                     },
                                     "event": {
                                         "description": "%AWS.configuration.description.awssam.debug.event%",
                                         "properties": {
                                             "json": {
-                                                "$ref": "#/definitions/jsonObject"
+                                                "additionalProperties": {
+                                                    "type": [
+                                                        "string",
+                                                        "number",
+                                                        "boolean"
+                                                    ]
+                                                },
+                                                "type": "object"
                                             },
                                             "path": {
                                                 "description": "%AWS.configuration.description.awssam.debug.event.path%",
@@ -303,7 +297,14 @@
                                     "template": {
                                         "properties": {
                                             "parameters": {
-                                                "$ref": "#/definitions/jsonObject"
+                                                "additionalProperties": {
+                                                    "type": [
+                                                        "string",
+                                                        "number",
+                                                        "boolean"
+                                                    ]
+                                                },
+                                                "type": "object"
                                             }
                                         },
                                         "type": "object",
@@ -319,7 +320,48 @@
                         ],
                         "type": "object"
                     }
-                }
+                },
+                "configurationSnippets": [
+                    {
+                        "label": "%AWS.configuration.description.awssam.debug.snippets.lambdaCode.label%",
+                        "description": "%AWS.configuration.description.awssam.debug.snippets.lambdaCode.description%",
+                        "body": {
+                            "type": "aws-sam",
+                            "request": "direct-invoke",
+                            "name": "${3:Invoke Lambda}",
+                            "invokeTarget": {
+                                "target": "code",
+                                "lambdaHandler": "${1:Function Handler}",
+                                "projectRoot": "^\"\\${workspaceFolder}\""
+                            },
+                            "lambda": {
+                                "runtime": "${2:Lambda Runtime}",
+                                "event": {
+                                    "json": {}
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "label": "%AWS.configuration.description.awssam.debug.snippets.lambdaTemplate.label%",
+                        "description": "%AWS.configuration.description.awssam.debug.snippets.lambdaTemplate.description%",
+                        "body": {
+                            "type": "aws-sam",
+                            "request": "direct-invoke",
+                            "name": "${3:Invoke Lambda}",
+                            "invokeTarget": {
+                                "target": "template",
+                                "samTemplatePath": "${1:Template Location}",
+                                "samTemplateResource": "${2:Function Logical ID}"
+                            },
+                            "lambda": {
+                                "event": {
+                                    "json": {}
+                                }
+                            }
+                        }
+                    }
+                ]
             }
         ],
         "viewsContainers": {
@@ -358,6 +400,10 @@
                 },
                 {
                     "command": "aws.executeStateMachine",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.copyArn",
                     "when": "false"
                 },
                 {
@@ -499,12 +545,12 @@
                 {
                     "command": "aws.deleteLambda",
                     "when": "view == aws.explorer && viewItem == awsRegionFunctionNode",
-                    "group": "1@1"
+                    "group": "2@1"
                 },
                 {
                     "command": "aws.deleteCloudFormation",
                     "when": "view == aws.explorer && viewItem == awsCloudFormationNode",
-                    "group": "0@5"
+                    "group": "2@5"
                 },
                 {
                     "command": "aws.searchSchema",
@@ -529,6 +575,11 @@
                 {
                     "command": "aws.executeStateMachine",
                     "when": "view == aws.explorer && viewItem == awsStateMachineNode",
+                    "group": "0@2"
+                },
+                {
+                    "command": "aws.copyArn",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode)$/",
                     "group": "1@1"
                 },
                 {
@@ -645,6 +696,11 @@
             {
                 "command": "aws.executeStateMachine",
                 "title": "%AWS.command.executeStateMachine%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.copyArn",
+                "title": "%AWS.command.copyArn%",
                 "category": "AWS"
             },
             {
@@ -779,8 +835,8 @@
         "testCompile": "tsc -p ./ && npm run buildScripts",
         "test": "npm run testCompile && ts-node ./test-scripts/test.ts",
         "integrationTest": "npm run testCompile && ts-node ./test-scripts/integrationTest.ts",
-        "lint": "tslint --project .",
-        "lintfix": "tslint --project . --fix",
+        "lint": "eslint -c .eslintrc.js --ext .ts .",
+        "lintfix": "eslint -c .eslintrc.js --fix --ext .ts .",
         "package": "vsce package",
         "install-plugin": "vsce package -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix",
         "generateTelemetry": "node node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts",
@@ -789,7 +845,7 @@
         "createRelease": "ts-node ./build-scripts/createRelease.ts"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "0.0.19",
+        "@aws-toolkits/telemetry": "0.0.20",
         "@types/adm-zip": "^0.4.32",
         "@types/async-lock": "^1.1.0",
         "@types/cross-spawn": "^6.0.0",
@@ -810,7 +866,15 @@
         "@types/uuid": "^3.4.4",
         "@types/vscode": "^1.31.0",
         "@types/xml2js": "^0.4.3",
+        "@typescript-eslint/eslint-plugin": "^2.27.0",
+        "@typescript-eslint/eslint-plugin-tslint": "^2.27.0",
+        "@typescript-eslint/parser": "^2.27.0",
+        "circular-dependency-plugin": "^5.2.0",
         "decache": "^4.4.0",
+        "eslint": "^6.8.0",
+        "eslint-config-prettier": "^6.10.1",
+        "eslint-plugin-header": "^3.0.0",
+        "eslint-plugin-no-null": "^1.0.2",
         "filemanager-webpack-plugin": "^2.0.5",
         "glob": "^7.1.4",
         "husky": "^2.3.0",
@@ -830,9 +894,6 @@
         "ts-loader": "^6.2.0",
         "ts-mockito": "^2.5.0",
         "ts-node": "^8.5.2",
-        "tslint": "^5.20.1",
-        "tslint-eslint-rules": "^5.4.0",
-        "tslint-no-circular-imports": "^0.7.0",
         "vsce": "^1.69.0",
         "vscode-nls-dev": "^3.3.1",
         "vscode-test": "^1.2.3",

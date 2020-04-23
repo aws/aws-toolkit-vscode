@@ -66,7 +66,7 @@ export class FeatureToggle {
         if (Array.isArray(settingsArr)) {
             for (const setting of settingsArr) {
                 // check for string as settings.json does not enforce types
-                if (typeof setting === 'string' && keys.indexOf(setting) >= 0) {
+                if (typeof setting === 'string' && keys.includes(setting)) {
                     this.enabledFeatures.add(setting)
                 }
             }
