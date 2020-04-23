@@ -10,7 +10,7 @@
         "url": "https://github.com/aws/aws-toolkit-vscode"
     },
     "engines": {
-        "vscode": "^1.31.1"
+        "vscode": "^1.42.0"
     },
     "icon": "resources/aws-icon-256x256.png",
     "bugs": {
@@ -115,16 +115,8 @@
                     "markdownDescription": "%AWS.configuration.description.logLevel%"
                 },
                 "aws.telemetry": {
-                    "type": [
-                        "string",
-                        "null"
-                    ],
-                    "enum": [
-                        "Enable",
-                        "Disable",
-                        "Use IDE settings"
-                    ],
-                    "default": "Use IDE settings",
+                    "type": "boolean",
+                    "default": true,
                     "markdownDescription": "%AWS.configuration.description.telemetry%"
                 },
                 "aws.stepfunctions.asl.format.enable": {
@@ -148,19 +140,6 @@
                     "direct-invoke": {
                         "$schema": "http://json-schema.org/draft-07/schema#",
                         "title": "AwsSamDebuggerConfiguration",
-                        "definitions": {
-                            "jsonObject": {
-                                "title": "ReadonlyJsonObject",
-                                "additionalProperties": {
-                                    "type": [
-                                        "string",
-                                        "number",
-                                        "boolean"
-                                    ]
-                                },
-                                "type": "object"
-                            }
-                        },
                         "additionalProperties": false,
                         "properties": {
                             "aws": {
@@ -245,13 +224,27 @@
                                 "properties": {
                                     "environmentVariables": {
                                         "description": "%AWS.configuration.description.awssam.debug.envvars%",
-                                        "$ref": "#/definitions/jsonObject"
+                                        "additionalProperties": {
+                                            "type": [
+                                                "string",
+                                                "number",
+                                                "boolean"
+                                            ]
+                                        },
+                                        "type": "object"
                                     },
                                     "event": {
                                         "description": "%AWS.configuration.description.awssam.debug.event%",
                                         "properties": {
                                             "json": {
-                                                "$ref": "#/definitions/jsonObject"
+                                                "additionalProperties": {
+                                                    "type": [
+                                                        "string",
+                                                        "number",
+                                                        "boolean"
+                                                    ]
+                                                },
+                                                "type": "object"
                                             },
                                             "path": {
                                                 "description": "%AWS.configuration.description.awssam.debug.event.path%",
@@ -304,7 +297,14 @@
                                     "template": {
                                         "properties": {
                                             "parameters": {
-                                                "$ref": "#/definitions/jsonObject"
+                                                "additionalProperties": {
+                                                    "type": [
+                                                        "string",
+                                                        "number",
+                                                        "boolean"
+                                                    ]
+                                                },
+                                                "type": "object"
                                             }
                                         },
                                         "type": "object",
@@ -400,6 +400,10 @@
                 },
                 {
                     "command": "aws.executeStateMachine",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.copyArn",
                     "when": "false"
                 },
                 {
@@ -541,12 +545,12 @@
                 {
                     "command": "aws.deleteLambda",
                     "when": "view == aws.explorer && viewItem == awsRegionFunctionNode",
-                    "group": "1@1"
+                    "group": "2@1"
                 },
                 {
                     "command": "aws.deleteCloudFormation",
                     "when": "view == aws.explorer && viewItem == awsCloudFormationNode",
-                    "group": "0@5"
+                    "group": "2@5"
                 },
                 {
                     "command": "aws.searchSchema",
@@ -571,6 +575,11 @@
                 {
                     "command": "aws.executeStateMachine",
                     "when": "view == aws.explorer && viewItem == awsStateMachineNode",
+                    "group": "0@2"
+                },
+                {
+                    "command": "aws.copyArn",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode)$/",
                     "group": "1@1"
                 },
                 {
@@ -687,6 +696,11 @@
             {
                 "command": "aws.executeStateMachine",
                 "title": "%AWS.command.executeStateMachine%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.copyArn",
+                "title": "%AWS.command.copyArn%",
                 "category": "AWS"
             },
             {
@@ -831,7 +845,7 @@
         "createRelease": "ts-node ./build-scripts/createRelease.ts"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "0.0.19",
+        "@aws-toolkits/telemetry": "0.0.20",
         "@types/adm-zip": "^0.4.32",
         "@types/async-lock": "^1.1.0",
         "@types/cross-spawn": "^6.0.0",

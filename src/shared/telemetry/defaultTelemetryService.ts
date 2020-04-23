@@ -28,10 +28,7 @@ export class DefaultTelemetryService implements TelemetryService {
 
     public startTime: Date
     public readonly persistFilePath: string
-    // start off disabled
-    // this flag will only ever be true if the user has made a decision
     private _telemetryEnabled: boolean = false
-    private _telemetryOptionExplicitlyStated = false
 
     private _flushPeriod: number
     private _timer?: NodeJS.Timer
@@ -60,10 +57,6 @@ export class DefaultTelemetryService implements TelemetryService {
         }
     }
 
-    public notifyOptOutOptionMade() {
-        this._telemetryOptionExplicitlyStated = true
-    }
-
     public async start(): Promise<void> {
         this._eventQueue.push(...DefaultTelemetryService.readEventsFromCache(this.persistFilePath))
         recordSessionStart()
@@ -90,6 +83,10 @@ export class DefaultTelemetryService implements TelemetryService {
         return this._telemetryEnabled
     }
     public set telemetryEnabled(value: boolean) {
+        if (this._telemetryEnabled !== value) {
+            getLogger().verbose(`Telemetry is now ${value ? 'enabled' : 'disabled'}`)
+        }
+
         // clear the queue on explicit disable
         if (!value) {
             this.clearRecords()
@@ -118,11 +115,9 @@ export class DefaultTelemetryService implements TelemetryService {
     }
 
     public record(event: TelemetryEvent, awsContext?: AwsContext): void {
-        // record events only if telemetry is enabled or the user hasn't expressed a preference
-        // events should only be flushed if the user has consented
-        const actualAwsContext = awsContext || this.awsContext
-        const eventWithCommonMetadata = this.injectCommonMetadata(event, actualAwsContext)
-        if (this.telemetryEnabled || !this._telemetryOptionExplicitlyStated) {
+        if (this.telemetryEnabled) {
+            const actualAwsContext = awsContext || this.awsContext
+            const eventWithCommonMetadata = this.injectCommonMetadata(event, actualAwsContext)
             this._eventQueue.push(eventWithCommonMetadata)
         }
     }
@@ -145,9 +140,6 @@ export class DefaultTelemetryService implements TelemetryService {
                 await this.publisher.flush()
                 this.clearRecords()
             }
-        } else if (this._telemetryOptionExplicitlyStated) {
-            // explicitly clear the queue if user has disabled telemetry
-            this.clearRecords()
         }
     }
 
@@ -333,6 +325,12 @@ export function filterTelemetryCacheEvents(input: any): TelemetryEvent[] {
                     getLogger().warn(
                         `Item in telemetry cache: ${item}\n has invalid data in the field 'data': ${data}! skipping!`
                     )
+
+                    return false
+                }
+
+                if (data?.Metadata?.some(m => m?.Value === undefined || m.Value === '')) {
+                    getLogger().warn(`telemetry: skipping cached item with null/empty metadata field:\n${item}`)
 
                     return false
                 }

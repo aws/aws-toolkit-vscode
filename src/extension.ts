@@ -44,8 +44,7 @@ import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetche
 import { HttpResourceFetcher } from './shared/resourcefetcher/httpResourceFetcher'
 import { activate as activateServerless } from './shared/sam/activation'
 import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
-import { AwsTelemetryOptOut } from './shared/telemetry/awsTelemetryOptOut'
-import { DefaultTelemetryService } from './shared/telemetry/defaultTelemetryService'
+import { activate as activateTelemetry } from './shared/telemetry/activation'
 import {
     recordAwsCreateCredentials,
     recordAwsHelp,
@@ -100,9 +99,10 @@ export async function activate(context: vscode.ExtensionContext) {
             settingsConfiguration: toolkitSettings,
         })
 
-        ext.telemetry = new DefaultTelemetryService(context, awsContext)
-        new AwsTelemetryOptOut(ext.telemetry, toolkitSettings).ensureUserNotified().catch(err => {
-            console.warn(`Exception while displaying opt-out message: ${err}`)
+        await activateTelemetry({
+            extensionContext: context,
+            awsContext: awsContext,
+            toolkitSettings: toolkitSettings,
         })
         await ext.telemetry.start()
 

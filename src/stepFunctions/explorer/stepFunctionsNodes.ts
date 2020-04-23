@@ -11,6 +11,7 @@ import { StepFunctions } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
 import { ext } from '../../shared/extensionGlobals'
+import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
@@ -71,7 +72,7 @@ export class StepFunctionsNode extends AWSTreeNodeBase {
     }
 }
 
-export class StateMachineNode extends AWSTreeNodeBase {
+export class StateMachineNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
         public readonly parent: AWSTreeNodeBase,
         public readonly regionCode: string,
@@ -93,6 +94,10 @@ export class StateMachineNode extends AWSTreeNodeBase {
 
     public get functionName(): string {
         return this.details.name || ''
+    }
+
+    public getArn(): string {
+        return this.details.stateMachineArn
     }
 }
 

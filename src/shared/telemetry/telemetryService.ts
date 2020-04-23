@@ -16,5 +16,4 @@ export interface TelemetryService {
     postFeedback(feedback: TelemetryFeedback): Promise<void>
     record(event: TelemetryEvent, awsContext?: AwsContext): void
     clearRecords(): void
-    notifyOptOutOptionMade(): void
 }
