@@ -28,7 +28,7 @@ import { PythonDebugAdapterHeartbeat } from './pythonDebugAdapterHeartbeat'
 import { getLocalRootVariants } from '../utilities/pathUtils'
 import { SamLaunchRequestArgs } from '../sam/debugger/samDebugSession'
 import * as pathutil from '../../shared/utilities/pathUtils'
-import { findParentProjectFile } from './codeLensUtils'
+import { findParentProjectFile } from '../utilities/workspaceUtils'
 
 const PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MS = 1000
 export const PYTHON_LANGUAGE = 'python'

@@ -34,7 +34,7 @@ import {
     makeInputTemplate,
     waitForDebugPort,
 } from './localLambdaRunner'
-import { findParentProjectFile } from './codeLensUtils'
+import { findParentProjectFile } from '../utilities/workspaceUtils'
 
 export const CSHARP_LANGUAGE = 'csharp'
 export const CSHARP_ALLFILES: vscode.DocumentFilter[] = [

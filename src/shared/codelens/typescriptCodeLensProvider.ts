@@ -21,7 +21,7 @@ import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidat
 import { SamLaunchRequestArgs } from '../sam/debugger/samDebugSession'
 import { RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import * as pathutil from '../../shared/utilities/pathUtils'
-import { findParentProjectFile } from './codeLensUtils'
+import { findParentProjectFile } from '../utilities/workspaceUtils'
 
 export async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
     const packageJsonPath = await findParentProjectFile(vscode.Uri.parse(filepath), path.join('**', 'package.json'))

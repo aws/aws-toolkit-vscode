@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import * as path from 'path'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
-import { findParentProjectFile } from '../../../shared/codelens/codeLensUtils'
+import { findParentProjectFile } from '../../../shared/utilities/workspaceUtils'
 
 describe('findParentProjectFile', async () => {
     before(() => {

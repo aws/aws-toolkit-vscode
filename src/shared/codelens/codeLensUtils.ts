@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as path from 'path'
 import * as vscode from 'vscode'
 
 import { CloudFormation } from '../cloudformation/cloudformation'
@@ -19,8 +18,6 @@ import { ExtContext } from '../extensions'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { nodeJsRuntimes } from '../../lambda/models/samLambdaRuntime'
-import { dirnameWithTrailingSlash } from '../utilities/pathUtils'
-import { isInDirectory } from '../filesystemUtilities'
 
 export type Language = 'python' | 'javascript' | 'csharp'
 
@@ -326,36 +323,4 @@ export function initializeTypescriptCodelens(context: ExtContext): void {
             }
         })
     )
-}
-
-export async function findParentProjectFile(
-    sourceCodeUri: vscode.Uri,
-    searchPattern: string,
-    findWorkspaceFiles: typeof vscode.workspace.findFiles = vscode.workspace.findFiles
-): Promise<vscode.Uri | undefined> {
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(sourceCodeUri)
-    if (!workspaceFolder) {
-        return undefined
-    }
-
-    const workspaceProjectFiles: vscode.Uri[] = await findWorkspaceFiles(
-        new vscode.RelativePattern(workspaceFolder, searchPattern)
-    )
-
-    // Use the project file "closest" in the parent chain to sourceCodeUri
-    let parentProjectFiles = workspaceProjectFiles
-        .filter(uri => {
-            const dirname = dirnameWithTrailingSlash(uri.fsPath)
-
-            return sourceCodeUri.fsPath.startsWith(dirname)
-        })
-        .sort((a, b) => {
-            if (isInDirectory(path.parse(a.fsPath).dir, path.parse(b.fsPath).dir)) {
-                return 1
-            }
-
-            return -1
-        })
-
-    return parentProjectFiles.length === 0 ? undefined : parentProjectFiles[0]
 }
