@@ -30,11 +30,7 @@ const documentSettings: DocumentLanguageSettings = { comments: 'error', trailing
 const languageService = getLanguageService({})
 
 export class AslVisualizationManager {
-    protected readonly managedVisualizations: Set<AslVisualization>
-
-    public constructor() {
-        this.managedVisualizations = new Set<AslVisualization>()
-    }
+    protected readonly managedVisualizations: Set<AslVisualization> = new Set<AslVisualization>()
 
     public getManagedVisualizations() {
         return this.managedVisualizations
@@ -96,7 +92,7 @@ export class AslVisualizationManager {
         const newVisualization = new AslVisualization(textDocument)
         this.managedVisualizations.add(newVisualization)
 
-        newVisualization.onVisualizationDispose()(() => {
+        newVisualization.getOnVisualizationDisposeEvent()(() => {
             this.deleteVisualization(newVisualization)
         })
 
@@ -117,19 +113,16 @@ export class AslVisualizationManager {
 export class AslVisualization {
     public readonly documentUri: vscode.Uri
     public readonly webviewPanel: vscode.WebviewPanel
-    protected readonly disposables: vscode.Disposable[]
-    protected isPanelDisposed: boolean
+    protected readonly disposables: vscode.Disposable[] = []
+    protected isPanelDisposed: boolean = false
     private readonly onVisualizationDisposeEmitter = new vscode.EventEmitter<void>()
-    //private readonly onVisualizationDispose = this.onVisualizationDisposeEmitter.event
 
     public constructor(textDocument: vscode.TextDocument) {
         this.documentUri = textDocument.uri
-        this.isPanelDisposed = false
-        this.disposables = []
         this.webviewPanel = this.setupWebviewPanel(textDocument)
     }
 
-    public onVisualizationDispose() {
+    public getOnVisualizationDisposeEvent() {
         return this.onVisualizationDisposeEmitter.event
     }
 
@@ -140,7 +133,7 @@ export class AslVisualization {
     }
 
     public getWebview(): vscode.Webview | void {
-        if (this.webviewPanel && this.webviewPanel.webview && !this.isPanelDisposed) {
+        if (this.webviewPanel?.webview && !this.isPanelDisposed) {
             return this.webviewPanel.webview
         }
     }
@@ -255,9 +248,9 @@ export class AslVisualization {
         // When the panel is closed, dispose of any disposables/remove subscriptions
         panel.onDidDispose(() => {
             this.onVisualizationDisposeEmitter.fire()
-            for (const disposable of this.disposables) {
+            this.disposables.forEach(disposable => {
                 disposable.dispose()
-            }
+            })
             debouncedUpdate.cancel()
             this.onVisualizationDisposeEmitter.dispose()
             this.isPanelDisposed = true
