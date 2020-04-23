@@ -10,18 +10,20 @@ import * as vscode from 'vscode'
 import { findParentProjectFile } from '../../../shared/utilities/workspaceUtils'
 
 describe('findParentProjectFile', async () => {
+    const workspaceDir = path.join('code', 'workspace')
     before(() => {
         const sandbox = sinon.createSandbox()
         sandbox.stub(vscode.workspace, 'getWorkspaceFolder').returns({
             name: 'tempFolder',
             index: 0,
-            uri: vscode.Uri.parse('code'),
+            uri: vscode.Uri.parse(workspaceDir),
         })
     })
-    const sourceCodeUri = vscode.Uri.file(path.join('code', 'someproject', 'src', 'Program.cs'))
-    const projectInSameFolderUri = vscode.Uri.file(path.join('code', 'someproject', 'src', 'App.csproj'))
-    const projectInParentFolderUri = vscode.Uri.file(path.join('code', 'someproject', 'App.csproj'))
-    const projectInParentParentFolderUri = vscode.Uri.file(path.join('code', 'App.csproj'))
+    const sourceCodeUri = vscode.Uri.file(path.join(workspaceDir, 'someproject', 'src', 'Program.cs'))
+    const projectInSameFolderUri = vscode.Uri.file(path.join(workspaceDir, 'someproject', 'src', 'App.csproj'))
+    const projectInParentFolderUri = vscode.Uri.file(path.join(workspaceDir, 'someproject', 'App.csproj'))
+    const projectInParentParentFolderUri = vscode.Uri.file(path.join(workspaceDir, 'App.csproj'))
+    const projectInParentButOutOfWorkspace = vscode.Uri.file(path.join('code', 'App.csproj'))
     const projectOutOfParentChainUri = vscode.Uri.file(path.join('code', 'someotherproject', 'App.csproj'))
 
     const testScenarios = [
@@ -58,6 +60,11 @@ describe('findParentProjectFile', async () => {
         {
             scenario: 'returns undefined when no project files are located in parent chain',
             findFilesResult: [projectOutOfParentChainUri],
+            expectedResult: undefined,
+        },
+        {
+            scenario: 'returns undefined when the project file is in the parent chain but out of the workspace folder',
+            findFilesResult: [projectInParentButOutOfWorkspace],
             expectedResult: undefined,
         },
     ]
