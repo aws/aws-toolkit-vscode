@@ -6,7 +6,6 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 
-import { detectLocalTemplates } from '../../lambda/local/detectLocalTemplates'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
