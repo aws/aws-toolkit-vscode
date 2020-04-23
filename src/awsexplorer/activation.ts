@@ -23,6 +23,7 @@ import {
     recordAwsShowRegion,
     recordVscodeActiveRegions,
 } from '../shared/telemetry/telemetry'
+import { AWSResourceNode } from '../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../shared/treeview/nodes/errorNode'
 import { showErrorDetails } from '../shared/treeview/webviews/showErrorDetails'
@@ -30,6 +31,7 @@ import { downloadStateMachineDefinition } from '../stepFunctions/commands/downlo
 import { executeStateMachine } from '../stepFunctions/commands/executeStateMachine'
 import { StateMachineNode } from '../stepFunctions/explorer/stepFunctionsNodes'
 import { AwsExplorer } from './awsExplorer'
+import { copyArnCommand } from './commands/copyArn'
 import { checkExplorerForDefaultRegion } from './defaultRegion'
 import { RegionNode } from './regionNode'
 
@@ -177,6 +179,10 @@ async function registerAwsExplorerCommands(
                     outputChannel: toolkitOutputChannel,
                 })
         )
+    )
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('aws.copyArn', async (node: AWSResourceNode) => await copyArnCommand(node))
     )
 
     context.subscriptions.push(

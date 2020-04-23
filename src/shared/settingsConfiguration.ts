@@ -22,14 +22,13 @@ export class DefaultSettingsConfiguration implements SettingsConfiguration {
     public readSetting<T>(settingKey: string, defaultValue?: T): T | undefined {
         // tslint:disable-next-line:no-null-keyword
         const settings = vscode.workspace.getConfiguration(this.extensionSettingsPrefix, null)
-        if (settings) {
-            const val = settings.get<T>(settingKey)
-            if (val) {
-                return val
-            }
+
+        if (!settings) {
+            return defaultValue
         }
 
-        return defaultValue || undefined
+        const val = settings.get<T>(settingKey)
+        return val ?? defaultValue
     }
 
     public async writeSetting<T>(settingKey: string, value: T, target: vscode.ConfigurationTarget): Promise<void> {
