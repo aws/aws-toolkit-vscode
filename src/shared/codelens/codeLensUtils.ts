@@ -199,7 +199,7 @@ export function makeTypescriptCodeLensProvider(): vscode.CodeLensProvider {
             // (eg: src/app.handler) instead of only the pure handler name (eg: app.handler)
             // Without this, the CodeLens command is unable to resolve a match back to a sam template.
             // This is done to address https://github.com/aws/aws-toolkit-vscode/issues/757
-            const handlers = await tsDebug.decorateHandlerNames(unprocessedHandlers, document.uri)
+            const handlers = await tsDebug.decorateHandlerNames([...unprocessedHandlers], document.uri)
 
             return makeCodeLenses({
                 document,

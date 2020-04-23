@@ -24,7 +24,7 @@ async function setupVSCode(): Promise<string> {
         const vsCodeExecutablePath = await setupVSCode()
         const cwd = process.cwd()
         const testEntrypoint = resolve(cwd, 'dist', 'src', 'integrationTest', 'index.js')
-        const workspacePath = join(cwd, 'dist', 'src', 'integrationTest-samples')
+        const workspacePath = join(cwd, 'dist', 'src', 'integrationTest-samples', 'workspaceFolder')
         console.log(`Starting tests: ${testEntrypoint}`)
 
         process.env.AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE = 'true'
@@ -33,7 +33,7 @@ async function setupVSCode(): Promise<string> {
             vscodeExecutablePath: vsCodeExecutablePath,
             extensionDevelopmentPath: cwd,
             extensionTestsPath: testEntrypoint,
-            launchArgs: [workspacePath]
+            launchArgs: [workspacePath],
         })
 
         console.log(`Finished running Integration test suite with result code: ${result}`)

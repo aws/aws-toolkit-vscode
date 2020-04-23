@@ -24,7 +24,7 @@ import * as pathutil from '../../shared/utilities/pathUtils'
 import { findParentProjectFile } from '../utilities/workspaceUtils'
 
 export async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
-    const packageJsonPath = await findParentProjectFile(vscode.Uri.parse(filepath), path.join('**', 'package.json'))
+    const packageJsonPath = await findParentProjectFile(vscode.Uri.parse(filepath), 'package.json')
     if (!packageJsonPath) {
         throw new Error(`Cannot find package.json for: ${filepath}`)
     }
@@ -41,7 +41,7 @@ export async function decorateHandlerNames(
     handlers: LambdaHandlerCandidate[],
     uri: vscode.Uri
 ): Promise<LambdaHandlerCandidate[]> {
-    const packageJsonFile = await findParentProjectFile(uri, path.join('**', 'package.json'))
+    const packageJsonFile = await findParentProjectFile(uri, 'package.json')
 
     if (!packageJsonFile) {
         return []

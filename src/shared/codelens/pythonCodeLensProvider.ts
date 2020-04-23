@@ -45,7 +45,7 @@ export async function getSamProjectDirPathForFile(filepath: string): Promise<str
 }
 
 export async function getLambdaHandlerCandidates(uri: vscode.Uri): Promise<LambdaHandlerCandidate[]> {
-    const requirementsFile = await findParentProjectFile(uri, path.join('**', 'requirements.txt'))
+    const requirementsFile = await findParentProjectFile(uri, 'requirements.txt')
     if (!requirementsFile) {
         return []
     }
