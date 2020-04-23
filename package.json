@@ -115,16 +115,8 @@
                     "markdownDescription": "%AWS.configuration.description.logLevel%"
                 },
                 "aws.telemetry": {
-                    "type": [
-                        "string",
-                        "null"
-                    ],
-                    "enum": [
-                        "Enable",
-                        "Disable",
-                        "Use IDE settings"
-                    ],
-                    "default": "Use IDE settings",
+                    "type": "boolean",
+                    "default": true,
                     "markdownDescription": "%AWS.configuration.description.telemetry%"
                 },
                 "aws.stepfunctions.asl.format.enable": {

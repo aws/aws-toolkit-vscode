@@ -14,16 +14,24 @@ import { TelemetryService } from './telemetryService'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-// SETTINGS_TELEMETRY_VALUE_XXX must be kept in sync with package.json "aws.telemetry" configuration values
-const SETTINGS_TELEMETRY_VALUE_ENABLE = 'Enable'
-const SETTINGS_TELEMETRY_VALUE_DISABLE = 'Disable'
-const SETTINGS_TELEMETRY_VALUE_USEIDE = 'Use IDE settings'
+const LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE = 'Disable'
 
-export const responseEnable = localize('AWS.telemetry.notificationYes', 'Enable')
-export const responseDisable = localize('AWS.telemetry.notificationNo', 'Disable')
+const telemetryNoticeText: string = localize(
+    'AWS.telemetry.notificationMessage',
+    'The AWS Toolkit collects usage metrics by default. These metrics help drive toolkit improvements. This setting can be changed from the IDE settings.'
+)
+
+export const noticeResponseViewSettings = localize('AWS.telemetry.notificationViewSettings', 'View Settings')
+export const noticeResponseOk = localize('AWS.telemetry.notificationOk', 'OK')
 
 const AWS_TELEMETRY_KEY = 'telemetry'
-const TELEMETRY_OPT_OUT_SHOWN = 'awsTelemetryOptOutShown'
+export const TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED = 'awsTelemetryNoticeVersionAck'
+// Telemetry Notice Versions
+// Versioning the users' notice acknowledgement is forward looking, and allows us to better
+// track scenarios when we may need to re-prompt the user about telemetry.
+// Version 1 was the original notice, allowing users to enable/disable/defer telemetry
+// Version 2 states that there is metrics gathering, which can be adjusted in the options
+const CURRENT_TELEMETRY_NOTICE_VERSION = 2
 
 /**
  * Sets up the Metrics system and initializes ext.telemetry
@@ -39,10 +47,8 @@ export async function activate(activateArguments: {
     applyTelemetryEnabledState(ext.telemetry, activateArguments.toolkitSettings)
 
     // Prompt user about telemetry if they haven't been
-    if (hasUserSeenTelemetryNotice(activateArguments.extensionContext)) {
-        ext.telemetry.notifyOptOutOptionMade()
-    } else {
-        promptForTelemetryOptIn(activateArguments.extensionContext, activateArguments.toolkitSettings)
+    if (!hasUserSeenTelemetryNotice(activateArguments.extensionContext)) {
+        showTelemetryNotice(activateArguments.extensionContext)
     }
 
     // When there are configuration changes, update the telemetry service appropriately
@@ -60,28 +66,38 @@ export async function activate(activateArguments: {
     )
 }
 
-function applyTelemetryEnabledState(telemetry: TelemetryService, toolkitSettings: SettingsConfiguration) {
-    const optInSetting = toolkitSettings.readSetting<string>(AWS_TELEMETRY_KEY) ?? SETTINGS_TELEMETRY_VALUE_USEIDE
+export function isTelemetryEnabled(toolkitSettings: SettingsConfiguration): boolean {
+    // Setting used to be an enum, but is now a boolean.
+    // We don't have api-based strong type support, so we have to process this value manually.
+    const value = toolkitSettings.readSetting<any>(AWS_TELEMETRY_KEY)
 
-    if (optInSetting === SETTINGS_TELEMETRY_VALUE_ENABLE) {
-        telemetry.telemetryEnabled = true
-    } else if (optInSetting === SETTINGS_TELEMETRY_VALUE_DISABLE) {
-        telemetry.telemetryEnabled = false
-    } else {
-        telemetry.telemetryEnabled = isVsCodeTelemetryEnabled()
+    // Handle original opt-out value (setting used to be a tri-state string value)
+    if (value === LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE) {
+        return false
     }
+
+    // Current value is expected to be a boolean
+    if (typeof value === 'boolean') {
+        return value
+    }
+
+    // Treat anything else (unexpected values, datatypes, or undefined) as opt-in
+    return true
 }
 
-function isVsCodeTelemetryEnabled(): boolean {
-    return vscode.workspace.getConfiguration('telemetry').get<boolean>('enableTelemetry', true)
+function applyTelemetryEnabledState(telemetry: TelemetryService, toolkitSettings: SettingsConfiguration) {
+    telemetry.telemetryEnabled = isTelemetryEnabled(toolkitSettings)
 }
 
-function hasUserSeenTelemetryNotice(extensionContext: vscode.ExtensionContext): boolean {
-    return extensionContext.globalState.get<boolean>(TELEMETRY_OPT_OUT_SHOWN, false)
+export function hasUserSeenTelemetryNotice(extensionContext: vscode.ExtensionContext): boolean {
+    return (
+        extensionContext.globalState.get<number>(TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED, 0) >=
+        CURRENT_TELEMETRY_NOTICE_VERSION
+    )
 }
 
-async function setHasUserSeenTelemetryNotice(extensionContext: vscode.ExtensionContext): Promise<void> {
-    await extensionContext.globalState.update(TELEMETRY_OPT_OUT_SHOWN, true)
+export async function setHasUserSeenTelemetryNotice(extensionContext: vscode.ExtensionContext): Promise<void> {
+    await extensionContext.globalState.update(TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED, CURRENT_TELEMETRY_NOTICE_VERSION)
     getLogger().verbose('Telemetry notice has been shown')
 }
 
@@ -89,25 +105,18 @@ async function setHasUserSeenTelemetryNotice(extensionContext: vscode.ExtensionC
  * Prompts user to Enable/Disable/Defer on Telemetry, then
  * handles the response appropriately.
  */
-function promptForTelemetryOptIn(extensionContext: vscode.ExtensionContext, toolkitSettings: SettingsConfiguration) {
+function showTelemetryNotice(extensionContext: vscode.ExtensionContext) {
     getLogger().verbose('Showing telemetry notice')
-
-    const notificationMessage: string = localize(
-        'AWS.telemetry.notificationMessage',
-        // prettier-ignore
-        'Please help improve the AWS Toolkit by enabling it to send usage data to AWS. You can always change your mind later by going to the "AWS Configuration" section in your user settings.'
-    )
 
     // Don't wait for a response
     vscode.window
-        .showInformationMessage(notificationMessage, responseEnable, responseDisable)
-        .then(async response => handleTelemetryNoticeResponse(response, extensionContext, toolkitSettings))
+        .showInformationMessage(telemetryNoticeText, noticeResponseViewSettings, noticeResponseOk)
+        .then(async response => handleTelemetryNoticeResponse(response, extensionContext))
 }
 
 export async function handleTelemetryNoticeResponse(
     response: string | undefined,
-    extensionContext: vscode.ExtensionContext,
-    toolkitSettings: SettingsConfiguration
+    extensionContext: vscode.ExtensionContext
 ) {
     try {
         getLogger().verbose(`Telemetry notice response: ${response}`)
@@ -117,13 +126,13 @@ export async function handleTelemetryNoticeResponse(
             return
         }
 
-        const setting =
-            response === responseDisable ? SETTINGS_TELEMETRY_VALUE_DISABLE : SETTINGS_TELEMETRY_VALUE_ENABLE
-        getLogger().verbose(`Applying telemetry setting: ${setting}`)
-        await toolkitSettings.writeSetting<string>(AWS_TELEMETRY_KEY, setting, vscode.ConfigurationTarget.Global)
-
         setHasUserSeenTelemetryNotice(extensionContext)
-        ext.telemetry.notifyOptOutOptionMade()
+
+        // noticeResponseOk is a no-op
+
+        if (response === noticeResponseViewSettings) {
+            vscode.commands.executeCommand('workbench.action.openSettings')
+        }
     } catch (err) {
         getLogger().error('Error while handling reponse from telemetry notice', err as Error)
     }
