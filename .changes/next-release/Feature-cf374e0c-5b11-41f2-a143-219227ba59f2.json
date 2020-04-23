@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "Users are shown a notification reflecting changes to how usage data is gathered. Usage data can still be configured through the editor's settings."
+}
