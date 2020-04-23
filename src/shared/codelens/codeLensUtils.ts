@@ -104,32 +104,32 @@ function makeLocalInvokeCodeLens(
 }
 
 // TODO: Keep around if we want a linkage back to the template file?
-async function getAssociatedSamTemplate(
-    documentUri: vscode.Uri,
-    workspaceFolderUri: vscode.Uri,
-    handlerName: string
-): Promise<vscode.Uri> {
-    const templates = detectLocalTemplates({
-        workspaceUris: [workspaceFolderUri],
-    })
+// async function getAssociatedSamTemplate(
+//     documentUri: vscode.Uri,
+//     workspaceFolderUri: vscode.Uri,
+//     handlerName: string
+// ): Promise<vscode.Uri> {
+//     const templates = detectLocalTemplates({
+//         workspaceUris: [workspaceFolderUri],
+//     })
 
-    for await (const template of templates) {
-        try {
-            // Throws if template does not contain a resource for this handler.
-            await CloudFormation.getResourceFromTemplate({
-                templatePath: template.fsPath,
-                handlerName,
-            })
-        } catch {
-            continue
-        }
+//     for await (const template of templates) {
+//         try {
+//             // Throws if template does not contain a resource for this handler.
+//             await CloudFormation.getResourceFromTemplate({
+//                 templatePath: template.fsPath,
+//                 handlerName,
+//             })
+//         } catch {
+//             continue
+//         }
 
-        // If there are multiple matching templates, use the first one.
-        return template
-    }
+//         // If there are multiple matching templates, use the first one.
+//         return template
+//     }
 
-    throw new Error(`Cannot find a SAM template associated with handler '${handlerName}' in: ${documentUri.fsPath}.`)
-}
+//     throw new Error(`Cannot find a SAM template associated with handler '${handlerName}' in: ${documentUri.fsPath}.`)
+// }
 
 export async function makePythonCodeLensProvider(
     pythonSettings: SettingsConfiguration
