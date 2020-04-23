@@ -13,7 +13,6 @@ import * as sampleDotNetSamProgram from './sampleDotNetSamProgram'
 import { writeFile } from 'fs-extra'
 import {
     DotNetLambdaHandlerComponents,
-    findParentProjectFile,
     generateDotNetLambdaHandler,
     getLambdaHandlerComponents,
     isPublicClassSymbol,
@@ -22,57 +21,6 @@ import {
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 
 const fakeRange = new vscode.Range(0, 0, 0, 0)
-
-describe('findParentProjectFile', async () => {
-    const sourceCodeUri = vscode.Uri.file(path.join('code', 'someproject', 'src', 'Program.cs'))
-    const projectInSameFolderUri = vscode.Uri.file(path.join('code', 'someproject', 'src', 'App.csproj'))
-    const projectInParentFolderUri = vscode.Uri.file(path.join('code', 'someproject', 'App.csproj'))
-    const projectInParentParentFolderUri = vscode.Uri.file(path.join('code', 'App.csproj'))
-    const projectOutOfParentChainUri = vscode.Uri.file(path.join('code', 'someotherproject', 'App.csproj'))
-
-    const testScenarios = [
-        {
-            scenario: 'locates project in same folder',
-            findFilesResult: [projectInSameFolderUri],
-            expectedResult: projectInSameFolderUri,
-        },
-        {
-            scenario: 'locates project in parent folder',
-            findFilesResult: [projectInParentFolderUri],
-            expectedResult: projectInParentFolderUri,
-        },
-        {
-            scenario: 'locates project two parent folders up',
-            findFilesResult: [projectInParentParentFolderUri],
-            expectedResult: projectInParentParentFolderUri,
-        },
-        {
-            scenario: 'selects project in same folder over parent folder',
-            findFilesResult: [projectInSameFolderUri, projectInParentFolderUri],
-            expectedResult: projectInSameFolderUri,
-        },
-        {
-            scenario: 'returns undefined when no project files are located',
-            findFilesResult: [],
-            expectedResult: undefined,
-        },
-        {
-            scenario: 'returns undefined when no project files are located in parent chain',
-            findFilesResult: [projectOutOfParentChainUri],
-            expectedResult: undefined,
-        },
-    ]
-
-    testScenarios.forEach(test => {
-        it(test.scenario, async () => {
-            const projectFile = await findParentProjectFile(
-                sourceCodeUri,
-                async (): Promise<vscode.Uri[]> => test.findFilesResult
-            )
-            assert.strictEqual(projectFile, test.expectedResult, 'Project file was not the expected one')
-        })
-    })
-})
 
 describe('getLambdaHandlerComponents', async () => {
     let tempFolder: string

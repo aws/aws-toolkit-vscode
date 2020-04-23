@@ -25,7 +25,6 @@ import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam
 import { SamLaunchRequestArgs } from '../sam/debugger/samDebugSession'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
 import { getStartPort } from '../utilities/debuggerUtils'
-import { dirnameWithTrailingSlash } from '../utilities/pathUtils'
 import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
 import {
     executeSamBuild,
@@ -35,6 +34,7 @@ import {
     makeInputTemplate,
     waitForDebugPort,
 } from './localLambdaRunner'
+import { findParentProjectFile } from './codeLensUtils'
 
 export const CSHARP_LANGUAGE = 'csharp'
 export const CSHARP_ALLFILES: vscode.DocumentFilter[] = [
@@ -211,14 +211,13 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
 }
 
 async function getAssemblyName(sourceCodeUri: vscode.Uri): Promise<string | undefined> {
-    const projectFile: vscode.Uri | undefined = await findParentProjectFile(sourceCodeUri)
-
+    const projectFile = await findParentProjectFile(sourceCodeUri, '**/*.csproj')
     if (!projectFile) {
         return undefined
     }
 
     // TODO : Perform an XPATH parse on the project file
-    // If Project/PropertyGroup/AssemblyName exists, use that. Otherwise use the file name.
+    // If Project/PropertyGroup/AssemblyName exists, usse that. Otherwise use the file name.
 
     return path.parse(projectFile.fsPath).name
 }
@@ -272,26 +271,6 @@ export function getLambdaHandlerComponents(
                 return accumulator
             }, [])
     )
-}
-
-export async function findParentProjectFile(
-    sourceCodeUri: vscode.Uri,
-    findWorkspaceFiles: typeof vscode.workspace.findFiles = vscode.workspace.findFiles
-): Promise<vscode.Uri | undefined> {
-    const workspaceProjectFiles: vscode.Uri[] = await findWorkspaceFiles('**/*.csproj')
-
-    // Use the project file "closest" in the parent chain to sourceCodeUri
-    // Assumption: only one .csproj file will exist in a given folder
-    const parentProjectFiles = workspaceProjectFiles
-        .filter(uri => {
-            const dirname = dirnameWithTrailingSlash(uri.fsPath)
-
-            return sourceCodeUri.fsPath.startsWith(dirname)
-        })
-        .sort()
-        .reverse()
-
-    return parentProjectFiles.length === 0 ? undefined : parentProjectFiles[0]
 }
 
 export function isPublicClassSymbol(

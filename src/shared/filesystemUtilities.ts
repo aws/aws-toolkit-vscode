@@ -94,6 +94,11 @@ export function isInDirectory(d: string, p: string): boolean {
     }
     const parentDirPieces = pathutils.normalizeSeparator(d).split('/')
     const containedPathPieces = pathutils.normalizeSeparator(p).split('/')
+
+    if (parentDirPieces.length > containedPathPieces.length) {
+        return false
+    }
+
     // Remove final empty element(s), if `d` ends with slash(es).
     while (parentDirPieces.length > 0 && parentDirPieces[parentDirPieces.length - 1] === '') {
         parentDirPieces.pop()
