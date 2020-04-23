@@ -42,26 +42,6 @@ export const readFileAsString = async (
     return readFile(pathLike, options)
 }
 
-/**
- * Searches for fileToFind, starting in searchFolder and working up the parent folder chain.
- * If file is not found, undefined is returned.
- */
-export async function findFileInParentPaths(searchFolder: string, fileToFind: string): Promise<string | undefined> {
-    const targetFilePath: string = path.join(searchFolder, fileToFind)
-
-    if (await fileExists(targetFilePath)) {
-        return targetFilePath
-    }
-
-    const parentPath = path.dirname(searchFolder)
-
-    if (!parentPath || parentPath === searchFolder) {
-        return undefined
-    }
-
-    return findFileInParentPaths(parentPath, fileToFind)
-}
-
 export const makeTemporaryToolkitFolder = async (...relativePathParts: string[]) => {
     if (relativePathParts.length === 0) {
         relativePathParts.push('vsctk')

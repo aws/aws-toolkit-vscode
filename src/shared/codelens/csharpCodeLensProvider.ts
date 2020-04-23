@@ -219,7 +219,7 @@ async function getAssemblyName(sourceCodeUri: vscode.Uri): Promise<string | unde
     }
 
     // TODO : Perform an XPATH parse on the project file
-    // If Project/PropertyGroup/AssemblyName exists, usse that. Otherwise use the file name.
+    // If Project/PropertyGroup/AssemblyName exists, use that. Otherwise use the file name.
 
     return path.parse(projectFile.fsPath).name
 }

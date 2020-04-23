@@ -8,19 +8,11 @@ import * as os from 'os'
 import * as del from 'del'
 import { writeFile } from 'fs-extra'
 import * as path from 'path'
-import { mkdir } from '../../shared/filesystem'
-import {
-    fileExists,
-    findFileInParentPaths,
-    isInDirectory,
-    makeTemporaryToolkitFolder,
-    tempDirPath,
-} from '../../shared/filesystemUtilities'
+import { fileExists, isInDirectory, makeTemporaryToolkitFolder, tempDirPath } from '../../shared/filesystemUtilities'
 
 describe('filesystemUtilities', () => {
     const targetFilename = 'findThisFile12345.txt'
     let targetFilePath: string
-    const nonExistingTargetFilename = 'doNotFindThisFile12345.txt'
     let tempFolder: string
     const foldersToCleanUp: string[] = []
 
@@ -65,40 +57,6 @@ describe('filesystemUtilities', () => {
             )
             const tmpDirExists = await fileExists(nestedTempDirPath)
             assert(tmpDirExists, `tempFolder should exist: '${nestedTempDirPath}'`)
-        })
-    })
-
-    describe('findFileInParentPaths', () => {
-        it('returns undefined when file not found', async () => {
-            assert.strictEqual(await findFileInParentPaths(tempFolder, nonExistingTargetFilename), undefined)
-        })
-
-        it('finds the file in the same folder', async () => {
-            assert.strictEqual(await findFileInParentPaths(tempFolder, targetFilename), targetFilePath)
-        })
-
-        it('finds the file next to another file', async () => {
-            const searchLocation = path.join(tempFolder, 'foo.txt')
-
-            assert.strictEqual(await findFileInParentPaths(searchLocation, targetFilename), targetFilePath)
-        })
-
-        it('finds the file in the parent folder', async () => {
-            const childFolder = path.join(tempFolder, 'child1')
-            await mkdir(childFolder)
-
-            assert.strictEqual(await findFileInParentPaths(childFolder, targetFilename), targetFilePath)
-        })
-
-        it('finds the file 3 parent folders up', async () => {
-            let childFolder = path.join(tempFolder, 'child1')
-            await mkdir(childFolder)
-            childFolder = path.join(tempFolder, 'child2')
-            await mkdir(childFolder)
-            childFolder = path.join(tempFolder, 'child3')
-            await mkdir(childFolder)
-
-            assert.strictEqual(await findFileInParentPaths(childFolder, targetFilename), targetFilePath)
         })
     })
 
