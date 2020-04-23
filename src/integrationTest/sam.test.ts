@@ -387,14 +387,6 @@ describe('SAM Integration Tests', async () => {
             assert.strictEqual(commandArguments.length, 1, 'CodeLens command had unexpected arg count')
             const params = commandArguments[0]
             assert.ok(params, 'unexpected non-defined command argument')
-
-            // tslint:disable-next-line:no-unsafe-any
-            const samTemplateUri = params.samTemplate as vscode.Uri
-            assert.strictEqual(
-                samTemplateUri.fsPath,
-                vscode.Uri.file(expectedSamTemplatePath).fsPath,
-                'CodeLens not referencing expected SAM Template'
-            )
         }
     }
 })

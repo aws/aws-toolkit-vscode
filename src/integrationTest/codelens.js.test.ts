@@ -36,7 +36,6 @@ describe('SAM Local CodeLenses (JS)', async () => {
 
         assertDebugCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)
         assertRunCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)
-        assertConfigureCodeLensExists(codeLenses)
     }).timeout(CODELENS_TEST_TIMEOUT_MILLIS)
 
     it('appear when manifest in root', async () => {
@@ -50,7 +49,6 @@ describe('SAM Local CodeLenses (JS)', async () => {
 
         assertDebugCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)
         assertRunCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)
-        assertConfigureCodeLensExists(codeLenses)
     }).timeout(CODELENS_TEST_TIMEOUT_MILLIS)
 
     it('appear when manifest in subfolder and app in subfolder to manifest', async () => {
@@ -64,7 +62,6 @@ describe('SAM Local CodeLenses (JS)', async () => {
 
         assertDebugCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)
         assertRunCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)
-        assertConfigureCodeLensExists(codeLenses)
     }).timeout(CODELENS_TEST_TIMEOUT_MILLIS)
 
     it('appear when project is a few folders deep in the workspace', async () => {
@@ -78,7 +75,6 @@ describe('SAM Local CodeLenses (JS)', async () => {
 
         assertDebugCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)
         assertRunCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)
-        assertConfigureCodeLensExists(codeLenses)
     })
 
     function assertDebugCodeLensExists(
@@ -127,19 +123,6 @@ describe('SAM Local CodeLenses (JS)', async () => {
 
         const commandArguments = codeLens.command.arguments[0] as LambdaLocalInvokeParams
 
-        return (
-            commandArguments.handlerName === handlerName &&
-            commandArguments.samTemplate.fsPath === templatePath &&
-            commandArguments.isDebug === isDebug
-        )
-    }
-
-    function assertConfigureCodeLensExists(codeLenses: vscode.CodeLens[]) {
-        assert.strictEqual(
-            codeLenses.filter(codeLens => codeLens.command && codeLens.command.command === 'aws.configureLambda')
-                .length,
-            1,
-            'The Configure CodeLens could not be found'
-        )
+        return commandArguments.handlerName === handlerName && commandArguments.isDebug === isDebug
     }
 })
