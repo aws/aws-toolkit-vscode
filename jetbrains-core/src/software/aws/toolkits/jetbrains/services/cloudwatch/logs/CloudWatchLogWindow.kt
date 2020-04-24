@@ -89,8 +89,16 @@ class CloudWatchLogWindow(private val project: Project) : CoroutineScope by Appl
         }
     }
 
+    fun closeLogGroup(logGroup: String) = launch {
+        toolWindow.findPrefix(logGroup).forEach {
+            withContext(edtContext) {
+                it.dispose()
+            }
+        }
+    }
+
     companion object {
-        private val CW_LOGS_TOOL_WINDOW = ToolkitToolWindowType(
+        internal val CW_LOGS_TOOL_WINDOW = ToolkitToolWindowType(
             "AWS.CloudWatchLog",
             message("cloudwatch.logs.toolwindow"),
             AwsIcons.Resources.CloudWatch.LOGS
