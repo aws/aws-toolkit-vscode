@@ -72,7 +72,7 @@
             "request": "launch",
             "runtimeExecutable": "${execPath}",
             "args": [
-                "${workspaceFolder}/dist/src/integrationTest-samples/",
+                "${workspaceFolder}/dist/src/testFixtures/",
                 "--extensionDevelopmentPath=${workspaceFolder}",
                 "--extensionTestsPath=${workspaceFolder}/dist/src/integrationTest/index.js"
             ],

@@ -169,7 +169,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             const config = await getConfig(
                 debugConfigProvider,
                 registry,
-                'integrationTest-samples/workspaceFolder/csharp2.1-plain-sam-app/'
+                'testFixtures/workspaceFolder/csharp2.1-plain-sam-app/'
             )
 
             // No workspace folder:
@@ -303,7 +303,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
 
         it('target=code: javascript', async () => {
             const appDir = pathutil.normalize(
-                path.join(testutil.getProjectDir(), 'integrationTest-samples/workspaceFolder/js-manifest-in-root/')
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/js-manifest-in-root/')
             )
             const folder = testutil.getWorkspaceFolder(appDir)
             const c = {
@@ -366,7 +366,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
 
         it('target=template: javascript', async () => {
             const appDir = pathutil.normalize(
-                path.join(testutil.getProjectDir(), 'integrationTest-samples/workspaceFolder/js-manifest-in-root/')
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/js-manifest-in-root/')
             )
             const folder = testutil.getWorkspaceFolder(appDir)
             const c = {
@@ -436,7 +436,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
 
         it('target=code: dotnet/csharp', async () => {
             const appDir = pathutil.normalize(
-                path.join(testutil.getProjectDir(), 'integrationTest-samples/workspaceFolder/csharp2.1-plain-sam-app/')
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/csharp2.1-plain-sam-app/')
             )
             const folder = testutil.getWorkspaceFolder(appDir)
             const c = {
@@ -522,7 +522,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
 
         it('debugconfig with extraneous env vars', async () => {
             const appDir = pathutil.normalize(
-                path.join(testutil.getProjectDir(), 'integrationTest-samples/workspaceFolder/js-manifest-in-root/')
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/js-manifest-in-root/')
             )
             const folder = testutil.getWorkspaceFolder(appDir)
             const c = {

@@ -7,7 +7,7 @@ build-scripts/**
 buildspec/**
 dist/src/test/**
 dist/src/integrationTest/**
-dist/src/integrationTest-samples/**
+dist/src/testFixtures/**
 dist/test/**
 dist/integrationTest/**
 dist/third-party/test/**
