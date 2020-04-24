@@ -108,9 +108,12 @@ async function makeLambdaDebugFile(params: {
     const logger = getLogger()
 
     const splitHandlerName = params.handlerName.split('.')
-    const handlerFunctionName = splitHandlerName.pop()
-    const handlerFileImportPath = splitHandlerName.join('.')
-    const handlerFilePrefix = splitHandlerName.join('_')
+    const handlerFunctionName = splitHandlerName[splitHandlerName.length - 1]
+    const handlerFiles = splitHandlerName.slice(0, splitHandlerName.length - 2)
+
+    const handlerFileImportPath = handlerFiles.join('.')
+    const handlerFilePrefix = handlerFiles.join('_')
+
     const debugHandlerFileName = `${handlerFilePrefix}___vsctk___debug`
     const debugHandlerFunctionName = 'lambda_handler'
     // TODO: Sanitize handlerFilePrefix, handlerFunctionName, debugHandlerFunctionName

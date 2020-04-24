@@ -77,6 +77,7 @@ export async function addFolderToWorkspace(folder: { uri: vscode.Uri; name?: str
 /**
  * Finds the closest file (specified by the search pattern) to the specified source file.
  * Checks parent directories up until the top level workspace folder for the source file.
+ * Returns undefined if the file isn't found in any directories between the sourceCodeUri directory and the workspace folder
  * @param sourceCodeUri Source file to look upwards from
  * @param projectFile File to find in same folder or parent, up until the source file's top level workspace folder. Accepts wildcards.
  * @param findWorkspaceFiles Only used for tests
@@ -110,5 +111,5 @@ export async function findParentProjectFile(
             return -1
         })
 
-    return parentProjectFiles.length === 0 ? undefined : parentProjectFiles[0]
+    return parentProjectFiles[0]
 }
