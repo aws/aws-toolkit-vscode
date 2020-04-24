@@ -49,7 +49,7 @@ export async function decorateHandlerNames(
 
     const relativePath = path.relative(path.dirname(packageJsonFile.fsPath), path.dirname(uri.fsPath))
 
-    return handlers.map(handler => {
+    return [...handlers].map(handler => {
         const handlerName = handler.handlerName
         handler.handlerName = normalizeSeparator(path.join(relativePath, handlerName))
 

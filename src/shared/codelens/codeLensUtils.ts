@@ -99,34 +99,6 @@ function makeLocalInvokeCodeLens(
     return new vscode.CodeLens(params.range, command)
 }
 
-// TODO: Keep around if we want a linkage back to the template file?
-// async function getAssociatedSamTemplate(
-//     documentUri: vscode.Uri,
-//     workspaceFolderUri: vscode.Uri,
-//     handlerName: string
-// ): Promise<vscode.Uri> {
-//     const templates = detectLocalTemplates({
-//         workspaceUris: [workspaceFolderUri],
-//     })
-
-//     for await (const template of templates) {
-//         try {
-//             // Throws if template does not contain a resource for this handler.
-//             await CloudFormation.getResourceFromTemplate({
-//                 templatePath: template.fsPath,
-//                 handlerName,
-//             })
-//         } catch {
-//             continue
-//         }
-
-//         // If there are multiple matching templates, use the first one.
-//         return template
-//     }
-
-//     throw new Error(`Cannot find a SAM template associated with handler '${handlerName}' in: ${documentUri.fsPath}.`)
-// }
-
 export async function makePythonCodeLensProvider(
     pythonSettings: SettingsConfiguration
 ): Promise<vscode.CodeLensProvider> {
@@ -199,7 +171,7 @@ export function makeTypescriptCodeLensProvider(): vscode.CodeLensProvider {
             // (eg: src/app.handler) instead of only the pure handler name (eg: app.handler)
             // Without this, the CodeLens command is unable to resolve a match back to a sam template.
             // This is done to address https://github.com/aws/aws-toolkit-vscode/issues/757
-            const handlers = await tsDebug.decorateHandlerNames([...unprocessedHandlers], document.uri)
+            const handlers = await tsDebug.decorateHandlerNames(unprocessedHandlers, document.uri)
 
             return makeCodeLenses({
                 document,

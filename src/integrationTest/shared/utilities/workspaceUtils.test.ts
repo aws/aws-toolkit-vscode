@@ -90,9 +90,9 @@ describe('findParentProjectFile', async () => {
             }
             const projectFile = await findParentProjectFile(sourceCodeUri, '*.csproj')
             if (test.expectedResult) {
-                // doesn't do a deepStrictEqual because VS Code sets a hidden field to `undefined` when returning instead of `null`.
-                // for all intents and purposes, if this matches, it's good enough for our purposes.
-                assert.strictEqual(projectFile!.path, test.expectedResult!.path)
+                // doesn't do a deepStrictEqual because VS Code sets a hidden field to `undefined` when returning instead of `null` (when it's created)
+                // for all intents and purposes, if this matches, it's good enough for us.
+                assert.strictEqual(projectFile!.fsPath, test.expectedResult!.fsPath)
             } else {
                 assert.strictEqual(projectFile, test.expectedResult)
             }

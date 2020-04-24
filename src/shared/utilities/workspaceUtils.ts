@@ -90,7 +90,6 @@ export async function findParentProjectFile(
     if (!workspaceFolder) {
         return undefined
     }
-    console.log(workspaceFolder)
 
     const workspaceProjectFiles: vscode.Uri[] = await vscode.workspace.findFiles(
         new vscode.RelativePattern(workspaceFolder, path.join('**', projectFile))
