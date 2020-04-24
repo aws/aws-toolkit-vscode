@@ -74,6 +74,14 @@ class LogGroupTableSorter(model: ListTableModel<LogStream>) : TableRowSorter<Lis
     }
 }
 
+class LogGroupFilterTableSorter(model: ListTableModel<LogStream>) : TableRowSorter<ListTableModel<LogStream>>(model) {
+    init {
+        sortKeys = listOf(SortKey(0, SortOrder.DESCENDING))
+        setSortable(0, false)
+        setSortable(1, false)
+    }
+}
+
 class LogStreamDateColumn : ColumnInfo<LogStreamEntry, String>(message("general.time")) {
     private val renderer = ResizingDateColumnRenderer(showSeconds = true)
     override fun valueOf(item: LogStreamEntry?): String? = item?.timestamp?.toString()

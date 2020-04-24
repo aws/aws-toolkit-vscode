@@ -334,3 +334,48 @@ class LogGroupActor(
         return events
     }
 }
+
+class LogGroupSearchActor(
+    project: Project,
+    client: CloudWatchLogsClient,
+    table: TableView<LogStream>,
+    private val logGroup: String
+) : LogActor<LogStream>(project, client, table) {
+    override val emptyText = message("cloudwatch.logs.no_log_streams")
+    override val tableErrorMessage = message("cloudwatch.logs.failed_to_load_streams", logGroup)
+    override val notFoundText = message("cloudwatch.logs.log_group_does_not_exist", logGroup)
+
+    override suspend fun loadInitialFilter(queryString: String) {
+        val request = DescribeLogStreamsRequest.builder()
+            .logGroupName(logGroup)
+            .descending(true)
+            .orderBy(OrderBy.LOG_STREAM_NAME)
+            .logStreamNamePrefix(queryString)
+            .build()
+        loadAndPopulate { getLogStreams(request) }
+    }
+
+    override suspend fun loadMore(nextToken: String?, saveForwardToken: Boolean, saveBackwardToken: Boolean): List<LogStream> {
+        // loading backwards doesn't make sense in this context, so just skip the event
+        if (saveBackwardToken) {
+            return listOf()
+        }
+
+        val request = DescribeLogStreamsRequest.builder()
+            .logGroupName(logGroup)
+            .nextToken(nextToken)
+            .descending(true)
+            .orderBy(OrderBy.LOG_STREAM_NAME)
+            .build()
+
+        return getLogStreams(request)
+    }
+
+    private fun getLogStreams(request: DescribeLogStreamsRequest): List<LogStream> {
+        val response = client.describeLogStreams(request)
+        val events = response.logStreams().filterNotNull()
+        nextForwardToken = response.nextToken()
+
+        return events
+    }
+}
