@@ -107,11 +107,15 @@ async function makeLambdaDebugFile(params: {
     }
     const logger = getLogger()
 
+    // Last piece of the handler is the function name. Remove it before modifying for pathing.
     const splitHandlerName = params.handlerName.split('.')
     const handlerFunctionName = splitHandlerName[splitHandlerName.length - 1]
     const handlerFiles = splitHandlerName.slice(0, splitHandlerName.length - 2)
 
+    // Handlers for Python imports must be joined by periods.
+    // ./foo/bar.py => foo.bar
     const handlerFileImportPath = handlerFiles.join('.')
+    // SAM doesn't handle periods in Python filenames. Replacing with underscores for the filename.
     const handlerFilePrefix = handlerFiles.join('_')
 
     const debugHandlerFileName = `${handlerFilePrefix}___vsctk___debug`
