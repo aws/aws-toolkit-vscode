@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 
-import { detectLocalTemplates } from '../../lambda/local/detectLocalTemplates'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
@@ -27,7 +26,6 @@ interface MakeConfigureCodeLensParams {
     handlerName: string
     range: vscode.Range
     workspaceFolder: vscode.WorkspaceFolder
-    samTemplate: vscode.Uri
     language: Language
 }
 
@@ -60,23 +58,15 @@ export async function makeCodeLenses({
                   )
 
         try {
-            const associatedTemplate = await getAssociatedSamTemplate(
-                document.uri,
-                workspaceFolder.uri,
-                handler.handlerName
-            )
             const baseParams: MakeConfigureCodeLensParams = {
                 document,
                 handlerName: handler.handlerName,
                 range,
                 workspaceFolder,
-                samTemplate: associatedTemplate, // TODO: Remove this assignment (or make optional) following merge of PR #971
                 language,
             }
             lenses.push(makeLocalInvokeCodeLens({ ...baseParams, isDebug: false }))
             lenses.push(makeLocalInvokeCodeLens({ ...baseParams, isDebug: true }))
-
-            lenses.push(makeConfigureCodeLens(baseParams))
         } catch (err) {
             getLogger().error(
                 `Could not generate 'configure' code lens for handler '${handler.handlerName}'`,
@@ -92,6 +82,7 @@ export function getInvokeCmdKey(language: Language) {
     return `aws.lambda.local.invoke.${language}`
 }
 
+// TODO: Morph into new debug config codelens
 function makeLocalInvokeCodeLens(
     params: MakeConfigureCodeLensParams & { isDebug: boolean; language: Language }
 ): vscode.CodeLens {
@@ -106,53 +97,6 @@ function makeLocalInvokeCodeLens(
     }
 
     return new vscode.CodeLens(params.range, command)
-}
-
-function makeConfigureCodeLens({
-    document,
-    handlerName,
-    range,
-    workspaceFolder,
-    samTemplate,
-}: MakeConfigureCodeLensParams): vscode.CodeLens {
-    // Handler will be the fully-qualified name, so we also allow '.' & ':' & '/' despite it being forbidden in handler names.
-    if (/[^\w\-\.\:\/]/.test(handlerName)) {
-        throw new Error(`Invalid handler name: '${handlerName}'`)
-    }
-    const command = {
-        arguments: [workspaceFolder, handlerName, samTemplate],
-        command: 'aws.configureLambda',
-        title: localize('AWS.command.configureLambda', 'Configure'),
-    }
-
-    return new vscode.CodeLens(range, command)
-}
-
-async function getAssociatedSamTemplate(
-    documentUri: vscode.Uri,
-    workspaceFolderUri: vscode.Uri,
-    handlerName: string
-): Promise<vscode.Uri> {
-    const templates = detectLocalTemplates({
-        workspaceUris: [workspaceFolderUri],
-    })
-
-    for await (const template of templates) {
-        try {
-            // Throws if template does not contain a resource for this handler.
-            await CloudFormation.getResourceFromTemplate({
-                templatePath: template.fsPath,
-                handlerName,
-            })
-        } catch {
-            continue
-        }
-
-        // If there are multiple matching templates, use the first one.
-        return template
-    }
-
-    throw new Error(`Cannot find a SAM template associated with handler '${handlerName}' in: ${documentUri.fsPath}.`)
 }
 
 export async function makePythonCodeLensProvider(
@@ -221,13 +165,13 @@ export function makeTypescriptCodeLensProvider(): vscode.CodeLensProvider {
                 document.uri.fsPath,
                 document.getText()
             )
-            const handlers: LambdaHandlerCandidate[] = await search.findCandidateLambdaHandlers()
+            const unprocessedHandlers: LambdaHandlerCandidate[] = await search.findCandidateLambdaHandlers()
 
             // For Javascript CodeLenses, store the complete relative pathed handler name
             // (eg: src/app.handler) instead of only the pure handler name (eg: app.handler)
             // Without this, the CodeLens command is unable to resolve a match back to a sam template.
             // This is done to address https://github.com/aws/aws-toolkit-vscode/issues/757
-            await tsDebug.decorateHandlerNames(handlers, document.uri.fsPath)
+            const handlers = await tsDebug.decorateHandlerNames(unprocessedHandlers, document.uri)
 
             return makeCodeLenses({
                 document,

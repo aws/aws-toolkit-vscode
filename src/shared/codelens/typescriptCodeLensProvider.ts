@@ -4,13 +4,12 @@
  */
 
 import * as path from 'path'
-import { findFileInParentPaths } from '../filesystemUtilities'
+import * as vscode from 'vscode'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import {
     executeSamBuild,
     generateInputTemplate,
-    getHandlerRelativePath,
     waitForDebugPort,
     makeBuildDir,
     invokeLambdaFunction,
@@ -22,41 +21,39 @@ import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidat
 import { SamLaunchRequestArgs } from '../sam/debugger/samDebugSession'
 import { RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import * as pathutil from '../../shared/utilities/pathUtils'
+import { findParentProjectFile } from '../utilities/workspaceUtils'
 
 export async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
-    const packageJsonPath: string | undefined = await findFileInParentPaths(path.dirname(filepath), 'package.json')
+    const packageJsonPath = await findParentProjectFile(vscode.Uri.parse(filepath), 'package.json')
     if (!packageJsonPath) {
         throw new Error(`Cannot find package.json for: ${filepath}`)
     }
 
-    return path.dirname(packageJsonPath)
+    return path.dirname(packageJsonPath.fsPath)
 }
 
 /**
  * Applies a full relative path to the Javascript handler that will be stored in the CodeLens commands.
  * @param handlers Handlers to apply relative paths to
- * @param parentDocumentPath Path to the file containing these Lambda Handlers
+ * @param uri URI of the file containing these Lambda Handlers
  */
 export async function decorateHandlerNames(
     handlers: LambdaHandlerCandidate[],
-    parentDocumentPath: string
-): Promise<void> {
-    const parentDir = path.dirname(parentDocumentPath)
-    const packageJsonPath = await findFileInParentPaths(parentDir, 'package.json')
+    uri: vscode.Uri
+): Promise<LambdaHandlerCandidate[]> {
+    const packageJsonFile = await findParentProjectFile(uri, 'package.json')
 
-    if (!packageJsonPath) {
-        return
+    if (!packageJsonFile) {
+        return []
     }
 
-    const relativePath = getHandlerRelativePath({
-        codeRoot: path.dirname(packageJsonPath),
-        filePath: parentDocumentPath,
-    })
+    const relativePath = path.relative(path.dirname(packageJsonFile.fsPath), path.dirname(uri.fsPath))
 
-    handlers.forEach(handler => {
+    return [...handlers].map(handler => {
         const handlerName = handler.handlerName
-
         handler.handlerName = normalizeSeparator(path.join(relativePath, handlerName))
+
+        return handler
     })
 }
 

@@ -28,6 +28,7 @@ import { PythonDebugAdapterHeartbeat } from './pythonDebugAdapterHeartbeat'
 import { getLocalRootVariants } from '../utilities/pathUtils'
 import { SamLaunchRequestArgs } from '../sam/debugger/samDebugSession'
 import * as pathutil from '../../shared/utilities/pathUtils'
+import { findParentProjectFile } from '../utilities/workspaceUtils'
 
 const PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MS = 1000
 export const PYTHON_LANGUAGE = 'python'
@@ -44,7 +45,17 @@ export async function getSamProjectDirPathForFile(filepath: string): Promise<str
 }
 
 export async function getLambdaHandlerCandidates(uri: vscode.Uri): Promise<LambdaHandlerCandidate[]> {
+    const requirementsFile = await findParentProjectFile(uri, 'requirements.txt')
+    if (!requirementsFile) {
+        return []
+    }
     const filename = uri.fsPath
+    const parsedPath = path.parse(filename)
+    // Python handler paths are period separated and don't include the file extension
+    const handlerPath = path
+        .relative(path.parse(requirementsFile.fsPath).dir, path.join(parsedPath.dir, parsedPath.name))
+        .split(path.sep)
+        .join('.')
 
     const symbols: vscode.DocumentSymbol[] =
         (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', uri)) ??
@@ -53,7 +64,7 @@ export async function getLambdaHandlerCandidates(uri: vscode.Uri): Promise<Lambd
     return symbols.filter(isTopLevelFunction).map<LambdaHandlerCandidate>(symbol => {
         return {
             filename,
-            handlerName: `${path.parse(filename).name}.${symbol.name}`,
+            handlerName: `${handlerPath}.${symbol.name}`,
             range: symbol.range,
         }
     })
@@ -96,7 +107,17 @@ async function makeLambdaDebugFile(params: {
     }
     const logger = getLogger()
 
-    const [handlerFilePrefix, handlerFunctionName] = params.handlerName.split('.')
+    // Last piece of the handler is the function name. Remove it before modifying for pathing.
+    const splitHandlerName = params.handlerName.split('.')
+    const handlerFunctionName = splitHandlerName[splitHandlerName.length - 1]
+    const handlerFiles = splitHandlerName.slice(0, splitHandlerName.length - 2)
+
+    // Handlers for Python imports must be joined by periods.
+    // ./foo/bar.py => foo.bar
+    const handlerFileImportPath = handlerFiles.join('.')
+    // SAM doesn't handle periods in Python filenames. Replacing with underscores for the filename.
+    const handlerFilePrefix = handlerFiles.join('_')
+
     const debugHandlerFileName = `${handlerFilePrefix}___vsctk___debug`
     const debugHandlerFunctionName = 'lambda_handler'
     // TODO: Sanitize handlerFilePrefix, handlerFunctionName, debugHandlerFunctionName
@@ -108,7 +129,7 @@ async function makeLambdaDebugFile(params: {
 
 import ptvsd
 import sys
-from ${handlerFilePrefix} import ${handlerFunctionName} as _handler
+from ${handlerFileImportPath} import ${handlerFunctionName} as _handler
 
 
 def ${debugHandlerFunctionName}(event, context):

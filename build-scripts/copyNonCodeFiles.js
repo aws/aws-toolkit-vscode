@@ -15,7 +15,7 @@ const outRoot = path.join(repoRoot, 'dist')
 const relativePaths = [
     path.join('src', 'templates'),
     path.join('src', 'test', 'shared', 'cloudformation', 'yaml'),
-    path.join('src', 'integrationTest-samples')
+    path.join('src', 'testFixtures'),
 ]
 
 ;(async () => {
@@ -23,7 +23,7 @@ const relativePaths = [
         await fs.copy(path.join(repoRoot, relativePath), path.join(outRoot, relativePath), {
             recursive: true,
             overwrite: true,
-            errorOnExist: false
+            errorOnExist: false,
         })
     }
 })()
