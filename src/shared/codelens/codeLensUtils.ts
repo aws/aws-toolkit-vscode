@@ -12,32 +12,28 @@ import { localize } from '../utilities/vsCodeUtils'
 import * as pythonDebug from './pythonCodeLensProvider'
 import * as csharpDebug from './csharpCodeLensProvider'
 import * as tsDebug from './typescriptCodeLensProvider'
-import { SettingsConfiguration } from '../settingsConfiguration'
 import { LambdaLocalInvokeParams } from './localLambdaRunner'
 import { ExtContext } from '../extensions'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
 import { nodeJsRuntimes } from '../../lambda/models/samLambdaRuntime'
+import { CODE_TARGET_TYPE } from '../sam/debugger/awsSamDebugConfiguration'
 
 export type Language = 'python' | 'javascript' | 'csharp'
 
-interface MakeConfigureCodeLensParams {
-    document: vscode.TextDocument
+interface MakeAddDebugConfigCodeLensParams {
     handlerName: string
     range: vscode.Range
-    workspaceFolder: vscode.WorkspaceFolder
-    language: Language
+    rootUri: vscode.Uri
 }
 
 export async function makeCodeLenses({
     document,
     token,
     handlers,
-    language,
 }: {
     document: vscode.TextDocument
     token: vscode.CancellationToken
     handlers: LambdaHandlerCandidate[]
-    language: Language
 }): Promise<vscode.CodeLens[]> {
     const workspaceFolder: vscode.WorkspaceFolder | undefined = vscode.workspace.getWorkspaceFolder(document.uri)
 
@@ -57,15 +53,12 @@ export async function makeCodeLenses({
                   )
 
         try {
-            const baseParams: MakeConfigureCodeLensParams = {
-                document,
+            const baseParams: MakeAddDebugConfigCodeLensParams = {
                 handlerName: handler.handlerName,
                 range,
-                workspaceFolder,
-                language,
+                rootUri: handler.projectRoot,
             }
-            lenses.push(makeLocalInvokeCodeLens({ ...baseParams, isDebug: false }))
-            lenses.push(makeLocalInvokeCodeLens({ ...baseParams, isDebug: true }))
+            lenses.push(makeAddCodeSamDebugCodeLens(baseParams))
         } catch (err) {
             getLogger().error(
                 `Could not generate 'configure' code lens for handler '${handler.handlerName}'`,
@@ -81,26 +74,23 @@ export function getInvokeCmdKey(language: Language) {
     return `aws.lambda.local.invoke.${language}`
 }
 
-// TODO: Morph into new debug config codelens
-function makeLocalInvokeCodeLens(
-    params: MakeConfigureCodeLensParams & { isDebug: boolean; language: Language }
-): vscode.CodeLens {
-    const title: string = params.isDebug
-        ? localize('AWS.codelens.lambda.invoke.debug', 'Debug Locally')
-        : localize('AWS.codelens.lambda.invoke', 'Run Locally')
-
+function makeAddCodeSamDebugCodeLens(params: MakeAddDebugConfigCodeLensParams): vscode.CodeLens {
     const command: vscode.Command = {
-        arguments: [params],
-        command: getInvokeCmdKey(params.language),
-        title,
+        title: localize('AWS.command.addSamDebugConfiguration', 'Add Debug Configuration'),
+        command: 'aws.addSamDebugConfiguration',
+        arguments: [
+            {
+                resourceName: params.handlerName,
+                rootUri: params.rootUri,
+            },
+            CODE_TARGET_TYPE,
+        ],
     }
 
     return new vscode.CodeLens(params.range, command)
 }
 
-export async function makePythonCodeLensProvider(
-    pythonSettings: SettingsConfiguration
-): Promise<vscode.CodeLensProvider> {
+export async function makePythonCodeLensProvider(): Promise<vscode.CodeLensProvider> {
     const logger = getLogger()
 
     return {
@@ -125,7 +115,6 @@ export async function makePythonCodeLensProvider(
                 document,
                 handlers,
                 token,
-                language: 'python',
             })
         },
     }
@@ -146,7 +135,6 @@ export async function makeCSharpCodeLensProvider(): Promise<vscode.CodeLensProvi
                 document,
                 handlers,
                 token,
-                language: 'csharp',
             })
         },
     }
@@ -167,7 +155,6 @@ export function makeTypescriptCodeLensProvider(): vscode.CodeLensProvider {
                 document,
                 handlers,
                 token,
-                language: 'javascript',
             })
         },
     }

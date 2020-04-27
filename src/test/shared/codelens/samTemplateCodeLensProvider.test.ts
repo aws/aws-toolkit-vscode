@@ -9,7 +9,10 @@ import * as vscode from 'vscode'
 import { TemplateFunctionResource, TemplateSymbolResolver } from '../../../shared/cloudformation/templateSymbolResolver'
 import { SamTemplateCodeLensProvider } from '../../../shared/codelens/samTemplateCodeLensProvider'
 import { LaunchConfiguration } from '../../../shared/debug/launchConfiguration'
-import { AwsSamDebuggerConfiguration } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
+import {
+    AwsSamDebuggerConfiguration,
+    TEMPLATE_TARGET_TYPE,
+} from '../../../shared/sam/debugger/awsSamDebugConfiguration'
 import { AddSamDebugConfigurationInput } from '../../../shared/sam/debugger/commands/addSamDebugConfiguration'
 
 const range = new vscode.Range(0, 0, 0, 0)
@@ -77,13 +80,13 @@ describe('SamTemplateCodeLensProvider', async () => {
 
         const expectedInput: AddSamDebugConfigurationInput = {
             resourceName: 'newResource',
-            templateUri: templateUri,
+            rootUri: templateUri,
         }
 
         const expectedCodeLens: vscode.CodeLens = new vscode.CodeLens(range, {
             title: 'Add Debug Configuration',
             command: 'aws.addSamDebugConfiguration',
-            arguments: [expectedInput],
+            arguments: [expectedInput, TEMPLATE_TARGET_TYPE],
         })
 
         assert.deepStrictEqual(codeLenses, [expectedCodeLens])

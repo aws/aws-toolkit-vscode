@@ -2,7 +2,7 @@
  * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { Range } from 'vscode'
+import { Range, Uri } from 'vscode'
 
 export interface AbsoluteCharOffset {
     positionStart: number
@@ -12,7 +12,7 @@ export interface AbsoluteCharOffset {
 export type RangeOrCharOffset = Range | AbsoluteCharOffset
 
 export interface LambdaHandlerCandidate extends RootlessLambdaHandlerCandidate {
-    projectRoot: string
+    projectRoot: Uri
 }
 
 export interface RootlessLambdaHandlerCandidate {
