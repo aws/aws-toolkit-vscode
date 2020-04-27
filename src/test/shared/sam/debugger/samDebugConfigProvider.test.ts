@@ -50,9 +50,14 @@ function assertEqualLaunchConfigs(actual: SamLaunchRequestArgs, expected: SamLau
 
     // Build dir is randomly-generated; check that it looks reasonable.
     assert.ok(actual.baseBuildDir && actual.baseBuildDir.length > 9)
+    if (expected.type === 'python') {
+        // manifestPath is randomly-generated; check that it looks reasonable.
+        assert.ok(actual.manifestPath && actual.manifestPath.length > 9)
+    }
 
     // Remove noisy properties before doing a deep-compare.
     for (const o of [actual, expected]) {
+        delete o.manifestPath
         delete o.documentUri
         delete o.baseBuildDir
         delete o.samTemplatePath
@@ -516,6 +521,82 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 const sourceFileMap = actual.sourceFileMap['/var/task']
                 assert.ok(/^[A-Z]:/.test(sourceFileMap.substring(0, 2)), 'sourceFileMap driveletter must be uppercase')
             }
+
+            assertEqualLaunchConfigs(actual, expected, appDir)
+        })
+
+        it('target=code: python 3.7', async () => {
+            const appDir = pathutil.normalize(
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/python3.7-plain-sam-app/')
+            )
+            const folder = testutil.getWorkspaceFolder(appDir)
+            const c = {
+                type: AWS_SAM_DEBUG_TYPE,
+                name: 'Test debugconfig',
+                request: DIRECT_INVOKE_TYPE,
+                invokeTarget: {
+                    target: CODE_TARGET_TYPE,
+                    lambdaHandler: 'app.lambda_handler',
+                    projectRoot: 'hello_world',
+                },
+                lambda: {
+                    runtime: 'python3.7',
+                },
+            }
+            ;(c as any).__noInvoke = true
+            const actual = (await debugConfigProvider.resolveDebugConfiguration(
+                folder,
+                c
+            ))!! as DotNetCoreDebugConfiguration
+            const expected: SamLaunchRequestArgs = {
+                request: 'attach', // Input "direct-invoke", output "attach".
+                runtime: 'python3.7',
+                runtimeFamily: lambdaModel.RuntimeFamily.Python,
+                type: 'python', // Input "aws-sam", output "python".
+                handlerName: '___vsctk___debug.lambda_handler',
+                workspaceFolder: {
+                    index: 0,
+                    name: 'test-workspace-folder',
+                    uri: vscode.Uri.file(appDir),
+                },
+                baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
+                codeRoot: pathutil.normalize(path.join(appDir, 'hello_world')),
+                debugPort: 5858,
+                documentUri: vscode.Uri.file(''), // TODO: remove or test.
+                invokeTarget: {
+                    lambdaHandler: 'app.lambda_handler',
+                    projectRoot: 'hello_world',
+                    target: 'code',
+                },
+                lambda: {
+                    runtime: 'python3.7',
+                },
+                name: 'SamLocalDebug',
+                noDebug: false,
+                originalHandlerName: '___vsctk___debug.lambda_handler',
+                originalSamTemplatePath: '?',
+                samTemplatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
+                port: 5858,
+                redirectOutput: false,
+
+                //
+                // Python-related fields
+                //
+                host: 'localhost',
+                outFilePath: pathutil.normalize(path.join(appDir, 'hello_world/___vsctk___debug.py')),
+                pathMappings: [
+                    {
+                        localRoot: pathutil.normalize(path.join(appDir, 'hello_world')),
+                        remoteRoot: '/var/task',
+                    },
+                ],
+            }
+
+            // Windows: sourceFileMap driveletter must be uppercase.
+            // if (os.platform() === 'win32') {
+            //     const sourceFileMap = actual.sourceFileMap['/var/task']
+            //     assert.ok(/^[A-Z]:/.test(sourceFileMap.substring(0, 2)), 'sourceFileMap driveletter must be uppercase')
+            // }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
         })
