@@ -16,7 +16,6 @@ import { SettingsConfiguration } from '../settingsConfiguration'
 import { LambdaLocalInvokeParams } from './localLambdaRunner'
 import { ExtContext } from '../extensions'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
-import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
 import { nodeJsRuntimes } from '../../lambda/models/samLambdaRuntime'
 
 export type Language = 'python' | 'javascript' | 'csharp'
@@ -135,7 +134,7 @@ export async function makePythonCodeLensProvider(
 export async function makeCSharpCodeLensProvider(): Promise<vscode.CodeLensProvider> {
     const logger = getLogger()
 
-    const codeLensProvider: vscode.CodeLensProvider = {
+    return {
         provideCodeLenses: async (
             document: vscode.TextDocument,
             token: vscode.CancellationToken
@@ -151,27 +150,18 @@ export async function makeCSharpCodeLensProvider(): Promise<vscode.CodeLensProvi
             })
         },
     }
-
-    return codeLensProvider
 }
 
 export function makeTypescriptCodeLensProvider(): vscode.CodeLensProvider {
+    const logger = getLogger()
+
     return {
         provideCodeLenses: async (
             document: vscode.TextDocument,
             token: vscode.CancellationToken
         ): Promise<vscode.CodeLens[]> => {
-            const search: TypescriptLambdaHandlerSearch = new TypescriptLambdaHandlerSearch(
-                document.uri.fsPath,
-                document.getText()
-            )
-            const unprocessedHandlers: LambdaHandlerCandidate[] = await search.findCandidateLambdaHandlers()
-
-            // For Javascript CodeLenses, store the complete relative pathed handler name
-            // (eg: src/app.handler) instead of only the pure handler name (eg: app.handler)
-            // Without this, the CodeLens command is unable to resolve a match back to a sam template.
-            // This is done to address https://github.com/aws/aws-toolkit-vscode/issues/757
-            const handlers = await tsDebug.decorateHandlerNames(unprocessedHandlers, document.uri)
+            const handlers = await tsDebug.getLambdaHandlerCandidates(document)
+            logger.debug('makeTypescriptCodeLensProvider handlers:', JSON.stringify(handlers, undefined, 2))
 
             return makeCodeLenses({
                 document,

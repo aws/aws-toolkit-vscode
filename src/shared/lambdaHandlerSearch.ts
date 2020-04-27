@@ -11,7 +11,11 @@ export interface AbsoluteCharOffset {
 
 export type RangeOrCharOffset = Range | AbsoluteCharOffset
 
-export interface LambdaHandlerCandidate {
+export interface LambdaHandlerCandidate extends RootlessLambdaHandlerCandidate {
+    projectRoot: string
+}
+
+export interface RootlessLambdaHandlerCandidate {
     handlerName: string
     filename: string
     range: RangeOrCharOffset
@@ -22,5 +26,5 @@ export interface LambdaHandlerSearch {
      * @description Looks for functions that appear to be valid Lambda Function Handlers.
      * @returns A collection of information for each detected candidate.
      */
-    findCandidateLambdaHandlers(): Promise<LambdaHandlerCandidate[]>
+    findCandidateLambdaHandlers(): Promise<RootlessLambdaHandlerCandidate[]>
 }
