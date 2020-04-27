@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.nio.file.Files
+import java.nio.file.Paths
 
 buildscript {
     repositories {
@@ -269,7 +271,35 @@ task ktlint(type: JavaExec, group: "verification") {
     inputs.files(project.fileTree(dir: ".", include: "**/*.kt"))
     outputs.dir("${project.buildDir}/reports/ktlint/")
 }
+
+task validateLocalizedMessages(group: "verification") {
+    BufferedReader files = Files.newBufferedReader(Paths.get("${project.rootDir}/resources/resources/software/aws/toolkits/resources/localized_messages.properties"))
+    files
+        .lines()
+        .map({ item ->
+            if (item == null || item.isEmpty()) {
+                return ""
+            }
+            String[] chunks = item.split("=")
+            if (chunks.length <= 1) {
+                return ""
+            } else {
+                return chunks[0]
+            }
+        })
+        .filter({item -> !item.isEmpty()})
+        .reduce({item1, item2 ->
+            if (item1 > item2) {
+                throw new GradleException("localization file is not sorted:" + item1 + " > " + item2)
+            }
+
+            return  item2
+        })
+    println("it is sorted")
+}
+
 check.dependsOn ktlint
+check.dependsOn validateLocalizedMessages
 check.dependsOn verifyPlugin
 
 task coverageReport(type: JacocoReport) {
