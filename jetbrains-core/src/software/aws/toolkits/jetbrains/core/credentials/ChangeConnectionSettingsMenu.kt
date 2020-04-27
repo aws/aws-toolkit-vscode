@@ -64,10 +64,10 @@ class ChangeAccountSettingsActionGroup(private val project: Project, private val
     }
 }
 
-private class ChangePartitionActionGroup : DefaultActionGroup(message("settings.partitions"), true) {
+private class ChangePartitionActionGroup : DefaultActionGroup(message("settings.partitions"), true), DumbAware {
     init {
         addAll(AwsRegionProvider.getInstance().partitions().map {
-            object : ToggleAction(it.value.description) {
+            object : ToggleAction(it.value.description), DumbAware {
                 private val partition = it.value
                 override fun isSelected(e: AnActionEvent) = getAccountSetting(e).selectedPartition == partition
 
