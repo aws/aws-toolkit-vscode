@@ -75,6 +75,10 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
 
             for (const templateDatum of templates) {
                 if (isInDirectory(folderPath, templateDatum.path)) {
+                    if (!templateDatum.template.Resources) {
+                        getLogger().error(`provideDebugConfigurations: invalid template: ${templateDatum.path}`)
+                        continue
+                    }
                     const resources = getResourcesFromTemplateDatum(templateDatum)
                     for (const resourceKey of resources.keys()) {
                         configs.push(createTemplateAwsSamDebugConfig(resourceKey, templateDatum.path))

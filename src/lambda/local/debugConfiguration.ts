@@ -155,8 +155,20 @@ export function getTemplateResource(config: AwsSamDebuggerConfiguration): CloudF
     }
     const templateInvoke = config.invokeTarget as TemplateTargetProperties
     const cfnTemplate = getTemplate(config)
+    if (!cfnTemplate) {
+        throw Error(`template not found (not registered?): ${templateInvoke.samTemplatePath}`)
+    }
+    if (!cfnTemplate?.Resources) {
+        throw Error(`no Resources in template: ${templateInvoke.samTemplatePath}`)
+    }
     const templateResource: CloudFormation.Resource | undefined = cfnTemplate?.Resources![
         templateInvoke.samTemplateResource!!
     ]
+    if (!templateResource) {
+        throw Error(
+            `template Resources object does not contain key '${templateInvoke.samTemplateResource}':` +
+                ` ${JSON.stringify(cfnTemplate?.Resources)}`
+        )
+    }
     return templateResource
 }

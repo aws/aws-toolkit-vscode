@@ -23,6 +23,7 @@ import {
 } from '../../../../shared/sam/debugger/awsSamDebugConfiguration'
 import { SamDebugConfigProvider } from '../../../../shared/sam/debugger/awsSamDebugger'
 import { SamLaunchRequestArgs } from '../../../../shared/sam/debugger/samDebugSession'
+import * as debugConfiguration from '../../../../lambda/local/debugConfiguration'
 import * as pathutil from '../../../../shared/utilities/pathUtils'
 import { FakeExtensionContext } from '../../../fakeExtensionContext'
 import * as testutil from '../../../testUtil'
@@ -107,6 +108,11 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             // No workspace folder:
             assert.deepStrictEqual(await debugConfigProvider.provideDebugConfigurations(undefined), [])
             // Workspace with no templates:
+            assert.deepStrictEqual(await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder), [])
+
+            // Malformed template.yaml:
+            await strToYamlFile('bogus', tempFile.fsPath)
+            await registry.addTemplateToRegistry(tempFile)
             assert.deepStrictEqual(await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder), [])
         })
 
@@ -325,7 +331,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 },
             }
             ;(c as any).__noInvoke = true
-            const actual = (await debugConfigProvider.resolveDebugConfiguration(folder, c))!!
+            const actual = (await debugConfigProvider.resolveDebugConfiguration(folder, c))!
             const expected: SamLaunchRequestArgs = {
                 type: 'node', // Input "aws-sam", output "node".
                 request: 'attach', // Input "direct-invoke", output "attach".
@@ -396,7 +402,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 tempFile.fsPath
             )
             await registry.addTemplateToRegistry(tempFile)
-            const actual = (await debugConfigProvider.resolveDebugConfiguration(folder, c))!!
+            const actual = (await debugConfigProvider.resolveDebugConfiguration(folder, c))!
             const tempDir = path.dirname(actual.codeRoot)
 
             const expected: SamLaunchRequestArgs = {
@@ -461,7 +467,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             const actual = (await debugConfigProvider.resolveDebugConfiguration(
                 folder,
                 c
-            ))!! as DotNetCoreDebugConfiguration
+            ))! as DotNetCoreDebugConfiguration
             const expected: SamLaunchRequestArgs = {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'dotnetcore2.1', // lambdaModel.dotNetRuntimes[0],
@@ -547,7 +553,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             const actual = (await debugConfigProvider.resolveDebugConfiguration(
                 folder,
                 c
-            ))!! as DotNetCoreDebugConfiguration
+            ))! as DotNetCoreDebugConfiguration
             const expected: SamLaunchRequestArgs = {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'python3.7',
@@ -592,11 +598,15 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 ],
             }
 
-            // Windows: sourceFileMap driveletter must be uppercase.
-            // if (os.platform() === 'win32') {
-            //     const sourceFileMap = actual.sourceFileMap['/var/task']
-            //     assert.ok(/^[A-Z]:/.test(sourceFileMap.substring(0, 2)), 'sourceFileMap driveletter must be uppercase')
-            // }
+            // Windows: pathMappings has uppercase and lowercase variants.
+            // See getLocalRootVariants(). ref: 4bd1418863edd45e27
+            if (os.platform() === 'win32') {
+                const localRoot: string = expected.pathMappings[0].localRoot
+                expected.pathMappings.unshift({
+                    localRoot: localRoot.substring(0, 1).toLowerCase() + localRoot.substring(1),
+                    remoteRoot: '/var/task',
+                })
+            }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
         })
@@ -634,7 +644,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 tempFile.fsPath
             )
             await registry.addTemplateToRegistry(tempFile)
-            const actual = (await debugConfigProvider.resolveDebugConfiguration(folder, c))!!
+            const actual = (await debugConfigProvider.resolveDebugConfiguration(folder, c))!
             const tempDir = path.dirname(actual.codeRoot)
 
             const expected: SamLaunchRequestArgs = {
@@ -828,5 +838,82 @@ describe('createTemplateAwsSamDebugConfig', () => {
         assert.deepStrictEqual(config.lambda?.environmentVariables, params.environmentVariables)
         assert.strictEqual(config.sam?.dockerNetwork, params.dockerNetwork)
         assert.strictEqual(config.sam?.containerBuild, undefined)
+    })
+})
+
+describe('debugConfiguration', () => {
+    let registry: CloudFormationTemplateRegistry
+    let tempFolder: string
+    let tempFile: vscode.Uri
+
+    beforeEach(async () => {
+        tempFolder = await makeTemporaryToolkitFolder()
+        tempFile = vscode.Uri.file(path.join(tempFolder, 'test.yaml'))
+        registry = CloudFormationTemplateRegistry.getRegistry()
+    })
+
+    afterEach(async () => {
+        await rmrf(tempFolder)
+    })
+
+    it('getCodeRoot(), getHandlerName() with invokeTarget=code', async () => {
+        const folder = testutil.getWorkspaceFolder(tempFolder)
+        const relativePath = 'src'
+        const fullPath = pathutil.normalize(path.join(tempFolder, relativePath))
+
+        const config = {
+            type: AWS_SAM_DEBUG_TYPE,
+            name: 'test debugconfig',
+            request: DIRECT_INVOKE_TYPE,
+            invokeTarget: {
+                target: CODE_TARGET_TYPE,
+                lambdaHandler: 'my.test.handler',
+                projectRoot: '',
+            },
+            lambda: {
+                runtime: [...lambdaModel.nodeJsRuntimes.values()][0],
+            },
+        }
+
+        assert.strictEqual(debugConfiguration.getHandlerName(config), 'my.test.handler')
+
+        // Config with relative path:
+        config.invokeTarget.projectRoot = relativePath
+        assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
+
+        // Config with absolute path:
+        config.invokeTarget.projectRoot = fullPath
+        assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
+    })
+
+    it('getCodeRoot(), getHandlerName() with invokeTarget=template', async () => {
+        const folder = testutil.getWorkspaceFolder(tempFolder)
+        const relativePath = 'src'
+        const fullPath = pathutil.normalize(path.join(tempFolder, relativePath))
+
+        const config = {
+            type: AWS_SAM_DEBUG_TYPE,
+            name: 'test debugconfig',
+            request: DIRECT_INVOKE_TYPE,
+            invokeTarget: {
+                target: TEMPLATE_TARGET_TYPE,
+                samTemplatePath: tempFile.fsPath,
+                samTemplateResource: 'TestResource',
+            },
+            lambda: {
+                runtime: [...lambdaModel.nodeJsRuntimes.values()][0],
+            },
+        }
+
+        // Template with relative path:
+        await strToYamlFile(makeSampleSamTemplateYaml(true, { codeUri: relativePath }), tempFile.fsPath)
+        await registry.addTemplateToRegistry(tempFile)
+        assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
+        assert.strictEqual(debugConfiguration.getHandlerName(config), 'handler')
+
+        // Template with absolute path:
+        await strToYamlFile(makeSampleSamTemplateYaml(true, { codeUri: fullPath }), tempFile.fsPath)
+        await registry.addTemplateToRegistry(tempFile)
+        assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
     })
 })
