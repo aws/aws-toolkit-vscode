@@ -7,7 +7,9 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { Disposable } from 'vscode-languageclient'
-import { AslVisualization, AslVisualizationManager } from '../../../../src/stepFunctions/commands/visualizeStateMachine'
+import { AslVisualizationManager } from '../../../../src/stepFunctions/commands/visualizeStateMachine/aslVisualizationManager'
+import { AslVisualization } from '../../../../src/stepFunctions/commands/visualizeStateMachine/aslVisualization'
+
 import { ext } from '../../../shared/extensionGlobals'
 import { StateMachineGraphCache } from '../../../stepFunctions/utils'
 
@@ -187,15 +189,15 @@ describe('StepFunctions VisualizeStateMachine', () => {
         assert.strictEqual(vis.getDisposables().length, 4)
 
         let panel = vis.getPanel()
-        assert(panel)
+        assert.ok(panel)
         panel = <vscode.WebviewPanel>panel
-        assert(panel.title.length > 0)
+        assert.ok(panel.title.length > 0)
         assert.strictEqual(panel.viewType, 'stateMachineVisualization')
 
         let webview = vis.getWebview()
-        assert(webview)
+        assert.ok(webview)
         webview = <vscode.Webview>webview
-        assert(webview.html)
+        assert.ok(webview.html)
     })
 
     it('Test AslVisualizationManager on setup managedVisualizations set is empty', async () => {
@@ -227,9 +229,7 @@ describe('StepFunctions VisualizeStateMachine', () => {
             assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
             const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
-            for (const vis of managedVisualizations) {
-                assert.deepStrictEqual(vis.documentUri, mockTextDocumentOne.uri)
-            }
+            assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.path))
         } catch (error) {
             assert.ok(error instanceof Error)
             const errorCasted = <Error>error
@@ -255,9 +255,7 @@ describe('StepFunctions VisualizeStateMachine', () => {
             assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
             const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
-            for (const vis of managedVisualizations) {
-                assert.deepStrictEqual(vis.documentUri, mockTextDocumentOne.uri)
-            }
+            assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.path))
         } catch (error) {
             assert.ok(error instanceof Error)
             const errorCasted = <Error>error
@@ -284,16 +282,8 @@ describe('StepFunctions VisualizeStateMachine', () => {
             assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
             const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
-            let foundVisOne = false
-            let foundVisTwo = false
-            for (const vis of managedVisualizations) {
-                if (vis.documentUri === mockTextDocumentOne.uri) {
-                    foundVisOne = true
-                } else if (vis.documentUri === mockTextDocumentTwo.uri) {
-                    foundVisTwo = true
-                }
-            }
-            assert(foundVisOne && foundVisTwo)
+            assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.path))
+            assert.ok(managedVisualizations.get(mockTextDocumentTwo.uri.path))
         } catch (error) {
             assert.ok(error instanceof Error)
             const errorCasted = <Error>error
@@ -330,16 +320,8 @@ describe('StepFunctions VisualizeStateMachine', () => {
             assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
             const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
-            let foundVisOne = false
-            let foundVisTwo = false
-            for (const vis of managedVisualizations) {
-                if (vis.documentUri === mockTextDocumentOne.uri) {
-                    foundVisOne = true
-                } else if (vis.documentUri === mockTextDocumentTwo.uri) {
-                    foundVisTwo = true
-                }
-            }
-            assert(foundVisOne && foundVisTwo)
+            assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.path))
+            assert.ok(managedVisualizations.get(mockTextDocumentTwo.uri.path))
         } catch (error) {
             assert.ok(error instanceof Error)
             const errorCasted = <Error>error
@@ -364,9 +346,7 @@ describe('StepFunctions VisualizeStateMachine', () => {
             if (!panel) {
                 assert.fail('Panel was not successfully generated')
             }
-            const onDisposeSpy = sinon.spy(aslVisualizationManager, 'deleteVisualization')
             panel.dispose()
-            assert(onDisposeSpy.calledOnce)
             assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
         } catch (error) {
             assert.ok(error instanceof Error)
@@ -397,9 +377,7 @@ describe('StepFunctions VisualizeStateMachine', () => {
             if (!panel) {
                 assert.fail('Panel was not successfully generated')
             }
-            const onDisposeSpy = sinon.spy(aslVisualizationManager, 'deleteVisualization')
             panel.dispose()
-            assert(onDisposeSpy.calledOnce)
             assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
         } catch (error) {
             assert.ok(error instanceof Error)

@@ -11,7 +11,7 @@ import { spy } from 'sinon'
 import * as vscode from 'vscode'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
-import { messageObject } from '../../stepFunctions/commands/visualizeStateMachine'
+import { messageObject } from '../../stepFunctions/commands/visualizeStateMachine/aslVisualization'
 import { assertThrowsError } from '../../test/shared/utilities/assertUtils'
 import { activateExtension } from '../integrationTestsUtilities'
 

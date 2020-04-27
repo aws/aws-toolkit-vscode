@@ -15,9 +15,8 @@ const localize = nls.loadMessageBundle()
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { ext } from '../../shared/extensionGlobals'
-import { getLogger, Logger } from '../../shared/logger'
-import { StateMachineGraphCache } from '../utils'
+import { ext } from '../../../shared/extensionGlobals'
+import { getLogger, Logger } from '../../../shared/logger'
 
 export interface messageObject {
     command: string
@@ -29,85 +28,20 @@ export interface messageObject {
 const documentSettings: DocumentLanguageSettings = { comments: 'error', trailingCommas: 'error' }
 const languageService = getLanguageService({})
 
-export class AslVisualizationManager {
-    protected readonly managedVisualizations: Set<AslVisualization> = new Set<AslVisualization>()
-
-    public getManagedVisualizations() {
-        return this.managedVisualizations
+export async function isDocumentValid(textDocument?: vscode.TextDocument): Promise<boolean> {
+    if (!textDocument) {
+        return false
     }
 
-    public async visualizeStateMachine(globalStorage: vscode.Memento): Promise<vscode.WebviewPanel | void> {
-        const logger: Logger = getLogger()
-        const cache = new StateMachineGraphCache()
+    const text = textDocument.getText()
+    const doc = ASLTextDocument.create(textDocument.uri.path, textDocument.languageId, textDocument.version, text)
+    // tslint:disable-next-line: no-inferred-empty-object-type
+    const jsonDocument = languageService.parseJSONDocument(doc)
+    const diagnostics = await languageService.doValidation(doc, jsonDocument, documentSettings)
 
-        /* TODO: Determine behaviour when command is run against bad input, or
-         * non-json files. Determine if we want to limit the command to only a
-         * specifc subset of file types ( .json only, custom .states extension, etc...)
-         * Ensure tests are written for this use case as well.
-         */
-        const activeTextEditor: vscode.TextEditor | undefined = vscode.window.activeTextEditor
+    const isValid = !diagnostics.some(diagnostic => diagnostic.severity === DiagnosticSeverity.Error)
 
-        let textDocument: vscode.TextDocument
-
-        if (activeTextEditor) {
-            textDocument = activeTextEditor.document
-        } else {
-            logger.error('Could not get active text editor for state machine render.')
-            throw new Error('Could not get active text editor for state machine render.')
-        }
-
-        // Attempt to retrieve existing visualization if it exists.
-        const existingVisualization = this.getExistingVisualization(textDocument)
-        if (existingVisualization) {
-            existingVisualization.showPanel()
-
-            return existingVisualization.getPanel()
-        }
-
-        // Existing visualization does not exist, construct new visualization
-        try {
-            await cache.updateCache(globalStorage)
-
-            return this.createNewVisualization(textDocument)
-        } catch (err) {
-            vscode.window.showInformationMessage(
-                localize(
-                    'AWS.stepfunctions.visualisation.errors.rendering',
-                    'There was an error rendering State Machine Graph, check logs for details.'
-                )
-            )
-
-            logger.debug('Unable to setup webview panel.')
-            logger.error(err as Error)
-        }
-
-        return
-    }
-
-    public deleteVisualization(visualizationToDelete: AslVisualization) {
-        this.managedVisualizations.delete(visualizationToDelete)
-    }
-
-    private createNewVisualization(textDocument: vscode.TextDocument): vscode.WebviewPanel | void {
-        const newVisualization = new AslVisualization(textDocument)
-        this.managedVisualizations.add(newVisualization)
-
-        newVisualization.getOnVisualizationDisposeEvent()(() => {
-            this.deleteVisualization(newVisualization)
-        })
-
-        return newVisualization.getPanel()
-    }
-
-    private getExistingVisualization(documentToFind: vscode.TextDocument): AslVisualization | void {
-        for (const vis of this.managedVisualizations) {
-            if (vis.documentUri.path === documentToFind.uri.path) {
-                return vis
-            }
-        }
-
-        return
-    }
+    return isValid
 }
 
 export class AslVisualization {
@@ -122,26 +56,24 @@ export class AslVisualization {
         this.webviewPanel = this.setupWebviewPanel(textDocument)
     }
 
-    public getOnVisualizationDisposeEvent() {
+    public get onVisualizationDisposeEvent() {
         return this.onVisualizationDisposeEmitter.event
     }
 
-    public getPanel(): vscode.WebviewPanel | void {
-        if (this.webviewPanel && !this.isPanelDisposed) {
+    public getPanel(): vscode.WebviewPanel | undefined {
+        if (!this.isPanelDisposed) {
             return this.webviewPanel
         }
     }
 
-    public getWebview(): vscode.Webview | void {
-        if (this.webviewPanel?.webview && !this.isPanelDisposed) {
-            return this.webviewPanel.webview
+    public getWebview(): vscode.Webview | undefined {
+        if (!this.isPanelDisposed) {
+            return this.webviewPanel?.webview
         }
     }
 
     public showPanel(): void {
-        if (this.webviewPanel && !this.isPanelDisposed) {
-            this.webviewPanel.reveal()
-        }
+        this.getPanel()?.reveal()
     }
 
     private setupWebviewPanel(textDocument: vscode.TextDocument): vscode.WebviewPanel {
@@ -192,7 +124,7 @@ export class AslVisualization {
         )
 
         const sendUpdateMessage = async (updatedTextDocument: vscode.TextDocument) => {
-            const isValid = await AslVisualization.isDocumentValid(updatedTextDocument)
+            const isValid = await isDocumentValid(updatedTextDocument)
             const webview = this.getWebview()
             if (this.isPanelDisposed || !webview) {
                 return
@@ -347,21 +279,5 @@ export class AslVisualization {
         const document = vscode.workspace.textDocuments.find(doc => doc.fileName === trackedDocumentURI.fsPath)
 
         return document !== undefined
-    }
-
-    private static async isDocumentValid(textDocument?: vscode.TextDocument): Promise<boolean> {
-        if (!textDocument) {
-            return false
-        }
-
-        const text = textDocument.getText()
-        const doc = ASLTextDocument.create(textDocument.uri.path, textDocument.languageId, textDocument.version, text)
-        // tslint:disable-next-line: no-inferred-empty-object-type
-        const jsonDocument = languageService.parseJSONDocument(doc)
-        const diagnostics = await languageService.doValidation(doc, jsonDocument, documentSettings)
-
-        const isValid = !diagnostics.some(diagnostic => diagnostic.severity === DiagnosticSeverity.Error)
-
-        return isValid
     }
 }
