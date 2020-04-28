@@ -110,7 +110,7 @@ async function makeLambdaDebugFile(params: {
     // Last piece of the handler is the function name. Remove it before modifying for pathing.
     const splitHandlerName = params.handlerName.split('.')
     const handlerFunctionName = splitHandlerName[splitHandlerName.length - 1]
-    const handlerFiles = splitHandlerName.slice(0, splitHandlerName.length - 2)
+    const handlerFiles = splitHandlerName.slice(0, splitHandlerName.length - 1)
 
     // Handlers for Python imports must be joined by periods.
     // ./foo/bar.py => foo.bar
