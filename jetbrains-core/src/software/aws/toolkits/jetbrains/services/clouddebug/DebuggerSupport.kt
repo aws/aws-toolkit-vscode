@@ -121,9 +121,16 @@ abstract class DebuggerSupport {
         val EP_NAME = ExtensionPointName<DebuggerSupport>("aws.toolkit.clouddebug.debuggerSupport")
 
         @JvmStatic
-        fun debuggers(): EnumMap<CloudDebuggingPlatform, DebuggerSupport> = EnumMap(EP_NAME.extensions.map {
-            it.platform to it
-        }.toMap())
+        fun debuggers(): EnumMap<CloudDebuggingPlatform, DebuggerSupport> {
+            val items = EP_NAME.extensions.map {
+                it.platform to it
+            }
+            return if (items.isEmpty()) {
+                EnumMap(CloudDebuggingPlatform::class.java)
+            } else {
+                EnumMap(items.toMap())
+            }
+        }
 
         @JvmStatic
         fun debugger(platform: CloudDebuggingPlatform) = debuggers()[platform]

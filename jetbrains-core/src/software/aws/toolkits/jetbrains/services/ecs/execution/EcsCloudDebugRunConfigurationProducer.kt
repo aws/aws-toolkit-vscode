@@ -4,7 +4,7 @@
 package software.aws.toolkits.jetbrains.services.ecs.execution
 
 import com.intellij.execution.actions.ConfigurationContext
-import com.intellij.execution.actions.RunConfigurationProducer
+import com.intellij.execution.actions.LazyRunConfigurationProducer
 import com.intellij.execution.configurations.ConfigurationFactory
 import com.intellij.openapi.util.Ref
 import com.intellij.psi.PsiElement
@@ -12,8 +12,7 @@ import software.aws.toolkits.jetbrains.core.credentials.activeCredentialProvider
 import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import software.aws.toolkits.jetbrains.services.ecs.EcsUtils
 
-@Suppress("DEPRECATION") // LazyRunConfigurationProducer not added till 2019.1 FIX_WHEN_MIN_IS_192
-class EcsCloudDebugRunConfigurationProducer : RunConfigurationProducer<EcsCloudDebugRunConfiguration>(getFactory()) {
+class EcsCloudDebugRunConfigurationProducer : LazyRunConfigurationProducer<EcsCloudDebugRunConfiguration>() {
     override fun isConfigurationFromContext(
         configuration: EcsCloudDebugRunConfiguration,
         context: ConfigurationContext
@@ -49,6 +48,8 @@ class EcsCloudDebugRunConfigurationProducer : RunConfigurationProducer<EcsCloudD
 
         return true
     }
+
+    override fun getConfigurationFactory(): ConfigurationFactory = getFactory()
 
     companion object {
         fun getFactory(): ConfigurationFactory = EcsCloudDebugRunConfigurationType.getInstance()

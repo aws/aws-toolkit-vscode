@@ -27,6 +27,7 @@ import software.aws.toolkits.jetbrains.services.cloudformation.executeChangeSetA
 import software.aws.toolkits.jetbrains.services.cloudformation.stack.StackWindowManager
 import software.aws.toolkits.jetbrains.services.cloudformation.validateSamTemplateHasResources
 import software.aws.toolkits.jetbrains.services.cloudformation.validateSamTemplateLambdaRuntimes
+import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.deploy.DeployServerlessApplicationDialog
 import software.aws.toolkits.jetbrains.services.lambda.deploy.SamDeployDialog
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
@@ -151,7 +152,12 @@ class DeployServerlessApplicationAction : AnAction(
     override fun update(e: AnActionEvent) {
         super.update(e)
 
-        e.presentation.isVisible = getSamTemplateFile(e) != null
+        // If there are no supported runtime groups, it will never succeed so don't show it
+        e.presentation.isVisible = if (LambdaHandlerResolver.supportedRuntimeGroups.isEmpty()) {
+            false
+        } else {
+            getSamTemplateFile(e) != null
+        }
     }
 
     /**

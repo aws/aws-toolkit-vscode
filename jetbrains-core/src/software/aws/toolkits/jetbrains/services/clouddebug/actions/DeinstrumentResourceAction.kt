@@ -8,6 +8,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeAction
+import software.aws.toolkits.jetbrains.services.clouddebug.DebuggerSupport
 import software.aws.toolkits.jetbrains.services.ecs.EcsServiceNode
 import software.aws.toolkits.jetbrains.services.ecs.EcsUtils
 import software.aws.toolkits.resources.message
@@ -30,7 +31,12 @@ class DeinstrumentResourceFromExplorerAction : SingleResourceNodeAction<EcsServi
     }
 
     override fun update(selected: EcsServiceNode, e: AnActionEvent) {
-        e.presentation.isVisible = EcsUtils.isInstrumented(selected.resourceArn())
+        // If there are no supported debuggers, showing this will just be confusing
+        e.presentation.isVisible = if (DebuggerSupport.debuggers().isEmpty()) {
+            false
+        } else {
+            EcsUtils.isInstrumented(selected.resourceArn())
+        }
     }
 
     companion object {

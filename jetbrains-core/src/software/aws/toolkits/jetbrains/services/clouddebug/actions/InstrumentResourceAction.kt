@@ -10,6 +10,7 @@ import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeAction
+import software.aws.toolkits.jetbrains.services.clouddebug.DebuggerSupport
 import software.aws.toolkits.jetbrains.services.ecs.EcsServiceNode
 import software.aws.toolkits.jetbrains.services.ecs.EcsUtils
 import software.aws.toolkits.jetbrains.utils.cloudDebugIsAvailable
@@ -34,7 +35,12 @@ class InstrumentResourceFromExplorerAction :
 
     override fun update(selected: EcsServiceNode, e: AnActionEvent) {
         val activeRegion = e.getRequiredData(PlatformDataKeys.PROJECT).activeRegion()
-        e.presentation.isVisible = !EcsUtils.isInstrumented(selected.resourceArn()) && cloudDebugIsAvailable(activeRegion)
+        // If there are no supported debuggers, showing this will just be confusing
+        e.presentation.isVisible = if (DebuggerSupport.debuggers().isEmpty()) {
+            false
+        } else {
+            !EcsUtils.isInstrumented(selected.resourceArn()) && cloudDebugIsAvailable(activeRegion)
+        }
     }
 }
 

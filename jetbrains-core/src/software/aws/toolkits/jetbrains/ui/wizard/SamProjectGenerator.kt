@@ -27,6 +27,7 @@ import icons.AwsIcons
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.services.lambda.SamNewProjectSettings
+import software.aws.toolkits.jetbrains.services.lambda.SamProjectTemplate
 import software.aws.toolkits.resources.message
 import javax.swing.Icon
 import javax.swing.JComponent
@@ -47,7 +48,8 @@ class SamProjectGenerator : ProjectTemplate,
     // or could be disposed if the user chooses to create a new project in the same window as their previous
     val defaultSourceCreatingProject = createDefaultSourceCreatingProject()
 
-    override fun isHidden(): Boolean = false
+    // Only show the generator if we have SAM templates to show
+    override fun isHidden(): Boolean = SamProjectTemplate.SAM_TEMPLATES.isEmpty()
 
     // steps are used by non-IntelliJ IDEs
     override fun createStep(

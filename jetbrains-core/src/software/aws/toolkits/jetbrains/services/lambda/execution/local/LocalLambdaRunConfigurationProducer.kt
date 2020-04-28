@@ -6,7 +6,8 @@ package software.aws.toolkits.jetbrains.services.lambda.execution.local
 import com.intellij.execution.RunManager
 import com.intellij.execution.RunnerAndConfigurationSettings
 import com.intellij.execution.actions.ConfigurationContext
-import com.intellij.execution.actions.RunConfigurationProducer
+import com.intellij.execution.actions.LazyRunConfigurationProducer
+import com.intellij.execution.configurations.ConfigurationFactory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Ref
 import com.intellij.psi.PsiElement
@@ -20,8 +21,7 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfig
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils.functionFromElement
 
-@Suppress("DEPRECATION") // LazyRunConfigurationProducer not added till 2019.1 FIX_WHEN_MIN_IS_192
-class LocalLambdaRunConfigurationProducer : RunConfigurationProducer<LocalLambdaRunConfiguration>(getFactory()) {
+class LocalLambdaRunConfigurationProducer : LazyRunConfigurationProducer<LocalLambdaRunConfiguration>() {
     // Filter all Lambda run CONFIGURATIONS down to only ones that are Lambda SAM for this run producer
     override fun getConfigurationSettingsList(runManager: RunManager): List<RunnerAndConfigurationSettings> =
         super.getConfigurationSettingsList(runManager).filter { it.configuration is LocalLambdaRunConfiguration }
@@ -91,6 +91,8 @@ class LocalLambdaRunConfigurationProducer : RunConfigurationProducer<LocalLambda
         val function = functionFromElement(element) ?: return false
         return templateFile == file && functionName == function.logicalName
     }
+
+    override fun getConfigurationFactory(): ConfigurationFactory = getFactory()
 
     companion object {
         fun getFactory() = LambdaRunConfigurationType.getInstance().configurationFactories.first { it is LocalLambdaRunConfigurationFactory }
