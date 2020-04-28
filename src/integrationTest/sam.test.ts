@@ -379,7 +379,7 @@ describe('SAM Integration Tests', async () => {
         //     }
         // }
 
-        function assertCodeLensReferencesHasSameRoot(codeLens: vscode.CodeLens, expectedSamTemplatePath: vscode.Uri) {
+        function assertCodeLensReferencesHasSameRoot(codeLens: vscode.CodeLens, expectedUri: vscode.Uri) {
             assert.ok(codeLens.command, 'CodeLens did not have a command')
             const command = codeLens.command!
 
@@ -390,7 +390,7 @@ describe('SAM Integration Tests', async () => {
             const params: AddSamDebugConfigurationInput = commandArguments[0]
             assert.ok(params, 'unexpected non-defined command argument')
 
-            assert.strictEqual(path.dirname(params.rootUri.fsPath), path.dirname(expectedSamTemplatePath.fsPath))
+            assert.strictEqual(path.dirname(params.rootUri.fsPath), path.dirname(expectedUri.fsPath))
         }
     }
 })
