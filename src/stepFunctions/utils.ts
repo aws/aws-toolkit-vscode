@@ -14,12 +14,23 @@ import { ext } from '../shared/extensionGlobals'
 import { mkdir } from '../shared/filesystem'
 import { fileExists } from '../shared/filesystemUtilities'
 import { getLogger, Logger } from '../shared/logger'
+import {
+    DiagnosticSeverity,
+    DocumentLanguageSettings,
+    getLanguageService,
+    TextDocument as ASLTextDocument,
+} from 'amazon-states-language-service'
+
+const documentSettings: DocumentLanguageSettings = { comments: 'error', trailingCommas: 'error' }
+const languageService = getLanguageService({})
 
 export const VISUALIZATION_SCRIPT_URL = 'https://do0of8uwbahzz.cloudfront.net/sfn-0.1.5.js'
 export const VISUALIZATION_CSS_URL = 'https://do0of8uwbahzz.cloudfront.net/graph-0.1.5.css'
 
 export const SCRIPTS_LAST_DOWNLOADED_URL = 'SCRIPT_LAST_DOWNLOADED_URL'
 export const CSS_LAST_DOWNLOADED_URL = 'CSS_LAST_DOWNLOADED_URL'
+
+export const ARN_REGEX_STRING = String.raw`^arn:aws([a-z]|\-)*:(states|lambda):([a-z]|\d|\-)*:([0-9]{12})?:.+:.+$`
 
 export interface UpdateCachedScriptOptions {
     globalStorage: vscode.Memento
@@ -172,4 +183,22 @@ export function isStepFunctionsRole(role: IAM.Role): boolean {
     const assumeRolePolicyDocument: string | undefined = role.AssumeRolePolicyDocument
 
     return !!assumeRolePolicyDocument?.includes(STEP_FUNCTIONS_SEVICE_PRINCIPAL)
+}
+
+export async function isDocumentValid(textDocument?: vscode.TextDocument): Promise<boolean> {
+    if (!textDocument) {
+        return false
+    }
+
+    const text = textDocument.getText()
+    const doc = ASLTextDocument.create(textDocument.uri.path, textDocument.languageId, textDocument.version, text)
+    // tslint:disable-next-line: no-inferred-empty-object-type
+    const jsonDocument = languageService.parseJSONDocument(doc)
+    const diagnostics = (await languageService.doValidation(doc, jsonDocument, documentSettings))
+        // Invalid ARN strings shouldn't prevent rendering of the state machine graph
+        .filter(diagnostic => !diagnostic.message.includes(ARN_REGEX_STRING))
+
+    const isValid = !diagnostics.some(diagnostic => diagnostic.severity === DiagnosticSeverity.Error)
+
+    return isValid
 }

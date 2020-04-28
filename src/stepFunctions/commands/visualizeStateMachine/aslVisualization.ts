@@ -4,42 +4,18 @@
  */
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
-import {
-    DiagnosticSeverity,
-    DocumentLanguageSettings,
-    getLanguageService,
-    TextDocument as ASLTextDocument,
-} from 'amazon-states-language-service'
 import { debounce } from 'lodash'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { ext } from '../../../shared/extensionGlobals'
 import { getLogger, Logger } from '../../../shared/logger'
+import { isDocumentValid } from '../../utils'
 
 export interface MessageObject {
     command: string
     text: string
     error?: string
     stateMachineData: string
-}
-
-const documentSettings: DocumentLanguageSettings = { comments: 'error', trailingCommas: 'error' }
-const languageService = getLanguageService({})
-
-export async function isDocumentValid(textDocument?: vscode.TextDocument): Promise<boolean> {
-    if (!textDocument) {
-        return false
-    }
-
-    const text = textDocument.getText()
-    const doc = ASLTextDocument.create(textDocument.uri.path, textDocument.languageId, textDocument.version, text)
-    // tslint:disable-next-line: no-inferred-empty-object-type
-    const jsonDocument = languageService.parseJSONDocument(doc)
-    const diagnostics = await languageService.doValidation(doc, jsonDocument, documentSettings)
-
-    const isValid = !diagnostics.some(diagnostic => diagnostic.severity === DiagnosticSeverity.Error)
-
-    return isValid
 }
 
 export class AslVisualization {
