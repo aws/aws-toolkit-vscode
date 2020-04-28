@@ -12,7 +12,7 @@ export interface AbsoluteCharOffset {
 export type RangeOrCharOffset = Range | AbsoluteCharOffset
 
 export interface LambdaHandlerCandidate extends RootlessLambdaHandlerCandidate {
-    projectRoot: Uri
+    manifestUri: Uri
 }
 
 export interface RootlessLambdaHandlerCandidate {

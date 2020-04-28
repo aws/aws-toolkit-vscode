@@ -17,6 +17,11 @@ import { CloudFormationTemplateRegistry } from '../../../cloudformation/template
 import { getExistingConfiguration } from '../../../../lambda/config/templates'
 import { localize } from '../../../utilities/vsCodeUtils'
 
+/**
+ * Holds information required to create a launch config
+ * @field resourceName: Resource being used. For templates, this is the resource name in the CFN stack. For code, this is the handler's name
+ * @field rootUri: The code root. For templates, this is the CodeUri value. For code, this is the manifest's URI.
+ */
 export interface AddSamDebugConfigurationInput {
     resourceName: string
     rootUri: vscode.Uri
@@ -73,6 +78,7 @@ export async function addSamDebugConfiguration(
         }
         samDebugConfig = createTemplateAwsSamDebugConfig(resourceName, rootUri.fsPath, preloadedConfig)
     } else if (type === CODE_TARGET_TYPE) {
+        // strip the manifest's URI to the manifest's dir here. More reliable to do this here than converting back and forth between URI/string up the chain.
         samDebugConfig = createCodeAwsSamDebugConfig(resourceName, path.dirname(rootUri.fsPath))
     } else {
         throw new Error('Unrecognized debug target type')

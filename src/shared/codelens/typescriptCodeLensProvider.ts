@@ -71,7 +71,7 @@ async function finalizeTsHandlers(
         return {
             filename: handler.filename,
             handlerName: normalizeSeparator(path.join(relativePath, handler.handlerName)),
-            projectRoot: packageJsonFileUri,
+            manifestUri: packageJsonFileUri,
             range: handler.range,
         }
     })

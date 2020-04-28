@@ -56,7 +56,7 @@ export async function makeCodeLenses({
             const baseParams: MakeAddDebugConfigCodeLensParams = {
                 handlerName: handler.handlerName,
                 range,
-                rootUri: handler.projectRoot,
+                rootUri: handler.manifestUri,
             }
             lenses.push(makeAddCodeSamDebugCodeLens(baseParams))
         } catch (err) {
