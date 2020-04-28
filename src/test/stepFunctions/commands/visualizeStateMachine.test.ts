@@ -308,14 +308,14 @@ describe('StepFunctions VisualizeStateMachine', async () => {
 
         // Preview Doc1
         mockVsCode.showTextDocument(mockTextDocumentOne)
-        const panel: vscode.WebviewPanel = await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
+        let panel = await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
         // Dispose of visualization panel
-        if (!panel) {
-            assert.fail('Panel was not successfully generated')
-        }
+        assert.ok(panel, 'Panel was not successfully generated')
+        panel = panel as vscode.WebviewPanel
         panel.dispose()
+
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
     })
 
@@ -324,7 +324,7 @@ describe('StepFunctions VisualizeStateMachine', async () => {
 
         // Preview Doc1
         mockVsCode.showTextDocument(mockTextDocumentOne)
-        const panel: vscode.WebviewPanel = await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
+        let panel = await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
         console.log(panel)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
@@ -334,10 +334,10 @@ describe('StepFunctions VisualizeStateMachine', async () => {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
         // Dispose of first visualization panel
-        if (!panel) {
-            assert.fail('Panel was not successfully generated')
-        }
+        assert.ok(panel, 'Panel was not successfully generated')
+        panel = panel as vscode.WebviewPanel
         panel.dispose()
+
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
     })
 })
