@@ -7,13 +7,13 @@ import * as assert from 'assert'
 import * as del from 'del'
 import * as fs from 'fs-extra'
 import * as path from 'path'
-import { spy } from 'sinon'
 import * as vscode from 'vscode'
+import { MessageObject } from '../../stepFunctions/commands/visualizeStateMachine/aslVisualization'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
-import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
-import { messageObject } from '../../stepFunctions/commands/visualizeStateMachine/aslVisualization'
-import { assertThrowsError } from '../../test/shared/utilities/assertUtils'
 import { activateExtension } from '../integrationTestsUtilities'
+import { assertThrowsError } from '../../test/shared/utilities/assertUtils'
+import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { spy } from 'sinon'
 
 const sampleStateMachine = `
 	 {
@@ -71,7 +71,7 @@ async function openATextEditorWithText(fileText: string, fileName: string): Prom
 async function waitUntilWebviewIsVisible(webviewPanel: vscode.WebviewPanel | undefined): Promise<void> {
     return new Promise<void>((resolve, reject) => {
         if (webviewPanel) {
-            webviewPanel.webview.onDidReceiveMessage((message: messageObject) => {
+            webviewPanel.webview.onDidReceiveMessage((message: MessageObject) => {
                 switch (message.command) {
                     case 'webviewRendered':
                         resolve()

@@ -2,23 +2,21 @@
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+import * as path from 'path'
+import * as vscode from 'vscode'
 import {
+    TextDocument as ASLTextDocument,
     DiagnosticSeverity,
     DocumentLanguageSettings,
     getLanguageService,
-    TextDocument as ASLTextDocument,
 } from 'amazon-states-language-service'
-
+import { Logger, getLogger } from '../../../shared/logger'
 import { debounce } from 'lodash'
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
-
-import * as path from 'path'
-import * as vscode from 'vscode'
 import { ext } from '../../../shared/extensionGlobals'
-import { getLogger, Logger } from '../../../shared/logger'
 
-export interface messageObject {
+export interface MessageObject {
     command: string
     text: string
     error?: string
@@ -48,7 +46,7 @@ export class AslVisualization {
     public readonly documentUri: vscode.Uri
     public readonly webviewPanel: vscode.WebviewPanel
     protected readonly disposables: vscode.Disposable[] = []
-    protected isPanelDisposed: boolean = false
+    protected isPanelDisposed = false
     private readonly onVisualizationDisposeEmitter = new vscode.EventEmitter<void>()
 
     public constructor(textDocument: vscode.TextDocument) {
@@ -56,7 +54,7 @@ export class AslVisualization {
         this.webviewPanel = this.setupWebviewPanel(textDocument)
     }
 
-    public get onVisualizationDisposeEvent() {
+    public get onVisualizationDisposeEvent(): vscode.Event<void> {
         return this.onVisualizationDisposeEmitter.event
     }
 
@@ -150,7 +148,7 @@ export class AslVisualization {
 
         // Handle messages from the webview
         this.disposables.push(
-            panel.webview.onDidReceiveMessage(async (message: messageObject) => {
+            panel.webview.onDidReceiveMessage(async (message: MessageObject) => {
                 switch (message.command) {
                     case 'updateResult':
                         logger.debug(message.text)

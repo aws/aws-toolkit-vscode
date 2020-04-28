@@ -5,17 +5,16 @@
 
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
-
 import * as vscode from 'vscode'
+import { Logger, getLogger } from '../../../shared/logger'
 import { AslVisualization } from './aslVisualization'
-import { ext } from '../../../shared/extensionGlobals'
-import { getLogger, Logger } from '../../../shared/logger'
 import { StateMachineGraphCache } from '../../utils'
+import { ext } from '../../../shared/extensionGlobals'
 
 export class AslVisualizationManager {
     protected readonly managedVisualizations: Map<string, AslVisualization> = new Map<string, AslVisualization>()
 
-    public getManagedVisualizations() {
+    public getManagedVisualizations(): Map<string, AslVisualization> {
         return this.managedVisualizations
     }
 
@@ -68,7 +67,7 @@ export class AslVisualizationManager {
         return
     }
 
-    private deleteVisualization(visualizationToDelete: AslVisualization) {
+    private deleteVisualization(visualizationToDelete: AslVisualization): void {
         this.managedVisualizations.delete(visualizationToDelete.documentUri.path)
     }
 
