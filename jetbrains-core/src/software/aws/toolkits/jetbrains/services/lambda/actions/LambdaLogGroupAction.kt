@@ -31,7 +31,7 @@ class LambdaLogGroupAction :
                 val window = CloudWatchLogWindow.getInstance(project)
                 window.showLogGroup(logGroup)
             } else {
-                notifyError(message("lambda.logs.does_not_exist"), selected.functionName())
+                notifyError(message("lambda.logs.does_not_exist", selected.functionName()))
             }
         }
     }

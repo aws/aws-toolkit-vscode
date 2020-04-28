@@ -201,7 +201,7 @@ class SamEventBridgeStarterAppGradle : JavaGradleSamProjectTemplate() {
 class SamEventBridgeStarterAppMaven : JavaGradleSamProjectTemplate() {
     override fun getName() = message("sam.init.template.eventBridge_starterApp_maven.name")
 
-    override fun getDescription() = message("sam.init.template.eventBridge_stargitterApp.description")
+    override fun getDescription() = message("sam.init.template.eventBridge_starterApp.description")
 
     override fun functionName(): String = "HelloWorldFunction"
 
