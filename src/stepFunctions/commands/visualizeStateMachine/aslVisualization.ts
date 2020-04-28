@@ -4,17 +4,17 @@
  */
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
-import * as path from 'path'
-import * as vscode from 'vscode'
 import {
-    TextDocument as ASLTextDocument,
     DiagnosticSeverity,
     DocumentLanguageSettings,
     getLanguageService,
+    TextDocument as ASLTextDocument,
 } from 'amazon-states-language-service'
-import { Logger, getLogger } from '../../../shared/logger'
 import { debounce } from 'lodash'
+import * as path from 'path'
+import * as vscode from 'vscode'
 import { ext } from '../../../shared/extensionGlobals'
+import { getLogger, Logger } from '../../../shared/logger'
 
 export interface MessageObject {
     command: string
