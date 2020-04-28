@@ -14,7 +14,7 @@ export class AslVisualizationManager {
     protected readonly managedVisualizations: Map<string, AslVisualization> = new Map<string, AslVisualization>()
     private readonly extensionContext: vscode.ExtensionContext
 
-    constructor(extensionContext: vscode.ExtensionContext) {
+    public constructor(extensionContext: vscode.ExtensionContext) {
         this.extensionContext = extensionContext
     }
 
