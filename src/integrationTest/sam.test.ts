@@ -62,7 +62,7 @@ function tryRemoveFolder(fullPath: string) {
     }
 }
 
-async function getLocalCodeLens(documentUri: vscode.Uri): Promise<vscode.CodeLens> {
+async function getAddConfigCodeLens(documentUri: vscode.Uri): Promise<vscode.CodeLens> {
     while (true) {
         try {
             // this works without a sleep locally, but not on CodeBuild
@@ -88,13 +88,13 @@ async function getLocalCodeLens(documentUri: vscode.Uri): Promise<vscode.CodeLen
     }
 }
 
-// async function continueDebugger(): Promise<void> {
-//     await vscode.commands.executeCommand('workbench.action.debug.continue')
-// }
+async function continueDebugger(): Promise<void> {
+    await vscode.commands.executeCommand('workbench.action.debug.continue')
+}
 
-// async function stopDebugger(): Promise<void> {
-//     await vscode.commands.executeCommand('workbench.action.debug.stop')
-// }
+async function stopDebugger(): Promise<void> {
+    await vscode.commands.executeCommand('workbench.action.debug.stop')
+}
 
 async function closeAllEditors(): Promise<void> {
     await vscode.commands.executeCommand('workbench.action.closeAllEditors')
@@ -255,7 +255,7 @@ describe('SAM Integration Tests', async () => {
                 }).timeout(TIMEOUT)
 
                 it('produces an Add Debug Configuration codelens', async () => {
-                    const codeLens = await getLocalCodeLens(samAppCodeUri)
+                    const codeLens = await getAddConfigCodeLens(samAppCodeUri)
                     assert.ok(codeLens)
 
                     let manifestFile: string
@@ -278,76 +278,78 @@ describe('SAM Integration Tests', async () => {
                     assertCodeLensReferencesHasSameRoot(codeLens, projectRoot!)
                 }).timeout(TIMEOUT)
 
-                // it.skip('invokes the Run Local CodeLens', async () => {
-                //     const codeLens = await getRunLocalCodeLens(samAppCodeUri, scenario.language)
-                //     assert.ok(codeLens, 'expected to find a CodeLens')
+                it.skip('invokes the Run Local CodeLens', async () => {
+                    // TODO: Remove this
+                    const codeLens = await getAddConfigCodeLens(samAppCodeUri)
+                    assert.ok(codeLens, 'expected to find a CodeLens')
 
-                //     // tslint:disable-next-line: no-unsafe-any
-                //     await vscode.commands.executeCommand<any>(
-                //         codeLens.command!.command,
-                //         ...codeLens.command!.arguments!
-                //     )
-                // }).timeout(TIMEOUT)
+                    // tslint:disable-next-line: no-unsafe-any
+                    await vscode.commands.executeCommand<any>(
+                        codeLens.command!.command,
+                        ...codeLens.command!.arguments!
+                    )
+                }).timeout(TIMEOUT)
 
-                // it.skip('invokes the Debug Local CodeLens', async () => {
-                //     assert.strictEqual(
-                //         vscode.debug.activeDebugSession,
-                //         undefined,
-                //         'unexpected debug session in progress'
-                //     )
+                it.skip('invokes the Debug Local CodeLens', async () => {
+                    assert.strictEqual(
+                        vscode.debug.activeDebugSession,
+                        undefined,
+                        'unexpected debug session in progress'
+                    )
 
-                //     const codeLens = await getDebugLocalCodeLens(samAppCodeUri, scenario.language)
-                //     assert.ok(codeLens, 'expected to find a CodeLens')
+                    // TODO: Remove this
+                    const codeLens = await getAddConfigCodeLens(samAppCodeUri)
+                    assert.ok(codeLens, 'expected to find a CodeLens')
 
-                //     const debugSessionStartedAndStoppedPromise = new Promise<void>((resolve, reject) => {
-                //         testDisposables.push(
-                //             vscode.debug.onDidStartDebugSession(async startedSession => {
-                //                 const sessionValidation = validateSamDebugSession(
-                //                     startedSession,
-                //                     scenario.debugSessionType
-                //                 )
+                    const debugSessionStartedAndStoppedPromise = new Promise<void>((resolve, reject) => {
+                        testDisposables.push(
+                            vscode.debug.onDidStartDebugSession(async startedSession => {
+                                const sessionValidation = validateSamDebugSession(
+                                    startedSession,
+                                    scenario.debugSessionType
+                                )
 
-                //                 if (sessionValidation) {
-                //                     await stopDebugger()
-                //                     throw new Error(sessionValidation)
-                //                 }
+                                if (sessionValidation) {
+                                    await stopDebugger()
+                                    throw new Error(sessionValidation)
+                                }
 
-                //                 // Wait for this debug session to terminate
-                //                 testDisposables.push(
-                //                     vscode.debug.onDidTerminateDebugSession(async endedSession => {
-                //                         const endSessionValidation = validateSamDebugSession(
-                //                             endedSession,
-                //                             scenario.debugSessionType
-                //                         )
+                                // Wait for this debug session to terminate
+                                testDisposables.push(
+                                    vscode.debug.onDidTerminateDebugSession(async endedSession => {
+                                        const endSessionValidation = validateSamDebugSession(
+                                            endedSession,
+                                            scenario.debugSessionType
+                                        )
 
-                //                         if (endSessionValidation) {
-                //                             throw new Error(endSessionValidation)
-                //                         }
+                                        if (endSessionValidation) {
+                                            throw new Error(endSessionValidation)
+                                        }
 
-                //                         if (startedSession.id === endedSession.id) {
-                //                             resolve()
-                //                         } else {
-                //                             reject(new Error('Unexpected debug session ended'))
-                //                         }
-                //                     })
-                //                 )
+                                        if (startedSession.id === endedSession.id) {
+                                            resolve()
+                                        } else {
+                                            reject(new Error('Unexpected debug session ended'))
+                                        }
+                                    })
+                                )
 
-                //                 // wait for it to actually start (which we do not get an event for). 800 is
-                //                 // short enough to finish before the next test is run and long enough to
-                //                 // actually act after it pauses
-                //                 await sleep(800)
-                //                 await continueDebugger()
-                //             })
-                //         )
-                //     })
+                                // wait for it to actually start (which we do not get an event for). 800 is
+                                // short enough to finish before the next test is run and long enough to
+                                // actually act after it pauses
+                                await sleep(800)
+                                await continueDebugger()
+                            })
+                        )
+                    })
 
-                //     await vscode.commands.executeCommand<any>(
-                //         codeLens.command!.command,
-                //         ...codeLens.command!.arguments!
-                //     )
+                    await vscode.commands.executeCommand<any>(
+                        codeLens.command!.command,
+                        ...codeLens.command!.arguments!
+                    )
 
-                //     await debugSessionStartedAndStoppedPromise
-                // }).timeout(TIMEOUT * 2)
+                    await debugSessionStartedAndStoppedPromise
+                }).timeout(TIMEOUT * 2)
             })
         })
 
@@ -363,21 +365,21 @@ describe('SAM Integration Tests', async () => {
             await runSamCliInit(initArguments, samCliContext)
         }
 
-        // /**
-        //  * Returns a string if there is a validation issue, undefined if there is no issue
-        //  */
-        // function validateSamDebugSession(
-        //     debugSession: vscode.DebugSession,
-        //     expectedSessionType: string
-        // ): string | undefined {
-        //     if (debugSession.name !== 'SamLocalDebug') {
-        //         return `Unexpected Session Name ${debugSession}`
-        //     }
+        /**
+         * Returns a string if there is a validation issue, undefined if there is no issue
+         */
+        function validateSamDebugSession(
+            debugSession: vscode.DebugSession,
+            expectedSessionType: string
+        ): string | undefined {
+            if (debugSession.name !== 'SamLocalDebug') {
+                return `Unexpected Session Name ${debugSession}`
+            }
 
-        //     if (debugSession.type !== expectedSessionType) {
-        //         return `Unexpected Session Type ${debugSession}`
-        //     }
-        // }
+            if (debugSession.type !== expectedSessionType) {
+                return `Unexpected Session Type ${debugSession}`
+            }
+        }
 
         function assertCodeLensReferencesHasSameRoot(codeLens: vscode.CodeLens, expectedUri: vscode.Uri) {
             assert.ok(codeLens.command, 'CodeLens did not have a command')
