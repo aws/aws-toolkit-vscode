@@ -6,10 +6,10 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
-import { Logger, getLogger } from '../../../shared/logger'
-import { AslVisualization } from './aslVisualization'
-import { StateMachineGraphCache } from '../../utils'
 import { ext } from '../../../shared/extensionGlobals'
+import { getLogger, Logger } from '../../../shared/logger'
+import { StateMachineGraphCache } from '../../utils'
+import { AslVisualization } from './aslVisualization'
 
 export class AslVisualizationManager {
     protected readonly managedVisualizations: Map<string, AslVisualization> = new Map<string, AslVisualization>()
