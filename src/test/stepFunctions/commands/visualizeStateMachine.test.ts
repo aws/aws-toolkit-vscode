@@ -16,7 +16,7 @@ import { assertThrowsError } from '../../shared/utilities/assertUtils'
 
 // Top level defintions
 let aslVisualizationManager: AslVisualizationManager
-const sandbox: sinon.SinonSandbox = sinon.createSandbox()
+let sandbox: sinon.SinonSandbox
 
 const mockGlobalStorage: vscode.Memento = {
     update: sinon.spy(),
@@ -131,7 +131,18 @@ const mockRange: vscode.Range = {
     with: sinon.spy(),
 }
 
-describe('StepFunctions VisualizeStateMachine', () => {
+const mockExtensionContext: vscode.ExtensionContext = {
+    extensionPath: '',
+    globalState: mockGlobalStorage,
+    globalStoragePath: '',
+    logPath: '',
+    storagePath: '',
+    subscriptions: [],
+    workspaceState: mockGlobalStorage,
+    asAbsolutePath: sinon.spy(),
+}
+
+describe('StepFunctions VisualizeStateMachine', async () => {
     let mockVsCode: MockVSCode
 
     const oldWebviewScriptsPath = ext.visualizationResourcePaths.localWebviewScriptsPath
@@ -154,7 +165,7 @@ describe('StepFunctions VisualizeStateMachine', () => {
         ext.visualizationResourcePaths.visualizationLibraryCSS = mockUriOne
         ext.visualizationResourcePaths.stateMachineCustomThemeCSS = mockUriOne
 
-        //sandbox = sinon.createSandbox()
+        sandbox = sinon.createSandbox()
         sandbox.stub(StateMachineGraphCache.prototype, 'updateCachedFile').callsFake(async options => {
             return
         })
@@ -162,7 +173,7 @@ describe('StepFunctions VisualizeStateMachine', () => {
 
     // Before each
     beforeEach(() => {
-        aslVisualizationManager = new AslVisualizationManager()
+        aslVisualizationManager = new AslVisualizationManager(mockExtensionContext)
     })
 
     // After each
@@ -221,7 +232,6 @@ describe('StepFunctions VisualizeStateMachine', () => {
     it('Test AslVisualizationManager managedVisualizations set has one AslVis on first preview', async () => {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
-        // try {
         // Preview Doc1
         mockVsCode.showTextDocument(mockTextDocumentOne)
         await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
@@ -229,21 +239,11 @@ describe('StepFunctions VisualizeStateMachine', () => {
 
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
         assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.path))
-        // } catch (error) {
-        //     assert.ok(error instanceof Error)
-        //     const errorCasted = <Error>error
-        //     if (errorCasted.message === 'Could not get active text editor for state machine render.') {
-        //         assert.fail('Should not throw error on valid visualization')
-        //     } else {
-        //         assert.fail(errorCasted.message)
-        //     }
-        // }
     })
 
     it('Test AslVisualizationManager managedVisualizations set does not add second Vis on duplicate preview', async () => {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
-        // try {
         // Preview Doc1
         mockVsCode.showTextDocument(mockTextDocumentOne)
         await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
@@ -255,21 +255,11 @@ describe('StepFunctions VisualizeStateMachine', () => {
 
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
         assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.path))
-        // } catch (error) {
-        //     assert.ok(error instanceof Error)
-        //     const errorCasted = <Error>error
-        //     if (errorCasted.message === 'Could not get active text editor for state machine render.') {
-        //         assert.fail('Should not throw error on valid visualization')
-        //     } else {
-        //         assert.fail(errorCasted.message)
-        //     }
-        // }
     })
 
     it('Test AslVisualizationManager managedVisualizations set adds second Vis on different preview', async () => {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
-        // try {
         // Preview Doc1
         mockVsCode.showTextDocument(mockTextDocumentOne)
         await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
@@ -283,21 +273,11 @@ describe('StepFunctions VisualizeStateMachine', () => {
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
         assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.path))
         assert.ok(managedVisualizations.get(mockTextDocumentTwo.uri.path))
-        // } catch (error) {
-        //     assert.ok(error instanceof Error)
-        //     const errorCasted = <Error>error
-        //     if (errorCasted.message === 'Could not get active text editor for state machine render.') {
-        //         assert.fail('Should not throw error on valid visualization')
-        //     } else {
-        //         assert.fail(errorCasted.message)
-        //     }
-        // }
     })
 
     it('Test AslVisualizationManager managedVisualizations set does not add duplicate renders when multiple Vis active', async () => {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
-        // try {
         // Preview Doc1
         mockVsCode.showTextDocument(mockTextDocumentOne)
         await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
@@ -321,73 +301,44 @@ describe('StepFunctions VisualizeStateMachine', () => {
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
         assert.ok(managedVisualizations.get(mockTextDocumentOne.uri.path))
         assert.ok(managedVisualizations.get(mockTextDocumentTwo.uri.path))
-        // } catch (error) {
-        //     assert.ok(error instanceof Error)
-        //     const errorCasted = <Error>error
-        //     if (errorCasted.message === 'Could not get active text editor for state machine render.') {
-        //         assert.fail('Should not throw error on valid visualization')
-        //     } else {
-        //         assert.fail(errorCasted.message)
-        //     }
-        // }
     })
 
     it('Test AslVisualizationManager managedVisualizations set removes visualization on visualization dispose, single vis', async () => {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
-        try {
-            // Preview Doc1
-            mockVsCode.showTextDocument(mockTextDocumentOne)
-            const panel = await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
-            assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
+        // Preview Doc1
+        mockVsCode.showTextDocument(mockTextDocumentOne)
+        const panel: vscode.WebviewPanel = await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
+        assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
-            // Dispose of visualization panel
-            if (!panel) {
-                assert.fail('Panel was not successfully generated')
-            }
-            panel.dispose()
-            assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
-        } catch (error) {
-            assert.ok(error instanceof Error)
-            const errorCasted = <Error>error
-            if (errorCasted.message === 'Could not get active text editor for state machine render.') {
-                assert.fail('Should not throw error on valid visualization')
-            } else {
-                assert.fail(errorCasted.message)
-            }
+        // Dispose of visualization panel
+        if (!panel) {
+            assert.fail('Panel was not successfully generated')
         }
+        panel.dispose()
+        assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
     })
 
     it('Test AslVisualizationManager managedVisualizations set removes correct visualization on visualization dispose, multiple vis', async () => {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
-        try {
-            // Preview Doc1
-            mockVsCode.showTextDocument(mockTextDocumentOne)
-            const panel = await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
-            console.log(panel)
-            assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
+        // Preview Doc1
+        mockVsCode.showTextDocument(mockTextDocumentOne)
+        const panel: vscode.WebviewPanel = await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
+        console.log(panel)
+        assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
-            // Preview Doc2
-            mockVsCode.showTextDocument(mockTextDocumentTwo)
-            await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
-            assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
+        // Preview Doc2
+        mockVsCode.showTextDocument(mockTextDocumentTwo)
+        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
+        assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
-            // Dispose of first visualization panel
-            if (!panel) {
-                assert.fail('Panel was not successfully generated')
-            }
-            panel.dispose()
-            assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
-        } catch (error) {
-            assert.ok(error instanceof Error)
-            const errorCasted = <Error>error
-            if (errorCasted.message === 'Could not get active text editor for state machine render.') {
-                assert.fail('Should not throw error on valid visualization')
-            } else {
-                assert.fail(errorCasted.message)
-            }
+        // Dispose of first visualization panel
+        if (!panel) {
+            assert.fail('Panel was not successfully generated')
         }
+        panel.dispose()
+        assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
     })
 })
 

@@ -35,7 +35,7 @@ async function registerStepFunctionCommands(
     outputChannel: vscode.OutputChannel
 ): Promise<void> {
     initalizeWebviewPaths(extensionContext)
-    const visualizationManager = new AslVisualizationManager()
+    const visualizationManager = new AslVisualizationManager(extensionContext)
 
     extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.previewStateMachine', async () => {

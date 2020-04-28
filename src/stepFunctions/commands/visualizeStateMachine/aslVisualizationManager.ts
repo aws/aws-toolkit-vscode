@@ -6,13 +6,17 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
-import { ext } from '../../../shared/extensionGlobals'
 import { getLogger, Logger } from '../../../shared/logger'
 import { StateMachineGraphCache } from '../../utils'
 import { AslVisualization } from './aslVisualization'
 
 export class AslVisualizationManager {
     protected readonly managedVisualizations: Map<string, AslVisualization> = new Map<string, AslVisualization>()
+    private readonly extensionContext: vscode.ExtensionContext
+
+    constructor(extensionContext: vscode.ExtensionContext) {
+        this.extensionContext = extensionContext
+    }
 
     public getManagedVisualizations(): Map<string, AslVisualization> {
         return this.managedVisualizations
@@ -62,6 +66,7 @@ export class AslVisualizationManager {
 
             logger.debug('Unable to setup webview panel.')
             logger.error(err as Error)
+            console.log((err as Error).message)
         }
 
         return
@@ -77,7 +82,7 @@ export class AslVisualizationManager {
         const visualizationDisposable = newVisualization.onVisualizationDisposeEvent(() => {
             this.deleteVisualization(newVisualization)
         })
-        ext.context.subscriptions.push(visualizationDisposable)
+        this.extensionContext.subscriptions.push(visualizationDisposable)
     }
 
     private getExistingVisualization(uriToFind: vscode.Uri): AslVisualization | undefined {
