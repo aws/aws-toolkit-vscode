@@ -12,6 +12,7 @@ import {
     getTemplateResource,
     NodejsDebugConfiguration,
     PythonDebugConfiguration,
+    getRuntimeFamily,
 } from '../../../lambda/local/debugConfiguration'
 import { getFamily, RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import { CloudFormationTemplateRegistry, getResourcesFromTemplateDatum } from '../../cloudformation/templateRegistry'
@@ -190,7 +191,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         const runtime: string | undefined =
             config.lambda?.runtime ??
             templateResource?.Properties?.Runtime ??
-            getDefaultRuntime(editor?.document?.languageId ?? 'unknown')
+            getDefaultRuntime(getRuntimeFamily(editor?.document?.languageId ?? 'unknown'))
 
         if (!runtime) {
             getLogger().error(`SAM debug: failed to launch config: ${config})`)
