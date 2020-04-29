@@ -1,4 +1,0 @@
-{
-    "type": "Bug Fix",
-    "description": "Bug fixes for step functions language server.: One is related to the error when there is \"Default\" property missing on \"Choice\" state.  Second,  “Unreachable state” error when the default state is declared before being referenced by “Choice” state."
-}
