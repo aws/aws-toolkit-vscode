@@ -9,6 +9,7 @@ import {
     CodeTargetProperties,
     TemplateTargetProperties,
 } from './awsSamDebugConfiguration.gen'
+import { RuntimeFamily, dotNetRuntimes, nodeJsRuntimes, pythonRuntimes } from '../../../lambda/models/samLambdaRuntime'
 
 export * from './awsSamDebugConfiguration.gen'
 
@@ -85,7 +86,27 @@ export function createTemplateAwsSamDebugConfig(
     return response
 }
 
-export function createCodeAwsSamDebugConfig(lambdaHandler: string, projectRoot: string): AwsSamDebuggerConfiguration {
+export function createCodeAwsSamDebugConfig(
+    lambdaHandler: string,
+    projectRoot: string,
+    runtimeFamily?: RuntimeFamily
+): AwsSamDebuggerConfiguration {
+    let runtime: string
+
+    switch (runtimeFamily) {
+        case RuntimeFamily.DotNetCore:
+            runtime = dotNetRuntimes.first()
+            break
+        case RuntimeFamily.NodeJS:
+            runtime = nodeJsRuntimes.first()
+            break
+        case RuntimeFamily.Python:
+            runtime = pythonRuntimes.first()
+            break
+        default:
+            throw new Error('Invalid or missing runtime family')
+    }
+
     return {
         type: AWS_SAM_DEBUG_TYPE,
         request: DIRECT_INVOKE_TYPE,
@@ -95,6 +116,9 @@ export function createCodeAwsSamDebugConfig(lambdaHandler: string, projectRoot: 
             target: CODE_TARGET_TYPE,
             projectRoot,
             lambdaHandler,
+        },
+        lambda: {
+            runtime,
         },
     }
 }
