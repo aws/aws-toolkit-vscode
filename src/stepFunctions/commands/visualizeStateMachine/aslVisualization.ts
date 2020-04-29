@@ -5,7 +5,7 @@
 
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
-import { debounce } from 'lodash'
+import { debounce, Cancelable } from 'lodash'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { ext } from '../../../shared/extensionGlobals'
@@ -154,7 +154,7 @@ export class AslVisualization {
 
         // When the panel is closed, dispose of any disposables/remove subscriptions
         panel.onDidDispose(() => {
-            debouncedUpdate.cancel()
+            ;(debouncedUpdate as Cancelable).cancel()
             this.onVisualizationDisposeEmitter.fire()
             this.disposables.forEach(disposable => {
                 disposable.dispose()
