@@ -66,17 +66,32 @@ export interface PipeTransport {
 }
 
 /**
- * Guesses a reasonable default runtime value from a vscode document
- * languageId.
+ * Maps vscode document languageId to `RuntimeFamily`.
  */
-export function getDefaultRuntime(langId: string): string | undefined {
+export function getRuntimeFamily(langId: string): RuntimeFamily {
     switch (langId) {
         case 'typescript':
         case 'javascript':
-            return nodeJsRuntimes.sort(compareSamLambdaRuntime).first()
+            return RuntimeFamily.NodeJS
         case 'csharp':
-            return dotNetRuntimes.sort(compareSamLambdaRuntime).first()
+            return RuntimeFamily.DotNetCore
         case 'python':
+            return RuntimeFamily.Python
+        default:
+            return RuntimeFamily.Unknown
+    }
+}
+
+/**
+ * Guesses a reasonable default runtime value for the given `RuntimeFamily`.
+ */
+export function getDefaultRuntime(langId: RuntimeFamily): string | undefined {
+    switch (langId) {
+        case RuntimeFamily.NodeJS:
+            return nodeJsRuntimes.sort(compareSamLambdaRuntime).first()
+        case RuntimeFamily.DotNetCore:
+            return dotNetRuntimes.sort(compareSamLambdaRuntime).first()
+        case RuntimeFamily.Python:
             return pythonRuntimes.sort(compareSamLambdaRuntime).first()
         default:
             return undefined
