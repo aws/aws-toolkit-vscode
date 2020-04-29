@@ -78,12 +78,14 @@ export function getRuntimeFamily(langId: string): RuntimeFamily {
  */
 export function getDefaultRuntime(runtime: RuntimeFamily): string | undefined {
     switch (runtime) {
+        // note: compareSamLambdaRuntime sorts from least value to greatest, to alphabetically sort runtimes
+        // thus, pull the last value since that will represent the greatest (and thus, newest) version
         case RuntimeFamily.NodeJS:
-            return nodeJsRuntimes.sort(compareSamLambdaRuntime).first()
+            return nodeJsRuntimes.sort(compareSamLambdaRuntime).last()
         case RuntimeFamily.DotNetCore:
-            return dotNetRuntimes.sort(compareSamLambdaRuntime).first()
+            return dotNetRuntimes.sort(compareSamLambdaRuntime).last()
         case RuntimeFamily.Python:
-            return pythonRuntimes.sort(compareSamLambdaRuntime).first()
+            return pythonRuntimes.sort(compareSamLambdaRuntime).last()
         default:
             return undefined
     }
