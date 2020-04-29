@@ -559,7 +559,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 runtime: 'python3.7',
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
                 type: 'python', // Input "aws-sam", output "python".
-                handlerName: '___vsctk___debug.lambda_handler',
+                handlerName: 'app___vsctk___debug.lambda_handler',
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -579,7 +579,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 },
                 name: 'SamLocalDebug',
                 noDebug: false,
-                originalHandlerName: '___vsctk___debug.lambda_handler',
+                originalHandlerName: 'app___vsctk___debug.lambda_handler',
                 originalSamTemplatePath: '?',
                 samTemplatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
                 port: 5858,
@@ -589,7 +589,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 // Python-related fields
                 //
                 host: 'localhost',
-                outFilePath: pathutil.normalize(path.join(appDir, 'hello_world/___vsctk___debug.py')),
+                outFilePath: pathutil.normalize(path.join(appDir, 'hello_world/app___vsctk___debug.py')),
                 pathMappings: [
                     {
                         localRoot: pathutil.normalize(path.join(appDir, 'hello_world')),
