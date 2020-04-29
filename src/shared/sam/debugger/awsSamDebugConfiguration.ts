@@ -84,3 +84,17 @@ export function createTemplateAwsSamDebugConfig(
 
     return response
 }
+
+export function createCodeAwsSamDebugConfig(lambdaHandler: string, projectRoot: string): AwsSamDebuggerConfiguration {
+    return {
+        type: AWS_SAM_DEBUG_TYPE,
+        request: DIRECT_INVOKE_TYPE,
+        // TODO: change the name?
+        name: lambdaHandler,
+        invokeTarget: {
+            target: CODE_TARGET_TYPE,
+            projectRoot,
+            lambdaHandler,
+        },
+    }
+}

@@ -13,12 +13,14 @@ import { helloWorldTemplate } from '../../src/lambda/models/samTemplates'
 import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
 import { assertThrowsError } from '../../src/test/shared/utilities/assertUtils'
-import { getInvokeCmdKey, Language } from '../shared/codelens/codeLensUtils'
+import { Language } from '../shared/codelens/codeLensUtils'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { fileExists } from '../shared/filesystemUtilities'
 import { getLogger } from '../shared/logger'
 import { WinstonToolkitLogger } from '../shared/logger/winstonToolkitLogger'
 import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep, TIMEOUT } from './integrationTestsUtilities'
+import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/addSamDebugConfiguration'
+import { findParentProjectFile } from '../shared/utilities/workspaceUtils'
 
 const projectFolder = getTestWorkspaceFolder()
 
@@ -60,15 +62,7 @@ function tryRemoveFolder(fullPath: string) {
     }
 }
 
-async function getDebugLocalCodeLens(documentUri: vscode.Uri, language: Language): Promise<vscode.CodeLens> {
-    return getLocalCodeLens(documentUri, language, true)
-}
-
-async function getRunLocalCodeLens(documentUri: vscode.Uri, language: Language): Promise<vscode.CodeLens> {
-    return getLocalCodeLens(documentUri, language, false)
-}
-
-async function getLocalCodeLens(documentUri: vscode.Uri, language: Language, debug: boolean): Promise<vscode.CodeLens> {
+async function getAddConfigCodeLens(documentUri: vscode.Uri): Promise<vscode.CodeLens> {
     while (true) {
         try {
             // this works without a sleep locally, but not on CodeBuild
@@ -81,12 +75,8 @@ async function getLocalCodeLens(documentUri: vscode.Uri, language: Language, deb
             // omnisharp spits out some undefined code lenses for some reason, we filter them because they are
             // not shown to the user and do not affect how our extension is working
             codeLenses = codeLenses.filter(codeLens => {
-                if (codeLens.command && codeLens.command.arguments && codeLens.command.arguments.length === 1) {
-                    return (
-                        codeLens.command.command === getInvokeCmdKey(language) &&
-                        // tslint:disable-next-line:no-unsafe-any
-                        codeLens.command.arguments[0].isDebug === debug
-                    )
+                if (codeLens.command && codeLens.command.arguments && codeLens.command.arguments.length === 2) {
+                    return codeLens.command.command === 'aws.addSamDebugConfiguration'
                 }
 
                 return false
@@ -264,20 +254,33 @@ describe('SAM Integration Tests', async () => {
                     assert(err.message.includes('directory already exists'))
                 }).timeout(TIMEOUT)
 
-                it('produces a Run Local CodeLens', async () => {
-                    const codeLens = await getRunLocalCodeLens(samAppCodeUri, scenario.language)
-                    assert.ok(codeLens, 'expected to find a CodeLens')
-                    assertCodeLensReferencesSamTemplate(codeLens, samTemplatePath)
-                }).timeout(TIMEOUT)
-
-                it('produces a Debug Local CodeLens', async () => {
-                    const codeLens = await getDebugLocalCodeLens(samAppCodeUri, scenario.language)
+                it('produces an Add Debug Configuration codelens', async () => {
+                    const codeLens = await getAddConfigCodeLens(samAppCodeUri)
                     assert.ok(codeLens)
-                    assertCodeLensReferencesSamTemplate(codeLens, samTemplatePath)
+
+                    let manifestFile: string
+                    switch (scenario.language) {
+                        case 'javascript':
+                            manifestFile = 'package.json'
+                            break
+                        case 'python':
+                            manifestFile = 'requirements.txt'
+                            break
+                        case 'csharp':
+                            manifestFile = '*.csproj'
+                            break
+                        default:
+                            assert.fail('invalid scenario language')
+                    }
+
+                    const projectRoot = await findParentProjectFile(samAppCodeUri, manifestFile)
+                    assert.ok(projectRoot, 'projectRoot not found')
+                    assertCodeLensReferencesHasSameRoot(codeLens, projectRoot!)
                 }).timeout(TIMEOUT)
 
                 it.skip('invokes the Run Local CodeLens', async () => {
-                    const codeLens = await getRunLocalCodeLens(samAppCodeUri, scenario.language)
+                    // TODO: Remove this
+                    const codeLens = await getAddConfigCodeLens(samAppCodeUri)
                     assert.ok(codeLens, 'expected to find a CodeLens')
 
                     // tslint:disable-next-line: no-unsafe-any
@@ -294,7 +297,8 @@ describe('SAM Integration Tests', async () => {
                         'unexpected debug session in progress'
                     )
 
-                    const codeLens = await getDebugLocalCodeLens(samAppCodeUri, scenario.language)
+                    // TODO: Remove this
+                    const codeLens = await getAddConfigCodeLens(samAppCodeUri)
                     assert.ok(codeLens, 'expected to find a CodeLens')
 
                     const debugSessionStartedAndStoppedPromise = new Promise<void>((resolve, reject) => {
@@ -377,16 +381,18 @@ describe('SAM Integration Tests', async () => {
             }
         }
 
-        function assertCodeLensReferencesSamTemplate(codeLens: vscode.CodeLens, expectedSamTemplatePath: string) {
+        function assertCodeLensReferencesHasSameRoot(codeLens: vscode.CodeLens, expectedUri: vscode.Uri) {
             assert.ok(codeLens.command, 'CodeLens did not have a command')
             const command = codeLens.command!
 
             assert.ok(command.arguments, 'CodeLens command had no arguments')
             const commandArguments = command.arguments!
 
-            assert.strictEqual(commandArguments.length, 1, 'CodeLens command had unexpected arg count')
-            const params = commandArguments[0]
+            assert.strictEqual(commandArguments.length, 2, 'CodeLens command had unexpected arg count')
+            const params: AddSamDebugConfigurationInput = commandArguments[0]
             assert.ok(params, 'unexpected non-defined command argument')
+
+            assert.strictEqual(path.dirname(params.rootUri.fsPath), path.dirname(expectedUri.fsPath))
         }
     }
 })

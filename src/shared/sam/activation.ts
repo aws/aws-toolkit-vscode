@@ -18,7 +18,7 @@ import * as csLensProvider from '../codelens/csharpCodeLensProvider'
 import * as pyLensProvider from '../codelens/pythonCodeLensProvider'
 import { SamTemplateCodeLensProvider } from '../codelens/samTemplateCodeLensProvider'
 import { ExtContext } from '../extensions'
-import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
+import { SettingsConfiguration } from '../settingsConfiguration'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { PromiseSharer } from '../utilities/promiseUtilities'
 import { initialize as initializeSamCliContext } from './cli/samCliContext'
@@ -144,7 +144,7 @@ async function activateCodeLensProviders(
     disposables.push(
         vscode.languages.registerCodeLensProvider(
             pyLensProvider.PYTHON_ALLFILES,
-            await codelensUtils.makePythonCodeLensProvider(new DefaultSettingsConfiguration('python'))
+            await codelensUtils.makePythonCodeLensProvider()
         )
     )
 
