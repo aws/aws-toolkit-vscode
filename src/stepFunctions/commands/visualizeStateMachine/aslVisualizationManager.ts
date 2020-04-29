@@ -66,7 +66,6 @@ export class AslVisualizationManager {
 
             logger.debug('Unable to setup webview panel.')
             logger.error(err as Error)
-            console.log((err as Error).message)
         }
 
         return
