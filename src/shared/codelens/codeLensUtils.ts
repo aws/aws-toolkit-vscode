@@ -15,7 +15,7 @@ import * as tsDebug from './typescriptCodeLensProvider'
 import { LambdaLocalInvokeParams } from './localLambdaRunner'
 import { ExtContext } from '../extensions'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
-import { nodeJsRuntimes } from '../../lambda/models/samLambdaRuntime'
+import { nodeJsRuntimes, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { CODE_TARGET_TYPE } from '../sam/debugger/awsSamDebugConfiguration'
 
 export type Language = 'python' | 'javascript' | 'csharp'
@@ -24,16 +24,19 @@ interface MakeAddDebugConfigCodeLensParams {
     handlerName: string
     range: vscode.Range
     rootUri: vscode.Uri
+    runtimeFamily: RuntimeFamily
 }
 
 export async function makeCodeLenses({
     document,
     token,
     handlers,
+    runtimeFamily,
 }: {
     document: vscode.TextDocument
     token: vscode.CancellationToken
     handlers: LambdaHandlerCandidate[]
+    runtimeFamily: RuntimeFamily
 }): Promise<vscode.CodeLens[]> {
     const workspaceFolder: vscode.WorkspaceFolder | undefined = vscode.workspace.getWorkspaceFolder(document.uri)
 
@@ -57,6 +60,7 @@ export async function makeCodeLenses({
                 handlerName: handler.handlerName,
                 range,
                 rootUri: handler.manifestUri,
+                runtimeFamily,
             }
             lenses.push(makeAddCodeSamDebugCodeLens(baseParams))
         } catch (err) {
@@ -82,6 +86,7 @@ function makeAddCodeSamDebugCodeLens(params: MakeAddDebugConfigCodeLensParams): 
             {
                 resourceName: params.handlerName,
                 rootUri: params.rootUri,
+                runtimeFamily: params.runtimeFamily,
             },
             CODE_TARGET_TYPE,
         ],
@@ -115,6 +120,7 @@ export async function makePythonCodeLensProvider(): Promise<vscode.CodeLensProvi
                 document,
                 handlers,
                 token,
+                runtimeFamily: RuntimeFamily.Python,
             })
         },
     }
@@ -135,6 +141,7 @@ export async function makeCSharpCodeLensProvider(): Promise<vscode.CodeLensProvi
                 document,
                 handlers,
                 token,
+                runtimeFamily: RuntimeFamily.DotNetCore,
             })
         },
     }
@@ -155,6 +162,7 @@ export function makeTypescriptCodeLensProvider(): vscode.CodeLensProvider {
                 document,
                 handlers,
                 token,
+                runtimeFamily: RuntimeFamily.NodeJS,
             })
         },
     }

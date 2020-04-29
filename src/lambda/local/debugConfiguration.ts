@@ -5,9 +5,8 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { nodeJsRuntimes, compareSamLambdaRuntime } from '../../lambda/models/samLambdaRuntime'
 import { SamLaunchRequestArgs } from '../../shared/sam/debugger/samDebugSession'
-import { dotNetRuntimes, pythonRuntimes, RuntimeFamily } from '../models/samLambdaRuntime'
+import { RuntimeFamily } from '../models/samLambdaRuntime'
 import {
     CodeTargetProperties,
     TemplateTargetProperties,
@@ -63,24 +62,6 @@ export interface PipeTransport {
     pipeArgs: string[]
     debuggerPath: typeof DOTNET_CORE_DEBUGGER_PATH
     pipeCwd: string
-}
-
-/**
- * Guesses a reasonable default runtime value from a vscode document
- * languageId.
- */
-export function getDefaultRuntime(langId: string): string | undefined {
-    switch (langId) {
-        case 'typescript':
-        case 'javascript':
-            return nodeJsRuntimes.sort(compareSamLambdaRuntime).first()
-        case 'csharp':
-            return dotNetRuntimes.sort(compareSamLambdaRuntime).first()
-        case 'python':
-            return pythonRuntimes.sort(compareSamLambdaRuntime).first()
-        default:
-            return undefined
-    }
 }
 
 export function assertTargetKind(config: SamLaunchRequestArgs, expectedTarget: 'code' | 'template'): void {
@@ -155,8 +136,20 @@ export function getTemplateResource(config: AwsSamDebuggerConfiguration): CloudF
     }
     const templateInvoke = config.invokeTarget as TemplateTargetProperties
     const cfnTemplate = getTemplate(config)
+    if (!cfnTemplate) {
+        throw Error(`template not found (not registered?): ${templateInvoke.samTemplatePath}`)
+    }
+    if (!cfnTemplate?.Resources) {
+        throw Error(`no Resources in template: ${templateInvoke.samTemplatePath}`)
+    }
     const templateResource: CloudFormation.Resource | undefined = cfnTemplate?.Resources![
         templateInvoke.samTemplateResource!!
     ]
+    if (!templateResource) {
+        throw Error(
+            `template Resources object does not contain key '${templateInvoke.samTemplateResource}':` +
+                ` ${JSON.stringify(cfnTemplate?.Resources)}`
+        )
+    }
     return templateResource
 }

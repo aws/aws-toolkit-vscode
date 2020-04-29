@@ -17,6 +17,7 @@ import { CloudFormationTemplateRegistry } from '../../../cloudformation/template
 import { getExistingConfiguration } from '../../../../lambda/config/templates'
 import { localize } from '../../../utilities/vsCodeUtils'
 import { getNormalizedRelativePath } from '../../../utilities/pathUtils'
+import { RuntimeFamily } from '../../../../lambda/models/samLambdaRuntime'
 
 /**
  * Holds information required to create a launch config
@@ -26,13 +27,14 @@ import { getNormalizedRelativePath } from '../../../utilities/pathUtils'
 export interface AddSamDebugConfigurationInput {
     resourceName: string
     rootUri: vscode.Uri
+    runtimeFamily?: RuntimeFamily
 }
 
 /**
  * Adds a new debug configuration for the given sam function resource and template.
  */
 export async function addSamDebugConfiguration(
-    { resourceName, rootUri }: AddSamDebugConfigurationInput,
+    { resourceName, rootUri, runtimeFamily }: AddSamDebugConfigurationInput,
     type: typeof CODE_TARGET_TYPE | typeof TEMPLATE_TARGET_TYPE
 ): Promise<void> {
     // tslint:disable-next-line: no-floating-promises
@@ -88,7 +90,8 @@ export async function addSamDebugConfiguration(
             resourceName,
             workspaceFolder
                 ? getNormalizedRelativePath(workspaceFolder.uri.fsPath, path.dirname(rootUri.fsPath))
-                : path.dirname(rootUri.fsPath)
+                : path.dirname(rootUri.fsPath),
+            runtimeFamily
         )
     } else {
         throw new Error('Unrecognized debug target type')
