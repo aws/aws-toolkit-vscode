@@ -66,17 +66,32 @@ export interface PipeTransport {
 }
 
 /**
- * Guesses a reasonable default runtime value from a vscode document
- * languageId.
+ * Maps vscode document languageId to `RuntimeFamily`.
  */
-export function getDefaultRuntime(langId: string): string | undefined {
+export function getRuntimeFamily(langId: string): RuntimeFamily {
     switch (langId) {
         case 'typescript':
         case 'javascript':
-            return nodeJsRuntimes.sort(compareSamLambdaRuntime).first()
+            return RuntimeFamily.NodeJS
         case 'csharp':
-            return dotNetRuntimes.sort(compareSamLambdaRuntime).first()
+            return RuntimeFamily.DotNetCore
         case 'python':
+            return RuntimeFamily.Python
+        default:
+            return RuntimeFamily.Unknown
+    }
+}
+
+/**
+ * Guesses a reasonable default runtime value for the given `RuntimeFamily`.
+ */
+export function getDefaultRuntime(runtime: RuntimeFamily): string | undefined {
+    switch (runtime) {
+        case RuntimeFamily.NodeJS:
+            return nodeJsRuntimes.sort(compareSamLambdaRuntime).first()
+        case RuntimeFamily.DotNetCore:
+            return dotNetRuntimes.sort(compareSamLambdaRuntime).first()
+        case RuntimeFamily.Python:
             return pythonRuntimes.sort(compareSamLambdaRuntime).first()
         default:
             return undefined
@@ -155,8 +170,20 @@ export function getTemplateResource(config: AwsSamDebuggerConfiguration): CloudF
     }
     const templateInvoke = config.invokeTarget as TemplateTargetProperties
     const cfnTemplate = getTemplate(config)
+    if (!cfnTemplate) {
+        throw Error(`template not found (not registered?): ${templateInvoke.samTemplatePath}`)
+    }
+    if (!cfnTemplate?.Resources) {
+        throw Error(`no Resources in template: ${templateInvoke.samTemplatePath}`)
+    }
     const templateResource: CloudFormation.Resource | undefined = cfnTemplate?.Resources![
         templateInvoke.samTemplateResource!!
     ]
+    if (!templateResource) {
+        throw Error(
+            `template Resources object does not contain key '${templateInvoke.samTemplateResource}':` +
+                ` ${JSON.stringify(cfnTemplate?.Resources)}`
+        )
+    }
     return templateResource
 }
