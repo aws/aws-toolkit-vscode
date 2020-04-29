@@ -85,8 +85,8 @@ export function getRuntimeFamily(langId: string): RuntimeFamily {
 /**
  * Guesses a reasonable default runtime value for the given `RuntimeFamily`.
  */
-export function getDefaultRuntime(langId: RuntimeFamily): string | undefined {
-    switch (langId) {
+export function getDefaultRuntime(runtime: RuntimeFamily): string | undefined {
+    switch (runtime) {
         case RuntimeFamily.NodeJS:
             return nodeJsRuntimes.sort(compareSamLambdaRuntime).first()
         case RuntimeFamily.DotNetCore:
