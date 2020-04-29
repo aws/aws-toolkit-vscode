@@ -16,6 +16,7 @@ import {
 import { CloudFormationTemplateRegistry } from '../../../cloudformation/templateRegistry'
 import { getExistingConfiguration } from '../../../../lambda/config/templates'
 import { localize } from '../../../utilities/vsCodeUtils'
+import { RuntimeFamily } from '../../../../lambda/models/samLambdaRuntime'
 
 /**
  * Holds information required to create a launch config
@@ -25,13 +26,14 @@ import { localize } from '../../../utilities/vsCodeUtils'
 export interface AddSamDebugConfigurationInput {
     resourceName: string
     rootUri: vscode.Uri
+    runtimeFamily?: RuntimeFamily
 }
 
 /**
  * Adds a new debug configuration for the given sam function resource and template.
  */
 export async function addSamDebugConfiguration(
-    { resourceName, rootUri }: AddSamDebugConfigurationInput,
+    { resourceName, rootUri, runtimeFamily }: AddSamDebugConfigurationInput,
     type: typeof CODE_TARGET_TYPE | typeof TEMPLATE_TARGET_TYPE
 ): Promise<void> {
     // tslint:disable-next-line: no-floating-promises
@@ -79,7 +81,7 @@ export async function addSamDebugConfiguration(
         samDebugConfig = createTemplateAwsSamDebugConfig(resourceName, rootUri.fsPath, preloadedConfig)
     } else if (type === CODE_TARGET_TYPE) {
         // strip the manifest's URI to the manifest's dir here. More reliable to do this here than converting back and forth between URI/string up the chain.
-        samDebugConfig = createCodeAwsSamDebugConfig(resourceName, path.dirname(rootUri.fsPath))
+        samDebugConfig = createCodeAwsSamDebugConfig(resourceName, path.dirname(rootUri.fsPath), runtimeFamily)
     } else {
         throw new Error('Unrecognized debug target type')
     }
