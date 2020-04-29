@@ -9,7 +9,8 @@ import {
     CodeTargetProperties,
     TemplateTargetProperties,
 } from './awsSamDebugConfiguration.gen'
-import { RuntimeFamily, dotNetRuntimes, nodeJsRuntimes, pythonRuntimes } from '../../../lambda/models/samLambdaRuntime'
+import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
+import { getDefaultRuntime } from '../../../lambda/local/debugConfiguration'
 
 export * from './awsSamDebugConfiguration.gen'
 
@@ -91,20 +92,9 @@ export function createCodeAwsSamDebugConfig(
     projectRoot: string,
     runtimeFamily?: RuntimeFamily
 ): AwsSamDebuggerConfiguration {
-    let runtime: string
-
-    switch (runtimeFamily) {
-        case RuntimeFamily.DotNetCore:
-            runtime = dotNetRuntimes.first()
-            break
-        case RuntimeFamily.NodeJS:
-            runtime = nodeJsRuntimes.first()
-            break
-        case RuntimeFamily.Python:
-            runtime = pythonRuntimes.first()
-            break
-        default:
-            throw new Error('Invalid or missing runtime family')
+    const runtime = runtimeFamily ? getDefaultRuntime(runtimeFamily) : undefined
+    if (!runtime) {
+        throw new Error('Invalid or missing runtime family')
     }
 
     return {
