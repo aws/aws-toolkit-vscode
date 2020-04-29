@@ -7,14 +7,12 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import {
     getCodeRoot,
-    getDefaultRuntime,
     getHandlerName,
     getTemplateResource,
     NodejsDebugConfiguration,
     PythonDebugConfiguration,
-    getRuntimeFamily,
 } from '../../../lambda/local/debugConfiguration'
-import { getFamily, RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
+import { getDefaultRuntime, getFamily, getRuntimeFamily, RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import { CloudFormationTemplateRegistry, getResourcesFromTemplateDatum } from '../../cloudformation/templateRegistry'
 import * as csharpDebug from '../../codelens/csharpCodeLensProvider'
 import * as pythonDebug from '../../codelens/pythonCodeLensProvider'

@@ -55,3 +55,36 @@ function getSortableCompareText(runtime: Runtime): string {
 export function compareSamLambdaRuntime(a: Runtime, b: Runtime): number {
     return getSortableCompareText(a).localeCompare(getSortableCompareText(b))
 }
+
+/**
+ * Maps vscode document languageId to `RuntimeFamily`.
+ */
+export function getRuntimeFamily(langId: string): RuntimeFamily {
+    switch (langId) {
+        case 'typescript':
+        case 'javascript':
+            return RuntimeFamily.NodeJS
+        case 'csharp':
+            return RuntimeFamily.DotNetCore
+        case 'python':
+            return RuntimeFamily.Python
+        default:
+            return RuntimeFamily.Unknown
+    }
+}
+
+/**
+ * Guesses a reasonable default runtime value for the given `RuntimeFamily`.
+ */
+export function getDefaultRuntime(runtime: RuntimeFamily): string | undefined {
+    switch (runtime) {
+        case RuntimeFamily.NodeJS:
+            return nodeJsRuntimes.sort(compareSamLambdaRuntime).first()
+        case RuntimeFamily.DotNetCore:
+            return dotNetRuntimes.sort(compareSamLambdaRuntime).first()
+        case RuntimeFamily.Python:
+            return pythonRuntimes.sort(compareSamLambdaRuntime).first()
+        default:
+            return undefined
+    }
+}

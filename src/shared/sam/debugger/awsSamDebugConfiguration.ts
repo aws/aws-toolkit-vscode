@@ -9,8 +9,7 @@ import {
     CodeTargetProperties,
     TemplateTargetProperties,
 } from './awsSamDebugConfiguration.gen'
-import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
-import { getDefaultRuntime } from '../../../lambda/local/debugConfiguration'
+import { getDefaultRuntime, RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 
 export * from './awsSamDebugConfiguration.gen'
 

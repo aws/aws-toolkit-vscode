@@ -5,9 +5,8 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { nodeJsRuntimes, compareSamLambdaRuntime } from '../../lambda/models/samLambdaRuntime'
 import { SamLaunchRequestArgs } from '../../shared/sam/debugger/samDebugSession'
-import { dotNetRuntimes, pythonRuntimes, RuntimeFamily } from '../models/samLambdaRuntime'
+import { RuntimeFamily } from '../models/samLambdaRuntime'
 import {
     CodeTargetProperties,
     TemplateTargetProperties,
@@ -63,39 +62,6 @@ export interface PipeTransport {
     pipeArgs: string[]
     debuggerPath: typeof DOTNET_CORE_DEBUGGER_PATH
     pipeCwd: string
-}
-
-/**
- * Maps vscode document languageId to `RuntimeFamily`.
- */
-export function getRuntimeFamily(langId: string): RuntimeFamily {
-    switch (langId) {
-        case 'typescript':
-        case 'javascript':
-            return RuntimeFamily.NodeJS
-        case 'csharp':
-            return RuntimeFamily.DotNetCore
-        case 'python':
-            return RuntimeFamily.Python
-        default:
-            return RuntimeFamily.Unknown
-    }
-}
-
-/**
- * Guesses a reasonable default runtime value for the given `RuntimeFamily`.
- */
-export function getDefaultRuntime(runtime: RuntimeFamily): string | undefined {
-    switch (runtime) {
-        case RuntimeFamily.NodeJS:
-            return nodeJsRuntimes.sort(compareSamLambdaRuntime).first()
-        case RuntimeFamily.DotNetCore:
-            return dotNetRuntimes.sort(compareSamLambdaRuntime).first()
-        case RuntimeFamily.Python:
-            return pythonRuntimes.sort(compareSamLambdaRuntime).first()
-        default:
-            return undefined
-    }
 }
 
 export function assertTargetKind(config: SamLaunchRequestArgs, expectedTarget: 'code' | 'template'): void {
