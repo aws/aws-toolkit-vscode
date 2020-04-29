@@ -7,7 +7,11 @@ import * as _ from 'lodash'
 import * as vscode from 'vscode'
 import { TemplateFunctionResource, TemplateSymbolResolver } from '../cloudformation/templateSymbolResolver'
 import { LaunchConfiguration } from '../debug/launchConfiguration'
-import { isTemplateTargetProperties, TemplateTargetProperties } from '../sam/debugger/awsSamDebugConfiguration'
+import {
+    isTemplateTargetProperties,
+    TemplateTargetProperties,
+    TEMPLATE_TARGET_TYPE,
+} from '../sam/debugger/awsSamDebugConfiguration'
 import { AddSamDebugConfigurationInput } from '../sam/debugger/commands/addSamDebugConfiguration'
 import { localize } from '../utilities/vsCodeUtils'
 import * as pathutils from '../utilities/pathUtils'
@@ -38,13 +42,13 @@ export class SamTemplateCodeLensProvider implements vscode.CodeLensProvider {
     private createCodeLens(functionResource: TemplateFunctionResource, templateUri: vscode.Uri): vscode.CodeLens {
         const input: AddSamDebugConfigurationInput = {
             resourceName: functionResource.name,
-            templateUri: templateUri,
+            rootUri: templateUri,
         }
 
         return new vscode.CodeLens(functionResource.range, {
             title: localize('AWS.command.addSamDebugConfiguration', 'Add Debug Configuration'),
             command: 'aws.addSamDebugConfiguration',
-            arguments: [input],
+            arguments: [input, TEMPLATE_TARGET_TYPE],
         })
     }
 }

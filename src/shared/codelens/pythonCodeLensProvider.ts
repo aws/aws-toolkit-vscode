@@ -65,6 +65,7 @@ export async function getLambdaHandlerCandidates(uri: vscode.Uri): Promise<Lambd
         return {
             filename,
             handlerName: `${handlerPath}.${symbol.name}`,
+            manifestUri: requirementsFile,
             range: symbol.range,
         }
     })

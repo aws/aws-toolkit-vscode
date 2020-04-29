@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import * as path from 'path'
 import { readFileAsString } from '../shared/filesystemUtilities'
-import { LambdaHandlerCandidate } from '../shared/lambdaHandlerSearch'
+import { RootlessLambdaHandlerCandidate } from '../shared/lambdaHandlerSearch'
 import { TypescriptLambdaHandlerSearch } from '../shared/typescriptLambdaHandlerSearch'
 
 describe('TypescriptLambdaHandlerSearch', () => {
@@ -77,7 +77,7 @@ describe('TypescriptLambdaHandlerSearch', () => {
 
         const search: TypescriptLambdaHandlerSearch = new TypescriptLambdaHandlerSearch(filename, fileContents)
 
-        const handlers: LambdaHandlerCandidate[] = await search.findCandidateLambdaHandlers()
+        const handlers: RootlessLambdaHandlerCandidate[] = await search.findCandidateLambdaHandlers()
 
         assertCandidateHandlers(handlers, expectedHandlerNames)
     }
@@ -86,7 +86,7 @@ describe('TypescriptLambdaHandlerSearch', () => {
         return path.join(__dirname, '..', '..', '..', 'src', 'test', 'samples')
     }
 
-    function assertCandidateHandlers(actual: LambdaHandlerCandidate[], expectedHandlerNames: Set<string>) {
+    function assertCandidateHandlers(actual: RootlessLambdaHandlerCandidate[], expectedHandlerNames: Set<string>) {
         assert.strictEqual(actual.length, expectedHandlerNames.size)
         assert.strictEqual(
             actual.map(handler => handler.handlerName).every(handlerName => expectedHandlerNames.has(handlerName)),

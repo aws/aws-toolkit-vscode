@@ -186,10 +186,16 @@ export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchReque
 }
 
 export async function getLambdaHandlerCandidates(document: vscode.TextDocument): Promise<LambdaHandlerCandidate[]> {
-    const assemblyName = await getAssemblyName(document.uri)
-    if (!assemblyName) {
+    // Limitation: If more than one .csproj file exists in the same directory,
+    // and the directory is the closest to the source file, the csproj file used will be random
+
+    // TODO : Perform an XPATH parse on the project file
+    // If Project/PropertyGroup/AssemblyName exists, use that. Otherwise use the file name.
+    const assemblyUri = await findParentProjectFile(document.uri, '*.csproj')
+    if (!assemblyUri) {
         return []
     }
+    const assemblyName = path.parse(assemblyUri.fsPath).name
 
     const symbols: vscode.DocumentSymbol[] =
         (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
@@ -204,24 +210,11 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
             return {
                 filename: document.uri.fsPath,
                 handlerName,
+                manifestUri: assemblyUri,
                 range: lambdaHandlerComponents.handlerRange,
             }
         }
     )
-}
-
-async function getAssemblyName(sourceCodeUri: vscode.Uri): Promise<string | undefined> {
-    // Limitation: If more than one .csproj file exists in the same directory,
-    // and the directory is the closest to the source file, the csproj file used will be random
-    const projectFile = await findParentProjectFile(sourceCodeUri, '*.csproj')
-    if (!projectFile) {
-        return undefined
-    }
-
-    // TODO : Perform an XPATH parse on the project file
-    // If Project/PropertyGroup/AssemblyName exists, use that. Otherwise use the file name.
-
-    return path.parse(projectFile.fsPath).name
 }
 
 export function getLambdaHandlerComponents(
