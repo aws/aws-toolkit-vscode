@@ -1,0 +1,34 @@
+{
+	"date": "2020-04-29",
+	"version": "1.9.0",
+	"entries": [
+		{
+			"type": "Breaking Change",
+			"description": "Bumping VS Code minimum version: 1.31.1 => 1.42.0"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Bug fixes for step functions language server.: One is related to the error when there is \"Default\" property missing on \"Choice\" state.  Second,  “Unreachable state” error when the default state is declared before being referenced by “Choice” state."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Fixed a validation issue with VS Code's `settings.json` and `launch.json` files (#1027)"
+		},
+		{
+			"type": "Feature",
+			"description": "Add context menu command to copy ARNs from the AWS Explorer"
+		},
+		{
+			"type": "Feature",
+			"description": "Bumped maximum (exclusive) supported SAM CLI version from 0.50.0 to 0.60.0."
+		},
+		{
+			"type": "Feature",
+			"description": "Users are shown a notification reflecting changes to how usage data is gathered. Usage data can still be configured through the editor's settings."
+		},
+		{
+			"type": "Feature",
+			"description": "Visualising of step functions step machines will be allowed when ARN strings within ASL definition are invalid."
+		}
+	]
+}
