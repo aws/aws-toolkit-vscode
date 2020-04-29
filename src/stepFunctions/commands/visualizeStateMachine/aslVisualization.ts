@@ -154,11 +154,11 @@ export class AslVisualization {
 
         // When the panel is closed, dispose of any disposables/remove subscriptions
         panel.onDidDispose(() => {
+            debouncedUpdate.cancel()
             this.onVisualizationDisposeEmitter.fire()
             this.disposables.forEach(disposable => {
                 disposable.dispose()
             })
-            debouncedUpdate.cancel()
             this.onVisualizationDisposeEmitter.dispose()
             this.isPanelDisposed = true
         })
