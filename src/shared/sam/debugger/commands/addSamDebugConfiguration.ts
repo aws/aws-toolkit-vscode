@@ -16,6 +16,7 @@ import {
 import { CloudFormationTemplateRegistry } from '../../../cloudformation/templateRegistry'
 import { getExistingConfiguration } from '../../../../lambda/config/templates'
 import { localize } from '../../../utilities/vsCodeUtils'
+import { getNormalizedRelativePath } from '../../../utilities/pathUtils'
 
 /**
  * Holds information required to create a launch config
@@ -38,9 +39,9 @@ export async function addSamDebugConfiguration(
     emitCommandTelemetry()
 
     let samDebugConfig: AwsSamDebuggerConfiguration
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(rootUri)
 
     if (type === TEMPLATE_TARGET_TYPE) {
-        const workspaceFolder = vscode.workspace.getWorkspaceFolder(rootUri)
         let preloadedConfig = undefined
 
         if (workspaceFolder) {
@@ -76,10 +77,19 @@ export async function addSamDebugConfiguration(
                 }
             }
         }
-        samDebugConfig = createTemplateAwsSamDebugConfig(resourceName, rootUri.fsPath, preloadedConfig)
+        samDebugConfig = createTemplateAwsSamDebugConfig(
+            resourceName,
+            workspaceFolder ? getNormalizedRelativePath(workspaceFolder.uri.fsPath, rootUri.fsPath) : rootUri.fsPath,
+            preloadedConfig
+        )
     } else if (type === CODE_TARGET_TYPE) {
         // strip the manifest's URI to the manifest's dir here. More reliable to do this here than converting back and forth between URI/string up the chain.
-        samDebugConfig = createCodeAwsSamDebugConfig(resourceName, path.dirname(rootUri.fsPath))
+        samDebugConfig = createCodeAwsSamDebugConfig(
+            resourceName,
+            workspaceFolder
+                ? getNormalizedRelativePath(workspaceFolder.uri.fsPath, path.dirname(rootUri.fsPath))
+                : path.dirname(rootUri.fsPath)
+        )
     } else {
         throw new Error('Unrecognized debug target type')
     }
