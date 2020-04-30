@@ -2,12 +2,6 @@
  * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import {
-    DiagnosticSeverity,
-    DocumentLanguageSettings,
-    getLanguageService,
-    TextDocument as ASLTextDocument,
-} from 'amazon-states-language-service'
 
 import { debounce } from 'lodash'
 import * as nls from 'vscode-nls'
@@ -17,32 +11,13 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { ext } from '../../shared/extensionGlobals'
 import { getLogger, Logger } from '../../shared/logger'
-import { StateMachineGraphCache } from '../utils'
+import { StateMachineGraphCache, isDocumentValid } from '../utils'
 
 export interface messageObject {
     command: string
     text: string
     error?: string
     stateMachineData: string
-}
-
-const documentSettings: DocumentLanguageSettings = { comments: 'error', trailingCommas: 'error' }
-const languageService = getLanguageService({})
-
-async function isDocumentValid(textDocument?: vscode.TextDocument): Promise<boolean> {
-    if (!textDocument) {
-        return false
-    }
-
-    const text = textDocument.getText()
-    const doc = ASLTextDocument.create(textDocument.uri.path, textDocument.languageId, textDocument.version, text)
-    // tslint:disable-next-line: no-inferred-empty-object-type
-    const jsonDocument = languageService.parseJSONDocument(doc)
-    const diagnostics = await languageService.doValidation(doc, jsonDocument, documentSettings)
-
-    const isValid = !diagnostics.some(diagnostic => diagnostic.severity === DiagnosticSeverity.Error)
-
-    return isValid
 }
 
 /**
