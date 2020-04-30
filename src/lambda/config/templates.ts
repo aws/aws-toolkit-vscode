@@ -14,6 +14,7 @@ import * as nls from 'vscode-nls'
 import { mkdir } from '../../shared/filesystem'
 import * as fsUtils from '../../shared/filesystemUtilities'
 import { getLogger, Logger } from '../../shared/logger'
+import { ReadonlyJsonObject } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { getNormalizedRelativePath } from '../../shared/utilities/pathUtils'
 import { saveDocumentIfDirty } from '../../shared/utilities/textDocumentUtilities'
@@ -53,6 +54,9 @@ export function generateDefaultHandlerConfig(): HandlerConfig {
     }
 }
 
+/**
+ * TODO: remove? still needed?
+ */
 export async function getHandlerConfig(params: {
     handlerName: string
     documentUri: vscode.Uri
@@ -394,4 +398,52 @@ export class TemplatesConfigPopulator {
 
         return this
     }
+}
+
+/**
+ * Returns a previously-configured event payload if the following are true (`undefined` if false):
+ * * old `.aws/templates.json` file exists and is valid JSON
+ * * handler exists in `.aws/templates.json`
+ * @param workspaceFolder Current workspace folder
+ * @param handler Function's handler
+ * @param samTemplate Originating SAM Template
+ */
+export async function getExistingConfiguration(
+    workspaceFolder: vscode.WorkspaceFolder,
+    handler: string,
+    samTemplate: vscode.Uri
+): Promise<
+    | {
+          eventJson?: ReadonlyJsonObject
+          environmentVariables?: ReadonlyJsonObject
+          dockerNetwork?: string
+          useContainer?: boolean
+      }
+    | undefined
+> {
+    const configPath: string = getTemplatesConfigPath(workspaceFolder.uri.fsPath)
+
+    if (await fsUtils.fileExists(configPath)) {
+        const templateRelativePath = getNormalizedRelativePath(workspaceFolder.uri.fsPath, samTemplate.fsPath)
+        try {
+            const json = JSON.parse(await fsUtils.readFileAsString(configPath)) as TemplatesConfig
+            const handlerData = json.templates[templateRelativePath]?.handlers?.[handler]
+            if (handlerData) {
+                return {
+                    eventJson: handlerData.event,
+                    environmentVariables: handlerData.environmentVariables,
+                    dockerNetwork: handlerData.dockerNetwork,
+                    useContainer: handlerData.useContainer,
+                }
+            }
+        } catch (e) {
+            // json was not parseable
+            const err = e as Error
+            getLogger().info(`Error parsing the legacy configuration file: ${err.message}`)
+
+            return undefined
+        }
+    }
+
+    return undefined
 }

@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+
 import { getLogger, Logger } from '../../shared/logger'
 import { recordLambdaConfigure, Result } from '../../shared/telemetry/telemetry'
 import { getNormalizedRelativePath } from '../../shared/utilities/pathUtils'
@@ -116,21 +117,21 @@ async function getEventRange(
         c => c.name === relativeTemplatePath
     )
     if (!templateSymbol) {
-        logger.warn(`Unable to find template section ${relativeTemplatePath} in ${editor.document.uri}`)
+        logger.warn(`Cannot find template section '${relativeTemplatePath}' in: ${editor.document.uri}`)
 
         return defaultRange
     }
 
     const handlersSymbol: vscode.DocumentSymbol | undefined = templateSymbol!.children.find(c => c.name === 'handlers')
     if (!handlersSymbol) {
-        logger.warn(`Unable to find handlers section for ${relativeTemplatePath} in ${editor.document.uri}`)
+        logger.warn(`Cannot find handlers section for '${relativeTemplatePath}' in: ${editor.document.uri}`)
 
         return defaultRange
     }
 
     const handlerSymbol: vscode.DocumentSymbol | undefined = handlersSymbol.children.find(c => c.name === handler)
     if (!handlerSymbol) {
-        logger.warn(`Unable to find config for handler ${handler}`)
+        logger.warn(`Cannot find config for handler: ${handler}`)
 
         return defaultRange
     }

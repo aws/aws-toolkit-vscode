@@ -3,42 +3,38 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { access } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
-
-import { access } from 'fs-extra'
-import { getHandlerConfig } from '../../lambda/config/templates'
-import { makeCoreCLRDebugConfiguration } from '../../lambda/local/debugConfiguration'
+import * as os from 'os'
+import {
+    DotNetCoreDebugConfiguration,
+    DOTNET_CORE_DEBUGGER_PATH,
+    getCodeRoot,
+    getTemplate,
+    getTemplateResource,
+} from '../../lambda/local/debugConfiguration'
+import { RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
+import * as pathutil from '../../shared/utilities/pathUtils'
 import { DefaultDockerClient, DockerClient } from '../clients/dockerClient'
-import { CloudFormation } from '../cloudformation/cloudformation'
+import { ExtContext } from '../extensions'
 import { mkdir } from '../filesystem'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
-import { getLogger } from '../logger'
 import { DefaultSamCliProcessInvoker } from '../sam/cli/samCliInvoker'
-import { SamCliProcessInvoker } from '../sam/cli/samCliInvokerUtils'
-import {
-    DefaultSamLocalInvokeCommand,
-    SamLocalInvokeCommand,
-    WAIT_FOR_DEBUGGER_MESSAGES,
-} from '../sam/cli/samCliLocalInvoke'
-import { SettingsConfiguration } from '../settingsConfiguration'
+import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
+import { SamLaunchRequestArgs } from '../sam/debugger/samDebugSession'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
-import { TelemetryService } from '../telemetry/telemetryService'
 import { getStartPort } from '../utilities/debuggerUtils'
-import { dirnameWithTrailingSlash } from '../utilities/pathUtils'
 import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
-import { CodeLensProviderParams, getInvokeCmdKey, makeCodeLenses } from './codeLensUtils'
 import {
     executeSamBuild,
     ExecuteSamBuildArguments,
     invokeLambdaFunction,
-    InvokeLambdaFunctionArguments,
-    InvokeLambdaFunctionContext,
-    LambdaLocalInvokeParams,
     makeBuildDir,
     makeInputTemplate,
     waitForDebugPort,
 } from './localLambdaRunner'
+import { findParentProjectFile } from '../utilities/workspaceUtils'
 
 export const CSHARP_LANGUAGE = 'csharp'
 export const CSHARP_ALLFILES: vscode.DocumentFilter[] = [
@@ -59,32 +55,8 @@ export interface DotNetLambdaHandlerComponents {
     handlerRange: vscode.Range
 }
 
-export async function initialize({
-    context,
-    configuration,
-    outputChannel: toolkitOutputChannel,
-    processInvoker = new DefaultSamCliProcessInvoker(),
-    telemetryService,
-    localInvokeCommand = new DefaultSamLocalInvokeCommand(getChannelLogger(toolkitOutputChannel), [
-        WAIT_FOR_DEBUGGER_MESSAGES.DOTNET,
-    ]),
-}: CodeLensProviderParams): Promise<void> {
-    context.subscriptions.push(
-        vscode.commands.registerCommand(getInvokeCmdKey(CSHARP_LANGUAGE), async (params: LambdaLocalInvokeParams) => {
-            await onLocalInvokeCommand({
-                lambdaLocalInvokeParams: params,
-                configuration,
-                toolkitOutputChannel,
-                processInvoker,
-                localInvokeCommand,
-                telemetryService,
-            })
-        })
-    )
-}
-
 export interface OnLocalInvokeCommandContext {
-    installDebugger(args: InstallDebuggerArgs): Promise<InstallDebuggerResult>
+    installDebugger(args: InstallDebuggerArgs): Promise<void>
 }
 
 class DefaultOnLocalInvokeCommandContext implements OnLocalInvokeCommandContext {
@@ -94,160 +66,112 @@ class DefaultOnLocalInvokeCommandContext implements OnLocalInvokeCommandContext 
         this.dockerClient = new DefaultDockerClient(outputChannel)
     }
 
-    public async installDebugger(args: InstallDebuggerArgs): Promise<InstallDebuggerResult> {
-        return await _installDebugger(args, { dockerClient: this.dockerClient })
+    public async installDebugger(args: InstallDebuggerArgs): Promise<void> {
+        await _installDebugger(args, { dockerClient: this.dockerClient })
     }
 }
 
-function getCodeUri(resource: CloudFormation.Resource, samTemplateUri: vscode.Uri) {
-    const rawCodeUri = CloudFormation.getCodeUri(resource)
+/**
+ * Gathers and sets launch-config info by inspecting the workspace and creating
+ * temp files/directories as needed.
+ *
+ * Does NOT execute/invoke SAM, docker, etc.
+ */
+export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<SamLaunchRequestArgs> {
+    // TODO: walk the tree to find .sln, .csproj ...
+    if (!config.codeRoot) {
+        // Last-resort attempt to discover the project root (when there is no
+        // `launch.json` nor `template.yaml`).
+        config.codeRoot = getSamProjectDirPathForFile(config?.samTemplatePath ?? config.documentUri!!.fsPath)
+        if (!config.codeRoot) {
+            // TODO: return error and show it at the caller.
+            throw Error('missing launch.json, template.yaml, and failed to discover project root')
+        }
+    }
+    config.codeRoot = pathutil.normalize(config.codeRoot)
 
-    return path.isAbsolute(rawCodeUri) ? rawCodeUri : path.join(path.dirname(samTemplateUri.fsPath), rawCodeUri)
+    const baseBuildDir = await makeBuildDir()
+    const template = getTemplate(config)
+    const resource = getTemplateResource(config)
+    const codeUri = getCodeRoot(config.workspaceFolder, config)
+    const handlerName = config.handlerName
+
+    config.samTemplatePath = await makeInputTemplate({
+        baseBuildDir,
+        codeDir: codeUri!!,
+        relativeFunctionHandler: handlerName,
+        runtime: config.runtime,
+        globals: template?.Globals,
+        properties: resource?.Properties,
+    })
+
+    config = {
+        ...config,
+        type: 'coreclr',
+        request: 'attach',
+        runtimeFamily: RuntimeFamily.DotNetCore,
+        name: 'SamLocalDebug',
+        baseBuildDir: baseBuildDir,
+    }
+
+    if (!config.noDebug) {
+        config = await makeCoreCLRDebugConfiguration(config, config.codeRoot)
+    }
+
+    return config
 }
 
 /**
- * The command that is run when user clicks on Run Local or Debug Local CodeLens
- * Accepts object containing the following params:
- * @param configuration - SettingsConfiguration (for invokeLambdaFunction)
- * @param toolkitOutputChannel - "AWS Toolkit" output channel
- * @param commandName - Name of the VS Code Command currently running
- * @param lambdaLocalInvokeParams - Information about the Lambda Handler to invoke locally
- * @param processInvoker - SAM CLI Process invoker
- * @param taskInvoker - SAM CLI Task invoker
- * @param telemetryService - Telemetry service for metrics
+ * Launches and attaches debugger to a SAM dotnet (csharp) project.
  */
-async function onLocalInvokeCommand(
-    {
-        configuration,
-        toolkitOutputChannel,
-        lambdaLocalInvokeParams,
-        processInvoker,
-        localInvokeCommand,
-        telemetryService,
-        loadCloudFormationTemplate = async _args => await CloudFormation.load(_args),
-        getResourceFromTemplateResource = async _args => await CloudFormation.getResourceFromTemplateResources(_args),
-    }: {
-        configuration: SettingsConfiguration
-        toolkitOutputChannel: vscode.OutputChannel
-        lambdaLocalInvokeParams: LambdaLocalInvokeParams
-        processInvoker: SamCliProcessInvoker
-        localInvokeCommand: SamLocalInvokeCommand
-        telemetryService: TelemetryService
-        loadCloudFormationTemplate?(filename: string): Promise<CloudFormation.Template>
-        getResourceFromTemplateResource?(args: {
-            templateResources?: CloudFormation.TemplateResources
-            handlerName: string
-        }): Promise<CloudFormation.Resource>
-    },
-    context: OnLocalInvokeCommandContext = new DefaultOnLocalInvokeCommandContext(toolkitOutputChannel)
-): Promise<void> {
-    const channelLogger = getChannelLogger(toolkitOutputChannel)
-    const template: CloudFormation.Template = await loadCloudFormationTemplate(
-        lambdaLocalInvokeParams.samTemplate.fsPath
-    )
-    const resource = await getResourceFromTemplateResource({
-        templateResources: template.Resources,
-        handlerName: lambdaLocalInvokeParams.handlerName,
-    })
+export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchRequestArgs): Promise<void> {
+    const invokeCtx: OnLocalInvokeCommandContext = new DefaultOnLocalInvokeCommandContext(ctx.outputChannel)
+    const processInvoker = new DefaultSamCliProcessInvoker()
+    const localInvokeCommand = new DefaultSamLocalInvokeCommand(getChannelLogger(ctx.outputChannel), [
+        WAIT_FOR_DEBUGGER_MESSAGES.DOTNET,
+    ])
     let invokeResult: Result = 'Succeeded'
-    const lambdaRuntime = CloudFormation.getRuntime(resource)
 
     try {
         // Switch over to the output channel so the user has feedback that we're getting things ready
-        channelLogger.channel.show(true)
-        channelLogger.info(
-            'AWS.output.sam.local.start',
-            'Preparing to run {0} locally...',
-            lambdaLocalInvokeParams.handlerName
-        )
-
-        const baseBuildDir = await makeBuildDir()
-        const codeUri = getCodeUri(resource, lambdaLocalInvokeParams.samTemplate)
-        const documentUri = lambdaLocalInvokeParams.document.uri
-        const handlerName = lambdaLocalInvokeParams.handlerName
-
-        const inputTemplatePath = await makeInputTemplate({
-            baseBuildDir,
-            codeDir: codeUri,
-            relativeFunctionHandler: handlerName,
-            runtime: lambdaRuntime,
-            globals: template.Globals,
-            properties: resource.Properties,
-        })
-
-        const config = await getHandlerConfig({
-            handlerName: handlerName,
-            documentUri: documentUri,
-            samTemplate: vscode.Uri.file(lambdaLocalInvokeParams.samTemplate.fsPath),
-        })
+        ctx.chanLogger.channel.show(true)
+        ctx.chanLogger.info('AWS.output.sam.local.start', 'Preparing to run {0} locally...', config.handlerName)
 
         const buildArgs: ExecuteSamBuildArguments = {
-            baseBuildDir,
-            channelLogger,
-            codeDir: codeUri,
-            inputTemplatePath,
+            baseBuildDir: config.baseBuildDir!!,
+            channelLogger: ctx.chanLogger,
+            codeDir: path.dirname(config.samTemplatePath),
+            inputTemplatePath: config.samTemplatePath,
             samProcessInvoker: processInvoker,
-            useContainer: config.useContainer,
+            useContainer: config.sam?.containerBuild,
         }
-        if (lambdaLocalInvokeParams.isDebug) {
+        if (!config.noDebug) {
             buildArgs.environmentVariables = {
                 SAM_BUILD_MODE: 'debug',
             }
         }
-        const samTemplatePath: string = await executeSamBuild(buildArgs)
 
-        const invokeArgs: InvokeLambdaFunctionArguments = {
-            baseBuildDir,
-            documentUri,
-            originalHandlerName: handlerName,
-            handlerName,
-            originalSamTemplatePath: lambdaLocalInvokeParams.samTemplate.fsPath,
-            samTemplatePath,
-            runtime: lambdaRuntime,
+        // XXX: reassignment
+        config.samTemplatePath = await executeSamBuild(buildArgs)
+        if (config.invokeTarget.target === 'template') {
+            // XXX: reassignment
+            config.invokeTarget.samTemplatePath = config.samTemplatePath
         }
 
-        const invokeContext: InvokeLambdaFunctionContext = {
-            channelLogger,
-            configuration,
-            samLocalInvokeCommand: localInvokeCommand,
-            telemetryService,
-        }
-
-        if (!lambdaLocalInvokeParams.isDebug) {
-            await invokeLambdaFunction(invokeArgs, invokeContext)
-        } else {
-            const { debuggerPath } = await context.installDebugger({
-                lambdaRuntime: lambdaRuntime,
-                targetFolder: codeUri,
-                channelLogger,
+        if (!config.noDebug) {
+            await invokeCtx.installDebugger({
+                debuggerPath: config.debuggerPath!!,
+                lambdaRuntime: config.runtime,
+                channelLogger: ctx.chanLogger,
             })
-            const port = await getStartPort()
-            const debugConfig = makeCoreCLRDebugConfiguration({
-                port,
-                codeUri,
-            })
-
-            await invokeLambdaFunction(
-                {
-                    ...invokeArgs,
-                    debugArgs: {
-                        debugConfig,
-                        debugPort: port,
-                        debuggerPath,
-                    },
-                },
-                {
-                    channelLogger,
-                    configuration,
-                    samLocalInvokeCommand: localInvokeCommand,
-                    telemetryService,
-                    onWillAttachDebugger: waitForDebugPort,
-                }
-            )
+            config.onWillAttachDebugger = waitForDebugPort
+            config.samLocalInvokeCommand = localInvokeCommand
         }
+
+        await invokeLambdaFunction(ctx, config)
     } catch (err) {
         invokeResult = 'Failed'
-        channelLogger.error(
+        ctx.chanLogger.error(
             'AWS.error.during.sam.local',
             'An error occurred trying to run SAM Application locally: {0}',
             err as Error
@@ -255,43 +179,23 @@ async function onLocalInvokeCommand(
     } finally {
         recordLambdaInvokeLocal({
             result: invokeResult,
-            runtime: lambdaRuntime as Runtime,
-            debug: lambdaLocalInvokeParams.isDebug,
+            runtime: config.runtime as Runtime,
+            debug: !config.noDebug,
         })
     }
 }
 
-export async function makeCSharpCodeLensProvider(): Promise<vscode.CodeLensProvider> {
-    const logger = getLogger()
-
-    const codeLensProvider: vscode.CodeLensProvider = {
-        provideCodeLenses: async (
-            document: vscode.TextDocument,
-            token: vscode.CancellationToken
-        ): Promise<vscode.CodeLens[]> => {
-            const handlers: LambdaHandlerCandidate[] = await getLambdaHandlerCandidates(document)
-            logger.debug(
-                'csharpCodeLensProvider.makeCSharpCodeLensProvider handlers:',
-                JSON.stringify(handlers, undefined, 2)
-            )
-
-            return makeCodeLenses({
-                document,
-                handlers,
-                token,
-                language: 'csharp',
-            })
-        },
-    }
-
-    return codeLensProvider
-}
-
 export async function getLambdaHandlerCandidates(document: vscode.TextDocument): Promise<LambdaHandlerCandidate[]> {
-    const assemblyName = await getAssemblyName(document.uri)
-    if (!assemblyName) {
+    // Limitation: If more than one .csproj file exists in the same directory,
+    // and the directory is the closest to the source file, the csproj file used will be random
+
+    // TODO : Perform an XPATH parse on the project file
+    // If Project/PropertyGroup/AssemblyName exists, use that. Otherwise use the file name.
+    const assemblyUri = await findParentProjectFile(document.uri, '*.csproj')
+    if (!assemblyUri) {
         return []
     }
+    const assemblyName = path.parse(assemblyUri.fsPath).name
 
     const symbols: vscode.DocumentSymbol[] =
         (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
@@ -306,23 +210,11 @@ export async function getLambdaHandlerCandidates(document: vscode.TextDocument):
             return {
                 filename: document.uri.fsPath,
                 handlerName,
+                manifestUri: assemblyUri,
                 range: lambdaHandlerComponents.handlerRange,
             }
         }
     )
-}
-
-async function getAssemblyName(sourceCodeUri: vscode.Uri): Promise<string | undefined> {
-    const projectFile: vscode.Uri | undefined = await findParentProjectFile(sourceCodeUri)
-
-    if (!projectFile) {
-        return undefined
-    }
-
-    // TODO : Perform an XPATH parse on the project file
-    // If Project/PropertyGroup/AssemblyName exists, use that. Otherwise use the file name.
-
-    return path.parse(projectFile.fsPath).name
 }
 
 export function getLambdaHandlerComponents(
@@ -359,7 +251,7 @@ export function getLambdaHandlerComponents(
                 accumulator.push(
                     ...lambdaHandlerComponents.class.children
                         .filter(classChildSymbol => classChildSymbol.kind === vscode.SymbolKind.Method)
-                        .filter(methodSymbol => isPublicMethodSymbol(document, methodSymbol))
+                        .filter(methodSymbol => isValidLambdaHandler(document, methodSymbol))
                         .map(methodSymbol => {
                             return {
                                 assembly,
@@ -374,26 +266,6 @@ export function getLambdaHandlerComponents(
                 return accumulator
             }, [])
     )
-}
-
-export async function findParentProjectFile(
-    sourceCodeUri: vscode.Uri,
-    findWorkspaceFiles: typeof vscode.workspace.findFiles = vscode.workspace.findFiles
-): Promise<vscode.Uri | undefined> {
-    const workspaceProjectFiles: vscode.Uri[] = await findWorkspaceFiles('**/*.csproj')
-
-    // Use the project file "closest" in the parent chain to sourceCodeUri
-    // Assumption: only one .csproj file will exist in a given folder
-    const parentProjectFiles = workspaceProjectFiles
-        .filter(uri => {
-            const dirname = dirnameWithTrailingSlash(uri.fsPath)
-
-            return sourceCodeUri.fsPath.startsWith(dirname)
-        })
-        .sort()
-        .reverse()
-
-    return parentProjectFiles.length === 0 ? undefined : parentProjectFiles[0]
 }
 
 export function isPublicClassSymbol(
@@ -411,7 +283,12 @@ export function isPublicClassSymbol(
     return false
 }
 
-export function isPublicMethodSymbol(
+/**
+ * Returns whether or not a method is a valid Lambda handler
+ * @param document VS Code document
+ * @param symbol VS Code DocumentSymbol to evaluate
+ */
+export function isValidLambdaHandler(
     document: Pick<vscode.TextDocument, 'getText'>,
     symbol: vscode.DocumentSymbol
 ): boolean {
@@ -420,10 +297,63 @@ export function isPublicMethodSymbol(
         const signatureBeforeMethodNameRange = new vscode.Range(symbol.range.start, symbol.selectionRange.start)
         const signatureBeforeMethodName: string = document.getText(signatureBeforeMethodNameRange)
 
-        return REGEXP_RESERVED_WORD_PUBLIC.test(signatureBeforeMethodName)
+        if (REGEXP_RESERVED_WORD_PUBLIC.test(signatureBeforeMethodName)) {
+            return isValidMethodSignature(symbol)
+        }
     }
 
     return false
+}
+
+/**
+ * Returns whether or not a VS Code DocumentSymbol is a method that could be a Lambda handler
+ * * has one or more parameters
+ * * if there is more than one parameter, the second parameter is an ILambdaContext object
+ *   * does not check for extension/implementation of ILambdaContext
+ * @param symbol VS Code DocumentSymbol to analyze
+ */
+export function isValidMethodSignature(symbol: vscode.DocumentSymbol): boolean {
+    const parametersRegExp = /\(.*\)/
+    const lambdaContextType = 'ILambdaContext '
+
+    if (symbol.kind === vscode.SymbolKind.Method) {
+        // public void methodName(Foo<Bar, Baz> x, ILambdaContext y) -> (Foo<Bar, Baz> x, ILambdaContext y)
+        const parametersArr = parametersRegExp.exec(symbol.name)
+        // reject if there are no parameters
+        if (!parametersArr) {
+            return false
+        }
+        // remove generics from parameter string so we can do a predictable split on comma
+        const strippedStr = stripGenericsFromParams(parametersArr[0])
+        const individualParams = strippedStr.split(',')
+        if (
+            individualParams.length === 1 ||
+            individualParams[1]
+                .valueOf()
+                .trimLeft()
+                .startsWith(lambdaContextType)
+        ) {
+            return true
+        }
+    }
+
+    return false
+}
+
+/**
+ * Strips any generics from a string in order to ensure predictable commas for a string of parameters.
+ * e.g.: `'(Foo<Bar, Baz> x, ILambdaContext y)' -> '(Foo x, ILambdaContext y)'`
+ * Implements a fairly rough English-centric approximation of the C# identifier spec:
+ * * can start with a letter, underscore, or @ sign
+ * * all other characters are letters, numbers, underscores, or periods
+ *
+ * Actual spec: https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/lexical-structure#identifiers
+ * @param input String to remove generics from
+ */
+function stripGenericsFromParams(input: string): string {
+    const cSharpGenericIdentifierRegex = /(?:<{1}(?:\s*[a-zA-Z_@][a-zA-Z0-9._]*[\s,]?)*>{1})/g
+
+    return input.replace(cSharpGenericIdentifierRegex, '')
 }
 
 export function generateDotNetLambdaHandler(components: DotNetLambdaHandlerComponents): string {
@@ -431,42 +361,34 @@ export function generateDotNetLambdaHandler(components: DotNetLambdaHandlerCompo
 }
 
 interface InstallDebuggerArgs {
-    lambdaRuntime: string
-    targetFolder: string
-    channelLogger: ChannelLogger
-}
-
-interface InstallDebuggerResult {
     debuggerPath: string
+    lambdaRuntime: string
+    channelLogger: ChannelLogger
 }
 
 function getDebuggerPath(parentFolder: string): string {
     return path.resolve(parentFolder, '.vsdbg')
 }
 
-async function ensureDebuggerPathExists(parentFolder: string): Promise<void> {
-    const vsdbgPath = getDebuggerPath(parentFolder)
-
+async function ensureDebuggerPathExists(debuggerPath: string): Promise<void> {
     try {
-        await access(vsdbgPath)
+        await access(debuggerPath)
     } catch {
-        await mkdir(vsdbgPath)
+        await mkdir(debuggerPath)
     }
 }
 
 async function _installDebugger(
-    { lambdaRuntime, targetFolder, channelLogger }: InstallDebuggerArgs,
+    { debuggerPath, lambdaRuntime, channelLogger }: InstallDebuggerArgs,
     { dockerClient }: { dockerClient: DockerClient }
-): Promise<InstallDebuggerResult> {
-    await ensureDebuggerPathExists(targetFolder)
+): Promise<void> {
+    await ensureDebuggerPathExists(debuggerPath)
 
     try {
-        const vsdbgPath = getDebuggerPath(targetFolder)
-
         channelLogger.info(
             'AWS.samcli.local.invoke.debugger.install',
             'Installing .NET Core Debugger to {0}...',
-            vsdbgPath
+            debuggerPath
         )
 
         await dockerClient.invoke({
@@ -475,7 +397,7 @@ async function _installDebugger(
             removeOnExit: true,
             mount: {
                 type: 'bind',
-                source: vsdbgPath,
+                source: debuggerPath,
                 destination: '/vsdbg',
             },
             entryPoint: {
@@ -483,8 +405,6 @@ async function _installDebugger(
                 args: ['-c', 'curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg'],
             },
         })
-
-        return { debuggerPath: vsdbgPath }
     } catch (err) {
         channelLogger.info(
             'AWS.samcli.local.invoke.debugger.install.failed',
@@ -493,5 +413,55 @@ async function _installDebugger(
         )
 
         throw err
+    }
+}
+
+function getSamProjectDirPathForFile(filepath: string): string {
+    return pathutil.normalize(path.dirname(filepath))
+}
+
+/**
+ * Creates a CLR launch-config composed with the given `config`.
+ */
+export async function makeCoreCLRDebugConfiguration(
+    config: SamLaunchRequestArgs,
+    codeUri: string
+): Promise<DotNetCoreDebugConfiguration> {
+    if (!!config.noDebug) {
+        throw Error(`SAM debug: invalid config ${config}`)
+    }
+    config.debugPort = config.debugPort ?? (await getStartPort())
+    const pipeArgs = ['-c', `docker exec -i $(docker ps -q -f publish=${config.debugPort}) \${debuggerCommand}`]
+    config.debuggerPath = pathutil.normalize(getDebuggerPath(config.codeRoot))
+    await ensureDebuggerPathExists(config.debuggerPath)
+
+    if (os.platform() === 'win32') {
+        // Coerce drive letter to uppercase. While Windows is case-insensitive, sourceFileMap is case-sensitive.
+        codeUri = codeUri.replace(pathutil.DRIVE_LETTER_REGEX, match => match.toUpperCase())
+    }
+
+    return {
+        ...config,
+        name: 'SamLocalDebug',
+        runtimeFamily: RuntimeFamily.DotNetCore,
+        request: 'attach',
+        processId: '1',
+        pipeTransport: {
+            pipeProgram: 'sh',
+            pipeArgs,
+            debuggerPath: DOTNET_CORE_DEBUGGER_PATH,
+            pipeCwd: codeUri,
+        },
+        windows: {
+            pipeTransport: {
+                pipeProgram: 'powershell',
+                pipeArgs,
+                debuggerPath: DOTNET_CORE_DEBUGGER_PATH,
+                pipeCwd: codeUri,
+            },
+        },
+        sourceFileMap: {
+            ['/var/task']: codeUri,
+        },
     }
 }

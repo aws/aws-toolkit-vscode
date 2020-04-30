@@ -4,11 +4,11 @@
  */
 
 import * as assert from 'assert'
-import { join } from 'path'
+import { dirname, join } from 'path'
 import * as vscode from 'vscode'
-import { LambdaLocalInvokeParams } from '../shared/codelens/localLambdaRunner'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { activateExtension, expectCodeLenses, getTestWorkspaceFolder } from './integrationTestsUtilities'
+import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/addSamDebugConfiguration'
 
 const ACTIVATE_EXTENSION_TIMEOUT_MILLIS = 30000
 const CODELENS_TEST_TIMEOUT_MILLIS = 10000
@@ -28,118 +28,78 @@ describe('SAM Local CodeLenses (JS)', async () => {
     it('appear when manifest in subfolder and app is beside manifest', async () => {
         const appRoot = join(workspaceFolder, 'js-plain-sam-app')
         const appCodePath = join(appRoot, 'src', 'app.js')
-        const samTemplatePath = join(appRoot, 'template.yaml')
         const expectedHandlerName = 'app.handlerBesidePackageJson'
         const document = await vscode.workspace.openTextDocument(appCodePath)
 
         const codeLenses = await expectCodeLenses(document.uri)
 
-        assertDebugCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)
-        assertRunCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)
-        assertConfigureCodeLensExists(codeLenses)
+        assertAddDebugConfigCodeLensExists(codeLenses, expectedHandlerName, dirname(appCodePath))
     }).timeout(CODELENS_TEST_TIMEOUT_MILLIS)
 
     it('appear when manifest in root', async () => {
         const appRoot = join(workspaceFolder, 'js-manifest-in-root')
         const appCodePath = join(appRoot, 'src', 'subfolder', 'app.js')
-        const samTemplatePath = join(appRoot, 'template.yaml')
         const expectedHandlerName = 'src/subfolder/app.handlerTwoFoldersDeep'
         const document = await vscode.workspace.openTextDocument(appCodePath)
 
         const codeLenses = await expectCodeLenses(document.uri)
 
-        assertDebugCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)
-        assertRunCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)
-        assertConfigureCodeLensExists(codeLenses)
+        assertAddDebugConfigCodeLensExists(codeLenses, expectedHandlerName, join(dirname(appCodePath), '..', '..'))
     }).timeout(CODELENS_TEST_TIMEOUT_MILLIS)
 
     it('appear when manifest in subfolder and app in subfolder to manifest', async () => {
         const appRoot = join(workspaceFolder, 'js-manifest-in-subfolder')
         const appCodePath = join(appRoot, 'src', 'subfolder', 'app.js')
-        const samTemplatePath = join(appRoot, 'template.yaml')
         const expectedHandlerName = 'subfolder/app.handlerInManifestSubfolder'
         const document = await vscode.workspace.openTextDocument(appCodePath)
 
         const codeLenses = await expectCodeLenses(document.uri)
 
-        assertDebugCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)
-        assertRunCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)
-        assertConfigureCodeLensExists(codeLenses)
+        assertAddDebugConfigCodeLensExists(codeLenses, expectedHandlerName, join(dirname(appCodePath), '..'))
     }).timeout(CODELENS_TEST_TIMEOUT_MILLIS)
 
     it('appear when project is a few folders deep in the workspace', async () => {
         const appRoot = join(workspaceFolder, 'deeper-projects', 'js-plain-sam-app')
         const appCodePath = join(appRoot, 'src', 'app.js')
-        const samTemplatePath = join(appRoot, 'template.yaml')
         const expectedHandlerName = 'app.projectDeepInWorkspace'
         const document = await vscode.workspace.openTextDocument(appCodePath)
 
         const codeLenses = await expectCodeLenses(document.uri)
 
-        assertDebugCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)
-        assertRunCodeLensExists(codeLenses, expectedHandlerName, samTemplatePath)
-        assertConfigureCodeLensExists(codeLenses)
+        assertAddDebugConfigCodeLensExists(codeLenses, expectedHandlerName, dirname(appCodePath))
     })
 
-    function assertDebugCodeLensExists(
+    function assertAddDebugConfigCodeLensExists(
         codeLenses: vscode.CodeLens[],
         expectedHandlerName: string,
-        expectedSamTemplatePath: string
+        manifestPath: string
     ) {
         const debugCodeLenses = getLocalInvokeCodeLenses(codeLenses).filter(codeLens =>
-            hasLocalInvokeArguments(codeLens, expectedHandlerName, expectedSamTemplatePath, true)
+            hasLocalInvokeArguments(codeLens, expectedHandlerName, manifestPath)
         )
 
-        assert.strictEqual(debugCodeLenses.length, 1, 'Debug CodeLens was not found')
-    }
-
-    function assertRunCodeLensExists(
-        codeLenses: vscode.CodeLens[],
-        expectedHandlerName: string,
-        expectedSamTemplatePath: string
-    ) {
-        const debugCodeLenses = getLocalInvokeCodeLenses(codeLenses).filter(codeLens =>
-            hasLocalInvokeArguments(codeLens, expectedHandlerName, expectedSamTemplatePath, false)
-        )
-
-        assert.strictEqual(debugCodeLenses.length, 1, 'Run CodeLens was not found')
+        assert.strictEqual(debugCodeLenses.length, 1, 'Add Debug Config CodeLens was not found')
     }
 
     function getLocalInvokeCodeLenses(codeLenses: vscode.CodeLens[]): vscode.CodeLens[] {
         return codeLenses.filter(
             codeLens =>
                 codeLens.command &&
-                codeLens.command.command === 'aws.lambda.local.invoke.javascript' &&
+                codeLens.command.command === 'aws.addSamDebugConfiguration' &&
                 codeLens.command.arguments &&
-                codeLens.command.arguments.length === 1
+                codeLens.command.arguments.length === 2
         )
     }
 
-    function hasLocalInvokeArguments(
-        codeLens: vscode.CodeLens,
-        handlerName: string,
-        templatePath: string,
-        isDebug: boolean
-    ): boolean {
-        if (!codeLens.command || !codeLens.command.arguments || codeLens.command.arguments.length !== 1) {
+    function hasLocalInvokeArguments(codeLens: vscode.CodeLens, handlerName: string, manifestPath: string): boolean {
+        if (!codeLens.command || !codeLens.command.arguments || codeLens.command.arguments.length !== 2) {
             return false
         }
 
-        const commandArguments = codeLens.command.arguments[0] as LambdaLocalInvokeParams
+        const commandArguments = codeLens.command.arguments[0] as AddSamDebugConfigurationInput
 
         return (
-            commandArguments.handlerName === handlerName &&
-            commandArguments.samTemplate.fsPath === templatePath &&
-            commandArguments.isDebug === isDebug
-        )
-    }
-
-    function assertConfigureCodeLensExists(codeLenses: vscode.CodeLens[]) {
-        assert.strictEqual(
-            codeLenses.filter(codeLens => codeLens.command && codeLens.command.command === 'aws.configureLambda')
-                .length,
-            1,
-            'The Configure CodeLens could not be found'
+            commandArguments.resourceName === handlerName && dirname(commandArguments.rootUri.fsPath) === manifestPath
         )
     }
 })

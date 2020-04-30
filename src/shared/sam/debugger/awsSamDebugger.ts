@@ -4,236 +4,262 @@
  */
 
 import * as vscode from 'vscode'
-
 import * as nls from 'vscode-nls'
+import { getCodeRoot, getHandlerName, getTemplateResource } from '../../../lambda/local/debugConfiguration'
+import { getDefaultRuntime, getFamily, getRuntimeFamily, RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
+import { CloudFormationTemplateRegistry, getResourcesFromTemplateDatum } from '../../cloudformation/templateRegistry'
+import * as csharpDebug from '../../codelens/csharpCodeLensProvider'
+import * as pythonDebug from '../../codelens/pythonCodeLensProvider'
+import * as tsDebug from '../../codelens/typescriptCodeLensProvider'
+import { ExtContext } from '../../extensions'
+import { isInDirectory } from '../../filesystemUtilities'
+import { getLogger } from '../../logger'
+import { getStartPort } from '../../utilities/debuggerUtils'
+import * as pathutil from '../../utilities/pathUtils'
+import { tryGetAbsolutePath } from '../../utilities/workspaceUtils'
+import {
+    AwsSamDebuggerConfiguration,
+    AWS_SAM_DEBUG_TYPE,
+    createTemplateAwsSamDebugConfig,
+} from './awsSamDebugConfiguration'
+import { TemplateTargetProperties } from './awsSamDebugConfiguration.gen'
+import {
+    AwsSamDebugConfigurationValidator,
+    DefaultAwsSamDebugConfigurationValidator,
+} from './awsSamDebugConfigurationValidator'
+import { SamLaunchRequestArgs } from './samDebugSession'
+
 const localize = nls.loadMessageBundle()
 
-import { samLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
-import { CloudFormation } from '../../cloudformation/cloudformation'
-import { CloudFormationTemplateRegistry } from '../../cloudformation/templateRegistry'
-import { isInDirectory } from '../../filesystemUtilities'
-import { AwsSamDebuggerConfiguration, TemplateTargetProperties } from './awsSamDebugConfiguration'
+/**
+ * `DebugConfigurationProvider` dynamically defines these aspects of a VSCode debugger:
+ * - Initial debug configurations (for newly-created launch.json)
+ * - To resolve a launch configuration before it is used to start a new
+ *   debug session.
+ *   Two "resolve" methods exist:
+ *   - resolveDebugConfiguration: called before variables are substituted in
+ *     the launch configuration.
+ *   - resolveDebugConfigurationWithSubstitutedVariables: called after all
+ *     variables have been substituted.
+ *
+ * https://code.visualstudio.com/api/extension-guides/debugger-extension#using-a-debugconfigurationprovider
+ */
+export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider {
+    public constructor(readonly ctx: ExtContext) {}
 
-export const AWS_SAM_DEBUG_TYPE = 'aws-sam'
-export const DIRECT_INVOKE_TYPE = 'direct-invoke'
-export const TEMPLATE_TARGET_TYPE: 'template' = 'template'
-export const CODE_TARGET_TYPE: 'code' = 'code'
-
-const AWS_SAM_DEBUG_REQUEST_TYPES = [DIRECT_INVOKE_TYPE]
-const AWS_SAM_DEBUG_TARGET_TYPES = [TEMPLATE_TARGET_TYPE, CODE_TARGET_TYPE]
-
-export class AwsSamDebugConfigurationProvider implements vscode.DebugConfigurationProvider {
-    public constructor(private readonly cftRegistry = CloudFormationTemplateRegistry.getRegistry()) {}
-
+    /**
+     * @param folder  Workspace folder
+     * @param token  Cancellation token
+     */
     public async provideDebugConfigurations(
         folder: vscode.WorkspaceFolder | undefined,
         token?: vscode.CancellationToken
     ): Promise<AwsSamDebuggerConfiguration[] | undefined> {
+        if (token?.isCancellationRequested) {
+            return undefined
+        }
+        const cftRegistry = CloudFormationTemplateRegistry.getRegistry()
+
+        const configs: AwsSamDebuggerConfiguration[] = []
         if (folder) {
-            const debugConfigurations: AwsSamDebuggerConfiguration[] = []
             const folderPath = folder.uri.fsPath
-            const templates = this.cftRegistry.registeredTemplates
+            const templates = cftRegistry.registeredTemplates
 
             for (const templateDatum of templates) {
-                if (isInDirectory(folderPath, templateDatum.path) && templateDatum.template.Resources) {
-                    for (const resourceKey of Object.keys(templateDatum.template.Resources)) {
-                        const resource = templateDatum.template.Resources[resourceKey]
-                        if (resource) {
-                            debugConfigurations.push(
-                                createDirectInvokeSamDebugConfigurationFromTemplate(resourceKey, templateDatum.path)
-                            )
-                        }
+                if (isInDirectory(folderPath, templateDatum.path)) {
+                    if (!templateDatum.template.Resources) {
+                        getLogger().error(`provideDebugConfigurations: invalid template: ${templateDatum.path}`)
+                        continue
+                    }
+                    const resources = getResourcesFromTemplateDatum(templateDatum)
+                    for (const resourceKey of resources.keys()) {
+                        configs.push(createTemplateAwsSamDebugConfig(resourceKey, templateDatum.path))
                     }
                 }
             }
-
-            return debugConfigurations
+            getLogger().verbose(`provideDebugConfigurations: debugconfigs: ${JSON.stringify(configs)}`)
         }
+
+        return configs
     }
 
+    /**
+     * Generates a launch-config from a user-provided debug-config, then launches it.
+     *
+     * - "Launch" means `sam build` followed by `sam local invoke`.
+     * - If launch.json is missing, this function attempts to generate a
+     *   debug-config dynamically.
+     *
+     * @param folder  Workspace folder
+     * @param config User-provided config (from launch.json)
+     * @param token  Cancellation token
+     */
     public async resolveDebugConfiguration(
         folder: vscode.WorkspaceFolder | undefined,
-        debugConfiguration: AwsSamDebuggerConfiguration,
+        config: AwsSamDebuggerConfiguration,
         token?: vscode.CancellationToken
-    ): Promise<AwsSamDebuggerConfiguration | undefined> {
-        let validityPair: { isValid: boolean; message?: string } = generalDebugConfigValidation(debugConfiguration)
-
-        if (!validityPair.isValid) {
-            if (validityPair.message) {
-                vscode.window.showErrorMessage(validityPair.message)
-            }
-
+    ): Promise<SamLaunchRequestArgs | undefined> {
+        if (token?.isCancellationRequested) {
             return undefined
         }
-
-        if (debugConfiguration.invokeTarget.target === TEMPLATE_TARGET_TYPE) {
-            validityPair = templateDebugConfigValidation(debugConfiguration, this.cftRegistry)
-        } else if (debugConfiguration.invokeTarget.target === CODE_TARGET_TYPE) {
-            validityPair = codeDebugConfigValidation(debugConfiguration)
-        }
-
-        if (!validityPair.isValid) {
-            if (validityPair.message) {
-                vscode.window.showErrorMessage(validityPair.message)
-            }
-
+        if (!folder) {
+            getLogger().error(`SAM debug: no workspace folder`)
+            vscode.window.showErrorMessage(
+                localize('AWS.sam.debugger.noWorkspace', 'AWS SAM debug: choose a workspace, then try again')
+            )
             return undefined
-        } else if (validityPair.message) {
-            vscode.window.showInformationMessage(validityPair.message)
         }
+        const cftRegistry = CloudFormationTemplateRegistry.getRegistry()
 
-        vscode.window.showInformationMessage(localize('AWS.generic.notImplemented', 'Not implemented'))
+        // If "request" field is missing this means launch.json does not exist.
+        // User/vscode expects us to dynamically decide defaults if possible.
+        const hasLaunchJson = !!config.request
+        const configValidator: AwsSamDebugConfigurationValidator = new DefaultAwsSamDebugConfigurationValidator(
+            cftRegistry,
+            folder
+        )
 
-        return undefined
-    }
-}
+        if (!hasLaunchJson) {
+            // Try to generate a default config dynamically.
+            const configs: AwsSamDebuggerConfiguration[] | undefined = await this.provideDebugConfigurations(
+                folder,
+                token
+            )
 
-function createDirectInvokeSamDebugConfigurationFromTemplate(
-    resourceName: string,
-    templatePath: string
-): AwsSamDebuggerConfiguration {
-    return {
-        type: AWS_SAM_DEBUG_TYPE,
-        request: DIRECT_INVOKE_TYPE,
-        name: resourceName,
-        invokeTarget: {
-            target: TEMPLATE_TARGET_TYPE,
-            samTemplatePath: templatePath,
-            samTemplateResource: resourceName,
-        },
-    }
-}
-
-function generalDebugConfigValidation(
-    debugConfiguration: AwsSamDebuggerConfiguration
-): { isValid: boolean; message?: string } {
-    if (!AWS_SAM_DEBUG_REQUEST_TYPES.includes(debugConfiguration.request)) {
-        return {
-            isValid: false,
-            message: localize(
-                'AWS.sam.debugger.invalidRequest',
-                'Debug Configuration has an unsupported request type. Supported types: {0}',
-                AWS_SAM_DEBUG_REQUEST_TYPES.join(', ')
-            ),
-        }
-    }
-
-    if (!AWS_SAM_DEBUG_TARGET_TYPES.includes(debugConfiguration.invokeTarget.target)) {
-        return {
-            isValid: false,
-            message: localize(
-                'AWS.sam.debugger.invalidTarget',
-                'Debug Configuration has an unsupported target type. Supported types: {0}',
-                AWS_SAM_DEBUG_TARGET_TYPES.join(', ')
-            ),
-        }
-    }
-
-    return { isValid: true }
-}
-
-function templateDebugConfigValidation(
-    debugConfiguration: AwsSamDebuggerConfiguration,
-    cftRegistry: CloudFormationTemplateRegistry
-): { isValid: boolean; message?: string } {
-    const templateTarget = debugConfiguration.invokeTarget as TemplateTargetProperties
-
-    const template = cftRegistry.getRegisteredTemplate(templateTarget.samTemplatePath)
-
-    if (!template) {
-        return {
-            isValid: false,
-            message: localize(
-                'AWS.sam.debugger.missingTemplate',
-                'Unable to find the Template file {0}',
-                templateTarget.samTemplatePath
-            ),
-        }
-    }
-
-    const resources = template.template.Resources
-
-    if (!resources || !Object.keys(resources).includes(templateTarget.samTemplateResource)) {
-        return {
-            isValid: false,
-            message: localize(
-                'AWS.sam.debugger.missingResource',
-                'Unable to find the Template Resource {0} in Template file {1}',
-                templateTarget.samTemplateResource,
-                templateTarget.samTemplatePath
-            ),
-        }
-    }
-
-    const resource = resources[templateTarget.samTemplateResource]
-
-    // TODO: Validate against `AWS::Lambda::Function`?
-    if (resource?.Type !== CloudFormation.SERVERLESS_FUNCTION_TYPE) {
-        return {
-            isValid: false,
-            message: localize(
-                'AWS.sam.debugger.resourceNotAFunction',
-                'Template Resource {0} in Template file {1} needs to be of type {2}',
-                templateTarget.samTemplateResource,
-                templateTarget.samTemplatePath,
-                CloudFormation.SERVERLESS_FUNCTION_TYPE
-            ),
-        }
-    }
-
-    if (!resource?.Properties?.Runtime || !samLambdaRuntimes.has(resource?.Properties?.Runtime as string)) {
-        return {
-            isValid: false,
-            message: localize(
-                'AWS.sam.debugger.unsupportedRuntime',
-                'Runtime for Template Resource {0} in Template file {1} is either undefined or unsupported.',
-                templateTarget.samTemplateResource,
-                templateTarget.samTemplatePath
-            ),
-        }
-    }
-
-    const templateEnv = resource?.Properties.Environment
-    if (templateEnv?.Variables) {
-        const templateEnvVars = Object.keys(templateEnv.Variables)
-        const missingVars: string[] = []
-        if (debugConfiguration.lambda && debugConfiguration.lambda.environmentVariables) {
-            for (const key of Object.keys(debugConfiguration.lambda.environmentVariables)) {
-                if (!templateEnvVars.includes(key)) {
-                    missingVars.push(key)
+            if (!configs || configs.length === 0) {
+                getLogger().error(
+                    `SAM debug: failed to generate config (found CFN templates: ${cftRegistry.registeredTemplates.length})`
+                )
+                if (cftRegistry.registeredTemplates.length > 0) {
+                    vscode.window.showErrorMessage(
+                        localize('AWS.sam.debugger.noTemplates', 'No SAM templates found in workspace')
+                    )
+                } else {
+                    vscode.window.showErrorMessage(
+                        localize('AWS.sam.debugger.failedLaunch', 'AWS SAM failed to launch. Try creating launch.json')
+                    )
                 }
+                return undefined
+            }
+
+            config = {
+                ...config,
+                ...configs[0],
+            }
+            getLogger().verbose(`SAM debug: generated config (no launch.json): ${JSON.stringify(config)}`)
+        } else {
+            const rv = configValidator.validate(config)
+            if (!rv.isValid) {
+                getLogger().error(`SAM debug: invalid config: ${rv.message!!}`)
+                vscode.window.showErrorMessage(rv.message!!)
+                return undefined
+            } else if (rv.message) {
+                vscode.window.showInformationMessage(rv.message)
+            }
+            getLogger().verbose(`SAM debug: config: ${JSON.stringify(config.name)}`)
+        }
+
+        const editor = vscode.window.activeTextEditor
+        const templateInvoke = config.invokeTarget as TemplateTargetProperties
+        const templateResource = getTemplateResource(config)
+        const codeRoot = getCodeRoot(folder, config)
+        const handlerName = getHandlerName(config)
+
+        if (templateInvoke?.samTemplatePath) {
+            // Normalize to absolute path.
+            // TODO: If path is relative, it is relative to launch.json (i.e. .vscode directory).
+            templateInvoke.samTemplatePath = pathutil.normalize(
+                tryGetAbsolutePath(folder, templateInvoke.samTemplatePath)
+            )
+        }
+
+        const runtime: string | undefined =
+            config.lambda?.runtime ??
+            templateResource?.Properties?.Runtime ??
+            getDefaultRuntime(getRuntimeFamily(editor?.document?.languageId ?? 'unknown'))
+
+        if (!runtime) {
+            getLogger().error(`SAM debug: failed to launch config: ${config})`)
+            vscode.window.showErrorMessage(
+                localize('AWS.sam.debugger.failedLaunch', 'AWS SAM failed to launch. Try creating launch.json')
+            )
+            return undefined
+        }
+
+        const runtimeFamily = getFamily(runtime)
+        const documentUri =
+            vscode.window.activeTextEditor?.document.uri ??
+            // XXX: don't know what URI to choose...
+            vscode.Uri.parse(templateInvoke.samTemplatePath!!)
+
+        let launchConfig: SamLaunchRequestArgs = {
+            ...config,
+            request: 'attach',
+            codeRoot: codeRoot ?? '',
+            workspaceFolder: folder,
+            runtime: runtime,
+            runtimeFamily: runtimeFamily,
+            handlerName: handlerName,
+            originalHandlerName: handlerName,
+            documentUri: documentUri,
+            samTemplatePath: pathutil.normalize(templateInvoke?.samTemplatePath),
+            originalSamTemplatePath: pathutil.normalize(templateInvoke?.samTemplatePath),
+            debugPort: config.noDebug ? -1 : await getStartPort(),
+        }
+
+        //
+        // Configure and launch.
+        //
+        // 1. prepare a bunch of arguments
+        // 2. do `sam build`
+        // 3. do `sam local invoke`
+        //
+        switch (runtimeFamily) {
+            case RuntimeFamily.NodeJS: {
+                // Make a NodeJS launch-config from the generic config.
+                launchConfig = await tsDebug.makeTypescriptConfig(launchConfig)
+                break
+            }
+            case RuntimeFamily.Python: {
+                // Make a Python launch-config from the generic config.
+                launchConfig = await pythonDebug.makePythonDebugConfig(
+                    launchConfig,
+                    !launchConfig.noDebug,
+                    launchConfig.runtime,
+                    launchConfig.handlerName
+                )
+                break
+            }
+            case RuntimeFamily.DotNetCore: {
+                // Make a DotNet launch-config from the generic config.
+                launchConfig = await csharpDebug.makeCsharpConfig(launchConfig)
+                break
+            }
+            default: {
+                getLogger().error(`SAM debug: unknown runtime: ${runtime})`)
+                vscode.window.showErrorMessage(
+                    localize('AWS.sam.debugger.invalidRuntime', 'AWS SAM debug: unknown runtime: {0}', runtime)
+                )
+                return undefined
             }
         }
-        if (missingVars.length > 0) {
-            // this check doesn't affect template validity.
-            return {
-                isValid: true,
-                message: localize(
-                    'AWS.sam.debugger.extraEnvVars',
-                    'The following environment variables are not found in the targeted template and will not be overridden: {0}',
-                    missingVars.join(', ')
-                ),
-            }
+
+        // Set the type, then vscode will pass the config to SamDebugSession.attachRequest().
+        // (Registered in sam/activation.ts which calls registerDebugAdapterDescriptorFactory()).
+        // By this point launchConfig.request is now set to "attach" (not "direct-invoke").
+        launchConfig.type = AWS_SAM_DEBUG_TYPE
+
+        if (launchConfig.request !== 'attach') {
+            // The "request" field must be updated so that it routes to the
+            // DebugAdapter (SamDebugSession.attachRequest()), else this will
+            // just cycle back (and it indicates a bug in the config logic).
+            throw Error(
+                `resolveDebugConfiguration: launchConfig was not correctly resolved before return: ${JSON.stringify(
+                    launchConfig
+                )}`
+            )
         }
+
+        return launchConfig
     }
-
-    return { isValid: true }
-}
-
-function codeDebugConfigValidation(
-    debugConfiguration: AwsSamDebuggerConfiguration
-): { isValid: boolean; message?: string } {
-    if (!debugConfiguration.lambda?.runtime || !samLambdaRuntimes.has(debugConfiguration.lambda.runtime)) {
-        return {
-            isValid: false,
-            message: localize(
-                'AWS.sam.debugger.missingRuntime',
-                'Debug Configurations with an invoke target of "{0}" require a valid Lambda runtime value, expected one of [{1}]',
-                CODE_TARGET_TYPE,
-                Array.from(samLambdaRuntimes).join(', ')
-            ),
-        }
-    }
-
-    return { isValid: true }
 }

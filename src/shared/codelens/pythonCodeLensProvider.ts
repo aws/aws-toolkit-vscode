@@ -7,32 +7,28 @@ import { unlink, writeFile } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { getHandlerConfig } from '../../lambda/config/templates'
 import { PythonDebugConfiguration, PythonPathMapping } from '../../lambda/local/debugConfiguration'
-import { CloudFormation } from '../cloudformation/cloudformation'
-import { VSCODE_EXTENSION_ID } from '../extensions'
+import { RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
+import { ExtContext, VSCODE_EXTENSION_ID } from '../extensions'
 import { fileExists, readFileAsString } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
 import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
-import { SettingsConfiguration } from '../settingsConfiguration'
-import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
 import { getStartPort } from '../utilities/debuggerUtils'
-import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
-import { CodeLensProviderParams, DRIVE_LETTER_REGEX, getInvokeCmdKey, makeCodeLenses } from './codeLensUtils'
+import { ChannelLogger } from '../utilities/vsCodeUtils'
 import {
     executeSamBuild,
-    getHandlerRelativePath,
     getLambdaInfoFromExistingTemplate,
-    getRelativeFunctionHandler,
     invokeLambdaFunction,
-    InvokeLambdaFunctionArguments,
-    LambdaLocalInvokeParams,
     makeBuildDir,
     makeInputTemplate,
 } from './localLambdaRunner'
 import { PythonDebugAdapterHeartbeat } from './pythonDebugAdapterHeartbeat'
+import { getLocalRootVariants } from '../utilities/pathUtils'
+import { SamLaunchRequestArgs } from '../sam/debugger/samDebugSession'
+import * as pathutil from '../../shared/utilities/pathUtils'
+import { findParentProjectFile } from '../utilities/workspaceUtils'
 
 const PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MS = 1000
 export const PYTHON_LANGUAGE = 'python'
@@ -44,33 +40,47 @@ export const PYTHON_ALLFILES: vscode.DocumentFilter[] = [
 ]
 
 // TODO: Fix this! Implement a more robust/flexible solution. This is just a basic minimal proof of concept.
-const getSamProjectDirPathForFile = async (filepath: string): Promise<string> => {
+export async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
     return path.dirname(filepath)
 }
 
-async function getLambdaHandlerCandidates(uri: vscode.Uri): Promise<LambdaHandlerCandidate[]> {
+export async function getLambdaHandlerCandidates(uri: vscode.Uri): Promise<LambdaHandlerCandidate[]> {
+    const requirementsFile = await findParentProjectFile(uri, 'requirements.txt')
+    if (!requirementsFile) {
+        return []
+    }
     const filename = uri.fsPath
+    const parsedPath = path.parse(filename)
+    // Python handler paths are period separated and don't include the file extension
+    const handlerPath = path
+        .relative(path.parse(requirementsFile.fsPath).dir, path.join(parsedPath.dir, parsedPath.name))
+        .split(path.sep)
+        .join('.')
 
     const symbols: vscode.DocumentSymbol[] =
         (await vscode.commands.executeCommand<vscode.DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', uri)) ??
         []
 
-    return symbols
-        .filter(sym => sym.kind === vscode.SymbolKind.Function)
-        .map<LambdaHandlerCandidate>(symbol => {
-            return {
-                filename,
-                handlerName: `${path.parse(filename).name}.${symbol.name}`,
-                range: symbol.range,
-            }
-        })
+    return symbols.filter(isTopLevelFunction).map<LambdaHandlerCandidate>(symbol => {
+        return {
+            filename,
+            handlerName: `${handlerPath}.${symbol.name}`,
+            manifestUri: requirementsFile,
+            range: symbol.range,
+        }
+    })
+}
+
+function isTopLevelFunction(symbol: vscode.DocumentSymbol) {
+    // if the function is indented at all, it is not classified as being a top-level function in the eyes of Python
+    return symbol.kind === vscode.SymbolKind.Function && symbol.range.start.character === 0
 }
 
 // Add create debugging manifest/requirements.txt containing ptvsd
-const makePythonDebugManifest = async (params: {
+async function makePythonDebugManifest(params: {
     samProjectCodeRoot: string
     outputDir: string
-}): Promise<string | undefined> => {
+}): Promise<string | undefined> {
     let manifestText = ''
     const manfestPath = path.join(params.samProjectCodeRoot, 'requirements.txt')
     if (await fileExists(manfestPath)) {
@@ -88,18 +98,24 @@ const makePythonDebugManifest = async (params: {
     // else we don't need to override the manifest. nothing to return
 }
 
-// tslint:disable:no-trailing-whitespace
-const makeLambdaDebugFile = async (params: {
+export async function makeLambdaDebugFile(params: {
     handlerName: string
     debugPort: number
     outputDir: string
-}): Promise<{ outFilePath: string; debugHandlerName: string }> => {
-    if (!params.outputDir) {
-        throw new Error('Must specify outputDir')
-    }
+}): Promise<{ outFilePath: string; debugHandlerName: string }> {
     const logger = getLogger()
 
-    const [handlerFilePrefix, handlerFunctionName] = params.handlerName.split('.')
+    // Last piece of the handler is the function name. Remove it before modifying for pathing.
+    const splitHandlerName = params.handlerName.split('.')
+    const handlerFunctionName = splitHandlerName[splitHandlerName.length - 1]
+    const handlerFiles = splitHandlerName.slice(0, splitHandlerName.length - 1)
+
+    // Handlers for Python imports must be joined by periods.
+    // ./foo/bar.py => foo.bar
+    const handlerFileImportPath = handlerFiles.join('.')
+    // SAM doesn't handle periods in Python filenames. Replacing with underscores for the filename.
+    const handlerFilePrefix = handlerFiles.join('_')
+
     const debugHandlerFileName = `${handlerFilePrefix}___vsctk___debug`
     const debugHandlerFunctionName = 'lambda_handler'
     // TODO: Sanitize handlerFilePrefix, handlerFunctionName, debugHandlerFunctionName
@@ -111,7 +127,7 @@ const makeLambdaDebugFile = async (params: {
 
 import ptvsd
 import sys
-from ${handlerFilePrefix} import ${handlerFunctionName} as _handler
+from ${handlerFileImportPath} import ${handlerFunctionName} as _handler
 
 
 def ${debugHandlerFunctionName}(event, context):
@@ -139,39 +155,92 @@ def ${debugHandlerFunctionName}(event, context):
     }
 }
 
-export function getLocalRootVariants(filePath: string): string[] {
-    if (process.platform === 'win32' && DRIVE_LETTER_REGEX.test(filePath)) {
-        return [
-            filePath.replace(DRIVE_LETTER_REGEX, match => match.toLowerCase()),
-            filePath.replace(DRIVE_LETTER_REGEX, match => match.toUpperCase()),
-        ]
+/**
+ * Gathers and sets launch-config info by inspecting the workspace and creating
+ * temp files/directories as needed.
+ *
+ * Does NOT execute/invoke SAM, docker, etc.
+ */
+export async function makePythonDebugConfig(
+    config: SamLaunchRequestArgs,
+    isDebug: boolean,
+    runtime: string,
+    handlerName: string
+): Promise<PythonDebugConfiguration> {
+    if (!config.codeRoot) {
+        // Last-resort attempt to discover the project root (when there is no
+        // `launch.json` nor `template.yaml`).
+        config.codeRoot = await getSamProjectDirPathForFile(config?.samTemplatePath ?? config.documentUri!!.fsPath)
+        if (!config.codeRoot) {
+            // TODO: return error and show it at the caller.
+            throw Error('missing launch.json, template.yaml, and failed to discover project root')
+        }
+    }
+    config.codeRoot = pathutil.normalize(config.codeRoot)
+
+    const baseBuildDir = await makeBuildDir()
+    let debugPort: number | undefined
+    let manifestPath: string | undefined
+    let outFilePath: string | undefined
+    if (isDebug) {
+        debugPort = await getStartPort()
+        const rv = await makeLambdaDebugFile({
+            handlerName: handlerName,
+            debugPort: debugPort,
+            outputDir: config.codeRoot,
+        })
+        outFilePath = rv.outFilePath
+        // XXX: Reassign handler name.
+        handlerName = rv.debugHandlerName
+        manifestPath = await makePythonDebugManifest({
+            samProjectCodeRoot: config.codeRoot,
+            outputDir: baseBuildDir,
+        })
     }
 
-    return [filePath]
-}
-
-function makeDebugConfig({
-    debugPort,
-    samProjectCodeRoot,
-}: {
-    debugPort?: number
-    samProjectCodeRoot: string
-}): PythonDebugConfiguration {
-    const pathMappings: PythonPathMapping[] = getLocalRootVariants(samProjectCodeRoot).map<PythonPathMapping>(
-        variant => {
-            return {
-                localRoot: variant,
-                remoteRoot: '/var/task',
-            }
+    const relativeOriginalFunctionHandler = config.handlerName
+    const relativeFunctionHandler = handlerName
+    const lambdaInfo = await getLambdaInfoFromExistingTemplate({
+        workspaceUri: config.workspaceFolder.uri,
+        relativeOriginalFunctionHandler,
+    })
+    const inputTemplatePath = await makeInputTemplate({
+        baseBuildDir,
+        codeDir: config.codeRoot,
+        relativeFunctionHandler,
+        globals: lambdaInfo && lambdaInfo.templateGlobals ? lambdaInfo.templateGlobals : undefined,
+        properties: lambdaInfo && lambdaInfo.resource.Properties ? lambdaInfo.resource.Properties : undefined,
+        runtime: runtime,
+    })
+    const pathMappings: PythonPathMapping[] = getLocalRootVariants(config.codeRoot).map<PythonPathMapping>(variant => {
+        return {
+            localRoot: variant,
+            remoteRoot: '/var/task',
         }
-    )
+    })
 
     return {
-        type: PYTHON_LANGUAGE,
+        ...config,
+        type: 'python',
         request: 'attach',
+        runtimeFamily: RuntimeFamily.Python,
+        outFilePath: pathutil.normalize(outFilePath ?? ''),
+        baseBuildDir: baseBuildDir,
+        noDebug: false,
+        samTemplatePath: inputTemplatePath,
+        originalSamTemplatePath: inputTemplatePath,
         name: 'SamLocalDebug',
+
+        //
+        // Python-specific fields.
+        //
+        manifestPath: manifestPath ?? 'unknown',
+        debugPort: debugPort,
+        port: debugPort ?? -1,
+        runtime: runtime,
+        handlerName: handlerName,
+        originalHandlerName: handlerName,
         host: 'localhost',
-        port: debugPort!,
         pathMappings,
         // Disable redirectOutput to prevent the Python Debugger from automatically writing stdout/stderr text
         // to the Debug Console. We're taking the child process stdout/stderr and explicitly writing that to
@@ -180,176 +249,53 @@ function makeDebugConfig({
     }
 }
 
-export async function initialize({
-    context,
-    configuration,
-    outputChannel: toolkitOutputChannel,
-    processInvoker = new DefaultValidatingSamCliProcessInvoker({}),
-    telemetryService,
-    localInvokeCommand,
-}: CodeLensProviderParams): Promise<void> {
-    const logger = getLogger()
-    const channelLogger = getChannelLogger(toolkitOutputChannel)
+/**
+ * Launches and attaches debugger to a SAM Python project.
+ */
+export async function invokePythonLambda(ctx: ExtContext, config: PythonDebugConfiguration) {
+    // Switch over to the output channel so the user has feedback that we're getting things ready
+    ctx.chanLogger.channel.show(true)
+    ctx.chanLogger.info('AWS.output.sam.local.start', 'Preparing to run {0} locally...', config.handlerName)
 
-    if (!localInvokeCommand) {
-        localInvokeCommand = new DefaultSamLocalInvokeCommand(channelLogger, [])
-    }
+    config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand(ctx.chanLogger, [
+        // TODO: enable this?
+        // WAIT_FOR_DEBUGGER_MESSAGES.PYTHON,
+    ])
+    const processInvoker = new DefaultValidatingSamCliProcessInvoker({})
 
-    const invokeLambda = async (args: LambdaLocalInvokeParams & { runtime: string }) => {
-        // Switch over to the output channel so the user has feedback that we're getting things ready
-        channelLogger.channel.show(true)
+    try {
+        const inputTemplatePath = config.samTemplatePath!!
 
-        channelLogger.info('AWS.output.sam.local.start', 'Preparing to run {0} locally...', args.handlerName)
+        // XXX: reassignment
+        config.samTemplatePath = await executeSamBuild({
+            baseBuildDir: config.baseBuildDir!!,
+            channelLogger: ctx.chanLogger,
+            codeDir: config.invokeTarget.target === 'template' ? path.dirname(config.codeRoot) : config.codeRoot,
+            inputTemplatePath: inputTemplatePath,
+            manifestPath: config.manifestPath,
+            samProcessInvoker: processInvoker,
+            useContainer: config.sam?.containerBuild || false,
+        })
+        if (config.invokeTarget.target === 'template') {
+            // XXX: reassignment
+            config.invokeTarget.samTemplatePath = config.samTemplatePath
+        }
 
-        let lambdaDebugFilePath: string | undefined
+        config.onWillAttachDebugger = waitForPythonDebugAdapter
 
-        try {
-            const samProjectCodeRoot = await getSamProjectDirPathForFile(args.document.uri.fsPath)
-            const baseBuildDir = await makeBuildDir()
-
-            let debugPort: number | undefined
-
-            let handlerName: string = args.handlerName
-            let manifestPath: string | undefined
-            if (args.isDebug) {
-                debugPort = await getStartPort()
-                const { debugHandlerName, outFilePath } = await makeLambdaDebugFile({
-                    handlerName: args.handlerName,
-                    debugPort: debugPort,
-                    outputDir: samProjectCodeRoot,
-                })
-                lambdaDebugFilePath = outFilePath
-                handlerName = debugHandlerName
-                manifestPath = await makePythonDebugManifest({
-                    samProjectCodeRoot,
-                    outputDir: baseBuildDir,
-                })
-            }
-
-            const handlerFileRelativePath = getHandlerRelativePath({
-                codeRoot: samProjectCodeRoot,
-                filePath: args.document.uri.fsPath,
-            })
-
-            const relativeOriginalFunctionHandler = getRelativeFunctionHandler({
-                handlerName: args.handlerName,
-                runtime: args.runtime,
-                handlerFileRelativePath,
-            })
-
-            const relativeFunctionHandler = getRelativeFunctionHandler({
-                handlerName: handlerName,
-                runtime: args.runtime,
-                handlerFileRelativePath,
-            })
-
-            const lambdaInfo = await getLambdaInfoFromExistingTemplate({
-                workspaceUri: args.workspaceFolder.uri,
-                relativeOriginalFunctionHandler,
-            })
-
-            const inputTemplatePath = await makeInputTemplate({
-                baseBuildDir,
-                codeDir: samProjectCodeRoot,
-                relativeFunctionHandler,
-                globals: lambdaInfo && lambdaInfo.templateGlobals ? lambdaInfo.templateGlobals : undefined,
-                properties: lambdaInfo && lambdaInfo.resource.Properties ? lambdaInfo.resource.Properties : undefined,
-                runtime: args.runtime,
-            })
-
-            logger.debug(
-                `pythonCodeLensProvider.invokeLambda: ${JSON.stringify(
-                    { samProjectCodeRoot, inputTemplatePath, handlerName, manifestPath },
-                    undefined,
-                    2
-                )}`
-            )
-
-            const config = await getHandlerConfig({
-                handlerName: args.handlerName,
-                documentUri: args.document.uri,
-                samTemplate: vscode.Uri.file(args.samTemplate.fsPath),
-            })
-
-            const samTemplatePath: string = await executeSamBuild({
-                baseBuildDir,
-                channelLogger,
-                codeDir: samProjectCodeRoot,
-                inputTemplatePath,
-                manifestPath,
-                samProcessInvoker: processInvoker,
-                useContainer: config.useContainer,
-            })
-
-            const invokeArgs: InvokeLambdaFunctionArguments = {
-                baseBuildDir,
-                originalSamTemplatePath: args.samTemplate.fsPath,
-                samTemplatePath,
-                documentUri: args.document.uri,
-                originalHandlerName: args.handlerName,
-                handlerName,
-                runtime: args.runtime,
-            }
-
-            if (args.isDebug) {
-                const debugConfig: PythonDebugConfiguration = makeDebugConfig({ debugPort, samProjectCodeRoot })
-                invokeArgs.debugArgs = {
-                    debugConfig,
-                    debugPort: debugConfig.port,
-                }
-            }
-
-            await invokeLambdaFunction(invokeArgs, {
-                channelLogger,
-                configuration,
-                samLocalInvokeCommand: localInvokeCommand!,
-                telemetryService,
-                onWillAttachDebugger: waitForPythonDebugAdapter,
-            })
-        } catch (err) {
-            const error = err as Error
-            channelLogger.error(
-                'AWS.error.during.sam.local',
-                'An error occurred trying to run SAM Application locally: {0}',
-                error
-            )
-        } finally {
-            if (lambdaDebugFilePath) {
-                await deleteFile(lambdaDebugFilePath)
-            }
+        await invokeLambdaFunction(ctx, config)
+    } catch (err) {
+        const error = err as Error
+        ctx.chanLogger.error(
+            'AWS.error.during.sam.local',
+            'An error occurred trying to run SAM Application locally: {0}',
+            error
+        )
+    } finally {
+        if (config.outFilePath) {
+            await deleteFile(config.outFilePath)
         }
     }
-
-    context.subscriptions.push(
-        vscode.commands.registerCommand(
-            getInvokeCmdKey('python'),
-            async (params: LambdaLocalInvokeParams): Promise<void> => {
-                let invokeResult: Result = 'Succeeded'
-                let lambdaRuntime = 'unknown'
-                try {
-                    const resource = await CloudFormation.getResourceFromTemplate({
-                        handlerName: params.handlerName,
-                        templatePath: params.samTemplate.fsPath,
-                    })
-                    lambdaRuntime = CloudFormation.getRuntime(resource)
-
-                    await invokeLambda({
-                        runtime: lambdaRuntime,
-                        ...params,
-                    })
-                } catch (err) {
-                    invokeResult = 'Failed'
-                    throw err
-                } finally {
-                    recordLambdaInvokeLocal({
-                        result: invokeResult,
-                        runtime: lambdaRuntime as Runtime,
-                        debug: params.isDebug,
-                    })
-                }
-            }
-        )
-    )
 }
 
 export async function waitForPythonDebugAdapter(
@@ -410,45 +356,12 @@ async function deleteFile(filePath: string): Promise<void> {
     }
 }
 
-async function activatePythonExtensionIfInstalled() {
+export async function activatePythonExtensionIfInstalled() {
     const extension = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.python)
 
     // If the extension is not installed, it is not a failure. There may be reduced functionality.
     if (extension && !extension.isActive) {
         getLogger().info('Python CodeLens Provider is activating the python extension')
         await extension.activate()
-    }
-}
-
-export async function makePythonCodeLensProvider(
-    pythonSettings: SettingsConfiguration
-): Promise<vscode.CodeLensProvider> {
-    const logger = getLogger()
-
-    return {
-        // CodeLensProvider
-        provideCodeLenses: async (
-            document: vscode.TextDocument,
-            token: vscode.CancellationToken
-        ): Promise<vscode.CodeLens[]> => {
-            // Try to activate the Python Extension before requesting symbols from a python file
-            await activatePythonExtensionIfInstalled()
-            if (token.isCancellationRequested) {
-                return []
-            }
-
-            const handlers: LambdaHandlerCandidate[] = await getLambdaHandlerCandidates(document.uri)
-            logger.debug(
-                'pythonCodeLensProvider.makePythonCodeLensProvider handlers:',
-                JSON.stringify(handlers, undefined, 2)
-            )
-
-            return makeCodeLenses({
-                document,
-                handlers,
-                token,
-                language: 'python',
-            })
-        },
     }
 }

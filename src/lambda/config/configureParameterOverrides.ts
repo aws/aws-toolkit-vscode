@@ -133,14 +133,14 @@ async function getParameterOverridesRange(
 
     const templateSymbol = templatesSymbol.children.find(c => c.name === relativeTemplatePath)
     if (!templateSymbol) {
-        logger.warn(`Unable to find template section ${relativeTemplatePath} in ${editor.document.uri}`)
+        logger.warn(`Cannot find template section '${relativeTemplatePath}' in: ${editor.document.uri}`)
 
         return defaultRange
     }
 
     const parameterOverridesSymbol = templateSymbol.children.find(c => c.name === 'parameterOverrides')
     if (!parameterOverridesSymbol) {
-        logger.warn(`Unable to find parameterOverrides section for ${relativeTemplatePath} in ${editor.document.uri}`)
+        logger.warn(`Cannot find parameterOverrides section for '${relativeTemplatePath}' in: ${editor.document.uri}`)
 
         return defaultRange
     }

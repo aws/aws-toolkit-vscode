@@ -13,59 +13,49 @@ import {
     SamDeployWizard,
     SamDeployWizardResponse,
 } from '../../lambda/wizards/samDeployWizard'
-import { AwsContext } from '../awsContext'
-import { CodeLensProviderParams } from '../codelens/codeLensUtils'
+import * as codelensUtils from '../codelens/codeLensUtils'
 import * as csLensProvider from '../codelens/csharpCodeLensProvider'
 import * as pyLensProvider from '../codelens/pythonCodeLensProvider'
-import * as tsLensProvider from '../codelens/typescriptCodeLensProvider'
-import { RegionProvider } from '../regions/regionProvider'
-import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
+import { SamTemplateCodeLensProvider } from '../codelens/samTemplateCodeLensProvider'
+import { ExtContext } from '../extensions'
+import { SettingsConfiguration } from '../settingsConfiguration'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { PromiseSharer } from '../utilities/promiseUtilities'
-import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
 import { initialize as initializeSamCliContext } from './cli/samCliContext'
 import { detectSamCli } from './cli/samCliDetection'
-import { AWS_SAM_DEBUG_TYPE, AwsSamDebugConfigurationProvider } from './debugger/awsSamDebugger'
+import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
+import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
+import { SamDebugSession } from './debugger/samDebugSession'
+import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
 
 /**
- * Activate serverless related functionality for the extension.
+ * Activate SAM-related functionality.
  */
-export async function activate(activateArguments: {
-    extensionContext: vscode.ExtensionContext
-    awsContext: AwsContext
-    regionProvider: RegionProvider
-    toolkitSettings: SettingsConfiguration
-    outputChannel: vscode.OutputChannel
-    telemetryService: TelemetryService
-}): Promise<void> {
-    const channelLogger = getChannelLogger(activateArguments.outputChannel)
+export async function activate(ctx: ExtContext): Promise<void> {
+    initializeSamCliContext({ settingsConfiguration: ctx.settings })
 
-    initializeSamCliContext({ settingsConfiguration: activateArguments.toolkitSettings })
-
-    activateArguments.extensionContext.subscriptions.push(
-        ...(await activateCodeLensProviders(
-            activateArguments.extensionContext,
-            activateArguments.toolkitSettings,
-            activateArguments.outputChannel,
-            activateArguments.telemetryService
-        ))
+    ctx.subscriptions.push(
+        ...(await activateCodeLensProviders(ctx, ctx.settings, ctx.outputChannel, ctx.telemetryService))
     )
 
-    await registerServerlessCommands({
-        awsContext: activateArguments.awsContext,
-        extensionContext: activateArguments.extensionContext,
-        regionProvider: activateArguments.regionProvider,
-        channelLogger,
-    })
+    await registerServerlessCommands(ctx)
 
-    const provider = vscode.debug.registerDebugConfigurationProvider(
-        AWS_SAM_DEBUG_TYPE,
-        new AwsSamDebugConfigurationProvider()
+    ctx.subscriptions.push(
+        vscode.debug.registerDebugConfigurationProvider(AWS_SAM_DEBUG_TYPE, new SamDebugConfigProvider(ctx))
     )
 
-    activateArguments.extensionContext.subscriptions.push(provider)
+    // "Inline" DA type: runs inside the extension and directly talks to it.
+    //
+    // Debug adapters can be run in different ways, defined by the type of
+    // `vscode.DebugAdapterDescriptorFactory` you implement:
+    // https://code.visualstudio.com/api/extension-guides/debugger-extension#alternative-approach-to-develop-a-debugger-extension
+    //
+    // XXX: requires the "debuggers.*.label" attribute in package.json!
+    ctx.subscriptions.push(
+        vscode.debug.registerDebugAdapterDescriptorFactory(AWS_SAM_DEBUG_TYPE, new InlineDebugAdapterFactory(ctx))
+    )
 
-    activateArguments.extensionContext.subscriptions.push(
+    ctx.subscriptions.push(
         vscode.languages.registerCompletionItemProvider(
             {
                 language: 'json',
@@ -82,24 +72,20 @@ export async function activate(activateArguments: {
     await resumeCreateNewSamApp()
 }
 
-async function registerServerlessCommands(params: {
-    extensionContext: vscode.ExtensionContext
-    awsContext: AwsContext
-    regionProvider: RegionProvider
-    channelLogger: ChannelLogger
-}): Promise<void> {
-    params.extensionContext.subscriptions.push(
+async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
+    ctx.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.samcli.detect',
             async () =>
                 await PromiseSharer.getExistingPromiseOrCreate('samcli.detect', async () => await detectSamCli(true))
         ),
         vscode.commands.registerCommand('aws.lambda.createNewSamApp', async () => {
-            await createNewSamApplication(params.channelLogger, params.awsContext, params.regionProvider)
+            await createNewSamApplication(ctx.chanLogger, ctx.awsContext, ctx.regionProvider)
         }),
         vscode.commands.registerCommand('aws.configureLambda', configureLocalLambda),
+        vscode.commands.registerCommand('aws.addSamDebugConfiguration', addSamDebugConfiguration),
         vscode.commands.registerCommand('aws.deploySamApplication', async () => {
-            const samDeployWizardContext = new DefaultSamDeployWizardContext(params.regionProvider, params.awsContext)
+            const samDeployWizardContext = new DefaultSamDeployWizardContext(ctx.regionProvider, ctx.awsContext)
             const samDeployWizard: SamDeployWizardResponseProvider = {
                 getSamDeployWizardResponse: async (): Promise<SamDeployWizardResponse | undefined> => {
                     const wizard = new SamDeployWizard(samDeployWizardContext)
@@ -109,8 +95,8 @@ async function registerServerlessCommands(params: {
             }
 
             await deploySamApplication(
-                { channelLogger: params.channelLogger, samDeployWizard },
-                { awsContext: params.awsContext }
+                { channelLogger: ctx.chanLogger, samDeployWizard },
+                { awsContext: ctx.awsContext }
             )
         })
     )
@@ -119,20 +105,27 @@ async function registerServerlessCommands(params: {
 }
 
 async function activateCodeLensProviders(
-    context: vscode.ExtensionContext,
+    context: ExtContext,
     configuration: SettingsConfiguration,
     toolkitOutputChannel: vscode.OutputChannel,
     telemetryService: TelemetryService
 ): Promise<vscode.Disposable[]> {
     const disposables: vscode.Disposable[] = []
-    const providerParams: CodeLensProviderParams = {
-        context,
-        configuration,
-        outputChannel: toolkitOutputChannel,
-        telemetryService,
-    }
 
-    tsLensProvider.initialize(providerParams)
+    codelensUtils.initializeTypescriptCodelens(context)
+
+    disposables.push(
+        vscode.languages.registerCodeLensProvider(
+            [
+                {
+                    language: 'yaml',
+                    scheme: 'file',
+                    pattern: '**/*template.{yml,yaml}',
+                },
+            ],
+            new SamTemplateCodeLensProvider()
+        )
+    )
 
     disposables.push(
         vscode.languages.registerCodeLensProvider(
@@ -143,25 +136,49 @@ async function activateCodeLensProviders(
                     scheme: 'file',
                 },
             ],
-            tsLensProvider.makeTypescriptCodeLensProvider()
+            codelensUtils.makeTypescriptCodeLensProvider()
         )
     )
 
-    await pyLensProvider.initialize(providerParams)
+    await codelensUtils.initializePythonCodelens(context)
     disposables.push(
         vscode.languages.registerCodeLensProvider(
             pyLensProvider.PYTHON_ALLFILES,
-            await pyLensProvider.makePythonCodeLensProvider(new DefaultSettingsConfiguration('python'))
+            await codelensUtils.makePythonCodeLensProvider()
         )
     )
 
-    await csLensProvider.initialize(providerParams)
+    await codelensUtils.initializeCsharpCodelens(context)
     disposables.push(
         vscode.languages.registerCodeLensProvider(
             csLensProvider.CSHARP_ALLFILES,
-            await csLensProvider.makeCSharpCodeLensProvider()
+            await codelensUtils.makeCSharpCodeLensProvider()
         )
     )
 
     return disposables
+}
+
+class InlineDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory {
+    public constructor(readonly ctx: ExtContext) {}
+
+    /**
+     * The inline implementation implements the Debug Adapter Protocol.
+     * VSCode's extension API has a minimalistic subset of that protocol:
+     *   - vscode.DebugAdapter.handleMessage(): for passing a DAP message to the adapter.
+     *   - vscode.DebugAdapter.onDidSendMessage(): for listening for DAP messages received from the adapter.
+     *
+     * - Alternative: import the "vscode-debugprotocol" node module.
+     * - Alternative (easier): use VSCode's default implementation of a debug
+     *   adapter, available as node module "vscode-debugadapter" in 1.38+ the
+     *   DebugSession (or LoggingDebugSession) is compatible with the
+     *   `vscode.DebugAdapter` interface defined in the extension API.
+     *
+     * https://code.visualstudio.com/updates/v1_42#_extension-authoring
+     */
+    public createDebugAdapterDescriptor(
+        _session: vscode.DebugSession
+    ): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
+        return new vscode.DebugAdapterInlineImplementation(new SamDebugSession(this.ctx))
+    }
 }

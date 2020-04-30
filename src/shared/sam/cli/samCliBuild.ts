@@ -55,6 +55,9 @@ export interface FileFunctions {
     fileExists: typeof fileExists
 }
 
+/**
+ * An elaborate way to run `sam build`.
+ */
 export class SamCliBuildInvocation {
     private readonly buildDir: string
     private readonly baseDir?: string

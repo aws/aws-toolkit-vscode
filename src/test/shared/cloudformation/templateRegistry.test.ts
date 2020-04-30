@@ -7,11 +7,16 @@ import * as assert from 'assert'
 import * as path from 'path'
 import * as vscode from 'vscode'
 
-import { CloudFormationTemplateRegistry, TemplateData } from '../../../shared/cloudformation/templateRegistry'
+import {
+    CloudFormationTemplateRegistry,
+    getResourcesFromTemplateDatum,
+    TemplateDatum,
+} from '../../../shared/cloudformation/templateRegistry'
 import { rmrf } from '../../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { assertThrowsError } from '../utilities/assertUtils'
 import { badYaml, makeSampleSamTemplateYaml, strToYamlFile } from './cloudformationTestUtils'
+import { assertEqualPaths } from '../../testUtil'
 
 describe('CloudFormation Template Registry', async () => {
     const goodYaml1 = makeSampleSamTemplateYaml(false)
@@ -131,10 +136,57 @@ describe('CloudFormation Template Registry', async () => {
     })
 })
 
-function assertValidTestTemplate(data: TemplateData | undefined, filename: string): void {
+describe('parseCloudFormationResources', () => {
+    const templateDatum: TemplateDatum = {
+        path: path.join('the', 'path', 'led', 'us', 'here', 'today'),
+        template: {
+            Resources: {
+                resource1: {
+                    Type: 'AWS::Serverless::Function',
+                    Properties: {
+                        Handler: 'tooHotTo.handler',
+                        CodeUri: 'rightHere',
+                    },
+                },
+            },
+        },
+    }
+
+    it('creates a map with a single resource', () => {
+        const resources = getResourcesFromTemplateDatum(templateDatum)
+        assert.strictEqual(resources.size, 1)
+        assert.strictEqual(resources.get('resource1')?.Properties?.Handler, 'tooHotTo.handler')
+    })
+
+    it('creates a map with an entry for each defined resource', () => {
+        const biggerDatum: TemplateDatum = {
+            ...templateDatum,
+            template: {
+                Resources: {
+                    ...templateDatum.template.Resources,
+                    resource2: {
+                        Type: 'AWS::Serverless::Function',
+                        Properties: {
+                            Handler: 'handledWith.care',
+                            CodeUri: 'overThere',
+                        },
+                    },
+                    undefinedResource: undefined,
+                },
+            },
+        }
+        const resources = getResourcesFromTemplateDatum(biggerDatum)
+        assert.strictEqual(resources.size, 2)
+        assert.ok(resources.has('resource1'))
+        assert.ok(resources.has('resource2'))
+        assert.ok(!resources.has('undefinedResource'))
+    })
+})
+
+function assertValidTestTemplate(data: TemplateDatum | undefined, filename: string): void {
     assert.ok(data)
     if (data) {
-        assert.strictEqual(data.path, filename)
+        assertEqualPaths(data.path, filename)
         assert.ok(data.template.Resources?.TestResource)
     }
 }

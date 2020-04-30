@@ -6,9 +6,21 @@
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { Map, Set } from 'immutable'
 
-export const nodeJsRuntimes: Set<Runtime> = Set<Runtime>(['nodejs8.10', 'nodejs10.x', 'nodejs12.x'])
+export enum RuntimeFamily {
+    Unknown,
+    Python,
+    NodeJS,
+    DotNetCore,
+}
+
+export const nodeJsRuntimes: Set<Runtime> = Set<Runtime>(['nodejs12.x', 'nodejs10.x', 'nodejs8.10'])
 export const pythonRuntimes: Set<Runtime> = Set<Runtime>(['python3.8', 'python3.7', 'python3.6', 'python2.7'])
 export const dotNetRuntimes: Set<Runtime> = Set<Runtime>(['dotnetcore2.1'])
+const DEFAULT_RUNTIMES = Map<RuntimeFamily, Runtime>([
+    [RuntimeFamily.NodeJS, 'nodejs12.x'],
+    [RuntimeFamily.Python, 'python3.8'],
+    [RuntimeFamily.DotNetCore, 'dotnetcore2.1'],
+])
 
 export const samLambdaRuntimes: Set<Runtime> = Set.union([nodeJsRuntimes, pythonRuntimes, dotNetRuntimes])
 
@@ -26,16 +38,7 @@ export function getDependencyManager(runtime: Runtime): DependencyManager {
     throw new Error(`Runtime ${runtime} does not have an associated DependencyManager`)
 }
 
-export enum RuntimeFamily {
-    Python,
-    NodeJS,
-    DotNetCore,
-}
-
-export function getFamily(runtime: string | undefined): RuntimeFamily {
-    if (!runtime) {
-        throw new Error(`Unrecognized runtime: '${runtime}'`)
-    }
+export function getFamily(runtime: string): RuntimeFamily {
     if (nodeJsRuntimes.has(runtime)) {
         return RuntimeFamily.NodeJS
     } else if (pythonRuntimes.has(runtime)) {
@@ -43,7 +46,7 @@ export function getFamily(runtime: string | undefined): RuntimeFamily {
     } else if (dotNetRuntimes.has(runtime)) {
         return RuntimeFamily.DotNetCore
     }
-    throw new Error(`Unrecognized runtime: '${runtime}'`)
+    return RuntimeFamily.Unknown
 }
 
 // This allows us to do things like "sort" nodejs10.x after nodejs8.10
@@ -54,6 +57,34 @@ function getSortableCompareText(runtime: Runtime): string {
     return runtimeCompareText.get(runtime) || runtime.toString()
 }
 
+/**
+ * Sorts runtimes from lowest value to greatest value, helpful for outputting alphabetized lists of runtimes
+ * Differs from normal sorting as it numbers into account: e.g. nodeJs8.10 < nodeJs10.x
+ */
 export function compareSamLambdaRuntime(a: Runtime, b: Runtime): number {
     return getSortableCompareText(a).localeCompare(getSortableCompareText(b))
+}
+
+/**
+ * Maps vscode document languageId to `RuntimeFamily`.
+ */
+export function getRuntimeFamily(langId: string): RuntimeFamily {
+    switch (langId) {
+        case 'typescript':
+        case 'javascript':
+            return RuntimeFamily.NodeJS
+        case 'csharp':
+            return RuntimeFamily.DotNetCore
+        case 'python':
+            return RuntimeFamily.Python
+        default:
+            return RuntimeFamily.Unknown
+    }
+}
+
+/**
+ * Provides the default runtime for a given `RuntimeFamily` or undefined if the runtime is invalid.
+ */
+export function getDefaultRuntime(runtime: RuntimeFamily): string | undefined {
+    return DEFAULT_RUNTIMES.get(runtime)
 }

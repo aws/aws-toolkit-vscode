@@ -12,7 +12,7 @@ function renderStateMachine(data) {
     let options = {
         width: window.innerWidth,
         height: window.innerHeight,
-        resizeHeight: false
+        resizeHeight: false,
     }
     graph = new sfn.StateMachineGraph(JSON.parse(data), containerId, options)
     graph.render()
@@ -27,7 +27,7 @@ function updateGraph(message) {
     let options = {
         width: window.innerWidth,
         height: window.innerHeight,
-        resizeHeight: false
+        resizeHeight: false,
     }
 
     statusInfoContainer.classList.remove('in-sync-asl', 'not-in-sync-asl', 'start-error-asl')
@@ -51,7 +51,7 @@ function updateGraph(message) {
         vscode.postMessage({
             command: 'updateResult',
             text: 'Successfully updated state machine graph.',
-            stateMachineData: message.stateMachineData
+            stateMachineData: message.stateMachineData,
         })
         statusInfoContainer.classList.remove('syncing-asl', 'not-in-sync-asl', 'start-error-asl')
         statusInfoContainer.classList.add('in-sync-asl')
@@ -65,7 +65,7 @@ function updateGraph(message) {
             command: 'updateResult',
             text: 'Error parsing state machine definition.',
             error: err.toString(),
-            stateMachineData: message.stateMachineData
+            stateMachineData: message.stateMachineData,
         })
 
         statusInfoContainer.classList.remove('syncing-asl', 'in-sync-asl', 'start-error-asl')
@@ -122,5 +122,5 @@ window.addEventListener('message', event => {
 // Let vscode know that the webview is finished rendering
 vscode.postMessage({
     command: 'webviewRendered',
-    text: 'Webivew has finished rendering and is visible'
+    text: 'Webivew has finished rendering and is visible',
 })

@@ -61,7 +61,17 @@ There are also some integration tests, which can be run from the Debug pane, or 
 
 Tests will output log output to `./.test-reports/testLog.log` for debugging
 
-<!--#### Common Issues-->
+#### Run a specific test
+
+To run a single test, change its `it()` call to `it.only(…)`.
+
+To run a single group of tests, change the `describe()` call to `describe.only(…)`.
+
+To run all tests in a particular subdirectory, you can edit
+`src/test/index.ts:rootTestsPath` so that it points to the subdirectory instead
+of the top-level directory:
+
+    rootTestsPath: __dirname + '/shared/sam/debugger/'
 
 #### Checking coverage report
 

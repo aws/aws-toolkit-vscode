@@ -7,21 +7,15 @@
             "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:FUNCTION_NAME",
             "Catch": [
                 {
-                    "ErrorEquals": [
-                        "CustomError"
-                    ],
+                    "ErrorEquals": ["CustomError"],
                     "Next": "CustomErrorFallback"
                 },
                 {
-                    "ErrorEquals": [
-                        "States.TaskFailed"
-                    ],
+                    "ErrorEquals": ["States.TaskFailed"],
                     "Next": "ReservedTypeFallback"
                 },
                 {
-                    "ErrorEquals": [
-                        "States.ALL"
-                    ],
+                    "ErrorEquals": ["States.ALL"],
                     "Next": "CatchAllFallback"
                 }
             ],
