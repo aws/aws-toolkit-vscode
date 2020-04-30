@@ -6,9 +6,21 @@
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { Map, Set } from 'immutable'
 
+export enum RuntimeFamily {
+    Unknown,
+    Python,
+    NodeJS,
+    DotNetCore,
+}
+
 export const nodeJsRuntimes: Set<Runtime> = Set<Runtime>(['nodejs12.x', 'nodejs10.x', 'nodejs8.10'])
 export const pythonRuntimes: Set<Runtime> = Set<Runtime>(['python3.8', 'python3.7', 'python3.6', 'python2.7'])
 export const dotNetRuntimes: Set<Runtime> = Set<Runtime>(['dotnetcore2.1'])
+const DEFAULT_RUNTIMES = Map<RuntimeFamily, Runtime>([
+    [RuntimeFamily.NodeJS, 'nodejs12.x'],
+    [RuntimeFamily.Python, 'python3.8'],
+    [RuntimeFamily.DotNetCore, 'dotnetcore2.1'],
+])
 
 export const samLambdaRuntimes: Set<Runtime> = Set.union([nodeJsRuntimes, pythonRuntimes, dotNetRuntimes])
 
@@ -24,13 +36,6 @@ export function getDependencyManager(runtime: Runtime): DependencyManager {
         return 'cli-package'
     }
     throw new Error(`Runtime ${runtime} does not have an associated DependencyManager`)
-}
-
-export enum RuntimeFamily {
-    Unknown,
-    Python,
-    NodeJS,
-    DotNetCore,
 }
 
 export function getFamily(runtime: string): RuntimeFamily {
@@ -52,6 +57,10 @@ function getSortableCompareText(runtime: Runtime): string {
     return runtimeCompareText.get(runtime) || runtime.toString()
 }
 
+/**
+ * Sorts runtimes from lowest value to greatest value, helpful for outputting alphabetized lists of runtimes
+ * Differs from normal sorting as it numbers into account: e.g. nodeJs8.10 < nodeJs10.x
+ */
 export function compareSamLambdaRuntime(a: Runtime, b: Runtime): number {
     return getSortableCompareText(a).localeCompare(getSortableCompareText(b))
 }
@@ -74,17 +83,8 @@ export function getRuntimeFamily(langId: string): RuntimeFamily {
 }
 
 /**
- * Guesses a reasonable default runtime value for the given `RuntimeFamily`.
+ * Provides the default runtime for a given `RuntimeFamily` or undefined if the runtime is invalid.
  */
 export function getDefaultRuntime(runtime: RuntimeFamily): string | undefined {
-    switch (runtime) {
-        case RuntimeFamily.NodeJS:
-            return nodeJsRuntimes.sort(compareSamLambdaRuntime).first()
-        case RuntimeFamily.DotNetCore:
-            return dotNetRuntimes.sort(compareSamLambdaRuntime).first()
-        case RuntimeFamily.Python:
-            return pythonRuntimes.sort(compareSamLambdaRuntime).first()
-        default:
-            return undefined
-    }
+    return DEFAULT_RUNTIMES.get(runtime)
 }
