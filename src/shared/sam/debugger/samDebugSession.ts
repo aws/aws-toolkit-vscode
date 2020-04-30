@@ -4,13 +4,17 @@
  */
 
 import * as vscode from 'vscode'
-import { InitializedEvent, Logger, logger, DebugSession } from 'vscode-debugadapter'
+import { DebugSession, InitializedEvent, Logger, logger } from 'vscode-debugadapter'
 import { DebugProtocol } from 'vscode-debugprotocol'
-import { ExtContext } from '../../extensions'
-import { AwsSamDebuggerConfiguration } from './awsSamDebugConfiguration.gen'
+import { NodejsDebugConfiguration, PythonDebugConfiguration } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
+import * as csharpDebug from '../../codelens/csharpCodeLensProvider'
+import * as pythonDebug from '../../codelens/pythonCodeLensProvider'
+import * as tsDebug from '../../codelens/typescriptCodeLensProvider'
+import { ExtContext } from '../../extensions'
 import { ChannelLogger } from '../../utilities/vsCodeUtils'
 import { SamLocalInvokeCommand } from '../cli/samCliLocalInvoke'
+import { AwsSamDebuggerConfiguration } from './awsSamDebugConfiguration.gen'
 
 /**
  * SAM-specific launch attributes (which are not part of the DAP).
@@ -21,7 +25,7 @@ import { SamLocalInvokeCommand } from '../cli/samCliLocalInvoke'
  * @see AwsSamDebuggerConfiguration
  * @see AwsSamDebugConfigurationProvider.resolveDebugConfiguration
  */
-export interface SamLaunchRequestArgs extends DebugProtocol.LaunchRequestArguments, AwsSamDebuggerConfiguration {
+export interface SamLaunchRequestArgs extends DebugProtocol.AttachRequestArguments, AwsSamDebuggerConfiguration {
     // readonly type: 'node' | 'python' | 'coreclr' | 'aws-sam'
     readonly request: 'attach' | 'launch' | 'direct-invoke'
 
@@ -126,46 +130,53 @@ export class SamDebugSession extends DebugSession {
         this.sendEvent(new InitializedEvent())
     }
 
+    protected async launchRequest(response: DebugProtocol.LaunchResponse, launchConfig: SamLaunchRequestArgs) {
+        // make sure to 'Stop' the buffered logging if 'trace' is not set
+        logger.setup(launchConfig.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false)
+    }
+
     /**
      * Invokes `sam build`, `sam invoke`, then attachs vscode debugger to the
      * debugger port.
      */
-    protected async launchRequest(response: DebugProtocol.LaunchResponse, args: SamLaunchRequestArgs) {
-        // make sure to 'Stop' the buffered logging if 'trace' is not set
-        logger.setup(args.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false)
-        // wait until configuration has finished (and configurationDoneRequest has been called)
-        // await this._configurationDone.wait(1000);
-
-        switch (args.runtimeFamily) {
-            case RuntimeFamily.NodeJS: {
-                try {
-                    /* await tsLensProvider.invokeLambda({ */
-                    /*     ...params, */
-                    /*     runtime: runtime, */
-                    /*     settings: this.ctx.settings, */
-                    /*     processInvoker: new DefaultValidatingSamCliProcessInvoker({}), */
-                    /*     localInvokeCommand: new DefaultSamLocalInvokeCommand(this.ctx.chanLogger, [ */
-                    /*         WAIT_FOR_DEBUGGER_MESSAGES.NODEJS */
-                    /*     ]), */
-                    /*     telemetryService: this.ctx.telemetryService, */
-                    /*     outputChannel: this.ctx.outputChannel, */
-                    /* }) */
+    protected async attachRequest(
+        response: DebugProtocol.AttachResponse,
+        attachConfig: SamLaunchRequestArgs,
+        request?: DebugProtocol.Request
+    ) {
+        try {
+            switch (attachConfig.runtimeFamily) {
+                case RuntimeFamily.NodeJS: {
+                    attachConfig.type = 'node'
+                    const config = attachConfig as NodejsDebugConfiguration
+                    await tsDebug.invokeTypescriptLambda(this.ctx, config)
                     response.success = true
-                } catch (e) {
-                    response.success = false
-                    response.message = `SAM invoke failed: ${e}`
+                    break
                 }
-                break
+                case RuntimeFamily.Python: {
+                    attachConfig.type = 'python'
+                    const config = attachConfig as PythonDebugConfiguration
+                    await pythonDebug.invokePythonLambda(this.ctx, config)
+                    response.success = true
+                    break
+                }
+                case RuntimeFamily.DotNetCore: {
+                    attachConfig.type = 'coreclr'
+                    await csharpDebug.invokeCsharpLambda(this.ctx, attachConfig)
+                    response.success = true
+                    break
+                }
+                default: {
+                    response.success = false
+                    response.message = `SAM debug: unknown runtimeFamily: ${attachConfig.runtimeFamily}`
+                    break
+                }
             }
-            case RuntimeFamily.Python:
-                // TODO
-                break
-            case RuntimeFamily.DotNetCore:
-                // TODO
-                break
+        } catch (e) {
+            response.success = false
+            response.message = `SAM debug failed: ${e}`
         }
 
-        this.ctx.outputChannel.append('SamDebugSession.launchRequest')
         this.sendResponse(response)
     }
 
@@ -209,7 +220,9 @@ export class SamDebugSession extends DebugSession {
         response: DebugProtocol.VariablesResponse,
         args: DebugProtocol.VariablesArguments,
         request?: DebugProtocol.Request
-    ) {}
+    ) {
+        // this.sendResponse(response);
+    }
 
     protected continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments): void {
         // this.sendResponse(response);
@@ -237,7 +250,9 @@ export class SamDebugSession extends DebugSession {
     protected dataBreakpointInfoRequest(
         response: DebugProtocol.DataBreakpointInfoResponse,
         args: DebugProtocol.DataBreakpointInfoArguments
-    ): void {}
+    ): void {
+        // this.sendResponse(response);
+    }
 
     protected setDataBreakpointsRequest(
         response: DebugProtocol.SetDataBreakpointsResponse,
