@@ -52,6 +52,10 @@ function getSortableCompareText(runtime: Runtime): string {
     return runtimeCompareText.get(runtime) || runtime.toString()
 }
 
+/**
+ * Sorts runtimes from lowest value to greatest value, helpful for outputting alphabetized lists of runtimes
+ * Differs from normal sorting as it numbers into account: e.g. nodeJs8.10 < nodeJs10.x
+ */
 export function compareSamLambdaRuntime(a: Runtime, b: Runtime): number {
     return getSortableCompareText(a).localeCompare(getSortableCompareText(b))
 }
@@ -74,12 +78,10 @@ export function getRuntimeFamily(langId: string): RuntimeFamily {
 }
 
 /**
- * Guesses a reasonable default runtime value for the given `RuntimeFamily`.
+ * Provides the most recent available runtime for a given `RuntimeFamily` or undefined if the runtime is invalid.
  */
 export function getDefaultRuntime(runtime: RuntimeFamily): string | undefined {
     switch (runtime) {
-        // note: compareSamLambdaRuntime sorts from least value to greatest, to alphabetically sort runtimes
-        // thus, pull the last value since that will represent the greatest (and thus, newest) version
         case RuntimeFamily.NodeJS:
             return nodeJsRuntimes.sort(compareSamLambdaRuntime).last()
         case RuntimeFamily.DotNetCore:
