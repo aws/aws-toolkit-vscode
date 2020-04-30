@@ -7,9 +7,10 @@ import { Lambda } from 'aws-sdk'
 import * as os from 'os'
 import { Uri } from 'vscode'
 import { ext } from '../../shared/extensionGlobals'
+import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
-export class LambdaFunctionNode extends AWSTreeNodeBase {
+export class LambdaFunctionNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
         public readonly parent: AWSTreeNodeBase,
         public readonly regionCode: string,
@@ -31,5 +32,13 @@ export class LambdaFunctionNode extends AWSTreeNodeBase {
 
     public get functionName(): string {
         return this.configuration.FunctionName || ''
+    }
+
+    public getArn(): string {
+        if (this.configuration.FunctionArn === undefined) {
+            throw new Error('FunctionArn expected but not found')
+        }
+
+        return this.configuration.FunctionArn
     }
 }

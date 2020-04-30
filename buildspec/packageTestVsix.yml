@@ -17,6 +17,7 @@ phases:
 
     build:
         commands:
+            - npm run generateNonCodeFiles
             - cp ./extension-readme.md ./README.md
             - npm run package
 

@@ -1,4 +1,0 @@
-{
-    "type": "Bug Fix",
-    "description": "Fixed a validation issue with VS Code's `settings.json` and `launch.json` files (#1027)"
-}
