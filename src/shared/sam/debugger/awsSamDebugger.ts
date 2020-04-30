@@ -5,13 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import {
-    getCodeRoot,
-    getHandlerName,
-    getTemplateResource,
-    NodejsDebugConfiguration,
-    PythonDebugConfiguration,
-} from '../../../lambda/local/debugConfiguration'
+import { getCodeRoot, getHandlerName, getTemplateResource } from '../../../lambda/local/debugConfiguration'
 import { getDefaultRuntime, getFamily, getRuntimeFamily, RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import { CloudFormationTemplateRegistry, getResourcesFromTemplateDatum } from '../../cloudformation/templateRegistry'
 import * as csharpDebug from '../../codelens/csharpCodeLensProvider'
@@ -26,7 +20,6 @@ import { tryGetAbsolutePath } from '../../utilities/workspaceUtils'
 import {
     AwsSamDebuggerConfiguration,
     AWS_SAM_DEBUG_TYPE,
-    DIRECT_INVOKE_TYPE,
     createTemplateAwsSamDebugConfig,
 } from './awsSamDebugConfiguration'
 import { TemplateTargetProperties } from './awsSamDebugConfiguration.gen'
@@ -116,12 +109,6 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             )
             return undefined
         }
-        /**
-         * XXX: Temporary magic field for testing.
-         * 1. Disables the EXECUTE phase.
-         * 2. Returns the config.
-         */
-        const noInvoke = !!config.__noInvoke
         const cftRegistry = CloudFormationTemplateRegistry.getRegistry()
 
         // If "request" field is missing this means launch.json does not exist.
@@ -228,35 +215,24 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         // 3. do `sam local invoke`
         //
         switch (runtimeFamily) {
-            case RuntimeFamily.NodeJS:
-                {
-                    const c: NodejsDebugConfiguration = await tsDebug.makeTypescriptConfig(launchConfig)
-                    launchConfig = c
-                    if (!noInvoke) {
-                        await tsDebug.invokeTypescriptLambda(this.ctx, c)
-                    }
-                }
+            case RuntimeFamily.NodeJS: {
+                // Make a NodeJS launch-config from the generic config.
+                launchConfig = await tsDebug.makeTypescriptConfig(launchConfig)
                 break
+            }
             case RuntimeFamily.Python: {
-                //  Make a Python launch-config from the generic config.
-                const c: PythonDebugConfiguration = await pythonDebug.makePythonDebugConfig(
+                // Make a Python launch-config from the generic config.
+                launchConfig = await pythonDebug.makePythonDebugConfig(
                     launchConfig,
                     !launchConfig.noDebug,
                     launchConfig.runtime,
                     launchConfig.handlerName
                 )
-                launchConfig = c
-                if (!noInvoke) {
-                    await pythonDebug.invokePythonLambda(this.ctx, c)
-                }
                 break
             }
             case RuntimeFamily.DotNetCore: {
-                const c = await csharpDebug.makeCsharpConfig(launchConfig)
-                launchConfig = c
-                if (!noInvoke) {
-                    await csharpDebug.invokeCsharpLambda(this.ctx, c)
-                }
+                // Make a DotNet launch-config from the generic config.
+                launchConfig = await csharpDebug.makeCsharpConfig(launchConfig)
                 break
             }
             default: {
@@ -268,23 +244,22 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             }
         }
 
-        if (launchConfig.type === AWS_SAM_DEBUG_TYPE || launchConfig.request === DIRECT_INVOKE_TYPE) {
-            // The "type" and "request" fields must be updated to non-AWS
-            // values, otherwise this will just cycle back (and it indicates a
-            // bug in the logic).
+        // Set the type, then vscode will pass the config to SamDebugSession.attachRequest().
+        // (Registered in sam/activation.ts which calls registerDebugAdapterDescriptorFactory()).
+        // By this point launchConfig.request is now set to "attach" (not "direct-invoke").
+        launchConfig.type = AWS_SAM_DEBUG_TYPE
+
+        if (launchConfig.request !== 'attach') {
+            // The "request" field must be updated so that it routes to the
+            // DebugAdapter (SamDebugSession.attachRequest()), else this will
+            // just cycle back (and it indicates a bug in the config logic).
             throw Error(
-                `resolveDebugConfiguration: launchConfig was not correctly resolved before return: ${launchConfig}`
+                `resolveDebugConfiguration: launchConfig was not correctly resolved before return: ${JSON.stringify(
+                    launchConfig
+                )}`
             )
         }
 
-        // XXX: return undefined, because we already launched and invoked by now.
-        //
-        // TODO: In the future we may consider NOT launching, and instead do one of the following:
-        //  - return a config here for vscode to handle
-        //  - return a config here for SamDebugSession.ts to handle (custom debug adapter)
-        if (!noInvoke) {
-            return undefined
-        }
         return launchConfig
     }
 }

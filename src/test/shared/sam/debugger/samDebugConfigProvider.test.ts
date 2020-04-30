@@ -65,7 +65,6 @@ function assertEqualLaunchConfigs(actual: SamLaunchRequestArgs, expected: SamLau
         delete o.originalSamTemplatePath
         delete o.workspaceFolder
         delete o.codeRoot
-        delete (o as any).__noInvoke
         delete (o as any).localRoot // Node-only
         delete (o as any).debuggerPath // Dotnet-only
     }
@@ -296,7 +295,6 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             // Assert that the relative path correctly maps to the full path in the registry.
             const name = 'Test rel path'
             const resolved = await debugConfigProvider.resolveDebugConfiguration(fakeWorkspaceFolder, {
-                __noInvoke: true,
                 type: AWS_SAM_DEBUG_TYPE,
                 name: name,
                 request: 'direct-invoke',
@@ -330,10 +328,9 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                     runtime: validRuntime,
                 },
             }
-            ;(c as any).__noInvoke = true
             const actual = (await debugConfigProvider.resolveDebugConfiguration(folder, c))!
             const expected: SamLaunchRequestArgs = {
-                type: 'node', // Input "aws-sam", output "node".
+                type: AWS_SAM_DEBUG_TYPE,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'nodejs12.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
@@ -381,7 +378,6 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             )
             const folder = testutil.getWorkspaceFolder(appDir)
             const c = {
-                __noInvoke: true,
                 type: AWS_SAM_DEBUG_TYPE,
                 name: 'whats in a name',
                 request: DIRECT_INVOKE_TYPE,
@@ -391,7 +387,6 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                     samTemplateResource: resourceName,
                 },
             }
-            ;(c as any).__noInvoke = true
             await strToYamlFile(
                 makeSampleSamTemplateYaml(true, {
                     resourceName: resourceName,
@@ -406,7 +401,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             const tempDir = path.dirname(actual.codeRoot)
 
             const expected: SamLaunchRequestArgs = {
-                type: 'node', // Input "aws-sam", output "node".
+                type: AWS_SAM_DEBUG_TYPE,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'nodejs12.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
@@ -463,7 +458,6 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                     runtime: 'dotnetcore2.1',
                 },
             }
-            ;(c as any).__noInvoke = true
             const actual = (await debugConfigProvider.resolveDebugConfiguration(
                 folder,
                 c
@@ -472,7 +466,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'dotnetcore2.1', // lambdaModel.dotNetRuntimes[0],
                 runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
-                type: 'coreclr', // Input "aws-sam", output "coreclr".
+                type: AWS_SAM_DEBUG_TYPE,
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -549,7 +543,6 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                     runtime: 'python3.7',
                 },
             }
-            ;(c as any).__noInvoke = true
             const actual = (await debugConfigProvider.resolveDebugConfiguration(
                 folder,
                 c
@@ -558,7 +551,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'python3.7',
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
-                type: 'python', // Input "aws-sam", output "python".
+                type: AWS_SAM_DEBUG_TYPE,
                 handlerName: 'app___vsctk___debug.lambda_handler',
                 workspaceFolder: {
                     index: 0,
@@ -617,7 +610,6 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             )
             const folder = testutil.getWorkspaceFolder(appDir)
             const c = {
-                __noInvoke: true,
                 type: AWS_SAM_DEBUG_TYPE,
                 name: 'whats in a name',
                 request: DIRECT_INVOKE_TYPE,
@@ -633,7 +625,6 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                     },
                 },
             }
-            ;(c as any).__noInvoke = true
             await strToYamlFile(
                 makeSampleSamTemplateYaml(true, {
                     resourceName: resourceName,
@@ -648,7 +639,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             const tempDir = path.dirname(actual.codeRoot)
 
             const expected: SamLaunchRequestArgs = {
-                type: 'node', // Input "aws-sam", output "node".
+                type: AWS_SAM_DEBUG_TYPE,
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -763,7 +754,6 @@ async function getConfig(
     if (!configs || configs.length === 0) {
         throw Error(`failed to generate config from: ${rootFolder}`)
     }
-    ;(configs[0] as any).__noInvoke = true
     return {
         config: configs[0],
         folder: folder,
