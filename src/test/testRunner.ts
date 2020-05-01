@@ -9,7 +9,9 @@ import * as Mocha from 'mocha'
 import * as glob from 'glob'
 import * as fs from 'fs'
 import * as os from 'os'
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const istanbul = require('istanbul')
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const remapIstanbul = require('remap-istanbul')
 
 export type TestType = 'unit' | 'integration'
@@ -79,6 +81,7 @@ export function run(testType: TestType = 'unit'): Promise<void> {
     })
 }
 
+// Adapted from https://github.com/codecov/example-typescript-vscode-extension
 class CoverageRunner {
     private coverageVar: string = '$$cov_' + new Date().getTime() + '$$'
     private transformer: any = undefined
@@ -89,6 +92,7 @@ class CoverageRunner {
 
     public setupCoverage(): void {
         // Set up Code Coverage, hooking require so that instrumented code is returned
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
         let self = this
         self.instrumenter = new istanbul.Instrumenter({ coverageVariable: self.coverageVar })
         let sourceRoot = path.join(self.testsRoot, self.options.relativeSourcePath)
@@ -100,6 +104,7 @@ class CoverageRunner {
         })
 
         // Create a match function - taken from the run-with-cover.js in istanbul.
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
         let decache = require('decache')
         let fileMap = {}
         srcFiles.forEach(file => {
