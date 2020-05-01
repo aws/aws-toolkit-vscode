@@ -6,7 +6,7 @@ WARNING: This package has been modified from the original Open Source MIT licens
 
 The test runner is sourced from [Codecov VSCode Extension Example](https://github.com/codecov/example-typescript-vscode-extension). This test runner is invoked by the VS Code extension, and orchestrates the [istanbul](https://istanbul.js.org/) coverage package.
 
-The file is located in [third-party/test/index.ts](test/index.ts). Its original source is located at https://github.com/codecov/example-typescript-vscode-extension/blob/master/test/index.ts
+The file is located in [src/test/index.ts](test/index.ts). Its original source is located at https://github.com/codecov/example-typescript-vscode-extension/blob/master/test/testRunner.ts
 
 ## VS Code Icons
 

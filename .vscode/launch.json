@@ -41,14 +41,16 @@
             "runtimeExecutable": "${execPath}",
             "args": [
                 "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/test/index.js"
+                "--extensionTestsPath=${workspaceFolder}/dist/src/test/index"
             ],
             "env": {
                 "TEST_REPORT_DIR": "${workspaceFolder}/.test-reports",
-                "TEST_FILE": null
+                "TEST_FILE": null,
+                "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true",
+                "NO_COVERAGE": "true"
             },
             "outFiles": ["${workspaceFolder}/dist/src/test/**/*.js"],
-            "preLaunchTask": "npm: watch"
+            "preLaunchTask": "${defaultBuildTask}"
         },
         {
             "name": "Extension Tests (current file)",
@@ -61,10 +63,12 @@
             ],
             "env": {
                 "TEST_REPORT_DIR": "${workspaceFolder}/.test-reports",
-                "TEST_FILE": "${relativeFileDirname}/${fileBasenameNoExtension}"
+                "TEST_FILE": "${relativeFileDirname}/${fileBasenameNoExtension}",
+                "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true",
+                "NO_COVERAGE": "true"
             },
             "outFiles": ["${workspaceFolder}/dist/src/test/**/*.js"],
-            "preLaunchTask": "npm: watch"
+            "preLaunchTask": "${defaultBuildTask}"
         },
         {
             "name": "Integration Tests",
@@ -77,9 +81,10 @@
                 "--extensionTestsPath=${workspaceFolder}/dist/src/integrationTest/index.js"
             ],
             "env": {
-                "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true",
                 "TEST_REPORT_DIR": "${workspaceFolder}/.test-reports",
-                "TEST_FILE": null
+                "TEST_FILE": null,
+                "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true",
+                "NO_COVERAGE": "true"
             },
             "outFiles": ["${workspaceFolder}/dist/src/integrationTest/**/*.js"],
             "preLaunchTask": "npm: testCompile"

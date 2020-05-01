@@ -4,7 +4,6 @@
  */
 
 import * as assert from 'assert'
-import { RegistrySummary, SchemaSummary } from 'aws-sdk/clients/schemas'
 import * as sinon from 'sinon'
 import {
     Cache,
@@ -131,9 +130,7 @@ describe('schemasDataProvider', () => {
 
         it('should return undefined when error occurs', async () => {
             sandbox.restore()
-            sandbox
-                .stub(schemaClient, 'listRegistries')
-                .returns((new Error('Custom error') as any) as AsyncIterableIterator<RegistrySummary>)
+            sandbox.stub(schemaClient, 'listRegistries').throws(new Error('Custom error'))
             const result = await dataProviderObject.getRegistries(TEST_REGION, schemaClient, testCredentials)
 
             assert.strictEqual(result, undefined)
@@ -223,9 +220,7 @@ describe('schemasDataProvider', () => {
 
         it('should return undefined when error occurs ', async () => {
             sandbox.restore()
-            sandbox
-                .stub(schemaClient, 'listSchemas')
-                .returns((new Error('Custom error') as any) as AsyncIterableIterator<SchemaSummary>)
+            sandbox.stub(schemaClient, 'listSchemas').throws(new Error('Custom error'))
             const result = await dataProviderObject.getSchemas(
                 TEST_REGION,
                 TEST_REGISTRY,

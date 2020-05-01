@@ -6,11 +6,14 @@
 import { resolve } from 'path'
 import { runTests } from 'vscode-test'
 import { setupVSCodeTestInstance } from './launchTestUtilities'
+import { env } from 'process'
 
 // tslint:disable-next-line: no-floating-promises
 ;(async () => {
     try {
         console.log('Running Main test suite...')
+
+        env['AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE'] = 'true'
         const vsCodeExecutablePath = await setupVSCodeTestInstance()
         const cwd = process.cwd()
         const testEntrypoint = resolve(cwd, 'dist', 'src', 'test', 'index.js')
@@ -19,7 +22,7 @@ import { setupVSCodeTestInstance } from './launchTestUtilities'
         const result = await runTests({
             vscodeExecutablePath: vsCodeExecutablePath,
             extensionDevelopmentPath: cwd,
-            extensionTestsPath: testEntrypoint
+            extensionTestsPath: testEntrypoint,
         })
 
         console.log(`Finished running Main test suite with result code: ${result}`)
