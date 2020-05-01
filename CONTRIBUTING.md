@@ -61,6 +61,9 @@ There are also some integration tests, which can be run from the Debug pane, or 
 
 Tests will output log output to `./.test-reports/testLog.log` for debugging
 
+Note: `src/testFixtures/` is excluded in `.vscode/settings.json`, to prevent VS
+Code from treating its files as project files.
+
 #### Run a specific test
 
 To run a single test, change its `it()` call to `it.only(…)`.
