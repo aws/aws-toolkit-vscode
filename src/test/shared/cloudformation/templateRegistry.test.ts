@@ -100,7 +100,7 @@ describe('CloudFormation Template Registry', async () => {
         // other get cases are tested in the add section
         describe('getRegisteredTemplate', async () => {
             it('returns undefined if the registry has no registered templates', () => {
-                assert.strictEqual(testRegistry.getRegisteredTemplate('template.yaml'), undefined)
+                assert.strictEqual(testRegistry.getRegisteredTemplate('/template.yaml'), undefined)
             })
 
             it('returns undefined if the registry does not contain the template in question', async () => {
@@ -108,7 +108,7 @@ describe('CloudFormation Template Registry', async () => {
                 await strToYamlFile(goodYaml1, filename.fsPath)
                 await testRegistry.addTemplateToRegistry(vscode.Uri.file(filename.fsPath))
 
-                assert.strictEqual(testRegistry.getRegisteredTemplate('not-the-template.yaml'), undefined)
+                assert.strictEqual(testRegistry.getRegisteredTemplate('/not-the-template.yaml'), undefined)
             })
         })
 

@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as path_ from 'path'
 import { getLogger } from '../logger/logger'
 import { CloudFormation } from './cloudformation'
 import * as pathutils from '../utilities/pathUtils'
@@ -19,6 +20,12 @@ export class CloudFormationTemplateRegistry {
 
     public constructor() {
         this.templateRegistryData = new Map<string, CloudFormation.Template>()
+    }
+
+    private assertAbsolute(path: string) {
+        if (!path_.isAbsolute(path)) {
+            throw Error(`CloudFormationTemplateRegistry: path is relative: ${path}`)
+        }
     }
 
     /**
@@ -43,6 +50,7 @@ export class CloudFormationTemplateRegistry {
      */
     public async addTemplateToRegistry(templateUri: vscode.Uri, quiet?: boolean): Promise<void> {
         const pathAsString = pathutils.normalize(templateUri.fsPath)
+        this.assertAbsolute(pathAsString)
         try {
             const template = await CloudFormation.load(pathAsString)
             this.templateRegistryData.set(pathAsString, template)
@@ -60,6 +68,7 @@ export class CloudFormationTemplateRegistry {
      */
     public getRegisteredTemplate(path: string): TemplateDatum | undefined {
         const normalizedPath = pathutils.normalize(path)
+        this.assertAbsolute(normalizedPath)
         const template = this.templateRegistryData.get(normalizedPath)
         if (template) {
             return {
@@ -91,6 +100,7 @@ export class CloudFormationTemplateRegistry {
      */
     public removeTemplateFromRegistry(templateUri: vscode.Uri): void {
         const pathAsString = pathutils.normalize(templateUri.fsPath)
+        this.assertAbsolute(pathAsString)
         this.templateRegistryData.delete(pathAsString)
     }
 

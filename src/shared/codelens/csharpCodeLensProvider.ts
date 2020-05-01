@@ -91,8 +91,8 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
     config.codeRoot = pathutil.normalize(config.codeRoot)
 
     const baseBuildDir = await makeBuildDir()
-    const template = getTemplate(config)
-    const resource = getTemplateResource(config)
+    const template = getTemplate(config.workspaceFolder, config)
+    const resource = getTemplateResource(config.workspaceFolder, config)
     const codeUri = getCodeRoot(config.workspaceFolder, config)
     const handlerName = config.handlerName
 

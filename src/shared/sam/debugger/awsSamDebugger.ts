@@ -73,7 +73,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                     }
                     const resources = getResourcesFromTemplateDatum(templateDatum)
                     for (const resourceKey of resources.keys()) {
-                        configs.push(createTemplateAwsSamDebugConfig(resourceKey, templateDatum.path))
+                        configs.push(createTemplateAwsSamDebugConfig(folder, resourceKey, templateDatum.path))
                     }
                 }
             }
@@ -161,9 +161,9 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
 
         const editor = vscode.window.activeTextEditor
         const templateInvoke = config.invokeTarget as TemplateTargetProperties
-        const templateResource = getTemplateResource(config)
+        const templateResource = getTemplateResource(folder, config)
         const codeRoot = getCodeRoot(folder, config)
-        const handlerName = getHandlerName(config)
+        const handlerName = getHandlerName(folder, config)
 
         if (templateInvoke?.samTemplatePath) {
             // Normalize to absolute path.
