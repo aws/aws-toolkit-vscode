@@ -1,7 +1,7 @@
 {
     "enabled": true,
-    "relativeSourcePath": "../",
-    "relativeCoverageDir": "../../../.coverage",
+    "relativeSourcePath": "./",
+    "relativeCoverageDir": "../../.coverage",
     "ignorePatterns": ["**/node_modules/**", "test/**", "integrationTest/**", "integrationTest-samples/**"],
     "includePid": false,
     "reports": ["text-summary", "json", "html"],

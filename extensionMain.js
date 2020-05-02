@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-;('use strict')
+'use strict'
 
 const join = require('path').join
 
@@ -21,6 +21,7 @@ const extensionEntryPath = useBundledEntrypoint()
     ? join(__dirname, 'dist', 'extension')
     : join(__dirname, 'dist', 'src', 'extension')
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const extension = require(extensionEntryPath)
 
 async function activate(context) {
