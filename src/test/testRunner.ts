@@ -14,9 +14,7 @@ const istanbul = require('istanbul')
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const remapIstanbul = require('remap-istanbul')
 
-export type TestType = 'unit' | 'integration'
-
-export function run(testType: TestType = 'unit'): Promise<void> {
+export function runTestsInFolder(testFolder: string): Promise<void> {
     const outputFile = path.resolve(process.env['TEST_REPORT_DIR'] || '.test-reports', 'report.xml')
     const colorOutput = !process.env['AWS_TOOLKIT_TEST_NO_COLOR']
 
@@ -34,6 +32,8 @@ export function run(testType: TestType = 'unit'): Promise<void> {
         timeout: 0,
     })
 
+    // __dirname is dist/src
+    // This becomes dist
     const testsRoot = path.resolve(__dirname, '..')
 
     return new Promise((c, e) => {
@@ -53,8 +53,6 @@ export function run(testType: TestType = 'unit'): Promise<void> {
             // XXX: explicitly add globalSetup, other tests depend on it.
             mocha.addFile(globalSetupPath)
         }
-
-        const testFolder = testType === 'unit' ? 'test' : 'integrationTest'
 
         glob(testFilePath ?? `**/${testFolder}/**/**.test.js`, { cwd: testsRoot }, (err, files) => {
             if (err) {
@@ -194,7 +192,7 @@ class CoverageRunner {
                     cov[file] = self.instrumenter.coverState
                 }
             } catch (e) {
-                console.log(e)
+                console.error(e)
             }
         })
 

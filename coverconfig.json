@@ -1,6 +1,6 @@
 {
     "enabled": true,
-    "relativeSourcePath": "../",
+    "relativeSourcePath": "./",
     "relativeCoverageDir": "../../.coverage",
     "ignorePatterns": ["**/node_modules/**", "test/**", "integrationTest/**", "integrationTest-samples/**"],
     "includePid": false,
