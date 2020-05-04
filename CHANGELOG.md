@@ -1,3 +1,6 @@
+# _1.14_ (2020-05-04)
+- **(Feature)** Add support for selecting regions in other partitions
+
 # _1.13_ (2020-04-16)
 - **(Feature)** On refresh, AWS explorer tree nodes will no longer be collapsed
 - **(Feature)** Add capabilities check boxes to serverless deploy (issue [#1394](https://github.com/aws/aws-toolkit-jetbrains/issues/1394))

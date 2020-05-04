@@ -1,0 +1,8 @@
+{
+  "date" : "2020-05-04",
+  "version" : "1.14",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Add support for selecting regions in other partitions"
+  } ]
+}
