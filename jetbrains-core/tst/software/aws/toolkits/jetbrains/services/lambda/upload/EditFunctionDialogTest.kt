@@ -64,7 +64,7 @@ class EditFunctionDialogTest {
     }
 
     @Test
-    fun newShowsBothConfigurationAndDeploymentSettings() {
+    fun newShowsConfigurationDeploymentAndBuildSettings() {
         mockBuckets()
         mockRoles()
 
@@ -74,6 +74,7 @@ class EditFunctionDialogTest {
 
         assertThat(dialog.getViewForTestAssertions().configurationSettings.isVisible).isTrue()
         assertThat(dialog.getViewForTestAssertions().deploySettings.isVisible).isTrue()
+        assertThat(dialog.getViewForTestAssertions().buildSettings.isVisible).isTrue()
     }
 
     @Test
@@ -87,10 +88,11 @@ class EditFunctionDialogTest {
 
         assertThat(dialog.getViewForTestAssertions().configurationSettings.isVisible).isTrue()
         assertThat(dialog.getViewForTestAssertions().deploySettings.isVisible).isFalse()
+        assertThat(dialog.getViewForTestAssertions().buildSettings.isVisible).isFalse()
     }
 
     @Test
-    fun updateCodeShowsOnlyDeploymentSettingsAndHandler() {
+    fun updateCodeShowsOnlyDeploymentSettingsHandlerAndBuild() {
         mockBuckets()
         mockRoles()
 
@@ -99,7 +101,10 @@ class EditFunctionDialogTest {
         }
 
         assertThat(dialog.getViewForTestAssertions().deploySettings.isVisible).isTrue()
+        assertThat(dialog.getViewForTestAssertions().buildSettings.isVisible).isTrue()
         assertThat(dialog.getViewForTestAssertions().handlerPanel.handler.isVisible).isTrue()
+
+        assertThat(dialog.getViewForTestAssertions().buildInContainer.isVisible).isTrue()
 
         assertThat(dialog.getViewForTestAssertions().name.isVisible).isFalse()
         assertThat(dialog.getViewForTestAssertions().description.isVisible).isFalse()

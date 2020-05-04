@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Add the ability to build in container when updating function code (#1740)"
+}

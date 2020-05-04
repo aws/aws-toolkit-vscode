@@ -16,6 +16,7 @@ import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTem
 import software.aws.toolkits.jetbrains.services.iam.IamRole
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.runtime
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionMode.NEW
 import software.aws.toolkits.jetbrains.utils.notifyNoActiveCredentialsError
 import software.aws.toolkits.resources.message
@@ -84,7 +85,8 @@ data class FunctionUploadDetails(
     val envVars: Map<String, String>,
     val timeout: Int,
     val memorySize: Int,
-    val xrayEnabled: Boolean
+    val xrayEnabled: Boolean,
+    val samOptions: SamOptions
 ) {
     val tracingMode: TracingMode =
         if (xrayEnabled) {

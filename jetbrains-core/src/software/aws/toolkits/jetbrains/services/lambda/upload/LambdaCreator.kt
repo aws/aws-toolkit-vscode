@@ -19,7 +19,6 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderUtils
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 import software.aws.toolkits.jetbrains.services.lambda.PackageLambdaFromHandler
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
-import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.toDataClass
 import software.aws.toolkits.jetbrains.services.s3.upload
 import software.aws.toolkits.resources.message
@@ -69,7 +68,7 @@ class LambdaCreator internal constructor(
             handler,
             functionDetails.handler,
             functionDetails.runtime,
-            SamOptions()
+            functionDetails.samOptions
         )
 
         // We should never hit this point since validation logic of the UI should validate this cant be null

@@ -31,6 +31,7 @@ import software.aws.toolkits.core.utils.delegateMock
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.services.iam.IamRole
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -232,7 +233,8 @@ class LambdaCreatorTestWithoutXray : LambdaCreatorTestBase(
         envVars = mapOf("TestKey" to "TestValue"),
         timeout = 60,
         memorySize = 512,
-        xrayEnabled = false
+        xrayEnabled = false,
+        samOptions = SamOptions()
     )
 )
 
@@ -246,6 +248,7 @@ class LambdaCreatorTestWithXray : LambdaCreatorTestBase(
         envVars = mapOf("TestKey" to "TestValue"),
         timeout = 60,
         memorySize = 512,
-        xrayEnabled = true
+        xrayEnabled = true,
+        samOptions = SamOptions()
     )
 )
