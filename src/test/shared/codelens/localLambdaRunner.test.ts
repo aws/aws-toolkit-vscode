@@ -11,18 +11,12 @@ import * as vscode from 'vscode'
 import * as localLambdaRunner from '../../../shared/codelens/localLambdaRunner'
 import * as fsUtils from '../../../shared/filesystemUtilities'
 import { ChildProcessResult } from '../../../shared/utilities/childProcess'
-import { ExtensionDisposableFiles } from '../../../shared/utilities/disposableFiles'
-import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { FakeChannelLogger } from '../fakeChannelLogger'
 import { assertRejects } from '../utilities/assertUtils'
 import { SamLaunchRequestArgs } from '../../../shared/sam/debugger/samDebugSession'
 
 describe('localLambdaRunner', async () => {
     let tempDir: string
-    before(async () => {
-        await ExtensionDisposableFiles.initialize(new FakeExtensionContext())
-    })
-
     beforeEach(async () => {
         tempDir = await fsUtils.makeTemporaryToolkitFolder()
     })

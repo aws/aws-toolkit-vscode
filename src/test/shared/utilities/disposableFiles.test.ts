@@ -88,12 +88,18 @@ describe('DisposableFiles', async () => {
 
 describe('ExtensionDisposableFiles', async () => {
     class TestExtensionDisposableFiles extends ExtensionDisposableFiles {
-        public static reset() {
+        public static ORIGINAL_INSTANCE = ExtensionDisposableFiles.INSTANCE
+
+        public static clearInstance() {
             if (ExtensionDisposableFiles.INSTANCE) {
                 del.sync([ExtensionDisposableFiles.INSTANCE.toolkitTempFolder], { force: true })
             }
 
             ExtensionDisposableFiles.INSTANCE = undefined
+        }
+
+        public static resetOriginalInstance() {
+            ExtensionDisposableFiles.INSTANCE = TestExtensionDisposableFiles.ORIGINAL_INSTANCE
         }
     }
 
@@ -103,10 +109,11 @@ describe('ExtensionDisposableFiles', async () => {
         extensionContext = ({
             subscriptions: [],
         } as any) as vscode.ExtensionContext
+        TestExtensionDisposableFiles.clearInstance()
     })
 
     afterEach(() => {
-        TestExtensionDisposableFiles.reset()
+        TestExtensionDisposableFiles.resetOriginalInstance()
     })
 
     it('getInstance throws error if not initialized', async () => {

@@ -24,7 +24,7 @@ describe('DefaultAwsClientBuilder', () => {
 
             assert.strictEqual(!!service.config.customUserAgent, true)
             assert.strictEqual(
-                service.config.customUserAgent!,
+                service.config.customUserAgent!.replace('---Insiders', ''),
                 `AWS-Toolkit-For-VSCode/testPluginVersion Visual-Studio-Code/${version}`
             )
         })
