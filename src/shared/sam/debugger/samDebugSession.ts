@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { DebugSession, InitializedEvent, Logger, logger } from 'vscode-debugadapter'
+import { DebugSession, InitializedEvent, Logger, logger, TerminatedEvent } from 'vscode-debugadapter'
 import { DebugProtocol } from 'vscode-debugprotocol'
 import { NodejsDebugConfiguration, PythonDebugConfiguration } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
@@ -178,6 +178,7 @@ export class SamDebugSession extends DebugSession {
         }
 
         this.sendResponse(response)
+        this.sendEvent(new TerminatedEvent())
     }
 
     protected setBreakPointsRequest(
