@@ -167,7 +167,7 @@ export class SamDebugSession extends DebugSession {
     protected async launchRequest(response: DebugProtocol.LaunchResponse, config: SamLaunchRequestArgs) {
         // make sure to 'Stop' the buffered logging if 'trace' is not set
         logger.setup(config.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false)
-        this.launchOrAttach(response, config)
+        await this.launchOrAttach(response, config)
         this.sendResponse(response)
         this.sendEvent(new TerminatedEvent())
     }
@@ -181,7 +181,7 @@ export class SamDebugSession extends DebugSession {
         config: SamLaunchRequestArgs,
         request?: DebugProtocol.Request
     ) {
-        this.launchOrAttach(response, config)
+        await this.launchOrAttach(response, config)
         this.sendResponse(response)
         this.sendEvent(new TerminatedEvent())
     }
