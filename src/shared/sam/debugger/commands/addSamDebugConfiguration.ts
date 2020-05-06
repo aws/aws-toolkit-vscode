@@ -16,7 +16,6 @@ import {
 import { CloudFormationTemplateRegistry } from '../../../cloudformation/templateRegistry'
 import { getExistingConfiguration } from '../../../../lambda/config/templates'
 import { localize } from '../../../utilities/vsCodeUtils'
-import { getNormalizedRelativePath } from '../../../utilities/pathUtils'
 import { RuntimeFamily } from '../../../../lambda/models/samLambdaRuntime'
 
 /**
@@ -79,18 +78,13 @@ export async function addSamDebugConfiguration(
                 }
             }
         }
-        samDebugConfig = createTemplateAwsSamDebugConfig(
-            resourceName,
-            workspaceFolder ? getNormalizedRelativePath(workspaceFolder.uri.fsPath, rootUri.fsPath) : rootUri.fsPath,
-            preloadedConfig
-        )
+        samDebugConfig = createTemplateAwsSamDebugConfig(workspaceFolder, resourceName, rootUri.fsPath, preloadedConfig)
     } else if (type === CODE_TARGET_TYPE) {
         // strip the manifest's URI to the manifest's dir here. More reliable to do this here than converting back and forth between URI/string up the chain.
         samDebugConfig = createCodeAwsSamDebugConfig(
+            workspaceFolder,
             resourceName,
-            workspaceFolder
-                ? getNormalizedRelativePath(workspaceFolder.uri.fsPath, path.dirname(rootUri.fsPath))
-                : path.dirname(rootUri.fsPath),
+            path.dirname(rootUri.fsPath),
             runtimeFamily
         )
     } else {

@@ -10,6 +10,7 @@ import {
     TemplateTargetProperties,
 } from './awsSamDebugConfiguration.gen'
 import { getDefaultRuntime, RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
+import { getNormalizedRelativePath } from '../../utilities/pathUtils'
 
 export * from './awsSamDebugConfiguration.gen'
 
@@ -39,6 +40,7 @@ export function isCodeTargetProperties(props: TargetProperties): props is CodeTa
 }
 
 export function createTemplateAwsSamDebugConfig(
+    folder: vscode.WorkspaceFolder | undefined,
     resourceName: string,
     templatePath: string,
     preloadedConfig?: {
@@ -48,13 +50,14 @@ export function createTemplateAwsSamDebugConfig(
         useContainer?: boolean
     }
 ): AwsSamDebuggerConfiguration {
+    const workspaceRelativePath = folder ? getNormalizedRelativePath(folder.uri.fsPath, templatePath) : templatePath
     const response: AwsSamDebuggerConfiguration = {
         type: AWS_SAM_DEBUG_TYPE,
         request: DIRECT_INVOKE_TYPE,
         name: resourceName,
         invokeTarget: {
             target: TEMPLATE_TARGET_TYPE,
-            samTemplatePath: templatePath,
+            samTemplatePath: workspaceRelativePath,
             samTemplateResource: resourceName,
         },
     }
@@ -87,10 +90,12 @@ export function createTemplateAwsSamDebugConfig(
 }
 
 export function createCodeAwsSamDebugConfig(
+    folder: vscode.WorkspaceFolder | undefined,
     lambdaHandler: string,
     projectRoot: string,
     runtimeFamily?: RuntimeFamily
 ): AwsSamDebuggerConfiguration {
+    const workspaceRelativePath = folder ? getNormalizedRelativePath(folder.uri.fsPath, projectRoot) : projectRoot
     const runtime = runtimeFamily ? getDefaultRuntime(runtimeFamily) : undefined
     if (!runtime) {
         throw new Error('Invalid or missing runtime family')
@@ -103,8 +108,8 @@ export function createCodeAwsSamDebugConfig(
         name: lambdaHandler,
         invokeTarget: {
             target: CODE_TARGET_TYPE,
-            projectRoot,
-            lambdaHandler,
+            projectRoot: workspaceRelativePath,
+            lambdaHandler: lambdaHandler,
         },
         lambda: {
             runtime,

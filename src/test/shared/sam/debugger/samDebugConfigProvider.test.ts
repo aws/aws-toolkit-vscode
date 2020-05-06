@@ -691,7 +691,7 @@ describe('createTemplateAwsSamDebugConfig', () => {
     const templatePath = path.join('two', 'roads', 'diverged', 'in', 'a', 'yellow', 'wood')
 
     it('creates a template-type SAM debugger configuration with minimal configurations', () => {
-        const config = createTemplateAwsSamDebugConfig(name, templatePath)
+        const config = createTemplateAwsSamDebugConfig(undefined, name, templatePath)
         assert.strictEqual(config.invokeTarget.target, TEMPLATE_TARGET_TYPE)
         const invokeTarget = config.invokeTarget as TemplateTargetProperties
         assert.strictEqual(config.name, name)
@@ -710,7 +710,7 @@ describe('createTemplateAwsSamDebugConfig', () => {
             },
             dockerNetwork: 'rockerFretwork',
         }
-        const config = createTemplateAwsSamDebugConfig(name, templatePath, params)
+        const config = createTemplateAwsSamDebugConfig(undefined, name, templatePath, params)
         assert.deepStrictEqual(config.lambda?.event?.json, params.eventJson)
         assert.deepStrictEqual(config.lambda?.environmentVariables, params.environmentVariables)
         assert.strictEqual(config.sam?.dockerNetwork, params.dockerNetwork)
@@ -804,7 +804,7 @@ describe('createTemplateAwsSamDebugConfig', () => {
     const templatePath = path.join('two', 'roads', 'diverged', 'in', 'a', 'yellow', 'wood')
 
     it('creates a template-type SAM debugger configuration with minimal configurations', () => {
-        const config = createTemplateAwsSamDebugConfig(name, templatePath)
+        const config = createTemplateAwsSamDebugConfig(undefined, name, templatePath)
         assert.strictEqual(config.invokeTarget.target, TEMPLATE_TARGET_TYPE)
         const invokeTarget = config.invokeTarget as TemplateTargetProperties
         assert.strictEqual(config.name, name)
@@ -823,7 +823,7 @@ describe('createTemplateAwsSamDebugConfig', () => {
             },
             dockerNetwork: 'rockerFretwork',
         }
-        const config = createTemplateAwsSamDebugConfig(name, templatePath, params)
+        const config = createTemplateAwsSamDebugConfig(undefined, name, templatePath, params)
         assert.deepStrictEqual(config.lambda?.event?.json, params.eventJson)
         assert.deepStrictEqual(config.lambda?.environmentVariables, params.environmentVariables)
         assert.strictEqual(config.sam?.dockerNetwork, params.dockerNetwork)
@@ -865,7 +865,7 @@ describe('debugConfiguration', () => {
             },
         }
 
-        assert.strictEqual(debugConfiguration.getHandlerName(config), 'my.test.handler')
+        assert.strictEqual(debugConfiguration.getHandlerName(folder, config), 'my.test.handler')
 
         // Config with relative path:
         config.invokeTarget.projectRoot = relativePath
@@ -899,7 +899,7 @@ describe('debugConfiguration', () => {
         await strToYamlFile(makeSampleSamTemplateYaml(true, { codeUri: relativePath }), tempFile.fsPath)
         await registry.addTemplateToRegistry(tempFile)
         assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
-        assert.strictEqual(debugConfiguration.getHandlerName(config), 'handler')
+        assert.strictEqual(debugConfiguration.getHandlerName(folder, config), 'handler')
 
         // Template with absolute path:
         await strToYamlFile(makeSampleSamTemplateYaml(true, { codeUri: fullPath }), tempFile.fsPath)
