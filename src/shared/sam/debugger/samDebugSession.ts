@@ -161,6 +161,9 @@ export class SamDebugSession extends DebugSession {
         }
     }
 
+    /**
+     * Invokes `sam build`, `sam invoke` _without_ debugging.
+     */
     protected async launchRequest(response: DebugProtocol.LaunchResponse, config: SamLaunchRequestArgs) {
         // make sure to 'Stop' the buffered logging if 'trace' is not set
         logger.setup(config.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false)
@@ -170,7 +173,7 @@ export class SamDebugSession extends DebugSession {
     }
 
     /**
-     * Invokes `sam build`, `sam invoke`, then attachs vscode debugger to the
+     * Invokes `sam build`, `sam invoke`, then attaches vscode debugger to the
      * debugger port.
      */
     protected async attachRequest(
