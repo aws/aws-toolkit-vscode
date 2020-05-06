@@ -224,7 +224,7 @@ export async function makePythonDebugConfig(
     return {
         ...config,
         type: 'python',
-        request: 'attach',
+        request: config.noDebug ? 'launch' : 'attach',
         runtimeFamily: RuntimeFamily.Python,
         outFilePath: pathutil.normalize(outFilePath ?? '') ?? undefined,
         baseBuildDir: baseBuildDir,

@@ -128,45 +128,30 @@ export class SamDebugSession extends DebugSession {
         this.sendEvent(new InitializedEvent())
     }
 
-    protected async launchRequest(response: DebugProtocol.LaunchResponse, launchConfig: SamLaunchRequestArgs) {
-        // make sure to 'Stop' the buffered logging if 'trace' is not set
-        logger.setup(launchConfig.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false)
-    }
-
-    /**
-     * Invokes `sam build`, `sam invoke`, then attachs vscode debugger to the
-     * debugger port.
-     */
-    protected async attachRequest(
-        response: DebugProtocol.AttachResponse,
-        attachConfig: SamLaunchRequestArgs,
-        request?: DebugProtocol.Request
-    ) {
+    protected async launchOrAttach(response: DebugProtocol.Response, config: SamLaunchRequestArgs) {
         try {
-            switch (attachConfig.runtimeFamily) {
+            switch (config.runtimeFamily) {
                 case RuntimeFamily.NodeJS: {
-                    attachConfig.type = 'node'
-                    const config = attachConfig as NodejsDebugConfiguration
-                    await tsDebug.invokeTypescriptLambda(this.ctx, config)
+                    config.type = 'node'
+                    await tsDebug.invokeTypescriptLambda(this.ctx, config as NodejsDebugConfiguration)
                     response.success = true
                     break
                 }
                 case RuntimeFamily.Python: {
-                    attachConfig.type = 'python'
-                    const config = attachConfig as PythonDebugConfiguration
-                    await pythonDebug.invokePythonLambda(this.ctx, config)
+                    config.type = 'python'
+                    await pythonDebug.invokePythonLambda(this.ctx, config as PythonDebugConfiguration)
                     response.success = true
                     break
                 }
                 case RuntimeFamily.DotNetCore: {
-                    attachConfig.type = 'coreclr'
-                    await csharpDebug.invokeCsharpLambda(this.ctx, attachConfig)
+                    config.type = 'coreclr'
+                    await csharpDebug.invokeCsharpLambda(this.ctx, config)
                     response.success = true
                     break
                 }
                 default: {
                     response.success = false
-                    response.message = `SAM debug: unknown runtimeFamily: ${attachConfig.runtimeFamily}`
+                    response.message = `SAM debug: unknown runtimeFamily: ${config.runtimeFamily}`
                     break
                 }
             }
@@ -174,7 +159,29 @@ export class SamDebugSession extends DebugSession {
             response.success = false
             response.message = `SAM debug failed: ${e}`
         }
+    }
 
+    /**
+     * Invokes `sam build`, `sam invoke` _without_ debugging.
+     */
+    protected async launchRequest(response: DebugProtocol.LaunchResponse, config: SamLaunchRequestArgs) {
+        // make sure to 'Stop' the buffered logging if 'trace' is not set
+        logger.setup(config.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false)
+        this.launchOrAttach(response, config)
+        this.sendResponse(response)
+        this.sendEvent(new TerminatedEvent())
+    }
+
+    /**
+     * Invokes `sam build`, `sam invoke`, then attaches vscode debugger to the
+     * debugger port.
+     */
+    protected async attachRequest(
+        response: DebugProtocol.AttachResponse,
+        config: SamLaunchRequestArgs,
+        request?: DebugProtocol.Request
+    ) {
+        this.launchOrAttach(response, config)
         this.sendResponse(response)
         this.sendEvent(new TerminatedEvent())
     }

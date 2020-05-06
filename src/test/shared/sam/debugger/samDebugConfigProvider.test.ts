@@ -378,6 +378,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             const expectedNoDebug: SamLaunchRequestArgs = {
                 ...expected,
                 noDebug: true,
+                request: 'launch',
                 debugPort: undefined,
                 port: -1,
             }
@@ -457,6 +458,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             const expectedNoDebug: SamLaunchRequestArgs = {
                 ...expected,
                 noDebug: true,
+                request: 'launch',
                 debugPort: undefined,
                 port: -1,
             }
@@ -553,6 +555,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             const expectedNoDebug: SamLaunchRequestArgs = {
                 ...expected,
                 noDebug: true,
+                request: 'launch',
                 debuggerPath: undefined,
                 debugPort: undefined,
             }
@@ -652,6 +655,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             const expectedNoDebug: SamLaunchRequestArgs = {
                 ...expected,
                 noDebug: true,
+                request: 'launch',
                 debugPort: undefined,
                 port: -1,
                 outFilePath: '',

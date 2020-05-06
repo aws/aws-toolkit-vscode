@@ -108,7 +108,7 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
     config = {
         ...config,
         type: 'coreclr',
-        request: 'attach',
+        request: config.noDebug ? 'launch' : 'attach',
         runtimeFamily: RuntimeFamily.DotNetCore,
         name: 'SamLocalDebug',
         baseBuildDir: baseBuildDir,
