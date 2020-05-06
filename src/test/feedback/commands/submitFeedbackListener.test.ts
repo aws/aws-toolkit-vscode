@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { anything, deepEqual, instance, mock, verify, when } from 'ts-mockito'
+import { anything, deepEqual, instance, mock, verify, when } from '../../utilities/mockito'
 import { FeedbackPanel, submitFeedbackListener, Window } from '../../../feedback/commands/submitFeedbackListener'
 import { TelemetryService } from '../../../shared/telemetry/telemetryService'
 
