@@ -128,9 +128,45 @@ export class SamDebugSession extends DebugSession {
         this.sendEvent(new InitializedEvent())
     }
 
-    protected async launchRequest(response: DebugProtocol.LaunchResponse, launchConfig: SamLaunchRequestArgs) {
+    protected async launchOrAttach(response: DebugProtocol.Response, config: SamLaunchRequestArgs) {
+        try {
+            switch (config.runtimeFamily) {
+                case RuntimeFamily.NodeJS: {
+                    config.type = 'node'
+                    await tsDebug.invokeTypescriptLambda(this.ctx, config as NodejsDebugConfiguration)
+                    response.success = true
+                    break
+                }
+                case RuntimeFamily.Python: {
+                    config.type = 'python'
+                    await pythonDebug.invokePythonLambda(this.ctx, config as PythonDebugConfiguration)
+                    response.success = true
+                    break
+                }
+                case RuntimeFamily.DotNetCore: {
+                    config.type = 'coreclr'
+                    await csharpDebug.invokeCsharpLambda(this.ctx, config)
+                    response.success = true
+                    break
+                }
+                default: {
+                    response.success = false
+                    response.message = `SAM debug: unknown runtimeFamily: ${config.runtimeFamily}`
+                    break
+                }
+            }
+        } catch (e) {
+            response.success = false
+            response.message = `SAM debug failed: ${e}`
+        }
+    }
+
+    protected async launchRequest(response: DebugProtocol.LaunchResponse, config: SamLaunchRequestArgs) {
         // make sure to 'Stop' the buffered logging if 'trace' is not set
-        logger.setup(launchConfig.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false)
+        logger.setup(config.trace ? Logger.LogLevel.Verbose : Logger.LogLevel.Stop, false)
+        this.launchOrAttach(response, config)
+        this.sendResponse(response)
+        this.sendEvent(new TerminatedEvent())
     }
 
     /**
@@ -139,42 +175,10 @@ export class SamDebugSession extends DebugSession {
      */
     protected async attachRequest(
         response: DebugProtocol.AttachResponse,
-        attachConfig: SamLaunchRequestArgs,
+        config: SamLaunchRequestArgs,
         request?: DebugProtocol.Request
     ) {
-        try {
-            switch (attachConfig.runtimeFamily) {
-                case RuntimeFamily.NodeJS: {
-                    attachConfig.type = 'node'
-                    const config = attachConfig as NodejsDebugConfiguration
-                    await tsDebug.invokeTypescriptLambda(this.ctx, config)
-                    response.success = true
-                    break
-                }
-                case RuntimeFamily.Python: {
-                    attachConfig.type = 'python'
-                    const config = attachConfig as PythonDebugConfiguration
-                    await pythonDebug.invokePythonLambda(this.ctx, config)
-                    response.success = true
-                    break
-                }
-                case RuntimeFamily.DotNetCore: {
-                    attachConfig.type = 'coreclr'
-                    await csharpDebug.invokeCsharpLambda(this.ctx, attachConfig)
-                    response.success = true
-                    break
-                }
-                default: {
-                    response.success = false
-                    response.message = `SAM debug: unknown runtimeFamily: ${attachConfig.runtimeFamily}`
-                    break
-                }
-            }
-        } catch (e) {
-            response.success = false
-            response.message = `SAM debug failed: ${e}`
-        }
-
+        this.launchOrAttach(response, config)
         this.sendResponse(response)
         this.sendEvent(new TerminatedEvent())
     }

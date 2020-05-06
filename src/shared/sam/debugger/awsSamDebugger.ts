@@ -246,7 +246,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         // By this point launchConfig.request is now set to "attach" (not "direct-invoke").
         launchConfig.type = AWS_SAM_DEBUG_TYPE
 
-        if (launchConfig.request !== 'attach') {
+        if (launchConfig.request !== 'attach' && launchConfig.request !== 'launch') {
             // The "request" field must be updated so that it routes to the
             // DebugAdapter (SamDebugSession.attachRequest()), else this will
             // just cycle back (and it indicates a bug in the config logic).
