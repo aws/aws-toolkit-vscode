@@ -39,10 +39,9 @@ export interface PythonPathMapping {
 export interface PythonDebugConfiguration extends SamLaunchRequestArgs {
     readonly runtimeFamily: RuntimeFamily.Python
     readonly host: string
-    // TODO: remove, use `debugPort` instead?
     readonly port: number
     readonly pathMappings: PythonPathMapping[]
-    readonly manifestPath: string
+    readonly manifestPath: string | undefined
 }
 
 export interface DotNetCoreDebugConfiguration extends SamLaunchRequestArgs {

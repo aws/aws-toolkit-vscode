@@ -4,9 +4,9 @@
  */
 
 import { access } from 'fs-extra'
+import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import * as os from 'os'
 import {
     DotNetCoreDebugConfiguration,
     DOTNET_CORE_DEBUGGER_PATH,
@@ -20,12 +20,13 @@ import { DefaultDockerClient, DockerClient } from '../clients/dockerClient'
 import { ExtContext } from '../extensions'
 import { mkdir } from '../filesystem'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
-import { DefaultSamCliProcessInvoker } from '../sam/cli/samCliInvoker'
+import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
 import { SamLaunchRequestArgs } from '../sam/debugger/samDebugSession'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
 import { getStartPort } from '../utilities/debuggerUtils'
 import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
+import { findParentProjectFile } from '../utilities/workspaceUtils'
 import {
     executeSamBuild,
     ExecuteSamBuildArguments,
@@ -34,7 +35,6 @@ import {
     makeInputTemplate,
     waitForDebugPort,
 } from './localLambdaRunner'
-import { findParentProjectFile } from '../utilities/workspaceUtils'
 
 export const CSHARP_LANGUAGE = 'csharp'
 export const CSHARP_ALLFILES: vscode.DocumentFilter[] = [
@@ -126,8 +126,8 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
  */
 export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchRequestArgs): Promise<void> {
     const invokeCtx: OnLocalInvokeCommandContext = new DefaultOnLocalInvokeCommandContext(ctx.outputChannel)
-    const processInvoker = new DefaultSamCliProcessInvoker()
-    const localInvokeCommand = new DefaultSamLocalInvokeCommand(getChannelLogger(ctx.outputChannel), [
+    const processInvoker = new DefaultValidatingSamCliProcessInvoker({})
+    config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand(getChannelLogger(ctx.outputChannel), [
         WAIT_FOR_DEBUGGER_MESSAGES.DOTNET,
     ])
     let invokeResult: Result = 'Succeeded'
@@ -153,10 +153,7 @@ export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchReque
 
         // XXX: reassignment
         config.samTemplatePath = await executeSamBuild(buildArgs)
-        if (config.invokeTarget.target === 'template') {
-            // XXX: reassignment
-            config.invokeTarget.samTemplatePath = config.samTemplatePath
-        }
+        delete config.invokeTarget // Must not be used beyond this point.
 
         if (!config.noDebug) {
             await invokeCtx.installDebugger({
@@ -165,7 +162,6 @@ export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchReque
                 channelLogger: ctx.chanLogger,
             })
             config.onWillAttachDebugger = waitForDebugPort
-            config.samLocalInvokeCommand = localInvokeCommand
         }
 
         await invokeLambdaFunction(ctx, config)

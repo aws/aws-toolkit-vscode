@@ -13,6 +13,7 @@ import {
     waitForDebugPort,
     makeBuildDir,
     invokeLambdaFunction,
+    ExecuteSamBuildArguments,
 } from './localLambdaRunner'
 import { ExtContext } from '../extensions'
 import { NodejsDebugConfiguration } from '../../lambda/local/debugConfiguration'
@@ -111,7 +112,7 @@ export async function makeTypescriptConfig(config: SamLaunchRequestArgs): Promis
         name: 'SamLocalDebug',
         preLaunchTask: undefined,
         address: 'localhost',
-        port: config.debugPort!!,
+        port: config.debugPort ?? -1,
         localRoot: config.codeRoot,
         remoteRoot: '/var/task',
         protocol: 'inspector',
@@ -131,27 +132,27 @@ export async function invokeTypescriptLambda(ctx: ExtContext, config: NodejsDebu
 
     const processInvoker = new DefaultValidatingSamCliProcessInvoker({})
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand(ctx.chanLogger, [WAIT_FOR_DEBUGGER_MESSAGES.NODEJS])
-
-    // XXX: reassignment
-    config.samTemplatePath = await executeSamBuild({
+    const buildArgs: ExecuteSamBuildArguments = {
         baseBuildDir: config.baseBuildDir!!,
         channelLogger: ctx.chanLogger,
         codeDir: config.codeRoot,
         inputTemplatePath: config.samTemplatePath,
         samProcessInvoker: processInvoker,
         useContainer: config.sam?.containerBuild,
-    })
-    if (config.invokeTarget.target === 'template') {
-        // XXX: reassignment
-        config.invokeTarget.samTemplatePath = config.samTemplatePath
     }
+
+    // XXX: reassignment
+    config.samTemplatePath = await executeSamBuild(buildArgs)
+    delete config.invokeTarget // Must not be used beyond this point.
 
     ctx.chanLogger.info(
         'AWS.output.starting.sam.app.locally',
         'Starting the SAM Application locally (see Terminal for output)'
     )
 
-    config.onWillAttachDebugger = waitForDebugPort
+    if (!config.noDebug) {
+        config.onWillAttachDebugger = waitForDebugPort
+    }
 
     await invokeLambdaFunction(ctx, config)
 }
