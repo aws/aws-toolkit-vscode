@@ -371,6 +371,19 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
+
+            //
+            // Test noDebug=true.
+            //
+            const expectedNoDebug: SamLaunchRequestArgs = {
+                ...expected,
+                noDebug: true,
+                debugPort: undefined,
+                port: -1,
+            }
+            ;(c as any).noDebug = true
+            const actualNoDebug = (await debugConfigProvider.resolveDebugConfiguration(folder, c))!
+            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug, appDir)
         })
 
         it('target=template: javascript', async () => {
@@ -437,6 +450,19 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
+
+            //
+            // Test noDebug=true.
+            //
+            const expectedNoDebug: SamLaunchRequestArgs = {
+                ...expected,
+                noDebug: true,
+                debugPort: undefined,
+                port: -1,
+            }
+            ;(c as any).noDebug = true
+            const actualNoDebug = (await debugConfigProvider.resolveDebugConfiguration(folder, c))!
+            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug, appDir)
         })
 
         it('target=code: dotnet/csharp', async () => {
@@ -528,7 +554,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 ...expected,
                 noDebug: true,
                 debuggerPath: undefined,
-                debugPort: -1,
+                debugPort: undefined,
             }
             delete expectedNoDebug.processId
             delete expectedNoDebug.pipeTransport

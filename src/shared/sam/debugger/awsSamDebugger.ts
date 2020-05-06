@@ -202,7 +202,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             handlerName: handlerName,
             documentUri: documentUri,
             samTemplatePath: pathutil.normalize(templateInvoke?.samTemplatePath),
-            debugPort: config.noDebug ? -1 : await getStartPort(),
+            debugPort: config.noDebug ? undefined : await getStartPort(),
         }
 
         //

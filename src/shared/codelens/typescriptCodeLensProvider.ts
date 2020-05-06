@@ -112,7 +112,7 @@ export async function makeTypescriptConfig(config: SamLaunchRequestArgs): Promis
         name: 'SamLocalDebug',
         preLaunchTask: undefined,
         address: 'localhost',
-        port: config.debugPort!!,
+        port: config.debugPort ?? -1,
         localRoot: config.codeRoot,
         remoteRoot: '/var/task',
         protocol: 'inspector',
