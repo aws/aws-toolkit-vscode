@@ -200,10 +200,8 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             runtime: runtime,
             runtimeFamily: runtimeFamily,
             handlerName: handlerName,
-            originalHandlerName: handlerName,
             documentUri: documentUri,
             samTemplatePath: pathutil.normalize(templateInvoke?.samTemplatePath),
-            originalSamTemplatePath: pathutil.normalize(templateInvoke?.samTemplatePath),
             debugPort: config.noDebug ? -1 : await getStartPort(),
         }
 
@@ -224,7 +222,6 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 // Make a Python launch-config from the generic config.
                 launchConfig = await pythonDebug.makePythonDebugConfig(
                     launchConfig,
-                    !launchConfig.noDebug,
                     launchConfig.runtime,
                     launchConfig.handlerName
                 )

@@ -38,6 +38,10 @@ import {
  * `resolveDebugConfiguration()` invoked on a user-provided "debug config").
  */
 function assertEqualLaunchConfigs(actual: SamLaunchRequestArgs, expected: SamLaunchRequestArgs, appDir: string) {
+    // Do not modify the original variables.
+    actual = { ...actual }
+    expected = { ...expected }
+
     assert.strictEqual(actual.workspaceFolder.name, expected.workspaceFolder.name)
 
     // Compare filepaths (before removing them for deep-compare).
@@ -62,7 +66,6 @@ function assertEqualLaunchConfigs(actual: SamLaunchRequestArgs, expected: SamLau
         delete o.documentUri
         delete o.baseBuildDir
         delete o.samTemplatePath
-        delete o.originalSamTemplatePath
         delete o.workspaceFolder
         delete o.codeRoot
         delete (o as any).localRoot // Node-only
@@ -354,8 +357,6 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 },
                 localRoot: pathutil.normalize(path.join(appDir, 'src')), // Normalized to absolute path.
                 name: 'SamLocalDebug',
-                originalHandlerName: 'my.test.handler',
-                originalSamTemplatePath: '?',
                 samTemplatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
 
                 //
@@ -422,8 +423,6 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 },
                 localRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
                 name: 'SamLocalDebug',
-                originalHandlerName: 'my.test.handler',
-                originalSamTemplatePath: '?',
                 samTemplatePath: pathutil.normalize(path.join(tempDir ?? '?', 'input/input-template.yaml')),
 
                 //
@@ -486,8 +485,6 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                     runtime: 'dotnetcore2.1',
                 },
                 name: 'SamLocalDebug',
-                originalHandlerName: 'HelloWorld::HelloWorld.Function::FunctionHandler',
-                originalSamTemplatePath: '?',
                 samTemplatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
 
                 //
@@ -523,6 +520,26 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
+
+            //
+            // Test noDebug=true.
+            //
+            const expectedNoDebug: SamLaunchRequestArgs = {
+                ...expected,
+                noDebug: true,
+                debuggerPath: undefined,
+                debugPort: -1,
+            }
+            delete expectedNoDebug.processId
+            delete expectedNoDebug.pipeTransport
+            delete expectedNoDebug.sourceFileMap
+            delete expectedNoDebug.windows
+            ;(c as any).noDebug = true
+            const actualNoDebug = (await debugConfigProvider.resolveDebugConfiguration(
+                folder,
+                c
+            ))! as DotNetCoreDebugConfiguration
+            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug, appDir)
         })
 
         it('target=code: python 3.7', async () => {
@@ -543,10 +560,13 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                     runtime: 'python3.7',
                 },
             }
+
+            // Invoke with noDebug=false (the default).
             const actual = (await debugConfigProvider.resolveDebugConfiguration(
                 folder,
                 c
             ))! as DotNetCoreDebugConfiguration
+            // Expected result with noDebug=false.
             const expected: SamLaunchRequestArgs = {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'python3.7',
@@ -571,9 +591,6 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                     runtime: 'python3.7',
                 },
                 name: 'SamLocalDebug',
-                noDebug: false,
-                originalHandlerName: 'app___vsctk___debug.lambda_handler',
-                originalSamTemplatePath: '?',
                 samTemplatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
                 port: 5858,
                 redirectOutput: false,
@@ -602,6 +619,24 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
+
+            //
+            // Test noDebug=true.
+            //
+            const expectedNoDebug: SamLaunchRequestArgs = {
+                ...expected,
+                noDebug: true,
+                debugPort: undefined,
+                port: -1,
+                outFilePath: '',
+                handlerName: 'app.lambda_handler',
+            }
+            ;(c as any).noDebug = true
+            const actualNoDebug = (await debugConfigProvider.resolveDebugConfiguration(
+                folder,
+                c
+            ))! as DotNetCoreDebugConfiguration
+            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug, appDir)
         })
 
         it('debugconfig with extraneous env vars', async () => {
@@ -663,8 +698,6 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 },
                 localRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
                 name: 'SamLocalDebug',
-                originalHandlerName: 'my.test.handler',
-                originalSamTemplatePath: '?',
                 samTemplatePath: pathutil.normalize(path.join(tempDir ?? '?', 'input/input-template.yaml')),
 
                 //

@@ -223,9 +223,9 @@ export async function invokeLambdaFunction(ctx: ExtContext, config: SamLaunchReq
         templatePath: config.samTemplatePath,
         eventPath,
         environmentVariablePath,
-        invoker: config.samLocalInvokeCommand!!, // ?? new DefaultValidatingSamCliProcessInvoker({})
+        invoker: config.samLocalInvokeCommand!,
         dockerNetwork: config.sam?.dockerNetwork,
-        debugPort: config.debugPort?.toString(),
+        debugPort: !config.noDebug ? config.debugPort?.toString() : undefined,
         debuggerPath: config.debuggerPath,
     }
     const command = new SamCliLocalInvokeInvocation(localInvokeArgs)
@@ -236,7 +236,7 @@ export async function invokeLambdaFunction(ctx: ExtContext, config: SamLaunchReq
     if (!config.noDebug) {
         if (config.onWillAttachDebugger) {
             messageUserWaitingToAttach(ctx.chanLogger)
-            await config.onWillAttachDebugger(config.debugPort!!, timer.remainingTime, ctx.chanLogger)
+            await config.onWillAttachDebugger(config.debugPort!, timer.remainingTime, ctx.chanLogger)
         }
 
         // HACK: remove non-serializable properties before attaching.

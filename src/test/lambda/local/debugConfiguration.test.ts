@@ -50,8 +50,6 @@ describe('makeCoreCLRDebugConfiguration', async () => {
 
             baseBuildDir: '/fake/build/dir/',
             documentUri: vscode.Uri.parse('/fake/path/foo.txt'),
-            originalHandlerName: 'fake-original-handler',
-            originalSamTemplatePath: '/fake/original/sam/path',
             samTemplatePath: '/fake/sam/path',
             samLocalInvokeCommand: new DefaultSamLocalInvokeCommand(fakeExtCtx.chanLogger),
 

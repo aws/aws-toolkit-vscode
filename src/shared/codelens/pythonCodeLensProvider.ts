@@ -23,6 +23,7 @@ import {
     invokeLambdaFunction,
     makeBuildDir,
     makeInputTemplate,
+    ExecuteSamBuildArguments,
 } from './localLambdaRunner'
 import { PythonDebugAdapterHeartbeat } from './pythonDebugAdapterHeartbeat'
 import { getLocalRootVariants } from '../utilities/pathUtils'
@@ -163,7 +164,6 @@ def ${debugHandlerFunctionName}(event, context):
  */
 export async function makePythonDebugConfig(
     config: SamLaunchRequestArgs,
-    isDebug: boolean,
     runtime: string,
     handlerName: string
 ): Promise<PythonDebugConfiguration> {
@@ -177,12 +177,15 @@ export async function makePythonDebugConfig(
         }
     }
     config.codeRoot = pathutil.normalize(config.codeRoot)
+    if (config.invokeTarget.target === 'template') {
+        config.codeRoot = path.dirname(config.codeRoot)
+    }
 
     const baseBuildDir = await makeBuildDir()
     let debugPort: number | undefined
     let manifestPath: string | undefined
     let outFilePath: string | undefined
-    if (isDebug) {
+    if (!config.noDebug) {
         debugPort = await getStartPort()
         const rv = await makeLambdaDebugFile({
             handlerName: handlerName,
@@ -198,11 +201,10 @@ export async function makePythonDebugConfig(
         })
     }
 
-    const relativeOriginalFunctionHandler = config.handlerName
     const relativeFunctionHandler = handlerName
     const lambdaInfo = await getLambdaInfoFromExistingTemplate({
         workspaceUri: config.workspaceFolder.uri,
-        relativeOriginalFunctionHandler,
+        relativeOriginalFunctionHandler: config.handlerName,
     })
     const inputTemplatePath = await makeInputTemplate({
         baseBuildDir,
@@ -224,22 +226,19 @@ export async function makePythonDebugConfig(
         type: 'python',
         request: 'attach',
         runtimeFamily: RuntimeFamily.Python,
-        outFilePath: pathutil.normalize(outFilePath ?? ''),
+        outFilePath: pathutil.normalize(outFilePath ?? '') ?? undefined,
         baseBuildDir: baseBuildDir,
-        noDebug: false,
         samTemplatePath: inputTemplatePath,
-        originalSamTemplatePath: inputTemplatePath,
         name: 'SamLocalDebug',
 
         //
         // Python-specific fields.
         //
-        manifestPath: manifestPath ?? 'unknown',
+        manifestPath: manifestPath,
         debugPort: debugPort,
         port: debugPort ?? -1,
         runtime: runtime,
         handlerName: handlerName,
-        originalHandlerName: handlerName,
         host: 'localhost',
         pathMappings,
         // Disable redirectOutput to prevent the Python Debugger from automatically writing stdout/stderr text
@@ -257,31 +256,26 @@ export async function invokePythonLambda(ctx: ExtContext, config: PythonDebugCon
     ctx.chanLogger.channel.show(true)
     ctx.chanLogger.info('AWS.output.sam.local.start', 'Preparing to run {0} locally...', config.handlerName)
 
-    config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand(ctx.chanLogger, [
-        // TODO: enable this?
-        // WAIT_FOR_DEBUGGER_MESSAGES.PYTHON,
-    ])
     const processInvoker = new DefaultValidatingSamCliProcessInvoker({})
+    config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand(ctx.chanLogger, [WAIT_FOR_DEBUGGER_MESSAGES.PYTHON])
+    const buildArgs: ExecuteSamBuildArguments = {
+        baseBuildDir: config.baseBuildDir!,
+        channelLogger: ctx.chanLogger,
+        codeDir: config.codeRoot,
+        inputTemplatePath: config.samTemplatePath!,
+        manifestPath: config.manifestPath,
+        samProcessInvoker: processInvoker,
+        useContainer: config.sam?.containerBuild || false,
+    }
 
     try {
-        const inputTemplatePath = config.samTemplatePath!!
-
         // XXX: reassignment
-        config.samTemplatePath = await executeSamBuild({
-            baseBuildDir: config.baseBuildDir!!,
-            channelLogger: ctx.chanLogger,
-            codeDir: config.invokeTarget.target === 'template' ? path.dirname(config.codeRoot) : config.codeRoot,
-            inputTemplatePath: inputTemplatePath,
-            manifestPath: config.manifestPath,
-            samProcessInvoker: processInvoker,
-            useContainer: config.sam?.containerBuild || false,
-        })
-        if (config.invokeTarget.target === 'template') {
-            // XXX: reassignment
-            config.invokeTarget.samTemplatePath = config.samTemplatePath
-        }
+        config.samTemplatePath = await executeSamBuild(buildArgs)
+        delete config.invokeTarget // Must not be used beyond this point.
 
-        config.onWillAttachDebugger = waitForPythonDebugAdapter
+        if (!config.noDebug) {
+            config.onWillAttachDebugger = waitForPythonDebugAdapter
+        }
 
         await invokeLambdaFunction(ctx, config)
     } catch (err) {
