@@ -5,25 +5,17 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { LambdaHandlerCandidate, RootlessLambdaHandlerCandidate } from '../lambdaHandlerSearch'
-import { normalizeSeparator } from '../utilities/pathUtils'
-import {
-    executeSamBuild,
-    generateInputTemplate,
-    waitForDebugPort,
-    makeBuildDir,
-    invokeLambdaFunction,
-    ExecuteSamBuildArguments,
-} from './localLambdaRunner'
-import { ExtContext } from '../extensions'
 import { NodejsDebugConfiguration } from '../../lambda/local/debugConfiguration'
-import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
-import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
-import { SamLaunchRequestArgs } from '../sam/debugger/samDebugSession'
 import { RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import * as pathutil from '../../shared/utilities/pathUtils'
-import { findParentProjectFile } from '../utilities/workspaceUtils'
+import { ExtContext } from '../extensions'
+import { LambdaHandlerCandidate, RootlessLambdaHandlerCandidate } from '../lambdaHandlerSearch'
+import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
+import { SamLaunchRequestArgs } from '../sam/debugger/samDebugSession'
 import { TypescriptLambdaHandlerSearch } from '../typescriptLambdaHandlerSearch'
+import { normalizeSeparator } from '../utilities/pathUtils'
+import { findParentProjectFile } from '../utilities/workspaceUtils'
+import { generateInputTemplate, invokeLambdaFunction, makeBuildDir, waitForDebugPort } from './localLambdaRunner'
 
 export async function getSamProjectDirPathForFile(filepath: string): Promise<string> {
     const packageJsonPath = await findParentProjectFile(vscode.Uri.parse(filepath), 'package.json')
@@ -126,33 +118,7 @@ export async function makeTypescriptConfig(config: SamLaunchRequestArgs): Promis
  * Launches and attaches debugger to a SAM Node project.
  */
 export async function invokeTypescriptLambda(ctx: ExtContext, config: NodejsDebugConfiguration) {
-    // Switch over to the output channel so the user has feedback that we're getting things ready
-    ctx.chanLogger.channel.show(true)
-    ctx.chanLogger.info('AWS.output.sam.local.start', 'Preparing to run {0} locally...', config.handlerName)
-
-    const processInvoker = new DefaultValidatingSamCliProcessInvoker({})
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand(ctx.chanLogger, [WAIT_FOR_DEBUGGER_MESSAGES.NODEJS])
-    const buildArgs: ExecuteSamBuildArguments = {
-        baseBuildDir: config.baseBuildDir!!,
-        channelLogger: ctx.chanLogger,
-        codeDir: config.codeRoot,
-        inputTemplatePath: config.samTemplatePath,
-        samProcessInvoker: processInvoker,
-        useContainer: config.sam?.containerBuild,
-    }
-
-    // XXX: reassignment
-    config.samTemplatePath = await executeSamBuild(buildArgs)
-    delete config.invokeTarget // Must not be used beyond this point.
-
-    ctx.chanLogger.info(
-        'AWS.output.starting.sam.app.locally',
-        'Starting the SAM Application locally (see Terminal for output)'
-    )
-
-    if (!config.noDebug) {
-        config.onWillAttachDebugger = waitForDebugPort
-    }
-
-    await invokeLambdaFunction(ctx, config)
+    config.onWillAttachDebugger = waitForDebugPort
+    await invokeLambdaFunction(ctx, config, async () => {})
 }

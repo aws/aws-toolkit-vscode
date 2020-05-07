@@ -375,6 +375,8 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             //
             // Test noDebug=true.
             //
+            ;(c as any).noDebug = true
+            const actualNoDebug = (await debugConfigProvider.resolveDebugConfiguration(folder, c))!
             const expectedNoDebug: SamLaunchRequestArgs = {
                 ...expected,
                 noDebug: true,
@@ -382,8 +384,6 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 debugPort: undefined,
                 port: -1,
             }
-            ;(c as any).noDebug = true
-            const actualNoDebug = (await debugConfigProvider.resolveDebugConfiguration(folder, c))!
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug, appDir)
         })
 
@@ -455,6 +455,8 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             //
             // Test noDebug=true.
             //
+            ;(c as any).noDebug = true
+            const actualNoDebug = (await debugConfigProvider.resolveDebugConfiguration(folder, c))!
             const expectedNoDebug: SamLaunchRequestArgs = {
                 ...expected,
                 noDebug: true,
@@ -462,8 +464,6 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 debugPort: undefined,
                 port: -1,
             }
-            ;(c as any).noDebug = true
-            const actualNoDebug = (await debugConfigProvider.resolveDebugConfiguration(folder, c))!
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug, appDir)
         })
 
@@ -489,6 +489,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 folder,
                 c
             ))! as DotNetCoreDebugConfiguration
+            const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'dotnetcore2.1', // lambdaModel.dotNetRuntimes[0],
@@ -500,7 +501,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                     uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
-                codeRoot: pathutil.normalize(path.join(appDir, 'src/HelloWorld')), // Normalized to absolute path.
+                codeRoot: expectedCodeRoot, // Normalized to absolute path.
                 debugPort: 5858,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'HelloWorld::HelloWorld.Function::FunctionHandler',
@@ -513,29 +514,29 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                     runtime: 'dotnetcore2.1',
                 },
                 name: 'SamLocalDebug',
-                samTemplatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
+                samTemplatePath: expectedCodeRoot + '/input-template.yaml',
 
                 //
                 // Csharp-related fields
                 //
-                debuggerPath: pathutil.normalize(path.join(path.join(appDir, 'src/HelloWorld'), '.vsdbg')),
+                debuggerPath: expectedCodeRoot + '/.vsdbg', // Normalized to absolute path.
                 processId: '1',
                 pipeTransport: {
                     debuggerPath: '/tmp/lambci_debug_files/vsdbg',
                     // tslint:disable-next-line: no-invalid-template-strings
                     pipeArgs: ['-c', 'docker exec -i $(docker ps -q -f publish=5858) ${debuggerCommand}'],
-                    pipeCwd: pathutil.normalize(path.join(appDir, 'src/HelloWorld')),
+                    pipeCwd: expectedCodeRoot,
                     pipeProgram: 'sh',
                 },
                 sourceFileMap: {
-                    '/var/task': pathutil.normalize(path.join(appDir, 'src/HelloWorld')),
+                    '/var/task': expectedCodeRoot,
                 },
                 windows: {
                     pipeTransport: {
                         debuggerPath: '/tmp/lambci_debug_files/vsdbg',
                         // tslint:disable-next-line: no-invalid-template-strings
                         pipeArgs: ['-c', 'docker exec -i $(docker ps -q -f publish=5858) ${debuggerCommand}'],
-                        pipeCwd: pathutil.normalize(path.join(appDir, 'src/HelloWorld')),
+                        pipeCwd: expectedCodeRoot,
                         pipeProgram: 'powershell',
                     },
                 },
@@ -552,8 +553,15 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             //
             // Test noDebug=true.
             //
+            ;(c as any).noDebug = true
+            const actualNoDebug = (await debugConfigProvider.resolveDebugConfiguration(
+                folder,
+                c
+            ))! as DotNetCoreDebugConfiguration
+            const expectedCodeRootNoDebug = (actualNoDebug.baseBuildDir ?? 'fail') + '/input'
             const expectedNoDebug: SamLaunchRequestArgs = {
                 ...expected,
+                codeRoot: expectedCodeRootNoDebug,
                 noDebug: true,
                 request: 'launch',
                 debuggerPath: undefined,
@@ -563,11 +571,6 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             delete expectedNoDebug.pipeTransport
             delete expectedNoDebug.sourceFileMap
             delete expectedNoDebug.windows
-            ;(c as any).noDebug = true
-            const actualNoDebug = (await debugConfigProvider.resolveDebugConfiguration(
-                folder,
-                c
-            ))! as DotNetCoreDebugConfiguration
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug, appDir)
         })
 
@@ -652,6 +655,11 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             //
             // Test noDebug=true.
             //
+            ;(c as any).noDebug = true
+            const actualNoDebug = (await debugConfigProvider.resolveDebugConfiguration(
+                folder,
+                c
+            ))! as DotNetCoreDebugConfiguration
             const expectedNoDebug: SamLaunchRequestArgs = {
                 ...expected,
                 noDebug: true,
@@ -661,11 +669,6 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 outFilePath: '',
                 handlerName: 'app.lambda_handler',
             }
-            ;(c as any).noDebug = true
-            const actualNoDebug = (await debugConfigProvider.resolveDebugConfiguration(
-                folder,
-                c
-            ))! as DotNetCoreDebugConfiguration
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug, appDir)
         })
 

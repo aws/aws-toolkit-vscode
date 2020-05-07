@@ -20,21 +20,12 @@ import { DefaultDockerClient, DockerClient } from '../clients/dockerClient'
 import { ExtContext } from '../extensions'
 import { mkdir } from '../filesystem'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
-import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
 import { SamLaunchRequestArgs } from '../sam/debugger/samDebugSession'
-import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
 import { getStartPort } from '../utilities/debuggerUtils'
 import { ChannelLogger, getChannelLogger } from '../utilities/vsCodeUtils'
 import { findParentProjectFile } from '../utilities/workspaceUtils'
-import {
-    executeSamBuild,
-    ExecuteSamBuildArguments,
-    invokeLambdaFunction,
-    makeBuildDir,
-    makeInputTemplate,
-    waitForDebugPort,
-} from './localLambdaRunner'
+import { invokeLambdaFunction, makeBuildDir, makeInputTemplate, waitForDebugPort } from './localLambdaRunner'
 
 export const CSHARP_LANGUAGE = 'csharp'
 export const CSHARP_ALLFILES: vscode.DocumentFilter[] = [
@@ -55,22 +46,6 @@ export interface DotNetLambdaHandlerComponents {
     handlerRange: vscode.Range
 }
 
-export interface OnLocalInvokeCommandContext {
-    installDebugger(args: InstallDebuggerArgs): Promise<void>
-}
-
-class DefaultOnLocalInvokeCommandContext implements OnLocalInvokeCommandContext {
-    private readonly dockerClient: DockerClient
-
-    public constructor(outputChannel: vscode.OutputChannel) {
-        this.dockerClient = new DefaultDockerClient(outputChannel)
-    }
-
-    public async installDebugger(args: InstallDebuggerArgs): Promise<void> {
-        await _installDebugger(args, { dockerClient: this.dockerClient })
-    }
-}
-
 /**
  * Gathers and sets launch-config info by inspecting the workspace and creating
  * temp files/directories as needed.
@@ -78,18 +53,6 @@ class DefaultOnLocalInvokeCommandContext implements OnLocalInvokeCommandContext 
  * Does NOT execute/invoke SAM, docker, etc.
  */
 export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<SamLaunchRequestArgs> {
-    // TODO: walk the tree to find .sln, .csproj ...
-    if (!config.codeRoot) {
-        // Last-resort attempt to discover the project root (when there is no
-        // `launch.json` nor `template.yaml`).
-        config.codeRoot = getSamProjectDirPathForFile(config?.samTemplatePath ?? config.documentUri!!.fsPath)
-        if (!config.codeRoot) {
-            // TODO: return error and show it at the caller.
-            throw Error('missing launch.json, template.yaml, and failed to discover project root')
-        }
-    }
-    config.codeRoot = pathutil.normalize(config.codeRoot)
-
     const baseBuildDir = await makeBuildDir()
     const template = getTemplate(config.workspaceFolder, config)
     const resource = getTemplateResource(config.workspaceFolder, config)
@@ -104,6 +67,8 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
         globals: template?.Globals,
         properties: resource?.Properties,
     })
+    // TODO: walk the tree to find .sln, .csproj ?
+    config.codeRoot = getSamProjectDirPathForFile(config.samTemplatePath)
 
     config = {
         ...config,
@@ -125,60 +90,22 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
  * Launches and attaches debugger to a SAM dotnet (csharp) project.
  */
 export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchRequestArgs): Promise<void> {
-    const invokeCtx: OnLocalInvokeCommandContext = new DefaultOnLocalInvokeCommandContext(ctx.outputChannel)
-    const processInvoker = new DefaultValidatingSamCliProcessInvoker({})
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand(getChannelLogger(ctx.outputChannel), [
         WAIT_FOR_DEBUGGER_MESSAGES.DOTNET,
     ])
-    let invokeResult: Result = 'Succeeded'
-
-    try {
-        // Switch over to the output channel so the user has feedback that we're getting things ready
-        ctx.chanLogger.channel.show(true)
-        ctx.chanLogger.info('AWS.output.sam.local.start', 'Preparing to run {0} locally...', config.handlerName)
-
-        const buildArgs: ExecuteSamBuildArguments = {
-            baseBuildDir: config.baseBuildDir!!,
-            channelLogger: ctx.chanLogger,
-            codeDir: path.dirname(config.samTemplatePath),
-            inputTemplatePath: config.samTemplatePath,
-            samProcessInvoker: processInvoker,
-            useContainer: config.sam?.containerBuild,
-        }
+    config.onWillAttachDebugger = waitForDebugPort
+    await invokeLambdaFunction(ctx, config, async () => {
         if (!config.noDebug) {
-            buildArgs.environmentVariables = {
-                SAM_BUILD_MODE: 'debug',
-            }
+            await _installDebugger(
+                {
+                    debuggerPath: config.debuggerPath!!,
+                    lambdaRuntime: config.runtime,
+                    channelLogger: ctx.chanLogger,
+                },
+                { dockerClient: new DefaultDockerClient(ctx.outputChannel) }
+            )
         }
-
-        // XXX: reassignment
-        config.samTemplatePath = await executeSamBuild(buildArgs)
-        delete config.invokeTarget // Must not be used beyond this point.
-
-        if (!config.noDebug) {
-            await invokeCtx.installDebugger({
-                debuggerPath: config.debuggerPath!!,
-                lambdaRuntime: config.runtime,
-                channelLogger: ctx.chanLogger,
-            })
-            config.onWillAttachDebugger = waitForDebugPort
-        }
-
-        await invokeLambdaFunction(ctx, config)
-    } catch (err) {
-        invokeResult = 'Failed'
-        ctx.chanLogger.error(
-            'AWS.error.during.sam.local',
-            'An error occurred trying to run SAM Application locally: {0}',
-            err as Error
-        )
-    } finally {
-        recordLambdaInvokeLocal({
-            result: invokeResult,
-            runtime: config.runtime as Runtime,
-            debug: !config.noDebug,
-        })
-    }
+    })
 }
 
 export async function getLambdaHandlerCandidates(document: vscode.TextDocument): Promise<LambdaHandlerCandidate[]> {

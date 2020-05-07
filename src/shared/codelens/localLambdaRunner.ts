@@ -3,29 +3,30 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { writeFile } from 'fs-extra'
+import { unlink, writeFile } from 'fs-extra'
 import * as path from 'path'
 import * as tcpPortUsed from 'tcp-port-used'
 import * as vscode from 'vscode'
 import { detectLocalLambdas, LocalLambda } from '../../lambda/local/detectLocalLambdas'
 import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
+import * as pathutil from '../../shared/utilities/pathUtils'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { ExtContext } from '../extensions'
 import { makeTemporaryToolkitFolder } from '../filesystemUtilities'
 import { getLogger } from '../logger'
+import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from '../sam/cli/samCliBuild'
 import { SamCliProcessInvoker } from '../sam/cli/samCliInvokerUtils'
 import { SamCliLocalInvokeInvocation, SamCliLocalInvokeInvocationArguments } from '../sam/cli/samCliLocalInvoke'
 import { SamLaunchRequestArgs } from '../sam/debugger/samDebugSession'
 import { SettingsConfiguration } from '../settingsConfiguration'
-import { recordSamAttachDebugger, Runtime } from '../telemetry/telemetry'
+import { recordLambdaInvokeLocal, recordSamAttachDebugger, Result, Runtime } from '../telemetry/telemetry'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { Timeout } from '../utilities/timeoutUtils'
 import { ChannelLogger } from '../utilities/vsCodeUtils'
-import * as pathutil from '../../shared/utilities/pathUtils'
 
 export interface LambdaLocalInvokeParams {
     /** URI of the current editor document. */
@@ -203,8 +204,43 @@ export async function executeSamBuild({
 
 /**
  * Prepares and invokes a lambda function via `sam local invoke`.
+ *
+ * @param ctx
+ * @param config
+ * @param onAfterBuild  Called after `executeSamBuild()`
  */
-export async function invokeLambdaFunction(ctx: ExtContext, config: SamLaunchRequestArgs): Promise<void> {
+export async function invokeLambdaFunction(
+    ctx: ExtContext,
+    config: SamLaunchRequestArgs,
+    onAfterBuild: () => Promise<void>
+): Promise<void> {
+    // Switch over to the output channel so the user has feedback that we're getting things ready
+    ctx.chanLogger.channel.show(true)
+    ctx.chanLogger.info('AWS.output.sam.local.start', 'Preparing to run {0} locally...', config.handlerName)
+
+    const processInvoker = new DefaultValidatingSamCliProcessInvoker({})
+    const buildArgs: ExecuteSamBuildArguments = {
+        baseBuildDir: config.baseBuildDir!,
+        channelLogger: ctx.chanLogger,
+        codeDir: config.codeRoot,
+        inputTemplatePath: config.samTemplatePath!,
+        manifestPath: config.manifestPath,
+        samProcessInvoker: processInvoker,
+        useContainer: config.sam?.containerBuild || false,
+    }
+
+    if (!config.noDebug) {
+        buildArgs.environmentVariables = {
+            SAM_BUILD_MODE: 'debug',
+        }
+    }
+
+    // XXX: reassignment
+    config.samTemplatePath = await executeSamBuild(buildArgs)
+    delete config.invokeTarget // Must not be used beyond this point.
+
+    await onAfterBuild()
+
     ctx.chanLogger.info(
         'AWS.output.starting.sam.app.locally',
         'Starting the SAM Application locally (see Terminal for output)'
@@ -231,7 +267,27 @@ export async function invokeLambdaFunction(ctx: ExtContext, config: SamLaunchReq
     const command = new SamCliLocalInvokeInvocation(localInvokeArgs)
 
     const timer = createInvokeTimer(ctx.settings)
-    await command.execute(timer)
+
+    let invokeResult: Result = 'Failed'
+    try {
+        await command.execute(timer)
+        invokeResult = 'Succeeded'
+    } catch (err) {
+        ctx.chanLogger.error('AWS.error.during.sam.local', 'Failed to run SAM Application locally: {0}', err as Error)
+    } finally {
+        recordLambdaInvokeLocal({
+            result: invokeResult,
+            runtime: config.runtime as Runtime,
+            debug: !config.noDebug,
+        })
+        if (config.outFilePath) {
+            try {
+                await unlink(config.outFilePath)
+            } catch (err) {
+                getLogger().warn(err as Error)
+            }
+        }
+    }
 
     if (!config.noDebug) {
         if (config.onWillAttachDebugger) {
