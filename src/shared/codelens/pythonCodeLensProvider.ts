@@ -3,33 +3,30 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { unlink, writeFile } from 'fs-extra'
+import { writeFile } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { PythonDebugConfiguration, PythonPathMapping } from '../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
+import * as pathutil from '../../shared/utilities/pathUtils'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../extensions'
 import { fileExists, readFileAsString } from '../filesystemUtilities'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
-import { DefaultValidatingSamCliProcessInvoker } from '../sam/cli/defaultValidatingSamCliProcessInvoker'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../sam/cli/samCliLocalInvoke'
+import { SamLaunchRequestArgs } from '../sam/debugger/samDebugSession'
 import { getStartPort } from '../utilities/debuggerUtils'
+import { getLocalRootVariants } from '../utilities/pathUtils'
 import { ChannelLogger } from '../utilities/vsCodeUtils'
+import { findParentProjectFile } from '../utilities/workspaceUtils'
 import {
-    executeSamBuild,
     getLambdaInfoFromExistingTemplate,
     invokeLambdaFunction,
     makeBuildDir,
     makeInputTemplate,
-    ExecuteSamBuildArguments,
 } from './localLambdaRunner'
 import { PythonDebugAdapterHeartbeat } from './pythonDebugAdapterHeartbeat'
-import { getLocalRootVariants } from '../utilities/pathUtils'
-import { SamLaunchRequestArgs } from '../sam/debugger/samDebugSession'
-import * as pathutil from '../../shared/utilities/pathUtils'
-import { findParentProjectFile } from '../utilities/workspaceUtils'
 
 const PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MS = 1000
 export const PYTHON_LANGUAGE = 'python'
@@ -194,14 +191,13 @@ export async function makePythonDebugConfig(
         })
         outFilePath = rv.outFilePath
         // XXX: Reassign handler name.
-        handlerName = rv.debugHandlerName
+        config.handlerName = rv.debugHandlerName
         manifestPath = await makePythonDebugManifest({
             samProjectCodeRoot: config.codeRoot,
             outputDir: baseBuildDir,
         })
     }
 
-    const relativeFunctionHandler = handlerName
     const lambdaInfo = await getLambdaInfoFromExistingTemplate({
         workspaceUri: config.workspaceFolder.uri,
         relativeOriginalFunctionHandler: config.handlerName,
@@ -209,7 +205,7 @@ export async function makePythonDebugConfig(
     const inputTemplatePath = await makeInputTemplate({
         baseBuildDir,
         codeDir: config.codeRoot,
-        relativeFunctionHandler,
+        relativeFunctionHandler: config.handlerName,
         globals: lambdaInfo && lambdaInfo.templateGlobals ? lambdaInfo.templateGlobals : undefined,
         properties: lambdaInfo && lambdaInfo.resource.Properties ? lambdaInfo.resource.Properties : undefined,
         runtime: runtime,
@@ -238,7 +234,6 @@ export async function makePythonDebugConfig(
         debugPort: debugPort,
         port: debugPort ?? -1,
         runtime: runtime,
-        handlerName: handlerName,
         host: 'localhost',
         pathMappings,
         // Disable redirectOutput to prevent the Python Debugger from automatically writing stdout/stderr text
@@ -252,44 +247,9 @@ export async function makePythonDebugConfig(
  * Launches and attaches debugger to a SAM Python project.
  */
 export async function invokePythonLambda(ctx: ExtContext, config: PythonDebugConfiguration) {
-    // Switch over to the output channel so the user has feedback that we're getting things ready
-    ctx.chanLogger.channel.show(true)
-    ctx.chanLogger.info('AWS.output.sam.local.start', 'Preparing to run {0} locally...', config.handlerName)
-
-    const processInvoker = new DefaultValidatingSamCliProcessInvoker({})
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand(ctx.chanLogger, [WAIT_FOR_DEBUGGER_MESSAGES.PYTHON])
-    const buildArgs: ExecuteSamBuildArguments = {
-        baseBuildDir: config.baseBuildDir!,
-        channelLogger: ctx.chanLogger,
-        codeDir: config.codeRoot,
-        inputTemplatePath: config.samTemplatePath!,
-        manifestPath: config.manifestPath,
-        samProcessInvoker: processInvoker,
-        useContainer: config.sam?.containerBuild || false,
-    }
-
-    try {
-        // XXX: reassignment
-        config.samTemplatePath = await executeSamBuild(buildArgs)
-        delete config.invokeTarget // Must not be used beyond this point.
-
-        if (!config.noDebug) {
-            config.onWillAttachDebugger = waitForPythonDebugAdapter
-        }
-
-        await invokeLambdaFunction(ctx, config)
-    } catch (err) {
-        const error = err as Error
-        ctx.chanLogger.error(
-            'AWS.error.during.sam.local',
-            'An error occurred trying to run SAM Application locally: {0}',
-            error
-        )
-    } finally {
-        if (config.outFilePath) {
-            await deleteFile(config.outFilePath)
-        }
-    }
+    config.onWillAttachDebugger = waitForPythonDebugAdapter
+    await invokeLambdaFunction(ctx, config, async () => {})
 }
 
 export async function waitForPythonDebugAdapter(
@@ -338,15 +298,6 @@ export async function waitForPythonDebugAdapter(
             // tslint:disable-next-line:max-line-length
             'Unable to communicate with the Python Debug Adapter. The debugger might not succeed when attaching to your SAM Application.'
         )
-    }
-}
-
-// Convenience method to swallow any errors
-async function deleteFile(filePath: string): Promise<void> {
-    try {
-        await unlink(filePath)
-    } catch (err) {
-        getLogger().warn(err as Error)
     }
 }
 
