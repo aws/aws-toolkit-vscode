@@ -44,6 +44,7 @@ import { HttpResourceFetcher } from './shared/resourcefetcher/httpResourceFetche
 import { activate as activateServerless } from './shared/sam/activation'
 import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
 import { activate as activateTelemetry } from './shared/telemetry/activation'
+import { activate as activateS3 } from './s3/activation'
 import {
     recordAwsCreateCredentials,
     recordAwsHelp,
@@ -186,6 +187,8 @@ export async function activate(context: vscode.ExtensionContext) {
             telemetryService: ext.telemetry,
             toolkitSettings,
         })
+
+        await activateS3({ extensionContext: context })
 
         setImmediate(async () => {
             await activateStepFunctions(context, awsContext, toolkitOutputChannel)
