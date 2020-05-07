@@ -73,7 +73,10 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                     }
                     const resources = getResourcesFromTemplateDatum(templateDatum)
                     for (const resourceKey of resources.keys()) {
-                        configs.push(createTemplateAwsSamDebugConfig(folder, resourceKey, templateDatum.path))
+                        const runtimeName = resources.get(resourceKey)?.Properties?.Runtime
+                        configs.push(
+                            createTemplateAwsSamDebugConfig(folder, runtimeName, resourceKey, templateDatum.path)
+                        )
                     }
                 }
             }

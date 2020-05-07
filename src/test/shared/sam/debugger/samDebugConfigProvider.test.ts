@@ -124,7 +124,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.notStrictEqual(provided, undefined)
             assert.strictEqual(provided!.length, 1)
-            assert.strictEqual(provided![0].name, 'TestResource')
+            assert.strictEqual(provided![0].name, 'TestResource (nodejs12.x)')
         })
 
         it('returns multiple items if a template with multiple resources is in the workspace', async () => {
@@ -138,8 +138,12 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             assert.notStrictEqual(provided, undefined)
             if (provided) {
                 assert.strictEqual(provided.length, 2)
-                assert.ok(resources.includes(provided[0].name))
-                assert.ok(resources.includes(provided[1].name))
+                assert.ok(
+                    resources.includes((provided[0].invokeTarget as TemplateTargetProperties).samTemplateResource)
+                )
+                assert.ok(
+                    resources.includes((provided[1].invokeTarget as TemplateTargetProperties).samTemplateResource)
+                )
             }
         })
 
@@ -170,8 +174,12 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             assert.notStrictEqual(provided, undefined)
             if (provided) {
                 assert.strictEqual(provided.length, 2)
-                assert.ok(resources.includes(provided[0].name))
-                assert.ok(resources.includes(provided[1].name))
+                assert.ok(
+                    resources.includes((provided[0].invokeTarget as TemplateTargetProperties).samTemplateResource)
+                )
+                assert.ok(
+                    resources.includes((provided[1].invokeTarget as TemplateTargetProperties).samTemplateResource)
+                )
                 assert.ok(!resources.includes(badResourceName))
             }
         })
@@ -757,7 +765,7 @@ describe('createTemplateAwsSamDebugConfig', () => {
     const templatePath = path.join('two', 'roads', 'diverged', 'in', 'a', 'yellow', 'wood')
 
     it('creates a template-type SAM debugger configuration with minimal configurations', () => {
-        const config = createTemplateAwsSamDebugConfig(undefined, name, templatePath)
+        const config = createTemplateAwsSamDebugConfig(undefined, undefined, name, templatePath)
         assert.strictEqual(config.invokeTarget.target, TEMPLATE_TARGET_TYPE)
         const invokeTarget = config.invokeTarget as TemplateTargetProperties
         assert.strictEqual(config.name, name)
@@ -776,7 +784,7 @@ describe('createTemplateAwsSamDebugConfig', () => {
             },
             dockerNetwork: 'rockerFretwork',
         }
-        const config = createTemplateAwsSamDebugConfig(undefined, name, templatePath, params)
+        const config = createTemplateAwsSamDebugConfig(undefined, undefined, name, templatePath, params)
         assert.deepStrictEqual(config.lambda?.event?.json, params.eventJson)
         assert.deepStrictEqual(config.lambda?.environmentVariables, params.environmentVariables)
         assert.strictEqual(config.sam?.dockerNetwork, params.dockerNetwork)
@@ -870,7 +878,7 @@ describe('createTemplateAwsSamDebugConfig', () => {
     const templatePath = path.join('two', 'roads', 'diverged', 'in', 'a', 'yellow', 'wood')
 
     it('creates a template-type SAM debugger configuration with minimal configurations', () => {
-        const config = createTemplateAwsSamDebugConfig(undefined, name, templatePath)
+        const config = createTemplateAwsSamDebugConfig(undefined, undefined, name, templatePath)
         assert.strictEqual(config.invokeTarget.target, TEMPLATE_TARGET_TYPE)
         const invokeTarget = config.invokeTarget as TemplateTargetProperties
         assert.strictEqual(config.name, name)
@@ -889,7 +897,7 @@ describe('createTemplateAwsSamDebugConfig', () => {
             },
             dockerNetwork: 'rockerFretwork',
         }
-        const config = createTemplateAwsSamDebugConfig(undefined, name, templatePath, params)
+        const config = createTemplateAwsSamDebugConfig(undefined, undefined, name, templatePath, params)
         assert.deepStrictEqual(config.lambda?.event?.json, params.eventJson)
         assert.deepStrictEqual(config.lambda?.environmentVariables, params.environmentVariables)
         assert.strictEqual(config.sam?.dockerNetwork, params.dockerNetwork)
