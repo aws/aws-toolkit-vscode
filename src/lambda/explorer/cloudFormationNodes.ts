@@ -87,12 +87,16 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
         return this.stackSummary.StackId
     }
 
-    public getArn(): string {
+    public get arn(): string {
         if (this.stackId === undefined) {
             throw new Error('StackId expected but not found')
         }
 
         return this.stackId
+    }
+
+    public get name(): string {
+        return this.stackName
     }
 
     public get stackName(): CloudFormation.StackName {

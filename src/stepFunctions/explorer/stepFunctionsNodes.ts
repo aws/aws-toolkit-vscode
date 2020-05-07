@@ -96,8 +96,16 @@ export class StateMachineNode extends AWSTreeNodeBase implements AWSResourceNode
         return this.details.name || ''
     }
 
-    public getArn(): string {
+    public get arn(): string {
         return this.details.stateMachineArn
+    }
+
+    public get name(): string {
+        if (this.details.name === undefined) {
+            throw new Error('name expected but not found')
+        }
+
+        return this.details.name
     }
 }
 

@@ -540,6 +540,26 @@
             ],
             "view/item/context": [
                 {
+                    "command": "aws.s3.downloadFileAs",
+                    "when": "view == aws.explorer && viewItem == awsS3FileNode",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.s3.createBucket",
+                    "when": "view == aws.explorer && viewItem == awsS3Node",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.s3.createFolder",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsS3BucketNode|awsS3FolderNode)$/",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.s3.uploadFile",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsS3BucketNode|awsS3FolderNode)$/",
+                    "group": "inline@2"
+                },
+                {
                     "command": "aws.invokeLambda",
                     "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
                     "group": "0@1"
@@ -580,9 +600,39 @@
                     "group": "0@2"
                 },
                 {
-                    "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode)$/",
+                    "command": "aws.s3.downloadFileAs",
+                    "when": "view == aws.explorer && viewItem == awsS3FileNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.s3.uploadFile",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsS3BucketNode|awsS3FolderNode)$/",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.s3.createFolder",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsS3BucketNode|awsS3FolderNode)$/",
+                    "group": "0@2"
+                },
+                {
+                    "command": "aws.copyName",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode)$/",
                     "group": "1@1"
+                },
+                {
+                    "command": "aws.s3.copyPath",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsS3FolderNode|awsS3FileNode)$/",
+                    "group": "1@2"
+                },
+                {
+                    "command": "aws.copyArn",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode)$/",
+                    "group": "1@3"
+                },
+                {
+                    "command": "aws.s3.createBucket",
+                    "when": "view == aws.explorer && viewItem == awsS3Node",
+                    "group": "1@4"
                 },
                 {
                     "command": "aws.downloadSchemaItemCode",
@@ -653,6 +703,47 @@
                 "category": "AWS"
             },
             {
+                "command": "aws.s3.copyPath",
+                "title": "%AWS.command.s3.copyPath%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.s3.downloadFileAs",
+                "title": "%AWS.command.s3.downloadFileAs%",
+                "category": "AWS",
+                "icon": {
+                    "light": "third-party/resources/from-vscode-icons/light/cloud-download.svg",
+                    "dark": "third-party/resources/from-vscode-icons/dark/cloud-download.svg"
+                }
+            },
+            {
+                "command": "aws.s3.uploadFile",
+                "title": "%AWS.command.s3.uploadFile%",
+                "category": "AWS",
+                "icon": {
+                    "light": "third-party/resources/from-vscode-icons/light/cloud-upload.svg",
+                    "dark": "third-party/resources/from-vscode-icons/dark/cloud-upload.svg"
+                }
+            },
+            {
+                "command": "aws.s3.createFolder",
+                "title": "%AWS.command.s3.createFolder%",
+                "category": "AWS",
+                "icon": {
+                    "light": "third-party/resources/from-vscode-icons/light/new-folder.svg",
+                    "dark": "third-party/resources/from-vscode-icons/dark/new-folder.svg"
+                }
+            },
+            {
+                "command": "aws.s3.createBucket",
+                "title": "%AWS.command.s3.createBucket%",
+                "category": "AWS",
+                "icon": {
+                    "light": "resources/light/s3/bucket.svg",
+                    "dark": "resources/dark/s3/bucket.svg"
+                }
+            },
+            {
                 "command": "aws.invokeLambda",
                 "title": "%AWS.command.invokeLambda%",
                 "category": "AWS"
@@ -708,6 +799,11 @@
             {
                 "command": "aws.copyArn",
                 "title": "%AWS.command.copyArn%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.copyName",
+                "title": "%AWS.command.copyName%",
                 "category": "AWS"
             },
             {
@@ -861,6 +957,7 @@
         "@aws-toolkits/telemetry": "0.0.20",
         "@types/adm-zip": "^0.4.32",
         "@types/async-lock": "^1.1.0",
+        "@types/bytes": "^3.1.0",
         "@types/cross-spawn": "^6.0.0",
         "@types/del": "^3.0.1",
         "@types/fs-extra": "^8.0.1",
@@ -869,6 +966,7 @@
         "@types/lodash": "^4.14.136",
         "@types/lolex": "^3.1.1",
         "@types/marked": "^0.6.5",
+        "@types/mime-types": "^2.1.0",
         "@types/mocha": "^7.0.2",
         "@types/node": "^10.14.22",
         "@types/readline-sync": "^1.4.3",
@@ -919,6 +1017,7 @@
         "amazon-states-language-service": "^1.1.0",
         "async-lock": "^1.1.3",
         "aws-sdk": "^2.581.0",
+        "bytes": "^3.1.0",
         "cloudformation-schema-js-yaml": "^1.0.1",
         "cross-spawn": "^6.0.5",
         "del": "^3.0.0",
@@ -928,6 +1027,7 @@
         "js-yaml": "^3.13.1",
         "jsonc-parser": "^2.0.2",
         "lodash": "^4.17.15",
+        "mime-types": "^2.1.27",
         "moment": "^2.24.0",
         "original-fs": "^1.1.0",
         "portfinder": "^1.0.25",
