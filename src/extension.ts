@@ -106,15 +106,15 @@ export async function activate(context: vscode.ExtensionContext) {
         })
         await ext.telemetry.start()
 
-        const extContext: ExtContext = {
-            ...context,
-            awsContext: awsContext,
-            regionProvider: regionProvider,
-            settings: toolkitSettings,
-            outputChannel: toolkitOutputChannel,
-            telemetryService: ext.telemetry,
-            chanLogger: getChannelLogger(toolkitOutputChannel),
-        }
+        const extContext = new ExtContext(
+            context,
+            awsContext,
+            regionProvider,
+            toolkitSettings,
+            toolkitOutputChannel,
+            ext.telemetry,
+            getChannelLogger(toolkitOutputChannel)
+        )
 
         context.subscriptions.push(
             vscode.commands.registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())

@@ -5,17 +5,14 @@
 
 import { Memento } from 'vscode'
 import { ExtContext } from '../shared/extensions'
-import { AwsContext } from '../shared/awsContext'
-import { FakeAwsContext, FakeRegionProvider } from './utilities/fakeAwsContext'
-import { RegionProvider } from '../shared/regions/regionProvider'
-import { SettingsConfiguration, DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
-import { TelemetryService } from '../shared/telemetry/telemetryService'
-import { MockOutputChannel } from './mockOutputChannel'
+import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetryService'
-import { FakeTelemetryPublisher } from './fake/fakeTelemetryService'
-import { FakeChannelLogger } from './shared/fakeChannelLogger'
-import { ChannelLogger } from '../shared/utilities/vsCodeUtils'
+import { TelemetryService } from '../shared/telemetry/telemetryService'
 import { ExtensionDisposableFiles } from '../shared/utilities/disposableFiles'
+import { FakeTelemetryPublisher } from './fake/fakeTelemetryService'
+import { MockOutputChannel } from './mockOutputChannel'
+import { FakeChannelLogger } from './shared/fakeChannelLogger'
+import { FakeAwsContext, FakeRegionProvider } from './utilities/fakeAwsContext'
 
 export interface FakeMementoStorage {
     [key: string]: any
@@ -26,32 +23,52 @@ export interface FakeExtensionState {
     workspaceState?: FakeMementoStorage
 }
 
-export class FakeExtensionContext implements ExtContext {
-    public subscriptions: {
-        dispose(): any
-    }[] = []
-    public workspaceState: Memento = new FakeMemento()
-    public globalState: Memento = new FakeMemento()
-    public storagePath: string | undefined
-    public globalStoragePath: string = '.'
-    public logPath: string = ''
-    public awsContext: AwsContext = new FakeAwsContext()
-    public regionProvider: RegionProvider = new FakeRegionProvider()
-    public settings: SettingsConfiguration = new DefaultSettingsConfiguration('aws')
-    public outputChannel = new MockOutputChannel()
-    public telemetryService: TelemetryService
-    public chanLogger: ChannelLogger
-
+export class FakeExtensionContext extends ExtContext {
     private _extensionPath: string = ''
+    private _telemetryService: TelemetryService | undefined
 
-    public constructor(preload?: FakeExtensionState) {
-        if (preload) {
-            this.globalState = new FakeMemento(preload.globalState)
-            this.workspaceState = new FakeMemento(preload.workspaceState)
-        }
-        this.chanLogger = new FakeChannelLogger()
+    public constructor(
+        // Test-related parameters:
+        preload?: FakeExtensionState,
+
+        //
+        // Inherited properties:
+        //
+        public readonly storagePath: string | undefined = '',
+        public readonly globalStoragePath: string = '.',
+        public readonly logPath: string = '',
+        public readonly subscriptions: { dispose(): any }[] = [],
+        public readonly workspaceState: Memento = preload ? new FakeMemento(preload.workspaceState) : new FakeMemento(),
+        public readonly globalState: Memento = preload ? new FakeMemento(preload.globalState) : new FakeMemento()
+    ) {
+        super(
+            // Cannot pass `this` here, but we need a `vscode.ExtensionContext`.
+            // Hack around the type system here, then fill the properties after the super() call.
+            ({
+                storagePath: '',
+                globalStoragePath: '.',
+                logPath: '',
+                subscriptions: [],
+                workspaceState: new FakeMemento(),
+                globalState: new FakeMemento(),
+            } as unknown) as ExtContext,
+            new FakeAwsContext(),
+            new FakeRegionProvider(),
+            new DefaultSettingsConfiguration('aws'),
+            new MockOutputChannel(),
+            {} as TelemetryService,
+            new FakeChannelLogger()
+        )
         const fakeTelemetryPublisher = new FakeTelemetryPublisher()
         this.telemetryService = new DefaultTelemetryService(this, this.awsContext, fakeTelemetryPublisher)
+    }
+
+    public get telemetryService(): TelemetryService {
+        return this._telemetryService!
+    }
+
+    public set telemetryService(t: TelemetryService) {
+        this._telemetryService = t
     }
 
     public get extensionPath(): string {
