@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { Memento } from 'vscode'
 import { ExtContext } from '../shared/extensions'
 import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
 import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetryService'
-import { TelemetryService } from '../shared/telemetry/telemetryService'
 import { ExtensionDisposableFiles } from '../shared/utilities/disposableFiles'
 import { FakeTelemetryPublisher } from './fake/fakeTelemetryService'
 import { MockOutputChannel } from './mockOutputChannel'
@@ -23,52 +23,23 @@ export interface FakeExtensionState {
     workspaceState?: FakeMementoStorage
 }
 
-export class FakeExtensionContext extends ExtContext {
+export class FakeExtensionContext implements vscode.ExtensionContext {
+    public subscriptions: {
+        dispose(): any
+    }[] = []
+    public workspaceState: Memento = new FakeMemento()
+    public globalState: Memento = new FakeMemento()
+    public storagePath: string | undefined
+    public globalStoragePath: string = '.'
+    public logPath: string = ''
+
     private _extensionPath: string = ''
-    private _telemetryService: TelemetryService | undefined
 
-    public constructor(
-        // Test-related parameters:
-        preload?: FakeExtensionState,
-
-        //
-        // Inherited properties:
-        //
-        public readonly storagePath: string | undefined = '',
-        public readonly globalStoragePath: string = '.',
-        public readonly logPath: string = '',
-        public readonly subscriptions: { dispose(): any }[] = [],
-        public readonly workspaceState: Memento = preload ? new FakeMemento(preload.workspaceState) : new FakeMemento(),
-        public readonly globalState: Memento = preload ? new FakeMemento(preload.globalState) : new FakeMemento()
-    ) {
-        super(
-            // Cannot pass `this` here, but we need a `vscode.ExtensionContext`.
-            // Hack around the type system here, then fill the properties after the super() call.
-            ({
-                storagePath: '',
-                globalStoragePath: '.',
-                logPath: '',
-                subscriptions: [],
-                workspaceState: new FakeMemento(),
-                globalState: new FakeMemento(),
-            } as unknown) as ExtContext,
-            new FakeAwsContext(),
-            new FakeRegionProvider(),
-            new DefaultSettingsConfiguration('aws'),
-            new MockOutputChannel(),
-            {} as TelemetryService,
-            new FakeChannelLogger()
-        )
-        const fakeTelemetryPublisher = new FakeTelemetryPublisher()
-        this.telemetryService = new DefaultTelemetryService(this, this.awsContext, fakeTelemetryPublisher)
-    }
-
-    public get telemetryService(): TelemetryService {
-        return this._telemetryService!
-    }
-
-    public set telemetryService(t: TelemetryService) {
-        this._telemetryService = t
+    public constructor(preload?: FakeExtensionState) {
+        if (preload) {
+            this.globalState = new FakeMemento(preload.globalState)
+            this.workspaceState = new FakeMemento(preload.workspaceState)
+        }
     }
 
     public get extensionPath(): string {
@@ -84,7 +55,7 @@ export class FakeExtensionContext extends ExtContext {
     }
 
     /**
-     * Creates a new `ExtContext` for use in tests.
+     * Creates a fake `vscode.ExtensionContext` for use in tests.
      *
      *  Disposes any existing `ExtensionDisposableFiles` and creates a new one
      *  with the new `ExtContext`.
@@ -97,6 +68,32 @@ export class FakeExtensionContext extends ExtContext {
             await ExtensionDisposableFiles.initialize(ctx)
         }
         return ctx
+    }
+
+    /**
+     * Creates a fake `ExtContext` for use in tests.
+     *
+     *  Disposes any existing `ExtensionDisposableFiles` and creates a new one
+     *  with the new `ExtContext`.
+     */
+    public static async getFakeExtContext(): Promise<ExtContext> {
+        const ctx = await FakeExtensionContext.getNew()
+        const awsContext = new FakeAwsContext()
+        const regionProvider = new FakeRegionProvider()
+        const settings = new DefaultSettingsConfiguration('aws')
+        const outputChannel = new MockOutputChannel()
+        const channelLogger = new FakeChannelLogger()
+        const fakeTelemetryPublisher = new FakeTelemetryPublisher()
+        const telemetryService = new DefaultTelemetryService(ctx, awsContext, fakeTelemetryPublisher)
+        return {
+            extensionContext: ctx,
+            awsContext: awsContext,
+            regionProvider: regionProvider,
+            settings: settings,
+            outputChannel: outputChannel,
+            telemetryService: telemetryService,
+            chanLogger: channelLogger,
+        }
     }
 }
 

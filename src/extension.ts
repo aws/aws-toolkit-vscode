@@ -106,15 +106,15 @@ export async function activate(context: vscode.ExtensionContext) {
         })
         await ext.telemetry.start()
 
-        const extContext = new ExtContext(
-            context,
-            awsContext,
-            regionProvider,
-            toolkitSettings,
-            toolkitOutputChannel,
-            ext.telemetry,
-            getChannelLogger(toolkitOutputChannel)
-        )
+        const extContext: ExtContext = {
+            extensionContext: context,
+            awsContext: awsContext,
+            regionProvider: regionProvider,
+            settings: toolkitSettings,
+            outputChannel: toolkitOutputChannel,
+            telemetryService: ext.telemetry,
+            chanLogger: getChannelLogger(toolkitOutputChannel),
+        }
 
         context.subscriptions.push(
             vscode.commands.registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())
@@ -171,7 +171,7 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateCloudFormationTemplateRegistry(context)
 
         await activateCdk({
-            extensionContext: extContext,
+            extensionContext: extContext.extensionContext,
         })
 
         await activateAwsExplorer({
@@ -183,7 +183,7 @@ export async function activate(context: vscode.ExtensionContext) {
         })
 
         await activateSchemas({
-            context: extContext,
+            context: extContext.extensionContext,
         })
 
         await ExtensionDisposableFiles.initialize(context)

@@ -85,7 +85,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
     const resourceName = 'myResource'
 
     beforeEach(async () => {
-        const fakeContext = await FakeExtensionContext.getNew()
+        const fakeContext = await FakeExtensionContext.getFakeExtContext()
         tempFolder = await makeTemporaryToolkitFolder()
         tempFile = vscode.Uri.file(path.join(tempFolder, 'test.yaml'))
         registry = CloudFormationTemplateRegistry.getRegistry()

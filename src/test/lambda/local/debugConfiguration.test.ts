@@ -34,8 +34,8 @@ describe('makeCoreCLRDebugConfiguration', async () => {
         await rmrf(tempFolder)
     })
 
-    function makeFakeSamLaunchConfig() {
-        const fakeExtCtx = new FakeExtensionContext()
+    async function makeFakeSamLaunchConfig() {
+        const fakeExtCtx = await FakeExtensionContext.getFakeExtContext()
         const config: SamLaunchRequestArgs = {
             name: 'fake-launch-config',
             workspaceFolder: fakeWorkspaceFolder,
@@ -65,7 +65,7 @@ describe('makeCoreCLRDebugConfiguration', async () => {
     }
 
     async function makeConfig({ codeUri = path.join('foo', 'bar') }: { codeUri?: string; port?: number }) {
-        const fakeLaunchConfig = makeFakeSamLaunchConfig()
+        const fakeLaunchConfig = await makeFakeSamLaunchConfig()
         return makeCoreCLRDebugConfiguration(fakeLaunchConfig, codeUri)
     }
 

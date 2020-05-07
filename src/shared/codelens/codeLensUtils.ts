@@ -169,7 +169,7 @@ export function makeTypescriptCodeLensProvider(): vscode.CodeLensProvider {
 }
 
 export async function initializePythonCodelens(context: ExtContext): Promise<void> {
-    context.subscriptions.push(
+    context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand(
             getInvokeCmdKey('python'),
             async (params: LambdaLocalInvokeParams): Promise<void> => {
@@ -180,7 +180,7 @@ export async function initializePythonCodelens(context: ExtContext): Promise<voi
 }
 
 export async function initializeCsharpCodelens(context: ExtContext): Promise<void> {
-    context.subscriptions.push(
+    context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand(
             getInvokeCmdKey(csharpDebug.CSHARP_LANGUAGE),
             async (params: LambdaLocalInvokeParams) => {
@@ -236,7 +236,7 @@ export function initializeTypescriptCodelens(context: ExtContext): void {
     }
 
     const command = getInvokeCmdKey('javascript')
-    context.subscriptions.push(
+    context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand(command, async (params: LambdaLocalInvokeParams) => {
             const logger = getLogger()
 
