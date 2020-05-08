@@ -34,13 +34,13 @@ import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
 export async function activate(ctx: ExtContext): Promise<void> {
     initializeSamCliContext({ settingsConfiguration: ctx.settings })
 
-    ctx.subscriptions.push(
+    ctx.extensionContext.subscriptions.push(
         ...(await activateCodeLensProviders(ctx, ctx.settings, ctx.outputChannel, ctx.telemetryService))
     )
 
     await registerServerlessCommands(ctx)
 
-    ctx.subscriptions.push(
+    ctx.extensionContext.subscriptions.push(
         vscode.debug.registerDebugConfigurationProvider(AWS_SAM_DEBUG_TYPE, new SamDebugConfigProvider(ctx))
     )
 
@@ -51,11 +51,11 @@ export async function activate(ctx: ExtContext): Promise<void> {
     // https://code.visualstudio.com/api/extension-guides/debugger-extension#alternative-approach-to-develop-a-debugger-extension
     //
     // XXX: requires the "debuggers.*.label" attribute in package.json!
-    ctx.subscriptions.push(
+    ctx.extensionContext.subscriptions.push(
         vscode.debug.registerDebugAdapterDescriptorFactory(AWS_SAM_DEBUG_TYPE, new InlineDebugAdapterFactory(ctx))
     )
 
-    ctx.subscriptions.push(
+    ctx.extensionContext.subscriptions.push(
         vscode.languages.registerCompletionItemProvider(
             {
                 language: 'json',
@@ -73,7 +73,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
 }
 
 async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
-    ctx.subscriptions.push(
+    ctx.extensionContext.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.samcli.detect',
             async () =>

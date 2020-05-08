@@ -107,7 +107,7 @@ export async function activate(context: vscode.ExtensionContext) {
         await ext.telemetry.start()
 
         const extContext: ExtContext = {
-            ...context,
+            extensionContext: context,
             awsContext: awsContext,
             regionProvider: regionProvider,
             settings: toolkitSettings,
@@ -171,7 +171,7 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateCloudFormationTemplateRegistry(context)
 
         await activateCdk({
-            extensionContext: extContext,
+            extensionContext: extContext.extensionContext,
         })
 
         await activateAwsExplorer({
@@ -183,7 +183,7 @@ export async function activate(context: vscode.ExtensionContext) {
         })
 
         await activateSchemas({
-            context: extContext,
+            context: extContext.extensionContext,
         })
 
         await ExtensionDisposableFiles.initialize(context)

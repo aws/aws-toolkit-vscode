@@ -18,7 +18,8 @@ export const VSCODE_EXTENSION_ID = {
 /**
  * Long-lived, extension-scoped, shared globals.
  */
-export interface ExtContext extends vscode.ExtensionContext {
+export interface ExtContext {
+    extensionContext: vscode.ExtensionContext
     awsContext: AwsContext
     regionProvider: RegionProvider
     settings: SettingsConfiguration
