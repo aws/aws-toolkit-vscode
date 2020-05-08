@@ -44,7 +44,7 @@ sourceSets {
 }
 
 test {
-    systemProperty("log.dir", "${org.jetbrains.intellij.Utils.systemDir(project.intellij.sandboxDirectory, true)}/logs")
+    systemProperty("log.dir", "${project.intellij.sandboxDirectory}-test/logs")
 }
 
 task pluginChangeLog(type: GenerateChangeLog) {

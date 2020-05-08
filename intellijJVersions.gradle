@@ -8,24 +8,22 @@ static def ideProfiles() {
                 "IC": [
                     sdkVersion: "IC-2019.2",
                     plugins: [
-                        "terminal",
-                        "yaml",
+                        "org.jetbrains.plugins.terminal",
+                        "org.jetbrains.plugins.yaml",
                         "PythonCore:2019.2.192.5728.98",
                         "java",
                         "gradle",
-                        "maven",
+                        "org.jetbrains.idea.maven",
                         "Docker:192.5728.74",
-                        "properties" // Used by Maven
                     ]
                 ],
                 "IU": [
                     sdkVersion: "IU-2019.2",
                     plugins: [
-                        "terminal",
-                        "yaml",
-                        "JavaScriptLanguage",
+                        "org.jetbrains.plugins.terminal",
+                        "org.jetbrains.plugins.yaml",
+                        "JavaScript",
                         "JavaScriptDebugger",
-                        "CSS",
                         "Pythonid:2019.2.192.5728.98"
                     ]
                 ],
@@ -34,7 +32,7 @@ static def ideProfiles() {
                     rdGenVersion: "0.192.36",
                     nugetVersion: "2019.2.0",
                     plugins: [
-                        "yaml"
+                        "org.jetbrains.plugins.yaml"
                     ]
                 ]
             ]
@@ -47,26 +45,23 @@ static def ideProfiles() {
                 "IC": [
                     sdkVersion: "IC-2019.3",
                     plugins: [
-                        "terminal",
-                        "yaml",
+                        "org.jetbrains.plugins.terminal",
+                        "org.jetbrains.plugins.yaml",
                         "PythonCore:193.5233.139",
                         "java",
-                        "gradle",
-                        "maven",
-                        "properties", // Used by Maven
+                        "com.intellij.gradle",
+                        "org.jetbrains.idea.maven",
                         "Docker:193.5233.140"
                     ]
                 ],
                 "IU": [
                     sdkVersion: "IU-2019.3",
                     plugins: [
-                        "terminal",
+                        "org.jetbrains.plugins.terminal",
                         "Pythonid:193.5233.109",
-                        "yaml",
-                        "stats-collector", // Transitive, used by JavaScriptLanguage
-                        "JavaScriptLanguage",
+                        "org.jetbrains.plugins.yaml",
+                        "JavaScript",
                         "JavaScriptDebugger",
-                        "CSS",
                     ]
                 ],
                 "RD": [
@@ -74,7 +69,7 @@ static def ideProfiles() {
                     rdGenVersion: "0.193.146",
                     nugetVersion: "2019.3.4",
                     plugins: [
-                        "yaml"
+                        "org.jetbrains.plugins.yaml"
                     ]
                 ]
             ]
@@ -86,29 +81,23 @@ static def ideProfiles() {
                 "IC": [
                     sdkVersion: "IC-2020.1",
                     plugins: [
-                        "terminal",
-                        "yaml",
+                        "org.jetbrains.plugins.terminal",
+                        "org.jetbrains.plugins.yaml",
                         "PythonCore:201.6668.31",
                         "java",
-                        "gradle",
-                        "repository-search", // Used by Maven
-                        "maven",
-                        "properties", // Used by Maven
+                        "com.intellij.gradle",
+                        "org.jetbrains.idea.maven",
                         "Docker:201.6668.30"
                     ]
                 ],
                 "IU": [
                     sdkVersion: "IU-2020.1",
                     plugins: [
-                        "terminal",
-                        "platform-images", // Used by a bunch of plugins
+                        "org.jetbrains.plugins.terminal",
                         "Pythonid:201.6668.31",
-                        "yaml",
-                        "stats-collector", // Transitive, used by JavaScriptLanguage
-                        "JavaScriptLanguage",
+                        "org.jetbrains.plugins.yaml",
+                        "JavaScript",
                         "JavaScriptDebugger",
-                        "CSS",
-                        "DatabaseTools"
                     ]
                 ],
                 "RD": [
@@ -116,7 +105,7 @@ static def ideProfiles() {
                     rdGenVersion: "0.201.69",
                     nugetVersion: "2020.1.0-eap05",
                     plugins: [
-                        "yaml"
+                        "org.jetbrains.plugins.yaml"
                     ]
                 ]
             ]

@@ -72,7 +72,7 @@ compileKotlin.dependsOn(generateModel)
 // TODO: Remove this FIX_WHEN_MIN_IS_193
 tasks.findByName("compileTestKotlin").onlyIf { resolveIdeProfileName() != "2019.2" /* Tests require 2019.3 or higher to build and run */ }
 test {
-    systemProperty("log.dir", "${org.jetbrains.intellij.Utils.systemDir(project.intellij.sandboxDirectory, true)}/logs")
+    systemProperty("log.dir", "${project.intellij.sandboxDirectory}-test/logs")
     useTestNG()
     environment("LOCAL_ENV_RUN", localEnv)
 }.onlyIf { resolveIdeProfileName() != "2019.2" /* Tests require 2019.3 or higher to build and run */ }
