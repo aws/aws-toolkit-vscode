@@ -124,7 +124,10 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.notStrictEqual(provided, undefined)
             assert.strictEqual(provided!.length, 1)
-            assert.strictEqual(provided![0].name, 'TestResource (nodejs12.x)')
+            assert.strictEqual(
+                provided![0].name,
+                `${path.basename(fakeWorkspaceFolder.uri.fsPath)}:TestResource (nodejs12.x)`
+            )
         })
 
         it('returns multiple items if a template with multiple resources is in the workspace', async () => {
@@ -762,13 +765,13 @@ describe('AwsSamDebugConfigurationProvider', async () => {
 
 describe('createTemplateAwsSamDebugConfig', () => {
     const name = 'my body is a template'
-    const templatePath = path.join('two', 'roads', 'diverged', 'in', 'a', 'yellow', 'wood')
+    const templatePath = path.join('two', 'roads', 'diverged', 'in', 'a', 'yellow', 'wood.yaml')
 
     it('creates a template-type SAM debugger configuration with minimal configurations', () => {
         const config = createTemplateAwsSamDebugConfig(undefined, undefined, name, templatePath)
         assert.strictEqual(config.invokeTarget.target, TEMPLATE_TARGET_TYPE)
         const invokeTarget = config.invokeTarget as TemplateTargetProperties
-        assert.strictEqual(config.name, name)
+        assert.strictEqual(config.name, `yellow:${name}`)
         assert.strictEqual(invokeTarget.samTemplateResource, name)
         assert.strictEqual(invokeTarget.samTemplatePath, templatePath)
         assert.ok(!config.hasOwnProperty('lambda'))
@@ -881,7 +884,7 @@ describe('createTemplateAwsSamDebugConfig', () => {
         const config = createTemplateAwsSamDebugConfig(undefined, undefined, name, templatePath)
         assert.strictEqual(config.invokeTarget.target, TEMPLATE_TARGET_TYPE)
         const invokeTarget = config.invokeTarget as TemplateTargetProperties
-        assert.strictEqual(config.name, name)
+        assert.strictEqual(config.name, `yellow:${name}`)
         assert.strictEqual(invokeTarget.samTemplateResource, name)
         assert.strictEqual(invokeTarget.samTemplatePath, templatePath)
         assert.ok(!config.hasOwnProperty('lambda'))
