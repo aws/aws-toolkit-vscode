@@ -8,7 +8,7 @@
  * @param timeoutLength Length of timeout duration (in ms)
  */
 export class Timeout {
-    private readonly _startTime: number
+    private _startTime: number
     private readonly _endTime: number
     private readonly _timer: Promise<void>
     private _timerTimeout?: NodeJS.Timeout
@@ -30,6 +30,17 @@ export class Timeout {
         const remainingTime = this._endTime - new Date().getTime()
 
         return remainingTime > 0 ? remainingTime : 0
+    }
+
+    /**
+     * Updates the timer to timeout in timeout length from now
+     */
+    public refresh() {
+        // These will not align, but we don't have visibility into a NodeJS.Timeout
+        // so remainingtime will be approximate. Timers are approximate anyway and are
+        // not highly accurate in when they fire.
+        this._startTime = new Date().getTime()
+        this._timerTimeout?.refresh()
     }
 
     /**

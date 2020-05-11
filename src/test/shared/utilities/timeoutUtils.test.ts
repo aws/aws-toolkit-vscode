@@ -72,10 +72,20 @@ describe('timeoutUtils', async () => {
             const checkTimerMs = 50
             const longTimer = new timeoutUtils.Timeout(checkTimerMs * 6)
 
-            // Simulate a small amount of time, then measulre elapsed time
+            // Simulate a small amount of time, then measure elapsed time
             clock.tick(checkTimerMs)
 
             assert.strictEqual(longTimer.elapsedTime, checkTimerMs)
+
+            // kill the timer to not mess with other tests
+            longTimer.killTimer()
+        })
+
+        it('Refresh pushes back the start time', async () => {
+            const longTimer = new timeoutUtils.Timeout(10)
+            clock.tick(5)
+            longTimer.refresh()
+            assert.strictEqual(longTimer.elapsedTime, 0)
 
             // kill the timer to not mess with other tests
             longTimer.killTimer()
