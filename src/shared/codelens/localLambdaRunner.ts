@@ -209,7 +209,7 @@ export class LocalLambdaRunner {
 
         if (this.localInvokeParams.isDebug) {
             messageUserWaitingToAttach(this.channelLogger)
-            await waitForDebugPort(this.debugPort, timer.remainingTime, this.channelLogger)
+            await waitForDebugPort(this.debugPort, timer, this.channelLogger)
 
             const attachResults = await attachDebugger({
                 debugConfig: this.debugConfig,
@@ -378,7 +378,7 @@ export interface InvokeLambdaFunctionContext {
     configuration: SettingsConfiguration
     samLocalInvokeCommand: SamLocalInvokeCommand
     telemetryService: TelemetryService
-    onWillAttachDebugger?(debugPort: number, timeoutDuration: number, channelLogger: ChannelLogger): Promise<void>
+    onWillAttachDebugger?(debugPort: number, timeout: Timeout, channelLogger: ChannelLogger): Promise<void>
 }
 
 export async function invokeLambdaFunction(
@@ -431,7 +431,7 @@ export async function invokeLambdaFunction(
     if (debugArgs) {
         if (onWillAttachDebugger) {
             messageUserWaitingToAttach(channelLogger)
-            await onWillAttachDebugger(debugArgs.debugPort, timer.remainingTime, channelLogger)
+            await onWillAttachDebugger(debugArgs.debugPort, timer, channelLogger)
         }
 
         const attachResults = await attachDebugger({
@@ -543,14 +543,15 @@ export async function attachDebugger({
 
 export async function waitForDebugPort(
     debugPort: number,
-    timeoutDuration: number,
+    timeoutDuration: Timeout,
     channelLogger: ChannelLogger
 ): Promise<void> {
+    const remainingTime = timeoutDuration.remainingTime
     try {
         // this function always attempts once no matter the timeoutDuration
-        await tcpPortUsed.waitUntilUsed(debugPort, SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS, timeoutDuration)
+        await tcpPortUsed.waitUntilUsed(debugPort, SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS, remainingTime)
     } catch (err) {
-        getLogger().warn(`Timed out after ${timeoutDuration} ms waiting for port ${debugPort} to open`, err as Error)
+        getLogger().warn(`Timed out after ${remainingTime} ms waiting for port ${debugPort} to open`, err as Error)
 
         channelLogger.warn(
             'AWS.samcli.local.invoke.port.not.open',
