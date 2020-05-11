@@ -8,17 +8,21 @@
  * @param timeoutLength Length of timeout duration (in ms)
  */
 export class Timeout {
-    private readonly _startTime: number
-    private readonly _endTime: number
-    private readonly _timer: Promise<void>
-    private _timerTimeout?: NodeJS.Timeout
-    private _timerResolve?: (value?: void | PromiseLike<void> | undefined) => void
+    private originalStartTime: number
+    private startTime: number
+    private endTime: number
+    private readonly timeoutLength: number
+    private readonly timerPromise: Promise<void>
+    private timerTimeout?: NodeJS.Timeout
+    private timerResolve?: (value?: void | PromiseLike<void> | undefined) => void
     public constructor(timeoutLength: number) {
-        this._startTime = new Date().getTime()
-        this._endTime = this._startTime + timeoutLength
-        this._timer = new Promise<void>((resolve, reject) => {
-            this._timerTimeout = setTimeout(reject, timeoutLength)
-            this._timerResolve = resolve
+        this.startTime = Date.now()
+        this.originalStartTime = this.startTime
+        this.endTime = this.startTime + timeoutLength
+        this.timeoutLength = timeoutLength
+        this.timerPromise = new Promise<void>((resolve, reject) => {
+            this.timerTimeout = setTimeout(reject, timeoutLength)
+            this.timerResolve = resolve
         })
     }
 
@@ -27,9 +31,21 @@ export class Timeout {
      * Bottoms out at 0
      */
     public get remainingTime(): number {
-        const remainingTime = this._endTime - new Date().getTime()
+        const remainingTime = this.endTime - Date.now()
 
         return remainingTime > 0 ? remainingTime : 0
+    }
+
+    /**
+     * Updates the timer to timeout in timeout length from now
+     */
+    public refresh() {
+        // These will not align, but we don't have visibility into a NodeJS.Timeout
+        // so remainingtime will be approximate. Timers are approximate anyway and are
+        // not highly accurate in when they fire.
+        this.startTime = Date.now()
+        this.endTime = this.startTime + this.timeoutLength
+        this.timerTimeout?.refresh()
     }
 
     /**
@@ -38,27 +54,25 @@ export class Timeout {
      * Once this timer has finished, cannot be restarted
      */
     public get timer(): Promise<void> {
-        return this._timer
+        return this.timerPromise
     }
 
     /**
      * Returns the elapsed time from the initial Timeout object creation
-     * Useful for telemetry reporting!
      */
     public get elapsedTime(): number {
-        return new Date().getTime() - this._startTime
+        return Date.now() - this.originalStartTime
     }
 
     /**
      * Kills the internal timer and resolves the timer's promise
-     * Helpful for tests!
      */
     public killTimer(): void {
-        if (this._timerTimeout) {
-            clearTimeout(this._timerTimeout)
+        if (this.timerTimeout) {
+            clearTimeout(this.timerTimeout)
         }
-        if (this._timerResolve) {
-            this._timerResolve()
+        if (this.timerResolve) {
+            this.timerResolve()
         }
     }
 }
