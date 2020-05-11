@@ -97,7 +97,6 @@ describe('timeoutUtils', async () => {
             const longTimer = new timeoutUtils.Timeout(10)
             clock.tick(5)
             longTimer.refresh()
-            assert.strictEqual(longTimer.elapsedTime, 0)
             assert.strictEqual(longTimer.remainingTime, 10)
 
             // kill the timer to not mess with other tests
