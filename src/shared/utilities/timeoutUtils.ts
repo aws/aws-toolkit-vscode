@@ -16,7 +16,7 @@ export class Timeout {
     private timerTimeout?: NodeJS.Timeout
     private timerResolve?: (value?: void | PromiseLike<void> | undefined) => void
     public constructor(timeoutLength: number) {
-        this.startTime = new Date().getTime()
+        this.startTime = Date.now()
         this.originalStartTime = this.startTime
         this.endTime = this.startTime + timeoutLength
         this.timeoutLength = timeoutLength
@@ -31,7 +31,7 @@ export class Timeout {
      * Bottoms out at 0
      */
     public get remainingTime(): number {
-        const remainingTime = this.endTime - new Date().getTime()
+        const remainingTime = this.endTime - Date.now()
 
         return remainingTime > 0 ? remainingTime : 0
     }
@@ -43,7 +43,7 @@ export class Timeout {
         // These will not align, but we don't have visibility into a NodeJS.Timeout
         // so remainingtime will be approximate. Timers are approximate anyway and are
         // not highly accurate in when they fire.
-        this.startTime = new Date().getTime()
+        this.startTime = Date.now()
         this.endTime = this.startTime + this.timeoutLength
         this.timerTimeout?.refresh()
     }
@@ -61,7 +61,7 @@ export class Timeout {
      * Returns the elapsed time from the initial Timeout object creation
      */
     public get elapsedTime(): number {
-        return new Date().getTime() - this.originalStartTime
+        return Date.now() - this.originalStartTime
     }
 
     /**
