@@ -112,7 +112,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
 
         const awaitedPromises = params.timeout ? [debuggerPromise, params.timeout.timer] : [debuggerPromise]
 
-        return Promise.race(awaitedPromises).catch(async () => {
+        await Promise.race(awaitedPromises).catch(async () => {
             // did debugger promise resolve/reject? if not, this was a timeout: kill the process
             // otherwise, process closed out on its own; no need to kill the process
             if (!debuggerPromiseClosed) {
