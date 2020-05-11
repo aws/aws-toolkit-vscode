@@ -4,13 +4,14 @@
  */
 
 import * as vscode from 'vscode'
+import * as path from 'path'
+import { getDefaultRuntime, RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
+import { getNormalizedRelativePath } from '../../utilities/pathUtils'
 import {
     AwsSamDebuggerConfiguration,
     CodeTargetProperties,
     TemplateTargetProperties,
 } from './awsSamDebugConfiguration.gen'
-import { getDefaultRuntime, RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
-import { getNormalizedRelativePath } from '../../utilities/pathUtils'
 
 export * from './awsSamDebugConfiguration.gen'
 
@@ -39,8 +40,31 @@ export function isCodeTargetProperties(props: TargetProperties): props is CodeTa
     return props.target === CODE_TARGET_TYPE
 }
 
+/**
+ * Creates a description for a SAM debugconfig entry (in launch.json).
+ *
+ * Example: `makeName('foo', '/bar/baz', 'zub')` => `"baz:foo (zub)"
+ *
+ * @param primaryName
+ * @param parentDir  Optional directory name (used as a prefix)
+ * @param suffix  Optional info used to differentiate the name
+ */
+function makeName(primaryName: string, parentDir: string | undefined, suffix: string | undefined) {
+    const withPrefix = parentDir ? `${parentDir}:${primaryName}` : primaryName
+    return suffix ? `${withPrefix} (${suffix})` : withPrefix
+}
+
+/**
+ *
+ * @param folder
+ * @param runtimeName  Optional runtime name used to enhance the config name
+ * @param resourceName
+ * @param templatePath
+ * @param preloadedConfig
+ */
 export function createTemplateAwsSamDebugConfig(
     folder: vscode.WorkspaceFolder | undefined,
+    runtimeName: string | undefined,
     resourceName: string,
     templatePath: string,
     preloadedConfig?: {
@@ -51,10 +75,12 @@ export function createTemplateAwsSamDebugConfig(
     }
 ): AwsSamDebuggerConfiguration {
     const workspaceRelativePath = folder ? getNormalizedRelativePath(folder.uri.fsPath, templatePath) : templatePath
+    const templateParentDir = path.basename(path.dirname(templatePath))
+
     const response: AwsSamDebuggerConfiguration = {
         type: AWS_SAM_DEBUG_TYPE,
         request: DIRECT_INVOKE_TYPE,
-        name: resourceName,
+        name: makeName(resourceName, templateParentDir, runtimeName),
         invokeTarget: {
             target: TEMPLATE_TARGET_TYPE,
             samTemplatePath: workspaceRelativePath,
@@ -104,8 +130,7 @@ export function createCodeAwsSamDebugConfig(
     return {
         type: AWS_SAM_DEBUG_TYPE,
         request: DIRECT_INVOKE_TYPE,
-        // TODO: change the name?
-        name: lambdaHandler,
+        name: makeName(lambdaHandler, projectRoot, runtime),
         invokeTarget: {
             target: CODE_TARGET_TYPE,
             projectRoot: workspaceRelativePath,

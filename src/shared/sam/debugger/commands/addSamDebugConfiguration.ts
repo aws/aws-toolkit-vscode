@@ -5,7 +5,11 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { getExistingConfiguration } from '../../../../lambda/config/templates'
+import { getDefaultRuntime, RuntimeFamily } from '../../../../lambda/models/samLambdaRuntime'
+import { CloudFormationTemplateRegistry } from '../../../cloudformation/templateRegistry'
 import { LaunchConfiguration } from '../../../debug/launchConfiguration'
+import { localize } from '../../../utilities/vsCodeUtils'
 import {
     AwsSamDebuggerConfiguration,
     CODE_TARGET_TYPE,
@@ -13,10 +17,6 @@ import {
     createTemplateAwsSamDebugConfig,
     TEMPLATE_TARGET_TYPE,
 } from '../awsSamDebugConfiguration'
-import { CloudFormationTemplateRegistry } from '../../../cloudformation/templateRegistry'
-import { getExistingConfiguration } from '../../../../lambda/config/templates'
-import { localize } from '../../../utilities/vsCodeUtils'
-import { RuntimeFamily } from '../../../../lambda/models/samLambdaRuntime'
 
 /**
  * Holds information required to create a launch config
@@ -41,6 +41,7 @@ export async function addSamDebugConfiguration(
 
     let samDebugConfig: AwsSamDebuggerConfiguration
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(rootUri)
+    const runtimeName = runtimeFamily ? getDefaultRuntime(runtimeFamily) : undefined
 
     if (type === TEMPLATE_TARGET_TYPE) {
         let preloadedConfig = undefined
@@ -78,7 +79,13 @@ export async function addSamDebugConfiguration(
                 }
             }
         }
-        samDebugConfig = createTemplateAwsSamDebugConfig(workspaceFolder, resourceName, rootUri.fsPath, preloadedConfig)
+        samDebugConfig = createTemplateAwsSamDebugConfig(
+            workspaceFolder,
+            runtimeName,
+            resourceName,
+            rootUri.fsPath,
+            preloadedConfig
+        )
     } else if (type === CODE_TARGET_TYPE) {
         // strip the manifest's URI to the manifest's dir here. More reliable to do this here than converting back and forth between URI/string up the chain.
         samDebugConfig = createCodeAwsSamDebugConfig(
