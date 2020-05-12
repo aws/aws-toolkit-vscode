@@ -6,16 +6,11 @@
 import * as assert from 'assert'
 import { AWSError, Request, S3 } from 'aws-sdk'
 import { ManagedUpload } from 'aws-sdk/lib/s3/managed_upload'
+import { FileStreams } from '../../../shared/utilities/streamUtilities'
 import { anyFunction, anything, capture, deepEqual, instance, mock, verify, when } from '../../utilities/mockito'
 import * as vscode from 'vscode'
-import {
-    DefaultBucket,
-    DefaultFile,
-    DefaultFolder,
-    DefaultS3Client,
-    FileStreams,
-} from '../../../shared/clients/defaultS3Client'
-import { DEFAULT_DELIMITER, DEFAULT_MAX_KEYS } from '../../../shared/clients/s3Client'
+import { DefaultBucket, DefaultFile, DefaultFolder, DefaultS3Client } from '../../../shared/clients/defaultS3Client'
+import { DEFAULT_DELIMITER, S3Error } from '../../../shared/clients/s3Client'
 import { FakeFileStreams } from './fakeFileStreams'
 
 class FakeProgressCaptor {
@@ -43,6 +38,7 @@ describe('DefaultS3Client', () => {
     const fileLocation = vscode.Uri.file('/file.jpg')
     const continuationToken = 'continuationToken'
     const nextContinuationToken = 'nextContinuationToken'
+    const maxResults = 20
 
     let mockS3: S3
 
@@ -80,7 +76,14 @@ describe('DefaultS3Client', () => {
 
     describe('createBucket', () => {
         it('creates a bucket', async () => {
-            when(mockS3.createBucket(deepEqual({ Bucket: bucketName }))).thenReturn(success())
+            when(
+                mockS3.createBucket(
+                    deepEqual({
+                        Bucket: bucketName,
+                        CreateBucketConfiguration: { LocationConstraint: region },
+                    })
+                )
+            ).thenReturn(success())
 
             const response = await createClient().createBucket({ bucketName })
 
@@ -92,7 +95,7 @@ describe('DefaultS3Client', () => {
         it('throws an S3Error on failure', async () => {
             when(mockS3.createBucket(anything())).thenReturn(failure())
 
-            await assert.rejects(createClient().createBucket({ bucketName }), /Expected failure/)
+            await assert.rejects(createClient().createBucket({ bucketName }), S3Error)
         })
     })
 
@@ -110,7 +113,7 @@ describe('DefaultS3Client', () => {
         it('throws an S3Error on failure', async () => {
             when(mockS3.upload(anything())).thenReturn(failure())
 
-            await assert.rejects(createClient().createFolder({ bucketName, path: folderPath }), /Expected failure/)
+            await assert.rejects(createClient().createFolder({ bucketName, path: folderPath }), S3Error)
         })
     })
 
@@ -142,7 +145,7 @@ describe('DefaultS3Client', () => {
                     key: fileKey,
                     saveLocation: fileLocation,
                 }),
-                /Expected failure/
+                S3Error
             )
         })
     })
@@ -188,7 +191,7 @@ describe('DefaultS3Client', () => {
                     key: fileKey,
                     fileLocation: fileLocation,
                 }),
-                /Expected failure/
+                S3Error
             )
         })
     })
@@ -220,14 +223,16 @@ describe('DefaultS3Client', () => {
         it('throws an S3Error on listBuckets failure', async () => {
             when(mockS3.listBuckets()).thenReturn(failure())
 
-            await assert.rejects(createClient().listBuckets(), /Expected failure/)
+            await assert.rejects(createClient().listBuckets(), S3Error)
+
+            verify(mockS3.headBucket(anything())).never()
         })
 
         it('throws an S3Error on headBucket failure', async () => {
             when(mockS3.listBuckets()).thenReturn(success({ Buckets: [{ Name: bucketName }] }))
             when(mockS3.headBucket(anything())).thenReturn(failure())
 
-            await assert.rejects(createClient().listBuckets(), /Expected failure/)
+            await assert.rejects(createClient().listBuckets(), S3Error)
         })
     })
 
@@ -238,7 +243,7 @@ describe('DefaultS3Client', () => {
                     deepEqual({
                         Bucket: bucketName,
                         Delimiter: DEFAULT_DELIMITER,
-                        MaxKeys: DEFAULT_MAX_KEYS,
+                        MaxKeys: maxResults,
                         Prefix: folderPath,
                         ContinuationToken: continuationToken,
                     })
@@ -254,7 +259,7 @@ describe('DefaultS3Client', () => {
                 })
             )
 
-            const response = await createClient().listObjects({ bucketName, folderPath, continuationToken })
+            const response = await createClient().listObjects({ bucketName, folderPath, continuationToken, maxResults })
 
             assert.deepStrictEqual(response, {
                 files: [
@@ -277,16 +282,13 @@ describe('DefaultS3Client', () => {
         it('throws an S3Error on listObjects failure', async () => {
             when(mockS3.listObjectsV2(anything())).thenReturn(failure())
 
-            await assert.rejects(
-                createClient().listObjects({ bucketName, folderPath, continuationToken }),
-                /Expected failure/
-            )
+            await assert.rejects(createClient().listObjects({ bucketName, folderPath, continuationToken }), S3Error)
         })
     })
 })
 
 describe('DefaultBucket', () => {
-    it('creates a Bucket', () => {
+    it('properly constructs an instance', () => {
         const bucket = new DefaultBucket({ partitionId: 'partitionId', region: 'region', name: 'name' })
         assert.strictEqual(bucket.name, 'name')
         assert.strictEqual(bucket.region, 'region')
@@ -295,7 +297,7 @@ describe('DefaultBucket', () => {
 })
 
 describe('DefaultFolder', () => {
-    it('creates a Folder', () => {
+    it('properly constructs an instance', () => {
         const folder = new DefaultFolder({
             partitionId: 'partitionId',
             bucketName: 'bucketName',
@@ -308,7 +310,7 @@ describe('DefaultFolder', () => {
 })
 
 describe('DefaultFile', () => {
-    it('creates a File', () => {
+    it('properly constructs an instance', () => {
         const file = new DefaultFile({
             partitionId: 'partitionId',
             bucketName: 'bucketName',

@@ -4,33 +4,29 @@
  */
 
 import { S3 } from 'aws-sdk'
-import { ListObjectsV2Output } from 'aws-sdk/clients/s3'
 import * as _ from 'lodash'
-import * as vscode from 'vscode'
-import * as fs from 'fs'
+import * as mime from 'mime-types'
 import { basename } from 'path'
-import * as stream from 'stream'
 import { ext } from '../extensionGlobals'
-import { promisifyReadStream, promisifyWriteStream } from '../streamUtilities'
+import { DefaultFileStreams, FileStreams, pipe, promisifyReadStream } from '../utilities/streamUtilities'
 import {
     Bucket,
     CreateBucketRequest,
+    CreateBucketResponse,
     CreateFolderRequest,
+    CreateFolderResponse,
     DEFAULT_DELIMITER,
     DEFAULT_MAX_KEYS,
-    Folder,
     DownloadFileRequest,
+    File,
+    Folder,
     ListBucketsResponse,
     ListObjectsRequest,
     ListObjectsResponse,
-    File,
     S3Client,
     S3Error,
     UploadFileRequest,
-    CreateFolderResponse,
-    CreateBucketResponse,
 } from './s3Client'
-import * as mime from 'mime-types'
 
 const DEFAULT_CONTENT_TYPE = 'application/octet-stream'
 const BUCKET_REGION_HEADER = 'x-amz-bucket-region'
@@ -48,17 +44,18 @@ export class DefaultS3Client implements S3Client {
     }
 
     /**
-     * Creates a bucket in the region of the client.
-     *
-     * @throws S3Error if there is an error calling S3.
+     * @inheritDoc
      */
     public async createBucket(request: CreateBucketRequest): Promise<CreateBucketResponse> {
         const s3 = await this.createS3()
 
         try {
-            // The docs incorrectly state that you must always specify the LocationConstraint or it will default to us-east-1
-            // https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateBucket.html
-            await s3.createBucket({ Bucket: request.bucketName }).promise()
+            await s3
+                .createBucket({
+                    Bucket: request.bucketName,
+                    CreateBucketConfiguration: { LocationConstraint: this.regionCode },
+                })
+                .promise()
         } catch (e) {
             throw new S3Error(`Failed to create bucket ${request.bucketName}: ${e}`)
         }
@@ -73,20 +70,7 @@ export class DefaultS3Client implements S3Client {
     }
 
     /**
-     * Creates a folder.
-     *
-     * The folder's bucket should reside in the same region as the one configured for the client.
-     *
-     * Note that folders don't actually exist in S3.
-     * Everything in S3 is an object with a key residing in a bucket.
-     * However, S3 allows you to emulate folders by providing a key with delimiters (slashes) in its name.
-     *
-     * To creating empty "folders", you upload an empty object with a trailing slash.
-     *
-     * Creation of folders isn't strictly necessary, as you can just upload keys with delimiters.
-     * However, empty folders make it easier to work with S3 as if it were a filesystem like in the UI.
-     *
-     * @throws S3Error if there is an error calling S3.
+     * @inheritDoc
      */
     public async createFolder(request: CreateFolderRequest): Promise<CreateFolderResponse> {
         const s3 = await this.createS3()
@@ -113,13 +97,7 @@ export class DefaultS3Client implements S3Client {
     }
 
     /**
-     * Downloads a file to disk.
-     *
-     * The file's bucket should reside in the same region as the one configured for the client.
-     *
-     * Pipes the response (read) stream into the file (write) stream.
-     *
-     * @throws S3Error if there is an error calling S3 or piping between streams.
+     * @inheritDoc
      */
     public async downloadFile(request: DownloadFileRequest): Promise<void> {
         const s3 = await this.createS3()
@@ -136,15 +114,7 @@ export class DefaultS3Client implements S3Client {
     }
 
     /**
-     * Uploads a file from disk.
-     *
-     * The destination bucket should reside in the same region as the one configured for the client.
-     *
-     * Pipes the file (read) stream into the request (write) stream.
-     * Assigns the target content type based on the mime type of the file.
-     * If content type cannot be determined, defaults to {@link DEFAULT_CONTENT_TYPE}.
-     *
-     * @throws S3Error if there is an error calling S3 or piping between streams.
+     * @inheritDoc
      */
     public async uploadFile(request: UploadFileRequest): Promise<void> {
         const s3 = await this.createS3()
@@ -175,13 +145,7 @@ export class DefaultS3Client implements S3Client {
     }
 
     /**
-     * Lists buckets in the region of the client.
-     *
-     * Note that S3 returns all buckets in all regions,
-     * so this incurs the cost of additional S3#HeadBucket requests for each bucket
-     * to filter out buckets residing outside of the client's region.
-     *
-     * @throws S3Error if there is an error calling S3.
+     * @inheritDoc
      */
     public async listBuckets(): Promise<ListBucketsResponse> {
         const s3 = await this.createS3()
@@ -213,35 +177,18 @@ export class DefaultS3Client implements S3Client {
     }
 
     /**
-     * Lists files and folders in a folder or inside the root bucket.
-     *
-     * The bucket should reside in the same region as the one configured for the client.
-     *
-     * Returns the first {@link DEFAULT_MAX_KEYS} objects (the first "page").
-     * If there are more results, returns a continuation token that can be passed in a subsequent call
-     * to get the next "page" of results.
-     *
-     * Note that folders don't actually exist in S3.
-     * Everything in S3 is an object with a key residing in a bucket.
-     * However, S3 lets you limit results to those residing at a specific "path" specified by delimiters (slashes).
-     * The list of sub-paths is returned in the result set and can be used in subsequent calls.
-     *
-     * A consequence of the fact that folders don't exist is that folders and files are intermingled across all
-     * of the pages.
-     * It's not possible to retrieve an exhaustive list of all folders without traversing all of the pages.
-     *
-     * @throws S3Error if there is an error calling S3.
+     * @inheritDoc
      */
     public async listObjects(request: ListObjectsRequest): Promise<ListObjectsResponse> {
         const s3 = await this.createS3()
 
-        let response: ListObjectsV2Output
+        let response: S3.ListObjectsV2Output
         try {
             response = await s3
                 .listObjectsV2({
                     Bucket: request.bucketName,
                     Delimiter: DEFAULT_DELIMITER,
-                    MaxKeys: DEFAULT_MAX_KEYS,
+                    MaxKeys: request.maxResults ?? DEFAULT_MAX_KEYS,
                     Prefix: request.folderPath,
                     ContinuationToken: request.continuationToken,
                 })
@@ -295,11 +242,6 @@ export class DefaultS3Client implements S3Client {
     }
 }
 
-export interface FileStreams {
-    createReadStream(uri: vscode.Uri): stream.Readable
-    createWriteStream(uri: vscode.Uri): stream.Writable
-}
-
 export class DefaultBucket implements Bucket {
     public readonly name: string
     public readonly region: string
@@ -308,7 +250,7 @@ export class DefaultBucket implements Bucket {
     public constructor({ partitionId, region, name }: { partitionId: string; region: string; name: string }) {
         this.name = name
         this.region = region
-        this.arn = `arn:${partitionId}:s3:::${name}`
+        this.arn = buildArn({ partitionId, bucketName: name })
     }
 
     public toString(): string {
@@ -323,7 +265,7 @@ export class DefaultFolder implements Folder {
 
     public constructor({ partitionId, bucketName, path }: { partitionId: string; bucketName: string; path: string }) {
         this.path = path
-        this.arn = `arn:${partitionId}:s3:::${bucketName}/${path}`
+        this.arn = buildArn({ partitionId, bucketName, key: path })
         this.name = _(this.path)
             .split(DEFAULT_DELIMITER)
             .dropRight()!
@@ -359,7 +301,7 @@ export class DefaultFile implements File {
             .split(DEFAULT_DELIMITER)
             .last()!
         this.key = key
-        this.arn = `arn:${partitionId}:s3:::${bucketName}/${key}`
+        this.arn = buildArn({ partitionId, bucketName, key })
         this.lastModified = lastModified
         this.sizeBytes = sizeBytes
     }
@@ -369,14 +311,12 @@ export class DefaultFile implements File {
     }
 }
 
-class DefaultFileStreams implements FileStreams {
-    public createReadStream(uri: vscode.Uri): stream.Readable {
-        return fs.createReadStream(uri.fsPath)
+function buildArn({ partitionId, bucketName, key }: { partitionId: string; bucketName: string; key?: string }) {
+    if (key === undefined) {
+        return `arn:${partitionId}:s3:::${bucketName}`
     }
 
-    public createWriteStream(uri: vscode.Uri): stream.Writable {
-        return fs.createWriteStream(uri.fsPath)
-    }
+    return `arn:${partitionId}:s3:::${bucketName}/${key}`
 }
 
 async function createSdkClient(regionCode: string): Promise<S3> {
@@ -385,27 +325,4 @@ async function createSdkClient(regionCode: string): Promise<S3> {
         { computeChecksums: true },
         regionCode
     )
-}
-
-async function pipe(
-    readStream: stream.Readable,
-    writeStream: stream.Writable,
-    progressListener?: (loadedBytes: number) => void
-): Promise<void> {
-    try {
-        readStream.pipe(writeStream)
-
-        let dataListener: ((chunk: any) => void) | undefined
-        if (progressListener) {
-            let loadedBytes = 0
-            dataListener = (chunk: any) => {
-                loadedBytes += chunk.length
-                progressListener(loadedBytes)
-            }
-        }
-
-        await Promise.all([promisifyReadStream(readStream, dataListener), promisifyWriteStream(writeStream)])
-    } finally {
-        writeStream.end()
-    }
 }

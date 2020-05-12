@@ -5,7 +5,7 @@
 
 import * as stream from 'stream'
 import * as vscode from 'vscode'
-import { FileStreams } from '../../../shared/clients/defaultS3Client'
+import { FileStreams } from '../../../shared/utilities/streamUtilities'
 
 export class FakeFileStreams implements FileStreams {
     private readonly readData: string
