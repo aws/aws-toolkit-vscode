@@ -54,13 +54,17 @@ export async function activate(activateArguments: {
     // When there are configuration changes, update the telemetry service appropriately
     vscode.workspace.onDidChangeConfiguration(
         async event => {
-            if (!ext.telemetry) {
-                return
-            }
             if (
                 event.affectsConfiguration('telemetry.enableTelemetry') ||
                 event.affectsConfiguration('aws.telemetry')
             ) {
+                if (!ext.telemetry) {
+                    getLogger().warn(
+                        'Telemetry configuration changed, but telemetry is undefined. This can happen during testing.'
+                    )
+                    return
+                }
+
                 applyTelemetryEnabledState(ext.telemetry, activateArguments.toolkitSettings)
             }
         },

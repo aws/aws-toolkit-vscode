@@ -45,7 +45,7 @@
             ],
             "env": {
                 "TEST_REPORT_DIR": "${workspaceFolder}/.test-reports",
-                "TEST_FILE": null,
+                "TEST_FILE": "null",
                 "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true",
                 "NO_COVERAGE": "true"
             },
@@ -82,7 +82,7 @@
             ],
             "env": {
                 "TEST_REPORT_DIR": "${workspaceFolder}/.test-reports",
-                "TEST_FILE": null,
+                "TEST_FILE": "null",
                 "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true",
                 "NO_COVERAGE": "true"
             },
