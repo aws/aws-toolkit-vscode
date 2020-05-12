@@ -62,9 +62,13 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
             await childProcess.start({
                 onStdout: (text: string): void => {
                     this.emitMessage(text)
+                    // If we have a timeout (as we do on debug) refresh the timeout as we receive text
+                    params.timeout?.refresh()
                 },
                 onStderr: (text: string): void => {
                     this.emitMessage(text)
+                    // If we have a timeout (as we do on debug) refresh the timeout as we receive text
+                    params.timeout?.refresh()
                     if (checkForDebuggerAttachCue) {
                         // Look for messages like "Waiting for debugger to attach" before returning back to caller
                         if (this.debuggerAttachCues.some(cue => text.includes(cue))) {
@@ -75,7 +79,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                         }
                     }
                 },
-                onClose: (code: number, signal: string): void => {
+                onClose: (code: number, _: string): void => {
                     this.logger.verbose(`The child process for sam local invoke closed with code ${code}`)
                     this.channelLogger.channel.appendLine(
                         localize('AWS.samcli.local.invoke.ended', 'Local invoke of SAM Application has ended.')
