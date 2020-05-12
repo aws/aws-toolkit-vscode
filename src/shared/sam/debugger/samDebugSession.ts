@@ -15,6 +15,7 @@ import { ExtContext } from '../../extensions'
 import { ChannelLogger } from '../../utilities/vsCodeUtils'
 import { SamLocalInvokeCommand } from '../cli/samCliLocalInvoke'
 import { AwsSamDebuggerConfiguration } from './awsSamDebugConfiguration.gen'
+import { Timeout } from '../../utilities/timeoutUtils'
 
 /**
  * SAM-specific launch attributes (which are not part of the DAP).
@@ -68,7 +69,7 @@ export interface SamLaunchRequestArgs extends DebugProtocol.AttachRequestArgumen
     //  Non-serializable...
     //
     samLocalInvokeCommand?: SamLocalInvokeCommand
-    onWillAttachDebugger?(debugPort: number, timeoutDuration: number, channelLogger: ChannelLogger): Promise<void>
+    onWillAttachDebugger?(debugPort: number, timeout: Timeout, channelLogger: ChannelLogger): Promise<void>
 }
 
 /**

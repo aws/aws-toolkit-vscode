@@ -292,7 +292,7 @@ export async function invokeLambdaFunction(
     if (!config.noDebug) {
         if (config.onWillAttachDebugger) {
             messageUserWaitingToAttach(ctx.chanLogger)
-            await config.onWillAttachDebugger(config.debugPort!, timer.remainingTime, ctx.chanLogger)
+            await config.onWillAttachDebugger(config.debugPort!, timer, ctx.chanLogger)
         }
 
         // HACK: remove non-serializable properties before attaching.
@@ -396,14 +396,15 @@ export async function attachDebugger({
 
 export async function waitForDebugPort(
     debugPort: number,
-    timeoutDuration: number,
+    timeoutDuration: Timeout,
     channelLogger: ChannelLogger
 ): Promise<void> {
+    const remainingTime = timeoutDuration.remainingTime
     try {
         // this function always attempts once no matter the timeoutDuration
-        await tcpPortUsed.waitUntilUsed(debugPort, SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS, timeoutDuration)
+        await tcpPortUsed.waitUntilUsed(debugPort, SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS, remainingTime)
     } catch (err) {
-        getLogger().warn(`Timed out after ${timeoutDuration} ms waiting for port ${debugPort} to open`, err as Error)
+        getLogger().warn(`Timed out after ${remainingTime} ms waiting for port ${debugPort} to open`, err as Error)
 
         channelLogger.warn(
             'AWS.samcli.local.invoke.port.not.open',

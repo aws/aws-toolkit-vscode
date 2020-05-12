@@ -27,6 +27,7 @@ import {
     makeInputTemplate,
 } from './localLambdaRunner'
 import { PythonDebugAdapterHeartbeat } from './pythonDebugAdapterHeartbeat'
+import { Timeout } from '../utilities/timeoutUtils'
 
 const PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MS = 1000
 export const PYTHON_LANGUAGE = 'python'
@@ -252,13 +253,8 @@ export async function invokePythonLambda(ctx: ExtContext, config: PythonDebugCon
     await invokeLambdaFunction(ctx, config, async () => {})
 }
 
-export async function waitForPythonDebugAdapter(
-    debugPort: number,
-    timeoutDurationMillis: number,
-    channelLogger: ChannelLogger
-) {
+export async function waitForPythonDebugAdapter(debugPort: number, timeout: Timeout, channelLogger: ChannelLogger) {
     const logger = getLogger()
-    const stopMillis = Date.now() + timeoutDurationMillis
 
     logger.verbose(`Testing debug adapter connection on port ${debugPort}`)
 
@@ -281,7 +277,7 @@ export async function waitForPythonDebugAdapter(
         }
 
         if (!debugServerAvailable) {
-            if (Date.now() > stopMillis) {
+            if (timeout.remainingTime === 0) {
                 break
             }
 
