@@ -22,7 +22,7 @@ reported the issue. Please try to include as much information as you can. Detail
 
 ### Requirements
 
-* [Java 8](https://docs.aws.amazon.com/corretto/latest/corretto-8-ug/downloads-list.html)
+* [Java 11](https://docs.aws.amazon.com/corretto/latest/corretto-11-ug/downloads-list.html)
 * [Git](https://git-scm.com/)
 * Dotnet Framework (Windows) or Mono (Linux, macOS)
   * macOS steps:
