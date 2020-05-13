@@ -58,19 +58,28 @@ export async function addSamDebugConfiguration(
                         rootUri
                     )
                     if (existingConfig) {
-                        const responseOk: string = localize('AWS.generic.response.ok', 'Ok')
+                        const responseMigrate: string = localize(
+                            'AWS.sam.debugger.useExistingConfig.migrate',
+                            'Create based on the legacy config'
+                        )
+                        const responseNew: string = localize(
+                            'AWS.sam.debugger.useExistingConfig.doNotMigrate',
+                            'Create new config only'
+                        )
                         const prompt = await vscode.window.showInformationMessage(
                             localize(
                                 'AWS.sam.debugger.useExistingConfig',
-                                'AWS Toolkit detected an existing legacy configuration for this function. Add to launch.json?'
+                                'AWS Toolkit detected an existing legacy configuration for this function. Create the debug config based on the legacy config?'
                             ),
                             { modal: true },
-                            responseOk
+                            responseMigrate,
+                            responseNew
                         )
-                        if (prompt === responseOk) {
-                            preloadedConfig = existingConfig
-                        } else {
+                        if (!prompt) {
+                            // User selected "Cancel". Abandon config creation
                             return
+                        } else if (prompt === responseMigrate) {
+                            preloadedConfig = existingConfig
                         }
                     }
                 }
