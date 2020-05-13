@@ -7,11 +7,11 @@
 import * as vscode from 'vscode'
 
 /**
- * Components associated with {@link vscode.commands}.
+ * Components associated with {@link module:vscode.commands}.
  */
 export interface Commands {
     /**
-     * See {@link vscode.commands.executeCommand}.
+     * See {@link module:vscode.commands.executeCommand}.
      */
     execute<T>(command: string, ...rest: any[]): Thenable<T | undefined>
 }

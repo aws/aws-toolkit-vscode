@@ -7,7 +7,7 @@
 import * as vscode from 'vscode'
 
 /**
- * Components associated with {@link vscode.env}.
+ * Components associated with {@link module:vscode.env}.
  */
 export interface Env {
     clipboard: Clipboard
@@ -15,7 +15,7 @@ export interface Env {
 
 export interface Clipboard {
     /**
-     * See {@link vscode.Clipboard.writeText}.
+     * See {@link module:vscode.Clipboard.writeText}.
      */
     writeText(message: string): Thenable<void>
 }
