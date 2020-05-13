@@ -9,6 +9,7 @@ env:
   variables:
     CI: true
     LOCAL_ENV_RUN: true
+    AWS_STS_REGIONAL_ENDPOINTS: regional
 
 phases:
   install:

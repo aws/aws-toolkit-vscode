@@ -11,6 +11,7 @@ env:
     RECORD_UI: true
     LOCAL_ENV_RUN: true
     GRADLE_USER_HOME: gradle-home
+    AWS_STS_REGIONAL_ENDPOINTS: regional
 
 phases:
   install:
