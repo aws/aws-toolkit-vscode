@@ -183,12 +183,11 @@ export function isStepFunctionsRole(role: IAM.Role): boolean {
     return !!assumeRolePolicyDocument?.includes(STEP_FUNCTIONS_SEVICE_PRINCIPAL)
 }
 
-export async function isDocumentValid(textDocument?: vscode.TextDocument): Promise<boolean> {
-    if (!textDocument) {
+export async function isDocumentValid(text: string, textDocument?: vscode.TextDocument): Promise<boolean> {
+    if (!textDocument || !text) {
         return false
     }
 
-    const text = textDocument.getText()
     const doc = ASLTextDocument.create(textDocument.uri.path, textDocument.languageId, textDocument.version, text)
     // tslint:disable-next-line: no-inferred-empty-object-type
     const jsonDocument = languageService.parseJSONDocument(doc)

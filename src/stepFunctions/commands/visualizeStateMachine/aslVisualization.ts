@@ -11,6 +11,15 @@ import * as vscode from 'vscode'
 import { ext } from '../../../shared/extensionGlobals'
 import { getLogger, Logger } from '../../../shared/logger'
 import { isDocumentValid } from '../../utils'
+import * as yaml from 'yaml'
+
+const YAML_OPTIONS: yaml.Options = {
+    merge: false,
+    maxAliasCount: 0,
+    schema: 'yaml-1.1',
+    version: '1.1',
+    prettyErrors: true,
+}
 
 export interface MessageObject {
     command: string
@@ -99,7 +108,27 @@ export class AslVisualization {
         )
 
         const sendUpdateMessage = async (updatedTextDocument: vscode.TextDocument) => {
-            const isValid = await isDocumentValid(updatedTextDocument)
+            const isYAML = updatedTextDocument.languageId === 'yaml'
+            const text = updatedTextDocument.getText()
+            let stateMachineData = text
+            let yamlErrors: string[] = []
+
+            if (isYAML) {
+                const parsed = yaml.parseDocument(text, YAML_OPTIONS)
+                yamlErrors = parsed.errors.map(error => error.message)
+                let json: any
+
+                try {
+                    json = parsed.toJSON()
+                } catch (e) {
+                    yamlErrors.push(e.message)
+                }
+
+                stateMachineData = JSON.stringify(json)
+            }
+
+            const isValid = (await isDocumentValid(stateMachineData, updatedTextDocument)) && !yamlErrors.length
+
             const webview = this.getWebview()
             if (this.isPanelDisposed || !webview) {
                 return
@@ -109,8 +138,9 @@ export class AslVisualization {
 
             webview.postMessage({
                 command: 'update',
-                stateMachineData: updatedTextDocument.getText(),
+                stateMachineData,
                 isValid,
+                errors: yamlErrors,
             })
         }
         const debouncedUpdate = debounce(sendUpdateMessage.bind(this), 500)
