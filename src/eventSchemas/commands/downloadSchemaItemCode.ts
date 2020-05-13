@@ -33,7 +33,7 @@ enum CodeGenerationStatus {
 const RETRY_INTERVAL_MS = 2000
 const MAX_RETRIES = 150 // p100 of Java code generation is 250 seconds. So retry for an even 5 minutes.
 
-export async function downloadSchemaItemCode(node: SchemaItemNode) {
+export async function downloadSchemaItemCode(node: SchemaItemNode, outputChannel: vscode.OutputChannel) {
     const logger: Logger = getLogger()
     let downloadResult: Result = 'Succeeded'
 
@@ -64,7 +64,7 @@ export async function downloadSchemaItemCode(node: SchemaItemNode) {
             schemaCoreCodeFileName: coreFileName,
         }
         const schemaCodeDownloader = createSchemaCodeDownloaderObject(node.client)
-        const coreCodeFilePath = await schemaCodeDownloader.downloadCode(request)
+        const coreCodeFilePath = await schemaCodeDownloader.downloadCode(request, outputChannel)
         vscode.window.showInformationMessage(
             localize(
                 'AWS.message.info.schemas.downloadCodeBindings.finished',
@@ -126,7 +126,10 @@ export class SchemaCodeDownloader {
         private readonly extractor: CodeExtractor
     ) {}
 
-    public async downloadCode(request: SchemaCodeDownloadRequestDetails): Promise<string | void> {
+    public async downloadCode(
+        request: SchemaCodeDownloadRequestDetails,
+        outputChannel: vscode.OutputChannel
+    ): Promise<string | void> {
         let zipContents: ArrayBuffer
         try {
             // If the code bindings for a given schema previously generated, this would succeed
@@ -168,7 +171,7 @@ export class SchemaCodeDownloader {
             )
         )
 
-        return await this.extractor.extractAndPlace(zipContents, request)
+        return await this.extractor.extractAndPlace(zipContents, request, outputChannel)
     }
 }
 
@@ -277,7 +280,8 @@ export class CodeDownloader {
 export class CodeExtractor {
     public async extractAndPlace(
         zipContents: ArrayBuffer,
-        request: SchemaCodeDownloadRequestDetails
+        request: SchemaCodeDownloadRequestDetails,
+        outputChannel: vscode.OutputChannel
     ): Promise<string | void> {
         const fileName = `${request.schemaName}.${request.schemaVersion}.${request.language}.zip`
 
@@ -292,10 +296,15 @@ export class CodeExtractor {
         fs.writeSync(fd, zipContentsBinary, 0, zipContentsBinary.byteLength, 0)
         fs.closeSync(fd)
 
-        this.validateNoFileCollisions(codeZipFile, destinationDirectory)
+        let overrideFiles: boolean = false
+        const collisionExist = this.checkFileCollisions(codeZipFile, destinationDirectory, outputChannel)
+
+        if (collisionExist) {
+            overrideFiles = await this.overrideOnCollisionUserResponse()
+        }
 
         const zip = new admZip(codeZipFile)
-        zip.extractAllTo(/*target path*/ destinationDirectory)
+        zip.extractAllTo(/*target path*/ destinationDirectory, overrideFiles)
 
         const coreCodeFilePath = this.getCoreCodeFilePath(codeZipFile, request.schemaCoreCodeFileName)
 
@@ -313,10 +322,15 @@ export class CodeExtractor {
         return tempFolder
     }
 
-    // Ensure that the downloaded code hierarchy has no collisions with the destination directory
-    public validateNoFileCollisions(codeZipFile: string, destinationDirectory: string): void {
+    // Check if downloaded code hierarchy has collisions with the destination directory and display them in output channel
+    public checkFileCollisions(
+        codeZipFile: string,
+        destinationDirectory: string,
+        outputChannel: vscode.OutputChannel
+    ): boolean {
         const zip = new admZip(codeZipFile)
         const zipEntries = zip.getEntries()
+        let collisionExist = false
 
         zipEntries.forEach(function(zipEntry) {
             if (zipEntry.isDirectory) {
@@ -324,16 +338,37 @@ export class CodeExtractor {
             } else {
                 const intendedDestinationPath = path.join(destinationDirectory, '/', zipEntry.entryName)
                 if (fs.existsSync(intendedDestinationPath)) {
-                    throw new UserNotifiedError(
-                        localize(
-                            'AWS.message.error.schemas.downloadCodeBindings.timeout',
-                            'Unable to place schema code in workspace because there is already a file {0} in the folder hierarchy',
-                            zipEntry.name
+                    if (!collisionExist) {
+                        collisionExist = true
+                        outputChannel.show(true)
+                        outputChannel.appendLine(
+                            localize(
+                                'AWS.message.info.schemas.downloadCodeBindings.colliding_files',
+                                'Following files already exist in the folder hierarchy :'
+                            )
                         )
-                    )
+                    }
+                    outputChannel.appendLine(intendedDestinationPath)
                 }
             }
         })
+
+        return collisionExist
+    }
+
+    public async overrideOnCollisionUserResponse(): Promise<boolean> {
+        const responseYes: string = localize('AWS.generic.response.yes', 'Yes')
+        const responseNo: string = localize('AWS.generic.response.no', 'No')
+
+        const userResponse = await vscode.window.showInformationMessage(
+            localize(
+                'AWS.message.info.schemas.downloadCodeBindings.colliding_override',
+                'Downloaded code hierarchy has collisions in the destination directory. Would you like to override?'
+            ),
+            responseYes,
+            responseNo
+        )
+        return userResponse === responseYes
     }
 
     public getCoreCodeFilePath(codeZipFile: string, coreFileName: string | undefined): string | undefined {

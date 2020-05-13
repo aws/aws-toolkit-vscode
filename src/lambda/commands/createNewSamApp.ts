@@ -165,7 +165,7 @@ export async function createNewSamApplication(
                 config.schemaName!
             )
 
-            await schemaCodeDownloader!.downloadCode(request!)
+            await schemaCodeDownloader!.downloadCode(request!, channelLogger.channel)
 
             vscode.window.showInformationMessage(
                 localize(
