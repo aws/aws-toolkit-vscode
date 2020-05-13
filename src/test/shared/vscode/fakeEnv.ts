@@ -3,36 +3,36 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Clipboard, Env } from '../../../shared/vscode/env'
+import { Env, Clipboard } from '../../../shared/vscode/env'
 
 export interface FakeEnvOptions {
-    clipboard?: FakeClipboard | FakeClipboardOptions
+    clipboard?: ClipboardOptions
 }
 
 export class FakeEnv implements Env {
-    private readonly _clipboard: FakeClipboard
+    private readonly _clipboard: DefaultFakeClipboard
 
     public get clipboard(): FakeClipboard {
         return this._clipboard
     }
 
-    public constructor({ clipboard = new FakeClipboard() }: FakeEnvOptions = {}) {
-        this._clipboard = clipboard instanceof FakeClipboard ? clipboard : new FakeClipboard(clipboard)
+    public constructor({ clipboard = new DefaultFakeClipboard() }: FakeEnvOptions = {}) {
+        this._clipboard = new DefaultFakeClipboard(clipboard)
     }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface FakeClipboardOptions {}
+export interface ClipboardOptions {}
 
-export class FakeClipboard implements Clipboard {
-    private _text: string | undefined
-
+export interface FakeClipboard extends Clipboard {
     /**
      * The text that was written, if any.
      */
-    public get text(): string | undefined {
-        return this._text
-    }
+    readonly text: string | undefined
+}
+
+class DefaultFakeClipboard implements FakeClipboard {
+    public text: string | undefined
 
     /**
      * Records the text that was written.
@@ -40,8 +40,8 @@ export class FakeClipboard implements Clipboard {
      * @returns an empty Promise.
      */
     public async writeText(text: string): Promise<void> {
-        this._text = text
+        this.text = text
     }
 
-    public constructor({}: FakeClipboardOptions = {}) {}
+    public constructor({}: ClipboardOptions = {}) {}
 }

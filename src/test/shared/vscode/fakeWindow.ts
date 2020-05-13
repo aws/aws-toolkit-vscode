@@ -5,22 +5,22 @@
 
 import * as vscode from 'vscode'
 import { isThenable } from '../../../shared/utilities/promiseUtilities'
-import { Dialog, InputBox, Message, Progress, StatusBar, Window } from '../../../shared/vscode/window'
+import { Window } from '../../../shared/vscode/window'
 
 export interface FakeWindowOptions {
-    statusBar?: FakeStatusBar | FakeStatusBarOptions
-    inputBox?: FakeInputBox | FakeInputBoxOptions
-    message?: FakeMessage | FakeMessageOptions
-    progress?: FakeProgress | FakeProgressOptions
-    dialog?: FakeDialog | FakeDialogOptions
+    statusBar?: StatusBarOptions
+    inputBox?: InputBoxOptions
+    message?: MessageOptions
+    progress?: ProgressOptions
+    dialog?: DialogOptions
 }
 
 export class FakeWindow implements Window {
-    private readonly _statusBar: FakeStatusBar
-    private readonly _inputBox: FakeInputBox
-    private readonly _message: FakeMessage
-    private readonly _progress: FakeProgress
-    private readonly _dialog: FakeDialog
+    private readonly _statusBar: DefaultFakeStatusBar
+    private readonly _inputBox: DefaultFakeInputBox
+    private readonly _message: DefaultFakeMessage
+    private readonly _progress: DefaultFakeProgress
+    private readonly _dialog: DefaultFakeDialog
 
     public get statusBar(): FakeStatusBar {
         return this._statusBar
@@ -42,33 +42,68 @@ export class FakeWindow implements Window {
         return this._dialog
     }
 
-    public constructor({
-        statusBar = new FakeStatusBar(),
-        inputBox = new FakeInputBox(),
-        message = new FakeMessage(),
-        progress = new FakeProgress(),
-        dialog = new FakeDialog(),
-    }: FakeWindowOptions = {}) {
-        this._statusBar = statusBar instanceof FakeStatusBar ? statusBar : new FakeStatusBar(statusBar)
-        this._inputBox = inputBox instanceof FakeInputBox ? inputBox : new FakeInputBox(inputBox)
-        this._message = message instanceof FakeMessage ? message : new FakeMessage(message)
-        this._progress = progress instanceof FakeProgress ? progress : new FakeProgress(progress)
-        this._dialog = dialog instanceof FakeDialog ? dialog : new FakeDialog(dialog)
+    public setStatusBarMessage(message: string, hideAfterTimeout?: number | undefined): vscode.Disposable {
+        return this._statusBar.setMessage(message)
+    }
+
+    public showInputBox(
+        options?: vscode.InputBoxOptions | undefined,
+        token?: vscode.CancellationToken | undefined
+    ): Thenable<string | undefined> {
+        return this._inputBox.show(options)
+    }
+
+    public showInformationMessage(message: string, ...items: string[]): Thenable<string | undefined> {
+        return this._message.showInformation(message)
+    }
+
+    public showWarningMessage(message: string, ...items: string[]): Thenable<string | undefined> {
+        return this._message.showWarning(message)
+    }
+
+    public showErrorMessage(message: string, ...items: string[]): Thenable<string | undefined> {
+        return this._message.showError(message)
+    }
+
+    public withProgress<R>(
+        options: vscode.ProgressOptions,
+        task: (
+            progress: vscode.Progress<{ message?: string | undefined; increment?: number | undefined }>,
+            token: vscode.CancellationToken
+        ) => Thenable<R>
+    ): Thenable<R> {
+        return this._progress.show(options, task)
+    }
+
+    public showOpenDialog(options: vscode.OpenDialogOptions): Thenable<vscode.Uri[] | undefined> {
+        return this._dialog.showOpen(options)
+    }
+
+    public showSaveDialog(options: vscode.SaveDialogOptions): Thenable<vscode.Uri | undefined> {
+        return this._dialog.showSave(options)
+    }
+
+    public constructor({ statusBar, inputBox, message, progress, dialog }: FakeWindowOptions = {}) {
+        this._statusBar = new DefaultFakeStatusBar(statusBar)
+        this._inputBox = new DefaultFakeInputBox(inputBox)
+        this._message = new DefaultFakeMessage(message)
+        this._progress = new DefaultFakeProgress(progress)
+        this._dialog = new DefaultFakeDialog(dialog)
     }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface FakeStatusBarOptions {}
+export interface StatusBarOptions {}
 
-export class FakeStatusBar implements StatusBar {
-    private _message: string | undefined
-
+export interface FakeStatusBar {
     /**
      * The message that was set, if any.
      */
-    public get message(): string | undefined {
-        return this._message
-    }
+    readonly message: string | undefined
+}
+
+class DefaultFakeStatusBar implements FakeStatusBar {
+    public message: string | undefined
 
     /**
      * Records the message that was set.
@@ -76,38 +111,37 @@ export class FakeStatusBar implements StatusBar {
      * @returns a no-op Disposable
      */
     public setMessage(message: string): vscode.Disposable {
-        this._message = message
+        this.message = message
         return new vscode.Disposable(() => undefined)
     }
 
-    public constructor({}: FakeStatusBarOptions = {}) {}
+    public constructor({}: StatusBarOptions = {}) {}
 }
 
-export interface FakeInputBoxOptions {
+export interface InputBoxOptions {
     /**
      * The input to respond with, if any.
      */
     input?: string | undefined
 }
 
-export class FakeInputBox implements InputBox {
-    private readonly _input: string | undefined
-    private _errorMessage: string | undefined
-    private _options: vscode.InputBoxOptions | undefined
-
+export interface FakeInputBox {
     /**
      * The options shown, if any.
      */
-    public get options(): vscode.InputBoxOptions | undefined {
-        return this._options
-    }
+    readonly options: vscode.InputBoxOptions | undefined
 
     /**
      * The message returned from the validateInput function, if any.
      */
-    public get errorMessage(): string | undefined {
-        return this._errorMessage
-    }
+    readonly errorMessage: string | undefined
+}
+
+class DefaultFakeInputBox implements FakeInputBox {
+    private readonly input: string | undefined
+
+    public errorMessage: string | undefined
+    public options: vscode.InputBoxOptions | undefined
 
     /**
      * Passes the {@link input} to the {@link vscode.InputBoxOptions.validateInput} and records the {@link errorMessage}, if any.
@@ -116,42 +150,74 @@ export class FakeInputBox implements InputBox {
      * @returns a Promise of the {@link input} if validation succeeds or no validation was set,
      * otherwise returns an empty Promise.
      */
-    public async show(options?: vscode.InputBoxOptions, token?: vscode.CancellationToken): Promise<string | undefined> {
-        this._options = options
+    public async show(options?: vscode.InputBoxOptions): Promise<string | undefined> {
+        this.options = options
         const validateInput = options?.validateInput
 
-        if (this._input !== undefined && validateInput) {
-            const result = validateInput(this._input)
+        if (this.input !== undefined && validateInput) {
+            const result = validateInput(this.input)
             if (isThenable<string | undefined>(result)) {
-                this._errorMessage = await result
+                this.errorMessage = await result
             } else {
-                this._errorMessage = result as string | undefined
+                this.errorMessage = result as string | undefined
             }
 
-            if (this._errorMessage) {
+            if (this.errorMessage) {
                 return Promise.resolve(undefined)
             }
         }
 
-        return Promise.resolve(this._input)
+        return Promise.resolve(this.input)
     }
 
-    public constructor({ input }: FakeInputBoxOptions = {}) {
-        this._input = input
+    public constructor({ input }: InputBoxOptions = {}) {
+        this.input = input
     }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface FakeMessageOptions {}
+export interface MessageOptions {}
 
-export class FakeMessage implements Message {
-    private _error: string | undefined
+export interface FakeMessage {
+    /**
+     * The information message that was shown, if any.
+     */
+    readonly information: string | undefined
+
+    /**
+     * The warning message that was shown, if any.
+     */
+    readonly warning: string | undefined
 
     /**
      * The error message that was shown, if any.
      */
-    public get error(): string | undefined {
-        return this._error
+    readonly error: string | undefined
+}
+
+class DefaultFakeMessage implements FakeMessage {
+    public information: string | undefined
+    public warning: string | undefined
+    public error: string | undefined
+
+    /**
+     * Records the information message that was shown, if any.
+     *
+     * @returns an empty Promise.
+     */
+    public async showInformation(message: string): Promise<string | undefined> {
+        this.information = message
+        return Promise.resolve(undefined)
+    }
+
+    /**
+     * Records the warning message that was shown, if any.
+     *
+     * @returns an empty Promise.
+     */
+    public async showWarning(message: string): Promise<string | undefined> {
+        this.warning = message
+        return Promise.resolve(undefined)
     }
 
     /**
@@ -159,34 +225,32 @@ export class FakeMessage implements Message {
      *
      * @returns an empty Promise.
      */
-    public async showError(message: string, ...items: string[]): Promise<string | undefined> {
-        this._error = message
+    public async showError(message: string): Promise<string | undefined> {
+        this.error = message
         return Promise.resolve(undefined)
     }
 
-    public constructor({}: FakeMessageOptions = {}) {}
+    public constructor({}: MessageOptions = {}) {}
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface FakeProgressOptions {}
+export interface ProgressOptions {}
 
-export class FakeProgress implements Progress {
-    private _reported: { message?: string; increment?: number }[] = []
-    private _options: vscode.ProgressOptions | undefined
-
+export interface FakeProgress {
     /**
      * The progress that was reported, if any.
      */
-    public get reported(): { message?: string; increment?: number }[] {
-        return this._reported
-    }
+    readonly reported: { message?: string; increment?: number }[]
 
     /**
      * The options that were shown, if any.
      */
-    public get options(): vscode.ProgressOptions | undefined {
-        return this._options
-    }
+    readonly options: vscode.ProgressOptions | undefined
+}
+
+class DefaultFakeProgress implements FakeProgress {
+    public reported: { message?: string; increment?: number }[] = []
+    public options: vscode.ProgressOptions | undefined
 
     /**
      * Records the options and progress that were reported, if any.
@@ -200,11 +264,11 @@ export class FakeProgress implements Progress {
             token: vscode.CancellationToken
         ) => Thenable<R>
     ): Promise<R> {
-        this._options = options
+        this.options = options
 
         const reporter: vscode.Progress<{ message?: string; increment?: number }> = {
             report: item => {
-                this._reported.push(item)
+                this.reported.push(item)
             },
         }
 
@@ -216,10 +280,10 @@ export class FakeProgress implements Progress {
         return task(reporter, token)
     }
 
-    public constructor({}: FakeProgressOptions = {}) {}
+    public constructor({}: ProgressOptions = {}) {}
 }
 
-export interface FakeDialogOptions {
+export interface DialogOptions {
     /**
      * The file to select in the open dialog, if any.
      */
@@ -231,25 +295,24 @@ export interface FakeDialogOptions {
     saveSelection?: vscode.Uri | undefined
 }
 
-export class FakeDialog implements Dialog {
-    private readonly _openSelections: vscode.Uri[] | undefined
-    private readonly _saveSelection: vscode.Uri | undefined
-    private _openOptions: vscode.OpenDialogOptions | undefined
-    private _saveOptions: vscode.SaveDialogOptions | undefined
-
+export interface FakeDialog {
     /**
      * The open options that were shown, if any.
      */
-    public get openOptions(): vscode.OpenDialogOptions | undefined {
-        return this._openOptions
-    }
+    readonly openOptions: vscode.OpenDialogOptions | undefined
 
     /**
      * The save options that were shown, if any.
      */
-    public get saveOptions(): vscode.SaveDialogOptions | undefined {
-        return this._saveOptions
-    }
+    readonly saveOptions: vscode.SaveDialogOptions | undefined
+}
+
+class DefaultFakeDialog implements FakeDialog {
+    private readonly openSelections: vscode.Uri[] | undefined
+    private readonly saveSelection: vscode.Uri | undefined
+
+    public openOptions: vscode.OpenDialogOptions | undefined
+    public saveOptions: vscode.SaveDialogOptions | undefined
 
     /**
      * Selects the file(s) specified in the {@link openSelections}, if any.
@@ -257,8 +320,8 @@ export class FakeDialog implements Dialog {
      * @returns a Promise of the {@link openSelections}.
      */
     public async showOpen(options: vscode.OpenDialogOptions): Promise<vscode.Uri[] | undefined> {
-        this._openOptions = options
-        return Promise.resolve(this._openSelections)
+        this.openOptions = options
+        return Promise.resolve(this.openSelections)
     }
 
     /**
@@ -267,12 +330,12 @@ export class FakeDialog implements Dialog {
      * @returns a Promise of the {@link saveSelection}.
      */
     public async showSave(options: vscode.SaveDialogOptions): Promise<vscode.Uri | undefined> {
-        this._saveOptions = options
-        return Promise.resolve(this._saveSelection)
+        this.saveOptions = options
+        return Promise.resolve(this.saveSelection)
     }
 
-    public constructor({ openSelections, saveSelection }: FakeDialogOptions = {}) {
-        this._openSelections = openSelections
-        this._saveSelection = saveSelection
+    public constructor({ openSelections, saveSelection }: DialogOptions = {}) {
+        this.openSelections = openSelections
+        this.saveSelection = saveSelection
     }
 }
