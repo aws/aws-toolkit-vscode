@@ -82,6 +82,8 @@ function makeAddCodeSamDebugCodeLens(params: MakeAddDebugConfigCodeLensParams): 
     const command: vscode.Command = {
         title: localize('AWS.command.addSamDebugConfiguration', 'Add Debug Configuration'),
         command: 'aws.addSamDebugConfiguration',
+        // Values provided by makeTypescriptCodeLensProvider(),
+        // makeCSharpCodeLensProvider(), makePythonCodeLensProvider().
         arguments: [
             {
                 resourceName: params.handlerName,

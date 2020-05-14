@@ -5,7 +5,11 @@
 
 import * as _ from 'lodash'
 import * as vscode from 'vscode'
-import { AwsSamDebuggerConfiguration, isAwsSamDebugConfiguration } from '../sam/debugger/awsSamDebugConfiguration'
+import {
+    AwsSamDebuggerConfiguration,
+    isAwsSamDebugConfiguration,
+    ensureRelativePaths,
+} from '../sam/debugger/awsSamDebugConfiguration'
 import {
     AwsSamDebugConfigurationValidator,
     DefaultAwsSamDebugConfigurationValidator,
@@ -37,7 +41,14 @@ export class LaunchConfiguration {
     ) {}
 
     public getDebugConfigurations(): vscode.DebugConfiguration[] {
-        return this.configSource.getDebugConfigurations()
+        return _(this.configSource.getDebugConfigurations())
+            .map(o => {
+                if (isAwsSamDebugConfiguration(o)) {
+                    ensureRelativePaths(undefined, o)
+                }
+                return o
+            })
+            .value()
     }
 
     /**
