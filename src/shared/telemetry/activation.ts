@@ -60,7 +60,7 @@ export async function activate(activateArguments: {
             ) {
                 if (!ext.telemetry) {
                     getLogger().warn(
-                        'Telemetry configuration changed, but telemetry is undefined. This can happen during testing.'
+                        'Telemetry configuration changed, but telemetry is undefined. This can happen during testing. #1071'
                     )
                     return
                 }
