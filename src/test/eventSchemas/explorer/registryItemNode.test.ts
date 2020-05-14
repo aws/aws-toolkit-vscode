@@ -37,7 +37,7 @@ describe('RegistryItemNode', () => {
 
     class SchemaMockToolkitClientBuilder extends MockToolkitClientBuilder {
         public constructor(schemaClient: SchemaClient) {
-            super(undefined, schemaClient)
+            super({ schemaClient })
         }
     }
 
@@ -140,7 +140,7 @@ describe('DefaultRegistryNode', () => {
 
     class SchemaMockToolkitClientBuilder extends MockToolkitClientBuilder {
         public constructor(schemaClient: SchemaClient) {
-            super(undefined, schemaClient)
+            super({ schemaClient })
         }
     }
     class RegistryNamesMockSchemaClient extends MockSchemaClient {

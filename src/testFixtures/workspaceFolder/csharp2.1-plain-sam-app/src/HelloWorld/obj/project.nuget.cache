@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "dgSpecHash": "sgoHzGiJet98MdPlRfpcNhaOcoXSmlw1y/9Vl8cSwS+Vkrk/4HkQiIHNXkzkwGxXXT28fLg3EXLQdCOf4gSB/Q==",
+  "success": true,
+  "projectFilePath": "c:\\Users\\bryceito\\aws-toolkit-vscode\\src\\integrationTest-samples\\workspaceFolder\\csharp2.1-plain-sam-app\\src\\HelloWorld\\HelloWorld.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\bryceito\\.nuget\\packages\\amazon.lambda.apigatewayevents\\1.2.0\\amazon.lambda.apigatewayevents.1.2.0.nupkg.sha512",
+    "C:\\Users\\bryceito\\.nuget\\packages\\amazon.lambda.core\\1.1.0\\amazon.lambda.core.1.1.0.nupkg.sha512",
+    "C:\\Users\\bryceito\\.nuget\\packages\\amazon.lambda.serialization.json\\1.5.0\\amazon.lambda.serialization.json.1.5.0.nupkg.sha512",
+    "C:\\Users\\bryceito\\.nuget\\packages\\microsoft.netcore.app\\2.1.0\\microsoft.netcore.app.2.1.0.nupkg.sha512",
+    "C:\\Users\\bryceito\\.nuget\\packages\\microsoft.netcore.dotnetapphost\\2.1.0\\microsoft.netcore.dotnetapphost.2.1.0.nupkg.sha512",
+    "C:\\Users\\bryceito\\.nuget\\packages\\microsoft.netcore.dotnethostpolicy\\2.1.0\\microsoft.netcore.dotnethostpolicy.2.1.0.nupkg.sha512",
+    "C:\\Users\\bryceito\\.nuget\\packages\\microsoft.netcore.dotnethostresolver\\2.1.0\\microsoft.netcore.dotnethostresolver.2.1.0.nupkg.sha512",
+    "C:\\Users\\bryceito\\.nuget\\packages\\microsoft.netcore.platforms\\2.1.0\\microsoft.netcore.platforms.2.1.0.nupkg.sha512",
+    "C:\\Users\\bryceito\\.nuget\\packages\\microsoft.netcore.targets\\2.1.0\\microsoft.netcore.targets.2.1.0.nupkg.sha512",
+    "C:\\Users\\bryceito\\.nuget\\packages\\netstandard.library\\2.0.3\\netstandard.library.2.0.3.nupkg.sha512",
+    "C:\\Users\\bryceito\\.nuget\\packages\\newtonsoft.json\\12.0.1\\newtonsoft.json.12.0.1.nupkg.sha512"
+  ],
+  "logs": []
+}
