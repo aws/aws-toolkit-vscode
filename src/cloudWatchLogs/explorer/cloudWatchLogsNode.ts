@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 import { CloudWatchLogs } from 'aws-sdk'
 import * as vscode from 'vscode'
 
-import { listCloudWatchLogGroups } from '../../lambda/utils'
+import { listCloudWatchLogGroups } from '../utils'
 import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
