@@ -18,6 +18,9 @@ export function setupTestIconPaths() {
     ext.iconPaths.dark.cloudFormation = '/icons/dark/cloudformation'
     ext.iconPaths.light.cloudFormation = '/icons/light/cloudformation'
 
+    ext.iconPaths.dark.cloudWatchLogGroup = '/icons/dark/cloudWatchLogGroup'
+    ext.iconPaths.light.cloudWatchLogGroup = '/icons/light/cloudWatchLogGroup'
+
     ext.iconPaths.dark.lambda = '/icons/dark/lambda'
     ext.iconPaths.light.lambda = '/icons/light/lambda'
 
