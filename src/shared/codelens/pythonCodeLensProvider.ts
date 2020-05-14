@@ -175,9 +175,6 @@ export async function makePythonDebugConfig(
         }
     }
     config.codeRoot = pathutil.normalize(config.codeRoot)
-    if (config.invokeTarget.target === 'template') {
-        config.codeRoot = path.dirname(config.codeRoot)
-    }
 
     const baseBuildDir = await makeBuildDir()
     let debugPort: number | undefined
