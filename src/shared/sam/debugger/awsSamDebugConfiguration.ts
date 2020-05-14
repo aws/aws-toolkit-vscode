@@ -12,6 +12,7 @@ import {
     CodeTargetProperties,
     TemplateTargetProperties,
 } from './awsSamDebugConfiguration.gen'
+import { getLogger } from '../../logger'
 
 export * from './awsSamDebugConfiguration.gen'
 
@@ -38,6 +39,41 @@ export function isTemplateTargetProperties(props: TargetProperties): props is Te
 
 export function isCodeTargetProperties(props: TargetProperties): props is CodeTargetProperties {
     return props.target === CODE_TARGET_TYPE
+}
+
+/**
+ * Ensures that the `projectRoot` or `samTemplatePath` relative properties on
+ * the given `config` are relative (not absolute) paths.
+ *
+ * @param folder  Workspace folder, or empty to use the workspace associated with `projectRoot` or `samTemplatePath`.
+ * @param config
+ */
+export function ensureRelativePaths(
+    folder: vscode.WorkspaceFolder | undefined,
+    config: AwsSamDebuggerConfiguration
+): void {
+    if (config.invokeTarget.target !== TEMPLATE_TARGET_TYPE && config.invokeTarget.target !== CODE_TARGET_TYPE) {
+        throw Error()
+    }
+    const filepath =
+        config.invokeTarget.target === TEMPLATE_TARGET_TYPE
+            ? config.invokeTarget.samTemplatePath
+            : config.invokeTarget.projectRoot
+    if (!path.isAbsolute(filepath)) {
+        return
+    }
+    const uri = vscode.Uri.file(filepath)
+    folder = folder ? folder : vscode.workspace.getWorkspaceFolder(uri)
+    if (!folder) {
+        getLogger().warn(`ensureRelativePaths: no workspace for path: "${filepath}"`)
+        return
+    }
+    const relPath = getNormalizedRelativePath(folder!.uri.fsPath, filepath)
+    if (config.invokeTarget.target === TEMPLATE_TARGET_TYPE) {
+        config.invokeTarget.samTemplatePath = relPath
+    } else {
+        config.invokeTarget.projectRoot = relPath
+    }
 }
 
 /**
@@ -122,6 +158,7 @@ export function createCodeAwsSamDebugConfig(
     runtimeFamily?: RuntimeFamily
 ): AwsSamDebuggerConfiguration {
     const workspaceRelativePath = folder ? getNormalizedRelativePath(folder.uri.fsPath, projectRoot) : projectRoot
+    const parentDir = path.basename(path.dirname(projectRoot))
     const runtime = runtimeFamily ? getDefaultRuntime(runtimeFamily) : undefined
     if (!runtime) {
         throw new Error('Invalid or missing runtime family')
@@ -130,7 +167,7 @@ export function createCodeAwsSamDebugConfig(
     return {
         type: AWS_SAM_DEBUG_TYPE,
         request: DIRECT_INVOKE_TYPE,
-        name: makeName(lambdaHandler, projectRoot, runtime),
+        name: makeName(lambdaHandler, parentDir, runtime),
         invokeTarget: {
             target: CODE_TARGET_TYPE,
             projectRoot: workspaceRelativePath,

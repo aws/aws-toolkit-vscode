@@ -20,6 +20,9 @@ import {
     DIRECT_INVOKE_TYPE,
     TEMPLATE_TARGET_TYPE,
     createTemplateAwsSamDebugConfig,
+    ensureRelativePaths,
+    createCodeAwsSamDebugConfig,
+    CodeTargetProperties,
 } from '../../../../shared/sam/debugger/awsSamDebugConfiguration'
 import { SamDebugConfigProvider } from '../../../../shared/sam/debugger/awsSamDebugger'
 import { SamLaunchRequestArgs } from '../../../../shared/sam/debugger/samDebugSession'
@@ -793,6 +796,31 @@ describe('createTemplateAwsSamDebugConfig', () => {
         assert.strictEqual(config.sam?.dockerNetwork, params.dockerNetwork)
         assert.strictEqual(config.sam?.containerBuild, undefined)
     })
+})
+
+it('ensureRelativePaths', () => {
+    let workspace: vscode.WorkspaceFolder = {
+        uri: vscode.Uri.file('/test1/'),
+        name: 'test workspace',
+        index: 0,
+    }
+    const templateConfig = createTemplateAwsSamDebugConfig(undefined, undefined, 'test name 1', '/test1/template.yaml')
+    assert.strictEqual(
+        (templateConfig.invokeTarget as TemplateTargetProperties).samTemplatePath,
+        '/test1/template.yaml'
+    )
+    ensureRelativePaths(workspace, templateConfig)
+    assert.strictEqual((templateConfig.invokeTarget as TemplateTargetProperties).samTemplatePath, 'template.yaml')
+
+    const codeConfig = createCodeAwsSamDebugConfig(
+        undefined,
+        'testName1',
+        '/test1/project',
+        lambdaModel.RuntimeFamily.NodeJS
+    )
+    assert.strictEqual((codeConfig.invokeTarget as CodeTargetProperties).projectRoot, '/test1/project')
+    ensureRelativePaths(workspace, codeConfig)
+    assert.strictEqual((codeConfig.invokeTarget as CodeTargetProperties).projectRoot, 'project')
 })
 
 function createBaseCodeConfig(params: {

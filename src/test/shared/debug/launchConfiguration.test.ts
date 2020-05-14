@@ -16,7 +16,7 @@ const samDebugConfiguration: AwsSamDebuggerConfiguration = {
     request: 'direct-invoke',
     invokeTarget: {
         target: 'template',
-        samTemplatePath: '/',
+        samTemplatePath: '/template.yaml',
         samTemplateResource: 'resource',
     },
 }
@@ -33,7 +33,7 @@ const debugConfigurations: vscode.DebugConfiguration[] = [
     },
 ]
 
-const templateUri = vscode.Uri.file('/')
+const templateUri = vscode.Uri.file('/template.yaml')
 
 describe('LaunchConfiguration', () => {
     let mockConfigSource: DebugConfigurationSource
