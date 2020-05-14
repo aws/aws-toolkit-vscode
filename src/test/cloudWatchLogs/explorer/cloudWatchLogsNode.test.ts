@@ -1,13 +1,13 @@
 /*!
- * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import * as assert from 'assert'
 import { CloudWatchLogs } from 'aws-sdk'
 import * as sinon from 'sinon'
-import { LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
-import { CloudWatchLogsNode, CONTEXT_VALUE_CLOUDWATCH_LOG } from '../../../cloudWatchLogs/explorer/cloudWatchLogsNode'
+import { CONTEXT_VALUE_CLOUDWATCH_LOG, LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
+import { CloudWatchLogsNode } from '../../../cloudWatchLogs/explorer/cloudWatchLogsNode'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 import { ext } from '../../../shared/extensionGlobals'
 import { asyncGenerator } from '../../utilities/collectionUtils'

@@ -14,6 +14,12 @@ import { RegionProvider } from '../shared/regions/regionProvider'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { StepFunctionsNode } from '../stepFunctions/explorer/stepFunctionsNodes'
 
+/**
+ * Services that are candidates to add to the region explorer.
+ * `serviceId`s are checked against ~/resources/endpoints.json to see whether or not the service is available in the given region.
+ * If the service is available, we use the `createFn` to generate the node for the region.
+ * This interface exists so we can add additional nodes to the array (otherwise Typescript types the array to what's already in the array at creation)
+ */
 interface ServiceCandidate {
     serviceId: string
     createFn(): AWSTreeNodeBase
@@ -42,7 +48,6 @@ export class RegionNode extends AWSTreeNodeBase {
         this.region = region
         this.update(region)
 
-        // note: serviceIds are specified in ~/resources/endpoints.json
         const serviceCandidates: ServiceCandidate[] = [
             { serviceId: 'cloudformation', createFn: () => new CloudFormationNode(this.regionCode) },
             { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },

@@ -10,6 +10,8 @@ import { ext } from '../../shared/extensionGlobals'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
+export const CONTEXT_VALUE_CLOUDWATCH_LOG = 'awsCloudWatchLogNode'
+
 export class LogGroupNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
         public readonly parent: AWSTreeNodeBase,
@@ -22,6 +24,7 @@ export class LogGroupNode extends AWSTreeNodeBase implements AWSResourceNode {
             dark: Uri.file(ext.iconPaths.dark.cloudWatchLogGroup),
             light: Uri.file(ext.iconPaths.light.cloudWatchLogGroup),
         }
+        this.contextValue = CONTEXT_VALUE_CLOUDWATCH_LOG
     }
 
     public update(configuration: CloudWatchLogs.LogGroup): void {
