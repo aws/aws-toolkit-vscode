@@ -42,6 +42,7 @@ export class RegionNode extends AWSTreeNodeBase {
         this.region = region
         this.update(region)
 
+        // note: serviceIds are specified in ~/resources/endpoints.json
         const serviceCandidates: ServiceCandidate[] = [
             { serviceId: 'cloudformation', createFn: () => new CloudFormationNode(this.regionCode) },
             { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },
@@ -49,6 +50,8 @@ export class RegionNode extends AWSTreeNodeBase {
             { serviceId: 'states', createFn: () => new StepFunctionsNode(this.regionCode) },
         ]
 
+        // Feature Toggle for CloudWatch Logs
+        // REMOVE_WHEN_CLOUDWATCH_LOGS_READY
         if (FeatureToggle.getFeatureToggle().isFeatureActive(ActiveFeatureKeys.CloudWatchLogs)) {
             serviceCandidates.push({ serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) })
         }

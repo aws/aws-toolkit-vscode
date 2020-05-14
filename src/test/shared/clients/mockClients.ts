@@ -27,6 +27,7 @@ interface Clients {
     stepFunctionsClient: StepFunctionsClient
     stsClient: StsClient
 }
+
 export class MockToolkitClientBuilder implements ToolkitClientBuilder {
     private readonly clients: Clients
     public constructor(overrideClients?: Partial<Clients>) {

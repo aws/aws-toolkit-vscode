@@ -19,6 +19,8 @@ import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { LogGroupNode } from './logGroupNode'
 
+export const CONTEXT_VALUE_CLOUDWATCH_LOG = 'awsCloudWatchLogNode'
+
 export class CloudWatchLogsNode extends AWSTreeNodeBase {
     private readonly logGroupNodes: Map<string, LogGroupNode>
 
@@ -60,7 +62,18 @@ export class CloudWatchLogsNode extends AWSTreeNodeBase {
             this.logGroupNodes,
             logGroups.keys(),
             key => this.logGroupNodes.get(key)!.update(logGroups.get(key)!),
-            key => new LogGroupNode(this, this.regionCode, logGroups.get(key)!)
+            key => makeLogGroupNode(this, this.regionCode, logGroups.get(key)!)
         )
     }
+}
+
+function makeLogGroupNode(
+    parent: AWSTreeNodeBase,
+    regionCode: string,
+    configuration: CloudWatchLogs.LogGroup
+): LogGroupNode {
+    const node = new LogGroupNode(parent, regionCode, configuration)
+    node.contextValue = CONTEXT_VALUE_CLOUDWATCH_LOG
+
+    return node
 }
