@@ -6,11 +6,18 @@
 import { TreeItemCollapsibleState } from 'vscode'
 import { SchemasNode } from '../eventSchemas/explorer/schemasNode'
 import { CloudFormationNode } from '../lambda/explorer/cloudFormationNodes'
+import { CloudWatchLogsNode } from '../cloudWatchLogs/explorer/cloudWatchLogsNode'
 import { LambdaNode } from '../lambda/explorer/lambdaNodes'
+import { ActiveFeatureKeys, FeatureToggle } from '../shared/featureToggle'
 import { Region } from '../shared/regions/endpoints'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { StepFunctionsNode } from '../stepFunctions/explorer/stepFunctionsNodes'
+
+interface RegionServiceNode {
+    serviceId: string
+    createFn(): AWSTreeNodeBase
+}
 
 /**
  * An AWS Explorer node representing a region.
@@ -35,12 +42,16 @@ export class RegionNode extends AWSTreeNodeBase {
         this.region = region
         this.update(region)
 
-        const serviceCandidates = [
+        const serviceCandidates: RegionServiceNode[] = [
             { serviceId: 'cloudformation', createFn: () => new CloudFormationNode(this.regionCode) },
             { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },
             { serviceId: 'schemas', createFn: () => new SchemasNode(this.regionCode) },
             { serviceId: 'states', createFn: () => new StepFunctionsNode(this.regionCode) },
         ]
+
+        if (FeatureToggle.getFeatureToggle().isFeatureActive(ActiveFeatureKeys.CloudWatchLogs)) {
+            serviceCandidates.push({ serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) })
+        }
 
         for (const serviceCandidate of serviceCandidates) {
             this.addChildNodeIfInRegion(serviceCandidate.serviceId, regionProvider, serviceCandidate.createFn)

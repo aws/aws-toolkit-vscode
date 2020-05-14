@@ -6,9 +6,10 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { CloudFormation, Lambda } from 'aws-sdk'
+import { CloudFormation, CloudWatchLogs, Lambda } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { CloudFormationClient } from '../shared/clients/cloudFormationClient'
+import { CloudWatchLogsClient } from '../shared/clients/cloudWatchLogsClient'
 import { LambdaClient } from '../shared/clients/lambdaClient'
 
 export async function* listCloudFormationStacks(
@@ -34,6 +35,22 @@ export async function* listLambdaFunctions(client: LambdaClient): AsyncIterableI
 
     try {
         yield* client.listFunctions()
+    } finally {
+        if (!!status) {
+            status.dispose()
+        }
+    }
+}
+
+export async function* listCloudWatchLogGroups(
+    client: CloudWatchLogsClient
+): AsyncIterableIterator<CloudWatchLogs.LogGroup> {
+    const status = vscode.window.setStatusBarMessage(
+        localize('AWS.message.statusBar.loading.logGroups', 'Loading Log Groups...')
+    )
+
+    try {
+        yield* client.describeLogGroups()
     } finally {
         if (!!status) {
             status.dispose()

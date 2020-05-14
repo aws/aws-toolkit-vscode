@@ -11,7 +11,9 @@ import { SettingsConfiguration } from './settingsConfiguration'
 // Features that do not follow this scheme will not work.
 // You cannot have more active features than FeatureToggle.maxFeatures (default: 5)
 // Any features that are flagged in the code but not added here will always return false.
-export enum ActiveFeatureKeys {}
+export enum ActiveFeatureKeys {
+    CloudWatchLogs = 'CloudWatchLogs',
+}
 
 /**
  * This class handles feature access for unreleased or gated features.
@@ -43,6 +45,8 @@ export class FeatureToggle {
     private readonly enabledFeatures: Set<string>
 
     private readonly maxFeatures: number = 5
+
+    private static INSTANCE: FeatureToggle | undefined
 
     public constructor(configuration: SettingsConfiguration, overrideKeys?: string[]) {
         this.enabledFeatures = new Set()
@@ -79,5 +83,22 @@ export class FeatureToggle {
      */
     public isFeatureActive(key: string): boolean {
         return this.enabledFeatures.has(key)
+    }
+
+    public static createFeatureToggle(configuration: SettingsConfiguration, overrideKeys?: string[]): FeatureToggle {
+        if (FeatureToggle.INSTANCE) {
+            throw new Error('FeatureToggle already initialized')
+        }
+
+        FeatureToggle.INSTANCE = new FeatureToggle(configuration, overrideKeys)
+        return FeatureToggle.INSTANCE
+    }
+
+    public static getFeatureToggle(): FeatureToggle {
+        if (!FeatureToggle.INSTANCE) {
+            throw new Error('FeatureToggle not initialized')
+        }
+
+        return FeatureToggle.INSTANCE
     }
 }

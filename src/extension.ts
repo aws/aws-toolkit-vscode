@@ -35,6 +35,7 @@ import {
     showQuickStartWebview,
     toastNewUser,
 } from './shared/extensionUtilities'
+import { FeatureToggle } from './shared/featureToggle'
 import { getLogger } from './shared/logger'
 import { activate as activateLogger } from './shared/logger/activation'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
@@ -104,6 +105,8 @@ export async function activate(context: vscode.ExtensionContext) {
             toolkitSettings: toolkitSettings,
         })
         await ext.telemetry.start()
+
+        FeatureToggle.createFeatureToggle(toolkitSettings)
 
         context.subscriptions.push(
             vscode.commands.registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())
