@@ -14,7 +14,7 @@ import { RegionProvider } from '../shared/regions/regionProvider'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { StepFunctionsNode } from '../stepFunctions/explorer/stepFunctionsNodes'
 
-interface RegionServiceNode {
+interface ServiceCandidate {
     serviceId: string
     createFn(): AWSTreeNodeBase
 }
@@ -42,7 +42,7 @@ export class RegionNode extends AWSTreeNodeBase {
         this.region = region
         this.update(region)
 
-        const serviceCandidates: RegionServiceNode[] = [
+        const serviceCandidates: ServiceCandidate[] = [
             { serviceId: 'cloudformation', createFn: () => new CloudFormationNode(this.regionCode) },
             { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },
             { serviceId: 'schemas', createFn: () => new SchemasNode(this.regionCode) },
