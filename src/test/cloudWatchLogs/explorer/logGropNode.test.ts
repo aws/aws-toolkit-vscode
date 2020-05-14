@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import { CloudWatchLogs } from 'aws-sdk'
 import * as os from 'os'
-import { LogGroupNode } from '../../../CloudWatchLogs/explorer/logGroupNode'
+import { LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
 import { ext } from '../../../shared/extensionGlobals'
 import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
