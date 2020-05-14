@@ -306,42 +306,42 @@ describe('StepFunctions VisualizeStateMachine', async () => {
     // TODO re-enable these tests once this race condition is resolved.
     // https://github.com/aws/aws-toolkit-vscode/issues/1071
     //
-    // it('Test AslVisualizationManager managedVisualizations set removes visualization on visualization dispose, single vis', async () => {
-    //     assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
-    //
-    //     // Preview Doc1
-    //     mockVsCode.showTextDocument(mockTextDocumentOne)
-    //     let panel = await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
-    //     assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
-    //
-    //     // Dispose of visualization panel
-    //     assert.ok(panel, 'Panel was not successfully generated')
-    //     panel = panel as vscode.WebviewPanel
-    //     panel.dispose()
-    //
-    //     assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
-    // })
-    //
-    // it('Test AslVisualizationManager managedVisualizations set removes correct visualization on visualization dispose, multiple vis', async () => {
-    //     assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
-    //
-    //      Preview Doc1
-    //     mockVsCode.showTextDocument(mockTextDocumentOne)
-    //     let panel = await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
-    //     assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
-    //
-    //      Preview Doc2
-    //     mockVsCode.showTextDocument(mockTextDocumentTwo)
-    //     await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
-    //     assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
-    //
-    //     // Dispose of first visualization panel
-    //     assert.ok(panel, 'Panel was not successfully generated')
-    //     panel = panel as vscode.WebviewPanel
-    //     panel.dispose()
-    //
-    //     assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
-    // })
+    it.skip('Test AslVisualizationManager managedVisualizations set removes visualization on visualization dispose, single vis', async () => {
+        assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
+
+        // Preview Doc1
+        mockVsCode.showTextDocument(mockTextDocumentOne)
+        let panel = await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
+        assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
+
+        // Dispose of visualization panel
+        assert.ok(panel, 'Panel was not successfully generated')
+        panel = panel as vscode.WebviewPanel
+        panel.dispose()
+
+        assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
+    })
+
+    it.skip('Test AslVisualizationManager managedVisualizations set removes correct visualization on visualization dispose, multiple vis', async () => {
+        assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
+
+        // Preview Doc1
+        mockVsCode.showTextDocument(mockTextDocumentOne)
+        let panel = await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
+        assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
+
+        // Preview Doc2
+        mockVsCode.showTextDocument(mockTextDocumentTwo)
+        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
+        assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
+
+        // Dispose of first visualization panel
+        assert.ok(panel, 'Panel was not successfully generated')
+        panel = panel as vscode.WebviewPanel
+        panel.dispose()
+
+        assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
+    })
 })
 
 class MockAslVisualization extends AslVisualization {
