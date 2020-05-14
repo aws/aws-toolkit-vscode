@@ -5,7 +5,7 @@
 
 import { CloudWatchLogs } from 'aws-sdk'
 import { ext } from '../extensionGlobals'
-import { CloudWatchLogsClient } from './CloudWatchLogsClient'
+import { CloudWatchLogsClient } from './cloudWatchLogsClient'
 
 export class DefaultCloudWatchLogsClient implements CloudWatchLogsClient {
     public constructor(public readonly regionCode: string) {}

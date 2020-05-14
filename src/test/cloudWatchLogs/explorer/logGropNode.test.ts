@@ -1,29 +1,29 @@
 /*!
- * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import * as assert from 'assert'
-import { Lambda } from 'aws-sdk'
+import { CloudWatchLogs } from 'aws-sdk'
 import * as os from 'os'
-import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
+import { LogGroupNode } from '../../../CloudWatchLogs/explorer/logGroupNode'
 import { ext } from '../../../shared/extensionGlobals'
 import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 
-describe('LambdaFunctionNode', () => {
+describe('LogGroupNode', () => {
     const parentNode = new TestAWSTreeNode('test node')
-    let testNode: LambdaFunctionNode
-    let fakeFunctionConfig: Lambda.FunctionConfiguration
+    let testNode: LogGroupNode
+    let fakeLogGroup: CloudWatchLogs.LogGroup
 
     before(async () => {
         setupTestIconPaths()
-        fakeFunctionConfig = {
-            FunctionName: 'testFunctionName',
-            FunctionArn: 'testFunctionARN',
+        fakeLogGroup = {
+            logGroupName: "it'sBig/it'sHeavy/it'sWood",
+            arn: "it'sBetterThanBadIt'sGood",
         }
 
-        testNode = new LambdaFunctionNode(parentNode, 'someregioncode', fakeFunctionConfig)
+        testNode = new LogGroupNode(parentNode, 'someregioncode', fakeLogGroup)
     })
 
     after(async () => {
@@ -43,25 +43,22 @@ describe('LambdaFunctionNode', () => {
     })
 
     it('initializes the label', async () => {
-        assert.strictEqual(testNode.label, fakeFunctionConfig.FunctionName)
+        assert.strictEqual(testNode.label, fakeLogGroup.logGroupName)
     })
 
     it('initializes the functionName', async () => {
-        assert.strictEqual(testNode.functionName, fakeFunctionConfig.FunctionName)
+        assert.strictEqual(testNode.logGroupName, fakeLogGroup.logGroupName)
     })
 
     it('initializes the tooltip', async () => {
-        assert.strictEqual(
-            testNode.tooltip,
-            `${fakeFunctionConfig.FunctionName}${os.EOL}${fakeFunctionConfig.FunctionArn}`
-        )
+        assert.strictEqual(testNode.tooltip, `${fakeLogGroup.logGroupName}${os.EOL}${fakeLogGroup.arn}`)
     })
 
     it('initializes the icon', async () => {
         const iconPath = testNode.iconPath as IconPath
 
-        assert.strictEqual(iconPath.dark.path, ext.iconPaths.dark.lambda, 'Unexpected dark icon path')
-        assert.strictEqual(iconPath.light.path, ext.iconPaths.light.lambda, 'Unexpected light icon path')
+        assert.strictEqual(iconPath.dark.path, ext.iconPaths.dark.cloudWatchLogGroup, 'Unexpected dark icon path')
+        assert.strictEqual(iconPath.light.path, ext.iconPaths.light.cloudWatchLogGroup, 'Unexpected light icon path')
     })
 
     it('has no children', async () => {
