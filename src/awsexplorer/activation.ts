@@ -200,7 +200,7 @@ async function registerAwsExplorerCommands(
     )
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('aws.viewLogStream', async (node: LogGroupNode) =>
+        vscode.commands.registerCommand('aws.cloudWatchLogs.viewLogStream', async (node: LogGroupNode) =>
             vscode.window.showInformationMessage('Not implemented')
         )
     )

@@ -9,7 +9,6 @@ const localize = nls.loadMessageBundle()
 import { CloudWatchLogs } from 'aws-sdk'
 import * as vscode from 'vscode'
 
-import { listCloudWatchLogGroups } from '../utils'
 import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
@@ -52,7 +51,7 @@ export class CloudWatchLogsNode extends AWSTreeNodeBase {
     public async updateChildren(): Promise<void> {
         const client: CloudWatchLogsClient = ext.toolkitClientBuilder.createCloudWatchLogsClient(this.regionCode)
         const logGroups: Map<string, CloudWatchLogs.LogGroup> = toMap(
-            await toArrayAsync(listCloudWatchLogGroups(client)),
+            await toArrayAsync(client.describeLogGroups()),
             configuration => configuration.logGroupName
         )
 

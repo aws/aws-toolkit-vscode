@@ -598,7 +598,7 @@
                     "when": "view == aws.explorer && viewItem == awsRegionNode"
                 },
                 {
-                    "command": "aws.viewLogStream",
+                    "command": "aws.cloudWatchLogs.viewLogStream",
                     "group": "0@1",
                     "when": "view == aws.explorer && viewItem == awsCloudWatchLogNode"
                 }
@@ -787,7 +787,7 @@
                 "category": "AWS"
             },
             {
-                "command": "aws.viewLogStream",
+                "command": "aws.cloudWatchLogs.viewLogStream",
                 "title": "%AWS.command.viewLogStream%",
                 "category": "AWS"
             }
