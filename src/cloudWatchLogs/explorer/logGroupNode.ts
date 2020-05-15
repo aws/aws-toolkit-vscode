@@ -16,10 +16,10 @@ export class LogGroupNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
         public readonly parent: AWSTreeNodeBase,
         public readonly regionCode: string,
-        public configuration: CloudWatchLogs.LogGroup
+        public logGroup: CloudWatchLogs.LogGroup
     ) {
         super('')
-        this.update(configuration)
+        this.update(logGroup)
         this.iconPath = {
             dark: Uri.file(ext.iconPaths.dark.cloudWatchLogGroup),
             light: Uri.file(ext.iconPaths.light.cloudWatchLogGroup),
@@ -27,17 +27,17 @@ export class LogGroupNode extends AWSTreeNodeBase implements AWSResourceNode {
         this.contextValue = CONTEXT_VALUE_CLOUDWATCH_LOG
     }
 
-    public update(configuration: CloudWatchLogs.LogGroup): void {
-        this.configuration = configuration
-        this.label = this.configuration.logGroupName || ''
-        this.tooltip = `${this.configuration.logGroupName}${os.EOL}${this.configuration.arn}`
+    public update(logGroup: CloudWatchLogs.LogGroup): void {
+        this.logGroup = logGroup
+        this.label = this.logGroup.logGroupName || ''
+        this.tooltip = `${this.logGroup.logGroupName}${os.EOL}${this.logGroup.arn}`
     }
 
     public get logGroupName(): string {
-        return this.configuration.logGroupName || ''
+        return this.logGroup.logGroupName || ''
     }
 
     public getArn(): string {
-        return this.configuration.arn || ''
+        return this.logGroup.arn || ''
     }
 }
