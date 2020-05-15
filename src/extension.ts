@@ -225,6 +225,9 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
 
     ext.iconPaths.dark.statemachine = context.asAbsolutePath('resources/dark/stepfunctions/preview.svg')
     ext.iconPaths.light.statemachine = context.asAbsolutePath('resources/light/stepfunctions/preview.svg')
+
+    ext.iconPaths.dark.cloudWatchLogGroup = context.asAbsolutePath('resources/dark/log-group.svg')
+    ext.iconPaths.light.cloudWatchLogGroup = context.asAbsolutePath('resources/light/log-group.svg')
 }
 
 function initializeManifestPaths(extensionContext: vscode.ExtensionContext) {

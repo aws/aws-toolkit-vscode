@@ -579,7 +579,7 @@
                 },
                 {
                     "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode)$/",
                     "group": "1@1"
                 },
                 {
@@ -596,6 +596,11 @@
                     "command": "aws.hideRegion",
                     "group": "0@1",
                     "when": "view == aws.explorer && viewItem == awsRegionNode"
+                },
+                {
+                    "command": "aws.cloudWatchLogs.viewLogStream",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem == awsCloudWatchLogNode"
                 }
             ]
         },
@@ -779,6 +784,11 @@
             {
                 "command": "aws.aboutToolkit",
                 "title": "%AWS.command.aboutToolkit%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.cloudWatchLogs.viewLogStream",
+                "title": "%AWS.command.viewLogStream%",
                 "category": "AWS"
             }
         ],

@@ -5,7 +5,9 @@
 
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { CloudFormationClient } from './cloudFormationClient'
+import { CloudWatchLogsClient } from './cloudWatchLogsClient'
 import { DefaultCloudFormationClient } from './defaultCloudFormationClient'
+import { DefaultCloudWatchLogsClient } from './defaultCloudWatchLogsClient'
 import { DefaultEcsClient } from './defaultEcsClient'
 import { DefaultIamClient } from './defaultIamClient'
 import { DefaultLambdaClient } from './defaultLambdaClient'
@@ -25,8 +27,8 @@ export class DefaultToolkitClientBuilder implements ToolkitClientBuilder {
         return new DefaultCloudFormationClient(regionCode)
     }
 
-    public createSchemaClient(regionCode: string): SchemaClient {
-        return new DefaultSchemaClient(regionCode)
+    public createCloudWatchLogsClient(regionCode: string): CloudWatchLogsClient {
+        return new DefaultCloudWatchLogsClient(regionCode)
     }
 
     public createEcsClient(regionCode: string): EcsClient {
@@ -39,6 +41,10 @@ export class DefaultToolkitClientBuilder implements ToolkitClientBuilder {
 
     public createLambdaClient(regionCode: string): LambdaClient {
         return new DefaultLambdaClient(regionCode)
+    }
+
+    public createSchemaClient(regionCode: string): SchemaClient {
+        return new DefaultSchemaClient(regionCode)
     }
 
     public createStepFunctionsClient(regionCode: string): StepFunctionsClient {

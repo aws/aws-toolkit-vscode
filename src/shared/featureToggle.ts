@@ -3,15 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SettingsConfiguration } from './settingsConfiguration'
+import { extensionSettingsPrefix } from './constants'
+import { SettingsConfiguration, DefaultSettingsConfiguration } from './settingsConfiguration'
 
-// This enum represents the list of active feature flags to check for
-// Features all need to be added with matching enums and string values
-// e.g. `Feature1 = 'Feature1'`
-// Features that do not follow this scheme will not work.
-// You cannot have more active features than FeatureToggle.maxFeatures (default: 5)
-// Any features that are flagged in the code but not added here will always return false.
-export enum ActiveFeatureKeys {}
+/**
+ * This enum represents the list of active feature flags to check for
+ * Features all need to be added with matching enums and string values
+ * e.g. `Feature1 = 'Feature1'`
+ * Features that do not follow this scheme will not work.
+ * You cannot have more active features than FeatureToggle.maxFeatures (default: 5)
+ * Any features that are flagged in the code but not added here will always return false.
+ */
+export enum ActiveFeatureKeys {
+    CloudWatchLogs = 'CloudWatchLogs',
+}
 
 /**
  * This class handles feature access for unreleased or gated features.
@@ -44,7 +49,12 @@ export class FeatureToggle {
 
     private readonly maxFeatures: number = 5
 
-    public constructor(configuration: SettingsConfiguration, overrideKeys?: string[]) {
+    private static INSTANCE: FeatureToggle | undefined
+
+    public constructor(
+        configuration: SettingsConfiguration = new DefaultSettingsConfiguration(extensionSettingsPrefix),
+        overrideKeys?: string[]
+    ) {
         this.enabledFeatures = new Set()
 
         let keys: string[] = []
@@ -79,5 +89,13 @@ export class FeatureToggle {
      */
     public isFeatureActive(key: string): boolean {
         return this.enabledFeatures.has(key)
+    }
+
+    public static getFeatureToggle(): FeatureToggle {
+        if (!FeatureToggle.INSTANCE) {
+            FeatureToggle.INSTANCE = new FeatureToggle()
+        }
+
+        return FeatureToggle.INSTANCE
     }
 }
