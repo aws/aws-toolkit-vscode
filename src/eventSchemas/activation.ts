@@ -40,14 +40,13 @@ async function registerSchemasCommands(
     context.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.searchSchema',
-            async (node: SchemasNode) => await createSearchSchemasWebView({ node: node, outputChannel: outputChannel })
+            async (node: SchemasNode) => await createSearchSchemasWebView({ node, outputChannel })
         )
     )
     context.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.searchSchemaPerRegistry',
-            async (node: RegistryItemNode) =>
-                await createSearchSchemasWebView({ node: node, outputChannel: outputChannel })
+            async (node: RegistryItemNode) => await createSearchSchemasWebView({ node, outputChannel })
         )
     )
 }

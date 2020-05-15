@@ -368,8 +368,8 @@ describe('SchemaCodeDownload', () => {
     const poller = new CodeGenerationStatusPoller(schemaClient)
     const downloader = new CodeDownloader(schemaClient)
     const generator = new CodeGenerator(schemaClient)
-    const extractor = new CodeExtractor()
     const outputChannel = new MockOutputChannel()
+    const extractor = new CodeExtractor(outputChannel)
 
     const schemaCodeDownloader = new SchemaCodeDownloader(downloader, generator, poller, extractor)
 
@@ -377,7 +377,7 @@ describe('SchemaCodeDownload', () => {
         it('should download pre-generated code and place it into requested directory ', async () => {
             const codeDownloaderStub = sandbox.stub(downloader, 'download').returns(Promise.resolve(arrayBuffer))
 
-            await schemaCodeDownloader.downloadCode(request, outputChannel)
+            await schemaCodeDownloader.downloadCode(request)
 
             assert.ok(
                 codeDownloaderStub.calledOnceWith(request),
@@ -394,7 +394,7 @@ describe('SchemaCodeDownload', () => {
             const customError = new Error('Custom error')
             const codeDownloaderStub = sandbox.stub(downloader, 'download').returns(Promise.reject(customError))
 
-            const error = await assertThrowsError(async () => schemaCodeDownloader.downloadCode(request, outputChannel))
+            const error = await assertThrowsError(async () => schemaCodeDownloader.downloadCode(request))
             assert.ok(
                 codeDownloaderStub.calledOnceWith(request),
                 'download method should be called once with correct parameters'
@@ -416,7 +416,7 @@ describe('SchemaCodeDownload', () => {
             codeDownloaderStub.onCall(0).returns(Promise.reject(customError)) // should fail on first call
             codeDownloaderStub.onCall(1).returns(Promise.resolve(arrayBuffer)) // should succeed on second
 
-            await schemaCodeDownloader.downloadCode(request, outputChannel)
+            await schemaCodeDownloader.downloadCode(request)
 
             assert.ok(
                 codeDownloaderStub.calledTwice,
@@ -433,7 +433,7 @@ describe('SchemaCodeDownload', () => {
             sandbox.stub(downloader, 'download').returns(Promise.resolve(arrayBuffer))
             sandbox.stub(extractor, 'extractAndPlace').returns(Promise.resolve(expectedFilePath))
 
-            const coreCodeFilePath = await schemaCodeDownloader.downloadCode(request, outputChannel)
+            const coreCodeFilePath = await schemaCodeDownloader.downloadCode(request)
             assert.strictEqual(
                 coreCodeFilePath,
                 expectedFilePath,
@@ -457,8 +457,8 @@ describe('CodeExtractor', () => {
         sandbox.restore()
     })
 
-    const codeExtractor = new CodeExtractor()
     const outputChannel = new MockOutputChannel()
+    const codeExtractor = new CodeExtractor(outputChannel)
 
     describe('checkFileCollisions', () => {
         it('should return true when zipFile directoryFile contents clash ', async () => {
@@ -476,7 +476,7 @@ describe('CodeExtractor', () => {
             //Create a zip file that clashes with destination content
             zipHandler = createZipFileInTempDirectory(fileName, 'Second file content', zipName)
 
-            const collisionOccured = codeExtractor.checkFileCollisions(zipName, destinationDirectory, outputChannel)
+            const collisionOccured = codeExtractor.checkFileCollisions(zipName, destinationDirectory)
 
             assert.strictEqual(collisionOccured, true, 'should confirm that collision occurs')
             assert(outputChannel.value.includes(expectedMessage), `channel missing msg: ${expectedMessage}`)
@@ -494,7 +494,7 @@ describe('CodeExtractor', () => {
             const fileName2 = 'test2.txt'
             zipHandler = createZipFileInTempDirectory(fileName2, 'Second file content', zipName)
 
-            const collisionOccured = codeExtractor.checkFileCollisions(zipName, destinationDirectory, outputChannel)
+            const collisionOccured = codeExtractor.checkFileCollisions(zipName, destinationDirectory)
             assert.strictEqual(
                 collisionOccured,
                 false,
@@ -545,7 +545,7 @@ describe('CodeExtractor', () => {
             const zip = new admZip()
             zip.addFile(fileName2, Buffer.from('Second file content'))
             const buffer = zip.toBuffer()
-            await codeExtractor.extractAndPlace(buffer, request, outputChannel)
+            await codeExtractor.extractAndPlace(buffer, request)
 
             const file1Path = path.join(destinationDirectory, fileName1)
             const file2Path = path.join(destinationDirectory, fileName2)
@@ -563,7 +563,7 @@ describe('CodeExtractor', () => {
         })
 
         it('should not override file content if user picks No when collision occurs', async () => {
-            sandbox.stub(codeExtractor, 'overrideOnCollisionUserResponse').returns(Promise.resolve(false))
+            sandbox.stub(codeExtractor, 'confirmOverwriteCollisions').returns(Promise.resolve(false))
 
             const fileName1 = 'test.txt'
             const zipFileName = path.join(destinationDirectory, 'test.zip')
@@ -579,7 +579,7 @@ describe('CodeExtractor', () => {
             zip.addFile(fileName2, Buffer.from('Second file content'))
             const buffer = zip.toBuffer()
 
-            await codeExtractor.extractAndPlace(buffer, request, outputChannel)
+            await codeExtractor.extractAndPlace(buffer, request)
 
             const file1Path = path.join(destinationDirectory, fileName1)
             const file1Content = fs.readFileSync(file1Path, { encoding: 'utf8' })
@@ -588,7 +588,7 @@ describe('CodeExtractor', () => {
         })
 
         it('should override file content if user picks Yes when collision occurs', async () => {
-            sandbox.stub(codeExtractor, 'overrideOnCollisionUserResponse').returns(Promise.resolve(true))
+            sandbox.stub(codeExtractor, 'confirmOverwriteCollisions').returns(Promise.resolve(true))
 
             const fileName1 = 'test.txt'
             const zipFileName = path.join(destinationDirectory, 'test.zip')
@@ -605,7 +605,7 @@ describe('CodeExtractor', () => {
             zip.addFile(fileName2, Buffer.from(overridenFileContent))
             const buffer = zip.toBuffer()
 
-            await codeExtractor.extractAndPlace(buffer, request, outputChannel)
+            await codeExtractor.extractAndPlace(buffer, request)
 
             const file1Path = path.join(destinationDirectory, fileName1)
             const file1Content = fs.readFileSync(file1Path, { encoding: 'utf8' })
@@ -621,7 +621,7 @@ describe('CodeExtractor', () => {
             const zip = new admZip()
             zip.addFile(fileName, Buffer.from('File content'))
             const buffer = zip.toBuffer()
-            const coreCodeFilePath = await codeExtractor.extractAndPlace(buffer, request, outputChannel)
+            const coreCodeFilePath = await codeExtractor.extractAndPlace(buffer, request)
 
             const filePath = path.join(destinationDirectoryUri.fsPath, fileName)
 

@@ -63,8 +63,8 @@ export async function downloadSchemaItemCode(node: SchemaItemNode, outputChannel
             destinationDirectory: wizardResponse.location,
             schemaCoreCodeFileName: coreFileName,
         }
-        const schemaCodeDownloader = createSchemaCodeDownloaderObject(node.client)
-        const coreCodeFilePath = await schemaCodeDownloader.downloadCode(request, outputChannel)
+        const schemaCodeDownloader = createSchemaCodeDownloaderObject(node.client, outputChannel)
+        const coreCodeFilePath = await schemaCodeDownloader.downloadCode(request)
         vscode.window.showInformationMessage(
             localize(
                 'AWS.message.info.schemas.downloadCodeBindings.finished',
@@ -100,11 +100,14 @@ function getCoreFileName(schemaName: string, fileExtension: string) {
     return parsedName[parsedName.length - 1].concat(fileExtension)
 }
 
-export function createSchemaCodeDownloaderObject(client: SchemaClient): SchemaCodeDownloader {
+export function createSchemaCodeDownloaderObject(
+    client: SchemaClient,
+    outputChannel: vscode.OutputChannel
+): SchemaCodeDownloader {
     const downloader = new CodeDownloader(client)
     const generator = new CodeGenerator(client)
     const poller = new CodeGenerationStatusPoller(client)
-    const extractor = new CodeExtractor()
+    const extractor = new CodeExtractor(outputChannel)
 
     return new SchemaCodeDownloader(downloader, generator, poller, extractor)
 }
@@ -126,10 +129,7 @@ export class SchemaCodeDownloader {
         private readonly extractor: CodeExtractor
     ) {}
 
-    public async downloadCode(
-        request: SchemaCodeDownloadRequestDetails,
-        outputChannel: vscode.OutputChannel
-    ): Promise<string | void> {
+    public async downloadCode(request: SchemaCodeDownloadRequestDetails): Promise<string | void> {
         let zipContents: ArrayBuffer
         try {
             // If the code bindings for a given schema previously generated, this would succeed
@@ -171,7 +171,7 @@ export class SchemaCodeDownloader {
             )
         )
 
-        return await this.extractor.extractAndPlace(zipContents, request, outputChannel)
+        return await this.extractor.extractAndPlace(zipContents, request)
     }
 }
 
@@ -278,10 +278,10 @@ export class CodeDownloader {
 }
 
 export class CodeExtractor {
+    public constructor(private readonly outputChannel: vscode.OutputChannel) {}
     public async extractAndPlace(
         zipContents: ArrayBuffer,
-        request: SchemaCodeDownloadRequestDetails,
-        outputChannel: vscode.OutputChannel
+        request: SchemaCodeDownloadRequestDetails
     ): Promise<string | void> {
         const fileName = `${request.schemaName}.${request.schemaVersion}.${request.language}.zip`
 
@@ -296,15 +296,15 @@ export class CodeExtractor {
         fs.writeSync(fd, zipContentsBinary, 0, zipContentsBinary.byteLength, 0)
         fs.closeSync(fd)
 
-        let overrideFiles: boolean = false
-        const collisionExist = this.checkFileCollisions(codeZipFile, destinationDirectory, outputChannel)
+        let overwriteFiles: boolean = false
+        const collisionExist = this.checkFileCollisions(codeZipFile, destinationDirectory)
 
         if (collisionExist) {
-            overrideFiles = await this.overrideOnCollisionUserResponse()
+            overwriteFiles = await this.confirmOverwriteCollisions()
         }
 
         const zip = new admZip(codeZipFile)
-        zip.extractAllTo(/*target path*/ destinationDirectory, overrideFiles)
+        zip.extractAllTo(destinationDirectory, overwriteFiles)
 
         const coreCodeFilePath = this.getCoreCodeFilePath(codeZipFile, request.schemaCoreCodeFileName)
 
@@ -323,14 +323,10 @@ export class CodeExtractor {
     }
 
     // Check if downloaded code hierarchy has collisions with the destination directory and display them in output channel
-    public checkFileCollisions(
-        codeZipFile: string,
-        destinationDirectory: string,
-        outputChannel: vscode.OutputChannel
-    ): boolean {
+    public checkFileCollisions(codeZipFile: string, destinationDirectory: string): boolean {
         const zip = new admZip(codeZipFile)
         const zipEntries = zip.getEntries()
-        let collisionExist = false
+        let detectedCollisions: string[] = []
 
         zipEntries.forEach(function(zipEntry) {
             if (zipEntry.isDirectory) {
@@ -338,25 +334,33 @@ export class CodeExtractor {
             } else {
                 const intendedDestinationPath = path.join(destinationDirectory, '/', zipEntry.entryName)
                 if (fs.existsSync(intendedDestinationPath)) {
-                    if (!collisionExist) {
-                        collisionExist = true
-                        outputChannel.show(true)
-                        outputChannel.appendLine(
-                            localize(
-                                'AWS.message.info.schemas.downloadCodeBindings.colliding_files',
-                                'Following files already exist in the folder hierarchy :'
-                            )
-                        )
-                    }
-                    outputChannel.appendLine(intendedDestinationPath)
+                    detectedCollisions.push(intendedDestinationPath)
                 }
             }
         })
 
-        return collisionExist
+        if (detectedCollisions.length > 0) {
+            this.writeToOutputChannel(detectedCollisions)
+        }
+
+        return detectedCollisions.length > 0
     }
 
-    public async overrideOnCollisionUserResponse(): Promise<boolean> {
+    public writeToOutputChannel(detectedCollisions: string[]) {
+        this.outputChannel.show(true)
+        this.outputChannel.appendLine(
+            localize(
+                'AWS.message.info.schemas.downloadCodeBindings.colliding_files',
+                'Following files already exist in the folder hierarchy :'
+            )
+        )
+
+        for (let filePath of detectedCollisions) {
+            this.outputChannel.appendLine(filePath)
+        }
+    }
+
+    public async confirmOverwriteCollisions(): Promise<boolean> {
         const responseYes: string = localize('AWS.generic.response.yes', 'Yes')
         const responseNo: string = localize('AWS.generic.response.no', 'No')
 
@@ -365,6 +369,7 @@ export class CodeExtractor {
                 'AWS.message.info.schemas.downloadCodeBindings.colliding_override',
                 'Downloaded code hierarchy has collisions in the destination directory. Would you like to override?'
             ),
+            { modal: true },
             responseYes,
             responseNo
         )

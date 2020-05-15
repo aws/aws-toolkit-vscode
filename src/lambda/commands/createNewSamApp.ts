@@ -158,14 +158,14 @@ export async function createNewSamApplication(
                 schemaVersion: schemaTemplateParameters!.SchemaVersion,
                 destinationDirectory: vscode.Uri.file(destinationDirectory),
             }
-            schemaCodeDownloader = createSchemaCodeDownloaderObject(client!)
+            schemaCodeDownloader = createSchemaCodeDownloaderObject(client!, channelLogger.channel)
             channelLogger.info(
                 'AWS.message.info.schemas.downloadCodeBindings.start',
                 'Downloading code for schema {0}...',
                 config.schemaName!
             )
 
-            await schemaCodeDownloader!.downloadCode(request!, channelLogger.channel)
+            await schemaCodeDownloader!.downloadCode(request!)
 
             vscode.window.showInformationMessage(
                 localize(
