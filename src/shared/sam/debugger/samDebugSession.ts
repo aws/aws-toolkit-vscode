@@ -8,9 +8,9 @@ import { DebugSession, InitializedEvent, Logger, logger, TerminatedEvent } from 
 import { DebugProtocol } from 'vscode-debugprotocol'
 import { NodejsDebugConfiguration, PythonDebugConfiguration } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
-import * as csharpDebug from '../../codelens/csharpCodeLensProvider'
-import * as pythonDebug from '../../codelens/pythonCodeLensProvider'
-import * as tsDebug from '../../codelens/typescriptCodeLensProvider'
+import * as csharpDebug from './csharpSamDebug'
+import * as pythonDebug from './pythonSamDebug'
+import * as invokeTypescriptLambda from './typescriptSamDebug'
 import { ExtContext } from '../../extensions'
 import { ChannelLogger } from '../../utilities/vsCodeUtils'
 import { SamLocalInvokeCommand } from '../cli/samCliLocalInvoke'
@@ -134,7 +134,7 @@ export class SamDebugSession extends DebugSession {
             switch (config.runtimeFamily) {
                 case RuntimeFamily.NodeJS: {
                     config.type = 'node'
-                    await tsDebug.invokeTypescriptLambda(this.ctx, config as NodejsDebugConfiguration)
+                    await invokeTypescriptLambda.invokeTypescriptLambda(this.ctx, config as NodejsDebugConfiguration)
                     response.success = true
                     break
                 }
