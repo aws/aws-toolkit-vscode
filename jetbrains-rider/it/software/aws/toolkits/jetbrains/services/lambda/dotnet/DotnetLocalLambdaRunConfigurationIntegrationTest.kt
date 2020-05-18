@@ -18,7 +18,6 @@ import software.aws.toolkits.jetbrains.services.lambda.execution.local.createHan
 import software.aws.toolkits.jetbrains.utils.executeRunConfiguration
 import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
 
-class Dotnet20LocalLambdaRunConfigurationIntegrationTest : DotnetLocalLambdaRunConfigurationIntegrationTestBase("EchoLambda2X", Runtime.DOTNETCORE2_0)
 class Dotnet21LocalLambdaRunConfigurationIntegrationTest : DotnetLocalLambdaRunConfigurationIntegrationTestBase("EchoLambda2X", Runtime.DOTNETCORE2_1)
 // TODO: Fix test not running on CodeBuild
 // class Dotnet31LocalLambdaRunConfigurationIntegrationTest : DotnetLocalLambdaRunConfigurationIntegrationTestBase("EchoLambda3X", Runtime.DOTNETCORE3_1)

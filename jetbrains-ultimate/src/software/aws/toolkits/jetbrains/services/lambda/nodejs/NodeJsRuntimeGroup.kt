@@ -16,7 +16,6 @@ import software.aws.toolkits.jetbrains.services.lambda.SdkBasedRuntimeGroupInfor
 
 class NodeJsRuntimeGroup : SdkBasedRuntimeGroupInformation() {
     override val runtimes: Set<Runtime> = setOf(
-        Runtime.NODEJS8_10,
         Runtime.NODEJS10_X,
         Runtime.NODEJS12_X
     )
@@ -31,7 +30,6 @@ class NodeJsRuntimeGroup : SdkBasedRuntimeGroupInformation() {
     override fun determineRuntime(project: Project): Runtime? =
         NodeJsInterpreterManager.getInstance(project).interpreter?.cachedVersion?.get()?.let {
             when {
-                it.major <= 8 -> Runtime.NODEJS8_10
                 it.major <= 10 -> Runtime.NODEJS10_X
                 it.major <= 12 -> Runtime.NODEJS12_X
                 else -> null

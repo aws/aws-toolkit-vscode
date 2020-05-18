@@ -21,6 +21,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.refactoring.listeners.RefactoringElementAdapter
 import com.intellij.refactoring.listeners.RefactoringElementListener
+import com.intellij.util.text.nullize
 import org.jetbrains.concurrency.isPending
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
@@ -185,7 +186,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
         functionOptions.logicalId = null
 
         functionOptions.handler = handler
-        functionOptions.runtime = runtime.toString()
+        functionOptions.runtime = runtime?.toString()
     }
 
     fun isUsingTemplate() = serializableOptions.functionOptions.useTemplate
@@ -289,16 +290,31 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
         val handler = tryOrNull { function.handler() }
             ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_handler_specified"))
 
-        val runtime = tryOrNull { Runtime.fromValue(function.runtime()).validOrNull }
-            ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_runtime_specified"))
+        val runtimeString = try {
+            function.runtime()
+        } catch (e: Exception) {
+            throw RuntimeConfigurationError(message("cloudformation.missing_property", "Runtime", functionName))
+        }
+
+        val runtime = runtimeString.validateSupportedRuntime()
 
         return Triple(handler, runtime, SamTemplateDetails(VfsUtil.virtualToIoFile(templateFile).toPath(), functionName))
     }
 
-    private fun resolveLambdaFromHandler(handler: String?, runtime: Runtime?): Triple<String, Runtime, SamTemplateDetails?> {
+    private fun resolveLambdaFromHandler(handler: String?, runtime: String?): Triple<String, Runtime, SamTemplateDetails?> {
         handler ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_handler_specified"))
-        runtime ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_runtime_specified"))
-        return Triple(handler, runtime, null)
+
+        return Triple(handler, runtime.validateSupportedRuntime(), null)
+    }
+
+    private fun String?.validateSupportedRuntime(): Runtime {
+        val runtimeString = this.nullize() ?: throw RuntimeConfigurationError(message("lambda.run_configuration.no_runtime_specified"))
+        val runtime = Runtime.fromValue(runtimeString)
+        if (runtime.runtimeGroup == null) {
+            throw RuntimeConfigurationError(message("lambda.run_configuration.unsupported_runtime", runtimeString))
+        }
+
+        return runtime
     }
 
     private fun resolveLambdaInfo(project: Project, functionOptions: FunctionOptions): Triple<String, Runtime, SamTemplateDetails?> =
@@ -311,7 +327,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
         } else {
             resolveLambdaFromHandler(
                 handler = functionOptions.handler,
-                runtime = Runtime.fromValue(functionOptions.runtime)?.validOrNull
+                runtime = functionOptions.runtime
             )
         }
 

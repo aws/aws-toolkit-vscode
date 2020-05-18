@@ -275,7 +275,7 @@ class LocalLambdaRunConfigurationTest {
             assertThat(runConfiguration).isNotNull
             assertThatThrownBy { runConfiguration.checkConfiguration() }
                 .isInstanceOf(RuntimeConfigurationError::class.java)
-                .hasMessage(message("lambda.run_configuration.no_runtime_specified", logicalName, template))
+                .hasMessage(message("cloudformation.missing_property", "Runtime", logicalName))
         }
     }
 
@@ -307,7 +307,7 @@ class LocalLambdaRunConfigurationTest {
             assertThat(runConfiguration).isNotNull
             assertThatThrownBy { runConfiguration.checkConfiguration() }
                 .isInstanceOf(RuntimeConfigurationError::class.java)
-                .hasMessage(message("lambda.run_configuration.no_runtime_specified", logicalName, template))
+                .hasMessage(message("lambda.run_configuration.unsupported_runtime", "FAKE"))
         }
     }
 

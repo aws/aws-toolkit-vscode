@@ -15,7 +15,6 @@ class DotNetRuntimeGroup : SdkBasedRuntimeGroupInformation() {
 
     override val runtimes: Set<Runtime>
         get() = setOf(
-                Runtime.DOTNETCORE2_0,
                 Runtime.DOTNETCORE2_1,
                 Runtime.DOTNETCORE3_1
         )

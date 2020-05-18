@@ -60,7 +60,7 @@ class NodeJsLambdaBuilderTest : BaseLambdaBuilderTest() {
         val module = projectRule.module
         val handler = projectRule.fixture.addLambdaHandler(subPath, fileName, handlerName)
         projectRule.fixture.addPackageJsonFile()
-        val builtLambda = buildLambda(module, handler, Runtime.NODEJS8_10, "$subPath/$fileName.$handlerName")
+        val builtLambda = buildLambda(module, handler, Runtime.NODEJS12_X, "$subPath/$fileName.$handlerName")
         verifyEntries(
             builtLambda,
             "$subPath/$fileName.js",
@@ -88,7 +88,7 @@ class NodeJsLambdaBuilderTest : BaseLambdaBuilderTest() {
             PsiTestUtil.addSourceRoot(module, handler.containingFile.virtualFile.parent)
         }
 
-        val builtLambda = buildLambda(module, handler, Runtime.NODEJS8_10, "$fileName.$handlerName")
+        val builtLambda = buildLambda(module, handler, Runtime.NODEJS12_X, "$fileName.$handlerName")
         verifyEntries(
             builtLambda,
             "$fileName.js",
@@ -116,7 +116,7 @@ class NodeJsLambdaBuilderTest : BaseLambdaBuilderTest() {
             logicalName = logicalName,
             codeUri = subPath,
             handler = "$fileName.$handlerName",
-            runtime = Runtime.NODEJS8_10
+            runtime = Runtime.NODEJS12_X
         )
         val templatePath = Paths.get(templateFile.virtualFile.path)
 
@@ -154,7 +154,7 @@ class NodeJsLambdaBuilderTest : BaseLambdaBuilderTest() {
             }
             """.trimIndent()
         )
-        val builtLambda = buildLambda(module, handler, Runtime.NODEJS8_10, "$subPath/$fileName.$handlerName")
+        val builtLambda = buildLambda(module, handler, Runtime.NODEJS12_X, "$subPath/$fileName.$handlerName")
         verifyEntries(
             builtLambda,
             "$subPath/$fileName.js",
@@ -178,7 +178,7 @@ class NodeJsLambdaBuilderTest : BaseLambdaBuilderTest() {
         val handler = projectRule.fixture.addLambdaHandler(subPath)
         projectRule.fixture.addPackageJsonFile()
 
-        val lambdaPackage = packageLambda(projectRule.module, handler, Runtime.NODEJS8_10, "$subPath/$fileName.$handlerName")
+        val lambdaPackage = packageLambda(projectRule.module, handler, Runtime.NODEJS12_X, "$subPath/$fileName.$handlerName")
         verifyZipEntries(
             lambdaPackage,
             "$subPath/$fileName.js",
@@ -195,7 +195,7 @@ class NodeJsLambdaBuilderTest : BaseLambdaBuilderTest() {
         val handler = projectRule.fixture.addLambdaHandler(subPath)
         projectRule.fixture.addPackageJsonFile()
 
-        val builtLambda = buildLambda(projectRule.module, handler, Runtime.NODEJS8_10, "$subPath/$fileName.$handlerName", true)
+        val builtLambda = buildLambda(projectRule.module, handler, Runtime.NODEJS12_X, "$subPath/$fileName.$handlerName", true)
         verifyEntries(
             builtLambda,
             "$subPath/$fileName.js",
@@ -218,7 +218,7 @@ class NodeJsLambdaBuilderTest : BaseLambdaBuilderTest() {
         val handler = projectRule.fixture.addLambdaHandler(subPath)
         projectRule.fixture.addPackageJsonFile()
 
-        val lambdaPackage = packageLambda(projectRule.module, handler, Runtime.NODEJS8_10, "$subPath/$fileName.$handlerName", true)
+        val lambdaPackage = packageLambda(projectRule.module, handler, Runtime.NODEJS12_X, "$subPath/$fileName.$handlerName", true)
 
         verifyZipEntries(
             lambdaPackage,
