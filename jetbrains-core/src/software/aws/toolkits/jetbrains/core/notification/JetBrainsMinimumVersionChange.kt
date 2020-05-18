@@ -8,13 +8,14 @@ import com.intellij.openapi.application.ApplicationNamesInfo
 import software.aws.toolkits.resources.message
 
 class JetBrainsMinimumVersionChange : NoticeType {
-    override val id: String = "JetBrainsMinimumVersion_192"
+    override val id: String = "JetBrainsMinimumVersion_193"
     private val noticeContents = NoticeContents(
-        message("notice.title.jetbrains.minimum.version.2019.2"),
+        message("notice.title.jetbrains.minimum.version"),
         message(
-            "notice.message.jetbrains.minimum.version.2019.2",
+            "notice.message.jetbrains.minimum.version",
             ApplicationInfo.getInstance().fullVersion,
-            ApplicationNamesInfo.getInstance().fullProductName
+            ApplicationNamesInfo.getInstance().fullProductName,
+            "2019.3"
         )
     )
 
@@ -34,7 +35,7 @@ class JetBrainsMinimumVersionChange : NoticeType {
 
         majorVersion?.let {
             minorVersion?.let {
-                return majorVersion < 2019 || (majorVersion == 2019 && minorVersion < 2)
+                return majorVersion < 2019 || (majorVersion == 2019 && minorVersion < 3)
             }
         }
 
