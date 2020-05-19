@@ -19,7 +19,7 @@ class UploadObjectAction(private val project: Project, treeTable: S3TreeTable) :
         val descriptor =
             FileChooserDescriptorFactory.createAllButJarContentsDescriptor().withDescription(message("s3.upload.object.action", treeTable.bucket.name))
         val chooserDialog = FileChooserFactory.getInstance().createFileChooser(descriptor, project, null)
-        val filesChosen = chooserDialog.choose(project, null).toList()
+        val filesChosen = chooserDialog.choose(project).toList()
 
         // If there are no files chosen, the user has cancelled upload
         if (filesChosen.isEmpty()) {

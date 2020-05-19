@@ -97,7 +97,7 @@ class CloudWatchLogGroup(
 
     private fun addToolbar() {
         val actionGroup = DefaultActionGroup()
-        actionGroup.addAction(object : AnAction(message("explorer.refresh.title"), null, AllIcons.Actions.Refresh), DumbAware {
+        actionGroup.addAction(object : AnAction(message("general.refresh"), null, AllIcons.Actions.Refresh), DumbAware {
             override fun actionPerformed(e: AnActionEvent) {
                 CloudwatchlogsTelemetry.refreshGroup(project)
                 refreshTable()

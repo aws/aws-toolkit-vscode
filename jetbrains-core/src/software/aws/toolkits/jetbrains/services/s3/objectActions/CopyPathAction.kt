@@ -14,7 +14,7 @@ import java.awt.datatransfer.StringSelection
 
 class CopyPathAction(private val project: Project, treeTable: S3TreeTable) : SingleS3ObjectAction(treeTable, message("s3.copy.path"), AllIcons.Actions.Copy) {
     // Only enable it if we have some selection. We hide the root node so it means we have no selection if that is the node passed in
-    override fun enabled(node: S3TreeNode): Boolean = node != treeTable.getRootNode()
+    override fun enabled(node: S3TreeNode): Boolean = node != treeTable.rootNode
 
     override fun performAction(node: S3TreeNode) {
         CopyPasteManager.getInstance().setContents(StringSelection(node.key))

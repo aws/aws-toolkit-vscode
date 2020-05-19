@@ -50,7 +50,7 @@ class S3ViewerEditor(project: Project, bucket: S3VirtualBucket) : UserDataHolder
 
     override fun getName(): String = "S3 Bucket Panel"
 
-    override fun getPreferredFocusedComponent(): JComponent = s3Panel.focusComponent
+    override fun getPreferredFocusedComponent(): JComponent = s3Panel.treeTable
 
     override fun isValid(): Boolean = true
 

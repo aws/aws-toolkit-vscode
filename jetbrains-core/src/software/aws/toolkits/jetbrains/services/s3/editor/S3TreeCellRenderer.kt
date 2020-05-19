@@ -31,6 +31,7 @@ class S3TreeCellRenderer(private val speedSearchTarget: JComponent) : ColoredTre
                 append(node.name.trimEnd('/'))
             }
             node is S3TreeContinuationNode -> {
+                icon = AllIcons.Nodes.EmptyNode
                 append(node.name, SimpleTextAttributes.LINK_ATTRIBUTES)
             }
             else -> {

@@ -29,7 +29,7 @@ class AwsExplorerFactory : ToolWindowFactory, DumbAware {
         if (toolWindow is ToolWindowEx) {
             toolWindow.setTitleActions(
                 // order from left to right
-                object : DumbAwareAction(message("explorer.refresh.title"), message("explorer.refresh.description"), AllIcons.Actions.Refresh) {
+                object : DumbAwareAction(message("general.refresh"), message("explorer.refresh.description"), AllIcons.Actions.Refresh) {
                     override fun actionPerformed(e: AnActionEvent) {
                         AwsResourceCache.getInstance(project).clear()
                         explorer.invalidateTree()

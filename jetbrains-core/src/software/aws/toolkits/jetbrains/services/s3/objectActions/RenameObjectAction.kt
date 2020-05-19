@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 package software.aws.toolkits.jetbrains.services.s3.objectActions
 
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.InputValidator
 import com.intellij.openapi.ui.Messages
@@ -15,7 +16,10 @@ import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
 import software.aws.toolkits.telemetry.S3Telemetry
 
-class RenameObjectAction(private val project: Project, treeTable: S3TreeTable) : SingleS3ObjectAction(treeTable, message("s3.rename.object.action")) {
+class RenameObjectAction(
+    private val project: Project,
+    treeTable: S3TreeTable
+) : SingleS3ObjectAction(treeTable, message("s3.rename.object.action"), AllIcons.Actions.RefactoringBulb) {
 
     override fun enabled(node: S3TreeNode): Boolean = node is S3TreeObjectNode
 

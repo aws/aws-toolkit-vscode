@@ -9,7 +9,7 @@ import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
 import software.aws.toolkits.resources.message
 import javax.swing.tree.DefaultMutableTreeNode
 
-class S3Column(private val type: S3ColumnType) : ColumnInfo<Any, String>(type.title) {
+class S3Column(private val type: S3ColumnType) : ColumnInfo<Any?, Any?>(type.title) {
     override fun valueOf(item: Any?): String? {
         val userObject = (item as DefaultMutableTreeNode).userObject ?: return ""
         return getValue(userObject)
