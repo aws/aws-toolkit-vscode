@@ -4,37 +4,37 @@
  */
 
 import * as assert from 'assert'
-import { Schemas } from 'aws-sdk'
+import { CloudWatchLogs } from 'aws-sdk'
 import * as sinon from 'sinon'
-import { RegistryItemNode } from '../../../eventSchemas/explorer/registryItemNode'
-import { SchemasNode } from '../../../eventSchemas/explorer/schemasNode'
+import { CONTEXT_VALUE_CLOUDWATCH_LOG, LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
+import { CloudWatchLogsNode } from '../../../cloudWatchLogs/explorer/cloudWatchLogsNode'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 import { ext } from '../../../shared/extensionGlobals'
+import { asyncGenerator } from '../../utilities/collectionUtils'
 import {
     assertNodeListOnlyContainsErrorNode,
     assertNodeListOnlyContainsPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
-import { asyncGenerator } from '../../utilities/collectionUtils'
 
 const FAKE_REGION_CODE = 'someregioncode'
 const UNSORTED_TEXT = ['zebra', 'Antelope', 'aardvark', 'elephant']
 const SORTED_TEXT = ['aardvark', 'Antelope', 'elephant', 'zebra']
 
-describe('SchemasNode', () => {
+describe('CloudWatchLogsNode', () => {
     let sandbox: sinon.SinonSandbox
-    let testNode: SchemasNode
+    let testNode: CloudWatchLogsNode
 
-    // Mocked Lambda Client returns Lambda Functions for anything listed in lambdaFunctionNames
-    let registryNames: string[]
+    // Mocked Lambda Client returns Log Groups for anything listed in logGroupNames
+    let logGroupNames: string[]
 
     beforeEach(() => {
         sandbox = sinon.createSandbox()
 
-        registryNames = ['registry1', 'registry2']
+        logGroupNames = ['group1', 'group2']
 
         initializeClientBuilders()
 
-        testNode = new SchemasNode(FAKE_REGION_CODE)
+        testNode = new CloudWatchLogsNode(FAKE_REGION_CODE)
     })
 
     afterEach(() => {
@@ -42,25 +42,35 @@ describe('SchemasNode', () => {
     })
 
     it('returns placeholder node if no children are present', async () => {
-        registryNames = []
+        logGroupNames = []
 
         const childNodes = await testNode.getChildren()
 
         assertNodeListOnlyContainsPlaceholderNode(childNodes)
     })
 
-    it('has RegistryItemNode child nodes', async () => {
+    it('has LogGroupNode child nodes', async () => {
         const childNodes = await testNode.getChildren()
 
-        assert.strictEqual(childNodes.length, registryNames.length, 'Unexpected child count')
+        assert.strictEqual(childNodes.length, logGroupNames.length, 'Unexpected child count')
+
+        childNodes.forEach(node => assert.ok(node instanceof LogGroupNode, 'Expected child node to be LogGroupNode'))
+    })
+
+    it('has child nodes with CloudWatch Log contextValue', async () => {
+        const childNodes = await testNode.getChildren()
 
         childNodes.forEach(node =>
-            assert.ok(node instanceof RegistryItemNode, 'Expected child node to be RegistryItemNode')
+            assert.strictEqual(
+                node.contextValue,
+                CONTEXT_VALUE_CLOUDWATCH_LOG,
+                'expected the node to have a CloudWatch Log contextValue'
+            )
         )
     })
 
     it('sorts child nodes', async () => {
-        registryNames = UNSORTED_TEXT
+        logGroupNames = UNSORTED_TEXT
 
         const childNodes = await testNode.getChildren()
 
@@ -78,12 +88,12 @@ describe('SchemasNode', () => {
     })
 
     function initializeClientBuilders() {
-        const schemaClient = {
-            listRegistries: sandbox.stub().callsFake(() => {
-                return asyncGenerator<Schemas.RegistrySummary>(
-                    registryNames.map<Schemas.RegistrySummary>(name => {
+        const cloudWatchLogsClient = {
+            describeLogGroups: sandbox.stub().callsFake(() => {
+                return asyncGenerator<CloudWatchLogs.LogGroup>(
+                    logGroupNames.map<CloudWatchLogs.LogGroup>(name => {
                         return {
-                            RegistryName: name,
+                            logGroupName: name,
                         }
                     })
                 )
@@ -91,7 +101,7 @@ describe('SchemasNode', () => {
         }
 
         const clientBuilder = {
-            createSchemaClient: sandbox.stub().returns(schemaClient),
+            createCloudWatchLogsClient: sandbox.stub().returns(cloudWatchLogsClient),
         }
 
         ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
