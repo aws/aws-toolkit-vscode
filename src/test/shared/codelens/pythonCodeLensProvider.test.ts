@@ -8,7 +8,7 @@ import * as path from 'path'
 import { getLocalRootVariants } from '../../../shared/utilities/pathUtils'
 import { makeTemporaryToolkitFolder, readFileAsString } from '../../../shared/filesystemUtilities'
 import { rmrf } from '../../../shared/filesystem'
-import { makeLambdaDebugFile } from '../../../shared/codelens/pythonCodeLensProvider'
+import { makeLambdaDebugFile } from '../../../shared/sam/debugger/pythonSamDebug'
 
 describe('pythonCodeLensProvider', async () => {
     describe('getLocalRootVariants', async () => {

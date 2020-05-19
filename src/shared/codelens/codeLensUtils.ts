@@ -9,10 +9,11 @@ import { CloudFormation } from '../cloudformation/cloudformation'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
 import { localize } from '../utilities/vsCodeUtils'
-import * as pythonDebug from './pythonCodeLensProvider'
-import * as csharpDebug from './csharpCodeLensProvider'
-import * as tsDebug from './typescriptCodeLensProvider'
-import { LambdaLocalInvokeParams } from './localLambdaRunner'
+import * as pythonDebug from '../sam/debugger/pythonSamDebug'
+import * as pythonCodelens from './pythonCodeLensProvider'
+import * as csharpCodelens from './csharpCodeLensProvider'
+import * as tsCodelens from './typescriptCodeLensProvider'
+import { LambdaLocalInvokeParams } from '../sam/localLambdaRunner'
 import { ExtContext } from '../extensions'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
 import { nodeJsRuntimes, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
@@ -112,7 +113,7 @@ export async function makePythonCodeLensProvider(): Promise<vscode.CodeLensProvi
                 return []
             }
 
-            const handlers: LambdaHandlerCandidate[] = await pythonDebug.getLambdaHandlerCandidates(document.uri)
+            const handlers: LambdaHandlerCandidate[] = await pythonCodelens.getLambdaHandlerCandidates(document.uri)
             logger.debug(
                 'pythonCodeLensProvider.makePythonCodeLensProvider handlers:',
                 JSON.stringify(handlers, undefined, 2)
@@ -136,7 +137,7 @@ export async function makeCSharpCodeLensProvider(): Promise<vscode.CodeLensProvi
             document: vscode.TextDocument,
             token: vscode.CancellationToken
         ): Promise<vscode.CodeLens[]> => {
-            const handlers: LambdaHandlerCandidate[] = await csharpDebug.getLambdaHandlerCandidates(document)
+            const handlers: LambdaHandlerCandidate[] = await csharpCodelens.getLambdaHandlerCandidates(document)
             logger.debug('makeCSharpCodeLensProvider handlers:', JSON.stringify(handlers, undefined, 2))
 
             return makeCodeLenses({
@@ -157,7 +158,7 @@ export function makeTypescriptCodeLensProvider(): vscode.CodeLensProvider {
             document: vscode.TextDocument,
             token: vscode.CancellationToken
         ): Promise<vscode.CodeLens[]> => {
-            const handlers = await tsDebug.getLambdaHandlerCandidates(document)
+            const handlers = await tsCodelens.getLambdaHandlerCandidates(document)
             logger.debug('makeTypescriptCodeLensProvider handlers:', JSON.stringify(handlers, undefined, 2))
 
             return makeCodeLenses({
@@ -184,7 +185,7 @@ export async function initializePythonCodelens(context: ExtContext): Promise<voi
 export async function initializeCsharpCodelens(context: ExtContext): Promise<void> {
     context.extensionContext.subscriptions.push(
         vscode.commands.registerCommand(
-            getInvokeCmdKey(csharpDebug.CSHARP_LANGUAGE),
+            getInvokeCmdKey(csharpCodelens.CSHARP_LANGUAGE),
             async (params: LambdaLocalInvokeParams) => {
                 // await csharpDebug.invokeCsharpLambda({
                 //     ctx: context,

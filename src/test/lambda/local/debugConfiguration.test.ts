@@ -14,8 +14,8 @@ import { DefaultSamLocalInvokeCommand } from '../../../shared/sam/cli/samCliLoca
 import { SamLaunchRequestArgs } from '../../../shared/sam/debugger/samDebugSession'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { rmrf } from '../../../shared/filesystem'
-import { makeCoreCLRDebugConfiguration } from '../../../shared/codelens/csharpCodeLensProvider'
 import * as testutil from '../../testUtil'
+import { makeCoreCLRDebugConfiguration } from '../../../shared/sam/debugger/csharpSamDebug'
 
 describe('makeCoreCLRDebugConfiguration', async () => {
     let tempFolder: string
