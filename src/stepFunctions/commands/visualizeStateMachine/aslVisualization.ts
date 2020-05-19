@@ -153,7 +153,7 @@ export class AslVisualization {
         )
 
         // When the panel is closed, dispose of any disposables/remove subscriptions
-        panel.onDidDispose(() => {
+        const disposePanel = () => {
             debouncedUpdate.cancel()
             this.onVisualizationDisposeEmitter.fire()
             this.disposables.forEach(disposable => {
@@ -161,7 +161,19 @@ export class AslVisualization {
             })
             this.onVisualizationDisposeEmitter.dispose()
             this.isPanelDisposed = true
+        }
+
+        panel.onDidDispose(() => {
+            if (!this.isPanelDisposed) {
+                disposePanel()
+            }
         })
+
+        panel.dispose = () => {
+            if (!this.isPanelDisposed) {
+                disposePanel()
+            }
+        }
 
         return panel
     }
