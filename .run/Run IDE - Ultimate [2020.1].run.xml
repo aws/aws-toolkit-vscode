@@ -1,5 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Run IDE - Ultimate [2020.1]" type="GradleRunConfiguration" factoryName="Gradle" folderName="2020.1">
+    <log_file alias="idea.log" path="$PROJECT_DIR$/jetbrains-ultimate/build/idea-sandbox/system/log/idea.log" />
     <ExternalSystemSettings>
       <option name="env">
         <map>
@@ -20,7 +21,7 @@
       </option>
       <option name="vmOptions" value="" />
     </ExternalSystemSettings>
-    <GradleScriptDebugEnabled>true</GradleScriptDebugEnabled>
+    <GradleScriptDebugEnabled>false</GradleScriptDebugEnabled>
     <method v="2" />
   </configuration>
 </component>
