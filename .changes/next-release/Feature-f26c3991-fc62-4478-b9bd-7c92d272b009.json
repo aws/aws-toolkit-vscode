@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "If a file conflict is detected when downloading event schemas code bindings, a confirmation prompt is shown"
+}

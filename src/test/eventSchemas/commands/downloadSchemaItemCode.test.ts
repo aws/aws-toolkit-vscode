@@ -19,6 +19,7 @@ import {
     SchemaCodeDownloadRequestDetails,
 } from '../../../eventSchemas/commands/downloadSchemaItemCode'
 
+import { MockOutputChannel } from '../../../test/mockOutputChannel'
 import { MockSchemaClient } from '../../shared/clients/mockClients'
 
 import fs = require('fs')
@@ -367,7 +368,8 @@ describe('SchemaCodeDownload', () => {
     const poller = new CodeGenerationStatusPoller(schemaClient)
     const downloader = new CodeDownloader(schemaClient)
     const generator = new CodeGenerator(schemaClient)
-    const extractor = new CodeExtractor()
+    const outputChannel = new MockOutputChannel()
+    const extractor = new CodeExtractor(outputChannel)
 
     const schemaCodeDownloader = new SchemaCodeDownloader(downloader, generator, poller, extractor)
 
@@ -443,20 +445,29 @@ describe('SchemaCodeDownload', () => {
 
 describe('CodeExtractor', () => {
     let destinationDirectory: string
+    let sandbox: sinon.SinonSandbox
 
     beforeEach(async () => {
         destinationDirectory = await makeTemporaryToolkitFolder()
+        sandbox = sinon.createSandbox()
     })
 
     afterEach(async () => {
         del.sync([destinationDirectory], { force: true })
+        sandbox.restore()
     })
 
-    const codeExtractor = new CodeExtractor()
-    describe('validateNoFileCollisions', () => {
-        it('can validate zipFile directoryFile contents clash ', async () => {
+    const outputChannel = new MockOutputChannel()
+    const codeExtractor = new CodeExtractor(outputChannel)
+
+    describe('checkFileCollisions', () => {
+        it('should return true when zipFile directoryFile contents clash ', async () => {
             const fileName = 'test.txt'
             const zipName = path.join(destinationDirectory, 'test.zip')
+
+            let expectedMessage = 'Following files already exist in the folder hierarchy :\n'
+            const collidingfilePath = path.join(destinationDirectory, fileName)
+            expectedMessage = expectedMessage.concat(collidingfilePath)
 
             // Initialize a destination directory and file
             let zipHandler = createZipFileInTempDirectory(fileName, 'First file content', zipName)
@@ -465,17 +476,13 @@ describe('CodeExtractor', () => {
             //Create a zip file that clashes with destination content
             zipHandler = createZipFileInTempDirectory(fileName, 'Second file content', zipName)
 
-            const error = await assertThrowsError(async () =>
-                codeExtractor.validateNoFileCollisions(zipName, destinationDirectory)
-            )
-            assert.strictEqual(
-                error.message,
-                `Unable to place schema code in workspace because there is already a file ${fileName} in the folder hierarchy`,
-                'Should fail for collision with correct fileName'
-            )
+            const collisionOccured = codeExtractor.checkFileCollisions(zipName, destinationDirectory)
+
+            assert.strictEqual(collisionOccured, true, 'should confirm that collision occurs')
+            assert(outputChannel.value.includes(expectedMessage), `channel missing msg: ${expectedMessage}`)
         })
 
-        it('should return true if no collision present', async () => {
+        it('should return false if no collision present', async () => {
             const fileName1 = 'test.txt'
             const zipName = path.join(destinationDirectory, 'test.zip')
 
@@ -487,9 +494,11 @@ describe('CodeExtractor', () => {
             const fileName2 = 'test2.txt'
             zipHandler = createZipFileInTempDirectory(fileName2, 'Second file content', zipName)
 
-            assert.doesNotThrow(
-                () => codeExtractor.validateNoFileCollisions(zipName, destinationDirectory),
-                `There should be no collision in file names ${fileName1} and ${fileName2}`
+            const collisionOccured = codeExtractor.checkFileCollisions(zipName, destinationDirectory)
+            assert.strictEqual(
+                collisionOccured,
+                false,
+                `There should be no collision in files ${fileName1} and ${fileName2}`
             )
         })
     })
@@ -553,7 +562,9 @@ describe('CodeExtractor', () => {
             assert.strictEqual(file2Content, 'Second file content', `${file2Path} : file content do not match`)
         })
 
-        it('should not override file content if collision occurs', async () => {
+        it('should not override file content if user picks No when collision occurs', async () => {
+            sandbox.stub(codeExtractor, 'confirmOverwriteCollisions').returns(Promise.resolve(false))
+
             const fileName1 = 'test.txt'
             const zipFileName = path.join(destinationDirectory, 'test.zip')
             const expectedFileContent = 'First file content'
@@ -568,17 +579,38 @@ describe('CodeExtractor', () => {
             zip.addFile(fileName2, Buffer.from('Second file content'))
             const buffer = zip.toBuffer()
 
-            const error = await assertThrowsError(async () => codeExtractor.extractAndPlace(buffer, request))
+            await codeExtractor.extractAndPlace(buffer, request)
 
-            assert.strictEqual(
-                error.message,
-                `Unable to place schema code in workspace because there is already a file ${fileName1} in the folder hierarchy`,
-                'Should fail for expected error'
-            )
             const file1Path = path.join(destinationDirectory, fileName1)
             const file1Content = fs.readFileSync(file1Path, { encoding: 'utf8' })
 
             assert.strictEqual(file1Content, expectedFileContent, `${file1Path} :File content should not be overriden`)
+        })
+
+        it('should override file content if user picks Yes when collision occurs', async () => {
+            sandbox.stub(codeExtractor, 'confirmOverwriteCollisions').returns(Promise.resolve(true))
+
+            const fileName1 = 'test.txt'
+            const zipFileName = path.join(destinationDirectory, 'test.zip')
+            const initialFileContent = 'Initial file content'
+
+            // Initialize a destination directory and file
+            const zipHandler = createZipFileInTempDirectory(fileName1, initialFileContent, zipFileName)
+            zipHandler.extractAllTo(destinationDirectory)
+
+            //same file name, different file content -  collision occurs
+            const fileName2 = fileName1
+            const zip = new admZip()
+            const overridenFileContent = 'Replaced file content'
+            zip.addFile(fileName2, Buffer.from(overridenFileContent))
+            const buffer = zip.toBuffer()
+
+            await codeExtractor.extractAndPlace(buffer, request)
+
+            const file1Path = path.join(destinationDirectory, fileName1)
+            const file1Content = fs.readFileSync(file1Path, { encoding: 'utf8' })
+
+            assert.strictEqual(file1Content, overridenFileContent, `${file1Path} :File content should be overriden`)
         })
 
         it('should return coreCodeFilePath if it exists inside zip content', async () => {
