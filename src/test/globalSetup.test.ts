@@ -6,7 +6,6 @@
 /**
  * Before/After hooks for all "unit" tests
  */
-import * as vscode from 'vscode'
 import * as assert from 'assert'
 import { appendFileSync, mkdirpSync } from 'fs-extra'
 import { join } from 'path'
@@ -20,7 +19,6 @@ import { TelemetryPublisher } from '../shared/telemetry/telemetryPublisher'
 import { FakeExtensionContext } from './fakeExtensionContext'
 import { TestLogger } from './testLogger'
 import { FakeAwsContext } from './utilities/fakeAwsContext'
-import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
@@ -45,9 +43,6 @@ before(async () => {
     }
     const service = new DefaultTelemetryService(mockContext, mockAws, mockPublisher)
     ext.telemetry = service
-
-    // Warm up vscode before tests run
-    await vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)!.activate()
 })
 
 beforeEach(async function() {
