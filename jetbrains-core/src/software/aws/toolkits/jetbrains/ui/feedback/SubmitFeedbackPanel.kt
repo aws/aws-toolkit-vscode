@@ -21,7 +21,7 @@ import javax.swing.ButtonGroup
 import javax.swing.JLabel
 import javax.swing.JPanel
 
-class SubmitFeedbackPanel(initiallyPositive: Boolean = true) {
+class SubmitFeedbackPanel(initialSentiment: Sentiment? = null) {
     private lateinit var rootPanel: JPanel
     private lateinit var smileButton: JBRadioButton
     private lateinit var sadButton: JBRadioButton
@@ -66,10 +66,10 @@ class SubmitFeedbackPanel(initiallyPositive: Boolean = true) {
         sadIcon.text = null
 
         // select initial value
-        if (initiallyPositive) {
-            smileButton.isSelected = true
-        } else {
-            sadButton.isSelected = true
+        when (initialSentiment) {
+            Sentiment.POSITIVE -> smileButton.isSelected = true
+            Sentiment.NEGATIVE -> sadButton.isSelected = true
+            else -> sentimentButtonGroup.clearSelection()
         }
 
         // update remaining character count
@@ -89,11 +89,6 @@ class SubmitFeedbackPanel(initiallyPositive: Boolean = true) {
 
         val currentBody = comment ?: ""
         githubLink.text = message("feedback.github.link", "$GITHUB_LINK_BASE${URLEncoder.encode("$currentBody\n\n$toolkitMetadata", Charsets.UTF_8.name())}")
-    }
-
-    @TestOnly
-    internal fun clearSentimentSelection() {
-        sentimentButtonGroup.clearSelection()
     }
 
     companion object {

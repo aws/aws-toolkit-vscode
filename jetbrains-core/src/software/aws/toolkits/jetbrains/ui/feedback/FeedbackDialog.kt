@@ -11,9 +11,9 @@ import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.ui.ValidationInfo
 import icons.AwsIcons
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.annotations.TestOnly
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
@@ -25,7 +25,7 @@ import software.aws.toolkits.telemetry.FeedbackTelemetry
 import software.aws.toolkits.telemetry.Result
 
 class FeedbackDialog(private val project: Project) : DialogWrapper(project), CoroutineScope by ApplicationThreadPoolScope("FeedbackDialog") {
-    val panel = SubmitFeedbackPanel(initiallyPositive = true)
+    val panel = SubmitFeedbackPanel()
 
     init {
         title = feedbackTitle

@@ -27,13 +27,13 @@ class FeedbackTest {
     class NonParameterizedTests {
         @Test
         fun panelInitiallyNegative() {
-            val panel = SubmitFeedbackPanel(initiallyPositive = false)
+            val panel = SubmitFeedbackPanel(Sentiment.NEGATIVE)
             assertThat(panel.sentiment).isEqualTo(Sentiment.NEGATIVE)
         }
 
         @Test
         fun panelInitiallyPositive() {
-            val panel = SubmitFeedbackPanel(initiallyPositive = true)
+            val panel = SubmitFeedbackPanel(Sentiment.POSITIVE)
             assertThat(panel.sentiment).isEqualTo(Sentiment.POSITIVE)
         }
 
@@ -43,9 +43,6 @@ class FeedbackTest {
                 val dialog = FeedbackDialog(projectRule.project)
                 val panel = dialog.getViewForTesting()
 
-                assertThat(panel.sentiment).isEqualTo(Sentiment.POSITIVE)
-
-                panel.clearSentimentSelection()
                 assertThat(panel.sentiment).isEqualTo(null)
                 assertThat(dialog.doValidate()).isInstanceOfSatisfying(ValidationInfo::class.java) {
                     it.message.contains(message("feedback.validation.no_sentiment"))
