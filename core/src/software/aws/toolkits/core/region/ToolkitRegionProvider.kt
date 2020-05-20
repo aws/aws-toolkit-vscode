@@ -42,8 +42,7 @@ abstract class ToolkitRegionProvider {
      */
     abstract fun defaultPartition(): AwsPartition
 
-    @Deprecated("This loads the default region if specified region doesn't exist which does not make sense")
-    fun lookupRegionById(regionId: String?): AwsRegion = allRegions()[regionId] ?: defaultRegion()
+    operator fun get(regionId: String): AwsRegion? = allRegions()[regionId]
 
     open fun isServiceGlobal(region: AwsRegion, serviceId: String): Boolean {
         val partition = partitionData()[region.partitionId] ?: throw IllegalStateException("Partition data is missing for ${region.partitionId}")

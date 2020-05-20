@@ -1,4 +1,4 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.core.credentials
@@ -28,9 +28,10 @@ class MockCredentialsManager : CredentialManager() {
 
     fun addCredentials(
         id: String,
-        credentials: AwsCredentials = AwsBasicCredentials.create("Access", "Secret")
+        credentials: AwsCredentials = AwsBasicCredentials.create("Access", "Secret"),
+        regionId: String? = null
     ): ToolkitCredentialsIdentifier {
-        val credentialIdentifier = MockCredentialIdentifier(id, StaticCredentialsProvider.create(credentials))
+        val credentialIdentifier = MockCredentialIdentifier(id, StaticCredentialsProvider.create(credentials), regionId)
 
         addProvider(credentialIdentifier)
 
@@ -48,11 +49,12 @@ class MockCredentialsManager : CredentialManager() {
 
         val DUMMY_PROVIDER_IDENTIFIER: ToolkitCredentialsIdentifier = MockCredentialIdentifier(
             "DUMMY_CREDENTIALS",
-            StaticCredentialsProvider.create(AwsBasicCredentials.create("DummyAccess", "DummySecret"))
+            StaticCredentialsProvider.create(AwsBasicCredentials.create("DummyAccess", "DummySecret")),
+            null
         )
     }
 
-    private class MockCredentialIdentifier(override val displayName: String, val credentials: AwsCredentialsProvider) :
+    private class MockCredentialIdentifier(override val displayName: String, val credentials: AwsCredentialsProvider, override val defaultRegionId: String?) :
         ToolkitCredentialsIdentifier() {
         override val id: String = displayName
         override val factoryId: String = "mockCredentialProviderFactory"

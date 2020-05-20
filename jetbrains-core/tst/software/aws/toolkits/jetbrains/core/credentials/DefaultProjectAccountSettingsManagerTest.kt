@@ -1,4 +1,4 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.core.credentials
@@ -16,6 +16,7 @@ import org.junit.Test
 import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.rules.EnvironmentVariableHelper
+import software.aws.toolkits.core.utils.test.notNull
 import software.aws.toolkits.jetbrains.core.MockResourceCache
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
@@ -67,6 +68,42 @@ class DefaultProjectAccountSettingsManagerTest {
     fun testNoActiveCredentials() {
         assertThat(manager.isValidConnectionSettings()).isFalse()
         assertThat(manager.recentlyUsedCredentials()).isEmpty()
+    }
+
+    @Test
+    fun testNoActiveCredentialsSelectsDefaultProfileIfPresent() {
+        val credentials = mockCredentialManager.addCredentials("profile:default")
+        markConnectionSettingsAsValid(credentials, AwsRegionProvider.getInstance().defaultRegion())
+
+        manager.noStateLoaded()
+        waitForTerminalConnectionState()
+
+        assertThat(manager.selectedCredentialIdentifier).notNull.satisfies {
+            assertThat(it.id).isEqualTo(credentials.id)
+        }
+    }
+
+    @Test
+    fun noActiveRegionUsesDefaultCredentialRegion() {
+        val element = """
+            <AccountState>
+                <option name="activeProfile" value="Mock" />
+            </AccountState>
+        """.toElement()
+
+        val credentials = mockCredentialManager.addCredentials("Mock", regionId = "us-west-2")
+        with(MockRegionProvider.getInstance()) {
+            markConnectionSettingsAsValid(credentials, defaultRegion())
+            addRegion(AwsRegion("us-west-2", "Oregon", "AWS"))
+        }
+
+        deserializeAndLoadState(manager, element)
+
+        waitForTerminalConnectionState()
+
+        assertThat(manager.selectedRegion).notNull.satisfies {
+            assertThat(it.id).isEqualTo("us-west-2")
+        }
     }
 
     @Test
@@ -235,9 +272,9 @@ class DefaultProjectAccountSettingsManagerTest {
 
         waitForTerminalConnectionState()
 
-        val region = mockRegionManager.lookupRegionById(MockRegionProvider.getInstance().defaultRegion().id)
+        val region = mockRegionManager[MockRegionProvider.getInstance().defaultRegion().id]
         assertThat(manager.selectedRegion).isEqualTo(region)
-        assertThat(manager.selectedPartition?.id).isEqualTo(region.partitionId)
+        assertThat(manager.selectedPartition?.id).isEqualTo(region?.partitionId)
         assertThat(manager.recentlyUsedRegions()).element(0).isEqualTo(region)
     }
 

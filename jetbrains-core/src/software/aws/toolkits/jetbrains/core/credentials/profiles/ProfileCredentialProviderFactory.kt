@@ -1,4 +1,4 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.core.credentials.profiles
@@ -41,7 +41,7 @@ const val DEFAULT_PROFILE_ID = "profile:default"
 
 private const val PROFILE_FACTORY_ID = "ProfileCredentialProviderFactory"
 
-private class ProfileCredentialsIdentifier(internal val profileName: String) : ToolkitCredentialsIdentifier() {
+private class ProfileCredentialsIdentifier(internal val profileName: String, override val defaultRegionId: String?) : ToolkitCredentialsIdentifier() {
     override val id = "profile:$profileName"
     override val displayName = message("credentials.profile.name", profileName)
     override val factoryId = PROFILE_FACTORY_ID
@@ -80,17 +80,17 @@ class ProfileCredentialProviderFactory : CredentialProviderFactory, Disposable {
             val previousProfile = previousProfilesSnapshot.remove(it.key)
             if (previousProfile == null) {
                 // It was not in the snapshot, so it must be new
-                profilesAdded.add(ProfileCredentialsIdentifier(it.key))
+                profilesAdded.add(it.asId())
             } else {
                 // If the profile was modified, notify people, else do nothing
                 if (previousProfile != it.value) {
-                    profilesModified.add(ProfileCredentialsIdentifier(it.key))
+                    profilesModified.add(it.asId())
                 }
             }
         }
 
         // Any remaining profiles must have either become invalid or removed from the cred/config files
-        previousProfilesSnapshot.keys.asSequence().map { ProfileCredentialsIdentifier(it) }.toCollection(profilesRemoved)
+        previousProfilesSnapshot.entries.asSequence().map { it.asId() }.toCollection(profilesRemoved)
 
         profileHolder.update(newProfiles.validProfiles)
         credentialLoadCallback(CredentialsChangeEvent(profilesAdded, profilesModified, profilesRemoved))
@@ -271,6 +271,8 @@ class ProfileCredentialProviderFactory : CredentialProviderFactory, Disposable {
     private fun createCredentialProcessProvider(profile: Profile) = ProcessCredentialsProvider.builder()
         .command(profile.requiredProperty(ProfileProperty.CREDENTIAL_PROCESS))
         .build()
+
+    private fun Map.Entry<String, Profile>.asId() = ProfileCredentialsIdentifier(key, value.properties()[ProfileProperty.REGION])
 }
 
 private class ProfileHolder {

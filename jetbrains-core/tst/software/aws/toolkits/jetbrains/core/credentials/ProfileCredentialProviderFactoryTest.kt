@@ -1,4 +1,4 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.core.credentials
@@ -120,10 +120,11 @@ class ProfileCredentialProviderFactoryTest {
 
         verify(profileLoadCallback).invoke(
             check {
-                assertThat(it.added).hasSize(3)
+                assertThat(it.added).hasSize(4)
                     .has(profileName(FOO_PROFILE_NAME))
                     .has(profileName(BAR_PROFILE_NAME))
                     .has(profileName(BAZ_PROFILE_NAME))
+                    .has(profileName(REGIONALIZED_PROFILE_NAME, defaultRegion = "us-west-2"))
 
                 assertThat(it.modified).isEmpty()
                 assertThat(it.removed).isEmpty()
@@ -550,10 +551,10 @@ class ProfileCredentialProviderFactoryTest {
         }
     }
 
-    private fun profileName(expectedProfileName: String): Condition<Iterable<ToolkitCredentialsIdentifier>> =
+    private fun profileName(expectedProfileName: String, defaultRegion: String? = null): Condition<Iterable<ToolkitCredentialsIdentifier>> =
         object : Condition<Iterable<ToolkitCredentialsIdentifier>>(expectedProfileName) {
             override fun matches(value: Iterable<ToolkitCredentialsIdentifier>): Boolean = value.any {
-                it.id == "profile:$expectedProfileName"
+                it.id == "profile:$expectedProfileName" && defaultRegion?.let { dr -> it.defaultRegionId == dr } ?: true
             }
         }
 
@@ -622,11 +623,17 @@ class ProfileCredentialProviderFactoryTest {
 
             [profile baz]
             credential_process = /path/to/credential/process
+            
+            [profile regionalized]
+            aws_access_key_id=RegionAccessKey
+            aws_secret_access_key=RegionSecretKey
+            region=us-west-2
         """.trimIndent()
 
         const val FOO_PROFILE_NAME = "foo"
         const val BAR_PROFILE_NAME = "bar"
         const val BAZ_PROFILE_NAME = "baz"
+        const val REGIONALIZED_PROFILE_NAME = "regionalized"
         const val MFA_TOKEN = "MfaToken"
     }
 }

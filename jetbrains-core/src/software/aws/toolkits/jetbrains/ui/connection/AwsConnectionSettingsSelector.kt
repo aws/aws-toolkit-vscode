@@ -44,7 +44,7 @@ class AwsConnectionSettingsSelector(
     fun selectorPanel(): JComponent = view.panel
 
     fun resetAwsConnectionOptions(regionId: String?, credentialProviderId: String?) {
-        regionId?.let { view.region.selectedRegion = regionProvider.lookupRegionById(it) }
+        regionId?.let { view.region.selectedRegion = regionProvider[it] }
 
         credentialProviderId?.let { providerId ->
             try {

@@ -1,4 +1,4 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.core.credentials
@@ -31,6 +31,10 @@ class DefaultProjectAccountSettingsManager(private val project: Project) : Proje
         recentlyUsedRegions = recentlyUsedRegions.elements()
     )
 
+    override fun noStateLoaded() {
+        loadState(ConnectionSettingsState())
+    }
+
     override fun loadState(state: ConnectionSettingsState) {
         // This can be called more than once, so we need to re-do our init sequence
         connectionState = ConnectionState.INITIALIZING
@@ -49,7 +53,7 @@ class DefaultProjectAccountSettingsManager(private val project: Project) : Proje
                 CredentialManager.getInstance().getCredentialIdentifierById(credentialId)
             }
 
-            val regionId = state.activeRegion ?: AwsRegionProvider.getInstance().defaultRegion().id
+            val regionId = state.activeRegion ?: credentials?.defaultRegionId ?: AwsRegionProvider.getInstance().defaultRegion().id
             val region = AwsRegionProvider.getInstance().allRegions()[regionId]
             val partition = region?.partitionId?.let { AwsRegionProvider.getInstance().partitions()[it] }
 
