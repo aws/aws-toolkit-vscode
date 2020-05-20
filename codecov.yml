@@ -14,6 +14,7 @@ coverage:
     project:
       default:
         threshold: 1
+        informational: true
       unittest:
         threshold: 1
         only_pulls: true
@@ -23,6 +24,7 @@ coverage:
       default:
         threshold: 1
         only_pulls: true
+        informational: false
       unittest:
         threshold: 1
         only_pulls: true
