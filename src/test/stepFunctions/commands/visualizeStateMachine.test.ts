@@ -91,6 +91,78 @@ const mockTextDocumentTwo: vscode.TextDocument = {
     validateRange: sinon.spy(),
 }
 
+const mockUriThree: vscode.Uri = {
+    authority: 'MockAuthorityYaml',
+    fragment: 'MockFragmentYaml',
+    fsPath: 'MockFSPathYaml',
+    query: 'MockQueryYaml',
+    path: 'MockPathYaml',
+    scheme: 'MockSchemeYaml',
+    with: sinon.spy(),
+    toJSON: sinon.spy(),
+}
+
+const mockDataJson =
+    '{"Comment":"A Hello World example of the Amazon States Language using Pass states","StartAt":"Hello","States":{"Hello":{"Type":"Pass","Result":"Hello","Next":"World"},"World":{"Type":"Pass","Result":"${Text}","End":true}}}'
+
+const mockDataYaml = `
+Comment: "A Hello World example of the Amazon States Language using Pass states"
+StartAt: Hello
+States:
+  Hello:
+    Type: Pass
+    Result: Hello
+    Next: World
+  World:
+    Type: Pass
+    Result: \$\{Text\}
+    End: true
+`
+
+const mockTextDocumentYaml: vscode.TextDocument = {
+    eol: 1,
+    fileName: 'MockFileNameYaml',
+    isClosed: false,
+    isDirty: false,
+    isUntitled: false,
+    languageId: 'yaml',
+    lineCount: 0,
+    uri: mockUriThree,
+    version: 0,
+    getText: () => {
+        return mockDataYaml
+    },
+    getWordRangeAtPosition: sinon.spy(),
+    lineAt: sinon.spy(),
+    offsetAt: sinon.spy(),
+    positionAt: sinon.spy(),
+    save: sinon.spy(),
+    validatePosition: sinon.spy(),
+    validateRange: sinon.spy(),
+}
+
+const mockTextDocumentJson: vscode.TextDocument = {
+    eol: 1,
+    fileName: 'MockFileNameJson',
+    isClosed: false,
+    isDirty: false,
+    isUntitled: false,
+    languageId: 'asl',
+    lineCount: 0,
+    uri: mockUriThree,
+    version: 0,
+    getText: () => {
+        return mockDataJson
+    },
+    getWordRangeAtPosition: sinon.spy(),
+    lineAt: sinon.spy(),
+    offsetAt: sinon.spy(),
+    positionAt: sinon.spy(),
+    save: sinon.spy(),
+    validatePosition: sinon.spy(),
+    validateRange: sinon.spy(),
+}
+
 const mockPosition: vscode.Position = {
     line: 0,
     character: 0,
@@ -338,6 +410,52 @@ describe('StepFunctions VisualizeStateMachine', async () => {
         panel.dispose()
 
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
+    })
+
+    it('Test AslVisualisation sendUpdateMessage posts a correct update message for YAML files', async () => {
+        const postMessage = sinon.spy()
+        class MockAslVisualizationYaml extends AslVisualization {
+            public getWebview(): vscode.Webview | undefined {
+                return ({ postMessage } as unknown) as vscode.Webview
+            }
+        }
+
+        const visualisation = new MockAslVisualizationYaml(mockTextDocumentYaml)
+
+        await visualisation.sendUpdateMessage(mockTextDocumentYaml)
+
+        const message = {
+            command: 'update',
+            stateMachineData: mockDataJson,
+            isValid: true,
+            errors: [],
+        }
+
+        assert.ok(postMessage.calledOnce)
+        assert.deepEqual(postMessage.firstCall.args, [message])
+    })
+
+    it('Test AslVisualisation sendUpdateMessage posts a correct update message for ASL files', async () => {
+        const postMessage = sinon.spy()
+        class MockAslVisualizationJson extends AslVisualization {
+            public getWebview(): vscode.Webview | undefined {
+                return ({ postMessage } as unknown) as vscode.Webview
+            }
+        }
+
+        const visualisation = new MockAslVisualizationJson(mockTextDocumentJson)
+
+        await visualisation.sendUpdateMessage(mockTextDocumentJson)
+
+        const message = {
+            command: 'update',
+            stateMachineData: mockDataJson,
+            isValid: true,
+            errors: [],
+        }
+
+        assert.ok(postMessage.calledOnce)
+        assert.deepEqual(postMessage.firstCall.args, [message])
     })
 })
 
