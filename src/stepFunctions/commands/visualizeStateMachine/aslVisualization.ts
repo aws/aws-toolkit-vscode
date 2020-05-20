@@ -171,12 +171,10 @@ export class AslVisualization {
             })
         )
 
-        const parentDispose = panel.dispose
         panel.dispose = () => {
             if (!this.isPanelDisposed) {
                 disposePanel()
             }
-            parentDispose()
         }
 
         return panel

@@ -199,7 +199,7 @@ describe('StepFunctions VisualizeStateMachine', async () => {
 
         assert.deepStrictEqual(vis.documentUri, mockTextDocumentOne.uri)
         assert.strictEqual(vis.getIsPanelDisposed(), false)
-        assert.strictEqual(vis.getDisposables().length, 4)
+        assert.strictEqual(vis.getDisposables().length, 5)
 
         let panel = vis.getPanel()
         assert.ok(panel)
