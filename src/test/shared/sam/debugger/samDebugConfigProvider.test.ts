@@ -917,38 +917,6 @@ describe('AwsSamDebugConfigurationProvider', async () => {
     })
 })
 
-describe('createTemplateAwsSamDebugConfig', () => {
-    const name = 'my body is a template'
-    const templatePath = path.join('two', 'roads', 'diverged', 'in', 'a', 'yellow', 'wood.yaml')
-
-    it('creates a template-type SAM debugger configuration with minimal configurations', () => {
-        const config = createTemplateAwsSamDebugConfig(undefined, undefined, name, templatePath)
-        assert.strictEqual(config.invokeTarget.target, TEMPLATE_TARGET_TYPE)
-        const invokeTarget = config.invokeTarget as TemplateTargetProperties
-        assert.strictEqual(config.name, `yellow:${name}`)
-        assert.strictEqual(invokeTarget.samTemplateResource, name)
-        assert.strictEqual(invokeTarget.samTemplatePath, templatePath)
-        assert.ok(!config.hasOwnProperty('lambda'))
-    })
-
-    it('creates a template-type SAM debugger configuration with additional params', () => {
-        const params = {
-            eventJson: {
-                event: 'uneventufl',
-            },
-            environmentVariables: {
-                varial: 'invert to fakie',
-            },
-            dockerNetwork: 'rockerFretwork',
-        }
-        const config = createTemplateAwsSamDebugConfig(undefined, undefined, name, templatePath, params)
-        assert.deepStrictEqual(config.lambda?.event?.json, params.eventJson)
-        assert.deepStrictEqual(config.lambda?.environmentVariables, params.environmentVariables)
-        assert.strictEqual(config.sam?.dockerNetwork, params.dockerNetwork)
-        assert.strictEqual(config.sam?.containerBuild, undefined)
-    })
-})
-
 it('ensureRelativePaths', () => {
     let workspace: vscode.WorkspaceFolder = {
         uri: vscode.Uri.file('/test1/'),
@@ -1061,12 +1029,20 @@ describe('createTemplateAwsSamDebugConfig', () => {
 
     it('creates a template-type SAM debugger configuration with minimal configurations', () => {
         const config = createTemplateAwsSamDebugConfig(undefined, undefined, name, templatePath)
-        assert.strictEqual(config.invokeTarget.target, TEMPLATE_TARGET_TYPE)
-        const invokeTarget = config.invokeTarget as TemplateTargetProperties
-        assert.strictEqual(config.name, `yellow:${name}`)
-        assert.strictEqual(invokeTarget.samTemplateResource, name)
-        assert.strictEqual(invokeTarget.samTemplatePath, templatePath)
-        assert.ok(!config.hasOwnProperty('lambda'))
+        assert.deepStrictEqual(config, {
+            name: `yellow:${name}`,
+            type: AWS_SAM_DEBUG_TYPE,
+            request: DIRECT_INVOKE_TYPE,
+            invokeTarget: {
+                target: TEMPLATE_TARGET_TYPE,
+                samTemplateResource: name,
+                samTemplatePath: templatePath,
+            },
+            lambda: {
+                event: {},
+                environmentVariables: {},
+            },
+        })
     })
 
     it('creates a template-type SAM debugger configuration with additional params', () => {

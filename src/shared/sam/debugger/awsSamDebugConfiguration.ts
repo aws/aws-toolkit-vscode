@@ -122,6 +122,10 @@ export function createTemplateAwsSamDebugConfig(
             samTemplatePath: workspaceRelativePath,
             samTemplateResource: resourceName,
         },
+        lambda: {
+            event: {},
+            environmentVariables: {},
+        },
     }
 
     if (preloadedConfig) {
@@ -130,14 +134,13 @@ export function createTemplateAwsSamDebugConfig(
             lambda:
                 preloadedConfig.environmentVariables || preloadedConfig.eventJson
                     ? {
-                          event: preloadedConfig.eventJson
-                              ? {
-                                    json: preloadedConfig.eventJson,
-                                }
-                              : undefined,
+                          event: preloadedConfig.eventJson ? { json: preloadedConfig.eventJson } : {},
                           environmentVariables: preloadedConfig.environmentVariables,
                       }
-                    : undefined,
+                    : {
+                          event: {},
+                          environmentVariables: {},
+                      },
             sam:
                 preloadedConfig.dockerNetwork || preloadedConfig.useContainer
                     ? {
@@ -171,6 +174,8 @@ export function createCodeAwsSamDebugConfig(
         },
         lambda: {
             runtime,
+            event: {},
+            environmentVariables: {},
         },
     }
 }
