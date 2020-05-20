@@ -108,12 +108,12 @@ export class AslVisualization {
         )
 
         const sendUpdateMessage = async (updatedTextDocument: vscode.TextDocument) => {
-            const isYAML = updatedTextDocument.languageId === 'yaml'
+            const isYaml = updatedTextDocument.languageId === 'yaml'
             const text = updatedTextDocument.getText()
             let stateMachineData = text
             let yamlErrors: string[] = []
 
-            if (isYAML) {
+            if (isYaml) {
                 const parsed = yaml.parseDocument(text, YAML_OPTIONS)
                 yamlErrors = parsed.errors.map(error => error.message)
                 let json: any
