@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "Step Functions Linter: Resource property of Task state will accept any string instead of just arn. Additional disallowed properties will be marked as invalid."
+}

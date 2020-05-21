@@ -173,6 +173,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateSchemas({
             context: context,
+            outputChannel: toolkitOutputChannel,
         })
 
         await ExtensionDisposableFiles.initialize(context)
