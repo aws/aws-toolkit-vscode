@@ -105,7 +105,7 @@ export function createTemplateAwsSamDebugConfig(
     templatePath: string,
     preloadedConfig?: {
         eventJson?: ReadonlyJsonObject
-        environmentVariables?: ReadonlyJsonObject
+        environmentVariables?: { [key: string]: string }
         dockerNetwork?: string
         useContainer?: boolean
     }

@@ -227,9 +227,7 @@
                                         "description": "%AWS.configuration.description.awssam.debug.envvars%",
                                         "additionalProperties": {
                                             "type": [
-                                                "string",
-                                                "number",
-                                                "boolean"
+                                                "string"
                                             ]
                                         },
                                         "type": "object"

@@ -10,8 +10,6 @@ import {
     DotNetCoreDebugConfiguration,
     DOTNET_CORE_DEBUGGER_PATH,
     getCodeRoot,
-    getTemplate,
-    getTemplateResource,
 } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import * as pathutil from '../../../shared/utilities/pathUtils'
@@ -31,20 +29,11 @@ import { invokeLambdaFunction, makeBuildDir, makeInputTemplate, waitForDebugPort
  * Does NOT execute/invoke SAM, docker, etc.
  */
 export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<SamLaunchRequestArgs> {
-    const baseBuildDir = await makeBuildDir()
-    const template = getTemplate(config.workspaceFolder, config)
-    const resource = getTemplateResource(config.workspaceFolder, config)
-    const codeUri = getCodeRoot(config.workspaceFolder, config)
-    const handlerName = config.handlerName
+    config.baseBuildDir = await makeBuildDir()
+    config.codeRoot = getCodeRoot(config.workspaceFolder, config)!
 
-    config.samTemplatePath = await makeInputTemplate({
-        baseBuildDir,
-        codeDir: codeUri!!,
-        relativeFunctionHandler: handlerName,
-        runtime: config.runtime,
-        globals: template?.Globals,
-        properties: resource?.Properties,
-    })
+    config.samTemplatePath = await makeInputTemplate(config)
+    // XXX: reassignment...
     // TODO: walk the tree to find .sln, .csproj ?
     config.codeRoot = getSamProjectDirPathForFile(config.samTemplatePath)
 
@@ -54,7 +43,6 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
         request: config.noDebug ? 'launch' : 'attach',
         runtimeFamily: RuntimeFamily.DotNetCore,
         name: 'SamLocalDebug',
-        baseBuildDir: baseBuildDir,
     }
 
     if (!config.noDebug) {

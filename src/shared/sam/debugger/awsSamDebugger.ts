@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as _ from 'lodash'
 import * as nls from 'vscode-nls'
 import { getCodeRoot, getHandlerName, getTemplateResource } from '../../../lambda/local/debugConfiguration'
 import { getDefaultRuntime, getFamily, getRuntimeFamily, RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
@@ -181,6 +182,24 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             templateResource?.Properties?.Runtime ??
             getDefaultRuntime(getRuntimeFamily(editor?.document?.languageId ?? 'unknown'))
 
+        // Merge env vars from launch.json + template.yaml.
+        // Note: launch.json takes precedence.
+        let env: { [k: string]: string } = {
+            ...templateResource?.Properties?.Environment?.Variables,
+            ...config.lambda?.environmentVariables,
+        }
+        // target=template: override env vars ONLY if specified in template.yaml.
+        if (templateResource) {
+            env = _.pick(
+                env,
+                templateResource?.Properties?.Environment?.Variables
+                    ? Object.keys(templateResource?.Properties?.Environment?.Variables)
+                    : []
+            )
+        }
+        const lambdaMemory = templateResource?.Properties?.MemorySize ?? config.lambda?.memoryMb
+        const lambdaTimout = templateResource?.Properties?.Timeout ?? config.lambda?.timeoutSec
+
         if (!runtime) {
             getLogger().error(`SAM debug: failed to launch config: ${config})`)
             vscode.window.showErrorMessage(
@@ -206,6 +225,12 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             documentUri: documentUri,
             samTemplatePath: pathutil.normalize(templateInvoke?.samTemplatePath),
             debugPort: config.noDebug ? undefined : await getStartPort(),
+            lambda: {
+                ...config.lambda,
+                ...{ environmentVariables: env },
+                memoryMb: lambdaMemory,
+                timeoutSec: lambdaTimout,
+            },
         }
 
         //
@@ -223,11 +248,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             }
             case RuntimeFamily.Python: {
                 // Make a Python launch-config from the generic config.
-                launchConfig = await pythonDebug.makePythonDebugConfig(
-                    launchConfig,
-                    launchConfig.runtime,
-                    launchConfig.handlerName
-                )
+                launchConfig = await pythonDebug.makePythonDebugConfig(launchConfig)
                 break
             }
             case RuntimeFamily.DotNetCore: {
