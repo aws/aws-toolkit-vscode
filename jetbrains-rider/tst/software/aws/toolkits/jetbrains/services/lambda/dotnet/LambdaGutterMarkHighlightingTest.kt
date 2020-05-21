@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.services.lambda.dotnet
 import base.AwsMarkupBaseTest
 import com.jetbrains.rdclient.daemon.util.attributeId
 import com.jetbrains.rdclient.testFramework.waitForDaemon
-import com.jetbrains.rdclient.util.BackendException
 import com.jetbrains.rider.model.awsSettingModel
 import com.jetbrains.rider.projectView.solution
 import org.testng.annotations.DataProvider
@@ -54,20 +53,9 @@ class LambdaGutterMarkHighlightingTest : AwsMarkupBaseTest() {
         arrayOf("SQSEvents")
     )
 
-    // TODO this test fails frequently because it gets a:
-    // "com.jetbrains.rdclient.util.BackendException: Running number of exploration fell below 0"
-    // just suppressing this test would probably make another one fail with the same error. It seems
-    // to be caused by a bug in the IDE that happens most on 2019.3 Windows.
-    // TODO revaluate this/FIX_WHEN_MIN_IS_201
     @Suppress("UNUSED_PARAMETER")
     @Test(dataProvider = "singleParameterAmazonEventType")
-    fun testParameters_SingleParameterAmazonEvent_Detected(name: String) {
-        try {
-            verifyLambdaGutterMark()
-        } catch (e: BackendException) {
-            // If it throws a BackendException, ignore it. Other exceptions will fail the test.
-        }
-    }
+    fun testParameters_SingleParameterAmazonEvent_Detected(name: String) = verifyLambdaGutterMark()
 
     @Test
     fun testParameters_SingleParameterTypeInheritedFromAmazonEvent_Detected() = verifyLambdaGutterMark()
