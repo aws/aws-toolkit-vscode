@@ -11,6 +11,15 @@ import * as vscode from 'vscode'
 import { ext } from '../../../shared/extensionGlobals'
 import { getLogger, Logger } from '../../../shared/logger'
 import { isDocumentValid } from '../../utils'
+import * as yaml from 'yaml'
+
+const YAML_OPTIONS: yaml.Options = {
+    merge: false,
+    maxAliasCount: 0,
+    schema: 'yaml-1.1',
+    version: '1.1',
+    prettyErrors: true,
+}
 
 export interface MessageObject {
     command: string
@@ -51,6 +60,44 @@ export class AslVisualization {
         this.getPanel()?.reveal()
     }
 
+    public async sendUpdateMessage(updatedTextDocument: vscode.TextDocument) {
+        const logger: Logger = getLogger()
+        const isYaml = updatedTextDocument.languageId === 'yaml'
+        const text = updatedTextDocument.getText()
+        let stateMachineData = text
+        let yamlErrors: string[] = []
+
+        if (isYaml) {
+            const parsed = yaml.parseDocument(text, YAML_OPTIONS)
+            yamlErrors = parsed.errors.map(error => error.message)
+            let json: any
+
+            try {
+                json = parsed.toJSON()
+            } catch (e) {
+                yamlErrors.push(e.message)
+            }
+
+            stateMachineData = JSON.stringify(json)
+        }
+
+        const isValid = (await isDocumentValid(stateMachineData, updatedTextDocument)) && !yamlErrors.length
+
+        const webview = this.getWebview()
+        if (this.isPanelDisposed || !webview) {
+            return
+        }
+
+        logger.debug('Sending update message to webview.')
+
+        webview.postMessage({
+            command: 'update',
+            stateMachineData,
+            isValid,
+            errors: yamlErrors,
+        })
+    }
+
     private setupWebviewPanel(textDocument: vscode.TextDocument): vscode.WebviewPanel {
         const documentUri = textDocument.uri
         const logger: Logger = getLogger()
@@ -78,7 +125,7 @@ export class AslVisualization {
         this.disposables.push(
             vscode.workspace.onDidSaveTextDocument(async savedTextDocument => {
                 if (savedTextDocument && savedTextDocument.uri.path === documentUri.path) {
-                    await sendUpdateMessage(savedTextDocument)
+                    await this.sendUpdateMessage(savedTextDocument)
                 }
             })
         )
@@ -98,22 +145,7 @@ export class AslVisualization {
             })
         )
 
-        const sendUpdateMessage = async (updatedTextDocument: vscode.TextDocument) => {
-            const isValid = await isDocumentValid(updatedTextDocument)
-            const webview = this.getWebview()
-            if (this.isPanelDisposed || !webview) {
-                return
-            }
-
-            logger.debug('Sending update message to webview.')
-
-            webview.postMessage({
-                command: 'update',
-                stateMachineData: updatedTextDocument.getText(),
-                isValid,
-            })
-        }
-        const debouncedUpdate = debounce(sendUpdateMessage.bind(this), 500)
+        const debouncedUpdate = debounce(this.sendUpdateMessage.bind(this), 500)
 
         this.disposables.push(
             vscode.workspace.onDidChangeTextDocument(async textDocumentEvent => {
@@ -136,7 +168,7 @@ export class AslVisualization {
                     case 'webviewRendered': {
                         // Webview has finished rendering, so now we can give it our
                         // initial state machine definition.
-                        await sendUpdateMessage(textDocument)
+                        await this.sendUpdateMessage(textDocument)
                         break
                     }
 

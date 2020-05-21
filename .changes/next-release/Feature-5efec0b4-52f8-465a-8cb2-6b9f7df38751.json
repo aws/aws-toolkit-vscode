@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "Add basic visualisation capability for step function state machines defined in YAML."
+}

@@ -944,7 +944,8 @@
         "vue": "^2.5.16",
         "winston": "^3.2.1",
         "winston-transport": "^4.3.0",
-        "xml2js": "^0.4.19"
+        "xml2js": "^0.4.19",
+        "yaml": "^1.9.2"
     },
     "prettier": {
         "printWidth": 120,

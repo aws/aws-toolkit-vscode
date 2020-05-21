@@ -47,7 +47,21 @@ const sampleStateMachine = `
 	             "End": true
 	         }
 	     }
-	 }`
+     }`
+
+const samleStateMachineYaml = `
+    Comment: "A Hello World example of the Amazon States Language using Pass states"
+    StartAt: Hello
+    States:
+    Hello:
+        Type: Pass
+        Result: Hello
+        Next: World
+    World:
+        Type: Pass
+        Result: \$\{Text\}
+        End: true
+`
 
 let tempFolder: string
 
@@ -118,6 +132,29 @@ describe('visualizeStateMachine', async () => {
     it('correctly displays content when given a sample state machine', async () => {
         const fileName = 'mysamplestatemachine.json'
         const textEditor = await openATextEditorWithText(sampleStateMachine, fileName)
+
+        const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.previewStateMachine')
+
+        assert.ok(result)
+
+        await waitUntilWebviewIsVisible(result)
+
+        let expectedViewColumn
+        if (textEditor.viewColumn) {
+            expectedViewColumn = textEditor.viewColumn.valueOf() + 1
+        }
+
+        if (result) {
+            assert.deepStrictEqual(result.title, 'Graph: ' + fileName)
+            assert.deepStrictEqual(result.viewColumn, expectedViewColumn)
+            assert.deepStrictEqual(result.viewType, 'stateMachineVisualization')
+            assert.ok(result.webview.html)
+        }
+    })
+
+    it('correctly displays content when given a sample state machine in yaml', async () => {
+        const fileName = 'mysamplestatemachine.yaml'
+        const textEditor = await openATextEditorWithText(samleStateMachineYaml, fileName)
 
         const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.previewStateMachine')
 

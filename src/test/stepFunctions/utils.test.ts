@@ -234,9 +234,8 @@ describe('isDocumentValid', async () => {
             } `
 
         let textDocument = await vscode.workspace.openTextDocument({ language: 'asl' })
-        textDocument = Object.assign({}, textDocument, { getText: () => aslText })
 
-        const isValid = await isDocumentValid(textDocument)
+        const isValid = await isDocumentValid(aslText, textDocument)
         assert.ok(isValid)
     })
 
@@ -254,9 +253,8 @@ describe('isDocumentValid', async () => {
             } `
 
         let textDocument = await vscode.workspace.openTextDocument({ language: 'asl' })
-        textDocument = Object.assign({}, textDocument, { getText: () => aslText })
 
-        const isValid = await isDocumentValid(textDocument)
+        const isValid = await isDocumentValid(aslText, textDocument)
         assert.ok(isValid)
     })
 
@@ -274,9 +272,8 @@ describe('isDocumentValid', async () => {
             } `
 
         let textDocument = await vscode.workspace.openTextDocument({ language: 'asl' })
-        textDocument = Object.assign({}, textDocument, { getText: () => aslText })
 
-        const isValid = await isDocumentValid(textDocument)
+        const isValid = await isDocumentValid(aslText, textDocument)
 
         assert.ok(!isValid)
     })
