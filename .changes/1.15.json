@@ -1,0 +1,14 @@
+{
+  "date" : "2020-05-21",
+  "version" : "1.15",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Add the ability to build in container when updating function code (#1740)"
+  }, {
+    "type" : "feature",
+    "description" : "Add refresh to S3 browser"
+  }, {
+    "type" : "removal",
+    "description" : "Dropped support for run/debug of deprecated Lambda runtimes"
+  } ]
+}
