@@ -86,7 +86,7 @@ export class AslVisualization {
         // If documentUri being tracked is no longer found (due to file closure or rename), close the panel.
         this.disposables.push(
             vscode.workspace.onDidCloseTextDocument(documentWillSaveEvent => {
-                if (!this.trackedDocumentDoesExist(documentUri)) {
+                if (!this.trackedDocumentDoesExist(documentUri) && !this.isPanelDisposed) {
                     panel.dispose()
                     vscode.window.showInformationMessage(
                         localize(
@@ -154,6 +154,9 @@ export class AslVisualization {
 
         // When the panel is closed, dispose of any disposables/remove subscriptions
         const disposePanel = () => {
+            if (this.isPanelDisposed) {
+                return
+            }
             this.isPanelDisposed = true
             debouncedUpdate.cancel()
             this.onVisualizationDisposeEmitter.fire()
@@ -165,17 +168,9 @@ export class AslVisualization {
 
         this.disposables.push(
             panel.onDidDispose(() => {
-                if (!this.isPanelDisposed) {
-                    disposePanel()
-                }
+                disposePanel()
             })
         )
-
-        panel.dispose = () => {
-            if (!this.isPanelDisposed) {
-                disposePanel()
-            }
-        }
 
         return panel
     }
