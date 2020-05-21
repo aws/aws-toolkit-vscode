@@ -1,4 +1,0 @@
-{
-  "type" : "removal",
-  "description" : "Dropped support for run/debug of deprecated Lambda runtimes"
-}
