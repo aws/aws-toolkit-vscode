@@ -199,7 +199,7 @@ describe('StepFunctions VisualizeStateMachine', async () => {
 
         assert.deepStrictEqual(vis.documentUri, mockTextDocumentOne.uri)
         assert.strictEqual(vis.getIsPanelDisposed(), false)
-        assert.strictEqual(vis.getDisposables().length, 4)
+        assert.strictEqual(vis.getDisposables().length, 5)
 
         let panel = vis.getPanel()
         assert.ok(panel)
@@ -303,10 +303,7 @@ describe('StepFunctions VisualizeStateMachine', async () => {
         assert.ok(managedVisualizations.get(mockTextDocumentTwo.uri.path))
     })
 
-    // TODO re-enable these tests once this race condition is resolved.
-    // https://github.com/aws/aws-toolkit-vscode/issues/1071
-    //
-    it.skip('Test AslVisualizationManager managedVisualizations set removes visualization on visualization dispose, single vis', async () => {
+    it('Test AslVisualizationManager managedVisualizations set removes visualization on visualization dispose, single vis', async () => {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
         // Preview Doc1
@@ -322,7 +319,7 @@ describe('StepFunctions VisualizeStateMachine', async () => {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
     })
 
-    it.skip('Test AslVisualizationManager managedVisualizations set removes correct visualization on visualization dispose, multiple vis', async () => {
+    it('Test AslVisualizationManager managedVisualizations set removes correct visualization on visualization dispose, multiple vis', async () => {
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 0)
 
         // Preview Doc1
