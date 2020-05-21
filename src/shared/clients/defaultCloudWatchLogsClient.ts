@@ -78,9 +78,9 @@ export class DefaultCloudWatchLogsClient implements CloudWatchLogsClient {
     }
 }
 
-abstract class IteratingAWSCall<T> {
-    protected status: 'new' | 'started' | 'done'
-    protected nextRequest: Request<T, AWSError> | void = undefined
+export abstract class IteratingAWSCall<T> {
+    private status: 'new' | 'started' | 'done'
+    private nextRequest: Request<T, AWSError> | void = undefined
 
     public constructor() {
         this.status = 'new'
@@ -89,17 +89,20 @@ abstract class IteratingAWSCall<T> {
     public async getNext(): Promise<T | undefined> {
         let request: Request<T, AWSError>
         if (this.status === 'new') {
+            this.status = 'started'
             request = this.generateRequest()
         } else if (this.status === 'started' && this.nextRequest) {
             request = this.nextRequest
         } else {
             return undefined
         }
+
         const response = await request.promise()
         if (response.$response.nextPage()) {
             this.nextRequest = response.$response.nextPage()
         } else {
             this.status = 'done'
+            this.nextRequest = undefined
         }
 
         return response
@@ -119,7 +122,7 @@ abstract class IteratingAWSCall<T> {
     protected abstract generateRequest(): Request<T, AWSError>
 }
 
-class DescribeLogStreamsCall extends IteratingAWSCall<CloudWatchLogs.DescribeLogStreamsResponse> {
+export class DescribeLogStreamsCall extends IteratingAWSCall<CloudWatchLogs.DescribeLogStreamsResponse> {
     public constructor(private readonly client: CloudWatchLogs, private readonly logGroupName: string) {
         super()
     }
