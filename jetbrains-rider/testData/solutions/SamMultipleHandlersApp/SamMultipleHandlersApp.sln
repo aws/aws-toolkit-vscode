@@ -2,16 +2,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HelloWorld", "src\HelloWorld\HelloWorld.csproj", "{74430688-A458-4BE6-A24F-44CA0038A477}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HelloWorld.Tests", "test\HelloWorld.Test\HelloWorld.Tests.csproj", "{B48E7032-10BD-4BA3-8C4C-D29AC1D8127D}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D0879C7E-25EE-4C4A-A23C-D35478EA9ABA}"
-ProjectSection(SolutionItems) = preProject
-	omnisharp.json = omnisharp.json
-	template.yaml = template.yaml
-	README.md = README.md
-	.gitignore = .gitignore
-EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
