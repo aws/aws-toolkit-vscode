@@ -147,6 +147,7 @@ class DescribeLogStreamsCallPicker extends IteratingAWSCallPicker<CloudWatchLogs
             options: {
                 title: localize('aws.cloudWatchLogs.selectLogStream.workflow.prompt', 'Select a log stream'),
                 matchOnDetail: true,
+                ignoreFocusOut: true, // TODO: remove, for testing purposes
             },
         })
     }

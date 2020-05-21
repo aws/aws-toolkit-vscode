@@ -8,13 +8,6 @@ import { ext } from '../extensionGlobals'
 import { CloudWatchLogsClient } from './cloudWatchLogsClient'
 
 export class DefaultCloudWatchLogsClient implements CloudWatchLogsClient {
-    private nextDescribeLogStreams:
-        | {
-              logGroupName: string | undefined
-              nextRequest: void | Request<CloudWatchLogs.DescribeLogStreamsResponse, AWSError>
-          }
-        | undefined
-
     public constructor(public readonly regionCode: string) {}
 
     public async *describeLogGroups(): AsyncIterableIterator<CloudWatchLogs.LogGroup> {
@@ -27,39 +20,6 @@ export class DefaultCloudWatchLogsClient implements CloudWatchLogsClient {
             }
             request.nextToken = response.nextToken
         } while (request.nextToken)
-    }
-
-    public async describeLogStreams(
-        logGroupName: string,
-        isContinue?: boolean
-    ): Promise<CloudWatchLogs.DescribeLogStreamsResponse | undefined> {
-        const sdkClient = await this.createSdkClient()
-
-        const requestParams: CloudWatchLogs.DescribeLogStreamsRequest = {
-            logGroupName,
-            orderBy: 'LastEventTime',
-            descending: true,
-        }
-        let request: Request<CloudWatchLogs.DescribeLogStreamsResponse, AWSError> = sdkClient.describeLogStreams(
-            requestParams
-        )
-
-        if (isContinue && this.nextDescribeLogStreams!.logGroupName === logGroupName) {
-            if (this.nextDescribeLogStreams!.nextRequest) {
-                request = this.nextDescribeLogStreams!.nextRequest
-            } else {
-                // no next page, return undefined to signal end of pagination
-                return undefined
-            }
-        }
-
-        const response = await request.promise()
-        this.nextDescribeLogStreams = {
-            logGroupName,
-            nextRequest: response.$response.nextPage(),
-        }
-
-        return response
     }
 
     protected async invokeDescribeLogGroups(
@@ -132,6 +92,7 @@ export class DescribeLogStreamsCall extends IteratingAWSCall<CloudWatchLogs.Desc
             logGroupName: this.logGroupName,
             orderBy: 'LastEventTime',
             descending: true,
+            limit: 1, // TODO: remove, for testing purposes
         }
         return this.client.describeLogStreams(requestParams)
     }
