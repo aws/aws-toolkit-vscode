@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import { Loggable, LogLevel } from '../../../shared/logger'
-import { isLoggableError } from '../../../shared/logger/loggableType'
+import { isError } from 'lodash'
 import {
     ChannelLogger,
     getChannelLogger,
@@ -99,8 +99,8 @@ describe('getChannelLogger', function() {
 
                     it('writes to the logger', async () => {
                         const actualLogEntries = logger.getLoggedEntries(logLevel)
-                        const loggedErrors = actualLogEntries.filter(isLoggableError)
-                        const loggedText = actualLogEntries.filter(x => !isLoggableError(x))
+                        const loggedErrors = actualLogEntries.filter(isError)
+                        const loggedText = actualLogEntries.filter(x => !isError(x))
 
                         assert.strictEqual(loggedText.length, 1, 'Expected to log only one string')
                         assert.strictEqual(

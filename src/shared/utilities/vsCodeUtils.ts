@@ -5,7 +5,8 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { getLogger, Loggable, LogLevel } from '../logger'
+import { getLogger, LogLevel } from '../logger'
+import { Loggable } from '../logger/loggableType'
 
 // TODO: Consider NLS initialization/configuration here & have packages to import localize from here
 export const localize = nls.loadMessageBundle()
@@ -73,7 +74,7 @@ export function getChannelLogger(channel: vscode.OutputChannel): ChannelLogger {
         channel.appendLine(prettyMessage)
         // TODO: Log in english if/when we get multi lang support
         // Log pretty message then Error objects (so logger might show stack traces)
-        logger[level](...[prettyMessage, ...errors])
+        logger[level](prettyMessage, ...errors)
     }
 
     return Object.freeze({

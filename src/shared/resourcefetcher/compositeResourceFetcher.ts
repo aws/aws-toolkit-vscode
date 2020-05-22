@@ -29,7 +29,7 @@ export class CompositeResourceFetcher implements ResourceFetcher {
                 }
             }
         } catch (err) {
-            this.logger.error('Error loading resource from resource fetchers', err as Error)
+            this.logger.error('Error loading resource from resource fetchers: %O', err as Error)
 
             return undefined
         }
@@ -39,7 +39,7 @@ export class CompositeResourceFetcher implements ResourceFetcher {
         try {
             return await fetcher.get()
         } catch (err) {
-            this.logger.error('Error loading resource from resource fetcher', err as Error)
+            this.logger.error('Error loading resource from resource fetcher: %O', err as Error)
 
             return undefined
         }
