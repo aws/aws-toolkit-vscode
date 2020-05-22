@@ -58,23 +58,27 @@ export class IteratingAWSCall<TRequest, TResponse> {
         }
     ) {}
 
-    public async *getIteratorForRequest(request: TRequest): AsyncIterableIterator<TResponse> {
-        if (this.isDone) {
-            return undefined
+    public async *getIteratorForRequest(
+        request: TRequest
+    ): AsyncGenerator<TResponse, undefined, TResponse | undefined> {
+        while (!this.isDone) {
+            try {
+                const response: TResponse = await this.awsCall({
+                    ...request,
+                    [this.nextTokenNames.request]: this.nextToken,
+                })
+                if (response[this.nextTokenNames.response]) {
+                    this.nextToken = (response[this.nextTokenNames.response] as any) as string
+                } else {
+                    this.nextToken = undefined
+                    this.isDone = true
+                }
+
+                yield response
+            } catch (err) {
+                return undefined
+            }
         }
-
-        const response: TResponse = await this.awsCall({
-            ...request,
-            [this.nextTokenNames.request]: this.nextToken,
-        })
-
-        if (response[this.nextTokenNames.response]) {
-            this.nextToken = (response[this.nextTokenNames.response] as any) as string
-        } else {
-            this.nextToken = undefined
-            this.isDone = true
-        }
-
-        yield response
+        return undefined
     }
 }

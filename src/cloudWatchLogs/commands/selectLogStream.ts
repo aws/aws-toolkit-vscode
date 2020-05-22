@@ -13,6 +13,7 @@ import { LogGroupNode } from '../explorer/logGroupNode'
 import { IteratingAWSCall } from '../../shared/clients/defaultCloudWatchLogsClient'
 import { CloudWatchLogs } from 'aws-sdk'
 import { ext } from '../../shared/extensionGlobals'
+import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 
 export interface SelectLogStreamResponse {
     region: string
@@ -112,14 +113,6 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
 
     private async loadItems(): Promise<void> {
         const iter = this.awsCallLogic.iteratingAwsCall.getIteratorForRequest(this.awsCallLogic.initialRequest)
-        // const next = await iter.next()
-        // const response = next.value
-        // if (!response) {
-        //     this.isDone = true
-        //     this.quickPick.busy = false
-
-        //     return undefined
-        // }
 
         for await (const item of iter) {
             if (!this.isDone && !this.isPaused) {
@@ -130,6 +123,8 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
                 break
             }
         }
+        this.isDone = true
+        this.quickPick.busy = false
     }
 }
 
@@ -137,15 +132,14 @@ function createDescribeLogStreamsCallPicker(
     regionCode: string,
     logGroupName: string
 ): IteratingAWSCallPicker<CloudWatchLogs.DescribeLogStreamsRequest, CloudWatchLogs.DescribeLogStreamsResponse> {
+    const client: CloudWatchLogsClient = ext.toolkitClientBuilder.createCloudWatchLogsClient(regionCode)
+
     return new IteratingAWSCallPicker(
         {
-            iteratingAwsCall: new IteratingAWSCall(
-                ext.toolkitClientBuilder.createCloudWatchLogsClient(regionCode).describeLogStreams,
-                {
-                    request: 'nextToken',
-                    response: 'nextToken',
-                }
-            ),
+            iteratingAwsCall: new IteratingAWSCall(client.describeLogStreams.bind(client), {
+                request: 'nextToken',
+                response: 'nextToken',
+            }),
             initialRequest: {
                 logGroupName,
                 orderBy: 'LastEventTime',
@@ -161,7 +155,7 @@ function createDescribeLogStreamsCallPicker(
                             label: stream.logStreamName!,
                             detail: stream.lastEventTimestamp
                                 ? new Date(stream.lastEventTimestamp).toString()
-                                : undefined,
+                                : '(Log Stream has no events)',
                         })
                     }
                 }
