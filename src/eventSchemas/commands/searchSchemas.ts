@@ -93,7 +93,7 @@ export async function createSearchSchemasWebView(params: {
     } catch (err) {
         webviewResult = 'Failed'
         const error = err as Error
-        logger.error('Error searching schemas', error)
+        logger.error('Error searching schemas: %O', error)
     } finally {
         // TODO make this telemetry actually record failures
         recordSchemasSearch({ result: webviewResult })

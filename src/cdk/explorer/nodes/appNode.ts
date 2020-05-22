@@ -77,7 +77,7 @@ export class AppNode extends AWSTreeNodeBase {
 
             return constructs
         } catch (error) {
-            getLogger().error(`Could not load the construct tree located at '${this.id}'`, error as Error)
+            getLogger().error(`Could not load the construct tree located at '${this.id}': %O`, error as Error)
 
             return [
                 new PlaceholderNode(

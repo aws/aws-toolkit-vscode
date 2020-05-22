@@ -109,7 +109,7 @@ async function createStateMachine(
                 wizardResponse.name
             )
         )
-        logger.error(`Failed to create state machine '${wizardResponse.name}'.`, err as Error)
+        logger.error(`Failed to create state machine '${wizardResponse.name}'. %O`, err as Error)
         outputChannel.appendLine('')
     }
 }
@@ -154,7 +154,7 @@ async function updateStateMachine(
                 wizardResponse.stateMachineArn
             )
         )
-        logger.error(`Failed to update '${wizardResponse.stateMachineArn}'.`, err as Error)
+        logger.error(`Failed to update '${wizardResponse.stateMachineArn}'. %O`, err as Error)
         outputChannel.appendLine('')
     }
 }

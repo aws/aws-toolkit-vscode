@@ -141,6 +141,6 @@ export async function handleTelemetryNoticeResponse(
             vscode.commands.executeCommand('workbench.action.openSettings')
         }
     } catch (err) {
-        getLogger().error('Error while handling reponse from telemetry notice', err as Error)
+        getLogger().error('Error while handling response from telemetry notice: %O', err as Error)
     }
 }
