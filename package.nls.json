@@ -179,6 +179,7 @@
     "AWS.message.error.schemas.viewSchema.could_not_open": "Could not fetch and display schema {0} contents",
     "AWS.message.error.schemas.downloadCodeBindings.failed_to_download": "Unable to download schema code",
     "AWS.message.error.schemas.downloadCodeBindings.failed_to_generate": "Unable to generate schema code",
+    "AWS.message.error.schemas.downloadCodeBindings.cancelled:": "Download code bindings cancelled",
     "AWS.message.error.schemas.downloadCodeBindings.invalid_code_generation_status": "Invalid Code generation status {0}",
     "AWS.message.error.schemas.downloadCodeBindings.timout": "Failed to download code for schema {0} before timeout. Please try again later",
     "AWS.message.info.schemas.downloadCodeBindings.start": "Downloading code for schema {0}...",
