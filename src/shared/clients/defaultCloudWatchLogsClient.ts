@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AWSError, CloudWatchLogs, Request } from 'aws-sdk'
+import { CloudWatchLogs } from 'aws-sdk'
 import { ext } from '../extensionGlobals'
 import { CloudWatchLogsClient } from './cloudWatchLogsClient'
 
@@ -22,6 +22,14 @@ export class DefaultCloudWatchLogsClient implements CloudWatchLogsClient {
         } while (request.nextToken)
     }
 
+    public async describeLogStreams(
+        request: CloudWatchLogs.DescribeLogStreamsRequest
+    ): Promise<CloudWatchLogs.DescribeLogStreamsResponse> {
+        const sdkClient = await this.createSdkClient()
+
+        return await sdkClient.describeLogStreams(request).promise()
+    }
+
     protected async invokeDescribeLogGroups(
         request: CloudWatchLogs.DescribeLogGroupsRequest,
         sdkClient: CloudWatchLogs
@@ -38,62 +46,35 @@ export class DefaultCloudWatchLogsClient implements CloudWatchLogsClient {
     }
 }
 
-export abstract class IteratingAWSCall<T> {
-    private status: 'new' | 'started' | 'done'
-    private nextRequest: Request<T, AWSError> | void = undefined
+export class IteratingAWSCall<TRequest, TResponse> {
+    private isDone: boolean = false
+    private nextToken: string | undefined = undefined
 
-    public constructor() {
-        this.status = 'new'
-    }
+    public constructor(
+        private readonly awsCall: (request: TRequest) => Promise<TResponse>,
+        private readonly nextTokenNames: {
+            request: keyof TRequest
+            response: keyof TResponse
+        }
+    ) {}
 
-    public async getNext(): Promise<T | undefined> {
-        let request: Request<T, AWSError>
-        if (this.status === 'new') {
-            this.status = 'started'
-            request = this.generateRequest()
-        } else if (this.status === 'started' && this.nextRequest) {
-            request = this.nextRequest
-        } else {
+    public async *getIteratorForRequest(request: TRequest): AsyncIterableIterator<TResponse> {
+        if (this.isDone) {
             return undefined
         }
 
-        const response = await request.promise()
-        if (response.$response.nextPage()) {
-            this.nextRequest = response.$response.nextPage()
+        const response: TResponse = await this.awsCall({
+            ...request,
+            [this.nextTokenNames.request]: this.nextToken,
+        })
+
+        if (response[this.nextTokenNames.response]) {
+            this.nextToken = (response[this.nextTokenNames.response] as any) as string
         } else {
-            this.status = 'done'
-            this.nextRequest = undefined
+            this.nextToken = undefined
+            this.isDone = true
         }
 
-        return response
-    }
-
-    public async getAllRemaining(): Promise<T[]> {
-        const responses: T[] = []
-        let response: T | undefined = await this.getNext()
-        while (response) {
-            responses.push(response)
-            response = await this.getNext()
-        }
-
-        return responses
-    }
-
-    protected abstract generateRequest(): Request<T, AWSError>
-}
-
-export class DescribeLogStreamsCall extends IteratingAWSCall<CloudWatchLogs.DescribeLogStreamsResponse> {
-    public constructor(private readonly client: CloudWatchLogs, private readonly logGroupName: string) {
-        super()
-    }
-
-    protected generateRequest(): Request<CloudWatchLogs.DescribeLogStreamsResponse, AWSError> {
-        const requestParams: CloudWatchLogs.DescribeLogStreamsRequest = {
-            logGroupName: this.logGroupName,
-            orderBy: 'LastEventTime',
-            descending: true,
-            limit: 1, // TODO: remove, for testing purposes
-        }
-        return this.client.describeLogStreams(requestParams)
+        yield response
     }
 }

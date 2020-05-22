@@ -9,4 +9,8 @@ export interface CloudWatchLogsClient {
     readonly regionCode: string
 
     describeLogGroups(): AsyncIterableIterator<CloudWatchLogs.LogGroup>
+
+    describeLogStreams(
+        request: CloudWatchLogs.DescribeLogStreamsRequest
+    ): Promise<CloudWatchLogs.DescribeLogStreamsResponse>
 }
