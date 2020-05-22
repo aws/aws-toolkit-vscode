@@ -1,0 +1,4 @@
+{
+  "type" : "breaking",
+  "description" : "The toolkit now requires 2019.3 or newer"
+}

@@ -104,7 +104,6 @@ fun drawSearchMatch(graphics2D: Graphics2D, startXf: Float, endXf: Float, startY
     alpha = if (alpha < 0 || alpha > 1) 0.7f else alpha
     graphics2D.composite = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha)
     graphics2D.paint = UIUtil.getGradientPaint(startXf, startY + 2f, gradientStart, startXf, startY - height - 5.toFloat(), gradientEnd)
-    // AWS comment, this is available in 2019.2 (5728) ignore the IDE warning
     if (JreHiDpiUtil.isJreHiDPI(graphics2D)) {
         val c = GraphicsUtil.setupRoundedBorderAntialiasing(graphics2D)
         graphics2D.fill(RoundRectangle2D.Float(startXf, startY + 2, endXf - startXf, (height - 4).toFloat(), 5f, 5f))

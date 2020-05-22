@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.core
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ex.ProjectManagerEx
+import com.intellij.testFramework.HeavyPlatformTestCase
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
@@ -30,7 +31,6 @@ import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
-import software.aws.toolkits.jetbrains.utils.CompatibilityUtils.createProject
 import software.aws.toolkits.jetbrains.utils.spinUntil
 import java.time.Duration
 import kotlin.reflect.full.declaredMemberProperties
@@ -101,7 +101,7 @@ class AwsClientManagerTest {
 
     @Test
     fun clientsAreClosedWhenProjectIsDisposed() {
-        val project = createProject(temporaryDirectory.newFolder().toPath())
+        val project = HeavyPlatformTestCase.createProject(temporaryDirectory.newFolder().toPath())
         val projectManager = ProjectManagerEx.getInstanceEx()
 
         runInEdtAndWait {

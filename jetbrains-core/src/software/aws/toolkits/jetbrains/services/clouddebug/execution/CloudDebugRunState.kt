@@ -7,8 +7,7 @@ import com.intellij.build.BuildDescriptor
 import com.intellij.build.BuildView
 import com.intellij.build.DefaultBuildDescriptor
 import com.intellij.build.ViewManager
-import com.intellij.build.events.Failure
-import com.intellij.build.events.FailureResult
+import com.intellij.build.events.impl.FailureResultImpl
 import com.intellij.build.events.impl.FinishBuildEventImpl
 import com.intellij.build.events.impl.StartBuildEventImpl
 import com.intellij.build.events.impl.SuccessResultImpl
@@ -59,10 +58,10 @@ class CloudDebugRunState(
             try {
                 startRunConfiguration(descriptor, buildView)
                 rootStep.run(context, messageEmitter)
-                finishedSuccessfully(processHandler, buildView)
+                finishedSuccessfully(descriptor, processHandler, buildView)
             } catch (e: Throwable) {
                 result = Result.FAILED
-                finishedExceptionally(processHandler, buildView, e)
+                finishedExceptionally(descriptor, processHandler, buildView, e)
             }
 
             try {
@@ -84,13 +83,12 @@ class CloudDebugRunState(
     }
 
     private fun startRunConfiguration(descriptor: BuildDescriptor, buildView: BuildView) {
-        @Suppress("DEPRECATION") // TODO: switch to BuildProgressListener(Object, Event)  FIX_WHEN_MIN_IS_192
-        buildView.onEvent(StartBuildEventImpl(descriptor, message("cloud_debug.execution.running")))
+        buildView.onEvent(descriptor, StartBuildEventImpl(descriptor, message("cloud_debug.execution.running")))
     }
 
-    private fun finishedSuccessfully(processHandler: CloudDebugProcessHandler, buildView: BuildView) {
-        @Suppress("DEPRECATION") // TODO: switch to BuildProgressListener(Object, Event)  FIX_WHEN_MIN_IS_192
+    private fun finishedSuccessfully(descriptor: BuildDescriptor, processHandler: CloudDebugProcessHandler, buildView: BuildView) {
         buildView.onEvent(
+            descriptor,
             FinishBuildEventImpl(
                 runConfigId(),
                 null,
@@ -103,21 +101,21 @@ class CloudDebugRunState(
         processHandler.notifyProcessTerminated(0)
     }
 
-    private fun finishedExceptionally(processHandler: CloudDebugProcessHandler, buildView: BuildView, e: Throwable) {
+    private fun finishedExceptionally(descriptor: BuildDescriptor, processHandler: CloudDebugProcessHandler, buildView: BuildView, e: Throwable) {
         val message = if (e is ProcessCanceledException) {
             message("cloud_debug.execution.cancelled")
         } else {
             message("cloud_debug.execution.failed")
         }
 
-        @Suppress("DEPRECATION") // TODO: switch to BuildProgressListener(Object, Event)  FIX_WHEN_MIN_IS_192
         buildView.onEvent(
+            descriptor,
             FinishBuildEventImpl(
                 runConfigId(),
                 null,
                 System.currentTimeMillis(),
                 message,
-                DefaultFailureResult()
+                FailureResultImpl()
             )
         )
 
@@ -125,12 +123,6 @@ class CloudDebugRunState(
     }
 
     private fun runConfigId() = "${environment.runProfile.name}-${environment.executionId}"
-
-    // Empty constructor was not added to FailureResultImpl till 2019.2, implement the interface ourselves to get same behavior
-    // TODO FIX_WHEN_MIN_IS_192
-    private class DefaultFailureResult : FailureResult {
-        override fun getFailures(): List<Failure> = emptyList()
-    }
 
     companion object {
         private val LOG = getLogger<CloudDebugRunState>()

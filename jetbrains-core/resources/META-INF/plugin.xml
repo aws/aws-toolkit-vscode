@@ -65,7 +65,7 @@
     ]]></description>
 
     <vendor email="aws-toolkit-jetbrains@amazon.com" url="https://aws.amazon.com/">AWS</vendor>
-    <idea-version since-build="192" until-build="193.*"/>
+    <idea-version since-build="193" until-build="201.*"/>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->

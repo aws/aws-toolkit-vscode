@@ -8,6 +8,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.util.Ref
 import com.intellij.testFramework.DisposableRule
+import com.intellij.testFramework.ExtensionTestUtil
 import com.intellij.testFramework.ProjectRule
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.tree.TreeUtil
@@ -24,7 +25,6 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.fillResourceCache
 import software.aws.toolkits.jetbrains.ui.tree.AsyncTreeModel
 import software.aws.toolkits.jetbrains.ui.tree.StructureTreeModel
-import software.aws.toolkits.jetbrains.utils.CompatibilityUtils.registerExtension
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import javax.swing.tree.TreeModel
@@ -47,7 +47,7 @@ class AwsExplorerNodeProcessorTest {
     fun testNodePostProcessorIsInvoked() {
         val mockExtension = mock<AwsExplorerNodeProcessor>()
 
-        registerExtension(AwsExplorerNodeProcessor.EP_NAME, mockExtension, disposableRule.disposable)
+        ExtensionTestUtil.maskExtensions(AwsExplorerNodeProcessor.EP_NAME, listOf(mockExtension), disposableRule.disposable)
 
         val countDownLatch = CountDownLatch(1)
 
@@ -67,14 +67,14 @@ class AwsExplorerNodeProcessorTest {
         val ranOnCorrectThread = Ref(true)
         val ran = Ref(false)
 
-        registerExtension(
+        ExtensionTestUtil.maskExtensions(
             AwsExplorerNodeProcessor.EP_NAME,
-            object : AwsExplorerNodeProcessor {
+            listOf(object : AwsExplorerNodeProcessor {
                 override fun postProcessPresentation(node: AwsExplorerNode<*>, presentation: PresentationData) {
                     ran.set(true)
                     ran.set(ranOnCorrectThread.get() && !ApplicationManager.getApplication().isDispatchThread)
                 }
-            },
+            }),
             disposableRule.disposable
         )
 

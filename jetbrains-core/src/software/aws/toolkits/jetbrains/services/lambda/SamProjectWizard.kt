@@ -14,7 +14,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.roots.ProjectRootManager
-import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import icons.AwsIcons
@@ -118,12 +117,8 @@ abstract class SamProjectTemplate {
 
     private fun openReadmeFile(contentRoot: VirtualFile, project: Project) {
         VfsUtil.findRelativeFile(contentRoot, "README.md")?.let { readme ->
-            // TODO: Migrate to TextEditorWithPreview.DEFAULT_LAYOUT_FOR_FILE FIX_WHEN_MIN_IS_193
-            @Suppress("DEPRECATION") // Like the deprecated message says, this is a dirty hack, fix the todo above!
-            val key = Key.findKeyByName("TextEditorWithPreview.DefaultLayout") as? Key<TextEditorWithPreview.Layout>
-            key?.let {
-                readme.putUserData(key, TextEditorWithPreview.Layout.SHOW_PREVIEW)
-            }
+            // it's only available since the first non-EAP version of intellij, so it is fine
+            readme.putUserData(TextEditorWithPreview.DEFAULT_LAYOUT_FOR_FILE, TextEditorWithPreview.Layout.SHOW_PREVIEW)
 
             val fileEditorManager = FileEditorManager.getInstance(project)
             fileEditorManager.openTextEditor(OpenFileDescriptor(project, readme), true) ?: LOG.warn { "Failed to open README.md" }
