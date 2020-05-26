@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.s3.editor
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
+import com.intellij.openapi.actionSystem.CommonShortcuts
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.Separator
 import com.intellij.openapi.project.Project
@@ -75,7 +76,9 @@ class S3ViewerPanel(disposable: Disposable, private val project: Project, privat
         it.add(UploadObjectAction(project, table))
         it.add(Separator())
         it.add(NewFolderAction(project, table))
-        it.add(RenameObjectAction(project, table))
+        it.add(RenameObjectAction(project, table).apply {
+            registerCustomShortcutSet(CommonShortcuts.getRename(), table)
+        })
         it.add(CopyPathAction(project, table))
         it.add(Separator())
         it.add(DeleteObjectAction(project, table))

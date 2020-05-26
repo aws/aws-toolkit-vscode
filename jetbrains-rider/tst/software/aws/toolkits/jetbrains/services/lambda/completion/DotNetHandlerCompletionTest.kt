@@ -11,7 +11,6 @@ import com.jetbrains.rider.test.base.BaseTestWithSolution
 import org.assertj.core.api.Assertions.assertThat
 import org.testng.annotations.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.jetbrains.services.lambda.assume20192Version
 
 class DotNetHandlerCompletionTest : BaseTestWithSolution() {
 
@@ -36,10 +35,9 @@ class DotNetHandlerCompletionTest : BaseTestWithSolution() {
         assertIconPath(handlers.first().iconId, "/resharper/PsiSymbols/Method.svg")
     }
 
-    @Test
+    // TODO this test only works on 2019.2. Which we don't support anymore. Fix the test
     @TestEnvironment(solution = "SamMultipleHandlersApp")
     fun testDetermineHandlers_MultipleHandlers() {
-        assume20192Version()
         val handlers = DotNetHandlerCompletion().getHandlersFromBackend(project).sortedBy { it.handler }
 
         assertThat(handlers.size).isEqualTo(3)

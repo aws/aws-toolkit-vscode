@@ -13,7 +13,6 @@ import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import software.amazon.awssdk.profiles.ProfileFileLocation
 
-@Suppress("MissingRecentApi") // 2019.2 is 192.5728.98 TODO: Remove warning FIX_WHEN_MIN_IS_193
 class ProfileWatcher(parentDisposable: Disposable) : AsyncFileListener, Disposable {
     private val watchRoots = mutableSetOf<LocalFileSystem.WatchRequest>()
     private var onUpdate: (() -> Unit)? = null

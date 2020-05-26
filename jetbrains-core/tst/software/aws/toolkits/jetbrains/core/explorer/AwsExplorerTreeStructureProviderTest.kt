@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.core.explorer
 
 import com.intellij.openapi.application.runInEdt
 import com.intellij.testFramework.DisposableRule
+import com.intellij.testFramework.ExtensionTestUtil
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.ui.treeStructure.Tree
@@ -20,7 +21,6 @@ import software.aws.toolkits.jetbrains.core.MockResourceCache
 import software.aws.toolkits.jetbrains.core.fillResourceCache
 import software.aws.toolkits.jetbrains.ui.tree.AsyncTreeModel
 import software.aws.toolkits.jetbrains.ui.tree.StructureTreeModel
-import software.aws.toolkits.jetbrains.utils.CompatibilityUtils
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import javax.swing.tree.TreeModel
@@ -42,7 +42,7 @@ class AwsExplorerTreeStructureProviderTest {
     @Test
     fun testTreeStructureProviderIsInvoked() {
         val mockExtension = mock<AwsExplorerTreeStructureProvider>()
-        CompatibilityUtils.registerExtension(AwsExplorerTreeStructureProvider.EP_NAME, mockExtension, disposableRule.disposable)
+        ExtensionTestUtil.maskExtensions(AwsExplorerTreeStructureProvider.EP_NAME, listOf(mockExtension), disposableRule.disposable)
 
         val countDownLatch = CountDownLatch(1)
 

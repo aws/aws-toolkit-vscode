@@ -1,42 +1,5 @@
 static def ideProfiles() {
     return [
-        "2019.2": [
-            "guiTestFramework": "com.intellij.testGuiFramework:0.9.44.1@nightly",
-            "sinceVersion": "192",
-            "untilVersion": "192.*",
-            "products" : [
-                "IC": [
-                    sdkVersion: "IC-2019.2",
-                    plugins: [
-                        "org.jetbrains.plugins.terminal",
-                        "org.jetbrains.plugins.yaml",
-                        "PythonCore:2019.2.192.5728.98",
-                        "java",
-                        "gradle",
-                        "org.jetbrains.idea.maven",
-                        "Docker:192.5728.74",
-                    ]
-                ],
-                "IU": [
-                    sdkVersion: "IU-2019.2",
-                    plugins: [
-                        "org.jetbrains.plugins.terminal",
-                        "org.jetbrains.plugins.yaml",
-                        "JavaScript",
-                        "JavaScriptDebugger",
-                        "Pythonid:2019.2.192.5728.98"
-                    ]
-                ],
-                "RD": [
-                    sdkVersion: "RD-2019.2",
-                    rdGenVersion: "0.192.36",
-                    nugetVersion: "2019.2.0",
-                    plugins: [
-                        "org.jetbrains.plugins.yaml"
-                    ]
-                ]
-            ]
-        ],
         "2019.3": [
             "guiTestFramework": "com.intellij.testGuiFramework:193.SNAPSHOT.1@nightly",
             "sinceVersion": "193",
