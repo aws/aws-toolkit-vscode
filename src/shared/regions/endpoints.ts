@@ -78,8 +78,8 @@ export function loadEndpoints(json: string): Endpoints | undefined {
         }
     } catch (err) {
         const logger = getLogger()
-        logger.error('Failed to load endpoints manifest', err as Error)
-        logger.verbose('endpoints payload was:', json)
+        logger.error('Failed to load endpoints manifest: %O', err as Error)
+        logger.verbose('endpoints payload was: %s', json)
 
         return undefined
     }

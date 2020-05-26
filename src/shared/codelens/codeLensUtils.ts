@@ -85,7 +85,7 @@ export async function makeCodeLenses({
             lenses.push(makeConfigureCodeLens(baseParams))
         } catch (err) {
             getLogger().error(
-                `Could not generate 'configure' code lens for handler '${handler.handlerName}'`,
+                `Could not generate 'configure' code lens for handler '${handler.handlerName}': %O`,
                 err as Error
             )
         }

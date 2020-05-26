@@ -52,7 +52,7 @@ export class DisposableFiles implements vscode.Disposable {
                     }
                 })
             } catch (err) {
-                logger.error('Error during DisposableFiles dispose: ', err as Error)
+                logger.error('Error during DisposableFiles dispose: %O', err as Error)
             } finally {
                 this._disposed = true
             }

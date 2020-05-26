@@ -32,7 +32,7 @@ export class PythonDebugAdapterHeartbeat {
             })
             this.socket.once('error', (err: Error) => {
                 clearTimeout(timeout)
-                this.logger.verbose('Error while connecting', err)
+                this.logger.verbose('Error while connecting: %O', err)
                 resolve(false)
             })
 
@@ -52,13 +52,13 @@ export class PythonDebugAdapterHeartbeat {
 
             this.socket.on('data', data => {
                 clearTimeout(timeout)
-                this.logger.verbose('Data received from Debug Adapter', data.toString())
+                this.logger.verbose('Data received from Debug Adapter: %s', data.toString())
                 resolve(true)
             })
 
             this.socket.once('error', (err: Error) => {
                 clearTimeout(timeout)
-                this.logger.verbose('Error writing to Debug Adapter', err)
+                this.logger.verbose('Error writing to Debug Adapter: %O', err)
                 resolve(false)
             })
 

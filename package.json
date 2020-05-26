@@ -104,13 +104,15 @@
                         "error",
                         "warn",
                         "info",
-                        "verbose"
+                        "verbose",
+                        "debug"
                     ],
                     "enumDescriptions": [
                         "Errors Only",
                         "Errors and Warnings",
                         "Errors, Warnings, and Info",
-                        "Errors, Warnings, Info, and Verbose"
+                        "Errors, Warnings, Info, and Verbose",
+                        "Errors, Warnings, Info, Verbose, and Debug"
                     ],
                     "markdownDescription": "%AWS.configuration.description.logLevel%"
                 },
