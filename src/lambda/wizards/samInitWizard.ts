@@ -27,7 +27,7 @@ import {
     WizardStep,
     WorkspaceFolderQuickPickItem,
 } from '../../shared/wizards/multiStepWizard'
-import { compareSamLambdaRuntime, samLambdaRuntimes } from '../models/samLambdaRuntime'
+import { samLambdaCreatableRuntimes, promptForRuntime } from '../models/samLambdaRuntime'
 import {
     eventBridgeStarterAppTemplate,
     getSamTemplateWizardOption,
@@ -54,8 +54,7 @@ export interface CreateNewSamAppWizardContext {
 }
 
 export class DefaultCreateNewSamAppWizardContext extends WizardContext implements CreateNewSamAppWizardContext {
-    // Filter out node8 until local debugging is no longer supported, and it can be removed from samLambdaRuntimes
-    public readonly lambdaRuntimes = samLambdaRuntimes.filter(runtime => runtime !== 'nodejs8.10')
+    public readonly lambdaRuntimes = samLambdaCreatableRuntimes
     private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Documentation'))
     private readonly currentCredentials: Credentials | undefined
     private readonly schemasRegions: Region[]
@@ -67,22 +66,9 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
     }
 
     public async promptUserForRuntime(currRuntime?: Runtime): Promise<Runtime | undefined> {
-        const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
-            options: {
-                ignoreFocusOut: true,
-                title: localize('AWS.samcli.initWizard.runtime.prompt', 'Select a SAM Application Runtime'),
-                value: currRuntime ? currRuntime : '',
-            },
-            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
-            items: this.lambdaRuntimes
-                .toArray()
-                .sort(compareSamLambdaRuntime)
-                .map(runtime => ({
-                    label: runtime,
-                    alwaysShow: runtime === currRuntime,
-                    description:
-                        runtime === currRuntime ? localize('AWS.wizard.selectedPreviously', 'Selected Previously') : '',
-                })),
+        const quickPick = promptForRuntime({
+            buttons: [this.helpButton],
+            currRuntime,
         })
 
         const choices = await picker.promptUser({

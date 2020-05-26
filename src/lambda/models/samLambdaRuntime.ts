@@ -3,8 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
+import * as vscode from 'vscode'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { Map, Set } from 'immutable'
+import * as picker from '../../shared/ui/picker'
 
 export enum RuntimeFamily {
     Unknown,
@@ -23,6 +28,9 @@ const DEFAULT_RUNTIMES = Map<RuntimeFamily, Runtime>([
 ])
 
 export const samLambdaRuntimes: Set<Runtime> = Set.union([nodeJsRuntimes, pythonRuntimes, dotNetRuntimes])
+
+// Filter out node8 until local debugging is no longer supported, and it can be removed from samLambdaRuntimes
+export const samLambdaCreatableRuntimes: Set<Runtime> = samLambdaRuntimes.filter(runtime => runtime !== 'nodejs8.10')
 
 export type DependencyManager = 'cli-package' | 'mod' | 'gradle' | 'pip' | 'npm' | 'maven' | 'bundler'
 
@@ -87,4 +95,59 @@ export function getRuntimeFamily(langId: string): RuntimeFamily {
  */
 export function getDefaultRuntime(runtime: RuntimeFamily): string | undefined {
     return DEFAULT_RUNTIMES.get(runtime)
+}
+
+/**
+ * Returns a set of runtimes for a specified runtime family or undefined if not found.
+ * @param family Runtime family to get runtimes for
+ */
+function getRuntimesForFamily(family: RuntimeFamily): Set<Runtime> | undefined {
+    switch (family) {
+        case RuntimeFamily.NodeJS:
+            return nodeJsRuntimes
+        case RuntimeFamily.Python:
+            return pythonRuntimes
+        case RuntimeFamily.DotNetCore:
+            return dotNetRuntimes
+        default:
+            return undefined
+    }
+}
+
+/**
+ * Creates a quick pick for a Runtime with the following parameters (all optional)
+ * @param params buttons: array of buttons to add to the quick pick;
+ * currRuntime: Runtime to set a "Selected Previously" mark to;
+ * runtimeFamily: a RuntimeFamily that will define the list of runtimes to show (default: samLambdaCreatableRuntimes)
+ */
+export function promptForRuntime(params: {
+    buttons?: vscode.QuickInputButton[]
+    currRuntime?: Runtime
+    runtimeFamily?: RuntimeFamily
+}): vscode.QuickPick<vscode.QuickPickItem> {
+    const runtimes = params.runtimeFamily
+        ? getRuntimesForFamily(params.runtimeFamily) ?? samLambdaCreatableRuntimes
+        : samLambdaCreatableRuntimes
+
+    return picker.createQuickPick<vscode.QuickPickItem>({
+        options: {
+            ignoreFocusOut: true,
+            title: localize('AWS.samcli.initWizard.runtime.prompt', 'Select a SAM Application Runtime'),
+            value: params.currRuntime ? params.currRuntime : '',
+        },
+        buttons: [...(params.buttons ?? []), vscode.QuickInputButtons.Back],
+        items: runtimes
+            // remove uncreatable runtimes
+            .filter(value => samLambdaCreatableRuntimes.has(value))
+            .toArray()
+            .sort(compareSamLambdaRuntime)
+            .map(runtime => ({
+                label: runtime,
+                alwaysShow: runtime === params.currRuntime,
+                description:
+                    runtime === params.currRuntime
+                        ? localize('AWS.wizard.selectedPreviously', 'Selected Previously')
+                        : '',
+            })),
+    })
 }

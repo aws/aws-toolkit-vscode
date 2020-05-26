@@ -967,7 +967,7 @@ it('ensureRelativePaths', () => {
         undefined,
         'testName1',
         '/test1/project',
-        lambdaModel.RuntimeFamily.NodeJS
+        lambdaModel.getDefaultRuntime(lambdaModel.RuntimeFamily.NodeJS) ?? ''
     )
     assert.strictEqual((codeConfig.invokeTarget as CodeTargetProperties).projectRoot, '/test1/project')
     ensureRelativePaths(workspace, codeConfig)

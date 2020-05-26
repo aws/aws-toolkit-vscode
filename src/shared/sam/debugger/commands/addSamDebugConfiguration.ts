@@ -5,10 +5,12 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { Runtime } from 'aws-sdk/clients/lambda'
 import { getExistingConfiguration } from '../../../../lambda/config/templates'
-import { getDefaultRuntime, RuntimeFamily } from '../../../../lambda/models/samLambdaRuntime'
+import { getDefaultRuntime, RuntimeFamily, promptForRuntime } from '../../../../lambda/models/samLambdaRuntime'
 import { CloudFormationTemplateRegistry } from '../../../cloudformation/templateRegistry'
 import { LaunchConfiguration } from '../../../debug/launchConfiguration'
+import * as picker from '../../../ui/picker'
 import { localize } from '../../../utilities/vsCodeUtils'
 import {
     AwsSamDebuggerConfiguration,
@@ -93,13 +95,26 @@ export async function addSamDebugConfiguration(
             preloadedConfig
         )
     } else if (type === CODE_TARGET_TYPE) {
-        // strip the manifest's URI to the manifest's dir here. More reliable to do this here than converting back and forth between URI/string up the chain.
-        samDebugConfig = createCodeAwsSamDebugConfig(
-            workspaceFolder,
-            resourceName,
-            path.dirname(rootUri.fsPath),
-            runtimeFamily
-        )
+        const quickPick = promptForRuntime({
+            runtimeFamily,
+        })
+
+        const choices = await picker.promptUser({
+            picker: quickPick,
+        })
+        const val = picker.verifySinglePickerOutput(choices)
+        if (val) {
+            // strip the manifest's URI to the manifest's dir here. More reliable to do this here than converting back and forth between URI/string up the chain.
+            samDebugConfig = createCodeAwsSamDebugConfig(
+                workspaceFolder,
+                resourceName,
+                path.dirname(rootUri.fsPath),
+                val.label as Runtime
+            )
+        } else {
+            // User backed out of runtime selection. Abandon config creation.
+            return
+        }
     } else {
         throw new Error('Unrecognized debug target type')
     }
