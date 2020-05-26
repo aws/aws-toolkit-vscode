@@ -160,3 +160,52 @@ export async function take<T>(sequence: AsyncIterable<T>, count: number): Promis
 
     return result
 }
+
+// TODO: Move this to a function?
+// TODO: Allow this to generate its own client?
+export class IteratingAWSCall<TRequest, TResponse> {
+    private isDone: boolean = false
+    private nextToken: string | undefined = undefined
+
+    /**
+     * Wrap an AWS call in an iterating wrapper that handles the call's nextToken field.
+     * @param awsCall Call to wrap an iterating call around. Remember to add `.bind(this)` the call (or use an arrow function) or else `this` will be bound incorrectly.
+     * @param nextTokenNames The property representing the nextToken fields from the request and the response. Must be a property from the request/response types.
+     */
+    public constructor(
+        private readonly awsCall: (request: TRequest) => Promise<TResponse>,
+        private readonly nextTokenNames: {
+            request: keyof TRequest
+            response: keyof TResponse
+        }
+    ) {}
+
+    /**
+     * Generates an iterator from a request.
+     * TODO: Make this uncallable once an iterator has started from this class since the nextToken is specific to the class and not the iterator itself (or retain state solely in the function)
+     * @param request Request object to start the initial iteration off of.
+     */
+    public async *getIteratorForRequest(
+        request: TRequest
+    ): AsyncGenerator<TResponse, undefined, TResponse | undefined> {
+        while (!this.isDone) {
+            try {
+                const response: TResponse = await this.awsCall({
+                    ...request,
+                    [this.nextTokenNames.request]: this.nextToken,
+                })
+                if (response[this.nextTokenNames.response]) {
+                    this.nextToken = (response[this.nextTokenNames.response] as any) as string
+                } else {
+                    this.nextToken = undefined
+                    this.isDone = true
+                }
+
+                yield response
+            } catch (err) {
+                return undefined
+            }
+        }
+        return undefined
+    }
+}

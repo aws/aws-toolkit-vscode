@@ -10,10 +10,10 @@ const localize = nls.loadMessageBundle()
 import * as picker from '../../shared/ui/picker'
 import { MultiStepWizard, WizardStep } from '../../shared/wizards/multiStepWizard'
 import { LogGroupNode } from '../explorer/logGroupNode'
-import { IteratingAWSCall } from '../../shared/clients/defaultCloudWatchLogsClient'
 import { CloudWatchLogs } from 'aws-sdk'
 import { ext } from '../../shared/extensionGlobals'
 import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
+import { IteratingAWSCall } from '../../shared/utilities/collectionUtils'
 
 export interface SelectLogStreamResponse {
     region: string
@@ -50,8 +50,7 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
     }
 }
 
-// TODO: Cache these results and add a discrete refresh button?
-// TODO: Handle iterators
+// TODO: Cache these results?
 export class IteratingAWSCallPicker<TRequest, TResponse> {
     private isDone: boolean = false
     private isPaused: boolean = false
@@ -60,6 +59,10 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
     private readonly quickPick: vscode.QuickPick<vscode.QuickPickItem>
     private readonly moreItemsRequest: vscode.EventEmitter<void> = new vscode.EventEmitter<void>()
 
+    /**
+     * @param awsCallLogic: Object representing the call to be used, the initial request, and a function that converts from a response object to an array of quick pick items
+     * @param pickerOptions: Object representing QuickPick options, additional buttons, and any additional functionality to be called upon selecting a button.
+     */
     public constructor(
         private readonly awsCallLogic: {
             // TODO: allow for creation of a new call in case we want to reload quick pick in its entirety
@@ -79,6 +82,8 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
             ) => void
         } = {}
     ) {
+        // TODO: Create default buttons for load next page, refresh
+        // TODO: Set a global throttling flag that will optionally display said load next page button
         this.quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
                 ...this.pickerOptions.options,
@@ -98,8 +103,13 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
         this.moreItemsRequest.event(() => this.loadItems())
     }
 
+    /**
+     * Prompts the user with the quick pick specified by the constructor.
+     * Always attempts to load new results from the iteratingAwsCall, even if the call has been exhausted.
+     * If the call picker was previously paused, unpauses it.
+     */
     public async promptUser(): Promise<vscode.QuickPickItem[] | undefined> {
-        // start background loading
+        // start background loading and unpause the loader (if it was paused previously by a selection)
         this.quickPick.busy = true
         this.isPaused = false
         if (!this.isDone) {
@@ -111,6 +121,7 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
         })
     }
 
+    // TODO: Add nodes for no items, error (error retries call from where it left off?)
     private async loadItems(): Promise<void> {
         const iter = this.awsCallLogic.iteratingAwsCall.getIteratorForRequest(this.awsCallLogic.initialRequest)
 
