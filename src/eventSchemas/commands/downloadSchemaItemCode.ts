@@ -373,6 +373,12 @@ export class CodeExtractor {
             responseYes,
             responseNo
         )
+
+        if (!userResponse)
+            throw new UserNotifiedError(
+                localize('AWS.message.error.schemas.downloadCodeBindings.cancelled', 'Download code bindings cancelled')
+            )
+
         return userResponse === responseYes
     }
 
