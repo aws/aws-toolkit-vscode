@@ -1,0 +1,11 @@
+{
+  "date" : "2020-05-27",
+  "version" : "1.16",
+  "entries" : [ {
+    "type" : "breaking",
+    "description" : "The toolkit now requires 2019.3 or newer"
+  }, {
+    "type" : "feature",
+    "description" : "Add support for GoLand, CLion, RubyMine, and PhpStorm"
+  } ]
+}
