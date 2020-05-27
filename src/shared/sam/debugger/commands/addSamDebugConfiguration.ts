@@ -7,7 +7,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { getExistingConfiguration } from '../../../../lambda/config/templates'
-import { getDefaultRuntime, RuntimeFamily, promptForRuntime } from '../../../../lambda/models/samLambdaRuntime'
+import { createRuntimeQuickPick, getDefaultRuntime, RuntimeFamily } from '../../../../lambda/models/samLambdaRuntime'
 import { CloudFormationTemplateRegistry } from '../../../cloudformation/templateRegistry'
 import { LaunchConfiguration } from '../../../debug/launchConfiguration'
 import * as picker from '../../../ui/picker'
@@ -95,7 +95,7 @@ export async function addSamDebugConfiguration(
             preloadedConfig
         )
     } else if (type === CODE_TARGET_TYPE) {
-        const quickPick = promptForRuntime({
+        const quickPick = createRuntimeQuickPick({
             runtimeFamily,
         })
 

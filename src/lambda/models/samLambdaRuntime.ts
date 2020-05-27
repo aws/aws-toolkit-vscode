@@ -120,7 +120,7 @@ function getRuntimesForFamily(family: RuntimeFamily): Set<Runtime> | undefined {
  * currRuntime: Runtime to set a "Selected Previously" mark to;
  * runtimeFamily: a RuntimeFamily that will define the list of runtimes to show (default: samLambdaCreatableRuntimes)
  */
-export function promptForRuntime(params: {
+export function createRuntimeQuickPick(params: {
     buttons?: vscode.QuickInputButton[]
     currRuntime?: Runtime
     runtimeFamily?: RuntimeFamily

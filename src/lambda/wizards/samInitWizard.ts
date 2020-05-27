@@ -27,7 +27,7 @@ import {
     WizardStep,
     WorkspaceFolderQuickPickItem,
 } from '../../shared/wizards/multiStepWizard'
-import { samLambdaCreatableRuntimes, promptForRuntime } from '../models/samLambdaRuntime'
+import { createRuntimeQuickPick, samLambdaCreatableRuntimes } from '../models/samLambdaRuntime'
 import {
     eventBridgeStarterAppTemplate,
     getSamTemplateWizardOption,
@@ -66,7 +66,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
     }
 
     public async promptUserForRuntime(currRuntime?: Runtime): Promise<Runtime | undefined> {
-        const quickPick = promptForRuntime({
+        const quickPick = createRuntimeQuickPick({
             buttons: [this.helpButton],
             currRuntime,
         })
