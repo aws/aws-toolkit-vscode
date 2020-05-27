@@ -10,7 +10,7 @@ import { FileStreams } from '../../../shared/utilities/streamUtilities'
 import { anyFunction, anything, capture, deepEqual, instance, mock, verify, when } from '../../utilities/mockito'
 import * as vscode from 'vscode'
 import { DefaultBucket, DefaultFile, DefaultFolder, DefaultS3Client } from '../../../shared/clients/defaultS3Client'
-import { DEFAULT_DELIMITER, S3Error } from '../../../shared/clients/s3Client'
+import { DEFAULT_DELIMITER } from '../../../shared/clients/s3Client'
 import { FakeFileStreams } from './fakeFileStreams'
 
 class FakeProgressCaptor {
@@ -39,6 +39,7 @@ describe('DefaultS3Client', () => {
     const continuationToken = 'continuationToken'
     const nextContinuationToken = 'nextContinuationToken'
     const maxResults = 20
+    const error = new Error('Expected failure')
 
     let mockS3: S3
 
@@ -57,10 +58,10 @@ describe('DefaultS3Client', () => {
 
     function failure(): Request<any, AWSError> {
         return {
-            promise: () => Promise.reject(new Error('Expected failure')),
+            promise: () => Promise.reject(error),
             createReadStream() {
                 const readStream = FakeFileStreams.readStreamFrom(fileData)
-                readStream.destroy(new Error('Expected failure'))
+                readStream.destroy(error)
                 return readStream
             },
         } as Request<any, AWSError>
@@ -92,10 +93,10 @@ describe('DefaultS3Client', () => {
             })
         })
 
-        it('throws an S3Error on failure', async () => {
+        it('throws an Error on failure', async () => {
             when(mockS3.createBucket(anything())).thenReturn(failure())
 
-            await assert.rejects(createClient().createBucket({ bucketName }), S3Error)
+            await assert.rejects(createClient().createBucket({ bucketName }), error)
         })
     })
 
@@ -110,10 +111,10 @@ describe('DefaultS3Client', () => {
             })
         })
 
-        it('throws an S3Error on failure', async () => {
+        it('throws an Error on failure', async () => {
             when(mockS3.upload(anything())).thenReturn(failure())
 
-            await assert.rejects(createClient().createFolder({ bucketName, path: folderPath }), S3Error)
+            await assert.rejects(createClient().createFolder({ bucketName, path: folderPath }), error)
         })
     })
 
@@ -136,7 +137,7 @@ describe('DefaultS3Client', () => {
             assert.ok(progressCaptor.progress > 0)
         })
 
-        it('throws an S3Error on failure', async () => {
+        it('throws an Error on failure', async () => {
             when(mockS3.getObject(anything())).thenReturn(failure())
 
             await assert.rejects(
@@ -145,7 +146,7 @@ describe('DefaultS3Client', () => {
                     key: fileKey,
                     saveLocation: fileLocation,
                 }),
-                S3Error
+                error
             )
         })
     })
@@ -170,19 +171,21 @@ describe('DefaultS3Client', () => {
             })
 
             verify(mockS3.upload(anything())).once()
+            // eslint-disable-next-line @typescript-eslint/unbound-method
             const [{ Bucket, Key, Body, ContentType }] = capture(mockS3.upload).last()
             assert.strictEqual(Bucket, bucketName)
             assert.strictEqual(Key, fileKey)
             assert.strictEqual(ContentType, 'image/jpeg')
             assert.strictEqual(Body, fileStreams.readStream)
 
+            // eslint-disable-next-line @typescript-eslint/unbound-method
             const [, listener] = capture(mockManagedUpload.on).last()
             listener({ loaded: 1, total: 100 })
             listener({ loaded: 2, total: 100 })
             assert.strictEqual(progressCaptor.progress, 3)
         })
 
-        it('throws an S3Error on failure', async () => {
+        it('throws an Error on failure', async () => {
             when(mockS3.upload(anything())).thenReturn(failure())
 
             await assert.rejects(
@@ -191,7 +194,7 @@ describe('DefaultS3Client', () => {
                     key: fileKey,
                     fileLocation: fileLocation,
                 }),
-                S3Error
+                error
             )
         })
     })
@@ -220,19 +223,19 @@ describe('DefaultS3Client', () => {
             })
         })
 
-        it('throws an S3Error on listBuckets failure', async () => {
+        it('throws an Error on listBuckets failure', async () => {
             when(mockS3.listBuckets()).thenReturn(failure())
 
-            await assert.rejects(createClient().listBuckets(), S3Error)
+            await assert.rejects(createClient().listBuckets(), error)
 
             verify(mockS3.headBucket(anything())).never()
         })
 
-        it('throws an S3Error on headBucket failure', async () => {
+        it('throws an Error on headBucket failure', async () => {
             when(mockS3.listBuckets()).thenReturn(success({ Buckets: [{ Name: bucketName }] }))
             when(mockS3.headBucket(anything())).thenReturn(failure())
 
-            await assert.rejects(createClient().listBuckets(), S3Error)
+            await assert.rejects(createClient().listBuckets(), error)
         })
     })
 
@@ -279,10 +282,10 @@ describe('DefaultS3Client', () => {
             })
         })
 
-        it('throws an S3Error on listObjects failure', async () => {
+        it('throws an Error on listObjects failure', async () => {
             when(mockS3.listObjectsV2(anything())).thenReturn(failure())
 
-            await assert.rejects(createClient().listObjects({ bucketName, folderPath, continuationToken }), S3Error)
+            await assert.rejects(createClient().listObjects({ bucketName, folderPath, continuationToken }), error)
         })
     })
 })

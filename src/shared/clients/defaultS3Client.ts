@@ -8,6 +8,8 @@ import * as _ from 'lodash'
 import * as mime from 'mime-types'
 import { basename } from 'path'
 import { ext } from '../extensionGlobals'
+import { inspect } from 'util'
+import { getLogger } from '../logger'
 import { DefaultFileStreams, FileStreams, pipe, promisifyReadStream } from '../utilities/streamUtilities'
 import {
     Bucket,
@@ -24,7 +26,6 @@ import {
     ListObjectsRequest,
     ListObjectsResponse,
     S3Client,
-    S3Error,
     UploadFileRequest,
 } from './s3Client'
 
@@ -47,6 +48,7 @@ export class DefaultS3Client implements S3Client {
      * @inheritDoc
      */
     public async createBucket(request: CreateBucketRequest): Promise<CreateBucketResponse> {
+        getLogger().debug('CreateBucket called with request: %O', request)
         const s3 = await this.createS3()
 
         try {
@@ -57,22 +59,26 @@ export class DefaultS3Client implements S3Client {
                 })
                 .promise()
         } catch (e) {
-            throw new S3Error(`Failed to create bucket ${request.bucketName}: ${e}`)
+            getLogger().error('Failed to create bucket %s: %O', request.bucketName, e)
+            throw e
         }
 
-        return {
+        const response = {
             bucket: new DefaultBucket({
                 partitionId: this.partitionId,
                 region: this.regionCode,
                 name: request.bucketName,
             }),
         }
+        getLogger().debug('CreateBucket returned response: %O', response)
+        return response
     }
 
     /**
      * @inheritDoc
      */
     public async createFolder(request: CreateFolderRequest): Promise<CreateFolderResponse> {
+        getLogger().debug('CreateFolder called with request: %O', request)
         const s3 = await this.createS3()
 
         const folder = new DefaultFolder({
@@ -90,16 +96,25 @@ export class DefaultS3Client implements S3Client {
                 })
                 .promise()
         } catch (e) {
-            throw new S3Error(`Failed to create folder ${folder.name}: ${e}`)
+            getLogger().error('Failed to create folder %s: %O', folder.name, e)
+            throw e
         }
 
-        return { folder }
+        const response = { folder }
+        getLogger().debug('CreateFolder returned response: %O', response)
+        return response
     }
 
     /**
      * @inheritDoc
      */
     public async downloadFile(request: DownloadFileRequest): Promise<void> {
+        getLogger().debug(
+            'DownloadFile called for bucketName: %s, key: %s, saveLocation: %s',
+            request.bucketName,
+            request.key,
+            request.saveLocation
+        )
         const s3 = await this.createS3()
 
         // https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/requests-using-stream-objects.html
@@ -109,14 +124,22 @@ export class DefaultS3Client implements S3Client {
         try {
             await pipe(readStream, writeStream, request.progressListener)
         } catch (e) {
-            throw new S3Error(`Failed to download ${request.key} from bucket ${request.bucketName}: ${e}`)
+            getLogger().error(`Failed to download %s from bucket %s: %O`, request.key, request.bucketName, e)
+            throw e
         }
+        getLogger().debug('DownloadFile succeeded')
     }
 
     /**
      * @inheritDoc
      */
     public async uploadFile(request: UploadFileRequest): Promise<void> {
+        getLogger().debug(
+            'UploadFile called for bucketName: %s, key: %s, fileLocation: %s',
+            request.bucketName,
+            request.key,
+            request.fileLocation
+        )
         const s3 = await this.createS3()
 
         // https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/s3-example-creating-buckets.html#s3-example-creating-buckets-upload-file
@@ -140,14 +163,17 @@ export class DefaultS3Client implements S3Client {
         try {
             await Promise.all([promisifyReadStream(readStream), managedUploaded.promise()])
         } catch (e) {
-            throw new S3Error(`Failed to upload ${request.key} to bucket ${request.bucketName}: ${e}`)
+            getLogger().error('Failed to upload %s to bucket %s: %O', request.key, request.bucketName, e)
+            throw e
         }
+        getLogger().debug('UploadFile succeeded')
     }
 
     /**
      * @inheritDoc
      */
     public async listBuckets(): Promise<ListBucketsResponse> {
+        getLogger().debug('ListBuckets called')
         const s3 = await this.createS3()
 
         let s3Buckets: S3.Bucket[]
@@ -155,7 +181,8 @@ export class DefaultS3Client implements S3Client {
             const output = await s3.listBuckets().promise()
             s3Buckets = output.Buckets ?? []
         } catch (e) {
-            throw new S3Error(`Failed to list buckets: ${e}`)
+            getLogger().error('Failed to list buckets: %O', e)
+            throw e
         }
 
         // S3#ListBuckets returns buckets across all regions
@@ -173,6 +200,8 @@ export class DefaultS3Client implements S3Client {
             .reject(bucket => bucket.region !== this.regionCode)
             .value()
 
+        const response = { buckets: bucketsInRegion }
+        getLogger().debug('ListBuckets returned response: %O', response)
         return { buckets: bucketsInRegion }
     }
 
@@ -180,11 +209,13 @@ export class DefaultS3Client implements S3Client {
      * @inheritDoc
      */
     public async listObjects(request: ListObjectsRequest): Promise<ListObjectsResponse> {
+        getLogger().debug('ListObjects called with request: %O', request)
+
         const s3 = await this.createS3()
 
-        let response: S3.ListObjectsV2Output
+        let output: S3.ListObjectsV2Output
         try {
-            response = await s3
+            output = await s3
                 .listObjectsV2({
                     Bucket: request.bucketName,
                     Delimiter: DEFAULT_DELIMITER,
@@ -194,10 +225,11 @@ export class DefaultS3Client implements S3Client {
                 })
                 .promise()
         } catch (e) {
-            throw new S3Error(`Failed to list objects for bucket ${request.bucketName}: ${e}`)
+            getLogger().error('Failed to list objects for bucket %s: %O', request.bucketName, e)
+            throw e
         }
 
-        const files: File[] = _(response.Contents)
+        const files: File[] = _(output.Contents)
             .reject(file => file.Key === request.folderPath)
             .map(
                 file =>
@@ -211,17 +243,19 @@ export class DefaultS3Client implements S3Client {
             )
             .value()
 
-        const folders: Folder[] = _(response.CommonPrefixes)
+        const folders: Folder[] = _(output.CommonPrefixes)
             .map(prefix => prefix.Prefix)
             .compact()
             .map(path => new DefaultFolder({ path, partitionId: this.partitionId, bucketName: request.bucketName }))
             .value()
 
-        return {
+        const response = {
             files,
             folders,
-            continuationToken: response.NextContinuationToken,
+            continuationToken: output.NextContinuationToken,
         }
+        getLogger().debug('ListObjects returned response: %O', response)
+        return response
     }
 
     /**
@@ -230,14 +264,19 @@ export class DefaultS3Client implements S3Client {
      * Note that although there is an S3#GetBucketLocation API,
      * this is the suggested method of obtaining the region.
      *
-     * @throws S3Error if there is an error calling S3.
+     * @throws Error if there is an error calling S3.
      */
     private async lookupRegion(bucketName: string, s3: S3): Promise<string> {
+        getLogger().debug('LookupRegion called for bucketName: %s', bucketName)
+
         try {
             const response = await s3.headBucket({ Bucket: bucketName }).promise()
-            return response.$response.httpResponse.headers[BUCKET_REGION_HEADER]
+            const region = response.$response.httpResponse.headers[BUCKET_REGION_HEADER]
+            getLogger().debug('LookupRegion returned region: %s', region)
+            return region
         } catch (e) {
-            throw new S3Error(`Failed to find region for bucket ${bucketName}: ${e}`)
+            getLogger().error('Failed to find region for bucket %s: %O', bucketName, e)
+            throw e
         }
     }
 }
@@ -253,7 +292,7 @@ export class DefaultBucket implements Bucket {
         this.arn = buildArn({ partitionId, bucketName: name })
     }
 
-    public toString(): string {
+    public [inspect.custom](): string {
         return `Bucket (name=${this.name}, region=${this.region}, arn=${this.arn})`
     }
 }
@@ -272,7 +311,7 @@ export class DefaultFolder implements Folder {
             .last()!
     }
 
-    public toString(): string {
+    public [inspect.custom](): string {
         return `Folder (name=${this.name}, path=${this.path}, arn=${this.arn})`
     }
 }
@@ -306,7 +345,7 @@ export class DefaultFile implements File {
         this.sizeBytes = sizeBytes
     }
 
-    public toString(): string {
+    public [inspect.custom](): string {
         return `File (name=${this.name}, key=${this.key}, arn=${this.arn}, lastModified=${this.lastModified}, sizeBytes=${this.sizeBytes})`
     }
 }

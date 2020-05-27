@@ -12,7 +12,7 @@ export interface S3Client {
     /**
      * Creates a bucket in the region of the client.
      *
-     * @throws S3Error if there is an error calling S3.
+     * @throws Error if there is an error calling S3.
      */
     createBucket(request: CreateBucketRequest): Promise<CreateBucketResponse>
 
@@ -23,7 +23,7 @@ export interface S3Client {
      * so this incurs the cost of additional S3#HeadBucket requests for each bucket
      * to filter out buckets residing outside of the client's region.
      *
-     * @throws S3Error if there is an error calling S3.
+     * @throws Error if there is an error calling S3.
      */
     listBuckets(): Promise<ListBucketsResponse>
 
@@ -45,7 +45,7 @@ export interface S3Client {
      * of the pages.
      * It's not possible to retrieve an exhaustive list of all folders without traversing all of the pages.
      *
-     * @throws S3Error if there is an error calling S3.
+     * @throws Error if there is an error calling S3.
      */
     listObjects(request: ListObjectsRequest): Promise<ListObjectsResponse>
 
@@ -63,7 +63,7 @@ export interface S3Client {
      * Creation of folders isn't strictly necessary, as you can just upload keys with delimiters.
      * However, empty folders make it easier to work with S3 as if it were a filesystem like in the UI.
      *
-     * @throws S3Error if there is an error calling S3.
+     * @throws Error if there is an error calling S3.
      */
     createFolder(request: CreateFolderRequest): Promise<CreateFolderResponse>
 
@@ -74,7 +74,7 @@ export interface S3Client {
      *
      * Pipes the response (read) stream into the file (write) stream.
      *
-     * @throws S3Error if there is an error calling S3 or piping between streams.
+     * @throws Error if there is an error calling S3 or piping between streams.
      */
     downloadFile(request: DownloadFileRequest): Promise<void>
 
@@ -87,7 +87,7 @@ export interface S3Client {
      * Assigns the target content type based on the mime type of the file.
      * If content type cannot be determined, defaults to {@link DEFAULT_CONTENT_TYPE}.
      *
-     * @throws S3Error if there is an error calling S3 or piping between streams.
+     * @throws Error if there is an error calling S3 or piping between streams.
      */
     uploadFile(request: UploadFileRequest): Promise<void>
 }
@@ -106,7 +106,7 @@ export interface Folder {
 
 export interface File {
     readonly name: string // e.g. MyFile.jpg
-    readonly key: string // e.g. path/to/myFile (no bucket)
+    readonly key: string // e.g. path/to/myFile (no bucket name)
     readonly arn: string
     readonly lastModified?: Date
     readonly sizeBytes?: number
@@ -159,5 +159,3 @@ export interface UploadFileRequest {
     readonly progressListener?: (loadedBytes: number) => void
     readonly fileLocation: vscode.Uri
 }
-
-export class S3Error extends Error {}
