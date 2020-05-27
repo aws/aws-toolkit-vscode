@@ -53,3 +53,7 @@ export const sfnCreateStateMachineNameParamUrl: string =
 export const sfnDeveloperGuideUrl: string = 'https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html'
 export const sfnUpdateStateMachineUrl: string =
     'https://docs.aws.amazon.com/step-functions/latest/apireference/API_UpdateStateMachine.html'
+
+export const yamlMarketplacePage = {
+    ms: 'https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml',
+}

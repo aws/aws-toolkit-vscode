@@ -3,6 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 import * as vscode from 'vscode'
 import { createNewSamApplication, resumeCreateNewSamApp } from '../../lambda/commands/createNewSamApp'
 import { deploySamApplication, SamDeployWizardResponseProvider } from '../../lambda/commands/deploySamApplication'
@@ -27,12 +30,54 @@ import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
 import { SamDebugSession } from './debugger/samDebugSession'
 import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
+import { ext } from '../extensionGlobals'
+
+const YAML_PLUGIN = 'redhat.vscode-yaml'
+const YAML_PROMPT = 'dontShowYamlPromptEver'
 
 /**
  * Activate SAM-related functionality.
  */
 export async function activate(ctx: ExtContext): Promise<void> {
     initializeSamCliContext({ settingsConfiguration: ctx.settings })
+
+    const dontPromptEverAgain = ext.context.globalState.get<boolean>(YAML_PROMPT)
+    // only pop this up in VS Code and Insiders since other VS Code-like IDEs (e.g. Theia) may not have a marketplace or contain the YAML plugin
+    const isVsCode = vscode.env.appName && vscode.env.appName.startsWith('Visual Studio Code') ? true : false
+
+    if (!dontPromptEverAgain && !vscode.extensions.getExtension(YAML_PLUGIN) && isVsCode) {
+        // these will all be disposed immediately after showing one so the user isn't prompted more than once per session
+        const yamlPromptDisposables: vscode.Disposable[] = []
+
+        vscode.workspace.onDidOpenTextDocument(
+            async (doc: vscode.TextDocument) => {
+                if (doc.fileName.endsWith('template.yaml') || doc.fileName.endsWith('template.yml')) {
+                    promptInstallYamlPlugin()
+                    for (const prompt of yamlPromptDisposables) {
+                        prompt.dispose()
+                    }
+                }
+            },
+            undefined,
+            yamlPromptDisposables
+        )
+
+        vscode.window.onDidChangeActiveTextEditor(
+            async (editor: vscode.TextEditor | undefined) => {
+                if (editor) {
+                    const fileName = editor.document.fileName
+                    if (fileName.endsWith('template.yaml') || fileName.endsWith('template.yml')) {
+                        promptInstallYamlPlugin()
+                        for (const prompt of yamlPromptDisposables) {
+                            prompt.dispose()
+                        }
+                    }
+                }
+            },
+            undefined,
+            yamlPromptDisposables
+        )
+    }
 
     ctx.extensionContext.subscriptions.push(
         ...(await activateCodeLensProviders(ctx, ctx.settings, ctx.outputChannel, ctx.telemetryService))
@@ -180,5 +225,36 @@ class InlineDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory 
         _session: vscode.DebugSession
     ): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
         return new vscode.DebugAdapterInlineImplementation(new SamDebugSession(this.ctx))
+    }
+}
+
+async function promptInstallYamlPlugin(): Promise<void> {
+    const goToMarketplace = localize('AWS.message.info.yaml.goToMarketplace', 'Open Marketplace Page')
+    const dismiss = localize('AWS.generic.response.dismiss', 'Dismiss')
+    const dontShowAgain = localize('AWS.message.info.yaml.dontShowAgain', "Dismiss, and don't show again")
+
+    const response = await vscode.window.showInformationMessage(
+        localize(
+            'AWS.message.info.yaml.prompt',
+            'You can access additional AWS SAM functionality by installing YAML language support.'
+        ),
+        goToMarketplace,
+        dismiss,
+        dontShowAgain
+    )
+
+    switch (response) {
+        case goToMarketplace:
+            // Available options are:
+            // extension.open: opens extension page in VS Code extension marketplace view
+            // workspace.extension.installPlugin: autoinstalls plugin with no additional feedback
+            // workspace.extension.search: preloads and executes a search in the extension sidebar with the given term
+
+            // not sure if these are 100% stable.
+            // Opting for `extension.open` as this gives the user a good path forward to install while not doing anything potentially unexpected.
+            await vscode.commands.executeCommand('extension.open', YAML_PLUGIN)
+            break
+        case dontShowAgain:
+            ext.context.globalState.update(YAML_PROMPT, true)
     }
 }

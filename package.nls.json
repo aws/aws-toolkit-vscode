@@ -351,6 +351,7 @@
     "AWS.stepfunctions.visualisation.errors.rename": "State machine visualization closed due to file renaming or closure.",
     "AWS.submitFeedback.title": "Submit Quick Feedback",
     "AWS.wizard.selectedPreviously": "Selected Previously",
+    "AWS.generic.response.dismiss": "Dismiss",
     "AWS.generic.response.no": "No",
     "AWS.generic.response.yes": "Yes",
     "AWS.generic.notImplemented": "Not implemented",
