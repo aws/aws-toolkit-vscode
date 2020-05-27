@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { getDefaultRuntime, RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
+import { Runtime } from 'aws-sdk/clients/lambda'
 import { getNormalizedRelativePath } from '../../utilities/pathUtils'
 import {
     AwsSamDebuggerConfiguration,
@@ -155,14 +155,10 @@ export function createCodeAwsSamDebugConfig(
     folder: vscode.WorkspaceFolder | undefined,
     lambdaHandler: string,
     projectRoot: string,
-    runtimeFamily?: RuntimeFamily
+    runtime: Runtime
 ): AwsSamDebuggerConfiguration {
     const workspaceRelativePath = folder ? getNormalizedRelativePath(folder.uri.fsPath, projectRoot) : projectRoot
     const parentDir = path.basename(path.dirname(projectRoot))
-    const runtime = runtimeFamily ? getDefaultRuntime(runtimeFamily) : undefined
-    if (!runtime) {
-        throw new Error('Invalid or missing runtime family')
-    }
 
     return {
         type: AWS_SAM_DEBUG_TYPE,
