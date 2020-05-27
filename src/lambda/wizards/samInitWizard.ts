@@ -38,7 +38,7 @@ import {
 
 export interface CreateNewSamAppWizardContext {
     readonly lambdaRuntimes: Set<Runtime>
-    readonly workspaceFolders: vscode.WorkspaceFolder[] | undefined
+    readonly workspaceFolders: ReadonlyArray<vscode.WorkspaceFolder> | undefined
 
     promptUserForRuntime(currRuntime?: Runtime): Promise<Runtime | undefined>
     promptUserForTemplate(currRuntime: Runtime, currTemplate?: SamTemplate): Promise<SamTemplate | undefined>

@@ -877,7 +877,7 @@
         "@types/sinon": "^7.0.13",
         "@types/tcp-port-used": "^1.0.0",
         "@types/uuid": "^3.4.4",
-        "@types/vscode": "^1.31.0",
+        "@types/vscode": "1.42.0",
         "@types/xml2js": "^0.4.3",
         "@typescript-eslint/eslint-plugin": "^2.27.0",
         "@typescript-eslint/eslint-plugin-tslint": "^2.27.0",
