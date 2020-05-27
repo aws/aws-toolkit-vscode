@@ -18,6 +18,8 @@ export enum RuntimeFamily {
     DotNetCore,
 }
 
+// TODO: Consolidate all of the runtime constructs into a single <Runtime, Set<Runtime>> map
+//       We should be able to eliminate a fair amount of redundancy with that.
 export const nodeJsRuntimes: Set<Runtime> = Set<Runtime>(['nodejs12.x', 'nodejs10.x', 'nodejs8.10'])
 export const pythonRuntimes: Set<Runtime> = Set<Runtime>(['python3.8', 'python3.7', 'python3.6', 'python2.7'])
 export const dotNetRuntimes: Set<Runtime> = Set<Runtime>(['dotnetcore2.1'])
@@ -116,9 +118,10 @@ function getRuntimesForFamily(family: RuntimeFamily): Set<Runtime> | undefined {
 
 /**
  * Creates a quick pick for a Runtime with the following parameters (all optional)
- * @param params buttons: array of buttons to add to the quick pick;
- * currRuntime: Runtime to set a "Selected Previously" mark to;
- * runtimeFamily: a RuntimeFamily that will define the list of runtimes to show (default: samLambdaCreatableRuntimes)
+ * @param {Object} params Optional parameters for creating a QuickPick for runtimes:
+ * @param {vscode.QuickInputButton[]} params.buttons Array of buttons to add to the quick pick;
+ * @param {Runtime} params.currRuntime Runtime to set a "Selected Previously" mark to;
+ * @param {RuntimeFamily} params.runtimeFamily RuntimeFamily that will define the list of runtimes to show (default: samLambdaCreatableRuntimes)
  */
 export function createRuntimeQuickPick(params: {
     buttons?: vscode.QuickInputButton[]
