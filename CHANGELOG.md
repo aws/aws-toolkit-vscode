@@ -1,3 +1,7 @@
+# _1.16_ (2020-05-27)
+- **(Breaking Change)** The toolkit now requires 2019.3 or newer
+- **(Feature)** Add support for GoLand, CLion, RubyMine, and PhpStorm
+
 # _1.15_ (2020-05-21)
 - **(Feature)** Add the ability to build in container when updating function code ([#1740](https://github.com/aws/aws-toolkit-jetbrains/issues/1740))
 - **(Feature)** Add refresh to S3 browser
