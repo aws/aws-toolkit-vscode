@@ -239,6 +239,7 @@ describe('visualizeStateMachine', async () => {
 
         const postMessageSpy = spy()
         if (result) {
+            // eslint-disable-next-line @typescript-eslint/unbound-method
             result.webview.postMessage = postMessageSpy
         }
 

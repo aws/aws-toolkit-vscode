@@ -12,7 +12,7 @@ export interface Window {
     /**
      * See {@link module:vscode.window.setStatusBarMessage}.
      */
-    setStatusBarMessage(message: string, hideAfterTimeout?: number): vscode.Disposable
+    setStatusBarMessage(message: string, hideAfterTimeout: number): vscode.Disposable
 
     /**
      * See {@link module:vscode.window.showInputBox}.
@@ -56,4 +56,51 @@ export interface Window {
     showSaveDialog(options: vscode.SaveDialogOptions): Thenable<vscode.Uri | undefined>
 }
 
-export * from './defaultWindow'
+export namespace Window {
+    export function vscode(): Window {
+        return new DefaultWindow()
+    }
+}
+
+class DefaultWindow implements Window {
+    public setStatusBarMessage(message: string, hideAfterTimeout: number): vscode.Disposable {
+        return vscode.window.setStatusBarMessage(message, hideAfterTimeout)
+    }
+
+    public showInputBox(
+        options?: vscode.InputBoxOptions,
+        token?: vscode.CancellationToken
+    ): Thenable<string | undefined> {
+        return vscode.window.showInputBox(options, token)
+    }
+
+    public showInformationMessage(message: string, ...items: string[]): Thenable<string | undefined> {
+        return vscode.window.showInformationMessage(message, ...items)
+    }
+
+    public showWarningMessage(message: string, ...items: string[]): Thenable<string | undefined> {
+        return vscode.window.showWarningMessage(message, ...items)
+    }
+
+    public showErrorMessage(message: string, ...items: string[]): Thenable<string | undefined> {
+        return vscode.window.showErrorMessage(message, ...items)
+    }
+
+    public withProgress<R>(
+        options: vscode.ProgressOptions,
+        task: (
+            progress: vscode.Progress<{ message?: string; increment?: number }>,
+            token: vscode.CancellationToken
+        ) => Thenable<R>
+    ): Thenable<R> {
+        return vscode.window.withProgress(options, task)
+    }
+
+    public showOpenDialog(options: vscode.OpenDialogOptions): Thenable<vscode.Uri[] | undefined> {
+        return vscode.window.showOpenDialog(options)
+    }
+
+    public showSaveDialog(options: vscode.SaveDialogOptions): Thenable<vscode.Uri | undefined> {
+        return vscode.window.showSaveDialog(options)
+    }
+}

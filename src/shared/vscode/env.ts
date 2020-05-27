@@ -13,6 +13,12 @@ export interface Env {
     clipboard: Clipboard
 }
 
+export namespace Env {
+    export function vscode(): Env {
+        return new DefaultEnv()
+    }
+}
+
 export interface Clipboard {
     /**
      * See {@link module:vscode.Clipboard.writeText}.
@@ -20,4 +26,8 @@ export interface Clipboard {
     writeText(message: string): Thenable<void>
 }
 
-export * from './defaultEnv'
+class DefaultEnv implements Env {
+    public get clipboard(): Clipboard {
+        return vscode.env.clipboard
+    }
+}

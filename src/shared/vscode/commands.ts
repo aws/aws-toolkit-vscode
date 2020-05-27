@@ -16,4 +16,14 @@ export interface Commands {
     execute<T>(command: string, ...rest: any[]): Thenable<T | undefined>
 }
 
-export * from './defaultCommands'
+export namespace Commands {
+    export function vscode(): Commands {
+        return new DefaultCommands()
+    }
+}
+
+class DefaultCommands implements Commands {
+    public execute<T>(command: string, ...rest: any[]): Thenable<T | undefined> {
+        return vscode.commands.executeCommand(command, ...rest)
+    }
+}

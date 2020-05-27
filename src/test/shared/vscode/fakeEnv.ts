@@ -16,7 +16,7 @@ export class FakeEnv implements Env {
         return this._clipboard
     }
 
-    public constructor({ clipboard = new DefaultFakeClipboard() }: FakeEnvOptions = {}) {
+    public constructor({ clipboard }: FakeEnvOptions = {}) {
         this._clipboard = new DefaultFakeClipboard(clipboard)
     }
 }

@@ -42,13 +42,13 @@ export class FakeWindow implements Window {
         return this._dialog
     }
 
-    public setStatusBarMessage(message: string, hideAfterTimeout?: number | undefined): vscode.Disposable {
+    public setStatusBarMessage(message: string, hideAfterTimeout: number): vscode.Disposable {
         return this._statusBar.setMessage(message)
     }
 
     public showInputBox(
-        options?: vscode.InputBoxOptions | undefined,
-        token?: vscode.CancellationToken | undefined
+        options?: vscode.InputBoxOptions,
+        token?: vscode.CancellationToken
     ): Thenable<string | undefined> {
         return this._inputBox.show(options)
     }
@@ -68,7 +68,7 @@ export class FakeWindow implements Window {
     public withProgress<R>(
         options: vscode.ProgressOptions,
         task: (
-            progress: vscode.Progress<{ message?: string | undefined; increment?: number | undefined }>,
+            progress: vscode.Progress<{ message?: string; increment?: number }>,
             token: vscode.CancellationToken
         ) => Thenable<R>
     ): Thenable<R> {
@@ -152,10 +152,8 @@ class DefaultFakeInputBox implements FakeInputBox {
      */
     public async show(options?: vscode.InputBoxOptions): Promise<string | undefined> {
         this.options = options
-        const validateInput = options?.validateInput
-
-        if (this.input !== undefined && validateInput) {
-            const result = validateInput(this.input)
+        if (this.input !== undefined && options?.validateInput) {
+            const result = options.validateInput(this.input)
             if (isThenable<string | undefined>(result)) {
                 this.errorMessage = await result
             } else {
