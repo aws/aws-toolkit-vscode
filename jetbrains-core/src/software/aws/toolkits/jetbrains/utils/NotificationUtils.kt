@@ -17,6 +17,7 @@ import com.intellij.ui.ScrollPaneFactory
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.AwsToolkit
+import software.aws.toolkits.jetbrains.core.credentials.ChangeAccountSettingsMode
 import software.aws.toolkits.jetbrains.core.credentials.SettingsSelectorAction
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable
@@ -80,7 +81,7 @@ fun notifyNoActiveCredentialsError(
         title = title,
         content = content,
         project = project,
-        action = SettingsSelectorAction(showRegions = false)
+        action = SettingsSelectorAction(ChangeAccountSettingsMode.CREDENTIALS)
     )
 }
 

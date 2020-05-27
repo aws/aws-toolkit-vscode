@@ -54,7 +54,7 @@ class MockCredentialsManager : CredentialManager() {
         )
     }
 
-    private class MockCredentialIdentifier(override val displayName: String, val credentials: AwsCredentialsProvider, override val defaultRegionId: String?) :
+    class MockCredentialIdentifier(override val displayName: String, val credentials: AwsCredentialsProvider, override val defaultRegionId: String?) :
         ToolkitCredentialsIdentifier() {
         override val id: String = displayName
         override val factoryId: String = "mockCredentialProviderFactory"

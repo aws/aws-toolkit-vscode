@@ -17,6 +17,7 @@ import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.StatusBarWidgetProvider
 import com.intellij.util.Consumer
+import software.aws.toolkits.jetbrains.core.credentials.ChangeAccountSettingsMode.BOTH
 import software.aws.toolkits.resources.message
 import java.awt.Component
 import java.awt.event.MouseEvent
@@ -71,28 +72,27 @@ private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
     override fun dispose() {}
 }
 
-class SettingsSelectorAction(private val showRegions: Boolean = true) : AnAction(message("configure.toolkit")), DumbAware {
+class SettingsSelectorAction(private val mode: ChangeAccountSettingsMode = BOTH) : AnAction(message("configure.toolkit")), DumbAware {
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.getRequiredData(PlatformDataKeys.PROJECT)
         val settingsSelector = SettingsSelector(project)
-        settingsSelector.settingsPopup(e.dataContext, showRegions = showRegions).showCenteredInCurrentWindow(project)
+        settingsSelector.settingsPopup(e.dataContext, mode).showCenteredInCurrentWindow(project)
     }
 }
 
 class SettingsSelector(private val project: Project) {
-    fun settingsPopup(contextComponent: Component, showRegions: Boolean = true): ListPopup {
-        val dataContext = DataManager.getInstance().getDataContext(contextComponent)
-        return settingsPopup(dataContext, showRegions)
-    }
+    fun settingsPopup(contextComponent: Component, mode: ChangeAccountSettingsMode = BOTH): ListPopup =
+        settingsPopup(DataManager.getInstance().getDataContext(contextComponent), mode)
 
-    fun settingsPopup(dataContext: DataContext, showRegions: Boolean = true): ListPopup = JBPopupFactory.getInstance().createActionGroupPopup(
-        tooltipText,
-        ChangeAccountSettingsActionGroup(project, showRegions),
-        dataContext,
-        JBPopupFactory.ActionSelectionAid.SPEEDSEARCH,
-        true,
-        ActionPlaces.STATUS_BAR_PLACE
-    )
+    fun settingsPopup(dataContext: DataContext, mode: ChangeAccountSettingsMode = BOTH): ListPopup =
+        JBPopupFactory.getInstance().createActionGroupPopup(
+            tooltipText,
+            ChangeAccountSettingsActionGroup(project, mode),
+            dataContext,
+            JBPopupFactory.ActionSelectionAid.SPEEDSEARCH,
+            true,
+            ActionPlaces.STATUS_BAR_PLACE
+        )
 
     companion object {
         internal val tooltipText = message("settings.title")

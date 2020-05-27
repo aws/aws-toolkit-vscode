@@ -10,16 +10,22 @@ import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.actionSystem.Separator
 import com.intellij.openapi.actionSystem.ToggleAction
+import com.intellij.openapi.actionSystem.ex.ComboBoxAction
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.psi.util.CachedValueProvider
 import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.jetbrains.core.credentials.ChangeAccountSettingsMode.BOTH
+import software.aws.toolkits.jetbrains.core.credentials.ChangeAccountSettingsMode.CREDENTIALS
+import software.aws.toolkits.jetbrains.core.credentials.ChangeAccountSettingsMode.REGIONS
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.utils.actions.ComputableActionGroup
 import software.aws.toolkits.resources.message
+import javax.swing.JComponent
 
-class ChangeAccountSettingsActionGroup(private val project: Project, private val showRegions: Boolean) : ComputableActionGroup(), DumbAware {
+class ChangeAccountSettingsActionGroup(project: Project, private val mode: ChangeAccountSettingsMode) : ComputableActionGroup(), DumbAware {
+
     private val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
     private val partitionSelector = ChangePartitionActionGroup()
     private val regionSelector = ChangeRegionActionGroup(partitionSelector, accountSettingsManager)
@@ -28,7 +34,7 @@ class ChangeAccountSettingsActionGroup(private val project: Project, private val
     override fun createChildrenProvider(actionManager: ActionManager?): CachedValueProvider<Array<AnAction>> = CachedValueProvider {
         val actions = mutableListOf<AnAction>()
 
-        if (showRegions) {
+        if (mode.showRegions) {
             val usedRegions = accountSettingsManager.recentlyUsedRegions()
             if (usedRegions.isEmpty()) {
                 regionSelector.isPopup = false
@@ -44,24 +50,35 @@ class ChangeAccountSettingsActionGroup(private val project: Project, private val
             }
         }
 
-        val usedCredentials = accountSettingsManager.recentlyUsedCredentials()
-        if (usedCredentials.isEmpty()) {
-            actions.add(Separator.create(message("settings.credentials")))
+        if (mode.showCredentials) {
+            val usedCredentials = accountSettingsManager.recentlyUsedCredentials()
+            if (usedCredentials.isEmpty()) {
+                actions.add(Separator.create(message("settings.credentials")))
 
-            credentialSelector.isPopup = false
-            actions.add(credentialSelector)
-        } else {
-            actions.add(Separator.create(message("settings.credentials.recent")))
-            usedCredentials.forEach {
-                actions.add(ChangeCredentialsAction(it))
+                credentialSelector.isPopup = false
+                actions.add(credentialSelector)
+            } else {
+                actions.add(Separator.create(message("settings.credentials.recent")))
+                usedCredentials.forEach {
+                    actions.add(ChangeCredentialsAction(it))
+                }
+
+                credentialSelector.isPopup = true
+                actions.add(credentialSelector)
             }
-
-            credentialSelector.isPopup = true
-            actions.add(credentialSelector)
         }
 
         CachedValueProvider.Result.create(actions.toTypedArray(), accountSettingsManager)
     }
+}
+
+enum class ChangeAccountSettingsMode(
+    internal val showRegions: Boolean,
+    internal val showCredentials: Boolean
+) {
+    CREDENTIALS(false, true),
+    REGIONS(true, false),
+    BOTH(true, true)
 }
 
 private class ChangePartitionActionGroup : DefaultActionGroup(message("settings.partitions"), true), DumbAware {
@@ -117,18 +134,18 @@ private class ChangeRegionActionGroup(
         val partitionActions = partitionGroup?.let { listOf(it) } ?: emptyList<AnAction>()
 
         val actions = partitionActions +
-        regions.flatMap { (category, subRegions) ->
-            listOf(Separator.create(category)) +
-            subRegions.map {
-                ChangeRegionAction(it)
-            }
-        } as List<AnAction>
+            regions.flatMap { (category, subRegions) ->
+                listOf(Separator.create(category)) +
+                    subRegions.map {
+                        ChangeRegionAction(it)
+                    }
+            } as List<AnAction>
 
         CachedValueProvider.Result.create(actions.toTypedArray(), accountSettingsManager)
     }
 }
 
-private class ChangeRegionAction(private val region: AwsRegion) : ToggleAction(region.displayName), DumbAware {
+internal class ChangeRegionAction(private val region: AwsRegion) : ToggleAction(region.displayName), DumbAware {
     override fun isSelected(e: AnActionEvent): Boolean = getAccountSetting(e).selectedRegion == region
 
     override fun setSelected(e: AnActionEvent, state: Boolean) {
@@ -138,7 +155,7 @@ private class ChangeRegionAction(private val region: AwsRegion) : ToggleAction(r
     }
 }
 
-private class ChangeCredentialsAction(private val credentialsProvider: ToolkitCredentialsIdentifier) : ToggleAction(credentialsProvider.displayName),
+internal class ChangeCredentialsAction(private val credentialsProvider: ToolkitCredentialsIdentifier) : ToggleAction(credentialsProvider.displayName),
     DumbAware {
     override fun isSelected(e: AnActionEvent): Boolean = getAccountSetting(e).selectedCredentialIdentifier == credentialsProvider
 
@@ -151,3 +168,34 @@ private class ChangeCredentialsAction(private val credentialsProvider: ToolkitCr
 
 private fun getAccountSetting(e: AnActionEvent): ProjectAccountSettingsManager =
     ProjectAccountSettingsManager.getInstance(e.getRequiredData(PlatformDataKeys.PROJECT))
+
+class SettingsSelectorComboBoxAction(
+    private val project: Project,
+    private val mode: ChangeAccountSettingsMode
+) : ComboBoxAction(), DumbAware {
+    private val accountSettingsManager by lazy {
+        ProjectAccountSettingsManager.getInstance(project)
+    }
+
+    init {
+        templatePresentation.text = text()
+    }
+
+    override fun createPopupActionGroup(button: JComponent?) = DefaultActionGroup(ChangeAccountSettingsActionGroup(project, mode))
+
+    override fun update(e: AnActionEvent) {
+        e.presentation.text = text()
+    }
+
+    override fun displayTextInToolbar(): Boolean = true
+
+    private fun text() = when (mode) {
+        CREDENTIALS -> credentialsText()
+        REGIONS -> regionText()
+        BOTH -> "${credentialsText()}@${regionText()}"
+    }
+
+    private fun regionText() = accountSettingsManager.selectedRegion?.displayName ?: message("settings.regions.none_selected")
+
+    private fun credentialsText() = accountSettingsManager.selectedCredentialIdentifier?.displayName ?: message("settings.credentials.none_selected")
+}

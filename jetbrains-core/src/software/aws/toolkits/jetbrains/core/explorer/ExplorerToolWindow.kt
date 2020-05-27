@@ -10,6 +10,8 @@ import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ide.util.treeView.NodeRenderer
 import com.intellij.ide.util.treeView.TreeState
 import com.intellij.openapi.actionSystem.ActionGroup
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.DataKey
 import com.intellij.openapi.actionSystem.DefaultActionGroup
@@ -26,11 +28,13 @@ import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.TreeUIHelper
 import com.intellij.ui.components.panels.Wrapper
 import com.intellij.ui.treeStructure.Tree
+import software.aws.toolkits.jetbrains.core.credentials.ChangeAccountSettingsMode
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsChangeEvent
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsChangeNotifier
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionState
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.SettingsSelector
+import software.aws.toolkits.jetbrains.core.credentials.SettingsSelectorComboBoxAction
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_NODES
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_RESOURCE_NODES
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_SERVICE_NODE
@@ -64,8 +68,15 @@ class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(t
     }
 
     init {
+        val group = DefaultActionGroup(
+            SettingsSelectorComboBoxAction(project, ChangeAccountSettingsMode.CREDENTIALS),
+            SettingsSelectorComboBoxAction(project, ChangeAccountSettingsMode.REGIONS)
+        )
+
+        toolbar = ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLBAR, group, true).component
+
         val select = HyperlinkLabel(message("configure.toolkit"))
-        select.addHyperlinkListener { settingsSelector.settingsPopup(select, showRegions = false).showInCenterOf(select) }
+        select.addHyperlinkListener { settingsSelector.settingsPopup(select, ChangeAccountSettingsMode.BOTH).showInCenterOf(select) }
 
         errorPanel = JPanel()
         errorPanel.add(select)

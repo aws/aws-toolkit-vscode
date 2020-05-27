@@ -5,7 +5,11 @@ package software.aws.toolkits.core.utils.test
 
 import java.time.Duration
 import java.time.Instant
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.random.Random
+
+fun aString(length: Int = Random.nextInt(5, 30)): String = UUID.randomUUID().toString().substring(length)
 
 fun retryableAssert(
     timeout: Duration? = null,

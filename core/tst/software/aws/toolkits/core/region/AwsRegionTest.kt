@@ -8,6 +8,8 @@ import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
+import software.aws.toolkits.core.utils.test.aString
+import kotlin.random.Random
 
 @RunWith(Parameterized::class)
 class AwsRegionTest(private val region: AwsRegion, private val expectedCategory: String, private val expectedDisplayName: String) {
@@ -39,4 +41,13 @@ class AwsRegionTest(private val region: AwsRegion, private val expectedCategory:
     fun categoryShouldMatch() {
         assertThat(region.category, equalTo(expectedCategory))
     }
+}
+
+fun anAwsRegion(id: String = aRegionId(), name: String = aString(), partitionId: String = aString()) = AwsRegion(id, name, partitionId)
+
+fun aRegionId(): String {
+    val prefix = arrayOf("af", "us", "ca", "eu", "ap", "me", "cn").random()
+    val compass = arrayOf("north", "south", "east", "west", "central")
+    val count = Random.nextInt(1, 10)
+    return "$prefix-$compass-$count"
 }
