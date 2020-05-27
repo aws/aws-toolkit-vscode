@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import { createFolderCommand } from '../../../s3/commands/createFolder'
 import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
-import { S3Client, S3Error } from '../../../shared/clients/s3Client'
+import { S3Client } from '../../../shared/clients/s3Client'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
@@ -29,7 +29,7 @@ describe('createFolderCommand', () => {
         node = new S3BucketNode({ name: bucketName, region: 'region', arn: 'arn' }, instance(s3))
     })
 
-    it('prompts for folder name, creates folder, and refreshes node', async () => {
+    it('prompts for folder name, creates folder, shows success, and refreshes node', async () => {
         when(s3.createFolder(deepEqual({ path: folderPath, bucketName }))).thenResolve({
             folder: { name: folderName, path: folderPath, arn: 'arn' },
         })
@@ -38,8 +38,10 @@ describe('createFolderCommand', () => {
         const commands = new FakeCommands()
         await createFolderCommand(node, window, commands)
 
-        assert.strictEqual(window.inputBox.options?.prompt, 'Create Folder')
+        assert.strictEqual(window.inputBox.options?.prompt, 'Enter a folder to create in bucket-name')
         assert.strictEqual(window.inputBox.options?.placeHolder, 'Folder Name')
+
+        assert.strictEqual(window.message.information, 'Created folder foo')
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [node])
@@ -52,7 +54,7 @@ describe('createFolderCommand', () => {
     })
 
     it('shows an error message and refreshes node when folder creation fails', async () => {
-        when(s3.createFolder(anything())).thenReject(new S3Error('Expected failure'))
+        when(s3.createFolder(anything())).thenReject(new Error('Expected failure'))
 
         const window = new FakeWindow({ inputBox: { input: folderName } })
         const commands = new FakeCommands()

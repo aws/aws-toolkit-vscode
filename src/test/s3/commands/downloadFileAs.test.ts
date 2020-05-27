@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import * as vscode from 'vscode'
 import { downloadFileAsCommand } from '../../../s3/commands/downloadFileAs'
 import { S3FileNode } from '../../../s3/explorer/s3FileNode'
-import { S3Client, S3Error } from '../../../shared/clients/s3Client'
+import { S3Client } from '../../../shared/clients/s3Client'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, capture, verify } from '../../utilities/mockito'
 
@@ -18,7 +18,6 @@ describe('downloadFileAsCommand', () => {
     const lastModified = new Date(2020, 5, 4)
     const sizeBytes = 16
     const saveLocation = vscode.Uri.file('/file.jpg')
-    const defaultSaveLocation = vscode.Uri.file('file.jpg')
 
     let s3: S3Client
     let node: S3FileNode
@@ -38,9 +37,10 @@ describe('downloadFileAsCommand', () => {
         const window = new FakeWindow({ dialog: { saveSelection: saveLocation } })
         await downloadFileAsCommand(node, window)
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         const [downloadFileRequest] = capture(s3.downloadFile).last()
 
-        assert.deepStrictEqual(window.dialog.saveOptions?.defaultUri, defaultSaveLocation)
+        assert.ok(window.dialog.saveOptions?.defaultUri?.path?.endsWith(fileName))
         assert.strictEqual(window.dialog.saveOptions?.saveLabel, 'Download')
         assert.deepStrictEqual(window.dialog.saveOptions?.filters, { 'All files': ['*'], '*.jpg': ['.jpg'] })
 
@@ -48,9 +48,9 @@ describe('downloadFileAsCommand', () => {
         assert.strictEqual(downloadFileRequest.key, key)
         assert.strictEqual(downloadFileRequest.saveLocation, saveLocation)
 
-        reportProgression(downloadFileRequest.progressListener!, [4, 8, 16]) // +25% (4/16), +25% (4/16), +50% (8/16)
+        downloadFileRequest.progressListener!(4) // +25% (+4/16)
 
-        assert.deepStrictEqual(window.progress.reported, incrementalPercentages([25, 25, 50]))
+        assert.deepStrictEqual(window.progress.reported, [{ increment: 25 }])
         assert.strictEqual(window.progress.options?.location, vscode.ProgressLocation.Notification)
         assert.strictEqual(window.progress.options?.title, 'Downloading file.jpg...')
     })
@@ -62,7 +62,7 @@ describe('downloadFileAsCommand', () => {
     })
 
     it('shows an error message when download fails', async () => {
-        when(s3.downloadFile(anything())).thenReject(new S3Error('Expected failure'))
+        when(s3.downloadFile(anything())).thenReject(new Error('Expected failure'))
 
         const window = new FakeWindow({ dialog: { saveSelection: saveLocation } })
         await downloadFileAsCommand(node, window)
@@ -70,13 +70,3 @@ describe('downloadFileAsCommand', () => {
         assert.ok(window.message.error?.includes('Failed to download file'))
     })
 })
-
-function reportProgression(progressListener: (loadedBytes: number) => void, totalByteProgression: number[]): void {
-    totalByteProgression.forEach(total => progressListener(total))
-}
-
-function incrementalPercentages(increments: number[]) {
-    return increments.map(increment => ({
-        increment,
-    }))
-}

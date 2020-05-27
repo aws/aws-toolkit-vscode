@@ -3,14 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { extname } from 'path'
+import { extname, join } from 'path'
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
 import * as telemetry from '../../shared/telemetry/telemetry'
-import { DefaultWindow, Window } from '../../shared/vscode/window'
+import { Window } from '../../shared/vscode/window'
 import { S3FileNode } from '../explorer/s3FileNode'
+import { showErrorWithLogs } from '../util/messages'
 import { progressReporter } from '../util/progressReporter'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import downloadsFolder = require('downloads-folder')
 
 /**
  * Downloads a file represented by the given node.
@@ -18,8 +20,8 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
  * Prompts the user for the save location.
  * Downloads the file (showing a progress bar).
  */
-export async function downloadFileAsCommand(node: S3FileNode, window: Window = new DefaultWindow()): Promise<void> {
-    getLogger().debug(`DownloadFile called for ${node}`)
+export async function downloadFileAsCommand(node: S3FileNode, window = Window.vscode()): Promise<void> {
+    getLogger().debug('DownloadFile called for %O', node)
 
     const saveLocation = await promptForSaveLocation(node.file.name, window)
     if (!saveLocation) {
@@ -36,9 +38,10 @@ export async function downloadFileAsCommand(node: S3FileNode, window: Window = n
         getLogger().info(`Successfully downloaded file from ${node.file.arn} to ${saveLocation}`)
         telemetry.recordS3DownloadObject({ result: 'Succeeded' })
     } catch (e) {
-        getLogger().info(`Failed to download file from ${node.file.arn} to ${saveLocation}`, e)
-        window.showErrorMessage(
-            localize('AWS.s3.downloadFile.error.general', 'Failed to download file {0}', node.file.name)
+        getLogger().error(`Failed to download file from ${node.file.arn} to ${saveLocation}: %O`, e.toString())
+        showErrorWithLogs(
+            localize('AWS.s3.downloadFile.error.general', 'Failed to download file {0}', node.file.name),
+            window
         )
         telemetry.recordS3DownloadObject({ result: 'Failed' })
     }
@@ -52,8 +55,9 @@ async function promptForSaveLocation(fileName: string, window: Window): Promise<
         filters[`*${extension}`] = [extension]
     }
 
+    const downloadPath = join(findDownloadsFolder(), fileName)
     return window.showSaveDialog({
-        defaultUri: vscode.Uri.file(fileName),
+        defaultUri: vscode.Uri.file(downloadPath),
         saveLabel: localize('AWS.s3.downloadFile.saveButton', 'Download'),
         filters: filters,
     })
@@ -70,8 +74,17 @@ async function downloadWithProgress(node: S3FileNode, saveLocation: vscode.Uri, 
                 bucketName: node.bucket.name,
                 key: node.file.key,
                 saveLocation,
-                progressListener: progressReporter(progress, node.file.sizeBytes),
+                progressListener: progressReporter({ progress, totalBytes: node.file.sizeBytes }),
             })
         }
     )
+}
+
+function findDownloadsFolder(): string {
+    try {
+        return downloadsFolder() ?? ''
+    } catch (e) {
+        getLogger().warn('Failed to find downloads folder: %O', e)
+        return ''
+    }
 }

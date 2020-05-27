@@ -188,7 +188,7 @@ export async function activate(context: vscode.ExtensionContext) {
             toolkitSettings,
         })
 
-        await activateS3({ extensionContext: context })
+        await activateS3(context)
 
         setImmediate(async () => {
             await activateStepFunctions(context, awsContext, toolkitOutputChannel)

@@ -203,7 +203,7 @@ async function registerAwsExplorerCommands(
     )
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('aws.loadMore', async (node: AWSTreeNodeBase & LoadMoreNode) => {
+        vscode.commands.registerCommand('aws.loadMoreChildren', async (node: AWSTreeNodeBase & LoadMoreNode) => {
             await node.loadMoreChildren()
             awsExplorer.refresh(node)
         })

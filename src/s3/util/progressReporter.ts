@@ -5,6 +5,10 @@
 
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
+import { inspect } from 'util'
+import { throttle } from 'lodash'
+
+const DEFAULT_REPORTING_INTERVAL_MILLIS = 500
 
 /**
  * Returns a function that pipes cumulative byte progress to VSCode's incremental percentage Progress.
@@ -12,21 +16,49 @@ import { getLogger } from '../../shared/logger'
  * @param progress the VSCode progress to update.
  * @param totalBytes the total bytes.
  * Used in combination with cumulative bytes to calculate incremental progress.
+ * @param minIntervalMillis the minimum delay between progress updates.
+ * Used to throttle updates. Updates that occur between intervals are dropped.
  */
-export function progressReporter(
-    progress: vscode.Progress<{ message?: string; increment?: number }>,
+export function progressReporter({
+    progress,
+    totalBytes,
+    minIntervalMillis = DEFAULT_REPORTING_INTERVAL_MILLIS,
+}: {
+    progress: vscode.Progress<{ message?: string; increment?: number }>
     totalBytes?: number
-): (loadedBytes: number) => void {
-    let report: ProgressReport = new ProgressReport(totalBytes)
+    minIntervalMillis?: number
+}): (loadedBytes: number) => void {
+    const reportProgressThrottled = throttle(reportProgressImmediately, minIntervalMillis, {
+        leading: true,
+        trailing: false,
+    })
 
+    const report = new ProgressReport(totalBytes)
     return loadedBytes => {
-        report.updateLoadedBytes(loadedBytes)
-        if (report.incrementalPercentage) {
-            progress.report({ increment: report.incrementalPercentage })
+        const isDone = loadedBytes === totalBytes
+        if (isDone) {
+            reportProgressImmediately(progress, report, loadedBytes)
+        } else {
+            reportProgressThrottled(progress, report, loadedBytes)
         }
-
-        getLogger().info(`${report}`)
     }
+}
+
+/**
+ * Throttles the given function unless the given condition is met by the arguments.
+ *
+ * Like _.throttle except specific calls can bypass the throttling.
+ */
+function reportProgressImmediately(
+    progress: vscode.Progress<{ message?: string; increment?: number }>,
+    report: ProgressReport,
+    loadedBytes: number
+): void {
+    report.updateLoadedBytes(loadedBytes)
+    if (report.incrementalPercentage) {
+        progress.report({ increment: report.incrementalPercentage })
+    }
+    getLogger().info('%O', report)
 }
 
 /**
@@ -112,8 +144,8 @@ class ProgressReport {
             throw new Error(`newLoadedBytes: ${newLoadedBytes} must be an integer`)
         } else if (newLoadedBytes < 0) {
             throw new Error(`newLoadedBytes: ${newLoadedBytes} cannot be negative`)
-        } else if (newLoadedBytes > 0 && this.totalBytes === 0) {
-            throw new Error(`newLoadedBytes: ${newLoadedBytes} cannot be positive when totalBytes is 0`)
+        } else if (this.totalBytes !== undefined && newLoadedBytes > this.totalBytes) {
+            throw new Error(`newLoadedBytes: ${newLoadedBytes} cannot be greater than totalBytes`)
         } else if (newLoadedBytes < this._loadedBytes) {
             throw new Error(`newLoadedBytes: ${newLoadedBytes} cannot be less than loadedBytes: ${this._loadedBytes}`)
         }
@@ -122,7 +154,7 @@ class ProgressReport {
         this._loadedBytes = newLoadedBytes
     }
 
-    public toString(): string {
+    public [inspect.custom](): string {
         switch (this.totalBytes) {
             case undefined:
                 return `ProgressReport: ${this.loadedBytes} bytes loaded)`

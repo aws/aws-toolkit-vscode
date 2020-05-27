@@ -9,9 +9,10 @@ import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
-import { Commands, DefaultCommands } from '../../shared/vscode/commands'
-import { DefaultWindow, Window } from '../../shared/vscode/window'
+import { Commands } from '../../shared/vscode/commands'
+import { Window } from '../../shared/vscode/window'
 import * as telemetry from '../../shared/telemetry/telemetry'
+import { showErrorWithLogs } from '../util/messages'
 import { progressReporter } from '../util/progressReporter'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 
@@ -36,10 +37,10 @@ export interface FileSizeBytes {
 export async function uploadFileCommand(
     node: S3BucketNode | S3FolderNode,
     fileSizeBytes: FileSizeBytes = statFile,
-    window: Window = new DefaultWindow(),
-    commands: Commands = new DefaultCommands()
+    window = Window.vscode(),
+    commands = Commands.vscode()
 ): Promise<void> {
-    getLogger().debug(`UploadFile called for ${node}`)
+    getLogger().debug('UploadFile called for %O', node)
 
     const fileLocation = await promptForFileLocation(window)
     if (!fileLocation) {
@@ -56,16 +57,11 @@ export async function uploadFileCommand(
 
         await uploadWithProgress({ node, key, fileLocation, fileSizeBytes: fileSizeBytes(fileLocation), window })
 
-        getLogger().info(
-            `Successfully uploaded file from ${fileLocation.fsPath} to ${key} in bucket '${node.bucket.name}'`
-        )
+        getLogger().info(`Successfully uploaded file from ${fileLocation} to ${key} in bucket '${node.bucket.name}'`)
         telemetry.recordS3UploadObject({ result: 'Succeeded' })
     } catch (e) {
-        getLogger().error(
-            `Failed to upload file from ${fileLocation.fsPath} to ${key} in bucket '${node.bucket.name}'`,
-            e
-        )
-        window.showErrorMessage(localize('AWS.s3.uploadFile.error.general', 'Failed to upload file {0}', fileName))
+        getLogger().error(`Failed to upload file from ${fileLocation} to ${key} in bucket '${node.bucket.name}': %O`, e)
+        showErrorWithLogs(localize('AWS.s3.uploadFile.error.general', 'Failed to upload file {0}', fileName), window)
         telemetry.recordS3UploadObject({ result: 'Failed' })
     }
 
@@ -107,7 +103,7 @@ async function uploadWithProgress({
                 bucketName: node.bucket.name,
                 key: key,
                 fileLocation,
-                progressListener: progressReporter(progress, fileSizeBytes),
+                progressListener: progressReporter({ progress, totalBytes: fileSizeBytes }),
             })
         }
     )
@@ -118,6 +114,6 @@ function statFile(file: vscode.Uri) {
 }
 
 async function refreshNode(node: S3BucketNode | S3FolderNode, commands: Commands): Promise<void> {
-    node.clearCache()
+    node.clearChildren()
     return commands.execute('aws.refreshAwsExplorerNode', node)
 }

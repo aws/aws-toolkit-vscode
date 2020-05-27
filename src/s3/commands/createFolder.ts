@@ -8,9 +8,10 @@ import { getLogger } from '../../shared/logger'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
-import { Commands, DefaultCommands } from '../../shared/vscode/commands'
-import { DefaultWindow, Window } from '../../shared/vscode/window'
+import { Commands } from '../../shared/vscode/commands'
+import { Window } from '../../shared/vscode/window'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { showErrorWithLogs } from '../util/messages'
 
 /**
  * Creates a subfolder in the bucket or folder represented by the given node.
@@ -25,13 +26,15 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
  */
 export async function createFolderCommand(
     node: S3BucketNode | S3FolderNode,
-    window: Window = new DefaultWindow(),
-    commands: Commands = new DefaultCommands()
+    window = Window.vscode(),
+    commands = Commands.vscode()
 ): Promise<void> {
-    getLogger().debug(`CreateFolder called for ${node}`)
+    getLogger().debug('CreateFolder called for %O', node)
+
+    const parentName = node.path ? node.name : node.bucket.name
 
     const folderName = await window.showInputBox({
-        prompt: localize('AWS.s3.createFolder.prompt', 'Create Folder'),
+        prompt: localize('AWS.s3.createFolder.prompt', 'Enter a folder to create in {0}', parentName),
         placeHolder: localize('AWS.s3.createFolder.placeHolder', 'Folder Name'),
         validateInput: validateFolderName,
     })
@@ -48,12 +51,14 @@ export async function createFolderCommand(
     try {
         const { folder } = await node.createFolder({ path, bucketName: node.bucket.name })
 
-        getLogger().info(`Successfully created folder ${folder}`)
+        getLogger().info('Successfully created folder %O', folder)
+        window.showInformationMessage(localize('AWS.s3.createFolder.success', 'Created folder {0}', folderName))
         recordS3CreateFolder({ result: 'Succeeded' })
     } catch (e) {
-        getLogger().error(`Failed to create folder ${path} in bucket '${node.bucket.name}'`, e)
-        window.showErrorMessage(
-            localize('AWS.s3.createFolder.error.general', 'Failed to create folder {0}', folderName)
+        getLogger().error(`Failed to create folder ${path} in bucket '${node.bucket.name}': %O`, e)
+        showErrorWithLogs(
+            localize('AWS.s3.createFolder.error.general', 'Failed to create folder {0}', folderName),
+            window
         )
         recordS3CreateFolder({ result: 'Failed' })
     }
@@ -80,6 +85,6 @@ function validateFolderName(name: string): string | undefined {
 function recordS3CreateFolder({ result }: { result: telemetry.Result }): void {}
 
 async function refreshNode(node: S3BucketNode | S3FolderNode, commands: Commands): Promise<void> {
-    node.clearCache()
+    node.clearChildren()
     return commands.execute('aws.refreshAwsExplorerNode', node)
 }

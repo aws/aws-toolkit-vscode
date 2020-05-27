@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import * as vscode from 'vscode'
 import { FileSizeBytes, uploadFileCommand } from '../../../s3/commands/uploadFile'
 import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
-import { S3Client, S3Error } from '../../../shared/clients/s3Client'
+import { S3Client } from '../../../shared/clients/s3Client'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, capture, verify } from '../../utilities/mockito'
@@ -34,6 +34,7 @@ describe('uploadFileCommand', () => {
         const commands = new FakeCommands()
         await uploadFileCommand(node, statFile, window, commands)
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         const [uploadFileRequest] = capture(s3.uploadFile).last()
 
         assert.strictEqual(window.dialog.openOptions?.openLabel, 'Upload')
@@ -42,9 +43,9 @@ describe('uploadFileCommand', () => {
         assert.strictEqual(uploadFileRequest.key, key)
         assert.strictEqual(uploadFileRequest.fileLocation, fileLocation)
 
-        reportProgression(uploadFileRequest.progressListener!, [4, 8, 16]) // +25% (4/16), +25% (4/16), +50% (8/16)
+        uploadFileRequest.progressListener!(4) // +25% (+4/16)
 
-        assert.deepStrictEqual(window.progress.reported, incrementalPercentages([25, 25, 50]))
+        assert.deepStrictEqual(window.progress.reported, [{ increment: 25 }])
         assert.strictEqual(window.progress.options?.location, vscode.ProgressLocation.Notification)
         assert.strictEqual(window.progress.options?.title, 'Uploading file.jpg...')
 
@@ -59,7 +60,7 @@ describe('uploadFileCommand', () => {
     })
 
     it('shows an error message when upload fails', async () => {
-        when(s3.uploadFile(anything())).thenReject(new S3Error('Expected failure'))
+        when(s3.uploadFile(anything())).thenReject(new Error('Expected failure'))
 
         const window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
         const commands = new FakeCommands()
@@ -71,13 +72,3 @@ describe('uploadFileCommand', () => {
         assert.deepStrictEqual(commands.args, [node])
     })
 })
-
-function reportProgression(progressListener: (loadedBytes: number) => void, totalByteProgression: number[]): void {
-    totalByteProgression.forEach(total => progressListener(total))
-}
-
-function incrementalPercentages(increments: number[]) {
-    return increments.map(increment => ({
-        increment,
-    }))
-}

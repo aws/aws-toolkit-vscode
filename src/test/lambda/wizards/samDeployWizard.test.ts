@@ -8,12 +8,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { detectLocalTemplates } from '../../../lambda/local/detectLocalTemplates'
 import * as paramUtils from '../../../lambda/utilities/parameterUtils'
-import {
-    ParameterPromptResult,
-    SamDeployWizard,
-    SamDeployWizardContext,
-    validateS3Bucket,
-} from '../../../lambda/wizards/samDeployWizard'
+import { ParameterPromptResult, SamDeployWizard, SamDeployWizardContext } from '../../../lambda/wizards/samDeployWizard'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 
 interface QuickPickUriResponseItem extends vscode.QuickPickItem {
@@ -593,53 +588,5 @@ describe('SamDeployWizard', async () => {
                 await assertValidationFails(parts.join(''))
             })
         })
-    })
-})
-
-describe('validateS3Bucket', async () => {
-    function assertS3BucketValidationFails(bucketName: string) {
-        assert.notStrictEqual(
-            validateS3Bucket(bucketName),
-            undefined,
-            `Expected validation for S3 bucket name '${bucketName}' to fail, but it passed.`
-        )
-    }
-
-    it('validates a valid bucket name', async () => {
-        assert.strictEqual(validateS3Bucket('validbucketname'), undefined, 'failed to validate valid bucket name')
-    })
-
-    it('validates that bucket name has a valid length', async () => {
-        assertS3BucketValidationFails('')
-        assertS3BucketValidationFails('aa')
-        assertS3BucketValidationFails('aaaaaaaabbbbbbbbccccccccddddddddeeeeeeeeffffffffgggggggghhhhhhhh')
-    })
-
-    it('validates that bucket name does not contain invalid characters', async () => {
-        assertS3BucketValidationFails('aaA')
-        assertS3BucketValidationFails('aa_')
-        assertS3BucketValidationFails('aa$')
-    })
-
-    it('validates that bucket name is not formatted as an ip address', async () => {
-        assertS3BucketValidationFails('198.51.100.24')
-    })
-
-    it('validates that bucket name does not end with a dash', async () => {
-        assertS3BucketValidationFails('aa-')
-    })
-
-    it('validates that bucket name does not contain consecutive periods', async () => {
-        assertS3BucketValidationFails('a..a')
-    })
-
-    it('validates that bucket name does not contain a period adjacent to a dash', async () => {
-        assertS3BucketValidationFails('a.-a')
-        assertS3BucketValidationFails('a-.a')
-    })
-
-    it('validates that each label in bucket name begins with a number or a lower-case character', async () => {
-        assertS3BucketValidationFails('Aaa')
-        assertS3BucketValidationFails('aaa.Bbb')
     })
 })

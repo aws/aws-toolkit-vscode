@@ -20,7 +20,7 @@ describe('copyPathCommand', () => {
 
         assert.strictEqual(env.clipboard.text, 'path')
 
-        assert.strictEqual(window.statusBar.message, 'Copied path to clipboard')
+        assert.strictEqual(window.statusBar.message, '$(clippy) Copied path to clipboard')
     })
 })
 

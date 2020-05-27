@@ -27,7 +27,7 @@ describe('copyArnCommand', () => {
         await copyArnCommand(node, window, env)
 
         assert.strictEqual(env.clipboard.text, 'arn')
-        assert.strictEqual(window.statusBar.message, 'Copied ARN to clipboard')
+        assert.strictEqual(window.statusBar.message, '$(clippy) Copied ARN to clipboard')
         assert.strictEqual(window.message.error, undefined)
     })
 
