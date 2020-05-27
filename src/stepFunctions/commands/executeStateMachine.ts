@@ -115,7 +115,7 @@ function createMessageReceivedFunc({
                 } catch (e) {
                     executeResult = 'Failed'
                     const error = e as Error
-                    logger.error('Error starting execution for Step Functions State Machine', error)
+                    logger.error('Error starting execution for Step Functions State Machine: %O', error)
                     outputChannel.appendLine(
                         localize(
                             'AWS.message.error.stepFunctions.executeStateMachine.failed_to_start',

@@ -6,7 +6,6 @@
 /**
  * Before/After hooks for all "unit" tests
  */
-
 import * as assert from 'assert'
 import { appendFileSync, mkdirpSync } from 'fs-extra'
 import { join } from 'path'

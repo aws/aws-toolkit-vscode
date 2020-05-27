@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "An extension for working with Amazon Web Services",
-    "version": "1.9.0-SNAPSHOT",
+    "version": "1.10.0-SNAPSHOT",
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {
@@ -104,13 +104,15 @@
                         "error",
                         "warn",
                         "info",
-                        "verbose"
+                        "verbose",
+                        "debug"
                     ],
                     "enumDescriptions": [
                         "Errors Only",
                         "Errors and Warnings",
                         "Errors, Warnings, and Info",
-                        "Errors, Warnings, Info, and Verbose"
+                        "Errors, Warnings, Info, and Verbose",
+                        "Errors, Warnings, Info, Verbose, and Debug"
                     ],
                     "markdownDescription": "%AWS.configuration.description.logLevel%"
                 },
@@ -579,7 +581,7 @@
                 },
                 {
                     "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode)$/",
                     "group": "1@1"
                 },
                 {
@@ -596,6 +598,11 @@
                     "command": "aws.hideRegion",
                     "group": "0@1",
                     "when": "view == aws.explorer && viewItem == awsRegionNode"
+                },
+                {
+                    "command": "aws.cloudWatchLogs.viewLogStream",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem == awsCloudWatchLogNode"
                 }
             ]
         },
@@ -780,6 +787,11 @@
                 "command": "aws.aboutToolkit",
                 "title": "%AWS.command.aboutToolkit%",
                 "category": "AWS"
+            },
+            {
+                "command": "aws.cloudWatchLogs.viewLogStream",
+                "title": "%AWS.command.viewLogStream%",
+                "category": "AWS"
             }
         ],
         "jsonValidation": [
@@ -827,7 +839,8 @@
         "generateNonCodeFiles": "ts-node ./build-scripts/generateNonCodeFiles.ts",
         "reset": "node ./build-scripts/clean.js dist node_modules && npm install",
         "copyNonCodeFiles": "node ./build-scripts/copyNonCodeFiles.js",
-        "buildScripts": "npm run bundleDeps && npm run copyNonCodeFiles && npm run generateNonCodeFiles",
+        "copyExtensionMain": "node ./build-scripts/copyExtensionMain.js",
+        "buildScripts": "npm run bundleDeps && npm run copyExtensionMain && npm run copyNonCodeFiles && npm run generateNonCodeFiles",
         "compile": "webpack --mode development && npm run buildScripts",
         "recompile": "npm run clean && npm run compile",
         "watch": "npm run buildScripts && tsc -watch -p ./",
@@ -856,7 +869,7 @@
         "@types/lodash": "^4.14.136",
         "@types/lolex": "^3.1.1",
         "@types/marked": "^0.6.5",
-        "@types/mocha": "^5.2.0",
+        "@types/mocha": "^7.0.2",
         "@types/node": "^10.14.22",
         "@types/readline-sync": "^1.4.3",
         "@types/request": "^2.47.1",
@@ -882,7 +895,7 @@
         "json-schema-to-typescript": "^8.2.0",
         "lolex": "^4.2.0",
         "marked": "^0.7.0",
-        "mocha": "^6.2.3",
+        "mocha": "^7.1.1",
         "mocha-junit-reporter": "^1.23.3",
         "mocha-multi-reporters": "^1.1.7",
         "prettier": "^1.19.1",
@@ -890,19 +903,20 @@
         "readline-sync": "^1.4.9",
         "remap-istanbul": "^0.12.0",
         "sinon": "^7.4.2",
+        "source-map-support": "^0.5.19",
         "terser-webpack-plugin": "^2.3.1",
         "ts-loader": "^6.2.0",
         "ts-mockito": "^2.5.0",
         "ts-node": "^8.5.2",
         "vsce": "^1.69.0",
         "vscode-nls-dev": "^3.3.1",
-        "vscode-test": "^1.2.3",
+        "vscode-test": "^1.3.0",
         "webpack": "^4.41.2",
         "webpack-cli": "^3.3.10"
     },
     "dependencies": {
         "adm-zip": "^0.4.13",
-        "amazon-states-language-service": "^1.0.1",
+        "amazon-states-language-service": "^1.1.0",
         "async-lock": "^1.1.3",
         "aws-sdk": "^2.581.0",
         "cloudformation-schema-js-yaml": "^1.0.1",
@@ -932,7 +946,8 @@
         "vue": "^2.5.16",
         "winston": "^3.2.1",
         "winston-transport": "^4.3.0",
-        "xml2js": "^0.4.19"
+        "xml2js": "^0.4.19",
+        "yaml": "^1.9.2"
     },
     "prettier": {
         "printWidth": 120,

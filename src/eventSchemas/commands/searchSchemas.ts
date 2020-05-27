@@ -25,7 +25,10 @@ import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { SchemaTemplates } from '../templates/searchSchemasTemplates'
 
-export async function createSearchSchemasWebView(params: { node: RegistryItemNode | SchemasNode }) {
+export async function createSearchSchemasWebView(params: {
+    node: RegistryItemNode | SchemasNode
+    outputChannel: vscode.OutputChannel
+}) {
     const logger: Logger = getLogger()
     const client: SchemaClient = ext.toolkitClientBuilder.createSchemaClient(params.node.regionCode)
     const registryNames = await getRegistryNames(params.node, client)
@@ -82,6 +85,7 @@ export async function createSearchSchemasWebView(params: { node: RegistryItemNod
                 schemaClient: client,
                 telemetryService: ext.telemetry,
                 onPostMessage: message => view.webview.postMessage(message),
+                outputChannel: params.outputChannel,
             }),
             undefined,
             ext.context.subscriptions
@@ -89,7 +93,7 @@ export async function createSearchSchemasWebView(params: { node: RegistryItemNod
     } catch (err) {
         webviewResult = 'Failed'
         const error = err as Error
-        logger.error('Error searching schemas', error)
+        logger.error('Error searching schemas: %O', error)
     } finally {
         // TODO make this telemetry actually record failures
         recordSchemasSearch({ result: webviewResult })
@@ -144,6 +148,7 @@ export function createMessageReceivedFunc({
     schemaClient: SchemaClient
     telemetryService: TelemetryService
     onPostMessage(message: any): Thenable<boolean>
+    outputChannel: vscode.OutputChannel
 }) {
     return async (message: CommandMessage) => {
         switch (message.command) {
@@ -199,7 +204,7 @@ export function createMessageReceivedFunc({
                     schemaClient,
                     message.schemaSummary!.RegistryName!
                 )
-                await downloadSchemaItemCode(schemaItemNode)
+                await downloadSchemaItemCode(schemaItemNode, restParams.outputChannel)
 
                 return
 

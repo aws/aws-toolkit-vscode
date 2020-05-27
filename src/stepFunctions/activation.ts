@@ -11,7 +11,7 @@ import * as telemetry from '../shared/telemetry/telemetry'
 import { activate as activateASL } from './asl/client'
 import { createStateMachineFromTemplate } from './commands/createStateMachineFromTemplate'
 import { publishStateMachine } from './commands/publishStateMachine'
-import { visualizeStateMachine } from './commands/visualizeStateMachine'
+import { AslVisualizationManager } from './commands/visualizeStateMachine/aslVisualizationManager'
 
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
@@ -35,11 +35,12 @@ async function registerStepFunctionCommands(
     outputChannel: vscode.OutputChannel
 ): Promise<void> {
     initalizeWebviewPaths(extensionContext)
+    const visualizationManager = new AslVisualizationManager(extensionContext)
 
     extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.previewStateMachine', async () => {
             try {
-                return await visualizeStateMachine(extensionContext.globalState)
+                return await visualizationManager.visualizeStateMachine(extensionContext.globalState)
             } finally {
                 telemetry.recordStepfunctionsPreviewstatemachine()
             }

@@ -7,13 +7,13 @@ import * as assert from 'assert'
 import * as del from 'del'
 import * as fs from 'fs-extra'
 import * as path from 'path'
-import { spy } from 'sinon'
 import * as vscode from 'vscode'
+import { MessageObject } from '../../stepFunctions/commands/visualizeStateMachine/aslVisualization'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
-import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
-import { messageObject } from '../../stepFunctions/commands/visualizeStateMachine'
-import { assertThrowsError } from '../../test/shared/utilities/assertUtils'
 import { activateExtension } from '../integrationTestsUtilities'
+import { assertThrowsError } from '../../test/shared/utilities/assertUtils'
+import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { spy } from 'sinon'
 
 const sampleStateMachine = `
 	 {
@@ -47,7 +47,21 @@ const sampleStateMachine = `
 	             "End": true
 	         }
 	     }
-	 }`
+     }`
+
+const samleStateMachineYaml = `
+    Comment: "A Hello World example of the Amazon States Language using Pass states"
+    StartAt: Hello
+    States:
+    Hello:
+        Type: Pass
+        Result: Hello
+        Next: World
+    World:
+        Type: Pass
+        Result: \$\{Text\}
+        End: true
+`
 
 let tempFolder: string
 
@@ -71,7 +85,7 @@ async function openATextEditorWithText(fileText: string, fileName: string): Prom
 async function waitUntilWebviewIsVisible(webviewPanel: vscode.WebviewPanel | undefined): Promise<void> {
     return new Promise<void>((resolve, reject) => {
         if (webviewPanel) {
-            webviewPanel.webview.onDidReceiveMessage((message: messageObject) => {
+            webviewPanel.webview.onDidReceiveMessage((message: MessageObject) => {
                 switch (message.command) {
                     case 'webviewRendered':
                         resolve()
@@ -118,6 +132,29 @@ describe('visualizeStateMachine', async () => {
     it('correctly displays content when given a sample state machine', async () => {
         const fileName = 'mysamplestatemachine.json'
         const textEditor = await openATextEditorWithText(sampleStateMachine, fileName)
+
+        const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.previewStateMachine')
+
+        assert.ok(result)
+
+        await waitUntilWebviewIsVisible(result)
+
+        let expectedViewColumn
+        if (textEditor.viewColumn) {
+            expectedViewColumn = textEditor.viewColumn.valueOf() + 1
+        }
+
+        if (result) {
+            assert.deepStrictEqual(result.title, 'Graph: ' + fileName)
+            assert.deepStrictEqual(result.viewColumn, expectedViewColumn)
+            assert.deepStrictEqual(result.viewType, 'stateMachineVisualization')
+            assert.ok(result.webview.html)
+        }
+    })
+
+    it('correctly displays content when given a sample state machine in yaml', async () => {
+        const fileName = 'mysamplestatemachine.yaml'
+        const textEditor = await openATextEditorWithText(samleStateMachineYaml, fileName)
 
         const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.previewStateMachine')
 

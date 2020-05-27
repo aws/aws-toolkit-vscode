@@ -14,11 +14,17 @@ import { SchemasNode } from '../eventSchemas/explorer/schemasNode'
 /**
  * Activate Schemas functionality for the extension.
  */
-export async function activate(activateArguments: { context: vscode.ExtensionContext }): Promise<void> {
-    await registerSchemasCommands(activateArguments.context)
+export async function activate(activateArguments: {
+    context: vscode.ExtensionContext
+    outputChannel: vscode.OutputChannel
+}): Promise<void> {
+    await registerSchemasCommands(activateArguments.context, activateArguments.outputChannel)
 }
 
-async function registerSchemasCommands(context: vscode.ExtensionContext): Promise<void> {
+async function registerSchemasCommands(
+    context: vscode.ExtensionContext,
+    outputChannel: vscode.OutputChannel
+): Promise<void> {
     context.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.viewSchemaItem',
@@ -28,19 +34,19 @@ async function registerSchemasCommands(context: vscode.ExtensionContext): Promis
     context.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.downloadSchemaItemCode',
-            async (node: SchemaItemNode) => await downloadSchemaItemCode(node)
+            async (node: SchemaItemNode) => await downloadSchemaItemCode(node, outputChannel)
         )
     )
     context.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.searchSchema',
-            async (node: SchemasNode) => await createSearchSchemasWebView({ node: node })
+            async (node: SchemasNode) => await createSearchSchemasWebView({ node, outputChannel })
         )
     )
     context.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.searchSchemaPerRegistry',
-            async (node: RegistryItemNode) => await createSearchSchemasWebView({ node: node })
+            async (node: RegistryItemNode) => await createSearchSchemasWebView({ node, outputChannel })
         )
     )
 }

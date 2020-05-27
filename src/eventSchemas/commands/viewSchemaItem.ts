@@ -29,7 +29,7 @@ export async function viewSchemaItem(node: SchemaItemNode) {
                 node.schemaName
             )
         )
-        logger.error('Error on schema preview', error)
+        logger.error('Error on schema preview: %O', error)
     } finally {
         recordSchemasView({ result: viewResult })
     }
