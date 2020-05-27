@@ -59,11 +59,13 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
     private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Documentation'))
     private readonly currentCredentials: Credentials | undefined
     private readonly schemasRegions: Region[]
+    private readonly samCliVersion: string
 
-    public constructor(currentCredentials: Credentials | undefined, schemasRegions: Region[]) {
+    public constructor(currentCredentials: Credentials | undefined, schemasRegions: Region[], samCliVersion: string) {
         super()
         this.currentCredentials = currentCredentials
         this.schemasRegions = schemasRegions
+        this.samCliVersion = samCliVersion
     }
 
     public async promptUserForRuntime(currRuntime?: Runtime): Promise<Runtime | undefined> {
@@ -104,7 +106,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
         currRuntime: Runtime,
         currTemplate?: SamTemplate
     ): Promise<SamTemplate | undefined> {
-        const templates = getSamTemplateWizardOption(currRuntime)
+        const templates = getSamTemplateWizardOption(currRuntime, this.samCliVersion)
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
                 ignoreFocusOut: true,

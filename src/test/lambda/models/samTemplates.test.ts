@@ -5,21 +5,35 @@
 
 import * as assert from 'assert'
 import {
+    CLI_VERSION_STEP_FUNCTIONS_TEMPLATE,
     getSamCliTemplateParameter,
     getSamTemplateWizardOption,
     getTemplateDescription,
-    helloWorldOption,
     repromptUserForTemplate,
-    validTemplateOptions,
+    SamTemplate,
+    helloWorldTemplate,
+    eventBridgeHelloWorldTemplate,
+    eventBridgeStarterAppTemplate,
+    stepFunctionsSampleApp,
 } from '../../../lambda/models/samTemplates'
+import { Set } from 'immutable'
 import { assertThrowsError } from '../../../test/shared/utilities/assertUtils'
 
 import { samLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 
+const validTemplateOptions: Set<SamTemplate> = Set<SamTemplate>([
+    helloWorldTemplate,
+    eventBridgeHelloWorldTemplate,
+    eventBridgeStarterAppTemplate,
+    stepFunctionsSampleApp,
+])
+
+const defaultTemplateOptions: Set<SamTemplate> = Set<SamTemplate>([helloWorldTemplate, stepFunctionsSampleApp])
+
 describe('getSamTemplateWizardOption', () => {
     it('should successfully return available templates for specific runtime', () => {
         for (const runtime of samLambdaRuntimes.values()) {
-            const result = getSamTemplateWizardOption(runtime)
+            const result = getSamTemplateWizardOption(runtime, CLI_VERSION_STEP_FUNCTIONS_TEMPLATE)
             switch (runtime) {
                 case 'python3.6':
                 case 'python3.7':
@@ -33,11 +47,18 @@ describe('getSamTemplateWizardOption', () => {
                 default:
                     assert.deepStrictEqual(
                         result,
-                        helloWorldOption,
-                        'Rest of the runtimes support hello-world template only'
+                        defaultTemplateOptions,
+                        'Rest of the runtimes support default templates only'
                     )
                     break
             }
+        }
+    })
+
+    it('should not return Step Functions templates for a SAM CLI version that does not support them', () => {
+        for (const runtime of samLambdaRuntimes.values()) {
+            const result = getSamTemplateWizardOption(runtime, '0.40.0')
+            assert(!result.contains(stepFunctionsSampleApp))
         }
     })
 })
