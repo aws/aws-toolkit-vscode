@@ -7,10 +7,10 @@ import * as moment from 'moment'
 import * as bytes from 'bytes'
 import * as vscode from 'vscode'
 import { Bucket, DownloadFileRequest, File, S3Client } from '../../shared/clients/s3Client'
-import { ext } from '../../shared/extensionGlobals'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { inspect } from 'util'
 
 /**
  * Represents an object in an S3 bucket.
@@ -40,13 +40,13 @@ export class S3FileNode extends AWSTreeNodeBase implements AWSResourceNode {
             )
             this.description = `${readableSize}, ${readableDate}`
         }
-        this.iconPath = {
-            dark: vscode.Uri.file(ext.iconPaths.dark.s3.file),
-            light: vscode.Uri.file(ext.iconPaths.light.s3.file),
-        }
+        this.iconPath = vscode.ThemeIcon.File
         this.contextValue = 'awsS3FileNode'
     }
 
+    /**
+     * See {@link S3Client.downloadFile}.
+     */
     public downloadFile(request: DownloadFileRequest): Promise<void> {
         return this.s3.downloadFile(request)
     }
@@ -63,7 +63,7 @@ export class S3FileNode extends AWSTreeNodeBase implements AWSResourceNode {
         return this.file.key
     }
 
-    public toString(): string {
+    public [inspect.custom](): string {
         return `S3FileNode (bucket=${this.bucket.name}, file=${this.file.key}}`
     }
 }

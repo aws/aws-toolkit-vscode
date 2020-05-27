@@ -44,7 +44,7 @@ export class CloudWatchLogsNode extends AWSTreeNodeBase {
                     this,
                     localize('AWS.explorerNode.cloudWatchLogs.error', 'Error loading CloudWatch Logs resources')
                 ),
-            sort: (nodeA: LogGroupNode, nodeB: LogGroupNode) => nodeA.logGroupName.localeCompare(nodeB.logGroupName),
+            sort: (nodeA: LogGroupNode, nodeB: LogGroupNode) => nodeA.name.localeCompare(nodeB.name),
         })
     }
 

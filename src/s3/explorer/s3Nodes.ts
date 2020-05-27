@@ -11,6 +11,7 @@ import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { S3BucketNode } from './s3BucketNode'
+import { inspect } from 'util'
 
 /**
  * An AWS Explorer node representing S3.
@@ -37,11 +38,14 @@ export class S3Node extends AWSTreeNodeBase {
         })
     }
 
+    /**
+     * See {@link S3Client.createBucket}.
+     */
     public createBucket(request: CreateBucketRequest): Promise<CreateBucketResponse> {
         return this.s3.createBucket(request)
     }
 
-    public toString(): string {
+    public [inspect.custom](): string {
         return 'S3Node'
     }
 }

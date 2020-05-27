@@ -41,4 +41,9 @@ export interface LoadMoreNode {
      * @returns the existing and new children of the node.
      */
     loadMoreChildren(): Promise<AWSTreeNodeBase[]>
+
+    /**
+     * Clears all children from the Node's cache.
+     */
+    clearChildren(): void
 }

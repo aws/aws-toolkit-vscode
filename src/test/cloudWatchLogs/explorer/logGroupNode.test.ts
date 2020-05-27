@@ -47,7 +47,7 @@ describe('LogGroupNode', () => {
     })
 
     it('initializes the functionName', async () => {
-        assert.strictEqual(testNode.logGroupName, fakeLogGroup.logGroupName)
+        assert.strictEqual(testNode.name, fakeLogGroup.logGroupName)
     })
 
     it('initializes the tooltip', async () => {

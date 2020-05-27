@@ -4,31 +4,32 @@
  */
 
 import * as assert from 'assert'
+import { MoreResultsNode } from '../../../awsexplorer/moreResultsNode'
 import { S3FileNode } from '../../../s3/explorer/s3FileNode'
 import { S3FolderNode } from '../../../s3/explorer/s3FolderNode'
-import { S3MoreResultsNode } from '../../../s3/explorer/s3MoreResultsNode'
 import { S3Client, File, Folder, Bucket } from '../../../shared/clients/s3Client'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
+import { LoadMoreNode } from '../../../shared/treeview/nodes/loadMoreNode'
 import { deepEqual, instance, mock, when } from '../../utilities/mockito'
+import { FakeWorkspace } from '../../shared/vscode/fakeWorkspace'
 
 describe('S3FolderNode', () => {
     const bucketName = 'bucket-name'
     const path = 'folder/path'
     const continuationToken = 'continuationToken'
-    const secondContinuationToken = 'secondContinuationToken'
-
     const bucket: Bucket = { name: bucketName, region: 'region', arn: 'arn' }
-
     const file: File = { name: 'name', key: 'key', arn: 'arn' }
-    const moreFile: File = { name: 'moreName', key: 'moreKey', arn: 'moreArn' }
-
     const folder: Folder = { name: 'folder', path, arn: 'arn' }
     const subFolder: Folder = { name: 'subFolder', path: 'subPath', arn: 'subArn' }
-    const moreSubFolder: Folder = { name: 'moreSubFolder', path: 'moreSubPath', arn: 'moreSubArn' }
+    const maxResults = 200
+    const workspace = new FakeWorkspace({
+        section: 'aws',
+        configuration: { key: 's3.maxItemsPerPage', value: maxResults },
+    })
 
     let s3: S3Client
 
-    function assertFolderNode(node: AWSTreeNodeBase, expectedFolder: Folder): void {
+    function assertFolderNode(node: AWSTreeNodeBase | LoadMoreNode, expectedFolder: Folder): void {
         assert.ok(node instanceof S3FolderNode, `Node ${node} should be a Folder Node`)
         assert.deepStrictEqual((node as S3FolderNode).bucket, bucket)
         assert.deepStrictEqual((node as S3FolderNode).folder, expectedFolder)
@@ -41,187 +42,48 @@ describe('S3FolderNode', () => {
     }
 
     function assertMoreResultsNode(node: AWSTreeNodeBase): void {
-        assert.ok(node instanceof S3MoreResultsNode, `Node ${node} should be a More Results Node`)
-        assertFolderNode((node as S3MoreResultsNode).parent, folder)
+        assert.ok(node instanceof MoreResultsNode, `Node ${node} should be a More Results Node`)
+        assertFolderNode((node as MoreResultsNode).parent, folder)
     }
 
     beforeEach(() => {
         s3 = mock()
     })
 
-    describe('first call to getChildren', () => {
-        describe('single page of children', () => {
-            it('loads and returns initial children', async () => {
-                when(
-                    s3.listObjects(deepEqual({ bucketName, folderPath: path, continuationToken: undefined }))
-                ).thenResolve({
-                    folders: [subFolder],
-                    files: [file],
-                    continuationToken: undefined,
-                })
-
-                const node = new S3FolderNode(bucket, folder, instance(s3))
-                const [subFolderNode, fileNode, ...otherNodes] = await node.getChildren()
-
-                assertFolderNode(subFolderNode, subFolder)
-                assertFileNode(fileNode, file)
-                assert.strictEqual(otherNodes.length, 0)
+    describe('getChildren', () => {
+        it('gets children', async () => {
+            when(
+                s3.listObjects(deepEqual({ bucketName, folderPath: path, continuationToken: undefined, maxResults }))
+            ).thenResolve({
+                folders: [subFolder],
+                files: [file],
+                continuationToken: undefined,
             })
+
+            const node = new S3FolderNode(bucket, folder, instance(s3), workspace)
+            const [subFolderNode, fileNode, ...otherNodes] = await node.getChildren()
+
+            assertFolderNode(subFolderNode, subFolder)
+            assertFileNode(fileNode, file)
+            assert.strictEqual(otherNodes.length, 0)
         })
 
-        describe('multiple pages of children', () => {
-            it('loads and returns initial page of children with node for loading more results', async () => {
-                when(
-                    s3.listObjects(deepEqual({ bucketName, folderPath: path, continuationToken: undefined }))
-                ).thenResolve({
-                    folders: [subFolder],
-                    files: [file],
-                    continuationToken,
-                })
-
-                const node = new S3FolderNode(bucket, folder, instance(s3))
-                const [subFolderNode, fileNode, moreResultsNode, ...otherNodes] = await node.getChildren()
-
-                assertFolderNode(subFolderNode, subFolder)
-                assertFileNode(fileNode, file)
-                assertMoreResultsNode(moreResultsNode)
-                assert.strictEqual(otherNodes.length, 0)
+        it('gets children with node for loading more results', async () => {
+            when(
+                s3.listObjects(deepEqual({ bucketName, folderPath: path, continuationToken: undefined, maxResults }))
+            ).thenResolve({
+                folders: [subFolder],
+                files: [file],
+                continuationToken,
             })
-        })
-    })
 
-    describe('subsequent calls to getChildren', () => {
-        describe('no more pages of children', () => {
-            it('returns existing children', async () => {
-                when(
-                    s3.listObjects(
-                        deepEqual({
-                            bucketName,
-                            folderPath: path,
-                            continuationToken: undefined,
-                        })
-                    )
-                ).thenResolve({
-                    folders: [subFolder],
-                    files: [file],
-                    continuationToken: undefined,
-                })
+            const node = new S3FolderNode(bucket, folder, instance(s3), workspace)
+            const [subFolderNode, fileNode, moreResultsNode, ...otherNodes] = await node.getChildren()
 
-                const node = new S3FolderNode(bucket, folder, instance(s3))
-                await node.getChildren()
-                const [subFolderNode, fileNode, ...otherNodes] = await node.getChildren()
-
-                assertFolderNode(subFolderNode, subFolder)
-                assertFileNode(fileNode, file)
-                assert.strictEqual(otherNodes.length, 0)
-            })
-        })
-
-        describe('more pages of children', () => {
-            it('returns existing children with node for loading more results', async () => {
-                when(
-                    s3.listObjects(
-                        deepEqual({
-                            bucketName,
-                            folderPath: path,
-                            continuationToken: undefined,
-                        })
-                    )
-                ).thenResolve({
-                    folders: [subFolder],
-                    files: [file],
-                    continuationToken,
-                })
-
-                const node = new S3FolderNode(bucket, folder, instance(s3))
-                await node.getChildren()
-                const [subFolderNode, fileNode, moreResultsNode, ...otherNodes] = await node.getChildren()
-
-                assertFolderNode(subFolderNode, subFolder)
-                assertFileNode(fileNode, file)
-                assertMoreResultsNode(moreResultsNode)
-                assert.strictEqual(otherNodes.length, 0)
-            })
-        })
-    })
-
-    describe('call to load more children', () => {
-        describe('final page of children', () => {
-            it('loads and returns new and existing children', async () => {
-                when(
-                    s3.listObjects(
-                        deepEqual({
-                            bucketName,
-                            folderPath: path,
-                            continuationToken: undefined,
-                        })
-                    )
-                ).thenResolve({
-                    folders: [subFolder],
-                    files: [file],
-                    continuationToken,
-                })
-
-                when(s3.listObjects(deepEqual({ bucketName, folderPath: path, continuationToken }))).thenResolve({
-                    folders: [moreSubFolder],
-                    files: [moreFile],
-                    continuationToken: undefined,
-                })
-
-                const node = new S3FolderNode(bucket, folder, instance(s3))
-                await node.getChildren()
-
-                const [
-                    subFolderNode,
-                    fileNode,
-                    moreSubFolderNode,
-                    moreFileNode,
-                    ...otherNodes
-                ] = await node.loadMoreChildren()
-
-                assertFolderNode(subFolderNode, subFolder)
-                assertFileNode(fileNode, file)
-                assertFolderNode(moreSubFolderNode, moreSubFolder)
-                assertFileNode(moreFileNode, moreFile)
-                assert.strictEqual(otherNodes.length, 0)
-            })
-        })
-
-        describe('not final page of children', () => {
-            it('loads and returns new and existing children with node for loading more results', async () => {
-                when(
-                    s3.listObjects(deepEqual({ bucketName, folderPath: path, continuationToken: undefined }))
-                ).thenResolve({
-                    folders: [subFolder],
-                    files: [file],
-                    continuationToken,
-                })
-
-                when(s3.listObjects(deepEqual({ bucketName, folderPath: path, continuationToken }))).thenResolve({
-                    folders: [moreSubFolder],
-                    files: [moreFile],
-                    continuationToken: secondContinuationToken,
-                })
-
-                const node = new S3FolderNode(bucket, folder, instance(s3))
-                await node.getChildren()
-
-                const [
-                    subFolderNode,
-                    fileNode,
-                    moreSubFolderNode,
-                    moreFileNode,
-                    moreResultsNode,
-                    ...otherNodes
-                ] = await node.loadMoreChildren()
-
-                assertFolderNode(subFolderNode, subFolder)
-                assertFileNode(fileNode, file)
-                assertFolderNode(moreSubFolderNode, moreSubFolder)
-                assertFileNode(moreFileNode, moreFile)
-                assertMoreResultsNode(moreResultsNode)
-                assert.strictEqual(otherNodes.length, 0)
-            })
+            assertFolderNode(subFolderNode, subFolder)
+            assertFileNode(fileNode, file)
+            assertMoreResultsNode(moreResultsNode)
+            assert.strictEqual(otherNodes.length, 0)
         })
     })
 })

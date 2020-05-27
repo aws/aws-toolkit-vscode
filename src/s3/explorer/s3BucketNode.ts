@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { ChildNodePage } from '../../awsexplorer/childNodeLoader'
 import {
     Bucket,
     CreateFolderRequest,
@@ -18,80 +19,83 @@ import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
-import { S3FolderNode } from './s3FolderNode'
-import { S3MoreResultsNode } from './s3MoreResultsNode'
-import { S3NodeCache } from './s3NodeCache'
-import { S3FileNode } from './s3FileNode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { ChildNodeLoader } from '../../awsexplorer/childNodeLoader'
+import { Workspace } from '../../shared/vscode/workspace'
+import { S3FileNode } from './s3FileNode'
+import { S3FolderNode } from './s3FolderNode'
+import { inspect } from 'util'
+import { getLogger } from '../../shared/logger'
 
 /**
  * Represents an S3 bucket that may contain folders and/or objects.
  */
 export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, LoadMoreNode {
-    private cache: S3NodeCache
+    private readonly childLoader: ChildNodeLoader
 
-    public constructor(public readonly bucket: Bucket, private readonly s3: S3Client) {
+    public constructor(
+        public readonly bucket: Bucket,
+        private readonly s3: S3Client,
+        private readonly workspace = Workspace.vscode()
+    ) {
         super(bucket.name, vscode.TreeItemCollapsibleState.Collapsed)
         this.tooltip = bucket.name
         this.iconPath = {
-            dark: vscode.Uri.file(ext.iconPaths.dark.s3.bucket),
-            light: vscode.Uri.file(ext.iconPaths.light.s3.bucket),
+            dark: vscode.Uri.file(ext.iconPaths.dark.s3),
+            light: vscode.Uri.file(ext.iconPaths.light.s3),
         }
         this.contextValue = 'awsS3BucketNode'
-        this.cache = new S3NodeCache(new S3MoreResultsNode(this))
+        this.childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
-            getChildNodes: async () => {
-                // Consider locking to avoid possible race conditions
-                if (!this.initialChildrenLoaded()) {
-                    return this.loadInitialChildren()
-                }
-
-                return this.getExistingChildren()
-            },
+            getChildNodes: async () => this.childLoader.getChildren(),
             getErrorNode: async (error: Error) =>
                 new ErrorNode(this, error, localize('AWS.explorerNode.s3.error', 'Error loading S3 resources')),
             getNoChildrenPlaceholderNode: async () =>
-                new PlaceholderNode(this, localize('AWS.explorerNode.s3.noFiles', '[No Files found]')),
+                new PlaceholderNode(this, localize('AWS.explorerNode.s3.noObjects', '[No Objects found]')),
         })
     }
 
-    private initialChildrenLoaded(): boolean {
-        return !this.cache.isPristine
-    }
-
-    private async loadInitialChildren(): Promise<AWSTreeNodeBase[]> {
-        return this.loadMoreChildren()
-    }
-
-    private async getExistingChildren(): Promise<AWSTreeNodeBase[]> {
-        return this.cache.nodes
-    }
-
     public async loadMoreChildren(): Promise<AWSTreeNodeBase[]> {
+        return this.childLoader.loadMoreChildren()
+    }
+
+    public clearChildren(): void {
+        this.childLoader.clearChildren()
+    }
+
+    private async loadPage(continuationToken: string | undefined): Promise<ChildNodePage> {
+        getLogger().debug(`Loading page for %O using continuationToken %s`, this, continuationToken)
         const response = await this.s3.listObjects({
             bucketName: this.bucket.name,
-            continuationToken: this.cache.continuationToken,
+            continuationToken,
+            maxResults: this.getMaxItemsPerPage(),
         })
 
         const newFolders = response.folders.map(folder => new S3FolderNode(this.bucket, folder, this.s3))
         const newFiles = response.files.map(file => new S3FileNode(this.bucket, file, this.s3))
-        this.cache.appendItems(newFolders, newFiles, response.continuationToken)
-        return this.cache.nodes
+
+        getLogger().debug(`Loaded folders: %O and files: %O`, newFolders, newFiles)
+        return {
+            newContinuationToken: response.continuationToken,
+            newChildren: [...newFolders, ...newFiles],
+        }
     }
 
+    /**
+     * See {@link S3Client.createFolder}.
+     */
     public createFolder(request: CreateFolderRequest): Promise<CreateFolderResponse> {
         return this.s3.createFolder(request)
     }
 
+    /**
+     * See {@link S3Client.uploadFile}.
+     */
     public uploadFile(request: UploadFileRequest): Promise<void> {
         return this.s3.uploadFile(request)
-    }
-
-    public clearCache(): void {
-        this.cache = new S3NodeCache(new S3MoreResultsNode(this))
     }
 
     public get arn(): string {
@@ -107,7 +111,11 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
         return ''
     }
 
-    public toString(): string {
+    public [inspect.custom](): string {
         return `S3BucketNode (bucket=${this.bucket.name})`
+    }
+
+    private getMaxItemsPerPage(): number | undefined {
+        return this.workspace.getConfiguration('aws').get<number>('s3.maxItemsPerPage')
     }
 }
