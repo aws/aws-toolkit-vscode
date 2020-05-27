@@ -12,15 +12,15 @@ import software.aws.toolkits.jetbrains.utils.createShowMoreInfoDialogAction
 import software.aws.toolkits.jetbrains.utils.notifyWarn
 import software.aws.toolkits.resources.message
 
-class CredentialStatusNotification : StartupActivity, DumbAware, ConnectionSettingsChangeNotifier {
+class CredentialStatusNotification : StartupActivity, DumbAware, ConnectionSettingsStateChangeNotifier {
     override fun runActivity(project: Project) {
-        project.messageBus.connect().subscribe(ProjectAccountSettingsManager.CONNECTION_SETTINGS_CHANGED, this)
+        project.messageBus.connect().subscribe(ProjectAccountSettingsManager.CONNECTION_SETTINGS_STATE_CHANGED, this)
     }
 
-    override fun settingsChanged(event: ConnectionSettingsChangeEvent) {
-        if (event is InvalidConnectionSettings) {
+    override fun settingsStateChanged(newState: ConnectionState) {
+        if (newState is ConnectionState.InvalidConnection) {
             val title = message("credentials.invalid.title")
-            val message = message("credentials.profile.validation_error", event.credentialsProvider.displayName)
+            val message = newState.displayMessage
             notifyWarn(
                 title = title,
                 content = message,
@@ -29,7 +29,7 @@ class CredentialStatusNotification : StartupActivity, DumbAware, ConnectionSetti
                         message("credentials.invalid.more_info"),
                         title,
                         message,
-                        event.cause.localizedMessage
+                        newState.cause.localizedMessage
                     ),
                     createNotificationExpiringAction(ActionManager.getInstance().getAction("aws.settings.upsertCredentials"))
                 )

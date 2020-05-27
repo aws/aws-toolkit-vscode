@@ -26,21 +26,17 @@ class MockProjectAccountSettingsManager(project: Project) : ProjectAccountSettin
         val regionProvider = AwsRegionProvider.getInstance()
         changeConnectionSettings(MockCredentialsManager.DUMMY_PROVIDER_IDENTIFIER, regionProvider.defaultPartition(), regionProvider.defaultRegion())
 
-        waitUntilStable()
+        waitUntilConnectionStateIsStable()
     }
 
     fun changeRegionAndWait(region: AwsRegion) {
         changeRegion(region)
-        waitUntilStable()
+        waitUntilConnectionStateIsStable()
     }
 
     fun changeCredentialProviderAndWait(identifier: ToolkitCredentialsIdentifier?) {
         changeCredentialProvider(identifier)
-        waitUntilStable()
-    }
-
-    private fun waitUntilStable() {
-        spinUntil(Duration.ofSeconds(10)) { connectionState == ConnectionState.VALID }
+        waitUntilConnectionStateIsStable()
     }
 
     override suspend fun validate(credentialsProvider: ToolkitCredentialsProvider, region: AwsRegion): Boolean = withContext(Dispatchers.IO) {
@@ -72,4 +68,8 @@ fun <T> runUnderRealCredentials(project: Project, block: () -> T): T {
         }
         credentialsManager.removeCredentials(realCredentialsProvider)
     }
+}
+
+fun ProjectAccountSettingsManager.waitUntilConnectionStateIsStable() = spinUntil(Duration.ofSeconds(10)) {
+    connectionState !is ConnectionState.ValidatingConnection && connectionState !is ConnectionState.InitializingToolkit
 }

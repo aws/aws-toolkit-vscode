@@ -21,10 +21,8 @@ import software.aws.toolkits.jetbrains.core.MockResourceCache
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
-import software.aws.toolkits.jetbrains.utils.spinUntil
 import software.aws.toolkits.jetbrains.utils.toElement
 import java.nio.file.Files
-import java.time.Duration
 
 class DefaultProjectAccountSettingsManagerTest {
     @Rule
@@ -76,7 +74,7 @@ class DefaultProjectAccountSettingsManagerTest {
         markConnectionSettingsAsValid(credentials, AwsRegionProvider.getInstance().defaultRegion())
 
         manager.noStateLoaded()
-        waitForTerminalConnectionState()
+        manager.waitUntilConnectionStateIsStable()
 
         assertThat(manager.selectedCredentialIdentifier).notNull.satisfies {
             assertThat(it.id).isEqualTo(credentials.id)
@@ -99,7 +97,7 @@ class DefaultProjectAccountSettingsManagerTest {
 
         deserializeAndLoadState(manager, element)
 
-        waitForTerminalConnectionState()
+        manager.waitUntilConnectionStateIsStable()
 
         assertThat(manager.selectedRegion).notNull.satisfies {
             assertThat(it.id).isEqualTo("us-west-2")
@@ -161,8 +159,8 @@ class DefaultProjectAccountSettingsManagerTest {
         var gotNotification = false
 
         val busConnection = project.messageBus.connect()
-        busConnection.subscribe(ProjectAccountSettingsManager.CONNECTION_SETTINGS_CHANGED, object : ConnectionSettingsChangeNotifier {
-            override fun settingsChanged(event: ConnectionSettingsChangeEvent) {
+        busConnection.subscribe(ProjectAccountSettingsManager.CONNECTION_SETTINGS_STATE_CHANGED, object : ConnectionSettingsStateChangeNotifier {
+            override fun settingsStateChanged(newState: ConnectionState) {
                 gotNotification = true
             }
         })
@@ -179,8 +177,8 @@ class DefaultProjectAccountSettingsManagerTest {
         var gotNotification = false
 
         val busConnection = project.messageBus.connect()
-        busConnection.subscribe(ProjectAccountSettingsManager.CONNECTION_SETTINGS_CHANGED, object : ConnectionSettingsChangeNotifier {
-            override fun settingsChanged(event: ConnectionSettingsChangeEvent) {
+        busConnection.subscribe(ProjectAccountSettingsManager.CONNECTION_SETTINGS_STATE_CHANGED, object : ConnectionSettingsStateChangeNotifier {
+            override fun settingsStateChanged(newState: ConnectionState) {
                 gotNotification = true
             }
         })
@@ -249,7 +247,7 @@ class DefaultProjectAccountSettingsManagerTest {
 
         deserializeAndLoadState(manager, element)
 
-        waitForTerminalConnectionState()
+        manager.waitUntilConnectionStateIsStable()
 
         assertThat(manager.selectedCredentialIdentifier).isEqualTo(credentials)
         assertThat(manager.recentlyUsedCredentials()).element(0).isEqualTo(credentials)
@@ -270,7 +268,7 @@ class DefaultProjectAccountSettingsManagerTest {
 
         deserializeAndLoadState(manager, element)
 
-        waitForTerminalConnectionState()
+        manager.waitUntilConnectionStateIsStable()
 
         val region = mockRegionManager[MockRegionProvider.getInstance().defaultRegion().id]
         assertThat(manager.selectedRegion).isEqualTo(region)
@@ -292,7 +290,7 @@ class DefaultProjectAccountSettingsManagerTest {
         """.toElement()
         deserializeAndLoadState(manager, element)
 
-        waitForTerminalConnectionState()
+        manager.waitUntilConnectionStateIsStable()
 
         assertThat(manager.connectionSettings()?.region).isNull()
         assertThat(manager.recentlyUsedRegions()).isEmpty()
@@ -313,7 +311,7 @@ class DefaultProjectAccountSettingsManagerTest {
 
         deserializeAndLoadState(manager, element)
 
-        waitForTerminalConnectionState()
+        manager.waitUntilConnectionStateIsStable()
 
         assertThat(manager.isValidConnectionSettings()).isFalse()
         assertThat(manager.recentlyUsedCredentials()).isEmpty()
@@ -339,7 +337,7 @@ class DefaultProjectAccountSettingsManagerTest {
 
         deserializeAndLoadState(manager, element)
 
-        waitForTerminalConnectionState()
+        manager.waitUntilConnectionStateIsStable()
 
         assertThat(manager.isValidConnectionSettings()).isFalse()
     }
@@ -355,7 +353,7 @@ class DefaultProjectAccountSettingsManagerTest {
 
         deserializeAndLoadState(manager, element)
 
-        waitForTerminalConnectionState()
+        manager.waitUntilConnectionStateIsStable()
 
         assertThat(manager.isValidConnectionSettings()).isTrue()
         assertThat(manager.connectionSettings()?.credentials?.id).isEqualTo("profile:default")
@@ -397,17 +395,13 @@ class DefaultProjectAccountSettingsManagerTest {
     private fun changeCredentialProvider(credentialsProvider: ToolkitCredentialsIdentifier) {
         manager.changeCredentialProvider(credentialsProvider)
 
-        waitForTerminalConnectionState()
+        manager.waitUntilConnectionStateIsStable()
     }
 
     private fun changeRegion(region: AwsRegion) {
         manager.changeRegion(region)
 
-        waitForTerminalConnectionState()
-    }
-
-    private fun waitForTerminalConnectionState() {
-        spinUntil(Duration.ofSeconds(10)) { manager.connectionState == ConnectionState.VALID || manager.connectionState == ConnectionState.INVALID }
+        manager.waitUntilConnectionStateIsStable()
     }
 
     private fun Element?.string(): String = XMLOutputter().outputString(this)

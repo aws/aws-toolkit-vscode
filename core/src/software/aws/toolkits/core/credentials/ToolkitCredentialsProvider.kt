@@ -18,6 +18,11 @@ abstract class ToolkitCredentialsIdentifier {
     abstract val displayName: String
 
     /**
+     * An optional shortened version of the name to display in the UI where space is at a premium
+     */
+    open val shortName: String get() = displayName
+
+    /**
      * The ID of the corresponding [CredentialProviderFactory] so that the credential manager knows which factory to invoke in order
      * to resolve this into a [ToolkitCredentialsProvider]
      */
@@ -47,6 +52,7 @@ abstract class ToolkitCredentialsIdentifier {
 class ToolkitCredentialsProvider(private val identifier: ToolkitCredentialsIdentifier, delegate: AwsCredentialsProvider) : AwsCredentialsProvider by delegate {
     val id: String = identifier.id
     val displayName = identifier.displayName
+    val shortName = identifier.shortName
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

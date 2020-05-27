@@ -37,7 +37,7 @@ class DefaultProjectAccountSettingsManager(private val project: Project) : Proje
 
     override fun loadState(state: ConnectionSettingsState) {
         // This can be called more than once, so we need to re-do our init sequence
-        connectionState = ConnectionState.INITIALIZING
+        connectionState = ConnectionState.InitializingToolkit
 
         // Load reversed so that oldest is as the bottom
         state.recentlyUsedRegions.reversed()

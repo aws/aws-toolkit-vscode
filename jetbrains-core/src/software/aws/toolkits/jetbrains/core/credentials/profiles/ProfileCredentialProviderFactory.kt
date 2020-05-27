@@ -45,6 +45,7 @@ private class ProfileCredentialsIdentifier(internal val profileName: String, ove
     override val id = "profile:$profileName"
     override val displayName = message("credentials.profile.name", profileName)
     override val factoryId = PROFILE_FACTORY_ID
+    override val shortName: String = profileName
 }
 
 class ProfileCredentialProviderFactory : CredentialProviderFactory, Disposable {

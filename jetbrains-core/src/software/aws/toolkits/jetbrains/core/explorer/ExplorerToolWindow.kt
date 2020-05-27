@@ -22,18 +22,18 @@ import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.ui.DoubleClickListener
-import com.intellij.ui.HyperlinkLabel
+import com.intellij.ui.GuiUtils
+import com.intellij.ui.JBColor
 import com.intellij.ui.PopupHandler
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.TreeUIHelper
 import com.intellij.ui.components.panels.Wrapper
 import com.intellij.ui.treeStructure.Tree
+import com.intellij.util.ui.UIUtil
 import software.aws.toolkits.jetbrains.core.credentials.ChangeAccountSettingsMode
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsChangeEvent
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsChangeNotifier
+import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsStateChangeNotifier
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionState
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
-import software.aws.toolkits.jetbrains.core.credentials.SettingsSelector
 import software.aws.toolkits.jetbrains.core.credentials.SettingsSelectorComboBoxAction
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_NODES
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_RESOURCE_NODES
@@ -47,25 +47,26 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceActionNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceLocationNode
 import software.aws.toolkits.jetbrains.ui.tree.AsyncTreeModel
 import software.aws.toolkits.jetbrains.ui.tree.StructureTreeModel
-import software.aws.toolkits.resources.message
 import java.awt.Component
+import java.awt.Insets
 import java.awt.event.MouseEvent
+import javax.swing.JComponent
 import javax.swing.JPanel
+import javax.swing.JTextPane
 import javax.swing.JTree
+import javax.swing.text.SimpleAttributeSet
+import javax.swing.text.StyleConstants
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.TreeModel
 
-class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(true, true), ConnectionSettingsChangeNotifier {
+class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(true, true), ConnectionSettingsStateChangeNotifier {
     private val actionManager = ActionManagerEx.getInstanceEx()
     private val treePanelWrapper: Wrapper = Wrapper()
-    private val errorPanel: JPanel
     private val awsTreeModel = AwsExplorerTreeStructure(project)
     private val structureTreeModel = StructureTreeModel(awsTreeModel, project)
     private val awsTree = createTree(AsyncTreeModel(structureTreeModel, true, project))
     private val awsTreePanel = ScrollPaneFactory.createScrollPane(awsTree)
-    private val settingsSelector by lazy {
-        SettingsSelector(project)
-    }
+    private val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
 
     init {
         val group = DefaultActionGroup(
@@ -75,34 +76,44 @@ class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(t
 
         toolbar = ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLBAR, group, true).component
 
-        val select = HyperlinkLabel(message("configure.toolkit"))
-        select.addHyperlinkListener { settingsSelector.settingsPopup(select, ChangeAccountSettingsMode.BOTH).showInCenterOf(select) }
-
-        errorPanel = JPanel()
-        errorPanel.add(select)
-
         setContent(treePanelWrapper)
 
-        if (ProjectAccountSettingsManager.getInstance(project).isValidConnectionSettings()) {
-            treePanelWrapper.setContent(awsTreePanel)
-        } else {
-            treePanelWrapper.setContent(errorPanel)
-        }
-
-        project.messageBus.connect().subscribe(ProjectAccountSettingsManager.CONNECTION_SETTINGS_CHANGED, this)
+        project.messageBus.connect().subscribe(ProjectAccountSettingsManager.CONNECTION_SETTINGS_STATE_CHANGED, this)
+        settingsStateChanged(accountSettingsManager.connectionState)
     }
 
-    override fun settingsChanged(event: ConnectionSettingsChangeEvent) {
-        runInEdt {
-            when (event.state) {
-                ConnectionState.VALID -> {
-                    invalidateTree()
-                    treePanelWrapper.setContent(awsTreePanel)
-                }
-                else -> {
-                    treePanelWrapper.setContent(errorPanel)
-                }
+    private fun createInfoPanel(text: String, error: Boolean = false): JComponent {
+        val panel = JPanel(GuiUtils.createBorderLayout())
+
+        val textPane = JTextPane().apply {
+            this.text = text
+            val center = SimpleAttributeSet().apply { StyleConstants.setAlignment(this, StyleConstants.ALIGN_CENTER) }
+            with(styledDocument) {
+                setParagraphAttributes(0, length, center, false)
             }
+            margin = Insets(10, 10, 10, 10)
+            isEditable = false
+            if (error) {
+                foreground = JBColor.red
+            }
+            background = UIUtil.getLabelBackground()
+        }
+
+        panel.add(textPane)
+        return panel
+    }
+
+    override fun settingsStateChanged(newState: ConnectionState) {
+        runInEdt {
+            treePanelWrapper.setContent(
+                when (newState) {
+                    is ConnectionState.ValidConnection -> {
+                        invalidateTree()
+                        awsTreePanel
+                    }
+                    else -> createInfoPanel(newState.displayMessage, error = newState is ConnectionState.InvalidConnection)
+                }
+            )
         }
     }
 

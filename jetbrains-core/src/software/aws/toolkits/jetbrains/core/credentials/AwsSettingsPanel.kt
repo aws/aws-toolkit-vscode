@@ -28,7 +28,7 @@ class AwsSettingsPanelInstaller : StatusBarWidgetProvider {
 
 private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
     StatusBarWidget.MultipleTextValuesPresentation,
-    ConnectionSettingsChangeNotifier {
+    ConnectionSettingsStateChangeNotifier {
     private val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
     private val settingsSelector = SettingsSelector(project)
     private lateinit var statusBar: StatusBar
@@ -36,18 +36,9 @@ private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
     @Suppress("FunctionName")
     override fun ID(): String = "AwsSettingsPanel"
 
-    override fun getTooltipText() = SettingsSelector.tooltipText
+    override fun getTooltipText() = "${SettingsSelector.tooltipText} [${accountSettingsManager.connectionState.displayMessage}]"
 
-    override fun getSelectedValue(): String {
-        val credentials = accountSettingsManager.selectedCredentialIdentifier
-        val region = accountSettingsManager.selectedRegion
-        val statusLine = when {
-            credentials == null -> message("settings.credentials.none_selected")
-            region == null -> message("settings.regions.none_selected")
-            else -> "${credentials.displayName}@${region.name}"
-        }
-        return "AWS: $statusLine"
-    }
+    override fun getSelectedValue() = "AWS: ${accountSettingsManager.connectionState.shortMessage}"
 
     override fun getPopupStep() = settingsSelector.settingsPopup(statusBar.component)
 
@@ -57,18 +48,17 @@ private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
 
     override fun install(statusBar: StatusBar) {
         this.statusBar = statusBar
-        project.messageBus.connect().subscribe(ProjectAccountSettingsManager.CONNECTION_SETTINGS_CHANGED, this)
+        project.messageBus.connect(this).subscribe(ProjectAccountSettingsManager.CONNECTION_SETTINGS_STATE_CHANGED, this)
         updateWidget()
     }
 
-    override fun settingsChanged(event: ConnectionSettingsChangeEvent) {
+    override fun settingsStateChanged(newState: ConnectionState) {
         updateWidget()
     }
 
     private fun updateWidget() {
         statusBar.updateWidget(ID())
     }
-
     override fun dispose() {}
 }
 

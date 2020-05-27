@@ -26,13 +26,11 @@ import software.amazon.awssdk.http.SdkHttpClient
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.region.Endpoint
 import software.aws.toolkits.core.region.Service
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionState
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.waitUntilConnectionStateIsStable
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
-import software.aws.toolkits.jetbrains.utils.spinUntil
-import java.time.Duration
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.jvm.isAccessible
 
@@ -153,7 +151,7 @@ class AwsClientManagerTest {
         val testSettings = MockProjectAccountSettingsManager.getInstance(projectRule.project)
         testSettings.changeRegionAndWait(AwsRegion("us-west-2", "us-west-2", "aws"))
 
-        spinUntil(Duration.ofSeconds(10)) { testSettings.connectionState == ConnectionState.VALID || testSettings.connectionState == ConnectionState.INVALID }
+        testSettings.waitUntilConnectionStateIsStable()
 
         val afterRegionUpdate = sut.getClient<DummyServiceClient>()
 

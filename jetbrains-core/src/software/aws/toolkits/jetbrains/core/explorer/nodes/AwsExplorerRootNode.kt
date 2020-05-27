@@ -18,9 +18,12 @@ class AwsExplorerRootNode(private val nodeProject: Project) : AbstractTreeNode<A
     private val settings = ProjectAccountSettingsManager.getInstance(nodeProject)
     private val EP_NAME = ExtensionPointName<AwsExplorerServiceNode>("aws.toolkit.explorer.serviceNode")
 
-    override fun getChildren(): List<AwsExplorerNode<*>> = EP_NAME.extensionList
-        .filter { regionProvider.isServiceSupported(settings.activeRegion, it.serviceId) }
-        .map { it.buildServiceRootNode(nodeProject) }
+    override fun getChildren(): List<AwsExplorerNode<*>> {
+        val region = settings.selectedRegion ?: return emptyList()
+        return EP_NAME.extensionList
+            .filter { regionProvider.isServiceSupported(region, it.serviceId) }
+            .map { it.buildServiceRootNode(nodeProject) }
+    }
 
     override fun update(presentation: PresentationData) { }
 }

@@ -13,7 +13,6 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.jetbrains.annotations.TestOnly
 import software.aws.toolkits.core.credentials.CredentialProviderNotFoundException
 import software.aws.toolkits.core.credentials.ToolkitCredentialsChangeListener
 import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
@@ -37,9 +36,15 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
 
     @Volatile
     private var validationJob: Job? = null
+
     @Volatile
-    internal var connectionState: ConnectionState = ConnectionState.INITIALIZING
-        @TestOnly get
+    var connectionState: ConnectionState = ConnectionState.InitializingToolkit
+        internal set(value) {
+            field = value
+            if (!project.isDisposed) {
+                project.messageBus.syncPublisher(CONNECTION_SETTINGS_STATE_CHANGED).settingsStateChanged(value)
+            }
+        }
 
     protected val recentlyUsedProfiles = MRUList<String>(MAX_HISTORY)
     protected val recentlyUsedRegions = MRUList<String>(MAX_HISTORY)
@@ -62,12 +67,11 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
             })
     }
 
-    fun isValidConnectionSettings(): Boolean = connectionState == ConnectionState.VALID
+    fun isValidConnectionSettings(): Boolean = connectionState is ConnectionState.ValidConnection
 
-    fun connectionSettings(): ConnectionSettings? = selectedCredentialsProvider?.let { creds ->
-        selectedRegion?.let { region ->
-            ConnectionSettings(creds, region)
-        }
+    fun connectionSettings(): ConnectionSettings? = when (val state = connectionState) {
+        is ConnectionState.ValidConnection -> ConnectionSettings(state.credentials, state.region)
+        else -> null
     }
 
     /**
@@ -129,8 +133,8 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
     private fun changeFieldsAndNotify(fieldUpdateBlock: () -> Unit) {
         incModificationCount()
 
-        connectionState = ConnectionState.VALIDATING
         validationJob?.cancel(CancellationException("Newer connection settings chosen"))
+        connectionState = ConnectionState.ValidatingConnection
 
         // Clear existing provider
         selectedCredentialsProvider = null
@@ -138,13 +142,11 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
         fieldUpdateBlock()
 
         validationJob = GlobalScope.launch(Dispatchers.IO) {
-            broadcastChangeEvent(ConnectionSettingsStateChange(connectionState))
 
             val credentialsIdentifier = selectedCredentialIdentifier
             val region = selectedRegion
             if (credentialsIdentifier == null || region == null) {
-                connectionState = ConnectionState.INVALID
-                broadcastChangeEvent(ConnectionSettingsStateChange(connectionState))
+                connectionState = ConnectionState.IncompleteConfiguration(credentialsIdentifier, region)
                 incModificationCount()
                 return@launch
             }
@@ -153,14 +155,11 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
                 val credentialsProvider = CredentialManager.getInstance().getAwsCredentialProvider(credentialsIdentifier, region)
 
                 validate(credentialsProvider, region)
-                connectionState = ConnectionState.VALID
                 selectedCredentialsProvider = credentialsProvider
-
-                broadcastChangeEvent(ValidConnectionSettings(connectionState))
+                connectionState = ConnectionState.ValidConnection(credentialsProvider, region)
             } catch (e: Exception) {
-                connectionState = ConnectionState.INVALID
+                connectionState = ConnectionState.InvalidConnection(credentialsIdentifier, region, e)
                 LOGGER.warn(e) { message("credentials.profile.validation_error", credentialsIdentifier.displayName) }
-                broadcastChangeEvent(InvalidConnectionSettings(credentialsIdentifier, region, e, connectionState))
             } finally {
                 incModificationCount()
                 AwsTelemetry.validateCredentials(project, success = isValidConnectionSettings())
@@ -214,19 +213,13 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
         true
     }
 
-    private fun broadcastChangeEvent(event: ConnectionSettingsChangeEvent) {
-        if (!project.isDisposed) {
-            project.messageBus.syncPublisher(CONNECTION_SETTINGS_CHANGED).settingsChanged(event)
-        }
-    }
-
     companion object {
         /***
          * MessageBus topic for when the active credential profile or region is changed
          */
-        val CONNECTION_SETTINGS_CHANGED: Topic<ConnectionSettingsChangeNotifier> = Topic.create(
+        val CONNECTION_SETTINGS_STATE_CHANGED: Topic<ConnectionSettingsStateChangeNotifier> = Topic.create(
             "AWS Account setting changed",
-            ConnectionSettingsChangeNotifier::class.java
+            ConnectionSettingsStateChangeNotifier::class.java
         )
 
         @JvmStatic
@@ -237,28 +230,45 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
     }
 }
 
-enum class ConnectionState {
-    INITIALIZING,
-    VALIDATING,
-    INVALID,
-    VALID
+/**
+ * A state machine around the connection validation steps the toolkit goes through. Attempts to encapsulate both state, data available at each state and
+ * a consistent place to determine how to display state information (e.g. [displayMessage]).
+ */
+sealed class ConnectionState(val displayMessage: String) {
+    /**
+     * An optional short message to display in places where space is at a premium
+     */
+    open val shortMessage: String = displayMessage
+
+    object InitializingToolkit : ConnectionState(message("settings.states.initializing"))
+
+    object ValidatingConnection : ConnectionState(message("settings.states.validating")) {
+        override val shortMessage: String = message("settings.states.validating.short")
+    }
+
+    class ValidConnection(internal val credentials: ToolkitCredentialsProvider, internal val region: AwsRegion) :
+        ConnectionState("${credentials.displayName}@${region.displayName}") {
+        override val shortMessage: String = "${credentials.shortName}@${region.id}"
+    }
+
+    class IncompleteConfiguration(credentials: ToolkitCredentialsIdentifier?, region: AwsRegion?) : ConnectionState(
+        when {
+            region == null && credentials == null -> message("settings.none_selected")
+            region == null -> message("settings.regions.none_selected")
+            credentials == null -> message("settings.credentials.none_selected")
+            else -> throw IllegalArgumentException("At least one of regionId ($region) or toolkitCredentialsIdentifier ($credentials) must be null")
+        }
+    )
+
+    class InvalidConnection(credentials: ToolkitCredentialsIdentifier, region: AwsRegion, val cause: Exception) :
+        ConnectionState(message("settings.states.invalid", credentials.displayName, region.displayName, cause.localizedMessage)) {
+        override val shortMessage = message("settings.states.invalid.short")
+    }
 }
 
-interface ConnectionSettingsChangeNotifier {
-    fun settingsChanged(event: ConnectionSettingsChangeEvent)
+interface ConnectionSettingsStateChangeNotifier {
+    fun settingsStateChanged(newState: ConnectionState)
 }
-
-sealed class ConnectionSettingsChangeEvent(val state: ConnectionState)
-class ConnectionSettingsStateChange(state: ConnectionState) : ConnectionSettingsChangeEvent(state)
-
-class InvalidConnectionSettings(
-    val credentialsProvider: ToolkitCredentialsIdentifier,
-    val region: AwsRegion,
-    val cause: Exception,
-    state: ConnectionState
-) : ConnectionSettingsChangeEvent(state)
-
-class ValidConnectionSettings(state: ConnectionState) : ConnectionSettingsChangeEvent(state)
 
 /**
  * Legacy method, should be considered deprecated and avoided since it loads defaults out of band
