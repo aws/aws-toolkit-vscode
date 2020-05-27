@@ -1,3 +1,9 @@
+## 1.10.0 2020-05-27
+
+- **Feature** Add basic visualisation capability for step function state machines defined in YAML.
+- **Feature** Step Functions Linter: Resource property of Task state will accept any string instead of just arn. Additional disallowed properties will be marked as invalid.
+- **Feature** If a file conflict is detected when downloading event schemas code bindings, a confirmation prompt is shown
+
 ## 1.9.0 2020-04-29
 
 - **Breaking Change** Bumping VS Code minimum version: 1.31.1 => 1.42.0
