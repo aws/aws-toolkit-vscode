@@ -6,9 +6,12 @@
 import * as vscode from 'vscode'
 import * as Transport from 'winston-transport'
 
+export const MESSAGE = Symbol.for('message')
+
 interface LogEntry {
     level: string
     message: string
+    [MESSAGE]: string
 }
 
 export class OutputChannelTransport extends Transport {
@@ -26,7 +29,7 @@ export class OutputChannelTransport extends Transport {
 
     public log(info: LogEntry, next: () => void): void {
         setImmediate(() => {
-            this.outputChannel.appendLine(info.message)
+            this.outputChannel.appendLine(info[MESSAGE])
         })
 
         next()

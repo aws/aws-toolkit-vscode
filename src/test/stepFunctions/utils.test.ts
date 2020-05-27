@@ -6,7 +6,8 @@
 import * as assert from 'assert'
 import { IAM } from 'aws-sdk'
 import * as sinon from 'sinon'
-import { isStepFunctionsRole, StateMachineGraphCache } from '../../stepFunctions/utils'
+import { isStepFunctionsRole, StateMachineGraphCache, isDocumentValid } from '../../stepFunctions/utils'
+import * as vscode from 'vscode'
 
 const REQUEST_BODY = 'request body string'
 const ASSET_URL = 'https://something'
@@ -215,5 +216,65 @@ describe('isStepFunctionsRole', () => {
             }),
         }
         assert.ok(!isStepFunctionsRole(role))
+    })
+})
+
+describe('isDocumentValid', async () => {
+    it('returns true for valid ASL', async () => {
+        const aslText = `
+            {
+                "StartAt": "FirstMatchState",
+                "States": {
+                    "FirstMatchState": {
+                        "Type": "Task",
+                        "Resource": "arn:aws:lambda:us-west-2:000000000000:function:OnFirstMatch",
+                        "End": true
+                    }
+                }
+            } `
+
+        let textDocument = await vscode.workspace.openTextDocument({ language: 'asl' })
+
+        const isValid = await isDocumentValid(aslText, textDocument)
+        assert.ok(isValid)
+    })
+
+    it('returns true for ASL with invalid arns', async () => {
+        const aslText = `
+            {
+                "StartAt": "FirstMatchState",
+                "States": {
+                    "FirstMatchState": {
+                        "Type": "Task",
+                        "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:OnFirstMatch",
+                        "End": true
+                    }
+                }
+            } `
+
+        let textDocument = await vscode.workspace.openTextDocument({ language: 'asl' })
+
+        const isValid = await isDocumentValid(aslText, textDocument)
+        assert.ok(isValid)
+    })
+
+    it('returns false for invalid ASL', async () => {
+        const aslText = `
+            {
+                "StartAt": "Does not exist",
+                "States": {
+                    "FirstMatchState": {
+                        "Type": "Task",
+                        "Resource": "arn:aws:lambda:us-west-2:000000000000:function:OnFirstMatch",
+                        "End": true
+                    }
+                }
+            } `
+
+        let textDocument = await vscode.workspace.openTextDocument({ language: 'asl' })
+
+        const isValid = await isDocumentValid(aslText, textDocument)
+
+        assert.ok(!isValid)
     })
 })

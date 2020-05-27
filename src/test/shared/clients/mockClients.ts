@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CloudFormation, IAM, Lambda, Schemas, StepFunctions, STS } from 'aws-sdk'
+import { CloudFormation, CloudWatchLogs, IAM, Lambda, Schemas, StepFunctions, STS } from 'aws-sdk'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
+import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { EcsClient } from '../../../shared/clients/ecsClient'
 import { IamClient } from '../../../shared/clients/iamClient'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
@@ -16,49 +17,63 @@ import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuild
 import '../../../shared/utilities/asyncIteratorShim'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 
+interface Clients {
+    cloudFormationClient: CloudFormationClient
+    cloudWatchLogsClient: CloudWatchLogsClient
+    ecsClient: EcsClient
+    iamClient: IamClient
+    lambdaClient: LambdaClient
+    schemaClient: SchemaClient
+    stepFunctionsClient: StepFunctionsClient
+    stsClient: StsClient
+}
+
 export class MockToolkitClientBuilder implements ToolkitClientBuilder {
-    public constructor(
-        private readonly cloudFormationClient: CloudFormationClient = new MockCloudFormationClient(),
-
-        private readonly schemaClient: SchemaClient = new MockSchemaClient(),
-
-        private readonly ecsClient: EcsClient = new MockEcsClient({}),
-
-        private readonly iamClient: IamClient = new MockIamClient({}),
-
-        private readonly lambdaClient: LambdaClient = new MockLambdaClient({}),
-
-        private readonly stepFunctionsClient: StepFunctionsClient = new MockStepFunctionsClient(),
-
-        private readonly stsClient: StsClient = new MockStsClient({})
-    ) {}
+    private readonly clients: Clients
+    public constructor(overrideClients?: Partial<Clients>) {
+        this.clients = {
+            cloudFormationClient: new MockCloudFormationClient(),
+            cloudWatchLogsClient: new MockCloudWatchLogsClient(),
+            ecsClient: new MockEcsClient({}),
+            iamClient: new MockIamClient({}),
+            lambdaClient: new MockLambdaClient({}),
+            schemaClient: new MockSchemaClient(),
+            stepFunctionsClient: new MockStepFunctionsClient(),
+            stsClient: new MockStsClient({}),
+            ...overrideClients,
+        }
+    }
 
     public createCloudFormationClient(regionCode: string): CloudFormationClient {
-        return this.cloudFormationClient
+        return this.clients.cloudFormationClient
+    }
+
+    public createCloudWatchLogsClient(regionCode: string): CloudWatchLogsClient {
+        return this.clients.cloudWatchLogsClient
     }
 
     public createSchemaClient(regionCode: string): SchemaClient {
-        return this.schemaClient
+        return this.clients.schemaClient
     }
 
     public createIamClient(): IamClient {
-        return this.iamClient
+        return this.clients.iamClient
     }
 
     public createEcsClient(regionCode: string): EcsClient {
-        return this.ecsClient
+        return this.clients.ecsClient
     }
 
     public createLambdaClient(regionCode: string): LambdaClient {
-        return this.lambdaClient
+        return this.clients.lambdaClient
     }
 
     public createStepFunctionsClient(regionCode: string): StepFunctionsClient {
-        return this.stepFunctionsClient
+        return this.clients.stepFunctionsClient
     }
 
     public createStsClient(regionCode: string): StsClient {
-        return this.stsClient
+        return this.clients.stsClient
     }
 }
 
@@ -77,6 +92,16 @@ export class MockCloudFormationClient implements CloudFormationClient {
         ) => Promise<CloudFormation.DescribeStackResourcesOutput> = async (name: string) => ({
             StackResources: [],
         })
+    ) {}
+}
+
+export class MockCloudWatchLogsClient implements CloudWatchLogsClient {
+    public constructor(
+        public readonly regionCode: string = '',
+
+        public readonly describeLogGroups: (
+            statusFilter?: string[]
+        ) => AsyncIterableIterator<CloudWatchLogs.LogGroup> = (statusFilter?: string[]) => asyncGenerator([])
     ) {}
 }
 

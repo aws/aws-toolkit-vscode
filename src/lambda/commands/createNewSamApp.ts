@@ -158,7 +158,7 @@ export async function createNewSamApplication(
                 schemaVersion: schemaTemplateParameters!.SchemaVersion,
                 destinationDirectory: vscode.Uri.file(destinationDirectory),
             }
-            schemaCodeDownloader = createSchemaCodeDownloaderObject(client!)
+            schemaCodeDownloader = createSchemaCodeDownloaderObject(client!, channelLogger.channel)
             channelLogger.info(
                 'AWS.message.info.schemas.downloadCodeBindings.start',
                 'Downloading code for schema {0}...',
@@ -201,7 +201,7 @@ export async function createNewSamApplication(
             checkLogsMessage
         )
 
-        getLogger().error('Error creating new SAM Application', err as Error)
+        getLogger().error('Error creating new SAM Application: %O', err as Error)
 
         // An error occured, so do not try to open any files during the next extension activation
         activationLaunchPath.clearLaunchPath()

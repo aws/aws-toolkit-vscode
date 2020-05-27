@@ -1,3 +1,13 @@
+## 1.9.0 2020-04-29
+
+- **Breaking Change** Bumping VS Code minimum version: 1.31.1 => 1.42.0
+- **Bug Fix** Bug fixes for step functions language server.: One is related to the error when there is "Default" property missing on "Choice" state.  Second,  “Unreachable state” error when the default state is declared before being referenced by “Choice” state.
+- **Bug Fix** Fixed a validation issue with VS Code's `settings.json` and `launch.json` files (#1027)
+- **Feature** Add context menu command to copy ARNs from the AWS Explorer
+- **Feature** Bumped maximum (exclusive) supported SAM CLI version from 0.50.0 to 0.60.0.
+- **Feature** Users are shown a notification reflecting changes to how usage data is gathered. Usage data can still be configured through the editor's settings.
+- **Feature** Visualising of step functions step machines will be allowed when ARN strings within ASL definition are invalid.
+
 ## 1.8.0 2020-03-31
 
 - **Bug Fix** SAM applications deployed through the toolkit now support IAM resources with custom names

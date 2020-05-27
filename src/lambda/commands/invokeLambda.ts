@@ -115,7 +115,7 @@ export async function invokeLambda(params: {
             )
         } catch (err) {
             invokeResult = 'Failed'
-            logger.error('Error getting manifest data..', err as Error)
+            logger.error('Error getting manifest data..: %O', err as Error)
         }
     } catch (err) {
         invokeResult = 'Failed'

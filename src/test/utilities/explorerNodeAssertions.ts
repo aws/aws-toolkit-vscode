@@ -4,9 +4,9 @@
  */
 
 import * as assert from 'assert'
-import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
-import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
+import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
+import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
+import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 
 export function assertNodeListOnlyContainsErrorNode(nodes: AWSTreeNodeBase[]) {
     assert(nodes !== undefined)

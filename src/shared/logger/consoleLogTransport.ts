@@ -5,9 +5,12 @@
 
 import * as Transport from 'winston-transport'
 
+const MESSAGE = Symbol.for('message')
+
 interface LogEntry {
     level: string
     message: string
+    [MESSAGE]: string
 }
 
 /**
@@ -21,7 +24,7 @@ export class ConsoleLogTransport extends Transport {
 
     public log(info: LogEntry, next: () => void): void {
         setImmediate(() => {
-            console.log(info.message)
+            console.log(info[MESSAGE])
         })
 
         next()

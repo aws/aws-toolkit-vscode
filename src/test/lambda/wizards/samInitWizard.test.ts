@@ -14,7 +14,11 @@ import {
     helloWorldTemplate,
     SamTemplate,
 } from '../../../lambda/models/samTemplates'
-import { CreateNewSamAppWizard, CreateNewSamAppWizardContext } from '../../../lambda/wizards/samInitWizard'
+import {
+    CreateNewSamAppWizard,
+    CreateNewSamAppWizardContext,
+    CreateNewSamAppWizardResponse,
+} from '../../../lambda/wizards/samInitWizard'
 
 function isMultiDimensionalArray(array: any[] | any[][] | undefined): boolean {
     if (!array) {
@@ -275,18 +279,24 @@ describe('CreateNewSamAppWizard', async () => {
 
         describe('eventBridge-schema-app template', async () => {
             const locationPath = path.join('my', 'quick', 'pick', 'result')
-            let context: CreateNewSamAppWizardContext = new MockCreateNewSamAppWizardContext(
-                [],
-                Set<Runtime>(['nodejs8.10']),
-                'myName',
-                [vscode.Uri.file(locationPath)],
-                Set<SamTemplate>([eventBridgeStarterAppTemplate]),
-                'us-west-2',
-                'aws.events',
-                'AWSAPICallViaCloudTrail'
-            )
-            let wizard = new CreateNewSamAppWizard(context)
-            let args = await wizard.run()
+            let context: CreateNewSamAppWizardContext
+            let wizard: CreateNewSamAppWizard
+            let args: CreateNewSamAppWizardResponse | undefined
+
+            beforeEach(async () => {
+                context = new MockCreateNewSamAppWizardContext(
+                    [],
+                    Set<Runtime>(['nodejs8.10']),
+                    'myName',
+                    [vscode.Uri.file(locationPath)],
+                    Set<SamTemplate>([eventBridgeStarterAppTemplate]),
+                    'us-west-2',
+                    'aws.events',
+                    'AWSAPICallViaCloudTrail'
+                )
+                wizard = new CreateNewSamAppWizard(context)
+                args = await wizard.run()
+            })
 
             describe('region', async () => {
                 it('uses user response as region', async () => {

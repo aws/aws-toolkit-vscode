@@ -61,7 +61,7 @@ export class LoginManager {
             getLogger().error(
                 `Error trying to connect to AWS with Credentials Provider ${asString(
                     credentialsProviderId
-                )}. Toolkit will now disconnect from AWS.`,
+                )}. Toolkit will now disconnect from AWS. %O`,
                 err as Error
             )
             this.credentialsStore.invalidateCredentials(credentialsProviderId)
