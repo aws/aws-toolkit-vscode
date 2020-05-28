@@ -97,17 +97,17 @@ export async function createQuickStartWebview(
     context: vscode.ExtensionContext,
     page: string = 'quickStart.html'
 ): Promise<vscode.WebviewPanel> {
-    const html = convertExtensionRootTokensToPath(
-        await readFileAsString(path.join(context.extensionPath, page)),
-        context.extensionPath
-    )
     // create hidden webview, leave it up to the caller to show
     const view = vscode.window.createWebviewPanel(
         'html',
         localize('AWS.command.quickStart.title', 'AWS Toolkit - Quick Start'),
         { viewColumn: vscode.ViewColumn.Active, preserveFocus: true }
     )
-    view.webview.html = html
+    view.webview.html = convertExtensionRootTokensToPath(
+        await readFileAsString(path.join(context.extensionPath, page)),
+        context.extensionPath,
+        view.webview
+    )
 
     return view
 }
@@ -119,8 +119,10 @@ export async function createQuickStartWebview(
  * @param text Text to scan
  * @param basePath Extension path (from extension context)
  */
-function convertExtensionRootTokensToPath(text: string, basePath: string): string {
-    return text.replace(/!!EXTENSIONROOT!!/g, `vscode-resource:${basePath}`)
+function convertExtensionRootTokensToPath(text: string, basePath: string, webview: vscode.Webview): string {
+    return text.replace(/!!EXTENSIONROOT!!(?<restOfUrl>[-a-zA-Z0-9@:%_\+.~#?&//=]*)/g, (matchedString, restOfUrl) => {
+        return webview.asWebviewUri(vscode.Uri.file(`${basePath}${restOfUrl}`)).toString()
+    })
 }
 
 /**

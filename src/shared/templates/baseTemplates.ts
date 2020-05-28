@@ -4,7 +4,6 @@
  */
 
 export class BaseTemplates {
-    /* tslint:disable max-line-length */
     public static readonly SIMPLE_HTML = `
         <html>
         <head>
@@ -12,7 +11,7 @@ export class BaseTemplates {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <meta http-equiv="Content-Security-Policy"
                 content="default-src 'none';
-                img-src <%= cspSource %> https:;
+                img-src <%= cspSource %> https: data:;
                 script-src <%= cspSource %> 'self' 'unsafe-eval';
                 style-src <%= cspSource %>;"
             >
@@ -21,5 +20,4 @@ export class BaseTemplates {
                 <%= content %>
             </body>
         </html>`
-    /* tslint:enable max-line-length */
 }
