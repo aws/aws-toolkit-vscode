@@ -6,7 +6,7 @@
 import { S3 } from 'aws-sdk'
 import * as _ from 'lodash'
 import * as mime from 'mime-types'
-import { basename } from 'path'
+import * as path from 'path'
 import { ext } from '../extensionGlobals'
 import { inspect } from 'util'
 import { getLogger } from '../logger'
@@ -144,7 +144,7 @@ export class DefaultS3Client implements S3Client {
 
         // https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/s3-example-creating-buckets.html#s3-example-creating-buckets-upload-file
         const readStream = this.fileStreams.createReadStream(request.fileLocation)
-        const contentType = mime.lookup(basename(request.fileLocation.fsPath)) || DEFAULT_CONTENT_TYPE
+        const contentType = mime.lookup(path.basename(request.fileLocation.fsPath)) || DEFAULT_CONTENT_TYPE
 
         let managedUploaded = s3.upload({
             Bucket: request.bucketName,
