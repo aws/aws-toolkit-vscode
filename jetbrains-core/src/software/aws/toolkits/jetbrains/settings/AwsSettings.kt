@@ -7,8 +7,9 @@ import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
-import java.util.prefs.Preferences
+import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import java.util.UUID
+import java.util.prefs.Preferences
 
 interface AwsSettings {
     var isTelemetryEnabled: Boolean
@@ -36,6 +37,7 @@ class DefaultAwsSettings : PersistentStateComponent<AwsConfiguration>, AwsSettin
         get() = state.isTelemetryEnabled ?: true
         set(value) {
             state.isTelemetryEnabled = value
+            TelemetryService.getInstance().setTelemetryEnabled(value)
         }
 
     override var promptedForTelemetry: Boolean

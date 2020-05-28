@@ -50,7 +50,6 @@ allprojects {
     }
 
     tasks.withType(org.jetbrains.intellij.tasks.RunIdeTask) {
-        systemProperty("aws.toolkits.enableTelemetry", false)
         intellij {
             if (System.env.ALTERNATIVE_IDE) {
                 if(file(System.env.ALTERNATIVE_IDE).exists()) {

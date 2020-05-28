@@ -286,3 +286,9 @@ fun Project.activeCredentialProvider(): ToolkitCredentialsProvider = ProjectAcco
  * underlying AWS account.
  */
 fun Project.activeAwsAccount(): String? = tryOrNull { AwsResourceCache.getInstance(this).getResourceNow(StsResources.ACCOUNT) }
+
+/**
+ * The underlying AWS account for current active credential provider of the project if known. Return null if credential provider is not set or we have
+ * not cached it.
+ */
+fun Project.activeAwsAccountIfKnown(): String? = tryOrNull { AwsResourceCache.getInstance(this).getResourceIfPresent(StsResources.ACCOUNT) }
