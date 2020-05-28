@@ -26,16 +26,18 @@ export function submitFeedback(listener?: (message: any) => Promise<void>): vsco
     const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
 
     panel.webview.html = baseTemplateFn({
+        cspSource: panel.webview.cspSource,
         content: '<h1>Loading...</h1>',
     })
 
     const feedbackTemplateFn = _.template(FeedbackTemplates.SUBMIT_TEMPLATE)
 
-    const loadScripts = ExtensionUtilities.getScriptsForHtml(['submitFeedbackVue.js'])
-    const loadLibs = ExtensionUtilities.getLibrariesForHtml(['vue.min.js'])
-    const loadStylesheets = ExtensionUtilities.getCssForHtml(['submitFeedback.css'])
+    const loadScripts = ExtensionUtilities.getScriptsForHtml(['submitFeedbackVue.js'], panel.webview)
+    const loadLibs = ExtensionUtilities.getLibrariesForHtml(['vue.min.js'], panel.webview)
+    const loadStylesheets = ExtensionUtilities.getCssForHtml(['submitFeedback.css'], panel.webview)
 
     panel.webview.html = baseTemplateFn({
+        cspSource: panel.webview.cspSource,
         content: feedbackTemplateFn({
             Scripts: loadScripts,
             Libraries: loadLibs,

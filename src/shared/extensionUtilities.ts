@@ -8,7 +8,6 @@ import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { ScriptResource } from '../lambda/models/scriptResource'
 import { ext } from '../shared/extensionGlobals'
 import { mostRecentVersionKey, pluginVersion } from './constants'
 import { readFileAsString } from './filesystemUtilities'
@@ -17,41 +16,29 @@ import { getLogger } from './logger'
 const localize = nls.loadMessageBundle()
 
 export class ExtensionUtilities {
-    public static getLibrariesForHtml(names: string[]): ScriptResource[] {
+    public static getLibrariesForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
         const basePath = path.join(ext.context.extensionPath, 'media', 'libs')
 
-        return this.resolveResourceURIs(basePath, names)
+        return this.resolveResourceURIs(basePath, names, webview)
     }
 
-    public static getScriptsForHtml(names: string[]): ScriptResource[] {
+    public static getScriptsForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
         const basePath = path.join(ext.context.extensionPath, 'media', 'js')
 
-        return this.resolveResourceURIs(basePath, names)
+        return this.resolveResourceURIs(basePath, names, webview)
     }
 
-    public static getCssForHtml(names: string[]): ScriptResource[] {
+    public static getCssForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
         const basePath = path.join(ext.context.extensionPath, 'media', 'css')
 
-        return this.resolveResourceURIs(basePath, names)
+        return this.resolveResourceURIs(basePath, names, webview)
     }
 
-    public static getNonce(): string {
-        let text = ''
-        const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-        for (let i = 0; i < 32; i++) {
-            text += possible.charAt(Math.floor(Math.random() * possible.length))
-        }
-
-        return text
-    }
-
-    private static resolveResourceURIs(basePath: string, names: string[]): ScriptResource[] {
-        const scripts: ScriptResource[] = []
+    private static resolveResourceURIs(basePath: string, names: string[], webview: vscode.Webview): vscode.Uri[] {
+        const scripts: vscode.Uri[] = []
         _.forEach(names, scriptName => {
             const scriptPathOnDisk = vscode.Uri.file(path.join(basePath, scriptName))
-            const scriptUri = scriptPathOnDisk.with({ scheme: 'vscode-resource' })
-            const nonce = ExtensionUtilities.getNonce()
-            scripts.push({ nonce: nonce, uri: scriptUri })
+            scripts.push(webview.asWebviewUri(scriptPathOnDisk))
         })
 
         return scripts
@@ -110,17 +97,17 @@ export async function createQuickStartWebview(
     context: vscode.ExtensionContext,
     page: string = 'quickStart.html'
 ): Promise<vscode.WebviewPanel> {
-    const html = convertExtensionRootTokensToPath(
-        await readFileAsString(path.join(context.extensionPath, page)),
-        context.extensionPath
-    )
     // create hidden webview, leave it up to the caller to show
     const view = vscode.window.createWebviewPanel(
         'html',
         localize('AWS.command.quickStart.title', 'AWS Toolkit - Quick Start'),
         { viewColumn: vscode.ViewColumn.Active, preserveFocus: true }
     )
-    view.webview.html = html
+    view.webview.html = convertExtensionRootTokensToPath(
+        await readFileAsString(path.join(context.extensionPath, page)),
+        context.extensionPath,
+        view.webview
+    )
 
     return view
 }
@@ -132,8 +119,10 @@ export async function createQuickStartWebview(
  * @param text Text to scan
  * @param basePath Extension path (from extension context)
  */
-function convertExtensionRootTokensToPath(text: string, basePath: string): string {
-    return text.replace(/!!EXTENSIONROOT!!/g, `vscode-resource:${basePath}`)
+function convertExtensionRootTokensToPath(text: string, basePath: string, webview: vscode.Webview): string {
+    return text.replace(/!!EXTENSIONROOT!!(?<restOfUrl>[-a-zA-Z0-9@:%_\+.~#?&//=]*)/g, (matchedString, restOfUrl) => {
+        return webview.asWebviewUri(vscode.Uri.file(`${basePath}${restOfUrl}`)).toString()
+    })
 }
 
 /**
