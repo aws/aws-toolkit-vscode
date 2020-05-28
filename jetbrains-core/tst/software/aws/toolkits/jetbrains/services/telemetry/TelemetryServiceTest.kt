@@ -15,7 +15,6 @@ import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.core.region.AwsRegion
-import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADATA_NA
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADATA_NOT_SET
 import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryBatcher
@@ -68,7 +67,7 @@ class TelemetryServiceTest {
     }
 
     @Test
-    fun testTriggeredChangeEvent() {
+    fun testTelemetrySettingChanged() {
         AwsSettings.getInstance().isTelemetryEnabled = true
 
         val changeCountDown = CountDownLatch(3)
@@ -113,11 +112,9 @@ class TelemetryServiceTest {
         }
         telemetryService.dispose()
 
-        verify(batcher, times(3)).enqueue(eventCaptor.capture())
+        verify(batcher).enqueue(eventCaptor.capture())
 
-        assertMetricEventsContains(eventCaptor.allValues, "session_start", METADATA_NA, METADATA_NA)
         assertMetricEventsContains(eventCaptor.allValues, "Foo", METADATA_NOT_SET, "us-east-1")
-        assertMetricEventsContains(eventCaptor.allValues, "session_end", METADATA_NA, METADATA_NA)
     }
 
     @Test
@@ -144,7 +141,7 @@ class TelemetryServiceTest {
         }
         telemetryService.dispose()
 
-        verify(batcher, times(3)).enqueue(eventCaptor.capture())
+        verify(batcher).enqueue(eventCaptor.capture())
         assertMetricEventsContains(eventCaptor.allValues, "Foo", "111111111111", "foo-region")
     }
 
@@ -176,7 +173,7 @@ class TelemetryServiceTest {
         }
         telemetryService.dispose()
 
-        verify(batcher, times(3)).enqueue(eventCaptor.capture())
+        verify(batcher).enqueue(eventCaptor.capture())
         assertMetricEventsContains(eventCaptor.allValues, "Foo", "222222222222", "bar-region")
     }
 

@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.telemetry
 
-import com.intellij.openapi.application.ApplicationManager
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
@@ -57,7 +56,7 @@ class AWSCognitoCredentialsProvider(
         val identityId = identityIdProvider.identityId
         val request = GetCredentialsForIdentityRequest.builder().identityId(identityId).build()
 
-        return ApplicationManager.getApplication().executeOnPooledThread<Credentials> { cognitoClient.getCredentialsForIdentity(request).credentials() }.get()
+        return cognitoClient.getCredentialsForIdentity(request).credentials()
     }
 }
 

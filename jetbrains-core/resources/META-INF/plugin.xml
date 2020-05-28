@@ -92,13 +92,6 @@
         <xi:fallback/>
     </xi:include>
 
-    <application-components>
-        <component>
-            <interface-class>software.aws.toolkits.jetbrains.components.telemetry.TelemetryComponent</interface-class>
-            <implementation-class>software.aws.toolkits.jetbrains.components.telemetry.DefaultTelemetryComponent</implementation-class>
-        </component>
-    </application-components>
-
     <extensionPoints>
         <extensionPoint name="credentialProviderFactory" interface="software.aws.toolkits.core.credentials.CredentialProviderFactory"/>
 
