@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { basename } from 'path'
+import * as path from 'path'
 import { statSync } from 'fs'
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
@@ -49,7 +49,7 @@ export async function uploadFileCommand(
         return
     }
 
-    const fileName = basename(fileLocation.fsPath)
+    const fileName = path.basename(fileLocation.fsPath)
     const key = node.path + fileName
 
     try {
@@ -96,7 +96,7 @@ async function uploadWithProgress({
     return window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
-            title: localize('AWS.s3.uploadFile.progressTitle', 'Uploading {0}...', basename(fileLocation.fsPath)),
+            title: localize('AWS.s3.uploadFile.progressTitle', 'Uploading {0}...', path.basename(fileLocation.fsPath)),
         },
         progress => {
             return node.uploadFile({

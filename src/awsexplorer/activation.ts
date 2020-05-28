@@ -35,6 +35,7 @@ import { StateMachineNode } from '../stepFunctions/explorer/stepFunctionsNodes'
 import { AwsExplorer } from './awsExplorer'
 import { copyArnCommand } from './commands/copyArn'
 import { copyNameCommand } from './commands/copyName'
+import { loadMoreChildrenCommand } from './commands/loadMoreChildren'
 import { checkExplorerForDefaultRegion } from './defaultRegion'
 import { RegionNode } from './regionNode'
 
@@ -204,8 +205,7 @@ async function registerAwsExplorerCommands(
 
     context.subscriptions.push(
         vscode.commands.registerCommand('aws.loadMoreChildren', async (node: AWSTreeNodeBase & LoadMoreNode) => {
-            await node.loadMoreChildren()
-            awsExplorer.refresh(node)
+            await loadMoreChildrenCommand(node, awsExplorer)
         })
     )
 

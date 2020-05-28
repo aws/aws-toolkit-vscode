@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { extname, join } from 'path'
+import * as path from 'path'
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
 import * as telemetry from '../../shared/telemetry/telemetry'
@@ -50,12 +50,12 @@ export async function downloadFileAsCommand(node: S3FileNode, window = Window.vs
 async function promptForSaveLocation(fileName: string, window: Window): Promise<vscode.Uri | undefined> {
     const filters: vscode.SaveDialogOptions['filters'] = { 'All files': ['*'] }
 
-    const extension = extname(fileName)
+    const extension = path.extname(fileName)
     if (extension) {
         filters[`*${extension}`] = [extension]
     }
 
-    const downloadPath = join(findDownloadsFolder(), fileName)
+    const downloadPath = path.join(findDownloadsFolder(), fileName)
     return window.showSaveDialog({
         defaultUri: vscode.Uri.file(downloadPath),
         saveLabel: localize('AWS.s3.downloadFile.saveButton', 'Download'),
