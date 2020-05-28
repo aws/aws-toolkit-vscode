@@ -23,10 +23,6 @@ test {
     systemProperty("log.dir", "${project.intellij.sandboxDirectory}-test/logs")
 }
 
-runIde {
-    systemProperty("aws.toolkits.enableTelemetry", false)
-}
-
 jar {
     archiveBaseName = 'aws-intellij-toolkit-ultimate'
 }

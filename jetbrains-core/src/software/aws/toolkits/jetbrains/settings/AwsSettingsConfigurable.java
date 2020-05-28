@@ -34,8 +34,6 @@ import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance;
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager;
 import software.aws.toolkits.jetbrains.core.executables.ExecutableType;
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable;
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryEnabledChangedNotifier;
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService;
 
 public class AwsSettingsConfigurable implements SearchableConfigurable {
     private static final String CLOUDDEBUG = "clouddebug";
@@ -56,16 +54,12 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
     private JPanel remoteDebugSettings;
     private JPanel applicationLevelSettings;
 
-    private final TelemetryEnabledChangedNotifier publisher;
-
     public AwsSettingsConfigurable(Project project) {
         this.project = project;
 
         applicationLevelSettings.setBorder(IdeBorderFactory.createTitledBorder(message("aws.settings.global_label")));
         serverlessSettings.setBorder(IdeBorderFactory.createTitledBorder(message("aws.settings.serverless_label")));
         remoteDebugSettings.setBorder(IdeBorderFactory.createTitledBorder(message("aws.settings.remote_debug_label")));
-
-        publisher = TelemetryService.syncPublisher();
 
         SwingHelper.setPreferredWidth(samExecutablePath, this.panel.getWidth());
         SwingHelper.setPreferredWidth(cloudDebugExecutablePath, this.panel.getWidth());
@@ -261,15 +255,7 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
 
     private void saveTelemetrySettings() {
         AwsSettings awsSettings = AwsSettings.getInstance();
-        boolean oldSetting = awsSettings.isTelemetryEnabled();
-        try {
-            awsSettings.setTelemetryEnabled(enableTelemetry.isSelected());
-        } finally {
-            boolean newSetting = awsSettings.isTelemetryEnabled();
-            if (newSetting != oldSetting) {
-                publisher.notify(newSetting);
-            }
-        }
+        awsSettings.setTelemetryEnabled(enableTelemetry.isSelected());
     }
 
     private void saveLambdaSettings() {

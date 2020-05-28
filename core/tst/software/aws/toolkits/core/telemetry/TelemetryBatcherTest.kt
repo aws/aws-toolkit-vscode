@@ -10,7 +10,9 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.stub
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verifyBlocking
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Before
 import org.junit.Test
 import org.mockito.ArgumentMatchers.anyCollection
 import org.mockito.stubbing.Answer
@@ -18,16 +20,12 @@ import software.amazon.awssdk.core.exception.SdkServiceException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-class TestTelemetryBatcher(publisher: TelemetryPublisher, maxBatchSize: Int, maxQueueSize: Int) :
-    DefaultTelemetryBatcher(publisher, maxBatchSize, maxQueueSize) {
-    fun eventQueue() = eventQueue
-}
-
 class TelemetryBatcherTest {
     private var publisher: TelemetryPublisher = mock()
-    private var batcher: TestTelemetryBatcher = TestTelemetryBatcher(publisher, MAX_BATCH_SIZE, MAX_QUEUE_SIZE)
+    private var batcher = DefaultTelemetryBatcher(publisher, MAX_BATCH_SIZE, MAX_QUEUE_SIZE)
 
-    init {
+    @Before
+    fun setUp() {
         batcher.onTelemetryEnabledChanged(true)
     }
 
@@ -56,11 +54,9 @@ class TelemetryBatcherTest {
         val publishCaptor = argumentCaptor<Collection<MetricEvent>>()
 
         val totalEvents = MAX_BATCH_SIZE + 1
-        val events = ArrayList<MetricEvent>()
         repeat(totalEvents) {
-            events.add(createEmptyMetricEvent())
+            batcher.enqueue(createEmptyMetricEvent())
         }
-        batcher.enqueue(events)
         batcher.flush(false)
 
         verifyBlocking(publisher, times(2)) { publish(publishCaptor.capture()) }
@@ -85,7 +81,7 @@ class TelemetryBatcherTest {
         verifyBlocking(publisher, times(1)) { publish(publishCaptor.capture()) }
 
         assertThat(publishCaptor.allValues).hasSize(1)
-        assertThat(batcher.eventQueue()).hasSize(1)
+        assertThat(batcher.eventQueue).hasSize(1)
     }
 
     @Test
@@ -95,7 +91,7 @@ class TelemetryBatcherTest {
         publisher.stub {
             onBlocking { publisher.publish(anyCollection()) }
                 .doThrow(SdkServiceException.builder().statusCode(400).build())
-                .doAnswer(Answer<Unit> {})
+                .doAnswer(Answer {})
         }
 
         batcher.enqueue(createEmptyMetricEvent())
@@ -104,7 +100,7 @@ class TelemetryBatcherTest {
         verifyBlocking(publisher, times(1)) { publish(publishCaptor.capture()) }
 
         assertThat(publishCaptor.allValues).hasSize(1)
-        assertThat(batcher.eventQueue()).hasSize(0)
+        assertThat(batcher.eventQueue).hasSize(0)
     }
 
     @Test
@@ -120,6 +116,32 @@ class TelemetryBatcherTest {
 
         assertThat(publishCaptor.allValues).hasSize(1)
         assertThat(publishCaptor.firstValue.toList()).hasSize(1)
+    }
+
+    @Test
+    fun testNotSendingWhileDisabled() {
+        batcher.onTelemetryEnabledChanged(false)
+
+        batcher.enqueue(createEmptyMetricEvent())
+        batcher.flush(false)
+
+        verifyZeroInteractions(publisher)
+
+        assertThat(batcher.eventQueue).isEmpty()
+    }
+
+    @Test
+    fun verifyOptOut() {
+        batcher.enqueue(createEmptyMetricEvent())
+        assertThat(batcher.eventQueue).isNotEmpty
+
+        batcher.onTelemetryEnabledChanged(false)
+
+        batcher.flush(false)
+
+        verifyZeroInteractions(publisher)
+
+        assertThat(batcher.eventQueue).isEmpty()
     }
 
     private fun createEmptyMetricEvent(): MetricEvent = DefaultMetricEvent.builder().build()

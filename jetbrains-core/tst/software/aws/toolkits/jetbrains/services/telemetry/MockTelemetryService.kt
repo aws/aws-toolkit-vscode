@@ -4,19 +4,14 @@
 package software.aws.toolkits.jetbrains.services.telemetry
 
 import software.amazon.awssdk.services.toolkittelemetry.model.Sentiment
-import software.aws.toolkits.core.telemetry.DefaultMetricEvent
+import software.aws.toolkits.core.telemetry.DefaultTelemetryBatcher
 import software.aws.toolkits.core.telemetry.MetricEvent
+import software.aws.toolkits.core.telemetry.TelemetryPublisher
 
-class MockTelemetryService : TelemetryService {
-    override fun record(metricEventMetadata: TelemetryService.MetricEventMetadata, buildEvent: MetricEvent.Builder.() -> Unit): MetricEvent {
-        val builder = DefaultMetricEvent.builder()
-        buildEvent(builder)
-        builder.awsAccount(metricEventMetadata.awsAccount)
-        builder.awsRegion(metricEventMetadata.awsRegion)
-        return builder.build()
-    }
+class MockTelemetryService() : TelemetryService(NoOpPublisher(), DefaultTelemetryBatcher(NoOpPublisher()))
+
+class NoOpPublisher() : TelemetryPublisher {
+    override suspend fun publish(metricEvents: Collection<MetricEvent>) {}
 
     override suspend fun sendFeedback(sentiment: Sentiment, comment: String) {}
-
-    override fun dispose() {}
 }
