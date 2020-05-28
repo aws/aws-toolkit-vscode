@@ -35,10 +35,10 @@ export class LambdaTemplates {
         <br />
     </div>
     <% Libraries.forEach(function(lib) { %>
-        <script nonce="<%= lib.nonce %>" src="<%= lib.uri %>"></script>
+        <script src="<%= lib %>"></script>
     <% }); %>
     <% Scripts.forEach(function(scr) { %>
-        <script nonce="<%= scr.nonce %>" src="<%= scr.uri %>"></script>
+        <script src="<%= scr %>"></script>
     <% }); %>
     `
 }

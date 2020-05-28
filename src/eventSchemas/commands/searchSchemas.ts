@@ -53,11 +53,12 @@ export async function createSearchSchemasWebView(params: {
         )
         const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
         const searchTemplate = _.template(SchemaTemplates.SEARCH_TEMPLATE)
-        const loadScripts = ExtensionUtilities.getScriptsForHtml(['searchSchemasVue.js'])
-        const loadLibs = ExtensionUtilities.getLibrariesForHtml(['vue.min.js', 'lodash.min.js'])
-        const loadStylesheets = ExtensionUtilities.getCssForHtml(['searchSchemas.css'])
+        const loadScripts = ExtensionUtilities.getScriptsForHtml(['searchSchemasVue.js'], view.webview)
+        const loadLibs = ExtensionUtilities.getLibrariesForHtml(['vue.min.js', 'lodash.min.js'], view.webview)
+        const loadStylesheets = ExtensionUtilities.getCssForHtml(['searchSchemas.css'], view.webview)
 
         view.webview.html = baseTemplateFn({
+            cspSource: view.webview.cspSource,
             content: searchTemplate({
                 Header: getPageHeader(registryNames),
                 SearchInputPlaceholder: localize(
