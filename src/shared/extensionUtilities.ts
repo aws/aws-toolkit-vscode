@@ -16,6 +16,21 @@ import { getLogger } from './logger'
 
 const localize = nls.loadMessageBundle()
 
+const VSCODE_APPNAME = 'Visual Studio Code'
+
+export enum IDE {
+    vscode,
+    unknown,
+}
+
+export function getIdeType(): IDE {
+    if (vscode.env.appName.startsWith(VSCODE_APPNAME)) {
+        return IDE.vscode
+    }
+
+    return IDE.unknown
+}
+
 export class ExtensionUtilities {
     public static getLibrariesForHtml(names: string[]): ScriptResource[] {
         const basePath = path.join(ext.context.extensionPath, 'media', 'libs')

@@ -20,7 +20,10 @@ import * as codelensUtils from '../codelens/codeLensUtils'
 import * as csLensProvider from '../codelens/csharpCodeLensProvider'
 import * as pyLensProvider from '../codelens/pythonCodeLensProvider'
 import { SamTemplateCodeLensProvider } from '../codelens/samTemplateCodeLensProvider'
-import { ExtContext } from '../extensions'
+import { ext } from '../extensionGlobals'
+import { ExtContext, VSCODE_EXTENSION_ID } from '../extensions'
+import { getIdeType, IDE } from '../extensionUtilities'
+import { getLogger } from '../logger/logger'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { PromiseSharer } from '../utilities/promiseUtilities'
@@ -30,10 +33,8 @@ import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
 import { SamDebugSession } from './debugger/samDebugSession'
 import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
-import { ext } from '../extensionGlobals'
 
-const YAML_PLUGIN = 'redhat.vscode-yaml'
-const YAML_PROMPT = 'dontShowYamlPromptEver'
+const STATE_NAME_SUPPRESS_YAML_PROMPT = 'dontShowYamlPromptEver'
 
 /**
  * Activate SAM-related functionality.
@@ -41,43 +42,7 @@ const YAML_PROMPT = 'dontShowYamlPromptEver'
 export async function activate(ctx: ExtContext): Promise<void> {
     initializeSamCliContext({ settingsConfiguration: ctx.settings })
 
-    const dontPromptEverAgain = ext.context.globalState.get<boolean>(YAML_PROMPT)
-    // only pop this up in VS Code and Insiders since other VS Code-like IDEs (e.g. Theia) may not have a marketplace or contain the YAML plugin
-    const isVsCode = vscode.env.appName && vscode.env.appName.startsWith('Visual Studio Code') ? true : false
-
-    if (!dontPromptEverAgain && !vscode.extensions.getExtension(YAML_PLUGIN) && isVsCode) {
-        // these will all be disposed immediately after showing one so the user isn't prompted more than once per session
-        const yamlPromptDisposables: vscode.Disposable[] = []
-
-        vscode.workspace.onDidOpenTextDocument(
-            async (doc: vscode.TextDocument) => {
-                if (doc.fileName.endsWith('template.yaml') || doc.fileName.endsWith('template.yml')) {
-                    promptInstallYamlPlugin()
-                    for (const prompt of yamlPromptDisposables) {
-                        prompt.dispose()
-                    }
-                }
-            },
-            undefined,
-            yamlPromptDisposables
-        )
-
-        vscode.window.onDidChangeActiveTextEditor(
-            async (editor: vscode.TextEditor | undefined) => {
-                if (editor) {
-                    const fileName = editor.document.fileName
-                    if (fileName.endsWith('template.yaml') || fileName.endsWith('template.yml')) {
-                        promptInstallYamlPlugin()
-                        for (const prompt of yamlPromptDisposables) {
-                            prompt.dispose()
-                        }
-                    }
-                }
-            },
-            undefined,
-            yamlPromptDisposables
-        )
-    }
+    createYamlExtensionPrompt()
 
     ctx.extensionContext.subscriptions.push(
         ...(await activateCodeLensProviders(ctx, ctx.settings, ctx.outputChannel, ctx.telemetryService))
@@ -228,33 +193,98 @@ class InlineDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory 
     }
 }
 
-async function promptInstallYamlPlugin(): Promise<void> {
-    const goToMarketplace = localize('AWS.message.info.yaml.goToMarketplace', 'Open Marketplace Page')
-    const dismiss = localize('AWS.generic.response.dismiss', 'Dismiss')
-    const dontShowAgain = localize('AWS.message.info.yaml.dontShowAgain', "Dismiss, and don't show again")
+/**
+ * Creates a prompt (via toast) to guide users to installing the Red Hat YAML extension.
+ * This is necessary for displaying codelenses on templaye YAML files.
+ * Will show once per extension activation at most (all prompting triggers are disposed of on first trigger)
+ * Will not show if the YAML extension is installed or if a user has permanently dismissed the message.
+ */
+function createYamlExtensionPrompt(): void {
+    const neverPromptAgain = ext.context.globalState.get<boolean>(STATE_NAME_SUPPRESS_YAML_PROMPT)
 
-    const response = await vscode.window.showInformationMessage(
-        localize(
-            'AWS.message.info.yaml.prompt',
-            'You can access additional AWS SAM functionality by installing YAML language support.'
-        ),
-        goToMarketplace,
-        dismiss,
-        dontShowAgain
-    )
+    // only pop this up in VS Code and Insiders since other VS Code-like IDEs (e.g. Theia) may not have a marketplace or contain the YAML plugin
+    if (!neverPromptAgain && getIdeType() === IDE.vscode && !vscode.extensions.getExtension(VSCODE_EXTENSION_ID.yaml)) {
+        // these will all be disposed immediately after showing one so the user isn't prompted more than once per session
+        const yamlPromptDisposables: vscode.Disposable[] = []
 
-    switch (response) {
-        case goToMarketplace:
-            // Available options are:
-            // extension.open: opens extension page in VS Code extension marketplace view
-            // workspace.extension.installPlugin: autoinstalls plugin with no additional feedback
-            // workspace.extension.search: preloads and executes a search in the extension sidebar with the given term
+        // user opens a template file
+        vscode.workspace.onDidOpenTextDocument(
+            async (doc: vscode.TextDocument) => {
+                promptInstallYamlPlugin(doc.fileName, yamlPromptDisposables)
+            },
+            undefined,
+            yamlPromptDisposables
+        )
 
-            // not sure if these are 100% stable.
-            // Opting for `extension.open` as this gives the user a good path forward to install while not doing anything potentially unexpected.
-            await vscode.commands.executeCommand('extension.open', YAML_PLUGIN)
-            break
-        case dontShowAgain:
-            ext.context.globalState.update(YAML_PROMPT, true)
+        // user swaps to an already-open template file that didn't have focus
+        vscode.window.onDidChangeActiveTextEditor(
+            async (editor: vscode.TextEditor | undefined) => {
+                await promptInstallYamlPluginFromEditor(editor, yamlPromptDisposables)
+            },
+            undefined,
+            yamlPromptDisposables
+        )
+
+        // user already has an open template with focus
+        for (const editor of vscode.window.visibleTextEditors) {
+            promptInstallYamlPluginFromEditor(editor, yamlPromptDisposables)
+        }
+    }
+}
+
+async function promptInstallYamlPluginFromEditor(
+    editor: vscode.TextEditor | undefined,
+    disposables: vscode.Disposable[]
+): Promise<void> {
+    if (editor) {
+        promptInstallYamlPlugin(editor.document.fileName, disposables)
+    }
+}
+
+/**
+ * Looks for template.yaml and template.yml files and disp[oses prompts
+ * @param fileName File name to check against
+ * @param disposables List of disposables to dispose of when the filename is a template YAML file
+ */
+async function promptInstallYamlPlugin(fileName: string, disposables: vscode.Disposable[]): Promise<void> {
+    if (fileName.endsWith('template.yaml') || fileName.endsWith('template.yml')) {
+        // immediately dispose other triggers so it doesn't flash again
+        for (const prompt of disposables) {
+            prompt.dispose()
+        }
+
+        const goToMarketplace = localize('AWS.message.info.yaml.goToMarketplace', 'Open Marketplace Page')
+        const dismiss = localize('AWS.generic.response.dismiss', 'Dismiss')
+        const dontShowAgain = localize('AWS.message.info.yaml.dontShowAgain', "Dismiss, and don't show again")
+
+        const response = await vscode.window.showInformationMessage(
+            localize(
+                'AWS.message.info.yaml.prompt',
+                'You can access additional AWS SAM functionality by installing YAML language support.'
+            ),
+            goToMarketplace,
+            dismiss,
+            dontShowAgain
+        )
+
+        switch (response) {
+            case goToMarketplace:
+                // Available options are:
+                // extension.open: opens extension page in VS Code extension marketplace view
+                // workspace.extension.installPlugin: autoinstalls plugin with no additional feedback
+                // workspace.extension.search: preloads and executes a search in the extension sidebar with the given term
+
+                // not sure if these are 100% stable.
+                // Opting for `extension.open` as this gives the user a good path forward to install while not doing anything potentially unexpected.
+                try {
+                    await vscode.commands.executeCommand('extension.open', VSCODE_EXTENSION_ID.yaml)
+                } catch (e) {
+                    const err = e as Error
+                    getLogger().error(`Extension ${VSCODE_EXTENSION_ID.yaml} could not be opened: `, err.message)
+                }
+                break
+            case dontShowAgain:
+                ext.context.globalState.update(STATE_NAME_SUPPRESS_YAML_PROMPT, true)
+        }
     }
 }
