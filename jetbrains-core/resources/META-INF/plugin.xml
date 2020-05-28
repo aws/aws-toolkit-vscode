@@ -92,6 +92,11 @@
         <xi:fallback/>
     </xi:include>
 
+    <projectListeners>
+        <listener class="software.aws.toolkits.jetbrains.core.credentials.CredentialStatusNotification"
+                  topic="software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsStateChangeNotifier"/>
+    </projectListeners>
+
     <application-components>
         <component>
             <interface-class>software.aws.toolkits.jetbrains.components.telemetry.TelemetryComponent</interface-class>
@@ -158,9 +163,6 @@
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.SamSettings"/>
 
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.CloudDebugSettings"/>
-
-        <!-- TODO: Switch to <projectListener> FIX_WHEN_MIN_IS_193 -->
-        <backgroundPostStartupActivity implementation="software.aws.toolkits.jetbrains.core.credentials.CredentialStatusNotification"/>
 
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.settings.LambdaSettings"/>
 
