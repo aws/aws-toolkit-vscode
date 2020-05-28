@@ -416,6 +416,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.copyName",
+                    "when": "false"
+                },
+                {
                     "command": "aws.downloadSchemaItemCode",
                     "when": "false"
                 },
@@ -453,6 +457,26 @@
                 },
                 {
                     "command": "aws.showErrorDetails",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.s3.copyPath",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.s3.createBucket",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.s3.createFolder",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.s3.downloadFileAs",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.s3.uploadFile",
                     "when": "false"
                 }
             ],
@@ -632,13 +656,13 @@
                     "group": "2@1"
                 },
                 {
-                    "command": "aws.s3.copyPath",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsS3FolderNode|awsS3FileNode)$/",
+                    "command": "aws.copyArn",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode)$/",
                     "group": "2@2"
                 },
                 {
-                    "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode)$/",
+                    "command": "aws.s3.copyPath",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsS3FolderNode|awsS3FileNode)$/",
                     "group": "2@3"
                 },
                 {

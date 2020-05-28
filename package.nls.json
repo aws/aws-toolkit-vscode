@@ -155,6 +155,7 @@
     "AWS.explorerNode.error.retry": "Unable to get child nodes, click here to retry",
     "AWS.explorerNode.lambda.error": "Error loading Lambda resources",
     "AWS.explorerNode.loadMoreChildren": "Load More...",
+    "AWS.explorerNode.loadMoreChildren.error": "Error loading more resources",
     "AWS.explorerNode.noArnFound": "Could not find an ARN for selected AWS Explorer node",
     "AWS.explorerNode.s3.error": "Error loading S3 resources",
     "AWS.explorerNode.s3.noBuckets": "[No Buckets found]",
