@@ -667,7 +667,7 @@ describe('IteratingQuickPickController', async () => {
         })
 
         afterEach(() => {
-            sandbox.restore
+            sandbox.restore()
         })
 
         it('triggers a refresh and returns undefined', async () => {
