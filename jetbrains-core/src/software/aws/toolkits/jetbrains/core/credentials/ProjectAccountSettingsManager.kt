@@ -64,6 +64,12 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
                         changeConnectionSettings(null, selectedPartition, selectedRegion)
                     }
                 }
+
+                override fun providerModified(identifier: ToolkitCredentialsIdentifier) {
+                    if (selectedCredentialIdentifier == identifier && connectionState is ConnectionState.InvalidConnection) {
+                        refreshConnectionState()
+                    }
+                }
             })
     }
 
@@ -73,6 +79,11 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
         is ConnectionState.ValidConnection -> ConnectionSettings(state.credentials, state.region)
         else -> null
     }
+
+    /**
+     * Re-trigger validation of the current connection
+     */
+    fun refreshConnectionState() { changeFieldsAndNotify { } }
 
     /**
      * Internal setter that allows for null values and is intended to set the internal state and still notify
@@ -158,7 +169,7 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
                 selectedCredentialsProvider = credentialsProvider
                 connectionState = ConnectionState.ValidConnection(credentialsProvider, region)
             } catch (e: Exception) {
-                connectionState = ConnectionState.InvalidConnection(credentialsIdentifier, region, e)
+                connectionState = ConnectionState.InvalidConnection(e)
                 LOGGER.warn(e) { message("credentials.profile.validation_error", credentialsIdentifier.displayName) }
             } finally {
                 incModificationCount()
@@ -232,22 +243,23 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
 
 /**
  * A state machine around the connection validation steps the toolkit goes through. Attempts to encapsulate both state, data available at each state and
- * a consistent place to determine how to display state information (e.g. [displayMessage]).
+ * a consistent place to determine how to display state information (e.g. [displayMessage]). Exposes an [isTerminal] property that indicates if this
+ * state is temporary in the 'connection validation' workflow or if this is a terminal state.
  */
-sealed class ConnectionState(val displayMessage: String) {
+sealed class ConnectionState(val displayMessage: String, val isTerminal: Boolean) {
     /**
      * An optional short message to display in places where space is at a premium
      */
     open val shortMessage: String = displayMessage
 
-    object InitializingToolkit : ConnectionState(message("settings.states.initializing"))
+    object InitializingToolkit : ConnectionState(message("settings.states.initializing"), isTerminal = false)
 
-    object ValidatingConnection : ConnectionState(message("settings.states.validating")) {
+    object ValidatingConnection : ConnectionState(message("settings.states.validating"), isTerminal = false) {
         override val shortMessage: String = message("settings.states.validating.short")
     }
 
     class ValidConnection(internal val credentials: ToolkitCredentialsProvider, internal val region: AwsRegion) :
-        ConnectionState("${credentials.displayName}@${region.displayName}") {
+        ConnectionState("${credentials.displayName}@${region.displayName}", isTerminal = true) {
         override val shortMessage: String = "${credentials.shortName}@${region.id}"
     }
 
@@ -257,11 +269,11 @@ sealed class ConnectionState(val displayMessage: String) {
             region == null -> message("settings.regions.none_selected")
             credentials == null -> message("settings.credentials.none_selected")
             else -> throw IllegalArgumentException("At least one of regionId ($region) or toolkitCredentialsIdentifier ($credentials) must be null")
-        }
+        },
+        isTerminal = true
     )
 
-    class InvalidConnection(credentials: ToolkitCredentialsIdentifier, region: AwsRegion, val cause: Exception) :
-        ConnectionState(message("settings.states.invalid", cause.localizedMessage)) {
+    class InvalidConnection(val cause: Exception) : ConnectionState(message("settings.states.invalid", cause.localizedMessage), isTerminal = true) {
         override val shortMessage = message("settings.states.invalid.short")
     }
 }

@@ -89,6 +89,8 @@ class MockResourceCache(private val project: Project) : AwsResourceCache {
         map.clear()
     }
 
+    fun entryCount() = map.size
+
     fun <T> addEntry(resource: Resource.Cached<T>, value: T) =
         addEntry(resource, accountSettings.activeRegion.id, accountSettings.activeCredentialProvider.id, value)
 

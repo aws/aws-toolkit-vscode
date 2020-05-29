@@ -3,7 +3,14 @@
 
 package software.aws.toolkits.core.credentials
 
+import com.nhaarman.mockitokotlin2.mock
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.aws.toolkits.core.utils.test.aString
+
+fun aToolkitCredentialsProvider(
+    identifier: ToolkitCredentialsIdentifier = aToolkitCredentialsIdentifier(),
+    delegate: AwsCredentialsProvider = mock()
+) = ToolkitCredentialsProvider(identifier, delegate)
 
 fun aToolkitCredentialsIdentifier(
     id: String = aString(),

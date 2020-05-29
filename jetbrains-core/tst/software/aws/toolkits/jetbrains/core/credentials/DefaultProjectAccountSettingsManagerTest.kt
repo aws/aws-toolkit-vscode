@@ -384,6 +384,42 @@ class DefaultProjectAccountSettingsManagerTest {
         assertThat(manager.connectionSettings()).isNull()
     }
 
+    @Test
+    fun canRefreshTheStateWhichTriggersRevalidation() {
+        val defaultCredentials = mockCredentialManager.addCredentials("profile:default")
+
+        markConnectionSettingsAsInvalid(defaultCredentials, AwsRegionProvider.getInstance().defaultRegion())
+
+        changeRegion(AwsRegionProvider.getInstance().defaultRegion())
+        changeCredentialProvider(defaultCredentials)
+
+        assertThat(manager.isValidConnectionSettings()).isFalse()
+
+        markConnectionSettingsAsValid(defaultCredentials, AwsRegionProvider.getInstance().defaultRegion())
+        manager.refreshConnectionState()
+        manager.waitUntilConnectionStateIsStable()
+
+        assertThat(manager.isValidConnectionSettings()).isTrue()
+    }
+
+    @Test
+    fun connectionStateRefreshedAutomaticallyIfInvalidProfileUpdated() {
+        val defaultCredentials = mockCredentialManager.addCredentials("profile:default")
+
+        markConnectionSettingsAsInvalid(defaultCredentials, AwsRegionProvider.getInstance().defaultRegion())
+
+        changeRegion(AwsRegionProvider.getInstance().defaultRegion())
+        changeCredentialProvider(defaultCredentials)
+
+        assertThat(manager.isValidConnectionSettings()).isFalse()
+
+        markConnectionSettingsAsValid(defaultCredentials, AwsRegionProvider.getInstance().defaultRegion())
+        ApplicationManager.getApplication().messageBus.syncPublisher(CredentialManager.CREDENTIALS_CHANGED).providerModified(defaultCredentials)
+        manager.waitUntilConnectionStateIsStable()
+
+        assertThat(manager.isValidConnectionSettings()).isTrue()
+    }
+
     private fun markConnectionSettingsAsValid(credentialsIdentifier: ToolkitCredentialsIdentifier, region: AwsRegion) {
         mockResourceCache.addValidAwsCredential(region.id, credentialsIdentifier.id, "1111222233333")
     }

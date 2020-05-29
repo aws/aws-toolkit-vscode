@@ -39,6 +39,10 @@ class MockProjectAccountSettingsManager(project: Project) : ProjectAccountSettin
         waitUntilConnectionStateIsStable()
     }
 
+    fun setConnectionState(state: ConnectionState) {
+        connectionState = state
+    }
+
     override suspend fun validate(credentialsProvider: ToolkitCredentialsProvider, region: AwsRegion): Boolean = withContext(Dispatchers.IO) {
         true
     }
@@ -71,5 +75,5 @@ fun <T> runUnderRealCredentials(project: Project, block: () -> T): T {
 }
 
 fun ProjectAccountSettingsManager.waitUntilConnectionStateIsStable() = spinUntil(Duration.ofSeconds(10)) {
-    connectionState !is ConnectionState.ValidatingConnection && connectionState !is ConnectionState.InitializingToolkit
+    connectionState.isTerminal
 }

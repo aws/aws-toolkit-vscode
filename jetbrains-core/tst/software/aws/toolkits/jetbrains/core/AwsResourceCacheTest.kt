@@ -25,6 +25,7 @@ import org.junit.Test
 import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.core.utils.test.retryableAssert
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
@@ -457,5 +458,7 @@ class AwsResourceCacheTest {
         }
 
         private class StringResource(id: String) : DummyResource<String>(id, id)
+
+        fun dummyResource(value: String = aString()): Resource.Cached<String> = StringResource(value)
     }
 }
