@@ -1043,7 +1043,6 @@
         "cloudformation-schema-js-yaml": "^1.0.1",
         "cross-spawn": "^6.0.5",
         "del": "^3.0.0",
-        "downloads-folder": "^1.0.4",
         "fs-extra": "^8.1.0",
         "handlebars": "^4.5.3",
         "immutable": "^4.0.0-rc.12",
