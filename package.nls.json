@@ -387,6 +387,7 @@
     "AWS.generic.response.yes": "Yes",
     "AWS.generic.notImplemented": "Not implemented",
     "AWS.generic.refresh": "Refresh",
+    "AWS.generic.message.viewLogs": "View Logs...",
     "AWS.template.error.showErrorDetails.title": "Error details for",
     "AWS.template.error.showErrorDetails.errorCode": "Error code",
     "AWS.template.error.showErrorDetails.errorMessage": "Error message",

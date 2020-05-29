@@ -8,6 +8,7 @@ const localize = nls.loadMessageBundle()
 
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { validateBucketName } from '../../s3/util/validateBucketName'
 import { AwsContext } from '../../shared/awsContext'
 import { samDeployDocUrl } from '../../shared/constants'
 import { getLogger } from '../../shared/logger'
@@ -327,7 +328,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 
         return await input.promptUser({
             inputBox: inputBox,
-            onValidateInput: validateS3Bucket,
+            onValidateInput: validateBucketName,
             onDidTriggerButton: (button, resolve, reject) => {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
@@ -542,57 +543,6 @@ class SamTemplateQuickPickItem implements vscode.QuickPickItem {
 
         return uri.fsPath
     }
-}
-
-// https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-s3-bucket-naming-requirements.html
-export function validateS3Bucket(value: string): string | undefined {
-    if (value.length < 3 || value.length > 63) {
-        return localize(
-            'AWS.samcli.deploy.s3Bucket.error.length',
-            'S3 bucket name must be between 3 and 63 characters long'
-        )
-    }
-
-    if (!/^[a-z\d\.\-]+$/.test(value)) {
-        return localize(
-            'AWS.samcli.deploy.s3Bucket.error.invalidCharacters',
-            'S3 bucket name may only contain lower-case characters, numbers, periods, and dashes'
-        )
-    }
-
-    if (/^\d+\.\d+\.\d+\.\d+$/.test(value)) {
-        return localize(
-            'AWS.samcli.deploy.s3Bucket.error.ipAddress',
-            'S3 bucket name may not be formatted as an IP address (198.51.100.24)'
-        )
-    }
-
-    if (value.endsWith('-')) {
-        return localize('AWS.samcli.deploy.s3Bucket.error.endsWithDash', 'S3 bucket name may not end with a dash')
-    }
-
-    if (value.includes('..')) {
-        return localize(
-            'AWS.samcli.deploy.s3Bucket.error.consecutivePeriods',
-            'S3 bucket name may not have consecutive periods'
-        )
-    }
-
-    if (value.includes('.-') || value.includes('-.')) {
-        return localize(
-            'AWS.samcli.deploy.s3Bucket.error.dashAdjacentPeriods',
-            'S3 bucket name may not contain a period adjacent to a dash'
-        )
-    }
-
-    if (value.split('.').some(label => !/^[a-z\d]/.test(label))) {
-        return localize(
-            'AWS.samcli.deploy.s3Bucket.error.labelFirstCharacter',
-            'Each label in an S3 bucket name must begin with a number or a lower-case character'
-        )
-    }
-
-    return undefined
 }
 
 // https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_CreateStack.html
