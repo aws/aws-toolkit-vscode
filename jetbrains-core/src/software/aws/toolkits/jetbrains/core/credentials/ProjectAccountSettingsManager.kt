@@ -1,4 +1,4 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.core.credentials
@@ -261,7 +261,7 @@ sealed class ConnectionState(val displayMessage: String) {
     )
 
     class InvalidConnection(credentials: ToolkitCredentialsIdentifier, region: AwsRegion, val cause: Exception) :
-        ConnectionState(message("settings.states.invalid", credentials.displayName, region.displayName, cause.localizedMessage)) {
+        ConnectionState(message("settings.states.invalid", cause.localizedMessage)) {
         override val shortMessage = message("settings.states.invalid.short")
     }
 }

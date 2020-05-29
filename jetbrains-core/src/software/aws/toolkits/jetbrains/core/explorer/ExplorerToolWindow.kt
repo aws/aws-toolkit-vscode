@@ -1,4 +1,4 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 @file:Suppress("DEPRECATION") // TODO: Investigate AsyncTreeModel FIX_WHEN_MIN_IS_201
@@ -22,7 +22,6 @@ import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.ui.DoubleClickListener
-import com.intellij.ui.GuiUtils
 import com.intellij.ui.JBColor
 import com.intellij.ui.PopupHandler
 import com.intellij.ui.ScrollPaneFactory
@@ -48,6 +47,7 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceLocationNode
 import software.aws.toolkits.jetbrains.ui.tree.AsyncTreeModel
 import software.aws.toolkits.jetbrains.ui.tree.StructureTreeModel
 import java.awt.Component
+import java.awt.GridBagLayout
 import java.awt.Insets
 import java.awt.event.MouseEvent
 import javax.swing.JComponent
@@ -59,7 +59,7 @@ import javax.swing.text.StyleConstants
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.TreeModel
 
-class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(true, true), ConnectionSettingsStateChangeNotifier {
+class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), ConnectionSettingsStateChangeNotifier {
     private val actionManager = ActionManagerEx.getInstanceEx()
     private val treePanelWrapper: Wrapper = Wrapper()
     private val awsTreeModel = AwsExplorerTreeStructure(project)
@@ -83,21 +83,29 @@ class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(t
     }
 
     private fun createInfoPanel(text: String, error: Boolean = false): JComponent {
-        val panel = JPanel(GuiUtils.createBorderLayout())
+        val panel = JPanel(GridBagLayout())
 
         val textPane = JTextPane().apply {
             this.text = text
-            val center = SimpleAttributeSet().apply { StyleConstants.setAlignment(this, StyleConstants.ALIGN_CENTER) }
+            val center = SimpleAttributeSet().apply {
+                StyleConstants.setAlignment(this, StyleConstants.ALIGN_CENTER)
+                StyleConstants.setForeground(this, UIUtil.getInactiveTextColor())
+            }
             with(styledDocument) {
                 setParagraphAttributes(0, length, center, false)
             }
             margin = Insets(10, 10, 10, 10)
             isEditable = false
             if (error) {
-                foreground = JBColor.red
+                with(styledDocument) {
+                    val errorStyle = SimpleAttributeSet().apply {
+                        StyleConstants.setForeground(this, JBColor.red)
+                    }
+                    setCharacterAttributes(0, length, errorStyle, false)
+                }
             }
-            background = UIUtil.getLabelBackground()
         }
+        panel.background = textPane.background
 
         panel.add(textPane)
         return panel
@@ -125,15 +133,21 @@ class ExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(t
      * @param selectedNode AbstractTreeNode to redraw the tree from
      */
     fun invalidateTree(selectedNode: AbstractTreeNode<*>? = null) {
-        // Save the state and reapply it after we invalidate (which is the point where the state is wiped).
-        // Items are expanded again if their user object is unchanged (.equals()).
-        val state = TreeState.createOn(awsTree)
-        if (selectedNode != null) {
-            structureTreeModel.invalidate(selectedNode, true)
-        } else {
-            structureTreeModel.invalidate()
+        withSavedState(awsTree) {
+            if (selectedNode != null) {
+                structureTreeModel.invalidate(selectedNode, true)
+            } else {
+                structureTreeModel.invalidate()
+            }
         }
-        state.applyTo(awsTree)
+    }
+
+    // Save the state and reapply it after we invalidate (which is the point where the state is wiped).
+    // Items are expanded again if their user object is unchanged (.equals()).
+    private fun withSavedState(tree: Tree, block: () -> Unit) {
+        val state = TreeState.createOn(tree)
+        block()
+        state.applyTo(tree)
     }
 
     private fun createTree(model: TreeModel): Tree {
