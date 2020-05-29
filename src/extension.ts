@@ -221,6 +221,9 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
     ext.iconPaths.dark.registry = context.asAbsolutePath('resources/dark/registry.svg')
     ext.iconPaths.light.registry = context.asAbsolutePath('resources/light/registry.svg')
 
+    ext.iconPaths.dark.s3 = context.asAbsolutePath('resources/dark/s3/bucket.svg')
+    ext.iconPaths.light.s3 = context.asAbsolutePath('resources/light/s3/bucket.svg')
+
     ext.iconPaths.dark.schema = context.asAbsolutePath('resources/dark/schema.svg')
     ext.iconPaths.light.schema = context.asAbsolutePath('resources/light/schema.svg')
 
