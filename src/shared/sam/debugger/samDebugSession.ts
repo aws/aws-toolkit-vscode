@@ -37,6 +37,7 @@ export interface SamLaunchRequestArgs extends DebugProtocol.AttachRequestArgumen
     /** Resolved (potentinally generated) handler name. */
     handlerName: string
     workspaceFolder: vscode.WorkspaceFolder
+
     /**
      * Absolute path to the SAM project root, calculated from any of:
      *  - `codeUri` in `template.yaml`
@@ -46,18 +47,36 @@ export interface SamLaunchRequestArgs extends DebugProtocol.AttachRequestArgumen
     codeRoot: string
     outFilePath?: string
 
+    /** Path to (generated) directory used as a working/staging area for SAM. */
     baseBuildDir?: string
+
     /**
      * URI of the current editor document.
      * Used as a last resort for deciding `codeRoot` (when there is no `launch.json` nor `template.yaml`)
      */
     documentUri: vscode.Uri
+
     /**
      * SAM/CFN template absolute path used for SAM CLI invoke.
      * - For `target=code` this is the _generated_ template path.
      * - For `target=template` this is the template found in the workspace.
      */
     samTemplatePath: string
+
+    /**
+     * Path to the (generated) `event.json` file placed in `baseBuildDir` for SAM to discover.
+     *
+     * The file contains the event payload JSON to be consumed by SAM.
+     */
+    eventPayloadFile: string
+
+    /**
+     * Path to the (generated) `env-vars.json` file placed in `baseBuildDir` for SAM to discover.
+     *
+     * The file contains a JSON map of environment variables to be consumed by
+     * SAM, resolved from `template.yaml` and/or `lambda.environmentVariables`.
+     */
+    envFile: string
 
     //
     // Debug properties (when user runs with debugging enabled).

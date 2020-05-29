@@ -5,19 +5,19 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { SamLaunchRequestArgs } from '../../shared/sam/debugger/samDebugSession'
-import { RuntimeFamily } from '../models/samLambdaRuntime'
-import {
-    CodeTargetProperties,
-    TemplateTargetProperties,
-    AwsSamDebuggerConfiguration,
-    AWS_SAM_DEBUG_TARGET_TYPES,
-} from '../../shared/sam/debugger/awsSamDebugConfiguration'
-import { tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
-import { localize } from '../../shared/utilities/vsCodeUtils'
 import { CloudFormation } from '../../shared/cloudformation/cloudformation'
 import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
+import {
+    AwsSamDebuggerConfiguration,
+    AWS_SAM_DEBUG_TARGET_TYPES,
+    CodeTargetProperties,
+    TemplateTargetProperties,
+} from '../../shared/sam/debugger/awsSamDebugConfiguration'
+import { SamLaunchRequestArgs } from '../../shared/sam/debugger/samDebugSession'
 import * as pathutil from '../../shared/utilities/pathUtils'
+import { localize } from '../../shared/utilities/vsCodeUtils'
+import { tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
+import { RuntimeFamily } from '../models/samLambdaRuntime'
 
 export const DOTNET_CORE_DEBUGGER_PATH = '/tmp/lambci_debug_files/vsdbg'
 

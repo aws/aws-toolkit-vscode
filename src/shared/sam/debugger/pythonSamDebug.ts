@@ -19,7 +19,7 @@ import { getLocalRootVariants } from '../../utilities/pathUtils'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { ChannelLogger } from '../../utilities/vsCodeUtils'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { invokeLambdaFunction, makeBuildDir, makeInputTemplate } from '../localLambdaRunner'
+import { invokeLambdaFunction, makeInputTemplate } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './samDebugSession'
 
 const PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MS = 1000
@@ -115,6 +115,9 @@ def ${debugHandlerFunctionName}(event, context):
  * Does NOT execute/invoke SAM, docker, etc.
  */
 export async function makePythonDebugConfig(config: SamLaunchRequestArgs): Promise<PythonDebugConfiguration> {
+    if (!config.baseBuildDir) {
+        throw Error('invalid state: config.baseBuildDir was not set')
+    }
     if (!config.codeRoot) {
         // Last-resort attempt to discover the project root (when there is no
         // `launch.json` nor `template.yaml`).
@@ -126,7 +129,6 @@ export async function makePythonDebugConfig(config: SamLaunchRequestArgs): Promi
     }
     config.codeRoot = pathutil.normalize(config.codeRoot)
 
-    config.baseBuildDir = await makeBuildDir()
     let debugPort: number | undefined
     let manifestPath: string | undefined
     let outFilePath: string | undefined

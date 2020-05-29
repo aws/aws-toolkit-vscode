@@ -29,6 +29,7 @@ import {
     DefaultAwsSamDebugConfigurationValidator,
 } from './awsSamDebugConfigurationValidator'
 import { SamLaunchRequestArgs } from './samDebugSession'
+import { makeConfig } from '../localLambdaRunner'
 
 const localize = nls.loadMessageBundle()
 
@@ -182,21 +183,6 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             templateResource?.Properties?.Runtime ??
             getDefaultRuntime(getRuntimeFamily(editor?.document?.languageId ?? 'unknown'))
 
-        // Merge env vars from launch.json + template.yaml.
-        // Note: launch.json takes precedence.
-        let env: { [k: string]: string } = {
-            ...templateResource?.Properties?.Environment?.Variables,
-            ...config.lambda?.environmentVariables,
-        }
-        // target=template: override env vars ONLY if specified in template.yaml.
-        if (templateResource) {
-            env = _.pick(
-                env,
-                templateResource?.Properties?.Environment?.Variables
-                    ? Object.keys(templateResource?.Properties?.Environment?.Variables)
-                    : []
-            )
-        }
         const lambdaMemory = templateResource?.Properties?.MemorySize ?? config.lambda?.memoryMb
         const lambdaTimout = templateResource?.Properties?.Timeout ?? config.lambda?.timeoutSec
 
@@ -224,12 +210,14 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             handlerName: handlerName,
             documentUri: documentUri,
             samTemplatePath: pathutil.normalize(templateInvoke?.samTemplatePath),
+            eventPayloadFile: '', // Populated by makeConfig().
+            envFile: '', // Populated by makeConfig().
             debugPort: config.noDebug ? undefined : await getStartPort(),
             lambda: {
                 ...config.lambda,
-                ...{ environmentVariables: env },
                 memoryMb: lambdaMemory,
                 timeoutSec: lambdaTimout,
+                environmentVariables: { ...config.lambda?.environmentVariables },
             },
         }
 
@@ -240,6 +228,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         // 2. do `sam build`
         // 3. do `sam local invoke`
         //
+        await makeConfig(launchConfig)
         switch (runtimeFamily) {
             case RuntimeFamily.NodeJS: {
                 // Make a NodeJS launch-config from the generic config.

@@ -12,7 +12,7 @@ import { ExtContext } from '../../extensions'
 import { SamLaunchRequestArgs } from '../../sam/debugger/samDebugSession'
 import { findParentProjectFile } from '../../utilities/workspaceUtils'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { invokeLambdaFunction, makeBuildDir, makeInputTemplate, waitForDebugPort } from '../localLambdaRunner'
+import { invokeLambdaFunction, makeInputTemplate, waitForDebugPort } from '../localLambdaRunner'
 
 /**
  * Launches and attaches debugger to a SAM Node project.
@@ -39,6 +39,9 @@ export async function getSamProjectDirPathForFile(filepath: string): Promise<str
  * Does NOT execute/invoke SAM, docker, etc.
  */
 export async function makeTypescriptConfig(config: SamLaunchRequestArgs): Promise<NodejsDebugConfiguration> {
+    if (!config.baseBuildDir) {
+        throw Error('invalid state: config.baseBuildDir was not set')
+    }
     if (!config.codeRoot) {
         // Last-resort attempt to discover the project root (when there is no
         // `launch.json` nor `template.yaml`).
@@ -51,8 +54,6 @@ export async function makeTypescriptConfig(config: SamLaunchRequestArgs): Promis
         }
     }
     config.codeRoot = pathutil.normalize(config.codeRoot)
-
-    config.baseBuildDir = await makeBuildDir()
 
     // Always generate a temporary template.yaml, don't use workspace one directly.
     config.samTemplatePath = await makeInputTemplate(config)

@@ -30,7 +30,9 @@ import * as debugConfiguration from '../../../../lambda/local/debugConfiguration
 import * as pathutil from '../../../../shared/utilities/pathUtils'
 import { FakeExtensionContext } from '../../../fakeExtensionContext'
 import * as testutil from '../../../testUtil'
+import { assertFileText } from '../../../testUtil'
 import { makeSampleSamTemplateYaml, makeSampleYamlResource } from '../../cloudformation/cloudformationTestUtils'
+import { readFileSync } from 'fs-extra'
 
 /**
  * Asserts the contents of a "launch config" (the result of
@@ -45,12 +47,6 @@ function assertEqualLaunchConfigs(actual: SamLaunchRequestArgs, expected: SamLau
 
     // Compare filepaths (before removing them for deep-compare).
     testutil.assertEqualPaths(actual.workspaceFolder.uri.fsPath, expected.workspaceFolder.uri.fsPath)
-    testutil.assertEqualPaths(actual.codeRoot, expected.codeRoot)
-    testutil.assertEqualPaths(actual.debuggerPath ?? '', expected.debuggerPath ?? '')
-    testutil.assertEqualPaths(
-        (actual.localRoot as string | undefined) ?? '',
-        (expected.localRoot as string | undefined) ?? ''
-    )
 
     // Build dir is randomly-generated; check that it looks reasonable.
     assert.ok(actual.baseBuildDir && actual.baseBuildDir.length > 9)
@@ -59,11 +55,19 @@ function assertEqualLaunchConfigs(actual: SamLaunchRequestArgs, expected: SamLau
         assert.ok(actual.manifestPath && actual.manifestPath.length > 9)
     }
 
+    // Normalize path fields before comparing.
+    for (const o of [actual, expected]) {
+        o.codeRoot = pathutil.normalize(o.codeRoot)
+        o.envFile = pathutil.normalize(o.envFile)
+        o.eventPayloadFile = pathutil.normalize(o.eventPayloadFile)
+        o.debuggerPath = o.debuggerPath ? pathutil.normalize(o.debuggerPath) : o.debuggerPath
+        o.localRoot = o.localRoot ? pathutil.normalize(o.localRoot) : o.localRoot
+    }
+
     // Remove noisy properties before doing a deep-compare.
     for (const o of [actual, expected]) {
         delete o.manifestPath
         delete o.documentUri
-        delete o.baseBuildDir
         delete o.samTemplatePath
         delete o.workspaceFolder
         delete o.codeRoot
@@ -335,6 +339,19 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 },
                 lambda: {
                     runtime: 'nodejs12.x',
+                    // For target=code these envvars are written to the input-template.yaml.
+                    environmentVariables: {
+                        'test-envvar-1': 'test value 1',
+                        'test-envvar-2': 'test value 2',
+                    },
+                    memoryMb: 1.2,
+                    timeoutSec: 9000,
+                    event: {
+                        json: {
+                            'test-payload-key-1': 'test payload value 1',
+                            'test-payload-key-2': 'test payload value 2',
+                        },
+                    },
                 },
             }
             const actual = (await debugConfigProvider.resolveDebugConfiguration(folder, input))!
@@ -349,6 +366,8 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                     uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
+                envFile: `${actual.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'src')), // Normalized to absolute path.
                 debugPort: 5858,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
@@ -356,9 +375,6 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 invokeTarget: { ...input.invokeTarget },
                 lambda: {
                     ...input.lambda,
-                    environmentVariables: {},
-                    memoryMb: undefined,
-                    timeoutSec: undefined,
                 },
                 localRoot: pathutil.normalize(path.join(appDir, 'src')), // Normalized to absolute path.
                 name: 'SamLocalDebug',
@@ -376,7 +392,15 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
-            testutil.assertFileText(
+            assertFileText(
+                expected.envFile,
+                '{"awsToolkitSamLocalResource":{"test-envvar-1":"test value 1","test-envvar-2":"test value 2"}}'
+            )
+            assertFileText(
+                expected.eventPayloadFile,
+                '{"test-payload-key-1":"test payload value 1","test-payload-key-2":"test payload value 2"}'
+            )
+            assertFileText(
                 expected.samTemplatePath,
                 `Resources:
   awsToolkitSamLocalResource:
@@ -387,7 +411,11 @@ describe('AwsSamDebugConfigurationProvider', async () => {
         ${expected.codeRoot}
       Runtime: nodejs12.x
       Environment:
-        Variables: {}
+        Variables:
+          test-envvar-1: test value 1
+          test-envvar-2: test value 2
+      MemorySize: 1.2
+      Timeout: 9000
 `
             )
 
@@ -402,6 +430,9 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 request: 'launch',
                 debugPort: undefined,
                 port: -1,
+                baseBuildDir: actualNoDebug.baseBuildDir,
+                envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
             }
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug, appDir)
         })
@@ -420,6 +451,22 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                     samTemplatePath: 'template.yaml',
                     samTemplateResource: 'SourceCodeTwoFoldersDeep',
                 },
+                lambda: {
+                    // For target=template these are written to env-vars.json,
+                    // NOT the input-template.yaml.
+                    environmentVariables: {
+                        'test-js-template-envvar-1': 'test target=template envvar value 1',
+                        'test-js-template-envvar-2': 'test target=template envvar value 2',
+                    },
+                    memoryMb: 1.01,
+                    timeoutSec: 99,
+                    event: {
+                        json: {
+                            'test-js-template-key-1': 'test js target=template value 1',
+                            'test-js-template-key-2': 'test js target=template value 2',
+                        },
+                    },
+                },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
             await registry.addTemplateToRegistry(templatePath)
@@ -436,15 +483,15 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                     uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
+                envFile: `${actual.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: appDir,
                 debugPort: 5858,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'src/subfolder/app.handlerTwoFoldersDeep',
                 invokeTarget: { ...input.invokeTarget },
                 lambda: {
-                    environmentVariables: {},
-                    memoryMb: undefined,
-                    timeoutSec: undefined,
+                    ...input.lambda,
                 },
                 localRoot: appDir,
                 name: 'SamLocalDebug',
@@ -462,7 +509,15 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
-            testutil.assertFileText(
+            assertFileText(
+                expected.envFile,
+                '{"awsToolkitSamLocalResource":{"test-js-template-envvar-1":"test target=template envvar value 1","test-js-template-envvar-2":"test target=template envvar value 2"}}'
+            )
+            assertFileText(
+                expected.eventPayloadFile,
+                '{"test-js-template-key-1":"test js target=template value 1","test-js-template-key-2":"test js target=template value 2"}'
+            )
+            assertFileText(
                 expected.samTemplatePath,
                 `Resources:
   awsToolkitSamLocalResource:
@@ -472,8 +527,8 @@ describe('AwsSamDebugConfigurationProvider', async () => {
       CodeUri: >-
         ${expected.codeRoot}
       Runtime: nodejs10.x
-      Environment:
-        Variables: {}
+      MemorySize: 1.01
+      Timeout: 99
 `
             )
 
@@ -488,6 +543,9 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 request: 'launch',
                 debugPort: undefined,
                 port: -1,
+                baseBuildDir: actualNoDebug.baseBuildDir,
+                envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
             }
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug, appDir)
         })
@@ -526,6 +584,8 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                     uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
+                envFile: `${actual.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: expectedCodeRoot, // Normalized to absolute path.
                 debugPort: 5858,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
@@ -573,7 +633,9 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
-            testutil.assertFileText(
+            assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{}}')
+            assertFileText(expected.eventPayloadFile, '{}')
+            assertFileText(
                 expected.samTemplatePath,
                 `Resources:
   awsToolkitSamLocalResource:
@@ -604,6 +666,9 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 request: 'launch',
                 debuggerPath: undefined,
                 debugPort: undefined,
+                baseBuildDir: actualNoDebug.baseBuildDir,
+                envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
             }
             delete expectedNoDebug.processId
             delete expectedNoDebug.pipeTransport
@@ -626,6 +691,18 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                     samTemplatePath: 'template.yaml',
                     samTemplateResource: 'HelloWorldFunction',
                 },
+                lambda: {
+                    environmentVariables: {
+                        'test-envvar-1': 'test value 1',
+                    },
+                    memoryMb: 42,
+                    timeoutSec: 717,
+                    event: {
+                        json: {
+                            'test-payload-key-1': 'test payload value 1',
+                        },
+                    },
+                },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
             await registry.addTemplateToRegistry(templatePath)
@@ -645,17 +722,15 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                     uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
+                envFile: `${actual.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: expectedCodeRoot,
                 debugPort: 5858,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'HelloWorld::HelloWorld.Function::FunctionHandler',
                 invokeTarget: { ...input.invokeTarget },
                 lambda: {
-                    environmentVariables: {
-                        PARAM1: 'VALUE', // From template.yaml
-                    },
-                    memoryMb: undefined,
-                    timeoutSec: undefined,
+                    ...input.lambda,
                 },
                 name: 'SamLocalDebug',
                 samTemplatePath: expectedCodeRoot + '/input-template.yaml',
@@ -693,7 +768,9 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
-            testutil.assertFileText(
+            assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{"test-envvar-1":"test value 1"}}')
+            assertFileText(expected.eventPayloadFile, '{"test-payload-key-1":"test payload value 1"}')
+            assertFileText(
                 expected.samTemplatePath,
                 `Resources:
   awsToolkitSamLocalResource:
@@ -706,6 +783,8 @@ describe('AwsSamDebugConfigurationProvider', async () => {
       Environment:
         Variables:
           PARAM1: VALUE
+      MemorySize: 42
+      Timeout: 717
 Globals:
   Function:
     Timeout: 10
@@ -728,6 +807,9 @@ Globals:
                 request: 'launch',
                 debuggerPath: undefined,
                 debugPort: undefined,
+                baseBuildDir: actualNoDebug.baseBuildDir,
+                envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
             }
             delete expectedNoDebug.processId
             delete expectedNoDebug.pipeTransport
@@ -752,6 +834,9 @@ Globals:
                 },
                 lambda: {
                     runtime: 'python3.7',
+                    event: {
+                        path: `${appDir}/events/event.json`,
+                    },
                 },
             }
 
@@ -770,6 +855,8 @@ Globals:
                     uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
+                envFile: `${actual.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'hello_world')),
                 debugPort: 5858,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
@@ -809,7 +896,12 @@ Globals:
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
-            testutil.assertFileText(
+            assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{}}')
+            assert.strictEqual(
+                readFileSync(actual.eventPayloadFile, 'utf-8'),
+                readFileSync(input.lambda.event.path, 'utf-8')
+            )
+            assertFileText(
                 expected.samTemplatePath,
                 `Resources:
   awsToolkitSamLocalResource:
@@ -840,6 +932,9 @@ Globals:
                 port: -1,
                 outFilePath: '',
                 handlerName: 'app.lambda_handler',
+                baseBuildDir: actualNoDebug.baseBuildDir,
+                envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
             }
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug, appDir)
         })
@@ -877,6 +972,8 @@ Globals:
                     uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
+                envFile: `${actual.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'python3.7-plain-sam-app/hello_world')),
                 debugPort: 5858,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
@@ -917,7 +1014,9 @@ Globals:
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
-            testutil.assertFileText(
+            assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{}}')
+            assertFileText(expected.eventPayloadFile, '{}')
+            assertFileText(
                 expected.samTemplatePath,
                 `Resources:
   awsToolkitSamLocalResource:
@@ -927,8 +1026,6 @@ Globals:
       CodeUri: >-
         ${expected.codeRoot}
       Runtime: python3.7
-      Environment:
-        Variables: {}
 Globals:
   Function:
     Timeout: 3
@@ -948,6 +1045,9 @@ Globals:
                 port: -1,
                 outFilePath: '',
                 handlerName: 'app.lambda_handler',
+                baseBuildDir: actualNoDebug.baseBuildDir,
+                envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
             }
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug, appDir)
         })
@@ -967,7 +1067,7 @@ Globals:
                     samTemplateResource: resourceName,
                 },
                 lambda: {
-                    // These should NOT be passed to SAM.
+                    // These are written to env-vars.json, but ignored by SAM.
                     environmentVariables: {
                         var1: '2',
                         var2: '1',
@@ -995,6 +1095,8 @@ Globals:
                     uri: vscode.Uri.file(appDir),
                 },
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
+                envFile: `${actual.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
                 debugPort: 5858,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
@@ -1006,7 +1108,8 @@ Globals:
                 },
                 lambda: {
                     environmentVariables: {
-                        ENVVAR: 'envvar', // From template.yaml.
+                        var1: '2',
+                        var2: '1',
                     },
                     memoryMb: undefined,
                     timeoutSec: 12345, // From template.yaml.
@@ -1030,19 +1133,21 @@ Globals:
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
-            testutil.assertFileText(
+            assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{"var1":"2","var2":"1"}}')
+            assertFileText(expected.eventPayloadFile, '{}')
+            assertFileText(
                 expected.samTemplatePath,
                 `Resources:
   awsToolkitSamLocalResource:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: ${expected.handlerName}
-      CodeUri: ${expected.codeRoot}
+      ${(expected.codeRoot.length > 80 ? 'CodeUri: >-\n        ' : 'CodeUri: ') + expected.codeRoot}
       Runtime: nodejs12.x
-      Timeout: 12345
       Environment:
         Variables:
           ENVVAR: envvar
+      Timeout: 12345
 Globals:
   Function:
     Timeout: 5

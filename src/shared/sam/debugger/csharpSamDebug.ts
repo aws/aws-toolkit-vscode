@@ -20,7 +20,7 @@ import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../../
 import { SamLaunchRequestArgs } from '../../sam/debugger/samDebugSession'
 import { getStartPort } from '../../utilities/debuggerUtils'
 import { ChannelLogger, getChannelLogger } from '../../utilities/vsCodeUtils'
-import { invokeLambdaFunction, makeBuildDir, makeInputTemplate, waitForDebugPort } from '../localLambdaRunner'
+import { invokeLambdaFunction, makeInputTemplate, waitForDebugPort } from '../localLambdaRunner'
 
 /**
  * Gathers and sets launch-config info by inspecting the workspace and creating
@@ -29,7 +29,9 @@ import { invokeLambdaFunction, makeBuildDir, makeInputTemplate, waitForDebugPort
  * Does NOT execute/invoke SAM, docker, etc.
  */
 export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<SamLaunchRequestArgs> {
-    config.baseBuildDir = await makeBuildDir()
+    if (!config.baseBuildDir) {
+        throw Error('invalid state: config.baseBuildDir was not set')
+    }
     config.codeRoot = getCodeRoot(config.workspaceFolder, config)!
 
     config.samTemplatePath = await makeInputTemplate(config)
