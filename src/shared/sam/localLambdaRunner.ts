@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { unlink, writeFile } from 'fs-extra'
+import { copyFile, unlink, writeFile } from 'fs-extra'
 import * as path from 'path'
 import * as tcpPortUsed from 'tcp-port-used'
 import * as vscode from 'vscode'
@@ -21,6 +21,7 @@ import * as pathutil from '../utilities/pathUtils'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { Timeout } from '../utilities/timeoutUtils'
 import { ChannelLogger } from '../utilities/vsCodeUtils'
+import { tryGetAbsolutePath } from '../utilities/workspaceUtils'
 import { DefaultValidatingSamCliProcessInvoker } from './cli/defaultValidatingSamCliProcessInvoker'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from './cli/samCliBuild'
 import { SamCliProcessInvoker } from './cli/samCliInvokerUtils'
@@ -43,7 +44,7 @@ export interface SAMTemplateEnvironmentVariables {
     }
 }
 
-function getEnvironmentVariables(env: { [k: string]: string | number | boolean }): SAMTemplateEnvironmentVariables {
+function getEnvironmentVariables(env?: { [k: string]: string | number | boolean }): SAMTemplateEnvironmentVariables {
     return env ? { [TEMPLATE_RESOURCE_NAME]: env } : {}
 }
 
@@ -198,10 +199,15 @@ export async function invokeLambdaFunction(
 
     const eventPath: string = path.join(config.baseBuildDir!!, 'event.json')
     const environmentVariablePath = path.join(config.baseBuildDir!!, 'env-vars.json')
-    const env = JSON.stringify(getEnvironmentVariables(config.lambda?.environmentVariables ?? {}))
+    const env = JSON.stringify(getEnvironmentVariables(config.lambda?.environmentVariables))
     const maxRetries: number = getAttachDebuggerMaxRetryLimit(ctx.settings, MAX_DEBUGGER_RETRIES_DEFAULT)
+    if (config.lambda?.event?.path) {
+        const fullpath = tryGetAbsolutePath(config.workspaceFolder, config.lambda?.event?.path)
+        await copyFile(fullpath, eventPath)
+    } else if (config.lambda?.event?.json) {
+        await writeFile(eventPath, JSON.stringify(config.lambda?.event?.json || {}))
+    }
 
-    await writeFile(eventPath, JSON.stringify(config.lambda?.event || {}))
     await writeFile(environmentVariablePath, env)
 
     const localInvokeArgs: SamCliLocalInvokeInvocationArguments = {

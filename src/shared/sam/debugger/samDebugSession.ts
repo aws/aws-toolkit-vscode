@@ -3,19 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { Runtime } from 'aws-sdk/clients/lambda'
 import * as vscode from 'vscode'
 import { DebugSession, InitializedEvent, Logger, logger, TerminatedEvent } from 'vscode-debugadapter'
 import { DebugProtocol } from 'vscode-debugprotocol'
 import { NodejsDebugConfiguration, PythonDebugConfiguration } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
-import * as csharpDebug from './csharpSamDebug'
-import * as pythonDebug from './pythonSamDebug'
-import * as invokeTypescriptLambda from './typescriptSamDebug'
 import { ExtContext } from '../../extensions'
+import { Timeout } from '../../utilities/timeoutUtils'
 import { ChannelLogger } from '../../utilities/vsCodeUtils'
 import { SamLocalInvokeCommand } from '../cli/samCliLocalInvoke'
 import { AwsSamDebuggerConfiguration } from './awsSamDebugConfiguration.gen'
-import { Timeout } from '../../utilities/timeoutUtils'
+import * as csharpDebug from './csharpSamDebug'
+import * as pythonDebug from './pythonSamDebug'
+import * as invokeTypescriptLambda from './typescriptSamDebug'
 
 /**
  * SAM-specific launch attributes (which are not part of the DAP).
@@ -30,8 +31,10 @@ export interface SamLaunchRequestArgs extends DebugProtocol.AttachRequestArgumen
     // readonly type: 'node' | 'python' | 'coreclr' | 'aws-sam'
     readonly request: 'attach' | 'launch' | 'direct-invoke'
 
-    runtime: string
+    /** Runtime id-name passed to vscode to select a debugger/launcher. */
+    runtime: Runtime
     runtimeFamily: RuntimeFamily
+    /** Resolved (potentinally generated) handler name. */
     handlerName: string
     workspaceFolder: vscode.WorkspaceFolder
     /**
@@ -50,7 +53,7 @@ export interface SamLaunchRequestArgs extends DebugProtocol.AttachRequestArgumen
      */
     documentUri: vscode.Uri
     /**
-     * SAM template absolute path used for SAM CLI invoke.
+     * SAM/CFN template absolute path used for SAM CLI invoke.
      * - For `target=code` this is the _generated_ template path.
      * - For `target=template` this is the template found in the workspace.
      */
