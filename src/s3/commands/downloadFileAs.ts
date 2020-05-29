@@ -5,6 +5,7 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { downloadsDir } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { Window } from '../../shared/vscode/window'
@@ -12,7 +13,6 @@ import { S3FileNode } from '../explorer/s3FileNode'
 import { showErrorWithLogs } from '../util/messages'
 import { progressReporter } from '../util/progressReporter'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import downloadsFolder = require('downloads-folder')
 
 /**
  * Downloads a file represented by the given node.
@@ -55,7 +55,7 @@ async function promptForSaveLocation(fileName: string, window: Window): Promise<
         filters[`*${extension}`] = [extension]
     }
 
-    const downloadPath = path.join(findDownloadsFolder(), fileName)
+    const downloadPath = path.join(downloadsDir(), fileName)
     return window.showSaveDialog({
         defaultUri: vscode.Uri.file(downloadPath),
         saveLabel: localize('AWS.s3.downloadFile.saveButton', 'Download'),
@@ -78,13 +78,4 @@ async function downloadWithProgress(node: S3FileNode, saveLocation: vscode.Uri, 
             })
         }
     )
-}
-
-function findDownloadsFolder(): string {
-    try {
-        return downloadsFolder() ?? ''
-    } catch (e) {
-        getLogger().warn('Failed to find downloads folder: %O', e)
-        return ''
-    }
 }

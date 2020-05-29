@@ -5,7 +5,7 @@
 
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { getLogger } from '../../shared/logger'
-import { showLogOutputChannel } from '../../shared/logger/logger'
+import { showLogOutputChannel } from '../../shared/logger'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
 import { Window } from '../../shared/vscode/window'

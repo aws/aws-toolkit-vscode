@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { LOG_OUTPUT_CHANNEL } from './activation'
-
 let toolkitLogger: Logger | undefined
 
 export interface Logger {
@@ -42,11 +40,4 @@ export function getLogger(): Logger {
  */
 export function setLogger(logger: Logger | undefined) {
     toolkitLogger = logger
-}
-
-/**
- * Shows the log output channel.
- */
-export function showLogOutputChannel({ preserveFocus = true }: { preserveFocus?: boolean } = {}): void {
-    LOG_OUTPUT_CHANNEL.show(preserveFocus)
 }

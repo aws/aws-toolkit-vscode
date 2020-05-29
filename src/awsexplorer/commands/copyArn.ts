@@ -4,8 +4,7 @@
  */
 
 import * as nls from 'vscode-nls'
-import { getLogger } from '../../shared/logger'
-import { showLogOutputChannel } from '../../shared/logger/logger'
+import { getLogger, showLogOutputChannel } from '../../shared/logger'
 import * as telemetry from '../../shared/telemetry/telemetry'
 const localize = nls.loadMessageBundle()
 

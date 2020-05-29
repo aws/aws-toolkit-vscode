@@ -15,13 +15,13 @@ import { fileExists } from '../filesystemUtilities'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
 import { recordVscodeViewLogs } from '../telemetry/telemetry'
 import { setLogger } from './logger'
+import { LOG_OUTPUT_CHANNEL } from './outputChannel'
 import { WinstonToolkitLogger } from './winstonToolkitLogger'
 
 const localize = nls.loadMessageBundle()
 
 const LOG_PATH = path.join(getLogBasePath(), 'Code', 'logs', 'aws_toolkit', makeLogFilename())
 const DEFAULT_LOG_LEVEL: LogLevel = 'info'
-export const LOG_OUTPUT_CHANNEL: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Toolkit Logs')
 
 /**
  * Activate Logger functionality for the extension.
