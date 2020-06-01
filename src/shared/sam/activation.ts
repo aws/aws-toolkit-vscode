@@ -34,7 +34,7 @@ import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfigu
 import { SamDebugSession } from './debugger/samDebugSession'
 import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
 
-const STATE_NAME_SUPPRESS_YAML_PROMPT = 'dontShowYamlPromptEver'
+const STATE_NAME_SUPPRESS_YAML_PROMPT = 'aws.sam.suppressYamlPrompt'
 
 /**
  * Activate SAM-related functionality.
