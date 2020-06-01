@@ -50,11 +50,11 @@ sealed class LogActor<T>(
     }
 
     sealed class Message {
-        class LOAD_INITIAL : Message()
-        class LOAD_INITIAL_RANGE(val previousEvent: LogStreamEntry, val duration: Duration) : Message()
-        class LOAD_INITIAL_FILTER(val queryString: String) : Message()
-        class LOAD_FORWARD : Message()
-        class LOAD_BACKWARD : Message()
+        object LoadInitial : Message()
+        class LoadInitialRange(val previousEvent: LogStreamEntry, val duration: Duration) : Message()
+        class LoadInitialFilter(val queryString: String) : Message()
+        object LoadForward : Message()
+        object LoadBackward : Message()
     }
 
     init {
@@ -66,7 +66,7 @@ sealed class LogActor<T>(
     private suspend fun handleMessages() {
         for (message in channel) {
             when (message) {
-                is Message.LOAD_FORWARD -> if (!nextForwardToken.isNullOrEmpty()) {
+                is Message.LoadForward -> if (!nextForwardToken.isNullOrEmpty()) {
                     withContext(edtContext) { table.setPaintBusy(true) }
                     val items = loadMore(nextForwardToken, saveForwardToken = true)
                     withContext(edtContext) {
@@ -74,7 +74,7 @@ sealed class LogActor<T>(
                         table.setPaintBusy(false)
                     }
                 }
-                is Message.LOAD_BACKWARD -> if (!nextBackwardToken.isNullOrEmpty()) {
+                is Message.LoadBackward -> if (!nextBackwardToken.isNullOrEmpty()) {
                     withContext(edtContext) { table.setPaintBusy(true) }
                     val items = loadMore(nextBackwardToken, saveBackwardToken = true)
                     if (items.isNotEmpty()) {
@@ -96,7 +96,7 @@ sealed class LogActor<T>(
                     }
                     withContext(edtContext) { table.setPaintBusy(false) }
                 }
-                is Message.LOAD_INITIAL -> {
+                is Message.LoadInitial -> {
                     loadInitial()
                     // make sure the scroll pane is at the top after loading. Needed for Refresh!
                     val rect = table.getCellRect(0, 0, true)
@@ -104,7 +104,7 @@ sealed class LogActor<T>(
                         table.scrollRectToVisible(rect)
                     }
                 }
-                is Message.LOAD_INITIAL_RANGE -> {
+                is Message.LoadInitialRange -> {
                     loadInitialRange(message.previousEvent.timestamp, message.duration)
                     val item = table.listTableModel.items.firstOrNull { it == message.previousEvent }
                     val index = table.listTableModel.indexOf(item).takeIf { it > 0 } ?: return
@@ -113,7 +113,7 @@ sealed class LogActor<T>(
                         TableUtil.scrollSelectionToVisible(table)
                     }
                 }
-                is Message.LOAD_INITIAL_FILTER -> {
+                is Message.LoadInitialFilter -> {
                     loadInitialFilter(message.queryString)
                 }
             }

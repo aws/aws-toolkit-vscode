@@ -83,12 +83,12 @@ class LogStreamTable(
         component = ScrollPaneFactory.createScrollPane(logsTable).also {
             it.topReached {
                 if (logsTable.rowCount != 0) {
-                    launch { logStreamActor.channel.send(LogActor.Message.LOAD_BACKWARD()) }
+                    launch { logStreamActor.channel.send(LogActor.Message.LoadBackward) }
                 }
             }
             it.bottomReached {
                 if (logsTable.rowCount != 0) {
-                    launch { logStreamActor.channel.send(LogActor.Message.LOAD_FORWARD()) }
+                    launch { logStreamActor.channel.send(LogActor.Message.LoadForward) }
                 }
             }
         }

@@ -48,7 +48,7 @@ class LogStreamFilterActorTest : BaseCoroutineTest() {
                     .build()
             )
         runBlocking {
-            actor.channel.send(LogActor.Message.LOAD_INITIAL_FILTER("filter query"))
+            actor.channel.send(LogActor.Message.LoadInitialFilter("filter query"))
             tableModel.waitForModelToBeAtLeast(1)
         }
         assertThat(tableModel.items.size).isOne()
@@ -73,8 +73,8 @@ class LogStreamFilterActorTest : BaseCoroutineTest() {
                     .build()
             )
         runBlocking {
-            actor.channel.send(LogActor.Message.LOAD_INITIAL_FILTER("filter query"))
-            actor.channel.send(LogActor.Message.LOAD_FORWARD())
+            actor.channel.send(LogActor.Message.LoadInitialFilter("filter query"))
+            actor.channel.send(LogActor.Message.LoadForward)
             tableModel.waitForModelToBeAtLeast(2)
         }
         assertThat(tableModel.items).hasSize(2)
@@ -100,9 +100,9 @@ class LogStreamFilterActorTest : BaseCoroutineTest() {
                     .build()
             )
         runBlocking {
-            actor.channel.send(LogActor.Message.LOAD_INITIAL_FILTER("filter query"))
-            actor.channel.send(LogActor.Message.LOAD_BACKWARD())
-            actor.channel.send(LogActor.Message.LOAD_BACKWARD())
+            actor.channel.send(LogActor.Message.LoadInitialFilter("filter query"))
+            actor.channel.send(LogActor.Message.LoadBackward)
+            actor.channel.send(LogActor.Message.LoadBackward)
             tableModel.waitForModelToBeAtLeast(1)
         }
         assertThat(tableModel.items).hasSize(1)
@@ -115,7 +115,7 @@ class LogStreamFilterActorTest : BaseCoroutineTest() {
         actor.dispose()
         assertThatThrownBy {
             runBlocking {
-                channel.send(LogActor.Message.LOAD_FORWARD())
+                channel.send(LogActor.Message.LoadForward)
             }
         }.isInstanceOf(ClosedSendChannelException::class.java)
     }
@@ -123,7 +123,7 @@ class LogStreamFilterActorTest : BaseCoroutineTest() {
     @Test
     fun loadInitialThrows() {
         runBlocking {
-            actor.channel.send(LogActor.Message.LOAD_INITIAL())
+            actor.channel.send(LogActor.Message.LoadInitial)
             waitForTrue { actor.channel.isClosedForSend }
         }
     }
@@ -131,7 +131,7 @@ class LogStreamFilterActorTest : BaseCoroutineTest() {
     @Test
     fun loadInitialRangeThrows() {
         runBlocking {
-            actor.channel.send(LogActor.Message.LOAD_INITIAL_RANGE(LogStreamEntry("@@@", 0), Duration.ofMillis(0)))
+            actor.channel.send(LogActor.Message.LoadInitialRange(LogStreamEntry("@@@", 0), Duration.ofMillis(0)))
             waitForTrue { actor.channel.isClosedForSend }
         }
     }

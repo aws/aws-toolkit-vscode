@@ -45,7 +45,7 @@ class TailLogsAction(private val project: Project, private val channel: () -> Ch
         logStreamingJob = launch {
             while (true) {
                 try {
-                    channel().send(LogActor.Message.LOAD_FORWARD())
+                    channel().send(LogActor.Message.LoadForward)
                     delay(1000)
                 } catch (e: ClosedSendChannelException) {
                     // Channel is closed, so break out of the while loop and kill the coroutine

@@ -89,7 +89,7 @@ class CloudWatchLogGroup(
                     oldTable?.let { launch { Disposer.dispose(it) } }
                 }
                 launch {
-                    table.channel.send(LogActor.Message.LOAD_INITIAL_FILTER(searchField.text))
+                    table.channel.send(LogActor.Message.LoadInitialFilter(searchField.text))
                 }
             }
         }
@@ -107,7 +107,7 @@ class CloudWatchLogGroup(
     }
 
     private fun refreshTable() {
-        launch { groupTable.channel.send(LogActor.Message.LOAD_INITIAL()) }
+        launch { groupTable.channel.send(LogActor.Message.LoadInitial) }
     }
 
     override fun dispose() {}
