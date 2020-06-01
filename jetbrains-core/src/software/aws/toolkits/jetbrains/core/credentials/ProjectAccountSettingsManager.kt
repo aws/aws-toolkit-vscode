@@ -21,7 +21,6 @@ import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsPartition
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
@@ -269,16 +268,3 @@ fun Project.activeRegion(): AwsRegion = ProjectAccountSettingsManager.getInstanc
  * Legacy method, should be considered deprecated and avoided since it loads defaults out of band
  */
 fun Project.activeCredentialProvider(): ToolkitCredentialsProvider = ProjectAccountSettingsManager.getInstance(this).activeCredentialProvider
-
-/**
- * The underlying AWS account for current active credential provider of the project. Return null if credential provider is not set.
- * Calls of this member should be in non-UI thread since it makes network call using an STS client for retrieving the
- * underlying AWS account.
- */
-fun Project.activeAwsAccount(): String? = tryOrNull { AwsResourceCache.getInstance(this).getResourceNow(StsResources.ACCOUNT) }
-
-/**
- * The underlying AWS account for current active credential provider of the project if known. Return null if credential provider is not set or we have
- * not cached it.
- */
-fun Project.activeAwsAccountIfKnown(): String? = tryOrNull { AwsResourceCache.getInstance(this).getResourceIfPresent(StsResources.ACCOUNT) }
