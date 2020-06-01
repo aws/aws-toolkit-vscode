@@ -193,7 +193,7 @@
     "AWS.message.info.stepFunctions.publishStateMachine.creating": "Creating state machine '{0}' in {1}...",
     "AWS.message.info.stepFunctions.publishStateMachine.updateSuccess": "Successfully updated state machine '{0}'",
     "AWS.message.info.stepFunctions.publishStateMachine.updating": "Updating state machine '{0}' in {1}...",
-    "AWS.message.info.yaml.prompt": "You can access additional AWS SAM functionality by installing YAML language support.",
+    "AWS.message.info.yaml.prompt": "Install YAML extension for additional AWS features.",
     "AWS.message.info.yaml.goToMarketplace": "Open Marketplace Page",
     "AWS.message.info.yaml.dontShowAgain": "Dismiss, and don't show again",
     "AWS.schemas.downloadCodeBindings.initWizard.language.prompt": "Select a code binding language",
