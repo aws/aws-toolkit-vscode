@@ -83,7 +83,9 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
     /**
      * Re-trigger validation of the current connection
      */
-    fun refreshConnectionState() { changeFieldsAndNotify { } }
+    fun refreshConnectionState() {
+        changeFieldsAndNotify { }
+    }
 
     /**
      * Internal setter that allows for null values and is intended to set the internal state and still notify
@@ -104,15 +106,12 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
         }
     }
 
-    // TODO: Make this not null, few tests need to be fixed
     /**
      * Changes the credentials and then validates them. Notifies listeners of results
      */
-    fun changeCredentialProvider(identifier: ToolkitCredentialsIdentifier?) {
+    fun changeCredentialProvider(identifier: ToolkitCredentialsIdentifier) {
         changeFieldsAndNotify {
-            identifier?.let {
-                recentlyUsedProfiles.add(identifier.id)
-            }
+            recentlyUsedProfiles.add(identifier.id)
 
             selectedCredentialIdentifier = identifier
         }
@@ -123,9 +122,8 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
      */
     fun changeRegion(region: AwsRegion) {
         changeFieldsAndNotify {
-            region.let {
-                recentlyUsedRegions.add(region.id)
-            }
+            recentlyUsedRegions.add(region.id)
+
             selectedRegion = region
             selectedPartition = regionProvider.partitions()[region.partitionId]
         }

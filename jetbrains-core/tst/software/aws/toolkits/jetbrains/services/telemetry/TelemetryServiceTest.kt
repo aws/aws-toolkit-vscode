@@ -100,7 +100,7 @@ class TelemetryServiceTest {
     fun metricEventMetadataIsNotSet() {
         val accountSettings = MockProjectAccountSettingsManager.getInstance(projectRule.project)
 
-        accountSettings.changeCredentialProvider(null)
+        accountSettings.nullifyCredentialProviderAndWait()
 
         val eventCaptor = argumentCaptor<MetricEvent>()
 

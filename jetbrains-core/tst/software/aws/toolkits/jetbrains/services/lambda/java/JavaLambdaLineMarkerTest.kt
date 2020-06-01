@@ -493,7 +493,7 @@ Resources:
     @Test
     fun noCredentialsLeadsToNoMarkerIfNoOtherCriteriaPasses() {
         LambdaSettings.getInstance(projectRule.project).showAllHandlerGutterIcons = false
-        MockProjectAccountSettingsManager.getInstance(projectRule.project).changeCredentialProvider(null)
+        MockProjectAccountSettingsManager.getInstance(projectRule.project).nullifyCredentialProviderAndWait()
 
         val fixture = projectRule.fixture
 

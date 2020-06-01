@@ -36,8 +36,13 @@ class MockProjectAccountSettingsManager(project: Project) : ProjectAccountSettin
         waitUntilConnectionStateIsStable()
     }
 
-    fun changeCredentialProviderAndWait(identifier: ToolkitCredentialsIdentifier?) {
+    fun changeCredentialProviderAndWait(identifier: ToolkitCredentialsIdentifier) {
         changeCredentialProvider(identifier)
+        waitUntilConnectionStateIsStable()
+    }
+
+    fun nullifyCredentialProviderAndWait() {
+        changeConnectionSettings(null, selectedPartition, selectedRegion)
         waitUntilConnectionStateIsStable()
     }
 
@@ -84,7 +89,9 @@ fun <T> runUnderRealCredentials(project: Project, block: () -> T): T {
         return block.invoke()
     } finally {
         oldActive?.let {
-            manager.changeCredentialProviderAndWait(credentialsManager.getCredentialIdentifierById(oldActive.id))
+            credentialsManager.getCredentialIdentifierById(oldActive.id)?.let {
+                manager.changeCredentialProviderAndWait(it)
+            }
         }
         credentialsManager.removeCredentials(realCredentialsProvider)
     }
