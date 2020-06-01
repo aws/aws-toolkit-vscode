@@ -195,7 +195,7 @@
     "AWS.message.info.stepFunctions.publishStateMachine.updating": "Updating state machine '{0}' in {1}...",
     "AWS.message.info.yaml.prompt": "Install YAML extension for additional AWS features.",
     "AWS.message.info.yaml.goToMarketplace": "Open Marketplace Page",
-    "AWS.message.info.yaml.dontShowAgain": "Dismiss, and don't show again",
+    "AWS.message.info.yaml.suppressPrompt": "Dismiss, and don't show again",
     "AWS.schemas.downloadCodeBindings.initWizard.language.prompt": "Select a code binding language",
     "AWS.schemas.downloadCodeBindings.initWizard.version.prompt": "Select a version for schema {0} :",
     "AWS.schemas.downloadCodeBindings.initWizard.location.prompt": "Select a workspace folder to download code binding",

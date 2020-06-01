@@ -255,13 +255,13 @@ async function promptInstallYamlPlugin(fileName: string, disposables: vscode.Dis
 
         const goToMarketplace = localize('AWS.message.info.yaml.goToMarketplace', 'Open Marketplace Page')
         const dismiss = localize('AWS.generic.response.dismiss', 'Dismiss')
-        const dontShowAgain = localize('AWS.message.info.yaml.dontShowAgain', "Dismiss, and don't show again")
+        const permanentlySuppress = localize('AWS.message.info.yaml.suppressPrompt', "Dismiss, and don't show again")
 
         const response = await vscode.window.showInformationMessage(
             localize('AWS.message.info.yaml.prompt', 'Install YAML extension for additional AWS features.'),
             goToMarketplace,
             dismiss,
-            dontShowAgain
+            permanentlySuppress
         )
 
         switch (response) {
@@ -280,7 +280,7 @@ async function promptInstallYamlPlugin(fileName: string, disposables: vscode.Dis
                     getLogger().error(`Extension ${VSCODE_EXTENSION_ID.yaml} could not be opened: `, err.message)
                 }
                 break
-            case dontShowAgain:
+            case permanentlySuppress:
                 ext.context.globalState.update(STATE_NAME_SUPPRESS_YAML_PROMPT, true)
         }
     }
