@@ -5,8 +5,10 @@ package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
+import com.intellij.testFramework.ProjectRule
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.junit.rules.ExternalResource
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
@@ -50,6 +52,20 @@ class MockProjectAccountSettingsManager(project: Project) : ProjectAccountSettin
     companion object {
         fun getInstance(project: Project): MockProjectAccountSettingsManager =
             ServiceManager.getService(project, ProjectAccountSettingsManager::class.java) as MockProjectAccountSettingsManager
+    }
+
+    class ProjectAccountSettingsManagerRule(projectRule: ProjectRule) : ExternalResource() {
+        val settingsManager by lazy {
+            getInstance(projectRule.project)
+        }
+
+        override fun before() {
+            settingsManager.reset()
+        }
+
+        override fun after() {
+            settingsManager.reset()
+        }
     }
 }
 

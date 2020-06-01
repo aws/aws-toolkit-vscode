@@ -15,6 +15,7 @@ import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.psi.util.CachedValueProvider
 import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
+import software.aws.toolkits.core.region.AwsPartition
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.ChangeAccountSettingsMode.BOTH
 import software.aws.toolkits.jetbrains.core.credentials.ChangeAccountSettingsMode.CREDENTIALS
@@ -27,8 +28,8 @@ import javax.swing.JComponent
 class ChangeAccountSettingsActionGroup(project: Project, private val mode: ChangeAccountSettingsMode) : ComputableActionGroup(), DumbAware {
 
     private val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
-    private val partitionSelector = ChangePartitionActionGroup()
-    private val regionSelector = ChangeRegionActionGroup(partitionSelector, accountSettingsManager)
+    private val regionSelector =
+        ChangeRegionActionGroup(accountSettingsManager.selectedPartition, accountSettingsManager, ChangePartitionActionGroup(accountSettingsManager))
     private val credentialSelector = ChangeCredentialsActionGroup(true)
 
     override fun createChildrenProvider(actionManager: ActionManager?): CachedValueProvider<Array<AnAction>> = CachedValueProvider {
@@ -81,27 +82,7 @@ enum class ChangeAccountSettingsMode(
     BOTH(true, true)
 }
 
-private class ChangePartitionActionGroup : DefaultActionGroup(message("settings.partitions"), true), DumbAware {
-    init {
-        addAll(AwsRegionProvider.getInstance().partitions().map {
-            object : ToggleAction(it.value.description), DumbAware {
-                private val partition = it.value
-                override fun isSelected(e: AnActionEvent) = getAccountSetting(e).selectedPartition == partition
-
-                override fun setSelected(e: AnActionEvent, state: Boolean) {
-                    if (state) {
-                        getAccountSetting(e).changePartition(partition)
-                    }
-                }
-            }
-        })
-    }
-}
-
-private class ChangeCredentialsActionGroup(popup: Boolean) : ComputableActionGroup(
-    message("settings.credentials.profile_sub_menu"),
-    popup
-), DumbAware {
+private class ChangeCredentialsActionGroup(popup: Boolean) : ComputableActionGroup(message("settings.credentials.profile_sub_menu"), popup), DumbAware {
     override fun createChildrenProvider(actionManager: ActionManager?): CachedValueProvider<Array<AnAction>> = CachedValueProvider {
         val credentialManager = CredentialManager.getInstance()
 
@@ -116,30 +97,46 @@ private class ChangeCredentialsActionGroup(popup: Boolean) : ComputableActionGro
     }
 }
 
-private class ChangeRegionActionGroup(
-    private val partitionSelector: ChangePartitionActionGroup,
-    private val accountSettingsManager: ProjectAccountSettingsManager
-) :
-    ComputableActionGroup(message("settings.regions.region_sub_menu"), true), DumbAware {
+internal class ChangePartitionActionGroup(private val accountSettingsManager: ProjectAccountSettingsManager) :
+    ComputableActionGroup(message("settings.partitions"), true), DumbAware {
+    override fun createChildrenProvider(actionManager: ActionManager?): CachedValueProvider<Array<AnAction>> = CachedValueProvider {
+        val selectedPartitionId = accountSettingsManager.selectedPartition?.id
+        val actions = AwsRegionProvider.getInstance().partitions().values.filter { it.id != selectedPartitionId }.map { partition ->
+            ChangeRegionActionGroup(partition, accountSettingsManager, name = partition.description)
+        } as List<AnAction>
+
+        CachedValueProvider.Result.create(actions.toTypedArray(), accountSettingsManager)
+    }
+}
+
+internal class ChangeRegionActionGroup(
+    private val partition: AwsPartition?,
+    private val accountSettingsManager: ProjectAccountSettingsManager,
+    private val partitionSelector: ChangePartitionActionGroup? = null,
+    name: String = message("settings.regions.region_sub_menu")
+) : ComputableActionGroup(name, true), DumbAware {
     private val regionProvider = AwsRegionProvider.getInstance()
     override fun createChildrenProvider(actionManager: ActionManager?): CachedValueProvider<Array<AnAction>> = CachedValueProvider {
-        val partition = accountSettingsManager.selectedPartition
         val (regionMap, partitionGroup) = partition?.let {
             // if a partition has been selected, only show regions in that partition
             // and the partition selector
             regionProvider.regions(partition.id) to partitionSelector
             // otherwise show everything with no partition selector
         } ?: regionProvider.allRegions() to null
-        val regions = regionMap.values.groupBy { it.category }
-        val partitionActions = partitionGroup?.let { listOf(it) } ?: emptyList<AnAction>()
 
-        val actions = partitionActions +
-            regions.flatMap { (category, subRegions) ->
-                listOf(Separator.create(category)) +
-                    subRegions.map {
-                        ChangeRegionAction(it)
-                    }
-            } as List<AnAction>
+        val actions = mutableListOf<AnAction>()
+
+        regionMap.values.groupBy { it.category }.forEach { (category, subRegions) ->
+            actions.add(Separator.create(category))
+            subRegions.forEach {
+                actions.add(ChangeRegionAction(it))
+            }
+        }
+
+        if (partitionGroup != null && regionProvider.partitions().size > 1) {
+            actions.add(Separator.create())
+            actions.add(partitionGroup)
+        }
 
         CachedValueProvider.Result.create(actions.toTypedArray(), accountSettingsManager)
     }
