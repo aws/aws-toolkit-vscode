@@ -54,6 +54,7 @@ import {
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { getChannelLogger } from './shared/utilities/vsCodeUtils'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
+import { activate as activateSsmDocument } from './ssmDocument/activation'
 
 let localize: nls.LocalizeFunc
 
@@ -192,6 +193,8 @@ export async function activate(context: vscode.ExtensionContext) {
         })
 
         toastNewUser(context)
+
+        await activateSsmDocument(context, awsContext, toolkitOutputChannel)
 
         await loginWithMostRecentCredentials(toolkitSettings, loginManager)
     } catch (error) {

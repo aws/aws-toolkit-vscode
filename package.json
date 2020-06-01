@@ -54,7 +54,9 @@
         "onView:aws.cdk.explorer",
         "onCommand:aws.refreshCdkExplorer",
         "onCommand:aws.aboutToolkit",
-        "onLanguage:asl"
+        "onLanguage:asl",
+        "onLanguage:json",
+        "onLanguage:yaml"
     ],
     "main": "./extensionMain",
     "contributes": {
@@ -131,6 +133,11 @@
                     "type": "number",
                     "default": 5000,
                     "description": "%AWS.stepFunctions.asl.maxItemsComputed.desc%"
+                },
+                "aws.ssmDocument.ssmdocLanguage.maxNumberOfProblem": {
+                    "type": "number",
+                    "default": 1000,
+                    "description": "%AWS.ssmDocument.ssmdocLanguage.maxNumberOfProblem.desc%"
                 }
             }
         },
@@ -802,6 +809,20 @@
             {
                 "fileMatch": "*ecs-task-def.json",
                 "url": "https://ecs-intellisense.s3-us-west-2.amazonaws.com/task-definition/schema.json"
+            },
+            {
+                "fileMatch": "*.ssmdoc.json",
+                "url": "./src/ssmDocument/ssmdocLanguage/ssmdocschema.json"
+            }
+        ],
+        "yamlValidation": [
+            {
+                "fileMatch": "*.ssmdoc.yml",
+                "url": "./src/ssmDocument/ssmdocLanguage/ssmdocschema.json"
+            },
+            {
+                "fileMatch": "*.ssmdoc.yaml",
+                "url": "./src/ssmDocument/ssmdocLanguage/ssmdocschema.json"
             }
         ],
         "languages": [

@@ -1,0 +1,846 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "description": "AWS System Manager Document Schema",
+    "type": "object",
+    "properties": {
+        "schemaVersion": {
+            "type": "string",
+            "description": "Schema Version of Document. Command Document can use schemaVersion 1.2, 2.0, 2.2. Policy Document can use schemaVersion 2.0 and later. Automation Document must use schemaVersion 0.3."
+        }
+    },
+    "required": ["schemaVersion"],
+    "oneOf": [
+        {
+            "properties": {
+                "schemaVersion": {
+                    "enum": ["0.3", "1.2", "2.0", "2.2"]
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Information you provide to describe the purpose of the document."
+                },
+                "assumeRole": {
+                    "type": "string",
+                    "description": "The ARN of the role that allows Automation to perform the actions on your behalf."
+                },
+                "parameters": {
+                    "type": "object",
+                    "description": "A structure that defines the parameters the document accepts.",
+                    "properties": {},
+                    "additionalProperties": {
+                        "type": "object",
+                        "description": "Custom defined parameters.",
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "enum": ["String", "Integer", "Boolean", "StringList", "StringMap", "MapList"],
+                                "description": "Type of the parameter."
+                            },
+                            "description": {
+                                "type": "string",
+                                "description": "Description of the parameter."
+                            },
+                            "allowedPattern": {
+                                "type": "string",
+                                "description": " A regular expression that validates whether the user input matches the defined pattern for the parameter. If the user input does not match the allowed pattern, the execution fails to start."
+                            },
+                            "displayType": {
+                                "type": "string",
+                                "description": "Used to display either a textfield or a textarea in the AWS Management Console. textfield is a single-line text box. textarea is a multi-line text area.",
+                                "enum": ["textfield", "textarea"]
+                            },
+                            "minItems": {
+                                "type": "integer",
+                                "description": "The minimum number of items allowed."
+                            },
+                            "maxItems": {
+                                "type": "integer",
+                                "description": "The maximum number of items allowed."
+                            },
+                            "minChars": {
+                                "type": "integer",
+                                "description": "The minimum number of parameter characters allowed."
+                            },
+                            "maxChars": {
+                                "type": "integer",
+                                "description": "The maximum number of parameter characters allowed."
+                            },
+                            "allowedValues": {
+                                "type": "array",
+                                "description": "An array of values allowed for the parameter. Defining allowed values for the parameter validates the user input. If a user inputs a value that is not allowed, the execution fails to start."
+                            },
+                            "default": {
+                                "description": "Default Value of the parameter."
+                            }
+                        },
+                        "oneOf": [
+                            {
+                                "properties": {
+                                    "type": {
+                                        "const": "String"
+                                    },
+                                    "default": {
+                                        "type": "string"
+                                    },
+                                    "allowedValues": {
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "properties": {
+                                    "type": {
+                                        "const": "Boolean"
+                                    },
+                                    "default": {
+                                        "type": "boolean"
+                                    },
+                                    "allowedValues": {
+                                        "items": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "properties": {
+                                    "type": {
+                                        "const": "Integer"
+                                    },
+                                    "default": {
+                                        "type": "integer"
+                                    },
+                                    "allowedValues": {
+                                        "items": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "properties": {
+                                    "type": {
+                                        "const": "StringList"
+                                    },
+                                    "default": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "allowedValues": {
+                                        "items": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "properties": {
+                                    "type": {
+                                        "const": "StringMap"
+                                    },
+                                    "default": {
+                                        "type": "object"
+                                    },
+                                    "allowedValues": {
+                                        "items": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "properties": {
+                                    "type": {
+                                        "const": "MapList"
+                                    },
+                                    "default": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "allowedValues": {
+                                        "items": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        ],
+                        "required": ["type"],
+                        "additionalProperties": false
+                    }
+                },
+                "runtimeConfig": {
+                    "type": "object",
+                    "description": "(Schema version 1.2 only) The configuration for the instance as applied by one or more Systems Manager plugins. Plugins are not guaranteed to run in sequence."
+                },
+                "files": {
+                    "type": "object",
+                    "description": "(Schema version 0.3 only) The script files (and their checksums) attached to the document and run during an automation execution. Applies only to documents that include the aws:executeScript action and for which attachments have been specified in one or more steps."
+                },
+                "outputs": {
+                    "type": "array",
+                    "description": "(Schema version 0.3 only) Data generated by the execution of this document that can be used in other processes. For example, if your document creates a new AMI, you might specify \"CreateImage.ImageId\" as the output value, and then use this output to create new instances in a subsequent automation execution. "
+                },
+                "mainSteps": {
+                    "type": "array",
+                    "description": "(Schema version 0.3, 2.0, and 2.2 only) An object that can include multiple steps (plugins). Plugins are defined within steps. Steps run in sequential order as listed in the document."
+                }
+            },
+            "allOf": [
+                {
+                    "if": {
+                        "properties": { "schemaVersion": { "enum": ["0.3", "2.0", "2.2"] } }
+                    },
+                    "then": {
+                        "properties": {
+                            "runtimeConfig": {
+                                "not": {}
+                            },
+                            "mainSteps": {
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "action": {
+                                            "type": "string",
+                                            "description": "The name of the action the step is to run."
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "description": "An identifier that must be unique across all step names in the document."
+                                        },
+                                        "inputs": {
+                                            "type": "object",
+                                            "description": "The properties specific to the action."
+                                        },
+                                        "outputs": {
+                                            "type": "array",
+                                            "description": "Outputs for this step."
+                                        },
+                                        "precondition": {
+                                            "type": "object",
+                                            "description": "Preconditions for this step."
+                                        },
+                                        "maxAttemps": {
+                                            "type": "integer",
+                                            "description": "The number of times the step should be retried in case of failure. If the value is greater than 1, the step is not considered to have failed until all retry attempts have failed. The default value is 1."
+                                        },
+                                        "onFailure": {
+                                            "type": "string",
+                                            "description": "Indicates whether the workflow should abort, continue, or go to a different step on failure. The default value for this option is abort."
+                                        },
+                                        "isCritical": {
+                                            "description": "Designates a step as critical for the successful completion of the Automation. If a step with this designation fails, then Automation reports the final status of the Automation as Failed. The default value for this option is true."
+                                        },
+                                        "nextStep": {
+                                            "type": "string",
+                                            "description": "Specifies which step in an Automation workflow to process next after successfully completing a step."
+                                        },
+                                        "timeoutSeconds": {
+                                            "description": "The execution timeout value for the step. If the timeout is reached and the value of maxAttempts is greater than 1, then the step is not considered to have timed out until all retries have been attempted."
+                                        },
+                                        "isEnd": {
+                                            "description": "This option stops an Automation execution at the end of a specific step. The Automation execution stops if the step execution failed or succeeded. The default value is false."
+                                        }
+                                    },
+                                    "required": ["name", "action"]
+                                }
+                            }
+                        },
+                        "required": ["schemaVersion", "mainSteps"]
+                    }
+                },
+                {
+                    "if": {
+                        "properties": { "schemaVersion": { "const": "1.2" } }
+                    },
+                    "then": {
+                        "properties": {
+                            "mainSteps": {
+                                "not": {}
+                            },
+                            "runtimeConfig": {
+                                "properties": {
+                                    "aws:applications": {
+                                        "type": "object",
+                                        "description": "Install, repair, or uninstall applications on an EC2 instance. This plugin only runs on Windows Server operating systems.",
+                                        "properties": {
+                                            "properties": {
+                                                "type": "array",
+                                                "description": "Properties of plugin aws:applications.",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string",
+                                                            "description": "id of the step."
+                                                        },
+                                                        "action": {
+                                                            "type": "string",
+                                                            "description": "The action to take.",
+                                                            "default": "{{ action }}"
+                                                        },
+                                                        "parameters": {
+                                                            "type": "string",
+                                                            "description": "The parameters for the installer.",
+                                                            "default": "{{ parameters }}"
+                                                        },
+                                                        "source": {
+                                                            "type": "string",
+                                                            "description": "The URL of the .msi file for the application.",
+                                                            "default": "{{ source }}"
+                                                        },
+                                                        "sourceHash": {
+                                                            "type": "string",
+                                                            "description": "The SHA256 hash of the .msi file.",
+                                                            "default": "{{ sourceHash }}"
+                                                        }
+                                                    },
+                                                    "required": ["action", "source"],
+                                                    "additionalProperties": false
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "aws:cloudWatch": {
+                                        "type": "object",
+                                        "description": "Export data from Windows Server to Amazon CloudWatch or Amazon CloudWatch Logs and monitor the data using CloudWatch metrics. This plugin only runs on Windows Server operating systems.",
+                                        "properties": {
+                                            "id": {
+                                                "type": "string",
+                                                "description": "id of the step."
+                                            },
+                                            "settings": {
+                                                "type": "object",
+                                                "description": "Settings for cloudWatch."
+                                            },
+                                            "properties": {
+                                                "type": "string",
+                                                "description": "Properties of cloudWatch."
+                                            }
+                                        }
+                                    },
+                                    "aws:domainJoin": {
+                                        "type": "object",
+                                        "description": "Join an EC2 instance to a domain. This plugin only runs on Windows Server operating systems.",
+                                        "properties": {
+                                            "properties": {
+                                                "type": "object",
+                                                "description": "Properties of plugin aws:domainJoin",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string",
+                                                        "description": "id of the step."
+                                                    },
+                                                    "directoryId": {
+                                                        "type": "string",
+                                                        "description": "The ID of the directory. Example \"d-1234567890\".",
+                                                        "default": "{{ directoryId }}"
+                                                    },
+                                                    "directoryName": {
+                                                        "type": "string",
+                                                        "description": "The name of the domain.",
+                                                        "default": "{{ directoryName }}"
+                                                    },
+                                                    "directoryOU": {
+                                                        "type": "string",
+                                                        "description": "The organizational unit (OU).",
+                                                        "default": "{{ directoryOU }}"
+                                                    },
+                                                    "dnsIpAddresses": {
+                                                        "type": ["array", "string"],
+                                                        "description": "The IP addresses of the DNS servers.",
+                                                        "default": "{{ dnsIpAddresses }}"
+                                                    }
+                                                },
+                                                "required": ["directoryId", "directoryName"],
+                                                "additionalProperties": false
+                                            }
+                                        }
+                                    },
+                                    "aws:psModule": {
+                                        "description": "Install PowerShell modules on an EC2 instance. This plugin only runs on Windows Server operating systems.",
+                                        "properties": {
+                                            "properties": {
+                                                "description": "Properties of plugin aws:psMoudle.",
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string",
+                                                            "description": "id of the step."
+                                                        },
+                                                        "runCommand": {
+                                                            "type": ["array", "string"],
+                                                            "description": "The PowerShell command to run after the module is installed",
+                                                            "items": {
+                                                                "type": "string"
+                                                            },
+                                                            "default": "{{ runCommand }}"
+                                                        },
+                                                        "source": {
+                                                            "type": "string",
+                                                            "description": "The URL or local path on the instance to the application .zip file.",
+                                                            "default": "{{ source }}"
+                                                        },
+                                                        "sourceHash": {
+                                                            "type": "string",
+                                                            "description": "The SHA256 hash of the .zip file.",
+                                                            "default": "{{ sourceHash }}"
+                                                        },
+                                                        "timeoutSeconds": {
+                                                            "type": ["string", "integer"],
+                                                            "description": "The time in seconds for a command to be completed before it is considered to have failed.",
+                                                            "default": "{{ timeoutSeconds }}"
+                                                        },
+                                                        "workingDirectory": {
+                                                            "type": "string",
+                                                            "description": "The path to the working directory on your instance.",
+                                                            "default": "{{ workingDirectory }}"
+                                                        }
+                                                    },
+                                                    "required": ["source"],
+                                                    "additionalProperties": false
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "aws:runPowerShellScript": {
+                                        "description": "Run PowerShell scripts or specify the path to a script to run. This plugin runs on Microsoft Windows Server and Linux operating systems.",
+                                        "properties": {
+                                            "properties": {
+                                                "description": "Properties of plugin aws:runPowerShellScript.",
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string",
+                                                            "description": "id of the step."
+                                                        },
+                                                        "runCommand": {
+                                                            "type": ["array", "string"],
+                                                            "description": "Specify the commands to run or the path to an existing script on the instance.",
+                                                            "items": {
+                                                                "type": "string"
+                                                            },
+                                                            "default": "{{ runCommand }}"
+                                                        },
+                                                        "timeoutSeconds": {
+                                                            "type": ["string", "integer"],
+                                                            "description": "The time in seconds for a command to be completed before it is considered to have failed. When the timeout is reached, Systems Manager stops the command execution.",
+                                                            "default": "{{ timeoutSeconds }}"
+                                                        },
+                                                        "workingDirectory": {
+                                                            "type": "string",
+                                                            "description": "The path to the working directory on your instance.",
+                                                            "default": "{{ workingDirectory }}"
+                                                        }
+                                                    },
+                                                    "required": ["runCommand"],
+                                                    "additionalProperties": false
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "aws:runShellScript": {
+                                        "description": "Run Linux shell scripts or specify the path to a script to run. This plugin only runs on Linux operating systems.",
+                                        "properties": {
+                                            "properties": {
+                                                "type": "array",
+                                                "description": "Properties of plugin aws:runShellScript.",
+                                                "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string",
+                                                            "description": "id of the step."
+                                                        },
+                                                        "runCommand": {
+                                                            "type": ["array", "string"],
+                                                            "description": "Specify the commands to run or the path to an existing script on the instance.",
+                                                            "items": {
+                                                                "type": "string"
+                                                            },
+                                                            "default": "{{ runCommand }}"
+                                                        },
+                                                        "timeoutSeconds": {
+                                                            "type": ["string", "integer"],
+                                                            "description": "The time in seconds for a command to be completed before it is considered to have failed. When the timeout is reached, Systems Manager stops the command execution.",
+                                                            "default": "{{ timeoutSeconds }}"
+                                                        },
+                                                        "workingDirectory": {
+                                                            "type": "string",
+                                                            "description": "The path to the working directory on your instance.",
+                                                            "default": "{{ workingDirectory }}"
+                                                        }
+                                                    },
+                                                    "required": ["runCommand"]
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "aws:updateAgent": {
+                                        "description": "Update the EC2Config service to the latest version or specify an older version. This plugin only runs on Microsoft Windows Server operating systems.",
+                                        "properties": {
+                                            "properties": {
+                                                "type": "object",
+                                                "description": "Properties of plugin aws:updateAgent.",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string",
+                                                        "description": "id of the step."
+                                                    },
+                                                    "agentName": {
+                                                        "type": "string",
+                                                        "description": "EC2Config. This is the name of the agent that runs the EC2Config service.",
+                                                        "default": "Ec2Config"
+                                                    },
+                                                    "source": {
+                                                        "type": "string",
+                                                        "description": "",
+                                                        "default": "https://s3.{Region}.amazonaws.com/aws-ssm-{Region}/manifest.json"
+                                                    },
+                                                    "allowDowngrade": {
+                                                        "type": ["string", "boolean"],
+                                                        "description": "Allow the EC2Config service to be downgraded to an earlier version. If set to false, the service can be upgraded to newer versions only (default). If set to true, specify the earlier version.",
+                                                        "default": "{{ allowDowngrade }}"
+                                                    },
+                                                    "targetVersion": {
+                                                        "type": "string",
+                                                        "description": "A specific version of the EC2Config service to install. If not specified, the service will be updated to the latest version.",
+                                                        "default": "{{ targetVersion }}"
+                                                    }
+                                                },
+                                                "required": ["agentName", "source"],
+                                                "additionalProperties": false
+                                            }
+                                        }
+                                    },
+                                    "aws:updateSsmAgent": {
+                                        "description": "Update the SSM Agent to the latest version or specify an older version. This plugin runs on Linux and Windows Server operating systems.",
+                                        "properties": {
+                                            "properties": {
+                                                "type": "array",
+                                                "description": "Properties of plugin aws:updateSsmAgent.",
+                                                "items": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "string",
+                                                            "description": "id of the step."
+                                                        },
+                                                        "agentName": {
+                                                            "type": "string",
+                                                            "description": "amazon-ssm-agent. This is the name of the Systems Manager agent that processes requests and runs commands on the instance.",
+                                                            "default": "amazon-ssm-agent"
+                                                        },
+                                                        "source": {
+                                                            "type": "string",
+                                                            "description": "",
+                                                            "default": "https://s3.{Region}.amazonaws.com/aws-ssm-{Region}/manifest.json"
+                                                        },
+                                                        "allowDowngrade": {
+                                                            "type": ["string", "boolean"],
+                                                            "description": "Allow the EC2Config service to be downgraded to an earlier version. If set to false, the service can be upgraded to newer versions only (default). If set to true, specify the earlier version.",
+                                                            "default": "{{ allowDowngrade }}"
+                                                        },
+                                                        "targetVersion": {
+                                                            "type": "string",
+                                                            "description": "A specific version of the EC2Config service to install. If not specified, the service will be updated to the latest version.",
+                                                            "default": "{{ targetVersion }}"
+                                                        }
+                                                    },
+                                                    "required": ["agentName", "source", "allowDowngrade"],
+                                                    "additionalProperties": false
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "if": {
+                        "properties": { "schemaVersion": { "const": "2.2" } }
+                    },
+                    "then": {
+                        "properties": {
+                            "mainSteps": {
+                                "items": {
+                                    "properties": {
+                                        "action": {
+                                            "enum": [
+                                                "aws:applications",
+                                                "aws:cloudWatch",
+                                                "aws:configureDocker",
+                                                "aws:configurePackage",
+                                                "aws:domainJoin",
+                                                "aws:downloadContent",
+                                                "aws:psModule",
+                                                "aws:refreshAssociation",
+                                                "aws:runDockerAction",
+                                                "aws:runDocument",
+                                                "aws:runPowerShellScript",
+                                                "aws:runShellScript",
+                                                "aws:softwareInventory",
+                                                "aws:updateAgent",
+                                                "aws:updateSsmAgent"
+                                            ]
+                                        }
+                                    },
+                                    "allOf": [
+                                        {
+                                            "if": {
+                                                "properties": {
+                                                    "action": {
+                                                        "const": "aws:applications"
+                                                    }
+                                                }
+                                            },
+                                            "then": {
+                                                "description": "Install, repair, or uninstall applications on an EC2 instance. This plugin only runs on Windows Server operating systems.",
+                                                "properties": {
+                                                    "inputs": {
+                                                        "properties": {
+                                                            "action": {
+                                                                "description": "The action to take.",
+                                                                "type": "string",
+                                                                "oneOf": [
+                                                                    {
+                                                                        "enum": ["Install", "Repair", "Uninstall"]
+                                                                    },
+                                                                    {
+                                                                        "pattern": "^{{[ ]{0,1}[a-zA-Z_]+[ ]{0,1}}}$"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "source": {
+                                                                "type": "string",
+                                                                "description": "The URL of the .msi file for the application."
+                                                            },
+                                                            "parameters": {
+                                                                "type": "string",
+                                                                "description": "The parameters for the installer."
+                                                            },
+                                                            "sourceHash": {
+                                                                "type": "string",
+                                                                "description": "The SHA256 hash of the .msi file."
+                                                            }
+                                                        },
+                                                        "required": ["action", "source"]
+                                                    }
+                                                },
+                                                "required": ["inputs"]
+                                            }
+                                        },
+                                        {
+                                            "if": {
+                                                "properties": {
+                                                    "action": {
+                                                        "const": "aws:cloudWatch"
+                                                    }
+                                                }
+                                            },
+                                            "then": {
+                                                "description": "Export data from Windows Server to Amazon CloudWatch or Amazon CloudWatch Logs and monitor the data using CloudWatch metrics. This plugin only runs on Windows Server operating systems.",
+                                                "properties": {
+                                                    "settings": {
+                                                        "description": "Settings for cloudWatch.",
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "if": {
+                                                "properties": {
+                                                    "action": {
+                                                        "const": "aws:configureDocker"
+                                                    }
+                                                }
+                                            },
+                                            "then": {
+                                                "description": "(Schema version 2.0 or later) Configure an instance to work with containers and Docker. This plugin is supported on Linux and Windows Server operating systems.",
+                                                "properties": {
+                                                    "inputs": {
+                                                        "properties": {
+                                                            "action": {
+                                                                "description": "The type of action to perform. Install | Uninstall | set as parameter.",
+                                                                "type": "string",
+                                                                "anyOf": [
+                                                                    {
+                                                                        "enum": ["Install", "Uninstall", "{{ action }}"]
+                                                                    },
+                                                                    {
+                                                                        "pattern": "^{{[ ]{0,1}[a-zA-Z_]+[ ]{0,1}}}$"
+                                                                    }
+                                                                ]
+                                                            }
+                                                        },
+                                                        "required": ["action"]
+                                                    }
+                                                },
+                                                "required": ["inputs"]
+                                            }
+                                        },
+                                        {
+                                            "if": {
+                                                "properties": {
+                                                    "action": {
+                                                        "const": "aws:configurePackage"
+                                                    }
+                                                }
+                                            },
+                                            "then": {
+                                                "description": "(Schema version 2.0 or later) Install or uninstall a Distributor package. You can install the latest version, default version, or a version of the package you specify. Packages provided by AWS are also supported. This plugin runs on Windows Server and Linux operating systems, but not all the available packages are supported on Linux operating systems.\n\nAvailable AWS packages for Windows Server include the following: AWSPVDriver, AWSNVMe, AwsEnaNetworkDriver, AwsVssComponents, AmazonCloudWatchAgent, and AWSSupport-EC2Rescue.\n\nAvailable AWS packages for Linux operating systems include the following: AmazonCloudWatchAgent and AWSSupport-EC2Rescue.",
+                                                "properties": {
+                                                    "inputs": {
+                                                        "properties": {
+                                                            "action": {
+                                                                "description": "The type of action to perform. Install | Uninstall | set as parameter.",
+                                                                "type": "string",
+                                                                "anyOf": [
+                                                                    {
+                                                                        "enum": ["Install", "Uninstall", "{{ action }}"]
+                                                                    },
+                                                                    {
+                                                                        "pattern": "^{{[ ]{0,1}[a-zA-Z_]+[ ]{0,1}}}$"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "name": {
+                                                                "description": "The name of the AWS package to install or uninstall. Available packages include the following: AWSPVDriver, AwsEnaNetworkDriver, AwsVssComponents, and AmazonCloudWatchAgent.",
+                                                                "type": "string",
+                                                                "anyOf": [
+                                                                    {
+                                                                        "enum": [
+                                                                            "AWSPVDriver",
+                                                                            "AwsEnaNetworkDriver",
+                                                                            "AwsVssComponents",
+                                                                            "AmazonCloudWatchAgent"
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "pattern": "^{{[ ]{0,1}[a-zA-Z_]+[ ]{0,1}}}$"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "installationType": {
+                                                                "description": "The type of installation to perform. If you specify 'Uninstall and reinstall', the package is completely uninstalled, and then reinstalled. The application is unavailable until the reinstallation completes. If you specify 'In-place update', only new or changed files are added to the existing installation according you instructions you provide in an update script. The application remains available throughout the update process. Uninstall and reinstall is the default value.",
+                                                                "type": "string",
+                                                                "enum": ["Uninstall and reinstall", "In-place update"],
+                                                                "default": "Uninstall and reinstall"
+                                                            },
+                                                            "version": {
+                                                                "description": "A specific version of the package to install or uninstall. If installing, the system installs the latest published version, by default. If uninstalling, the system uninstalls the currently installed version, by default. If no installed version is found, the latest published version is downloaded, and the uninstall action is run.",
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "required": ["action", "name"]
+                                                    }
+                                                },
+                                                "required": ["inputs"]
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "if": {
+                        "properties": { "schemaVersion": { "const": "0.3" } }
+                    },
+                    "then": {
+                        "properties": {
+                            "mainSteps": {
+                                "items": {
+                                    "properties": {
+                                        "maxAttemps": {
+                                            "default": 1
+                                        },
+                                        "onFailure": {
+                                            "pattern": "((^|, )(Abort|Continue|step:\\w+))$"
+                                        }
+                                    },
+                                    "anyOf": [
+                                        {
+                                            "properties": {
+                                                "isEnd": {
+                                                    "type": "string",
+                                                    "default": "false",
+                                                    "enum": ["true", "false"]
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "properties": {
+                                                "isEnd": {
+                                                    "type": "boolean",
+                                                    "default": false
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "properties": {
+                                                "isCritical": {
+                                                    "type": "boolean",
+                                                    "default": true
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "properties": {
+                                                "isCritical": {
+                                                    "type": "string",
+                                                    "default": "true",
+                                                    "enum": ["true", "false"]
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "required": ["inputs"]
+                                }
+                            }
+                        }
+                    },
+                    "else": {
+                        "properties": {
+                            "files": {
+                                "not": {}
+                            },
+                            "outputs": {
+                                "not": {}
+                            }
+                        }
+                    }
+                }
+            ],
+            "additionalProperties": false
+        },
+        {
+            "properties": {
+                "schemaVersion": {
+                    "not": {
+                        "enum": ["0.3", "1.2", "2.0", "2.2"]
+                    }
+                }
+            }
+        }
+    ]
+}

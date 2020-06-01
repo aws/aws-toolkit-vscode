@@ -355,5 +355,6 @@
     "AWS.generic.notImplemented": "Not implemented",
     "AWS.template.error.showErrorDetails.title": "Error details for",
     "AWS.template.error.showErrorDetails.errorCode": "Error code",
-    "AWS.template.error.showErrorDetails.errorMessage": "Error message"
+    "AWS.template.error.showErrorDetails.errorMessage": "Error message",
+    "AWS.ssmDocument.ssmdocLanguage.maxNumberOfProblem.desc": "Controls the maximum number of problems produced by the SSM Document language server."
 }
