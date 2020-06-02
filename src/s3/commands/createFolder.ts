@@ -41,7 +41,7 @@ export async function createFolderCommand(
 
     if (!folderName) {
         getLogger().info('CreateFolder cancelled')
-        recordS3CreateFolder({ result: 'Cancelled' })
+        telemetry.recordS3CreateFolder({ result: 'Cancelled' })
         return
     }
 
@@ -53,14 +53,14 @@ export async function createFolderCommand(
 
         getLogger().info('Successfully created folder %O', folder)
         window.showInformationMessage(localize('AWS.s3.createFolder.success', 'Created folder {0}', folderName))
-        recordS3CreateFolder({ result: 'Succeeded' })
+        telemetry.recordS3CreateFolder({ result: 'Succeeded' })
     } catch (e) {
         getLogger().error(`Failed to create folder ${path} in bucket '${node.bucket.name}': %O`, e)
         showErrorWithLogs(
             localize('AWS.s3.createFolder.error.general', 'Failed to create folder {0}', folderName),
             window
         )
-        recordS3CreateFolder({ result: 'Failed' })
+        telemetry.recordS3CreateFolder({ result: 'Failed' })
     }
 
     await refreshNode(node, commands)
@@ -80,9 +80,6 @@ function validateFolderName(name: string): string | undefined {
     }
     return undefined
 }
-
-// TODO add telemetry for create folder
-function recordS3CreateFolder({ result }: { result: telemetry.Result }): void {}
 
 async function refreshNode(node: S3BucketNode | S3FolderNode, commands: Commands): Promise<void> {
     node.clearChildren()
