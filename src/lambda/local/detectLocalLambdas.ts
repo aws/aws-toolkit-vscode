@@ -17,6 +17,8 @@ export interface LocalLambda {
     handler?: string
 }
 
+// TODO: remove?
+// Key difference: `detectLocalTemplates()` crawls workspace for template files...
 export async function detectLocalLambdas(workspaceFolders: vscode.WorkspaceFolder[]): Promise<LocalLambda[]> {
     return (await Promise.all(workspaceFolders.map(detectLambdasFromWorkspaceFolder))).reduce(
         (accumulator: LocalLambda[], current: LocalLambda[]) => {

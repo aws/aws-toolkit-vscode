@@ -49,6 +49,8 @@ describe('makeCoreCLRDebugConfiguration', async () => {
             noDebug: false,
 
             baseBuildDir: '/fake/build/dir/',
+            envFile: '/fake/build/dir/env-vars.json',
+            eventPayloadFile: '/fake/build/dir/event.json',
             documentUri: vscode.Uri.parse('/fake/path/foo.txt'),
             samTemplatePath: '/fake/sam/path',
             samLocalInvokeCommand: new DefaultSamLocalInvokeCommand(fakeExtCtx.chanLogger),

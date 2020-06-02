@@ -3,30 +3,30 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { unlink, writeFile } from 'fs-extra'
+import { copyFile, unlink, writeFile } from 'fs-extra'
 import * as path from 'path'
 import * as tcpPortUsed from 'tcp-port-used'
 import * as vscode from 'vscode'
-import { detectLocalLambdas, LocalLambda } from '../../lambda/local/detectLocalLambdas'
+import { getTemplate, getTemplateResource } from '../../lambda/local/debugConfiguration'
 import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
-import * as pathutil from '../utilities/pathUtils'
-import { CloudFormation } from '../cloudformation/cloudformation'
 import { ExtContext } from '../extensions'
 import { makeTemporaryToolkitFolder } from '../filesystemUtilities'
 import { getLogger } from '../logger'
-import { DefaultValidatingSamCliProcessInvoker } from './cli/defaultValidatingSamCliProcessInvoker'
-import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from './cli/samCliBuild'
-import { SamCliProcessInvoker } from './cli/samCliInvokerUtils'
-import { SamCliLocalInvokeInvocation, SamCliLocalInvokeInvocationArguments } from './cli/samCliLocalInvoke'
-import { SamLaunchRequestArgs } from './debugger/samDebugSession'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { recordLambdaInvokeLocal, recordSamAttachDebugger, Result, Runtime } from '../telemetry/telemetry'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
+import * as pathutil from '../utilities/pathUtils'
 import { normalizeSeparator } from '../utilities/pathUtils'
 import { Timeout } from '../utilities/timeoutUtils'
 import { ChannelLogger } from '../utilities/vsCodeUtils'
+import { tryGetAbsolutePath } from '../utilities/workspaceUtils'
+import { DefaultValidatingSamCliProcessInvoker } from './cli/defaultValidatingSamCliProcessInvoker'
+import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from './cli/samCliBuild'
+import { SamCliProcessInvoker } from './cli/samCliInvokerUtils'
+import { SamCliLocalInvokeInvocation, SamCliLocalInvokeInvocationArguments } from './cli/samCliLocalInvoke'
+import { SamLaunchRequestArgs } from './debugger/samDebugSession'
 
 export interface LambdaLocalInvokeParams {
     /** URI of the current editor document. */
@@ -40,8 +40,12 @@ export interface LambdaLocalInvokeParams {
 
 export interface SAMTemplateEnvironmentVariables {
     [resource: string]: {
-        [key: string]: string
+        [k: string]: string | number | boolean
     }
+}
+
+function getEnvironmentVariables(env?: { [k: string]: string | number | boolean }): SAMTemplateEnvironmentVariables {
+    return env ? { [TEMPLATE_RESOURCE_NAME]: env } : {}
 }
 
 const TEMPLATE_RESOURCE_NAME = 'awsToolkitSamLocalResource'
@@ -49,40 +53,6 @@ const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
 const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
 const MAX_DEBUGGER_RETRIES_DEFAULT: number = 30
 const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 200
-
-/**
- * Generates a SAM Template that will be passed to `sam build`.
- *
- * Tries to detect local lambdas, then calls `makeInputTemplate()`.
- */
-export async function generateInputTemplate(config: SamLaunchRequestArgs): Promise<string> {
-    const buildFolder: string = config.baseBuildDir!!
-    let properties: CloudFormation.ResourceProperties | undefined
-    let globals: CloudFormation.TemplateGlobals | undefined
-    if (config.workspaceFolder) {
-        const lambdas = await detectLocalLambdas([config.workspaceFolder])
-        const existingLambda = lambdas.find(lambda => lambda.handler === config.handlerName)
-
-        if (existingLambda) {
-            if (existingLambda.resource && existingLambda.resource.Properties) {
-                properties = existingLambda.resource.Properties
-            }
-
-            if (existingLambda.templateGlobals) {
-                globals = existingLambda.templateGlobals
-            }
-        }
-    }
-
-    return await makeInputTemplate({
-        baseBuildDir: buildFolder,
-        codeDir: config.codeRoot,
-        relativeFunctionHandler: config.handlerName,
-        globals,
-        properties,
-        runtime: config.runtime,
-    })
-}
 
 export const makeBuildDir = async (): Promise<string> => {
     const buildDir = await makeTemporaryToolkitFolder()
@@ -107,55 +77,41 @@ export function getRelativeFunctionHandler(params: {
     return relativeFunctionHandler
 }
 
-export async function getLambdaInfoFromExistingTemplate(params: {
-    workspaceUri: vscode.Uri
-    relativeOriginalFunctionHandler: string
-}): Promise<LocalLambda | undefined> {
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(params.workspaceUri)
-    let existingLambda: LocalLambda | undefined
-    if (workspaceFolder) {
-        const lambdas = await detectLocalLambdas([workspaceFolder])
-        existingLambda = lambdas.find(lambda => lambda.handler === params.relativeOriginalFunctionHandler)
-    }
-
-    return existingLambda
-}
-
-export async function makeInputTemplate(params: {
-    baseBuildDir: string
-    codeDir: string
-    relativeFunctionHandler: string
-    globals?: CloudFormation.TemplateGlobals
-    properties?: CloudFormation.ResourceProperties
-    runtime: string
-}): Promise<string> {
+export async function makeInputTemplate(config: SamLaunchRequestArgs): Promise<string> {
     let newTemplate = new SamTemplateGenerator()
-        .withFunctionHandler(params.relativeFunctionHandler)
+        .withFunctionHandler(config.handlerName)
         .withResourceName(TEMPLATE_RESOURCE_NAME)
-        .withRuntime(params.runtime)
-        .withCodeUri(params.codeDir)
+        .withRuntime(config.runtime)
+        .withCodeUri(config.codeRoot)
 
-    if (params.properties) {
-        if (params.properties.Environment) {
-            newTemplate = newTemplate.withEnvironment(params.properties.Environment)
+    if (config.invokeTarget.target === 'template') {
+        const template = getTemplate(config.workspaceFolder, config)
+        // TODO: does target=code have an analog to `Globals`?
+        if (template?.Globals) {
+            newTemplate = newTemplate.withGlobals(template?.Globals)
         }
-
-        if (params.properties.MemorySize) {
-            newTemplate = newTemplate.withMemorySize(params.properties.MemorySize)
+        const templateResource = getTemplateResource(config.workspaceFolder, config)
+        if (templateResource?.Properties?.Environment?.Variables) {
+            newTemplate = newTemplate.withEnvironment({
+                Variables: templateResource?.Properties?.Environment?.Variables,
+            })
         }
-
-        if (params.properties.Timeout) {
-            newTemplate = newTemplate.withTimeout(params.properties.Timeout)
+    } else {
+        if (config.lambda?.environmentVariables) {
+            newTemplate = newTemplate.withEnvironment({
+                Variables: config.lambda?.environmentVariables,
+            })
         }
     }
-
-    if (params.globals) {
-        newTemplate = newTemplate.withGlobals(params.globals)
+    if (config.lambda?.memoryMb) {
+        newTemplate = newTemplate.withMemorySize(config.lambda?.memoryMb)
+    }
+    if (config.lambda?.timeoutSec) {
+        newTemplate = newTemplate.withTimeout(config.lambda?.timeoutSec)
     }
 
-    const inputTemplatePath: string = path.join(params.baseBuildDir, 'input', 'input-template.yaml')
+    const inputTemplatePath: string = path.join(config.baseBuildDir!, 'input', 'input-template.yaml')
     ExtensionDisposableFiles.getInstance().addFolder(inputTemplatePath)
-
     await newTemplate.generate(inputTemplatePath)
 
     return pathutil.normalize(inputTemplatePath)
@@ -227,6 +183,7 @@ export async function invokeLambdaFunction(
         manifestPath: config.manifestPath,
         samProcessInvoker: processInvoker,
         useContainer: config.sam?.containerBuild || false,
+        environmentVariables: config.lambda?.environmentVariables,
     }
 
     if (!config.noDebug) {
@@ -247,23 +204,19 @@ export async function invokeLambdaFunction(
     )
     getLogger().debug(`localLambdaRunner.invokeLambdaFunction: ${config.name}`)
 
-    const eventPath: string = path.join(config.baseBuildDir!!, 'event.json')
-    const environmentVariablePath = path.join(config.baseBuildDir!!, 'env-vars.json')
     const maxRetries: number = getAttachDebuggerMaxRetryLimit(ctx.settings, MAX_DEBUGGER_RETRIES_DEFAULT)
-
-    await writeFile(eventPath, JSON.stringify(config.lambda?.event || {}))
-    await writeFile(environmentVariablePath, JSON.stringify(config.lambda?.environmentVariables ?? {}))
 
     const localInvokeArgs: SamCliLocalInvokeInvocationArguments = {
         templateResourceName: TEMPLATE_RESOURCE_NAME,
         templatePath: config.samTemplatePath,
-        eventPath,
-        environmentVariablePath,
+        eventPath: config.eventPayloadFile,
+        environmentVariablePath: config.envFile,
         invoker: config.samLocalInvokeCommand!,
         dockerNetwork: config.sam?.dockerNetwork,
         debugPort: !config.noDebug ? config.debugPort?.toString() : undefined,
         debuggerPath: config.debuggerPath,
     }
+
     const command = new SamCliLocalInvokeInvocation(localInvokeArgs)
 
     const timer = createInvokeTimer(ctx.settings)
@@ -477,4 +430,37 @@ function messageUserWaitingToAttach(channelLogger: ChannelLogger) {
         'AWS.output.sam.local.waiting',
         'Waiting for SAM Application to start before attaching debugger...'
     )
+}
+
+/**
+ * Common logic shared by `makeCsharpConfig`, `makeTypescriptConfig`, `makePythonDebugConfig`.
+ *
+ * Rules for environment variables:
+ *  - SAM implicitly ignores envvars present in `env-vars.json` but absent in `input-template.yaml`.
+ *  - Do NOT merge envvars from template.yaml and `lambda.environmentVariables`.
+ *  - For `target=template`:
+ *    1. Pass envvars from `template.yaml` to the temporary `input-template.yaml` (see `makeInputTemplate()`).
+ *    2. Pass envvars from `lambda.environmentVariables` to `env-vars.json` (consumed by SAM).
+ *  - For `target=code`:
+ *    1. Pass envvars from `lambda.environmentVariables` to `input-template.yaml` (see `makeInputTemplate()`).
+ *    2. Does not use `env-vars.json`.
+ *
+ * @param config
+ */
+export async function makeConfig(config: SamLaunchRequestArgs): Promise<void> {
+    config.baseBuildDir = await makeBuildDir()
+    config.eventPayloadFile = path.join(config.baseBuildDir!, 'event.json')
+    config.envFile = path.join(config.baseBuildDir!, 'env-vars.json')
+
+    // env-vars.json (NB: effectively ignored for the `target=code` case).
+    const env = JSON.stringify(getEnvironmentVariables(config.lambda?.environmentVariables))
+    await writeFile(config.envFile, env)
+
+    // event.json
+    if (config.lambda?.event?.path) {
+        const fullpath = tryGetAbsolutePath(config.workspaceFolder, config.lambda?.event?.path)
+        await copyFile(fullpath, config.eventPayloadFile)
+    } else {
+        await writeFile(config.eventPayloadFile, JSON.stringify(config.lambda?.event?.json || {}))
+    }
 }

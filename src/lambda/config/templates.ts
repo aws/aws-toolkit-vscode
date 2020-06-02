@@ -415,7 +415,7 @@ export async function getExistingConfiguration(
 ): Promise<
     | {
           eventJson?: ReadonlyJsonObject
-          environmentVariables?: ReadonlyJsonObject
+          environmentVariables?: { [key: string]: string }
           dockerNetwork?: string
           useContainer?: boolean
       }
