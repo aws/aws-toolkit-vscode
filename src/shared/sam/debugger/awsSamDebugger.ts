@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as _ from 'lodash'
 import * as nls from 'vscode-nls'
 import { getCodeRoot, getHandlerName, getTemplateResource } from '../../../lambda/local/debugConfiguration'
 import { getDefaultRuntime, getFamily, getRuntimeFamily, RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
@@ -28,6 +29,7 @@ import {
     DefaultAwsSamDebugConfigurationValidator,
 } from './awsSamDebugConfigurationValidator'
 import { SamLaunchRequestArgs } from './samDebugSession'
+import { makeConfig } from '../localLambdaRunner'
 
 const localize = nls.loadMessageBundle()
 
@@ -181,6 +183,9 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             templateResource?.Properties?.Runtime ??
             getDefaultRuntime(getRuntimeFamily(editor?.document?.languageId ?? 'unknown'))
 
+        const lambdaMemory = templateResource?.Properties?.MemorySize ?? config.lambda?.memoryMb
+        const lambdaTimout = templateResource?.Properties?.Timeout ?? config.lambda?.timeoutSec
+
         if (!runtime) {
             getLogger().error(`SAM debug: failed to launch config: ${config})`)
             vscode.window.showErrorMessage(
@@ -205,7 +210,15 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             handlerName: handlerName,
             documentUri: documentUri,
             samTemplatePath: pathutil.normalize(templateInvoke?.samTemplatePath),
+            eventPayloadFile: '', // Populated by makeConfig().
+            envFile: '', // Populated by makeConfig().
             debugPort: config.noDebug ? undefined : await getStartPort(),
+            lambda: {
+                ...config.lambda,
+                memoryMb: lambdaMemory,
+                timeoutSec: lambdaTimout,
+                environmentVariables: { ...config.lambda?.environmentVariables },
+            },
         }
 
         //
@@ -215,6 +228,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         // 2. do `sam build`
         // 3. do `sam local invoke`
         //
+        await makeConfig(launchConfig)
         switch (runtimeFamily) {
             case RuntimeFamily.NodeJS: {
                 // Make a NodeJS launch-config from the generic config.
@@ -223,11 +237,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             }
             case RuntimeFamily.Python: {
                 // Make a Python launch-config from the generic config.
-                launchConfig = await pythonDebug.makePythonDebugConfig(
-                    launchConfig,
-                    launchConfig.runtime,
-                    launchConfig.handlerName
-                )
+                launchConfig = await pythonDebug.makePythonDebugConfig(launchConfig)
                 break
             }
             case RuntimeFamily.DotNetCore: {

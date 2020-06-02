@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as fs from 'fs'
 import { samLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 import { CloudFormation } from '../../cloudformation/cloudformation'
 import { CloudFormationTemplateRegistry } from '../../cloudformation/templateRegistry'
@@ -67,6 +68,10 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
             rv = this.validateTemplateConfig(config, config.invokeTarget.samTemplatePath, cfnTemplate)
         } else if (config.invokeTarget.target === CODE_TARGET_TYPE) {
             rv = this.validateCodeConfig(config)
+        }
+
+        if (rv.isValid) {
+            rv = this.validateLambda(config)
         }
 
         if (!rv.isValid && !rv.message) {
@@ -195,6 +200,24 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
                     CODE_TARGET_TYPE,
                     Array.from(samLambdaRuntimes).join(', ')
                 ),
+            }
+        }
+
+        return { isValid: true }
+    }
+
+    private validateLambda(config: AwsSamDebuggerConfiguration): ValidationResult {
+        if (config.lambda?.event?.path) {
+            const fullpath = tryGetAbsolutePath(this.workspaceFolder, config.lambda?.event?.path)
+            if (!fs.existsSync(fullpath)) {
+                return {
+                    isValid: false,
+                    message: localize(
+                        'AWS.sam.debugger.missingRuntime',
+                        'Payload file not found: "{0}"',
+                        config.lambda?.event?.path
+                    ),
+                }
             }
         }
 
