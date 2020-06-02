@@ -226,8 +226,14 @@ function createYamlExtensionPrompt(): void {
         )
 
         // user already has an open template with focus
-        for (const editor of vscode.window.visibleTextEditors) {
-            promptInstallYamlPluginFromEditor(editor, yamlPromptDisposables)
+        // prescreen if a template.yaml is current open so we only call once
+        const openTemplateYamls = vscode.window.visibleTextEditors.filter(editor => {
+            const fileName = editor.document.fileName
+            return fileName.endsWith('template.yaml') || fileName.endsWith('template.yml')
+        })
+
+        if (openTemplateYamls.length > 0) {
+            promptInstallYamlPluginFromEditor(openTemplateYamls[0], yamlPromptDisposables)
         }
     }
 }

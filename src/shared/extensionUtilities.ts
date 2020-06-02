@@ -24,7 +24,9 @@ export enum IDE {
 }
 
 export function getIdeType(): IDE {
-    if (vscode.env.appName.startsWith(VSCODE_APPNAME)) {
+    // Theia doesn't necessarily have all env propertie
+    // so we should be defensive and assume appName is nullable.
+    if (vscode.env.appName?.startsWith(VSCODE_APPNAME)) {
         return IDE.vscode
     }
 
