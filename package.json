@@ -55,7 +55,11 @@
         "onView:aws.cdk.explorer",
         "onCommand:aws.refreshCdkExplorer",
         "onCommand:aws.aboutToolkit",
-        "onLanguage:asl"
+        "onLanguage:asl",
+        "onLanguage:javascript",
+        "onLanguage:python",
+        "onLanguage:csharp",
+        "onLanguage:yaml"
     ],
     "main": "./extensionMain",
     "contributes": {
