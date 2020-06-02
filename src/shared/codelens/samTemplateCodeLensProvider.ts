@@ -6,15 +6,10 @@
 import * as _ from 'lodash'
 import * as vscode from 'vscode'
 import { TemplateFunctionResource, TemplateSymbolResolver } from '../cloudformation/templateSymbolResolver'
-import { LaunchConfiguration } from '../debug/launchConfiguration'
-import {
-    isTemplateTargetProperties,
-    TemplateTargetProperties,
-    TEMPLATE_TARGET_TYPE,
-} from '../sam/debugger/awsSamDebugConfiguration'
+import { getExistingSamTemplateResourcesForUri, LaunchConfiguration } from '../debug/launchConfiguration'
+import { TEMPLATE_TARGET_TYPE } from '../sam/debugger/awsSamDebugConfiguration'
 import { AddSamDebugConfigurationInput } from '../sam/debugger/commands/addSamDebugConfiguration'
 import { localize } from '../utilities/vsCodeUtils'
-import * as pathutils from '../utilities/pathUtils'
 
 /**
  * Provides Code Lenses for generating debug configurations for SAM templates.
@@ -31,7 +26,7 @@ export class SamTemplateCodeLensProvider implements vscode.CodeLensProvider {
             return []
         }
 
-        const existingDebuggedResources = getExistingDebuggedResources(document.uri, launchConfig)
+        const existingDebuggedResources = getExistingSamTemplateResourcesForUri(document.uri, launchConfig)
 
         return _(functionResources)
             .reject(functionResource => existingDebuggedResources.has(functionResource.name))
@@ -51,22 +46,4 @@ export class SamTemplateCodeLensProvider implements vscode.CodeLensProvider {
             arguments: [input, TEMPLATE_TARGET_TYPE],
         })
     }
-}
-
-function getExistingDebuggedResources(templateUri: vscode.Uri, launchConfig: LaunchConfiguration): Set<string> {
-    const existingSamDebugTargets = getExistingSamDebugTargets(launchConfig)
-    const folder = vscode.workspace.getWorkspaceFolder(templateUri)
-
-    return _(existingSamDebugTargets)
-        .filter(target => pathutils.areEqual(folder?.uri.fsPath, target.samTemplatePath, templateUri.fsPath))
-        .map(target => target.samTemplateResource)
-        .thru(array => new Set(array))
-        .value()
-}
-
-function getExistingSamDebugTargets(launchConfig: LaunchConfiguration): TemplateTargetProperties[] {
-    return _(launchConfig.getSamDebugConfigurations())
-        .map(samConfig => samConfig.invokeTarget)
-        .filter(isTemplateTargetProperties)
-        .value()
 }
