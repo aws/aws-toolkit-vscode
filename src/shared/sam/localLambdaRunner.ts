@@ -144,6 +144,7 @@ export async function invokeLambdaFunction(
         manifestPath: config.manifestPath,
         environmentVariables: {},
         useContainer: config.sam?.containerBuild || false,
+        extraArgs: config.sam?.buildArguments,
     }
     if (!config.noDebug) {
         // Needed at least for dotnet case; harmless for others.
@@ -177,6 +178,7 @@ export async function invokeLambdaFunction(
         dockerNetwork: config.sam?.dockerNetwork,
         debugPort: !config.noDebug ? config.debugPort?.toString() : undefined,
         debuggerPath: config.debuggerPath,
+        extraArgs: config.sam?.localArguments,
     }
 
     const command = new SamCliLocalInvokeInvocation(localInvokeArgs)
