@@ -45,7 +45,14 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
         const choices = await quickPick.promptUser()
         const val = picker.verifySinglePickerOutput(choices)
 
-        return val?.label
+        const result = val?.label
+
+        // TODO: Handle error and no items differently? Move the check into IteratingAWSCallPicker?
+        if (result && (result === quickPick.noItemsItem.label || quickPick.errorItem.label)) {
+            return undefined
+        }
+
+        return result
     }
 }
 
@@ -58,6 +65,7 @@ function createDescribeLogStreamsCallPicker(
     return new picker.IteratingAWSCallPicker(
         {
             iteratorParams: {
+                // TODO: is there a better way to send this call so we don't have to `.bind(client)`?
                 awsCall: client.describeLogStreams.bind(client),
                 nextTokenNames: {
                     request: 'nextToken',
