@@ -40,7 +40,7 @@ export class LaunchConfiguration {
      * Creates a Launch Configuration scoped to the given resource.
      */
     public constructor(
-        public scopedResource: vscode.Uri,
+        public readonly scopedResource: vscode.Uri,
         private readonly configSource: DebugConfigurationSource = new DefaultDebugConfigSource(scopedResource),
         private readonly samValidator: AwsSamDebugConfigurationValidator = new DefaultAwsSamDebugConfigurationValidator(
             CloudFormationTemplateRegistry.getRegistry(),
