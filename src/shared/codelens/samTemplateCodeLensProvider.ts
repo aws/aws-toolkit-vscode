@@ -6,7 +6,7 @@
 import * as _ from 'lodash'
 import * as vscode from 'vscode'
 import { TemplateFunctionResource, TemplateSymbolResolver } from '../cloudformation/templateSymbolResolver'
-import { getExistingSamTemplateResourcesForUri, LaunchConfiguration } from '../debug/launchConfiguration'
+import { getReferencedTemplateResources, LaunchConfiguration } from '../debug/launchConfiguration'
 import { TEMPLATE_TARGET_TYPE } from '../sam/debugger/awsSamDebugConfiguration'
 import { AddSamDebugConfigurationInput } from '../sam/debugger/commands/addSamDebugConfiguration'
 import { localize } from '../utilities/vsCodeUtils'
@@ -26,7 +26,7 @@ export class SamTemplateCodeLensProvider implements vscode.CodeLensProvider {
             return []
         }
 
-        const existingDebuggedResources = getExistingSamTemplateResourcesForUri(launchConfig)
+        const existingDebuggedResources = getReferencedTemplateResources(launchConfig)
 
         return _(functionResources)
             .reject(functionResource => existingDebuggedResources.has(functionResource.name))

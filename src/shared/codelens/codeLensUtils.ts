@@ -19,7 +19,7 @@ import { ExtContext } from '../extensions'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
 import { nodeJsRuntimes, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { CODE_TARGET_TYPE } from '../sam/debugger/awsSamDebugConfiguration'
-import { LaunchConfiguration, getExistingSamCodeConfigPaths } from '../debug/launchConfiguration'
+import { getReferencedHandlerPaths, LaunchConfiguration } from '../debug/launchConfiguration'
 
 export type Language = 'python' | 'javascript' | 'csharp'
 
@@ -48,7 +48,7 @@ export async function makeCodeLenses({
     }
 
     const lenses: vscode.CodeLens[] = []
-    const existingConfigs = getExistingSamCodeConfigPaths(new LaunchConfiguration(document.uri))
+    const existingConfigs = getReferencedHandlerPaths(new LaunchConfiguration(document.uri))
     for (const handler of handlers) {
         // handler.range is a RangeOrCharOffset union type. Extract vscode.Range.
         const range =

@@ -95,14 +95,14 @@ class DefaultDebugConfigSource implements DebugConfigurationSource {
     }
 }
 
-function getExistingSamTemplateTargets(launchConfig: LaunchConfiguration): TemplateTargetProperties[] {
+function getSamTemplateTargets(launchConfig: LaunchConfiguration): TemplateTargetProperties[] {
     return _(launchConfig.getSamDebugConfigurations())
         .map(samConfig => samConfig.invokeTarget)
         .filter(isTemplateTargetProperties)
         .value()
 }
 
-function getExistingSamCodeTargets(launchConfig: LaunchConfiguration): CodeTargetProperties[] {
+function getSamCodeTargets(launchConfig: LaunchConfiguration): CodeTargetProperties[] {
     return _(launchConfig.getSamDebugConfigurations())
         .map(samConfig => samConfig.invokeTarget)
         .filter(isCodeTargetProperties)
@@ -113,8 +113,8 @@ function getExistingSamCodeTargets(launchConfig: LaunchConfiguration): CodeTarge
  * Returns a Set containing the samTemplateResources from the launch.json file that the launch config is scoped to.
  * @param launchConfig Launch config to check
  */
-export function getExistingSamTemplateResourcesForUri(launchConfig: LaunchConfiguration): Set<string> {
-    const existingSamTemplateTargets = getExistingSamTemplateTargets(launchConfig)
+export function getReferencedTemplateResources(launchConfig: LaunchConfiguration): Set<string> {
+    const existingSamTemplateTargets = getSamTemplateTargets(launchConfig)
     const folder = launchConfig.workspaceFolder
 
     return _(existingSamTemplateTargets)
@@ -132,8 +132,8 @@ export function getExistingSamTemplateResourcesForUri(launchConfig: LaunchConfig
  * (without workspaceFolder if the projectRoot is relative).
  * @param launchConfig Launch config to check
  */
-export function getExistingSamCodeConfigPaths(launchConfig: LaunchConfiguration): Set<string> {
-    const existingSamCodeTargets = getExistingSamCodeTargets(launchConfig)
+export function getReferencedHandlerPaths(launchConfig: LaunchConfiguration): Set<string> {
+    const existingSamCodeTargets = getSamCodeTargets(launchConfig)
 
     return _(existingSamCodeTargets)
         .map(target => {

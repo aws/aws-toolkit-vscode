@@ -10,8 +10,8 @@ import * as vscode from 'vscode'
 import {
     DebugConfigurationSource,
     LaunchConfiguration,
-    getExistingSamTemplateResourcesForUri,
-    getExistingSamCodeConfigPaths,
+    getReferencedTemplateResources,
+    getReferencedHandlerPaths,
 } from '../../../shared/debug/launchConfiguration'
 import { AwsSamDebuggerConfiguration } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
 import { AwsSamDebugConfigurationValidator } from '../../../shared/sam/debugger/awsSamDebugConfigurationValidator'
@@ -86,11 +86,11 @@ describe('LaunchConfiguration', () => {
     })
 })
 
-describe('getExistingSamTemplateResourcesForUri', () => {
+describe('getReferencedTemplateResources', () => {
     it('includes resources that are in the given template', () => {
         const mockLaunchConfig = instance(createMockLaunchConfig())
 
-        const resultSet = getExistingSamTemplateResourcesForUri(mockLaunchConfig)
+        const resultSet = getReferencedTemplateResources(mockLaunchConfig)
         const workspaceFolder = mockLaunchConfig.workspaceFolder!.uri.fsPath
 
         // relative and absolute path of the correct template.yaml file
@@ -121,11 +121,11 @@ describe('getExistingSamTemplateResourcesForUri', () => {
     })
 })
 
-describe('getExistingSamCodeConfigPaths', () => {
+describe('getReferencedHandlerPaths', () => {
     it('includes all resources as absolute paths to root dir + handlers', () => {
         const mockLaunchConfig = instance(createMockLaunchConfig())
 
-        const resultSet = getExistingSamCodeConfigPaths(mockLaunchConfig)
+        const resultSet = getReferencedHandlerPaths(mockLaunchConfig)
         const workspaceFolder = mockLaunchConfig.workspaceFolder!.uri.fsPath
 
         //template type handlers, these are all false as we throw all of these out
