@@ -56,6 +56,10 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
 
 /**
  * Launches and attaches debugger to a SAM dotnet (csharp) project.
+ *
+ * We spin up a C# Lambda Docker container, download and build the debugger for
+ * Linux, then mount it with the SAM app on run. User's C# workspace dir will
+ * have a `.vsdbg` dir after the first run.
  */
 export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchRequestArgs): Promise<void> {
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand(getChannelLogger(ctx.outputChannel), [

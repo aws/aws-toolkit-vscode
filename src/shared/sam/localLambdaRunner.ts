@@ -24,7 +24,6 @@ import { ChannelLogger } from '../utilities/vsCodeUtils'
 import { tryGetAbsolutePath } from '../utilities/workspaceUtils'
 import { DefaultValidatingSamCliProcessInvoker } from './cli/defaultValidatingSamCliProcessInvoker'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from './cli/samCliBuild'
-import { SamCliProcessInvoker } from './cli/samCliInvokerUtils'
 import { SamCliLocalInvokeInvocation, SamCliLocalInvokeInvocationArguments } from './cli/samCliLocalInvoke'
 import { SamLaunchRequestArgs } from './debugger/samDebugSession'
 
@@ -117,53 +116,12 @@ export async function makeInputTemplate(config: SamLaunchRequestArgs): Promise<s
     return pathutil.normalize(inputTemplatePath)
 }
 
-export interface ExecuteSamBuildArguments {
-    baseBuildDir: string
-    channelLogger: Pick<ChannelLogger, 'info'>
-    codeDir: string
-    inputTemplatePath: string
-    manifestPath?: string
-    environmentVariables?: NodeJS.ProcessEnv
-    samProcessInvoker: SamCliProcessInvoker
-    useContainer?: boolean
-}
-
-export async function executeSamBuild({
-    baseBuildDir,
-    channelLogger,
-    codeDir,
-    inputTemplatePath,
-    manifestPath,
-    environmentVariables,
-    samProcessInvoker,
-    useContainer,
-}: ExecuteSamBuildArguments): Promise<string> {
-    channelLogger.info('AWS.output.building.sam.application', 'Building SAM Application...')
-
-    const samBuildOutputFolder = path.join(baseBuildDir, 'output')
-
-    const samCliArgs: SamCliBuildInvocationArguments = {
-        buildDir: samBuildOutputFolder,
-        baseDir: codeDir,
-        templatePath: inputTemplatePath,
-        invoker: samProcessInvoker,
-        manifestPath,
-        environmentVariables,
-        useContainer,
-    }
-    await new SamCliBuildInvocation(samCliArgs).execute()
-
-    channelLogger.info('AWS.output.building.sam.application.complete', 'Build complete.')
-
-    return path.join(samBuildOutputFolder, 'template.yaml')
-}
-
 /**
  * Prepares and invokes a lambda function via `sam local invoke`.
  *
  * @param ctx
  * @param config
- * @param onAfterBuild  Called after `executeSamBuild()`
+ * @param onAfterBuild  Called after `SamCliBuildInvocation.execute()`
  */
 export async function invokeLambdaFunction(
     ctx: ExtContext,
@@ -175,25 +133,29 @@ export async function invokeLambdaFunction(
     ctx.chanLogger.info('AWS.output.sam.local.start', 'Preparing to run {0} locally...', config.handlerName)
 
     const processInvoker = new DefaultValidatingSamCliProcessInvoker({})
-    const buildArgs: ExecuteSamBuildArguments = {
-        baseBuildDir: config.baseBuildDir!,
-        channelLogger: ctx.chanLogger,
-        codeDir: config.codeRoot,
-        inputTemplatePath: config.samTemplatePath!,
-        manifestPath: config.manifestPath,
-        samProcessInvoker: processInvoker,
-        useContainer: config.sam?.containerBuild || false,
-        environmentVariables: config.lambda?.environmentVariables,
-    }
 
+    ctx.chanLogger.info('AWS.output.building.sam.application', 'Building SAM Application...')
+    const samBuildOutputFolder = path.join(config.baseBuildDir!, 'output')
+    const samCliArgs: SamCliBuildInvocationArguments = {
+        buildDir: samBuildOutputFolder,
+        baseDir: config.codeRoot,
+        templatePath: config.samTemplatePath!,
+        invoker: processInvoker,
+        manifestPath: config.manifestPath,
+        environmentVariables: {},
+        useContainer: config.sam?.containerBuild || false,
+    }
     if (!config.noDebug) {
-        buildArgs.environmentVariables = {
+        // Needed at least for dotnet case; harmless for others.
+        samCliArgs.environmentVariables = {
             SAM_BUILD_MODE: 'debug',
         }
     }
+    await new SamCliBuildInvocation(samCliArgs).execute()
+    ctx.chanLogger.info('AWS.output.building.sam.application.complete', 'Build complete.')
 
     // XXX: reassignment
-    config.samTemplatePath = await executeSamBuild(buildArgs)
+    config.samTemplatePath = path.join(samBuildOutputFolder, 'template.yaml')
     delete config.invokeTarget // Must not be used beyond this point.
 
     await onAfterBuild()

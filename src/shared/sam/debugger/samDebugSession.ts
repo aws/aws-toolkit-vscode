@@ -59,7 +59,8 @@ export interface SamLaunchRequestArgs extends DebugProtocol.AttachRequestArgumen
     /**
      * SAM/CFN template absolute path used for SAM CLI invoke.
      * - For `target=code` this is the _generated_ template path.
-     * - For `target=template` this is the template found in the workspace.
+     * - For `target=template` this is the _generated_ template path (TODO: in
+     *   the future we may change this to be the template found in the workspace.
      */
     samTemplatePath: string
 

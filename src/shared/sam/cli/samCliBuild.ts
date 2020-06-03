@@ -23,7 +23,7 @@ export interface SamCliBuildInvocationArguments {
      */
     templatePath: string
     /**
-     * Environment variables to set on the child process.
+     * Environment variables set when invoking the SAM process (NOT passed to the Lambda).
      */
     environmentVariables?: NodeJS.ProcessEnv
     /**
