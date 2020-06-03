@@ -13,7 +13,7 @@ import { LogGroupNode } from '../explorer/logGroupNode'
 import { CloudWatchLogs } from 'aws-sdk'
 import { ext } from '../../shared/extensionGlobals'
 import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
-import { IteratingAWSCall } from '../../shared/utilities/collectionUtils'
+// import { IteratingAWSCall } from '../../shared/utilities/collectionUtils'
 
 export interface SelectLogStreamResponse {
     region: string
@@ -58,17 +58,20 @@ function createDescribeLogStreamsCallPicker(
 
     return new picker.IteratingAWSCallPicker(
         {
-            iteratingAwsCall: new IteratingAWSCall(client.describeLogStreams.bind(client), {
-                request: 'nextToken',
-                response: 'nextToken',
-            }),
-            initialRequest: {
-                logGroupName,
-                orderBy: 'LastEventTime',
-                descending: true,
-                limit: 1, // TODO: remove, for testing purposes
+            iteratorParams: {
+                awsCall: client.describeLogStreams.bind(client),
+                nextTokenNames: {
+                    request: 'nextToken',
+                    response: 'nextToken',
+                },
+                request: {
+                    logGroupName,
+                    orderBy: 'LastEventTime',
+                    descending: true,
+                    limit: 1, // TODO: remove, for testing purposes
+                },
             },
-            awsResponseToQuickPickItem: (response: CloudWatchLogs.DescribeLogStreamsResponse) => {
+            awsCallResponseToQuickPickItemFn: (response: CloudWatchLogs.DescribeLogStreamsResponse) => {
                 const result: vscode.QuickPickItem[] = []
 
                 if (response.logStreams) {
@@ -91,6 +94,7 @@ function createDescribeLogStreamsCallPicker(
                 matchOnDetail: true,
                 ignoreFocusOut: true, // TODO: remove, present for testing purposes
             },
+            isRefreshable: true,
         }
     )
 }

@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { getLogger } from '../logger'
-import { IteratingAWSCall } from '../utilities/collectionUtils'
+import { IteratorForAWSCallParams, getIteratorForAWSCall } from '../utilities/collectionUtils'
 
 /**
  * Options to configure the behavior of the quick pick UI.
@@ -152,9 +152,15 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
     private isDone: boolean = false
     private isPaused: boolean = false
     private items: vscode.QuickPickItem[] = []
+    private iterator: AsyncGenerator<TResponse, undefined, TResponse | undefined>
 
     private readonly quickPick: vscode.QuickPick<vscode.QuickPickItem>
     private readonly moreItemsRequest: vscode.EventEmitter<void> = new vscode.EventEmitter<void>()
+    private readonly refreshButton: vscode.QuickInputButton
+    private readonly paginationButton: vscode.QuickInputButton
+    // TODO: remove debug buttons
+    private readonly pauseButton: vscode.QuickInputButton
+    private readonly playButton: vscode.QuickInputButton
 
     /**
      * @param awsCallLogic: Object representing the call to be used, the initial request, and a function that converts from a response object to an array of quick pick items
@@ -163,9 +169,8 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
     public constructor(
         private readonly awsCallLogic: {
             // TODO: allow for creation of a new call in case we want to reload quick pick in its entirety
-            iteratingAwsCall: IteratingAWSCall<TRequest, TResponse>
-            initialRequest: TRequest
-            awsResponseToQuickPickItem: (response: TResponse) => vscode.QuickPickItem[]
+            iteratorParams: IteratorForAWSCallParams<TRequest, TResponse>
+            awsCallResponseToQuickPickItemFn: (response: TResponse) => vscode.QuickPickItem[]
         },
         private readonly pickerOptions: {
             options?: vscode.QuickPickOptions & AdditionalQuickPickOptions
@@ -177,8 +182,44 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
                 ) => void,
                 reject: (reason?: any) => void
             ) => void
+            isRefreshable?: boolean
+            paginationType?: 'append' | 'replace'
         } = {}
     ) {
+        this.iterator = this.createNewIterator()
+
+        // TODO: remove debug buttons
+        this.pauseButton = {
+            iconPath: new vscode.ThemeIcon('debug-pause'),
+            tooltip: 'Pause!',
+        }
+        this.playButton = {
+            iconPath: new vscode.ThemeIcon('play'),
+            tooltip: 'Play!',
+        }
+
+        this.refreshButton = {
+            iconPath: new vscode.ThemeIcon('refresh'),
+            tooltip: 'Refresh',
+        }
+
+        this.paginationButton = {
+            iconPath: new vscode.ThemeIcon('add'),
+            tooltip: this.pickerOptions.paginationType === 'append' ? 'Load Next Page...' : 'Next Page...',
+        }
+
+        // todo: localize
+        const quickPickButtons = this.pickerOptions.buttons || []
+        quickPickButtons.push(this.pauseButton, this.playButton)
+        if (this.pickerOptions.isRefreshable) {
+            quickPickButtons.push(this.refreshButton)
+        }
+        // is this the correct impl? If so, is this the correct icon?
+        // this or quickpick item at the end of the list?
+        if (this.pickerOptions.paginationType) {
+            quickPickButtons.push(this.paginationButton)
+        }
+
         // TODO: Create default buttons for load next page, refresh
         // TODO: Set a global throttling flag that will optionally display said load next page button
         this.quickPick = createQuickPick<vscode.QuickPickItem>({
@@ -194,7 +235,7 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
                 },
             },
             items: this.items,
-            buttons: this.pickerOptions.buttons,
+            buttons: quickPickButtons,
         })
 
         this.moreItemsRequest.event(() => this.loadItems())
@@ -206,32 +247,94 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
      * If the call picker was previously paused, unpauses it.
      */
     public async promptUser(): Promise<vscode.QuickPickItem[] | undefined> {
-        // start background loading and unpause the loader (if it was paused previously by a selection)
-        this.quickPick.busy = true
-        this.isPaused = false
         if (!this.isDone) {
             this.moreItemsRequest.fire()
         }
         return await promptUser<vscode.QuickPickItem>({
             picker: this.quickPick,
-            onDidTriggerButton: this.pickerOptions.onDidTriggerButton,
+            onDidTriggerButton: (button, resolve, reject) => {
+                // pause any existing execution
+                this.isPaused = true
+                if (button === this.refreshButton) {
+                    this.isPaused = true
+                    this.refreshQuickPick()
+                    this.moreItemsRequest.fire()
+                    return
+                }
+                if (button === this.paginationButton) {
+                    this.isPaused = false
+                    this.moreItemsRequest.fire()
+                    return
+                }
+                // TODO: remove debug buttons
+                if (button === this.pauseButton) {
+                    this.isPaused = true
+                    return
+                }
+                if (button === this.playButton) {
+                    this.isPaused = false
+                    this.moreItemsRequest.fire()
+                    return
+                }
+                // pass existing onDidTriggerButton through if it exists and wasn't a native button
+                if (this.pickerOptions.onDidTriggerButton) {
+                    this.pickerOptions.onDidTriggerButton(button, resolve, reject)
+                }
+            },
         })
     }
 
     // TODO: Add nodes for no items, error (error retries call from where it left off?)
     private async loadItems(): Promise<void> {
-        const iter = this.awsCallLogic.iteratingAwsCall.getIteratorForRequest(this.awsCallLogic.initialRequest)
+        // unpause the loader (if it was paused previously by a selection)
+        this.isPaused = false
 
-        for await (const item of iter) {
-            if (!this.isDone && !this.isPaused) {
-                this.items = this.items.concat(this.awsCallLogic.awsResponseToQuickPickItem(item))
+        // use a while loop so we have greater control over the iterator.
+        // breaking out of a for..of loop for an iterator will automatically set the iterator to `done`
+        // manual iteration means that we can use the same iterator no matter how many times we call loadItems()
+        while (!this.isDone && !this.isPaused) {
+            this.quickPick.busy = true
+            try {
+                const item = await this.iterator.next()
+                if (item.done) {
+                    this.isDone = true
+                    break
+                }
+                const nextItems = this.awsCallLogic.awsCallResponseToQuickPickItemFn(item.value)
+                this.items = this.pickerOptions.paginationType === 'replace' ? nextItems : this.items.concat(nextItems)
                 // TODO: Is there a way to append to this ReadOnlyArray so it doesn't constantly pop focus back to the top?
                 this.quickPick.items = this.items
-            } else {
-                break
+                // if this is manually paginated, pause the load after one pull
+                if (this.pickerOptions.paginationType) {
+                    this.isPaused = true
+                }
+            } catch (e) {
+                // append error node
+                // clicking error node should either go backwards (return undefined) or refresh
+                // maybe have one of each?
+                // give quickpick an error message
+                // we should not blow away the existing stacks
             }
         }
-        this.isDone = true
+
+        if (this.isDone && this.items.length === 0) {
+            // append no items node
+            // clicking node should return undefined to back up a step
+        }
         this.quickPick.busy = false
+    }
+
+    private refreshQuickPick(): void {
+        this.items = []
+        this.isDone = false
+        this.quickPick.items = this.items
+        this.iterator = this.createNewIterator()
+    }
+
+    /**
+     * Generates a new iterator. Used at construction and during a "refresh" scenario.
+     */
+    private createNewIterator(): AsyncGenerator<TResponse, undefined, TResponse | undefined> {
+        return getIteratorForAWSCall(this.awsCallLogic.iteratorParams)
     }
 }
