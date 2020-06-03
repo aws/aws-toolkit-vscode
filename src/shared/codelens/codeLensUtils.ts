@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as path from 'path'
 import * as vscode from 'vscode'
 
 import { CloudFormation } from '../cloudformation/cloudformation'
@@ -18,6 +19,7 @@ import { ExtContext } from '../extensions'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
 import { nodeJsRuntimes, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { CODE_TARGET_TYPE } from '../sam/debugger/awsSamDebugConfiguration'
+import { getReferencedHandlerPaths, LaunchConfiguration } from '../debug/launchConfiguration'
 
 export type Language = 'python' | 'javascript' | 'csharp'
 
@@ -46,6 +48,7 @@ export async function makeCodeLenses({
     }
 
     const lenses: vscode.CodeLens[] = []
+    const existingConfigs = getReferencedHandlerPaths(new LaunchConfiguration(document.uri))
     for (const handler of handlers) {
         // handler.range is a RangeOrCharOffset union type. Extract vscode.Range.
         const range =
@@ -63,7 +66,9 @@ export async function makeCodeLenses({
                 rootUri: handler.manifestUri,
                 runtimeFamily,
             }
-            lenses.push(makeAddCodeSamDebugCodeLens(baseParams))
+            if (!existingConfigs.has(path.join(path.dirname(baseParams.rootUri.fsPath), baseParams.handlerName))) {
+                lenses.push(makeAddCodeSamDebugCodeLens(baseParams))
+            }
         } catch (err) {
             getLogger().error(
                 `Could not generate 'configure' code lens for handler '${handler.handlerName}'`,
