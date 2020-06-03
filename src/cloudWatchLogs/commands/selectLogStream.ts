@@ -13,7 +13,6 @@ import { LogGroupNode } from '../explorer/logGroupNode'
 import { CloudWatchLogs } from 'aws-sdk'
 import { ext } from '../../shared/extensionGlobals'
 import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
-// import { IteratingAWSCall } from '../../shared/utilities/collectionUtils'
 
 export interface SelectLogStreamResponse {
     region: string

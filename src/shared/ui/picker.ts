@@ -4,8 +4,11 @@
  */
 
 import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 import { getLogger } from '../logger'
-import { IteratorForAWSCallParams, getIteratorForAWSCall } from '../utilities/collectionUtils'
+import { getIteratorForAWSCall, IteratorForAWSCallParams } from '../utilities/collectionUtils'
 
 /**
  * Options to configure the behavior of the quick pick UI.
@@ -162,6 +165,10 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
     private readonly pauseButton: vscode.QuickInputButton
     private readonly playButton: vscode.QuickInputButton
 
+    // these QuickPickItems are public so users can check against their label to determine if the item isn't valid
+    public readonly noItemsItem: vscode.QuickPickItem
+    public readonly errorItem: vscode.QuickPickItem
+
     /**
      * @param awsCallLogic: Object representing the call to be used, the initial request, and a function that converts from a response object to an array of quick pick items
      * @param pickerOptions: Object representing QuickPick options, additional buttons, and any additional functionality to be called upon selecting a button.
@@ -171,6 +178,7 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
             // TODO: allow for creation of a new call in case we want to reload quick pick in its entirety
             iteratorParams: IteratorForAWSCallParams<TRequest, TResponse>
             awsCallResponseToQuickPickItemFn: (response: TResponse) => vscode.QuickPickItem[]
+            noItemsMessage?: string
         },
         private readonly pickerOptions: {
             options?: vscode.QuickPickOptions & AdditionalQuickPickOptions
@@ -202,10 +210,20 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
             iconPath: new vscode.ThemeIcon('refresh'),
             tooltip: 'Refresh',
         }
-
         this.paginationButton = {
             iconPath: new vscode.ThemeIcon('add'),
             tooltip: this.pickerOptions.paginationType === 'append' ? 'Load Next Page...' : 'Next Page...',
+        }
+        this.noItemsItem = {
+            label:
+                this.awsCallLogic.noItemsMessage ??
+                localize('AWS.picker.dynamic.noItemsFound.label', 'No items found.'),
+            detail: localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back'),
+            alwaysShow: true,
+        }
+        this.errorItem = {
+            label: localize('AWS.picker.dynamic.errorNode.label', 'There was an error retrieving more items.'),
+            alwaysShow: true,
         }
 
         // todo: localize
@@ -228,7 +246,8 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
                 onDidSelectItem: item => {
                     // pause any existing execution
                     this.isPaused = true
-                    // pass existing onDidSelectItem through if it exists
+
+                    // pass existing onDidSelectItem through if it exists and isn't a base case
                     if (this.pickerOptions.options?.onDidSelectItem) {
                         this.pickerOptions.options.onDidSelectItem(item)
                     }
@@ -313,13 +332,17 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
                 // clicking error node should either go backwards (return undefined) or refresh
                 // maybe have one of each?
                 // give quickpick an error message
-                // we should not blow away the existing stacks
+                // we should not blow away the existing items
+                const err = e as Error
+                this.items.push({
+                    ...this.errorItem,
+                    detail: err.message,
+                })
             }
         }
 
         if (this.isDone && this.items.length === 0) {
-            // append no items node
-            // clicking node should return undefined to back up a step
+            this.items.push(this.noItemsItem)
         }
         this.quickPick.busy = false
     }
