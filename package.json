@@ -812,17 +812,17 @@
             },
             {
                 "fileMatch": "*.ssmdoc.json",
-                "url": "./src/ssmDocument/ssmdocLanguage/ssmdocschema.json"
+                "url": "./src/ssmDocument/ssmdocLanguage/resources/ssmdocschema.json"
             }
         ],
         "yamlValidation": [
             {
                 "fileMatch": "*.ssmdoc.yml",
-                "url": "./src/ssmDocument/ssmdocLanguage/ssmdocschema.json"
+                "url": "./src/ssmDocument/ssmdocLanguage/resources/ssmdocschema.json"
             },
             {
                 "fileMatch": "*.ssmdoc.yaml",
-                "url": "./src/ssmDocument/ssmdocLanguage/ssmdocschema.json"
+                "url": "./src/ssmDocument/ssmdocLanguage/resources/ssmdocschema.json"
             }
         ],
         "languages": [
@@ -968,7 +968,8 @@
         "winston": "^3.2.1",
         "winston-transport": "^4.3.0",
         "xml2js": "^0.4.19",
-        "yaml": "^1.9.2"
+        "yaml": "^1.9.2",
+        "vscode-json-languageservice": "3.4.9"
     },
     "prettier": {
         "printWidth": 120,

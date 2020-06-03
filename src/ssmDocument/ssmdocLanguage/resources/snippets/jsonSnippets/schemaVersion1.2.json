@@ -1,0 +1,19 @@
+[
+    {
+        "name": "$Plugin Snippet aws:applications",
+        "description": "Code Snippet for action aws:applications.\n\nInstall, repair, or uninstall applications on an EC2 instance. This plugin only runs on Windows Server operating systems.",
+        "body": [
+            "\"aws:applications\": {",
+            "\t\"properties\": [",
+            "\t\t{",
+            "\t\t\t\"id\": \"0.aws:applications\",",
+            "\t\t\t\"action\": \"{{ action }}\",",
+            "\t\t\t\"parameters\": \"{{ parameters }}\",",
+            "\t\t\t\"source\": \"{{ source }}\",",
+            "\t\t\t\"sourceHash\": \"{{ sourceHash }}\"",
+            "\t\t}",
+            "\t]",
+            "}"
+        ]
+    }
+]

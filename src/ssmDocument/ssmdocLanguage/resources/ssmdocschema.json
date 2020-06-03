@@ -724,20 +724,7 @@
                                                             },
                                                             "name": {
                                                                 "description": "The name of the AWS package to install or uninstall. Available packages include the following: AWSPVDriver, AwsEnaNetworkDriver, AwsVssComponents, and AmazonCloudWatchAgent.",
-                                                                "type": "string",
-                                                                "anyOf": [
-                                                                    {
-                                                                        "enum": [
-                                                                            "AWSPVDriver",
-                                                                            "AwsEnaNetworkDriver",
-                                                                            "AwsVssComponents",
-                                                                            "AmazonCloudWatchAgent"
-                                                                        ]
-                                                                    },
-                                                                    {
-                                                                        "pattern": "^{{[ ]{0,1}[a-zA-Z_]+[ ]{0,1}}}$"
-                                                                    }
-                                                                ]
+                                                                "type": "string"
                                                             },
                                                             "installationType": {
                                                                 "description": "The type of installation to perform. If you specify 'Uninstall and reinstall', the package is completely uninstalled, and then reinstalled. The application is unavailable until the reinstallation completes. If you specify 'In-place update', only new or changed files are added to the existing installation according you instructions you provide in an update script. The application remains available throughout the update process. Uninstall and reinstall is the default value.",
@@ -751,6 +738,551 @@
                                                             }
                                                         },
                                                         "required": ["action", "name"]
+                                                    }
+                                                },
+                                                "required": ["inputs"]
+                                            }
+                                        },
+                                        {
+                                            "if": {
+                                                "properties": {
+                                                    "action": {
+                                                        "const": "aws:configurePackage"
+                                                    }
+                                                }
+                                            },
+                                            "then": {
+                                                "description": "(Schema version 2.0 or later) Install or uninstall a Distributor package. You can install the latest version, default version, or a version of the package you specify. Packages provided by AWS are also supported. This plugin runs on Windows Server and Linux operating systems, but not all the available packages are supported on Linux operating systems.                                               Available AWS packages for Windows Server include the following: AWSPVDriver, AWSNVMe, AwsEnaNetworkDriver, AwsVssComponents, AmazonCloudWatchAgent, and AWSSupport-EC2Rescue. Available AWS packages for Linux operating systems include the following: AmazonCloudWatchAgent and AWSSupport-EC2Rescue.",
+                                                "properties": {
+                                                    "inputs": {
+                                                        "properties": {
+                                                            "name": {
+                                                                "description": "The name of the AWS package to install or uninstall. Available packages include the following: AWSPVDriver, AwsEnaNetworkDriver, AwsVssComponents, and AmazonCloudWatchAgent.",
+                                                                "type": "string"
+                                                            },
+                                                            "action": {
+                                                                "description": "Install or uninstall a package.",
+                                                                "type": "string",
+                                                                "anyOf": [
+                                                                    {
+                                                                        "enum": ["Install", "Uninstall"]
+                                                                    },
+                                                                    {
+                                                                        "pattern": "^{{[ ]{0,1}[a-zA-Z_]+[ ]{0,1}}}$"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "installationType": {
+                                                                "description": "The type of installation to perform. If you specify Uninstall and reinstall, the package is completely uninstalled, and then reinstalled. The application is unavailable until the reinstallation completes. If you specify In-place update, only new or changed files are added to the existing installation according you instructions you provide in an update script. The application remains available throughout the update process. Uninstall and reinstall is the default value.",
+                                                                "type": "string",
+                                                                "anyOf": [
+                                                                    {
+                                                                        "enum": [
+                                                                            "Uninstall and reinstall",
+                                                                            "In-place update"
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "pattern": "^{{[ ]{0,1}[a-zA-Z_]+[ ]{0,1}}}$"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "version": {
+                                                                "description": "A specific version of the package to install or uninstall. If installing, the system installs the latest published version, by default. If uninstalling, the system uninstalls the currently installed version, by default. If no installed version is found, the latest published version is downloaded, and the uninstall action is run.",
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "required": ["name", "action"]
+                                                    }
+                                                },
+                                                "required": ["inputs"]
+                                            }
+                                        },
+                                        {
+                                            "if": {
+                                                "properties": {
+                                                    "action": {
+                                                        "const": "aws:domainJoin"
+                                                    }
+                                                }
+                                            },
+                                            "then": {
+                                                "description": "Join an EC2 instance to a domain. This plugin only runs on Windows Server operating systems.",
+                                                "properties": {
+                                                    "inputs": {
+                                                        "properties": {
+                                                            "directoryId": {
+                                                                "description": "The ID of the directory. Example d-1234567890",
+                                                                "type": "string"
+                                                            },
+                                                            "directoryName": {
+                                                                "description": "The name of the domain.",
+                                                                "type": "string"
+                                                            },
+                                                            "directoryOU": {
+                                                                "description": "The organizational unit (OU).",
+                                                                "type": "string"
+                                                            },
+                                                            "dnsIpAddresses": {
+                                                                "description": "The IP addresses of the DNS servers.",
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "type": "string"
+                                                                }
+                                                            }
+                                                        },
+                                                        "required": ["directoryId", "directoryName"]
+                                                    }
+                                                },
+                                                "required": ["inputs"]
+                                            }
+                                        },
+                                        {
+                                            "if": {
+                                                "properties": {
+                                                    "action": {
+                                                        "const": "aws:downloadContent"
+                                                    }
+                                                }
+                                            },
+                                            "then": {
+                                                "description": "(Schema version 2.0 or later) Download SSM documents and scripts from remote locations. This plugin is supported on Linux and Windows Server operating systems.",
+                                                "properties": {
+                                                    "inputs": {
+                                                        "properties": {
+                                                            "sourceType": {
+                                                                "description": "The download source. Systems Manager currently supports the following source types for downloading scripts and SSM documents: GitHub, S3, and SSMDocument.",
+                                                                "type": "string",
+                                                                "anyOf": [
+                                                                    {
+                                                                        "enum": ["Github", "S3", "SSMDocument"]
+                                                                    },
+                                                                    {
+                                                                        "pattern": "^{{[ ]{0,1}[a-zA-Z_]+[ ]{0,1}}}$"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "sourceInfo": {
+                                                                "description": "The information required to retrieve the content from the required source.",
+                                                                "type": ["object", "string"]
+                                                            },
+                                                            "destinationPath": {
+                                                                "description": "An optional local path on the instance where you want to download the file. If you don't specify a path, the content is downloaded to a path relative to your command ID.",
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "allOf": [
+                                                            {
+                                                                "if": {
+                                                                    "properties": {
+                                                                        "sourceType": {
+                                                                            "const": "Github"
+                                                                        },
+                                                                        "sourceInfo": {
+                                                                            "type": "object"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                "then": {
+                                                                    "properties": {
+                                                                        "sourceInfo": {
+                                                                            "properties": {
+                                                                                "owner": {
+                                                                                    "description": "The repository owner.",
+                                                                                    "type": "string"
+                                                                                },
+                                                                                "repository": {
+                                                                                    "description": "The name of the repository.",
+                                                                                    "type": "string"
+                                                                                },
+                                                                                "path": {
+                                                                                    "description": "The path to the file or directory you want to download.",
+                                                                                    "type": "string"
+                                                                                },
+                                                                                "getOptions": {
+                                                                                    "description": " Extra options to retrieve content from a branch other than master or from a specific commit in the repository. getOptions can be omitted if you are using the latest commit in the master branch.\nThis parameter uses the following format:\n\tbranch:branch_name\n\tThe default is master\nbranch is required only if your SSM Document is stored in a branch other than master\n\n\tcommitID:commitID\n\tThe default is head.\n\tTo use the version of your SSM document in a commit other than the latest, specify the full commit ID.",
+                                                                                    "type": "string",
+                                                                                    "default": "branch:branch_name"
+                                                                                },
+                                                                                "tokenInfo": {
+                                                                                    "description": "The Systems Manager parameter (a SecureString parameter) where you store your GitHub access token information, in the format {{ssm-secure:secure-string-token-name}}.",
+                                                                                    "default": "{{ssm-secure:secure-string-token}}"
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            },
+                                                            {
+                                                                "if": {
+                                                                    "properties": {
+                                                                        "sourceType": {
+                                                                            "const": "S3"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                "then": {
+                                                                    "properties": {
+                                                                        "sourceInfo": {
+                                                                            "properties": {
+                                                                                "path": {
+                                                                                    "description": "The URL to the file or directory you want to download from Amazon S3.",
+                                                                                    "type": "string"
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            },
+                                                            {
+                                                                "if": {
+                                                                    "properties": {
+                                                                        "sourceType": {
+                                                                            "const": "SSMDocument"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                "then": {
+                                                                    "properties": {
+                                                                        "sourceInfo": {
+                                                                            "properties": {
+                                                                                "name": {
+                                                                                    "description": "Option 1:\n\tThe name and version of the document in the following format: name:version. Version is optional.\n\nOption 2:\n\tThe ARN for the document in the following format: arn:aws:ssm:region:account_id:document/document_name .",
+                                                                                    "type": "string"
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                },
+                                                "required": ["inputs"]
+                                            }
+                                        },
+                                        {
+                                            "if": {
+                                                "properties": {
+                                                    "action": {
+                                                        "const": "aws:psModule"
+                                                    }
+                                                }
+                                            },
+                                            "then": {
+                                                "description": "Install PowerShell modules on an EC2 instance. This plugin only runs on Windows Server operating systems.",
+                                                "properties": {
+                                                    "inputs": {
+                                                        "properties": {
+                                                            "runCommand": {
+                                                                "description": "The PowerShell command to run after the module is installed.",
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "type": "string"
+                                                                }
+                                                            },
+                                                            "source": {
+                                                                "description": "The URL or local path on the instance to the application .zip file.",
+                                                                "type": "string"
+                                                            },
+                                                            "sourceHash": {
+                                                                "description": "The SHA256 hash of the .zip file.",
+                                                                "type": "string"
+                                                            },
+                                                            "timeoutSeconds": {
+                                                                "description": "The time in seconds for a command to be completed before it is considered to have failed.",
+                                                                "type": ["string", "number"]
+                                                            },
+                                                            "workingDirectory": {
+                                                                "description": "The path to the working directory on your instance.",
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "required": ["source"]
+                                                    }
+                                                },
+                                                "required": ["inputs"]
+                                            }
+                                        },
+                                        {
+                                            "if": {
+                                                "properties": {
+                                                    "action": {
+                                                        "const": "aws:refreshAssociation"
+                                                    }
+                                                }
+                                            },
+                                            "then": {
+                                                "properties": {
+                                                    "inputs": {
+                                                        "description": "(Schema version 2.0 or later) Refresh (force apply) an association on demand. This action will change the system state based on what is defined in the selected association or all associations bound to the targets. This plugin runs on Linux and Microsoft Windows Server operating systems.",
+                                                        "properties": {
+                                                            "associationIds": {
+                                                                "description": "List of association IDs. If empty, all associations bound to the specified target are applied.",
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "type": "string"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "if": {
+                                                "properties": {
+                                                    "action": {
+                                                        "const": "aws:runDockerAction"
+                                                    }
+                                                }
+                                            },
+                                            "then": {
+                                                "description": "(Schema version 2.0 or later) Run Docker actions on containers. This plugin runs on Linux and Microsoft Windows Server operating systems.",
+                                                "properties": {
+                                                    "inputs": {
+                                                        "properties": {
+                                                            "action": {
+                                                                "description": "The type of action to perform.",
+                                                                "type": "string"
+                                                            },
+                                                            "container": {
+                                                                "description": "The Docker container ID.",
+                                                                "type": "string"
+                                                            },
+                                                            "image": {
+                                                                "description": "The Docker image name.",
+                                                                "type": "string"
+                                                            },
+                                                            "cmd": {
+                                                                "description": "The container command.",
+                                                                "type": "string"
+                                                            },
+                                                            "memory": {
+                                                                "description": "The container memory limit.",
+                                                                "type": "string"
+                                                            },
+                                                            "cpuShares": {
+                                                                "description": "The container CPU shares (relative weight).",
+                                                                "type": "string"
+                                                            },
+                                                            "volume": {
+                                                                "description": "The container volume mounts.",
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "type": "string"
+                                                                }
+                                                            },
+                                                            "env": {
+                                                                "description": "The container environment variables.",
+                                                                "type": "string"
+                                                            },
+                                                            "user": {
+                                                                "description": "The container user name.",
+                                                                "type": "string"
+                                                            },
+                                                            "publish": {
+                                                                "description": "The container published ports.",
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "required": ["action"]
+                                                    }
+                                                },
+                                                "required": ["inputs"]
+                                            }
+                                        },
+                                        {
+                                            "if": {
+                                                "properties": {
+                                                    "action": {
+                                                        "const": "aws:runDocument"
+                                                    }
+                                                }
+                                            },
+                                            "then": {
+                                                "description": "(Schema version 2.0 or later) Runs SSM documents stored in Systems Manager or on a local share. You can use this plugin with the aws:downloadContent plugin to download an SSM document from a remote location to a local share, and then run it. This plugin is supported on Linux and Windows Server operating systems.",
+                                                "properties": {
+                                                    "inputs": {
+                                                        "properties": {
+                                                            "documentType": {
+                                                                "description": "The document type to run. You can run local documents (LocalPath) or documents stored in Systems Manager (SSMDocument).",
+                                                                "type": "string",
+                                                                "enum": ["LocalPath", "SSMDocument"]
+                                                            },
+                                                            "documentPath": {
+                                                                "description": "The path to the document. If documentType is LocalPath, then specify the path to the document on the local share. If documentType is SSMDocument, then specify the name of the document.",
+                                                                "type": "string"
+                                                            },
+                                                            "documentParameters": {
+                                                                "description": "Parameters for the document",
+                                                                "type": ["object", "string"]
+                                                            }
+                                                        },
+                                                        "required": ["documentType"]
+                                                    }
+                                                },
+                                                "required": ["inputs"]
+                                            }
+                                        },
+                                        {
+                                            "if": {
+                                                "properties": {
+                                                    "action": {
+                                                        "const": "aws:runPowerShellScript"
+                                                    }
+                                                }
+                                            },
+                                            "then": {
+                                                "description": "Run PowerShell scripts or specify the path to a script to run. This plugin runs on Microsoft Windows Server and Linux operating systems.",
+                                                "properties": {
+                                                    "inputs": {
+                                                        "properties": {
+                                                            "runCommand": {
+                                                                "description": "Specify the commands to run or the path to an existing script on the instance.",
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "type": "string"
+                                                                }
+                                                            },
+                                                            "timeoutSeconds": {
+                                                                "description": "The time in seconds for a command to be completed before it is considered to have failed. When the timeout is reached, Systems Manager stops the command execution.",
+                                                                "type": ["string", "number"]
+                                                            },
+                                                            "workingDirectory": {
+                                                                "description": "The path to the working directory on your instance.",
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "if": {
+                                                "properties": {
+                                                    "action": {
+                                                        "const": "aws:softwareInventory"
+                                                    }
+                                                }
+                                            },
+                                            "then": {
+                                                "description": "(Schema version 2.0 or later) Gather metadata about applications, files, and configurations on your managed instances. This plugin runs on Linux and Microsoft Windows Server operating systems.",
+                                                "properties": {
+                                                    "inputs": {
+                                                        "properties": {
+                                                            "applications": {
+                                                                "description": "(Optional) Collect metadata for installed applications.",
+                                                                "type": "string"
+                                                            },
+                                                            "awsComponents": {
+                                                                "description": "(Optional) Collect metadata for AWS components like amazon-ssm-agent.",
+                                                                "type": "string"
+                                                            },
+                                                            "files": {
+                                                                "description": "(Optional, requires SSM Agent version 2.2.64.0 or later) Collect metadata for files, including file names, the time files were created, the time files were last modified and accessed, and file sizes, to name a few.",
+                                                                "type": "string"
+                                                            },
+                                                            "networkConfig": {
+                                                                "description": "(Optional) Collect metadata for network configurations.",
+                                                                "type": "string"
+                                                            },
+                                                            "windowsUpdates": {
+                                                                "description": "(Optional) Collect metadata for all Windows updates.",
+                                                                "type": "string"
+                                                            },
+                                                            "instanceDetailedInformation": {
+                                                                "description": "(Optional) Collect more instance information than is provided by the default inventory plugin (aws:instanceInformation), including CPU model, speed, and the number of cores, to name a few.",
+                                                                "type": "string"
+                                                            },
+                                                            "services": {
+                                                                "description": "(Optional, Windows OS only, requires SSM Agent version 2.2.64.0 or later) Collect metadata for service configurations.",
+                                                                "type": "string"
+                                                            },
+                                                            "windowsRegistry": {
+                                                                "description": "(Optional, Windows OS only, requires SSM Agent version 2.2.64.0 or later) Collect Windows Registry keys and values. You can choose a key path and collect all keys and values recursively. You can also collect a specific registry key and its value for a specific path. Inventory collects the key path, name, type, and the value.",
+                                                                "type": "string"
+                                                            },
+                                                            "windowsRoles": {
+                                                                "description": "(Optional, Windows OS only, requires SSM Agent version 2.2.64.0 or later) Collect metadata for Microsoft Windows role configurations.",
+                                                                "type": "string"
+                                                            },
+                                                            "customInventory": {
+                                                                "description": "(Optional) Collect custom inventory data.",
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "if": {
+                                                "properties": {
+                                                    "action": {
+                                                        "const": "aws:updateAgent"
+                                                    }
+                                                }
+                                            },
+                                            "then": {
+                                                "description": "Update the EC2Config service to the latest version or specify an older version. This plugin only runs on Microsoft Windows Server operating systems.",
+                                                "properties": {
+                                                    "inputs": {
+                                                        "properties": {
+                                                            "agentName": {
+                                                                "description": "EC2Config. This is the name of the agent that runs the EC2Config service.",
+                                                                "type": "string"
+                                                            },
+                                                            "allowDowngrade": {
+                                                                "description": "Allow the EC2Config service to be downgraded to an earlier version. If set to false, the service can be upgraded to newer versions only (default). If set to true, specify the earlier version.",
+                                                                "type": ["string", "boolean"]
+                                                            },
+                                                            "source": {
+                                                                "description": "The location where Systems Manager copies the version of EC2Config to install. You can't change this location.",
+                                                                "type": "string"
+                                                            },
+                                                            "targetVersion": {
+                                                                "description": "A specific version of the EC2Config service to install. If not specified, the service will be updated to the latest version.",
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "required": ["source"]
+                                                    }
+                                                },
+                                                "required": ["inputs"]
+                                            }
+                                        },
+                                        {
+                                            "if": {
+                                                "properties": {
+                                                    "action": {
+                                                        "const": "aws:updateSsmAgent"
+                                                    }
+                                                }
+                                            },
+                                            "then": {
+                                                "description": "Update the SSM Agent to the latest version or specify an older version. This plugin runs on Linux and Windows Server operating systems.",
+                                                "properties": {
+                                                    "inputs": {
+                                                        "properties": {
+                                                            "agentName": {
+                                                                "description": "amazon-ssm-agent. This is the name of the Systems Manager agent that processes requests and runs commands on the instance.",
+                                                                "type": "string"
+                                                            },
+                                                            "allowDowngrade": {
+                                                                "description": "Allow the SSM Agent to be downgraded to an earlier version. If set to false, the agent can be upgraded to newer versions only (default). If set to true, specify the earlier version.",
+                                                                "type": ["string", "boolean"]
+                                                            },
+                                                            "source": {
+                                                                "description": "The location where Systems Manager copies the SSM Agent version to install. You can't change this location.",
+                                                                "type": "string"
+                                                            },
+                                                            "targetVersion": {
+                                                                "description": "A specific version of SSM Agent to install. If not specified, the agent will be updated to the latest version.",
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "required": ["source", "agentName", "allowDowngrade"]
                                                     }
                                                 },
                                                 "required": ["inputs"]

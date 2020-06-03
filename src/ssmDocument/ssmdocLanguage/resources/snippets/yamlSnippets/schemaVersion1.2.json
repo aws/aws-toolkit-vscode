@@ -1,0 +1,15 @@
+[
+    {
+        "name": "$Plugin Snippet aws:applications",
+        "description": "Code Snippet for action aws:applications.\n\nInstall, repair, or uninstall applications on an EC2 instance. This plugin only runs on Windows Server operating systems.",
+        "body": [
+            "aws:applications:",
+            "\tproperties:",
+            "\t- id: 0.aws:applications",
+            "\t\taction: \"{{ action }}\"",
+            "\t\tparameters: \"{{ parameters }}\"",
+            "\t\tsource: \"{{ source }}\"",
+            "\t\tsourceHash: \"{{ sourceHash }}\""
+        ]
+    }
+]

@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import { activation as activateLanguageServer } from './ssmdocLanguage/ssmdocClient'
+import { activate as activateDecor } from './ssmdocLanguage/ssmdocDecoration'
 import { AwsContext } from '../shared/awsContext'
 
 // Activate Step Functions related functionality for the extension.
@@ -15,4 +16,5 @@ export async function activate(
     outputChannel: vscode.OutputChannel
 ): Promise<void> {
     await activateLanguageServer(extensionContext)
+    activateDecor(extensionContext)
 }
