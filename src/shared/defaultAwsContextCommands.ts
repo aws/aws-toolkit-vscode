@@ -27,6 +27,8 @@ import { Region } from './regions/endpoints'
 import { RegionProvider } from './regions/regionProvider'
 import { getRegionsForActiveCredentials } from './regions/regionUtilities'
 import { createQuickPick, promptUser } from './ui/picker'
+import { AWSContextCommands } from './awsContextCommands'
+import { recordAwsSetRegion } from './telemetry/telemetry'
 
 const TITLE_HIDE_REGION = localize(
     'AWS.message.prompt.region.hide.title',
@@ -37,7 +39,7 @@ const TITLE_SHOW_REGION = localize(
     'Select a region to show in the AWS Explorer'
 )
 
-export class DefaultAWSContextCommands {
+export class DefaultAWSContextCommands implements AWSContextCommands {
     private readonly _awsContext: AwsContext
     private readonly _awsContextTrees: AwsContextTreeCollection
     private readonly _regionProvider: RegionProvider
@@ -93,6 +95,7 @@ export class DefaultAWSContextCommands {
         if (newRegion) {
             await this._awsContext.addExplorerRegion(newRegion)
             this.refresh()
+            recordAwsSetRegion({ result: 'Succeeded', regionId: newRegion })
         }
     }
 
