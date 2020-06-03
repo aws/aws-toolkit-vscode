@@ -4,41 +4,46 @@ The _AWS Toolkit_, or simply the _Toolkit_, is an extension that enables you to 
 
 The following screenshots show important parts of the Toolkit.
 
-## <a id="ui-components"></a>Fundamental UI Components
+## <a id="ui-components"></a>Key UI components
 
 ### <a id="ui-components-aws-expl"></a>The AWS Explorer
+The **AWS Explorer** provides access to the AWS services that you can work with when using the Toolkit. To see the **AWS Explorer**, choose the **AWS** icon in the **Activity bar**.   
 
-![Overview, AWS Explorer](./resources/marketplace/overview.png)
+![Overview, AWS Explorer](./resources/marketplace/overview_CodeLens.png)
 
 ### <a id="ui-components-cdk-expl"></a>The AWS CDK Explorer
 
+The **AWS CDK Explorer** enables you to work with AWS Cloud Development Kit (AWS CDK) applications. The tree view in the **AWS CDK Explorer (Preview)** pane offers a bird’s eye view of your applications, infrastructure stacks, resources, and policies. 
+
 ![Overview, AWS CDK Explorer](./resources/marketplace/overview-cdk.png)
 
-### <a id="open-command-palette"></a>AWS Commands in the Command Palette
+### <a id="open-command-palette"></a>AWS commands in the Command Palette
 
-![Command Palette](./resources/marketplace/open-command-palette.gif)
+The Toolkit leverages Visual Studio Code's **Command Palette** to provide rapid access to [AWS-specific commands](#aws-commands).  
+
+![Command Palette](./resources/marketplace/open-command-palette-codelens.gif)
 
 ---
 
 # <a id="contents"></a>Contents
 
--   [Feature Overview](#feature-overview)
+-   [Feature overview](#feature-overview)
 -   [Setup](#additional-setup-steps)
 -   [Features](#features)
--   [Appendix A: AWS Commands](#aws-commands)
--   [Appendix B: Get Help](#get-help)
+-   [Appendix A: AWS commands](#aws-commands)
+-   [Appendix B: Get help](#get-help)
 
 { [Return to Top](#top) }
 
 ---
 
-# <a id="feature-overview"></a>Feature Overview
+# <a id="feature-overview"></a>Feature overview
 
 You can use the AWS Toolkit to interact with several AWS resources in various ways.
 
 These include the following:
 
--   AWS serverless applications
+-   AWS Serverless Applications
 
 -   AWS Lambda functions
 
@@ -82,53 +87,66 @@ For complete setup instructions for these three components, see [Installing the 
 
 # <a id="features"></a>Features
 
--   [Serverless Applications, Lambda Functions, and CloudFormation Stacks](#sam-and-lambda)
--   [AWS CDK Applications](#cdk-apps)
--   [Amazon EventBridge Schemas](#eventbridge)
--   [Amazon ECS Task Definition Files](#ecs-files)
+-   [AWS Serverless Applications](#sam-and-lambda)
+-   [AWS CDK applications](#cdk-apps)
+-   [Amazon EventBridge schemas](#eventbridge)
+-   [Amazon ECS task definition files](#ecs-files)
 -   [AWS Step Functions](#sfn-files)
 
 { [Return to Contents](#contents) } or { [Return to Top](#top) }
 
 ---
 
-## <a id="sam-and-lambda"></a>Serverless Applications, Lambda Functions, and CloudFormation Stacks
+## <a id="sam-and-lambda"></a> AWS Serverless Applications 
 
-The AWS Toolkit enables you to develop [AWS serverless applications](https://aws.amazon.com/serverless/) locally. It also enables you to do the following through the [AWS Explorer](#ui-components-aws-expl):
+The AWS Toolkit enables you to develop [AWS serverless applications](https://aws.amazon.com/serverless/) locally. It also allows you to use _CodeLens_&mdash;a Visual Studio Code feature&mdash;to do the following:
+-   Use SAM (serverless application model) templates to build and debug your locally developed AWS serverless applications.
+-   Run and debug specific [AWS Lambda](https://aws.amazon.com/lambda/) functions. 
 
--   Deploy your locally-developed AWS serverless applications to an AWS account, into an [AWS CloudFormation](https://aws.amazon.com/cloudformation/) stack
--   List and delete AWS CloudFormation stacks
--   List, invoke, and delete [AWS Lambda](https://aws.amazon.com/lambda/) functions
 
-The following example shows a highlight of this functionality.
+After you've [created a serverless application](https://docs.aws.amazon.com/console/toolkit-for-vscode/create-sam), you can locally run and debug it using a SAM template. This YAML-formatted file describes resources such as functions, APIs, databases, and event-source mappings that make up a serverless application. 
 
-After you have [created a serverless application](https://docs.aws.amazon.com/console/toolkit-for-vscode/create-sam), you can locally run, debug, and further develop that application in the VS Code editor. For example:
+To start debugging with a SAM template, choose `Add Debug Configuration` from the _CodeLens_ indicator in the template file.    
 
-![Configure and Run 1](./resources/marketplace/sam-configure-and-run-still-1.png)
+![Add Debug Configuration Template](./resources/marketplace/Codelens-YAML-template.png)
+###### The _CodeLens_ indicator in the SAM template allows you to add a debug configuration for the serverless application.</h6>
 
-Take special note of the _CodeLenses_ that enable you to run and debug the application locally.
+Alternatively, you can run and debug just the AWS Lambda function and exclude other resources defined by the SAM template. Again, use a _CodeLens_ indicator for an AWS Lambda-function handler. (A _handler_ is a function that Lambda calls to start execution of a Lambda function.) 
 
-The status and results are shown in the **OUTPUT** panel when the **AWS Toolkit** output channel is selected.
+![Add Debug Configuration Direct](./resources/marketplace/Codelens-direct-function.png)
+
+###### The _CodeLens_ indicator in the application file lets you add a debug configuration for a selected AWS Lambda function.
+
+
+When you run a debug session, the status and results are displayed in the **OUTPUT** panel when the **AWS Toolkit** output channel is selected.
 
 ![Configure and Run 1](./resources/marketplace/sam-configure-and-run-still-2.png)
 
-When you're satisfied, you can [deploy your application](https://docs.aws.amazon.com/console/toolkit-for-vscode/deploy-serverless-app) to a CloudFormation stack and then [run the Lambda function](https://docs.aws.amazon.com/console/toolkit-for-vscode/remote-lambda) on AWS.
+###### After a local run is complete, the output appears in the **OUTPUT** tab.
 
-For full details, see the [AWS Explorer](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/aws-explorer.html) in the Toolkit's user guide.
 
-#### Additional Information about CodeLenses
+When you're satisfied with performance, you can [deploy your serverless application](https://docs.aws.amazon.com/console/toolkit-for-vscode/deploy-serverless-app). During deployment, the SAM template is converted to a CloudFormation template, which is then used to configure all your application's resources in the AWS Cloud. 
 
-The functions that have Codelenses are those that use AWS Lambda-function handler syntax. A _handler_ is a function that Lambda calls to start execution of a Lambda function. These CodeLenses enable you to locally run or debug the corresponding serverless application. CodeLens actions in the Toolkit include:
+### Additional information about CodeLenses 
 
--   **Configure**, for specifying function configurations such as an event payload and environment variable overrides.
--   **Run Locally**, for running the function _without_ debugging.
--   **Debug Locally**, for running the function _with_ debugging.
+The AWS Toolkit for Visual Studio Code supports _CodeLens_-enabled debugging for the following languages and runtimes: 
+
+* C# (.NET Core 2.1)
+* JavaScript (Node.js 10.x, 12.x)
+* Python (2.7, 3.6, 3.7, 3.8)
+
+For more information, see the [AWS Explorer](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/aws-explorer.html) in the Toolkit's user guide.
+
+
+
+
+
 
 { [Return to Features](#features) } or { [Return to Top](#top) }
 
 ---
 
-## <a id="cdk-apps"></a>AWS CDK Applications
+## <a id="cdk-apps"></a>AWS CDK applications
 
 The AWS Toolkit enables you to work with [AWS Cloud Development Kit (AWS CDK)](https://aws.amazon.com/cdk/) applications. Using the [AWS CDK Explorer](#ui-components-cdk-expl) on the Toolkit, you can view CDK applications within your Workspace that have been synthesized.
 
@@ -142,7 +160,7 @@ For full details, see the [AWS CDK Explorer](https://docs.aws.amazon.com/toolkit
 
 ---
 
-## <a id="eventbridge"></a>Amazon EventBridge Schemas
+## <a id="eventbridge"></a>Amazon EventBridge schemas
 
 The AWS Toolkit provides support for [Amazon EventBridge](https://aws.amazon.com/eventbridge) schemas. Using the [AWS Explorer](#ui-components-aws-expl) of the Toolkit, you can perform the following operations on these schemas:
 
@@ -160,7 +178,7 @@ For full details, see [Working with Amazon EventBridge Schemas](https://docs.aws
 
 ---
 
-## <a id="ecs-files"></a>Amazon ECS Task Definition Files
+## <a id="ecs-files"></a>Amazon ECS task definition files
 
 The AWS Toolkit provides support for [Amazon Elastic Container Service (Amazon ECS)](https://aws.amazon.com/ecs). With the Toolkit installed in VS Code, IntelliSense functionality is provided for Amazon ECS task-definition files that you are updating in the editor.
 
@@ -192,7 +210,7 @@ For full details, see [Working with AWS Step Functions](https://docs.aws.amazon.
 
 ---
 
-# <a id="aws-commands"></a>Appendix A: AWS Commands
+# <a id="aws-commands"></a>Appendix A: AWS commands
 
 The AWS Toolkit has several features that you can access through the [Command Palette](#open-command-palette) (select **View**, then **Command Palette**):
 
@@ -201,9 +219,9 @@ The AWS Toolkit has several features that you can access through the [Command Pa
 | **AWS: About AWS Toolkit**                             | Displays information about the AWS Toolkit.                                                                                                                                                                                                                                                                    |
 | **AWS: Connect to AWS**                                | Connects the Toolkit to an AWS account. For more information, see [Connecting to AWS](https://docs.aws.amazon.com/console/toolkit-for-vscode/connect) in the user guide.                                                                                                                                       |
 | **AWS: Create a new Step Functions state machine**     | Generates a new Amazon States Language definition to use as the definition for a new Step Functions state machine. For more information, see [State Machine Templates](https://docs.aws.amazon.com//toolkit-for-vscode/latest/userguide/bulding-stepfunctions.html#templates-stepfunctions) in the user guide. |
-| **AWS: Create a New Issue on Github**                  | Opens the AWS Toolkit's [New Issue page on Github](https://github.com/aws/aws-toolkit-vscode/issues/new/choose).                                                                                                                                                                                               |
+| **AWS: Create a new Issue on Github**                  | Opens the AWS Toolkit's [New Issue page on Github](https://github.com/aws/aws-toolkit-vscode/issues/new/choose).                                                                                                                                                                                               |
 | **AWS: Create Credentials Profile**                    | Creates an AWS credentials profile. For more information, see [Setting Up Your AWS Credentials](https://docs.aws.amazon.com/console/toolkit-for-vscode/setup-credentials) in the user guide.                                                                                                                   |
-| **AWS: Create New SAM Application**                    | Generates a set of code files for a new AWS serverless application. For more information, see [Creating a Serverless Application](https://docs.aws.amazon.com/console/toolkit-for-vscode/create-sam) in the user guide.                                                                                        |
+| **AWS: Create new SAM Application**                    | Generates a set of code files for a new AWS serverless application. For more information, see [Creating a Serverless Application](https://docs.aws.amazon.com/console/toolkit-for-vscode/create-sam) in the user guide.                                                                                        |
 | **AWS: Deploy SAM Application**                        | Deploys a local serverless application to an AWS account. For more information, see [Deploying a Serverless Application](https://docs.aws.amazon.com/console/toolkit-for-vscode/deploy-serverless-app) in the user guide.                                                                                      |
 | **AWS: Detect SAM CLI**                                | Checks whether the Toolkit can communicate correctly with the AWS SAM CLI that is installed.                                                                                                                                                                                                                   |
 | **AWS: Focus on Explorer View**                        | Opens the **AWS: Explorer** Side Bar, which we will simply call [_the **AWS Explorer**_](#ui-components-aws-expl), and then moves the focus there.                                                                                                                                                             |
@@ -225,7 +243,7 @@ The AWS Toolkit has several features that you can access through the [Command Pa
 
 ---
 
-# <a id="get-help"></a>Appendix B: Get Help
+# <a id="get-help"></a>Appendix B: Get help
 
 For additional details on how to use the AWS Toolkit, see the [user guide](https://docs.aws.amazon.com/console/toolkit-for-vscode/welcome).
 
