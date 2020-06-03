@@ -65,6 +65,12 @@ describe('SamTemplateCodeLensProvider', async () => {
         mockLaunchConfig = mock()
 
         when(mockDocument.uri).thenReturn(templateUri)
+        when(mockLaunchConfig.scopedResource).thenReturn(templateUri)
+        when(mockLaunchConfig.workspaceFolder).thenReturn({
+            uri: templateUri,
+            name: 'notAWorkspaceFolder',
+            index: 1,
+        })
         when(mockLaunchConfig.getSamDebugConfigurations()).thenReturn(debugConfigurations)
     })
 

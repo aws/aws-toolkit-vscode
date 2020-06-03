@@ -26,7 +26,7 @@ export class SamTemplateCodeLensProvider implements vscode.CodeLensProvider {
             return []
         }
 
-        const existingDebuggedResources = getExistingSamTemplateResourcesForUri(document.uri, launchConfig)
+        const existingDebuggedResources = getExistingSamTemplateResourcesForUri(launchConfig)
 
         return _(functionResources)
             .reject(functionResource => existingDebuggedResources.has(functionResource.name))

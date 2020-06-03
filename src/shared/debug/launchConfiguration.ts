@@ -40,14 +40,14 @@ export class LaunchConfiguration {
      * Creates a Launch Configuration scoped to the given resource.
      */
     public constructor(
-        resource: vscode.Uri,
-        private readonly configSource: DebugConfigurationSource = new DefaultDebugConfigSource(resource),
+        public scopedResource: vscode.Uri,
+        private readonly configSource: DebugConfigurationSource = new DefaultDebugConfigSource(scopedResource),
         private readonly samValidator: AwsSamDebugConfigurationValidator = new DefaultAwsSamDebugConfigurationValidator(
             CloudFormationTemplateRegistry.getRegistry(),
-            vscode.workspace.getWorkspaceFolder(resource)
+            vscode.workspace.getWorkspaceFolder(scopedResource)
         )
     ) {
-        this.workspaceFolder = vscode.workspace.getWorkspaceFolder(resource)
+        this.workspaceFolder = vscode.workspace.getWorkspaceFolder(scopedResource)
     }
 
     public getDebugConfigurations(): vscode.DebugConfiguration[] {
@@ -110,19 +110,17 @@ function getExistingSamCodeTargets(launchConfig: LaunchConfiguration): CodeTarge
 }
 
 /**
- * Returns a Set containing the samTemplateResources from the launch.json file that are also in the provided template file.
- * @param templateUri Template URI to get resources from
+ * Returns a Set containing the samTemplateResources from the launch.json file that the launch config is scoped to.
  * @param launchConfig Launch config to check
  */
-export function getExistingSamTemplateResourcesForUri(
-    templateUri: vscode.Uri,
-    launchConfig: LaunchConfiguration
-): Set<string> {
+export function getExistingSamTemplateResourcesForUri(launchConfig: LaunchConfiguration): Set<string> {
     const existingSamTemplateTargets = getExistingSamTemplateTargets(launchConfig)
-    const folder = vscode.workspace.getWorkspaceFolder(templateUri)
+    const folder = launchConfig.workspaceFolder
 
     return _(existingSamTemplateTargets)
-        .filter(target => pathutils.areEqual(folder?.uri.fsPath, target.samTemplatePath, templateUri.fsPath))
+        .filter(target =>
+            pathutils.areEqual(folder?.uri.fsPath, target.samTemplatePath, launchConfig.scopedResource.fsPath)
+        )
         .map(target => target.samTemplateResource)
         .thru(array => new Set(array))
         .value()
@@ -131,7 +129,7 @@ export function getExistingSamTemplateResourcesForUri(
 /**
  * Returns a Set containing the full path for all `code`-type `aws-sam` debug configs in a launch.json file.
  * The full path represents `path.join(workspaceFolder, projectRoot, lambdaHandler)`
- * (without workspaceFolder if the projectRoot is relative)
+ * (without workspaceFolder if the projectRoot is relative).
  * @param launchConfig Launch config to check
  */
 export function getExistingSamCodeConfigPaths(launchConfig: LaunchConfiguration): Set<string> {
@@ -140,12 +138,14 @@ export function getExistingSamCodeConfigPaths(launchConfig: LaunchConfiguration)
     return _(existingSamCodeTargets)
         .map(target => {
             if (path.isAbsolute(target.projectRoot)) {
-                return path.join(target.projectRoot, target.lambdaHandler)
+                return pathutils.normalize(path.join(target.projectRoot, target.lambdaHandler))
             }
-            return path.join(
-                tryGetAbsolutePath(launchConfig.workspaceFolder, ''),
-                target.projectRoot,
-                target.lambdaHandler
+            return pathutils.normalize(
+                path.join(
+                    tryGetAbsolutePath(launchConfig.workspaceFolder, ''),
+                    target.projectRoot,
+                    target.lambdaHandler
+                )
             )
         })
         .thru(array => new Set(array))
