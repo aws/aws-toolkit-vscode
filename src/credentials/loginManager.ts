@@ -11,7 +11,12 @@ import { AwsContext } from '../shared/awsContext'
 import { credentialHelpUrl } from '../shared/constants'
 import { getAccountId } from '../shared/credentials/accountId'
 import { getLogger } from '../shared/logger'
-import { recordAwsSetCredentials, Result } from '../shared/telemetry/telemetry'
+import {
+    recordAwsSetCredentials,
+    Result,
+    recordAwsValidateCredentials,
+    CredentialType,
+} from '../shared/telemetry/telemetry'
 import { CredentialsStore } from './credentialsStore'
 import { CredentialsProvider } from './providers/credentialsProvider'
 import { asString, CredentialsProviderId } from './providers/credentialsProviderId'
@@ -29,6 +34,7 @@ export class LoginManager {
      */
     public async login(credentialsProviderId: CredentialsProviderId): Promise<void> {
         let loginResult: Result = 'Succeeded'
+        let credentialType: CredentialType | undefined
         try {
             const provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(
                 credentialsProviderId
@@ -50,6 +56,7 @@ export class LoginManager {
                 throw new Error('Could not determine Account Id for credentials')
             }
 
+            credentialType = provider.getType()
             await this.awsContext.setCredentials({
                 credentials: storedCredentials.credentials,
                 credentialsId: asString(credentialsProviderId),
@@ -70,7 +77,8 @@ export class LoginManager {
 
             this.notifyUserInvalidCredentials(credentialsProviderId)
         } finally {
-            recordAwsSetCredentials({ result: loginResult })
+            recordAwsSetCredentials({ result: loginResult, credentialType: credentialType })
+            recordAwsValidateCredentials({ result: loginResult })
         }
     }
 

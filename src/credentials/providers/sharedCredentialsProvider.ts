@@ -10,6 +10,7 @@ import { getStringHash } from '../../shared/utilities/textUtilities'
 import { getMfaTokenFromUser } from '../credentialsCreator'
 import { CredentialsProvider } from './credentialsProvider'
 import { CredentialsProviderId } from './credentialsProviderId'
+import { CredentialType } from '../../shared/telemetry/telemetry'
 
 const SHARED_CREDENTIAL_PROPERTIES = {
     AWS_ACCESS_KEY_ID: 'aws_access_key_id',
@@ -29,6 +30,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     private static readonly CREDENTIALS_TYPE = 'profile'
 
     private readonly profile: Profile
+    private type: CredentialType | undefined
 
     public constructor(
         private readonly profileName: string,
@@ -58,6 +60,10 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         return this.profile[SHARED_CREDENTIAL_PROPERTIES.REGION]
     }
 
+    public getType(): CredentialType | undefined {
+        return this.type
+    }
+
     /**
      * Decides if the credential is the kind that may be auto-connected at
      * first use (in particular, credentials that may prompt, such as SSO/MFA,
@@ -73,17 +79,24 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     public validate(): string | undefined {
         const expectedProperties: string[] = []
 
-        if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.ROLE_ARN)) {
+        if (
+            this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.ROLE_ARN) &&
+            this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.SOURCE_PROFILE)
+        ) {
+            this.type = 'assumeRoleProfile'
             return this.validateSourceProfileChain()
         } else if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_PROCESS)) {
+            this.type = 'credentialProcessProfile'
             // No validation. Don't check anything else.
             return undefined
         } else if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.AWS_SESSION_TOKEN)) {
+            this.type = 'staticProfile'
             expectedProperties.push(
                 SHARED_CREDENTIAL_PROPERTIES.AWS_ACCESS_KEY_ID,
                 SHARED_CREDENTIAL_PROPERTIES.AWS_SECRET_ACCESS_KEY
             )
         } else if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.AWS_ACCESS_KEY_ID)) {
+            this.type = 'staticProfile'
             expectedProperties.push(SHARED_CREDENTIAL_PROPERTIES.AWS_SECRET_ACCESS_KEY)
         } else {
             return `Profile ${this.profileName} is not supported by the Toolkit.`

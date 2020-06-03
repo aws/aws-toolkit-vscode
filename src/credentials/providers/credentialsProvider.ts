@@ -4,6 +4,7 @@
  */
 
 import { CredentialsProviderId } from './credentialsProviderId'
+import { CredentialType } from '../../shared/telemetry/telemetry'
 
 export interface CredentialsProvider {
     getCredentialsProviderId(): CredentialsProviderId
@@ -11,4 +12,5 @@ export interface CredentialsProvider {
     getHashCode(): string
     getCredentials(): Promise<AWS.Credentials>
     canAutoConnect(): boolean
+    getType(): CredentialType | undefined
 }

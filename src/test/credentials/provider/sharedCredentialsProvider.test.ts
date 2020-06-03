@@ -108,6 +108,16 @@ describe('SharedCredentialsProvider', async () => {
         assertSubstringsInText(sut.validate(), MISSING_PROPERTIES_FRAGMENT, 'aws_secret_access_key')
     })
 
+    it('validation identifies assume role must have source_profile', async () => {
+        const sut = new SharedCredentialsProvider(
+            'default',
+            new Map<string, Profile>([['default', { role_arn: 'x' }]])
+        )
+
+        assert.notStrictEqual(sut.validate(), undefined)
+        assertSubstringsInText(sut.validate(), 'not supported')
+    })
+
     it('validation identifies when the profile contains no supported properties', async () => {
         const sut = new SharedCredentialsProvider(
             'default',
@@ -125,6 +135,7 @@ describe('SharedCredentialsProvider', async () => {
         )
 
         assert.strictEqual(sut.validate(), undefined)
+        assert.strictEqual(sut.getType(), 'staticProfile')
     })
 
     it('validates a valid profile with a session token', async () => {
@@ -136,6 +147,7 @@ describe('SharedCredentialsProvider', async () => {
         )
 
         assert.strictEqual(sut.validate(), undefined)
+        assert.strictEqual(sut.getType(), 'staticProfile')
     })
 
     it('validates a valid profile with credential_process', async () => {
@@ -145,15 +157,7 @@ describe('SharedCredentialsProvider', async () => {
         )
 
         assert.strictEqual(sut.validate(), undefined)
-    })
-
-    it('validates a valid profile with role_arn', async () => {
-        const sut = new SharedCredentialsProvider(
-            'default',
-            new Map<string, Profile>([['default', { role_arn: 'x' }]])
-        )
-
-        assert.strictEqual(sut.validate(), undefined)
+        assert.strictEqual(sut.getType(), 'credentialProcessProfile')
     })
 
     it('validates a valid profile with role_arn and source_profile', async () => {
@@ -166,6 +170,7 @@ describe('SharedCredentialsProvider', async () => {
         )
 
         assert.strictEqual(sut.validate(), undefined)
+        assert.strictEqual(sut.getType(), 'assumeRoleProfile')
     })
 
     it('getCredentials throws when the profile is not valid', async () => {
