@@ -356,5 +356,6 @@
     "AWS.template.error.showErrorDetails.errorCode": "Error code",
     "AWS.template.error.showErrorDetails.errorMessage": "Error message",
     "AWS.picker.dynamic.noItemsFound.detail": "Click here to go back",
-    "AWS.picker.dynamic.noItemsFound.label": "No items found."
+    "AWS.picker.dynamic.noItemsFound.label": "No items found.",
+    "AWS.picker.dynamic.errorNode.label": "There was an error retrieving more items."
 }

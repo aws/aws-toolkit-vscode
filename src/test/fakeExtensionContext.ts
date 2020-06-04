@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ExtensionContext, Memento } from 'vscode'
+import { ExtensionContext, Memento, Uri } from 'vscode'
 
 export interface FakeMementoStorage {
     [key: string]: any
@@ -23,6 +23,7 @@ export class FakeExtensionContext implements ExtensionContext {
     public storagePath: string | undefined
     public globalStoragePath: string = '.'
     public logPath: string = ''
+    public extensionUri: Uri = Uri.parse('')
     private _extensionPath: string = ''
 
     public constructor(preload?: FakeExtensionState) {

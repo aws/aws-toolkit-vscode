@@ -48,7 +48,7 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
         const result = val?.label
 
         // TODO: Handle error and no items differently? Move the check into IteratingAWSCallPicker?
-        if (result && (result === quickPick.noItemsItem.label || quickPick.errorItem.label)) {
+        if (result && (result === quickPick.noItemsItem.label || result === quickPick.errorItem.label)) {
             return undefined
         }
 

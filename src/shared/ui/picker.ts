@@ -338,11 +338,13 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
                     ...this.errorItem,
                     detail: err.message,
                 })
+                this.quickPick.items = this.items
             }
         }
 
         if (this.isDone && this.items.length === 0) {
             this.items.push(this.noItemsItem)
+            this.quickPick.items = this.items
         }
         this.quickPick.busy = false
     }
