@@ -151,6 +151,7 @@ export function verifySinglePickerOutput<T extends vscode.QuickPickItem>(choices
 }
 
 // TODO: Cache these results?
+// TODO: Do we want a separate items array outside of the quickPick.items array?
 export class IteratingAWSCallPicker<TRequest, TResponse> {
     private isDone: boolean = false
     private isPaused: boolean = false
@@ -161,6 +162,7 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
     private readonly moreItemsRequest: vscode.EventEmitter<void> = new vscode.EventEmitter<void>()
     private readonly refreshButton: vscode.QuickInputButton
     private readonly paginationButton: vscode.QuickInputButton
+
     // TODO: remove debug buttons
     private readonly pauseButton: vscode.QuickInputButton
     private readonly playButton: vscode.QuickInputButton
@@ -208,11 +210,14 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
 
         this.refreshButton = {
             iconPath: new vscode.ThemeIcon('refresh'),
-            tooltip: 'Refresh',
+            tooltip: localize('AWS.generic.refresh', 'Refresh'),
         }
         this.paginationButton = {
             iconPath: new vscode.ThemeIcon('add'),
-            tooltip: this.pickerOptions.paginationType === 'append' ? 'Load Next Page...' : 'Next Page...',
+            tooltip:
+                this.pickerOptions.paginationType === 'append'
+                    ? localize('AWS.picker.dynamic.nextPage.append', 'Load Next Page...')
+                    : localize('AWS.picker.dynamic.nextPage', 'Next Page...'),
         }
         this.noItemsItem = {
             label:
@@ -226,14 +231,13 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
             alwaysShow: true,
         }
 
-        // todo: localize
         const quickPickButtons = this.pickerOptions.buttons || []
         quickPickButtons.push(this.pauseButton, this.playButton)
         if (this.pickerOptions.isRefreshable) {
             quickPickButtons.push(this.refreshButton)
         }
         // is this the correct impl? If so, is this the correct icon?
-        // this or quickpick item at the end of the list?
+        // e.g. this or quickpick item at the end of the list?
         if (this.pickerOptions.paginationType) {
             quickPickButtons.push(this.paginationButton)
         }
@@ -303,7 +307,6 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
         })
     }
 
-    // TODO: Add nodes for no items, error (error retries call from where it left off?)
     private async loadItems(): Promise<void> {
         // unpause the loader (if it was paused previously by a selection)
         this.isPaused = false
