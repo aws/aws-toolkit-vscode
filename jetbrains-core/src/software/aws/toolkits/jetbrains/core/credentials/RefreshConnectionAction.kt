@@ -10,8 +10,7 @@ import com.intellij.openapi.project.DumbAware
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.resources.message
 
-class RefreshConnectionAction : AnAction(message("settings.refresh.description"), null, AllIcons.Actions.Refresh), DumbAware {
-
+class RefreshConnectionAction(text: String = message("settings.refresh.description")) : AnAction(text, null, AllIcons.Actions.Refresh), DumbAware {
     override fun update(e: AnActionEvent) {
         val project = e.project ?: return
         e.presentation.isEnabled = when (val state = ProjectAccountSettingsManager.getInstance(project).connectionState) {

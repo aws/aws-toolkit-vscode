@@ -5,6 +5,7 @@
 package software.aws.toolkits.jetbrains.core.explorer
 
 import com.intellij.execution.Location
+import com.intellij.ide.DataManager
 import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ide.util.treeView.NodeRenderer
@@ -13,6 +14,7 @@ import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataKey
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.Separator
@@ -22,12 +24,16 @@ import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.ui.DoubleClickListener
+import com.intellij.ui.HyperlinkAdapter
+import com.intellij.ui.HyperlinkLabel
 import com.intellij.ui.JBColor
 import com.intellij.ui.PopupHandler
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.TreeUIHelper
-import com.intellij.ui.components.panels.Wrapper
+import com.intellij.ui.components.panels.NonOpaquePanel
 import com.intellij.ui.treeStructure.Tree
+import com.intellij.util.ui.GridBag
+import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import software.aws.toolkits.jetbrains.core.credentials.ChangeAccountSettingsMode
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsStateChangeNotifier
@@ -47,13 +53,13 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceLocationNode
 import software.aws.toolkits.jetbrains.ui.tree.AsyncTreeModel
 import software.aws.toolkits.jetbrains.ui.tree.StructureTreeModel
 import java.awt.Component
+import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
-import java.awt.Insets
 import java.awt.event.MouseEvent
 import javax.swing.JComponent
-import javax.swing.JPanel
 import javax.swing.JTextPane
 import javax.swing.JTree
+import javax.swing.event.HyperlinkEvent
 import javax.swing.text.SimpleAttributeSet
 import javax.swing.text.StyleConstants
 import javax.swing.tree.DefaultMutableTreeNode
@@ -61,7 +67,7 @@ import javax.swing.tree.TreeModel
 
 class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), ConnectionSettingsStateChangeNotifier {
     private val actionManager = ActionManagerEx.getInstanceEx()
-    private val treePanelWrapper: Wrapper = Wrapper()
+    private val treePanelWrapper = NonOpaquePanel()
     private val awsTreeModel = AwsExplorerTreeStructure(project)
     private val structureTreeModel = StructureTreeModel(awsTreeModel, project)
     private val awsTree = createTree(AsyncTreeModel(structureTreeModel, true, project))
@@ -76,39 +82,58 @@ class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), 
 
         toolbar = ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLBAR, group, true).component
 
+        background = UIUtil.getTreeBackground()
         setContent(treePanelWrapper)
 
         project.messageBus.connect().subscribe(ProjectAccountSettingsManager.CONNECTION_SETTINGS_STATE_CHANGED, this)
         settingsStateChanged(accountSettingsManager.connectionState)
     }
 
-    private fun createInfoPanel(text: String, error: Boolean = false): JComponent {
-        val panel = JPanel(GridBagLayout())
+    private fun createInfoPanel(state: ConnectionState): JComponent {
+        val panel = NonOpaquePanel(GridBagLayout())
+
+        val gridBag = GridBag()
+        gridBag.defaultAnchor = GridBagConstraints.CENTER
+        gridBag.defaultInsets = JBUI.insetsBottom(JBUI.scale(6))
 
         val textPane = JTextPane().apply {
-            this.text = text
-            val center = SimpleAttributeSet().apply {
-                StyleConstants.setAlignment(this, StyleConstants.ALIGN_CENTER)
-                StyleConstants.setForeground(this, UIUtil.getInactiveTextColor())
+            val textColor = if (state is ConnectionState.InvalidConnection) {
+                JBColor.red
+            } else {
+                UIUtil.getInactiveTextColor()
             }
+
             with(styledDocument) {
+                val center = SimpleAttributeSet().apply {
+                    StyleConstants.setAlignment(this, StyleConstants.ALIGN_CENTER)
+                    StyleConstants.setForeground(this, textColor)
+                }
                 setParagraphAttributes(0, length, center, false)
             }
-            margin = Insets(10, 10, 10, 10)
-            isEditable = false
-            if (error) {
-                with(styledDocument) {
-                    val errorStyle = SimpleAttributeSet().apply {
-                        StyleConstants.setForeground(this, JBColor.red)
-                    }
-                    setCharacterAttributes(0, length, errorStyle, false)
-                }
-            }
-        }
-        panel.background = textPane.background
 
-        panel.add(textPane)
+            text = state.displayMessage
+            isEditable = false
+        }
+
+        panel.add(textPane, gridBag.nextLine().next())
+
+        state.actions.forEach {
+            panel.add(createActionLabel(it), gridBag.nextLine().next())
+        }
+
         return panel
+    }
+
+    private fun createActionLabel(action: AnAction): HyperlinkLabel {
+        val label = HyperlinkLabel(action.templateText ?: "BUG: $action lacks a text description")
+        label.addHyperlinkListener(object : HyperlinkAdapter() {
+            override fun hyperlinkActivated(e: HyperlinkEvent) {
+                val event = AnActionEvent.createFromAnAction(action, e.inputEvent, ActionPlaces.UNKNOWN, DataManager.getInstance().getDataContext(label))
+                action.actionPerformed(event)
+            }
+        })
+
+        return label
     }
 
     override fun settingsStateChanged(newState: ConnectionState) {
@@ -119,7 +144,7 @@ class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), 
                         invalidateTree()
                         awsTreePanel
                     }
-                    else -> createInfoPanel(newState.displayMessage, error = newState is ConnectionState.InvalidConnection)
+                    else -> createInfoPanel(newState)
                 }
             )
         }

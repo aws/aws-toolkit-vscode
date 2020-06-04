@@ -4,8 +4,6 @@
 package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.actionSystem.AnAction
-import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.utils.createNotificationExpiringAction
 import software.aws.toolkits.jetbrains.utils.createShowMoreInfoDialogAction
@@ -31,11 +29,7 @@ class CredentialStatusNotification(private val project: Project) : ConnectionSet
                         newState.cause.localizedMessage
                     ),
                     createNotificationExpiringAction(actionManager.getAction("aws.settings.upsertCredentials")),
-                    createNotificationExpiringAction(object : AnAction(message("settings.retry")) {
-                        override fun actionPerformed(e: AnActionEvent) {
-                            actionManager.getAction("aws.settings.refresh").actionPerformed(e)
-                        }
-                    })
+                    createNotificationExpiringAction(RefreshConnectionAction(message("settings.retry")))
                 )
             )
         }

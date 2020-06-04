@@ -3,10 +3,12 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
+import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.SimpleModificationTracker
+import com.intellij.util.ExceptionUtil
 import com.intellij.util.messages.Topic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -250,6 +252,8 @@ sealed class ConnectionState(val displayMessage: String, val isTerminal: Boolean
      */
     open val shortMessage: String = displayMessage
 
+    open val actions: List<AnAction> = emptyList()
+
     object InitializingToolkit : ConnectionState(message("settings.states.initializing"), isTerminal = false)
 
     object ValidatingConnection : ConnectionState(message("settings.states.validating"), isTerminal = false) {
@@ -271,8 +275,11 @@ sealed class ConnectionState(val displayMessage: String, val isTerminal: Boolean
         isTerminal = true
     )
 
-    class InvalidConnection(val cause: Exception) : ConnectionState(message("settings.states.invalid", cause.localizedMessage), isTerminal = true) {
+    class InvalidConnection(val cause: Exception) :
+        ConnectionState(message("settings.states.invalid", ExceptionUtil.getMessage(cause) ?: ExceptionUtil.getThrowableText(cause)), isTerminal = true) {
         override val shortMessage = message("settings.states.invalid.short")
+
+        override val actions = listOf(RefreshConnectionAction(message("settings.retry")))
     }
 }
 
