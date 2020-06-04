@@ -45,7 +45,7 @@ class LogStreamListActorTest : BaseCoroutineTest() {
         whenever(client.getLogEvents(Mockito.any<GetLogEventsRequest>()))
             .thenReturn(GetLogEventsResponse.builder().events(OutputLogEvent.builder().message("message").build()).build())
         runBlocking {
-            actor.channel.send(LogActor.Message.LOAD_INITIAL())
+            actor.channel.send(LogActor.Message.LoadInitial)
             tableModel.waitForModelToBeAtLeast(1)
             waitForTrue { table.emptyText.text == message("cloudwatch.logs.no_events") }
         }
@@ -65,7 +65,7 @@ class LogStreamListActorTest : BaseCoroutineTest() {
             })
 
         runBlocking {
-            actor.channel.send(LogActor.Message.LOAD_INITIAL_RANGE(LogStreamEntry("@@@", 0), Duration.ofMillis(0)))
+            actor.channel.send(LogActor.Message.LoadInitialRange(LogStreamEntry("@@@", 0), Duration.ofMillis(0)))
             tableModel.waitForModelToBeAtLeast(1)
             waitForTrue { table.emptyText.text == message("cloudwatch.logs.no_events") }
         }
@@ -79,7 +79,7 @@ class LogStreamListActorTest : BaseCoroutineTest() {
     fun emptyTableOnExceptionThrown() {
         whenever(client.getLogEvents(Mockito.any<GetLogEventsRequest>())).then { throw IllegalStateException("network broke") }
         runBlocking {
-            actor.channel.send(LogActor.Message.LOAD_INITIAL())
+            actor.channel.send(LogActor.Message.LoadInitial)
             waitForTrue {
                 println(table.emptyText.text)
                 table.emptyText.text == message("cloudwatch.logs.failed_to_load_stream", "def")
@@ -92,7 +92,7 @@ class LogStreamListActorTest : BaseCoroutineTest() {
     fun emptyTableOnExceptionThrownRange() {
         whenever(client.getLogEvents(Mockito.any<GetLogEventsRequest>())).then { throw IllegalStateException("network broke") }
         runBlocking {
-            actor.channel.send(LogActor.Message.LOAD_INITIAL_RANGE(LogStreamEntry("@@@", 0), Duration.ofMillis(0)))
+            actor.channel.send(LogActor.Message.LoadInitialRange(LogStreamEntry("@@@", 0), Duration.ofMillis(0)))
             waitForTrue { table.emptyText.text == message("cloudwatch.logs.failed_to_load_stream", "def") }
         }
         assertThat(tableModel.items).isEmpty()
@@ -105,14 +105,14 @@ class LogStreamListActorTest : BaseCoroutineTest() {
             .thenReturn(GetLogEventsResponse.builder().nextForwardToken("3").build())
             .thenReturn(GetLogEventsResponse.builder().events(OutputLogEvent.builder().message("message2").build()).nextForwardToken("4").build())
         runBlocking {
-            actor.channel.send(LogActor.Message.LOAD_INITIAL())
+            actor.channel.send(LogActor.Message.LoadInitial)
             tableModel.waitForModelToBeAtLeast(1)
         }
         assertThat(tableModel.items.size).isOne()
         assertThat(tableModel.items.first().message).isEqualTo("message")
         runBlocking {
-            actor.channel.send(LogActor.Message.LOAD_FORWARD())
-            actor.channel.send(LogActor.Message.LOAD_FORWARD())
+            actor.channel.send(LogActor.Message.LoadForward)
+            actor.channel.send(LogActor.Message.LoadForward)
             tableModel.waitForModelToBeAtLeast(2)
         }
         assertThat(tableModel.items.size).isEqualTo(2)
@@ -128,14 +128,14 @@ class LogStreamListActorTest : BaseCoroutineTest() {
                 GetLogEventsResponse.builder().events(OutputLogEvent.builder().message("message2").timestamp(3).build()).nextBackwardToken("2").build()
             )
         runBlocking {
-            actor.channel.send(LogActor.Message.LOAD_INITIAL())
+            actor.channel.send(LogActor.Message.LoadInitial)
             tableModel.waitForModelToBeAtLeast(1)
         }
         assertThat(tableModel.items.size).isOne()
         assertThat(tableModel.items.first().message).isEqualTo("message")
         runBlocking {
-            actor.channel.send(LogActor.Message.LOAD_BACKWARD())
-            actor.channel.send(LogActor.Message.LOAD_BACKWARD())
+            actor.channel.send(LogActor.Message.LoadBackward)
+            actor.channel.send(LogActor.Message.LoadBackward)
             tableModel.waitForModelToBeAtLeast(2)
         }
         assertThat(tableModel.items.size).isEqualTo(2)
@@ -151,7 +151,7 @@ class LogStreamListActorTest : BaseCoroutineTest() {
         actor.dispose()
         assertThatThrownBy {
             runBlocking {
-                channel.send(LogActor.Message.LOAD_BACKWARD())
+                channel.send(LogActor.Message.LoadBackward)
             }
         }.isInstanceOf(ClosedSendChannelException::class.java)
     }
@@ -163,7 +163,7 @@ class LogStreamListActorTest : BaseCoroutineTest() {
         val table = TableView(tableModel)
         val actor = LogStreamListActor(projectRule.project, client, table, "abc", "def")
         runBlocking {
-            actor.channel.send(LogActor.Message.LOAD_INITIAL_FILTER("abc"))
+            actor.channel.send(LogActor.Message.LoadInitialFilter("abc"))
             waitForTrue { actor.channel.isClosedForSend }
         }
     }

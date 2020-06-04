@@ -40,7 +40,7 @@ class CreateS3BucketDialog(
     override fun doValidate(): ValidationInfo? = validateBucketName()?.let { ValidationInfo(it, view.bucketName) }
 
     override fun doCancelAction() {
-        S3Telemetry.createBucket(project, Result.CANCELLED)
+        S3Telemetry.createBucket(project, Result.Cancelled)
         super.doCancelAction()
     }
 
@@ -56,12 +56,12 @@ class CreateS3BucketDialog(
                         close(OK_EXIT_CODE)
                     }, ModalityState.stateForComponent(view.component))
                     project.refreshAwsTree(S3Resources.LIST_BUCKETS)
-                    S3Telemetry.createBucket(project, Result.SUCCEEDED)
+                    S3Telemetry.createBucket(project, Result.Succeeded)
                 } catch (e: Exception) {
                     setErrorText(e.message)
                     setOKButtonText(message("s3.create.bucket.create"))
                     isOKActionEnabled = true
-                    S3Telemetry.createBucket(project, Result.FAILED)
+                    S3Telemetry.createBucket(project, Result.Failed)
                 }
             }
         }

@@ -139,14 +139,14 @@ object CloudDebugResolver {
                 it.extract(directory)
             }
             emitInstallMetric(
-                Result.SUCCEEDED,
+                Result.Succeeded,
                 project,
                 startTime,
                 manifest.version,
                 oldVersion
             )
         } catch (e: Exception) {
-            emitInstallMetric(Result.FAILED, project, startTime, null, oldVersion)
+            emitInstallMetric(Result.Failed, project, startTime, null, oldVersion)
             throw e
         }
     }

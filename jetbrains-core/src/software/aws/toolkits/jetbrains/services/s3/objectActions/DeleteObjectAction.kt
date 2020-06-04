@@ -41,17 +41,17 @@ private fun deleteNodes(project: Project, treeTable: S3TreeTable, nodes: List<S3
     )
 
     if (response != Messages.OK) {
-        S3Telemetry.deleteObject(project, Result.CANCELLED)
+        S3Telemetry.deleteObject(project, Result.Cancelled)
     } else {
         GlobalScope.launch {
             try {
                 treeTable.bucket.deleteObjects(nodes.map { it.key })
                 nodes.forEach { treeTable.invalidateLevel(it) }
                 treeTable.refresh()
-                S3Telemetry.deleteObject(project, Result.SUCCEEDED)
+                S3Telemetry.deleteObject(project, Result.Succeeded)
             } catch (e: Exception) {
                 e.notifyError(message("s3.delete.object.failed"))
-                S3Telemetry.deleteObject(project, Result.FAILED)
+                S3Telemetry.deleteObject(project, Result.Failed)
             }
         }
     }

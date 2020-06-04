@@ -58,7 +58,7 @@ class ConfirmNonProductionDialogWrapper(private val project: Project, serviceNam
     override fun createSouthAdditionalPanel() = JPanel(GridBagLayout()).apply { add(doNotShowAgain) }
 
     override fun doOKAction() {
-        ClouddebugTelemetry.confirmNotProduction(project, Result.SUCCEEDED)
+        ClouddebugTelemetry.confirmNotProduction(project, Result.Succeeded)
         if (doNotShowAgain.isSelected) {
             settings.showEnableDebugWarning = false
         }
@@ -66,7 +66,7 @@ class ConfirmNonProductionDialogWrapper(private val project: Project, serviceNam
     }
 
     override fun doCancelAction() {
-        ClouddebugTelemetry.confirmNotProduction(project, Result.CANCELLED)
+        ClouddebugTelemetry.confirmNotProduction(project, Result.Cancelled)
         super.doCancelAction()
     }
 }

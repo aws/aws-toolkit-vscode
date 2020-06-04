@@ -38,17 +38,17 @@ class RenameObjectAction(
             }
         )
         if (newName == null) {
-            S3Telemetry.renameObject(project, Result.CANCELLED)
+            S3Telemetry.renameObject(project, Result.Cancelled)
         } else {
             GlobalScope.launch {
                 try {
                     treeTable.bucket.renameObject(node.key, "${node.parent?.key}$newName")
                     treeTable.invalidateLevel(node)
                     treeTable.refresh()
-                    S3Telemetry.renameObject(project, Result.SUCCEEDED)
+                    S3Telemetry.renameObject(project, Result.Succeeded)
                 } catch (e: Exception) {
                     e.notifyError(message("s3.rename.object.failed"))
-                    S3Telemetry.renameObject(project, Result.FAILED)
+                    S3Telemetry.renameObject(project, Result.Failed)
                 }
             }
         }

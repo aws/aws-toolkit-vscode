@@ -57,7 +57,7 @@ class AttachDebugger(
         ignoreCancellation: Boolean
     ) {
         val startTime = Instant.now()
-        var result = Result.SUCCEEDED
+        var result = Result.Succeeded
         try {
             val debuggerAttacher = DebuggerSupport.debuggers()[containerOptions.platform]
                 ?: throw IllegalStateException(
@@ -92,7 +92,7 @@ class AttachDebugger(
                 }
             } ?: throw IllegalStateException(message("cloud_debug.step.attach_debugger.failed"))
         } catch (e: ExecutionException) {
-            result = Result.FAILED
+            result = Result.Failed
             throw e.cause ?: e
         } finally {
             ClouddebugTelemetry.attachDebugger(

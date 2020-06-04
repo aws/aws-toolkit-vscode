@@ -68,7 +68,7 @@ class RemoteLambdaState(
     private fun invokeLambda(lambdaProcess: ProcessHandler) {
         val client = AwsClientManager.getInstance(environment.project)
             .getClient<LambdaClient>(settings.credentialProvider, settings.region)
-        var result = Result.SUCCEEDED
+        var result = Result.Succeeded
 
         lambdaProcess.notifyTextAvailable(
             message("lambda.execute.invoke", settings.functionName) + '\n',
@@ -106,7 +106,7 @@ class RemoteLambdaState(
                 lambdaProcess.destroyProcess()
             }
         } catch (e: Exception) {
-            result = Result.FAILED
+            result = Result.Failed
             runInEdt {
                 lambdaProcess.notifyTextAvailable(
                     message("lambda.execute.service_error", e.message ?: "Unknown") + '\n',

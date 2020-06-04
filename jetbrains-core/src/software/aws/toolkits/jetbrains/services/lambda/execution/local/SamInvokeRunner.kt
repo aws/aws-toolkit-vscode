@@ -130,7 +130,7 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
                                 count()
                                 // exception can be null but is not annotated as nullable
                                 metadata("debug", environment.isDebug())
-                                metadata("result", if (exception == null) Result.SUCCEEDED.value else Result.FAILED.value)
+                                metadata("result", if (exception == null) Result.Succeeded.value else Result.Failed.value)
                                 metadata("runtime", lambdaSettings.runtime.name)
                                 metadata("samVersion", SamCommon.getVersionString())
                                 metadata("templateBased", buildRequest is BuildLambdaFromTemplate)

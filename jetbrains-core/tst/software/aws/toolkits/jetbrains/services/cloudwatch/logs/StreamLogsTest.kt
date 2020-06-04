@@ -30,9 +30,9 @@ class StreamLogsTest {
         runBlocking {
             tailLogs.setSelected(TestActionEvent(), true)
             var response = channel.receive()
-            assertThat(response).isInstanceOf(LogActor.Message.LOAD_FORWARD::class.java)
+            assertThat(response).isInstanceOf(LogActor.Message.LoadForward::class.java)
             response = channel.receive()
-            assertThat(response).isInstanceOf(LogActor.Message.LOAD_FORWARD::class.java)
+            assertThat(response).isInstanceOf(LogActor.Message.LoadForward::class.java)
         }
     }
 

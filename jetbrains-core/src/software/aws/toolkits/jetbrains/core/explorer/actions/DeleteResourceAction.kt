@@ -40,7 +40,7 @@ abstract class DeleteResourceAction<in T : AwsExplorerResourceNode<*>>(text: Str
             )
 
             if (response == null) {
-                AwsTelemetry.deleteResource(selected.project, ServiceType.from(selected.serviceId), Result.CANCELLED)
+                AwsTelemetry.deleteResource(selected.project, ServiceType.from(selected.serviceId), Result.Cancelled)
             } else {
                 ApplicationManager.getApplication().executeOnPooledThread {
                     try {
