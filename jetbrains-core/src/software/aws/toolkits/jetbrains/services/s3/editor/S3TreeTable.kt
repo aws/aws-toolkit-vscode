@@ -186,9 +186,9 @@ class S3TreeTable(
                         throw e
                     }
                 }
-                S3Telemetry.uploadObjects(project, Result.SUCCEEDED, selectedFiles.size.toDouble())
+                S3Telemetry.uploadObjects(project, Result.Succeeded, selectedFiles.size.toDouble())
             } catch (e: Exception) {
-                S3Telemetry.uploadObjects(project, Result.FAILED, selectedFiles.size.toDouble())
+                S3Telemetry.uploadObjects(project, Result.Failed, selectedFiles.size.toDouble())
             }
         }
     }

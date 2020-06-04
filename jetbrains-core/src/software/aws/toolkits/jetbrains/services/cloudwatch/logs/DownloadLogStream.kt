@@ -91,9 +91,9 @@ class LogStreamDownloadTask(project: Project, val client: CloudWatchLogsClient, 
     override fun onThrowable(e: Throwable) {
         LOG.error(e) { "LogStreamDownloadTask exception thrown" }
         val result = if (e is ProcessCanceledException) {
-            Result.CANCELLED
+            Result.Cancelled
         } else {
-            Result.FAILED
+            Result.Failed
         }
         CloudwatchlogsTelemetry.openStreamInEditor(project, result)
     }
@@ -183,9 +183,9 @@ class LogStreamDownloadToFileTask(
     override fun onThrowable(e: Throwable) {
         LogStreamDownloadTask.LOG.error(e) { "LogStreamDownloadToFileTask exception thrown" }
         val result = if (e is ProcessCanceledException) {
-            Result.CANCELLED
+            Result.Cancelled
         } else {
-            Result.FAILED
+            Result.Failed
         }
         CloudwatchlogsTelemetry.downloadStreamToFile(project, result)
     }

@@ -28,7 +28,7 @@ class CloudWatchLogWindow(private val project: Project) : CoroutineScope by Appl
     private val edtContext = getCoroutineUiContext()
 
     fun showLogGroup(logGroup: String) = launch {
-        var result = Result.SUCCEEDED
+        var result = Result.Succeeded
         try {
             val existingWindow = toolWindow.find(logGroup)
             if (existingWindow != null) {
@@ -44,7 +44,7 @@ class CloudWatchLogWindow(private val project: Project) : CoroutineScope by Appl
             }
         } catch (e: Exception) {
             LOG.error(e) { "Exception thrown while trying to show log group '$logGroup'" }
-            result = Result.FAILED
+            result = Result.Failed
             throw e
         } finally {
             CloudwatchlogsTelemetry.openGroup(project, result)
@@ -57,7 +57,7 @@ class CloudWatchLogWindow(private val project: Project) : CoroutineScope by Appl
         previousEvent: LogStreamEntry? = null,
         duration: Duration? = null
     ) = launch {
-        var result = Result.SUCCEEDED
+        var result = Result.Succeeded
         try {
             val id = "$logGroup/$logStream/${previousEvent?.timestamp}/${previousEvent?.message}/$duration"
             val existingWindow = toolWindow.find(id)
@@ -82,7 +82,7 @@ class CloudWatchLogWindow(private val project: Project) : CoroutineScope by Appl
             }
         } catch (e: Exception) {
             LOG.error(e) { "Exception thrown while trying to show log group '$logGroup' stream '$logStream'" }
-            result = Result.FAILED
+            result = Result.Failed
             throw e
         } finally {
             CloudwatchlogsTelemetry.openStream(project, result)
