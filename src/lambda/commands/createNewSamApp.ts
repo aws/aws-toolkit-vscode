@@ -25,7 +25,7 @@ import { fileExists } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
-import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
+import { getSamCliVersion, getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
 import { throwAndNotifyIfInvalid } from '../../shared/sam/cli/samCliValidationUtils'
 import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
@@ -99,8 +99,9 @@ export async function createNewSamApplication(
         const currentCredentials = await awsContext.getCredentials()
         const availableRegions = getRegionsForActiveCredentials(awsContext, regionProvider)
         const schemasRegions = availableRegions.filter(region => regionProvider.isServiceInRegion('schemas', region.id))
+        const samCliVersion = await getSamCliVersion(samCliContext)
 
-        const wizardContext = new DefaultCreateNewSamAppWizardContext(currentCredentials, schemasRegions)
+        const wizardContext = new DefaultCreateNewSamAppWizardContext(currentCredentials, schemasRegions, samCliVersion)
         config = await new CreateNewSamAppWizard(wizardContext).run()
 
         if (!config) {
@@ -158,7 +159,7 @@ export async function createNewSamApplication(
                 schemaVersion: schemaTemplateParameters!.SchemaVersion,
                 destinationDirectory: vscode.Uri.file(destinationDirectory),
             }
-            schemaCodeDownloader = createSchemaCodeDownloaderObject(client!)
+            schemaCodeDownloader = createSchemaCodeDownloaderObject(client!, channelLogger.channel)
             channelLogger.info(
                 'AWS.message.info.schemas.downloadCodeBindings.start',
                 'Downloading code for schema {0}...',
@@ -201,7 +202,7 @@ export async function createNewSamApplication(
             checkLogsMessage
         )
 
-        getLogger().error('Error creating new SAM Application', err as Error)
+        getLogger().error('Error creating new SAM Application: %O', err as Error)
 
         // An error occured, so do not try to open any files during the next extension activation
         activationLaunchPath.clearLaunchPath()

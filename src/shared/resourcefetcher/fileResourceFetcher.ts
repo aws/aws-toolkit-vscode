@@ -21,7 +21,7 @@ export class FileResourceFetcher implements ResourceFetcher {
 
             return (await fs.readFile(this.filepath)).toString()
         } catch (err) {
-            this.logger.error(`Error loading resource from ${this.filepath}`, err as Error)
+            this.logger.error(`Error loading resource from ${this.filepath}: %O`, err as Error)
 
             return undefined
         }

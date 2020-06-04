@@ -51,6 +51,7 @@ export interface IconPaths {
     settings: string
     registry: string
     schema: string
+    cloudWatchLogGroup: string
 }
 
 function makeIconPathsObject(): IconPaths {
@@ -62,5 +63,6 @@ function makeIconPathsObject(): IconPaths {
         registry: '',
         schema: '',
         statemachine: '',
+        cloudWatchLogGroup: '',
     }
 }

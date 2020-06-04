@@ -21,7 +21,7 @@ export async function getAccountId(credentials: AWS.Credentials, region: string)
 
         return response.Account
     } catch (err) {
-        getLogger().error('Error getting AccountId', err as Error)
+        getLogger().error('Error getting AccountId: %O', err as Error)
 
         return undefined
     }

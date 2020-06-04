@@ -112,7 +112,7 @@ describe('RegistryItemNode', () => {
 
     class TestMockToolkitClientBuilder extends MockToolkitClientBuilder {
         public constructor(schemaClient: SchemaClient) {
-            super(undefined, schemaClient)
+            super({ schemaClient })
         }
     }
 

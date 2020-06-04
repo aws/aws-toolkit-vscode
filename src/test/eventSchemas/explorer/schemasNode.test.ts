@@ -13,7 +13,7 @@ import { ext } from '../../../shared/extensionGlobals'
 import {
     assertNodeListOnlyContainsErrorNode,
     assertNodeListOnlyContainsPlaceholderNode,
-} from '../../lambda/explorer/explorerNodeAssertions'
+} from '../../utilities/explorerNodeAssertions'
 import { asyncGenerator } from '../../utilities/collectionUtils'
 
 const FAKE_REGION_CODE = 'someregioncode'

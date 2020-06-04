@@ -123,7 +123,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     public readonly onDetectLocalTemplates = detectLocalTemplates
     public readonly getParameters = getParameters
     public readonly getOverriddenParameters = getOverriddenParameters
-    private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Documentation'))
+    private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Toolkit Documentation'))
 
     public constructor(private readonly regionProvider: RegionProvider, private readonly awsContext: AwsContext) {}
 

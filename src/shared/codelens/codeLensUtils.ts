@@ -71,7 +71,7 @@ export async function makeCodeLenses({
             }
         } catch (err) {
             getLogger().error(
-                `Could not generate 'configure' code lens for handler '${handler.handlerName}'`,
+                `Could not generate 'configure' code lens for handler '${handler.handlerName}': %O`,
                 err as Error
             )
         }
@@ -120,7 +120,7 @@ export async function makePythonCodeLensProvider(): Promise<vscode.CodeLensProvi
 
             const handlers: LambdaHandlerCandidate[] = await pythonCodelens.getLambdaHandlerCandidates(document.uri)
             logger.debug(
-                'pythonCodeLensProvider.makePythonCodeLensProvider handlers:',
+                'pythonCodeLensProvider.makePythonCodeLensProvider handlers: %s',
                 JSON.stringify(handlers, undefined, 2)
             )
 
@@ -143,7 +143,7 @@ export async function makeCSharpCodeLensProvider(): Promise<vscode.CodeLensProvi
             token: vscode.CancellationToken
         ): Promise<vscode.CodeLens[]> => {
             const handlers: LambdaHandlerCandidate[] = await csharpCodelens.getLambdaHandlerCandidates(document)
-            logger.debug('makeCSharpCodeLensProvider handlers:', JSON.stringify(handlers, undefined, 2))
+            logger.debug('makeCSharpCodeLensProvider handlers: %s', JSON.stringify(handlers, undefined, 2))
 
             return makeCodeLenses({
                 document,

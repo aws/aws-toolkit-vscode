@@ -3,16 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Loggable } from './loggableType'
-
 let toolkitLogger: Logger | undefined
 
 export interface Logger {
-    debug(...message: Loggable[]): void
-    verbose(...message: Loggable[]): void
-    info(...message: Loggable[]): void
-    warn(...message: Loggable[]): void
-    error(...message: Loggable[]): void
+    debug(message: string, ...meta: any[]): void
+    debug(error: Error): void
+    verbose(message: string, ...meta: any[]): void
+    verbose(error: Error): void
+    info(message: string, ...meta: any[]): void
+    info(error: Error): void
+    warn(message: string, ...meta: any[]): void
+    warn(error: Error): void
+    error(message: string, ...meta: any[]): void
+    error(error: Error): void
 }
 
 export type LogLevel = keyof Logger

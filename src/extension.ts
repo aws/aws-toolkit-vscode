@@ -184,6 +184,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateSchemas({
             context: extContext.extensionContext,
+            outputChannel: toolkitOutputChannel,
         })
 
         await ExtensionDisposableFiles.initialize(context)
@@ -229,6 +230,9 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
 
     ext.iconPaths.dark.statemachine = context.asAbsolutePath('resources/dark/stepfunctions/preview.svg')
     ext.iconPaths.light.statemachine = context.asAbsolutePath('resources/light/stepfunctions/preview.svg')
+
+    ext.iconPaths.dark.cloudWatchLogGroup = context.asAbsolutePath('resources/dark/log-group.svg')
+    ext.iconPaths.light.cloudWatchLogGroup = context.asAbsolutePath('resources/light/log-group.svg')
 }
 
 function initializeManifestPaths(extensionContext: vscode.ExtensionContext) {
@@ -249,7 +253,7 @@ function makeEndpointsProvider(): EndpointsProvider {
     const provider = new EndpointsProvider(localManifestFetcher, remoteManifestFetcher)
     // tslint:disable-next-line:no-floating-promises -- start the load without waiting. It raises events as fetchers retrieve data.
     provider.load().catch((err: Error) => {
-        getLogger().error('Failure while loading Endpoints Manifest', err)
+        getLogger().error('Failure while loading Endpoints Manifest: %O', err)
 
         vscode.window.showErrorMessage(
             localize(

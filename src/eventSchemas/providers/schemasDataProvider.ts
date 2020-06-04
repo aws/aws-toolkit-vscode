@@ -55,7 +55,7 @@ export class SchemasDataProvider {
             }
         } catch (err) {
             const error = err as Error
-            this.logger.error('Error retrieving registries', error)
+            this.logger.error('Error retrieving registries: %O', error)
 
             return undefined
         }
@@ -86,7 +86,7 @@ export class SchemasDataProvider {
             }
         } catch (err) {
             const error = err as Error
-            this.logger.error('Error retrieving schemas', error)
+            this.logger.error('Error retrieving schemas: %O', error)
 
             return undefined
         }

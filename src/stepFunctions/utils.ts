@@ -30,8 +30,6 @@ export const VISUALIZATION_CSS_URL = 'https://do0of8uwbahzz.cloudfront.net/graph
 export const SCRIPTS_LAST_DOWNLOADED_URL = 'SCRIPT_LAST_DOWNLOADED_URL'
 export const CSS_LAST_DOWNLOADED_URL = 'CSS_LAST_DOWNLOADED_URL'
 
-export const ARN_REGEX_STRING = String.raw`^arn:aws([a-z]|\-)*:(states|lambda):([a-z]|\d|\-)*:([0-9]{12})?:.+:.+$`
-
 export interface UpdateCachedScriptOptions {
     globalStorage: vscode.Memento
     lastDownloadedURLKey: string
@@ -149,7 +147,7 @@ async function httpsGetRequestWrapper(url: string): Promise<string> {
         request.get(url, function(error, response) {
             logger.verbose(`Step Functions finished getting content from ${url}`)
             if (error) {
-                logger.verbose(`Step Functions was unable to get content from ${url}`, error as Error)
+                logger.verbose(`Step Functions was unable to get content from ${url}: %O`, error as Error)
                 reject(error)
             } else {
                 resolve(response.body as string)
@@ -185,19 +183,15 @@ export function isStepFunctionsRole(role: IAM.Role): boolean {
     return !!assumeRolePolicyDocument?.includes(STEP_FUNCTIONS_SEVICE_PRINCIPAL)
 }
 
-export async function isDocumentValid(textDocument?: vscode.TextDocument): Promise<boolean> {
-    if (!textDocument) {
+export async function isDocumentValid(text: string, textDocument?: vscode.TextDocument): Promise<boolean> {
+    if (!textDocument || !text) {
         return false
     }
 
-    const text = textDocument.getText()
     const doc = ASLTextDocument.create(textDocument.uri.path, textDocument.languageId, textDocument.version, text)
     // tslint:disable-next-line: no-inferred-empty-object-type
     const jsonDocument = languageService.parseJSONDocument(doc)
-    const diagnostics = (await languageService.doValidation(doc, jsonDocument, documentSettings))
-        // Invalid ARN strings shouldn't prevent rendering of the state machine graph
-        .filter(diagnostic => !diagnostic.message.includes(ARN_REGEX_STRING))
-
+    const diagnostics = await languageService.doValidation(doc, jsonDocument, documentSettings)
     const isValid = !diagnostics.some(diagnostic => diagnostic.severity === DiagnosticSeverity.Error)
 
     return isValid
