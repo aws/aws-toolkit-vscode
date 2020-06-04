@@ -73,7 +73,7 @@ export async function makeLambdaDebugFile(params: {
     const debugHandlerFunctionName = 'lambda_handler'
     // TODO: Sanitize handlerFilePrefix, handlerFunctionName, debugHandlerFunctionName
     try {
-        logger.debug('pythonCodeLensProvider.makeLambdaDebugFile params:', JSON.stringify(params, undefined, 2))
+        logger.debug('pythonCodeLensProvider.makeLambdaDebugFile params: %s', JSON.stringify(params, undefined, 2))
         const template = `
 # Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
@@ -95,7 +95,7 @@ def ${debugHandlerFunctionName}(event, context):
 `
 
         const outFilePath = path.join(params.outputDir, `${debugHandlerFileName}.py`)
-        logger.debug('pythonCodeLensProvider.makeLambdaDebugFile outFilePath:', outFilePath)
+        logger.debug('pythonCodeLensProvider.makeLambdaDebugFile outFilePath: %s', outFilePath)
         await writeFile(outFilePath, template)
 
         return {
@@ -103,7 +103,7 @@ def ${debugHandlerFunctionName}(event, context):
             debugHandlerName: `${debugHandlerFileName}.${debugHandlerFunctionName}`,
         }
     } catch (err) {
-        logger.error('makeLambdaDebugFile failed:', err as Error)
+        logger.error('makeLambdaDebugFile failed: %O', err as Error)
         throw err
     }
 }
@@ -206,7 +206,7 @@ export async function waitForPythonDebugAdapter(debugPort: number, timeout: Time
                 }
             }
         } catch (err) {
-            logger.verbose('Error while testing', err as Error)
+            logger.verbose('Error while testing: %O', err as Error)
         } finally {
             await tester.disconnect()
         }

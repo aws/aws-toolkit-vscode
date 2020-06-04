@@ -26,10 +26,14 @@ export async function showErrorDetails(element: ErrorNode) {
 
     try {
         const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
-        view.webview.html = baseTemplateFn({ content: `<h1>${localize('AWS.message.loading', 'Loading...')}</h1>` })
+        view.webview.html = baseTemplateFn({
+            cspSource: view.webview.cspSource,
+            content: `<h1>${localize('AWS.message.loading', 'Loading...')}</h1>`,
+        })
 
         const showErrorDetailsTemplateFn = _.template(ErrorTemplates.SHOW_ERROR_DETAILS)
         view.webview.html = baseTemplateFn({
+            cspSource: view.webview.cspSource,
             content: showErrorDetailsTemplateFn(element),
         })
     } catch (err) {
@@ -39,7 +43,10 @@ export async function showErrorDetails(element: ErrorNode) {
         logger.error(error.message)
 
         const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
-        view.webview.html = baseTemplateFn({ content: `Error displaying error details: ${error.message}` })
+        view.webview.html = baseTemplateFn({
+            cspSource: view.webview.cspSource,
+            content: `Error displaying error details: ${error.message}`,
+        })
     } finally {
         recordAwsShowExplorerErrorDetails({ result: showResult })
     }

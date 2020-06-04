@@ -30,13 +30,13 @@ export class SchemaTemplates {
     <input type="submit" :disabled="downloadDisabled" v-on:click="downloadClicked" value="Download Code Bindings">
     </div>
     <% Libraries.forEach(function(lib) { %>
-        <script nonce="<%= lib.nonce %>" src="<%= lib.uri %>"></script>
+        <script src="<%= lib %>"></script>
     <% }); %>
     <% Scripts.forEach(function(scr) { %>
-        <script nonce="<%= scr.nonce %>" src="<%= scr.uri %>"></script>
+        <script src="<%= scr %>"></script>
     <% }); %>
     <% Stylesheets.forEach(function(scr) { %>
-        <link rel="stylesheet" type="text/css" href="<%= scr.uri %>">
+        <link rel="stylesheet" type="text/css" href="<%= scr %>">
     <% }); %>
     `
 }

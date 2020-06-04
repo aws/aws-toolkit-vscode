@@ -19,6 +19,7 @@ import { RegistryItemNode } from '../../../eventSchemas/explorer/registryItemNod
 import { SchemasNode } from '../../../eventSchemas/explorer/schemasNode'
 import { TelemetryService } from '../../../shared/telemetry/telemetryService'
 import { getTabSizeSetting } from '../../../shared/utilities/editorUtilities'
+import { MockOutputChannel } from '../../../test/mockOutputChannel'
 import { assertThrowsError } from '../../../test/shared/utilities/assertUtils'
 import { MockSchemaClient } from '../../shared/clients/mockClients'
 import { asyncGenerator } from '../../utilities/collectionUtils'
@@ -183,6 +184,7 @@ describe('Search Schemas', () => {
             record: () => {},
         } as any) as TelemetryService
 
+        const outputChannel = new MockOutputChannel()
         const singleRegistryName = [TEST_REGISTRY]
         const multipleRegistryNames = [TEST_REGISTRY, TEST_REGISTRY2]
         const AWS_EVENT_SCHEMA_RAW =
@@ -221,6 +223,7 @@ describe('Search Schemas', () => {
                 schemaClient: schemaClient,
                 telemetryService: mockTelemetryService,
                 onPostMessage: postMessageSpy,
+                outputChannel: outputChannel,
             })
 
             await returnedFunc(fakeMessage)
@@ -267,6 +270,7 @@ describe('Search Schemas', () => {
                 schemaClient: schemaClient,
                 telemetryService: mockTelemetryService,
                 onPostMessage: postMessageSpy,
+                outputChannel: outputChannel,
             })
 
             await returnedFunc(fakeMessage)
@@ -314,6 +318,7 @@ describe('Search Schemas', () => {
                 schemaClient: schemaClient,
                 telemetryService: mockTelemetryService,
                 onPostMessage: postMessageSpy,
+                outputChannel: outputChannel,
             })
 
             await returnedFunc(fakeMessage)
@@ -334,6 +339,7 @@ describe('Search Schemas', () => {
                 schemaClient: schemaClient,
                 telemetryService: mockTelemetryService,
                 onPostMessage: postMessageSpy,
+                outputChannel: outputChannel,
             })
 
             const error = await assertThrowsError(async () => returnedFunc(fakeMessage))

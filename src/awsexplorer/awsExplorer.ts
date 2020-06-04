@@ -81,7 +81,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
             }
         } catch (err) {
             const error = err as Error
-            this.logger.error(`Error getting children for node ${element?.label ?? 'Root Node'}`, error)
+            this.logger.error(`Error getting children for node ${element?.label ?? 'Root Node'}: %O`, error)
 
             childNodes.splice(
                 0,

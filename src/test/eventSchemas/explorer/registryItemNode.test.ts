@@ -14,7 +14,7 @@ import { ext } from '../../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
-import { assertNodeListOnlyContainsPlaceholderNode } from '../../lambda/explorer/explorerNodeAssertions'
+import { assertNodeListOnlyContainsPlaceholderNode } from '../../utilities/explorerNodeAssertions'
 import { MockSchemaClient, MockToolkitClientBuilder } from '../../shared/clients/mockClients'
 import { clearTestIconPaths, IconPath, setupTestIconPaths } from '../../shared/utilities/iconPathUtils'
 import { asyncGenerator } from '../../utilities/collectionUtils'
@@ -37,7 +37,7 @@ describe('RegistryItemNode', () => {
 
     class SchemaMockToolkitClientBuilder extends MockToolkitClientBuilder {
         public constructor(schemaClient: SchemaClient) {
-            super(undefined, schemaClient)
+            super({ schemaClient })
         }
     }
 
@@ -140,7 +140,7 @@ describe('DefaultRegistryNode', () => {
 
     class SchemaMockToolkitClientBuilder extends MockToolkitClientBuilder {
         public constructor(schemaClient: SchemaClient) {
-            super(undefined, schemaClient)
+            super({ schemaClient })
         }
     }
     class RegistryNamesMockSchemaClient extends MockSchemaClient {

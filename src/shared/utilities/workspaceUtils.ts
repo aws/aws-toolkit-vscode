@@ -64,7 +64,7 @@ export async function addFolderToWorkspace(folder: { uri: vscode.Uri; name?: str
             }
         })
     } catch (err) {
-        logger.error(`Unexpected error adding folder ${folder.uri.fsPath} to workspace`, err as Error)
+        logger.error(`Unexpected error adding folder ${folder.uri.fsPath} to workspace: %O`, err as Error)
 
         return false
     } finally {
