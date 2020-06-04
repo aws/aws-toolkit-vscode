@@ -22,6 +22,7 @@ import {
 } from '../sam/debugger/awsSamDebugConfigurationValidator'
 import * as pathutils from '../utilities/pathUtils'
 import { tryGetAbsolutePath } from '../utilities/workspaceUtils'
+import { getLogger } from '../logger'
 
 /**
  * Reads and writes DebugConfigurations.
@@ -98,7 +99,11 @@ class DefaultDebugConfigSource implements DebugConfigurationSource {
     }
 
     public async setDebugConfigurations(value: vscode.DebugConfiguration[]): Promise<void> {
-        await this.launch.update('configurations', value)
+        try {
+            await this.launch.update('configurations', value)
+        } catch (e) {
+            getLogger().error('setDebugConfigurations failed: %O', e as Error)
+        }
     }
 }
 
