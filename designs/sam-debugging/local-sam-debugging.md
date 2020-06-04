@@ -203,8 +203,8 @@ The required fields are: type, request, invokeTarget
                 "containerBuild": false,
                 "skipNewImageCheck": false,
                 "dockerNetwork": "aaaaa",
-                "buildArguments": "--foo",
-                "localArguments": "--foo",
+                "buildArguments": ["--foo"],
+                "localArguments": ["--foo"],
                 // used when invokeTarget references a SAM Template
                 "template": {
                     // SAM Template Parameter substitutions
@@ -269,8 +269,8 @@ The required fields are: type, request, invokeTarget, lambda.runtime
                 "containerBuild": false,
                 "skipNewImageCheck": false,
                 "dockerNetwork": "aaaaa",
-                "buildArguments": "--foo",
-                "localArguments": "--foo"
+                "buildArguments": ["--foo"],
+                "localArguments": ["--foo"]
             },
             // AWS related arguments
             "aws": {

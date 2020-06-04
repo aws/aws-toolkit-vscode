@@ -5,8 +5,8 @@
 
 import { fileExists } from '../../filesystemUtilities'
 import { getLogger, Logger } from '../../logger'
-import { DefaultSamCliProcessInvoker } from './samCliInvoker'
 import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
+import { DefaultSamCliProcessInvoker } from './samCliInvoker'
 
 export interface SamCliBuildInvocationArguments {
     /**
@@ -23,7 +23,7 @@ export interface SamCliBuildInvocationArguments {
      */
     templatePath: string
     /**
-     * Environment variables to set on the child process.
+     * Environment variables set when invoking the SAM process (NOT passed to the Lambda).
      */
     environmentVariables?: NodeJS.ProcessEnv
     /**
@@ -31,8 +31,9 @@ export interface SamCliBuildInvocationArguments {
      */
     invoker: SamCliProcessInvoker
     /**
-     * If your functions depend on packages that have natively compiled dependencies,
-     * use this flag to build your function inside an AWS Lambda-like Docker container.
+     * - true: If your Lambda depends on packages that need to be compiled natively,
+     *   use this flag to build your function inside an AWS Lambda-like Docker container.
+     * - false: Lambda will be built on local machine instead of in a Docker image.
      */
     useContainer?: boolean
     /**
@@ -42,13 +43,16 @@ export interface SamCliBuildInvocationArguments {
      */
     dockerNetwork?: string
     /**
-     * Specifies whether the command should skip pulling down the latest Docker image for Lambda runtime.
+     * - true: Do not pull the latest Docker image for Lambda runtime.
+     * - false: Pull the latest Docker image if necessary
      */
     skipPullImage?: boolean
     /**
      * The path to a custom dependency manifest (ex: package.json) to use instead of the default one.
      */
     manifestPath?: string
+    /** SAM args specified by user (`sam.buildArguments`). */
+    extraArgs?: string[]
 }
 
 export interface FileFunctions {
@@ -59,64 +63,44 @@ export interface FileFunctions {
  * An elaborate way to run `sam build`.
  */
 export class SamCliBuildInvocation {
-    private readonly buildDir: string
-    private readonly baseDir?: string
-    private readonly environmentVariables?: NodeJS.ProcessEnv
-    private readonly templatePath: string
-    private readonly invoker: SamCliProcessInvoker
-    private readonly useContainer: boolean
-    private readonly dockerNetwork?: string
-    private readonly skipPullImage: boolean
-    private readonly manifestPath?: string
-
-    /**
-     * @see SamCliBuildInvocationArguments for parameter info
-     * invoker - Defaults to DefaultSamCliProcessInvoker
-     * useContainer - Defaults to false (function will be built on local machine instead of in a docker image)
-     * skipPullImage - Defaults to false (the latest Docker image will be pulled down if necessary)
-     */
     public constructor(
-        {
-            invoker = new DefaultSamCliProcessInvoker(),
-            useContainer = false,
-            skipPullImage = false,
-            ...params
-        }: SamCliBuildInvocationArguments,
+        private readonly args: SamCliBuildInvocationArguments,
         private readonly context: { file: FileFunctions } = { file: getDefaultFileFunctions() }
     ) {
-        this.buildDir = params.buildDir
-        this.baseDir = params.baseDir
-        this.templatePath = params.templatePath
-        this.environmentVariables = params.environmentVariables
-        this.invoker = invoker
-        this.useContainer = useContainer
-        this.dockerNetwork = params.dockerNetwork
-        this.skipPullImage = skipPullImage
-        this.manifestPath = params.manifestPath
+        this.args.invoker = this.args.invoker ?? new DefaultSamCliProcessInvoker()
+        this.args.useContainer = !!this.args.useContainer
+        this.args.skipPullImage = !!this.args.skipPullImage
     }
 
-    public async execute(): Promise<void> {
+    /**
+     *
+     * @returns process exit/status code
+     */
+    public async execute(): Promise<number> {
         await this.validate()
 
-        const invokeArgs: string[] = ['build', '--build-dir', this.buildDir, '--template', this.templatePath]
+        const invokeArgs: string[] = ['build', '--build-dir', this.args.buildDir, '--template', this.args.templatePath]
 
-        this.addArgumentIf(invokeArgs, !!this.baseDir, '--base-dir', this.baseDir!)
-        this.addArgumentIf(invokeArgs, !!this.dockerNetwork, '--docker-network', this.dockerNetwork!)
-        this.addArgumentIf(invokeArgs, !!this.useContainer, '--use-container')
-        this.addArgumentIf(invokeArgs, !!this.skipPullImage, '--skip-pull-image')
-        this.addArgumentIf(invokeArgs, !!this.manifestPath, '--manifest', this.manifestPath!)
+        this.addArgumentIf(invokeArgs, !!this.args.baseDir, '--base-dir', this.args.baseDir!)
+        this.addArgumentIf(invokeArgs, !!this.args.dockerNetwork, '--docker-network', this.args.dockerNetwork!)
+        this.addArgumentIf(invokeArgs, !!this.args.useContainer, '--use-container')
+        this.addArgumentIf(invokeArgs, !!this.args.skipPullImage, '--skip-pull-image')
+        this.addArgumentIf(invokeArgs, !!this.args.manifestPath, '--manifest', this.args.manifestPath!)
+        invokeArgs.push(...(this.args.extraArgs ?? []))
 
         const env: NodeJS.ProcessEnv = {
             ...process.env,
-            ...this.environmentVariables,
+            ...this.args.environmentVariables,
         }
 
-        const childProcessResult = await this.invoker.invoke({
+        const childProcessResult = await this.args.invoker.invoke({
             spawnOptions: { env },
             arguments: invokeArgs,
         })
 
         logAndThrowIfUnexpectedExitCode(childProcessResult, 0)
+
+        return childProcessResult.exitCode
     }
 
     private addArgumentIf(args: string[], addIfConditional: boolean, ...argsToAdd: string[]) {
@@ -126,10 +110,10 @@ export class SamCliBuildInvocation {
     }
 
     private async validate(): Promise<void> {
-        if (!(await this.context.file.fileExists(this.templatePath))) {
+        if (!(await this.context.file.fileExists(this.args.templatePath))) {
             const logger: Logger = getLogger()
 
-            const err = new Error(`template path does not exist: ${this.templatePath}`)
+            const err = new Error(`template path does not exist: ${this.args.templatePath}`)
             logger.error(err)
             throw err
         }

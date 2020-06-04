@@ -6,15 +6,15 @@
 import * as assert from 'assert'
 import * as del from 'del'
 import { readdir } from 'fs-extra'
-import * as path from 'path'
 import * as vscode from 'vscode'
-import * as localLambdaRunner from '../../../shared/sam/localLambdaRunner'
 import * as fsUtils from '../../../shared/filesystemUtilities'
+import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from '../../../shared/sam/cli/samCliBuild'
+import { SamLaunchRequestArgs } from '../../../shared/sam/debugger/samDebugSession'
+import * as localLambdaRunner from '../../../shared/sam/localLambdaRunner'
 import { ChildProcessResult } from '../../../shared/utilities/childProcess'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { FakeChannelLogger } from '../fakeChannelLogger'
 import { assertRejects } from '../utilities/assertUtils'
-import { SamLaunchRequestArgs } from '../../../shared/sam/debugger/samDebugSession'
 
 describe('localLambdaRunner', async () => {
     let tempDir: string
@@ -296,28 +296,30 @@ describe('localLambdaRunner', async () => {
             stderr: 'nothing to report',
         }
 
-        const generateSamBuildParams = (isSuccessfulBuild: boolean) => {
+        function generateSamBuildParams(isSuccessfulBuild: boolean): SamCliBuildInvocationArguments {
             return {
-                baseBuildDir: tempDir,
-                codeDir: tempDir,
-                inputTemplatePath: tempDir,
-                channelLogger: new FakeChannelLogger(),
-                // not needed for testing
-                manifestPath: undefined,
-                samProcessInvoker: {
+                buildDir: tempDir,
+                baseDir: tempDir,
+                templatePath: tempDir,
+                manifestPath: undefined, // not needed for testing
+                invoker: {
                     invoke: async (): Promise<ChildProcessResult> =>
                         isSuccessfulBuild ? successfulChildProcess : failedChildProcess,
                 },
+                environmentVariables: undefined,
+                useContainer: false,
+                skipPullImage: true,
             }
         }
 
         it('fails when the child process returns a nonzero exit code', async () => {
-            await assertRejects(async () => localLambdaRunner.executeSamBuild(generateSamBuildParams(false)))
+            const samArgs = generateSamBuildParams(false)
+            await assertRejects(async () => await new SamCliBuildInvocation(samArgs).execute())
         })
 
         it('succeeds when the child process returns with an exit code of 0', async () => {
-            const samBuildResult = await localLambdaRunner.executeSamBuild(generateSamBuildParams(true))
-            assert.strictEqual(samBuildResult, path.join(tempDir, 'output', 'template.yaml'))
+            const samArgs = generateSamBuildParams(true)
+            assert.strictEqual(await new SamCliBuildInvocation(samArgs).execute(), 0)
         })
     })
 })

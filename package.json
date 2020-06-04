@@ -281,7 +281,10 @@
                                 "properties": {
                                     "buildArguments": {
                                         "description": "%AWS.configuration.description.awssam.debug.buildArguments%",
-                                        "type": "string"
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
                                     },
                                     "containerBuild": {
                                         "description": "%AWS.configuration.description.awssam.debug.containerBuild%",
@@ -293,7 +296,10 @@
                                     },
                                     "localArguments": {
                                         "description": "%AWS.configuration.description.awssam.debug.localArguments%",
-                                        "type": "string"
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
                                     },
                                     "skipNewImageCheck": {
                                         "description": "%AWS.configuration.description.awssam.debug.skipNewImageCheck%",
