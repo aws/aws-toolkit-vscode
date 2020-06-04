@@ -18,9 +18,15 @@ import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { fileExists } from '../shared/filesystemUtilities'
 import { getLogger } from '../shared/logger'
 import { WinstonToolkitLogger } from '../shared/logger/winstonToolkitLogger'
-import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep, TIMEOUT } from './integrationTestsUtilities'
+import { CODE_TARGET_TYPE } from '../shared/sam/debugger/awsSamDebugConfiguration'
+import { SamDebugConfigProvider } from '../shared/sam/debugger/awsSamDebugger'
 import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { findParentProjectFile } from '../shared/utilities/workspaceUtils'
+import * as testutil from '../test/testUtil'
+import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep, TIMEOUT } from './integrationTestsUtilities'
+import { FakeExtensionContext } from '../test/fakeExtensionContext'
+import { NodejsDebugConfiguration } from '../lambda/local/debugConfiguration'
+import { invokeTypescriptLambda } from '../shared/sam/debugger/typescriptSamDebug'
 
 const projectFolder = getTestWorkspaceFolder()
 
@@ -102,6 +108,7 @@ async function closeAllEditors(): Promise<void> {
 
 async function activateExtensions(): Promise<void> {
     console.log('Activating extensions...')
+    // TODO: silence the python extension output, it is noisy.
     await activateExtension(VSCODE_EXTENSION_ID.python)
     await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
     console.log('Extensions activated')
@@ -225,6 +232,7 @@ describe('SAM Integration Tests', async () => {
                     console.log(`subSuiteTestLocation: ${subSuiteTestLocation}`)
 
                     await createSamApplication(subSuiteTestLocation)
+                    // TODO: useful?
                     const appPath = path.join(subSuiteTestLocation, samApplicationName, scenario.path)
                     cfnTemplatePath = path.join(subSuiteTestLocation, samApplicationName, 'template.yaml')
                     samAppCodeUri = await openSamAppFile(appPath)
@@ -278,28 +286,12 @@ describe('SAM Integration Tests', async () => {
                     assertCodeLensReferencesHasSameRoot(codeLens, projectRoot!)
                 }).timeout(TIMEOUT)
 
-                it.skip('invokes the Run Local CodeLens', async () => {
-                    // TODO: Remove this
-                    const codeLens = await getAddConfigCodeLens(samAppCodeUri)
-                    assert.ok(codeLens, 'expected to find a CodeLens')
-
-                    // tslint:disable-next-line: no-unsafe-any
-                    await vscode.commands.executeCommand<any>(
-                        codeLens.command!.command,
-                        ...codeLens.command!.arguments!
-                    )
-                }).timeout(TIMEOUT)
-
-                it.skip('invokes the Debug Local CodeLens', async () => {
+                it('invokes the Debug Local CodeLens', async () => {
                     assert.strictEqual(
                         vscode.debug.activeDebugSession,
                         undefined,
                         'unexpected debug session in progress'
                     )
-
-                    // TODO: Remove this
-                    const codeLens = await getAddConfigCodeLens(samAppCodeUri)
-                    assert.ok(codeLens, 'expected to find a CodeLens')
 
                     const debugSessionStartedAndStoppedPromise = new Promise<void>((resolve, reject) => {
                         testDisposables.push(
@@ -343,10 +335,45 @@ describe('SAM Integration Tests', async () => {
                         )
                     })
 
-                    await vscode.commands.executeCommand<any>(
-                        codeLens.command!.command,
-                        ...codeLens.command!.arguments!
-                    )
+                    // const tempFolder = await makeTemporaryToolkitFolder()
+                    const fakeContext = await FakeExtensionContext.getFakeExtContext()
+                    const debugConfigProvider = new SamDebugConfigProvider(fakeContext)
+                    const folder = testutil.getWorkspaceFolder(projectFolder)
+
+                    // const appDir = pathutil.normalize(
+                    //     path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/js-manifest-in-root/')
+                    // )
+                    const input = {
+                        type: 'aws-sam',
+                        name: 'whats in a name',
+                        request: 'direct-invoke',
+                        invokeTarget: {
+                            target: CODE_TARGET_TYPE,
+                            lambdaHandler: 'my.test.handler',
+                            projectRoot: 'src',
+                        },
+                        lambda: {
+                            runtime: 'nodejs12.x',
+                            // For target=code these envvars are written to the input-template.yaml.
+                            environmentVariables: {
+                                'test-envvar-1': 'test value 1',
+                                'test-envvar-2': 'test value 2',
+                            },
+                            memoryMb: 512,
+                            timeoutSec: 9000,
+                            event: {
+                                json: {
+                                    'test-payload-key-1': 'test payload value 1',
+                                    'test-payload-key-2': 'test payload value 2',
+                                },
+                            },
+                        },
+                    }
+                    const resolvedConfig = (await debugConfigProvider.resolveDebugConfiguration(folder, input))!
+                    resolvedConfig.type = 'node'
+                    await invokeTypescriptLambda(fakeContext, resolvedConfig as NodejsDebugConfiguration)
+
+                    // await vscode.commands.executeCommand('workbench.action.debug.selectandstart')
 
                     await debugSessionStartedAndStoppedPromise
                 }).timeout(TIMEOUT * 2)
