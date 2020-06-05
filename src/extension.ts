@@ -35,7 +35,7 @@ import {
     showQuickStartWebview,
     toastNewUser,
 } from './shared/extensionUtilities'
-import { getLogger } from './shared/logger'
+import { getLogger, Logger } from './shared/logger'
 import { activate as activateLogger } from './shared/logger/activation'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import { EndpointsProvider } from './shared/regions/endpointsProvider'
@@ -197,12 +197,12 @@ export async function activate(context: vscode.ExtensionContext) {
         toastNewUser(context)
 
         await loginWithMostRecentCredentials(toolkitSettings, loginManager)
+
+        recordToolkitInitialization(activationStartedOn, getLogger())
     } catch (error) {
         const channelLogger = getChannelLogger(toolkitOutputChannel)
         channelLogger.error('AWS.channel.aws.toolkit.activation.error', 'Error Activating AWS Toolkit', error as Error)
         throw error
-    } finally {
-        recordToolkitInitialization(activationStartedOn)
     }
 }
 
@@ -267,7 +267,7 @@ function makeEndpointsProvider(): EndpointsProvider {
     return provider
 }
 
-function recordToolkitInitialization(activationStartedOn: number) {
+function recordToolkitInitialization(activationStartedOn: number, logger?: Logger) {
     try {
         const activationFinishedOn = Date.now()
         const duration = Math.abs(activationFinishedOn - activationStartedOn)
@@ -276,7 +276,7 @@ function recordToolkitInitialization(activationStartedOn: number) {
             duration: duration,
         })
     } catch (err) {
-        getLogger().error(err)
+        logger?.error(err)
     }
 }
 
