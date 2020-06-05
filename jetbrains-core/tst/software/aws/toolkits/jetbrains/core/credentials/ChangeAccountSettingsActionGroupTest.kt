@@ -8,7 +8,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.core.region.anAwsRegion
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.core.region.MockRegionProvider.RegionProviderRule
 
 class ChangeAccountSettingsActionGroupTest {
 
@@ -18,7 +18,7 @@ class ChangeAccountSettingsActionGroupTest {
 
     @Rule
     @JvmField
-    val regionProviderRule = MockRegionProvider.RegionProviderRule(projectRule)
+    val regionProviderRule = RegionProviderRule()
 
     @Rule
     @JvmField

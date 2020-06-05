@@ -115,6 +115,14 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
             recentlyUsedProfiles.add(identifier.id)
 
             selectedCredentialIdentifier = identifier
+
+            identifier.defaultRegionId?.let { regionProvider[it] }?.let { credentialRegion ->
+                selectedRegion.let {
+                    if (it?.partitionId != credentialRegion.partitionId) {
+                        selectedRegion = credentialRegion
+                    }
+                }
+            }
         }
     }
 
@@ -127,16 +135,6 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
 
             selectedRegion = region
             selectedPartition = regionProvider.partitions()[region.partitionId]
-        }
-    }
-
-    /**
-     * Changes the partition and then validates them. Notifies listeners of results
-     */
-    fun changePartition(partition: AwsPartition) {
-        changeFieldsAndNotify {
-            selectedRegion = null
-            selectedPartition = partition
         }
     }
 

@@ -46,6 +46,11 @@ class MockProjectAccountSettingsManager(project: Project) : ProjectAccountSettin
         waitUntilConnectionStateIsStable()
     }
 
+    fun nullifyRegionAndWait() {
+        changeConnectionSettings(selectedCredentialIdentifier, null, null)
+        waitUntilConnectionStateIsStable()
+    }
+
     fun setConnectionState(state: ConnectionState) {
         connectionState = state
     }

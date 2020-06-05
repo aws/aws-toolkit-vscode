@@ -15,11 +15,13 @@ import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.core.region.anAwsRegion
 import software.aws.toolkits.core.rules.EnvironmentVariableHelper
 import software.aws.toolkits.core.utils.test.notNull
 import software.aws.toolkits.jetbrains.core.MockResourceCache
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.core.region.MockRegionProvider.RegionProviderRule
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.toElement
 import java.nio.file.Files
@@ -33,11 +35,13 @@ class DefaultProjectAccountSettingsManagerTest {
     @JvmField
     val environmentVariableHelper = EnvironmentVariableHelper()
 
-    private lateinit var mockRegionManager: MockRegionProvider
+    @Rule
+    @JvmField
+    val regionProviderRule = RegionProviderRule()
+
     private lateinit var mockCredentialManager: MockCredentialsManager
     private lateinit var manager: DefaultProjectAccountSettingsManager
     private lateinit var mockResourceCache: MockResourceCache
-    private lateinit var queue: MutableList<Any>
 
     @Before
     fun setUp() {
@@ -47,9 +51,6 @@ class DefaultProjectAccountSettingsManagerTest {
         System.getProperties().remove("aws.region")
         environmentVariableHelper.remove("AWS_REGION")
 
-        queue = mutableListOf()
-
-        mockRegionManager = MockRegionProvider.getInstance()
         mockCredentialManager = MockCredentialsManager.getInstance()
         manager = DefaultProjectAccountSettingsManager(projectRule.project)
         mockResourceCache = MockResourceCache.getInstance(projectRule.project)
@@ -57,19 +58,18 @@ class DefaultProjectAccountSettingsManagerTest {
 
     @After
     fun tearDown() {
-        mockRegionManager.reset()
         mockCredentialManager.reset()
         mockResourceCache.clear()
     }
 
     @Test
-    fun testNoActiveCredentials() {
+    fun `Starts with no active credentials`() {
         assertThat(manager.isValidConnectionSettings()).isFalse()
         assertThat(manager.recentlyUsedCredentials()).isEmpty()
     }
 
     @Test
-    fun testNoActiveCredentialsSelectsDefaultProfileIfPresent() {
+    fun `On load, automatically selects default profile if present and no other active credentials`() {
         val credentials = mockCredentialManager.addCredentials("profile:default")
         markConnectionSettingsAsValid(credentials, AwsRegionProvider.getInstance().defaultRegion())
 
@@ -82,7 +82,7 @@ class DefaultProjectAccountSettingsManagerTest {
     }
 
     @Test
-    fun noActiveRegionUsesDefaultCredentialRegion() {
+    fun `On load, default region of credential is used if there is no other active region`() {
         val element = """
             <AccountState>
                 <option name="activeProfile" value="Mock" />
@@ -105,7 +105,7 @@ class DefaultProjectAccountSettingsManagerTest {
     }
 
     @Test
-    fun testMakingCredentialActive() {
+    fun `Activated credential are validated and added to the recently used list`() {
         changeRegion(AwsRegionProvider.getInstance().defaultRegion())
 
         assertThat(manager.recentlyUsedCredentials()).isEmpty()
@@ -133,7 +133,7 @@ class DefaultProjectAccountSettingsManagerTest {
     }
 
     @Test
-    fun testMakingRegionActive() {
+    fun `Activated regions are validated and added to the recently used list`() {
         val mockRegionProvider = MockRegionProvider.getInstance()
         val mockRegion1 = mockRegionProvider.addRegion(AwsRegion("MockRegion-1", "MockRegion-1", "aws"))
         val mockRegion2 = mockRegionProvider.addRegion(AwsRegion("MockRegion-2", "MockRegion-2", "aws"))
@@ -153,7 +153,7 @@ class DefaultProjectAccountSettingsManagerTest {
     }
 
     @Test
-    fun testMakingRegionActiveFiresNotification() {
+    fun `Activating a region fires a state change notification`() {
         val project = projectRule.project
 
         var gotNotification = false
@@ -171,7 +171,7 @@ class DefaultProjectAccountSettingsManagerTest {
     }
 
     @Test
-    fun testMakingCredentialsActiveFiresNotification() {
+    fun `Activating a credential fires a state change notification`() {
         val project = projectRule.project
 
         var gotNotification = false
@@ -191,7 +191,7 @@ class DefaultProjectAccountSettingsManagerTest {
     }
 
     @Test
-    fun testSavingActiveRegion() {
+    fun `Active region is persisted`() {
         manager.changeRegion(AwsRegion.GLOBAL)
         val element = Element("AccountState")
         serializeStateInto(manager, element)
@@ -210,7 +210,7 @@ class DefaultProjectAccountSettingsManagerTest {
     }
 
     @Test
-    fun testSavingActiveCredential() {
+    fun `Active credential is persisted`() {
         mockResourceCache.addValidAwsCredential(manager.activeRegion.id, "Mock", "222222222222")
         changeCredentialProvider(mockCredentialManager.addCredentials("Mock"))
         val element = Element("AccountState")
@@ -230,7 +230,7 @@ class DefaultProjectAccountSettingsManagerTest {
     }
 
     @Test
-    fun testLoadingActiveCredential() {
+    fun `Active credential can be restored from persistence`() {
         val element = """
             <AccountState>
                 <option name="activeProfile" value="Mock" />
@@ -254,7 +254,7 @@ class DefaultProjectAccountSettingsManagerTest {
     }
 
     @Test
-    fun testLoadingActiveRegion() {
+    fun `Active region can be restored from persistence`() {
         val element = """
             <AccountState>
                 <option name="activeRegion" value="${MockRegionProvider.getInstance().defaultRegion().id}" />
@@ -270,14 +270,14 @@ class DefaultProjectAccountSettingsManagerTest {
 
         manager.waitUntilConnectionStateIsStable()
 
-        val region = mockRegionManager[MockRegionProvider.getInstance().defaultRegion().id]
+        val region = regionProviderRule.regionProvider[MockRegionProvider.getInstance().defaultRegion().id]
         assertThat(manager.selectedRegion).isEqualTo(region)
         assertThat(manager.selectedPartition?.id).isEqualTo(region?.partitionId)
         assertThat(manager.recentlyUsedRegions()).element(0).isEqualTo(region)
     }
 
     @Test
-    fun testLoadingRegionThatNoLongerExistsReturnsNull() {
+    fun `Attempting to restore a region that no longer exists is handled gracefully`() {
         val element = """
             <AccountState>
                 <option name="activeRegion" value="DoesNotExist" />
@@ -297,7 +297,7 @@ class DefaultProjectAccountSettingsManagerTest {
     }
 
     @Test
-    fun testLoadingCredentialThatNoLongerExistsReturnsNull() {
+    fun `Attempting to restore a credential that no longer exists is handled gracefully`() {
         val element = """
             <AccountState>
                 <option name="activeProfile" value="DoesNotExist" />
@@ -319,7 +319,7 @@ class DefaultProjectAccountSettingsManagerTest {
     }
 
     @Test
-    fun testLoadingInvalidActiveCredentialNotSelected() {
+    fun `Credentials are validated when restored from persistence`() {
         val mockCredentials = mockCredentialManager.addCredentials("Mock")
 
         markConnectionSettingsAsInvalid(mockCredentials, MockRegionProvider.getInstance().defaultRegion())
@@ -343,7 +343,7 @@ class DefaultProjectAccountSettingsManagerTest {
     }
 
     @Test
-    fun testLoadingDefaultProfileIfNoPrevious() {
+    fun `On load, default credential is selected if no other credential is active`() {
         val credentials = mockCredentialManager.addCredentials("profile:default")
         markConnectionSettingsAsValid(credentials, MockRegionProvider.getInstance().defaultRegion())
 
@@ -363,7 +363,7 @@ class DefaultProjectAccountSettingsManagerTest {
     }
 
     @Test
-    fun testRemovingActiveProfileFallsBackToNothing() {
+    fun `Removal of the active credential falls back to 'no credential selected' state`() {
         val defaultCredentials = mockCredentialManager.addCredentials("profile:default")
         val adminCredentials = mockCredentialManager.addCredentials("profile:admin")
 
@@ -385,7 +385,7 @@ class DefaultProjectAccountSettingsManagerTest {
     }
 
     @Test
-    fun canRefreshTheStateWhichTriggersRevalidation() {
+    fun `Refreshing state triggers connection to be re-validated`() {
         val defaultCredentials = mockCredentialManager.addCredentials("profile:default")
 
         markConnectionSettingsAsInvalid(defaultCredentials, AwsRegionProvider.getInstance().defaultRegion())
@@ -403,7 +403,7 @@ class DefaultProjectAccountSettingsManagerTest {
     }
 
     @Test
-    fun connectionStateRefreshedAutomaticallyIfInvalidProfileUpdated() {
+    fun `A change to the selected credential triggers a refresh if the current state is invalid`() {
         val defaultCredentials = mockCredentialManager.addCredentials("profile:default")
 
         markConnectionSettingsAsInvalid(defaultCredentials, AwsRegionProvider.getInstance().defaultRegion())
@@ -418,6 +418,41 @@ class DefaultProjectAccountSettingsManagerTest {
         manager.waitUntilConnectionStateIsStable()
 
         assertThat(manager.isValidConnectionSettings()).isTrue()
+    }
+
+    @Test
+    fun `If region is null and credential has a default region, use it`() {
+        val defaultRegionForCredentials = anAwsRegion().also { regionProviderRule.regionProvider.addRegion(it) }
+        val credentials = mockCredentialManager.addCredentials("profile:whatever", regionId = defaultRegionForCredentials.id)
+
+        manager.selectedRegion = null
+        markConnectionSettingsAsValid(credentials, defaultRegionForCredentials)
+
+        manager.changeCredentialProvider(credentials)
+        manager.waitUntilConnectionStateIsStable()
+
+        assertThat(manager.connectionState).isInstanceOfSatisfying(ConnectionState.ValidConnection::class.java) {
+            assertThat(it.credentials.id).isEqualTo(credentials.id)
+            assertThat(it.region.id).isEqualTo(defaultRegionForCredentials.id)
+        }
+    }
+
+    @Test
+    fun `Credential with a default region that's different from the currently select partition, uses the credentials region`() {
+        val defaultRegionForCredentials = anAwsRegion().also { regionProviderRule.regionProvider.addRegion(it) }
+        val credentials = mockCredentialManager.addCredentials("profile:whatever", regionId = defaultRegionForCredentials.id)
+
+        manager.selectedRegion = anAwsRegion()
+
+        markConnectionSettingsAsValid(credentials, defaultRegionForCredentials)
+
+        manager.changeCredentialProvider(credentials)
+        manager.waitUntilConnectionStateIsStable()
+
+        assertThat(manager.connectionState).isInstanceOfSatisfying(ConnectionState.ValidConnection::class.java) {
+            assertThat(it.credentials.id).isEqualTo(credentials.id)
+            assertThat(it.region.id).isEqualTo(defaultRegionForCredentials.id)
+        }
     }
 
     private fun markConnectionSettingsAsValid(credentialsIdentifier: ToolkitCredentialsIdentifier, region: AwsRegion) {
