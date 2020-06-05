@@ -48,12 +48,13 @@ export async function downloadFileAsCommand(node: S3FileNode, window = Window.vs
 }
 
 async function promptForSaveLocation(fileName: string, window: Window): Promise<vscode.Uri | undefined> {
-    const filters: vscode.SaveDialogOptions['filters'] = { 'All files': ['*'] }
-
     const extension = path.extname(fileName)
-    if (extension) {
-        filters[`*${extension}`] = [extension]
-    }
+
+    // Insertion order matters, as it determines the ordering in the filters dropdown
+    // First inserted item is at the top (this should be the extension, if present)
+    const filters: vscode.SaveDialogOptions['filters'] = extension
+        ? { [`*${extension}`]: [extension.slice(1)], 'All Files': ['*'] }
+        : { 'All Files': ['*'] }
 
     const downloadPath = path.join(downloadsDir(), fileName)
     return window.showSaveDialog({

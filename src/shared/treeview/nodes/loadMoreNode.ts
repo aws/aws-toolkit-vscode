@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AWSTreeNodeBase } from './awsTreeNodeBase'
-
 /**
  * Represents a Node that has the ability to load more results.
  *
@@ -35,12 +33,13 @@ export interface LoadMoreNode {
      *
      * After that, the Node must be refreshed to trigger a call to getChildren() (i.e. "return your loaded children").
      * That will correctly display the (existing and) new results that were appended to the cache.
-     *
-     * Callers must await the Promise before refreshing the node to avoid a race condition.
-     *
-     * @returns the existing and new children of the node.
      */
-    loadMoreChildren(): Promise<AWSTreeNodeBase[]>
+    loadMoreChildren(): Promise<void>
+
+    /**
+     * Returns true if a {@link loadMoreChildren} call is in progress.
+     */
+    isLoadingMoreChildren(): boolean
 
     /**
      * Clears all children from the Node's cache.

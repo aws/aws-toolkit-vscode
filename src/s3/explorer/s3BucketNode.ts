@@ -58,8 +58,12 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
         })
     }
 
-    public async loadMoreChildren(): Promise<AWSTreeNodeBase[]> {
-        return this.childLoader.loadMoreChildren()
+    public async loadMoreChildren(): Promise<void> {
+        await this.childLoader.loadMoreChildren()
+    }
+
+    public isLoadingMoreChildren(): boolean {
+        return this.childLoader.isLoadingMoreChildren()
     }
 
     public clearChildren(): void {

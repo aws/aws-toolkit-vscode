@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { S3 } from 'aws-sdk'
+import { S3, AWSError } from 'aws-sdk'
 import * as _ from 'lodash'
 import * as mime from 'mime-types'
 import * as path from 'path'
@@ -263,8 +263,6 @@ export class DefaultS3Client implements S3Client {
      *
      * Note that although there is an S3#GetBucketLocation API,
      * this is the suggested method of obtaining the region.
-     *
-     * @throws Error if there is an error calling S3.
      */
     private async lookupRegion(bucketName: string, s3: S3): Promise<string> {
         getLogger().debug('LookupRegion called for bucketName: %s', bucketName)
@@ -275,8 +273,7 @@ export class DefaultS3Client implements S3Client {
             getLogger().debug('LookupRegion returned region: %s', region)
             return region
         } catch (e) {
-            getLogger().error('Failed to find region for bucket %s: %O', bucketName, e)
-            throw e
+            return (e as AWSError).region
         }
     }
 }
@@ -359,9 +356,20 @@ function buildArn({ partitionId, bucketName, key }: { partitionId: string; bucke
 }
 
 async function createSdkClient(regionCode: string): Promise<S3> {
+    clearInternalBucketCache()
+
     return await ext.sdkClientBuilder.createAndConfigureServiceClient(
         options => new S3(options),
         { computeChecksums: true },
         regionCode
     )
+}
+
+/**
+ * Bucket region is cached across invocations without regard to partition
+ * If partition changes with same bucket name in both partitions, cache is incorrect
+ * @see https://github.com/aws/aws-sdk-js/blob/16a799c0681c01dcafa7b30be5f16894861b3a32/lib/services/s3.js#L919-L924
+ */
+function clearInternalBucketCache(): void {
+    ;(S3.prototype as any).bucketRegionCache = {}
 }

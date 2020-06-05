@@ -23,6 +23,14 @@ class FakeProgressCaptor {
     }
 }
 
+class FakeAwsError extends Error {
+    public region: string = 'us-west-2'
+
+    public constructor(message: string) {
+        super(message)
+    }
+}
+
 describe('DefaultS3Client', () => {
     const partition = 'aws'
     const region = 'us-west-2'
@@ -39,7 +47,7 @@ describe('DefaultS3Client', () => {
     const continuationToken = 'continuationToken'
     const nextContinuationToken = 'nextContinuationToken'
     const maxResults = 20
-    const error = new Error('Expected failure')
+    const error: AWSError = new FakeAwsError('Expected failure') as AWSError
 
     let mockS3: S3
 
@@ -231,11 +239,20 @@ describe('DefaultS3Client', () => {
             verify(mockS3.headBucket(anything())).never()
         })
 
-        it('throws an Error on headBucket failure', async () => {
+        it('returns region from exception on headBucket failure', async () => {
             when(mockS3.listBuckets()).thenReturn(success({ Buckets: [{ Name: bucketName }] }))
             when(mockS3.headBucket(anything())).thenReturn(failure())
 
-            await assert.rejects(createClient().listBuckets(), error)
+            const response = await createClient().listBuckets()
+            assert.deepStrictEqual(response, {
+                buckets: [
+                    new DefaultBucket({
+                        partitionId: partition,
+                        region,
+                        name: bucketName,
+                    }),
+                ],
+            })
         })
     })
 

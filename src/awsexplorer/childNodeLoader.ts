@@ -7,6 +7,9 @@ import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { LoadMoreNode } from '../shared/treeview/nodes/loadMoreNode'
 import { MoreResultsNode } from './moreResultsNode'
 import { ChildNodeCache } from './childNodeCache'
+import * as AsyncLock from 'async-lock'
+
+const LOCK_KEY = 'ChildNodeLoader'
 
 export interface ChildNodePage {
     newChildren: AWSTreeNodeBase[]
@@ -19,6 +22,7 @@ export interface ChildNodePage {
 export class ChildNodeLoader {
     private readonly loadPage: (continuationToken: string | undefined) => Promise<ChildNodePage>
     private readonly moreResults: MoreResultsNode
+    private readonly loadChildrenLock: AsyncLock
     private cache: ChildNodeCache
 
     public constructor(
@@ -27,6 +31,7 @@ export class ChildNodeLoader {
     ) {
         this.loadPage = loadPage
         this.moreResults = new MoreResultsNode(parent)
+        this.loadChildrenLock = new AsyncLock()
         this.cache = new ChildNodeCache()
     }
 
@@ -34,21 +39,24 @@ export class ChildNodeLoader {
      * Gets the initial or previously-loaded children.
      */
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
-        if (!this.initialChildrenLoaded()) {
-            return this.loadInitialChildren()
-        }
-
+        await this.loadMoreChildrenIf(() => !this.initialChildrenLoaded())
         return this.getExistingChildren()
     }
 
     /**
-     * Loads and returns more children.
+     * Loads and appends a new page of children.
+     *
+     * If there is no new page of children, has no effect.
      */
-    public async loadMoreChildren(): Promise<AWSTreeNodeBase[]> {
-        const newPage = await this.loadPage(this.cache.continuationToken)
+    public async loadMoreChildren(): Promise<void> {
+        return this.loadMoreChildrenIf(() => !this.allChildrenLoaded())
+    }
 
-        this.cache.appendPage(newPage)
-        return this.getExistingChildren()
+    /**
+     * Returns true if a {@link loadMoreChildren} call is in progress.
+     */
+    public isLoadingMoreChildren(): boolean {
+        return this.loadChildrenLock.isBusy(LOCK_KEY)
     }
 
     /**
@@ -62,15 +70,34 @@ export class ChildNodeLoader {
         return !this.cache.isPristine
     }
 
-    private async loadInitialChildren(): Promise<AWSTreeNodeBase[]> {
-        return this.loadMoreChildren()
+    private allChildrenLoaded(): boolean {
+        return this.initialChildrenLoaded() && this.cache.continuationToken === undefined
     }
 
-    private async getExistingChildren(): Promise<AWSTreeNodeBase[]> {
+    private getExistingChildren(): AWSTreeNodeBase[] {
         if (this.cache.continuationToken !== undefined) {
             return [...this.cache.children, this.moreResults]
         }
 
         return this.cache.children
+    }
+
+    /**
+     * Prevents multiple concurrent attempts to load next page.
+     *
+     * This can happen if the user double clicks a node that executes a command before the node is hidden.
+     * In this case, the attempts are queued up.
+     *
+     * @param condition a double checked condition that must evaluate to true for the page load to take place.
+     */
+    private async loadMoreChildrenIf(condition: () => boolean): Promise<void> {
+        if (condition()) {
+            return this.loadChildrenLock.acquire(LOCK_KEY, async () => {
+                if (condition()) {
+                    const newPage = await this.loadPage(this.cache.continuationToken)
+                    this.cache.appendPage(newPage)
+                }
+            })
+        }
     }
 }
