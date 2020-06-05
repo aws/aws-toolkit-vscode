@@ -50,6 +50,7 @@ import {
     recordAwsHelpQuickstart,
     recordAwsReportPluginIssue,
     recordAwsShowExtensionSource,
+    recordToolkitInit,
 } from './shared/telemetry/telemetry'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { getChannelLogger } from './shared/utilities/vsCodeUtils'
@@ -58,6 +59,8 @@ import { activate as activateStepFunctions } from './stepFunctions/activation'
 let localize: nls.LocalizeFunc
 
 export async function activate(context: vscode.ExtensionContext) {
+    const activationStartedOn = Date.now()
+
     localize = nls.loadMessageBundle()
 
     ext.context = context
@@ -198,6 +201,8 @@ export async function activate(context: vscode.ExtensionContext) {
         const channelLogger = getChannelLogger(toolkitOutputChannel)
         channelLogger.error('AWS.channel.aws.toolkit.activation.error', 'Error Activating AWS Toolkit', error as Error)
         throw error
+    } finally {
+        recordToolkitInitialization(activationStartedOn)
     }
 }
 
@@ -260,6 +265,19 @@ function makeEndpointsProvider(): EndpointsProvider {
     })
 
     return provider
+}
+
+function recordToolkitInitialization(activationStartedOn: number) {
+    try {
+        const activationFinishedOn = Date.now()
+        const duration = Math.abs(activationFinishedOn - activationStartedOn)
+
+        recordToolkitInit({
+            duration: duration,
+        })
+    } catch (err) {
+        getLogger().error(err)
+    }
 }
 
 // Unique extension entrypoint names, so that they can be obtained from the webpack bundle
