@@ -47,13 +47,11 @@ describe('ChildNodeLoader', () => {
     function delayedChildLoader(continuationToken: string): ChildNodeLoader {
         return new ChildNodeLoader(fakeLoadMore, _token => {
             return new Promise(resolve =>
-                setTimeout(
-                    () =>
-                        resolve({
-                            newChildren: [fakeNode],
-                            newContinuationToken: continuationToken,
-                        }),
-                    5
+                setTimeout(() =>
+                    resolve({
+                        newChildren: [fakeNode],
+                        newContinuationToken: continuationToken,
+                    })
                 )
             )
         })
