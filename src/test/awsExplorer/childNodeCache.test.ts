@@ -13,8 +13,12 @@ class FakeNode extends AWSTreeNodeBase implements LoadMoreNode {
         super('FakeNode')
     }
 
-    public loadMoreChildren(): Promise<AWSTreeNodeBase[]> {
-        return Promise.resolve([])
+    public loadMoreChildren(): Promise<void> {
+        return Promise.resolve()
+    }
+
+    public isLoadingMoreChildren(): boolean {
+        return false
     }
 
     public clearChildren(): void {}

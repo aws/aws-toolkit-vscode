@@ -42,7 +42,7 @@ describe('downloadFileAsCommand', () => {
 
         assert.ok(window.dialog.saveOptions?.defaultUri?.path?.endsWith(fileName))
         assert.strictEqual(window.dialog.saveOptions?.saveLabel, 'Download')
-        assert.deepStrictEqual(window.dialog.saveOptions?.filters, { 'All files': ['*'], '*.jpg': ['.jpg'] })
+        assert.deepStrictEqual(window.dialog.saveOptions?.filters, { 'All Files': ['*'], '*.jpg': ['jpg'] })
 
         assert.strictEqual(downloadFileRequest.bucketName, bucketName)
         assert.strictEqual(downloadFileRequest.key, key)
