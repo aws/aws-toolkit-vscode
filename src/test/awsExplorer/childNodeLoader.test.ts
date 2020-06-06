@@ -16,8 +16,12 @@ class FakeNode extends AWSTreeNodeBase {
 }
 
 class FakeLoadMore implements LoadMoreNode {
-    public loadMoreChildren(): Promise<AWSTreeNodeBase[]> {
-        return Promise.resolve([])
+    public loadMoreChildren(): Promise<void> {
+        return Promise.resolve()
+    }
+
+    public isLoadingMoreChildren(): boolean {
+        return false
     }
 
     public clearChildren(): void {}
@@ -27,17 +31,30 @@ describe('ChildNodeLoader', () => {
     const fakeNode = new FakeNode()
     const fakeLoadMore = new FakeLoadMore()
 
-    function childLoader() {
+    function childLoader(): ChildNodeLoader {
         return continuedChildLoader()
     }
 
-    function continuedChildLoader(continuationToken?: string) {
+    function continuedChildLoader(continuationToken?: string): ChildNodeLoader {
         return new ChildNodeLoader(fakeLoadMore, _token =>
             Promise.resolve({
                 newChildren: [fakeNode],
                 newContinuationToken: continuationToken,
             })
         )
+    }
+
+    function delayedChildLoader(continuationToken: string): ChildNodeLoader {
+        return new ChildNodeLoader(fakeLoadMore, _token => {
+            return new Promise(resolve =>
+                setTimeout(() =>
+                    resolve({
+                        newChildren: [fakeNode],
+                        newContinuationToken: continuationToken,
+                    })
+                )
+            )
+        })
     }
 
     describe('first call to getChildren', () => {
@@ -74,19 +91,47 @@ describe('ChildNodeLoader', () => {
     })
 
     describe('loadMoreChildren', () => {
-        it('loads and returns new and existing children', async () => {
+        it('loads and appends next page of children', async () => {
+            const loader = continuedChildLoader('token')
+
+            await loader.getChildren()
+            await loader.loadMoreChildren()
+            const [firstNode, secondNode, moreResultsNode, ...otherNodes] = await loader.getChildren()
+
+            assert.strictEqual(firstNode, fakeNode)
+            assert.strictEqual(secondNode, fakeNode)
+            assert.strictEqual((moreResultsNode as MoreResultsNode).parent, fakeLoadMore)
+            assert.strictEqual(otherNodes.length, 0)
+        })
+
+        it('has no effect if all children already loaded', async () => {
             const loader = childLoader()
 
             await loader.getChildren()
-            const [firstNode, secondNode, ...otherNodes] = await loader.loadMoreChildren()
+            await loader.loadMoreChildren()
+            await loader.loadMoreChildren()
+            const [firstNode, ...otherNodes] = await loader.getChildren()
+
+            assert.strictEqual(firstNode, fakeNode)
+            assert.strictEqual(otherNodes.length, 0)
+        })
+
+        it('queues up concurrent calls', async () => {
+            const loader = delayedChildLoader('token')
+
+            const firstCall = loader.getChildren()
+            const secondCall = loader.loadMoreChildren()
+            const thirdCall = loader.loadMoreChildren()
+            const fourthCall = loader.getChildren()
+
+            const [, , , children] = await Promise.all([firstCall, secondCall, thirdCall, fourthCall])
+            const [firstNode, secondNode, thirdNode, moreResultsNode, ...otherNodes] = children
+
             assert.strictEqual(firstNode, fakeNode)
             assert.strictEqual(secondNode, fakeNode)
+            assert.strictEqual(thirdNode, fakeNode)
+            assert.strictEqual((moreResultsNode as MoreResultsNode).parent, fakeLoadMore)
             assert.strictEqual(otherNodes.length, 0)
-
-            const [firstExistingNode, secondExistingNode, ...otherExistingNodes] = await loader.getChildren()
-            assert.strictEqual(firstExistingNode, fakeNode)
-            assert.strictEqual(secondExistingNode, fakeNode)
-            assert.strictEqual(otherExistingNodes.length, 0)
         })
     })
 

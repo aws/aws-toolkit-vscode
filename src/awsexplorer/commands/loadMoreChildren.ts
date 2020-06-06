@@ -19,8 +19,15 @@ export async function loadMoreChildrenCommand(
     awsExplorer: AwsExplorer,
     window = Window.vscode()
 ): Promise<void> {
+    getLogger().debug('LoadMoreChildren called for %O', node)
+
+    // This can happen if the user double clicks a node that executes this command before the node is hidden
+    if (node.isLoadingMoreChildren()) {
+        getLogger().debug('LoadMoreChildren already in progress. Ignoring.')
+        return
+    }
+
     try {
-        getLogger().debug('LoadMoreChildren called for %O', node)
         await node.loadMoreChildren()
     } catch (e) {
         const logsItem = localize('AWS.generic.message.viewLogs', 'View Logs...')
