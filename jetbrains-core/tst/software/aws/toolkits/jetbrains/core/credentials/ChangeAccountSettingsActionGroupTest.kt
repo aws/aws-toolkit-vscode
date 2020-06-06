@@ -22,7 +22,7 @@ class ChangeAccountSettingsActionGroupTest {
 
     @Rule
     @JvmField
-    val settingsManagerRule = MockProjectAccountSettingsManager.ProjectAccountSettingsManagerRule(projectRule)
+    val settingsManagerRule = MockAwsConnectionManager.ProjectAccountSettingsManagerRule(projectRule)
 
     @Test
     fun `Can display both region and credentials selection`() {

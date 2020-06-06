@@ -29,7 +29,7 @@ class AwsSettingsPanelInstaller : StatusBarWidgetProvider {
 private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
     StatusBarWidget.MultipleTextValuesPresentation,
     ConnectionSettingsStateChangeNotifier {
-    private val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
+    private val accountSettingsManager = AwsConnectionManager.getInstance(project)
     private val settingsSelector = SettingsSelector(project)
     private lateinit var statusBar: StatusBar
 
@@ -48,7 +48,7 @@ private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
 
     override fun install(statusBar: StatusBar) {
         this.statusBar = statusBar
-        project.messageBus.connect(this).subscribe(ProjectAccountSettingsManager.CONNECTION_SETTINGS_STATE_CHANGED, this)
+        project.messageBus.connect(this).subscribe(AwsConnectionManager.CONNECTION_SETTINGS_STATE_CHANGED, this)
         updateWidget()
     }
 

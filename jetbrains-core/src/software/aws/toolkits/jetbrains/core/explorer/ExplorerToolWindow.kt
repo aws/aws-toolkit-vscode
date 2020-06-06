@@ -38,7 +38,7 @@ import com.intellij.util.ui.UIUtil
 import software.aws.toolkits.jetbrains.core.credentials.ChangeAccountSettingsMode
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsStateChangeNotifier
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionState
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.SettingsSelectorComboBoxAction
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_NODES
 import software.aws.toolkits.jetbrains.core.explorer.ExplorerDataKeys.SELECTED_RESOURCE_NODES
@@ -72,7 +72,7 @@ class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), 
     private val structureTreeModel = StructureTreeModel(awsTreeModel, project)
     private val awsTree = createTree(AsyncTreeModel(structureTreeModel, true, project))
     private val awsTreePanel = ScrollPaneFactory.createScrollPane(awsTree)
-    private val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
+    private val accountSettingsManager = AwsConnectionManager.getInstance(project)
 
     init {
         val group = DefaultActionGroup(
@@ -85,7 +85,7 @@ class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), 
         background = UIUtil.getTreeBackground()
         setContent(treePanelWrapper)
 
-        project.messageBus.connect().subscribe(ProjectAccountSettingsManager.CONNECTION_SETTINGS_STATE_CHANGED, this)
+        project.messageBus.connect().subscribe(AwsConnectionManager.CONNECTION_SETTINGS_STATE_CHANGED, this)
         settingsStateChanged(accountSettingsManager.connectionState)
     }
 

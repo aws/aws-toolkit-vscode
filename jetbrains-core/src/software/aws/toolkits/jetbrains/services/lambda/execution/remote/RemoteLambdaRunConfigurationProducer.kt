@@ -10,7 +10,7 @@ import com.intellij.execution.actions.LazyRunConfigurationProducer
 import com.intellij.execution.configurations.ConfigurationFactory
 import com.intellij.openapi.util.Ref
 import com.intellij.psi.PsiElement
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationType
 
 class RemoteLambdaRunConfigurationProducer : LazyRunConfigurationProducer<RemoteLambdaRunConfiguration>() {
@@ -30,7 +30,7 @@ class RemoteLambdaRunConfigurationProducer : LazyRunConfigurationProducer<Remote
         val location = context.location as? RemoteLambdaLocation ?: return false
         val function = location.lambdaFunction
 
-        val accountSettings = ProjectAccountSettingsManager.getInstance(context.project)
+        val accountSettings = AwsConnectionManager.getInstance(context.project)
         accountSettings.connectionSettings()?.let {
             configuration.credentialProviderId(it.credentials.id)
             configuration.regionId(it.region.id)
@@ -49,7 +49,7 @@ class RemoteLambdaRunConfigurationProducer : LazyRunConfigurationProducer<Remote
         val location = context.location as? RemoteLambdaLocation ?: return false
         val function = location.lambdaFunction
 
-        val accountSettings = ProjectAccountSettingsManager.getInstance(context.project)
+        val accountSettings = AwsConnectionManager.getInstance(context.project)
         return accountSettings.connectionSettings()?.let {
             configuration.functionName() == function.name &&
                 configuration.credentialProviderId() == it.credentials.id &&

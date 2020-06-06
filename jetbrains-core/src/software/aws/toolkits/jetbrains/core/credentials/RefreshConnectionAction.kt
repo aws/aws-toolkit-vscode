@@ -13,7 +13,7 @@ import software.aws.toolkits.resources.message
 class RefreshConnectionAction(text: String = message("settings.refresh.description")) : AnAction(text, null, AllIcons.Actions.Refresh), DumbAware {
     override fun update(e: AnActionEvent) {
         val project = e.project ?: return
-        e.presentation.isEnabled = when (val state = ProjectAccountSettingsManager.getInstance(project).connectionState) {
+        e.presentation.isEnabled = when (val state = AwsConnectionManager.getInstance(project).connectionState) {
             is ConnectionState.IncompleteConfiguration -> false
             else -> state.isTerminal
         }
@@ -22,6 +22,6 @@ class RefreshConnectionAction(text: String = message("settings.refresh.descripti
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
         AwsResourceCache.getInstance(project).clear()
-        ProjectAccountSettingsManager.getInstance(project).refreshConnectionState()
+        AwsConnectionManager.getInstance(project).refreshConnectionState()
     }
 }

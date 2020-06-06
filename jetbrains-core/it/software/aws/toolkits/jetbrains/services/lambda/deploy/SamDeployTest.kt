@@ -18,7 +18,7 @@ import software.amazon.awssdk.services.cloudformation.model.Parameter
 import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.rules.S3TemporaryBucketRule
-import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.runUnderRealCredentials
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
@@ -49,7 +49,7 @@ class SamDeployTest {
     fun setUp() {
         setSamExecutableFromEnvironment()
 
-        MockProjectAccountSettingsManager.getInstance(projectRule.project).changeRegion(AwsRegion(Region.US_WEST_2.id(), "us-west-2", "aws"))
+        MockAwsConnectionManager.getInstance(projectRule.project).changeRegion(AwsRegion(Region.US_WEST_2.id(), "us-west-2", "aws"))
     }
 
     @Test

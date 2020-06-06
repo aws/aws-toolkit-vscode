@@ -28,7 +28,7 @@ import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier;
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider;
 import software.aws.toolkits.core.region.AwsRegion;
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager;
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager;
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager;
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance;
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager;
 import software.aws.toolkits.jetbrains.core.executables.ExecutableType;
@@ -169,7 +169,7 @@ public class SamInitSelectionPanel implements ValidatablePanel {
         this.awsCredentialSelectionUi = AwsConnectionSettingsPanel.create(selectedTemplate, generator, this::awsCredentialsUpdated);
         addAwsConnectionSettingsPanel(awsCredentialSelectionUi);
 
-        ProjectAccountSettingsManager accountSettingsManager = ProjectAccountSettingsManager.Companion.getInstance(generator.getDefaultSourceCreatingProject());
+        AwsConnectionManager accountSettingsManager = AwsConnectionManager.Companion.getInstance(generator.getDefaultSourceCreatingProject());
         if (accountSettingsManager.isValidConnectionSettings()) {
             awsCredentialsUpdated(accountSettingsManager.getActiveRegion(), accountSettingsManager.getActiveCredentialProvider().getId());
         } else {
@@ -192,7 +192,7 @@ public class SamInitSelectionPanel implements ValidatablePanel {
     }
 
     private Unit awsCredentialsUpdated(@NotNull AwsRegion awsRegion, @NotNull ToolkitCredentialsIdentifier credentialIdentifier) {
-        ProjectAccountSettingsManager accountSettingsManager = ProjectAccountSettingsManager.getInstance(generator.getDefaultSourceCreatingProject());
+        AwsConnectionManager accountSettingsManager = AwsConnectionManager.getInstance(generator.getDefaultSourceCreatingProject());
         if (!accountSettingsManager.isValidConnectionSettings() ||
             !accountSettingsManager.getActiveCredentialProvider().getId().equals(credentialIdentifier.getId())) {
             accountSettingsManager.changeCredentialProvider(credentialIdentifier);

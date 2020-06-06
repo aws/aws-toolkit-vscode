@@ -26,7 +26,7 @@ import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtu
 import software.aws.toolkits.jetbrains.utils.toElement
 import java.nio.file.Files
 
-class DefaultProjectAccountSettingsManagerTest {
+class DefaultAwsConnectionManagerTest {
     @Rule
     @JvmField
     val projectRule = HeavyJavaCodeInsightTestFixtureRule()
@@ -40,7 +40,7 @@ class DefaultProjectAccountSettingsManagerTest {
     val regionProviderRule = RegionProviderRule()
 
     private lateinit var mockCredentialManager: MockCredentialsManager
-    private lateinit var manager: DefaultProjectAccountSettingsManager
+    private lateinit var manager: DefaultAwsConnectionManager
     private lateinit var mockResourceCache: MockResourceCache
 
     @Before
@@ -52,7 +52,7 @@ class DefaultProjectAccountSettingsManagerTest {
         environmentVariableHelper.remove("AWS_REGION")
 
         mockCredentialManager = MockCredentialsManager.getInstance()
-        manager = DefaultProjectAccountSettingsManager(projectRule.project)
+        manager = DefaultAwsConnectionManager(projectRule.project)
         mockResourceCache = MockResourceCache.getInstance(projectRule.project)
     }
 
@@ -159,7 +159,7 @@ class DefaultProjectAccountSettingsManagerTest {
         var gotNotification = false
 
         val busConnection = project.messageBus.connect()
-        busConnection.subscribe(ProjectAccountSettingsManager.CONNECTION_SETTINGS_STATE_CHANGED, object : ConnectionSettingsStateChangeNotifier {
+        busConnection.subscribe(AwsConnectionManager.CONNECTION_SETTINGS_STATE_CHANGED, object : ConnectionSettingsStateChangeNotifier {
             override fun settingsStateChanged(newState: ConnectionState) {
                 gotNotification = true
             }
@@ -177,7 +177,7 @@ class DefaultProjectAccountSettingsManagerTest {
         var gotNotification = false
 
         val busConnection = project.messageBus.connect()
-        busConnection.subscribe(ProjectAccountSettingsManager.CONNECTION_SETTINGS_STATE_CHANGED, object : ConnectionSettingsStateChangeNotifier {
+        busConnection.subscribe(AwsConnectionManager.CONNECTION_SETTINGS_STATE_CHANGED, object : ConnectionSettingsStateChangeNotifier {
             override fun settingsStateChanged(newState: ConnectionState) {
                 gotNotification = true
             }

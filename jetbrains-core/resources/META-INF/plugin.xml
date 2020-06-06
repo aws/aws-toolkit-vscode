@@ -160,9 +160,9 @@
 
         <moduleService serviceImplementation="software.aws.toolkits.jetbrains.settings.DeploySettings"/>
 
-        <projectService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager"
-                        serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultProjectAccountSettingsManager"
-                        testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager"/>
+        <projectService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager"
+                        serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultAwsConnectionManager"
+                        testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager"/>
 
         <statusBarWidgetProvider implementation="software.aws.toolkits.jetbrains.core.credentials.AwsSettingsPanelInstaller"/>
 

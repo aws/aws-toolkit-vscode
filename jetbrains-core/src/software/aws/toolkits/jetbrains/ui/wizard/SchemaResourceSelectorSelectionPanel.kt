@@ -6,7 +6,7 @@ package software.aws.toolkits.jetbrains.ui.wizard
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.ComboboxSpeedSearch
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
 import software.aws.toolkits.jetbrains.ui.AwsConnection
@@ -54,7 +54,7 @@ class SchemaResourceSelectorSelectionPanel(
     override val schemaSelectionPanel: JComponent = schemaPanel
 
     private fun initializeAwsConnection(): AwsConnection? {
-        val settings = ProjectAccountSettingsManager.getInstance(project)
+        val settings = AwsConnectionManager.getInstance(project)
         return if (settings.isValidConnectionSettings()) {
             settings.activeRegion to settings.activeCredentialProvider
         } else {

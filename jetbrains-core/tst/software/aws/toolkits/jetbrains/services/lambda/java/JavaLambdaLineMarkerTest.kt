@@ -15,7 +15,7 @@ import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.lambda.model.TracingMode
 import software.aws.toolkits.jetbrains.core.MockResourceCache
-import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
 import software.aws.toolkits.jetbrains.services.lambda.resources.LambdaResources
 import software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker
 import software.aws.toolkits.jetbrains.settings.LambdaSettings
@@ -69,7 +69,7 @@ class JavaLambdaLineMarkerTest {
 
     @After
     fun tearDown() {
-        MockProjectAccountSettingsManager.getInstance(projectRule.project).reset()
+        MockAwsConnectionManager.getInstance(projectRule.project).reset()
     }
 
     @Test
@@ -493,7 +493,7 @@ Resources:
     @Test
     fun noCredentialsLeadsToNoMarkerIfNoOtherCriteriaPasses() {
         LambdaSettings.getInstance(projectRule.project).showAllHandlerGutterIcons = false
-        MockProjectAccountSettingsManager.getInstance(projectRule.project).nullifyCredentialProviderAndWait()
+        MockAwsConnectionManager.getInstance(projectRule.project).nullifyCredentialProviderAndWait()
 
         val fixture = projectRule.fixture
 

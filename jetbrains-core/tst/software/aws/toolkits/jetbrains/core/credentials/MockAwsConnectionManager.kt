@@ -17,7 +17,7 @@ import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.utils.spinUntil
 import java.time.Duration
 
-class MockProjectAccountSettingsManager(project: Project) : ProjectAccountSettingsManager(project) {
+class MockAwsConnectionManager(project: Project) : AwsConnectionManager(project) {
     init {
         reset()
     }
@@ -60,8 +60,8 @@ class MockProjectAccountSettingsManager(project: Project) : ProjectAccountSettin
     }
 
     companion object {
-        fun getInstance(project: Project): MockProjectAccountSettingsManager =
-            ServiceManager.getService(project, ProjectAccountSettingsManager::class.java) as MockProjectAccountSettingsManager
+        fun getInstance(project: Project): MockAwsConnectionManager =
+            ServiceManager.getService(project, AwsConnectionManager::class.java) as MockAwsConnectionManager
     }
 
     class ProjectAccountSettingsManagerRule(projectRule: ProjectRule) : ExternalResource() {
@@ -82,7 +82,7 @@ class MockProjectAccountSettingsManager(project: Project) : ProjectAccountSettin
 fun <T> runUnderRealCredentials(project: Project, block: () -> T): T {
     val credentials = DefaultCredentialsProvider.create().resolveCredentials()
 
-    val manager = MockProjectAccountSettingsManager.getInstance(project)
+    val manager = MockAwsConnectionManager.getInstance(project)
     val credentialsManager = MockCredentialsManager.getInstance()
     val oldActive = manager.connectionSettings()?.credentials
     val realCredentialsProvider = credentialsManager.addCredentials("RealCredentials", credentials)
@@ -102,6 +102,6 @@ fun <T> runUnderRealCredentials(project: Project, block: () -> T): T {
     }
 }
 
-fun ProjectAccountSettingsManager.waitUntilConnectionStateIsStable() = spinUntil(Duration.ofSeconds(10)) {
+fun AwsConnectionManager.waitUntilConnectionStateIsStable() = spinUntil(Duration.ofSeconds(10)) {
     connectionState.isTerminal
 }

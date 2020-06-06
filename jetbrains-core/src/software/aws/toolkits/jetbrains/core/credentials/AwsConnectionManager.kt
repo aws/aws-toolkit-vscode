@@ -31,7 +31,7 @@ import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AwsTelemetry
 import java.util.concurrent.CancellationException
 
-abstract class ProjectAccountSettingsManager(private val project: Project) : SimpleModificationTracker() {
+abstract class AwsConnectionManager(private val project: Project) : SimpleModificationTracker() {
     private val resourceCache = AwsResourceCache.getInstance(project)
     private val regionProvider = AwsRegionProvider.getInstance()
 
@@ -231,9 +231,9 @@ abstract class ProjectAccountSettingsManager(private val project: Project) : Sim
         )
 
         @JvmStatic
-        fun getInstance(project: Project): ProjectAccountSettingsManager = ServiceManager.getService(project, ProjectAccountSettingsManager::class.java)
+        fun getInstance(project: Project): AwsConnectionManager = ServiceManager.getService(project, AwsConnectionManager::class.java)
 
-        private val LOGGER = getLogger<DefaultProjectAccountSettingsManager>()
+        private val LOGGER = getLogger<AwsConnectionManager>()
         private const val MAX_HISTORY = 5
     }
 }
@@ -287,9 +287,9 @@ interface ConnectionSettingsStateChangeNotifier {
 /**
  * Legacy method, should be considered deprecated and avoided since it loads defaults out of band
  */
-fun Project.activeRegion(): AwsRegion = ProjectAccountSettingsManager.getInstance(this).activeRegion
+fun Project.activeRegion(): AwsRegion = AwsConnectionManager.getInstance(this).activeRegion
 
 /**
  * Legacy method, should be considered deprecated and avoided since it loads defaults out of band
  */
-fun Project.activeCredentialProvider(): ToolkitCredentialsProvider = ProjectAccountSettingsManager.getInstance(this).activeCredentialProvider
+fun Project.activeCredentialProvider(): ToolkitCredentialsProvider = AwsConnectionManager.getInstance(this).activeCredentialProvider

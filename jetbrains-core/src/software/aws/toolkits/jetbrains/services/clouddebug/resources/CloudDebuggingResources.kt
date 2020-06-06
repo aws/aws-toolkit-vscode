@@ -20,7 +20,7 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.ExecutableBackedCacheResource
 import software.aws.toolkits.jetbrains.core.Resource
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.core.executables.CloudDebugExecutable
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.MessageEmitter
@@ -55,7 +55,7 @@ object CloudDebuggingResources {
             return null
         }
 
-        val accountSettings = ProjectAccountSettingsManager.getInstance(project)
+        val accountSettings = AwsConnectionManager.getInstance(project)
         val credentials = accountSettings.activeCredentialProvider.resolveCredentials().toEnvironmentVariables()
         val region = accountSettings.activeRegion.toEnvironmentVariables()
 

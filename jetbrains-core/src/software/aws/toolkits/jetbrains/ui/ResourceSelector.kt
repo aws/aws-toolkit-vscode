@@ -20,7 +20,7 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.Resource
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.ui.find
 import software.aws.toolkits.resources.message
@@ -262,7 +262,7 @@ class ResourceSelector<T> private constructor(
         }
 
         fun build() = ResourceSelector(project, resource, comboBoxModel, resolveCustomRenderer(), loadOnCreate, sortOnLoad, awsConnection ?: {
-            val settings = ProjectAccountSettingsManager.getInstance(project)
+            val settings = AwsConnectionManager.getInstance(project)
             settings.activeRegion to settings.activeCredentialProvider
         })
     }

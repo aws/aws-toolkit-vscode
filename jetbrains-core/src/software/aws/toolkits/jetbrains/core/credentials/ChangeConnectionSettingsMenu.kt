@@ -27,7 +27,7 @@ import javax.swing.JComponent
 
 class ChangeAccountSettingsActionGroup(project: Project, private val mode: ChangeAccountSettingsMode) : ComputableActionGroup(), DumbAware {
 
-    private val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
+    private val accountSettingsManager = AwsConnectionManager.getInstance(project)
     private val regionSelector =
         ChangeRegionActionGroup(accountSettingsManager.selectedPartition, accountSettingsManager, ChangePartitionActionGroup(accountSettingsManager))
     private val credentialSelector = ChangeCredentialsActionGroup(true)
@@ -97,7 +97,7 @@ private class ChangeCredentialsActionGroup(popup: Boolean) : ComputableActionGro
     }
 }
 
-internal class ChangePartitionActionGroup(private val accountSettingsManager: ProjectAccountSettingsManager) :
+internal class ChangePartitionActionGroup(private val accountSettingsManager: AwsConnectionManager) :
     ComputableActionGroup(message("settings.partitions"), true), DumbAware {
     override fun createChildrenProvider(actionManager: ActionManager?): CachedValueProvider<Array<AnAction>> = CachedValueProvider {
         val selectedPartitionId = accountSettingsManager.selectedPartition?.id
@@ -111,7 +111,7 @@ internal class ChangePartitionActionGroup(private val accountSettingsManager: Pr
 
 internal class ChangeRegionActionGroup(
     private val partition: AwsPartition?,
-    private val accountSettingsManager: ProjectAccountSettingsManager,
+    private val accountSettingsManager: AwsConnectionManager,
     private val partitionSelector: ChangePartitionActionGroup? = null,
     name: String = message("settings.regions.region_sub_menu")
 ) : ComputableActionGroup(name, true), DumbAware {
@@ -163,15 +163,15 @@ internal class ChangeCredentialsAction(private val credentialsProvider: ToolkitC
     }
 }
 
-private fun getAccountSetting(e: AnActionEvent): ProjectAccountSettingsManager =
-    ProjectAccountSettingsManager.getInstance(e.getRequiredData(PlatformDataKeys.PROJECT))
+private fun getAccountSetting(e: AnActionEvent): AwsConnectionManager =
+    AwsConnectionManager.getInstance(e.getRequiredData(PlatformDataKeys.PROJECT))
 
 class SettingsSelectorComboBoxAction(
     private val project: Project,
     private val mode: ChangeAccountSettingsMode
 ) : ComboBoxAction(), DumbAware {
     private val accountSettingsManager by lazy {
-        ProjectAccountSettingsManager.getInstance(project)
+        AwsConnectionManager.getInstance(project)
     }
 
     init {

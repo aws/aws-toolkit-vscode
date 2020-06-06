@@ -8,7 +8,7 @@ import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import software.aws.toolkits.jetbrains.core.AwsClientManager
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.services.schemas.SchemaCodeLangs
 import software.aws.toolkits.jetbrains.services.schemas.SchemaTemplateParameters
 import software.aws.toolkits.jetbrains.services.schemas.code.SchemaCodeDownloadRequestDetails
@@ -48,12 +48,12 @@ class SamSchemaDownloadPostCreationAction {
     }
 
     private fun initializeNewProjectCredentialsFromSourceCreatingProject(newApplicationProject: Project, sourceCreatingProject: Project) {
-        val newApplicationProjectSettings = ProjectAccountSettingsManager.getInstance(newApplicationProject)
+        val newApplicationProjectSettings = AwsConnectionManager.getInstance(newApplicationProject)
         if (newApplicationProjectSettings.isValidConnectionSettings()) {
             return
         }
 
-        val sourceCreatingProjectSettings = ProjectAccountSettingsManager.getInstance(sourceCreatingProject)
+        val sourceCreatingProjectSettings = AwsConnectionManager.getInstance(sourceCreatingProject)
         if (!sourceCreatingProjectSettings.isValidConnectionSettings()) {
             return
         }

@@ -28,7 +28,7 @@ import software.aws.toolkits.core.region.Endpoint
 import software.aws.toolkits.core.region.Service
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
-import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.waitUntilConnectionStateIsStable
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import kotlin.reflect.full.declaredMemberProperties
@@ -51,12 +51,12 @@ class AwsClientManagerTest {
         mockCredentialManager = MockCredentialsManager.getInstance()
         mockCredentialManager.reset()
         MockRegionProvider.getInstance().reset()
-        MockProjectAccountSettingsManager.getInstance(projectRule.project).reset()
+        MockAwsConnectionManager.getInstance(projectRule.project).reset()
     }
 
     @After
     fun tearDown() {
-        MockProjectAccountSettingsManager.getInstance(projectRule.project).reset()
+        MockAwsConnectionManager.getInstance(projectRule.project).reset()
         MockRegionProvider.getInstance().reset()
         mockCredentialManager.reset()
     }
@@ -148,7 +148,7 @@ class AwsClientManagerTest {
         val sut = getClientManager()
         val first = sut.getClient<DummyServiceClient>()
 
-        val testSettings = MockProjectAccountSettingsManager.getInstance(projectRule.project)
+        val testSettings = MockAwsConnectionManager.getInstance(projectRule.project)
         testSettings.changeRegionAndWait(AwsRegion("us-west-2", "us-west-2", "aws"))
 
         testSettings.waitUntilConnectionStateIsStable()

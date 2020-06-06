@@ -23,12 +23,12 @@ import software.aws.toolkits.core.region.ToolkitRegionProvider
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 
 open class AwsClientManager(project: Project) : ToolkitClientManager(), Disposable {
 
-    private val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
+    private val accountSettingsManager = AwsConnectionManager.getInstance(project)
     private val regionProvider = AwsRegionProvider.getInstance()
 
     init {

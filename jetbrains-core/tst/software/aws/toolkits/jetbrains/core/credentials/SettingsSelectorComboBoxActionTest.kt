@@ -21,7 +21,7 @@ class SettingsSelectorComboBoxActionTest {
 
     @Test
     fun canConfigureForRegions() {
-        val settings = MockProjectAccountSettingsManager.getInstance(projectRule.project)
+        val settings = MockAwsConnectionManager.getInstance(projectRule.project)
 
         val group = SettingsSelectorComboBoxAction(projectRule.project, ChangeAccountSettingsMode.REGIONS)
 
@@ -35,7 +35,7 @@ class SettingsSelectorComboBoxActionTest {
 
     @Test
     fun canConfigureForCredentials() {
-        val settings = MockProjectAccountSettingsManager.getInstance(projectRule.project)
+        val settings = MockAwsConnectionManager.getInstance(projectRule.project)
 
         val group = SettingsSelectorComboBoxAction(projectRule.project, ChangeAccountSettingsMode.CREDENTIALS)
 

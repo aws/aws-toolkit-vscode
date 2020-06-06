@@ -30,7 +30,7 @@ internal class RefreshConnectionActionTest {
 
         val states = mutableSetOf<ConnectionState>()
         projectRule.project.messageBus.connect()
-            .subscribe(ProjectAccountSettingsManager.CONNECTION_SETTINGS_STATE_CHANGED, object : ConnectionSettingsStateChangeNotifier {
+            .subscribe(AwsConnectionManager.CONNECTION_SETTINGS_STATE_CHANGED, object : ConnectionSettingsStateChangeNotifier {
                 override fun settingsStateChanged(newState: ConnectionState) {
                     states.add(newState)
                 }
@@ -63,7 +63,7 @@ internal class RefreshConnectionActionTest {
     }
 
     private fun checkExpectedActionState(connectionState: ConnectionState, shouldBeEnabled: Boolean) {
-        val mockProjectAccountSettingsManager = MockProjectAccountSettingsManager.getInstance(projectRule.project)
+        val mockProjectAccountSettingsManager = MockAwsConnectionManager.getInstance(projectRule.project)
 
         mockProjectAccountSettingsManager.setConnectionState(connectionState)
 
