@@ -39,9 +39,9 @@ import software.amazon.awssdk.http.HttpExecuteRequest
 import software.amazon.awssdk.http.HttpExecuteResponse
 import software.amazon.awssdk.http.SdkHttpClient
 import software.amazon.awssdk.http.SdkHttpFullResponse
+import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.CredentialsChangeEvent
 import software.aws.toolkits.core.credentials.CredentialsChangeListener
-import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
 import software.aws.toolkits.core.region.ToolkitRegionProvider
 import software.aws.toolkits.core.rules.SystemPropertyHelper
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileCredentialProviderFactory
@@ -550,9 +550,9 @@ class ProfileCredentialProviderFactoryTest {
         }
     }
 
-    private fun profileName(expectedProfileName: String, defaultRegion: String? = null): Condition<Iterable<ToolkitCredentialsIdentifier>> =
-        object : Condition<Iterable<ToolkitCredentialsIdentifier>>(expectedProfileName) {
-            override fun matches(value: Iterable<ToolkitCredentialsIdentifier>): Boolean = value.any {
+    private fun profileName(expectedProfileName: String, defaultRegion: String? = null): Condition<Iterable<CredentialIdentifier>> =
+        object : Condition<Iterable<CredentialIdentifier>>(expectedProfileName) {
+            override fun matches(value: Iterable<CredentialIdentifier>): Boolean = value.any {
                 it.id == "profile:$expectedProfileName" && defaultRegion?.let { dr -> it.defaultRegionId == dr } ?: true
             }
         }
@@ -603,7 +603,7 @@ class ProfileCredentialProviderFactoryTest {
         }
     }
 
-    private fun ProfileCredentialProviderFactory.createProvider(validProfile: ToolkitCredentialsIdentifier) = this.createAwsCredentialProvider(
+    private fun ProfileCredentialProviderFactory.createProvider(validProfile: CredentialIdentifier) = this.createAwsCredentialProvider(
         validProfile,
         MockRegionProvider.getInstance().defaultRegion(),
         sdkHttpClientSupplier = { mockSdkHttpClient }

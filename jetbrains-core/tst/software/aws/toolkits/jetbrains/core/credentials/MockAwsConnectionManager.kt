@@ -6,11 +6,9 @@ package software.aws.toolkits.jetbrains.core.credentials
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
 import com.intellij.testFramework.ProjectRule
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.junit.rules.ExternalResource
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
-import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
+import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
@@ -36,7 +34,7 @@ class MockAwsConnectionManager(project: Project) : AwsConnectionManager(project)
         waitUntilConnectionStateIsStable()
     }
 
-    fun changeCredentialProviderAndWait(identifier: ToolkitCredentialsIdentifier) {
+    fun changeCredentialProviderAndWait(identifier: CredentialIdentifier) {
         changeCredentialProvider(identifier)
         waitUntilConnectionStateIsStable()
     }
@@ -55,9 +53,7 @@ class MockAwsConnectionManager(project: Project) : AwsConnectionManager(project)
         connectionState = state
     }
 
-    override suspend fun validate(credentialsProvider: ToolkitCredentialsProvider, region: AwsRegion): Boolean = withContext(Dispatchers.IO) {
-        true
-    }
+    override suspend fun validate(credentialsProvider: ToolkitCredentialsProvider, region: AwsRegion) {}
 
     companion object {
         fun getInstance(project: Project): MockAwsConnectionManager =

@@ -14,7 +14,7 @@ import com.intellij.openapi.actionSystem.ex.ComboBoxAction
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.psi.util.CachedValueProvider
-import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
+import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.region.AwsPartition
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.ChangeAccountSettingsMode.BOTH
@@ -152,7 +152,7 @@ internal class ChangeRegionAction(private val region: AwsRegion) : ToggleAction(
     }
 }
 
-internal class ChangeCredentialsAction(private val credentialsProvider: ToolkitCredentialsIdentifier) : ToggleAction(credentialsProvider.displayName),
+internal class ChangeCredentialsAction(private val credentialsProvider: CredentialIdentifier) : ToggleAction(credentialsProvider.displayName),
     DumbAware {
     override fun isSelected(e: AnActionEvent): Boolean = getAccountSetting(e).selectedCredentialIdentifier == credentialsProvider
 

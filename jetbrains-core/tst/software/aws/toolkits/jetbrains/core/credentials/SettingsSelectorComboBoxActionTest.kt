@@ -8,7 +8,7 @@ import com.intellij.testFramework.TestActionEvent
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
-import software.aws.toolkits.core.credentials.aToolkitCredentialsIdentifier
+import software.aws.toolkits.core.credentials.aCredentialsIdentifier
 import software.aws.toolkits.core.region.anAwsRegion
 
 class SettingsSelectorComboBoxActionTest {
@@ -17,7 +17,7 @@ class SettingsSelectorComboBoxActionTest {
     val projectRule = ProjectRule()
 
     private val DUMMY_REGION = anAwsRegion()
-    private val DUMMY_CREDENTIAL = aToolkitCredentialsIdentifier()
+    private val DUMMY_CREDENTIAL = aCredentialsIdentifier()
 
     @Test
     fun canConfigureForRegions() {

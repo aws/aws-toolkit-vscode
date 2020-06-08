@@ -5,11 +5,6 @@ package software.aws.toolkits.jetbrains.core.credentials.profiles
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.ModalityState
-import com.intellij.openapi.ui.Messages
-import com.intellij.openapi.util.Ref
-import icons.AwsIcons
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
@@ -23,13 +18,16 @@ import software.amazon.awssdk.services.sts.StsClient
 import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider
 import software.amazon.awssdk.services.sts.model.AssumeRoleRequest
 import software.aws.toolkits.core.ToolkitClientManager
+import software.aws.toolkits.core.credentials.CredentialIdentifier
+import software.aws.toolkits.core.credentials.CredentialIdentifierBase
 import software.aws.toolkits.core.credentials.CredentialProviderFactory
 import software.aws.toolkits.core.credentials.CredentialsChangeEvent
 import software.aws.toolkits.core.credentials.CredentialsChangeListener
-import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.credentials.CorrectThreadCredentialsProvider
+import software.aws.toolkits.jetbrains.core.credentials.MfaRequiredInteractiveCredentials
+import software.aws.toolkits.jetbrains.core.credentials.promptForMfaToken
 import software.aws.toolkits.jetbrains.utils.createNotificationExpiringAction
 import software.aws.toolkits.jetbrains.utils.createShowMoreInfoDialogAction
 import software.aws.toolkits.jetbrains.utils.notifyError
@@ -41,12 +39,15 @@ const val DEFAULT_PROFILE_ID = "profile:default"
 
 private const val PROFILE_FACTORY_ID = "ProfileCredentialProviderFactory"
 
-private class ProfileCredentialsIdentifier(internal val profileName: String, override val defaultRegionId: String?) : ToolkitCredentialsIdentifier() {
+private open class ProfileCredentialsIdentifier(internal val profileName: String, override val defaultRegionId: String?) : CredentialIdentifierBase() {
     override val id = "profile:$profileName"
     override val displayName = message("credentials.profile.name", profileName)
     override val factoryId = PROFILE_FACTORY_ID
     override val shortName: String = profileName
 }
+
+private class ProfileCredentialsIdentifierMfa(profileName: String, defaultRegionId: String?) :
+    ProfileCredentialsIdentifier(profileName, defaultRegionId), MfaRequiredInteractiveCredentials
 
 class ProfileCredentialProviderFactory : CredentialProviderFactory, Disposable {
     private val profileWatcher = ProfileWatcher(this)
@@ -81,17 +82,17 @@ class ProfileCredentialProviderFactory : CredentialProviderFactory, Disposable {
             val previousProfile = previousProfilesSnapshot.remove(it.key)
             if (previousProfile == null) {
                 // It was not in the snapshot, so it must be new
-                profilesAdded.add(it.asId())
+                profilesAdded.add(it.value.asId(newProfiles.validProfiles))
             } else {
                 // If the profile was modified, notify people, else do nothing
                 if (previousProfile != it.value) {
-                    profilesModified.add(it.asId())
+                    profilesModified.add(it.value.asId(newProfiles.validProfiles))
                 }
             }
         }
 
         // Any remaining profiles must have either become invalid or removed from the cred/config files
-        previousProfilesSnapshot.entries.asSequence().map { it.asId() }.toCollection(profilesRemoved)
+        previousProfilesSnapshot.values.asSequence().map { it.asId(newProfiles.validProfiles) }.toCollection(profilesRemoved)
 
         profileHolder.update(newProfiles.validProfiles)
         credentialLoadCallback(CredentialsChangeEvent(profilesAdded, profilesModified, profilesRemoved))
@@ -152,7 +153,7 @@ class ProfileCredentialProviderFactory : CredentialProviderFactory, Disposable {
     override fun dispose() {}
 
     override fun createAwsCredentialProvider(
-        providerId: ToolkitCredentialsIdentifier,
+        providerId: CredentialIdentifier,
         region: AwsRegion,
         sdkHttpClientSupplier: () -> SdkHttpClient
     ): AwsCredentialsProvider {
@@ -162,15 +163,11 @@ class ProfileCredentialProviderFactory : CredentialProviderFactory, Disposable {
         val profile = profileHolder.getProfile(profileProviderId.profileName)
             ?: throw IllegalStateException("Profile ${profileProviderId.profileName} looks to have been removed")
 
-        return createAwsCredentialProvider(profile, region, sdkHttpClientSupplier())
+        return createAwsCredentialProvider(profile, region, sdkHttpClientSupplier)
     }
 
-    private fun createAwsCredentialProvider(
-        profile: Profile,
-        region: AwsRegion,
-        sdkClient: SdkHttpClient
-    ) = when {
-        profile.propertyExists(ProfileProperty.ROLE_ARN) -> createAssumeRoleProvider(profile, region, sdkClient)
+    private fun createAwsCredentialProvider(profile: Profile, region: AwsRegion, sdkHttpClientSupplier: () -> SdkHttpClient) = when {
+        profile.propertyExists(ProfileProperty.ROLE_ARN) -> createAssumeRoleProvider(profile, region, sdkHttpClientSupplier)
         profile.propertyExists(ProfileProperty.AWS_SESSION_TOKEN) -> createStaticSessionProvider(profile)
         profile.propertyExists(ProfileProperty.AWS_ACCESS_KEY_ID) -> createBasicProvider(profile)
         profile.propertyExists(ProfileProperty.CREDENTIAL_PROCESS) -> createCredentialProcessProvider(profile)
@@ -179,22 +176,22 @@ class ProfileCredentialProviderFactory : CredentialProviderFactory, Disposable {
         }
     }
 
-    private fun createAssumeRoleProvider(
-        profile: Profile,
-        region: AwsRegion,
-        sdkClient: SdkHttpClient
-    ): AwsCredentialsProvider {
+    private fun createAssumeRoleProvider(profile: Profile, region: AwsRegion, sdkHttpClientSupplier: () -> SdkHttpClient): AwsCredentialsProvider {
         val sourceProfileName = profile.requiredProperty(ProfileProperty.SOURCE_PROFILE)
         val sourceProfile = profileHolder.getProfile(sourceProfileName)
             ?: throw IllegalStateException("Profile $sourceProfileName looks to have been removed")
+
+        val sdkHttpClient = sdkHttpClientSupplier.invoke()
+
+        val parentCredentialProvider = createAwsCredentialProvider(sourceProfile, region, sdkHttpClientSupplier)
 
         // Override the default SPI for getting the active credentials since we are making an internal
         // to this provider client
         val stsClient = ToolkitClientManager.createNewClient(
             StsClient::class,
-            sdkClient,
+            sdkHttpClient,
             Region.of(region.id),
-            createAwsCredentialProvider(sourceProfile, region, sdkClient),
+            parentCredentialProvider,
             AwsClientManager.userAgent
         )
 
@@ -206,20 +203,21 @@ class ProfileCredentialProviderFactory : CredentialProviderFactory, Disposable {
         val mfaSerial = profile.property(ProfileProperty.MFA_SERIAL)
             .orElse(null)
 
-        return CorrectThreadCredentialsProvider(
-            StsAssumeRoleCredentialsProvider.builder()
-                .stsClient(stsClient)
-                .refreshRequest(Supplier {
-                    createAssumeRoleRequest(
-                        profile.name(),
-                        mfaSerial,
-                        roleArn,
-                        roleSessionName,
-                        externalId
-                    )
-                })
-                .build()
-        )
+        val assumeRoleCredentialsProvider = StsAssumeRoleCredentialsProvider.builder()
+            .stsClient(stsClient)
+            .refreshRequest(Supplier {
+                createAssumeRoleRequest(
+                    profile.name(),
+                    mfaSerial,
+                    roleArn,
+                    roleSessionName,
+                    externalId
+                )
+            })
+            .build()
+
+        // TODO: Do we still need this wrapper?
+        return CorrectThreadCredentialsProvider(assumeRoleCredentialsProvider)
     }
 
     private fun createAssumeRoleRequest(
@@ -228,30 +226,19 @@ class ProfileCredentialProviderFactory : CredentialProviderFactory, Disposable {
         roleArn: String,
         roleSessionName: String?,
         externalId: String?
-    ): AssumeRoleRequest = AssumeRoleRequest.builder()
-        .roleArn(roleArn)
-        .roleSessionName(roleSessionName)
-        .externalId(externalId).also { request ->
-            mfaSerial?.let { _ ->
-                request.serialNumber(mfaSerial)
-                    .tokenCode(promptMfaToken(profileName, mfaSerial))
-            }
-        }.build()
+    ): AssumeRoleRequest {
+        val requestBuilder = AssumeRoleRequest.builder()
+            .roleArn(roleArn)
+            .roleSessionName(roleSessionName)
+            .externalId(externalId)
 
-    private fun promptMfaToken(name: String, mfaSerial: String): String {
-        val result = Ref<String>()
+        mfaSerial?.let { _ ->
+            requestBuilder
+                .serialNumber(mfaSerial)
+                .tokenCode(promptForMfaToken(profileName, mfaSerial))
+        }
 
-        ApplicationManager.getApplication().invokeAndWait({
-            val mfaCode: String = Messages.showInputDialog(
-                message("credentials.profile.mfa.message", mfaSerial),
-                message("credentials.profile.mfa.title", name),
-                AwsIcons.Logos.IAM_LARGE
-            ) ?: throw IllegalStateException("MFA challenge is required")
-
-            result.set(mfaCode)
-        }, ModalityState.any())
-
-        return result.get()
+        return requestBuilder.build()
     }
 
     private fun createBasicProvider(profile: Profile) = StaticCredentialsProvider.create(
@@ -273,7 +260,19 @@ class ProfileCredentialProviderFactory : CredentialProviderFactory, Disposable {
         .command(profile.requiredProperty(ProfileProperty.CREDENTIAL_PROCESS))
         .build()
 
-    private fun Map.Entry<String, Profile>.asId() = ProfileCredentialsIdentifier(key, value.properties()[ProfileProperty.REGION])
+    private fun Profile.asId(profiles: Map<String, Profile>): ProfileCredentialsIdentifier {
+        val name = this.name()
+        val defaultRegion = this.properties()[ProfileProperty.REGION]
+
+        return if (this.requiresMfa(profiles)) {
+            ProfileCredentialsIdentifierMfa(name, defaultRegion)
+        } else {
+            ProfileCredentialsIdentifier(name, defaultRegion)
+        }
+    }
+
+    private fun Profile.requiresMfa(profiles: Map<String, Profile>) = this.traverseCredentialChain(profiles)
+        .any { it.propertyExists(ProfileProperty.MFA_SERIAL) }
 }
 
 private class ProfileHolder {

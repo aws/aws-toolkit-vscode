@@ -10,14 +10,16 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.SimpleModificationTracker
 import com.intellij.util.ExceptionUtil
 import com.intellij.util.messages.Topic
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.CredentialProviderNotFoundException
 import software.aws.toolkits.core.credentials.ToolkitCredentialsChangeListener
-import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsPartition
 import software.aws.toolkits.core.region.AwsRegion
@@ -29,7 +31,6 @@ import software.aws.toolkits.jetbrains.services.sts.StsResources
 import software.aws.toolkits.jetbrains.utils.MRUList
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AwsTelemetry
-import java.util.concurrent.CancellationException
 
 abstract class AwsConnectionManager(private val project: Project) : SimpleModificationTracker() {
     private val resourceCache = AwsResourceCache.getInstance(project)
@@ -51,7 +52,7 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
     protected val recentlyUsedRegions = MRUList<String>(MAX_HISTORY)
 
     // Internal state is visible for AwsSettingsPanel and ChangeAccountSettingsActionGroup
-    internal var selectedCredentialIdentifier: ToolkitCredentialsIdentifier? = null
+    internal var selectedCredentialIdentifier: CredentialIdentifier? = null
     internal var selectedPartition: AwsPartition? = null
     internal var selectedRegion: AwsRegion? = null
 
@@ -60,13 +61,13 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
     init {
         ApplicationManager.getApplication().messageBus.connect(project)
             .subscribe(CredentialManager.CREDENTIALS_CHANGED, object : ToolkitCredentialsChangeListener {
-                override fun providerRemoved(identifier: ToolkitCredentialsIdentifier) {
+                override fun providerRemoved(identifier: CredentialIdentifier) {
                     if (selectedCredentialIdentifier == identifier) {
                         changeConnectionSettings(null, selectedPartition, selectedRegion)
                     }
                 }
 
-                override fun providerModified(identifier: ToolkitCredentialsIdentifier) {
+                override fun providerModified(identifier: CredentialIdentifier) {
                     if (selectedCredentialIdentifier == identifier && connectionState is ConnectionState.InvalidConnection) {
                         refreshConnectionState()
                     }
@@ -91,7 +92,7 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
     /**
      * Internal setter that allows for null values and is intended to set the internal state and still notify
      */
-    protected fun changeConnectionSettings(identifier: ToolkitCredentialsIdentifier?, partition: AwsPartition?, region: AwsRegion?) {
+    protected fun changeConnectionSettings(identifier: CredentialIdentifier?, partition: AwsPartition?, region: AwsRegion?) {
         changeFieldsAndNotify {
             identifier?.let {
                 recentlyUsedProfiles.add(it.id)
@@ -110,7 +111,7 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
     /**
      * Changes the credentials and then validates them. Notifies listeners of results
      */
-    fun changeCredentialProvider(identifier: ToolkitCredentialsIdentifier) {
+    fun changeCredentialProvider(identifier: CredentialIdentifier) {
         changeFieldsAndNotify {
             recentlyUsedProfiles.add(identifier.id)
 
@@ -138,23 +139,28 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
         }
     }
 
+    @Synchronized
     private fun changeFieldsAndNotify(fieldUpdateBlock: () -> Unit) {
         incModificationCount()
 
         validationJob?.cancel(CancellationException("Newer connection settings chosen"))
+        val isInitial = connectionState is ConnectionState.InitializingToolkit
         connectionState = ConnectionState.ValidatingConnection
-
-        // Clear existing provider
-        selectedCredentialsProvider = null
 
         fieldUpdateBlock()
 
         validationJob = GlobalScope.launch(Dispatchers.IO) {
-
             val credentialsIdentifier = selectedCredentialIdentifier
             val region = selectedRegion
             if (credentialsIdentifier == null || region == null) {
                 connectionState = ConnectionState.IncompleteConfiguration(credentialsIdentifier, region)
+                incModificationCount()
+                return@launch
+            }
+
+            if (isInitial && credentialsIdentifier is InteractiveCredential && credentialsIdentifier.userActionRequired()) {
+                connectionState = ConnectionState.RequiresUserAction(credentialsIdentifier)
+
                 incModificationCount()
                 return@launch
             }
@@ -199,9 +205,9 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
     fun recentlyUsedRegions(): List<AwsRegion> = recentlyUsedRegions.elements().mapNotNull { regionProvider.allRegions()[it] }
 
     /**
-     * Returns the list of recently used [ToolkitCredentialsIdentifier]
+     * Returns the list of recently used [CredentialIdentifier]
      */
-    fun recentlyUsedCredentials(): List<ToolkitCredentialsIdentifier> {
+    fun recentlyUsedCredentials(): List<CredentialIdentifier> {
         val credentialManager = CredentialManager.getInstance()
         return recentlyUsedProfiles.elements().mapNotNull { credentialManager.getCredentialIdentifierById(it) }
     }
@@ -209,16 +215,17 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
     /**
      * Internal method that executes the actual validation of credentials
      */
-    protected open suspend fun validate(credentialsProvider: ToolkitCredentialsProvider, region: AwsRegion): Boolean = withContext(Dispatchers.IO) {
-        // TODO: Convert the cache over to suspend methods
-        resourceCache.getResourceNow(
-            StsResources.ACCOUNT,
-            region = region,
-            credentialProvider = credentialsProvider,
-            useStale = false,
-            forceFetch = true
-        )
-        true
+    protected open suspend fun validate(credentialsProvider: ToolkitCredentialsProvider, region: AwsRegion) {
+        withContext(Dispatchers.IO) {
+            // TODO: Convert the cache over to suspend methods
+            resourceCache.getResource(
+                StsResources.ACCOUNT,
+                region = region,
+                credentialProvider = credentialsProvider,
+                useStale = false,
+                forceFetch = true
+            ).await()
+        }
     }
 
     companion object {
@@ -262,7 +269,7 @@ sealed class ConnectionState(val displayMessage: String, val isTerminal: Boolean
         override val shortMessage: String = "${credentials.shortName}@${region.id}"
     }
 
-    class IncompleteConfiguration(credentials: ToolkitCredentialsIdentifier?, region: AwsRegion?) : ConnectionState(
+    class IncompleteConfiguration(credentials: CredentialIdentifier?, region: AwsRegion?) : ConnectionState(
         when {
             region == null && credentials == null -> message("settings.none_selected")
             region == null -> message("settings.regions.none_selected")
@@ -277,6 +284,13 @@ sealed class ConnectionState(val displayMessage: String, val isTerminal: Boolean
         override val shortMessage = message("settings.states.invalid.short")
 
         override val actions = listOf(RefreshConnectionAction(message("settings.retry")))
+    }
+
+    class RequiresUserAction(interactiveCredentials: InteractiveCredential) :
+        ConnectionState(interactiveCredentials.userActionDisplayMessage, isTerminal = true) {
+        override val shortMessage = interactiveCredentials.userActionShortDisplayMessage
+
+        override val actions = listOf(interactiveCredentials.userAction)
     }
 }
 

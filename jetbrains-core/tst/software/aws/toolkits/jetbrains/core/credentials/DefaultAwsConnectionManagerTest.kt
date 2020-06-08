@@ -13,7 +13,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
+import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.region.anAwsRegion
 import software.aws.toolkits.core.rules.EnvironmentVariableHelper
@@ -455,15 +455,15 @@ class DefaultAwsConnectionManagerTest {
         }
     }
 
-    private fun markConnectionSettingsAsValid(credentialsIdentifier: ToolkitCredentialsIdentifier, region: AwsRegion) {
+    private fun markConnectionSettingsAsValid(credentialsIdentifier: CredentialIdentifier, region: AwsRegion) {
         mockResourceCache.addValidAwsCredential(region.id, credentialsIdentifier.id, "1111222233333")
     }
 
-    private fun markConnectionSettingsAsInvalid(credentialsIdentifier: ToolkitCredentialsIdentifier, region: AwsRegion) {
+    private fun markConnectionSettingsAsInvalid(credentialsIdentifier: CredentialIdentifier, region: AwsRegion) {
         mockResourceCache.addInvalidAwsCredential(region.id, credentialsIdentifier.id)
     }
 
-    private fun changeCredentialProvider(credentialsProvider: ToolkitCredentialsIdentifier) {
+    private fun changeCredentialProvider(credentialsProvider: CredentialIdentifier) {
         manager.changeCredentialProvider(credentialsProvider)
 
         manager.waitUntilConnectionStateIsStable()

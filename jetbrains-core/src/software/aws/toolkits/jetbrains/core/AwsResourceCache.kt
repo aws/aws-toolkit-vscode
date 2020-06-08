@@ -10,8 +10,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.util.Alarm
 import com.intellij.util.AlarmFactory
 import software.amazon.awssdk.core.SdkClient
+import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.ToolkitCredentialsChangeListener
-import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.getLogger
@@ -315,9 +315,9 @@ class DefaultAwsResourceCache(
         cache.clear()
     }
 
-    override fun providerRemoved(identifier: ToolkitCredentialsIdentifier) = clearByCredential(identifier.id)
+    override fun providerRemoved(identifier: CredentialIdentifier) = clearByCredential(identifier.id)
 
-    override fun providerModified(identifier: ToolkitCredentialsIdentifier) = clearByCredential(identifier.id)
+    override fun providerModified(identifier: CredentialIdentifier) = clearByCredential(identifier.id)
 
     private fun clearByCredential(providerId: String) {
         cache.keys.removeIf { it.credentialsId == providerId }

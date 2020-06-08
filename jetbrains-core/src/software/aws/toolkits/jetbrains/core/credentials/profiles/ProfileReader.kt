@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.core.credentials.profiles
 
-import com.intellij.util.text.nullize
 import software.amazon.awssdk.profiles.Profile
 import software.amazon.awssdk.profiles.ProfileFile
 import software.amazon.awssdk.profiles.ProfileProperty
@@ -47,28 +46,8 @@ private fun validateProfile(profile: Profile, allProfiles: Map<String, Profile>)
 }
 
 private fun validateAssumeRoleProfile(profile: Profile, allProfiles: Map<String, Profile>) {
-    val profileChain = linkedSetOf<String>()
-    var currentProfile = profile
-
-    while (currentProfile.propertyExists(ProfileProperty.ROLE_ARN)) {
-        val currentProfileName = currentProfile.name()
-        if (!profileChain.add(currentProfileName)) {
-            val chain = profileChain.joinToString("->", postfix = "->$currentProfileName")
-            throw IllegalArgumentException(message("credentials.profile.circular_profiles", profile.name(), chain))
-        }
-
-        val sourceProfile = currentProfile.requiredProperty(ProfileProperty.SOURCE_PROFILE)
-        currentProfile = allProfiles[sourceProfile]
-            ?: throw IllegalArgumentException(
-                message(
-                    "credentials.profile.source_profile_not_found",
-                    currentProfileName,
-                    sourceProfile
-                )
-            )
-    }
-
-    validateProfile(currentProfile, allProfiles)
+    val rootProfile = profile.traverseCredentialChain(allProfiles).last()
+    validateProfile(rootProfile, allProfiles)
 }
 
 private fun validateStaticSessionProfile(profile: Profile) {
@@ -81,19 +60,3 @@ private fun validateBasicProfile(profile: Profile) {
     profile.requiredProperty(ProfileProperty.AWS_ACCESS_KEY_ID)
     profile.requiredProperty(ProfileProperty.AWS_SECRET_ACCESS_KEY)
 }
-
-fun Profile.propertyExists(propertyName: String): Boolean = this.property(propertyName).isPresent
-
-fun Profile.requiredProperty(propertyName: String): String = this.property(propertyName)
-    .filter {
-        it.nullize() != null
-    }
-    .orElseThrow {
-        IllegalArgumentException(
-            message(
-                "credentials.profile.missing_property",
-                this.name(),
-                propertyName
-            )
-        )
-    }

@@ -14,9 +14,9 @@ import com.intellij.openapi.util.Disposer
 import software.amazon.awssdk.core.SdkClient
 import software.amazon.awssdk.http.SdkHttpClient
 import software.aws.toolkits.core.ToolkitClientManager
+import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.CredentialProviderNotFoundException
 import software.aws.toolkits.core.credentials.ToolkitCredentialsChangeListener
-import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.region.ToolkitRegionProvider
@@ -36,7 +36,7 @@ open class AwsClientManager(project: Project) : ToolkitClientManager(), Disposab
 
         val busConnection = ApplicationManager.getApplication().messageBus.connect(project)
         busConnection.subscribe(CredentialManager.CREDENTIALS_CHANGED, object : ToolkitCredentialsChangeListener {
-            override fun providerRemoved(identifier: ToolkitCredentialsIdentifier) {
+            override fun providerRemoved(identifier: CredentialIdentifier) {
                 invalidateSdks(identifier.id)
             }
         })

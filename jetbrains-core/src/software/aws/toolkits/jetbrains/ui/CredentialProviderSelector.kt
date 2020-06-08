@@ -7,7 +7,7 @@ import com.intellij.openapi.ui.ComboBox
 import com.intellij.ui.CollectionComboBoxModel
 import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.util.containers.OrderedSet
-import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
+import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.jetbrains.utils.ui.selected
 
 /**
@@ -23,7 +23,7 @@ class CredentialProviderSelector : ComboBox<Any>() {
         setRenderer(RENDERER)
     }
 
-    fun setCredentialsProviders(providers: List<ToolkitCredentialsIdentifier>) {
+    fun setCredentialsProviders(providers: List<CredentialIdentifier>) {
         comboBoxModel.items = providers
     }
 
@@ -33,14 +33,14 @@ class CredentialProviderSelector : ComboBox<Any>() {
     fun getSelectedCredentialsProvider(): String? {
         selected().let {
             return when (it) {
-                is ToolkitCredentialsIdentifier -> it.id
+                is CredentialIdentifier -> it.id
                 is String -> it
                 else -> null
             }
         }
     }
 
-    fun setSelectedCredentialsProvider(provider: ToolkitCredentialsIdentifier) {
+    fun setSelectedCredentialsProvider(provider: CredentialIdentifier) {
         selectedItem = provider
     }
 
@@ -68,7 +68,7 @@ class CredentialProviderSelector : ComboBox<Any>() {
         val RENDERER = SimpleListCellRenderer.create<Any>("") {
             when (it) {
                 is String -> "$it (Not valid)"
-                is ToolkitCredentialsIdentifier -> it.displayName
+                is CredentialIdentifier -> it.displayName
                 else -> ""
             }
         }

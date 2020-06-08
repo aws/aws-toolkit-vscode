@@ -22,7 +22,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
+import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.test.aString
@@ -52,9 +52,9 @@ class AwsResourceCacheTest {
     private val mockResource = mock<Resource.Cached<String>>()
     private val sut = DefaultAwsResourceCache(projectRule.project, mockClock, 1000, Duration.ofMinutes(1))
 
-    private lateinit var cred1Identifier: ToolkitCredentialsIdentifier
+    private lateinit var cred1Identifier: CredentialIdentifier
     private lateinit var cred1Provider: ToolkitCredentialsProvider
-    private lateinit var cred2Identifier: ToolkitCredentialsIdentifier
+    private lateinit var cred2Identifier: CredentialIdentifier
     private lateinit var cred2Provider: ToolkitCredentialsProvider
 
     @Before
