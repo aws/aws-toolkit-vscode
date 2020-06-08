@@ -270,7 +270,7 @@ function makeEndpointsProvider(): EndpointsProvider {
 function recordToolkitInitialization(activationStartedOn: number, logger?: Logger) {
     try {
         const activationFinishedOn = Date.now()
-        const duration = Math.abs(activationFinishedOn - activationStartedOn)
+        const duration = activationFinishedOn - activationStartedOn
 
         recordToolkitInit({
             duration: duration,
