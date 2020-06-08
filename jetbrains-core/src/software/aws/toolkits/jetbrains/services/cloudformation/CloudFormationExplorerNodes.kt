@@ -13,6 +13,7 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNo
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.CacheBackedAwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.services.cloudformation.resources.CloudFormationResources
+import software.aws.toolkits.jetbrains.services.cloudformation.stack.StackWindowManager
 import software.aws.toolkits.jetbrains.utils.toHumanReadable
 
 class CloudFormationServiceNode(project: Project, service: AwsExplorerServiceNode) : CacheBackedAwsExplorerServiceRootNode<StackSummary>(
@@ -41,4 +42,8 @@ class CloudFormationStackNode(
     override fun displayName() = stackName
 
     override fun statusText(): String? = stackStatus.toString().toHumanReadable()
+
+    override fun onDoubleClick() {
+        StackWindowManager.getInstance(nodeProject).openStack(stackName, stackId)
+    }
 }

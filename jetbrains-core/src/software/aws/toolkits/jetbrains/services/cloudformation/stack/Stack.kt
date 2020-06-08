@@ -7,6 +7,7 @@ import com.intellij.notification.NotificationType
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.OnePixelSplitter
@@ -37,6 +38,7 @@ class StackWindowManager(private val project: Project) {
     fun openStack(stackName: String, stackId: String) {
         assert(SwingUtilities.isEventDispatchThread())
         toolWindow.find(stackId)?.run { show() } ?: StackUI(project, stackName, stackId, toolWindow).start()
+        CloudformationTelemetry.open(project)
     }
 
     companion object {
@@ -44,10 +46,9 @@ class StackWindowManager(private val project: Project) {
     }
 }
 
-class OpenStackUiAction : SingleResourceNodeAction<CloudFormationStackNode>(message("cloudformation.stack.view")) {
+class OpenStackUiAction : SingleResourceNodeAction<CloudFormationStackNode>(message("cloudformation.stack.view")), DumbAware {
     override fun actionPerformed(selected: CloudFormationStackNode, e: AnActionEvent) {
         StackWindowManager.getInstance(e.getRequiredData(LangDataKeys.PROJECT)).openStack(selected.stackName, selected.stackId)
-        CloudformationTelemetry.open(e.project)
     }
 }
 

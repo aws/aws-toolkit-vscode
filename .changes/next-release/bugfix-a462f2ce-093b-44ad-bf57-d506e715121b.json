@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix double clicking Cloud Formation node not opening the stack viewer"
+}
