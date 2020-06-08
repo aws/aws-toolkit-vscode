@@ -5,17 +5,15 @@
 
 import * as assert from 'assert'
 import * as os from 'os'
-import * as path from 'path'
 import * as vscode from 'vscode'
-
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
-import { FakeExtensionContext } from '../../fakeExtensionContext'
-import { DefaultSamLocalInvokeCommand } from '../../../shared/sam/cli/samCliLocalInvoke'
-import { SamLaunchRequestArgs } from '../../../shared/sam/debugger/samDebugSession'
-import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { rmrf } from '../../../shared/filesystem'
-import * as testutil from '../../testUtil'
+import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
+import { DefaultSamLocalInvokeCommand } from '../../../shared/sam/cli/samCliLocalInvoke'
 import { makeCoreCLRDebugConfiguration } from '../../../shared/sam/debugger/csharpSamDebug'
+import { SamLaunchRequestArgs } from '../../../shared/sam/debugger/samDebugSession'
+import { FakeExtensionContext } from '../../fakeExtensionContext'
+import * as testutil from '../../testUtil'
 
 describe('makeCoreCLRDebugConfiguration', async () => {
     let tempFolder: string
@@ -66,35 +64,34 @@ describe('makeCoreCLRDebugConfiguration', async () => {
         return config
     }
 
-    async function makeConfig({ codeUri = path.join('foo', 'bar') }: { codeUri?: string; port?: number }) {
+    async function makeConfig({ codeUri = tempFolder }: { codeUri?: string; port?: number }) {
         const fakeLaunchConfig = await makeFakeSamLaunchConfig()
         return makeCoreCLRDebugConfiguration(fakeLaunchConfig, codeUri)
     }
 
     it('uses the specified codeUri', async () => {
         const config = await makeConfig({})
-
-        testutil.assertEqualPaths(config.sourceFileMap['/var/task'], path.join('foo', 'bar'))
+        testutil.assertEqualPaths(config.sourceFileMap['/var/task'], tempFolder)
     })
 
     describe('windows', async () => {
         if (os.platform() === 'win32') {
             it('massages drive letters to uppercase', async () => {
-                const config = await makeConfig({ codeUri: 'c:\\foo\\bar' })
-
-                testutil.assertEqualPaths(config.windows.pipeTransport.pipeCwd, 'C:/foo/bar')
+                const config = await makeConfig({})
+                assert.strictEqual(
+                    config.windows.pipeTransport.pipeCwd.substring(0, 1),
+                    tempFolder.substring(0, 1).toUpperCase()
+                )
             })
         }
 
         it('uses powershell', async () => {
             const config = await makeConfig({})
-
             assert.strictEqual(config.windows.pipeTransport.pipeProgram, 'powershell')
         })
 
         it('uses the specified port', async () => {
             const config = await makeConfig({})
-
             assert.strictEqual(
                 config.windows.pipeTransport.pipeArgs.some(arg => arg.includes(config.debugPort!!.toString())),
                 true
