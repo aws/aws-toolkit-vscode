@@ -11,6 +11,7 @@ import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.OnePixelSplitter
+import com.intellij.ui.components.JBTabbedPane
 import icons.AwsIcons
 import software.amazon.awssdk.services.cloudformation.model.StackStatus
 import software.aws.toolkits.jetbrains.core.AwsClientManager
@@ -60,12 +61,13 @@ private class StackUI(private val project: Project, private val stackName: Strin
     private val notificationGroup: NotificationGroup
     private val pageButtons: PageButtons
 
-    private val table: TableViewImpl
+    private val eventsTable: EventsTableImpl
+    private val outputsTable = OutputsTableView()
 
     init {
         val tree = TreeViewImpl(project, stackName)
         animator = IconAnimator(REDRAW_ANIMATED_ICON_INTERVAL, tree)
-        table = TableViewImpl()
+        eventsTable = EventsTableImpl()
         pageButtons = PageButtons(this::onPageButtonClick)
 
         notificationGroup = NotificationGroup.findRegisteredGroup(STACK_TOOL_WINDOW.id)
@@ -73,16 +75,24 @@ private class StackUI(private val project: Project, private val stackName: Strin
 
         val mainPanel = OnePixelSplitter(false, TREE_TABLE_INITIAL_PROPORTION).apply {
             firstComponent = tree.component
-            secondComponent = JPanel().apply {
-                layout = BoxLayout(this, BoxLayout.Y_AXIS)
-                add(table.component)
-                add(pageButtons.component)
+            secondComponent = JBTabbedPane().apply {
+                this.add(message("cloudformation.stack.tab_labels.events"), JPanel().apply {
+                    layout = BoxLayout(this, BoxLayout.Y_AXIS)
+                    add(eventsTable.component)
+                    add(pageButtons.component)
+                })
+
+                this.add(message("cloudformation.stack.tab_labels.outputs"), JPanel().apply {
+                    layout = BoxLayout(this, BoxLayout.Y_AXIS)
+                    add(outputsTable.component)
+                })
             }
         }
 
         updater = Updater(
             tree,
-            eventsTableView = table,
+            eventsTable = eventsTable,
+            outputsTable = outputsTable,
             stackName = stackName,
             updateEveryMs = UPDATE_STACK_STATUS_INTERVAL,
             listener = this,
@@ -91,7 +101,7 @@ private class StackUI(private val project: Project, private val stackName: Strin
         )
 
         toolWindowTab = toolWindow.addTab(stackName, mainPanel, id = stackId)
-        listOf(tree, updater, animator, table, pageButtons).forEach { Disposer.register(toolWindowTab, it) }
+        listOf(tree, updater, animator, eventsTable, outputsTable, pageButtons).forEach { Disposer.register(toolWindowTab, it) }
     }
 
     fun start() {
@@ -119,7 +129,7 @@ private class StackUI(private val project: Project, private val stackName: Strin
     }
 
     fun onPageButtonClick(page: Page) {
-        table.showBusyIcon()
+        eventsTable.showBusyIcon()
         // To prevent double click, we disable buttons. They will be enabled by Updater when data fetched
         pageButtons.setPagesAvailable(emptySet())
         updater.switchPage(page)
