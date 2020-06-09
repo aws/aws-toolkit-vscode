@@ -33,10 +33,10 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
         throw Error('invalid state: config.baseBuildDir was not set')
     }
     config.codeRoot = getCodeRoot(config.workspaceFolder, config)!
-
     config.samTemplatePath = await makeInputTemplate(config)
-    // XXX: reassignment...
+    // TODO: avoid the reassignment
     // TODO: walk the tree to find .sln, .csproj ?
+    const originalCodeRoot = config.codeRoot
     config.codeRoot = getSamProjectDirPathForFile(config.samTemplatePath)
 
     config = {
@@ -48,7 +48,7 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
     }
 
     if (!config.noDebug) {
-        config = await makeCoreCLRDebugConfiguration(config, config.codeRoot)
+        config = await makeCoreCLRDebugConfiguration(config, originalCodeRoot)
     }
 
     return config
@@ -152,7 +152,7 @@ export async function makeCoreCLRDebugConfiguration(
     }
     config.debugPort = config.debugPort ?? (await getStartPort())
     const pipeArgs = ['-c', `docker exec -i $(docker ps -q -f publish=${config.debugPort}) \${debuggerCommand}`]
-    config.debuggerPath = pathutil.normalize(getDebuggerPath(config.codeRoot))
+    config.debuggerPath = pathutil.normalize(getDebuggerPath(codeUri))
     await ensureDebuggerPathExists(config.debuggerPath)
 
     if (os.platform() === 'win32') {

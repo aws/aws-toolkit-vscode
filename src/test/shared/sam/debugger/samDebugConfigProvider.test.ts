@@ -572,6 +572,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 folder,
                 input
             ))! as DotNetCoreDebugConfiguration
+            const codeRoot = `${appDir}${input.invokeTarget.projectRoot}`
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
                 request: 'attach', // Input "direct-invoke", output "attach".
@@ -603,24 +604,24 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 //
                 // Csharp-related fields
                 //
-                debuggerPath: expectedCodeRoot + '/.vsdbg', // Normalized to absolute path.
+                debuggerPath: codeRoot + '/.vsdbg', // Normalized to absolute path.
                 processId: '1',
                 pipeTransport: {
                     debuggerPath: '/tmp/lambci_debug_files/vsdbg',
                     // tslint:disable-next-line: no-invalid-template-strings
                     pipeArgs: ['-c', 'docker exec -i $(docker ps -q -f publish=5858) ${debuggerCommand}'],
-                    pipeCwd: expectedCodeRoot,
+                    pipeCwd: codeRoot,
                     pipeProgram: 'sh',
                 },
                 sourceFileMap: {
-                    '/var/task': expectedCodeRoot,
+                    '/var/task': codeRoot,
                 },
                 windows: {
                     pipeTransport: {
                         debuggerPath: '/tmp/lambci_debug_files/vsdbg',
                         // tslint:disable-next-line: no-invalid-template-strings
                         pipeArgs: ['-c', 'docker exec -i $(docker ps -q -f publish=5858) ${debuggerCommand}'],
-                        pipeCwd: expectedCodeRoot,
+                        pipeCwd: codeRoot,
                         pipeProgram: 'powershell',
                     },
                 },
@@ -710,6 +711,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 folder,
                 input
             ))! as DotNetCoreDebugConfiguration
+            const codeRoot = `${appDir}/src/HelloWorld`
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
                 request: 'attach', // Input "direct-invoke", output "attach".
@@ -738,24 +740,24 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 //
                 // Csharp-related fields
                 //
-                debuggerPath: expectedCodeRoot + '/.vsdbg', // Normalized to absolute path.
+                debuggerPath: codeRoot + '/.vsdbg', // Normalized to absolute path.
                 processId: '1',
                 pipeTransport: {
                     debuggerPath: '/tmp/lambci_debug_files/vsdbg',
                     // tslint:disable-next-line: no-invalid-template-strings
                     pipeArgs: ['-c', 'docker exec -i $(docker ps -q -f publish=5858) ${debuggerCommand}'],
-                    pipeCwd: expectedCodeRoot,
+                    pipeCwd: codeRoot,
                     pipeProgram: 'sh',
                 },
                 sourceFileMap: {
-                    '/var/task': expectedCodeRoot,
+                    '/var/task': codeRoot,
                 },
                 windows: {
                     pipeTransport: {
                         debuggerPath: '/tmp/lambci_debug_files/vsdbg',
                         // tslint:disable-next-line: no-invalid-template-strings
                         pipeArgs: ['-c', 'docker exec -i $(docker ps -q -f publish=5858) ${debuggerCommand}'],
-                        pipeCwd: expectedCodeRoot,
+                        pipeCwd: codeRoot,
                         pipeProgram: 'powershell',
                     },
                 },
