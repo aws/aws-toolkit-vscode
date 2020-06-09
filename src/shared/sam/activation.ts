@@ -31,7 +31,6 @@ import { initialize as initializeSamCliContext } from './cli/samCliContext'
 import { detectSamCli } from './cli/samCliDetection'
 import { SamDebugConfigProvider } from './debugger/awsSamDebugger'
 import { addSamDebugConfiguration } from './debugger/commands/addSamDebugConfiguration'
-import { SamDebugSession } from './debugger/samDebugSession'
 import { AWS_SAM_DEBUG_TYPE } from './debugger/awsSamDebugConfiguration'
 
 const STATE_NAME_SUPPRESS_YAML_PROMPT = 'aws.sam.suppressYamlPrompt'
@@ -52,17 +51,6 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
     ctx.extensionContext.subscriptions.push(
         vscode.debug.registerDebugConfigurationProvider(AWS_SAM_DEBUG_TYPE, new SamDebugConfigProvider(ctx))
-    )
-
-    // "Inline" DA type: runs inside the extension and directly talks to it.
-    //
-    // Debug adapters can be run in different ways, defined by the type of
-    // `vscode.DebugAdapterDescriptorFactory` you implement:
-    // https://code.visualstudio.com/api/extension-guides/debugger-extension#alternative-approach-to-develop-a-debugger-extension
-    //
-    // XXX: requires the "debuggers.*.label" attribute in package.json!
-    ctx.extensionContext.subscriptions.push(
-        vscode.debug.registerDebugAdapterDescriptorFactory(AWS_SAM_DEBUG_TYPE, new InlineDebugAdapterFactory(ctx))
     )
 
     ctx.extensionContext.subscriptions.push(
@@ -167,30 +155,6 @@ async function activateCodeLensProviders(
     )
 
     return disposables
-}
-
-class InlineDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory {
-    public constructor(readonly ctx: ExtContext) {}
-
-    /**
-     * The inline implementation implements the Debug Adapter Protocol.
-     * VSCode's extension API has a minimalistic subset of that protocol:
-     *   - vscode.DebugAdapter.handleMessage(): for passing a DAP message to the adapter.
-     *   - vscode.DebugAdapter.onDidSendMessage(): for listening for DAP messages received from the adapter.
-     *
-     * - Alternative: import the "vscode-debugprotocol" node module.
-     * - Alternative (easier): use VSCode's default implementation of a debug
-     *   adapter, available as node module "vscode-debugadapter" in 1.38+ the
-     *   DebugSession (or LoggingDebugSession) is compatible with the
-     *   `vscode.DebugAdapter` interface defined in the extension API.
-     *
-     * https://code.visualstudio.com/updates/v1_42#_extension-authoring
-     */
-    public createDebugAdapterDescriptor(
-        _session: vscode.DebugSession
-    ): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
-        return new vscode.DebugAdapterInlineImplementation(new SamDebugSession(this.ctx))
-    }
 }
 
 /**

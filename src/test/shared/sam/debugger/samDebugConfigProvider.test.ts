@@ -24,8 +24,7 @@ import {
     createCodeAwsSamDebugConfig,
     CodeTargetProperties,
 } from '../../../../shared/sam/debugger/awsSamDebugConfiguration'
-import { SamDebugConfigProvider } from '../../../../shared/sam/debugger/awsSamDebugger'
-import { SamLaunchRequestArgs } from '../../../../shared/sam/debugger/samDebugSession'
+import { SamDebugConfigProvider, SamLaunchRequestArgs } from '../../../../shared/sam/debugger/awsSamDebugger'
 import * as debugConfiguration from '../../../../lambda/local/debugConfiguration'
 import * as pathutil from '../../../../shared/utilities/pathUtils'
 import { FakeExtensionContext } from '../../../fakeExtensionContext'
@@ -35,7 +34,7 @@ import { makeSampleSamTemplateYaml, makeSampleYamlResource } from '../../cloudfo
 import { readFileSync } from 'fs-extra'
 
 /**
- * Asserts the contents of a "launch config" (the result of
+ * Asserts the contents of a "launch config" (the result of `makeConfig()` or
  * `resolveDebugConfiguration()` invoked on a user-provided "debug config").
  */
 function assertEqualLaunchConfigs(actual: SamLaunchRequestArgs, expected: SamLaunchRequestArgs, appDir: string) {
@@ -47,6 +46,10 @@ function assertEqualLaunchConfigs(actual: SamLaunchRequestArgs, expected: SamLau
 
     // Compare filepaths (before removing them for deep-compare).
     testutil.assertEqualPaths(actual.workspaceFolder.uri.fsPath, expected.workspaceFolder.uri.fsPath)
+
+    // Port number is unstable; check that it looks reasonable.
+    assert.ok(!actual.debugPort || actual.debugPort > 5000)
+    assert.strictEqual(actual.port, expected.port)
 
     // Build dir is randomly-generated; check that it looks reasonable.
     assert.ok(actual.baseBuildDir && actual.baseBuildDir.length > 9)
@@ -77,7 +80,7 @@ function assertEqualLaunchConfigs(actual: SamLaunchRequestArgs, expected: SamLau
     assert.deepStrictEqual(actual, expected)
 }
 
-describe('AwsSamDebugConfigurationProvider', async () => {
+describe('SamDebugConfigurationProvider', async () => {
     let debugConfigProvider: SamDebugConfigProvider
     let registry: CloudFormationTemplateRegistry
     let tempFolder: string
@@ -187,7 +190,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
         })
     })
 
-    describe('resolveDebugConfiguration', async () => {
+    describe('makeConfig', async () => {
         it('failure modes', async () => {
             const config = await getConfig(
                 debugConfigProvider,
@@ -196,23 +199,17 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             )
 
             // No workspace folder:
-            assert.deepStrictEqual(
-                await debugConfigProvider.resolveDebugConfiguration(undefined, config.config),
-                undefined
-            )
+            assert.deepStrictEqual(await debugConfigProvider.makeConfig(undefined, config.config), undefined)
 
             // Unknown runtime:
             config.config.lambda = {
                 runtime: 'happy-runtime-42',
             }
-            assert.deepStrictEqual(
-                await debugConfigProvider.resolveDebugConfiguration(config.folder, config.config),
-                undefined
-            )
+            assert.deepStrictEqual(await debugConfigProvider.makeConfig(config.folder, config.config), undefined)
         })
 
         it('returns undefined when resolving debug configurations with an invalid request type', async () => {
-            const resolved = await debugConfigProvider.resolveDebugConfiguration(undefined, {
+            const resolved = await debugConfigProvider.makeConfig(undefined, {
                 type: AWS_SAM_DEBUG_TYPE,
                 name: 'whats in a name',
                 request: 'not-direct-invoke',
@@ -227,7 +224,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
 
         it('returns undefined when resolving debug configurations with an invalid target type', async () => {
             const tgt = 'not-code' as 'code'
-            const resolved = await debugConfigProvider.resolveDebugConfiguration(undefined, {
+            const resolved = await debugConfigProvider.makeConfig(undefined, {
                 type: AWS_SAM_DEBUG_TYPE,
                 name: 'whats in a name',
                 request: DIRECT_INVOKE_TYPE,
@@ -241,13 +238,13 @@ describe('AwsSamDebugConfigurationProvider', async () => {
         })
 
         it("returns undefined when resolving template debug configurations with a template that isn't in the registry", async () => {
-            const resolved = await debugConfigProvider.resolveDebugConfiguration(undefined, createFakeConfig({}))
+            const resolved = await debugConfigProvider.makeConfig(undefined, createFakeConfig({}))
             assert.strictEqual(resolved, undefined)
         })
 
         it("returns undefined when resolving template debug configurations with a template that doesn't have the set resource", async () => {
             await createAndRegisterYaml({}, tempFile, registry)
-            const resolved = await debugConfigProvider.resolveDebugConfiguration(
+            const resolved = await debugConfigProvider.makeConfig(
                 undefined,
                 createFakeConfig({ samTemplatePath: tempFile.fsPath })
             )
@@ -256,7 +253,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
 
         it('returns undefined when resolving template debug configurations with a resource that has an invalid runtime in template', async () => {
             await createAndRegisterYaml({ resourceName, runtime: 'moreLikeRanOutOfTime' }, tempFile, registry)
-            const resolved = await debugConfigProvider.resolveDebugConfiguration(
+            const resolved = await debugConfigProvider.makeConfig(
                 undefined,
                 createFakeConfig({
                     samTemplatePath: tempFile.fsPath,
@@ -272,7 +269,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 tempFile.fsPath
             )
             await registry.addTemplateToRegistry(tempFile)
-            const resolved = await debugConfigProvider.resolveDebugConfiguration(undefined, {
+            const resolved = await debugConfigProvider.makeConfig(undefined, {
                 type: AWS_SAM_DEBUG_TYPE,
                 name: 'whats in a name',
                 request: DIRECT_INVOKE_TYPE,
@@ -286,7 +283,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
         })
 
         it('returns undefined when resolving code debug configurations with invalid runtimes', async () => {
-            const resolved = await debugConfigProvider.resolveDebugConfiguration(undefined, {
+            const resolved = await debugConfigProvider.makeConfig(undefined, {
                 ...createBaseCodeConfig({}),
                 lambda: {
                     runtime: 'COBOL',
@@ -307,7 +304,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
 
             // Assert that the relative path correctly maps to the full path in the registry.
             const name = 'Test rel path'
-            const resolved = await debugConfigProvider.resolveDebugConfiguration(fakeWorkspaceFolder, {
+            const resolved = await debugConfigProvider.makeConfig(fakeWorkspaceFolder, {
                 type: AWS_SAM_DEBUG_TYPE,
                 name: name,
                 request: 'direct-invoke',
@@ -354,7 +351,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                     },
                 },
             }
-            const actual = (await debugConfigProvider.resolveDebugConfiguration(folder, input))!
+            const actual = (await debugConfigProvider.makeConfig(folder, input))!
             const expected: SamLaunchRequestArgs = {
                 type: AWS_SAM_DEBUG_TYPE,
                 request: 'attach', // Input "direct-invoke", output "attach".
@@ -369,7 +366,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'src')), // Normalized to absolute path.
-                debugPort: 5858,
+                debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'my.test.handler',
                 invokeTarget: { ...input.invokeTarget },
@@ -384,7 +381,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 // Node-related fields
                 //
                 address: 'localhost',
-                port: 5858,
+                port: actual.debugPort,
                 preLaunchTask: undefined,
                 protocol: 'inspector',
                 remoteRoot: '/var/task',
@@ -423,7 +420,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             // Test noDebug=true.
             //
             ;(input as any).noDebug = true
-            const actualNoDebug = (await debugConfigProvider.resolveDebugConfiguration(folder, input))!
+            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))!
             const expectedNoDebug: SamLaunchRequestArgs = {
                 ...expected,
                 noDebug: true,
@@ -470,7 +467,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
             await registry.addTemplateToRegistry(templatePath)
-            const actual = (await debugConfigProvider.resolveDebugConfiguration(folder, input))!
+            const actual = (await debugConfigProvider.makeConfig(folder, input))!
 
             const expected: SamLaunchRequestArgs = {
                 type: AWS_SAM_DEBUG_TYPE,
@@ -486,7 +483,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: appDir,
-                debugPort: 5858,
+                debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'src/subfolder/app.handlerTwoFoldersDeep',
                 invokeTarget: { ...input.invokeTarget },
@@ -501,7 +498,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 // Node-related fields
                 //
                 address: 'localhost',
-                port: 5858,
+                port: actual.debugPort,
                 preLaunchTask: undefined,
                 protocol: 'inspector',
                 remoteRoot: '/var/task',
@@ -536,7 +533,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             // Test noDebug=true.
             //
             ;(input as any).noDebug = true
-            const actualNoDebug = (await debugConfigProvider.resolveDebugConfiguration(folder, input))!
+            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))!
             const expectedNoDebug: SamLaunchRequestArgs = {
                 ...expected,
                 noDebug: true,
@@ -568,10 +565,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                     runtime: 'dotnetcore2.1',
                 },
             }
-            const actual = (await debugConfigProvider.resolveDebugConfiguration(
-                folder,
-                input
-            ))! as DotNetCoreDebugConfiguration
+            const actual = (await debugConfigProvider.makeConfig(folder, input))! as DotNetCoreDebugConfiguration
             const codeRoot = `${appDir}${input.invokeTarget.projectRoot}`
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
@@ -588,7 +582,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: expectedCodeRoot, // Normalized to absolute path.
-                debugPort: 5858,
+                debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'HelloWorld::HelloWorld.Function::FunctionHandler',
                 invokeTarget: { ...input.invokeTarget },
@@ -609,7 +603,10 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 pipeTransport: {
                     debuggerPath: '/tmp/lambci_debug_files/vsdbg',
                     // tslint:disable-next-line: no-invalid-template-strings
-                    pipeArgs: ['-c', 'docker exec -i $(docker ps -q -f publish=5858) ${debuggerCommand}'],
+                    pipeArgs: [
+                        '-c',
+                        `docker exec -i $(docker ps -q -f publish=${actual.debugPort}) \${debuggerCommand}`,
+                    ],
                     pipeCwd: codeRoot,
                     pipeProgram: 'sh',
                 },
@@ -620,7 +617,10 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                     pipeTransport: {
                         debuggerPath: '/tmp/lambci_debug_files/vsdbg',
                         // tslint:disable-next-line: no-invalid-template-strings
-                        pipeArgs: ['-c', 'docker exec -i $(docker ps -q -f publish=5858) ${debuggerCommand}'],
+                        pipeArgs: [
+                            '-c',
+                            `docker exec -i $(docker ps -q -f publish=${actual.debugPort}) \${debuggerCommand}`,
+                        ],
                         pipeCwd: codeRoot,
                         pipeProgram: 'powershell',
                     },
@@ -655,10 +655,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             // Test noDebug=true.
             //
             ;(input as any).noDebug = true
-            const actualNoDebug = (await debugConfigProvider.resolveDebugConfiguration(
-                folder,
-                input
-            ))! as DotNetCoreDebugConfiguration
+            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))! as DotNetCoreDebugConfiguration
             const expectedCodeRootNoDebug = (actualNoDebug.baseBuildDir ?? 'fail') + '/input'
             const expectedNoDebug: SamLaunchRequestArgs = {
                 ...expected,
@@ -707,10 +704,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
             await registry.addTemplateToRegistry(templatePath)
-            const actual = (await debugConfigProvider.resolveDebugConfiguration(
-                folder,
-                input
-            ))! as DotNetCoreDebugConfiguration
+            const actual = (await debugConfigProvider.makeConfig(folder, input))! as DotNetCoreDebugConfiguration
             const codeRoot = `${appDir}/src/HelloWorld`
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
@@ -727,7 +721,7 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: expectedCodeRoot,
-                debugPort: 5858,
+                debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'HelloWorld::HelloWorld.Function::FunctionHandler',
                 invokeTarget: { ...input.invokeTarget },
@@ -745,7 +739,10 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                 pipeTransport: {
                     debuggerPath: '/tmp/lambci_debug_files/vsdbg',
                     // tslint:disable-next-line: no-invalid-template-strings
-                    pipeArgs: ['-c', 'docker exec -i $(docker ps -q -f publish=5858) ${debuggerCommand}'],
+                    pipeArgs: [
+                        '-c',
+                        `docker exec -i $(docker ps -q -f publish=${actual.debugPort}) \${debuggerCommand}`,
+                    ],
                     pipeCwd: codeRoot,
                     pipeProgram: 'sh',
                 },
@@ -756,7 +753,10 @@ describe('AwsSamDebugConfigurationProvider', async () => {
                     pipeTransport: {
                         debuggerPath: '/tmp/lambci_debug_files/vsdbg',
                         // tslint:disable-next-line: no-invalid-template-strings
-                        pipeArgs: ['-c', 'docker exec -i $(docker ps -q -f publish=5858) ${debuggerCommand}'],
+                        pipeArgs: [
+                            '-c',
+                            `docker exec -i $(docker ps -q -f publish=${actual.debugPort}) \${debuggerCommand}`,
+                        ],
                         pipeCwd: codeRoot,
                         pipeProgram: 'powershell',
                     },
@@ -797,10 +797,7 @@ Globals:
             // Test noDebug=true.
             //
             ;(input as any).noDebug = true
-            const actualNoDebug = (await debugConfigProvider.resolveDebugConfiguration(
-                folder,
-                input
-            ))! as DotNetCoreDebugConfiguration
+            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))! as DotNetCoreDebugConfiguration
             const expectedCodeRootNoDebug = (actualNoDebug.baseBuildDir ?? 'fail') + '/input'
             const expectedNoDebug: SamLaunchRequestArgs = {
                 ...expected,
@@ -843,7 +840,7 @@ Globals:
             }
 
             // Invoke with noDebug=false (the default).
-            const actual = (await debugConfigProvider.resolveDebugConfiguration(folder, input))!
+            const actual = (await debugConfigProvider.makeConfig(folder, input))!
             // Expected result with noDebug=false.
             const expected: SamLaunchRequestArgs = {
                 request: 'attach', // Input "direct-invoke", output "attach".
@@ -860,7 +857,7 @@ Globals:
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'hello_world')),
-                debugPort: 5858,
+                debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 invokeTarget: { ...input.invokeTarget },
                 lambda: {
@@ -871,7 +868,7 @@ Globals:
                 },
                 name: 'SamLocalDebug',
                 samTemplatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
-                port: 5858,
+                port: actual.debugPort,
                 redirectOutput: false,
 
                 //
@@ -922,10 +919,7 @@ Globals:
             // Test noDebug=true.
             //
             ;(input as any).noDebug = true
-            const actualNoDebug = (await debugConfigProvider.resolveDebugConfiguration(
-                folder,
-                input
-            ))! as DotNetCoreDebugConfiguration
+            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))! as DotNetCoreDebugConfiguration
             const expectedNoDebug: SamLaunchRequestArgs = {
                 ...expected,
                 noDebug: true,
@@ -960,7 +954,7 @@ Globals:
             await registry.addTemplateToRegistry(templatePath)
 
             // Invoke with noDebug=false (the default).
-            const actual = (await debugConfigProvider.resolveDebugConfiguration(folder, input))!
+            const actual = (await debugConfigProvider.makeConfig(folder, input))!
             // Expected result with noDebug=false.
             const expected: SamLaunchRequestArgs = {
                 request: 'attach', // Input "direct-invoke", output "attach".
@@ -977,7 +971,7 @@ Globals:
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'python3.7-plain-sam-app/hello_world')),
-                debugPort: 5858,
+                debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 invokeTarget: { ...input.invokeTarget },
                 lambda: {
@@ -987,7 +981,7 @@ Globals:
                 },
                 name: 'SamLocalDebug',
                 samTemplatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
-                port: 5858,
+                port: actual.debugPort,
                 redirectOutput: false,
 
                 //
@@ -1038,7 +1032,7 @@ Globals:
             // Test noDebug=true.
             //
             ;(input as any).noDebug = true
-            const actualNoDebug = (await debugConfigProvider.resolveDebugConfiguration(folder, input))!
+            const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))!
             const expectedNoDebug: SamLaunchRequestArgs = {
                 ...expected,
                 noDebug: true,
@@ -1086,7 +1080,7 @@ Globals:
                 tempFile.fsPath
             )
             await registry.addTemplateToRegistry(tempFile)
-            const actual = (await debugConfigProvider.resolveDebugConfiguration(folder, c))!
+            const actual = (await debugConfigProvider.makeConfig(folder, c))!
             const tempDir = path.dirname(actual.codeRoot)
 
             const expected: SamLaunchRequestArgs = {
@@ -1100,7 +1094,7 @@ Globals:
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
-                debugPort: 5858,
+                debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'my.test.handler',
                 invokeTarget: {
@@ -1124,7 +1118,7 @@ Globals:
                 // Node-related fields
                 //
                 address: 'localhost',
-                port: 5858,
+                port: actual.debugPort,
                 preLaunchTask: undefined,
                 protocol: 'inspector',
                 remoteRoot: '/var/task',

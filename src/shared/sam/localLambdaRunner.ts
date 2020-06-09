@@ -13,7 +13,7 @@ import { ExtContext } from '../extensions'
 import { makeTemporaryToolkitFolder } from '../filesystemUtilities'
 import { getLogger } from '../logger'
 import { SettingsConfiguration } from '../settingsConfiguration'
-import { recordLambdaInvokeLocal, recordSamAttachDebugger, Result, Runtime } from '../telemetry/telemetry'
+import { recordLambdaInvokeLocal, Result, Runtime, recordSamAttachDebugger } from '../telemetry/telemetry'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
@@ -25,7 +25,7 @@ import { tryGetAbsolutePath } from '../utilities/workspaceUtils'
 import { DefaultValidatingSamCliProcessInvoker } from './cli/defaultValidatingSamCliProcessInvoker'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from './cli/samCliBuild'
 import { SamCliLocalInvokeInvocation, SamCliLocalInvokeInvocationArguments } from './cli/samCliLocalInvoke'
-import { SamLaunchRequestArgs } from './debugger/samDebugSession'
+import { SamLaunchRequestArgs } from './debugger/awsSamDebugger'
 
 export interface LambdaLocalInvokeParams {
     /** URI of the current editor document. */
@@ -127,7 +127,7 @@ export async function invokeLambdaFunction(
     ctx: ExtContext,
     config: SamLaunchRequestArgs,
     onAfterBuild: () => Promise<void>
-): Promise<void> {
+): Promise<SamLaunchRequestArgs> {
     // Switch over to the output channel so the user has feedback that we're getting things ready
     ctx.chanLogger.channel.show(true)
     ctx.chanLogger.info('AWS.output.sam.local.start', 'Preparing to run {0} locally...', config.handlerName)
@@ -211,11 +211,13 @@ export async function invokeLambdaFunction(
             messageUserWaitingToAttach(ctx.chanLogger)
             await config.onWillAttachDebugger(config.debugPort!, timer, ctx.chanLogger)
         }
+    }
+    // HACK: remove non-serializable properties before attaching.
+    // TODO: revisit this :)
+    config.onWillAttachDebugger = undefined
+    config.samLocalInvokeCommand = undefined
 
-        // HACK: remove non-serializable properties before attaching.
-        // TODO: revisit this :)
-        config.onWillAttachDebugger = undefined
-        config.samLocalInvokeCommand = undefined
+    if (!config.noDebug) {
         const attachResults = await attachDebugger({
             debugConfig: config,
             maxRetries,
@@ -231,11 +233,12 @@ export async function invokeLambdaFunction(
                 })
             },
         })
-
         if (attachResults.success) {
             await showDebugConsole()
         }
     }
+
+    return config
 }
 
 export interface AttachDebuggerContext {

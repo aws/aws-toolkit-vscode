@@ -20,7 +20,7 @@ import { Timeout } from '../../utilities/timeoutUtils'
 import { ChannelLogger } from '../../utilities/vsCodeUtils'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
 import { invokeLambdaFunction, makeInputTemplate } from '../localLambdaRunner'
-import { SamLaunchRequestArgs } from './samDebugSession'
+import { SamLaunchRequestArgs } from './awsSamDebugger'
 
 const PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MS = 1000
 
@@ -182,10 +182,14 @@ export async function makePythonDebugConfig(config: SamLaunchRequestArgs): Promi
 /**
  * Launches and attaches debugger to a SAM Python project.
  */
-export async function invokePythonLambda(ctx: ExtContext, config: PythonDebugConfiguration) {
+export async function invokePythonLambda(
+    ctx: ExtContext,
+    config: PythonDebugConfiguration
+): Promise<PythonDebugConfiguration> {
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand(ctx.chanLogger, [WAIT_FOR_DEBUGGER_MESSAGES.PYTHON])
     config.onWillAttachDebugger = waitForPythonDebugAdapter
-    await invokeLambdaFunction(ctx, config, async () => {})
+    const c = (await invokeLambdaFunction(ctx, config, async () => {})) as PythonDebugConfiguration
+    return c
 }
 
 export async function waitForPythonDebugAdapter(debugPort: number, timeout: Timeout, channelLogger: ChannelLogger) {

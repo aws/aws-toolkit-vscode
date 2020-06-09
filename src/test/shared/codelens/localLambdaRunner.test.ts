@@ -9,12 +9,12 @@ import { readdir } from 'fs-extra'
 import * as vscode from 'vscode'
 import * as fsUtils from '../../../shared/filesystemUtilities'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from '../../../shared/sam/cli/samCliBuild'
-import { SamLaunchRequestArgs } from '../../../shared/sam/debugger/samDebugSession'
 import * as localLambdaRunner from '../../../shared/sam/localLambdaRunner'
 import { ChildProcessResult } from '../../../shared/utilities/childProcess'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { FakeChannelLogger } from '../fakeChannelLogger'
 import { assertRejects } from '../utilities/assertUtils'
+import { SamLaunchRequestArgs } from '../../../shared/sam/debugger/awsSamDebugger'
 
 describe('localLambdaRunner', async () => {
     let tempDir: string

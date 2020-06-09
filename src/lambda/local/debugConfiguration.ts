@@ -13,11 +13,11 @@ import {
     CodeTargetProperties,
     TemplateTargetProperties,
 } from '../../shared/sam/debugger/awsSamDebugConfiguration'
-import { SamLaunchRequestArgs } from '../../shared/sam/debugger/samDebugSession'
 import * as pathutil from '../../shared/utilities/pathUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
 import { RuntimeFamily } from '../models/samLambdaRuntime'
+import { SamLaunchRequestArgs } from '../../shared/sam/debugger/awsSamDebugger'
 
 export const DOTNET_CORE_DEBUGGER_PATH = '/tmp/lambci_debug_files/vsdbg'
 

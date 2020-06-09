@@ -6,9 +6,18 @@
 import * as vscode from 'vscode'
 import * as _ from 'lodash'
 import * as nls from 'vscode-nls'
-import { getCodeRoot, getHandlerName, getTemplateResource } from '../../../lambda/local/debugConfiguration'
+import { Runtime } from 'aws-sdk/clients/lambda'
+import {
+    getCodeRoot,
+    getHandlerName,
+    getTemplateResource,
+    NodejsDebugConfiguration,
+    PythonDebugConfiguration,
+} from '../../../lambda/local/debugConfiguration'
 import { getDefaultRuntime, getFamily, getRuntimeFamily, RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import { CloudFormationTemplateRegistry, getResourcesFromTemplateDatum } from '../../cloudformation/templateRegistry'
+import { Timeout } from '../../utilities/timeoutUtils'
+import { ChannelLogger } from '../../utilities/vsCodeUtils'
 import * as csharpDebug from './csharpSamDebug'
 import * as pythonDebug from './pythonSamDebug'
 import * as tsDebug from './typescriptSamDebug'
@@ -28,10 +37,87 @@ import {
     AwsSamDebugConfigurationValidator,
     DefaultAwsSamDebugConfigurationValidator,
 } from './awsSamDebugConfigurationValidator'
-import { SamLaunchRequestArgs } from './samDebugSession'
 import { makeConfig } from '../localLambdaRunner'
+import { SamLocalInvokeCommand } from '../cli/samCliLocalInvoke'
 
 const localize = nls.loadMessageBundle()
+
+/**
+ * SAM-specific launch attributes (which are not part of the DAP).
+ *
+ * Schema for these attributes lives in package.json
+ * ("configurationAttributes").
+ *
+ * @see AwsSamDebuggerConfiguration
+ * @see AwsSamDebugConfigurationProvider.resolveDebugConfiguration
+ */
+export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
+    // readonly type: 'node' | 'python' | 'coreclr' | 'aws-sam'
+    readonly request: 'attach' | 'launch' | 'direct-invoke'
+
+    /** Runtime id-name passed to vscode to select a debugger/launcher. */
+    runtime: Runtime
+    runtimeFamily: RuntimeFamily
+    /** Resolved (potentinally generated) handler name. */
+    handlerName: string
+    workspaceFolder: vscode.WorkspaceFolder
+
+    /**
+     * Absolute path to the SAM project root, calculated from any of:
+     *  - `codeUri` in `template.yaml`
+     *  - `projectRoot` for the case of `target=code`
+     *  - provider-specific heuristic (last resort)
+     */
+    codeRoot: string
+    outFilePath?: string
+
+    /** Path to (generated) directory used as a working/staging area for SAM. */
+    baseBuildDir?: string
+
+    /**
+     * URI of the current editor document.
+     * Used as a last resort for deciding `codeRoot` (when there is no `launch.json` nor `template.yaml`)
+     */
+    documentUri: vscode.Uri
+
+    /**
+     * SAM/CFN template absolute path used for SAM CLI invoke.
+     * - For `target=code` this is the _generated_ template path.
+     * - For `target=template` this is the _generated_ template path (TODO: in
+     *   the future we may change this to be the template found in the workspace.
+     */
+    samTemplatePath: string
+
+    /**
+     * Path to the (generated) `event.json` file placed in `baseBuildDir` for SAM to discover.
+     *
+     * The file contains the event payload JSON to be consumed by SAM.
+     */
+    eventPayloadFile: string
+
+    /**
+     * Path to the (generated) `env-vars.json` file placed in `baseBuildDir` for SAM to discover.
+     *
+     * The file contains a JSON map of environment variables to be consumed by
+     * SAM, resolved from `template.yaml` and/or `lambda.environmentVariables`.
+     */
+    envFile: string
+
+    //
+    // Debug properties (when user runs with debugging enabled).
+    //
+    /** vscode implicit field, set if user invokes "Run (Start Without Debugging)". */
+    noDebug?: boolean
+    debuggerPath?: string
+    debugPort?: number
+
+    //
+    //  Invocation properties (for "execute" phase, after "config" phase).
+    //  Non-serializable...
+    //
+    samLocalInvokeCommand?: SamLocalInvokeCommand
+    onWillAttachDebugger?(debugPort: number, timeout: Timeout, channelLogger: ChannelLogger): Promise<void>
+}
 
 /**
  * `DebugConfigurationProvider` dynamically defines these aspects of a VSCode debugger:
@@ -89,17 +175,40 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
     }
 
     /**
-     * Generates a launch-config from a user-provided debug-config, then launches it.
+     * Generates a full run-config from a user-provided config, then
+     * runs/debugs it (essentially `sam build` + `sam local invoke`).
      *
-     * - "Launch" means `sam build` followed by `sam local invoke`.
-     * - If launch.json is missing, this function attempts to generate a
-     *   debug-config dynamically.
+     * If `launch.json` is missing, attempts to generate a config dynamically.
      *
      * @param folder  Workspace folder
      * @param config User-provided config (from launch.json)
      * @param token  Cancellation token
      */
     public async resolveDebugConfiguration(
+        folder: vscode.WorkspaceFolder | undefined,
+        config: AwsSamDebuggerConfiguration,
+        token?: vscode.CancellationToken
+    ): Promise<SamLaunchRequestArgs | undefined> {
+        const resolvedConfig = await this.makeConfig(folder, config, token)
+        if (!resolvedConfig) {
+            return undefined
+        }
+        await this.invokeConfig(resolvedConfig)
+        // TODO: return config here, and remove use of `startDebugging()` in `localLambdaRunner.ts`.
+        return undefined
+    }
+
+    /**
+     * Performs the CONFIG phase of SAM run/debug:
+     * - gathers info from `launch.json`, project workspace, OS
+     * - creates runtime-specific files
+     * - creates `input-template.yaml`, `env-vars.json`, `event.json` files
+     * - creates a config object to handoff to VSCode
+     *
+     * @returns Config to handoff to VSCode or nodejs/python/dotnet plugin (can
+     * also be used in `vscode.debug.startDebugging`)
+     */
+    public async makeConfig(
         folder: vscode.WorkspaceFolder | undefined,
         config: AwsSamDebuggerConfiguration,
         token?: vscode.CancellationToken
@@ -229,7 +338,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         // 3. do `sam local invoke`
         //
         await makeConfig(launchConfig)
-        switch (runtimeFamily) {
+        switch (launchConfig.runtimeFamily) {
             case RuntimeFamily.NodeJS: {
                 // Make a NodeJS launch-config from the generic config.
                 launchConfig = await tsDebug.makeTypescriptConfig(launchConfig)
@@ -271,5 +380,29 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         }
 
         return launchConfig
+    }
+
+    /**
+     * Performs the EXECUTE phase of SAM run/debug.
+     */
+    public async invokeConfig(config: SamLaunchRequestArgs): Promise<SamLaunchRequestArgs> {
+        switch (config.runtimeFamily) {
+            case RuntimeFamily.NodeJS: {
+                config.type = 'node'
+                const c = await tsDebug.invokeTypescriptLambda(this.ctx, config as NodejsDebugConfiguration)
+                return c
+            }
+            case RuntimeFamily.Python: {
+                config.type = 'python'
+                return await pythonDebug.invokePythonLambda(this.ctx, config as PythonDebugConfiguration)
+            }
+            case RuntimeFamily.DotNetCore: {
+                config.type = 'coreclr'
+                return await csharpDebug.invokeCsharpLambda(this.ctx, config)
+            }
+            default: {
+                throw Error(`unknown runtimeFamily: ${config.runtimeFamily}`)
+            }
+        }
     }
 }
