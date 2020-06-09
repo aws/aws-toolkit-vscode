@@ -9,18 +9,22 @@ import { NodejsDebugConfiguration } from '../../../lambda/local/debugConfigurati
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import * as pathutil from '../../../shared/utilities/pathUtils'
 import { ExtContext } from '../../extensions'
-import { SamLaunchRequestArgs } from '../../sam/debugger/samDebugSession'
 import { findParentProjectFile } from '../../utilities/workspaceUtils'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
 import { invokeLambdaFunction, makeInputTemplate, waitForDebugPort } from '../localLambdaRunner'
+import { SamLaunchRequestArgs } from './awsSamDebugger'
 
 /**
  * Launches and attaches debugger to a SAM Node project.
  */
-export async function invokeTypescriptLambda(ctx: ExtContext, config: NodejsDebugConfiguration) {
+export async function invokeTypescriptLambda(
+    ctx: ExtContext,
+    config: NodejsDebugConfiguration
+): Promise<NodejsDebugConfiguration> {
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand(ctx.chanLogger, [WAIT_FOR_DEBUGGER_MESSAGES.NODEJS])
     config.onWillAttachDebugger = waitForDebugPort
-    await invokeLambdaFunction(ctx, config, async () => {})
+    const c = (await invokeLambdaFunction(ctx, config, async () => {})) as NodejsDebugConfiguration
+    return c
 }
 
 export async function getSamProjectDirPathForFile(filepath: string): Promise<string> {

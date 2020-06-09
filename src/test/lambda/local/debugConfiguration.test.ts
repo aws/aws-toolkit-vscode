@@ -11,9 +11,9 @@ import { rmrf } from '../../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { DefaultSamLocalInvokeCommand } from '../../../shared/sam/cli/samCliLocalInvoke'
 import { makeCoreCLRDebugConfiguration } from '../../../shared/sam/debugger/csharpSamDebug'
-import { SamLaunchRequestArgs } from '../../../shared/sam/debugger/samDebugSession'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import * as testutil from '../../testUtil'
+import { SamLaunchRequestArgs } from '../../../shared/sam/debugger/awsSamDebugger'
 
 describe('makeCoreCLRDebugConfiguration', async () => {
     let tempFolder: string

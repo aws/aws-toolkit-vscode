@@ -17,10 +17,10 @@ import { DefaultDockerClient, DockerClient } from '../../clients/dockerClient'
 import { ExtContext } from '../../extensions'
 import { mkdir } from '../../filesystem'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../../sam/cli/samCliLocalInvoke'
-import { SamLaunchRequestArgs } from '../../sam/debugger/samDebugSession'
 import { getStartPort } from '../../utilities/debuggerUtils'
 import { ChannelLogger, getChannelLogger } from '../../utilities/vsCodeUtils'
 import { invokeLambdaFunction, makeInputTemplate, waitForDebugPort } from '../localLambdaRunner'
+import { SamLaunchRequestArgs } from './awsSamDebugger'
 
 /**
  * Gathers and sets launch-config info by inspecting the workspace and creating
@@ -61,12 +61,12 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
  * Linux, then mount it with the SAM app on run. User's C# workspace dir will
  * have a `.vsdbg` dir after the first run.
  */
-export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchRequestArgs): Promise<void> {
+export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchRequestArgs): Promise<SamLaunchRequestArgs> {
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand(getChannelLogger(ctx.outputChannel), [
         WAIT_FOR_DEBUGGER_MESSAGES.DOTNET,
     ])
     config.onWillAttachDebugger = waitForDebugPort
-    await invokeLambdaFunction(ctx, config, async () => {
+    return await invokeLambdaFunction(ctx, config, async () => {
         if (!config.noDebug) {
             await _installDebugger(
                 {
