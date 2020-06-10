@@ -216,6 +216,8 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         if (token?.isCancellationRequested) {
             return undefined
         }
+        folder =
+            folder ?? (vscode.workspace.workspaceFolders?.length ? vscode.workspace.workspaceFolders[0] : undefined)
         if (!folder) {
             getLogger().error(`SAM debug: no workspace folder`)
             vscode.window.showErrorMessage(
