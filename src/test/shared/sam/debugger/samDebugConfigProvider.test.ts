@@ -354,6 +354,7 @@ describe('SamDebugConfigurationProvider', async () => {
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
             const expected: SamLaunchRequestArgs = {
                 type: AWS_SAM_DEBUG_TYPE,
+                awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'nodejs12.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
@@ -472,6 +473,7 @@ describe('SamDebugConfigurationProvider', async () => {
 
             const expected: SamLaunchRequestArgs = {
                 type: AWS_SAM_DEBUG_TYPE,
+                awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'nodejs10.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
@@ -571,6 +573,7 @@ describe('SamDebugConfigurationProvider', async () => {
             const codeRoot = `${appDir}${input.invokeTarget.projectRoot}`
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
+                awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'dotnetcore2.1', // lambdaModel.dotNetRuntimes[0],
                 runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
@@ -710,6 +713,7 @@ describe('SamDebugConfigurationProvider', async () => {
             const codeRoot = `${appDir}/src/HelloWorld`
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
+                awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'dotnetcore2.1', // lambdaModel.dotNetRuntimes[0],
                 runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
@@ -845,6 +849,7 @@ Globals:
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
             // Expected result with noDebug=false.
             const expected: SamLaunchRequestArgs = {
+                awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'python3.7',
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
@@ -959,6 +964,7 @@ Globals:
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
             // Expected result with noDebug=false.
             const expected: SamLaunchRequestArgs = {
+                awsCredentials: undefined,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'python3.7',
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
@@ -1086,6 +1092,7 @@ Globals:
             const tempDir = path.dirname(actual.codeRoot)
 
             const expected: SamLaunchRequestArgs = {
+                awsCredentials: undefined,
                 type: AWS_SAM_DEBUG_TYPE,
                 workspaceFolder: {
                     index: 0,

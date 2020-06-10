@@ -26,6 +26,7 @@ import { DefaultValidatingSamCliProcessInvoker } from './cli/defaultValidatingSa
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from './cli/samCliBuild'
 import { SamCliLocalInvokeInvocation, SamCliLocalInvokeInvocationArguments } from './cli/samCliLocalInvoke'
 import { SamLaunchRequestArgs } from './debugger/awsSamDebugger'
+import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
 
 export interface LambdaLocalInvokeParams {
     /** URI of the current editor document. */
@@ -142,7 +143,7 @@ export async function invokeLambdaFunction(
         templatePath: config.samTemplatePath!,
         invoker: processInvoker,
         manifestPath: config.manifestPath,
-        environmentVariables: {},
+        environmentVariables: config.awsCredentials ? asEnvironmentVariables(config.awsCredentials) : {},
         useContainer: config.sam?.containerBuild || false,
         extraArgs: config.sam?.buildArguments,
     }
@@ -174,6 +175,7 @@ export async function invokeLambdaFunction(
         templatePath: config.samTemplatePath,
         eventPath: config.eventPayloadFile,
         environmentVariablePath: config.envFile,
+        environmentVariables: config.awsCredentials ? asEnvironmentVariables(config.awsCredentials) : {},
         invoker: config.samLocalInvokeCommand!,
         dockerNetwork: config.sam?.dockerNetwork,
         debugPort: !config.noDebug ? config.debugPort?.toString() : undefined,

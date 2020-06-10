@@ -39,6 +39,10 @@ import {
 } from './awsSamDebugConfigurationValidator'
 import { makeConfig } from '../localLambdaRunner'
 import { SamLocalInvokeCommand } from '../cli/samCliLocalInvoke'
+import { getCredentialsFromStore } from '../../../credentials/credentialsStore'
+import { fromString } from '../../../credentials/providers/credentialsProviderId'
+import { notifyUserInvalidCredentials } from '../../../credentials/credentialsUtilities'
+import { Credentials } from 'aws-sdk/lib/credentials'
 
 const localize = nls.loadMessageBundle()
 
@@ -110,6 +114,11 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
     noDebug?: boolean
     debuggerPath?: string
     debugPort?: number
+
+    /**
+     * Credentials to add as env vars if available
+     */
+    awsCredentials?: Credentials
 
     //
     //  Invocation properties (for "execute" phase, after "config" phase).
@@ -309,6 +318,23 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             // XXX: don't know what URI to choose...
             vscode.Uri.parse(templateInvoke.samTemplatePath!!)
 
+        let awsCredentials: Credentials | undefined
+
+        if (config.aws?.credentials) {
+            const credentialsProviderId = fromString(config.aws.credentials)
+            try {
+                const cachedCredentials = await getCredentialsFromStore(
+                    credentialsProviderId,
+                    this.ctx.credentialsStore
+                )
+                awsCredentials = cachedCredentials.credentials
+            } catch (err) {
+                getLogger().error(err as Error)
+                notifyUserInvalidCredentials(credentialsProviderId)
+                return undefined
+            }
+        }
+
         let launchConfig: SamLaunchRequestArgs = {
             ...config,
             request: 'attach',
@@ -328,6 +354,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 timeoutSec: lambdaTimout,
                 environmentVariables: { ...config.lambda?.environmentVariables },
             },
+            awsCredentials: awsCredentials,
         }
 
         //

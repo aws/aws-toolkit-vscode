@@ -62,7 +62,7 @@ export async function makeTypescriptConfig(config: SamLaunchRequestArgs): Promis
     // Always generate a temporary template.yaml, don't use workspace one directly.
     config.samTemplatePath = await makeInputTemplate(config)
 
-    //  Make a python launch-config from the generic config.
+    //  Make a node launch-config from the generic config.
     const nodejsLaunchConfig: NodejsDebugConfiguration = {
         ...config, // Compose.
         type: 'node',

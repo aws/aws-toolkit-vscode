@@ -9,9 +9,8 @@ import { recordAwsSetCredentials, Result } from '../shared/telemetry/telemetry'
 import { asString, CredentialsProviderId } from './providers/credentialsProviderId'
 import { notifyUserInvalidCredentials } from './credentialsUtilities'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
-import { CredentialsStore, CachedCredentials } from './credentialsStore'
+import { CredentialsStore } from './credentialsStore'
 import { getAccountId } from '../shared/credentials/accountId'
-import { CredentialsProvider } from './providers/credentialsProvider'
 
 export class LoginManager {
     private readonly defaultCredentialsRegion = 'us-east-1'
@@ -59,7 +58,7 @@ export class LoginManager {
             throw new Error(`Could not find Credentials Provider for ${asString(credentialsProviderId)}`)
         }
 
-        const storedCredentials = await this.updateCredentialsStore(credentialsProviderId, provider)
+        const storedCredentials = await this.store.upsertCredentials(credentialsProviderId, provider)
 
         if (!storedCredentials) {
             this.store.invalidateCredentials(credentialsProviderId)
@@ -79,22 +78,5 @@ export class LoginManager {
             accountId: accountId,
             defaultRegion: provider.getDefaultRegion(),
         }
-    }
-
-    /**
-     * Updates the CredentialsStore if the credentials are considered different
-     */
-    private async updateCredentialsStore(
-        credentialsProviderId: CredentialsProviderId,
-        provider: CredentialsProvider
-    ): Promise<CachedCredentials | void> {
-        const storedCredentials = await this.store.getCredentials(credentialsProviderId)
-        if (provider.getHashCode() !== storedCredentials?.credentialsHashCode) {
-            getLogger().verbose(
-                `Credentials for ${asString(credentialsProviderId)} have changed, using updated credentials.`
-            )
-        }
-
-        return await this.store.upsertCredentials(credentialsProviderId, provider)
     }
 }

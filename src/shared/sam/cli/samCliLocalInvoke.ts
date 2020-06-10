@@ -156,6 +156,10 @@ export interface SamCliLocalInvokeInvocationArguments {
      */
     environmentVariablePath: string
     /**
+     * Environment variables set when invoking the SAM process (NOT passed to the Lambda).
+     */
+    environmentVariables?: NodeJS.ProcessEnv
+    /**
      * When specified, starts the Lambda function container in debug mode and exposes this port on the local host.
      */
     debugPort?: string

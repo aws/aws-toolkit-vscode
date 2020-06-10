@@ -4,6 +4,7 @@
  */
 
 import * as AWS from 'aws-sdk'
+import { getLogger } from '../shared/logger/logger'
 import { CredentialsProvider } from './providers/credentialsProvider'
 import { asString, CredentialsProviderId } from './providers/credentialsProviderId'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
@@ -43,7 +44,10 @@ export class CredentialsStore {
 
         if (!credentials) {
             credentials = await this.insertCredentials(credentialsProviderId, credentialsProvider)
-        } else if (credentialsProvider.getHashCode() !== credentials?.credentialsHashCode) {
+        } else if (credentialsProvider.getHashCode() !== credentials.credentialsHashCode) {
+            getLogger().verbose(
+                `Credentials for ${asString(credentialsProviderId)} have changed, using updated credentials.`
+            )
             this.invalidateCredentials(credentialsProviderId)
             credentials = await this.insertCredentials(credentialsProviderId, credentialsProvider)
         }
@@ -77,7 +81,7 @@ export class CredentialsStore {
 export async function getCredentialsFromStore(
     credentialsProviderId: CredentialsProviderId,
     credentialsStore: CredentialsStore
-): Promise<CachedCredentials | undefined> {
+): Promise<CachedCredentials> {
     const provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(credentialsProviderId)
     if (!provider) {
         credentialsStore.invalidateCredentials(credentialsProviderId)
