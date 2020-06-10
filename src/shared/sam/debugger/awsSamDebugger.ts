@@ -323,11 +323,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         if (config.aws?.credentials) {
             const credentialsProviderId = fromString(config.aws.credentials)
             try {
-                const cachedCredentials = await getCredentialsFromStore(
-                    credentialsProviderId,
-                    this.ctx.credentialsStore
-                )
-                awsCredentials = cachedCredentials.credentials
+                awsCredentials = await getCredentialsFromStore(credentialsProviderId, this.ctx.credentialsStore)
             } catch (err) {
                 getLogger().error(err as Error)
                 notifyUserInvalidCredentials(credentialsProviderId)

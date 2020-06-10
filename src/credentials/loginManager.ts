@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AwsContext, AwsContextCredentials } from '../shared/awsContext'
+import { AwsContext } from '../shared/awsContext'
+import { getAccountId } from '../shared/credentials/accountId'
 import { getLogger } from '../shared/logger'
 import { recordAwsSetCredentials, Result } from '../shared/telemetry/telemetry'
-import { asString, CredentialsProviderId } from './providers/credentialsProviderId'
-import { notifyUserInvalidCredentials } from './credentialsUtilities'
-import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 import { CredentialsStore } from './credentialsStore'
-import { getAccountId } from '../shared/credentials/accountId'
+import { notifyUserInvalidCredentials } from './credentialsUtilities'
+import { asString, CredentialsProviderId } from './providers/credentialsProviderId'
+import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 
 export class LoginManager {
     private readonly defaultCredentialsRegion = 'us-east-1'
@@ -24,7 +24,31 @@ export class LoginManager {
     public async login(credentialsProviderId: CredentialsProviderId): Promise<void> {
         let loginResult: Result = 'Succeeded'
         try {
-            await this.awsContext.setCredentials(await this.getAwsContextCredentials(credentialsProviderId))
+            const provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(
+                credentialsProviderId
+            )
+            if (!provider) {
+                throw new Error(`Could not find Credentials Provider for ${asString(credentialsProviderId)}`)
+            }
+
+            const storedCredentials = await this.store.upsertCredentials(credentialsProviderId, provider)
+
+            if (!storedCredentials) {
+                throw new Error(`No credentials found for id ${asString(credentialsProviderId)}`)
+            }
+
+            const credentialsRegion = provider.getDefaultRegion() ?? this.defaultCredentialsRegion
+            const accountId = await getAccountId(storedCredentials.credentials, credentialsRegion)
+            if (!accountId) {
+                throw new Error('Could not determine Account Id for credentials')
+            }
+
+            await this.awsContext.setCredentials({
+                credentials: storedCredentials.credentials,
+                credentialsId: asString(credentialsProviderId),
+                accountId: accountId,
+                defaultRegion: provider.getDefaultRegion(),
+            })
         } catch (err) {
             loginResult = 'Failed'
             getLogger().error(
@@ -33,6 +57,7 @@ export class LoginManager {
                 )}. Toolkit will now disconnect from AWS. %O`,
                 err as Error
             )
+            this.store.invalidateCredentials(credentialsProviderId)
 
             await this.logout()
 
@@ -47,36 +72,5 @@ export class LoginManager {
      */
     public async logout(): Promise<void> {
         await this.awsContext.setCredentials(undefined)
-    }
-
-    private async getAwsContextCredentials(
-        credentialsProviderId: CredentialsProviderId
-    ): Promise<AwsContextCredentials> {
-        const provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(credentialsProviderId)
-        if (!provider) {
-            this.store.invalidateCredentials(credentialsProviderId)
-            throw new Error(`Could not find Credentials Provider for ${asString(credentialsProviderId)}`)
-        }
-
-        const storedCredentials = await this.store.upsertCredentials(credentialsProviderId, provider)
-
-        if (!storedCredentials) {
-            this.store.invalidateCredentials(credentialsProviderId)
-            throw new Error(`No credentials found for id ${asString(credentialsProviderId)}`)
-        }
-
-        const credentialsRegion = provider.getDefaultRegion() ?? this.defaultCredentialsRegion
-        const accountId = await getAccountId(storedCredentials.credentials, credentialsRegion)
-        if (!accountId) {
-            this.store.invalidateCredentials(credentialsProviderId)
-            throw new Error('Could not determine Account Id for credentials')
-        }
-
-        return {
-            credentials: storedCredentials.credentials,
-            credentialsId: asString(credentialsProviderId),
-            accountId: accountId,
-            defaultRegion: provider.getDefaultRegion(),
-        }
     }
 }

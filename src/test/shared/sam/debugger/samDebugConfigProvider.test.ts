@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import * as os from 'os'
 import * as path from 'path'
+import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { DotNetCoreDebugConfiguration } from '../../../../lambda/local/debugConfiguration'
 import * as lambdaModel from '../../../../lambda/models/samLambdaRuntime'
@@ -32,6 +33,11 @@ import * as testutil from '../../../testUtil'
 import { assertFileText } from '../../../testUtil'
 import { makeSampleSamTemplateYaml, makeSampleYamlResource } from '../../cloudformation/cloudformationTestUtils'
 import { readFileSync } from 'fs-extra'
+import { CredentialsStore } from '../../../../credentials/credentialsStore'
+import { CredentialsProviderManager } from '../../../../credentials/providers/credentialsProviderManager'
+import { Credentials } from 'aws-sdk'
+import { ExtContext } from '../../../../shared/extensions'
+import { CredentialsProvider } from '../../../../credentials/providers/credentialsProvider'
 
 /**
  * Asserts the contents of a "launch config" (the result of `makeConfig()` or
@@ -87,14 +93,19 @@ describe('SamDebugConfigurationProvider', async () => {
     let tempFolderSimilarName: string | undefined
     let tempFile: vscode.Uri
     let fakeWorkspaceFolder: vscode.WorkspaceFolder
+    let fakeContext: ExtContext
+    let sandbox: sinon.SinonSandbox
     const resourceName = 'myResource'
+    const mockedCredentials = new Credentials('access', 'secret', 'session')
 
     beforeEach(async () => {
-        const fakeContext = await FakeExtensionContext.getFakeExtContext()
+        fakeContext = await FakeExtensionContext.getFakeExtContext()
         tempFolder = await makeTemporaryToolkitFolder()
         tempFile = vscode.Uri.file(path.join(tempFolder, 'test.yaml'))
         registry = CloudFormationTemplateRegistry.getRegistry()
         debugConfigProvider = new SamDebugConfigProvider(fakeContext)
+        sandbox = sinon.createSandbox()
+
         fakeWorkspaceFolder = {
             uri: vscode.Uri.file(tempFolder),
             name: 'It was me, fakeWorkspaceFolder!',
@@ -108,6 +119,7 @@ describe('SamDebugConfigurationProvider', async () => {
         if (tempFolderSimilarName) {
             await rmrf(tempFolderSimilarName)
         }
+        sandbox.restore()
     })
 
     describe('provideDebugConfig', async () => {
@@ -206,6 +218,39 @@ describe('SamDebugConfigurationProvider', async () => {
                 runtime: 'happy-runtime-42',
             }
             assert.deepStrictEqual(await debugConfigProvider.makeConfig(config.folder, config.config), undefined)
+
+            // bad credentials
+            const mockCredentialsStore: CredentialsStore = new CredentialsStore()
+
+            const credentialsProvider: CredentialsProvider = {
+                getCredentials: sandbox.stub().resolves(({} as any) as AWS.Credentials),
+                getCredentialsProviderId: sandbox.stub().returns({
+                    credentialType: 'test',
+                    credentialTypeId: 'someId',
+                }),
+                getDefaultRegion: sandbox.stub().returns('someRegion'),
+                getHashCode: sandbox.stub().returns('1234'),
+                canAutoConnect: sandbox.stub().returns(true),
+            }
+            const getCredentialsProviderStub = sandbox.stub(
+                CredentialsProviderManager.getInstance(),
+                'getCredentialsProvider'
+            )
+            getCredentialsProviderStub.resolves(credentialsProvider)
+            sandbox.stub(mockCredentialsStore, 'upsertCredentials').throws()
+            const debugConfigProviderMockCredentials = new SamDebugConfigProvider({
+                ...fakeContext,
+                credentialsStore: mockCredentialsStore,
+            })
+            assert.deepStrictEqual(
+                await debugConfigProviderMockCredentials.makeConfig(config.folder, {
+                    ...config.config,
+                    aws: {
+                        credentials: 'profile:error',
+                    },
+                }),
+                undefined
+            )
         })
 
         it('returns undefined when resolving debug configurations with an invalid request type', async () => {
@@ -1159,6 +1204,126 @@ Globals:
     Timeout: 5
 `
             )
+        })
+
+        it('debugconfig with aws section', async () => {
+            const mockCredentialsStore: CredentialsStore = new CredentialsStore()
+
+            const credentialsProvider: CredentialsProvider = {
+                getCredentials: sandbox.stub().resolves(({} as any) as AWS.Credentials),
+                getCredentialsProviderId: sandbox.stub().returns({
+                    credentialType: 'test',
+                    credentialTypeId: 'someId',
+                }),
+                getDefaultRegion: sandbox.stub().returns('someRegion'),
+                getHashCode: sandbox.stub().returns('1234'),
+                canAutoConnect: sandbox.stub().returns(true),
+            }
+            const getCredentialsProviderStub = sandbox.stub(
+                CredentialsProviderManager.getInstance(),
+                'getCredentialsProvider'
+            )
+            getCredentialsProviderStub.resolves(credentialsProvider)
+            const upsertStub = sandbox.stub(mockCredentialsStore, 'upsertCredentials')
+            upsertStub.resolves({
+                credentials: mockedCredentials,
+                credentialsHashCode: 'unimportant',
+            })
+            const debugConfigProviderMockCredentials = new SamDebugConfigProvider({
+                ...fakeContext,
+                credentialsStore: mockCredentialsStore,
+            })
+
+            const appDir = pathutil.normalize(
+                path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/js-manifest-in-root/')
+            )
+            const folder = testutil.getWorkspaceFolder(appDir)
+            const awsSection = {
+                aws: {
+                    credentials: 'profile:success',
+                    region: 'us-weast-9',
+                },
+            }
+            const c = {
+                type: AWS_SAM_DEBUG_TYPE,
+                name: 'test-extraneous-env',
+                request: DIRECT_INVOKE_TYPE,
+                invokeTarget: {
+                    target: TEMPLATE_TARGET_TYPE,
+                    samTemplatePath: tempFile.fsPath,
+                    samTemplateResource: resourceName,
+                },
+                lambda: {
+                    // These are written to env-vars.json, but ignored by SAM.
+                    environmentVariables: {
+                        var1: '2',
+                        var2: '1',
+                    },
+                },
+                ...awsSection,
+            }
+            testutil.toFile(
+                makeSampleSamTemplateYaml(true, {
+                    resourceName: resourceName,
+                    runtime: 'nodejs12.x',
+                    handler: 'my.test.handler',
+                    codeUri: 'codeuri',
+                }),
+                tempFile.fsPath
+            )
+            await registry.addTemplateToRegistry(tempFile)
+            const actual = (await debugConfigProviderMockCredentials.makeConfig(folder, c))!
+            const tempDir = path.dirname(actual.codeRoot)
+
+            const expected: SamLaunchRequestArgs = {
+                awsCredentials: mockedCredentials,
+                ...awsSection,
+                type: AWS_SAM_DEBUG_TYPE,
+                workspaceFolder: {
+                    index: 0,
+                    name: 'test-workspace-folder',
+                    uri: vscode.Uri.file(appDir),
+                },
+                baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
+                envFile: `${actual.baseBuildDir}/env-vars.json`,
+                eventPayloadFile: `${actual.baseBuildDir}/event.json`,
+                codeRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
+                debugPort: actual.debugPort,
+                documentUri: vscode.Uri.file(''), // TODO: remove or test.
+                handlerName: 'my.test.handler',
+                invokeTarget: {
+                    target: 'template',
+                    samTemplatePath: pathutil.normalize(path.join(tempDir ?? '?', 'test.yaml')),
+                    samTemplateResource: 'myResource',
+                },
+                lambda: {
+                    environmentVariables: {
+                        var1: '2',
+                        var2: '1',
+                    },
+                    memoryMb: undefined,
+                    timeoutSec: 12345, // From template.yaml.
+                },
+                localRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
+                name: 'SamLocalDebug',
+                samTemplatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
+
+                //
+                // Node-related fields
+                //
+                address: 'localhost',
+                port: actual.debugPort,
+                preLaunchTask: undefined,
+                protocol: 'inspector',
+                remoteRoot: '/var/task',
+                request: 'attach', // Input "direct-invoke", output "attach".
+                runtime: 'nodejs12.x',
+                runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
+                skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
+                stopOnEntry: false,
+            }
+
+            assertEqualLaunchConfigs(actual, expected, appDir)
         })
     })
 })
