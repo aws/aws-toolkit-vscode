@@ -386,6 +386,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 protocol: 'inspector',
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
+                stopOnEntry: false,
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
@@ -503,6 +504,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 protocol: 'inspector',
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
+                stopOnEntry: false,
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
@@ -1126,6 +1128,7 @@ Globals:
                 runtime: 'nodejs12.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
+                stopOnEntry: false,
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)

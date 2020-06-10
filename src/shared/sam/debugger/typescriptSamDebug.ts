@@ -75,6 +75,8 @@ export async function makeTypescriptConfig(config: SamLaunchRequestArgs): Promis
         localRoot: config.codeRoot,
         remoteRoot: '/var/task',
         protocol: 'inspector',
+        // Stop at first user breakpoint, not the runtime bootstrap file.
+        stopOnEntry: config.stopOnEntry === undefined ? false : !!config.stopOnEntry,
         skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
     }
 
