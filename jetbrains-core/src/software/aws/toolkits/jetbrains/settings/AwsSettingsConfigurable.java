@@ -33,6 +33,7 @@ import software.aws.toolkits.jetbrains.core.executables.CloudDebugExecutable;
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance;
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager;
 import software.aws.toolkits.jetbrains.core.executables.ExecutableType;
+import software.aws.toolkits.jetbrains.core.help.HelpIds;
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable;
 
 public class AwsSettingsConfigurable implements SearchableConfigurable {
@@ -72,11 +73,9 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
     }
 
     private void createUIComponents() {
-        cloudDebugHelp = createHelpLink("aws.settings.clouddebug.help_url");
-        cloudDebugHelp.setEnabled(false);
+        cloudDebugHelp = createHelpLink(HelpIds.CLOUD_DEBUG_ENABLE);
         cloudDebugExecutablePath = createCliConfigurationElement(getCloudDebugExecutableInstance(), CLOUDDEBUG);
-        samHelp = createHelpLink("lambda.sam.cli.install_url");
-        samHelp.setEnabled(false);
+        samHelp = createHelpLink(HelpIds.SAM_CLI_INSTALL);
         samExecutablePath = createCliConfigurationElement(getSamExecutableInstance(), SAM);
     }
 
@@ -152,8 +151,8 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
     }
 
     @NotNull
-    private LinkLabel createHelpLink(String helpMessageKey) {
-        return LinkLabel.create(message("aws.settings.learn_more"), () -> BrowserUtil.browse(message(helpMessageKey)));
+    private LinkLabel createHelpLink(HelpIds helpId) {
+        return LinkLabel.create(message("aws.settings.learn_more"), () -> BrowserUtil.browse(helpId.getUrl()));
     }
 
     @NotNull

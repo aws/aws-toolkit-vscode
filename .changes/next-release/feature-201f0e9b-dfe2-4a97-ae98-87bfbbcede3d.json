@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Adding 'Outputs' tab to the CloudFormation Stack Viewer"
+}

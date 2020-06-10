@@ -10,7 +10,7 @@ import com.intellij.util.AlarmFactory
 import software.amazon.awssdk.core.exception.SdkException
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.amazon.awssdk.services.cloudformation.model.DescribeStackResourcesRequest
-import software.amazon.awssdk.services.cloudformation.model.DescribeStacksRequest
+import software.amazon.awssdk.services.cloudformation.model.Output
 import software.amazon.awssdk.services.cloudformation.model.StackEvent
 import software.amazon.awssdk.services.cloudformation.model.StackResource
 import software.amazon.awssdk.services.cloudformation.model.StackStatus
@@ -29,7 +29,8 @@ interface UpdateListener {
  */
 class Updater(
     private val treeView: TreeView,
-    private val eventsTableView: TableView,
+    private val eventsTable: EventsTable,
+    private val outputsTable: OutputsListener,
     private val stackName: String,
     private val updateEveryMs: Int,
     private val listener: UpdateListener,
@@ -73,8 +74,8 @@ class Updater(
 
     private fun fetchData(pageToSwitchTo: Page?) {
         assert(!SwingUtilities.isEventDispatchThread())
-        val resources = fetchResources()
-        val newStackStatus = resources.second
+        val stackDetails = fetchStackDetails()
+        val newStackStatus = stackDetails.status
         val newStackStatusType = newStackStatus.type
         val newStackStatusNotInProgress = newStackStatusType !in setOf(StatusType.UNKNOWN, StatusType.PROGRESS)
 
@@ -94,9 +95,11 @@ class Updater(
         }
 
         app.invokeLater {
+            outputsTable.updatedOutputs(stackDetails.outputs)
+
             showData(
                 stackStatus = newStackStatus,
-                resources = resources.first,
+                resources = stackDetails.resources,
                 newEvents = eventsAndButtonStates?.first ?: emptyList(),
                 pageChanged = pageToSwitchTo != null
             )
@@ -123,18 +126,20 @@ class Updater(
         assert(SwingUtilities.isEventDispatchThread())
         treeView.setStackStatus(stackStatus)
         treeView.fillResources(resources)
-        eventsTableView.insertEvents(newEvents, pageChanged)
+        eventsTable.insertEvents(newEvents, pageChanged)
     }
 
-    private fun fetchResources(): Pair<List<StackResource>, StackStatus> {
+    private fun fetchStackDetails(): Stack {
         assert(!SwingUtilities.isEventDispatchThread())
         val resourcesRequest = DescribeStackResourcesRequest.builder().stackName(stackName).build()
         val resources = client.describeStackResources(resourcesRequest).stackResources()
-        val statusRequest = DescribeStacksRequest.builder().stackName(stackName).build()
-        val stackStatus = client.describeStacks(statusRequest).stacks().firstOrNull()?.stackStatus()
-            ?: StackStatus.UNKNOWN_TO_SDK_VERSION
-        return Pair(resources, stackStatus)
+        val stack = client.describeStacks { it.stackName(stackName) }.stacks().firstOrNull()
+        val stackStatus = stack?.stackStatus() ?: StackStatus.UNKNOWN_TO_SDK_VERSION
+        val outputs = stack?.outputs() ?: emptyList()
+        return Stack(stackStatus, resources, outputs)
     }
+
+    private data class Stack(val status: StackStatus, val resources: List<StackResource>, val outputs: List<Output>)
 
     override fun dispose() {}
 }
