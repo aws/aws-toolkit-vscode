@@ -35,6 +35,7 @@ import software.aws.toolkits.telemetry.AwsTelemetry
 abstract class AwsConnectionManager(private val project: Project) : SimpleModificationTracker() {
     private val resourceCache = AwsResourceCache.getInstance(project)
     private val regionProvider = AwsRegionProvider.getInstance()
+    private val credentialsRegionHandler = CredentialsRegionHandler.getInstance(project)
 
     @Volatile
     private var validationJob: Job? = null
@@ -117,13 +118,7 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
 
             selectedCredentialIdentifier = identifier
 
-            identifier.defaultRegionId?.let { regionProvider[it] }?.let { credentialRegion ->
-                selectedRegion.let {
-                    if (it?.partitionId != credentialRegion.partitionId) {
-                        selectedRegion = credentialRegion
-                    }
-                }
-            }
+            selectedRegion = credentialsRegionHandler.determineSelectedRegion(identifier, selectedRegion)
         }
     }
 

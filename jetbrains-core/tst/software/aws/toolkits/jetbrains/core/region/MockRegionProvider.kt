@@ -9,6 +9,8 @@ import software.aws.toolkits.core.region.AwsPartition
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.region.Service
 import software.aws.toolkits.core.region.ToolkitRegionProvider
+import software.aws.toolkits.core.region.anAwsRegion
+import software.aws.toolkits.core.utils.test.aString
 
 class MockRegionProvider : ToolkitRegionProvider() {
     private val overrideRegions: MutableMap<String, AwsRegion> = mutableMapOf()
@@ -62,5 +64,7 @@ class MockRegionProvider : ToolkitRegionProvider() {
         override fun after() {
             regionProvider.reset()
         }
+
+        fun createAwsRegion(partitionId: String = aString()) = anAwsRegion(partitionId = partitionId).also { regionProvider.addRegion(it) }
     }
 }

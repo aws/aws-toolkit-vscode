@@ -15,7 +15,6 @@ import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.region.AwsRegion
-import software.aws.toolkits.core.region.anAwsRegion
 import software.aws.toolkits.core.rules.EnvironmentVariableHelper
 import software.aws.toolkits.core.utils.test.notNull
 import software.aws.toolkits.jetbrains.core.MockResourceCache
@@ -418,41 +417,6 @@ class DefaultAwsConnectionManagerTest {
         manager.waitUntilConnectionStateIsStable()
 
         assertThat(manager.isValidConnectionSettings()).isTrue()
-    }
-
-    @Test
-    fun `If region is null and credential has a default region, use it`() {
-        val defaultRegionForCredentials = anAwsRegion().also { regionProviderRule.regionProvider.addRegion(it) }
-        val credentials = mockCredentialManager.addCredentials("profile:whatever", regionId = defaultRegionForCredentials.id)
-
-        manager.selectedRegion = null
-        markConnectionSettingsAsValid(credentials, defaultRegionForCredentials)
-
-        manager.changeCredentialProvider(credentials)
-        manager.waitUntilConnectionStateIsStable()
-
-        assertThat(manager.connectionState).isInstanceOfSatisfying(ConnectionState.ValidConnection::class.java) {
-            assertThat(it.credentials.id).isEqualTo(credentials.id)
-            assertThat(it.region.id).isEqualTo(defaultRegionForCredentials.id)
-        }
-    }
-
-    @Test
-    fun `Credential with a default region that's different from the currently select partition, uses the credentials region`() {
-        val defaultRegionForCredentials = anAwsRegion().also { regionProviderRule.regionProvider.addRegion(it) }
-        val credentials = mockCredentialManager.addCredentials("profile:whatever", regionId = defaultRegionForCredentials.id)
-
-        manager.selectedRegion = anAwsRegion()
-
-        markConnectionSettingsAsValid(credentials, defaultRegionForCredentials)
-
-        manager.changeCredentialProvider(credentials)
-        manager.waitUntilConnectionStateIsStable()
-
-        assertThat(manager.connectionState).isInstanceOfSatisfying(ConnectionState.ValidConnection::class.java) {
-            assertThat(it.credentials.id).isEqualTo(credentials.id)
-            assertThat(it.region.id).isEqualTo(defaultRegionForCredentials.id)
-        }
     }
 
     private fun markConnectionSettingsAsValid(credentialsIdentifier: CredentialIdentifier, region: AwsRegion) {

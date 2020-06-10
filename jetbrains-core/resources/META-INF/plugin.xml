@@ -151,7 +151,8 @@
                             serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultCredentialManager"
                             testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager"/>
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.settings.AwsSettings"
-                            serviceImplementation="software.aws.toolkits.jetbrains.settings.DefaultAwsSettings"/>
+                            serviceImplementation="software.aws.toolkits.jetbrains.settings.DefaultAwsSettings"
+                            testServiceImplementation="software.aws.toolkits.jetbrains.settings.MockAwsSettings" />
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.SamSettings"/>
 
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.CloudDebugSettings"/>
@@ -163,6 +164,9 @@
         <projectService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager"
                         serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultAwsConnectionManager"
                         testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager"/>
+        <projectService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.CredentialsRegionHandler"
+                        serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultCredentialsRegionHandler"
+                        testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.MockCredentialsRegionHandler"/>
 
         <statusBarWidgetProvider implementation="software.aws.toolkits.jetbrains.core.credentials.AwsSettingsPanelInstaller"/>
 
