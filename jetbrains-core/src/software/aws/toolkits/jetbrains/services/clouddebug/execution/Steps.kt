@@ -122,7 +122,7 @@ abstract class CliBasedStep : Step() {
         ignoreCancellation: Boolean
     ) {
         val startTime = Instant.now()
-        var result = Result.SUCCEEDED
+        var result = Result.Succeeded
         val commandLine = getCli(context)
 
         constructCommandLine(context, commandLine)
@@ -149,12 +149,12 @@ abstract class CliBasedStep : Step() {
             try {
                 handleErrorResult(processCapture.output.stdout, messageEmitter)
             } catch (e: Exception) {
-                result = Result.FAILED
+                result = Result.Failed
                 throw e
             }
         } catch (e: ProcessCanceledException) {
             LOG.warn(e) { "Step \"$stepName\" cancelled!" }
-            result = Result.CANCELLED
+            result = Result.Cancelled
         } finally {
             recordTelemetry(context, startTime, result)
         }

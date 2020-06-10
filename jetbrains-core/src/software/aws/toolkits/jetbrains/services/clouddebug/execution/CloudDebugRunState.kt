@@ -54,13 +54,13 @@ class CloudDebugRunState(
 
         ApplicationManager.getApplication().executeOnPooledThread {
             val messageEmitter = DefaultMessageEmitter.createRoot(buildView, runConfigId())
-            var result = Result.SUCCEEDED
+            var result = Result.Succeeded
             try {
                 startRunConfiguration(descriptor, buildView)
                 rootStep.run(context, messageEmitter)
                 finishedSuccessfully(descriptor, processHandler, buildView)
             } catch (e: Throwable) {
-                result = Result.FAILED
+                result = Result.Failed
                 finishedExceptionally(descriptor, processHandler, buildView, e)
             }
 

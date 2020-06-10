@@ -23,7 +23,7 @@ class UploadObjectAction(private val project: Project, treeTable: S3TreeTable) :
 
         // If there are no files chosen, the user has cancelled upload
         if (filesChosen.isEmpty()) {
-            S3Telemetry.uploadObjects(project, Result.CANCELLED)
+            S3Telemetry.uploadObjects(project, Result.Cancelled)
             return
         }
 

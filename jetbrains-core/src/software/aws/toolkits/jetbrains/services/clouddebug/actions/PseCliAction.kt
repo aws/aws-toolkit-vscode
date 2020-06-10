@@ -100,7 +100,7 @@ abstract class PseCliAction(val project: Project, val actionName: String, privat
                             val exception = Exception(errorMessage)
                             LOG.error(exception) { "Setting cloud-debug executable failed" }
                             notifyError(message("aws.notification.title"), errorMessage, project)
-                            produceTelemetry(startTime, Result.FAILED, null)
+                            produceTelemetry(startTime, Result.Failed, null)
                             messageEmitter.finishExceptionally(exception)
                             null
                         }
@@ -194,7 +194,7 @@ abstract class PseCliAction(val project: Project, val actionName: String, privat
                         }
                     }
 
-                    val result = if (exit == 0) Result.SUCCEEDED else Result.FAILED
+                    val result = if (exit == 0) Result.Succeeded else Result.Failed
                     produceTelemetry(startTime, result, clouddebug.version)
                 }
             }

@@ -16,6 +16,7 @@ import software.amazon.awssdk.services.cloudformation.model.DescribeStackResourc
 import software.amazon.awssdk.services.cloudformation.model.DescribeStackResourcesResponse
 import software.amazon.awssdk.services.cloudformation.model.DescribeStacksRequest
 import software.amazon.awssdk.services.cloudformation.model.DescribeStacksResponse
+import software.amazon.awssdk.services.cloudformation.model.Output
 import software.amazon.awssdk.services.cloudformation.model.ResourceStatus
 import software.amazon.awssdk.services.cloudformation.model.Stack
 import software.amazon.awssdk.services.cloudformation.model.StackResource
@@ -29,10 +30,9 @@ import javax.swing.SwingUtilities
 private fun createSemaphore() = Semaphore(1).apply { acquire() }
 private fun Semaphore.waitFor() = assert(tryAcquire(10, TimeUnit.SECONDS)) { "operation never completed" }
 
-private val StackStatus.asResponse
-    get() = DescribeStacksResponse.builder().stacks(
-        Stack.builder().stackStatus(this).build()
-    ).build()
+private fun StackStatus.asResponse(outputs: List<Output> = emptyList()) = DescribeStacksResponse.builder().stacks(
+    Stack.builder().stackStatus(this).outputs(outputs).build()
+).build()
 
 class UpdaterTest {
     @JvmField
@@ -44,12 +44,13 @@ class UpdaterTest {
     val mockClientManagerRule = MockClientManagerRule(projectRule)
 
     private val treeView = mock(TreeView::class.java)
-    private val tableView = mock(TableView::class.java)
+    private val eventsTable = mock(EventsTable::class.java)
+    private val outputTable = mock(OutputsListener::class.java)
     private val updateListener = mock(UpdateListener::class.java)
 
     @Before
     fun setUp() {
-        arrayOf(treeView, tableView).forEach { whenever(it.component).thenReturn(JLabel()) }
+        arrayOf(treeView, eventsTable).forEach { whenever(it.component).thenReturn(JLabel()) }
     }
 
     @Test
@@ -59,7 +60,7 @@ class UpdaterTest {
         val insertEvents = createSemaphore()
         whenever(treeView.fillResources(any())).then { fillResources.release() }
         whenever(treeView.setStackStatus(StackStatus.CREATE_COMPLETE)).then { setStackStatus.release() }
-        whenever(tableView.insertEvents(any(), any())).then { insertEvents.release() }
+        whenever(eventsTable.insertEvents(any(), any())).then { insertEvents.release() }
 
         val mockEventsGenerator = MockEventsGenerator()
 
@@ -76,18 +77,23 @@ class UpdaterTest {
                 .build()
         )
 
+        val outputs = listOf(
+            Output.builder().outputKey("hello").outputValue("world").build()
+        )
+
         var availablePages = emptySet<Page>()
         SwingUtilities.invokeLater {
             val client = mockClientManagerRule.createMock(mockEventsGenerator) { mock ->
                 whenever(mock.describeStacks(any<DescribeStacksRequest>()))
-                    .thenReturn(StackStatus.CREATE_IN_PROGRESS.asResponse)
-                    .thenReturn(StackStatus.CREATE_COMPLETE.asResponse)
+                    .thenReturn(StackStatus.CREATE_IN_PROGRESS.asResponse())
+                    .thenReturn(StackStatus.CREATE_COMPLETE.asResponse(outputs))
                 whenever(mock.describeStackResources(any<DescribeStackResourcesRequest>()))
                     .thenReturn(DescribeStackResourcesResponse.builder().stackResources(resources).build())
             }
             Updater(
                 treeView = treeView,
-                eventsTableView = tableView,
+                eventsTable = eventsTable,
+                outputsTable = outputTable,
                 stackName = "MyStack",
                 updateEveryMs = 1,
                 listener = updateListener,
@@ -101,7 +107,8 @@ class UpdaterTest {
         verify(treeView, atLeast(1)).setStackStatus(StackStatus.CREATE_IN_PROGRESS)
         verify(treeView, atLeast(1)).setStackStatus(StackStatus.CREATE_COMPLETE)
         verify(treeView, atLeast(1)).fillResources(resources)
-        verify(tableView, atLeast(1)).insertEvents(mockEventsGenerator.currentPage, false)
+        verify(outputTable, atLeast(1)).updatedOutputs(outputs)
+        verify(eventsTable, atLeast(1)).insertEvents(mockEventsGenerator.currentPage, false)
         Assert.assertEquals("Wrong button for first page", availablePages, setOf(Page.NEXT))
     }
 }

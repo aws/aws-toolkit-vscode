@@ -114,11 +114,11 @@ class StartRemoteShellAction(private val project: Project, private val container
                 }
 
                 override fun onSuccess() {
-                    recordTelemetry(Result.SUCCEEDED)
+                    recordTelemetry(Result.Succeeded)
                 }
 
                 override fun onThrowable(error: Throwable) {
-                    recordTelemetry(Result.FAILED)
+                    recordTelemetry(Result.Failed)
                 }
 
                 private fun recordTelemetry(result: Result) {

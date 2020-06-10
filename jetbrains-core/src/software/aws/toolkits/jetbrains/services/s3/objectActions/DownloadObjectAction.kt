@@ -196,10 +196,8 @@ class DownloadObjectAction @JvmOverloads constructor(private val project: Projec
                         output.outputStream().use {
                             bucket.download(project, key, it)
                         }
-                        S3Telemetry.downloadObject(project, success = true)
                     } catch (e: Exception) {
                         e.notifyError(message("s3.download.object.failed", key))
-                        S3Telemetry.downloadObject(project, success = false)
                         output.deleteIfExists()
                         throw e
                     }

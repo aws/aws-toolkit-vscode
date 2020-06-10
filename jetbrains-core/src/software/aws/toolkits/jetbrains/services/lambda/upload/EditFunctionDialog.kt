@@ -191,7 +191,7 @@ class EditFunctionDialog(
     override fun getOKAction(): Action = action
 
     override fun doCancelAction() {
-        LambdaTelemetry.editFunction(project, result = Result.CANCELLED)
+        LambdaTelemetry.editFunction(project, result = Result.Cancelled)
         super.doCancelAction()
     }
 
@@ -234,11 +234,11 @@ class EditFunctionDialog(
             when (error) {
                 null -> {
                     notifyInfo(title = NOTIFICATION_TITLE, content = message, project = project)
-                    LambdaTelemetry.editFunction(project, update = false, result = Result.SUCCEEDED)
+                    LambdaTelemetry.editFunction(project, update = false, result = Result.Succeeded)
                 }
                 is Exception -> {
                     error.notifyError(title = NOTIFICATION_TITLE)
-                    LambdaTelemetry.editFunction(project, update = false, result = Result.FAILED)
+                    LambdaTelemetry.editFunction(project, update = false, result = Result.Failed)
                 }
             }
         }
@@ -259,10 +259,10 @@ class EditFunctionDialog(
                             content = message("lambda.function.configuration_updated.notification", functionDetails.name)
                         )
                         runInEdt(ModalityState.any()) { close(OK_EXIT_CODE) }
-                        LambdaTelemetry.editFunction(project, update = true, result = Result.SUCCEEDED)
+                        LambdaTelemetry.editFunction(project, update = true, result = Result.Succeeded)
                     }.exceptionally { error ->
                         setErrorText(ExceptionUtil.getNonEmptyMessage(error, error.toString()))
-                        LambdaTelemetry.editFunction(project, update = true, result = Result.FAILED)
+                        LambdaTelemetry.editFunction(project, update = true, result = Result.Failed)
                         null
                     }
             }

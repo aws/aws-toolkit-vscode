@@ -37,7 +37,7 @@ class FeedbackDialog(private val project: Project) : DialogWrapper(project), Cor
         if (okAction.isEnabled) {
             setOKButtonText(message("feedback.submitting"))
             isOKActionEnabled = false
-            var result = Result.SUCCEEDED
+            var result = Result.Succeeded
 
             val sentiment = panel.sentiment ?: throw IllegalStateException("sentiment was null after validation")
             val comment = panel.comment ?: throw IllegalStateException("comment was null after validation")
@@ -55,7 +55,7 @@ class FeedbackDialog(private val project: Project) : DialogWrapper(project), Cor
                         setOKButtonText(message("feedback.submit_button"))
                         isOKActionEnabled = true
                     }
-                    result = Result.FAILED
+                    result = Result.Failed
                 } finally {
                     FeedbackTelemetry.result(project, result = result)
                 }
@@ -67,7 +67,7 @@ class FeedbackDialog(private val project: Project) : DialogWrapper(project), Cor
         super.doCancelAction()
         // kill any remaining coroutines
         coroutineContext.cancel()
-        FeedbackTelemetry.result(project, result = Result.CANCELLED)
+        FeedbackTelemetry.result(project, result = Result.Cancelled)
     }
 
     public override fun doValidate(): ValidationInfo? {

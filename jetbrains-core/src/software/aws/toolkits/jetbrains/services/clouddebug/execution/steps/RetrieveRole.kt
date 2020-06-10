@@ -26,7 +26,7 @@ class RetrieveRole(private val settings: EcsServiceCloudDebuggingRunSettings) : 
         ignoreCancellation: Boolean
     ) {
         val startTime = Instant.now()
-        var result = Result.SUCCEEDED
+        var result = Result.Succeeded
         try {
             val description = CloudDebuggingResources.describeInstrumentedResource(context.project, settings.clusterArn, settings.serviceArn)
             if (description == null || description.status != INSTRUMENTED_STATUS || description.taskRole.isEmpty()) {
@@ -35,7 +35,7 @@ class RetrieveRole(private val settings: EcsServiceCloudDebuggingRunSettings) : 
 
             context.putAttribute(INSTRUMENT_IAM_ROLE_KEY, description.taskRole)
         } catch (e: Exception) {
-            result = Result.FAILED
+            result = Result.Failed
             throw RuntimeException(message("cloud_debug.step.retrieve_execution_role.failed"), e)
         } finally {
             ClouddebugTelemetry.retrieveRole(

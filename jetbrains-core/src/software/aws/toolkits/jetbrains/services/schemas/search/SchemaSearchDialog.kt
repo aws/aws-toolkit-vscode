@@ -38,7 +38,7 @@ class SchemaSearchSingleRegistryDialog(
         incrementalResultsCallback: OnSearchResultReturned,
         registrySearchErrorCallback: OnSearchResultError
     ) {
-        SchemasTelemetry.search(project, Result.SUCCEEDED)
+        SchemasTelemetry.search(project, Result.Succeeded)
         searchExecutor.searchSchemasInRegistry(registryName, searchText, incrementalResultsCallback, registrySearchErrorCallback)
     }
 }
@@ -64,7 +64,7 @@ class SchemaSearchAllRegistriesDialog(
         incrementalResultsCallback: OnSearchResultReturned,
         registrySearchErrorCallback: OnSearchResultError
     ) {
-        SchemasTelemetry.search(project, Result.SUCCEEDED)
+        SchemasTelemetry.search(project, Result.Succeeded)
         searchExecutor.searchSchemasAcrossAllRegistries(searchText, incrementalResultsCallback, registrySearchErrorCallback)
     }
 }

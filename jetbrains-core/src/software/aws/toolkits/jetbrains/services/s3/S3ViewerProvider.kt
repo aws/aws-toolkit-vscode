@@ -83,10 +83,10 @@ fun openEditor(project: Project, bucket: Bucket): Editor? = try {
         ),
         true
     ).also {
-        S3Telemetry.openEditor(project, Result.SUCCEEDED)
+        S3Telemetry.openEditor(project, Result.Succeeded)
     }
 } catch (e: Exception) {
     e.notifyError(message("s3.open.viewer.bucket.failed"))
-    S3Telemetry.openEditor(project, Result.FAILED)
+    S3Telemetry.openEditor(project, Result.Failed)
     null
 }
