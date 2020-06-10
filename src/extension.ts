@@ -55,6 +55,7 @@ import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { getChannelLogger } from './shared/utilities/vsCodeUtils'
 import { ExtContext } from './shared/extensions'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
+import { CredentialsStore } from './credentials/credentialsStore'
 
 let localize: nls.LocalizeFunc
 
@@ -78,7 +79,8 @@ export async function activate(context: vscode.ExtensionContext) {
         const awsContext = new DefaultAwsContext(context)
         const awsContextTrees = new AwsContextTreeCollection()
         const regionProvider = new DefaultRegionProvider(endpointsProvider)
-        const loginManager = new LoginManager(awsContext)
+        const credentialsStore = new CredentialsStore()
+        const loginManager = new LoginManager(awsContext, credentialsStore)
 
         const toolkitEnvDetails = getToolkitEnvironmentDetails()
         getLogger().info(toolkitEnvDetails)
@@ -114,6 +116,7 @@ export async function activate(context: vscode.ExtensionContext) {
             outputChannel: toolkitOutputChannel,
             telemetryService: ext.telemetry,
             chanLogger: getChannelLogger(toolkitOutputChannel),
+            credentialsStore,
         }
 
         context.subscriptions.push(

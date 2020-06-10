@@ -6,6 +6,7 @@
 import * as AWS from 'aws-sdk'
 import { CredentialsProvider } from './providers/credentialsProvider'
 import { asString, CredentialsProviderId } from './providers/credentialsProviderId'
+import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 
 export interface CachedCredentials {
     credentials: AWS.Credentials
@@ -31,20 +32,20 @@ export class CredentialsStore {
 
     /**
      * If credentials are not stored, the credentialsProvider is used to produce credentials (which are then stored).
+     * If the credentials exist but are invalid, the credentials will be invalidated and updated.
+     * Either way, the credentials tied to the credentialsProviderId will then be returned.
      */
-    public async getOrCreateCredentials(
+    public async upsertCredentials(
         credentialsProviderId: CredentialsProviderId,
         credentialsProvider: CredentialsProvider
     ): Promise<CachedCredentials> {
         let credentials = await this.getCredentials(credentialsProviderId)
 
         if (!credentials) {
-            credentials = {
-                credentials: await credentialsProvider.getCredentials(),
-                credentialsHashCode: credentialsProvider.getHashCode(),
-            }
-
-            this.credentialsCache[asString(credentialsProviderId)] = credentials
+            credentials = await this.insertCredentials(credentialsProviderId, credentialsProvider)
+        } else if (credentialsProvider.getHashCode() !== credentials?.credentialsHashCode) {
+            this.invalidateCredentials(credentialsProviderId)
+            credentials = await this.insertCredentials(credentialsProviderId, credentialsProvider)
         }
 
         return credentials
@@ -57,4 +58,31 @@ export class CredentialsStore {
         // tslint:disable-next-line:no-dynamic-delete
         delete this.credentialsCache[asString(credentialsProviderId)]
     }
+
+    private async insertCredentials(
+        credentialsProviderId: CredentialsProviderId,
+        credentialsProvider: CredentialsProvider
+    ): Promise<CachedCredentials> {
+        const credentials = {
+            credentials: await credentialsProvider.getCredentials(),
+            credentialsHashCode: credentialsProvider.getHashCode(),
+        }
+
+        this.credentialsCache[asString(credentialsProviderId)] = credentials
+
+        return credentials
+    }
+}
+
+export async function getCredentialsFromStore(
+    credentialsProviderId: CredentialsProviderId,
+    credentialsStore: CredentialsStore
+): Promise<CachedCredentials | undefined> {
+    const provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(credentialsProviderId)
+    if (!provider) {
+        credentialsStore.invalidateCredentials(credentialsProviderId)
+        throw new Error(`Could not find Credentials Provider for ${asString(credentialsProviderId)}`)
+    }
+
+    return await credentialsStore.upsertCredentials(credentialsProviderId, provider)
 }

@@ -9,6 +9,7 @@ import { RegionProvider } from './regions/regionProvider'
 import { SettingsConfiguration } from './settingsConfiguration'
 import { TelemetryService } from './telemetry/telemetryService'
 import { ChannelLogger } from './utilities/vsCodeUtils'
+import { CredentialsStore } from '../credentials/credentialsStore'
 
 export const VSCODE_EXTENSION_ID = {
     awstoolkit: 'amazonwebservices.aws-toolkit-vscode',
@@ -27,4 +28,5 @@ export interface ExtContext {
     outputChannel: vscode.OutputChannel
     telemetryService: TelemetryService
     chanLogger: ChannelLogger
+    credentialsStore: CredentialsStore
 }
