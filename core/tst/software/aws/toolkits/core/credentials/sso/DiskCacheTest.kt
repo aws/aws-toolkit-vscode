@@ -137,6 +137,28 @@ class DiskCacheTest {
     }
 
     @Test
+    fun invalidateClientRegistrationDeletesTheFile() {
+        val expiationTime = now.plus(20, ChronoUnit.MINUTES)
+        val cacheFile = cacheLocation.resolve("aws-toolkit-jetbrains-client-id-$ssoRegion.json")
+        cacheFile.writeText(
+            """
+            {
+                "clientId": "DummyId", 
+                "clientSecret": "DummySecret", 
+                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expiationTime)}"
+            }
+            """.trimIndent()
+        )
+
+        assertThat(sut.loadClientRegistration(ssoRegion)).isNotNull
+
+        sut.invalidateClientRegistration(ssoRegion)
+
+        assertThat(sut.loadClientRegistration(ssoRegion)).isNull()
+        assertThat(cacheFile).doesNotExist()
+    }
+
+    @Test
     fun nonExistentAccessTokenReturnsNull() {
         assertThat(sut.loadAccessToken(ssoUrl)).isNull()
     }
@@ -261,6 +283,29 @@ class DiskCacheTest {
                 }       
                 """.trimIndent()
             )
+    }
+
+    @Test
+    fun accessTokenInvalidationDeletesFile() {
+        val expiationTime = now.plus(20, ChronoUnit.MINUTES)
+        val cacheFile = cacheLocation.resolve("c1ac99f782ad92755c6de8647b510ec247330ad1.json")
+        cacheFile.writeText(
+            """
+            {
+                "startUrl": "$ssoUrl", 
+                "region": "$ssoRegion",
+                "accessToken": "DummyAccessToken",
+                "expiresAt": "${DateTimeFormatter.ISO_INSTANT.format(expiationTime)}"
+            }
+            """.trimIndent()
+        )
+
+        assertThat(sut.loadAccessToken(ssoUrl)).isNotNull
+
+        sut.invalidateAccessToken(ssoUrl)
+
+        assertThat(sut.loadAccessToken(ssoUrl)).isNull()
+        assertThat(cacheFile).doesNotExist()
     }
 
     private fun isUnix() = !System.getProperty("os.name").toLowerCase().startsWith("windows")

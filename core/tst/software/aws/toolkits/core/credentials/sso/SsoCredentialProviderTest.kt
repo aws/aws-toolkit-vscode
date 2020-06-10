@@ -9,6 +9,7 @@ import com.nhaarman.mockitokotlin2.stub
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Before
 import org.junit.Test
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
@@ -16,23 +17,25 @@ import software.amazon.awssdk.services.sso.SsoClient
 import software.amazon.awssdk.services.sso.model.GetRoleCredentialsRequest
 import software.amazon.awssdk.services.sso.model.GetRoleCredentialsResponse
 import software.amazon.awssdk.services.sso.model.RoleCredentials
+import software.amazon.awssdk.services.ssooidc.model.AccessDeniedException
 import software.aws.toolkits.core.utils.delegateMock
+import software.aws.toolkits.core.utils.test.aString
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
 class SsoCredentialProviderTest {
-    private val accessTokenId = "access123"
-    private val accountId = "111222333444"
-    private val roleName = "role123"
-    private val accessKey = "accessKey"
-    private val secretKey = "secretKey"
-    private val sessionToken = "sessionToken"
+    private val accessTokenId = aString()
+    private val accountId = aString()
+    private val roleName = aString()
+    private val accessKey = aString()
+    private val secretKey = aString()
+    private val sessionToken = aString()
     private val credentials = AwsSessionCredentials.create(accessKey, secretKey, sessionToken)
-    private val accessToken = AccessToken("ssoUrl", "ssoRegion", accessTokenId, Instant.now().plusSeconds(10))
+    private val accessToken = AccessToken(aString(), aString(), accessTokenId, Instant.now().plusSeconds(10))
 
     private lateinit var ssoClient: SsoClient
     private lateinit var ssoAccessTokenProvider: SsoAccessTokenProvider
-    private lateinit var credProvider: SsoCredentialProvider
+    private lateinit var sut: SsoCredentialProvider
 
     @Before
     fun setUp() {
@@ -44,17 +47,17 @@ class SsoCredentialProviderTest {
                 accessToken
             )
         }
-        credProvider = SsoCredentialProvider(accountId, roleName, ssoClient, ssoAccessTokenProvider)
+        sut = SsoCredentialProvider(accountId, roleName, ssoClient, ssoAccessTokenProvider)
     }
 
     @Test
     fun cachingDoesNotApplyToExpiredSession() {
         createSsoResponse(Instant.now().minusSeconds(5000))
 
-        assertThat(credProvider.resolveCredentials()).usingRecursiveComparison().isEqualTo(credentials)
+        assertThat(sut.resolveCredentials()).usingRecursiveComparison().isEqualTo(credentials)
 
         // Resolve again
-        assertThat(credProvider.resolveCredentials()).usingRecursiveComparison().isEqualTo(credentials)
+        assertThat(sut.resolveCredentials()).usingRecursiveComparison().isEqualTo(credentials)
 
         verify(ssoClient, times(2)).getRoleCredentials(any<GetRoleCredentialsRequest>())
     }
@@ -63,12 +66,27 @@ class SsoCredentialProviderTest {
     fun cachingDoesApplyToExpiredSession() {
         createSsoResponse(Instant.now().plus(2, ChronoUnit.HOURS))
 
-        assertThat(credProvider.resolveCredentials()).usingRecursiveComparison().isEqualTo(credentials)
+        assertThat(sut.resolveCredentials()).usingRecursiveComparison().isEqualTo(credentials)
 
         // Resolve again
-        assertThat(credProvider.resolveCredentials()).usingRecursiveComparison().isEqualTo(credentials)
+        assertThat(sut.resolveCredentials()).usingRecursiveComparison().isEqualTo(credentials)
 
         verify(ssoClient).getRoleCredentials(any<GetRoleCredentialsRequest>())
+    }
+
+    @Test
+    fun rejectedAccessTokenInvalidatesIt() {
+        ssoClient.stub {
+            on(
+                ssoClient.getRoleCredentials(any<GetRoleCredentialsRequest>())
+            ).thenThrow(
+                AccessDeniedException.builder().build()
+            )
+        }
+
+        assertThatThrownBy { sut.resolveCredentials() }.isNotNull()
+
+        verify(ssoAccessTokenProvider).invalidate()
     }
 
     private fun createSsoResponse(expirationTime: Instant) {
