@@ -47,7 +47,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
         ]
     ) {}
 
-    public async invoke({ options = {}, ...params }: SamLocalInvokeCommandArgs): Promise<void> {
+    public async invoke({ options, ...params }: SamLocalInvokeCommandArgs): Promise<void> {
         this.channelLogger.info(
             'AWS.running.command',
             'Running command: {0}',
@@ -216,6 +216,9 @@ export class SamCliLocalInvokeInvocation {
         invokeArgs.push(...(this.args.extraArgs ?? []))
 
         await this.args.invoker.invoke({
+            options: {
+                env: this.args.environmentVariables,
+            },
             command: 'sam',
             args: invokeArgs,
             isDebug: !!this.args.debugPort,
