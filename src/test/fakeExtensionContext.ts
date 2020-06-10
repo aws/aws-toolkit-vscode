@@ -13,6 +13,7 @@ import { FakeTelemetryPublisher } from './fake/fakeTelemetryService'
 import { MockOutputChannel } from './mockOutputChannel'
 import { FakeChannelLogger } from './shared/fakeChannelLogger'
 import { FakeAwsContext, FakeRegionProvider } from './utilities/fakeAwsContext'
+import { CredentialsStore } from '../credentials/credentialsStore'
 
 export interface FakeMementoStorage {
     [key: string]: any
@@ -93,6 +94,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
             outputChannel: outputChannel,
             telemetryService: telemetryService,
             chanLogger: channelLogger,
+            credentialsStore: new CredentialsStore(),
         }
     }
 }

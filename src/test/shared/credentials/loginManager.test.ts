@@ -11,6 +11,7 @@ import { CredentialsProviderId } from '../../../credentials/providers/credential
 import { CredentialsProviderManager } from '../../../credentials/providers/credentialsProviderManager'
 import { AwsContext } from '../../../shared/awsContext'
 import * as accountId from '../../../shared/credentials/accountId'
+import { CredentialsStore } from '../../../credentials/credentialsStore'
 
 describe('LoginManager', async () => {
     let sandbox: sinon.SinonSandbox
@@ -26,6 +27,8 @@ describe('LoginManager', async () => {
         credentialTypeId: 'someId',
     }
 
+    const credentialsStore = new CredentialsStore()
+
     let loginManager: LoginManager
     let credentialsProvider: CredentialsProvider
     let getAccountIdStub: sinon.SinonStub<[AWS.Credentials, string], Promise<string | undefined>>
@@ -34,7 +37,7 @@ describe('LoginManager', async () => {
     beforeEach(async () => {
         sandbox = sinon.createSandbox()
 
-        loginManager = new LoginManager(awsContext)
+        loginManager = new LoginManager(awsContext, credentialsStore)
         credentialsProvider = {
             getCredentials: sandbox.stub().resolves(sampleCredentials),
             getCredentialsProviderId: sandbox.stub().returns(sampleCredentialsProviderId),

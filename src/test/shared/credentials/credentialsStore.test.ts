@@ -38,15 +38,15 @@ describe('CredentialsStore', async () => {
         assert.strictEqual(await sut.getCredentials(sampleCredentialsProviderId), undefined)
     })
 
-    it('getOrCreateCredentials creates when credentials are not loaded', async () => {
+    it('upsertCredentials creates when credentials are not loaded', async () => {
         const provider = makeSampleCredentialsProvider(1)
-        const loadedCredentials = await sut.getOrCreateCredentials(sampleCredentialsProviderId, provider)
+        const loadedCredentials = await sut.upsertCredentials(sampleCredentialsProviderId, provider)
 
         assert.strictEqual(loadedCredentials.credentials, sampleCredentials)
         assert.strictEqual(loadedCredentials.credentialsHashCode, provider.getHashCode())
     })
 
-    it('getOrCreateCredentials does not call create method once credentials are loaded', async () => {
+    it('upsertCredentials does not call create method once credentials are loaded', async () => {
         const provider = makeSampleCredentialsProvider()
         const getCredentialsStub = sandbox
             .stub(provider, 'getCredentials')
@@ -55,8 +55,8 @@ describe('CredentialsStore', async () => {
             .onSecondCall()
             .throws('Create should not be called!')
 
-        const loadedCredentials1 = await sut.getOrCreateCredentials(sampleCredentialsProviderId, provider)
-        const loadedCredentials2 = await sut.getOrCreateCredentials(sampleCredentialsProviderId, provider)
+        const loadedCredentials1 = await sut.upsertCredentials(sampleCredentialsProviderId, provider)
+        const loadedCredentials2 = await sut.upsertCredentials(sampleCredentialsProviderId, provider)
 
         assert.strictEqual(getCredentialsStub.callCount, 1, 'Expected create method to be called once only')
         assert.strictEqual(loadedCredentials1.credentials, sampleCredentials)
@@ -65,7 +65,7 @@ describe('CredentialsStore', async () => {
 
     it('getCredentials returns stored credentials', async () => {
         const provider = makeSampleCredentialsProvider(2)
-        await sut.getOrCreateCredentials(sampleCredentialsProviderId, provider)
+        await sut.upsertCredentials(sampleCredentialsProviderId, provider)
         const loadedCredentials = await sut.getCredentials(sampleCredentialsProviderId)
 
         assert.strictEqual(loadedCredentials?.credentials, sampleCredentials)
@@ -73,7 +73,7 @@ describe('CredentialsStore', async () => {
     })
 
     it('invalidate removes the credentials from storage', async () => {
-        await sut.getOrCreateCredentials(sampleCredentialsProviderId, makeSampleCredentialsProvider())
+        await sut.upsertCredentials(sampleCredentialsProviderId, makeSampleCredentialsProvider())
         sut.invalidateCredentials(sampleCredentialsProviderId)
         const loadedCredentials = await sut.getCredentials(sampleCredentialsProviderId)
 

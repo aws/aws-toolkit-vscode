@@ -26,6 +26,7 @@ import { DefaultValidatingSamCliProcessInvoker } from './cli/defaultValidatingSa
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from './cli/samCliBuild'
 import { SamCliLocalInvokeInvocation, SamCliLocalInvokeInvocationArguments } from './cli/samCliLocalInvoke'
 import { SamLaunchRequestArgs } from './debugger/awsSamDebugger'
+import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
 
 export interface LambdaLocalInvokeParams {
     /** URI of the current editor document. */
@@ -136,13 +137,17 @@ export async function invokeLambdaFunction(
 
     ctx.chanLogger.info('AWS.output.building.sam.application', 'Building SAM Application...')
     const samBuildOutputFolder = path.join(config.baseBuildDir!, 'output')
+    const envVars = {
+        ...(config.awsCredentials ? asEnvironmentVariables(config.awsCredentials) : {}),
+        ...(config.aws?.region ? { AWS_DEFAULT_REGION: config.aws.region } : {}),
+    }
     const samCliArgs: SamCliBuildInvocationArguments = {
         buildDir: samBuildOutputFolder,
         baseDir: config.codeRoot,
         templatePath: config.samTemplatePath!,
         invoker: processInvoker,
         manifestPath: config.manifestPath,
-        environmentVariables: {},
+        environmentVariables: envVars,
         useContainer: config.sam?.containerBuild || false,
         extraArgs: config.sam?.buildArguments,
     }
@@ -174,6 +179,7 @@ export async function invokeLambdaFunction(
         templatePath: config.samTemplatePath,
         eventPath: config.eventPayloadFile,
         environmentVariablePath: config.envFile,
+        environmentVariables: envVars,
         invoker: config.samLocalInvokeCommand!,
         dockerNetwork: config.sam?.dockerNetwork,
         debugPort: !config.noDebug ? config.debugPort?.toString() : undefined,

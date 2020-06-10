@@ -3,25 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
-
-import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
-import { credentialHelpUrl } from '../shared/constants'
 import { getAccountId } from '../shared/credentials/accountId'
 import { getLogger } from '../shared/logger'
 import { recordAwsSetCredentials, Result } from '../shared/telemetry/telemetry'
 import { CredentialsStore } from './credentialsStore'
-import { CredentialsProvider } from './providers/credentialsProvider'
+import { notifyUserInvalidCredentials } from './credentialsUtilities'
 import { asString, CredentialsProviderId } from './providers/credentialsProviderId'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 
 export class LoginManager {
     private readonly defaultCredentialsRegion = 'us-east-1'
-    private readonly credentialsStore: CredentialsStore = new CredentialsStore()
 
-    public constructor(private readonly awsContext: AwsContext) {}
+    public constructor(private readonly awsContext: AwsContext, private readonly store: CredentialsStore) {}
 
     /**
      * Establishes a Credentials for the Toolkit to use. Essentially the Toolkit becomes "logged in".
@@ -37,9 +31,8 @@ export class LoginManager {
                 throw new Error(`Could not find Credentials Provider for ${asString(credentialsProviderId)}`)
             }
 
-            await this.updateCredentialsStore(credentialsProviderId, provider)
+            const storedCredentials = await this.store.upsertCredentials(credentialsProviderId, provider)
 
-            const storedCredentials = await this.credentialsStore.getCredentials(credentialsProviderId)
             if (!storedCredentials) {
                 throw new Error(`No credentials found for id ${asString(credentialsProviderId)}`)
             }
@@ -64,11 +57,11 @@ export class LoginManager {
                 )}. Toolkit will now disconnect from AWS. %O`,
                 err as Error
             )
-            this.credentialsStore.invalidateCredentials(credentialsProviderId)
+            this.store.invalidateCredentials(credentialsProviderId)
 
             await this.logout()
 
-            this.notifyUserInvalidCredentials(credentialsProviderId)
+            notifyUserInvalidCredentials(credentialsProviderId)
         } finally {
             recordAwsSetCredentials({ result: loginResult })
         }
@@ -79,46 +72,5 @@ export class LoginManager {
      */
     public async logout(): Promise<void> {
         await this.awsContext.setCredentials(undefined)
-    }
-
-    /**
-     * Updates the CredentialsStore if the credentials are considered different
-     */
-    private async updateCredentialsStore(
-        credentialsProviderId: CredentialsProviderId,
-        provider: CredentialsProvider
-    ): Promise<void> {
-        const storedCredentials = await this.credentialsStore.getCredentials(credentialsProviderId)
-        if (provider.getHashCode() !== storedCredentials?.credentialsHashCode) {
-            getLogger().verbose(
-                `Credentials for ${asString(credentialsProviderId)} have changed, using updated credentials.`
-            )
-            this.credentialsStore.invalidateCredentials(credentialsProviderId)
-        }
-
-        await this.credentialsStore.getOrCreateCredentials(credentialsProviderId, provider)
-    }
-
-    private notifyUserInvalidCredentials(credentialProviderId: CredentialsProviderId) {
-        const getHelp = localize('AWS.message.credentials.invalid.help', 'Get Help...')
-        const viewLogs = localize('AWS.message.credentials.invalid.logs', 'View Logs...')
-
-        vscode.window
-            .showErrorMessage(
-                localize(
-                    'AWS.message.credentials.invalid',
-                    'Invalid Credentials {0}, see logs for more information.',
-                    asString(credentialProviderId)
-                ),
-                getHelp,
-                viewLogs
-            )
-            .then((selection: string | undefined) => {
-                if (selection === getHelp) {
-                    vscode.env.openExternal(vscode.Uri.parse(credentialHelpUrl))
-                } else if (selection === viewLogs) {
-                    vscode.commands.executeCommand('aws.viewLogs')
-                }
-            })
     }
 }
