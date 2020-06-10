@@ -83,6 +83,7 @@
     <depends optional="true" config-file="ext-python.xml">com.intellij.modules.python</depends>
     <depends optional="true" config-file="ext-nodejs.xml">JavaScriptDebugger</depends>
     <depends optional="true" config-file="ext-rider.xml">com.intellij.modules.rider</depends>
+    <depends optional="true" config-file="ext-datagrip.xml">com.intellij.database</depends>
 
     <xi:include href="/META-INF/change-notes.xml" xpointer="xpointer(/idea-plugin/*)">
         <xi:fallback/>

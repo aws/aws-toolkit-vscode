@@ -61,6 +61,7 @@ static def ideProfiles() {
                         "org.jetbrains.plugins.yaml",
                         "JavaScript",
                         "JavaScriptDebugger",
+                        "com.intellij.database",
                     ]
                 ],
                 "RD": [
