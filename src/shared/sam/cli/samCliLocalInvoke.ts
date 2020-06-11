@@ -96,7 +96,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                 onError: (error: Error): void => {
                     this.channelLogger.error(
                         'AWS.samcli.local.invoke.error',
-                        'Error encountered running local SAM Application',
+                        'Error running local SAM Application: {0}',
                         error
                     )
                     debuggerPromiseClosed = true
