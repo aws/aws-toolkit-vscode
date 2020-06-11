@@ -217,7 +217,10 @@ export class SamCliLocalInvokeInvocation {
 
         await this.args.invoker.invoke({
             options: {
-                env: this.args.environmentVariables,
+                env: {
+                    ...process.env,
+                    ...this.args.environmentVariables,
+                },
             },
             command: 'sam',
             args: invokeArgs,
