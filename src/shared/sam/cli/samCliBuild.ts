@@ -51,6 +51,10 @@ export interface SamCliBuildInvocationArguments {
      * The path to a custom dependency manifest (ex: package.json) to use instead of the default one.
      */
     manifestPath?: string
+    /**
+     * parameter overrides specified in the `sam.template.parameters` field
+     */
+    parameterOverrides?: string[]
     /** SAM args specified by user (`sam.buildArguments`). */
     extraArgs?: string[]
 }
@@ -86,6 +90,12 @@ export class SamCliBuildInvocation {
         this.addArgumentIf(invokeArgs, !!this.args.useContainer, '--use-container')
         this.addArgumentIf(invokeArgs, !!this.args.skipPullImage, '--skip-pull-image')
         this.addArgumentIf(invokeArgs, !!this.args.manifestPath, '--manifest', this.args.manifestPath!)
+        this.addArgumentIf(
+            invokeArgs,
+            !!this.args.parameterOverrides && this.args.parameterOverrides.length > 0,
+            '--parameter-overrides',
+            ...this.args.parameterOverrides!
+        )
         invokeArgs.push(...(this.args.extraArgs ?? []))
 
         const env: NodeJS.ProcessEnv = {

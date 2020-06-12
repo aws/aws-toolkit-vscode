@@ -312,27 +312,4 @@ describe('CloudFormation', () => {
             assert.strictEqual(runtime, 'nodejs12.x')
         })
     })
-
-    describe('getCodeUri', async () => {
-        it('throws if resource does not specify properties', async () => {
-            const resource = createBaseResource()
-            delete resource.Properties
-
-            assert.throws(() => CloudFormation.getCodeUri(resource))
-        })
-
-        it('throws if resource does not specify a code uri', async () => {
-            const resource = createBaseResource()
-            delete resource.Properties!.CodeUri
-
-            assert.throws(() => CloudFormation.getCodeUri(resource))
-        })
-
-        it('returns code uri if specified', async () => {
-            const resource = createBaseResource()
-            const codeUri = CloudFormation.getCodeUri(resource)
-
-            assert.strictEqual(codeUri, '/')
-        })
-    })
 })

@@ -8,6 +8,7 @@ import { writeFile } from 'fs-extra'
 import * as yaml from 'js-yaml'
 import * as filesystemUtilities from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
+import { getLogger } from '../logger'
 
 export namespace CloudFormation {
     export const SERVERLESS_FUNCTION_TYPE = 'AWS::Serverless::Function'
@@ -39,12 +40,16 @@ export namespace CloudFormation {
     }
 
     export interface ResourceProperties {
-        Handler: string
-        CodeUri: string
-        Runtime?: string
+        Handler: string | Ref
+        CodeUri: string | Ref
+        Runtime?: string | Ref
         MemorySize?: number
-        Timeout?: number
+        Timeout?: number | Ref
         Environment?: Environment
+    }
+
+    interface Ref {
+        Ref: string
     }
 
     export interface Environment {
@@ -184,46 +189,60 @@ export namespace CloudFormation {
         }
 
         for (const lambdaResource of lambdaResources) {
-            validateResource(lambdaResource)
+            validateResource(lambdaResource, template)
         }
     }
 
-    export function validateResource(resource: Resource): void {
+    /**
+     * Validates whether or not a property is an expected type.
+     * This takes refs into account but doesn't
+     * @param resource
+     * @param template
+     */
+    export function validateResource(resource: Resource, template: Template): void {
         if (!resource.Type) {
             throw new Error('Missing or invalid value in Template for key: Type')
         }
         if (!!resource.Properties) {
-            if (!resource.Properties.Handler || typeof resource.Properties.Handler !== 'string') {
+            if (
+                !resource.Properties.Handler ||
+                !validatePropertyType(resource.Properties.Handler, 'string', template)
+            ) {
                 throw new Error('Missing or invalid value in Template for key: Handler')
             }
-            if (!resource.Properties.CodeUri || typeof resource.Properties.CodeUri !== 'string') {
+            if (
+                !resource.Properties.CodeUri ||
+                !validatePropertyType(resource.Properties.CodeUri, 'string', template)
+            ) {
                 throw new Error('Missing or invalid value in Template for key: CodeUri')
             }
-            if (!!resource.Properties.Runtime && typeof resource.Properties.Runtime !== 'string') {
+            if (
+                !!resource.Properties.Runtime &&
+                !validatePropertyType(resource.Properties.Runtime, 'string', template)
+            ) {
                 throw new Error('Invalid value in Template for key: Runtime')
             }
-            if (!!resource.Properties.Timeout && typeof resource.Properties.Timeout !== 'number') {
+            if (
+                !!resource.Properties.Timeout &&
+                !validatePropertyType(resource.Properties.Timeout, 'number', template)
+            ) {
                 throw new Error('Invalid value in Template for key: Timeout')
             }
         }
     }
 
-    export function getRuntime(resource: Pick<Resource, 'Properties'>): string {
+    export function getRuntime(resource: Pick<Resource, 'Properties'>, template: Template): string {
         const properties = resource.Properties
-        if (!properties || !properties.Runtime) {
+        if (!properties || !validatePropertyType(properties.Runtime, 'string', template)) {
             throw new Error('Resource does not specify a Runtime')
         }
 
-        return properties.Runtime
-    }
-
-    export function getCodeUri(resource: Pick<Resource, 'Properties'>): string {
-        const properties = resource.Properties
-        if (!properties || !properties.CodeUri) {
-            throw new Error('Resource does not specify a CodeUri')
+        const reffedVal = getStringForProperty(properties.Runtime! as Ref, template)
+        // TODO: should we handle this a different way? User could still override in this state.
+        if (!reffedVal) {
+            throw new Error('Resource references a parameter without a default value')
         }
-
-        return properties.CodeUri
+        return reffedVal
     }
 
     export async function getResourceFromTemplate(
@@ -283,5 +302,108 @@ export namespace CloudFormation {
             //       `CodeUri`, rather than to the directory containing the source file.
             resource.Properties.Handler === handlerName
         )
+    }
+
+    export function getStringForProperty(
+        property: string | number | object | undefined,
+        template: Template
+    ): string | undefined {
+        if (validatePropertyType(property, 'string', template)) {
+            if (typeof property === 'string') {
+                return property
+            } else if (typeof property === 'object') {
+                try {
+                    const forcedProperty = property as Ref
+                    return getReffedString(forcedProperty, template)
+                } catch (err) {
+                    getLogger().debug(err)
+                }
+            }
+        }
+
+        return undefined
+    }
+
+    export function getNumberForProperty(
+        property: string | number | object | undefined,
+        template: Template
+    ): number | undefined {
+        if (validatePropertyType(property, 'number', template)) {
+            if (typeof property === 'number') {
+                return property
+            } else if (typeof property === 'object') {
+                try {
+                    const forcedProperty = property as Ref
+                    return getReffedNumber(forcedProperty, template)
+                } catch (err) {
+                    getLogger().debug(err)
+                }
+            }
+        }
+
+        return undefined
+    }
+
+    function validatePropertyType(
+        property: string | number | object | undefined,
+        type: 'string' | 'number',
+        template: Template
+    ): boolean {
+        if (typeof property === type) {
+            return true
+        } else if (
+            typeof property === 'object' &&
+            Object.keys(property).length === 1 &&
+            Object.keys(property).includes('Ref')
+        ) {
+            // property has a Ref, force it to abide by that shape
+            const forcedProperty = property as Ref
+            const param = getReffedParam(forcedProperty, template)
+            const paramType = param.Type === 'Number' ? 'number' : 'string'
+
+            return paramType === type
+        }
+
+        return false
+    }
+
+    function getReffedNumber(ref: Ref, template: Template): number | undefined {
+        const param = getReffedParam(ref, template)
+        if (param.Type === 'Number') {
+            if (param.Default && typeof param.Default !== 'number') {
+                throw new Error(`Parameter ${ref.Ref} is not a number`)
+            }
+
+            // returns undefined if no default value is present
+            return param.Default
+        }
+
+        throw new Error(`Parameter ${ref.Ref} is not typed as a number`)
+    }
+
+    function getReffedString(ref: Ref, template: Template): string | undefined {
+        const param = getReffedParam(ref, template)
+        // every other type, including List<Number>, is formatted as a string.
+        if (param.Type !== 'Number') {
+            if (param.Default && typeof param.Default !== 'string') {
+                throw new Error(`Parameter ${ref.Ref} is not a string`)
+            }
+
+            // returns undefined if no default value is present
+            return param.Default
+        }
+
+        throw new Error(`Parameter ${ref.Ref} is not typed as a string`)
+    }
+
+    function getReffedParam(ref: Ref, template: Template): Parameter {
+        const refParam = ref.Ref
+        const params = template.Parameters
+
+        if (params && Object.keys(params).includes(refParam)) {
+            return params[refParam]!
+        }
+
+        throw new Error(`Parameter not found in template: ${refParam}`)
     }
 }

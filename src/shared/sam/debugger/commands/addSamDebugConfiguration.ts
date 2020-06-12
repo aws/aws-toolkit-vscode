@@ -19,6 +19,7 @@ import {
     createTemplateAwsSamDebugConfig,
     TEMPLATE_TARGET_TYPE,
 } from '../awsSamDebugConfiguration'
+import { CloudFormation } from '../../../cloudformation/cloudformation'
 
 /**
  * Holds information required to create a launch config
@@ -54,11 +55,11 @@ export async function addSamDebugConfiguration(
             if (templateDatum) {
                 const resource = templateDatum.template.Resources![resourceName]
                 if (resource && resource.Properties) {
-                    const existingConfig = await getExistingConfiguration(
-                        workspaceFolder,
+                    const handler = CloudFormation.getStringForProperty(
                         resource.Properties.Handler,
-                        rootUri
+                        templateDatum.template
                     )
+                    const existingConfig = await getExistingConfiguration(workspaceFolder, handler ?? '', rootUri)
                     if (existingConfig) {
                         const responseMigrate: string = localize(
                             'AWS.sam.debugger.useExistingConfig.migrate',

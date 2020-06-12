@@ -150,6 +150,7 @@ export async function invokeLambdaFunction(
         environmentVariables: envVars,
         useContainer: config.sam?.containerBuild || false,
         extraArgs: config.sam?.buildArguments,
+        parameterOverrides: config.parameterOverrides,
     }
     if (!config.noDebug) {
         // Needed at least for dotnet case; harmless for others.
@@ -185,6 +186,7 @@ export async function invokeLambdaFunction(
         debugPort: !config.noDebug ? config.debugPort?.toString() : undefined,
         debuggerPath: config.debuggerPath,
         extraArgs: config.sam?.localArguments,
+        parameterOverrides: config.parameterOverrides,
     }
 
     const command = new SamCliLocalInvokeInvocation(localInvokeArgs)

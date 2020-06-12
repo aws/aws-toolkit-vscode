@@ -13,6 +13,7 @@ import {
     getTemplateResource,
     NodejsDebugConfiguration,
     PythonDebugConfiguration,
+    getTemplate,
 } from '../../../lambda/local/debugConfiguration'
 import { getDefaultRuntime, getFamily, getRuntimeFamily, RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import { CloudFormationTemplateRegistry, getResourcesFromTemplateDatum } from '../../cloudformation/templateRegistry'
@@ -43,6 +44,7 @@ import { getCredentialsFromStore } from '../../../credentials/credentialsStore'
 import { fromString } from '../../../credentials/providers/credentialsProviderId'
 import { notifyUserInvalidCredentials } from '../../../credentials/credentialsUtilities'
 import { Credentials } from 'aws-sdk/lib/credentials'
+import { CloudFormation } from '../../cloudformation/cloudformation'
 
 const localize = nls.loadMessageBundle()
 
@@ -120,6 +122,11 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
      */
     awsCredentials?: Credentials
 
+    /**
+     * parameter overrides specified in the `sam.template.parameters` field
+     */
+    parameterOverrides: string[]
+
     //
     //  Invocation properties (for "execute" phase, after "config" phase).
     //  Non-serializable...
@@ -172,7 +179,12 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                     for (const resourceKey of resources.keys()) {
                         const runtimeName = resources.get(resourceKey)?.Properties?.Runtime
                         configs.push(
-                            createTemplateAwsSamDebugConfig(folder, runtimeName, resourceKey, templateDatum.path)
+                            createTemplateAwsSamDebugConfig(
+                                folder,
+                                CloudFormation.getStringForProperty(runtimeName, templateDatum.template),
+                                resourceKey,
+                                templateDatum.path
+                            )
                         )
                     }
                 }
@@ -286,6 +298,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
 
         const editor = vscode.window.activeTextEditor
         const templateInvoke = config.invokeTarget as TemplateTargetProperties
+        const template = getTemplate(folder, config)
         const templateResource = getTemplateResource(folder, config)
         const codeRoot = getCodeRoot(folder, config)
         const handlerName = getHandlerName(folder, config)
@@ -300,11 +313,16 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
 
         const runtime: string | undefined =
             config.lambda?.runtime ??
-            templateResource?.Properties?.Runtime ??
+            (template
+                ? CloudFormation.getStringForProperty(templateResource?.Properties?.Runtime, template)
+                : undefined) ??
             getDefaultRuntime(getRuntimeFamily(editor?.document?.languageId ?? 'unknown'))
 
         const lambdaMemory = templateResource?.Properties?.MemorySize ?? config.lambda?.memoryMb
-        const lambdaTimout = templateResource?.Properties?.Timeout ?? config.lambda?.timeoutSec
+        const lambdaTimeout =
+            (template
+                ? CloudFormation.getNumberForProperty(templateResource?.Properties?.Timeout, template)
+                : undefined) ?? config.lambda?.timeoutSec
 
         if (!runtime) {
             getLogger().error(`SAM debug: failed to launch config: ${config})`)
@@ -333,6 +351,14 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             }
         }
 
+        let parameterOverrideArr: string[] = []
+        const params = config.sam?.template?.parameters
+        if (params) {
+            for (const key of Object.keys(params)) {
+                parameterOverrideArr.push(`${key}=${params[key].toString()}`)
+            }
+        }
+
         let launchConfig: SamLaunchRequestArgs = {
             ...config,
             request: 'attach',
@@ -349,10 +375,11 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             lambda: {
                 ...config.lambda,
                 memoryMb: lambdaMemory,
-                timeoutSec: lambdaTimout,
+                timeoutSec: lambdaTimeout,
                 environmentVariables: { ...config.lambda?.environmentVariables },
             },
             awsCredentials: awsCredentials,
+            parameterOverrides: parameterOverrideArr,
         }
 
         //

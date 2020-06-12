@@ -79,6 +79,8 @@
     "AWS.configuration.description.awssam.debug.dockerNetwork": "Specifies the name or id of an existing Docker network that Lambda Docker containers should connect to.",
     "AWS.configuration.description.awssam.debug.localArguments": "Additional arguments to pass to the `sam local` command.",
     "AWS.configuration.description.awssam.debug.skipNewImageCheck": "Specifies whether the command should skip pulling down the latest Docker image for Lambda runtime (default: false).",
+    "AWS.configuration.description.awssam.debug.template": "Values to override in the template",
+    "AWS.configuration.description.awssam.debug.templateParameters": "Key:value mappings for SAM template parameter overrides. More information can be found",
     "AWS.configuration.description.awssam.debug.snippets.lambdaCode.label": "AWS SAM: Direct Lambda handler invoke",
     "AWS.configuration.description.awssam.debug.snippets.lambdaCode.description": "A new configuration for invoking an AWS Lambda directly via the SAM CLI.",
     "AWS.configuration.description.awssam.debug.snippets.lambdaTemplate.label": "AWS SAM: Template-based Lambda invoke",
