@@ -380,7 +380,7 @@ describe('SamDebugConfigurationProvider', async () => {
                     },
                     memoryMb: 1.2,
                     timeoutSec: 9000,
-                    event: {
+                    payload: {
                         json: {
                             'test-payload-key-1': 'test payload value 1',
                             'test-payload-key-2': 'test payload value 2',
@@ -496,7 +496,7 @@ describe('SamDebugConfigurationProvider', async () => {
                     },
                     memoryMb: 1.01,
                     timeoutSec: 99,
-                    event: {
+                    payload: {
                         json: {
                             'test-js-template-key-1': 'test js target=template value 1',
                             'test-js-template-key-2': 'test js target=template value 2',
@@ -737,7 +737,7 @@ describe('SamDebugConfigurationProvider', async () => {
                     },
                     memoryMb: 42,
                     timeoutSec: 717,
-                    event: {
+                    payload: {
                         json: {
                             'test-payload-key-1': 'test payload value 1',
                         },
@@ -876,7 +876,7 @@ Globals:
                 },
                 lambda: {
                     runtime: 'python3.7',
-                    event: {
+                    payload: {
                         path: `${appDir}/events/event.json`,
                     },
                 },
@@ -942,7 +942,7 @@ Globals:
             assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{}}')
             assert.strictEqual(
                 readFileSync(actual.eventPayloadFile, 'utf-8'),
-                readFileSync(input.lambda.event.path, 'utf-8')
+                readFileSync(input.lambda.payload.path, 'utf-8')
             )
             assertFileText(
                 expected.templatePath,
@@ -1439,7 +1439,7 @@ describe('createTemplateAwsSamDebugConfig', () => {
                 templatePath: templatePath,
             },
             lambda: {
-                event: {},
+                payload: {},
                 environmentVariables: {},
             },
         })
@@ -1456,7 +1456,7 @@ describe('createTemplateAwsSamDebugConfig', () => {
             dockerNetwork: 'rockerFretwork',
         }
         const config = createTemplateAwsSamDebugConfig(undefined, undefined, name, templatePath, params)
-        assert.deepStrictEqual(config.lambda?.event?.json, params.eventJson)
+        assert.deepStrictEqual(config.lambda?.payload?.json, params.eventJson)
         assert.deepStrictEqual(config.lambda?.environmentVariables, params.environmentVariables)
         assert.strictEqual(config.sam?.dockerNetwork, params.dockerNetwork)
         assert.strictEqual(config.sam?.containerBuild, undefined)

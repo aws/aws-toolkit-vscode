@@ -123,7 +123,7 @@ export function createTemplateAwsSamDebugConfig(
             logicalId: resourceName,
         },
         lambda: {
-            event: {},
+            payload: {},
             environmentVariables: {},
         },
     }
@@ -134,11 +134,11 @@ export function createTemplateAwsSamDebugConfig(
             lambda:
                 preloadedConfig.environmentVariables || preloadedConfig.eventJson
                     ? {
-                          event: preloadedConfig.eventJson ? { json: preloadedConfig.eventJson } : {},
+                          payload: preloadedConfig.eventJson ? { json: preloadedConfig.eventJson } : {},
                           environmentVariables: preloadedConfig.environmentVariables,
                       }
                     : {
-                          event: {},
+                          payload: {},
                           environmentVariables: {},
                       },
             sam:
@@ -174,7 +174,7 @@ export function createCodeAwsSamDebugConfig(
         },
         lambda: {
             runtime,
-            event: {},
+            payload: {},
             environmentVariables: {},
         },
     }

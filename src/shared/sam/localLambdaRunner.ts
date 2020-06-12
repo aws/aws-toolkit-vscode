@@ -440,10 +440,10 @@ export async function makeConfig(config: SamLaunchRequestArgs): Promise<void> {
     await writeFile(config.envFile, env)
 
     // event.json
-    if (config.lambda?.event?.path) {
-        const fullpath = tryGetAbsolutePath(config.workspaceFolder, config.lambda?.event?.path)
+    if (config.lambda?.payload?.path) {
+        const fullpath = tryGetAbsolutePath(config.workspaceFolder, config.lambda?.payload?.path)
         await copyFile(fullpath, config.eventPayloadFile)
     } else {
-        await writeFile(config.eventPayloadFile, JSON.stringify(config.lambda?.event?.json || {}))
+        await writeFile(config.eventPayloadFile, JSON.stringify(config.lambda?.payload?.json || {}))
     }
 }

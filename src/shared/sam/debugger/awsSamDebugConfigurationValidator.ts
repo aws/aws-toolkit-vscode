@@ -207,15 +207,15 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
     }
 
     private validateLambda(config: AwsSamDebuggerConfiguration): ValidationResult {
-        if (config.lambda?.event?.path) {
-            const fullpath = tryGetAbsolutePath(this.workspaceFolder, config.lambda?.event?.path)
+        if (config.lambda?.payload?.path) {
+            const fullpath = tryGetAbsolutePath(this.workspaceFolder, config.lambda?.payload?.path)
             if (!fs.existsSync(fullpath)) {
                 return {
                     isValid: false,
                     message: localize(
                         'AWS.sam.debugger.missingRuntime',
                         'Payload file not found: "{0}"',
-                        config.lambda?.event?.path
+                        config.lambda?.payload?.path
                     ),
                 }
             }

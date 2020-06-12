@@ -238,10 +238,11 @@
                                         },
                                         "type": "object"
                                     },
-                                    "event": {
+                                    "payload": {
                                         "description": "%AWS.configuration.description.awssam.debug.event%",
                                         "properties": {
                                             "json": {
+                                                "description": "%AWS.configuration.description.awssam.debug.event.json%",
                                                 "additionalProperties": {
                                                     "type": [
                                                         "string",
@@ -347,7 +348,7 @@
                             },
                             "lambda": {
                                 "runtime": "${2:Lambda Runtime}",
-                                "event": {
+                                "payload": {
                                     "json": {}
                                 }
                             }
@@ -366,7 +367,7 @@
                                 "logicalId": "${2:Function Logical ID}"
                             },
                             "lambda": {
-                                "event": {
+                                "payload": {
                                     "json": {}
                                 }
                             }
