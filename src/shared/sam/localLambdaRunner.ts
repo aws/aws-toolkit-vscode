@@ -132,7 +132,15 @@ export async function invokeLambdaFunction(
 ): Promise<SamLaunchRequestArgs> {
     // Switch over to the output channel so the user has feedback that we're getting things ready
     ctx.chanLogger.channel.show(true)
-    ctx.chanLogger.info('AWS.output.sam.local.start', 'Preparing to run {0} locally...', config.handlerName)
+    if (!config.noDebug) {
+        ctx.chanLogger.info(
+            'AWS.output.sam.local.startDebug',
+            "Preparing to debug '{0}' locally...",
+            config.handlerName
+        )
+    } else {
+        ctx.chanLogger.info('AWS.output.sam.local.startRun', "Preparing to run '{0}' locally...", config.handlerName)
+    }
 
     const processInvoker = new DefaultValidatingSamCliProcessInvoker({})
 
