@@ -28,6 +28,7 @@ import { SamCliLocalInvokeInvocation, SamCliLocalInvokeInvocationArguments } fro
 import { SamLaunchRequestArgs } from './debugger/awsSamDebugger'
 import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
 
+// TODO: remove this and all related code.
 export interface LambdaLocalInvokeParams {
     /** URI of the current editor document. */
     uri: vscode.Uri
@@ -144,7 +145,7 @@ export async function invokeLambdaFunction(
     const samCliArgs: SamCliBuildInvocationArguments = {
         buildDir: samBuildOutputFolder,
         baseDir: config.codeRoot,
-        templatePath: config.samTemplatePath!,
+        templatePath: config.templatePath!,
         invoker: processInvoker,
         manifestPath: config.manifestPath,
         environmentVariables: envVars,
@@ -162,7 +163,7 @@ export async function invokeLambdaFunction(
     ctx.chanLogger.info('AWS.output.building.sam.application.complete', 'Build complete.')
 
     // XXX: reassignment
-    config.samTemplatePath = path.join(samBuildOutputFolder, 'template.yaml')
+    config.templatePath = path.join(samBuildOutputFolder, 'template.yaml')
     delete config.invokeTarget // Must not be used beyond this point.
 
     await onAfterBuild()
@@ -177,7 +178,7 @@ export async function invokeLambdaFunction(
 
     const localInvokeArgs: SamCliLocalInvokeInvocationArguments = {
         templateResourceName: TEMPLATE_RESOURCE_NAME,
-        templatePath: config.samTemplatePath,
+        templatePath: config.templatePath,
         eventPath: config.eventPayloadFile,
         environmentVariablePath: config.envFile,
         environmentVariables: envVars,

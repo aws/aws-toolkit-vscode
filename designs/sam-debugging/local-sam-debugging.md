@@ -179,7 +179,7 @@ The required fields are: type, request, invokeTarget
             // Reference to the thing (Template or Code) being invoked
             "invokeTarget": {
                 "target": "template", // template | code, influences fields expected by toolkit
-                "samTemplatePath": "path to template yaml file",
+                "templatePath": "path to template yaml file",
                 "samTemplateResource": "HelloWorldResource" // Name of Template resource to debug
             },
             // Lambda Execution related arguments

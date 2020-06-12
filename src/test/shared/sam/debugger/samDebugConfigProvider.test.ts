@@ -77,7 +77,7 @@ function assertEqualLaunchConfigs(actual: SamLaunchRequestArgs, expected: SamLau
     for (const o of [actual, expected]) {
         delete o.manifestPath
         delete o.documentUri
-        delete o.samTemplatePath
+        delete o.templatePath
         delete o.workspaceFolder
         delete o.codeRoot
         delete (o as any).localRoot // Node-only
@@ -158,12 +158,8 @@ describe('SamDebugConfigurationProvider', async () => {
             assert.notStrictEqual(provided, undefined)
             if (provided) {
                 assert.strictEqual(provided.length, 2)
-                assert.ok(
-                    resources.includes((provided[0].invokeTarget as TemplateTargetProperties).samTemplateResource)
-                )
-                assert.ok(
-                    resources.includes((provided[1].invokeTarget as TemplateTargetProperties).samTemplateResource)
-                )
+                assert.ok(resources.includes((provided[0].invokeTarget as TemplateTargetProperties).logicalId))
+                assert.ok(resources.includes((provided[1].invokeTarget as TemplateTargetProperties).logicalId))
             }
         })
 
@@ -191,12 +187,8 @@ describe('SamDebugConfigurationProvider', async () => {
             assert.notStrictEqual(provided, undefined)
             if (provided) {
                 assert.strictEqual(provided.length, 2)
-                assert.ok(
-                    resources.includes((provided[0].invokeTarget as TemplateTargetProperties).samTemplateResource)
-                )
-                assert.ok(
-                    resources.includes((provided[1].invokeTarget as TemplateTargetProperties).samTemplateResource)
-                )
+                assert.ok(resources.includes((provided[0].invokeTarget as TemplateTargetProperties).logicalId))
+                assert.ok(resources.includes((provided[1].invokeTarget as TemplateTargetProperties).logicalId))
                 assert.ok(!resources.includes(badResourceName))
             }
         })
@@ -291,7 +283,7 @@ describe('SamDebugConfigurationProvider', async () => {
             await createAndRegisterYaml({}, tempFile, registry)
             const resolved = await debugConfigProvider.makeConfig(
                 undefined,
-                createFakeConfig({ samTemplatePath: tempFile.fsPath })
+                createFakeConfig({ templatePath: tempFile.fsPath })
             )
             assert.strictEqual(resolved, undefined)
         })
@@ -301,8 +293,8 @@ describe('SamDebugConfigurationProvider', async () => {
             const resolved = await debugConfigProvider.makeConfig(
                 undefined,
                 createFakeConfig({
-                    samTemplatePath: tempFile.fsPath,
-                    samTemplateResource: resourceName,
+                    templatePath: tempFile.fsPath,
+                    logicalId: resourceName,
                 })
             )
             assert.strictEqual(resolved, undefined)
@@ -320,8 +312,8 @@ describe('SamDebugConfigurationProvider', async () => {
                 request: DIRECT_INVOKE_TYPE,
                 invokeTarget: {
                     target: TEMPLATE_TARGET_TYPE,
-                    samTemplatePath: tempFile.fsPath,
-                    samTemplateResource: resourceName,
+                    templatePath: tempFile.fsPath,
+                    logicalId: resourceName,
                 },
             })
             assert.strictEqual(resolved, undefined)
@@ -355,8 +347,8 @@ describe('SamDebugConfigurationProvider', async () => {
                 request: 'direct-invoke',
                 invokeTarget: {
                     target: TEMPLATE_TARGET_TYPE,
-                    samTemplatePath: relPath,
-                    samTemplateResource: 'TestResource',
+                    templatePath: relPath,
+                    logicalId: 'TestResource',
                     //lambdaHandler: 'sick handles',
                     //projectRoot: 'root as in beer'
                 },
@@ -421,7 +413,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 },
                 localRoot: pathutil.normalize(path.join(appDir, 'src')), // Normalized to absolute path.
                 name: 'SamLocalDebug',
-                samTemplatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
 
                 //
                 // Node-related fields
@@ -445,7 +437,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 '{"test-payload-key-1":"test payload value 1","test-payload-key-2":"test payload value 2"}'
             )
             assertFileText(
-                expected.samTemplatePath,
+                expected.templatePath,
                 `Resources:
   awsToolkitSamLocalResource:
     Type: 'AWS::Serverless::Function'
@@ -492,8 +484,8 @@ describe('SamDebugConfigurationProvider', async () => {
                 request: DIRECT_INVOKE_TYPE,
                 invokeTarget: {
                     target: TEMPLATE_TARGET_TYPE,
-                    samTemplatePath: 'template.yaml',
-                    samTemplateResource: 'SourceCodeTwoFoldersDeep',
+                    templatePath: 'template.yaml',
+                    logicalId: 'SourceCodeTwoFoldersDeep',
                 },
                 lambda: {
                     // For target=template these are written to env-vars.json,
@@ -540,7 +532,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 },
                 localRoot: appDir,
                 name: 'SamLocalDebug',
-                samTemplatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
 
                 //
                 // Node-related fields
@@ -564,7 +556,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 '{"test-js-template-key-1":"test js target=template value 1","test-js-template-key-2":"test js target=template value 2"}'
             )
             assertFileText(
-                expected.samTemplatePath,
+                expected.templatePath,
                 `Resources:
   awsToolkitSamLocalResource:
     Type: 'AWS::Serverless::Function'
@@ -643,7 +635,7 @@ describe('SamDebugConfigurationProvider', async () => {
                     timeoutSec: undefined,
                 },
                 name: 'SamLocalDebug',
-                samTemplatePath: expectedCodeRoot + '/input-template.yaml',
+                templatePath: expectedCodeRoot + '/input-template.yaml',
 
                 //
                 // Csharp-related fields
@@ -687,7 +679,7 @@ describe('SamDebugConfigurationProvider', async () => {
             assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{}}')
             assertFileText(expected.eventPayloadFile, '{}')
             assertFileText(
-                expected.samTemplatePath,
+                expected.templatePath,
                 `Resources:
   awsToolkitSamLocalResource:
     Type: 'AWS::Serverless::Function'
@@ -736,8 +728,8 @@ describe('SamDebugConfigurationProvider', async () => {
                 request: DIRECT_INVOKE_TYPE,
                 invokeTarget: {
                     target: TEMPLATE_TARGET_TYPE,
-                    samTemplatePath: 'template.yaml',
-                    samTemplateResource: 'HelloWorldFunction',
+                    templatePath: 'template.yaml',
+                    logicalId: 'HelloWorldFunction',
                 },
                 lambda: {
                     environmentVariables: {
@@ -780,7 +772,7 @@ describe('SamDebugConfigurationProvider', async () => {
                     ...input.lambda,
                 },
                 name: 'SamLocalDebug',
-                samTemplatePath: expectedCodeRoot + '/input-template.yaml',
+                templatePath: expectedCodeRoot + '/input-template.yaml',
 
                 //
                 // Csharp-related fields
@@ -824,7 +816,7 @@ describe('SamDebugConfigurationProvider', async () => {
             assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{"test-envvar-1":"test value 1"}}')
             assertFileText(expected.eventPayloadFile, '{"test-payload-key-1":"test payload value 1"}')
             assertFileText(
-                expected.samTemplatePath,
+                expected.templatePath,
                 `Resources:
   awsToolkitSamLocalResource:
     Type: 'AWS::Serverless::Function'
@@ -919,7 +911,7 @@ Globals:
                     timeoutSec: undefined,
                 },
                 name: 'SamLocalDebug',
-                samTemplatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
                 port: actual.debugPort,
                 redirectOutput: false,
 
@@ -953,7 +945,7 @@ Globals:
                 readFileSync(input.lambda.event.path, 'utf-8')
             )
             assertFileText(
-                expected.samTemplatePath,
+                expected.templatePath,
                 `Resources:
   awsToolkitSamLocalResource:
     Type: 'AWS::Serverless::Function'
@@ -998,8 +990,8 @@ Globals:
                 request: DIRECT_INVOKE_TYPE,
                 invokeTarget: {
                     target: TEMPLATE_TARGET_TYPE,
-                    samTemplatePath: 'python3.7-plain-sam-app/template.yaml',
-                    samTemplateResource: 'HelloWorldFunction',
+                    templatePath: 'python3.7-plain-sam-app/template.yaml',
+                    logicalId: 'HelloWorldFunction',
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-plain-sam-app/template.yaml'))
@@ -1033,7 +1025,7 @@ Globals:
                     timeoutSec: undefined,
                 },
                 name: 'SamLocalDebug',
-                samTemplatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
                 port: actual.debugPort,
                 redirectOutput: false,
 
@@ -1066,7 +1058,7 @@ Globals:
             assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{}}')
             assertFileText(expected.eventPayloadFile, '{}')
             assertFileText(
-                expected.samTemplatePath,
+                expected.templatePath,
                 `Resources:
   awsToolkitSamLocalResource:
     Type: 'AWS::Serverless::Function'
@@ -1112,8 +1104,8 @@ Globals:
                 request: DIRECT_INVOKE_TYPE,
                 invokeTarget: {
                     target: TEMPLATE_TARGET_TYPE,
-                    samTemplatePath: tempFile.fsPath,
-                    samTemplateResource: resourceName,
+                    templatePath: tempFile.fsPath,
+                    logicalId: resourceName,
                 },
                 lambda: {
                     // These are written to env-vars.json, but ignored by SAM.
@@ -1153,8 +1145,8 @@ Globals:
                 handlerName: 'my.test.handler',
                 invokeTarget: {
                     target: 'template',
-                    samTemplatePath: pathutil.normalize(path.join(tempDir ?? '?', 'test.yaml')),
-                    samTemplateResource: 'myResource',
+                    templatePath: pathutil.normalize(path.join(tempDir ?? '?', 'test.yaml')),
+                    logicalId: 'myResource',
                 },
                 lambda: {
                     environmentVariables: {
@@ -1166,7 +1158,7 @@ Globals:
                 },
                 localRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
                 name: 'SamLocalDebug',
-                samTemplatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
 
                 //
                 // Node-related fields
@@ -1187,7 +1179,7 @@ Globals:
             assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{"var1":"2","var2":"1"}}')
             assertFileText(expected.eventPayloadFile, '{}')
             assertFileText(
-                expected.samTemplatePath,
+                expected.templatePath,
                 `Resources:
   awsToolkitSamLocalResource:
     Type: 'AWS::Serverless::Function'
@@ -1250,8 +1242,8 @@ Globals:
                 request: DIRECT_INVOKE_TYPE,
                 invokeTarget: {
                     target: TEMPLATE_TARGET_TYPE,
-                    samTemplatePath: tempFile.fsPath,
-                    samTemplateResource: resourceName,
+                    templatePath: tempFile.fsPath,
+                    logicalId: resourceName,
                 },
                 lambda: {
                     // These are written to env-vars.json, but ignored by SAM.
@@ -1293,8 +1285,8 @@ Globals:
                 handlerName: 'my.test.handler',
                 invokeTarget: {
                     target: 'template',
-                    samTemplatePath: pathutil.normalize(path.join(tempDir ?? '?', 'test.yaml')),
-                    samTemplateResource: 'myResource',
+                    templatePath: pathutil.normalize(path.join(tempDir ?? '?', 'test.yaml')),
+                    logicalId: 'myResource',
                 },
                 lambda: {
                     environmentVariables: {
@@ -1306,7 +1298,7 @@ Globals:
                 },
                 localRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
                 name: 'SamLocalDebug',
-                samTemplatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
+                templatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
 
                 //
                 // Node-related fields
@@ -1335,12 +1327,9 @@ it('ensureRelativePaths', () => {
         index: 0,
     }
     const templateConfig = createTemplateAwsSamDebugConfig(undefined, undefined, 'test name 1', '/test1/template.yaml')
-    assert.strictEqual(
-        (templateConfig.invokeTarget as TemplateTargetProperties).samTemplatePath,
-        '/test1/template.yaml'
-    )
+    assert.strictEqual((templateConfig.invokeTarget as TemplateTargetProperties).templatePath, '/test1/template.yaml')
     ensureRelativePaths(workspace, templateConfig)
-    assert.strictEqual((templateConfig.invokeTarget as TemplateTargetProperties).samTemplatePath, 'template.yaml')
+    assert.strictEqual((templateConfig.invokeTarget as TemplateTargetProperties).templatePath, 'template.yaml')
 
     const codeConfig = createCodeAwsSamDebugConfig(
         undefined,
@@ -1398,8 +1387,8 @@ async function getConfig(
 function createFakeConfig(params: {
     name?: string
     target?: string
-    samTemplatePath?: string
-    samTemplateResource?: string
+    templatePath?: string
+    logicalId?: string
 }): AwsSamDebuggerConfiguration {
     return {
         type: AWS_SAM_DEBUG_TYPE,
@@ -1409,8 +1398,8 @@ function createFakeConfig(params: {
             !params.target || params.target === TEMPLATE_TARGET_TYPE
                 ? {
                       target: TEMPLATE_TARGET_TYPE,
-                      samTemplatePath: params.samTemplatePath ?? 'somewhere else',
-                      samTemplateResource: params.samTemplateResource ?? 'you lack resources',
+                      templatePath: params.templatePath ?? 'somewhere else',
+                      logicalId: params.logicalId ?? 'you lack resources',
                   }
                 : {
                       target: CODE_TARGET_TYPE,
@@ -1446,8 +1435,8 @@ describe('createTemplateAwsSamDebugConfig', () => {
             request: DIRECT_INVOKE_TYPE,
             invokeTarget: {
                 target: TEMPLATE_TARGET_TYPE,
-                samTemplateResource: name,
-                samTemplatePath: templatePath,
+                logicalId: name,
+                templatePath: templatePath,
             },
             lambda: {
                 event: {},
@@ -1530,8 +1519,8 @@ describe('debugConfiguration', () => {
             request: DIRECT_INVOKE_TYPE,
             invokeTarget: {
                 target: TEMPLATE_TARGET_TYPE,
-                samTemplatePath: tempFile.fsPath,
-                samTemplateResource: 'TestResource',
+                templatePath: tempFile.fsPath,
+                logicalId: 'TestResource',
             },
             lambda: {
                 runtime: [...lambdaModel.nodeJsRuntimes.values()][0],

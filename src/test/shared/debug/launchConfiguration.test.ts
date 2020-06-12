@@ -23,8 +23,8 @@ const samDebugConfiguration: AwsSamDebuggerConfiguration = {
     request: 'direct-invoke',
     invokeTarget: {
         target: 'template',
-        samTemplatePath: '/template.yaml',
-        samTemplateResource: 'resource',
+        templatePath: '/template.yaml',
+        logicalId: 'resource',
     },
 }
 
@@ -166,34 +166,34 @@ function createMockLaunchConfig(): LaunchConfiguration {
     })
     when(mockLaunchConfig.scopedResource).thenReturn(vscode.Uri.file(path.join(workspaceFolder, 'template.yaml')))
     when(mockLaunchConfig.getSamDebugConfigurations()).thenReturn([
-        // default: template target with not-in-workspace, absolute-pathed samTemplatePath
+        // default: template target with not-in-workspace, absolute-pathed templatePath
         createMockSamDebugConfig(),
         createMockSamDebugConfig({
             invokeTarget: {
                 target: 'template',
-                samTemplatePath: 'template.yaml',
-                samTemplateResource: 'relativePathGoodTemplate',
+                templatePath: 'template.yaml',
+                logicalId: 'relativePathGoodTemplate',
             },
         }),
         createMockSamDebugConfig({
             invokeTarget: {
                 target: 'template',
-                samTemplatePath: 'template2.yaml',
-                samTemplateResource: 'relativePathBadTemplate',
+                templatePath: 'template2.yaml',
+                logicalId: 'relativePathBadTemplate',
             },
         }),
         createMockSamDebugConfig({
             invokeTarget: {
                 target: 'template',
-                samTemplatePath: pathutils.normalize(path.resolve(workspaceFolder, 'template.yaml')),
-                samTemplateResource: 'absolutePathGoodTemplate',
+                templatePath: pathutils.normalize(path.resolve(workspaceFolder, 'template.yaml')),
+                logicalId: 'absolutePathGoodTemplate',
             },
         }),
         createMockSamDebugConfig({
             invokeTarget: {
                 target: 'template',
-                samTemplatePath: pathutils.normalize(path.resolve(workspaceFolder, 'template2.yaml')),
-                samTemplateResource: 'absolutePathBadTemplate',
+                templatePath: pathutils.normalize(path.resolve(workspaceFolder, 'template2.yaml')),
+                logicalId: 'absolutePathBadTemplate',
             },
         }),
         createMockSamDebugConfig({

@@ -110,7 +110,7 @@ function getSamCodeTargets(launchConfig: LaunchConfiguration): CodeTargetPropert
 }
 
 /**
- * Returns a Set containing the samTemplateResources from the launch.json file that the launch config is scoped to.
+ * Returns a Set containing the logicalIds from the launch.json file that the launch config is scoped to.
  * @param launchConfig Launch config to check
  */
 export function getReferencedTemplateResources(launchConfig: LaunchConfiguration): Set<string> {
@@ -119,9 +119,9 @@ export function getReferencedTemplateResources(launchConfig: LaunchConfiguration
 
     return _(existingSamTemplateTargets)
         .filter(target =>
-            pathutils.areEqual(folder?.uri.fsPath, target.samTemplatePath, launchConfig.scopedResource.fsPath)
+            pathutils.areEqual(folder?.uri.fsPath, target.templatePath, launchConfig.scopedResource.fsPath)
         )
-        .map(target => target.samTemplateResource)
+        .map(target => target.logicalId)
         .thru(array => new Set(array))
         .value()
 }

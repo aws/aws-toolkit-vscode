@@ -171,12 +171,12 @@
                                         "title": "Template Target Properties",
                                         "description": "%AWS.configuration.description.awssam.debug.invokeTarget%",
                                         "properties": {
-                                            "samTemplatePath": {
-                                                "description": "%AWS.configuration.description.awssam.debug.samTemplatePath%",
+                                            "templatePath": {
+                                                "description": "%AWS.configuration.description.awssam.debug.templatePath%",
                                                 "type": "string"
                                             },
-                                            "samTemplateResource": {
-                                                "description": "%AWS.configuration.description.awssam.debug.samTemplateResource%",
+                                            "logicalId": {
+                                                "description": "%AWS.configuration.description.awssam.debug.logicalId%",
                                                 "type": "string"
                                             },
                                             "target": {
@@ -189,8 +189,8 @@
                                         },
                                         "additionalProperties": false,
                                         "required": [
-                                            "samTemplatePath",
-                                            "samTemplateResource",
+                                            "templatePath",
+                                            "logicalId",
                                             "target"
                                         ],
                                         "type": "object"
@@ -362,8 +362,8 @@
                             "name": "${3:Invoke Lambda}",
                             "invokeTarget": {
                                 "target": "template",
-                                "samTemplatePath": "${1:Template Location}",
-                                "samTemplateResource": "${2:Function Logical ID}"
+                                "templatePath": "${1:Template Location}",
+                                "logicalId": "${2:Function Logical ID}"
                             },
                             "lambda": {
                                 "event": {

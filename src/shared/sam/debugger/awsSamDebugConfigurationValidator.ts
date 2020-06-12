@@ -59,13 +59,13 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
             )
         } else if (config.invokeTarget.target === TEMPLATE_TARGET_TYPE) {
             let cfnTemplate
-            if (config.invokeTarget.samTemplatePath) {
-                const fullpath = tryGetAbsolutePath(this.workspaceFolder, config.invokeTarget.samTemplatePath)
+            if (config.invokeTarget.templatePath) {
+                const fullpath = tryGetAbsolutePath(this.workspaceFolder, config.invokeTarget.templatePath)
                 // Normalize to absolute path for use in the runner.
-                config.invokeTarget.samTemplatePath = fullpath
+                config.invokeTarget.templatePath = fullpath
                 cfnTemplate = this.cftRegistry.getRegisteredTemplate(fullpath)?.template
             }
-            rv = this.validateTemplateConfig(config, config.invokeTarget.samTemplatePath, cfnTemplate)
+            rv = this.validateTemplateConfig(config, config.invokeTarget.templatePath, cfnTemplate)
         } else if (config.invokeTarget.target === CODE_TARGET_TYPE) {
             rv = this.validateCodeConfig(config)
         }
@@ -95,7 +95,7 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
                 message: localize(
                     'AWS.sam.debugger.missingField',
                     'Missing required field "{0}" in debug config',
-                    'samTemplatePath'
+                    'templatePath'
                 ),
             }
         }
@@ -106,36 +106,36 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
                 message: localize(
                     'AWS.sam.debugger.missingTemplate',
                     'Invalid (or missing) template file (path must be workspace-relative, or absolute): {0}',
-                    templateTarget.samTemplatePath
+                    templateTarget.templatePath
                 ),
             }
         }
 
         const resources = cfnTemplate.Resources
-        if (!templateTarget.samTemplateResource) {
+        if (!templateTarget.logicalId) {
             return {
                 isValid: false,
                 message: localize(
                     'AWS.sam.debugger.missingField',
                     'Missing required field "{0}" in debug config',
-                    'samTemplateResource'
+                    'logicalId'
                 ),
             }
         }
 
-        if (!resources || !Object.keys(resources).includes(templateTarget.samTemplateResource)) {
+        if (!resources || !Object.keys(resources).includes(templateTarget.logicalId)) {
             return {
                 isValid: false,
                 message: localize(
                     'AWS.sam.debugger.missingResource',
                     'Cannot find the template resource "{0}" in template file: {1}',
-                    templateTarget.samTemplateResource,
-                    templateTarget.samTemplatePath
+                    templateTarget.logicalId,
+                    templateTarget.templatePath
                 ),
             }
         }
 
-        const resource = resources[templateTarget.samTemplateResource]
+        const resource = resources[templateTarget.logicalId]
 
         // TODO: Validate against `AWS::Lambda::Function`?
         if (resource?.Type !== CloudFormation.SERVERLESS_FUNCTION_TYPE) {
@@ -144,8 +144,8 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
                 message: localize(
                     'AWS.sam.debugger.resourceNotAFunction',
                     'Template Resource {0} in Template file {1} needs to be of type {2}',
-                    templateTarget.samTemplateResource,
-                    templateTarget.samTemplatePath,
+                    templateTarget.logicalId,
+                    templateTarget.templatePath,
                     CloudFormation.SERVERLESS_FUNCTION_TYPE
                 ),
             }
@@ -157,8 +157,8 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
                 message: localize(
                     'AWS.sam.debugger.unsupportedRuntime',
                     'Runtime for Template Resource {0} in Template file {1} is either undefined or unsupported.',
-                    templateTarget.samTemplateResource,
-                    templateTarget.samTemplatePath
+                    templateTarget.logicalId,
+                    templateTarget.templatePath
                 ),
             }
         }

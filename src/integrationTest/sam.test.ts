@@ -215,7 +215,7 @@ describe('SAM Integration Tests', async () => {
                 let subSuiteTestLocation: string
 
                 let samAppCodeUri: vscode.Uri
-                let samTemplatePath: string
+                let cfnTemplatePath: string
 
                 before(async function() {
                     // tslint:disable-next-line: no-invalid-this
@@ -226,7 +226,7 @@ describe('SAM Integration Tests', async () => {
 
                     await createSamApplication(subSuiteTestLocation)
                     const appPath = path.join(subSuiteTestLocation, samApplicationName, scenario.path)
-                    samTemplatePath = path.join(subSuiteTestLocation, samApplicationName, 'template.yaml')
+                    cfnTemplatePath = path.join(subSuiteTestLocation, samApplicationName, 'template.yaml')
                     samAppCodeUri = await openSamAppFile(appPath)
                 })
 
@@ -245,7 +245,7 @@ describe('SAM Integration Tests', async () => {
                 })
 
                 it('the SAM Template contains the expected runtime', async () => {
-                    const fileContents = readFileSync(samTemplatePath).toString()
+                    const fileContents = readFileSync(cfnTemplatePath).toString()
                     assert.ok(fileContents.includes(`Runtime: ${scenario.runtime}`))
                 })
 
