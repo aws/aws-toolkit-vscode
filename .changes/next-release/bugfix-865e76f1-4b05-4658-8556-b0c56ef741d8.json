@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix partition awareness of SAM deploy"
-}
