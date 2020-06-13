@@ -179,8 +179,8 @@ The required fields are: type, request, invokeTarget
             // Reference to the thing (Template or Code) being invoked
             "invokeTarget": {
                 "target": "template", // template | code, influences fields expected by toolkit
-                "samTemplatePath": "path to template yaml file",
-                "samTemplateResource": "HelloWorldResource" // Name of Template resource to debug
+                "templatePath": "path to template yaml file",
+                "logicalId": "HelloWorldResource" // Name of Template resource to debug
             },
             // Lambda Execution related arguments
             "lambda": {
@@ -190,7 +190,7 @@ The required fields are: type, request, invokeTarget
                     "envvar2": "..."
                 },
                 // The event passed to the Lambda handler (defaults to an empty JSON object)
-                "event": {
+                "payload": {
                     // path or json, not both
                     "path": "somepath", // Path to event data
                     "json": {
@@ -256,7 +256,7 @@ The required fields are: type, request, invokeTarget, lambda.runtime
                     "envvar2": "..."
                 },
                 // The event passed to the Lambda handler (defaults to an empty JSON object)
-                "event": {
+                "payload": {
                     // path or json, not both
                     "path": "somepath", // Path to event data
                     "json": {

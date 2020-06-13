@@ -33,8 +33,8 @@ const debugConfigurations: AwsSamDebuggerConfiguration[] = [
         request: 'request',
         invokeTarget: {
             target: 'template',
-            samTemplatePath: '/',
-            samTemplateResource: 'existingResource',
+            templatePath: '/',
+            logicalId: 'existingResource',
         },
     },
     {
@@ -43,8 +43,8 @@ const debugConfigurations: AwsSamDebuggerConfiguration[] = [
         request: 'request',
         invokeTarget: {
             target: 'template',
-            samTemplatePath: '/some/other/template/with/the/same/resource/name',
-            samTemplateResource: 'newResource',
+            templatePath: '/some/other/template/with/the/same/resource/name',
+            logicalId: 'newResource',
         },
     },
 ]

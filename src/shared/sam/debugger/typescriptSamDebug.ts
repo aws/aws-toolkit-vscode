@@ -50,7 +50,7 @@ export async function makeTypescriptConfig(config: SamLaunchRequestArgs): Promis
         // Last-resort attempt to discover the project root (when there is no
         // `launch.json` nor `template.yaml`).
         config.codeRoot = pathutil.normalize(
-            await getSamProjectDirPathForFile(config?.samTemplatePath ?? config.documentUri!!.fsPath)
+            await getSamProjectDirPathForFile(config?.templatePath ?? config.documentUri!!.fsPath)
         )
         if (!config.codeRoot) {
             // TODO: return error and show it at the caller.
@@ -60,7 +60,7 @@ export async function makeTypescriptConfig(config: SamLaunchRequestArgs): Promis
     config.codeRoot = pathutil.normalize(config.codeRoot)
 
     // Always generate a temporary template.yaml, don't use workspace one directly.
-    config.samTemplatePath = await makeInputTemplate(config)
+    config.templatePath = await makeInputTemplate(config)
 
     //  Make a node launch-config from the generic config.
     const nodejsLaunchConfig: NodejsDebugConfiguration = {
