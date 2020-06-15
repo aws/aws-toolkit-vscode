@@ -16,8 +16,8 @@ class SettingsSelectorComboBoxActionTest {
     @JvmField
     val projectRule = ProjectRule()
 
-    private val DUMMY_REGION = anAwsRegion()
-    private val DUMMY_CREDENTIAL = aCredentialsIdentifier()
+    private val dummyRegion = anAwsRegion()
+    private val dummyCredential = aCredentialsIdentifier()
 
     @Test
     fun canConfigureForRegions() {
@@ -25,12 +25,13 @@ class SettingsSelectorComboBoxActionTest {
 
         val group = SettingsSelectorComboBoxAction(projectRule.project, ChangeAccountSettingsMode.REGIONS)
 
-        settings.changeRegionAndWait(DUMMY_REGION)
+        settings.changeRegionAndWait(dummyRegion)
 
         val action = TestActionEvent()
         group.update(action)
 
-        assertThat(action.presentation.text).isEqualTo(DUMMY_REGION.displayName)
+        assertThat(action.presentation.text).isEqualTo(dummyRegion.id)
+        assertThat(action.presentation.description).isEqualTo(dummyRegion.displayName)
     }
 
     @Test
@@ -39,11 +40,12 @@ class SettingsSelectorComboBoxActionTest {
 
         val group = SettingsSelectorComboBoxAction(projectRule.project, ChangeAccountSettingsMode.CREDENTIALS)
 
-        settings.changeCredentialProviderAndWait(DUMMY_CREDENTIAL)
+        settings.changeCredentialProviderAndWait(dummyCredential)
 
         val action = TestActionEvent()
         group.update(action)
 
-        assertThat(action.presentation.text).isEqualTo(DUMMY_CREDENTIAL.displayName)
+        assertThat(action.presentation.text).isEqualTo(dummyCredential.shortName)
+        assertThat(action.presentation.description).isEqualTo(dummyCredential.displayName)
     }
 }

@@ -8,6 +8,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.PlatformDataKeys
+import com.intellij.openapi.actionSystem.Presentation
 import com.intellij.openapi.actionSystem.Separator
 import com.intellij.openapi.actionSystem.ToggleAction
 import com.intellij.openapi.actionSystem.ex.ComboBoxAction
@@ -175,24 +176,32 @@ class SettingsSelectorComboBoxAction(
     }
 
     init {
-        templatePresentation.text = text()
+        updatePresentation(templatePresentation)
     }
 
     override fun createPopupActionGroup(button: JComponent?) = DefaultActionGroup(ChangeAccountSettingsActionGroup(project, mode))
 
     override fun update(e: AnActionEvent) {
-        e.presentation.text = text()
+        updatePresentation(e.presentation)
     }
 
     override fun displayTextInToolbar(): Boolean = true
 
-    private fun text() = when (mode) {
-        CREDENTIALS -> credentialsText()
-        REGIONS -> regionText()
-        BOTH -> "${credentialsText()}@${regionText()}"
+    private fun updatePresentation(presentation: Presentation) {
+        val (short, long) = when (mode) {
+            CREDENTIALS -> credentialsText()
+            REGIONS -> regionText()
+            BOTH -> "${credentialsText()}@${regionText()}" to null
+        }
+        presentation.text = short
+        presentation.description = long
     }
 
-    private fun regionText() = accountSettingsManager.selectedRegion?.displayName ?: message("settings.regions.none_selected")
+    private fun regionText() = accountSettingsManager.selectedRegion?.let {
+        it.id to it.displayName
+    } ?: message("settings.regions.none_selected") to null
 
-    private fun credentialsText() = accountSettingsManager.selectedCredentialIdentifier?.displayName ?: message("settings.credentials.none_selected")
+    private fun credentialsText() = accountSettingsManager.selectedCredentialIdentifier?.let {
+        it.shortName to it.displayName
+    } ?: message("settings.credentials.none_selected") to null
 }
