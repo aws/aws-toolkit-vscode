@@ -14,6 +14,7 @@ import software.aws.toolkits.core.region.anAwsRegion
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.AwsResourceCacheTest.Companion.dummyResource
 import software.aws.toolkits.jetbrains.core.MockResourceCache
+import java.util.concurrent.ConcurrentHashMap
 
 internal class RefreshConnectionActionTest {
 
@@ -28,7 +29,7 @@ internal class RefreshConnectionActionTest {
         val mockResourceCache = MockResourceCache.getInstance(projectRule.project)
         mockResourceCache.addEntry(dummyResource(), aString())
 
-        val states = mutableSetOf<ConnectionState>()
+        val states = ConcurrentHashMap.newKeySet<ConnectionState>()
         projectRule.project.messageBus.connect()
             .subscribe(AwsConnectionManager.CONNECTION_SETTINGS_STATE_CHANGED, object : ConnectionSettingsStateChangeNotifier {
                 override fun settingsStateChanged(newState: ConnectionState) {
