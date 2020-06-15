@@ -3,16 +3,22 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.java
 
+import com.intellij.testFramework.IdeaTestUtil
+import kotlinx.coroutines.runBlocking
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.rules.EnvironmentVariableHelper
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addFileToModule
 import software.aws.toolkits.jetbrains.utils.rules.addModule
 import software.aws.toolkits.jetbrains.utils.setUpGradleProject
+import software.aws.toolkits.jetbrains.utils.setUpJdk
 import software.aws.toolkits.jetbrains.utils.setUpMavenProject
 import software.aws.toolkits.resources.message
 import java.nio.file.Paths
@@ -22,13 +28,21 @@ class JavaLambdaBuilderTest : BaseLambdaBuilderTest() {
     @JvmField
     val projectRule = HeavyJavaCodeInsightTestFixtureRule()
 
+    @Rule
+    @JvmField
+    val envVarsRule = EnvironmentVariableHelper()
+
     override val lambdaBuilder: LambdaBuilder
         get() = JavaLambdaBuilder()
 
     @Before
     override fun setUp() {
         super.setUp()
+
+        envVarsRule.remove("JAVA_HOME")
+
         projectRule.fixture.addModule("main")
+        projectRule.setUpJdk()
     }
 
     @Test
@@ -153,5 +167,33 @@ class JavaLambdaBuilderTest : BaseLambdaBuilderTest() {
             buildLambda(projectRule.module, handlerPsi, Runtime.JAVA8, "com.example.SomeClass")
         }.isInstanceOf(IllegalStateException::class.java)
             .hasMessageEndingWith(message("lambda.build.java.unsupported_build_system", projectRule.module.name))
+    }
+
+    @Test
+    fun javaHomePassedWhenNotInContainer() {
+        val commandLine = runBlocking {
+            JavaLambdaBuilder().constructSamBuildCommand(
+                projectRule.module,
+                Paths.get("."),
+                "SomeId",
+                SamOptions(buildInContainer = false),
+                Paths.get(".")
+            )
+        }
+        assertThat(commandLine.environment).extractingByKey("JAVA_HOME").isEqualTo(IdeaTestUtil.requireRealJdkHome())
+    }
+
+    @Test
+    fun javaHomeNotPassedWheInContainer() {
+        val commandLine = runBlocking {
+            JavaLambdaBuilder().constructSamBuildCommand(
+                projectRule.module,
+                Paths.get("."),
+                "SomeId",
+                SamOptions(buildInContainer = true),
+                Paths.get(".")
+            )
+        }
+        assertThat(commandLine.environment).doesNotContainKey("JAVA_HOME")
     }
 }

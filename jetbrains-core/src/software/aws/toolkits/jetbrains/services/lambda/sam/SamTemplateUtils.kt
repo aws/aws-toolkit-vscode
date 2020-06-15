@@ -7,14 +7,18 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
 import com.intellij.testFramework.LightVirtualFile
+import com.intellij.util.io.createFile
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.core.utils.writeText
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
 import software.aws.toolkits.jetbrains.services.cloudformation.Function
 import software.aws.toolkits.jetbrains.services.cloudformation.SERVERLESS_FUNCTION_TYPE
 import software.aws.toolkits.jetbrains.utils.yamlWriter
 import java.io.File
+import java.nio.file.Path
 
 object SamTemplateUtils {
     private val LOG = getLogger<SamTemplateUtils>()
@@ -45,11 +49,10 @@ object SamTemplateUtils {
     }
 
     @JvmStatic
-    fun functionFromElement(element: PsiElement): Function? =
-        CloudFormationTemplate.convertPsiToResource(element) as? Function
+    fun functionFromElement(element: PsiElement): Function? = CloudFormationTemplate.convertPsiToResource(element) as? Function
 
     fun writeDummySamTemplate(
-        tempFile: File,
+        tempFile: Path,
         logicalId: String,
         runtime: Runtime,
         codeUri: String,
@@ -58,6 +61,9 @@ object SamTemplateUtils {
         memorySize: Int,
         envVars: Map<String, String> = emptyMap()
     ) {
+        if (!tempFile.exists()) {
+            tempFile.createFile()
+        }
         tempFile.writeText(yamlWriter {
             mapping("Resources") {
                 mapping(logicalId) {
@@ -72,7 +78,7 @@ object SamTemplateUtils {
                         if (envVars.isNotEmpty()) {
                             mapping("Environment") {
                                 mapping("Variables") {
-                                    envVars.forEach { key, value ->
+                                    envVars.forEach { (key, value) ->
                                         keyValue(key, value)
                                     }
                                 }

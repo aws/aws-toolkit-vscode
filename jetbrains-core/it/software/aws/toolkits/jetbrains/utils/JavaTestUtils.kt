@@ -4,7 +4,7 @@
 package software.aws.toolkits.jetbrains.utils
 
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.application.WriteAction
+import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.externalSystem.importing.ImportSpecBuilder
 import com.intellij.openapi.externalSystem.model.DataNode
@@ -18,6 +18,7 @@ import com.intellij.openapi.externalSystem.util.ExternalSystemUtil
 import com.intellij.openapi.projectRoots.JavaSdk
 import com.intellij.openapi.projectRoots.ProjectJdkTable
 import com.intellij.openapi.projectRoots.impl.SdkConfigurationUtil
+import com.intellij.openapi.roots.ModuleRootModificationUtil
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.Ref
 import com.intellij.openapi.util.SystemInfo
@@ -31,6 +32,7 @@ import com.intellij.util.io.isDirectory
 import com.intellij.util.io.readBytes
 import com.intellij.util.io.write
 import com.intellij.xdebugger.XDebuggerUtil
+import org.jetbrains.annotations.NotNull
 import org.jetbrains.idea.maven.project.MavenProjectsManager
 import org.jetbrains.plugins.gradle.settings.GradleProjectSettings
 import org.jetbrains.plugins.gradle.util.GradleConstants
@@ -42,7 +44,29 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
-internal fun HeavyJavaCodeInsightTestFixtureRule.setUpGradleProject(compatibility: String = "1.8"): PsiClass {
+fun HeavyJavaCodeInsightTestFixtureRule.setUpJdk(jdkName: String = "Real JDK"): @NotNull String {
+    val jdkHome = IdeaTestUtil.requireRealJdkHome()
+
+    runInEdtAndWait {
+        runWriteAction {
+            VfsRootAccess.allowRootAccess(this.fixture.testRootDisposable, jdkHome)
+            val jdkHomeDir = LocalFileSystem.getInstance().refreshAndFindFileByPath(jdkHome)!!
+            val jdk = SdkConfigurationUtil.setupSdk(emptyArray(), jdkHomeDir, JavaSdk.getInstance(), false, null, jdkName)!!
+
+            ProjectJdkTable.getInstance().addJdk(jdk)
+            Disposer.register(
+                this.fixture.testRootDisposable,
+                Disposable { runWriteAction { ProjectJdkTable.getInstance().removeJdk(jdk) } }
+            )
+
+            ModuleRootModificationUtil.setModuleSdk(this.module, jdk)
+        }
+    }
+
+    return jdkHome
+}
+
+fun HeavyJavaCodeInsightTestFixtureRule.setUpGradleProject(compatibility: String = "1.8"): PsiClass {
     val fixture = this.fixture
     val buildFile = fixture.addFileToModule(
         this.module,
@@ -81,19 +105,8 @@ internal fun HeavyJavaCodeInsightTestFixtureRule.setUpGradleProject(compatibilit
             """.trimIndent()
     )
 
-    val jdkHome = IdeaTestUtil.requireRealJdkHome()
-    VfsRootAccess.allowRootAccess(fixture.testRootDisposable, jdkHome)
-    val jdkHomeDir = LocalFileSystem.getInstance().refreshAndFindFileByPath(jdkHome)!!
     val jdkName = "Gradle JDK"
-    val jdk = SdkConfigurationUtil.setupSdk(emptyArray(), jdkHomeDir, JavaSdk.getInstance(), false, null, jdkName)!!
-
-    WriteAction.runAndWait<Nothing> {
-        ProjectJdkTable.getInstance().addJdk(jdk)
-    }
-
-    Disposer.register(
-        fixture.testRootDisposable,
-        Disposable { WriteAction.runAndWait<Nothing> { ProjectJdkTable.getInstance().removeJdk(jdk) } })
+    setUpJdk(jdkName)
 
     ExternalSystemApiUtil.subscribe(
         project,
