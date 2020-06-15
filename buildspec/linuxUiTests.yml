@@ -16,8 +16,8 @@ env:
 phases:
   install:
     runtime-versions:
-      java: openjdk11
-      dotnet: 2.2
+      java: corretto11
+      dotnet: 3.1
 
     commands:
       - apt-get update

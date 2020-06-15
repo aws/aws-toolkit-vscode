@@ -8,9 +8,13 @@ import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.externalSystem.ExternalSystemModulePropertyManager
 import com.intellij.openapi.externalSystem.util.ExternalSystemApiUtil
 import com.intellij.openapi.module.Module
+import com.intellij.openapi.projectRoots.JavaSdkType
+import com.intellij.openapi.roots.ModuleRootManager
+import com.intellij.openapi.util.io.FileUtil
 import com.intellij.psi.PsiElement
 import org.jetbrains.idea.maven.project.MavenProjectsManager
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.resources.message
 
 class JavaLambdaBuilder : LambdaBuilder() {
@@ -20,6 +24,21 @@ class JavaLambdaBuilder : LambdaBuilder() {
             isMaven(module) -> getPomLocation(module)
             else -> throw IllegalStateException(message("lambda.build.java.unsupported_build_system", module.name))
         }
+
+    override fun additionalEnvironmentVariables(module: Module, samOptions: SamOptions): Map<String, String> {
+        if (samOptions.buildInContainer) {
+            return emptyMap()
+        }
+
+        val sdk = ModuleRootManager.getInstance(module).sdk ?: return emptyMap()
+        val sdkHome = sdk.homePath ?: return emptyMap()
+
+        return if (sdk.sdkType is JavaSdkType) {
+            mapOf("JAVA_HOME" to FileUtil.toSystemDependentName(sdkHome))
+        } else {
+            emptyMap()
+        }
+    }
 
     private fun isGradle(module: Module): Boolean = ExternalSystemModulePropertyManager.getInstance(module)
         .getExternalSystemId() == "GRADLE"
