@@ -12,6 +12,7 @@ import { getLogger } from '../logger'
 
 export namespace CloudFormation {
     export const SERVERLESS_FUNCTION_TYPE = 'AWS::Serverless::Function'
+    export const LAMBDA_FUNCTION_TYPE = 'AWS::Lambda::Function'
 
     export function validateProperties({
         Handler,
@@ -43,12 +44,12 @@ export namespace CloudFormation {
         Handler: string | Ref
         CodeUri: string | Ref
         Runtime?: string | Ref
-        MemorySize?: number
+        MemorySize?: number | Ref
         Timeout?: number | Ref
         Environment?: Environment
     }
 
-    interface Ref {
+    export interface Ref {
         Ref: string
     }
 
@@ -61,7 +62,7 @@ export namespace CloudFormation {
     }
 
     export interface Resource {
-        Type: typeof SERVERLESS_FUNCTION_TYPE
+        Type: typeof SERVERLESS_FUNCTION_TYPE | typeof LAMBDA_FUNCTION_TYPE
         Properties?: ResourceProperties
     }
 

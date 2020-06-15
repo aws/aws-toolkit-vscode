@@ -94,7 +94,7 @@ export function getCodeRoot(
                 if (!templateResource?.Properties) {
                     return undefined
                 }
-                const fullPath = tryGetAbsolutePath(folder, templateInvoke.samTemplatePath)
+                const fullPath = tryGetAbsolutePath(folder, templateInvoke.templatePath)
                 const templateDir = path.dirname(fullPath)
                 const uri = CloudFormation.getStringForProperty(templateResource?.Properties?.CodeUri, template)
                 return uri ? pathutil.normalize(path.resolve(templateDir ?? '', uri)) : undefined
@@ -151,13 +151,13 @@ export function getTemplate(
     }
     const templateInvoke = config.invokeTarget as TemplateTargetProperties
     const cftRegistry = CloudFormationTemplateRegistry.getRegistry()
-    const fullPath = tryGetAbsolutePath(folder, templateInvoke.samTemplatePath)
+    const fullPath = tryGetAbsolutePath(folder, templateInvoke.templatePath)
     const cfnTemplate = cftRegistry.getRegisteredTemplate(fullPath)?.template
     return cfnTemplate
 }
 
 /**
- * Gets the template resources object specified by the `samTemplateResource`
+ * Gets the template resources object specified by the `logicalId`
  * field (if the config has `invokeTarget.target=template`).
  */
 export function getTemplateResource(
@@ -170,17 +170,15 @@ export function getTemplateResource(
     const templateInvoke = config.invokeTarget as TemplateTargetProperties
     const cfnTemplate = getTemplate(folder, config)
     if (!cfnTemplate) {
-        throw Error(`template not found (not registered?): ${templateInvoke.samTemplatePath}`)
+        throw Error(`template not found (not registered?): ${templateInvoke.templatePath}`)
     }
     if (!cfnTemplate?.Resources) {
-        throw Error(`no Resources in template: ${templateInvoke.samTemplatePath}`)
+        throw Error(`no Resources in template: ${templateInvoke.templatePath}`)
     }
-    const templateResource: CloudFormation.Resource | undefined = cfnTemplate?.Resources![
-        templateInvoke.samTemplateResource!!
-    ]
+    const templateResource: CloudFormation.Resource | undefined = cfnTemplate?.Resources![templateInvoke.logicalId!!]
     if (!templateResource) {
         throw Error(
-            `template Resources object does not contain key '${templateInvoke.samTemplateResource}':` +
+            `template Resources object does not contain key '${templateInvoke.logicalId}':` +
                 ` ${JSON.stringify(cfnTemplate?.Resources)}`
         )
     }

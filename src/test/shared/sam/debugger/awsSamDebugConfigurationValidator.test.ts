@@ -23,8 +23,8 @@ function createTemplateConfig(): AwsSamDebuggerConfiguration {
         request: 'direct-invoke',
         invokeTarget: {
             target: 'template',
-            samTemplatePath: '/',
-            samTemplateResource: 'TestResource',
+            templatePath: '/',
+            logicalId: 'TestResource',
         },
     }
 }
@@ -91,7 +91,7 @@ describe('DefaultAwsSamDebugConfigurationValidator', () => {
 
     it("returns invalid when resolving template debug configurations with a template that doesn't have the set resource", () => {
         const target = templateConfig.invokeTarget as TemplateTargetProperties
-        target.samTemplateResource = 'wrong'
+        target.logicalId = 'wrong'
 
         const result = validator.validate(templateConfig)
         assert.strictEqual(result.isValid, false)
@@ -99,7 +99,7 @@ describe('DefaultAwsSamDebugConfigurationValidator', () => {
 
     it("returns invalid when resolving template debug configurations with a template that isn't serverless", () => {
         const target = templateConfig.invokeTarget as TemplateTargetProperties
-        target.samTemplateResource = 'OtherResource'
+        target.logicalId = 'OtherResource'
 
         const result = validator.validate(templateConfig)
         assert.strictEqual(result.isValid, false)

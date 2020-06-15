@@ -33,11 +33,11 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
         throw Error('invalid state: config.baseBuildDir was not set')
     }
     config.codeRoot = getCodeRoot(config.workspaceFolder, config)!
-    config.samTemplatePath = await makeInputTemplate(config)
+    config.templatePath = await makeInputTemplate(config)
     // TODO: avoid the reassignment
     // TODO: walk the tree to find .sln, .csproj ?
     const originalCodeRoot = config.codeRoot
-    config.codeRoot = getSamProjectDirPathForFile(config.samTemplatePath)
+    config.codeRoot = getSamProjectDirPathForFile(config.templatePath)
 
     config = {
         ...config,

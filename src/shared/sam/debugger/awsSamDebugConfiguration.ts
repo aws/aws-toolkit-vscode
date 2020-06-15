@@ -42,10 +42,10 @@ export function isCodeTargetProperties(props: TargetProperties): props is CodeTa
 }
 
 /**
- * Ensures that the `projectRoot` or `samTemplatePath` relative properties on
+ * Ensures that the `projectRoot` or `templatePath` relative properties on
  * the given `config` are relative (not absolute) paths.
  *
- * @param folder  Workspace folder, or empty to use the workspace associated with `projectRoot` or `samTemplatePath`.
+ * @param folder  Workspace folder, or empty to use the workspace associated with `projectRoot` or `templatePath`.
  * @param config
  */
 export function ensureRelativePaths(
@@ -57,7 +57,7 @@ export function ensureRelativePaths(
     }
     const filepath =
         config.invokeTarget.target === TEMPLATE_TARGET_TYPE
-            ? config.invokeTarget.samTemplatePath
+            ? config.invokeTarget.templatePath
             : config.invokeTarget.projectRoot
     if (!path.isAbsolute(filepath)) {
         return
@@ -70,7 +70,7 @@ export function ensureRelativePaths(
     }
     const relPath = getNormalizedRelativePath(folder!.uri.fsPath, filepath)
     if (config.invokeTarget.target === TEMPLATE_TARGET_TYPE) {
-        config.invokeTarget.samTemplatePath = relPath
+        config.invokeTarget.templatePath = relPath
     } else {
         config.invokeTarget.projectRoot = relPath
     }
@@ -119,11 +119,11 @@ export function createTemplateAwsSamDebugConfig(
         name: makeName(resourceName, templateParentDir, runtimeName),
         invokeTarget: {
             target: TEMPLATE_TARGET_TYPE,
-            samTemplatePath: workspaceRelativePath,
-            samTemplateResource: resourceName,
+            templatePath: workspaceRelativePath,
+            logicalId: resourceName,
         },
         lambda: {
-            event: {},
+            payload: {},
             environmentVariables: {},
         },
     }
@@ -134,11 +134,11 @@ export function createTemplateAwsSamDebugConfig(
             lambda:
                 preloadedConfig.environmentVariables || preloadedConfig.eventJson
                     ? {
-                          event: preloadedConfig.eventJson ? { json: preloadedConfig.eventJson } : {},
+                          payload: preloadedConfig.eventJson ? { json: preloadedConfig.eventJson } : {},
                           environmentVariables: preloadedConfig.environmentVariables,
                       }
                     : {
-                          event: {},
+                          payload: {},
                           environmentVariables: {},
                       },
             sam:
@@ -174,7 +174,7 @@ export function createCodeAwsSamDebugConfig(
         },
         lambda: {
             runtime,
-            event: {},
+            payload: {},
             environmentVariables: {},
         },
     }

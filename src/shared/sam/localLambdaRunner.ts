@@ -28,6 +28,7 @@ import { SamCliLocalInvokeInvocation, SamCliLocalInvokeInvocationArguments } fro
 import { SamLaunchRequestArgs } from './debugger/awsSamDebugger'
 import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
 
+// TODO: remove this and all related code.
 export interface LambdaLocalInvokeParams {
     /** URI of the current editor document. */
     uri: vscode.Uri
@@ -88,7 +89,10 @@ export async function makeInputTemplate(config: SamLaunchRequestArgs): Promise<s
         const template = getTemplate(config.workspaceFolder, config)
         // TODO: does target=code have an analog to `Globals`?
         if (template?.Globals) {
-            newTemplate = newTemplate.withGlobals(template?.Globals)
+            newTemplate = newTemplate.withGlobals(template.Globals)
+        }
+        if (template?.Parameters) {
+            newTemplate = newTemplate.withParameters(template.Parameters)
         }
         const templateResource = getTemplateResource(config.workspaceFolder, config)
         if (templateResource?.Properties?.Environment?.Variables) {
@@ -96,6 +100,8 @@ export async function makeInputTemplate(config: SamLaunchRequestArgs): Promise<s
                 Variables: templateResource?.Properties?.Environment?.Variables,
             })
         }
+
+        return config.invokeTarget.templatePath
     } else {
         if (config.lambda?.environmentVariables) {
             newTemplate = newTemplate.withEnvironment({
@@ -103,6 +109,7 @@ export async function makeInputTemplate(config: SamLaunchRequestArgs): Promise<s
             })
         }
     }
+    // TODO: allow refs for these?
     if (config.lambda?.memoryMb) {
         newTemplate = newTemplate.withMemorySize(config.lambda?.memoryMb)
     }
@@ -131,7 +138,15 @@ export async function invokeLambdaFunction(
 ): Promise<SamLaunchRequestArgs> {
     // Switch over to the output channel so the user has feedback that we're getting things ready
     ctx.chanLogger.channel.show(true)
-    ctx.chanLogger.info('AWS.output.sam.local.start', 'Preparing to run {0} locally...', config.handlerName)
+    if (!config.noDebug) {
+        ctx.chanLogger.info(
+            'AWS.output.sam.local.startDebug',
+            "Preparing to debug '{0}' locally...",
+            config.handlerName
+        )
+    } else {
+        ctx.chanLogger.info('AWS.output.sam.local.startRun', "Preparing to run '{0}' locally...", config.handlerName)
+    }
 
     const processInvoker = new DefaultValidatingSamCliProcessInvoker({})
 
@@ -144,7 +159,7 @@ export async function invokeLambdaFunction(
     const samCliArgs: SamCliBuildInvocationArguments = {
         buildDir: samBuildOutputFolder,
         baseDir: config.codeRoot,
-        templatePath: config.samTemplatePath!,
+        templatePath: config.templatePath!,
         invoker: processInvoker,
         manifestPath: config.manifestPath,
         environmentVariables: envVars,
@@ -162,7 +177,7 @@ export async function invokeLambdaFunction(
     ctx.chanLogger.info('AWS.output.building.sam.application.complete', 'Build complete.')
 
     // XXX: reassignment
-    config.samTemplatePath = path.join(samBuildOutputFolder, 'template.yaml')
+    config.templatePath = path.join(samBuildOutputFolder, 'template.yaml')
     delete config.invokeTarget // Must not be used beyond this point.
 
     await onAfterBuild()
@@ -177,7 +192,7 @@ export async function invokeLambdaFunction(
 
     const localInvokeArgs: SamCliLocalInvokeInvocationArguments = {
         templateResourceName: TEMPLATE_RESOURCE_NAME,
-        templatePath: config.samTemplatePath,
+        templatePath: config.templatePath,
         eventPath: config.eventPayloadFile,
         environmentVariablePath: config.envFile,
         environmentVariables: envVars,
@@ -432,10 +447,10 @@ export async function makeConfig(config: SamLaunchRequestArgs): Promise<void> {
     await writeFile(config.envFile, env)
 
     // event.json
-    if (config.lambda?.event?.path) {
-        const fullpath = tryGetAbsolutePath(config.workspaceFolder, config.lambda?.event?.path)
+    if (config.lambda?.payload?.path) {
+        const fullpath = tryGetAbsolutePath(config.workspaceFolder, config.lambda?.payload?.path)
         await copyFile(fullpath, config.eventPayloadFile)
     } else {
-        await writeFile(config.eventPayloadFile, JSON.stringify(config.lambda?.event?.json || {}))
+        await writeFile(config.eventPayloadFile, JSON.stringify(config.lambda?.payload?.json || {}))
     }
 }

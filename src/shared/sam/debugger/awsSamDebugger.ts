@@ -92,7 +92,7 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
      * - For `target=template` this is the _generated_ template path (TODO: in
      *   the future we may change this to be the template found in the workspace.
      */
-    samTemplatePath: string
+    templatePath: string
 
     /**
      * Path to the (generated) `event.json` file placed in `baseBuildDir` for SAM to discover.
@@ -125,7 +125,7 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
     /**
      * parameter overrides specified in the `sam.template.parameters` field
      */
-    parameterOverrides: string[]
+    parameterOverrides?: string[]
 
     //
     //  Invocation properties (for "execute" phase, after "config" phase).
@@ -303,12 +303,10 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         const codeRoot = getCodeRoot(folder, config)
         const handlerName = getHandlerName(folder, config)
 
-        if (templateInvoke?.samTemplatePath) {
+        if (templateInvoke?.templatePath) {
             // Normalize to absolute path.
             // TODO: If path is relative, it is relative to launch.json (i.e. .vscode directory).
-            templateInvoke.samTemplatePath = pathutil.normalize(
-                tryGetAbsolutePath(folder, templateInvoke.samTemplatePath)
-            )
+            templateInvoke.templatePath = pathutil.normalize(tryGetAbsolutePath(folder, templateInvoke.templatePath))
         }
 
         const runtime: string | undefined =
@@ -318,7 +316,10 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 : undefined) ??
             getDefaultRuntime(getRuntimeFamily(editor?.document?.languageId ?? 'unknown'))
 
-        const lambdaMemory = templateResource?.Properties?.MemorySize ?? config.lambda?.memoryMb
+        const lambdaMemory =
+            (template
+                ? CloudFormation.getNumberForProperty(templateResource?.Properties?.MemorySize, template)
+                : undefined) ?? config.lambda?.memoryMb
         const lambdaTimeout =
             (template
                 ? CloudFormation.getNumberForProperty(templateResource?.Properties?.Timeout, template)
@@ -336,7 +337,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         const documentUri =
             vscode.window.activeTextEditor?.document.uri ??
             // XXX: don't know what URI to choose...
-            vscode.Uri.parse(templateInvoke.samTemplatePath!!)
+            vscode.Uri.parse(templateInvoke.templatePath!!)
 
         let awsCredentials: Credentials | undefined
 
@@ -368,7 +369,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             runtimeFamily: runtimeFamily,
             handlerName: handlerName,
             documentUri: documentUri,
-            samTemplatePath: pathutil.normalize(templateInvoke?.samTemplatePath),
+            templatePath: pathutil.normalize(templateInvoke?.templatePath),
             eventPayloadFile: '', // Populated by makeConfig().
             envFile: '', // Populated by makeConfig().
             debugPort: config.noDebug ? undefined : await getStartPort(),

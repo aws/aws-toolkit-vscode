@@ -14,6 +14,11 @@ export class SamTemplateGenerator {
     private resourceName?: string
     private readonly properties: Partial<CloudFormation.ResourceProperties> = {}
     private globals: CloudFormation.TemplateGlobals | undefined
+    private parameters:
+        | {
+              [key: string]: CloudFormation.Parameter | undefined
+          }
+        | undefined
 
     public withResourceName(resourceName: string): SamTemplateGenerator {
         this.resourceName = resourceName
@@ -21,31 +26,31 @@ export class SamTemplateGenerator {
         return this
     }
 
-    public withFunctionHandler(handlerName: string): SamTemplateGenerator {
+    public withFunctionHandler(handlerName: string | CloudFormation.Ref): SamTemplateGenerator {
         this.properties.Handler = handlerName
 
         return this
     }
 
-    public withCodeUri(codeUri: string): SamTemplateGenerator {
+    public withCodeUri(codeUri: string | CloudFormation.Ref): SamTemplateGenerator {
         this.properties.CodeUri = codeUri
 
         return this
     }
 
-    public withRuntime(runtime: string): SamTemplateGenerator {
+    public withRuntime(runtime: string | CloudFormation.Ref): SamTemplateGenerator {
         this.properties.Runtime = runtime
 
         return this
     }
 
-    public withMemorySize(memorySize: number): SamTemplateGenerator {
+    public withMemorySize(memorySize: number | CloudFormation.Ref): SamTemplateGenerator {
         this.properties.MemorySize = memorySize
 
         return this
     }
 
-    public withTimeout(timeout: number): SamTemplateGenerator {
+    public withTimeout(timeout: number | CloudFormation.Ref): SamTemplateGenerator {
         this.properties.Timeout = timeout
 
         return this
@@ -59,6 +64,12 @@ export class SamTemplateGenerator {
 
     public withGlobals(globals: CloudFormation.TemplateGlobals): SamTemplateGenerator {
         this.globals = globals
+
+        return this
+    }
+
+    public withParameters(parameters: { [key: string]: CloudFormation.Parameter | undefined }): SamTemplateGenerator {
+        this.parameters = parameters
 
         return this
     }
@@ -79,6 +90,10 @@ export class SamTemplateGenerator {
 
         if (this.globals) {
             template.Globals = this.globals
+        }
+
+        if (this.parameters) {
+            template.Parameters = this.parameters
         }
 
         const templateAsYaml: string = yaml.safeDump(template, { skipInvalid: true })
