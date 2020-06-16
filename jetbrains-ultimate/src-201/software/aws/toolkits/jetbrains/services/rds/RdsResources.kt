@@ -14,10 +14,14 @@ const val mysqlEngineType = "mysql"
 const val postgresEngineType = "postgres"
 const val jdbcMysql = "mysql"
 const val jdbcPostgres = "postgresql"
+
 // Filters are also just a string
 const val engineFilter = "engine"
 
 object RdsResources {
+    private val RDS_REGION_REGEX = """.*\.(.+).rds\.""".toRegex()
+    fun extractRegionFromUrl(url: String?): String? = url?.let { RDS_REGION_REGEX.find(url)?.groupValues?.get(1) }
+
     val LIST_INSTANCES_MYSQL: Resource.Cached<List<DBInstance>> = listInstancesFilter(mysqlEngineType)
     val LIST_INSTANCES_POSTGRES: Resource.Cached<List<DBInstance>> = listInstancesFilter(postgresEngineType)
 

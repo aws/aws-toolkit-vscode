@@ -6,4 +6,7 @@
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.RdsExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.RedshiftExplorerRootNode"/>
     </extensions>
+    <extensions defaultExtensionNs="com.intellij.database">
+        <connectionInterceptor implementation="software.aws.toolkits.jetbrains.services.rds.auth.IamAuth"/>
+    </extensions>
 </idea-plugin>

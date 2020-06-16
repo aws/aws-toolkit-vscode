@@ -62,6 +62,11 @@ enum class HelpIds(shortId: String, val url: String) {
         "sam.install",
         "https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html"
     ),
+    // RDS
+    RDS_SETUP_IAM_AUTH(
+        "rdsIamAuth",
+        "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.IAMDBAuth.html"
+    )
     ;
 
     val id = "aws.toolkit.$shortId"
