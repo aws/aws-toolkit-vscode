@@ -94,7 +94,7 @@ export class SamCliBuildInvocation {
             invokeArgs,
             !!this.args.parameterOverrides && this.args.parameterOverrides.length > 0,
             '--parameter-overrides',
-            ...this.args.parameterOverrides!
+            ...(this.args.parameterOverrides ?? [])
         )
         invokeArgs.push(...(this.args.extraArgs ?? []))
 

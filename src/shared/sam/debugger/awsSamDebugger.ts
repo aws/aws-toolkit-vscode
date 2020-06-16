@@ -64,8 +64,10 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
     /** Runtime id-name passed to vscode to select a debugger/launcher. */
     runtime: Runtime
     runtimeFamily: RuntimeFamily
-    /** Resolved (potentinally generated) handler name. */
+    /** Resolved (potentinally generated) handler name. This field is mutable and should adjust to whatever handler name is currently generated*/
     handlerName: string
+    /** Friendly name to display. */
+    handlerDisplayName?: string
     workspaceFolder: vscode.WorkspaceFolder
 
     /**
@@ -301,6 +303,9 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         const template = getTemplate(folder, config)
         const templateResource = getTemplateResource(folder, config)
         const codeRoot = getCodeRoot(folder, config)
+        // Handler is the only field that we need to parse refs for.
+        // This is necessary for Python debugging since we have to create the temporary entry file
+        // Other refs can fail; SAM will handle them.
         const handlerName = getHandlerName(folder, config)
 
         if (templateInvoke?.templatePath) {
@@ -352,9 +357,10 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             }
         }
 
-        let parameterOverrideArr: string[] = []
+        let parameterOverrideArr: string[] | undefined
         const params = config.sam?.template?.parameters
         if (params) {
+            parameterOverrideArr = []
             for (const key of Object.keys(params)) {
                 parameterOverrideArr.push(`${key}=${params[key].toString()}`)
             }

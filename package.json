@@ -314,8 +314,7 @@
                                                 "additionalProperties": {
                                                     "type": [
                                                         "string",
-                                                        "number",
-                                                        "boolean"
+                                                        "number"
                                                     ]
                                                 },
                                                 "type": "object"

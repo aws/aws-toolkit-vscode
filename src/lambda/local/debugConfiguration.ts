@@ -123,7 +123,12 @@ export function getHandlerName(
             const template = getTemplate(folder, config)
             if (template) {
                 const templateResource = getTemplateResource(folder, config)
-                return CloudFormation.getStringForProperty(templateResource?.Properties?.Handler!!, template) ?? ''
+                const propertyValue = CloudFormation.resolvePropertyWithOverrides(
+                    templateResource?.Properties?.Handler!!,
+                    template,
+                    config.sam?.template?.parameters
+                )
+                return propertyValue ? propertyValue.toString() : ''
             }
             return ''
         }

@@ -171,7 +171,8 @@ export async function invokeLambdaFunction(
     }
     const samCliArgs: SamCliBuildInvocationArguments = {
         buildDir: samBuildOutputFolder,
-        baseDir: config.codeRoot,
+        // undefined triggers SAM to use the template's dir as the code root
+        baseDir: config.invokeTarget.target === 'code' ? config.codeRoot : undefined,
         templatePath: config.templatePath!,
         invoker: processInvoker,
         manifestPath: config.manifestPath,
@@ -201,7 +202,6 @@ export async function invokeLambdaFunction(
 
     // XXX: reassignment
     config.templatePath = path.join(samBuildOutputFolder, 'template.yaml')
-    delete config.invokeTarget // Must not be used beyond this point.
 
     await onAfterBuild()
 
@@ -214,7 +214,9 @@ export async function invokeLambdaFunction(
     const maxRetries: number = getAttachDebuggerMaxRetryLimit(ctx.settings, MAX_DEBUGGER_RETRIES_DEFAULT)
 
     const localInvokeArgs: SamCliLocalInvokeInvocationArguments = {
-        templateResourceName: TEMPLATE_RESOURCE_NAME,
+        //
+        templateResourceName:
+            config.invokeTarget.target === 'code' ? TEMPLATE_RESOURCE_NAME : config.invokeTarget.logicalId,
         templatePath: config.templatePath,
         eventPath: config.eventPayloadFile,
         environmentVariablePath: config.envFile,

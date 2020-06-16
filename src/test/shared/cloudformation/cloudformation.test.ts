@@ -170,14 +170,14 @@ describe('CloudFormation', () => {
 
     describe('validateResource', async () => {
         it('can successfully validate a valid resource', () => {
-            assert.doesNotThrow(() => CloudFormation.validateResource(createBaseResource()))
+            assert.doesNotThrow(() => CloudFormation.validateResource(createBaseResource(), createBaseTemplate()))
         })
 
         it('can detect an invalid resource', () => {
             const badResource = createBaseResource()
             delete badResource.Properties!.CodeUri
             assert.throws(
-                () => CloudFormation.validateResource(badResource),
+                () => CloudFormation.validateResource(badResource, createBaseTemplate()),
                 Error,
                 'Missing or invalid value in Template for key: CodeUri'
             )
@@ -237,7 +237,7 @@ describe('CloudFormation', () => {
                 assert.ok(resource)
                 // Verify runtimes as a way of seeing if we got the correct resource when there is more
                 // than one entry with the same handler.
-                const runtime = CloudFormation.getRuntime(resource)
+                const runtime = CloudFormation.getRuntime(resource, createBaseTemplate())
                 assert.strictEqual(runtime, scenario.expectedRuntime, 'Unexpected runtime resolved from SAM Template')
             })
         }
@@ -270,7 +270,7 @@ describe('CloudFormation', () => {
                 assert.ok(resource)
                 // Verify runtimes as a way of seeing if we got the correct resource when there is more
                 // than one entry with the same handler.
-                const runtime = CloudFormation.getRuntime(resource)
+                const runtime = CloudFormation.getRuntime(resource, createBaseTemplate())
                 assert.strictEqual(runtime, scenario.expectedRuntime, 'Unexpected runtime resolved from SAM Template')
             })
         }
@@ -295,19 +295,19 @@ describe('CloudFormation', () => {
             const resource = createBaseResource()
             delete resource.Properties
 
-            assert.throws(() => CloudFormation.getRuntime(resource))
+            assert.throws(() => CloudFormation.getRuntime(resource, createBaseTemplate()))
         })
 
         it('throws if resource does not specify a runtime', async () => {
             const resource = createBaseResource()
             delete resource.Properties!.Runtime
 
-            assert.throws(() => CloudFormation.getRuntime(resource))
+            assert.throws(() => CloudFormation.getRuntime(resource, createBaseTemplate()))
         })
 
         it('returns runtime if specified', async () => {
             const resource = createBaseResource()
-            const runtime = CloudFormation.getRuntime(resource)
+            const runtime = CloudFormation.getRuntime(resource, createBaseTemplate())
 
             assert.strictEqual(runtime, 'nodejs12.x')
         })

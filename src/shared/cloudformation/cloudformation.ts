@@ -305,6 +305,27 @@ export namespace CloudFormation {
         )
     }
 
+    /**
+     * Parameter/Ref helper functions
+     */
+
+    /**
+     * Validates whether or not a property is a valid ref.
+     * @param property Property to validate
+     */
+    function isRef(property: string | number | object | undefined): boolean {
+        return (
+            typeof property === 'object' && Object.keys(property).length === 1 && Object.keys(property).includes('Ref')
+        )
+    }
+
+    /**
+     * Gets the string value for a property in a template.
+     * If the value is a Ref to a parameter, returns the default value of the ref; this may be undefined.
+     * Also returns undefined if the property is undefined or a number.
+     * @param property Property value to check
+     * @param template Template object to parse through
+     */
     export function getStringForProperty(
         property: string | number | object | undefined,
         template: Template
@@ -312,7 +333,7 @@ export namespace CloudFormation {
         if (validatePropertyType(property, 'string', template)) {
             if (typeof property === 'string') {
                 return property
-            } else if (typeof property === 'object') {
+            } else if (isRef(property)) {
                 try {
                     const forcedProperty = property as Ref
                     return getReffedString(forcedProperty, template)
@@ -325,6 +346,13 @@ export namespace CloudFormation {
         return undefined
     }
 
+    /**
+     * Gets the numeric value for a property in a template.
+     * If the value is a Ref to a parameter, returns the default value of the ref; this may be undefined.
+     * Also returns undefined if the property is undefined or a string.
+     * @param property Property value to check
+     * @param template Template object to parse through
+     */
     export function getNumberForProperty(
         property: string | number | object | undefined,
         template: Template
@@ -332,7 +360,7 @@ export namespace CloudFormation {
         if (validatePropertyType(property, 'number', template)) {
             if (typeof property === 'number') {
                 return property
-            } else if (typeof property === 'object') {
+            } else if (isRef(property)) {
                 try {
                     const forcedProperty = property as Ref
                     return getReffedNumber(forcedProperty, template)
@@ -345,6 +373,13 @@ export namespace CloudFormation {
         return undefined
     }
 
+    /**
+     * Returns whether or not a property or its underlying ref matches the specified type
+     * Does not validate a default value for a template parameter; just checks the value's type
+     * @param property Property to validate the type of
+     * @param type Type to validate the property's type against
+     * @param template Template object to parse through
+     */
     function validatePropertyType(
         property: string | number | object | undefined,
         type: 'string' | 'number',
@@ -352,11 +387,7 @@ export namespace CloudFormation {
     ): boolean {
         if (typeof property === type) {
             return true
-        } else if (
-            typeof property === 'object' &&
-            Object.keys(property).length === 1 &&
-            Object.keys(property).includes('Ref')
-        ) {
+        } else if (isRef(property)) {
             // property has a Ref, force it to abide by that shape
             const forcedProperty = property as Ref
             const param = getReffedParam(forcedProperty, template)
@@ -368,6 +399,13 @@ export namespace CloudFormation {
         return false
     }
 
+    /**
+     * Helper function to get a number from a Ref.
+     * Throws an error if the value is not specifically a number.
+     * Returns undefined if ref does not have a default value but is a number.
+     * @param ref Ref to pull a number from
+     * @param template Template to parse through
+     */
     function getReffedNumber(ref: Ref, template: Template): number | undefined {
         const param = getReffedParam(ref, template)
         if (param.Type === 'Number') {
@@ -382,6 +420,14 @@ export namespace CloudFormation {
         throw new Error(`Parameter ${ref.Ref} is not typed as a number`)
     }
 
+    /**
+     * Helper function to get a string from a Ref.
+     * Throws an error if the value is specifically a number.
+     * (all other CFN param types are some form of string).
+     * Returns undefined if ref does not have a default value but is a string.
+     * @param ref Ref to pull a string from
+     * @param template Template to parse through
+     */
     function getReffedString(ref: Ref, template: Template): string | undefined {
         const param = getReffedParam(ref, template)
         // every other type, including List<Number>, is formatted as a string.
@@ -397,6 +443,12 @@ export namespace CloudFormation {
         throw new Error(`Parameter ${ref.Ref} is not typed as a string`)
     }
 
+    /**
+     * Given a Ref, pulls the CFN Parameter that the Ref is reffing.
+     * Throws an error if reffed param isn't found.
+     * @param ref Ref containing a reference to a parameter
+     * @param template Template to parse through
+     */
     function getReffedParam(ref: Ref, template: Template): Parameter {
         const refParam = ref.Ref
         const params = template.Parameters
@@ -406,5 +458,51 @@ export namespace CloudFormation {
         }
 
         throw new Error(`Parameter not found in template: ${refParam}`)
+    }
+
+    /**
+     * Resolves a value against a list of overrides. Resolution occurs in this order:
+     * * property is not an object = return raw val (possibly undefined)
+     * * property is a Ref object
+     *   * ...with an override = return overridden val
+     *   * ...without an override = return default val (possibly undefined)
+     * * property is a generic object = return undefined
+     * @param property Property to evaluate
+     * @param template Template to parse through
+     * @param overrides Object containing override values
+     */
+    export function resolvePropertyWithOverrides(
+        property: string | number | object | undefined,
+        template: Template,
+        overrides: {
+            [k: string]: string | number
+        } = {}
+    ): string | number | undefined {
+        if (validatePropertyType(property, 'string', template)) {
+            if (typeof property !== 'object') {
+                return property
+            }
+            if (isRef(property)) {
+                try {
+                    // property has a Ref, force it to abide by that shape
+                    const forcedProperty = property as Ref
+                    const refParam = forcedProperty.Ref
+                    const param = getReffedParam(forcedProperty, template)
+                    if (param) {
+                        // check overrides first--those take precedent
+                        if (Object.keys(overrides).includes(refParam)) {
+                            return overrides[refParam]
+                        }
+
+                        // return default val. This can be undefined.
+                        return param.Default
+                    }
+                } catch (err) {
+                    getLogger().debug(err)
+                }
+            }
+        }
+
+        return undefined
     }
 }
