@@ -6,10 +6,13 @@ package software.aws.toolkits.jetbrains.core
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
+import com.intellij.testFramework.ProjectRule
+import org.junit.rules.ExternalResource
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.services.sts.StsResources
+import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.ConcurrentHashMap
@@ -121,4 +124,21 @@ class MockResourceCache(private val project: Project) : AwsResourceCache {
 
         private data class CacheKey(val resourceId: String, val regionId: String, val credentialsId: String)
     }
+}
+
+class MockResourceCacheRule(private val project: () -> Project) : ExternalResource() {
+    constructor(projectRule: ProjectRule) : this({ projectRule.project })
+    constructor(projectRule: CodeInsightTestFixtureRule) : this({ projectRule.project })
+
+    private lateinit var cache: MockResourceCache
+
+    override fun before() {
+        cache = MockResourceCache.getInstance(project())
+    }
+
+    override fun after() {
+        cache.clear()
+    }
+
+    fun get() = cache
 }

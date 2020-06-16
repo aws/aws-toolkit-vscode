@@ -4,5 +4,6 @@
 <idea-plugin>
     <extensions defaultExtensionNs="aws.toolkit">
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.RdsExplorerRootNode"/>
+        <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.RedshiftExplorerRootNode"/>
     </extensions>
 </idea-plugin>
