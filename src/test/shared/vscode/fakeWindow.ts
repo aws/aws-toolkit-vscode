@@ -4,8 +4,10 @@
  */
 
 import * as vscode from 'vscode'
+import * as _ from 'lodash'
 import { isThenable } from '../../../shared/utilities/promiseUtilities'
 import { Window } from '../../../shared/vscode/window'
+import { inspect } from 'util'
 
 export interface FakeWindowOptions {
     statusBar?: StatusBarOptions
@@ -53,16 +55,48 @@ export class FakeWindow implements Window {
         return this._inputBox.show(options)
     }
 
-    public showInformationMessage(message: string, ...items: string[]): Thenable<string | undefined> {
-        return this._message.showInformation(message)
+    public showInformationMessage(message: string, ...items: string[]): Thenable<string | undefined>
+    public showInformationMessage(
+        message: string,
+        options: MessageOptions,
+        ...items: string[]
+    ): Thenable<string | undefined>
+    public showInformationMessage<T extends vscode.MessageItem>(message: string, ...items: T[]): Thenable<T | undefined>
+    public showInformationMessage<T extends vscode.MessageItem>(
+        message: string,
+        options: MessageOptions,
+        ...items: T[]
+    ): Thenable<T | undefined>
+    public showInformationMessage(message: string, ...args: any[]): Thenable<any | undefined> {
+        return this._message.showInformation(message, ...args)
     }
 
-    public showWarningMessage(message: string, ...items: string[]): Thenable<string | undefined> {
-        return this._message.showWarning(message)
+    public showWarningMessage(message: string, ...items: string[]): Thenable<string | undefined>
+    public showWarningMessage(
+        message: string,
+        options: MessageOptions,
+        ...items: string[]
+    ): Thenable<string | undefined>
+    public showWarningMessage<T extends vscode.MessageItem>(message: string, ...items: T[]): Thenable<T | undefined>
+    public showWarningMessage<T extends vscode.MessageItem>(
+        message: string,
+        options: MessageOptions,
+        ...items: T[]
+    ): Thenable<T | undefined>
+    public showWarningMessage(message: string, ...args: any[]): Thenable<any | undefined> {
+        return this._message.showWarning(message, ...args)
     }
 
-    public showErrorMessage(message: string, ...items: string[]): Thenable<string | undefined> {
-        return this._message.showError(message)
+    public showErrorMessage(message: string, ...items: string[]): Thenable<string | undefined>
+    public showErrorMessage(message: string, options: MessageOptions, ...items: string[]): Thenable<string | undefined>
+    public showErrorMessage<T extends vscode.MessageItem>(message: string, ...items: T[]): Thenable<T | undefined>
+    public showErrorMessage<T extends vscode.MessageItem>(
+        message: string,
+        options: MessageOptions,
+        ...items: T[]
+    ): Thenable<T | undefined>
+    public showErrorMessage(message: string, ...args: any[]): Thenable<any | undefined> {
+        return this._message.showError(message, ...args)
     }
 
     public withProgress<R>(
@@ -173,8 +207,22 @@ class DefaultFakeInputBox implements FakeInputBox {
     }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface MessageOptions {}
+export interface MessageOptions {
+    /**
+     * The information message selection to choose, if any.
+     */
+    informationSelection?: string | undefined
+
+    /**
+     * The warning message selection to choose, if any.
+     */
+    warningSelection?: string | undefined
+
+    /**
+     * The error message selection to choose, if any.
+     */
+    errorSelection?: string | undefined
+}
 
 export interface FakeMessage {
     /**
@@ -194,41 +242,109 @@ export interface FakeMessage {
 }
 
 class DefaultFakeMessage implements FakeMessage {
+    private readonly informationSelection: string | undefined
+    private readonly warningSelection: string | undefined
+    private readonly errorSelection: string | undefined
+
     public information: string | undefined
     public warning: string | undefined
     public error: string | undefined
 
     /**
-     * Records the information message that was shown, if any.
+     * Records the information message that was shown and selects the given informationSelection, if any.
      *
-     * @returns an empty Promise.
+     * @returns the selected item, or undefined if no selection is made.
      */
-    public async showInformation(message: string): Promise<string | undefined> {
+    public async showInformation(message: string, ...items: string[]): Promise<string | undefined>
+    public async showInformation(
+        message: string,
+        options: MessageOptions,
+        ...items: string[]
+    ): Promise<string | undefined>
+    public async showInformation<T extends vscode.MessageItem>(message: string, ...items: T[]): Promise<T | undefined>
+    public async showInformation<T extends vscode.MessageItem>(
+        message: string,
+        options: MessageOptions,
+        ...items: T[]
+    ): Promise<T | undefined>
+    public async showInformation(message: string, ...rest: any[]): Promise<any | undefined> {
         this.information = message
-        return Promise.resolve(undefined)
+        return DefaultFakeMessage.extractSelectedItem(this.informationSelection, rest)
     }
 
     /**
-     * Records the warning message that was shown, if any.
+     * Records the warning message that was shown and selects the given warningSelection if any.
      *
-     * @returns an empty Promise.
+     * @returns the selected item, or undefined if no selection is made.
      */
-    public async showWarning(message: string): Promise<string | undefined> {
+    public async showWarning(message: string, ...items: string[]): Promise<string | undefined>
+    public async showWarning(message: string, options: MessageOptions, ...items: string[]): Promise<string | undefined>
+    public async showWarning<T extends vscode.MessageItem>(message: string, ...items: T[]): Promise<T | undefined>
+    public async showWarning<T extends vscode.MessageItem>(
+        message: string,
+        options: MessageOptions,
+        ...items: T[]
+    ): Promise<T | undefined>
+    public async showWarning(message: string, ...rest: any[]): Promise<any | undefined> {
         this.warning = message
-        return Promise.resolve(undefined)
+        return DefaultFakeMessage.extractSelectedItem(this.warningSelection, rest)
     }
 
     /**
-     * Records the error message that was shown, if any.
+     * Records the error message that was shown and selects the given errorSelection, if any.
      *
-     * @returns an empty Promise.
+     * @returns the selected item, or undefined if no selection is made.
      */
-    public async showError(message: string): Promise<string | undefined> {
+    public async showError(message: string, ...items: string[]): Promise<string | undefined>
+    public async showError(message: string, options: MessageOptions, ...items: string[]): Promise<string | undefined>
+    public async showError<T extends vscode.MessageItem>(message: string, ...items: T[]): Promise<T | undefined>
+    public async showError<T extends vscode.MessageItem>(
+        message: string,
+        options: MessageOptions,
+        ...items: T[]
+    ): Promise<T | undefined>
+    public async showError(message: string, ...rest: any[]): Promise<any | undefined> {
         this.error = message
-        return Promise.resolve(undefined)
+        return DefaultFakeMessage.extractSelectedItem(this.errorSelection, rest)
     }
 
-    public constructor({}: MessageOptions = {}) {}
+    public constructor({ informationSelection, warningSelection, errorSelection }: MessageOptions = {}) {
+        this.informationSelection = informationSelection
+        this.warningSelection = warningSelection
+        this.errorSelection = errorSelection
+    }
+
+    private static extractSelectedItem(
+        selection: string | undefined,
+        args: any[]
+    ): string | vscode.MessageItem | undefined {
+        const items = this.getItems(args)
+        if (!items || !selection) {
+            return undefined
+        }
+
+        const selectedItem = items.find(item => this.getTitle(item) === selection)
+        if (!selectedItem) {
+            throw new Error(`Cannot select '${selection}' from the shown items: ${inspect(items)}`)
+        }
+        return selectedItem
+    }
+
+    private static getItems(args: any[]): (string | vscode.MessageItem)[] | undefined {
+        const items: (string | vscode.MessageItem)[] = _(args)
+            .takeRightWhile(item => _(item).isString() || DefaultFakeMessage.isMessageItem(item))
+            .value()
+
+        return _(items).isEmpty() ? undefined : items
+    }
+
+    private static getTitle(item: string | vscode.MessageItem): string {
+        return _.isString(item) ? item : item.title
+    }
+
+    private static isMessageItem(item: any): item is vscode.MessageItem {
+        return item && item.title
+    }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
