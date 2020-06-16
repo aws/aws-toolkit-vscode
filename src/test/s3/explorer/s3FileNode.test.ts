@@ -4,6 +4,7 @@
  */
 
 import * as assert from 'assert'
+import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
 import { S3FileNode } from '../../../s3/explorer/s3FileNode'
 import { S3Client } from '../../../shared/clients/s3Client'
 
@@ -12,17 +13,18 @@ describe('S3FileNode', () => {
     const name = 'file.jpg'
     const key = 'path/to/file.jpg'
     const sizeBytes = 1024
-    const lastModified = new Date(2020, 5, 4)
+    const lastModified = new Date(2020, 5, 4, 3, 2, 1)
     const now = new Date(2020, 6, 4)
 
     it('creates an S3 File Node', async () => {
         const node = new S3FileNode(
             { name: 'bucket-name', region: 'region', arn: 'arn' },
             { name, key, arn, sizeBytes, lastModified },
+            {} as S3BucketNode,
             {} as S3Client,
             now
         )
-        assert.ok(node.tooltip?.startsWith('path/to/file.jpg\nSize: 1 KB\nLast Modified: a month ago'))
+        assert.ok(node.tooltip?.startsWith('path/to/file.jpg\nSize: 1 KB\nLast Modified: Jun 4, 2020 3:02:01 AM GMT'))
         assert.ok((node.description as string).startsWith('1 KB, a month ago'))
     })
 })
