@@ -242,6 +242,7 @@
                                         "description": "%AWS.configuration.description.awssam.debug.event%",
                                         "properties": {
                                             "json": {
+                                                "description": "%AWS.configuration.description.awssam.debug.event.json%",
                                                 "additionalProperties": {
                                                     "type": [
                                                         "string",

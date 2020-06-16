@@ -183,6 +183,7 @@ export async function invokeLambdaFunction(
     if (!config.noDebug) {
         // Needed at least for dotnet case; harmless for others.
         samCliArgs.environmentVariables = {
+            ...samCliArgs.environmentVariables,
             SAM_BUILD_MODE: 'debug',
         }
     }
