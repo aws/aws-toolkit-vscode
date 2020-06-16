@@ -55,9 +55,8 @@ class DefaultAwsConnectionManager(private val project: Project) : AwsConnectionM
 
             val regionId = state.activeRegion ?: credentials?.defaultRegionId ?: AwsRegionProvider.getInstance().defaultRegion().id
             val region = AwsRegionProvider.getInstance().allRegions()[regionId]
-            val partition = region?.partitionId?.let { AwsRegionProvider.getInstance().partitions()[it] }
 
-            changeConnectionSettings(credentials, partition, region)
+            changeConnectionSettings(credentials, region)
         }
     }
 }

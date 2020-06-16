@@ -18,6 +18,7 @@ import com.intellij.psi.util.CachedValueProvider
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.region.AwsPartition
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager.Companion.selectedPartition
 import software.aws.toolkits.jetbrains.core.credentials.ChangeAccountSettingsMode.BOTH
 import software.aws.toolkits.jetbrains.core.credentials.ChangeAccountSettingsMode.CREDENTIALS
 import software.aws.toolkits.jetbrains.core.credentials.ChangeAccountSettingsMode.REGIONS

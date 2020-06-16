@@ -21,7 +21,6 @@ import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.CredentialProviderNotFoundException
 import software.aws.toolkits.core.credentials.ToolkitCredentialsChangeListener
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
-import software.aws.toolkits.core.region.AwsPartition
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
@@ -54,7 +53,6 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
 
     // Internal state is visible for AwsSettingsPanel and ChangeAccountSettingsActionGroup
     internal var selectedCredentialIdentifier: CredentialIdentifier? = null
-    internal var selectedPartition: AwsPartition? = null
     internal var selectedRegion: AwsRegion? = null
 
     private var selectedCredentialsProvider: ToolkitCredentialsProvider? = null
@@ -64,7 +62,7 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
             .subscribe(CredentialManager.CREDENTIALS_CHANGED, object : ToolkitCredentialsChangeListener {
                 override fun providerRemoved(identifier: CredentialIdentifier) {
                     if (selectedCredentialIdentifier == identifier) {
-                        changeConnectionSettings(null, selectedPartition, selectedRegion)
+                        changeConnectionSettings(null, selectedRegion)
                     }
                 }
 
@@ -93,7 +91,7 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
     /**
      * Internal setter that allows for null values and is intended to set the internal state and still notify
      */
-    protected fun changeConnectionSettings(identifier: CredentialIdentifier?, partition: AwsPartition?, region: AwsRegion?) {
+    protected fun changeConnectionSettings(identifier: CredentialIdentifier?, region: AwsRegion?) {
         changeFieldsAndNotify {
             identifier?.let {
                 recentlyUsedProfiles.add(it.id)
@@ -104,7 +102,6 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
             }
 
             selectedCredentialIdentifier = identifier
-            selectedPartition = partition
             selectedRegion = region
         }
     }
@@ -128,9 +125,7 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
     fun changeRegion(region: AwsRegion) {
         changeFieldsAndNotify {
             recentlyUsedRegions.add(region.id)
-
             selectedRegion = region
-            selectedPartition = regionProvider.partitions()[region.partitionId]
         }
     }
 
@@ -237,6 +232,7 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
 
         private val LOGGER = getLogger<AwsConnectionManager>()
         private const val MAX_HISTORY = 5
+        internal val AwsConnectionManager.selectedPartition get() = selectedRegion?.let { AwsRegionProvider.getInstance().partitions()[it.partitionId] }
     }
 }
 

@@ -52,7 +52,7 @@ class ChangeAccountSettingsActionGroupTest {
     }
 
     @Test
-    fun `Region group shows sub-regions for non-selected partitions`() {
+    fun `Region group all regions at the top-level for selected partition and shows regions for non-selected paritions in a partition sub-menu`() {
         val selectedRegion = anAwsRegion(partitionId = "selected").also { regionProviderRule.regionProvider.addRegion(it) }
         val otherPartitionRegion = anAwsRegion(partitionId = "nonSelected").also { regionProviderRule.regionProvider.addRegion(it) }
         val anotherRegionInSamePartition = anAwsRegion(partitionId = otherPartitionRegion.partitionId).also { regionProviderRule.regionProvider.addRegion(it) }
@@ -60,16 +60,21 @@ class ChangeAccountSettingsActionGroupTest {
         settingsManagerRule.settingsManager.changeRegionAndWait(selectedRegion)
 
         val group = ChangeAccountSettingsActionGroup(projectRule.project, ChangeAccountSettingsMode.REGIONS)
-        val partitionActions = getRegionActions(group)
-            .filterIsInstance<ChangePartitionActionGroup>().first().getChildren(null)
 
-        assertThat(partitionActions).noneMatch { it.templateText == selectedRegion.partitionId }
+        val regionActionGroup = getRegionActions(group)
 
-        val nonSelectedAction = partitionActions.filterIsInstance<ChangeRegionActionGroup>().first { it.templateText == otherPartitionRegion.partitionId }
+        val topLevelRegionActions = regionActionGroup.filterIsInstance<ChangeRegionAction>()
+        val partitionActions = regionActionGroup.filterIsInstance<ChangePartitionActionGroup>().first().getChildren(null)
+        val nonSelectedSubAction = partitionActions.filterIsInstance<ChangeRegionActionGroup>().first { it.templateText == otherPartitionRegion.partitionId }
             .getChildren(null).filterIsInstance<ChangeRegionAction>()
 
-        assertThat(nonSelectedAction).hasSize(2)
-        assertThat(nonSelectedAction.map { it.templateText }).containsExactlyInAnyOrder(
+        assertThat(topLevelRegionActions).hasOnlyOneElementSatisfying {
+            it.templateText == selectedRegion.displayName
+        }
+        assertThat(partitionActions).noneMatch { it.templateText == selectedRegion.partitionId }
+
+        assertThat(nonSelectedSubAction).hasSize(2)
+        assertThat(nonSelectedSubAction.map { it.templateText }).containsExactlyInAnyOrder(
             otherPartitionRegion.displayName,
             anotherRegionInSamePartition.displayName
         )
