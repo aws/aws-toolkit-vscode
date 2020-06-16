@@ -26,6 +26,7 @@ import software.aws.toolkits.jetbrains.utils.rules.addClass
 import software.aws.toolkits.jetbrains.utils.rules.addModule
 import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
 import software.aws.toolkits.jetbrains.utils.setUpGradleProject
+import software.aws.toolkits.jetbrains.utils.setUpJdk
 
 @RunWith(Parameterized::class)
 class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runtime) {
@@ -69,6 +70,8 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runtim
             Runtime.JAVA11 -> "11"
             else -> throw NotImplementedError()
         }
+
+        projectRule.setUpJdk()
 
         projectRule.setUpGradleProject(compatibility)
 
