@@ -12,6 +12,7 @@ import { CloudFormation } from '../../cloudformation/cloudformation'
 
 export class SamTemplateGenerator {
     private resourceName?: string
+    private templateResources?: CloudFormation.TemplateResources
     private readonly properties: Partial<CloudFormation.ResourceProperties> = {}
     private globals: CloudFormation.TemplateGlobals | undefined
     private parameters:
@@ -20,8 +21,16 @@ export class SamTemplateGenerator {
           }
         | undefined
 
+    public constructor(private readonly originalTemplate?: CloudFormation.Template) {}
+
     public withResourceName(resourceName: string): SamTemplateGenerator {
         this.resourceName = resourceName
+
+        return this
+    }
+
+    public withTemplateResources(templateResources: CloudFormation.TemplateResources) {
+        this.templateResources = templateResources
 
         return this
     }
@@ -75,25 +84,37 @@ export class SamTemplateGenerator {
     }
 
     public async generate(filename: string): Promise<void> {
-        if (!this.resourceName) {
-            throw new Error('Missing value: ResourceName')
+        if (!this.resourceName && !this.templateResources) {
+            throw new Error('Missing value: at least one of ResourceName or TemplateResources')
         }
 
-        const template: CloudFormation.Template = {
+        const templateAdditions: CloudFormation.Template = {
             Resources: {
-                [this.resourceName!]: {
-                    Type: CloudFormation.SERVERLESS_FUNCTION_TYPE,
-                    Properties: CloudFormation.validateProperties(this.properties),
-                },
+                ...this.templateResources,
             },
         }
 
+        if (this.resourceName) {
+            templateAdditions.Resources = {
+                ...templateAdditions.Resources,
+                [this.resourceName]: {
+                    Type: CloudFormation.SERVERLESS_FUNCTION_TYPE,
+                    Properties: CloudFormation.validateProperties(this.properties),
+                },
+            }
+        }
+
         if (this.globals) {
-            template.Globals = this.globals
+            templateAdditions.Globals = this.globals
         }
 
         if (this.parameters) {
-            template.Parameters = this.parameters
+            templateAdditions.Parameters = this.parameters
+        }
+
+        const template: CloudFormation.Template = {
+            ...this.originalTemplate,
+            ...templateAdditions,
         }
 
         const templateAsYaml: string = yaml.safeDump(template, { skipInvalid: true })
