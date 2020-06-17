@@ -313,7 +313,7 @@ describe('CloudFormation', () => {
         })
     })
 
-    describe.only('Ref handlers', () => {
+    describe('Ref handlers', () => {
         const template: CloudFormation.Template = {
             Parameters: {
                 strParamVal: {

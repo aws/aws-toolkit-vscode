@@ -66,8 +66,6 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
     runtimeFamily: RuntimeFamily
     /** Resolved (potentinally generated) handler name. This field is mutable and should adjust to whatever handler name is currently generated*/
     handlerName: string
-    /** Friendly name to display. */
-    handlerDisplayName?: string
     workspaceFolder: vscode.WorkspaceFolder
 
     /**
