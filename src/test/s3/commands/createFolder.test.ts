@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import { createFolderCommand } from '../../../s3/commands/createFolder'
 import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
+import { S3Node } from '../../../s3/explorer/s3Nodes'
 import { S3Client } from '../../../shared/clients/s3Client'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
@@ -26,7 +27,11 @@ describe('createFolderCommand', () => {
 
     beforeEach(() => {
         s3 = mock()
-        node = new S3BucketNode({ name: bucketName, region: 'region', arn: 'arn' }, instance(s3))
+        node = new S3BucketNode(
+            { name: bucketName, region: 'region', arn: 'arn' },
+            new S3Node(instance(s3)),
+            instance(s3)
+        )
     })
 
     it('prompts for folder name, creates folder, shows success, and refreshes node', async () => {
@@ -38,7 +43,7 @@ describe('createFolderCommand', () => {
         const commands = new FakeCommands()
         await createFolderCommand(node, window, commands)
 
-        assert.strictEqual(window.inputBox.options?.prompt, 'Enter a folder to create in bucket-name')
+        assert.strictEqual(window.inputBox.options?.prompt, 'Enter a folder to create in s3://bucket-name')
         assert.strictEqual(window.inputBox.options?.placeHolder, 'Folder Name')
 
         assert.strictEqual(window.message.information, 'Created folder foo')

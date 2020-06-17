@@ -16,7 +16,6 @@ import { TelemetryService } from './telemetry/telemetryService'
 export namespace ext {
     export let context: ExtensionContext
     export let outputChannel: OutputChannel
-    export let lambdaOutputChannel: OutputChannel
     export let awsContextCommands: AWSContextCommands
     export let sdkClientBuilder: AWSClientBuilder
     export let toolkitClientBuilder: ToolkitClientBuilder

@@ -11,7 +11,7 @@ import { S3FolderNode } from '../explorer/s3FolderNode'
 import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { showErrorWithLogs } from '../util/messages'
+import { readablePath, showErrorWithLogs } from '../util/messages'
 
 /**
  * Creates a subfolder in the bucket or folder represented by the given node.
@@ -31,10 +31,8 @@ export async function createFolderCommand(
 ): Promise<void> {
     getLogger().debug('CreateFolder called for %O', node)
 
-    const parentName = node.path ? node.name : node.bucket.name
-
     const folderName = await window.showInputBox({
-        prompt: localize('AWS.s3.createFolder.prompt', 'Enter a folder to create in {0}', parentName),
+        prompt: localize('AWS.s3.createFolder.prompt', 'Enter a folder to create in {0}', readablePath(node)),
         placeHolder: localize('AWS.s3.createFolder.placeHolder', 'Folder Name'),
         validateInput: validateFolderName,
     })
