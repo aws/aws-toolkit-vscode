@@ -52,7 +52,7 @@ class SamDeployDialog(
     private var currentStep = 0
     private val credentialsProvider = ProjectAccountSettingsManager.getInstance(project).activeCredentialProvider
     private val region = ProjectAccountSettingsManager.getInstance(project).activeRegion
-    private val changeSetRegex = "(arn:aws.*?:cloudformation:.*changeSet/[^\\s]*)".toRegex()
+    private val changeSetRegex = "(arn:${region.partitionId}:cloudformation:.*changeSet/[^\\s]*)".toRegex()
     val deployFuture: CompletableFuture<String>
     lateinit var changeSetName: String
         private set
