@@ -14,6 +14,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.core.credentials.CredentialIdentifier
+import software.aws.toolkits.core.credentials.aCredentialsIdentifier
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.rules.EnvironmentVariableHelper
 import software.aws.toolkits.core.utils.test.notNull
@@ -70,7 +71,7 @@ class DefaultAwsConnectionManagerTest {
 
     @Test
     fun `On load, automatically selects default profile if present and no other active credentials`() {
-        val credentials = mockCredentialManager.addCredentials("profile:default")
+        val credentials = mockCredentialManager.addCredentials(DEFAULT_PROFILE_ID)
         markConnectionSettingsAsValid(credentials, AwsRegionProvider.getInstance().defaultRegion())
 
         manager.noStateLoaded()
@@ -344,7 +345,7 @@ class DefaultAwsConnectionManagerTest {
 
     @Test
     fun `On load, default credential is selected if no other credential is active`() {
-        val credentials = mockCredentialManager.addCredentials("profile:default")
+        val credentials = mockCredentialManager.addCredentials(DEFAULT_PROFILE_ID)
         markConnectionSettingsAsValid(credentials, MockRegionProvider.getInstance().defaultRegion())
 
         val element = """
@@ -356,18 +357,18 @@ class DefaultAwsConnectionManagerTest {
         manager.waitUntilConnectionStateIsStable()
 
         assertThat(manager.isValidConnectionSettings()).isTrue()
-        assertThat(manager.connectionSettings()?.credentials?.id).isEqualTo("profile:default")
+        assertThat(manager.connectionSettings()?.credentials?.id).isEqualTo(DEFAULT_PROFILE_ID)
 
         assertThat(manager.recentlyUsedCredentials()).hasSize(1)
-        assertThat(manager.recentlyUsedCredentials().first().id).isEqualTo("profile:default")
+        assertThat(manager.recentlyUsedCredentials().first().id).isEqualTo(DEFAULT_PROFILE_ID)
     }
 
     @Test
     fun `Removal of the active credential falls back to 'no credential selected' state`() {
-        val defaultCredentials = mockCredentialManager.addCredentials("profile:default")
-        val adminCredentials = mockCredentialManager.addCredentials("profile:admin")
+        val someOtherCredential = aCredentialsIdentifier().also { mockCredentialManager.addCredentials(it.id) }
+        val adminCredentials = aCredentialsIdentifier().also { mockCredentialManager.addCredentials(it.id) }
 
-        markConnectionSettingsAsValid(defaultCredentials, AwsRegionProvider.getInstance().defaultRegion())
+        markConnectionSettingsAsValid(someOtherCredential, AwsRegionProvider.getInstance().defaultRegion())
         markConnectionSettingsAsValid(adminCredentials, AwsRegionProvider.getInstance().defaultRegion())
 
         changeRegion(AwsRegionProvider.getInstance().defaultRegion())
@@ -375,7 +376,7 @@ class DefaultAwsConnectionManagerTest {
 
         assertThat(manager.isValidConnectionSettings()).isTrue()
 
-        assertThat(manager.selectedCredentialIdentifier?.id).isEqualTo("profile:admin")
+        assertThat(manager.selectedCredentialIdentifier?.id).isEqualTo(adminCredentials.id)
 
         ApplicationManager.getApplication().messageBus.syncPublisher(CredentialManager.CREDENTIALS_CHANGED).providerRemoved(adminCredentials)
 
@@ -386,7 +387,7 @@ class DefaultAwsConnectionManagerTest {
 
     @Test
     fun `Refreshing state triggers connection to be re-validated`() {
-        val defaultCredentials = mockCredentialManager.addCredentials("profile:default")
+        val defaultCredentials = aCredentialsIdentifier().also { mockCredentialManager.addCredentials(it.id) }
 
         markConnectionSettingsAsInvalid(defaultCredentials, AwsRegionProvider.getInstance().defaultRegion())
 
@@ -404,7 +405,7 @@ class DefaultAwsConnectionManagerTest {
 
     @Test
     fun `A change to the selected credential triggers a refresh if the current state is invalid`() {
-        val defaultCredentials = mockCredentialManager.addCredentials("profile:default")
+        val defaultCredentials = aCredentialsIdentifier().also { mockCredentialManager.addCredentials(it.id) }
 
         markConnectionSettingsAsInvalid(defaultCredentials, AwsRegionProvider.getInstance().defaultRegion())
 
@@ -418,6 +419,24 @@ class DefaultAwsConnectionManagerTest {
         manager.waitUntilConnectionStateIsStable()
 
         assertThat(manager.isValidConnectionSettings()).isTrue()
+    }
+
+    @Test
+    fun `A change to the selected credential triggers a refresh if the current state is valid`() {
+        val credentials = aCredentialsIdentifier().also { mockCredentialManager.addCredentials(it.id) }
+
+        markConnectionSettingsAsValid(credentials, AwsRegionProvider.getInstance().defaultRegion())
+
+        changeRegion(AwsRegionProvider.getInstance().defaultRegion())
+        changeCredentialProvider(credentials)
+
+        assertThat(manager.isValidConnectionSettings()).isTrue()
+
+        markConnectionSettingsAsInvalid(credentials, AwsRegionProvider.getInstance().defaultRegion())
+        ApplicationManager.getApplication().messageBus.syncPublisher(CredentialManager.CREDENTIALS_CHANGED).providerModified(credentials)
+        manager.waitUntilConnectionStateIsStable()
+
+        assertThat(manager.isValidConnectionSettings()).isFalse()
     }
 
     private fun markConnectionSettingsAsValid(credentialsIdentifier: CredentialIdentifier, region: AwsRegion) {
@@ -441,4 +460,7 @@ class DefaultAwsConnectionManagerTest {
     }
 
     private fun Element?.string(): String = XMLOutputter().outputString(this)
+    companion object {
+        const val DEFAULT_PROFILE_ID = "profile:default"
+    }
 }

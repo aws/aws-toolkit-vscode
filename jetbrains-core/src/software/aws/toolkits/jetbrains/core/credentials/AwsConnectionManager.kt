@@ -67,7 +67,7 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
                 }
 
                 override fun providerModified(identifier: CredentialIdentifier) {
-                    if (selectedCredentialIdentifier == identifier && connectionState is ConnectionState.InvalidConnection) {
+                    if (selectedCredentialIdentifier == identifier) {
                         refreshConnectionState()
                     }
                 }
