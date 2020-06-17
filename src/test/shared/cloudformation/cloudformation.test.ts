@@ -312,4 +312,162 @@ describe('CloudFormation', () => {
             assert.strictEqual(runtime, 'nodejs12.x')
         })
     })
+
+    describe.only('Ref handlers', () => {
+        const template: CloudFormation.Template = {
+            Parameters: {
+                strParamVal: {
+                    Type: 'String',
+                    Default: 'asdf',
+                },
+                strParamNoVal: {
+                    Type: 'String',
+                },
+                numParamVal: {
+                    Type: 'Number',
+                    Default: 1,
+                },
+                numParamNoVal: {
+                    Type: 'Number',
+                },
+            },
+        }
+
+        describe('getStringForProperty', () => {
+            it('returns a string', () => {
+                const property: string = 'good'
+                assert.strictEqual(CloudFormation.getStringForProperty(property, template), property)
+            })
+
+            it('returns a string from a ref with a default value', () => {
+                const property: CloudFormation.Ref = {
+                    Ref: 'strParamVal',
+                }
+                assert.strictEqual(CloudFormation.getStringForProperty(property, template), 'asdf')
+            })
+
+            it('returns undefined if the ref does not have a default value', () => {
+                const property: CloudFormation.Ref = {
+                    Ref: 'strParamNoVal',
+                }
+                assert.strictEqual(CloudFormation.getStringForProperty(property, template), undefined)
+            })
+
+            it('returns undefined if a number is provided', () => {
+                const property: number = 1
+                assert.strictEqual(CloudFormation.getStringForProperty(property, template), undefined)
+            })
+
+            it('returns undefined if a ref to a number is provided', () => {
+                const property: CloudFormation.Ref = {
+                    Ref: 'numParamVal',
+                }
+                assert.strictEqual(CloudFormation.getStringForProperty(property, template), undefined)
+            })
+
+            it('returns undefined if undefined is provided', () => {
+                assert.strictEqual(CloudFormation.getStringForProperty(undefined, template), undefined)
+            })
+        })
+
+        describe('getNumberForProperty', () => {
+            it('returns a number', () => {
+                const property: number = 1
+                assert.strictEqual(CloudFormation.getNumberForProperty(property, template), 1)
+            })
+
+            it('returns a number from a ref with a default value', () => {
+                const property: CloudFormation.Ref = {
+                    Ref: 'numParamVal',
+                }
+                assert.strictEqual(CloudFormation.getNumberForProperty(property, template), 1)
+            })
+
+            it('returns undefined if the ref does not have a default value', () => {
+                const property: CloudFormation.Ref = {
+                    Ref: 'numParamNoVal',
+                }
+                assert.strictEqual(CloudFormation.getNumberForProperty(property, template), undefined)
+            })
+
+            it('returns undefined is a string', () => {
+                const property: string = 'good'
+                assert.strictEqual(CloudFormation.getNumberForProperty(property, template), undefined)
+            })
+
+            it('returns undefined if a ref to a string is provided', () => {
+                const property: CloudFormation.Ref = {
+                    Ref: 'strParamVal',
+                }
+                assert.strictEqual(CloudFormation.getNumberForProperty(property, template), undefined)
+            })
+
+            it('returns undefined if undefined is provided', () => {
+                assert.strictEqual(CloudFormation.getNumberForProperty(undefined, template), undefined)
+            })
+        })
+
+        describe('resolvePropertyWithOverrides', () => {
+            it('returns a string', () => {
+                const property: string = 'good'
+                assert.strictEqual(CloudFormation.resolvePropertyWithOverrides(property, template), property)
+            })
+
+            it('returns a string from a ref with a default value', () => {
+                const property: CloudFormation.Ref = {
+                    Ref: 'strParamVal',
+                }
+                assert.strictEqual(CloudFormation.resolvePropertyWithOverrides(property, template), 'asdf')
+            })
+
+            it('returns a number', () => {
+                const property: number = 1
+                assert.strictEqual(CloudFormation.resolvePropertyWithOverrides(property, template), 1)
+            })
+
+            it('returns a number from a ref with a default value', () => {
+                const property: CloudFormation.Ref = {
+                    Ref: 'numParamVal',
+                }
+                assert.strictEqual(CloudFormation.resolvePropertyWithOverrides(property, template), 1)
+            })
+
+            it('returns undefined if undefined is provided', () => {
+                assert.strictEqual(CloudFormation.resolvePropertyWithOverrides(undefined, template), undefined)
+            })
+
+            it('returns undefined if the ref does not have a default value and no overrides are present', () => {
+                const property: CloudFormation.Ref = {
+                    Ref: 'strParamNoVal',
+                }
+                assert.strictEqual(CloudFormation.resolvePropertyWithOverrides(property, template), undefined)
+            })
+
+            it('returns the override value if no default value provided', () => {
+                const property: CloudFormation.Ref = {
+                    Ref: 'strParamNoVal',
+                }
+                const overrideParams = {
+                    strParamNoVal: 'surprise!',
+                }
+                assert.strictEqual(
+                    CloudFormation.resolvePropertyWithOverrides(property, template, overrideParams),
+                    'surprise!'
+                )
+            })
+
+            it('returns the override value even if default value provided', () => {
+                const property: CloudFormation.Ref = {
+                    Ref: 'strParamVal',
+                }
+                const overrideParams = {
+                    strParamVal: 'surprise!',
+                }
+                assert.strictEqual(
+                    CloudFormation.resolvePropertyWithOverrides(property, template, overrideParams),
+                    'surprise!'
+                )
+            })
+        })
+    })
 })

@@ -90,7 +90,7 @@ function assertEqualLaunchConfigs(actual: SamLaunchRequestArgs, expected: SamLau
     assert.deepStrictEqual(actual, expected)
 }
 
-describe.only('SamDebugConfigurationProvider', async () => {
+describe('SamDebugConfigurationProvider', async () => {
     let debugConfigProvider: SamDebugConfigProvider
     let registry: CloudFormationTemplateRegistry
     let tempFolder: string

@@ -478,28 +478,32 @@ export namespace CloudFormation {
             [k: string]: string | number
         } = {}
     ): string | number | undefined {
-        if (validatePropertyType(property, 'string', template)) {
-            if (typeof property !== 'object') {
-                return property
-            }
-            if (isRef(property)) {
-                try {
-                    // property has a Ref, force it to abide by that shape
-                    const forcedProperty = property as Ref
-                    const refParam = forcedProperty.Ref
-                    const param = getReffedParam(forcedProperty, template)
-                    if (param) {
-                        // check overrides first--those take precedent
-                        if (Object.keys(overrides).includes(refParam)) {
-                            return overrides[refParam]
-                        }
-
-                        // return default val. This can be undefined.
-                        return param.Default
+        if (typeof property !== 'object') {
+            return property
+        }
+        if (isRef(property)) {
+            try {
+                // property has a Ref, force it to abide by that shape
+                const forcedProperty = property as Ref
+                const refParam = forcedProperty.Ref
+                const param = getReffedParam(forcedProperty, template)
+                if (param) {
+                    // check overrides first--those take precedent
+                    if (Object.keys(overrides).includes(refParam)) {
+                        return param.Type === 'Number'
+                            ? (overrides[refParam] as number)
+                            : (overrides[refParam] as string)
                     }
-                } catch (err) {
-                    getLogger().debug(err)
+
+                    // return default val. This can be undefined.
+                    return param.Default
+                        ? param.Type === 'Number'
+                            ? (param.Default as number)
+                            : (param.Default as string)
+                        : undefined
                 }
+            } catch (err) {
+                getLogger().debug(err)
             }
         }
 
