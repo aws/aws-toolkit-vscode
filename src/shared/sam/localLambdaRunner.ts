@@ -214,7 +214,6 @@ export async function invokeLambdaFunction(
     const maxRetries: number = getAttachDebuggerMaxRetryLimit(ctx.settings, MAX_DEBUGGER_RETRIES_DEFAULT)
 
     const localInvokeArgs: SamCliLocalInvokeInvocationArguments = {
-        //
         templateResourceName:
             config.invokeTarget.target === 'code' ? TEMPLATE_RESOURCE_NAME : config.invokeTarget.logicalId,
         templatePath: config.templatePath,
