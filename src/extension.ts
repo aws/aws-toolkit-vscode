@@ -33,7 +33,7 @@ import {
     aboutToolkit,
     getToolkitEnvironmentDetails,
     showQuickStartWebview,
-    toastNewUser,
+    showWelcomeMessage,
 } from './shared/extensionUtilities'
 import { getLogger, Logger } from './shared/logger'
 import { activate as activateLogger } from './shared/logger/activation'
@@ -194,7 +194,7 @@ export async function activate(context: vscode.ExtensionContext) {
             await activateStepFunctions(context, awsContext, toolkitOutputChannel)
         })
 
-        toastNewUser(context)
+        showWelcomeMessage(context)
 
         await loginWithMostRecentCredentials(toolkitSettings, loginManager)
 
