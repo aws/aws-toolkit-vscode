@@ -272,7 +272,7 @@
     "AWS.sam.debugger.missingTemplate": "Cannot find template file (must be workspace-relative, or absolute): {0}",
     "AWS.sam.debugger.missingResource": "Cannot find template resource \"{0}\" in template file: {1}",
     "AWS.sam.debugger.missingField": "Missing required field \"{0}\" in debug config",
-    "AWS.sam.debugger.resourceNotAFunction": "Template Resource {0} in Template file {1} needs to be of type {2}",
+    "AWS.sam.debugger.resourceNotAFunction": "Template Resource {0} in Template file {1} needs to be of type {2} or {3}",
     "AWS.sam.debugger.unsupportedRuntime": "Runtime for Template Resource {0} in Template file {1} is either undefined or unsupported.",
     "AWS.sam.debugger.useExistingConfig": "AWS Toolkit detected an existing legacy configuration for this function. Create the debug config based on the legacy config?",
     "AWS.sam.debugger.useExistingConfig.migrate": "Create based on the legacy config",

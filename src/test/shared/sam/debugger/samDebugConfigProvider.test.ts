@@ -38,7 +38,6 @@ import { CredentialsProviderManager } from '../../../../credentials/providers/cr
 import { Credentials } from 'aws-sdk'
 import { ExtContext } from '../../../../shared/extensions'
 import { CredentialsProvider } from '../../../../credentials/providers/credentialsProvider'
-import { CloudFormation } from '../../../../shared/cloudformation/cloudformation'
 
 /**
  * Asserts the contents of a "launch config" (the result of `makeConfig()` or
@@ -560,9 +559,21 @@ describe('SamDebugConfigurationProvider', async () => {
                 expected.eventPayloadFile,
                 '{"test-js-template-key-1":"test js target=template value 1","test-js-template-key-2":"test js target=template value 2"}'
             )
-            const origTemplate = await CloudFormation.load(templatePath.fsPath)
-            const expectedTemplate = await CloudFormation.load(expected.templatePath)
-            assert.deepStrictEqual(origTemplate, expectedTemplate, 'Templates are not equal!')
+            assertFileText(
+                expected.templatePath,
+                `Resources:
+  SourceCodeTwoFoldersDeep:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: .
+      Handler: src/subfolder/app.handlerTwoFoldersDeep
+      Runtime: nodejs10.x
+    Environment:
+      Variables:
+        SAMPLE1: value 1 from template.yaml
+        SAMPLE2: value 2 from template.yaml
+`
+            )
 
             //
             // Test noDebug=true.
@@ -814,10 +825,51 @@ describe('SamDebugConfigurationProvider', async () => {
             assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{"test-envvar-1":"test value 1"}}')
             assertFileText(expected.eventPayloadFile, '{"test-payload-key-1":"test payload value 1"}')
 
-            const origTemplate = await CloudFormation.load(templatePath.fsPath)
-            const expectedTemplate = await CloudFormation.load(expected.templatePath)
-            assert.deepStrictEqual(origTemplate, expectedTemplate, 'Templates are not equal!')
-
+            assertFileText(
+                expected.templatePath,
+                `AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: |
+  Test SAM Template
+Globals:
+  Function:
+    Timeout: 10
+Resources:
+  HelloWorldFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: ./src/HelloWorld/
+      Handler: 'HelloWorld::HelloWorld.Function::FunctionHandler'
+      Runtime: dotnetcore2.1
+      Environment:
+        Variables:
+          PARAM1: VALUE
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+Outputs:
+  HelloWorldApi:
+    Description: API Gateway endpoint URL for Prod stage for Hello World function
+    Value:
+      'Fn::Sub': >-
+        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
+  HelloWorldFunction:
+    Description: Hello World Lambda Function ARN
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunction
+        - Arn
+  HelloWorldFunctionIamRole:
+    Description: Implicit IAM Role created for Hello World function
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunctionRole
+        - Arn
+`
+            )
             //
             // Test noDebug=true.
             //
@@ -1044,11 +1096,49 @@ describe('SamDebugConfigurationProvider', async () => {
             assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{}}')
             assertFileText(expected.eventPayloadFile, '{}')
 
-            const origTemplate = await CloudFormation.load(templatePath.fsPath)
-            // manual modification since the expected template will change the handler name.
-            origTemplate.Resources!.HelloWorldFunction!.Properties!.Handler = 'app___vsctk___debug.lambda_handler'
-            const expectedTemplate = await CloudFormation.load(expected.templatePath)
-            assert.deepStrictEqual(origTemplate, expectedTemplate, 'Templates are not equal!')
+            assertFileText(
+                expected.templatePath,
+                `AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: |
+  python3.7-plain-sam-app
+  Sample SAM Template for python3.7-plain-sam-app
+Globals:
+  Function:
+    Timeout: 3
+Resources:
+  HelloWorldFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: hello_world/
+      Handler: app___vsctk___debug.lambda_handler
+      Runtime: python3.7
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+Outputs:
+  HelloWorldApi:
+    Description: API Gateway endpoint URL for Prod stage for Hello World function
+    Value:
+      'Fn::Sub': >-
+        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
+  HelloWorldFunction:
+    Description: Hello World Lambda Function ARN
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunction
+        - Arn
+  HelloWorldFunctionIamRole:
+    Description: Implicit IAM Role created for Hello World function
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunctionRole
+        - Arn
+`
+            )
 
             //
             // Test noDebug=true.
@@ -1159,9 +1249,24 @@ describe('SamDebugConfigurationProvider', async () => {
             assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{"var1":"2","var2":"1"}}')
             assertFileText(expected.eventPayloadFile, '{}')
 
-            const origTemplate = await CloudFormation.load(tempFile.fsPath)
-            const expectedTemplate = await CloudFormation.load(expected.templatePath)
-            assert.deepStrictEqual(origTemplate, expectedTemplate, 'Templates are not equal!')
+            assertFileText(
+                expected.templatePath,
+                `Globals:
+  Function:
+    Timeout: 5
+Resources:
+  myResource:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: my.test.handler
+      CodeUri: codeuri
+      Runtime: nodejs12.x
+      Timeout: 12345
+      Environment:
+        Variables:
+          ENVVAR: envvar
+`
+            )
         })
 
         it('debugconfig with aws section', async () => {

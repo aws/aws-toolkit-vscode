@@ -137,20 +137,23 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
 
         const resource = resources[templateTarget.logicalId]
 
-        // TODO: Validate against `AWS::Lambda::Function`?
         if (resource?.Type !== CloudFormation.SERVERLESS_FUNCTION_TYPE) {
             return {
                 isValid: false,
                 message: localize(
                     'AWS.sam.debugger.resourceNotAFunction',
-                    'Template Resource {0} in Template file {1} needs to be of type {2}',
+                    'Template Resource {0} in Template file {1} needs to be of type {2} or {3}',
                     templateTarget.logicalId,
                     templateTarget.templatePath,
-                    CloudFormation.SERVERLESS_FUNCTION_TYPE
+                    CloudFormation.SERVERLESS_FUNCTION_TYPE,
+                    CloudFormation.LAMBDA_FUNCTION_TYPE
                 ),
             }
         }
 
+        // TODO: Decide what to do with this re: refs.
+        // As of now, this has to be directly declared without a ref, despite the fact that SAM will handle a ref.
+        // Should we just pass validation off to SAM and ignore validation at this point, or should we directly process the value (like the handler)?
         if (!resource?.Properties?.Runtime || !samLambdaRuntimes.has(resource?.Properties?.Runtime as string)) {
             return {
                 isValid: false,
