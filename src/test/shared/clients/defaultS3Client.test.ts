@@ -5,12 +5,13 @@
 
 import * as assert from 'assert'
 import { AWSError, Request, S3 } from 'aws-sdk'
+import { DeleteObjectsRequest, ListObjectVersionsOutput, ListObjectVersionsRequest } from 'aws-sdk/clients/s3'
 import { ManagedUpload } from 'aws-sdk/lib/s3/managed_upload'
 import { FileStreams } from '../../../shared/utilities/streamUtilities'
 import { anyFunction, anything, capture, deepEqual, instance, mock, verify, when } from '../../utilities/mockito'
 import * as vscode from 'vscode'
 import { DefaultBucket, DefaultFile, DefaultFolder, DefaultS3Client } from '../../../shared/clients/defaultS3Client'
-import { DEFAULT_DELIMITER } from '../../../shared/clients/s3Client'
+import { DEFAULT_DELIMITER, DEFAULT_MAX_KEYS } from '../../../shared/clients/s3Client'
 import { FakeFileStreams } from './fakeFileStreams'
 
 class FakeProgressCaptor {
@@ -37,9 +38,11 @@ describe('DefaultS3Client', () => {
     const bucketName = 'bucketName'
     const outOfRegionBucketName = 'outOfRegionBucketName'
     const folderPath = 'foo/bar/'
+    const folderVersionId = 'folderVersionId'
     const subFolderPath = 'foo/bar/subFolder/'
     const emptySubFolderPath = 'foo/bar//'
     const fileKey = 'foo/bar/file.jpg'
+    const fileVersionId = 'fileVersionId'
     const fileSizeBytes = 5
     const fileLastModified = new Date(2020, 5, 4)
     const fileData = 'fileData'
@@ -47,9 +50,63 @@ describe('DefaultS3Client', () => {
     const continuationToken = 'continuationToken'
     const nextContinuationToken = 'nextContinuationToken'
     const maxResults = 20
+    const nextKeyMarker = 'nextKeyMarker'
+    const nextVersionIdMarker = 'nextVersionIdMarker'
     const error: AWSError = new FakeAwsError('Expected failure') as AWSError
 
     let mockS3: S3
+
+    class ListObjectVersionsFixtures {
+        public readonly firstPageRequest: ListObjectVersionsRequest = {
+            Bucket: bucketName,
+            MaxKeys: DEFAULT_MAX_KEYS,
+            KeyMarker: undefined,
+            VersionIdMarker: undefined,
+        }
+
+        public readonly firstPageResponse: ListObjectVersionsOutput = {
+            Versions: [
+                { Key: folderPath, VersionId: folderVersionId },
+                { Key: fileKey, VersionId: fileVersionId },
+            ],
+            IsTruncated: true,
+            NextKeyMarker: nextKeyMarker,
+            NextVersionIdMarker: nextVersionIdMarker,
+        }
+
+        public readonly secondPageRequest: ListObjectVersionsRequest = {
+            Bucket: bucketName,
+            MaxKeys: DEFAULT_MAX_KEYS,
+            KeyMarker: nextKeyMarker,
+            VersionIdMarker: nextVersionIdMarker,
+        }
+
+        public readonly secondPageResponse: ListObjectVersionsOutput = {
+            Versions: [{ Key: fileKey, VersionId: undefined }],
+            IsTruncated: false,
+        }
+    }
+
+    class DeleteObjectsFixtures {
+        public readonly firstRequest: DeleteObjectsRequest = {
+            Bucket: bucketName,
+            Delete: {
+                Objects: [
+                    { Key: folderPath, VersionId: folderVersionId },
+                    { Key: fileKey, VersionId: fileVersionId },
+                ],
+                Quiet: true,
+            },
+        }
+
+        public readonly secondRequest: DeleteObjectsRequest = {
+            Bucket: bucketName,
+            Delete: {
+                Objects: [{ Key: fileKey, VersionId: undefined }],
+                Quiet: true,
+            },
+        }
+    }
 
     beforeEach(() => {
         mockS3 = mock()
@@ -105,6 +162,59 @@ describe('DefaultS3Client', () => {
             when(mockS3.createBucket(anything())).thenReturn(failure())
 
             await assert.rejects(createClient().createBucket({ bucketName }), error)
+        })
+    })
+
+    describe('deleteBucket', () => {
+        const {
+            firstPageRequest: firstList,
+            secondPageRequest: secondList,
+            firstPageResponse: firstListResponse,
+            secondPageResponse: secondListResponse,
+        } = new ListObjectVersionsFixtures()
+        const anyListResponse = secondListResponse
+        const { firstRequest: firstDelete, secondRequest: secondDelete } = new DeleteObjectsFixtures()
+
+        it('empties a bucket and deletes it', async () => {
+            when(mockS3.listObjectVersions(deepEqual(firstList))).thenReturn(success(firstListResponse))
+            when(mockS3.deleteObjects(deepEqual(firstDelete))).thenReturn(success({}))
+
+            when(mockS3.listObjectVersions(deepEqual(secondList))).thenReturn(success(secondListResponse))
+            when(mockS3.deleteObjects(deepEqual(secondDelete))).thenReturn(success({}))
+
+            when(mockS3.deleteBucket(deepEqual({ Bucket: bucketName }))).thenReturn(success({}))
+
+            await createClient().deleteBucket({ bucketName })
+
+            verify(mockS3.listObjectVersions(anything())).twice()
+            verify(mockS3.deleteObjects(anything())).twice()
+            verify(mockS3.deleteBucket(anything())).once()
+        })
+
+        it('throws an Error on listObjectVersions failure', async () => {
+            when(mockS3.listObjectVersions(anything())).thenReturn(failure())
+
+            await assert.rejects(createClient().deleteBucket({ bucketName }), error)
+
+            verify(mockS3.deleteObjects(anything())).never()
+            verify(mockS3.deleteBucket(anything())).never()
+        })
+
+        it('throws an Error on deleteObjects failure', async () => {
+            when(mockS3.listObjectVersions(anything())).thenReturn(success(anyListResponse))
+            when(mockS3.deleteObjects(anything())).thenReturn(failure())
+
+            await assert.rejects(createClient().deleteBucket({ bucketName }), error)
+
+            verify(mockS3.deleteBucket(anything())).never()
+        })
+
+        it('throws an Error on deleteBucket failure', async () => {
+            when(mockS3.listObjectVersions(anything())).thenReturn(success(anyListResponse))
+            when(mockS3.deleteObjects(anything())).thenReturn(success({}))
+            when(mockS3.deleteBucket(anything())).thenReturn(failure())
+
+            await assert.rejects(createClient().deleteBucket({ bucketName }), error)
         })
     })
 
@@ -256,8 +366,8 @@ describe('DefaultS3Client', () => {
         })
     })
 
-    describe('listObjects', () => {
-        it('lists objects', async () => {
+    describe('listFiles', () => {
+        it('lists files and folders', async () => {
             when(
                 mockS3.listObjectsV2(
                     deepEqual({
@@ -279,7 +389,7 @@ describe('DefaultS3Client', () => {
                 })
             )
 
-            const response = await createClient().listObjects({ bucketName, folderPath, continuationToken, maxResults })
+            const response = await createClient().listFiles({ bucketName, folderPath, continuationToken, maxResults })
 
             assert.deepStrictEqual(response, {
                 files: [
@@ -299,10 +409,141 @@ describe('DefaultS3Client', () => {
             })
         })
 
-        it('throws an Error on listObjects failure', async () => {
+        it('throws an Error on listFiles failure', async () => {
             when(mockS3.listObjectsV2(anything())).thenReturn(failure())
 
-            await assert.rejects(createClient().listObjects({ bucketName, folderPath, continuationToken }), error)
+            await assert.rejects(createClient().listFiles({ bucketName, folderPath, continuationToken }), error)
+        })
+    })
+
+    describe('listObjectVersions', () => {
+        const {
+            firstPageRequest,
+            secondPageRequest,
+            firstPageResponse,
+            secondPageResponse,
+        } = new ListObjectVersionsFixtures()
+
+        it('lists objects and their versions with a continuation token for the next page of results', async () => {
+            when(mockS3.listObjectVersions(deepEqual(firstPageRequest))).thenReturn(success(firstPageResponse))
+
+            const response = await createClient().listObjectVersions({ bucketName })
+
+            assert.deepStrictEqual(response, {
+                objects: [
+                    { key: folderPath, versionId: folderVersionId },
+                    { key: fileKey, versionId: fileVersionId },
+                ],
+                continuationToken: { keyMarker: nextKeyMarker, versionIdMarker: nextVersionIdMarker },
+            })
+        })
+
+        it('throws an Error on listObjectVersions failure', async () => {
+            when(mockS3.listObjectVersions(anything())).thenReturn(failure())
+
+            await assert.rejects(createClient().listObjectVersions({ bucketName }), error)
+        })
+
+        it('returns pages from listObjectVersionsIterable', async () => {
+            when(mockS3.listObjectVersions(deepEqual(firstPageRequest))).thenReturn(success(firstPageResponse))
+            when(mockS3.listObjectVersions(deepEqual(secondPageRequest))).thenReturn(success(secondPageResponse))
+
+            const iterable = createClient().listObjectVersionsIterable({ bucketName })
+
+            const responses = []
+            for await (const response of iterable) {
+                responses.push(response)
+            }
+            const [firstPage, secondPage, ...otherPages] = responses
+
+            assert.deepStrictEqual(firstPage.objects, [
+                { key: folderPath, versionId: folderVersionId },
+                { key: fileKey, versionId: fileVersionId },
+            ])
+            assert.deepStrictEqual(secondPage.objects, [{ key: fileKey, versionId: undefined }])
+            assert.deepStrictEqual(otherPages, [])
+        })
+
+        it('throws an Error on listObjectVersionsIterable iterate failure', async () => {
+            when(mockS3.listObjectVersions(anything())).thenReturn(failure())
+
+            const iterable = createClient().listObjectVersionsIterable({ bucketName })
+            await assert.rejects(iterable.next(), error)
+        })
+    })
+
+    describe('deleteObject', () => {
+        it('deletes an object', async () => {
+            when(mockS3.deleteObject(deepEqual({ Bucket: bucketName, Key: fileKey }))).thenReturn(success({}))
+
+            await createClient().deleteObject({ bucketName, key: fileKey })
+
+            verify(mockS3.deleteObject(anything())).once()
+        })
+
+        it('throws an Error on failure', async () => {
+            when(mockS3.deleteObject(anything())).thenReturn(failure())
+
+            await assert.rejects(createClient().deleteObject({ bucketName, key: fileKey }), error)
+        })
+    })
+
+    describe('deleteObjects', () => {
+        it('deletes objects', async () => {
+            when(
+                mockS3.deleteObjects(
+                    deepEqual({
+                        Bucket: bucketName,
+                        Delete: {
+                            Objects: [
+                                {
+                                    Key: folderPath,
+                                    VersionId: folderVersionId,
+                                },
+                                {
+                                    Key: fileKey,
+                                    VersionId: undefined,
+                                },
+                            ],
+                            Quiet: true,
+                        },
+                    })
+                )
+            ).thenReturn(success({}))
+
+            const response = await createClient().deleteObjects({
+                bucketName,
+                objects: [{ key: folderPath, versionId: folderVersionId }, { key: fileKey }],
+            })
+
+            verify(mockS3.deleteObjects(anything())).once()
+
+            assert.deepStrictEqual(response, { errors: [] })
+        })
+
+        it('returns a list of errors on partial failure', async () => {
+            const error: S3.Error = {
+                Key: folderPath,
+                VersionId: folderVersionId,
+                Code: '404',
+                Message: 'Expected failure',
+            }
+
+            when(mockS3.deleteObjects(anything())).thenReturn(success({ Errors: [error] }))
+
+            const response = await createClient().deleteObjects({
+                bucketName,
+                objects: [{ key: folderPath, versionId: folderVersionId }, { key: fileKey }],
+            })
+
+            verify(mockS3.deleteObjects(anything())).once()
+            assert.deepStrictEqual(response, { errors: [error] })
+        })
+
+        it('throws an Error on failure', async () => {
+            when(mockS3.deleteObjects(anything())).thenReturn(failure())
+
+            await assert.rejects(createClient().deleteObjects({ bucketName, objects: [{ key: fileKey }] }), error)
         })
     })
 })
