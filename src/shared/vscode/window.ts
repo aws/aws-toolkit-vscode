@@ -103,52 +103,16 @@ class DefaultWindow implements Window {
         return vscode.window.showInputBox(options, token)
     }
 
-    public showInformationMessage(message: string, ...items: string[]): Thenable<string | undefined>
-    public showInformationMessage(
-        message: string,
-        options: vscode.MessageOptions,
-        ...items: string[]
-    ): Thenable<string | undefined>
-    public showInformationMessage<T extends vscode.MessageItem>(message: string, ...items: T[]): Thenable<T | undefined>
-    public showInformationMessage<T extends vscode.MessageItem>(
-        message: string,
-        options: vscode.MessageOptions,
-        ...items: T[]
-    ): Thenable<T | undefined>
     public showInformationMessage(...args: any[]): Thenable<any | undefined> {
         // @ts-ignore
         return vscode.window.showInformationMessage(...args)
     }
 
-    public showWarningMessage(message: string, ...items: string[]): Thenable<string | undefined>
-    public showWarningMessage(
-        message: string,
-        options: vscode.MessageOptions,
-        ...items: string[]
-    ): Thenable<string | undefined>
-    public showWarningMessage<T extends vscode.MessageItem>(message: string, ...items: T[]): Thenable<T | undefined>
-    public showWarningMessage<T extends vscode.MessageItem>(
-        message: string,
-        options: vscode.MessageOptions,
-        ...items: T[]
-    ): Thenable<T | undefined>
     public showWarningMessage(...args: any[]): Thenable<any | undefined> {
         // @ts-ignore
         return vscode.window.showWarningMessage(...args)
     }
 
-    public showErrorMessage(message: string, ...items: string[]): Thenable<string | undefined>
-    public showErrorMessage(
-        message: string,
-        options: vscode.MessageOptions,
-        ...items: string[]
-    ): Thenable<string | undefined>
-    public showErrorMessage<T extends vscode.MessageItem>(message: string, ...items: T[]): Thenable<T | undefined>
-    public showErrorMessage<T extends vscode.MessageItem>(
-        message: string,
-        options: vscode.MessageOptions,
-        ...items: T[]
-    ): Thenable<T | undefined>
     public showErrorMessage(...args: any[]): Thenable<any | undefined> {
         // @ts-ignore
         return vscode.window.showErrorMessage(...args)

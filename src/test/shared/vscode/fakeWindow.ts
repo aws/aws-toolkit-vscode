@@ -55,46 +55,14 @@ export class FakeWindow implements Window {
         return this._inputBox.show(options)
     }
 
-    public showInformationMessage(message: string, ...items: string[]): Thenable<string | undefined>
-    public showInformationMessage(
-        message: string,
-        options: MessageOptions,
-        ...items: string[]
-    ): Thenable<string | undefined>
-    public showInformationMessage<T extends vscode.MessageItem>(message: string, ...items: T[]): Thenable<T | undefined>
-    public showInformationMessage<T extends vscode.MessageItem>(
-        message: string,
-        options: MessageOptions,
-        ...items: T[]
-    ): Thenable<T | undefined>
     public showInformationMessage(message: string, ...args: any[]): Thenable<any | undefined> {
         return this._message.showInformation(message, ...args)
     }
 
-    public showWarningMessage(message: string, ...items: string[]): Thenable<string | undefined>
-    public showWarningMessage(
-        message: string,
-        options: MessageOptions,
-        ...items: string[]
-    ): Thenable<string | undefined>
-    public showWarningMessage<T extends vscode.MessageItem>(message: string, ...items: T[]): Thenable<T | undefined>
-    public showWarningMessage<T extends vscode.MessageItem>(
-        message: string,
-        options: MessageOptions,
-        ...items: T[]
-    ): Thenable<T | undefined>
     public showWarningMessage(message: string, ...args: any[]): Thenable<any | undefined> {
         return this._message.showWarning(message, ...args)
     }
 
-    public showErrorMessage(message: string, ...items: string[]): Thenable<string | undefined>
-    public showErrorMessage(message: string, options: MessageOptions, ...items: string[]): Thenable<string | undefined>
-    public showErrorMessage<T extends vscode.MessageItem>(message: string, ...items: T[]): Thenable<T | undefined>
-    public showErrorMessage<T extends vscode.MessageItem>(
-        message: string,
-        options: MessageOptions,
-        ...items: T[]
-    ): Thenable<T | undefined>
     public showErrorMessage(message: string, ...args: any[]): Thenable<any | undefined> {
         return this._message.showError(message, ...args)
     }
@@ -255,18 +223,6 @@ class DefaultFakeMessage implements FakeMessage {
      *
      * @returns the selected item, or undefined if no selection is made.
      */
-    public async showInformation(message: string, ...items: string[]): Promise<string | undefined>
-    public async showInformation(
-        message: string,
-        options: MessageOptions,
-        ...items: string[]
-    ): Promise<string | undefined>
-    public async showInformation<T extends vscode.MessageItem>(message: string, ...items: T[]): Promise<T | undefined>
-    public async showInformation<T extends vscode.MessageItem>(
-        message: string,
-        options: MessageOptions,
-        ...items: T[]
-    ): Promise<T | undefined>
     public async showInformation(message: string, ...rest: any[]): Promise<any | undefined> {
         this.information = message
         return DefaultFakeMessage.extractSelectedItem(this.informationSelection, rest)
@@ -277,14 +233,6 @@ class DefaultFakeMessage implements FakeMessage {
      *
      * @returns the selected item, or undefined if no selection is made.
      */
-    public async showWarning(message: string, ...items: string[]): Promise<string | undefined>
-    public async showWarning(message: string, options: MessageOptions, ...items: string[]): Promise<string | undefined>
-    public async showWarning<T extends vscode.MessageItem>(message: string, ...items: T[]): Promise<T | undefined>
-    public async showWarning<T extends vscode.MessageItem>(
-        message: string,
-        options: MessageOptions,
-        ...items: T[]
-    ): Promise<T | undefined>
     public async showWarning(message: string, ...rest: any[]): Promise<any | undefined> {
         this.warning = message
         return DefaultFakeMessage.extractSelectedItem(this.warningSelection, rest)
@@ -295,14 +243,6 @@ class DefaultFakeMessage implements FakeMessage {
      *
      * @returns the selected item, or undefined if no selection is made.
      */
-    public async showError(message: string, ...items: string[]): Promise<string | undefined>
-    public async showError(message: string, options: MessageOptions, ...items: string[]): Promise<string | undefined>
-    public async showError<T extends vscode.MessageItem>(message: string, ...items: T[]): Promise<T | undefined>
-    public async showError<T extends vscode.MessageItem>(
-        message: string,
-        options: MessageOptions,
-        ...items: T[]
-    ): Promise<T | undefined>
     public async showError(message: string, ...rest: any[]): Promise<any | undefined> {
         this.error = message
         return DefaultFakeMessage.extractSelectedItem(this.errorSelection, rest)
