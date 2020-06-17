@@ -31,7 +31,11 @@ import * as pathutil from '../../../../shared/utilities/pathUtils'
 import { FakeExtensionContext } from '../../../fakeExtensionContext'
 import * as testutil from '../../../testUtil'
 import { assertFileText } from '../../../testUtil'
-import { makeSampleSamTemplateYaml, makeSampleYamlResource } from '../../cloudformation/cloudformationTestUtils'
+import {
+    makeSampleSamTemplateYaml,
+    makeSampleYamlResource,
+    makeSampleYamlParameters,
+} from '../../cloudformation/cloudformationTestUtils'
 import { readFileSync } from 'fs-extra'
 import { CredentialsStore } from '../../../../credentials/credentialsStore'
 import { CredentialsProviderManager } from '../../../../credentials/providers/credentialsProviderManager'
@@ -86,7 +90,7 @@ function assertEqualLaunchConfigs(actual: SamLaunchRequestArgs, expected: SamLau
     assert.deepStrictEqual(actual, expected)
 }
 
-describe('SamDebugConfigurationProvider', async () => {
+describe.only('SamDebugConfigurationProvider', async () => {
     let debugConfigProvider: SamDebugConfigProvider
     let registry: CloudFormationTemplateRegistry
     let tempFolder: string
@@ -1597,6 +1601,13 @@ describe('debugConfiguration', () => {
             lambda: {
                 runtime: [...lambdaModel.nodeJsRuntimes.values()][0],
             },
+            sam: {
+                template: {
+                    parameters: {
+                        override: 'override',
+                    },
+                },
+            },
         }
 
         // Template with relative path:
@@ -1609,5 +1620,74 @@ describe('debugConfiguration', () => {
         testutil.toFile(makeSampleSamTemplateYaml(true, { codeUri: fullPath }), tempFile.fsPath)
         await registry.addTemplateToRegistry(tempFile)
         assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
+
+        // Template with refs that don't override:
+        const tempFileRefs = vscode.Uri.file(path.join(tempFolder, 'testRefs.yaml'))
+        const fileRefsConfig = {
+            ...config,
+            invokeTarget: {
+                ...config.invokeTarget,
+                templatePath: tempFileRefs.fsPath,
+            },
+        }
+        const paramStr = makeSampleYamlParameters({
+            notOverride: {
+                Type: 'String',
+                Default: 'notDoingAnything',
+            },
+        })
+        testutil.toFile(makeSampleSamTemplateYaml(true, { codeUri: fullPath }, paramStr), tempFileRefs.fsPath)
+        await registry.addTemplateToRegistry(tempFileRefs)
+        assert.strictEqual(debugConfiguration.getCodeRoot(folder, fileRefsConfig), fullPath)
+        assert.strictEqual(debugConfiguration.getHandlerName(folder, fileRefsConfig), 'handler')
+
+        // Template with refs that overrides handler via default parameter value in YAML template
+        const tempFileDefaultRefs = vscode.Uri.file(path.join(tempFolder, 'testDefaultRefs.yaml'))
+        const fileDefaultRefsConfig = {
+            ...config,
+            invokeTarget: {
+                ...config.invokeTarget,
+                templatePath: tempFileDefaultRefs.fsPath,
+            },
+        }
+        const paramStrDefaultOverride = makeSampleYamlParameters({
+            defaultOverride: {
+                Type: 'String',
+                Default: 'thisWillOverride',
+            },
+        })
+        testutil.toFile(
+            makeSampleSamTemplateYaml(
+                true,
+                { codeUri: fullPath, handler: '!Ref defaultOverride' },
+                paramStrDefaultOverride
+            ),
+            tempFileDefaultRefs.fsPath
+        )
+        await registry.addTemplateToRegistry(tempFileDefaultRefs)
+        assert.strictEqual(debugConfiguration.getCodeRoot(folder, fileDefaultRefsConfig), fullPath)
+        assert.strictEqual(debugConfiguration.getHandlerName(folder, fileDefaultRefsConfig), 'thisWillOverride')
+
+        // Template with refs that overrides handler via override value in launch config
+        const tempFileOverrideRef = vscode.Uri.file(path.join(tempFolder, 'testOverrideRefs.yaml'))
+        const fileOverrideRefConfig = {
+            ...config,
+            invokeTarget: {
+                ...config.invokeTarget,
+                templatePath: tempFileOverrideRef.fsPath,
+            },
+        }
+        const paramStrNoDefaultOverride = makeSampleYamlParameters({
+            override: {
+                Type: 'String',
+            },
+        })
+        testutil.toFile(
+            makeSampleSamTemplateYaml(true, { codeUri: fullPath, handler: '!Ref override' }, paramStrNoDefaultOverride),
+            tempFileOverrideRef.fsPath
+        )
+        await registry.addTemplateToRegistry(tempFileOverrideRef)
+        assert.strictEqual(debugConfiguration.getCodeRoot(folder, fileOverrideRefConfig), fullPath)
+        assert.strictEqual(debugConfiguration.getHandlerName(folder, fileOverrideRefConfig), 'override')
     })
 })

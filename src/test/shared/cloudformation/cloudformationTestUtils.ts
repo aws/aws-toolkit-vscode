@@ -49,7 +49,8 @@ export function makeSampleSamTemplateYaml(
         runtime?: string
         handler?: string
         codeUri?: string
-    } = {}
+    } = {},
+    parameters?: string
 ): string {
     const globalsYaml = `
 Globals:
@@ -57,7 +58,7 @@ Globals:
         Timeout: 5`
 
     return `${addGlobalsSection ? globalsYaml : ''}
-Resources:${makeSampleYamlResource(subValues)}`
+Resources:${makeSampleYamlResource(subValues)}${parameters ? `\nParameters:\n${parameters}` : ''}`
 }
 
 export function makeSampleYamlResource(
@@ -80,6 +81,32 @@ export function makeSampleYamlResource(
             Environment:
                 Variables:
                     ENVVAR: envvar`
+}
+
+export function makeSampleYamlParameters(params: { [key: string]: CloudFormation.Parameter | undefined }): string {
+    const returnVals: string[] = []
+    for (const paramKey of Object.keys(params)) {
+        const param = params[paramKey]
+        if (param) {
+            const paramStr = `
+    ${paramKey}:
+        Type: ${param.Type}
+        ${param.AllowedPattern ? `AllowedPattern: ${param.AllowedPattern}` : ''}
+        ${param.AllowValues ? `AllowedValues:\n              - ${param.AllowValues.join('\n              - ')}` : ''}
+        ${param.ConstraintDescription ? `ConstraintDescription: ${param.ConstraintDescription}` : ''}
+        ${param.Default ? `Default: ${param.Default.toString()}` : ''}
+        ${param.Description ? `Description: ${param.Description}` : ''}
+        ${param.MaxLength ? `MaxLength: ${param.MaxLength.toString()}` : ''}
+        ${param.MaxValue ? `MaxValue: ${param.MaxValue.toString()}` : ''}
+        ${param.MinLength ? `MinLength: ${param.MinLength.toString()}` : ''}
+        ${param.MinValue ? `MinValue: ${param.MinValue.toString()}` : ''}
+        ${param.NoEcho ? `NoEcho: ${param.NoEcho.toString()}` : ''}
+`
+            returnVals.push(paramStr)
+        }
+    }
+
+    return returnVals.join('\n')
 }
 
 export const badYaml = '{ASD}ASD{asd}ASD:asd'
