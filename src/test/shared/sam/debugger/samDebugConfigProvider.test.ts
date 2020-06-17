@@ -38,6 +38,7 @@ import { CredentialsProviderManager } from '../../../../credentials/providers/cr
 import { Credentials } from 'aws-sdk'
 import { ExtContext } from '../../../../shared/extensions'
 import { CredentialsProvider } from '../../../../credentials/providers/credentialsProvider'
+import { CloudFormation } from '../../../../shared/cloudformation/cloudformation'
 
 /**
  * Asserts the contents of a "launch config" (the result of `makeConfig()` or
@@ -425,6 +426,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
                 stopOnEntry: false,
+                parameterOverrides: undefined,
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
@@ -532,7 +534,9 @@ describe('SamDebugConfigurationProvider', async () => {
                 },
                 localRoot: appDir,
                 name: 'SamLocalDebug',
-                templatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
+                templatePath: pathutil.normalize(
+                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
+                ),
 
                 //
                 // Node-related fields
@@ -544,6 +548,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
                 stopOnEntry: false,
+                parameterOverrides: undefined,
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
@@ -555,20 +560,9 @@ describe('SamDebugConfigurationProvider', async () => {
                 expected.eventPayloadFile,
                 '{"test-js-template-key-1":"test js target=template value 1","test-js-template-key-2":"test js target=template value 2"}'
             )
-            assertFileText(
-                expected.templatePath,
-                `Resources:
-  awsToolkitSamLocalResource:
-    Type: 'AWS::Serverless::Function'
-    Properties:
-      Handler: src/subfolder/app.handlerTwoFoldersDeep
-      CodeUri: >-
-        ${expected.codeRoot}
-      Runtime: nodejs10.x
-      MemorySize: 1.01
-      Timeout: 99
-`
-            )
+            const origTemplate = await CloudFormation.load(templatePath.fsPath)
+            const expectedTemplate = await CloudFormation.load(expected.templatePath)
+            assert.deepStrictEqual(origTemplate, expectedTemplate, 'Templates are not equal!')
 
             //
             // Test noDebug=true.
@@ -667,6 +661,7 @@ describe('SamDebugConfigurationProvider', async () => {
                         pipeProgram: 'powershell',
                     },
                 },
+                parameterOverrides: undefined,
             }
 
             // Windows: sourceFileMap driveletter must be uppercase.
@@ -772,7 +767,9 @@ describe('SamDebugConfigurationProvider', async () => {
                     ...input.lambda,
                 },
                 name: 'SamLocalDebug',
-                templatePath: expectedCodeRoot + '/input-template.yaml',
+                templatePath: pathutil.normalize(
+                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
+                ),
 
                 //
                 // Csharp-related fields
@@ -804,6 +801,7 @@ describe('SamDebugConfigurationProvider', async () => {
                         pipeProgram: 'powershell',
                     },
                 },
+                parameterOverrides: undefined,
             }
 
             // Windows: sourceFileMap driveletter must be uppercase.
@@ -815,26 +813,10 @@ describe('SamDebugConfigurationProvider', async () => {
             assertEqualLaunchConfigs(actual, expected, appDir)
             assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{"test-envvar-1":"test value 1"}}')
             assertFileText(expected.eventPayloadFile, '{"test-payload-key-1":"test payload value 1"}')
-            assertFileText(
-                expected.templatePath,
-                `Resources:
-  awsToolkitSamLocalResource:
-    Type: 'AWS::Serverless::Function'
-    Properties:
-      Handler: 'HelloWorld::HelloWorld.Function::FunctionHandler'
-      CodeUri: >-
-        ${appDir}/src/HelloWorld
-      Runtime: dotnetcore2.1
-      Environment:
-        Variables:
-          PARAM1: VALUE
-      MemorySize: 42
-      Timeout: 717
-Globals:
-  Function:
-    Timeout: 10
-`
-            )
+
+            const origTemplate = await CloudFormation.load(templatePath.fsPath)
+            const expectedTemplate = await CloudFormation.load(expected.templatePath)
+            assert.deepStrictEqual(origTemplate, expectedTemplate, 'Templates are not equal!')
 
             //
             // Test noDebug=true.
@@ -926,6 +908,7 @@ Globals:
                         remoteRoot: '/var/task',
                     },
                 ],
+                parameterOverrides: undefined,
             }
 
             // Windows: pathMappings has uppercase and lowercase variants.
@@ -1025,7 +1008,9 @@ Globals:
                     timeoutSec: undefined,
                 },
                 name: 'SamLocalDebug',
-                templatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
+                templatePath: pathutil.normalize(
+                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
+                ),
                 port: actual.debugPort,
                 redirectOutput: false,
 
@@ -1042,6 +1027,7 @@ Globals:
                         remoteRoot: '/var/task',
                     },
                 ],
+                parameterOverrides: undefined,
             }
 
             // Windows: pathMappings has uppercase and lowercase variants.
@@ -1057,21 +1043,12 @@ Globals:
             assertEqualLaunchConfigs(actual, expected, appDir)
             assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{}}')
             assertFileText(expected.eventPayloadFile, '{}')
-            assertFileText(
-                expected.templatePath,
-                `Resources:
-  awsToolkitSamLocalResource:
-    Type: 'AWS::Serverless::Function'
-    Properties:
-      Handler: ${expected.handlerName}
-      CodeUri: >-
-        ${expected.codeRoot}
-      Runtime: python3.7
-Globals:
-  Function:
-    Timeout: 3
-`
-            )
+
+            const origTemplate = await CloudFormation.load(templatePath.fsPath)
+            // manual modification since the expected template will change the handler name.
+            origTemplate.Resources!.HelloWorldFunction!.Properties!.Handler = 'app___vsctk___debug.lambda_handler'
+            const expectedTemplate = await CloudFormation.load(expected.templatePath)
+            assert.deepStrictEqual(origTemplate, expectedTemplate, 'Templates are not equal!')
 
             //
             // Test noDebug=true.
@@ -1158,7 +1135,9 @@ Globals:
                 },
                 localRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
                 name: 'SamLocalDebug',
-                templatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
+                templatePath: pathutil.normalize(
+                    path.join(path.dirname(tempFile.fsPath), 'app___vsctk___template.yaml')
+                ),
 
                 //
                 // Node-related fields
@@ -1173,29 +1152,16 @@ Globals:
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
                 stopOnEntry: false,
+                parameterOverrides: undefined,
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
             assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{"var1":"2","var2":"1"}}')
             assertFileText(expected.eventPayloadFile, '{}')
-            assertFileText(
-                expected.templatePath,
-                `Resources:
-  awsToolkitSamLocalResource:
-    Type: 'AWS::Serverless::Function'
-    Properties:
-      Handler: ${expected.handlerName}
-      ${(expected.codeRoot.length > 80 ? 'CodeUri: >-\n        ' : 'CodeUri: ') + expected.codeRoot}
-      Runtime: nodejs12.x
-      Environment:
-        Variables:
-          ENVVAR: envvar
-      Timeout: 12345
-Globals:
-  Function:
-    Timeout: 5
-`
-            )
+
+            const origTemplate = await CloudFormation.load(tempFile.fsPath)
+            const expectedTemplate = await CloudFormation.load(expected.templatePath)
+            assert.deepStrictEqual(origTemplate, expectedTemplate, 'Templates are not equal!')
         })
 
         it('debugconfig with aws section', async () => {
@@ -1313,6 +1279,7 @@ Globals:
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
                 stopOnEntry: false,
+                parameterOverrides: undefined,
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
