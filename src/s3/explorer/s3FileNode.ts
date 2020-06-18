@@ -15,8 +15,15 @@ import { inspect } from 'util'
 import { S3BucketNode } from './s3BucketNode'
 import { S3FolderNode } from './s3FolderNode'
 
-// Same format used in the S3 console
-const DATE_FORMAT = 'MMM D, YYYY h:mm:ss A [GMT]ZZ' // Jan 5, 2020 5:30:20 PM GMT-0700
+/**
+ * Moment format for rendering readable dates for S3.
+ *
+ * Same format used in the S3 console, but it's also locale-aware.
+ *
+ * US: Jan 5, 2020 5:30:20 PM GMT-0700
+ * GB: 5 Jan 2020 17:30:20 GMT+0100
+ */
+export const S3_DATE_FORMAT = 'll LTS [GMT]ZZ'
 
 /**
  * Represents an object in an S3 bucket.
@@ -43,7 +50,7 @@ export class S3FileNode extends AWSTreeNodeBase implements AWSResourceNode {
                 '{0}\nSize: {1}\nLast Modified: {2}',
                 this.file.key,
                 readableSize,
-                moment(file.lastModified).format(DATE_FORMAT)
+                moment(file.lastModified).format(S3_DATE_FORMAT)
             )
             this.description = `${readableSize}, ${readableDate}`
         }
