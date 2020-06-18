@@ -196,7 +196,7 @@ export namespace CloudFormation {
 
     /**
      * Validates whether or not a property is an expected type.
-     * This takes refs into account but doesn't
+     * This takes refs into account but doesn't account for value; just whether or not the type is correct.
      * @param resource
      * @param template
      */
@@ -322,7 +322,7 @@ export namespace CloudFormation {
     /**
      * Gets the string value for a property in a template.
      * If the value is a Ref to a parameter, returns the default value of the ref; this may be undefined.
-     * Also returns undefined if the property is undefined or a number.
+     * Also returns undefined if the property is neither string nor Ref.
      * @param property Property value to check
      * @param template Template object to parse through
      */
@@ -349,7 +349,7 @@ export namespace CloudFormation {
     /**
      * Gets the numeric value for a property in a template.
      * If the value is a Ref to a parameter, returns the default value of the ref; this may be undefined.
-     * Also returns undefined if the property is undefined or a string.
+     * Also returns undefined if the property is neither number nor Ref.
      * @param property Property value to check
      * @param template Template object to parse through
      */
@@ -400,7 +400,7 @@ export namespace CloudFormation {
     }
 
     /**
-     * Helper function to get a number from a Ref.
+     * Gets a number from a Ref.
      * Throws an error if the value is not specifically a number.
      * Returns undefined if ref does not have a default value but is a number.
      * @param ref Ref to pull a number from
@@ -421,7 +421,7 @@ export namespace CloudFormation {
     }
 
     /**
-     * Helper function to get a string from a Ref.
+     * Gets a string from a Ref.
      * Throws an error if the value is specifically a number.
      * (all other CFN param types are some form of string).
      * Returns undefined if ref does not have a default value but is a string.

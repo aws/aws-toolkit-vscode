@@ -89,17 +89,17 @@ export function getCodeRoot(
         case 'template': {
             const templateInvoke = config.invokeTarget as TemplateTargetProperties
             const template = getTemplate(folder, config)
-            if (template) {
-                const templateResource = getTemplateResource(folder, config)
-                if (!templateResource?.Properties) {
-                    return undefined
-                }
-                const fullPath = tryGetAbsolutePath(folder, templateInvoke.templatePath)
-                const templateDir = path.dirname(fullPath)
-                const uri = CloudFormation.getStringForProperty(templateResource?.Properties?.CodeUri, template)
-                return uri ? pathutil.normalize(path.resolve(templateDir ?? '', uri)) : undefined
+            if (!template) {
+                return undefined
             }
-            break
+            const templateResource = getTemplateResource(folder, config)
+            if (!templateResource?.Properties) {
+                return undefined
+            }
+            const fullPath = tryGetAbsolutePath(folder, templateInvoke.templatePath)
+            const templateDir = path.dirname(fullPath)
+            const uri = CloudFormation.getStringForProperty(templateResource?.Properties?.CodeUri, template)
+            return uri ? pathutil.normalize(path.resolve(templateDir ?? '', uri)) : undefined
         }
         default: {
             throw Error('invalid invokeTarget') // Must not happen.
@@ -121,16 +121,16 @@ export function getHandlerName(
         }
         case 'template': {
             const template = getTemplate(folder, config)
-            if (template) {
-                const templateResource = getTemplateResource(folder, config)
-                const propertyValue = CloudFormation.resolvePropertyWithOverrides(
-                    templateResource?.Properties?.Handler!!,
-                    template,
-                    config.sam?.template?.parameters
-                )
-                return propertyValue ? propertyValue.toString() : ''
+            if (!template) {
+                return ''
             }
-            return ''
+            const templateResource = getTemplateResource(folder, config)
+            const propertyValue = CloudFormation.resolvePropertyWithOverrides(
+                templateResource?.Properties?.Handler!!,
+                template,
+                config.sam?.template?.parameters
+            )
+            return propertyValue ? propertyValue.toString() : ''
         }
         default: {
             // Should never happen.

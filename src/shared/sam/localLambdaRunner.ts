@@ -228,6 +228,9 @@ export async function invokeLambdaFunction(
         parameterOverrides: config.parameterOverrides,
     }
 
+    // no longer necessary
+    delete config.invokeTarget
+
     const command = new SamCliLocalInvokeInvocation(localInvokeArgs)
 
     const timer = createInvokeTimer(ctx.settings)
