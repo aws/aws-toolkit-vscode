@@ -191,8 +191,6 @@ export async function invokeLambdaFunction(
 
     try {
         await new SamCliBuildInvocation(samCliArgs).execute()
-    } catch (err) {
-        throw err as Error
     } finally {
         // always delete temp template.
         await unlink(config.templatePath)
