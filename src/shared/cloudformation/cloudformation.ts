@@ -207,25 +207,25 @@ export namespace CloudFormation {
         if (!!resource.Properties) {
             if (
                 !resource.Properties.Handler ||
-                !validatePropertyType(resource.Properties.Handler, 'string', template)
+                !validatePropertyType(resource.Properties.Handler, template, 'string')
             ) {
                 throw new Error('Missing or invalid value in Template for key: Handler')
             }
             if (
                 !resource.Properties.CodeUri ||
-                !validatePropertyType(resource.Properties.CodeUri, 'string', template)
+                !validatePropertyType(resource.Properties.CodeUri, template, 'string')
             ) {
                 throw new Error('Missing or invalid value in Template for key: CodeUri')
             }
             if (
                 !!resource.Properties.Runtime &&
-                !validatePropertyType(resource.Properties.Runtime, 'string', template)
+                !validatePropertyType(resource.Properties.Runtime, template, 'string')
             ) {
                 throw new Error('Invalid value in Template for key: Runtime')
             }
             if (
                 !!resource.Properties.Timeout &&
-                !validatePropertyType(resource.Properties.Timeout, 'number', template)
+                !validatePropertyType(resource.Properties.Timeout, template, 'number')
             ) {
                 throw new Error('Invalid value in Template for key: Timeout')
             }
@@ -234,7 +234,7 @@ export namespace CloudFormation {
 
     export function getRuntime(resource: Pick<Resource, 'Properties'>, template: Template): string {
         const properties = resource.Properties
-        if (!properties || !validatePropertyType(properties.Runtime, 'string', template)) {
+        if (!properties || !validatePropertyType(properties.Runtime, template, 'string')) {
             throw new Error('Resource does not specify a Runtime')
         }
 
@@ -330,20 +330,7 @@ export namespace CloudFormation {
         property: string | number | object | undefined,
         template: Template
     ): string | undefined {
-        if (validatePropertyType(property, 'string', template)) {
-            if (typeof property === 'string') {
-                return property
-            } else if (isRef(property)) {
-                try {
-                    const forcedProperty = property as Ref
-                    return getReffedString(forcedProperty, template)
-                } catch (err) {
-                    getLogger().debug(err)
-                }
-            }
-        }
-
-        return undefined
+        return getThingForProperty(property, template, 'string') as string | undefined
     }
 
     /**
@@ -357,13 +344,32 @@ export namespace CloudFormation {
         property: string | number | object | undefined,
         template: Template
     ): number | undefined {
-        if (validatePropertyType(property, 'number', template)) {
-            if (typeof property === 'number') {
+        return getThingForProperty(property, template, 'number') as number | undefined
+    }
+
+    /**
+     * Returns the "thing" that represents the property:
+     * * string if a string is requested and (the property is a string or if the property is a ref that is not a Number and has a default value)
+     * * number if a number is requested and (the property is a number or if the property is a ref that is Number and has a default value)
+     * * undefined in all other cases
+     *
+     * Ultimately it is up to the caller to ensure the type matches but this should do a more-than-reasonable job.
+     * @param property Property to validate the type of
+     * @param template Template object to parse through
+     * @param type Type to validate the property's type against
+     */
+    function getThingForProperty(
+        property: string | number | object | undefined,
+        template: Template,
+        type: 'string' | 'number'
+    ): string | number | undefined {
+        if (validatePropertyType(property, template, type)) {
+            if (typeof property !== 'object' && typeof property === type) {
                 return property
             } else if (isRef(property)) {
                 try {
                     const forcedProperty = property as Ref
-                    return getReffedNumber(forcedProperty, template)
+                    return getReffedThing(forcedProperty, template, type)
                 } catch (err) {
                     getLogger().debug(err)
                 }
@@ -377,13 +383,13 @@ export namespace CloudFormation {
      * Returns whether or not a property or its underlying ref matches the specified type
      * Does not validate a default value for a template parameter; just checks the value's type
      * @param property Property to validate the type of
-     * @param type Type to validate the property's type against
      * @param template Template object to parse through
+     * @param type Type to validate the property's type against
      */
     function validatePropertyType(
         property: string | number | object | undefined,
-        type: 'string' | 'number',
-        template: Template
+        template: Template,
+        type: 'string' | 'number'
     ): boolean {
         if (typeof property === type) {
             return true
@@ -405,42 +411,24 @@ export namespace CloudFormation {
      * Returns undefined if ref does not have a default value but is a number.
      * @param ref Ref to pull a number from
      * @param template Template to parse through
+     * @param thingType Type to validate against
      */
-    function getReffedNumber(ref: Ref, template: Template): number | undefined {
-        const param = getReffedParam(ref, template)
-        if (param.Type === 'Number') {
-            if (param.Default && typeof param.Default !== 'number') {
-                throw new Error(`Parameter ${ref.Ref} is not a number`)
-            }
-
-            // returns undefined if no default value is present
-            return param.Default
-        }
-
-        throw new Error(`Parameter ${ref.Ref} is not typed as a number`)
-    }
-
-    /**
-     * Gets a string from a Ref.
-     * Throws an error if the value is specifically a number.
-     * (all other CFN param types are some form of string).
-     * Returns undefined if ref does not have a default value but is a string.
-     * @param ref Ref to pull a string from
-     * @param template Template to parse through
-     */
-    function getReffedString(ref: Ref, template: Template): string | undefined {
+    function getReffedThing(ref: Ref, template: Template, thingType: 'number' | 'string'): number | string | undefined {
         const param = getReffedParam(ref, template)
         // every other type, including List<Number>, is formatted as a string.
-        if (param.Type !== 'Number') {
-            if (param.Default && typeof param.Default !== 'string') {
-                throw new Error(`Parameter ${ref.Ref} is not a string`)
+        if (
+            (thingType === 'number' && param.Type === 'Number') ||
+            (thingType !== 'number' && param.Type !== 'Number')
+        ) {
+            if (param.Default && typeof param.Default !== thingType) {
+                throw new Error(`Parameter ${ref.Ref} is not a ${thingType}`)
             }
 
             // returns undefined if no default value is present
             return param.Default
         }
 
-        throw new Error(`Parameter ${ref.Ref} is not typed as a string`)
+        throw new Error(`Parameter ${ref.Ref} is not a ${thingType}`)
     }
 
     /**
