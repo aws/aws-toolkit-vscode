@@ -65,6 +65,7 @@ describe('SamCliBuildInvocation', async () => {
             assert.strictEqual(args[0], 'build')
             assert.strictEqual(args[3], '--template')
             assert.strictEqual(args[5], '--base-dir')
+
             // `extraArgs` are appended to the end.
             assert.strictEqual(args[7], '--parameter-overrides')
             assert.strictEqual(args[8], 'math=math')

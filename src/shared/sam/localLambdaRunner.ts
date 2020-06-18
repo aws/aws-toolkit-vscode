@@ -226,8 +226,7 @@ export async function invokeLambdaFunction(
         parameterOverrides: config.parameterOverrides,
     }
 
-    // no longer necessary
-    delete config.invokeTarget
+    delete config.invokeTarget // Must not be used beyond this point.
 
     const command = new SamCliLocalInvokeInvocation(localInvokeArgs)
 
