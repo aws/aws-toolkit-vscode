@@ -34,6 +34,8 @@ object SsoPrompt : SsoLoginCallback {
 
             if (result == Messages.OK) {
                 BrowserUtil.browse(authorization.verificationUriComplete)
+            } else {
+                throw IllegalStateException(message("credentials.sso.login.cancelled"))
             }
         }
     }
