@@ -31,7 +31,11 @@ import * as pathutil from '../../../../shared/utilities/pathUtils'
 import { FakeExtensionContext } from '../../../fakeExtensionContext'
 import * as testutil from '../../../testUtil'
 import { assertFileText } from '../../../testUtil'
-import { makeSampleSamTemplateYaml, makeSampleYamlResource } from '../../cloudformation/cloudformationTestUtils'
+import {
+    makeSampleSamTemplateYaml,
+    makeSampleYamlResource,
+    makeSampleYamlParameters,
+} from '../../cloudformation/cloudformationTestUtils'
 import { readFileSync } from 'fs-extra'
 import { CredentialsStore } from '../../../../credentials/credentialsStore'
 import { CredentialsProviderManager } from '../../../../credentials/providers/credentialsProviderManager'
@@ -425,6 +429,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
                 stopOnEntry: false,
+                parameterOverrides: undefined,
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
@@ -532,7 +537,9 @@ describe('SamDebugConfigurationProvider', async () => {
                 },
                 localRoot: appDir,
                 name: 'SamLocalDebug',
-                templatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
+                templatePath: pathutil.normalize(
+                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
+                ),
 
                 //
                 // Node-related fields
@@ -544,6 +551,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
                 stopOnEntry: false,
+                parameterOverrides: undefined,
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
@@ -558,15 +566,16 @@ describe('SamDebugConfigurationProvider', async () => {
             assertFileText(
                 expected.templatePath,
                 `Resources:
-  awsToolkitSamLocalResource:
+  SourceCodeTwoFoldersDeep:
     Type: 'AWS::Serverless::Function'
     Properties:
+      CodeUri: .
       Handler: src/subfolder/app.handlerTwoFoldersDeep
-      CodeUri: >-
-        ${expected.codeRoot}
       Runtime: nodejs10.x
-      MemorySize: 1.01
-      Timeout: 99
+    Environment:
+      Variables:
+        SAMPLE1: value 1 from template.yaml
+        SAMPLE2: value 2 from template.yaml
 `
             )
 
@@ -667,6 +676,7 @@ describe('SamDebugConfigurationProvider', async () => {
                         pipeProgram: 'powershell',
                     },
                 },
+                parameterOverrides: undefined,
             }
 
             // Windows: sourceFileMap driveletter must be uppercase.
@@ -772,7 +782,9 @@ describe('SamDebugConfigurationProvider', async () => {
                     ...input.lambda,
                 },
                 name: 'SamLocalDebug',
-                templatePath: expectedCodeRoot + '/input-template.yaml',
+                templatePath: pathutil.normalize(
+                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
+                ),
 
                 //
                 // Csharp-related fields
@@ -804,6 +816,7 @@ describe('SamDebugConfigurationProvider', async () => {
                         pipeProgram: 'powershell',
                     },
                 },
+                parameterOverrides: undefined,
             }
 
             // Windows: sourceFileMap driveletter must be uppercase.
@@ -815,27 +828,52 @@ describe('SamDebugConfigurationProvider', async () => {
             assertEqualLaunchConfigs(actual, expected, appDir)
             assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{"test-envvar-1":"test value 1"}}')
             assertFileText(expected.eventPayloadFile, '{"test-payload-key-1":"test payload value 1"}')
+
             assertFileText(
                 expected.templatePath,
-                `Resources:
-  awsToolkitSamLocalResource:
+                `AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: |
+  Test SAM Template
+Globals:
+  Function:
+    Timeout: 10
+Resources:
+  HelloWorldFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
+      CodeUri: ./src/HelloWorld/
       Handler: 'HelloWorld::HelloWorld.Function::FunctionHandler'
-      CodeUri: >-
-        ${appDir}/src/HelloWorld
       Runtime: dotnetcore2.1
       Environment:
         Variables:
           PARAM1: VALUE
-      MemorySize: 42
-      Timeout: 717
-Globals:
-  Function:
-    Timeout: 10
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+Outputs:
+  HelloWorldApi:
+    Description: API Gateway endpoint URL for Prod stage for Hello World function
+    Value:
+      'Fn::Sub': >-
+        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
+  HelloWorldFunction:
+    Description: Hello World Lambda Function ARN
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunction
+        - Arn
+  HelloWorldFunctionIamRole:
+    Description: Implicit IAM Role created for Hello World function
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunctionRole
+        - Arn
 `
             )
-
             //
             // Test noDebug=true.
             //
@@ -926,6 +964,7 @@ Globals:
                         remoteRoot: '/var/task',
                     },
                 ],
+                parameterOverrides: undefined,
             }
 
             // Windows: pathMappings has uppercase and lowercase variants.
@@ -1025,7 +1064,9 @@ Globals:
                     timeoutSec: undefined,
                 },
                 name: 'SamLocalDebug',
-                templatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
+                templatePath: pathutil.normalize(
+                    path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
+                ),
                 port: actual.debugPort,
                 redirectOutput: false,
 
@@ -1042,6 +1083,7 @@ Globals:
                         remoteRoot: '/var/task',
                     },
                 ],
+                parameterOverrides: undefined,
             }
 
             // Windows: pathMappings has uppercase and lowercase variants.
@@ -1057,19 +1099,48 @@ Globals:
             assertEqualLaunchConfigs(actual, expected, appDir)
             assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{}}')
             assertFileText(expected.eventPayloadFile, '{}')
+
             assertFileText(
                 expected.templatePath,
-                `Resources:
-  awsToolkitSamLocalResource:
-    Type: 'AWS::Serverless::Function'
-    Properties:
-      Handler: ${expected.handlerName}
-      CodeUri: >-
-        ${expected.codeRoot}
-      Runtime: python3.7
+                `AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: |
+  python3.7-plain-sam-app
+  Sample SAM Template for python3.7-plain-sam-app
 Globals:
   Function:
     Timeout: 3
+Resources:
+  HelloWorldFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: hello_world/
+      Handler: app___vsctk___debug.lambda_handler
+      Runtime: python3.7
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+Outputs:
+  HelloWorldApi:
+    Description: API Gateway endpoint URL for Prod stage for Hello World function
+    Value:
+      'Fn::Sub': >-
+        https://\${ServerlessRestApi}.execute-api.\${AWS::Region}.amazonaws.com/Prod/hello/
+  HelloWorldFunction:
+    Description: Hello World Lambda Function ARN
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunction
+        - Arn
+  HelloWorldFunctionIamRole:
+    Description: Implicit IAM Role created for Hello World function
+    Value:
+      'Fn::GetAtt':
+        - HelloWorldFunctionRole
+        - Arn
 `
             )
 
@@ -1158,7 +1229,9 @@ Globals:
                 },
                 localRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
                 name: 'SamLocalDebug',
-                templatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
+                templatePath: pathutil.normalize(
+                    path.join(path.dirname(tempFile.fsPath), 'app___vsctk___template.yaml')
+                ),
 
                 //
                 // Node-related fields
@@ -1173,27 +1246,29 @@ Globals:
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
                 stopOnEntry: false,
+                parameterOverrides: undefined,
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
             assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{"var1":"2","var2":"1"}}')
             assertFileText(expected.eventPayloadFile, '{}')
+
             assertFileText(
                 expected.templatePath,
-                `Resources:
-  awsToolkitSamLocalResource:
+                `Globals:
+  Function:
+    Timeout: 5
+Resources:
+  myResource:
     Type: 'AWS::Serverless::Function'
     Properties:
-      Handler: ${expected.handlerName}
-      ${(expected.codeRoot.length > 80 ? 'CodeUri: >-\n        ' : 'CodeUri: ') + expected.codeRoot}
+      Handler: my.test.handler
+      CodeUri: codeuri
       Runtime: nodejs12.x
+      Timeout: 12345
       Environment:
         Variables:
           ENVVAR: envvar
-      Timeout: 12345
-Globals:
-  Function:
-    Timeout: 5
 `
             )
         })
@@ -1313,6 +1388,7 @@ Globals:
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
                 stopOnEntry: false,
+                parameterOverrides: undefined,
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
@@ -1448,7 +1524,7 @@ describe('createTemplateAwsSamDebugConfig', () => {
     it('creates a template-type SAM debugger configuration with additional params', () => {
         const params = {
             eventJson: {
-                event: 'uneventufl',
+                payload: 'uneventufl',
             },
             environmentVariables: {
                 varial: 'invert to fakie',
@@ -1525,6 +1601,13 @@ describe('debugConfiguration', () => {
             lambda: {
                 runtime: [...lambdaModel.nodeJsRuntimes.values()][0],
             },
+            sam: {
+                template: {
+                    parameters: {
+                        override: 'override',
+                    },
+                },
+            },
         }
 
         // Template with relative path:
@@ -1537,5 +1620,74 @@ describe('debugConfiguration', () => {
         testutil.toFile(makeSampleSamTemplateYaml(true, { codeUri: fullPath }), tempFile.fsPath)
         await registry.addTemplateToRegistry(tempFile)
         assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
+
+        // Template with refs that don't override:
+        const tempFileRefs = vscode.Uri.file(path.join(tempFolder, 'testRefs.yaml'))
+        const fileRefsConfig = {
+            ...config,
+            invokeTarget: {
+                ...config.invokeTarget,
+                templatePath: tempFileRefs.fsPath,
+            },
+        }
+        const paramStr = makeSampleYamlParameters({
+            notOverride: {
+                Type: 'String',
+                Default: 'notDoingAnything',
+            },
+        })
+        testutil.toFile(makeSampleSamTemplateYaml(true, { codeUri: fullPath }, paramStr), tempFileRefs.fsPath)
+        await registry.addTemplateToRegistry(tempFileRefs)
+        assert.strictEqual(debugConfiguration.getCodeRoot(folder, fileRefsConfig), fullPath)
+        assert.strictEqual(debugConfiguration.getHandlerName(folder, fileRefsConfig), 'handler')
+
+        // Template with refs that overrides handler via default parameter value in YAML template
+        const tempFileDefaultRefs = vscode.Uri.file(path.join(tempFolder, 'testDefaultRefs.yaml'))
+        const fileDefaultRefsConfig = {
+            ...config,
+            invokeTarget: {
+                ...config.invokeTarget,
+                templatePath: tempFileDefaultRefs.fsPath,
+            },
+        }
+        const paramStrDefaultOverride = makeSampleYamlParameters({
+            defaultOverride: {
+                Type: 'String',
+                Default: 'thisWillOverride',
+            },
+        })
+        testutil.toFile(
+            makeSampleSamTemplateYaml(
+                true,
+                { codeUri: fullPath, handler: '!Ref defaultOverride' },
+                paramStrDefaultOverride
+            ),
+            tempFileDefaultRefs.fsPath
+        )
+        await registry.addTemplateToRegistry(tempFileDefaultRefs)
+        assert.strictEqual(debugConfiguration.getCodeRoot(folder, fileDefaultRefsConfig), fullPath)
+        assert.strictEqual(debugConfiguration.getHandlerName(folder, fileDefaultRefsConfig), 'thisWillOverride')
+
+        // Template with refs that overrides handler via override value in launch config
+        const tempFileOverrideRef = vscode.Uri.file(path.join(tempFolder, 'testOverrideRefs.yaml'))
+        const fileOverrideRefConfig = {
+            ...config,
+            invokeTarget: {
+                ...config.invokeTarget,
+                templatePath: tempFileOverrideRef.fsPath,
+            },
+        }
+        const paramStrNoDefaultOverride = makeSampleYamlParameters({
+            override: {
+                Type: 'String',
+            },
+        })
+        testutil.toFile(
+            makeSampleSamTemplateYaml(true, { codeUri: fullPath, handler: '!Ref override' }, paramStrNoDefaultOverride),
+            tempFileOverrideRef.fsPath
+        )
+        await registry.addTemplateToRegistry(tempFileOverrideRef)
+        assert.strictEqual(debugConfiguration.getCodeRoot(folder, fileOverrideRefConfig), fullPath)
+        assert.strictEqual(debugConfiguration.getHandlerName(folder, fileOverrideRefConfig), 'override')
     })
 })

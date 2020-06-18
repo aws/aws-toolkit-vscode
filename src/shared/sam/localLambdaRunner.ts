@@ -79,31 +79,52 @@ export function getRelativeFunctionHandler(params: {
 }
 
 export async function makeInputTemplate(config: SamLaunchRequestArgs): Promise<string> {
-    let newTemplate = new SamTemplateGenerator()
-        .withFunctionHandler(config.handlerName)
-        .withResourceName(TEMPLATE_RESOURCE_NAME)
-        .withRuntime(config.runtime)
-        .withCodeUri(config.codeRoot)
+    let newTemplate: SamTemplateGenerator
+    let inputTemplatePath: string
 
+    // use existing template to create a temporary template with a resource that has an overridden handler name.
+    // this is necessary for Python, which overrides the handler name due to the debug file.
     if (config.invokeTarget.target === 'template') {
         const template = getTemplate(config.workspaceFolder, config)
-        // TODO: does target=code have an analog to `Globals`?
-        if (template?.Globals) {
-            newTemplate = newTemplate.withGlobals(template?.Globals)
-        }
         const templateResource = getTemplateResource(config.workspaceFolder, config)
-        if (templateResource?.Properties?.Environment?.Variables) {
-            newTemplate = newTemplate.withEnvironment({
-                Variables: templateResource?.Properties?.Environment?.Variables,
-            })
+
+        if (!template || !templateResource) {
+            throw new Error('Resource not found in base template')
         }
+
+        const resourceWithOverriddenHandler = {
+            ...templateResource,
+            Properties: {
+                ...templateResource.Properties!,
+                Handler: config.handlerName,
+            },
+        }
+
+        newTemplate = new SamTemplateGenerator(template).withTemplateResources({
+            [config.invokeTarget.logicalId]: resourceWithOverriddenHandler,
+        })
+
+        // template type uses the template dir and a throwaway template name so we can use existing relative paths
+        // clean this one up manually; we don't want to accidentally delete the workspace dir
+        inputTemplatePath = path.join(path.dirname(config.templatePath), 'app___vsctk___template.yaml')
+        // code type - generate ephemeral SAM template
     } else {
+        newTemplate = new SamTemplateGenerator()
+            .withFunctionHandler(config.handlerName)
+            .withResourceName(TEMPLATE_RESOURCE_NAME)
+            .withRuntime(config.runtime)
+            .withCodeUri(config.codeRoot)
         if (config.lambda?.environmentVariables) {
             newTemplate = newTemplate.withEnvironment({
                 Variables: config.lambda?.environmentVariables,
             })
         }
+        inputTemplatePath = path.join(config.baseBuildDir!, 'input', 'input-template.yaml')
+        // code type is fire-and-forget so we can add to disposable files
+        ExtensionDisposableFiles.getInstance().addFolder(inputTemplatePath)
     }
+
+    // additional overrides
     if (config.lambda?.memoryMb) {
         newTemplate = newTemplate.withMemorySize(config.lambda?.memoryMb)
     }
@@ -111,8 +132,6 @@ export async function makeInputTemplate(config: SamLaunchRequestArgs): Promise<s
         newTemplate = newTemplate.withTimeout(config.lambda?.timeoutSec)
     }
 
-    const inputTemplatePath: string = path.join(config.baseBuildDir!, 'input', 'input-template.yaml')
-    ExtensionDisposableFiles.getInstance().addFolder(inputTemplatePath)
     await newTemplate.generate(inputTemplatePath)
 
     return pathutil.normalize(inputTemplatePath)
@@ -152,13 +171,15 @@ export async function invokeLambdaFunction(
     }
     const samCliArgs: SamCliBuildInvocationArguments = {
         buildDir: samBuildOutputFolder,
-        baseDir: config.codeRoot,
+        // undefined triggers SAM to use the template's dir as the code root
+        baseDir: config.invokeTarget.target === 'code' ? config.codeRoot : undefined,
         templatePath: config.templatePath!,
         invoker: processInvoker,
         manifestPath: config.manifestPath,
         environmentVariables: envVars,
         useContainer: config.sam?.containerBuild || false,
         extraArgs: config.sam?.buildArguments,
+        parameterOverrides: config.parameterOverrides,
     }
     if (!config.noDebug) {
         // Needed at least for dotnet case; harmless for others.
@@ -167,12 +188,18 @@ export async function invokeLambdaFunction(
             SAM_BUILD_MODE: 'debug',
         }
     }
-    await new SamCliBuildInvocation(samCliArgs).execute()
+
+    try {
+        await new SamCliBuildInvocation(samCliArgs).execute()
+    } finally {
+        // always delete temp template.
+        await unlink(config.templatePath)
+    }
+
     ctx.chanLogger.info('AWS.output.building.sam.application.complete', 'Build complete.')
 
     // XXX: reassignment
     config.templatePath = path.join(samBuildOutputFolder, 'template.yaml')
-    delete config.invokeTarget // Must not be used beyond this point.
 
     await onAfterBuild()
 
@@ -185,7 +212,8 @@ export async function invokeLambdaFunction(
     const maxRetries: number = getAttachDebuggerMaxRetryLimit(ctx.settings, MAX_DEBUGGER_RETRIES_DEFAULT)
 
     const localInvokeArgs: SamCliLocalInvokeInvocationArguments = {
-        templateResourceName: TEMPLATE_RESOURCE_NAME,
+        templateResourceName:
+            config.invokeTarget.target === 'code' ? TEMPLATE_RESOURCE_NAME : config.invokeTarget.logicalId,
         templatePath: config.templatePath,
         eventPath: config.eventPayloadFile,
         environmentVariablePath: config.envFile,
@@ -195,7 +223,10 @@ export async function invokeLambdaFunction(
         debugPort: !config.noDebug ? config.debugPort?.toString() : undefined,
         debuggerPath: config.debuggerPath,
         extraArgs: config.sam?.localArguments,
+        parameterOverrides: config.parameterOverrides,
     }
+
+    delete config.invokeTarget // Must not be used beyond this point.
 
     const command = new SamCliLocalInvokeInvocation(localInvokeArgs)
 

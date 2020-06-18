@@ -307,13 +307,14 @@
                                         "type": "boolean"
                                     },
                                     "template": {
+                                        "description": "%AWS.configuration.description.awssam.debug.template%",
                                         "properties": {
                                             "parameters": {
+                                                "description": "%AWS.configuration.description.awssam.debug.templateParameters%",
                                                 "additionalProperties": {
                                                     "type": [
                                                         "string",
-                                                        "number",
-                                                        "boolean"
+                                                        "number"
                                                     ]
                                                 },
                                                 "type": "object"

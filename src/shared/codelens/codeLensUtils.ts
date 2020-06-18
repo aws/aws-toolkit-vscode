@@ -252,7 +252,8 @@ export function initializeTypescriptCodelens(context: ExtContext): void {
                 handlerName: params.handlerName,
                 templatePath: params.samTemplate.fsPath,
             })
-            const lambdaRuntime = CloudFormation.getRuntime(resource)
+            const template = await CloudFormation.load(params.samTemplate.fsPath)
+            const lambdaRuntime = CloudFormation.getRuntime(resource, template)
             let invokeResult: Result = 'Succeeded'
             try {
                 if (!nodeJsRuntimes.has(lambdaRuntime)) {

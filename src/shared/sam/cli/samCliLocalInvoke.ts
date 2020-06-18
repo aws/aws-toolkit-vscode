@@ -182,6 +182,10 @@ export interface SamCliLocalInvokeInvocationArguments {
      * Host path to a debugger that will be mounted into the Lambda container.
      */
     debuggerPath?: string
+    /**
+     * parameter overrides specified in the `sam.template.parameters` field
+     */
+    parameterOverrides?: string[]
     /** SAM args specified by user (`sam.localArguments`). */
     extraArgs?: string[]
 }
@@ -213,6 +217,12 @@ export class SamCliLocalInvokeInvocation {
         this.addArgumentIf(invokeArgs, !!this.args.dockerNetwork, '--docker-network', this.args.dockerNetwork!)
         this.addArgumentIf(invokeArgs, !!this.args.skipPullImage, '--skip-pull-image')
         this.addArgumentIf(invokeArgs, !!this.args.debuggerPath, '--debugger-path', this.args.debuggerPath!)
+        this.addArgumentIf(
+            invokeArgs,
+            !!this.args.parameterOverrides && this.args.parameterOverrides.length > 0,
+            '--parameter-overrides',
+            ...(this.args.parameterOverrides ?? [])
+        )
         invokeArgs.push(...(this.args.extraArgs ?? []))
 
         await this.args.invoker.invoke({

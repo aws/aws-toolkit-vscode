@@ -62,14 +62,14 @@ async function detectLambdasFromTemplate(
             workspaceFolder,
             templatePath,
             templateGlobals: template.Globals,
-            handler: getHandler(resources[key]!),
+            handler: getHandler(resources[key]!, template),
             resource: resources[key]!,
         }))
 }
 
-function getHandler(resource: CloudFormation.Resource): string | undefined {
+function getHandler(resource: CloudFormation.Resource, template: CloudFormation.Template): string | undefined {
     if (resource.Properties && resource.Properties.Handler) {
-        return resource.Properties.Handler
+        return CloudFormation.getStringForProperty(resource.Properties.Handler, template)
     }
 
     return undefined

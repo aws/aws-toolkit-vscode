@@ -88,13 +88,18 @@ export function getCodeRoot(
         }
         case 'template': {
             const templateInvoke = config.invokeTarget as TemplateTargetProperties
+            const template = getTemplate(folder, config)
+            if (!template) {
+                return undefined
+            }
             const templateResource = getTemplateResource(folder, config)
             if (!templateResource?.Properties) {
                 return undefined
             }
             const fullPath = tryGetAbsolutePath(folder, templateInvoke.templatePath)
             const templateDir = path.dirname(fullPath)
-            return pathutil.normalize(path.resolve(templateDir ?? '', templateResource?.Properties?.CodeUri))
+            const uri = CloudFormation.getStringForProperty(templateResource?.Properties?.CodeUri, template)
+            return uri ? pathutil.normalize(path.resolve(templateDir ?? '', uri)) : undefined
         }
         default: {
             throw Error('invalid invokeTarget') // Must not happen.
@@ -115,8 +120,17 @@ export function getHandlerName(
             return codeInvoke.lambdaHandler
         }
         case 'template': {
+            const template = getTemplate(folder, config)
+            if (!template) {
+                return ''
+            }
             const templateResource = getTemplateResource(folder, config)
-            return templateResource?.Properties?.Handler!!
+            const propertyValue = CloudFormation.resolvePropertyWithOverrides(
+                templateResource?.Properties?.Handler!!,
+                template,
+                config.sam?.template?.parameters
+            )
+            return propertyValue ? propertyValue.toString() : ''
         }
         default: {
             // Should never happen.

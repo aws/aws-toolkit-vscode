@@ -67,9 +67,11 @@ describe('SamCliBuildInvocation', async () => {
             assert.strictEqual(args[5], '--base-dir')
 
             // `extraArgs` are appended to the end.
-            assert.strictEqual(args[7], '--debug')
-            assert.strictEqual(args[8], '--build-dir')
-            assert.strictEqual(args[9], 'my/build/dir/')
+            assert.strictEqual(args[7], '--parameter-overrides')
+            assert.strictEqual(args[8], 'math=math')
+            assert.strictEqual(args[9], '--debug')
+            assert.strictEqual(args[10], '--build-dir')
+            assert.strictEqual(args[11], 'my/build/dir/')
         })
 
         await new SamCliBuildInvocation({
@@ -78,6 +80,7 @@ describe('SamCliBuildInvocation', async () => {
             templatePath: placeholderTemplateFile,
             invoker: processInvoker,
             extraArgs: ['--debug', '--build-dir', 'my/build/dir/'],
+            parameterOverrides: ['math=math'],
         }).execute()
     })
 
