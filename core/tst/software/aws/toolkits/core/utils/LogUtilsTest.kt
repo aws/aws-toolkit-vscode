@@ -10,8 +10,7 @@ import com.nhaarman.mockitokotlin2.reset
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
-import org.hamcrest.CoreMatchers.equalTo
-import org.hamcrest.MatcherAssert.assertThat
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.slf4j.Logger
@@ -24,10 +23,8 @@ class LogUtilsTest {
     @Test
     fun exceptionIsLoggedAndSuppressedInTryOrNull() {
         val expectedException = RuntimeException("Boom")
-        val result = log.tryOrNull("message", level = Level.WARN) { throw expectedException }
-
+        log.tryOrNull("message", level = Level.WARN) { throw expectedException }
         verify(log).warn(any(), eq(expectedException))
-        assertThat(result, equalTo(null))
     }
 
     @Test
@@ -35,7 +32,7 @@ class LogUtilsTest {
         val expectedException = RuntimeException("Boom")
         val exception = catch { log.tryOrThrowNullable("message") { throw expectedException } }
         verify(log).error(any(), eq(expectedException))
-        assertThat(exception === expectedException, equalTo(true))
+        assertThat(exception).isEqualTo(expectedException)
     }
 
     @Test
@@ -43,7 +40,7 @@ class LogUtilsTest {
         val expectedException = RuntimeException("Boom")
         val exception = catch { log.tryOrThrow<Unit>("message") { throw expectedException } }
         verify(log).error(any(), eq(expectedException))
-        assertThat(exception === expectedException, equalTo(true))
+        assertThat(exception).isEqualTo(expectedException)
     }
 
     @Test
@@ -56,7 +53,7 @@ class LogUtilsTest {
     fun smartCastToNonNullOnTryOrThrow() {
         val nullableValue: String = log.tryOrThrow("message") { mightBeNull(shouldBeNull = false) }
         val nonNullableValue: String = log.tryOrThrow("message") { willNeverBeNull() }
-        assertThat(nullableValue, equalTo(nonNullableValue))
+        assertThat(nullableValue).isEqualTo(nonNullableValue)
     }
 
     @Test
@@ -150,9 +147,8 @@ class LogUtilsTest {
 
     @Test
     fun logWhenNull() {
-        val result = log.logWhenNull("message", level = Level.WARN) { null }
+        log.logWhenNull("message", level = Level.WARN) { null }
         verify(log).warn("message", null)
-        assertThat(result, equalTo(null))
     }
 
     @Before

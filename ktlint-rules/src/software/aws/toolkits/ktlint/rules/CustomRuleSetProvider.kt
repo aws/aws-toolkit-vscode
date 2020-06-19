@@ -15,6 +15,7 @@ class CustomRuleSetProvider : RuleSetProvider {
         ExpressionBodyRule(),
         LazyLogRule(),
         DialogModalityRule(),
+        BannedImportsRule(),
         NoWildcardImportsRule() // Disabled by default, so including in our rule set
     )
 }

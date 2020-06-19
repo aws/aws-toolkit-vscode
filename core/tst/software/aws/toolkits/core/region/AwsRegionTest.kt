@@ -3,8 +3,7 @@
 
 package software.aws.toolkits.core.region
 
-import org.hamcrest.CoreMatchers.equalTo
-import org.hamcrest.MatcherAssert.assertThat
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -32,11 +31,11 @@ class AwsRegionTest(private val region: AwsRegion, private val expectedCategory:
 
     @Test
     fun displayNameShouldMatch() {
-        assertThat(region.displayName, equalTo(expectedDisplayName))
+        assertThat(region.displayName).isEqualTo(expectedDisplayName)
     }
 
     @Test
     fun categoryShouldMatch() {
-        assertThat(region.category, equalTo(expectedCategory))
+        assertThat(region.category).isEqualTo(expectedCategory)
     }
 }

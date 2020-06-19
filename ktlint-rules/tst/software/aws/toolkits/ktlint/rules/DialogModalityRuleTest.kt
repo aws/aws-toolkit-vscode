@@ -5,7 +5,7 @@ package software.aws.toolkits.ktlint.rules
 
 import com.pinterest.ktlint.core.LintError
 import com.pinterest.ktlint.test.lint
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 
@@ -16,7 +16,7 @@ class DialogModalityRuleTest {
     @Test
     fun runInEdtCallsShouldSpecifyModalityWhenCalledWithinDialog() {
         assertExpected(
-                """
+            """
             class Blah : DialogWrapper {
               fun blah() {
                 runInEdt { }
@@ -29,19 +29,20 @@ class DialogModalityRuleTest {
     @Test
     fun callsThatSpecifyModalityAnyAreFine() {
         assertExpected(
-                """
+            """
             class Blah : DialogWrapper {
               fun blah() {
                 runInEdt(ModalityState.any()) { }
               }
             }
-        """)
+        """
+        )
     }
 
     @Test
     fun callsThatSpecifyWrongModalityAreNotFine() {
         assertExpected(
-                """
+            """
             class Blah : DialogWrapper() {
               fun blah() {
                 runInEdt(ModalityState.current()) { }
@@ -52,12 +53,12 @@ class DialogModalityRuleTest {
     }
 
     private fun assertExpected(@Language("kotlin") kotlinText: String, vararg expectedErrors: Pair<Int, Int>) {
-        Assertions.assertThat(rule.lint(kotlinText.trimIndent())).containsExactly(*expectedErrors.map {
+        assertThat(rule.lint(kotlinText.trimIndent())).containsExactly(*expectedErrors.map {
             LintError(
-                    it.first,
-                    it.second,
-                    rule.id,
-                    "Call to runInEdt without ModalityState.any() within Dialog will not run until Dialog exits."
+                it.first,
+                it.second,
+                rule.id,
+                "Call to runInEdt without ModalityState.any() within Dialog will not run until Dialog exits."
             )
         }.toTypedArray())
     }

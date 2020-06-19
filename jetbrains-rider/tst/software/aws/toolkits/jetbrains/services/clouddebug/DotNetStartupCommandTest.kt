@@ -8,7 +8,7 @@ import com.jetbrains.rdclient.util.idea.pumpMessages
 import com.jetbrains.rider.projectView.solutionDirectory
 import com.jetbrains.rider.test.asserts.shouldBeTrue
 import com.jetbrains.rider.test.scriptingApi.buildSolutionWithReSharperBuild
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.testng.annotations.DataProvider
 import org.testng.annotations.Test
 import software.aws.toolkits.jetbrains.services.ecs.execution.ArtifactMapping
@@ -39,7 +39,7 @@ class DotNetStartupCommandTest : AwsReuseSolutionTestBase() {
         )
 
         pumpMessages(Duration.ofSeconds(2).toMillis()) { command.isNotEmpty() }
-        Assertions.assertThat(command).isEqualTo(originalCommand)
+        assertThat(command).isEqualTo(originalCommand)
     }
 
     @Test
@@ -69,6 +69,6 @@ class DotNetStartupCommandTest : AwsReuseSolutionTestBase() {
         pumpMessages(Duration.ofSeconds(2).toMillis()) { command.isNotEmpty() }
 
         val expectedCommand = "dotnet /tmp/remote/path/netcoreapp2.1/HelloWorld.dll"
-        Assertions.assertThat(command).isEqualTo(expectedCommand)
+        assertThat(command).isEqualTo(expectedCommand)
     }
 }

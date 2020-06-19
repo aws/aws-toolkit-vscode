@@ -4,7 +4,8 @@
 package software.aws.toolkits.jetbrains.services.clouddebug
 
 import com.intellij.execution.configurations.RuntimeConfigurationError
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Test
 import software.aws.toolkits.resources.message
 
@@ -15,7 +16,7 @@ class CloudDebugStartupCommandTest {
     @Test
     fun emptyStartupCommandThrowsAnException() {
         val containerName = "myContainer"
-        Assertions.assertThatThrownBy { startupCommand.validateStartupCommand("", containerName) }
+        assertThatThrownBy { startupCommand.validateStartupCommand("", containerName) }
             .isInstanceOf(RuntimeConfigurationError::class.java)
             .hasMessage(message("cloud_debug.run_configuration.missing.start_command", containerName))
     }
@@ -27,11 +28,11 @@ class CloudDebugStartupCommandTest {
 
     @Test
     fun autoFillIsNotSupportedByDefault() {
-        Assertions.assertThat(startupCommand.isStartCommandAutoFillSupported).isFalse()
+        assertThat(startupCommand.isStartCommandAutoFillSupported).isFalse()
     }
 
     @Test
     fun defaultHintTextIsEmptyString() {
-        Assertions.assertThat(startupCommand.getStartupCommandTextFieldHintText()).isEqualTo("")
+        assertThat(startupCommand.getStartupCommandTextFieldHintText()).isEqualTo("")
     }
 }
