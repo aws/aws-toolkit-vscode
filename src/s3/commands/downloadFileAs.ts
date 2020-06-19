@@ -19,8 +19,9 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
  * Downloads a file represented by the given node.
  *
  * Prompts the user for the save location.
+ * Shows the output channel with "download started" message.
  * Downloads the file (showing a progress bar).
- * Shows output channel.
+ * Shows the output channel with "download completed" message.
  */
 export async function downloadFileAsCommand(
     node: S3FileNode,

@@ -17,8 +17,15 @@ import { showErrorWithLogs } from '../util/messages'
  * Deletes the bucket represented by the given node.
  *
  * Prompts the user for confirmation (user must type the bucket name).
- * Deletes the bucket, showing a progress bar.
+ * Empties and deletes the bucket, showing a progress bar.
  * Refreshes the parent node.
+ *
+ * Note that this just repeatedly calls list and delete to empty the bucket before deletion.
+ * Failures during the emptying or deleting step can leave the bucket in a state where
+ * some (or all) objects are deleted, but the bucket remains.
+ *
+ * This is unfortunate, but it's still a valuable feature and partial failures
+ * don't result in a state of too much confusion for the user.
  */
 export async function deleteBucketCommand(
     node: S3BucketNode,

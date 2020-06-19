@@ -28,7 +28,9 @@ export interface FileSizeBytes {
  * Uploads a file to the bucket or folder represented by the given node.
  *
  * Prompts the user for the file location.
+ * Shows the output channel with "upload started" message.
  * Uploads the file (showing a progress bar).
+ * Shows the output channel with "upload completed" message.
  * Refreshes the node.
  *
  * Node that the node is reset to displaying its first page of results.
