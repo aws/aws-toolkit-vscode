@@ -10,4 +10,10 @@
         <connectionInterceptor implementation="software.aws.toolkits.jetbrains.services.rds.auth.IamAuth"/>
         <connectionInterceptor implementation="software.aws.toolkits.jetbrains.services.redshift.auth.IamAuth"/>
     </extensions>
+    <actions>
+    <group id="aws.toolkit.explorer.redshift.cluster" popup="true" compact="false">
+        <action id="redshift.awsauth" class="software.aws.toolkits.jetbrains.services.redshift.actions.CreateDataSourceAction"/>
+        <separator/>
+    </group>
+    </actions>
 </idea-plugin>

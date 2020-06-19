@@ -88,7 +88,7 @@ class IamAuth : DatabaseAuthProvider, CoroutineScope by ApplicationThreadPoolSco
     }
 
     companion object {
-        const val providerId = "aws.redshift.api"
+        const val providerId = "aws.redshift.iam"
         private val LOG = getLogger<IamAuth>()
     }
 }

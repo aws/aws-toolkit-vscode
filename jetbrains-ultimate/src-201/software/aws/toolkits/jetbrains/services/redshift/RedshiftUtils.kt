@@ -3,11 +3,19 @@
 
 package software.aws.toolkits.jetbrains.services.redshift
 
+import com.intellij.database.autoconfig.DataSourceRegistry
+import com.intellij.database.dataSource.DataSourceSslConfiguration
+import com.intellij.database.remote.jdbc.helpers.JdbcSettings
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.redshift.model.Cluster
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
+import software.aws.toolkits.jetbrains.core.credentials.connectionSettings
+import software.aws.toolkits.jetbrains.core.datagrip.CREDENTIAL_ID_PROPERTY
+import software.aws.toolkits.jetbrains.core.datagrip.REGION_ID_PROPERTY
+import software.aws.toolkits.jetbrains.services.redshift.auth.CLUSTER_ID_PROPERTY
+import software.aws.toolkits.jetbrains.services.redshift.auth.IamAuth
 import software.aws.toolkits.jetbrains.services.sts.StsResources
 
 object RedshiftUtils {
@@ -22,4 +30,21 @@ fun Project.clusterArn(cluster: Cluster, region: AwsRegion): String {
     // Attempt to get account out of the cache. If not, it's empty so, it is still a valid arn
     val account = tryOrNull { AwsResourceCache.getInstance(this).getResourceIfPresent(StsResources.ACCOUNT) } ?: ""
     return "arn:${region.partitionId}:redshift:${region.id}:$account:cluster:${cluster.clusterIdentifier()}"
+}
+
+fun DataSourceRegistry.createDatasource(project: Project, cluster: Cluster) {
+    val connectionSettings = project.connectionSettings()
+    builder
+        .withJdbcAdditionalProperty(CREDENTIAL_ID_PROPERTY, connectionSettings?.credentials?.id)
+        .withJdbcAdditionalProperty(REGION_ID_PROPERTY, connectionSettings?.region?.id)
+        .withJdbcAdditionalProperty(CLUSTER_ID_PROPERTY, cluster.clusterIdentifier())
+        .withUser(cluster.masterUsername())
+        .withUrl("jdbc:redshift://${cluster.endpoint().address()}:${cluster.endpoint().port()}/${cluster.dbName()}")
+        .commit()
+    // TODO FIX_WHEN_MIN_IS_202 set auth provider ID in builder
+    newDataSources.firstOrNull()?.let {
+        it.authProviderId = IamAuth.providerId
+        // Force SSL on
+        it.sslCfg = DataSourceSslConfiguration("", "", "", true, JdbcSettings.SslMode.VERIFY_FULL)
+    } ?: throw IllegalStateException("Newly inserted data source is not in the data source registry!")
 }
