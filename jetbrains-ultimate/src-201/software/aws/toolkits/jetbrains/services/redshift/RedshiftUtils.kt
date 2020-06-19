@@ -12,8 +12,8 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.connectionSettings
-import software.aws.toolkits.jetbrains.core.datagrip.CREDENTIAL_ID_PROPERTY
-import software.aws.toolkits.jetbrains.core.datagrip.REGION_ID_PROPERTY
+import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
+import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
 import software.aws.toolkits.jetbrains.services.redshift.auth.CLUSTER_ID_PROPERTY
 import software.aws.toolkits.jetbrains.services.redshift.auth.IamAuth
 import software.aws.toolkits.jetbrains.services.sts.StsResources

@@ -31,8 +31,8 @@ import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
-import software.aws.toolkits.jetbrains.core.datagrip.CREDENTIAL_ID_PROPERTY
-import software.aws.toolkits.jetbrains.core.datagrip.REGION_ID_PROPERTY
+import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
+import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 
 class IamAuthTest {

@@ -10,6 +10,7 @@ import com.intellij.database.dataSource.url.template.UrlEditorModel
 import com.intellij.database.dataSource.url.ui.UrlPropertiesPanel
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
+import org.jetbrains.annotations.TestOnly
 import software.aws.toolkits.jetbrains.services.redshift.RedshiftUtils
 import software.aws.toolkits.jetbrains.ui.AwsAuthWidget
 import software.aws.toolkits.resources.message
@@ -52,4 +53,7 @@ class IamAuthWidget : AwsAuthWidget() {
         val clusterId = RedshiftUtils.extractClusterIdFromUrl(url)
         clusterId?.let { clusterIdSelector.text = it }
     }
+
+    @TestOnly
+    internal fun getClusterId() = clusterIdSelector.text
 }
