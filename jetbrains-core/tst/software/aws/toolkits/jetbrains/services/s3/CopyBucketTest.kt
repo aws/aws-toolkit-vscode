@@ -6,7 +6,7 @@ import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.TestActionEvent
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.s3.model.Bucket
@@ -25,6 +25,6 @@ class CopyBucketTest {
         val copyAction = CopyBucketNameAction()
         copyAction.actionPerformed(bucket, TestActionEvent(DataContext { projectRule.project }))
         val content = CopyPasteManager.getInstance().contents
-        Assertions.assertThat(content?.getTransferData(DataFlavor.stringFlavor)).isEqualTo("foo")
+        assertThat(content?.getTransferData(DataFlavor.stringFlavor)).isEqualTo("foo")
     }
 }
