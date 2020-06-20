@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { S3 } from 'aws-sdk'
 import * as vscode from 'vscode'
 
 export const DEFAULT_MAX_KEYS = 300
@@ -28,11 +29,11 @@ export interface S3Client {
     listBuckets(): Promise<ListBucketsResponse>
 
     /**
-     * Lists files and folders in a folder or inside the root bucket.
+     * Lists files and folders in a folder or inside the bucket root.
      *
      * The bucket should reside in the same region as the one configured for the client.
      *
-     * Returns the first {@link DEFAULT_MAX_KEYS} objects (the first "page").
+     * Returns the first {@link ListFilesRequest#maxResults} objects (the first "page").
      * If there are more results, returns a continuation token that can be passed in a subsequent call
      * to get the next "page" of results.
      *
@@ -47,7 +48,7 @@ export interface S3Client {
      *
      * @throws Error if there is an error calling S3.
      */
-    listObjects(request: ListObjectsRequest): Promise<ListObjectsResponse>
+    listFiles(request: ListFilesRequest): Promise<ListFilesResponse>
 
     /**
      * Creates a folder.
@@ -90,6 +91,57 @@ export interface S3Client {
      * @throws Error if there is an error calling S3 or piping between streams.
      */
     uploadFile(request: UploadFileRequest): Promise<void>
+
+    /**
+     * Lists versions of all objects inside a bucket.
+     *
+     * The bucket should reside in the same region as the one configured for the client.
+     *
+     * Returns the first {@link ListObjectVersionsRequest#maxResults} versions (the first "page").
+     * If there are more results, returns a continuation token that can be passed in a subsequent call
+     * to get the next "page" of results.
+     *
+     * @throws Error if there is an error calling S3.
+     */
+    listObjectVersions(request: ListObjectVersionsRequest): Promise<ListObjectVersionsResponse>
+
+    /**
+     * Returns an async iterable over all pages of {@link listObjectVersions}.
+     *
+     * @throws Error from the iterable if there is an error calling S3.
+     */
+    listObjectVersionsIterable(request: ListObjectVersionsRequest): AsyncIterableIterator<ListObjectVersionsResponse>
+
+    /**
+     * Deletes an object from a bucket.
+     *
+     * The bucket should reside in the same region as the one configured for the client.
+     *
+     * @throws Error if there is an error calling S3.
+     */
+    deleteObject(request: DeleteObjectRequest): Promise<void>
+
+    /**
+     * Deletes objects from a bucket.
+     *
+     * The bucket should reside in the same region as the one configured for the client.
+     *
+     * Returns a list of Errors that occurred if the delete was only partially completed.
+     *
+     * @throws Error if there is an error calling S3, beyond the partial errors mentioned above.
+     */
+    deleteObjects(request: DeleteObjectsRequest): Promise<DeleteObjectsResponse>
+
+    /**
+     * Empties and deletes a bucket.
+     *
+     * Note that this just repeatedly calls list and delete to empty the bucket before deletion.
+     * Failures during the emptying or deleting step can leave the bucket in a state where
+     * some (or all) objects are deleted, but the bucket remains.
+     *
+     * @throws Error if there is an error calling S3 to empty or delete the bucket.
+     */
+    deleteBucket(request: DeleteBucketRequest): Promise<void>
 }
 
 export interface Bucket {
@@ -100,7 +152,7 @@ export interface Bucket {
 
 export interface Folder {
     readonly name: string // e.g. MyFolder (no trailing slash)
-    readonly path: string // e.g. path/to/MyFolder (no bucket)
+    readonly path: string // e.g. path/to/MyFolder/ (no bucket name)
     readonly arn: string
 }
 
@@ -110,6 +162,16 @@ export interface File {
     readonly arn: string
     readonly lastModified?: Date
     readonly sizeBytes?: number
+}
+
+interface Object {
+    readonly key: string
+    readonly versionId?: string
+}
+
+export interface ContinuationToken {
+    readonly keyMarker: string
+    readonly versionIdMarker?: string
 }
 
 export interface CreateBucketRequest {
@@ -124,14 +186,14 @@ export interface ListBucketsResponse {
     readonly buckets: Bucket[]
 }
 
-export interface ListObjectsRequest {
+export interface ListFilesRequest {
     readonly bucketName: string
     readonly folderPath?: string
     readonly continuationToken?: string
-    readonly maxResults?: number
+    readonly maxResults?: number // Defaults to DEFAULT_MAX_KEYS
 }
 
-export interface ListObjectsResponse {
+export interface ListFilesResponse {
     readonly files: File[]
     readonly folders: Folder[]
     readonly continuationToken?: string
@@ -158,4 +220,33 @@ export interface UploadFileRequest {
     readonly key: string
     readonly progressListener?: (loadedBytes: number) => void
     readonly fileLocation: vscode.Uri
+}
+
+export interface ListObjectVersionsRequest {
+    readonly bucketName: string
+    readonly continuationToken?: ContinuationToken
+    readonly maxResults?: number // Defaults to DEFAULT_MAX_KEYS
+}
+
+export interface ListObjectVersionsResponse {
+    readonly objects: Object[]
+    readonly continuationToken?: ContinuationToken
+}
+
+export interface DeleteObjectRequest {
+    readonly bucketName: string
+    readonly key: string
+}
+
+export interface DeleteObjectsRequest {
+    readonly bucketName: string
+    readonly objects: { key: string; versionId?: string }[]
+}
+
+export interface DeleteObjectsResponse {
+    readonly errors: S3.Error[]
+}
+
+export interface DeleteBucketRequest {
+    readonly bucketName: string
 }
