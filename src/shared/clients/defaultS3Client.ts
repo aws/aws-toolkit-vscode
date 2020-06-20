@@ -3,28 +3,35 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { S3, AWSError } from 'aws-sdk'
+import { AWSError, S3 } from 'aws-sdk'
 import * as _ from 'lodash'
 import * as mime from 'mime-types'
 import * as path from 'path'
-import { ext } from '../extensionGlobals'
 import { inspect } from 'util'
+import { ext } from '../extensionGlobals'
 import { getLogger } from '../logger'
 import { DefaultFileStreams, FileStreams, pipe, promisifyReadStream } from '../utilities/streamUtilities'
 import {
     Bucket,
+    ContinuationToken,
     CreateBucketRequest,
     CreateBucketResponse,
     CreateFolderRequest,
     CreateFolderResponse,
     DEFAULT_DELIMITER,
     DEFAULT_MAX_KEYS,
+    DeleteBucketRequest,
+    DeleteObjectRequest,
+    DeleteObjectsRequest,
+    DeleteObjectsResponse,
     DownloadFileRequest,
     File,
     Folder,
     ListBucketsResponse,
-    ListObjectsRequest,
-    ListObjectsResponse,
+    ListFilesRequest,
+    ListFilesResponse,
+    ListObjectVersionsRequest,
+    ListObjectVersionsResponse,
     S3Client,
     UploadFileRequest,
 } from './s3Client'
@@ -63,7 +70,7 @@ export class DefaultS3Client implements S3Client {
             throw e
         }
 
-        const response = {
+        const response: CreateBucketResponse = {
             bucket: new DefaultBucket({
                 partitionId: this.partitionId,
                 region: this.regionCode,
@@ -72,6 +79,31 @@ export class DefaultS3Client implements S3Client {
         }
         getLogger().debug('CreateBucket returned response: %O', response)
         return response
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public async deleteBucket(request: DeleteBucketRequest): Promise<void> {
+        getLogger().debug('DeleteBucket called with request: %O', request)
+        const { bucketName } = request
+        const s3 = await this.createS3()
+
+        try {
+            await this.emptyBucket(bucketName)
+        } catch (e) {
+            getLogger().error('Failed to empty bucket %s before deleting: %O', bucketName, e)
+            throw e
+        }
+
+        try {
+            await s3.deleteBucket({ Bucket: bucketName }).promise()
+        } catch (e) {
+            getLogger().error('Failed to delete bucket %s: %O', bucketName, e)
+            throw e
+        }
+
+        getLogger().debug('DeleteBucket succeeded')
     }
 
     /**
@@ -100,7 +132,7 @@ export class DefaultS3Client implements S3Client {
             throw e
         }
 
-        const response = { folder }
+        const response: CreateFolderResponse = { folder }
         getLogger().debug('CreateFolder returned response: %O', response)
         return response
     }
@@ -200,7 +232,7 @@ export class DefaultS3Client implements S3Client {
             .reject(bucket => bucket.region !== this.regionCode)
             .value()
 
-        const response = { buckets: bucketsInRegion }
+        const response: ListBucketsResponse = { buckets: bucketsInRegion }
         getLogger().debug('ListBuckets returned response: %O', response)
         return { buckets: bucketsInRegion }
     }
@@ -208,8 +240,8 @@ export class DefaultS3Client implements S3Client {
     /**
      * @inheritDoc
      */
-    public async listObjects(request: ListObjectsRequest): Promise<ListObjectsResponse> {
-        getLogger().debug('ListObjects called with request: %O', request)
+    public async listFiles(request: ListFilesRequest): Promise<ListFilesResponse> {
+        getLogger().debug('ListFiles called with request: %O', request)
 
         const s3 = await this.createS3()
 
@@ -225,7 +257,7 @@ export class DefaultS3Client implements S3Client {
                 })
                 .promise()
         } catch (e) {
-            getLogger().error('Failed to list objects for bucket %s: %O', request.bucketName, e)
+            getLogger().error('Failed to list files for bucket %s: %O', request.bucketName, e)
             throw e
         }
 
@@ -249,12 +281,118 @@ export class DefaultS3Client implements S3Client {
             .map(path => new DefaultFolder({ path, partitionId: this.partitionId, bucketName: request.bucketName }))
             .value()
 
-        const response = {
+        const response: ListFilesResponse = {
             files,
             folders,
             continuationToken: output.NextContinuationToken,
         }
-        getLogger().debug('ListObjects returned response: %O', response)
+        getLogger().debug('ListFiles returned response: %O', response)
+        return response
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public async listObjectVersions(request: ListObjectVersionsRequest): Promise<ListObjectVersionsResponse> {
+        getLogger().debug('ListObjectVersions called with request: %O', request)
+        const s3 = await this.createS3()
+
+        let output: S3.ListObjectVersionsOutput
+        try {
+            output = await s3
+                .listObjectVersions({
+                    Bucket: request.bucketName,
+                    MaxKeys: request.maxResults ?? DEFAULT_MAX_KEYS,
+                    KeyMarker: request.continuationToken?.keyMarker,
+                    VersionIdMarker: request.continuationToken?.versionIdMarker,
+                })
+                .promise()
+        } catch (e) {
+            getLogger().error('Failed to list object versions: %O', e)
+            throw e
+        }
+
+        const response: ListObjectVersionsResponse = {
+            objects: (output.Versions ?? []).map(version => ({
+                key: version.Key!,
+                versionId: version.VersionId,
+            })),
+            continuationToken: output.IsTruncated
+                ? { keyMarker: output.NextKeyMarker!, versionIdMarker: output.NextVersionIdMarker }
+                : undefined,
+        }
+        getLogger().debug('ListObjectVersions returned response: %O', response)
+        return response
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public async *listObjectVersionsIterable(
+        request: ListObjectVersionsRequest
+    ): AsyncIterableIterator<ListObjectVersionsResponse> {
+        let continuationToken: ContinuationToken | undefined = request.continuationToken
+        do {
+            const listObjectVersionsResponse: ListObjectVersionsResponse = await this.listObjectVersions({
+                bucketName: request.bucketName,
+                maxResults: request.maxResults,
+                continuationToken,
+            })
+            continuationToken = listObjectVersionsResponse.continuationToken
+
+            yield listObjectVersionsResponse
+        } while (continuationToken)
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public async deleteObject(request: DeleteObjectRequest): Promise<void> {
+        getLogger().debug('DeleteObject called with request: %O', request)
+        const s3 = await this.createS3()
+
+        try {
+            await s3
+                .deleteObject({
+                    Bucket: request.bucketName,
+                    Key: request.key,
+                })
+                .promise()
+        } catch (e) {
+            getLogger().error('Failed to delete object: %O', e)
+            throw e
+        }
+
+        getLogger().debug('DeleteObject succeeded')
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public async deleteObjects(request: DeleteObjectsRequest): Promise<DeleteObjectsResponse> {
+        getLogger().debug('DeleteObjects called with request: %O', request)
+        const s3 = await this.createS3()
+
+        let errors: S3.Error[]
+        try {
+            const output = await s3
+                .deleteObjects({
+                    Bucket: request.bucketName,
+                    Delete: {
+                        Objects: request.objects.map(({ key: Key, versionId: VersionId }) => ({ Key, VersionId })),
+                        Quiet: true,
+                    },
+                })
+                .promise()
+
+            errors = output.Errors ?? []
+        } catch (e) {
+            getLogger().error('Failed to delete objects: %O', e)
+            throw e
+        }
+
+        const response: DeleteObjectsResponse = { errors }
+        getLogger().debug('DeleteObjects returned response: %O', response)
         return response
     }
 
@@ -274,6 +412,34 @@ export class DefaultS3Client implements S3Client {
             return region
         } catch (e) {
             return (e as AWSError).region
+        }
+    }
+
+    /**
+     * Empties a bucket by repeatedly listing and deleting all versions of all objects inside.
+     *
+     * Note that this just repeatedly calls list object versions and delete objects to empty the bucket.
+     * Failures can leave the bucket in a state where only some objects are deleted.
+     *
+     * @throws Error if there is an error listing or deleting.
+     */
+    private async emptyBucket(bucketName: string): Promise<void> {
+        try {
+            for await (const { objects } of this.listObjectVersionsIterable({ bucketName })) {
+                if (_(objects).isEmpty()) {
+                    continue
+                }
+
+                const deleteObjectsResponse = await this.deleteObjects({ bucketName, objects })
+                if (!_(deleteObjectsResponse.errors).isEmpty()) {
+                    const e = new Error(inspect(deleteObjectsResponse.errors[0]))
+                    getLogger().error('Failed to delete %d objects: %O...', deleteObjectsResponse.errors.length, e)
+                    throw e
+                }
+            }
+        } catch (e) {
+            getLogger().error('Failed to empty bucket %s: %O', bucketName, e)
+            throw e
         }
     }
 }
