@@ -29,7 +29,7 @@ export class S3Node extends AWSTreeNodeBase {
             getChildNodes: async () => {
                 const response = await this.s3.listBuckets()
 
-                return response.buckets.map(bucket => new S3BucketNode(bucket, this.s3))
+                return response.buckets.map(bucket => new S3BucketNode(bucket, this, this.s3))
             },
             getErrorNode: async (error: Error) =>
                 new ErrorNode(this, error, localize('AWS.explorerNode.s3.error', 'Error loading S3 resources')),
@@ -41,7 +41,7 @@ export class S3Node extends AWSTreeNodeBase {
     /**
      * See {@link S3Client.createBucket}.
      */
-    public createBucket(request: CreateBucketRequest): Promise<CreateBucketResponse> {
+    public async createBucket(request: CreateBucketRequest): Promise<CreateBucketResponse> {
         return this.s3.createBucket(request)
     }
 

@@ -53,7 +53,7 @@ describe('S3FolderNode', () => {
     describe('getChildren', () => {
         it('gets children', async () => {
             when(
-                s3.listObjects(deepEqual({ bucketName, folderPath: path, continuationToken: undefined, maxResults }))
+                s3.listFiles(deepEqual({ bucketName, folderPath: path, continuationToken: undefined, maxResults }))
             ).thenResolve({
                 folders: [subFolder],
                 files: [file],
@@ -70,7 +70,7 @@ describe('S3FolderNode', () => {
 
         it('gets children with node for loading more results', async () => {
             when(
-                s3.listObjects(deepEqual({ bucketName, folderPath: path, continuationToken: undefined, maxResults }))
+                s3.listFiles(deepEqual({ bucketName, folderPath: path, continuationToken: undefined, maxResults }))
             ).thenResolve({
                 folders: [subFolder],
                 files: [file],

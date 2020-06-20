@@ -70,7 +70,7 @@ export class S3FolderNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
 
     private async loadPage(continuationToken: string | undefined): Promise<ChildNodePage> {
         getLogger().debug(`Loading page for %O using continuationToken %s`, this, continuationToken)
-        const response = await this.s3.listObjects({
+        const response = await this.s3.listFiles({
             bucketName: this.bucket.name,
             folderPath: this.folder.path,
             continuationToken,
@@ -78,7 +78,7 @@ export class S3FolderNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
         })
 
         const newFolders = response.folders.map(folder => new S3FolderNode(this.bucket, folder, this.s3))
-        const newFiles = response.files.map(file => new S3FileNode(this.bucket, file, this.s3))
+        const newFiles = response.files.map(file => new S3FileNode(this.bucket, file, this, this.s3))
 
         getLogger().debug(`Loaded folders: %O and files: %O`, newFolders, newFiles)
         return {
@@ -90,14 +90,14 @@ export class S3FolderNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
     /**
      * See {@link S3Client.createFolder}.
      */
-    public createFolder(request: CreateFolderRequest): Promise<CreateFolderResponse> {
+    public async createFolder(request: CreateFolderRequest): Promise<CreateFolderResponse> {
         return this.s3.createFolder(request)
     }
 
     /**
      * See {@link S3Client.uploadFile}.
      */
-    public uploadFile(request: UploadFileRequest): Promise<void> {
+    public async uploadFile(request: UploadFileRequest): Promise<void> {
         return this.s3.uploadFile(request)
     }
 
