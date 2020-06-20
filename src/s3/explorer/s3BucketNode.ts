@@ -26,6 +26,7 @@ import { S3FileNode } from './s3FileNode'
 import { S3FolderNode } from './s3FolderNode'
 import { inspect } from 'util'
 import { getLogger } from '../../shared/logger'
+import { S3Node } from './s3Nodes'
 
 /**
  * Represents an S3 bucket that may contain folders and/or objects.
@@ -35,6 +36,7 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
 
     public constructor(
         public readonly bucket: Bucket,
+        public readonly parent: S3Node,
         private readonly s3: S3Client,
         private readonly workspace = Workspace.vscode()
     ) {
@@ -72,14 +74,14 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
 
     private async loadPage(continuationToken: string | undefined): Promise<ChildNodePage> {
         getLogger().debug(`Loading page for %O using continuationToken %s`, this, continuationToken)
-        const response = await this.s3.listObjects({
+        const response = await this.s3.listFiles({
             bucketName: this.bucket.name,
             continuationToken,
             maxResults: this.getMaxItemsPerPage(),
         })
 
         const newFolders = response.folders.map(folder => new S3FolderNode(this.bucket, folder, this.s3))
-        const newFiles = response.files.map(file => new S3FileNode(this.bucket, file, this.s3))
+        const newFiles = response.files.map(file => new S3FileNode(this.bucket, file, this, this.s3))
 
         getLogger().debug(`Loaded folders: %O and files: %O`, newFolders, newFiles)
         return {
@@ -91,15 +93,22 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
     /**
      * See {@link S3Client.createFolder}.
      */
-    public createFolder(request: CreateFolderRequest): Promise<CreateFolderResponse> {
+    public async createFolder(request: CreateFolderRequest): Promise<CreateFolderResponse> {
         return this.s3.createFolder(request)
     }
 
     /**
      * See {@link S3Client.uploadFile}.
      */
-    public uploadFile(request: UploadFileRequest): Promise<void> {
+    public async uploadFile(request: UploadFileRequest): Promise<void> {
         return this.s3.uploadFile(request)
+    }
+
+    /**
+     * See {@link S3Client.deleteBucket}.
+     */
+    public async deleteBucket(): Promise<void> {
+        await this.s3.deleteBucket({ bucketName: this.bucket.name })
     }
 
     public get arn(): string {

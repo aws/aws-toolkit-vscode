@@ -8,6 +8,7 @@ import { MoreResultsNode } from '../../../awsexplorer/moreResultsNode'
 import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
 import { S3FileNode } from '../../../s3/explorer/s3FileNode'
 import { S3FolderNode } from '../../../s3/explorer/s3FolderNode'
+import { S3Node } from '../../../s3/explorer/s3Nodes'
 import { S3Client, File, Folder, Bucket } from '../../../shared/clients/s3Client'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { LoadMoreNode } from '../../../shared/treeview/nodes/loadMoreNode'
@@ -51,19 +52,17 @@ describe('S3BucketNode', () => {
 
     describe('getChildren', () => {
         it('gets children', async () => {
-            when(s3.listObjects(deepEqual({ bucketName: name, continuationToken: undefined, maxResults }))).thenResolve(
-                {
-                    folders: [folder],
-                    files: [file],
-                    continuationToken: undefined,
-                }
-            )
+            when(s3.listFiles(deepEqual({ bucketName: name, continuationToken: undefined, maxResults }))).thenResolve({
+                folders: [folder],
+                files: [file],
+                continuationToken: undefined,
+            })
 
             const workspace = new FakeWorkspace({
                 section: 'aws',
                 configuration: { key: 's3.maxItemsPerPage', value: maxResults },
             })
-            const node = new S3BucketNode(bucket, instance(s3), workspace)
+            const node = new S3BucketNode(bucket, new S3Node(instance(s3)), instance(s3), workspace)
             const [folderNode, fileNode, ...otherNodes] = await node.getChildren()
 
             assertFolderNode(folderNode, folder)
@@ -72,19 +71,17 @@ describe('S3BucketNode', () => {
         })
 
         it('gets children with node for loading more results', async () => {
-            when(s3.listObjects(deepEqual({ bucketName: name, continuationToken: undefined, maxResults }))).thenResolve(
-                {
-                    folders: [folder],
-                    files: [file],
-                    continuationToken,
-                }
-            )
+            when(s3.listFiles(deepEqual({ bucketName: name, continuationToken: undefined, maxResults }))).thenResolve({
+                folders: [folder],
+                files: [file],
+                continuationToken,
+            })
 
             const workspace = new FakeWorkspace({
                 section: 'aws',
                 configuration: { key: 's3.maxItemsPerPage', value: maxResults },
             })
-            const node = new S3BucketNode(bucket, instance(s3), workspace)
+            const node = new S3BucketNode(bucket, new S3Node(instance(s3)), instance(s3), workspace)
             const [folderNode, fileNode, moreResultsNode, ...otherNodes] = await node.getChildren()
 
             assertFolderNode(folderNode, folder)

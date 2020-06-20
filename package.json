@@ -472,11 +472,23 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.s3.deleteBucket",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.s3.deleteFile",
+                    "when": "false"
+                },
+                {
                     "command": "aws.s3.downloadFileAs",
                     "when": "false"
                 },
                 {
                     "command": "aws.s3.uploadFile",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.s3.uploadFileToParent",
                     "when": "false"
                 }
             ],
@@ -646,6 +658,11 @@
                     "group": "0@1"
                 },
                 {
+                    "command": "aws.s3.uploadFileToParent",
+                    "when": "view == aws.explorer && viewItem == awsS3FileNode",
+                    "group": "1@1"
+                },
+                {
                     "command": "aws.s3.createFolder",
                     "when": "view == aws.explorer && viewItem =~ /^(awsS3BucketNode|awsS3FolderNode)$/",
                     "group": "1@1"
@@ -664,6 +681,16 @@
                     "command": "aws.s3.copyPath",
                     "when": "view == aws.explorer && viewItem =~ /^(awsS3FolderNode|awsS3FileNode)$/",
                     "group": "2@3"
+                },
+                {
+                    "command": "aws.s3.deleteBucket",
+                    "when": "view == aws.explorer && viewItem == awsS3BucketNode",
+                    "group": "3@1"
+                },
+                {
+                    "command": "aws.s3.deleteFile",
+                    "when": "view == aws.explorer && viewItem == awsS3FileNode",
+                    "group": "3@1"
                 },
                 {
                     "command": "aws.downloadSchemaItemCode",
@@ -751,6 +778,11 @@
                 "icon": "$(cloud-upload)"
             },
             {
+                "command": "aws.s3.uploadFileToParent",
+                "title": "%AWS.command.s3.uploadFileToParent%",
+                "category": "AWS"
+            },
+            {
                 "command": "aws.s3.createFolder",
                 "title": "%AWS.command.s3.createFolder%",
                 "category": "AWS",
@@ -764,6 +796,16 @@
                     "light": "resources/light/s3/create-bucket.svg",
                     "dark": "resources/dark/s3/create-bucket.svg"
                 }
+            },
+            {
+                "command": "aws.s3.deleteBucket",
+                "title": "%AWS.command.s3.deleteBucket%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.s3.deleteFile",
+                "title": "%AWS.command.s3.deleteFile%",
+                "category": "AWS"
             },
             {
                 "command": "aws.invokeLambda",

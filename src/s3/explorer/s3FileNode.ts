@@ -12,6 +12,18 @@ import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { isFileIconThemeSeti, localize } from '../../shared/utilities/vsCodeUtils'
 import { inspect } from 'util'
+import { S3BucketNode } from './s3BucketNode'
+import { S3FolderNode } from './s3FolderNode'
+
+/**
+ * Moment format for rendering readable dates for S3.
+ *
+ * Same format used in the S3 console, but it's also locale-aware.
+ *
+ * US: Jan 5, 2020 5:30:20 PM GMT-0700
+ * GB: 5 Jan 2020 17:30:20 GMT+0100
+ */
+export const S3_DATE_FORMAT = 'll LTS [GMT]ZZ'
 
 /**
  * Represents an object in an S3 bucket.
@@ -20,6 +32,7 @@ export class S3FileNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
         public readonly bucket: Bucket,
         public readonly file: File,
+        public readonly parent: S3BucketNode | S3FolderNode,
         private readonly s3: S3Client,
         now: Date = new Date()
     ) {
@@ -37,7 +50,7 @@ export class S3FileNode extends AWSTreeNodeBase implements AWSResourceNode {
                 '{0}\nSize: {1}\nLast Modified: {2}',
                 this.file.key,
                 readableSize,
-                readableDate
+                moment(file.lastModified).format(S3_DATE_FORMAT)
             )
             this.description = `${readableSize}, ${readableDate}`
         }
@@ -48,8 +61,15 @@ export class S3FileNode extends AWSTreeNodeBase implements AWSResourceNode {
     /**
      * See {@link S3Client.downloadFile}.
      */
-    public downloadFile(request: DownloadFileRequest): Promise<void> {
+    public async downloadFile(request: DownloadFileRequest): Promise<void> {
         return this.s3.downloadFile(request)
+    }
+
+    /**
+     * See {@link S3Client.deleteFile}.
+     */
+    public async deleteFile(): Promise<void> {
+        await this.s3.deleteObject({ bucketName: this.bucket.name, key: this.file.key })
     }
 
     public get arn(): string {
