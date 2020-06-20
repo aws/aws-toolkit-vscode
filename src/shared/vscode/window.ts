@@ -23,16 +23,45 @@ export interface Window {
      * See {@link module:vscode.window.showInformationMessage}.
      */
     showInformationMessage(message: string, ...items: string[]): Thenable<string | undefined>
+    showInformationMessage(
+        message: string,
+        options: vscode.MessageOptions,
+        ...items: string[]
+    ): Thenable<string | undefined>
+    showInformationMessage<T extends vscode.MessageItem>(message: string, ...items: T[]): Thenable<T | undefined>
+    showInformationMessage<T extends vscode.MessageItem>(
+        message: string,
+        options: vscode.MessageOptions,
+        ...items: T[]
+    ): Thenable<T | undefined>
 
     /**
      * See {@link module:vscode.window.showWarningMessage}.
      */
     showWarningMessage(message: string, ...items: string[]): Thenable<string | undefined>
+    showWarningMessage(
+        message: string,
+        options: vscode.MessageOptions,
+        ...items: string[]
+    ): Thenable<string | undefined>
+    showWarningMessage<T extends vscode.MessageItem>(message: string, ...items: T[]): Thenable<T | undefined>
+    showWarningMessage<T extends vscode.MessageItem>(
+        message: string,
+        options: vscode.MessageOptions,
+        ...items: T[]
+    ): Thenable<T | undefined>
 
     /**
      * See {@link module:vscode.window.showErrorMessage}.
      */
     showErrorMessage(message: string, ...items: string[]): Thenable<string | undefined>
+    showErrorMessage(message: string, options: vscode.MessageOptions, ...items: string[]): Thenable<string | undefined>
+    showErrorMessage<T extends vscode.MessageItem>(message: string, ...items: T[]): Thenable<T | undefined>
+    showErrorMessage<T extends vscode.MessageItem>(
+        message: string,
+        options: vscode.MessageOptions,
+        ...items: T[]
+    ): Thenable<T | undefined>
 
     /**
      * See {@link module:vscode.window.withProgress}.
@@ -74,16 +103,19 @@ class DefaultWindow implements Window {
         return vscode.window.showInputBox(options, token)
     }
 
-    public showInformationMessage(message: string, ...items: string[]): Thenable<string | undefined> {
-        return vscode.window.showInformationMessage(message, ...items)
+    public showInformationMessage(...args: any[]): Thenable<any | undefined> {
+        // @ts-ignore
+        return vscode.window.showInformationMessage(...args)
     }
 
-    public showWarningMessage(message: string, ...items: string[]): Thenable<string | undefined> {
-        return vscode.window.showWarningMessage(message, ...items)
+    public showWarningMessage(...args: any[]): Thenable<any | undefined> {
+        // @ts-ignore
+        return vscode.window.showWarningMessage(...args)
     }
 
-    public showErrorMessage(message: string, ...items: string[]): Thenable<string | undefined> {
-        return vscode.window.showErrorMessage(message, ...items)
+    public showErrorMessage(...args: any[]): Thenable<any | undefined> {
+        // @ts-ignore
+        return vscode.window.showErrorMessage(...args)
     }
 
     public withProgress<R>(
