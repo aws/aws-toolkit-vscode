@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ExtensionContext, Memento } from 'vscode'
+import * as vscode from 'vscode'
+import * as del from 'del'
+import { Memento } from 'vscode'
 import { ExtensionDisposableFiles } from '../shared/utilities/disposableFiles'
 
 export interface FakeMementoStorage {
@@ -15,7 +17,7 @@ export interface FakeExtensionState {
     workspaceState?: FakeMementoStorage
 }
 
-export class FakeExtensionContext implements ExtensionContext {
+export class FakeExtensionContext implements vscode.ExtensionContext {
     public subscriptions: {
         dispose(): any
     }[] = []
@@ -54,11 +56,29 @@ export class FakeExtensionContext implements ExtensionContext {
     public static async getNew(): Promise<FakeExtensionContext> {
         const ctx = new FakeExtensionContext()
         try {
-            ExtensionDisposableFiles.getInstance().dispose()
+            TestExtensionDisposableFiles.clearInstance()
         } catch {
-            await ExtensionDisposableFiles.initialize(ctx)
+            // Ignore.
         }
+        await TestExtensionDisposableFiles.initialize(ctx)
         return ctx
+    }
+}
+
+export class TestExtensionDisposableFiles extends ExtensionDisposableFiles {
+    public static ORIGINAL_INSTANCE = ExtensionDisposableFiles.INSTANCE
+
+    public static clearInstance() {
+        const instance = ExtensionDisposableFiles.INSTANCE
+        ExtensionDisposableFiles.INSTANCE = undefined
+        if (instance) {
+            del.sync([instance.toolkitTempFolder], { force: true })
+            instance.dispose()
+        }
+    }
+
+    public static resetOriginalInstance() {
+        ExtensionDisposableFiles.INSTANCE = TestExtensionDisposableFiles.ORIGINAL_INSTANCE
     }
 }
 
