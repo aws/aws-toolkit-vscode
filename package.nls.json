@@ -3,6 +3,7 @@
     "AWS.title.createCredentialProfile": "Create a new AWS credential profile",
     "AWS.title.creatingCredentialProfile": "Saving new credential profile {0}",
     "AWS.title.selectCredentialProfile": "Select an AWS credential profile",
+    "AWS.startup.toastIfAlpha": "AWS Toolkit PREVIEW. (To get the latest STABLE version, uninstall this version.)",
     "AWS.cdk.explorerTitle": "AWS CDK Explorer (Preview)",
     "Aws.cdk.explorerNode.noApps": "[No CDK Apps found in Workspaces]",
     "Aws.cdk.explorerNode.app.noConstructTree": "[Unable to load construct tree for this App. Run `cdk synth`]",
