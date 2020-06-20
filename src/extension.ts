@@ -67,6 +67,7 @@ export async function activate(context: vscode.ExtensionContext) {
     ext.context = context
     await activateLogger(context)
     const toolkitOutputChannel = vscode.window.createOutputChannel(localize('AWS.channel.aws.toolkit', 'AWS Toolkit'))
+    ext.outputChannel = toolkitOutputChannel
 
     try {
         initializeCredentialsProviderManager()

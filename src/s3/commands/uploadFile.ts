@@ -6,13 +6,14 @@
 import * as path from 'path'
 import { statSync } from 'fs'
 import * as vscode from 'vscode'
+import { ext } from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
 import { Commands } from '../../shared/vscode/commands'
 import { Window } from '../../shared/vscode/window'
 import * as telemetry from '../../shared/telemetry/telemetry'
-import { showErrorWithLogs } from '../util/messages'
+import { readablePath, showErrorWithLogs, showOutputMessage } from '../util/messages'
 import { progressReporter } from '../util/progressReporter'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 
@@ -27,7 +28,9 @@ export interface FileSizeBytes {
  * Uploads a file to the bucket or folder represented by the given node.
  *
  * Prompts the user for the file location.
+ * Shows the output channel with "upload started" message.
  * Uploads the file (showing a progress bar).
+ * Shows the output channel with "upload completed" message.
  * Refreshes the node.
  *
  * Node that the node is reset to displaying its first page of results.
@@ -38,7 +41,8 @@ export async function uploadFileCommand(
     node: S3BucketNode | S3FolderNode,
     fileSizeBytes: FileSizeBytes = statFile,
     window = Window.vscode(),
-    commands = Commands.vscode()
+    commands = Commands.vscode(),
+    outputChannel = ext.outputChannel
 ): Promise<void> {
     getLogger().debug('UploadFile called for %O', node)
 
@@ -51,16 +55,16 @@ export async function uploadFileCommand(
 
     const fileName = path.basename(fileLocation.fsPath)
     const key = node.path + fileName
-
+    const destinationPath = readablePath({ bucket: node.bucket, path: key })
     try {
-        getLogger().info(`Uploading file from ${fileLocation} to ${key} in bucket '${node.bucket.name}'`)
+        showOutputMessage(`Uploading file from ${fileLocation} to ${destinationPath}`, outputChannel)
 
         await uploadWithProgress({ node, key, fileLocation, fileSizeBytes: fileSizeBytes(fileLocation), window })
 
-        getLogger().info(`Successfully uploaded file from ${fileLocation} to ${key} in bucket '${node.bucket.name}'`)
+        showOutputMessage(`Successfully uploaded file ${destinationPath}`, outputChannel)
         telemetry.recordS3UploadObject({ result: 'Succeeded' })
     } catch (e) {
-        getLogger().error(`Failed to upload file from ${fileLocation} to ${key} in bucket '${node.bucket.name}': %O`, e)
+        getLogger().error(`Failed to upload file from ${fileLocation} to ${destinationPath}: %O`, e)
         showErrorWithLogs(localize('AWS.s3.uploadFile.error.general', 'Failed to upload file {0}', fileName), window)
         telemetry.recordS3UploadObject({ result: 'Failed' })
     }

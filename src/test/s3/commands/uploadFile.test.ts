@@ -7,7 +7,9 @@ import * as assert from 'assert'
 import * as vscode from 'vscode'
 import { FileSizeBytes, uploadFileCommand } from '../../../s3/commands/uploadFile'
 import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
+import { S3Node } from '../../../s3/explorer/s3Nodes'
 import { S3Client } from '../../../shared/clients/s3Client'
+import { MockOutputChannel } from '../../mockOutputChannel'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 import { anything, mock, instance, when, capture, verify } from '../../utilities/mockito'
@@ -24,15 +26,20 @@ describe('uploadFileCommand', () => {
 
     beforeEach(() => {
         s3 = mock()
-        node = new S3BucketNode({ name: bucketName, region: 'region', arn: 'arn' }, instance(s3))
+        node = new S3BucketNode(
+            { name: bucketName, region: 'region', arn: 'arn' },
+            new S3Node(instance(s3)),
+            instance(s3)
+        )
     })
 
-    it('prompts for file location, uploads file, shows progress, and refreshes node', async () => {
+    it('prompts for file location, uploads file with progress, shows output channel, and refreshes node', async () => {
         when(s3.uploadFile(anything())).thenResolve()
 
         const window = new FakeWindow({ dialog: { openSelections: [fileLocation] } })
         const commands = new FakeCommands()
-        await uploadFileCommand(node, statFile, window, commands)
+        const outputChannel = new MockOutputChannel()
+        await uploadFileCommand(node, statFile, window, commands, outputChannel)
 
         // eslint-disable-next-line @typescript-eslint/unbound-method
         const [uploadFileRequest] = capture(s3.uploadFile).last()
@@ -48,6 +55,13 @@ describe('uploadFileCommand', () => {
         assert.deepStrictEqual(window.progress.reported, [{ increment: 25 }])
         assert.strictEqual(window.progress.options?.location, vscode.ProgressLocation.Notification)
         assert.strictEqual(window.progress.options?.title, 'Uploading file.jpg...')
+
+        assert.deepStrictEqual(outputChannel.lines, [
+            `Uploading file from ${fileLocation} to s3://bucket-name/file.jpg`,
+            `Successfully uploaded file s3://bucket-name/file.jpg`,
+        ])
+        assert.strictEqual(outputChannel.isShown, true)
+        assert.strictEqual(outputChannel.isFocused, false)
 
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [node])

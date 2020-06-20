@@ -5,12 +5,13 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { ext } from '../../shared/extensionGlobals'
 import { downloadsDir } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { Window } from '../../shared/vscode/window'
 import { S3FileNode } from '../explorer/s3FileNode'
-import { showErrorWithLogs } from '../util/messages'
+import { readablePath, showErrorWithLogs, showOutputMessage } from '../util/messages'
 import { progressReporter } from '../util/progressReporter'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 
@@ -18,9 +19,15 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
  * Downloads a file represented by the given node.
  *
  * Prompts the user for the save location.
+ * Shows the output channel with "download started" message.
  * Downloads the file (showing a progress bar).
+ * Shows the output channel with "download completed" message.
  */
-export async function downloadFileAsCommand(node: S3FileNode, window = Window.vscode()): Promise<void> {
+export async function downloadFileAsCommand(
+    node: S3FileNode,
+    window = Window.vscode(),
+    outputChannel = ext.outputChannel
+): Promise<void> {
     getLogger().debug('DownloadFile called for %O', node)
 
     const saveLocation = await promptForSaveLocation(node.file.name, window)
@@ -30,15 +37,16 @@ export async function downloadFileAsCommand(node: S3FileNode, window = Window.vs
         return
     }
 
+    const sourcePath = readablePath(node)
     try {
-        getLogger().info(`Downloading file from ${node.file.arn} to ${saveLocation}`)
+        showOutputMessage(`Downloading file from ${sourcePath} to ${saveLocation}`, outputChannel)
 
         await downloadWithProgress(node, saveLocation, window)
 
-        getLogger().info(`Successfully downloaded file from ${node.file.arn} to ${saveLocation}`)
+        showOutputMessage(`Successfully downloaded file ${saveLocation}`, outputChannel)
         telemetry.recordS3DownloadObject({ result: 'Succeeded' })
     } catch (e) {
-        getLogger().error(`Failed to download file from ${node.file.arn} to ${saveLocation}: %O`, e.toString())
+        getLogger().error(`Failed to download file from ${sourcePath} to ${saveLocation}: %O`, e.toString())
         showErrorWithLogs(
             localize('AWS.s3.downloadFile.error.general', 'Failed to download file {0}', node.file.name),
             window

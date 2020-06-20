@@ -58,7 +58,7 @@ function reportProgressImmediately(
     if (report.incrementalPercentage) {
         progress.report({ increment: report.incrementalPercentage })
     }
-    getLogger().info('%O', report)
+    getLogger().verbose('%O', report)
 }
 
 /**
