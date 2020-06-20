@@ -9,6 +9,7 @@ import * as vscode from 'vscode'
 
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import {
+    formatTelemetrySettingToBool,
     handleTelemetryNoticeResponse,
     isTelemetryEnabled,
     noticeResponseViewSettings,
@@ -103,6 +104,7 @@ describe('isTelemetryEnabled', () => {
         it(scenario.desc, async () => {
             await settings.update('telemetry', scenario.initialSettingValue, vscode.ConfigurationTarget.Global)
 
+            await formatTelemetrySettingToBool(toolkitSettings)
             const isEnabled = isTelemetryEnabled(toolkitSettings)
             assert.strictEqual(isEnabled, scenario.expectedIsEnabledValue)
         })
