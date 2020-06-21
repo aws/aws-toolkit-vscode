@@ -78,7 +78,7 @@ export async function activate(activateArguments: {
 /*
  * Formats the AWS telemetry setting to a boolean: false if setting value was 'Disable' or false, true for everything else
  */
-export async function formatTelemetrySettingToBool(toolkitSettings: SettingsConfiguration) {
+export async function formatTelemetrySettingToBool(toolkitSettings: SettingsConfiguration): Promise<void> {
     // Setting used to be an enum, but is now a boolean.
     // We don't have api-based strong type support, so we have to process this value manually.
     const value = toolkitSettings.readSetting<any>(AWS_TELEMETRY_KEY)
