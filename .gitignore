@@ -10,6 +10,7 @@ telemetryCache
 quickStart.html
 .gitcommit
 media/libs/
+package.json.bk
 
 # Auto generated definitions
 src/**/*.gen.ts
