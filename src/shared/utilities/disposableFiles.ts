@@ -27,7 +27,7 @@ export class DisposableFiles implements vscode.Disposable {
     }
 
     public isDisposed(): boolean {
-        return !!this._disposed
+        return this._disposed
     }
 
     public dispose(): void {
