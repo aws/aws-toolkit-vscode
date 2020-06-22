@@ -11,6 +11,7 @@ import * as vscode from 'vscode'
 import { mkdir } from '../../../shared/filesystem'
 import { fileExists, makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { DisposableFiles, ExtensionDisposableFiles } from '../../../shared/utilities/disposableFiles'
+import { TestExtensionDisposableFiles } from '../../fakeExtensionContext'
 
 describe('DisposableFiles', async () => {
     let tempFolder: string
@@ -87,22 +88,6 @@ describe('DisposableFiles', async () => {
 })
 
 describe('ExtensionDisposableFiles', async () => {
-    class TestExtensionDisposableFiles extends ExtensionDisposableFiles {
-        public static ORIGINAL_INSTANCE = ExtensionDisposableFiles.INSTANCE
-
-        public static clearInstance() {
-            if (ExtensionDisposableFiles.INSTANCE) {
-                del.sync([ExtensionDisposableFiles.INSTANCE.toolkitTempFolder], { force: true })
-            }
-
-            ExtensionDisposableFiles.INSTANCE = undefined
-        }
-
-        public static resetOriginalInstance() {
-            ExtensionDisposableFiles.INSTANCE = TestExtensionDisposableFiles.ORIGINAL_INSTANCE
-        }
-    }
-
     let extensionContext: vscode.ExtensionContext
 
     beforeEach(() => {

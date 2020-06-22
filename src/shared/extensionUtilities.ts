@@ -12,6 +12,7 @@ import { ext } from '../shared/extensionGlobals'
 import { mostRecentVersionKey, pluginVersion } from './constants'
 import { readFileAsString } from './filesystemUtilities'
 import { getLogger } from './logger'
+import { VSCODE_EXTENSION_ID, EXTENSION_ALPHA_VERSION } from './extensions'
 
 const localize = nls.loadMessageBundle()
 
@@ -173,9 +174,9 @@ export function setMostRecentVersion(context: vscode.ExtensionContext): void {
 }
 
 /**
- * Publishes a toast with a link to the welcome page
+ * Shows a message with a link to the quickstart page.
  */
-async function promptQuickStart(): Promise<void> {
+async function showQuickstartPrompt(): Promise<void> {
     const view = localize('AWS.command.quickStart', 'View Quick Start')
     const prompt = await vscode.window.showInformationMessage(
         localize(
@@ -191,18 +192,33 @@ async function promptQuickStart(): Promise<void> {
 }
 
 /**
- * Checks if a user is new to this version
- * If so, pops a toast with a link to a quick start page
+ * Shows a "new version" or "alpha version" message.
+ *
+ * - If extension version is "alpha", shows a warning message.
+ * - If extension version was not previously run on this machine, shows a toast
+ *   with a link to the quickstart page.
+ * - Otherwise does nothing.
  *
  * @param context VS Code Extension Context
  */
-export function toastNewUser(context: vscode.ExtensionContext): void {
+export function showWelcomeMessage(context: vscode.ExtensionContext): void {
+    const version = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)?.packageJSON.version
+    if (version === EXTENSION_ALPHA_VERSION) {
+        vscode.window.showWarningMessage(
+            localize(
+                'AWS.startup.toastIfAlpha',
+                'AWS Toolkit PREVIEW. (To get the latest STABLE version, uninstall this version.)'
+            )
+        )
+        return
+    }
+
     try {
         if (isDifferentVersion(context)) {
             setMostRecentVersion(context)
             // the welcome toast should be nonblocking.
             // tslint:disable-next-line: no-floating-promises
-            promptQuickStart()
+            showQuickstartPrompt()
         }
     } catch (err) {
         // swallow error and don't block extension load

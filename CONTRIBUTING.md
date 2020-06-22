@@ -32,8 +32,22 @@ When you launch the extension or run tests from Visual Studio Code, it will auto
 
 If you prefer, you can build from the command line:
 
--   To build one time: `npm run compile`
--   To build and watch for file changes: `npm run watch`
+-   To build one time:
+    ```
+    npm run compile
+    ```
+-   To build and watch for file changes:
+    ```
+    npm run watch
+    ```
+-   To build a release artifact:
+    ```
+    npm run package
+    ```
+-   To build an "alpha" artifact (useful for letting others test a particular build):
+    ```
+    npm run packageAlpha
+    ```
 
 #### If you run out of memory while building
 
