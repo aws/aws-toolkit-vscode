@@ -33,9 +33,9 @@ import {
     aboutToolkit,
     getToolkitEnvironmentDetails,
     showQuickStartWebview,
-    toastNewUser,
+    showWelcomeMessage,
 } from './shared/extensionUtilities'
-import { getLogger } from './shared/logger'
+import { getLogger, Logger } from './shared/logger'
 import { activate as activateLogger } from './shared/logger/activation'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import { EndpointsProvider } from './shared/regions/endpointsProvider'
@@ -50,6 +50,7 @@ import {
     recordAwsHelpQuickstart,
     recordAwsReportPluginIssue,
     recordAwsShowExtensionSource,
+    recordToolkitInit,
 } from './shared/telemetry/telemetry'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { getChannelLogger } from './shared/utilities/vsCodeUtils'
@@ -60,6 +61,8 @@ import { CredentialsStore } from './credentials/credentialsStore'
 let localize: nls.LocalizeFunc
 
 export async function activate(context: vscode.ExtensionContext) {
+    const activationStartedOn = Date.now()
+
     localize = nls.loadMessageBundle()
 
     ext.context = context
@@ -198,9 +201,11 @@ export async function activate(context: vscode.ExtensionContext) {
             await activateStepFunctions(context, awsContext, toolkitOutputChannel)
         })
 
-        toastNewUser(context)
+        showWelcomeMessage(context)
 
         await loginWithMostRecentCredentials(toolkitSettings, loginManager)
+
+        recordToolkitInitialization(activationStartedOn, getLogger())
     } catch (error) {
         const channelLogger = getChannelLogger(toolkitOutputChannel)
         channelLogger.error('AWS.channel.aws.toolkit.activation.error', 'Error Activating AWS Toolkit', error as Error)
@@ -267,6 +272,19 @@ function makeEndpointsProvider(): EndpointsProvider {
     })
 
     return provider
+}
+
+function recordToolkitInitialization(activationStartedOn: number, logger?: Logger) {
+    try {
+        const activationFinishedOn = Date.now()
+        const duration = activationFinishedOn - activationStartedOn
+
+        recordToolkitInit({
+            duration: duration,
+        })
+    } catch (err) {
+        logger?.error(err)
+    }
 }
 
 // Unique extension entrypoint names, so that they can be obtained from the webpack bundle

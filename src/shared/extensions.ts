@@ -30,3 +30,8 @@ export interface ExtContext {
     chanLogger: ChannelLogger
     credentialsStore: CredentialsStore
 }
+
+/**
+ * Version of the .vsix produced by the `packageAlpha` script.
+ */
+export const EXTENSION_ALPHA_VERSION = '1.99.0-SNAPSHOT'

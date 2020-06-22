@@ -19,7 +19,7 @@ import { SamLaunchRequestArgs } from '../../../shared/sam/debugger/awsSamDebugge
 describe('localLambdaRunner', async () => {
     let tempDir: string
     before(async () => {
-        FakeExtensionContext.getNew()
+        await FakeExtensionContext.getNew()
     })
 
     beforeEach(async () => {
