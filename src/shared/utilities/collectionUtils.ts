@@ -172,11 +172,12 @@ export interface IteratorForAWSCallParams<TRequest, TResponse> {
 
 /**
  * Generates an iterator representing a paginated AWS call from a request and an AWS SDK call
+ * Each next() call will make a new request with the previous request's nextToken.
  * @param params Iterator params
  */
-export async function* getIteratorForAWSCall<TRequest, TResponse>(
+export async function* getPaginatedAWSCallIter<TRequest, TResponse>(
     params: IteratorForAWSCallParams<TRequest, TResponse>
-): AsyncGenerator<TResponse, undefined, TResponse | undefined> {
+): AsyncIterator<TResponse> {
     let isDone: boolean = false
     let nextToken: string | undefined = undefined
 
@@ -188,11 +189,11 @@ export async function* getIteratorForAWSCall<TRequest, TResponse>(
         if (response[params.nextTokenNames.response]) {
             nextToken = (response[params.nextTokenNames.response] as any) as string
         } else {
-            nextToken = undefined
             isDone = true
+
+            return response
         }
 
         yield response
     }
-    return undefined
 }

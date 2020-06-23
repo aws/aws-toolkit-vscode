@@ -8,7 +8,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { getLogger } from '../logger'
-import { getIteratorForAWSCall, IteratorForAWSCallParams } from '../utilities/collectionUtils'
+import { getPaginatedAWSCallIter, IteratorForAWSCallParams } from '../utilities/collectionUtils'
 
 /**
  * Options to configure the behavior of the quick pick UI.
@@ -150,30 +150,26 @@ export function verifySinglePickerOutput<T extends vscode.QuickPickItem>(choices
     return choices[0]
 }
 
-// TODO: Cache these results?
-// TODO: Do we want a separate items array outside of the quickPick.items array?
+// TODO: Cache these results? Should we have a separate store? Can we also use a store with values from the explorer tree?
 export class IteratingAWSCallPicker<TRequest, TResponse> {
     private isDone: boolean = false
     private isPaused: boolean = false
+    // TODO: Is this necessary or should we just use this.quickPick.items directly?
     private items: vscode.QuickPickItem[] = []
-    private iterator: AsyncGenerator<TResponse, undefined, TResponse | undefined>
+    private iterator: AsyncIterator<TResponse>
 
     private readonly quickPick: vscode.QuickPick<vscode.QuickPickItem>
     private readonly moreItemsRequest: vscode.EventEmitter<void> = new vscode.EventEmitter<void>()
     private readonly refreshButton: vscode.QuickInputButton
     private readonly paginationButton: vscode.QuickInputButton
 
-    // TODO: remove debug buttons
-    private readonly pauseButton: vscode.QuickInputButton
-    private readonly playButton: vscode.QuickInputButton
-
     // these QuickPickItems are public so users can check against their label to determine if the item isn't valid
     public readonly noItemsItem: vscode.QuickPickItem
     public readonly errorItem: vscode.QuickPickItem
 
     /**
-     * @param awsCallLogic: Object representing the call to be used, the initial request, and a function that converts from a response object to an array of quick pick items
-     * @param pickerOptions: Object representing QuickPick options, additional buttons, and any additional functionality to be called upon selecting a button.
+     * @param awsCallLogic: Object representing the call to be used, the initial request parameters, and a function that converts from a response object to an array of quick pick items
+     * @param pickerOptions: Object representing QuickPick options, additional buttons, any additional functionality to be called upon selecting a button, whether or not the quick pick should be refreshable, and whether manual pagination should be used
      */
     public constructor(
         private readonly awsCallLogic: {
@@ -193,29 +189,20 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
                 reject: (reason?: any) => void
             ) => void
             isRefreshable?: boolean
-            paginationType?: 'append' | 'replace'
+            manualPaginationType?: 'append' | 'replace'
         } = {}
     ) {
         this.iterator = this.createNewIterator()
-
-        // TODO: remove debug buttons
-        this.pauseButton = {
-            iconPath: new vscode.ThemeIcon('debug-pause'),
-            tooltip: 'Pause!',
-        }
-        this.playButton = {
-            iconPath: new vscode.ThemeIcon('play'),
-            tooltip: 'Play!',
-        }
 
         this.refreshButton = {
             iconPath: new vscode.ThemeIcon('refresh'),
             tooltip: localize('AWS.generic.refresh', 'Refresh'),
         }
         this.paginationButton = {
+            // TODO: Find better icon
             iconPath: new vscode.ThemeIcon('add'),
             tooltip:
-                this.pickerOptions.paginationType === 'append'
+                this.pickerOptions.manualPaginationType === 'append'
                     ? localize('AWS.picker.dynamic.nextPage.append', 'Load Next Page...')
                     : localize('AWS.picker.dynamic.nextPage', 'Next Page...'),
         }
@@ -232,13 +219,12 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
         }
 
         const quickPickButtons = this.pickerOptions.buttons || []
-        quickPickButtons.push(this.pauseButton, this.playButton)
         if (this.pickerOptions.isRefreshable) {
             quickPickButtons.push(this.refreshButton)
         }
         // is this the correct impl? If so, is this the correct icon?
-        // e.g. this or quickpick item at the end of the list?
-        if (this.pickerOptions.paginationType) {
+        // e.g. use a button like this or add quickpick item at the end of the list?
+        if (this.pickerOptions.manualPaginationType) {
             quickPickButtons.push(this.paginationButton)
         }
 
@@ -278,30 +264,21 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
             onDidTriggerButton: (button, resolve, reject) => {
                 // pause any existing execution
                 this.isPaused = true
-                if (button === this.refreshButton) {
-                    this.isPaused = true
-                    this.refreshQuickPick()
-                    this.moreItemsRequest.fire()
-                    return
-                }
-                if (button === this.paginationButton) {
-                    this.isPaused = false
-                    this.moreItemsRequest.fire()
-                    return
-                }
-                // TODO: remove debug buttons
-                if (button === this.pauseButton) {
-                    this.isPaused = true
-                    return
-                }
-                if (button === this.playButton) {
-                    this.isPaused = false
-                    this.moreItemsRequest.fire()
-                    return
-                }
-                // pass existing onDidTriggerButton through if it exists and wasn't a native button
-                if (this.pickerOptions.onDidTriggerButton) {
-                    this.pickerOptions.onDidTriggerButton(button, resolve, reject)
+                switch (button) {
+                    case this.refreshButton:
+                        this.isPaused = true
+                        this.refreshQuickPick()
+                        this.moreItemsRequest.fire()
+                        return
+                    case this.paginationButton:
+                        this.isPaused = false
+                        this.moreItemsRequest.fire()
+                        return
+                    // pass existing onDidTriggerButton through if it exists and wasn't a native button
+                    default:
+                        if (this.pickerOptions.onDidTriggerButton) {
+                            this.pickerOptions.onDidTriggerButton(button, resolve, reject)
+                        }
                 }
             },
         })
@@ -318,18 +295,20 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
             this.quickPick.busy = true
             try {
                 const item = await this.iterator.next()
-                if (item.done) {
+                if (!item) {
                     this.isDone = true
                     break
                 }
                 const nextItems = this.awsCallLogic.awsCallResponseToQuickPickItemFn(item.value)
-                this.items = this.pickerOptions.paginationType === 'replace' ? nextItems : this.items.concat(nextItems)
+                this.items =
+                    this.pickerOptions.manualPaginationType === 'replace' ? nextItems : this.items.concat(nextItems)
                 // TODO: Is there a way to append to this ReadOnlyArray so it doesn't constantly pop focus back to the top?
                 this.quickPick.items = this.items
                 // if this is manually paginated, pause the load after one pull
-                if (this.pickerOptions.paginationType) {
+                if (this.pickerOptions.manualPaginationType) {
                     this.isPaused = true
                 }
+                this.isDone = item.done ?? false
             } catch (e) {
                 // append error node
                 // clicking error node should either go backwards (return undefined) or refresh
@@ -362,7 +341,7 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
     /**
      * Generates a new iterator. Used at construction and during a "refresh" scenario.
      */
-    private createNewIterator(): AsyncGenerator<TResponse, undefined, TResponse | undefined> {
-        return getIteratorForAWSCall(this.awsCallLogic.iteratorParams)
+    private createNewIterator(): AsyncIterator<TResponse> {
+        return getPaginatedAWSCallIter(this.awsCallLogic.iteratorParams)
     }
 }
