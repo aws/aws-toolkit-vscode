@@ -8,8 +8,10 @@ import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
 import java.time.Duration
 
 object StsResources {
-    @Suppress("UsePropertyAccessSyntax")
     val ACCOUNT = ClientBackedCachedResource(StsClient::class, "sts.account", expiry = Duration.ofDays(1)) {
-        getCallerIdentity().account()
+        callerIdentity.account()
+    }
+    val USER = ClientBackedCachedResource(StsClient::class, "sts.user", expiry = Duration.ofDays(1)) {
+        callerIdentity.userId()
     }
 }
