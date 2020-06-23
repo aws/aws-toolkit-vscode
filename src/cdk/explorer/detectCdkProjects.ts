@@ -10,7 +10,7 @@ import { getLogger } from '../../shared/logger'
 import { CdkAppLocation } from './cdkProject'
 
 export async function detectCdkProjects(
-    workspaceFolders: vscode.WorkspaceFolder[] | undefined = [...(vscode.workspace.workspaceFolders ?? [])]
+    workspaceFolders: ReadonlyArray<vscode.WorkspaceFolder> | undefined = vscode.workspace.workspaceFolders
 ): Promise<CdkAppLocation[]> {
     if (!workspaceFolders) {
         return []
@@ -72,6 +72,6 @@ async function* detectCdkProjectsInFolder(folder: string): AsyncIterableIterator
         yield vscode.Uri.file(cdkJsonPath)
     } catch (err) {
         // This is usually because the file doesn't exist, but could also be a permissions issue.
-        getLogger().debug(`Error detecting CDK apps in ${folder}`, err as Error)
+        getLogger().debug(`Error detecting CDK apps in ${folder}: %O`, err as Error)
     }
 }

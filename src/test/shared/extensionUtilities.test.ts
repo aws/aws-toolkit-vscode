@@ -88,7 +88,9 @@ describe('extensionUtilities', () => {
 
             assert.strictEqual(typeof webview, 'object')
             const forcedWebview = webview as vscode.WebviewPanel
-            assert.strictEqual(forcedWebview.webview.html, `${basetext}vscode-resource:${context.extensionPath}`)
+
+            const pathAsVsCodeResource = forcedWebview.webview.asWebviewUri(vscode.Uri.file(context.extensionPath))
+            assert.strictEqual(forcedWebview.webview.html, `${basetext}${pathAsVsCodeResource}`)
         })
     })
 

@@ -62,7 +62,7 @@ export async function addFolderToWorkspace(folder: NewWorkspaceFolder): Promise<
             }
         })
     } catch (err) {
-        logger.error(`Unexpected error adding folder ${folder.uri.fsPath} to workspace`, err as Error)
+        logger.error(`Unexpected error adding folder ${folder.uri.fsPath} to workspace: %O`, err as Error)
 
         return false
     } finally {

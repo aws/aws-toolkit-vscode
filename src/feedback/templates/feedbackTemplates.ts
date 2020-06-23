@@ -30,20 +30,20 @@ export class FeedbackTemplates {
         <a href="https://github.com/aws/aws-toolkit-vscode/issues/new/choose">Talk to us on GitHub instead!</a></p>
 
         <input v-if="isSubmitting" type="submit" value="Submitting..." disabled>
-        <input v-else type="submit" @click="submitFeedback" :disabled="comment.length === 0 || comment.length > 2000" value="Submit">
+        <input v-else type="submit" @click="submitFeedback" :disabled="comment.length === 0 || comment.length > 2000  || sentiment === ''" value="Submit">
 
         <div id="error" v-if="error !== ''">
             <strong>{{ error }}</strong>
         </div>
     </div>
     <% Libraries.forEach(function(lib) { %>
-        <script nonce="<%= lib.nonce %>" src="<%= lib.uri %>"></script>
+        <script src="<%= lib %>"></script>
     <% }); %>
     <% Scripts.forEach(function(scr) { %>
-        <script nonce="<%= scr.nonce %>" src="<%= scr.uri %>"></script>
+        <script src="<%= scr %>"></script>
     <% }); %>
     <% Stylesheets.forEach(function(scr) { %>
-        <link rel="stylesheet" type="text/css" href="<%= scr.uri %>">
+        <link rel="stylesheet" type="text/css" href="<%= scr %>">
     <% }); %>
     `
 }

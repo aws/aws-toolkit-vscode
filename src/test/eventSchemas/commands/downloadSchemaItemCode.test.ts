@@ -613,6 +613,33 @@ describe('CodeExtractor', () => {
             assert.strictEqual(file1Content, overridenFileContent, `${file1Path} :File content should be overriden`)
         })
 
+        it('should throw error if user picks Cancel when collision occurs', async () => {
+            const error = new Error('Download code bindings cancelled')
+            sandbox.stub(codeExtractor, 'confirmOverwriteCollisions').returns(Promise.reject(error))
+
+            const fileName1 = 'test.txt'
+            const zipFileName = path.join(destinationDirectory, 'test.zip')
+            const expectedFileContent = 'First file content'
+
+            // Initialize a destination directory and file
+            const zipHandler = createZipFileInTempDirectory(fileName1, expectedFileContent, zipFileName)
+            zipHandler.extractAllTo(destinationDirectory)
+
+            //same file name -  collision occurs
+            const fileName2 = fileName1
+            const zip = new admZip()
+            zip.addFile(fileName2, Buffer.from('Second file content'))
+            const buffer = zip.toBuffer()
+
+            const err = await assertThrowsError(async () => codeExtractor.extractAndPlace(buffer, request))
+            assert.strictEqual(err.message, 'Download code bindings cancelled', 'Should fail for expected error')
+
+            const file1Path = path.join(destinationDirectory, fileName1)
+            const file1Content = fs.readFileSync(file1Path, { encoding: 'utf8' })
+
+            assert.strictEqual(file1Content, expectedFileContent, `${file1Path} :File content should not be overriden`)
+        })
+
         it('should return coreCodeFilePath if it exists inside zip content', async () => {
             //grab the title from schemaName
             const title = testSchemaName.split('.').pop()

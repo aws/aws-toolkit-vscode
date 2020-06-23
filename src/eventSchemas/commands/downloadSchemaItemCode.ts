@@ -88,7 +88,7 @@ export async function downloadSchemaItemCode(node: SchemaItemNode, outputChannel
             errorMessage = error.message
         }
         vscode.window.showErrorMessage(errorMessage)
-        logger.error('Error downloading schema', error)
+        logger.error('Error downloading schema: %O', error)
     } finally {
         recordSchemasDownload({ result: downloadResult })
     }
@@ -373,6 +373,12 @@ export class CodeExtractor {
             responseYes,
             responseNo
         )
+
+        if (!userResponse)
+            throw new UserNotifiedError(
+                localize('AWS.message.error.schemas.downloadCodeBindings.cancelled', 'Download code bindings cancelled')
+            )
+
         return userResponse === responseYes
     }
 

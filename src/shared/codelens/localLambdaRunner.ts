@@ -551,7 +551,7 @@ export async function waitForDebugPort(
         // this function always attempts once no matter the timeoutDuration
         await tcpPortUsed.waitUntilUsed(debugPort, SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS, remainingTime)
     } catch (err) {
-        getLogger().warn(`Timed out after ${remainingTime} ms waiting for port ${debugPort} to open`, err as Error)
+        getLogger().warn(`Timed out after ${remainingTime} ms waiting for port ${debugPort} to open: %O`, err as Error)
 
         channelLogger.warn(
             'AWS.samcli.local.invoke.port.not.open',
@@ -615,7 +615,7 @@ async function showDebugConsole(): Promise<void> {
         await vscode.commands.executeCommand('workbench.debug.action.toggleRepl')
     } catch (err) {
         // in case the vs code command changes or misbehaves, swallow error
-        getLogger().verbose('Unable to switch to the Debug Console', err as Error)
+        getLogger().verbose('Unable to switch to the Debug Console: %O', err as Error)
     }
 }
 

@@ -162,12 +162,12 @@ export async function take<T>(sequence: AsyncIterable<T>, count: number): Promis
 }
 
 export interface IteratorForAWSCallParams<TRequest, TResponse> {
-    request: TRequest
     awsCall: (request: TRequest) => Promise<TResponse>
     nextTokenNames: {
         request: keyof TRequest
         response: keyof TResponse
     }
+    request: TRequest
 }
 
 /**

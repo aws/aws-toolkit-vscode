@@ -11,7 +11,7 @@ export function removeAnsi(text: string): string {
     try {
         return stripAnsi(text)
     } catch (err) {
-        getLogger().error('Unexpected error while removing Ansi from text', err as Error)
+        getLogger().error('Unexpected error while removing Ansi from text: %O', err as Error)
 
         // Fall back to original text so callers aren't impacted
         return text

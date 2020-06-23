@@ -38,7 +38,7 @@ import {
 
 export interface CreateNewSamAppWizardContext {
     readonly lambdaRuntimes: Set<Runtime>
-    readonly workspaceFolders: vscode.WorkspaceFolder[] | undefined
+    readonly workspaceFolders: ReadonlyArray<vscode.WorkspaceFolder> | undefined
 
     promptUserForRuntime(currRuntime?: Runtime): Promise<Runtime | undefined>
     promptUserForTemplate(currRuntime: Runtime, currTemplate?: SamTemplate): Promise<SamTemplate | undefined>
@@ -56,14 +56,16 @@ export interface CreateNewSamAppWizardContext {
 export class DefaultCreateNewSamAppWizardContext extends WizardContext implements CreateNewSamAppWizardContext {
     // Filter out node8 until local debugging is no longer supported, and it can be removed from samLambdaRuntimes
     public readonly lambdaRuntimes = samLambdaRuntimes.filter(runtime => runtime !== 'nodejs8.10')
-    private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Documentation'))
+    private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Toolkit Documentation'))
     private readonly currentCredentials: Credentials | undefined
     private readonly schemasRegions: Region[]
+    private readonly samCliVersion: string
 
-    public constructor(currentCredentials: Credentials | undefined, schemasRegions: Region[]) {
+    public constructor(currentCredentials: Credentials | undefined, schemasRegions: Region[], samCliVersion: string) {
         super()
         this.currentCredentials = currentCredentials
         this.schemasRegions = schemasRegions
+        this.samCliVersion = samCliVersion
     }
 
     public async promptUserForRuntime(currRuntime?: Runtime): Promise<Runtime | undefined> {
@@ -104,7 +106,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
         currRuntime: Runtime,
         currTemplate?: SamTemplate
     ): Promise<SamTemplate | undefined> {
-        const templates = getSamTemplateWizardOption(currRuntime)
+        const templates = getSamTemplateWizardOption(currRuntime, this.samCliVersion)
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             options: {
                 ignoreFocusOut: true,

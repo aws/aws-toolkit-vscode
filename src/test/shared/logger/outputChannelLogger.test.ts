@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { OutputChannelTransport } from '../../../shared/logger/outputChannelTransport'
+import { OutputChannelTransport, MESSAGE } from '../../../shared/logger/outputChannelTransport'
 import { MockOutputChannel } from '../../mockOutputChannel'
 
 describe('OutputChannelTransport', async () => {
@@ -32,6 +32,7 @@ describe('OutputChannelTransport', async () => {
             {
                 level: 'info',
                 message: loggedMessage,
+                [MESSAGE]: loggedMessage,
             },
             async () => {
                 // Test will timeout if expected text is not encountered

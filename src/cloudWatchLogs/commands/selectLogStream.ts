@@ -62,7 +62,10 @@ function createDescribeLogStreamsCallPicker(
 ): picker.IteratingAWSCallPicker<CloudWatchLogs.DescribeLogStreamsRequest, CloudWatchLogs.DescribeLogStreamsResponse> {
     const client: CloudWatchLogsClient = ext.toolkitClientBuilder.createCloudWatchLogsClient(regionCode)
 
-    return new picker.IteratingAWSCallPicker(
+    return new picker.IteratingAWSCallPicker<
+        CloudWatchLogs.DescribeLogStreamsRequest,
+        CloudWatchLogs.DescribeLogStreamsResponse
+    >(
         {
             iteratorParams: {
                 // TODO: is there a better way to send this call so we don't have to `.bind(client)`?

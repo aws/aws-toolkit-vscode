@@ -8,50 +8,38 @@ import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { ScriptResource } from '../lambda/models/scriptResource'
 import { ext } from '../shared/extensionGlobals'
 import { mostRecentVersionKey, pluginVersion } from './constants'
 import { readFileAsString } from './filesystemUtilities'
 import { getLogger } from './logger'
+import { VSCODE_EXTENSION_ID, EXTENSION_ALPHA_VERSION } from './extensions'
 
 const localize = nls.loadMessageBundle()
 
 export class ExtensionUtilities {
-    public static getLibrariesForHtml(names: string[]): ScriptResource[] {
+    public static getLibrariesForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
         const basePath = path.join(ext.context.extensionPath, 'media', 'libs')
 
-        return this.resolveResourceURIs(basePath, names)
+        return this.resolveResourceURIs(basePath, names, webview)
     }
 
-    public static getScriptsForHtml(names: string[]): ScriptResource[] {
+    public static getScriptsForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
         const basePath = path.join(ext.context.extensionPath, 'media', 'js')
 
-        return this.resolveResourceURIs(basePath, names)
+        return this.resolveResourceURIs(basePath, names, webview)
     }
 
-    public static getCssForHtml(names: string[]): ScriptResource[] {
+    public static getCssForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
         const basePath = path.join(ext.context.extensionPath, 'media', 'css')
 
-        return this.resolveResourceURIs(basePath, names)
+        return this.resolveResourceURIs(basePath, names, webview)
     }
 
-    public static getNonce(): string {
-        let text = ''
-        const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-        for (let i = 0; i < 32; i++) {
-            text += possible.charAt(Math.floor(Math.random() * possible.length))
-        }
-
-        return text
-    }
-
-    private static resolveResourceURIs(basePath: string, names: string[]): ScriptResource[] {
-        const scripts: ScriptResource[] = []
+    private static resolveResourceURIs(basePath: string, names: string[], webview: vscode.Webview): vscode.Uri[] {
+        const scripts: vscode.Uri[] = []
         _.forEach(names, scriptName => {
             const scriptPathOnDisk = vscode.Uri.file(path.join(basePath, scriptName))
-            const scriptUri = scriptPathOnDisk.with({ scheme: 'vscode-resource' })
-            const nonce = ExtensionUtilities.getNonce()
-            scripts.push({ nonce: nonce, uri: scriptUri })
+            scripts.push(webview.asWebviewUri(scriptPathOnDisk))
         })
 
         return scripts
@@ -110,17 +98,17 @@ export async function createQuickStartWebview(
     context: vscode.ExtensionContext,
     page: string = 'quickStart.html'
 ): Promise<vscode.WebviewPanel> {
-    const html = convertExtensionRootTokensToPath(
-        await readFileAsString(path.join(context.extensionPath, page)),
-        context.extensionPath
-    )
     // create hidden webview, leave it up to the caller to show
     const view = vscode.window.createWebviewPanel(
         'html',
         localize('AWS.command.quickStart.title', 'AWS Toolkit - Quick Start'),
         { viewColumn: vscode.ViewColumn.Active, preserveFocus: true }
     )
-    view.webview.html = html
+    view.webview.html = convertExtensionRootTokensToPath(
+        await readFileAsString(path.join(context.extensionPath, page)),
+        context.extensionPath,
+        view.webview
+    )
 
     return view
 }
@@ -132,8 +120,10 @@ export async function createQuickStartWebview(
  * @param text Text to scan
  * @param basePath Extension path (from extension context)
  */
-function convertExtensionRootTokensToPath(text: string, basePath: string): string {
-    return text.replace(/!!EXTENSIONROOT!!/g, `vscode-resource:${basePath}`)
+function convertExtensionRootTokensToPath(text: string, basePath: string, webview: vscode.Webview): string {
+    return text.replace(/!!EXTENSIONROOT!!(?<restOfUrl>[-a-zA-Z0-9@:%_\+.~#?&//=]*)/g, (matchedString, restOfUrl) => {
+        return webview.asWebviewUri(vscode.Uri.file(`${basePath}${restOfUrl}`)).toString()
+    })
 }
 
 /**
@@ -167,9 +157,9 @@ export function setMostRecentVersion(context: vscode.ExtensionContext): void {
 }
 
 /**
- * Publishes a toast with a link to the welcome page
+ * Shows a message with a link to the quickstart page.
  */
-async function promptQuickStart(): Promise<void> {
+async function showQuickstartPrompt(): Promise<void> {
     const view = localize('AWS.command.quickStart', 'View Quick Start')
     const prompt = await vscode.window.showInformationMessage(
         localize(
@@ -185,18 +175,33 @@ async function promptQuickStart(): Promise<void> {
 }
 
 /**
- * Checks if a user is new to this version
- * If so, pops a toast with a link to a quick start page
+ * Shows a "new version" or "alpha version" message.
+ *
+ * - If extension version is "alpha", shows a warning message.
+ * - If extension version was not previously run on this machine, shows a toast
+ *   with a link to the quickstart page.
+ * - Otherwise does nothing.
  *
  * @param context VS Code Extension Context
  */
-export function toastNewUser(context: vscode.ExtensionContext): void {
+export function showWelcomeMessage(context: vscode.ExtensionContext): void {
+    const version = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)?.packageJSON.version
+    if (version === EXTENSION_ALPHA_VERSION) {
+        vscode.window.showWarningMessage(
+            localize(
+                'AWS.startup.toastIfAlpha',
+                'AWS Toolkit PREVIEW. (To get the latest STABLE version, uninstall this version.)'
+            )
+        )
+        return
+    }
+
     try {
         if (isDifferentVersion(context)) {
             setMostRecentVersion(context)
             // the welcome toast should be nonblocking.
             // tslint:disable-next-line: no-floating-promises
-            promptQuickStart()
+            showQuickstartPrompt()
         }
     } catch (err) {
         // swallow error and don't block extension load

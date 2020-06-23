@@ -4,6 +4,7 @@
  */
 
 import { ExtensionContext, Memento, Uri } from 'vscode'
+import { ExtensionDisposableFiles } from '../shared/utilities/disposableFiles'
 
 export interface FakeMementoStorage {
     [key: string]: any
@@ -43,6 +44,22 @@ export class FakeExtensionContext implements ExtensionContext {
 
     public asAbsolutePath(relativePath: string): string {
         return relativePath
+    }
+
+    /**
+     * Creates a fake `vscode.ExtensionContext` for use in tests.
+     *
+     *  Disposes any existing `ExtensionDisposableFiles` and creates a new one
+     *  with the new `ExtContext`.
+     */
+    public static async getNew(): Promise<FakeExtensionContext> {
+        const ctx = new FakeExtensionContext()
+        try {
+            ExtensionDisposableFiles.getInstance().dispose()
+        } catch {
+            await ExtensionDisposableFiles.initialize(ctx)
+        }
+        return ctx
     }
 }
 

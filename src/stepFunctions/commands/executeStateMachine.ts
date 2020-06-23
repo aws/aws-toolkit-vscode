@@ -42,11 +42,12 @@ export async function executeStateMachine(params: {
 
         const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
         const executeTemplate = _.template(StepFunctionsTemplates.EXECUTE_TEMPLATE)
-        const loadScripts = ExtensionUtilities.getScriptsForHtml(['executeStateMachine.js'])
-        const loadLibs = ExtensionUtilities.getLibrariesForHtml(['vue.min.js'])
-        const loadStylesheets = ExtensionUtilities.getCssForHtml(['executeStateMachine.css'])
+        const loadScripts = ExtensionUtilities.getScriptsForHtml(['executeStateMachine.js'], view.webview)
+        const loadLibs = ExtensionUtilities.getLibrariesForHtml(['vue.min.js'], view.webview)
+        const loadStylesheets = ExtensionUtilities.getCssForHtml(['executeStateMachine.css'], view.webview)
 
         view.webview.html = baseTemplateFn({
+            cspSource: view.webview.cspSource,
             content: executeTemplate({
                 StateMachineName: stateMachineNode.details.name,
                 Scripts: loadScripts,
@@ -115,7 +116,7 @@ function createMessageReceivedFunc({
                 } catch (e) {
                     executeResult = 'Failed'
                     const error = e as Error
-                    logger.error('Error starting execution for Step Functions State Machine', error)
+                    logger.error('Error starting execution for Step Functions State Machine: %O', error)
                     outputChannel.appendLine(
                         localize(
                             'AWS.message.error.stepFunctions.executeStateMachine.failed_to_start',

@@ -49,8 +49,8 @@ export class WorkspaceFolderQuickPickItem implements FolderQuickPickItem {
 
 export class WizardContext {
     public readonly showOpenDialog = vscode.window.showOpenDialog
-    public get workspaceFolders(): vscode.WorkspaceFolder[] | undefined {
-        return [...(vscode.workspace.workspaceFolders ?? [])]
+    public get workspaceFolders(): ReadonlyArray<vscode.WorkspaceFolder> | undefined {
+        return vscode.workspace.workspaceFolders
     }
 }
 

@@ -26,7 +26,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
 
             return contents
         } catch (err) {
-            this.logger.error(`Error loading resource from ${this.url}`, err as Error)
+            this.logger.error(`Error loading resource from ${this.url}: %O`, err as Error)
 
             return undefined
         }
