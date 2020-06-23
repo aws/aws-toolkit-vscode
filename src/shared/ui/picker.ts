@@ -8,7 +8,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { getLogger } from '../logger'
-import { getPaginatedAWSCallIter, IteratorForAWSCallParams } from '../utilities/collectionUtils'
+import { getPaginatedAwsCallIter, getPaginatedAwsCallIterParams } from '../utilities/collectionUtils'
 
 /**
  * Options to configure the behavior of the quick pick UI.
@@ -174,7 +174,7 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
     public constructor(
         private readonly awsCallLogic: {
             // TODO: allow for creation of a new call in case we want to reload quick pick in its entirety
-            iteratorParams: IteratorForAWSCallParams<TRequest, TResponse>
+            iteratorParams: getPaginatedAwsCallIterParams<TRequest, TResponse>
             awsCallResponseToQuickPickItemFn: (response: TResponse) => vscode.QuickPickItem[]
             noItemsMessage?: string
         },
@@ -342,6 +342,6 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
      * Generates a new iterator. Used at construction and during a "refresh" scenario.
      */
     private createNewIterator(): AsyncIterator<TResponse> {
-        return getPaginatedAWSCallIter(this.awsCallLogic.iteratorParams)
+        return getPaginatedAwsCallIter(this.awsCallLogic.iteratorParams)
     }
 }

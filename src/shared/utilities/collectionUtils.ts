@@ -161,7 +161,7 @@ export async function take<T>(sequence: AsyncIterable<T>, count: number): Promis
     return result
 }
 
-export interface IteratorForAWSCallParams<TRequest, TResponse> {
+export interface getPaginatedAwsCallIterParams<TRequest, TResponse> {
     awsCall: (request: TRequest) => Promise<TResponse>
     nextTokenNames: {
         request: keyof TRequest
@@ -175,13 +175,12 @@ export interface IteratorForAWSCallParams<TRequest, TResponse> {
  * Each next() call will make a new request with the previous request's nextToken.
  * @param params Iterator params
  */
-export async function* getPaginatedAWSCallIter<TRequest, TResponse>(
-    params: IteratorForAWSCallParams<TRequest, TResponse>
+export async function* getPaginatedAwsCallIter<TRequest, TResponse>(
+    params: getPaginatedAwsCallIterParams<TRequest, TResponse>
 ): AsyncIterator<TResponse> {
-    let isDone: boolean = false
     let nextToken: string | undefined = undefined
 
-    while (!isDone) {
+    while (true) {
         const response: TResponse = await params.awsCall({
             ...params.request,
             [params.nextTokenNames.request]: nextToken,
@@ -189,8 +188,6 @@ export async function* getPaginatedAWSCallIter<TRequest, TResponse>(
         if (response[params.nextTokenNames.response]) {
             nextToken = (response[params.nextTokenNames.response] as any) as string
         } else {
-            isDone = true
-
             return response
         }
 
