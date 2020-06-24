@@ -41,16 +41,16 @@ describe('selectLogStreamWizard', async () => {
     it('returns the selected log stream name', async () => {
         const streamName = 'stream/name'
         const region = 'us-weast-99'
-        const groupArn = 'grouper'
+        const groupName = 'grouper'
         const wizard = new SelectLogStreamWizard(
-            new LogGroupNode(new FakeParentNode('asdf'), region, { arn: groupArn }),
+            new LogGroupNode(new FakeParentNode('asdf'), region, { logGroupName: groupName }),
             new MockSelectLogStreamWizardContext([streamName])
         )
         const result = await wizard.run()
 
         assert.ok(result)
-        assert.strictEqual(result?.logGroup, groupArn)
-        assert.strictEqual(result?.logStream, streamName)
+        assert.strictEqual(result?.logGroupName, groupName)
+        assert.strictEqual(result?.logStreamName, streamName)
         assert.strictEqual(result?.region, region)
     })
 })

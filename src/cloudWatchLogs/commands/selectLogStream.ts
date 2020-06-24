@@ -16,8 +16,8 @@ import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 
 export interface SelectLogStreamResponse {
     region: string
-    logGroup: string
-    logStream: string
+    logGroupName: string
+    logStreamName: string
 }
 
 export async function selectLogStream(node: LogGroupNode): Promise<void> {
@@ -26,8 +26,8 @@ export async function selectLogStream(node: LogGroupNode): Promise<void> {
         vscode.window.showInformationMessage(
             `Not implemented but here's the deets:
 region: ${logStreamResponse.region}
-logGroup: ${logStreamResponse.logGroup}
-logStream: ${logStreamResponse.logStream}`
+logGroup: ${logStreamResponse.logGroupName}
+logStream: ${logStreamResponse.logStreamName}`
         )
     }
 }
@@ -120,7 +120,7 @@ export class SelectLogStreamWizard extends MultiStepWizard<SelectLogStreamRespon
         super()
         this.response = {
             region: node.regionCode,
-            logGroup: node.logGroup.arn,
+            logGroupName: node.logGroup.logGroupName,
         }
     }
 
@@ -129,19 +129,19 @@ export class SelectLogStreamWizard extends MultiStepWizard<SelectLogStreamRespon
     }
 
     protected getResult(): SelectLogStreamResponse | undefined {
-        if (!this.response.region || !this.response.logGroup || !this.response.logStream) {
+        if (!this.response.region || !this.response.logGroupName || !this.response.logStreamName) {
             return undefined
         }
 
         return {
             region: this.response.region,
-            logGroup: this.response.logGroup,
-            logStream: this.response.logStream,
+            logGroupName: this.response.logGroupName,
+            logStreamName: this.response.logStreamName,
         }
     }
 
     private readonly SELECT_STREAM: WizardStep = async () => {
-        this.response.logStream = await this.context.pickLogStream()
+        this.response.logStreamName = await this.context.pickLogStream()
 
         return undefined
     }
