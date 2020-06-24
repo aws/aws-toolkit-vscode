@@ -4,6 +4,8 @@
  */
 
 import * as nls from 'vscode-nls'
+import * as _ from 'lodash'
+
 const localize = nls.loadMessageBundle()
 
 import * as path from 'path'
@@ -16,11 +18,11 @@ import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtili
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
-import { difference, filter, toArrayAsync } from '../../shared/utilities/collectionUtils'
+import { difference, filter } from '../../shared/utilities/collectionUtils'
 import { MultiStepWizard, WizardStep } from '../../shared/wizards/multiStepWizard'
 import { configureParameterOverrides } from '../config/configureParameterOverrides'
-import { detectLocalTemplates } from '../local/detectLocalTemplates'
 import { getOverriddenParameters, getParameters } from '../utilities/parameterUtils'
+import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
 
 export interface SamDeployWizardResponse {
     parameterOverrides: Map<string, string>
@@ -36,7 +38,7 @@ export const enum ParameterPromptResult {
 }
 
 export interface SamDeployWizardContext {
-    readonly onDetectLocalTemplates: typeof detectLocalTemplates
+    readonly templateUris: vscode.Uri[]
 
     readonly workspaceFolders: vscode.Uri[] | undefined
 
@@ -120,12 +122,15 @@ function getSingleResponse(responses: vscode.QuickPickItem[] | undefined): strin
 }
 
 export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
-    public readonly onDetectLocalTemplates = detectLocalTemplates
+    public readonly templateUris: vscode.Uri[]
     public readonly getParameters = getParameters
     public readonly getOverriddenParameters = getOverriddenParameters
     private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Toolkit Documentation'))
 
-    public constructor(private readonly regionProvider: RegionProvider, private readonly awsContext: AwsContext) {}
+    public constructor(private readonly regionProvider: RegionProvider, private readonly awsContext: AwsContext) {
+        const cfnRegistry = CloudFormationTemplateRegistry.getRegistry()
+        this.templateUris = cfnRegistry.registeredTemplates.map(o => vscode.Uri.file(o.path))
+    }
 
     public get workspaceFolders(): vscode.Uri[] | undefined {
         return (vscode.workspace.workspaceFolders || []).map(f => f.uri)
@@ -148,7 +153,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 ),
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
-            items: await getTemplateChoices(this.onDetectLocalTemplates, ...workspaceFolders),
+            items: await getTemplateChoices(this.templateUris, ...workspaceFolders),
         })
 
         const choices = await picker.promptUser({
@@ -626,15 +631,13 @@ function validateStackName(value: string): string | undefined {
 }
 
 async function getTemplateChoices(
-    onDetectLocalTemplates: typeof detectLocalTemplates = detectLocalTemplates,
+    templateUris: vscode.Uri[],
     ...workspaceFolders: vscode.Uri[]
 ): Promise<SamTemplateQuickPickItem[]> {
-    const uris = await toArrayAsync(onDetectLocalTemplates({ workspaceUris: workspaceFolders }))
-
     const uriToLabel: Map<vscode.Uri, string> = new Map<vscode.Uri, string>()
     const labelCounts: Map<string, number> = new Map()
 
-    uris.forEach(uri => {
+    templateUris.forEach(uri => {
         const label = SamTemplateQuickPickItem.getLabel(uri)
         uriToLabel.set(uri, label)
         labelCounts.set(label, 1 + (labelCounts.get(label) || 0))

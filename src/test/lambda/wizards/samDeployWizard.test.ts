@@ -6,7 +6,6 @@
 import * as assert from 'assert'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { detectLocalTemplates } from '../../../lambda/local/detectLocalTemplates'
 import * as paramUtils from '../../../lambda/utilities/parameterUtils'
 import {
     ParameterPromptResult,
@@ -14,7 +13,6 @@ import {
     SamDeployWizardContext,
     validateS3Bucket,
 } from '../../../lambda/wizards/samDeployWizard'
-import { asyncGenerator } from '../../utilities/collectionUtils'
 
 interface QuickPickUriResponseItem extends vscode.QuickPickItem {
     uri: vscode.Uri
@@ -48,7 +46,7 @@ class MockSamDeployWizardContext implements SamDeployWizardContext {
     }
 
     public constructor(
-        public readonly onDetectLocalTemplates: typeof detectLocalTemplates,
+        public readonly templateUris: vscode.Uri[],
         private readonly workspaceFoldersResponses: (vscode.Uri[] | undefined)[] = [],
         private readonly promptForSamTemplateResponses: (QuickPickUriResponseItem | undefined)[] = [],
         private readonly promptForRegionResponses: (QuickPickRegionResponseItem | undefined)[] = [],
@@ -134,17 +132,7 @@ function normalizePath(...paths: string[]): string {
 describe('SamDeployWizard', async () => {
     describe('TEMPLATE', async () => {
         it('fails gracefully when no templates are found', async () => {
-            const wizard = new SamDeployWizard(
-                new MockSamDeployWizardContext(
-                    async function*() {
-                        yield* []
-                    },
-                    [[]],
-                    [undefined],
-                    [],
-                    []
-                )
-            )
+            const wizard = new SamDeployWizard(new MockSamDeployWizardContext([], [[]], [undefined], [], []))
             const result = await wizard.run()
 
             assert.ok(!result)
@@ -155,9 +143,7 @@ describe('SamDeployWizard', async () => {
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const wizard = new SamDeployWizard(
                 new MockSamDeployWizardContext(
-                    async function*() {
-                        yield vscode.Uri.file(templatePath)
-                    },
+                    [vscode.Uri.file(templatePath)],
                     [[vscode.Uri.file(workspaceFolderPath)]],
                     [undefined],
                     [],
@@ -174,9 +160,7 @@ describe('SamDeployWizard', async () => {
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const wizard = new SamDeployWizard(
                 new MockSamDeployWizardContext(
-                    async function*() {
-                        yield vscode.Uri.file(templatePath)
-                    },
+                    [vscode.Uri.file(templatePath)],
                     [[vscode.Uri.file(workspaceFolderPath)]],
                     [createQuickPickUriResponseItem(vscode.Uri.file(templatePath))],
                     [createQuickPickRegionResponseItem('asdf')],
@@ -211,7 +195,7 @@ describe('SamDeployWizard', async () => {
         }): SamDeployWizardContext {
             return {
                 // It's fine to return an empty list if promptUserForSamTemplate is overridden.
-                onDetectLocalTemplates: () => asyncGenerator([]),
+                templateUris: [],
                 // It's fine to return an empty list if promptUserForSamTemplate is overridden.
                 workspaceFolders: [],
 
@@ -399,9 +383,7 @@ describe('SamDeployWizard', async () => {
 
             const wizard = new SamDeployWizard(
                 new MockSamDeployWizardContext(
-                    async function*() {
-                        yield vscode.Uri.file(templatePath)
-                    },
+                    [vscode.Uri.file(templatePath)],
                     [[vscode.Uri.file(workspaceFolderPath)]],
                     [createQuickPickUriResponseItem(vscode.Uri.file(templatePath))],
                     [createQuickPickRegionResponseItem(region)],
@@ -424,10 +406,7 @@ describe('SamDeployWizard', async () => {
 
             const wizard = new SamDeployWizard(
                 new MockSamDeployWizardContext(
-                    async function*() {
-                        yield vscode.Uri.file(templatePath1)
-                        yield vscode.Uri.file(templatePath2)
-                    },
+                    [vscode.Uri.file(templatePath1), vscode.Uri.file(templatePath2)],
                     [[vscode.Uri.file(workspaceFolderPath1)], [vscode.Uri.file(workspaceFolderPath2)]],
                     [
                         createQuickPickUriResponseItem(vscode.Uri.file(templatePath1)),
@@ -459,10 +438,7 @@ describe('SamDeployWizard', async () => {
 
             const wizard = new SamDeployWizard(
                 new MockSamDeployWizardContext(
-                    async function*() {
-                        yield vscode.Uri.file(templatePath1)
-                        yield vscode.Uri.file(templatePath2)
-                    },
+                    [vscode.Uri.file(templatePath1), vscode.Uri.file(templatePath2)],
                     [[vscode.Uri.file(workspaceFolderPath1)], [vscode.Uri.file(workspaceFolderPath2)]],
                     [
                         createQuickPickUriResponseItem(vscode.Uri.file(templatePath1)),
@@ -488,9 +464,7 @@ describe('SamDeployWizard', async () => {
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const wizard = new SamDeployWizard(
                 new MockSamDeployWizardContext(
-                    async function*() {
-                        yield vscode.Uri.file(templatePath)
-                    },
+                    [vscode.Uri.file(templatePath)],
                     [[vscode.Uri.file(workspaceFolderPath)]],
                     [createQuickPickUriResponseItem(vscode.Uri.file(templatePath))],
                     [createQuickPickRegionResponseItem('asdf')],
@@ -511,9 +485,7 @@ describe('SamDeployWizard', async () => {
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const wizard = new SamDeployWizard(
                 new MockSamDeployWizardContext(
-                    async function*() {
-                        yield vscode.Uri.file(templatePath)
-                    },
+                    [vscode.Uri.file(templatePath)],
                     [[vscode.Uri.file(workspaceFolderPath)]],
                     [createQuickPickUriResponseItem(vscode.Uri.file(templatePath))],
                     [createQuickPickRegionResponseItem('asdf')],
@@ -532,9 +504,7 @@ describe('SamDeployWizard', async () => {
             const templatePath = normalizePath(workspaceFolderPath, 'template.yaml')
             const wizard = new SamDeployWizard(
                 new MockSamDeployWizardContext(
-                    async function*() {
-                        yield vscode.Uri.file(templatePath)
-                    },
+                    [vscode.Uri.file(templatePath)],
                     [[vscode.Uri.file(workspaceFolderPath)]],
                     [createQuickPickUriResponseItem(vscode.Uri.file(templatePath))],
                     [createQuickPickRegionResponseItem('asdf')],
@@ -556,9 +526,7 @@ describe('SamDeployWizard', async () => {
                 try {
                     await new SamDeployWizard(
                         new MockSamDeployWizardContext(
-                            async function*() {
-                                yield vscode.Uri.file(templatePath)
-                            },
+                            [vscode.Uri.file(templatePath)],
                             [[vscode.Uri.file(workspaceFolderPath)]],
                             [createQuickPickUriResponseItem(vscode.Uri.file(templatePath))],
                             [createQuickPickRegionResponseItem('asdf')],
