@@ -3,8 +3,8 @@
 
 package software.aws.toolkits.jetbrains.services.clouddebug
 
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Test
 import software.aws.toolkits.jetbrains.services.clouddebug.python.PythonDebuggerSupport
 import software.aws.toolkits.resources.message
@@ -60,7 +60,7 @@ class PythonStartCommandAugmenterTest {
 
     @Test
     fun augmenterEmptyPortsArray() {
-        Assertions.assertThatThrownBy { augmenter.augmentStatement("python3 test.py", listOf(), "/abc/pydevd.py") }
+        assertThatThrownBy { augmenter.augmentStatement("python3 test.py", listOf(), "/abc/pydevd.py") }
             .isInstanceOf(IllegalStateException::class.java)
             .hasMessage(message("cloud_debug.step.augment_statement.missing_debug_port"))
     }

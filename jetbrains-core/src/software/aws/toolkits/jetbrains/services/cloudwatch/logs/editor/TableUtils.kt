@@ -117,8 +117,8 @@ private class WrappingLogStreamMessageRenderer : TableCellRenderer {
             return component
         }
 
-        component.wrapStyleWord = wrap
-        component.lineWrap = wrap
+        component.wrapStyleWord = wrap || isSelected
+        component.lineWrap = wrap || isSelected
         component.text = (value as? String)?.trim()
         component.font = font
         component.setSelectionHighlighting(table, isSelected)

@@ -8,7 +8,7 @@ import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.util.registry.Registry
 import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.xdebugger.XDebuggerUtil
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Assume.assumeTrue
 import org.junit.Before
@@ -102,7 +102,7 @@ class NodeJsDebugEndToEndTest : CloudDebugTestCase("CloudDebugTestECSClusterTask
             configuration.checkConfiguration()
             executeRunConfiguration(configuration, DefaultDebugExecutor.EXECUTOR_ID)
         }
-        Assertions.assertThat(debuggerIsHit.get()).isTrue()
+        assertThat(debuggerIsHit.get()).isTrue()
     }
 
     private fun addNodeFile(): String {

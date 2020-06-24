@@ -8,7 +8,6 @@ import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.psi.PsiElement
 import com.intellij.util.io.isFile
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import software.amazon.awssdk.services.lambda.model.Runtime
@@ -92,6 +91,6 @@ abstract class BaseLambdaBuilderTest {
                     file
                 )
             }
-        Assertions.assertThat(builtLambda.mappings).containsAll(updatedPaths)
+        assertThat(builtLambda.mappings).containsAll(updatedPaths)
     }
 }

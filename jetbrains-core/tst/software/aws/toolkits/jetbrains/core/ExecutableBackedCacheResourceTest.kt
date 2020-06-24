@@ -7,8 +7,8 @@ import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ExtensionTestUtil
 import com.intellij.testFramework.ProjectRule
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -50,7 +50,7 @@ class ExecutableBackedCacheResourceTest {
     fun testExecutableIsNotInstalledCausesException() {
         createMockExecutable("invalidBinary")
 
-        Assertions.assertThatThrownBy {
+        assertThatThrownBy {
             executeCacheResource {}
         }.isInstanceOf(IllegalStateException::class.java)
     }

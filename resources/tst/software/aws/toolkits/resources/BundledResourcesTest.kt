@@ -3,8 +3,7 @@
 
 package software.aws.toolkits.resources
 
-import org.hamcrest.CoreMatchers.equalTo
-import org.hamcrest.MatcherAssert.assertThat
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -23,7 +22,7 @@ class BundledResourcesTest(private val file: InputStream) {
     @Test
     fun fileExistsAndHasContent() {
         file.use {
-            assertThat(it.read() > 0, equalTo(true))
+            assertThat(it.read()).isGreaterThan(0)
         }
     }
 }
