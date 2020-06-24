@@ -105,13 +105,18 @@ export function isTelemetryEnabled(toolkitSettings: SettingsConfiguration): bool
         return false
     }
 
-    // Current value is expected to be a boolean
-    if (typeof value === 'boolean') {
-        return value
+    //Will throw an error if type is not a boolean
+    try {
+        if (typeof value !== 'boolean') {
+            throw new TypeError(`${value} is not a boolean`)
+        } else {
+            return value
+        }
+    } catch (error) {
+        getLogger().error(error)
+        // Treat anything else (unexpected values, datatypes, or undefined) as opt-in
+        return true
     }
-
-    // Treat anything else (unexpected values, datatypes, or undefined) as opt-in
-    return true
 }
 
 function applyTelemetryEnabledState(telemetry: TelemetryService, toolkitSettings: SettingsConfiguration) {
