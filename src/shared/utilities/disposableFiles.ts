@@ -26,6 +26,10 @@ export class DisposableFiles implements vscode.Disposable {
         return this
     }
 
+    public isDisposed(): boolean {
+        return this._disposed
+    }
+
     public dispose(): void {
         const logger: Logger = getLogger()
         if (!this._disposed) {
@@ -70,7 +74,7 @@ export class ExtensionDisposableFiles extends DisposableFiles {
     }
 
     public static async initialize(extensionContext: vscode.ExtensionContext): Promise<void> {
-        if (!!ExtensionDisposableFiles.INSTANCE) {
+        if (ExtensionDisposableFiles.INSTANCE && !ExtensionDisposableFiles.INSTANCE.isDisposed()) {
             throw new Error('ExtensionDisposableFiles already initialized')
         }
 
@@ -82,7 +86,7 @@ export class ExtensionDisposableFiles extends DisposableFiles {
     }
 
     public static getInstance(): ExtensionDisposableFiles {
-        if (!ExtensionDisposableFiles.INSTANCE) {
+        if (!ExtensionDisposableFiles.INSTANCE || ExtensionDisposableFiles.INSTANCE.isDisposed()) {
             throw new Error('ExtensionDisposableFiles not initialized')
         }
 
