@@ -15,6 +15,9 @@ import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeA
 import software.aws.toolkits.jetbrains.services.redshift.RedshiftExplorerNode
 import software.aws.toolkits.jetbrains.services.redshift.createDatasource
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.DatabaseCredentials.IAM
+import software.aws.toolkits.telemetry.RedshiftTelemetry
+import software.aws.toolkits.telemetry.Result
 
 // It is registered in ext-datagrip.xml FIX_WHEN_MIN_IS_201
 @Suppress("ComponentNotRegistered")
@@ -34,6 +37,16 @@ class CreateDataSourceAction : SingleExplorerNodeAction<RedshiftExplorerNode>(me
                     registry.showDialog()
                 }
             }
+
+            override fun onCancel() = recordTelemetry(Result.Cancelled)
+            override fun onThrowable(error: Throwable) = recordTelemetry(Result.Failed)
+            override fun onSuccess() = recordTelemetry(Result.Succeeded)
+
+            private fun recordTelemetry(result: Result) = RedshiftTelemetry.createConnectionConfiguration(
+                selected.nodeProject,
+                result,
+                IAM
+            )
         }.queue()
     }
 }

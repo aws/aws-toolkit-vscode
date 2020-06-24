@@ -18,11 +18,14 @@ import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
+import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
-import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.DatabaseCredentials.IAM
+import software.aws.toolkits.telemetry.RedshiftTelemetry
+import software.aws.toolkits.telemetry.Result
 import java.util.concurrent.CompletionStage
 
 data class RedshiftSettings(
@@ -41,11 +44,19 @@ class IamAuth : DatabaseAuthProvider, CoroutineScope by ApplicationThreadPoolSco
     override fun intercept(connection: ProtoConnection, silent: Boolean): CompletionStage<ProtoConnection>? {
         LOG.info { "Intercepting db connection [$connection]" }
         return future {
+            var result = Result.Succeeded
             val project = connection.runConfiguration.project
-            val auth = validateConnection(connection)
-            val client = project.awsClient<RedshiftClient>(auth.connectionSettings.credentials, auth.connectionSettings.region)
-            val credentials = getCredentials(auth, client)
-            DatabaseCredentialsAuthProvider.applyCredentials(connection, credentials, true)
+            try {
+                val auth = validateConnection(connection)
+                val client = project.awsClient<RedshiftClient>(auth.connectionSettings.credentials, auth.connectionSettings.region)
+                val credentials = getCredentials(auth, client)
+                DatabaseCredentialsAuthProvider.applyCredentials(connection, credentials, true)
+            } catch (e: Throwable) {
+                result = Result.Failed
+                throw e
+            } finally {
+                RedshiftTelemetry.getCredentials(project, result, IAM)
+            }
         }
     }
 
@@ -74,7 +85,7 @@ class IamAuth : DatabaseAuthProvider, CoroutineScope by ApplicationThreadPoolSco
         )
     }
 
-    internal fun getCredentials(settings: RedshiftSettings, client: RedshiftClient): Credentials? {
+    internal fun getCredentials(settings: RedshiftSettings, client: RedshiftClient): Credentials {
         if (client.describeClusters { it.clusterIdentifier(settings.clusterId).build() }.clusters().isEmpty()) {
             throw IllegalArgumentException(message("redshift.validation.cluster_does_not_exist", settings.clusterId, settings.connectionSettings.region.id))
         }

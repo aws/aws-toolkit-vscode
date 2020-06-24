@@ -32,6 +32,9 @@ import software.aws.toolkits.jetbrains.services.sts.StsResources
 import software.aws.toolkits.jetbrains.utils.actions.OpenBrowserAction
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.DatabaseCredentials
+import software.aws.toolkits.telemetry.RdsTelemetry
+import software.aws.toolkits.telemetry.Result
 
 // It is registered in ext-datagrip.xml FIX_WHEN_MIN_IS_201
 @Suppress("ComponentNotRegistered")
@@ -60,6 +63,17 @@ class CreateIamDataSourceAction(private val node: RdsNode) : AnAction(message("r
                     registry.showDialog()
                 }
             }
+
+            override fun onCancel() = recordTelemetry(Result.Cancelled)
+            override fun onThrowable(error: Throwable) = recordTelemetry(Result.Failed)
+            override fun onSuccess() = recordTelemetry(Result.Succeeded)
+
+            private fun recordTelemetry(result: Result) = RdsTelemetry.createConnectionConfiguration(
+                node.nodeProject,
+                result,
+                DatabaseCredentials.IAM,
+                node.dbInstance.engine()
+            )
         }.queue()
     }
 

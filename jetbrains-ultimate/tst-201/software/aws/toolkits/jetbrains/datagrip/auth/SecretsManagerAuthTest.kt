@@ -156,6 +156,11 @@ class SecretsManagerAuthTest {
                 m
             }
             on { dataSource } doReturn mockConnection
+            on { databaseDriver } doAnswer {
+                mock {
+                    on { id } doReturn "id"
+                }
+            }
         }
         return mock {
             val m = mutableMapOf<String, String>()
