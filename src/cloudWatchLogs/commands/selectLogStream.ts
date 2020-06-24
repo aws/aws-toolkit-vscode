@@ -13,6 +13,7 @@ import { LogGroupNode } from '../explorer/logGroupNode'
 import { CloudWatchLogs } from 'aws-sdk'
 import { ext } from '../../shared/extensionGlobals'
 import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
+import * as telemetry from '../../shared/telemetry/telemetry'
 
 export interface SelectLogStreamResponse {
     region: string
@@ -21,6 +22,7 @@ export interface SelectLogStreamResponse {
 }
 
 export async function selectLogStream(node: LogGroupNode): Promise<void> {
+    let result: telemetry.Result = 'Succeeded'
     const logStreamResponse = await new SelectLogStreamWizard(node).run()
     if (logStreamResponse) {
         vscode.window.showInformationMessage(
@@ -29,7 +31,11 @@ region: ${logStreamResponse.region}
 logGroup: ${logStreamResponse.logGroupName}
 logStream: ${logStreamResponse.logStreamName}`
         )
+    } else {
+        result = 'Cancelled'
     }
+
+    telemetry.recordCloudwatchlogsOpenStream({ result })
 }
 
 export interface SelectLogStreamWizardContext {
@@ -40,18 +46,25 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
     public constructor(private readonly regionCode: string, private readonly logGroupName: string) {}
 
     public async pickLogStream(): Promise<string | undefined> {
+        let telemetryResult: telemetry.Result = 'Succeeded'
         const quickPick = createDescribeLogStreamsCallPicker(this.regionCode, this.logGroupName)
 
         const choices = await quickPick.promptUser()
         const val = picker.verifySinglePickerOutput(choices)
 
-        const result = val?.label
+        let result = val?.label
 
-        // TODO: Handle error and no items differently? Move the check into IteratingAWSCallPicker?
-        if (result && (result === quickPick.noItemsItem.label || result === quickPick.errorItem.label)) {
-            return undefined
+        // handle no items for a group as a cancel
+        if (!result || result === quickPick.noItemsItem.label) {
+            result = undefined
+            telemetryResult = 'Cancelled'
+        }
+        if (result === quickPick.errorItem.label) {
+            result = undefined
+            telemetryResult = 'Failed'
         }
 
+        telemetry.recordCloudwatchlogsOpenGroup({ result: telemetryResult })
         return result
     }
 }
