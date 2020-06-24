@@ -59,6 +59,7 @@ private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
     private fun updateWidget() {
         statusBar.updateWidget(ID())
     }
+
     override fun dispose() {}
 }
 

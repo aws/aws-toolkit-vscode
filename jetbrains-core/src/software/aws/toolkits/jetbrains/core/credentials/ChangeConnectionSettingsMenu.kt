@@ -28,10 +28,12 @@ import software.aws.toolkits.resources.message
 import javax.swing.JComponent
 
 class ChangeAccountSettingsActionGroup(project: Project, private val mode: ChangeAccountSettingsMode) : ComputableActionGroup(), DumbAware {
-
     private val accountSettingsManager = AwsConnectionManager.getInstance(project)
-    private val regionSelector =
-        ChangeRegionActionGroup(accountSettingsManager.selectedPartition, accountSettingsManager, ChangePartitionActionGroup(accountSettingsManager))
+    private val regionSelector = ChangeRegionActionGroup(
+        accountSettingsManager.selectedPartition,
+        accountSettingsManager,
+        ChangePartitionActionGroup(accountSettingsManager)
+    )
     private val credentialSelector = ChangeCredentialsActionGroup(true)
 
     override fun createChildrenProvider(actionManager: ActionManager?): CachedValueProvider<Array<AnAction>> = CachedValueProvider {
@@ -70,6 +72,9 @@ class ChangeAccountSettingsActionGroup(project: Project, private val mode: Chang
                 actions.add(credentialSelector)
             }
         }
+
+        actions.add(Separator.create())
+        actions.addAll(accountSettingsManager.connectionState.actions)
 
         CachedValueProvider.Result.create(actions.toTypedArray(), accountSettingsManager)
     }
