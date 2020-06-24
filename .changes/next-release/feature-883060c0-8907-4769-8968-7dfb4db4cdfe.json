@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Wrap logstream entries when they are selected (#1863)"
+}
