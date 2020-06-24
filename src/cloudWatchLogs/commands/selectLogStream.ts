@@ -78,7 +78,6 @@ function createDescribeLogStreamsCallPicker(
                     logGroupName,
                     orderBy: 'LastEventTime',
                     descending: true,
-                    limit: 1, // TODO: remove, for testing purposes
                 },
             },
             awsCallResponseToQuickPickItemFn: (response: CloudWatchLogs.DescribeLogStreamsResponse) => {
@@ -102,7 +101,6 @@ function createDescribeLogStreamsCallPicker(
             options: {
                 title: localize('aws.cloudWatchLogs.selectLogStream.workflow.prompt', 'Select a log stream'),
                 matchOnDetail: true,
-                ignoreFocusOut: true, // TODO: remove, present for testing purposes
             },
             isRefreshable: true,
         }

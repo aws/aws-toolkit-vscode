@@ -6,6 +6,8 @@
 import '../../../shared/utilities/asyncIteratorShim'
 
 import * as assert from 'assert'
+import { CloudWatchLogs } from 'aws-sdk'
+import * as sinon from 'sinon'
 import {
     complement,
     difference,
@@ -19,11 +21,22 @@ import {
     toMapAsync,
     union,
     updateInPlace,
+    getPaginatedAwsCallIter,
+    getPaginatedAwsCallIterParams,
 } from '../../../shared/utilities/collectionUtils'
 
 import { asyncGenerator } from '../../utilities/collectionUtils'
 
 describe('CollectionUtils', async () => {
+    let sandbox: sinon.SinonSandbox
+    beforeEach(() => {
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(() => {
+        sandbox.restore()
+    })
+
     describe('union', async () => {
         it('returns an empty set if both inputs are empty', async () => {
             const result = union([], [])
@@ -354,6 +367,59 @@ describe('CollectionUtils', async () => {
             assert.ok(result)
             assert.strictEqual(result.length, 1)
             assert.strictEqual(result[0], 2)
+        })
+    })
+
+    describe('getPaginatedAwsCallIter', async () => {
+        it('iterates as long as results are present', async () => {
+            const fakeCall = sandbox.stub<
+                [CloudWatchLogs.DescribeLogStreamsRequest],
+                CloudWatchLogs.DescribeLogStreamsResponse
+            >()
+            const responses: CloudWatchLogs.LogStreams[] = [
+                [{ logStreamName: 'stream1' }, { logStreamName: 'stream2' }, { logStreamName: 'stream3' }],
+                [{ logStreamName: 'stream4' }, { logStreamName: 'stream5' }, { logStreamName: 'stream6' }],
+                [{ logStreamName: 'stream7' }, { logStreamName: 'stream8' }, { logStreamName: 'stream9' }],
+            ]
+            fakeCall
+                .onCall(0)
+                .returns({
+                    logStreams: responses[0],
+                    nextToken: 'gotAToken',
+                })
+                .onCall(1)
+                .returns({
+                    logStreams: responses[1],
+                    nextToken: 'gotAnotherToken',
+                })
+                .onCall(2)
+                .returns({
+                    logStreams: responses[2],
+                })
+                .onCall(3)
+                .returns({})
+            const params: getPaginatedAwsCallIterParams<
+                CloudWatchLogs.DescribeLogStreamsRequest,
+                CloudWatchLogs.DescribeLogStreamsResponse
+            > = {
+                awsCall: async req => fakeCall(req),
+                nextTokenNames: {
+                    request: 'nextToken',
+                    response: 'nextToken',
+                },
+                request: {
+                    logGroupName: 'imJustHereSoIWontGetFined',
+                },
+            }
+            const iter: AsyncIterator<CloudWatchLogs.DescribeLogStreamsResponse> = getPaginatedAwsCallIter(params)
+            const firstResult = await iter.next()
+            const secondResult = await iter.next()
+            const thirdResult = await iter.next()
+            const fourthResult = await iter.next()
+            assert.deepStrictEqual(firstResult.value.logStreams, responses[0])
+            assert.deepStrictEqual(secondResult.value.logStreams, responses[1])
+            assert.deepStrictEqual(thirdResult.value.logStreams, responses[2])
+            assert.deepStrictEqual(fourthResult, { done: true, value: undefined })
         })
     })
 })

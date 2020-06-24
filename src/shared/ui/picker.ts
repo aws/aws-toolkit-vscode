@@ -151,6 +151,8 @@ export function verifySinglePickerOutput<T extends vscode.QuickPickItem>(choices
 }
 
 // TODO: Cache these results? Should we have a separate store? Can we also use a store with values from the explorer tree?
+// If we move this to a cache, we should remove the awsCallLogic and instead listen/send events to/from the cache.
+// (this should also be retooled to not use the request/response objects directly)
 export class IteratingAWSCallPicker<TRequest, TResponse> {
     private isDone: boolean = false
     private isPaused: boolean = false
