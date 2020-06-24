@@ -60,6 +60,14 @@ class DatagripUtilsTest {
         assertThat(creds.credentials.id).isEqualTo(credentialId)
     }
 
+    @Test
+    fun `jdbcAdapterFromRuntime works`() {
+        assertThat(jdbcAdapterFromRuntime("postgres")).isEqualTo("postgresql")
+        assertThat(jdbcAdapterFromRuntime("mysql")).isEqualTo("mysql")
+        assertThat(jdbcAdapterFromRuntime("redshift")).isEqualTo("redshift")
+        assertThat(jdbcAdapterFromRuntime("mongo")).isNull()
+    }
+
     private fun buildConnection(
         credentials: String? = null,
         region: String? = null

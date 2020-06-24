@@ -3,14 +3,24 @@
 
 package software.aws.toolkits.jetbrains.datagrip
 
+import com.intellij.database.dataSource.DataSourceSslConfiguration
 import com.intellij.database.dataSource.DatabaseConnectionInterceptor.ProtoConnection
+import com.intellij.database.remote.jdbc.helpers.JdbcSettings
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
+import software.aws.toolkits.jetbrains.services.rds.jdbcMysql
+import software.aws.toolkits.jetbrains.services.rds.jdbcPostgres
+import software.aws.toolkits.jetbrains.services.rds.mysqlEngineType
+import software.aws.toolkits.jetbrains.services.rds.postgresEngineType
+import software.aws.toolkits.jetbrains.services.redshift.RedshiftResources.jdbcRedshift
+import software.aws.toolkits.jetbrains.services.redshift.RedshiftResources.redshiftEngineType
 import software.aws.toolkits.resources.message
 
 const val CREDENTIAL_ID_PROPERTY = "AWS.CredentialId"
 const val REGION_ID_PROPERTY = "AWS.RegionId"
+
+val FullSslValidation = DataSourceSslConfiguration("", "", "", true, JdbcSettings.SslMode.VERIFY_FULL)
 
 fun ProtoConnection.getAwsConnectionSettings(): ConnectionSettings {
     val credentialManager = CredentialManager.getInstance()
@@ -26,6 +36,13 @@ fun ProtoConnection.getAwsConnectionSettings(): ConnectionSettings {
         credentialManager.getAwsCredentialProvider(it, region)
     } ?: throw IllegalArgumentException(message("datagrip.validation.invalid_credential_specified", credentialId))
     return ConnectionSettings(credentials, region)
+}
+
+fun jdbcAdapterFromRuntime(runtime: String?): String? = when (runtime) {
+    postgresEngineType -> jdbcPostgres
+    mysqlEngineType -> jdbcMysql
+    redshiftEngineType -> jdbcRedshift
+    else -> null
 }
 
 // We don't have access to service information when we need this. What we do have access to is the database driver

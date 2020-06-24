@@ -12,4 +12,7 @@ object RedshiftResources {
     val LIST_CLUSTERS: Resource.Cached<List<Cluster>> = ClientBackedCachedResource(RedshiftClient::class, "redshift.list_instances") {
         describeClustersPaginator().clusters().toList()
     }
+
+    const val jdbcRedshift = "redshift"
+    const val redshiftEngineType = "redshift"
 }

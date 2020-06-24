@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.services.rds.actions
 
 import com.intellij.database.DatabaseBundle
 import com.intellij.database.autoconfig.DataSourceRegistry
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.progress.PerformInBackgroundOption
@@ -17,7 +16,7 @@ import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.activeCredentialProvider
 import software.aws.toolkits.jetbrains.core.credentials.activeRegion
-import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeActionGroup
+import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeAction
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
@@ -38,15 +37,9 @@ import software.aws.toolkits.telemetry.Result
 
 // It is registered in ext-datagrip.xml FIX_WHEN_MIN_IS_201
 @Suppress("ComponentNotRegistered")
-class CreateDataSourceActionGroup : SingleExplorerNodeActionGroup<RdsNode>("rds.connect"), DumbAware {
-    override fun getChildren(selected: RdsNode, e: AnActionEvent): List<AnAction> = listOf(
-        CreateIamDataSourceAction(selected)
-    )
-}
-
-class CreateIamDataSourceAction(private val node: RdsNode) : AnAction(message("rds.iam_config")), DumbAware {
-    override fun actionPerformed(e: AnActionEvent) {
-        if (!checkPrerequisites()) {
+class CreateIamDataSourceAction : SingleExplorerNodeAction<RdsNode>(message("rds.iam_config")), DumbAware {
+    override fun actionPerformed(node: RdsNode, e: AnActionEvent) {
+        if (!checkPrerequisites(node)) {
             return
         }
         object : Task.Backgroundable(
@@ -57,7 +50,7 @@ class CreateIamDataSourceAction(private val node: RdsNode) : AnAction(message("r
         ) {
             override fun run(indicator: ProgressIndicator) {
                 val registry = DataSourceRegistry(node.nodeProject)
-                createDatasource(registry)
+                createDatasource(node, registry)
                 // Asynchronously show the user the configuration dialog to let them save/edit/test the profile
                 runInEdt {
                     registry.showDialog()
@@ -77,7 +70,7 @@ class CreateIamDataSourceAction(private val node: RdsNode) : AnAction(message("r
         }.queue()
     }
 
-    internal fun checkPrerequisites(): Boolean {
+    internal fun checkPrerequisites(node: RdsNode): Boolean {
         // Assert IAM auth enabled
         if (!node.dbInstance.iamDatabaseAuthenticationEnabled()) {
             notifyError(
@@ -91,7 +84,7 @@ class CreateIamDataSourceAction(private val node: RdsNode) : AnAction(message("r
         return true
     }
 
-    internal fun createDatasource(registry: DataSourceRegistry) {
+    internal fun createDatasource(node: RdsNode, registry: DataSourceRegistry) {
         val username = try {
             // use current STS user as username. Split on : because it comes back id:username
             AwsResourceCache.getInstance(node.nodeProject).getResourceNow(StsResources.USER).substringAfter(':')

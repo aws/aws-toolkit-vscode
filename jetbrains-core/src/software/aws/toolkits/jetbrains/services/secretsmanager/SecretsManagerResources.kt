@@ -11,3 +11,5 @@ object SecretsManagerResources {
         listSecretsPaginator().toList().flatMap { it.secretList() }
     }
 }
+
+fun String.arnToName() = this.substringAfterLast(':')

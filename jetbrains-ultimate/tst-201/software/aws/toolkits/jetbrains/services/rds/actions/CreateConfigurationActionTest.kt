@@ -19,12 +19,14 @@ import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
 import software.aws.toolkits.jetbrains.services.rds.RdsDatasourceConfiguration
+import software.aws.toolkits.jetbrains.services.rds.RdsNode
 import software.aws.toolkits.jetbrains.services.rds.auth.IamAuth
 import software.aws.toolkits.jetbrains.services.rds.jdbcMysql
 import software.aws.toolkits.jetbrains.services.rds.jdbcPostgres
 import software.aws.toolkits.jetbrains.services.rds.mysqlEngineType
 import software.aws.toolkits.jetbrains.services.rds.postgresEngineType
 import software.aws.toolkits.jetbrains.services.sts.StsResources
+import java.util.concurrent.CompletableFuture
 
 class CreateConfigurationActionTest {
     @Rule
@@ -42,22 +44,22 @@ class CreateConfigurationActionTest {
 
     @Test
     fun `Prerequisites fails when IAM authentication is disabled`() {
-        val action = createSourceAction(iamAuthEnabled = false)
-        assertThat(action.checkPrerequisites()).isFalse()
+        val node = createNode(iamAuthEnabled = false)
+        assertThat(CreateIamDataSourceAction().checkPrerequisites(node)).isFalse()
     }
 
     @Test
     fun `Prerequisites succeeds when all are met`() {
-        val action = createSourceAction(iamAuthEnabled = true)
-        assertThat(action.checkPrerequisites()).isTrue()
+        val node = createNode(iamAuthEnabled = true)
+        assertThat(CreateIamDataSourceAction().checkPrerequisites(node)).isTrue()
     }
 
     @Test
     fun `Create data source gets user`() {
         resourceCache.get().addEntry(StsResources.USER, username)
-        val action = createSourceAction()
+        val node = createNode()
         val registry = DataSourceRegistry(projectRule.project)
-        action.createDatasource(registry)
+        CreateIamDataSourceAction().createDatasource(node, registry)
         assertThat(registry.newDataSources).hasOnlyOneElementSatisfying {
             assertThat(it.isTemporary).isFalse()
             assertThat(it.username).isEqualTo(username)
@@ -66,9 +68,12 @@ class CreateConfigurationActionTest {
 
     @Test
     fun `Create data source falls back to master username`() {
-        val action = createSourceAction()
+        resourceCache.get().addEntry(StsResources.USER, CompletableFuture<String>().also {
+            it.completeExceptionally(RuntimeException("Failed to get current user"))
+        })
+        val node = createNode()
         val registry = DataSourceRegistry(projectRule.project)
-        action.createDatasource(registry)
+        CreateIamDataSourceAction().createDatasource(node, registry)
         assertThat(registry.newDataSources).hasOnlyOneElementSatisfying {
             assertThat(it.isTemporary).isFalse()
             assertThat(it.username).isEqualTo(masterUsername)
@@ -154,18 +159,18 @@ class CreateConfigurationActionTest {
         )
     }
 
-    private fun createSourceAction(
+    private fun createNode(
         address: String = RuleUtils.randomName(),
         port: Int = RuleUtils.randomNumber(),
         dbName: String = RuleUtils.randomName(),
         iamAuthEnabled: Boolean = true,
         engineType: String = mysqlEngineType
-    ) = CreateIamDataSourceAction(mock {
+    ): RdsNode = mock {
         on { nodeProject } doAnswer { projectRule.project }
         on { dbInstance } doAnswer {
             createDbInstance(address, port, dbName, iamAuthEnabled, engineType)
         }
-    })
+    }
 
     private fun createDbInstance(
         address: String = RuleUtils.randomName(),
