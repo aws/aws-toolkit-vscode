@@ -82,7 +82,9 @@ export async function activate(activateArguments: {
 export async function sanitizeTelemetrySetting(toolkitSettings: SettingsConfiguration): Promise<void> {
     const value = toolkitSettings.readSetting<any>(AWS_TELEMETRY_KEY)
 
-    if (typeof value === 'boolean') return
+    if (typeof value === 'boolean') {
+        return
+    }
 
     // Set to false if original setting was opt-out
     // Treat anything else (unexpected values, datatypes, or undefined) as opt-in
