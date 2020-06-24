@@ -9,7 +9,6 @@ import * as vscode from 'vscode'
 
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import {
-    formatTelemetrySettingToBool,
     handleTelemetryNoticeResponse,
     isTelemetryEnabled,
     noticeResponseViewSettings,
@@ -17,6 +16,7 @@ import {
     TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED,
     hasUserSeenTelemetryNotice,
     setHasUserSeenTelemetryNotice,
+    sanitizeTelemetrySetting,
 } from '../../../shared/telemetry/activation'
 import { DefaultSettingsConfiguration } from '../../../shared/settingsConfiguration'
 import { extensionSettingsPrefix } from '../../../shared/constants'
@@ -71,7 +71,7 @@ describe('handleTelemetryNoticeResponse', () => {
     })
 })
 
-describe('isTelemetryEnabled', () => {
+describe('Telemetry on activation', () => {
     let settings: vscode.WorkspaceConfiguration
     const toolkitSettings = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 
@@ -100,13 +100,26 @@ describe('isTelemetryEnabled', () => {
         { initialSettingValue: undefined, expectedIsEnabledValue: true, desc: 'Unset value' },
     ]
 
-    scenarios.forEach(scenario => {
-        it(scenario.desc, async () => {
-            await settings.update('telemetry', scenario.initialSettingValue, vscode.ConfigurationTarget.Global)
+    describe('isTelemetryEnabled', () => {
+        scenarios.forEach(scenario => {
+            it(scenario.desc, async () => {
+                await settings.update('telemetry', scenario.initialSettingValue, vscode.ConfigurationTarget.Global)
 
-            await formatTelemetrySettingToBool(toolkitSettings)
-            const isEnabled = isTelemetryEnabled(toolkitSettings)
-            assert.strictEqual(isEnabled, scenario.expectedIsEnabledValue)
+                const isEnabled = isTelemetryEnabled(toolkitSettings)
+                assert.strictEqual(isEnabled, scenario.expectedIsEnabledValue)
+            })
+        })
+    })
+
+    describe('sanitizeTelemetrySetting', () => {
+        scenarios.forEach(scenario => {
+            it(scenario.desc, async () => {
+                await settings.update('telemetry', scenario.initialSettingValue, vscode.ConfigurationTarget.Global)
+
+                await sanitizeTelemetrySetting(toolkitSettings)
+                const sanitiezedSetting = toolkitSettings.readSetting<any>('telemetry')
+                assert.strictEqual(sanitiezedSetting, scenario.expectedIsEnabledValue)
+            })
         })
     })
 })

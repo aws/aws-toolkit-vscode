@@ -44,7 +44,7 @@ export async function activate(activateArguments: {
     ext.telemetry = new DefaultTelemetryService(activateArguments.extensionContext, activateArguments.awsContext)
 
     // Convert setting to boolean if it is not already
-    await formatTelemetrySettingToBool(activateArguments.toolkitSettings)
+    await sanitizeTelemetrySetting(activateArguments.toolkitSettings)
 
     // Configure telemetry based on settings, and default to enabled
     applyTelemetryEnabledState(ext.telemetry, activateArguments.toolkitSettings)
@@ -75,17 +75,15 @@ export async function activate(activateArguments: {
         activateArguments.extensionContext.subscriptions
     )
 }
+
 /*
  * Formats the AWS telemetry setting to a boolean: false if setting value was 'Disable' or false, true for everything else
  */
-export async function formatTelemetrySettingToBool(toolkitSettings: SettingsConfiguration): Promise<void> {
-    // Setting used to be an enum, but is now a boolean.
-    // We don't have api-based strong type support, so we have to process this value manually.
+export async function sanitizeTelemetrySetting(toolkitSettings: SettingsConfiguration): Promise<void> {
     const value = toolkitSettings.readSetting<any>(AWS_TELEMETRY_KEY)
 
     if (typeof value === 'boolean') return
 
-    // Original setting used to be a tri-state string value
     // Set to false if original setting was opt-out
     // Treat anything else (unexpected values, datatypes, or undefined) as opt-in
     if (value === LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE) {
@@ -96,7 +94,22 @@ export async function formatTelemetrySettingToBool(toolkitSettings: SettingsConf
 }
 
 export function isTelemetryEnabled(toolkitSettings: SettingsConfiguration): boolean {
-    return toolkitSettings.readSetting<any>(AWS_TELEMETRY_KEY)
+    // Setting used to be an enum, but is now a boolean.
+    // We don't have api-based strong type support, so we have to process this value manually.
+    const value = toolkitSettings.readSetting<any>(AWS_TELEMETRY_KEY)
+
+    // Handle original opt-out value (setting used to be a tri-state string value)
+    if (value === LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE) {
+        return false
+    }
+
+    // Current value is expected to be a boolean
+    if (typeof value === 'boolean') {
+        return value
+    }
+
+    // Treat anything else (unexpected values, datatypes, or undefined) as opt-in
+    return true
 }
 
 function applyTelemetryEnabledState(telemetry: TelemetryService, toolkitSettings: SettingsConfiguration) {
