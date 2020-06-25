@@ -13,21 +13,33 @@ import com.intellij.ui.ClickListener
 import com.intellij.ui.EditorTextField
 import com.intellij.ui.JBColor
 import com.intellij.ui.JreHiDpiUtil
+import com.intellij.ui.components.JBLabel
+import com.intellij.ui.components.JBTextArea
 import com.intellij.ui.paint.LinePainter2D
+import com.intellij.ui.speedSearch.SpeedSearchSupply
 import com.intellij.util.ui.GraphicsUtil
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import software.aws.toolkits.jetbrains.utils.formatText
 import java.awt.AlphaComposite
 import java.awt.Color
+import java.awt.Component
+import java.awt.Graphics
 import java.awt.Graphics2D
+import java.awt.Shape
 import java.awt.event.MouseEvent
 import java.awt.geom.RoundRectangle2D
 import javax.swing.AbstractButton
 import javax.swing.JComboBox
 import javax.swing.JComponent
+import javax.swing.JLabel
+import javax.swing.JTable
+import javax.swing.JTextArea
 import javax.swing.JTextField
 import javax.swing.ListModel
+import javax.swing.table.DefaultTableCellRenderer
+import javax.swing.text.Highlighter
+import javax.swing.text.JTextComponent
 
 fun JTextField?.blankAsNull(): String? = if (this?.text?.isNotBlank() == true) {
     text
@@ -125,4 +137,63 @@ fun drawSearchMatch(graphics2D: Graphics2D, startXf: Float, endXf: Float, startY
         LinePainter2D.paint(graphics2D, startX.toDouble(), startY + height - 3.toDouble(), endX - 1.toDouble(), startY + height - 3.toDouble())
     }
     config.restore()
+}
+
+fun Component.setSelectionHighlighting(table: JTable, isSelected: Boolean) {
+    if (isSelected) {
+        foreground = table.selectionForeground
+        background = table.selectionBackground
+    } else {
+        foreground = table.foreground
+        background = table.background
+    }
+}
+
+private class SpeedSearchHighlighter : Highlighter.HighlightPainter {
+    override fun paint(g: Graphics?, startingPoint: Int, endingPoint: Int, bounds: Shape?, component: JTextComponent?) {
+        component ?: return
+        val graphics = g as? Graphics2D ?: return
+        val beginningRect = component.modelToView(startingPoint)
+        val endingRect = component.modelToView(endingPoint)
+        drawSearchMatch(graphics, beginningRect.x.toFloat(), endingRect.x.toFloat(), beginningRect.y.toFloat(), beginningRect.height)
+    }
+}
+
+private fun JTextArea.speedSearchHighlighter(speedSearchEnabledComponent: JComponent) {
+    // matchingFragments does work with wrapped text but not around words if they are wrapped, so it will also need to be extended
+    // in the future
+    val speedSearch = SpeedSearchSupply.getSupply(speedSearchEnabledComponent) ?: return
+    val fragments = speedSearch.matchingFragments(text)?.iterator() ?: return
+    fragments.forEach {
+        highlighter?.addHighlight(it.startOffset, it.endOffset, SpeedSearchHighlighter())
+    }
+}
+
+class WrappingCellRenderer(private val wrapOnSelection: Boolean, private val toggleableWrap: Boolean) : DefaultTableCellRenderer() {
+    var wrap: Boolean = false
+
+    // JBTextArea has a different font from JBLabel (the default in a table) so harvest the font off of it
+    private val jLabelFont = JBLabel().font
+
+    override fun getTableCellRendererComponent(table: JTable?, value: Any?, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component {
+        val defaultComponent = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column)
+        table ?: return defaultComponent
+        val component = JBTextArea()
+
+        component.border = (defaultComponent as? JLabel)?.border ?: JBUI.Borders.empty(2, 2)
+        component.wrapStyleWord = (wrapOnSelection && isSelected) || (toggleableWrap && wrap)
+        component.lineWrap = (wrapOnSelection && isSelected) || (toggleableWrap && wrap)
+        component.font = jLabelFont
+        component.text = (value as? String)?.trim()
+        component.setSelectionHighlighting(table, isSelected)
+
+        component.setSize(table.columnModel.getColumn(column).width, component.preferredSize.height)
+        if (table.getRowHeight(row) != component.preferredSize.height) {
+            table.setRowHeight(row, component.preferredSize.height)
+        }
+
+        component.speedSearchHighlighter(table)
+
+        return component
+    }
 }

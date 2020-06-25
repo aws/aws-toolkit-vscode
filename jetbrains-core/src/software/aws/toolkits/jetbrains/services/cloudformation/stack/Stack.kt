@@ -12,6 +12,9 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.components.JBTabbedPane
+import com.intellij.uiDesigner.core.GridConstraints
+import com.intellij.uiDesigner.core.GridLayoutManager
+import com.intellij.util.ui.JBUI
 import icons.AwsIcons
 import software.amazon.awssdk.services.cloudformation.model.StackStatus
 import software.aws.toolkits.jetbrains.core.AwsClientManager
@@ -76,10 +79,41 @@ private class StackUI(private val project: Project, private val stackName: Strin
         val mainPanel = OnePixelSplitter(false, TREE_TABLE_INITIAL_PROPORTION).apply {
             firstComponent = tree.component
             secondComponent = JBTabbedPane().apply {
-                this.add(message("cloudformation.stack.tab_labels.events"), JPanel().apply {
-                    layout = BoxLayout(this, BoxLayout.Y_AXIS)
-                    add(eventsTable.component)
-                    add(pageButtons.component)
+                this.add(message("cloudformation.stack.tab_labels.events"), JPanel(GridLayoutManager(2, 1)).apply {
+                    add(
+                        eventsTable.component,
+                        GridConstraints(
+                            0,
+                            0,
+                            1,
+                            1,
+                            0,
+                            GridConstraints.FILL_BOTH,
+                            GridConstraints.SIZEPOLICY_CAN_GROW or GridConstraints.SIZEPOLICY_WANT_GROW or GridConstraints.SIZEPOLICY_CAN_SHRINK,
+                            GridConstraints.SIZEPOLICY_CAN_GROW or GridConstraints.SIZEPOLICY_WANT_GROW or GridConstraints.SIZEPOLICY_CAN_SHRINK,
+                            null,
+                            null,
+                            null
+                        )
+                    )
+                    add(
+                        pageButtons.component,
+                        GridConstraints(
+                            1,
+                            0,
+                            1,
+                            1,
+                            0,
+                            GridConstraints.FILL_HORIZONTAL,
+                            GridConstraints.SIZEPOLICY_CAN_GROW or GridConstraints.SIZEPOLICY_WANT_GROW or GridConstraints.SIZEPOLICY_CAN_SHRINK,
+                            GridConstraints.SIZEPOLICY_CAN_GROW or GridConstraints.SIZEPOLICY_CAN_SHRINK,
+                            null,
+                            null,
+                            null
+                        )
+                    )
+                    tabComponentInsets = JBUI.emptyInsets()
+                    border = JBUI.Borders.empty()
                 })
 
                 this.add(message("cloudformation.stack.tab_labels.outputs"), JPanel().apply {
