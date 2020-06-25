@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Add word wrap to CloudFormation status reasons on selection (#1858)"
+}

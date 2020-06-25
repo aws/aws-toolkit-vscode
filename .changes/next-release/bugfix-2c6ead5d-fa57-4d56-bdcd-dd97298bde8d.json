@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix Cloud Formation event viewer not expanding as the window expands"
+}

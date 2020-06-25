@@ -66,6 +66,11 @@ class LogStreamTable(
             autoResizeMode = JTable.AUTO_RESIZE_LAST_COLUMN
             setPaintBusy(true)
             emptyText.text = message("loading_resource.loading")
+            // Set the row height to 20. This is a magic number, so let me explain. This is
+            // The height of a JLabel (16) + 1 inner border (top and bottom) + 1 outer border
+            // (top and bottom) = 20 total. If we don't do this, as we scroll to the bottom,
+            // it will spring back to the top in a very comical but very not great way
+            setRowHeight(20)
         }
 
         // TODO this also searches the date column which we don't want to do.
