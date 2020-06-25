@@ -45,11 +45,20 @@ export interface SAMTemplateEnvironmentVariables {
     }
 }
 
-function getEnvironmentVariables(env?: { [k: string]: string | number | boolean }): SAMTemplateEnvironmentVariables {
-    return env ? { [TEMPLATE_RESOURCE_NAME]: env } : {}
+function getEnvironmentVariables(
+    resourceName: string,
+    env?: { [k: string]: string | number | boolean }
+): SAMTemplateEnvironmentVariables {
+    return env ? { [resourceName]: env } : {}
 }
 
-const TEMPLATE_RESOURCE_NAME = 'awsToolkitSamLocalResource'
+/**
+ * Decides the resource name for the generated template.yaml.
+ */
+function makeResourceName(config: SamLaunchRequestArgs): string {
+    return config.invokeTarget.target === 'code' ? 'awsToolkitSamLocalResource' : config.invokeTarget.logicalId
+}
+
 const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
 const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
 const MAX_DEBUGGER_RETRIES_DEFAULT: number = 30
@@ -81,6 +90,7 @@ export function getRelativeFunctionHandler(params: {
 export async function makeInputTemplate(config: SamLaunchRequestArgs): Promise<string> {
     let newTemplate: SamTemplateGenerator
     let inputTemplatePath: string
+    const resourceName = makeResourceName(config)
 
     // use existing template to create a temporary template with a resource that has an overridden handler name.
     // this is necessary for Python, which overrides the handler name due to the debug file.
@@ -101,7 +111,7 @@ export async function makeInputTemplate(config: SamLaunchRequestArgs): Promise<s
         }
 
         newTemplate = new SamTemplateGenerator(template).withTemplateResources({
-            [config.invokeTarget.logicalId]: resourceWithOverriddenHandler,
+            [resourceName]: resourceWithOverriddenHandler,
         })
 
         // template type uses the template dir and a throwaway template name so we can use existing relative paths
@@ -111,7 +121,7 @@ export async function makeInputTemplate(config: SamLaunchRequestArgs): Promise<s
     } else {
         newTemplate = new SamTemplateGenerator()
             .withFunctionHandler(config.handlerName)
-            .withResourceName(TEMPLATE_RESOURCE_NAME)
+            .withResourceName(resourceName)
             .withRuntime(config.runtime)
             .withCodeUri(config.codeRoot)
         if (config.lambda?.environmentVariables) {
@@ -212,8 +222,7 @@ export async function invokeLambdaFunction(
     const maxRetries: number = getAttachDebuggerMaxRetryLimit(ctx.settings, MAX_DEBUGGER_RETRIES_DEFAULT)
 
     const localInvokeArgs: SamCliLocalInvokeInvocationArguments = {
-        templateResourceName:
-            config.invokeTarget.target === 'code' ? TEMPLATE_RESOURCE_NAME : config.invokeTarget.logicalId,
+        templateResourceName: makeResourceName(config),
         templatePath: config.templatePath,
         eventPath: config.eventPayloadFile,
         environmentVariablePath: config.envFile,
@@ -467,7 +476,7 @@ export async function makeConfig(config: SamLaunchRequestArgs): Promise<void> {
     config.envFile = path.join(config.baseBuildDir!, 'env-vars.json')
 
     // env-vars.json (NB: effectively ignored for the `target=code` case).
-    const env = JSON.stringify(getEnvironmentVariables(config.lambda?.environmentVariables))
+    const env = JSON.stringify(getEnvironmentVariables(makeResourceName(config), config.lambda?.environmentVariables))
     await writeFile(config.envFile, env)
 
     // event.json
