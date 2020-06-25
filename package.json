@@ -77,11 +77,6 @@
                     "default": "prompt",
                     "markdownDescription": "%AWS.configuration.description.onDefaultRegionMissing%"
                 },
-                "aws.sam.template.depth": {
-                    "type": "number",
-                    "default": 4,
-                    "description": "%AWS.configuration.sam.template.depth%"
-                },
                 "aws.samcli.location": {
                     "type": "string",
                     "default": "",
