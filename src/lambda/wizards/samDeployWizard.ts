@@ -38,8 +38,6 @@ export const enum ParameterPromptResult {
 }
 
 export interface SamDeployWizardContext {
-    readonly templateUris: vscode.Uri[]
-
     readonly workspaceFolders: vscode.Uri[] | undefined
 
     /**
@@ -122,15 +120,11 @@ function getSingleResponse(responses: vscode.QuickPickItem[] | undefined): strin
 }
 
 export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
-    public readonly templateUris: vscode.Uri[]
     public readonly getParameters = getParameters
     public readonly getOverriddenParameters = getOverriddenParameters
     private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Toolkit Documentation'))
 
-    public constructor(private readonly regionProvider: RegionProvider, private readonly awsContext: AwsContext) {
-        const cfnRegistry = CloudFormationTemplateRegistry.getRegistry()
-        this.templateUris = cfnRegistry.registeredTemplates.map(o => vscode.Uri.file(o.path))
-    }
+    public constructor(private readonly regionProvider: RegionProvider, private readonly awsContext: AwsContext) {}
 
     public get workspaceFolders(): vscode.Uri[] | undefined {
         return (vscode.workspace.workspaceFolders || []).map(f => f.uri)
@@ -153,7 +147,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 ),
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
-            items: await getTemplateChoices(this.templateUris, ...workspaceFolders),
+            items: await getTemplateChoices(...workspaceFolders),
         })
 
         const choices = await picker.promptUser({
@@ -630,10 +624,9 @@ function validateStackName(value: string): string | undefined {
     return undefined
 }
 
-async function getTemplateChoices(
-    templateUris: vscode.Uri[],
-    ...workspaceFolders: vscode.Uri[]
-): Promise<SamTemplateQuickPickItem[]> {
+async function getTemplateChoices(...workspaceFolders: vscode.Uri[]): Promise<SamTemplateQuickPickItem[]> {
+    const cfnRegistry = CloudFormationTemplateRegistry.getRegistry()
+    const templateUris = cfnRegistry.registeredTemplates.map(o => vscode.Uri.file(o.path))
     const uriToLabel: Map<vscode.Uri, string> = new Map<vscode.Uri, string>()
     const labelCounts: Map<string, number> = new Map()
 
