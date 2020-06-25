@@ -14,7 +14,6 @@ import javax.swing.Icon
 object AwsIcons {
     object Logos {
         @JvmField val AWS = IconLoader.getIcon("/icons/logos/AWS.svg") // 13x13
-        @JvmField val IAM_LARGE = IconLoader.getIcon("/icons/logos/IAM_large.svg") // 64x64
         @JvmField val CLOUD_FORMATION_TOOL = IconLoader.getIcon("/icons/logos/CloudFormationTool.svg") // 13x13
         @JvmField val EVENT_BRIDGE = IconLoader.getIcon("/icons/logos/EventBridge.svg") // 13x13
     }

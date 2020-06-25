@@ -9,7 +9,7 @@ import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
-import kotlin.test.assertNotNull
+import org.junit.rules.ExternalResource
 
 class NotificationUtilsTest {
 
@@ -17,23 +17,32 @@ class NotificationUtilsTest {
     @JvmField
     val projectRule = ProjectRule()
 
+    @Rule
+    @JvmField
+    val notificationListener = NotificationListenerRule(projectRule)
+
     @Test
-    fun notificationOnExceptionWithoutMessageShowsStackTrace() {
-        val project = projectRule.project
+    fun `Notifications show stack traces for exceptions`() {
+        NullPointerException().notifyError("ooops", project = projectRule.project)
 
-        val messageBus = project.messageBus.connect()
-        var notification: Notification? = null
-        messageBus.setDefaultHandler { _, params ->
-            notification = params[0] as Notification
-        }
-        messageBus.subscribe(Notifications.TOPIC)
-
-        NullPointerException().notifyError("ooops", project = project)
-
-        assertNotNull(notification) {
+        assertThat(notificationListener.notifications).hasOnlyOneElementSatisfying {
             assertThat(it.content)
                 .startsWith("java.lang.NullPointerException")
                 .contains("NotificationUtilsTest.kt")
         }
+    }
+}
+
+class NotificationListenerRule(private val projectRule: ProjectRule) : ExternalResource() {
+    val notifications = mutableListOf<Notification>()
+
+    override fun before() {
+        with(projectRule.project.messageBus.connect()) {
+            setDefaultHandler { _, params ->
+                notifications.add(params[0] as Notification)
+            }
+            subscribe(Notifications.TOPIC)
+        }
+        notifications.clear()
     }
 }

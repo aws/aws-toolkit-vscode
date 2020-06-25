@@ -5,7 +5,7 @@ package software.aws.toolkits.jetbrains.services.schemas.search
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.services.schemas.search.SchemaSearchDialogManager.DialogStateCacheKey.AllRegistriesDialogStateCacheKey
 import software.aws.toolkits.jetbrains.services.schemas.search.SchemaSearchDialogManager.DialogStateCacheKey.SingleRegistryDialogStateCacheKey
 
@@ -14,8 +14,8 @@ class SchemaSearchDialogManager {
     private val allRegistriesSearchDialogStateCache: MutableMap<AllRegistriesDialogStateCacheKey, SchemaSearchDialogState> = mutableMapOf()
 
     fun searchRegistryDialog(registry: String, project: Project): DialogWrapper {
-        val credentialId = ProjectAccountSettingsManager.getInstance(project).activeCredentialProvider.id
-        val region = ProjectAccountSettingsManager.getInstance(project).activeRegion.id
+        val credentialId = AwsConnectionManager.getInstance(project).activeCredentialProvider.id
+        val region = AwsConnectionManager.getInstance(project).activeRegion.id
 
         val dialog = SchemaSearchSingleRegistryDialog(
             registry,
@@ -35,8 +35,8 @@ class SchemaSearchDialogManager {
     }
 
     fun searchAllRegistriesDialog(project: Project): DialogWrapper {
-        val credentialId = ProjectAccountSettingsManager.getInstance(project).activeCredentialProvider.id
-        val region = ProjectAccountSettingsManager.getInstance(project).activeRegion.id
+        val credentialId = AwsConnectionManager.getInstance(project).activeCredentialProvider.id
+        val region = AwsConnectionManager.getInstance(project).activeRegion.id
 
         val dialog = SchemaSearchAllRegistriesDialog(
             project,
