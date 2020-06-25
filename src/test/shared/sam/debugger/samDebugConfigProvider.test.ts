@@ -557,7 +557,7 @@ describe('SamDebugConfigurationProvider', async () => {
             assertEqualLaunchConfigs(actual, expected, appDir)
             assertFileText(
                 expected.envFile,
-                '{"awsToolkitSamLocalResource":{"test-js-template-envvar-1":"test target=template envvar value 1","test-js-template-envvar-2":"test target=template envvar value 2"}}'
+                '{"SourceCodeTwoFoldersDeep":{"test-js-template-envvar-1":"test target=template envvar value 1","test-js-template-envvar-2":"test target=template envvar value 2"}}'
             )
             assertFileText(
                 expected.eventPayloadFile,
@@ -826,7 +826,7 @@ describe('SamDebugConfigurationProvider', async () => {
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
-            assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{"test-envvar-1":"test value 1"}}')
+            assertFileText(expected.envFile, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
             assertFileText(expected.eventPayloadFile, '{"test-payload-key-1":"test payload value 1"}')
 
             assertFileText(
@@ -1097,7 +1097,7 @@ Outputs:
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
-            assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{}}')
+            assertFileText(expected.envFile, '{"HelloWorldFunction":{}}')
             assertFileText(expected.eventPayloadFile, '{}')
 
             assertFileText(
@@ -1250,7 +1250,7 @@ Outputs:
             }
 
             assertEqualLaunchConfigs(actual, expected, appDir)
-            assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{"var1":"2","var2":"1"}}')
+            assertFileText(expected.envFile, '{"myResource":{"var1":"2","var2":"1"}}')
             assertFileText(expected.eventPayloadFile, '{}')
 
             assertFileText(
