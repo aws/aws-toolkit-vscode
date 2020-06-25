@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix CloudWatch Logs logstream scrolling up automatically in certain circumstances"
+}

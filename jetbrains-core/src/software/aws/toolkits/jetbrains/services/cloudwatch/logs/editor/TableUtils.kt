@@ -4,9 +4,6 @@
 package software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor
 
 import com.intellij.ui.SimpleColoredComponent
-import com.intellij.ui.components.JBLabel
-import com.intellij.ui.components.JBTextArea
-import com.intellij.ui.speedSearch.SpeedSearchSupply
 import com.intellij.ui.speedSearch.SpeedSearchUtil
 import com.intellij.util.text.DateFormatUtil
 import com.intellij.util.text.SyncDateFormat
@@ -14,27 +11,20 @@ import com.intellij.util.ui.ColumnInfo
 import com.intellij.util.ui.ListTableModel
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogStream
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamEntry
-import software.aws.toolkits.jetbrains.utils.ui.drawSearchMatch
+import software.aws.toolkits.jetbrains.utils.ui.WrappingCellRenderer
+import software.aws.toolkits.jetbrains.utils.ui.setSelectionHighlighting
 import software.aws.toolkits.resources.message
 import java.awt.BorderLayout
 import java.awt.Component
-import java.awt.Graphics
-import java.awt.Graphics2D
-import java.awt.Shape
 import java.text.SimpleDateFormat
-import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JTable
-import javax.swing.JTextArea
 import javax.swing.SortOrder
 import javax.swing.border.CompoundBorder
-import javax.swing.border.EmptyBorder
 import javax.swing.table.DefaultTableCellRenderer
 import javax.swing.table.TableCellRenderer
 import javax.swing.table.TableRowSorter
-import javax.swing.text.Highlighter
-import javax.swing.text.JTextComponent
 
 class LogStreamsStreamColumn : ColumnInfo<LogStream, String>(message("cloudwatch.logs.log_streams")) {
     private val renderer = LogStreamsStreamColumnRenderer()
@@ -91,7 +81,7 @@ class LogStreamDateColumn : ColumnInfo<LogStreamEntry, String>(message("general.
 }
 
 class LogStreamMessageColumn : ColumnInfo<LogStreamEntry, String>(message("general.message")) {
-    private val renderer = WrappingLogStreamMessageRenderer()
+    private val renderer = WrappingCellRenderer(wrapOnSelection = true, toggleableWrap = true)
     fun wrap() {
         renderer.wrap = true
     }
@@ -103,35 +93,6 @@ class LogStreamMessageColumn : ColumnInfo<LogStreamEntry, String>(message("gener
     override fun valueOf(item: LogStreamEntry?): String? = item?.message
     override fun isCellEditable(item: LogStreamEntry?): Boolean = false
     override fun getRenderer(item: LogStreamEntry?): TableCellRenderer? = renderer
-}
-
-private class WrappingLogStreamMessageRenderer : TableCellRenderer {
-    var wrap = false
-
-    // JBTextArea has a different font from JBLabel (the default in a table) so harvest the font off of it
-    private val font = JBLabel().font
-
-    override fun getTableCellRendererComponent(table: JTable?, value: Any?, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component {
-        val component = JBTextArea()
-        if (table == null) {
-            return component
-        }
-
-        component.wrapStyleWord = wrap || isSelected
-        component.lineWrap = wrap || isSelected
-        component.text = (value as? String)?.trim()
-        component.font = font
-        component.setSelectionHighlighting(table, isSelected)
-
-        component.setSize(table.columnModel.getColumn(column).width, component.preferredSize.height)
-        if (table.getRowHeight(row) != component.preferredSize.height) {
-            table.setRowHeight(row, component.preferredSize.height)
-        }
-
-        component.speedSearchHighlighter(table)
-
-        return component
-    }
 }
 
 private class ResizingDateColumnRenderer(showSeconds: Boolean) : TableCellRenderer {
@@ -165,41 +126,8 @@ private class ResizingDateColumnRenderer(showSeconds: Boolean) : TableCellRender
         if (isSelected) {
             // this border has an outside and inside border, take only the outside border
             wrapper.border = (component.border as? CompoundBorder)?.outsideBorder
-            // Push the text up to compensate for the new border
-            component.border = EmptyBorder(-1, 0, 0, 0)
-        } else {
-            component.border = null
         }
+        component.border = null
         return wrapper
-    }
-}
-
-private fun Component.setSelectionHighlighting(table: JTable, isSelected: Boolean) {
-    if (isSelected) {
-        foreground = table.selectionForeground
-        background = table.selectionBackground
-    } else {
-        foreground = table.foreground
-        background = table.background
-    }
-}
-
-private class SpeedSearchHighlighter : Highlighter.HighlightPainter {
-    override fun paint(g: Graphics?, startingPoint: Int, endingPoint: Int, bounds: Shape?, component: JTextComponent?) {
-        component ?: return
-        val graphics = g as? Graphics2D ?: return
-        val beginningRect = component.modelToView(startingPoint)
-        val endingRect = component.modelToView(endingPoint)
-        drawSearchMatch(graphics, beginningRect.x.toFloat(), endingRect.x.toFloat(), beginningRect.y.toFloat(), beginningRect.height)
-    }
-}
-
-private fun JTextArea.speedSearchHighlighter(speedSearchEnabledComponent: JComponent) {
-    // matchingFragments does work with wrapped text but not around words if they are wrapped, so it will also need to be extended
-    // in the future
-    val speedSearch = SpeedSearchSupply.getSupply(speedSearchEnabledComponent) ?: return
-    val fragments = speedSearch.matchingFragments(text)?.iterator() ?: return
-    fragments.forEach {
-        highlighter?.addHighlight(it.startOffset, it.endOffset, SpeedSearchHighlighter())
     }
 }

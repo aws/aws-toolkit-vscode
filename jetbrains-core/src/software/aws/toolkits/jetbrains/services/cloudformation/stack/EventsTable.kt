@@ -3,7 +3,10 @@
 package software.aws.toolkits.jetbrains.services.cloudformation.stack
 
 import com.intellij.openapi.Disposable
+import com.intellij.ui.IdeBorderFactory
+import com.intellij.ui.SideBorder
 import software.amazon.awssdk.services.cloudformation.model.StackEvent
+import software.aws.toolkits.jetbrains.utils.ui.WrappingCellRenderer
 import software.aws.toolkits.resources.message
 import java.awt.Component
 import javax.swing.JComponent
@@ -43,8 +46,11 @@ internal class EventsTableImpl : EventsTable, Disposable {
         DynamicTableView.Field(message("cloudformation.stack.status"), renderer = StatusCellRenderer()) { e -> e.resourceStatusAsString() },
         DynamicTableView.Field(message("cloudformation.stack.logical_id")) { e -> e.logicalResourceId() },
         DynamicTableView.Field(message("cloudformation.stack.physical_id")) { e -> e.physicalResourceId() },
-        DynamicTableView.Field(message("cloudformation.stack.reason")) { e -> e.resourceStatusReason() ?: "" }
-    )
+        DynamicTableView.Field(
+            message("cloudformation.stack.reason"),
+            WrappingCellRenderer(wrapOnSelection = true, toggleableWrap = false)
+        ) { e -> e.resourceStatusReason() ?: "" }
+    ).apply { component.border = IdeBorderFactory.createBorder(SideBorder.BOTTOM) }
 
     override val component: JComponent = table.component
 
