@@ -21,8 +21,6 @@ describe('SAM Local CodeLenses (JS)', async () => {
         // tslint:disable-next-line:no-invalid-this
         this.timeout(ACTIVATE_EXTENSION_TIMEOUT_MILLIS)
         await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
-
-        await vscode.workspace.getConfiguration('aws').update('sam.template.depth', 8, false)
     })
 
     it('appear when manifest in subfolder and app is beside manifest', async () => {
