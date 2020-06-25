@@ -93,22 +93,7 @@ function createDescribeLogStreamsCallPicker(
                     descending: true,
                 },
             },
-            awsCallResponseToQuickPickItemFn: (response: CloudWatchLogs.DescribeLogStreamsResponse) => {
-                const result: vscode.QuickPickItem[] = []
-
-                if (response.logStreams) {
-                    for (const stream of response.logStreams) {
-                        result.push({
-                            label: stream.logStreamName!,
-                            detail: stream.lastEventTimestamp
-                                ? new Date(stream.lastEventTimestamp).toString()
-                                : '(Log Stream has no events)',
-                        })
-                    }
-                }
-
-                return result
-            },
+            awsCallResponseToQuickPickItemFn: convertDescribeLogStreamsToQuickPickItems,
         },
         {
             options: {
@@ -118,6 +103,25 @@ function createDescribeLogStreamsCallPicker(
             isRefreshable: true,
         }
     )
+}
+
+export function convertDescribeLogStreamsToQuickPickItems(
+    response: CloudWatchLogs.DescribeLogStreamsResponse
+): vscode.QuickPickItem[] {
+    const result: vscode.QuickPickItem[] = []
+
+    if (response.logStreams) {
+        for (const stream of response.logStreams) {
+            result.push({
+                label: stream.logStreamName!,
+                detail: stream.lastEventTimestamp
+                    ? new Date(stream.lastEventTimestamp).toString()
+                    : localize('aws.cloudWatchLogs.selectLogStream.workflow.noStreams', '(Log Stream has no events)'),
+            })
+        }
+    }
+
+    return result
 }
 
 export class SelectLogStreamWizard extends MultiStepWizard<SelectLogStreamResponse> {

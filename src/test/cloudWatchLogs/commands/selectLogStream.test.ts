@@ -3,8 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 import * as assert from 'assert'
-import { SelectLogStreamWizardContext, SelectLogStreamWizard } from '../../../cloudWatchLogs/commands/selectLogStream'
+import {
+    SelectLogStreamWizardContext,
+    SelectLogStreamWizard,
+    convertDescribeLogStreamsToQuickPickItems,
+} from '../../../cloudWatchLogs/commands/selectLogStream'
 import { LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
 import { FakeParentNode } from '../../cdk/explorer/constructNode.test'
 
@@ -52,5 +59,34 @@ describe('selectLogStreamWizard', async () => {
         assert.strictEqual(result?.logGroupName, groupName)
         assert.strictEqual(result?.logStreamName, streamName)
         assert.strictEqual(result?.region, region)
+    })
+})
+
+describe('convertDescribeLogStreamsToQuickPickItems', () => {
+    it('converts things correctly', () => {
+        const time = new Date().getSeconds()
+        const results = convertDescribeLogStreamsToQuickPickItems({
+            logStreams: [
+                {
+                    logStreamName: 'streamWithoutTimestamp',
+                },
+                {
+                    logStreamName: 'streamWithTimestamp',
+                    lastEventTimestamp: time,
+                },
+            ],
+        })
+
+        assert.strictEqual(results.length, 2)
+        assert.deepStrictEqual(results[0], {
+            label: 'streamWithoutTimestamp',
+            detail: localize('aws.cloudWatchLogs.selectLogStream.workflow.noStreams', '(Log Stream has no events)'),
+        })
+        assert.deepStrictEqual(results[1], {
+            label: 'streamWithTimestamp',
+            detail: new Date(time).toString(),
+        })
+        const noResults = convertDescribeLogStreamsToQuickPickItems({})
+        assert.strictEqual(noResults.length, 0)
     })
 })
