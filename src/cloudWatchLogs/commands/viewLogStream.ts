@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
+import * as moment from 'moment'
 const localize = nls.loadMessageBundle()
 
 import * as picker from '../../shared/ui/picker'
@@ -14,6 +15,7 @@ import { CloudWatchLogs } from 'aws-sdk'
 import { ext } from '../../shared/extensionGlobals'
 import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import * as telemetry from '../../shared/telemetry/telemetry'
+import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 
 export interface SelectLogStreamResponse {
     region: string
@@ -21,7 +23,7 @@ export interface SelectLogStreamResponse {
     logStreamName: string
 }
 
-export async function selectLogStream(node: LogGroupNode): Promise<void> {
+export async function viewLogStream(node: LogGroupNode): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
     const logStreamResponse = await new SelectLogStreamWizard(node).run()
     if (logStreamResponse) {
@@ -81,8 +83,7 @@ function createDescribeLogStreamsCallPicker(
     >(
         {
             iteratorParams: {
-                // TODO: is there a better way to send this call so we don't have to `.bind(client)`?
-                awsCall: client.describeLogStreams.bind(client),
+                awsCall: request => client.describeLogStreams(request),
                 nextTokenNames: {
                     request: 'nextToken',
                     response: 'nextToken',
@@ -97,7 +98,7 @@ function createDescribeLogStreamsCallPicker(
         },
         {
             options: {
-                title: localize('aws.cloudWatchLogs.selectLogStream.workflow.prompt', 'Select a log stream'),
+                title: localize('aws.cloudWatchLogs.viewLogStream.workflow.prompt', 'Select a log stream'),
                 matchOnDetail: true,
             },
             isRefreshable: true,
@@ -108,20 +109,12 @@ function createDescribeLogStreamsCallPicker(
 export function convertDescribeLogStreamsToQuickPickItems(
     response: CloudWatchLogs.DescribeLogStreamsResponse
 ): vscode.QuickPickItem[] {
-    const result: vscode.QuickPickItem[] = []
-
-    if (response.logStreams) {
-        for (const stream of response.logStreams) {
-            result.push({
-                label: stream.logStreamName!,
-                detail: stream.lastEventTimestamp
-                    ? new Date(stream.lastEventTimestamp).toString()
-                    : localize('aws.cloudWatchLogs.selectLogStream.workflow.noStreams', '(Log Stream has no events)'),
-            })
-        }
-    }
-
-    return result
+    return (response.logStreams ?? []).map<vscode.QuickPickItem>(stream => ({
+        label: stream.logStreamName!,
+        detail: stream.lastEventTimestamp
+            ? moment(stream.lastEventTimestamp).format(LOCALIZED_DATE_FORMAT)
+            : localize('aws.cloudWatchLogs.viewLogStream.workflow.noStreams', '[No Log Events found]'),
+    }))
 }
 
 export class SelectLogStreamWizard extends MultiStepWizard<SelectLogStreamResponse> {

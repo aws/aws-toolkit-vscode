@@ -11,7 +11,7 @@ import {
     SelectLogStreamWizardContext,
     SelectLogStreamWizard,
     convertDescribeLogStreamsToQuickPickItems,
-} from '../../../cloudWatchLogs/commands/selectLogStream'
+} from '../../../cloudWatchLogs/commands/viewLogStream'
 import { LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
 import { FakeParentNode } from '../../cdk/explorer/constructNode.test'
 
@@ -34,7 +34,7 @@ class MockSelectLogStreamWizardContext implements SelectLogStreamWizardContext {
     }
 }
 
-describe('selectLogStreamWizard', async () => {
+describe('viewLogStreamWizard', async () => {
     it('exits when cancelled', async () => {
         const wizard = new SelectLogStreamWizard(
             new LogGroupNode(new FakeParentNode('asdf'), 'region', {}),
@@ -80,7 +80,7 @@ describe('convertDescribeLogStreamsToQuickPickItems', () => {
         assert.strictEqual(results.length, 2)
         assert.deepStrictEqual(results[0], {
             label: 'streamWithoutTimestamp',
-            detail: localize('aws.cloudWatchLogs.selectLogStream.workflow.noStreams', '(Log Stream has no events)'),
+            detail: localize('aws.cloudWatchLogs.viewLogStream.workflow.noStreams', '[No Log Events found]'),
         })
         assert.deepStrictEqual(results[1], {
             label: 'streamWithTimestamp',

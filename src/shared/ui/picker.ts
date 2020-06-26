@@ -211,7 +211,7 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
         this.noItemsItem = {
             label:
                 this.awsCallLogic.noItemsMessage ??
-                localize('AWS.picker.dynamic.noItemsFound.label', 'No items found.'),
+                localize('AWS.picker.dynamic.noItemsFound.label', '[No items found]'),
             detail: localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back'),
             alwaysShow: true,
         }
@@ -230,7 +230,6 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
             quickPickButtons.push(this.paginationButton)
         }
 
-        // TODO: Create default buttons for load next page, refresh
         // TODO: Set a global throttling flag that will optionally display said load next page button
         this.quickPick = createQuickPick<vscode.QuickPickItem>({
             options: {
@@ -268,7 +267,6 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
                 this.isPaused = true
                 switch (button) {
                     case this.refreshButton:
-                        this.isPaused = true
                         this.refreshQuickPick()
                         this.moreItemsRequest.fire()
                         return
@@ -326,10 +324,13 @@ export class IteratingAWSCallPicker<TRequest, TResponse> {
             }
         }
 
+        // no items in response
         if (this.isDone && this.items.length === 0) {
             this.items.push(this.noItemsItem)
             this.quickPick.items = this.items
         }
+
+        // disable loading bar
         this.quickPick.busy = false
     }
 

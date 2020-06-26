@@ -27,7 +27,7 @@ export class DefaultCloudWatchLogsClient implements CloudWatchLogsClient {
     ): Promise<CloudWatchLogs.DescribeLogStreamsResponse> {
         const sdkClient = await this.createSdkClient()
 
-        return await sdkClient.describeLogStreams(request).promise()
+        return sdkClient.describeLogStreams(request).promise()
     }
 
     protected async invokeDescribeLogGroups(
