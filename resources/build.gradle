@@ -12,9 +12,7 @@ sourceSets {
 task downloadResources(type: Download) {
     dest "$buildDir/downloaded-resources/software/aws/toolkits/resources/"
 
-    src([
-        "https://aws-toolkit-endpoints.s3.amazonaws.com/endpoints.json"
-    ])
+    src(["https://idetoolkits.amazonwebservices.com/endpoints.json"])
 
     onlyIfModified true
     useETag true
