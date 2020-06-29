@@ -45,3 +45,10 @@ export class PromiseSharer {
         })
     }
 }
+
+/**
+ * Copied from src/vs/base/common/async.ts
+ */
+export function isThenable<T>(obj: any): obj is Promise<T> {
+    return obj && typeof (<Promise<any>>obj).then === 'function'
+}
