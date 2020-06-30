@@ -10,10 +10,8 @@ import java.util.concurrent.ExecutionException
 // Wait for a completion stage to end, and throw the exception that caused it to fail
 // if it fails.
 @TestOnly
-fun <T> CompletionStage<T>.unwrap() {
-    try {
-        this.toCompletableFuture().get()
-    } catch (e: ExecutionException) {
-        throw e.cause ?: e
-    }
+fun <T> CompletionStage<T>.unwrap(): T = try {
+    this.toCompletableFuture().get()
+} catch (e: ExecutionException) {
+    throw e.cause ?: e
 }

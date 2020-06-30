@@ -72,30 +72,30 @@ class SecretsManagerAuthTest {
 
     @Test(expected = IllegalArgumentException::class)
     fun `No secret fails`() {
-        sAuth.intercept(buildConnection(hasSecret = false), false)!!.unwrap()
+        sAuth.intercept(buildConnection(hasSecret = false), false)?.unwrap()
     }
 
     @Test(expected = IllegalArgumentException::class)
     fun `Bad AWS connection fails`() {
-        sAuth.intercept(buildConnection(hasCredentials = false), false)!!.unwrap()
+        sAuth.intercept(buildConnection(hasCredentials = false), false)?.unwrap()
     }
 
     @Test(expected = IllegalArgumentException::class)
     fun `No username in credentials fails`() {
         createSecretsManagerClient(hasUsername = false)
-        sAuth.intercept(buildConnection(), false)!!.unwrap()
+        sAuth.intercept(buildConnection(), false)?.unwrap()
     }
 
     @Test(expected = IllegalArgumentException::class)
     fun `No password in credentials fails`() {
         createSecretsManagerClient(hasPassword = false)
-        sAuth.intercept(buildConnection(), false)!!.unwrap()
+        sAuth.intercept(buildConnection(), false)?.unwrap()
     }
 
     @Test(expected = RuntimeException::class)
     fun `Secrets Manager client throws fails`() {
         createSecretsManagerClient(succeeds = false)
-        sAuth.intercept(buildConnection(), false)!!.unwrap()
+        sAuth.intercept(buildConnection(), false)?.unwrap()
     }
 
     private fun createSecretsManagerClient(

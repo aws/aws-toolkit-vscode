@@ -17,10 +17,7 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
-import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
-import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
-import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
-import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
+import software.aws.toolkits.jetbrains.datagrip.getAwsConnectionSettings
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.DatabaseCredentials.IAM
@@ -61,19 +58,9 @@ class IamAuth : DatabaseAuthProvider, CoroutineScope by ApplicationThreadPoolSco
     }
 
     internal fun validateConnection(connection: ProtoConnection): RedshiftSettings {
-        val credentialManager = CredentialManager.getInstance()
+        val auth = connection.getAwsConnectionSettings()
         val clusterIdentifier = connection.connectionPoint.additionalJdbcProperties[CLUSTER_ID_PROPERTY]
             ?: throw IllegalArgumentException(message("redshift.validation.no_cluster_id"))
-        val regionId = connection.connectionPoint.additionalJdbcProperties[REGION_ID_PROPERTY]
-        val region = regionId?.let {
-            AwsRegionProvider.getInstance().allRegions()[it]
-        } ?: throw IllegalArgumentException(message("redshift.validation.invalid_region_specified", regionId.toString()))
-        val credentialId = connection.connectionPoint.additionalJdbcProperties[CREDENTIAL_ID_PROPERTY]
-        val credentials = credentialId?.let { id ->
-            credentialManager.getCredentialIdentifierById(id)?.let {
-                credentialManager.getAwsCredentialProvider(it, region)
-            }
-        } ?: throw IllegalArgumentException(message("redshift.validation.invalid_credential_specified", credentialId.toString()))
         val username = connection.connectionPoint.dataSource.username
         if (username.isEmpty()) {
             throw IllegalArgumentException(message("redshift.validation.username"))
@@ -81,7 +68,7 @@ class IamAuth : DatabaseAuthProvider, CoroutineScope by ApplicationThreadPoolSco
         return RedshiftSettings(
             clusterIdentifier,
             username,
-            ConnectionSettings(credentials, region)
+            auth
         )
     }
 

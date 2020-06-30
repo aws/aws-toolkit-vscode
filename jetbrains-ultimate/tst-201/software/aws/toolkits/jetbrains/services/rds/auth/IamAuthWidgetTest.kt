@@ -17,23 +17,23 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
+import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 
 class IamAuthWidgetTest {
     @Rule
     @JvmField
     val projectRule = ProjectRule()
 
-    private lateinit var widget: RdsAwsAuthWidget
+    private lateinit var widget: IamAuthWidget
     private val credentialId = RuleUtils.randomName()
     private val defaultRegion = RuleUtils.randomName()
     private val mockCreds = AwsBasicCredentials.create("Access", "ItsASecret")
 
     @Before
     fun setUp() {
-        widget = RdsAwsAuthWidget()
+        widget = IamAuthWidget()
         MockCredentialsManager.getInstance().addCredentials(credentialId, mockCreds)
         MockRegionProvider.getInstance().addRegion(AwsRegion(defaultRegion, RuleUtils.randomName(), RuleUtils.randomName()))
     }
@@ -82,6 +82,24 @@ class IamAuthWidgetTest {
         val badUrl = "jdbc:postgresql://abc.host.1000000%invalidregion.rds.amazonaws.com:5432/dev"
         widget.updateFromUrl(mock<UrlEditorModel> { on { url } doReturn badUrl })
         assertThat(widget.getSelectedRegion()?.id).isEqualTo(defaultRegion)
+    }
+
+    @Test
+    fun `Sets instance from URL`() {
+        widget.reset(mock(), false)
+        val endpointUrl = "jdbc:postgresql://abc.host.$defaultRegion.rds.amazonaws.com:5432/dev"
+        widget.updateFromUrl(mock<UrlEditorModel> { on { url } doReturn endpointUrl })
+        assertThat(widget.getInstanceId()).isEqualTo("abc")
+    }
+
+    @Test
+    fun `Does not unset instance on invalid url`() {
+        widget.reset(mock(), false)
+        val endpointUrl = "jdbc:postgresql://abc.host.$defaultRegion.rds.amazonaws.com:5432/dev"
+        widget.updateFromUrl(mock<UrlEditorModel> { on { url } doReturn endpointUrl })
+        val badUrl = "jdbc:postgresql://abcdefg/dev"
+        widget.updateFromUrl(mock<UrlEditorModel> { on { url } doReturn badUrl })
+        assertThat(widget.getInstanceId()).isEqualTo("abc")
     }
 
     private fun buildDataSource(
