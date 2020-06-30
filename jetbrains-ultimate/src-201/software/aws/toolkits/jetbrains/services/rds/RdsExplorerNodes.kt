@@ -3,7 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.rds
 
-import com.intellij.icons.AllIcons
+import icons.AwsIcons
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.rds.RdsClient
 import software.amazon.awssdk.services.rds.model.DBInstance
@@ -19,8 +19,8 @@ import javax.swing.Icon
 
 class RdsExplorerParentNode(project: Project, private val service: AwsExplorerServiceNode) : AwsExplorerServiceRootNode(project, service) {
     override fun getChildrenInternal(): List<AwsExplorerNode<*>> = listOf(
-        RdsParentNode(nodeProject, message("rds.mysql"), AllIcons.Providers.Mysql, RdsResources.LIST_INSTANCES_MYSQL),
-        RdsParentNode(nodeProject, message("rds.postgres"), AllIcons.Providers.Postgresql, RdsResources.LIST_INSTANCES_POSTGRES)
+        RdsParentNode(nodeProject, message("rds.mysql"), AwsIcons.Resources.Rds.MYSQL, RdsResources.LIST_INSTANCES_MYSQL),
+        RdsParentNode(nodeProject, message("rds.postgres"), AwsIcons.Resources.Rds.POSTGRES, RdsResources.LIST_INSTANCES_POSTGRES)
     )
 }
 

@@ -3,7 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.redshift
 
-import com.intellij.icons.AllIcons
+import icons.AwsIcons
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.redshift.RedshiftClient
 import software.amazon.awssdk.services.redshift.model.Cluster
@@ -23,7 +23,7 @@ class RedshiftExplorerNode(project: Project, val cluster: Cluster) : AwsExplorer
     project,
     RedshiftClient.SERVICE_NAME,
     cluster,
-    AllIcons.Providers.Redshift
+    AwsIcons.Resources.REDSHIFT
 ) {
     override fun displayName(): String = cluster.clusterIdentifier()
     override fun resourceType(): String = "cluster"
