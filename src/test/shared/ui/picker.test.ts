@@ -484,3 +484,218 @@ describe('IteratingQuickPickPopulator', async () => {
         }
     })
 })
+
+describe('IteratingQuickPickController', async () => {
+    const values = ['a', 'b', 'c']
+    const result = [{ label: 'A' }, { label: 'B' }, { label: 'C' }]
+    const errMessage = 'ahhhhhhhhh!!!'
+
+    async function* iteratorFn(): AsyncIterator<string> {
+        for (const [i, value] of values.entries()) {
+            await new Promise(resolve => {
+                setTimeout(() => {
+                    resolve()
+                }, 300)
+            })
+            if (i === values.length - 1) {
+                return value
+            }
+            yield value
+        }
+    }
+
+    async function* errIteratorFn(): AsyncIterator<string> {
+        throw new Error(errMessage)
+        yield 'nope'
+    }
+
+    async function* blankIteratorFn(): AsyncIterator<string> {}
+
+    let quickPick: vscode.QuickPick<vscode.QuickPickItem>
+
+    beforeEach(() => {
+        quickPick = picker.createQuickPick<vscode.QuickPickItem>({})
+    })
+
+    afterEach(() => {
+        quickPick.dispose()
+    })
+
+    it('appends a refresh button to the quickPick', () => {
+        new picker.IteratingQuickPickController(
+            quickPick,
+            new picker.IteratingQuickPickPopulator<string>(
+                () => iteratorFn(),
+                val => {
+                    if (val) {
+                        return [{ label: val.toUpperCase() }]
+                    }
+
+                    return []
+                }
+            )
+        )
+
+        assert.strictEqual(quickPick.buttons.length, 1)
+        assert.strictEqual(quickPick.buttons[0], picker.IteratingQuickPickController.REFRESH_BUTTON)
+    })
+
+    it('returns iterated values on start and on reset', async () => {
+        const controller = new picker.IteratingQuickPickController(
+            quickPick,
+            new picker.IteratingQuickPickPopulator<string>(
+                () => iteratorFn(),
+                val => {
+                    if (val) {
+                        return [{ label: val.toUpperCase() }]
+                    }
+
+                    return []
+                }
+            )
+        )
+
+        controller.startRequests()
+
+        await new Promise(resolve => {
+            setTimeout(() => {
+                assert.deepStrictEqual(quickPick.items, result)
+                resolve()
+            }, 1200)
+        })
+
+        controller.reset()
+        // assert.strictEqual(quickPick.items.length, 0)
+
+        await new Promise(resolve => {
+            setTimeout(() => {
+                assert.deepStrictEqual(quickPick.items, result)
+                resolve()
+            }, 1200)
+        })
+    })
+
+    it('pauses and restarts iteration', async () => {
+        const controller = new picker.IteratingQuickPickController(
+            quickPick,
+            new picker.IteratingQuickPickPopulator<string>(
+                () => iteratorFn(),
+                val => {
+                    if (val) {
+                        return [{ label: val.toUpperCase() }]
+                    }
+
+                    return []
+                }
+            )
+        )
+
+        // pause almost immediately. This should cause this to output a single item.
+        controller.startRequests()
+        await new Promise(resolve => {
+            setTimeout(() => {
+                controller.pauseRequests()
+                resolve()
+            }, 50)
+        })
+        // check after a long enough time period that a second iteration should have occurred had it not paused
+        await new Promise(resolve => {
+            setTimeout(() => {
+                assert.deepStrictEqual(quickPick.items, [{ label: 'A' }])
+                resolve()
+            }, 400)
+        })
+
+        controller.startRequests()
+        await new Promise(resolve => {
+            setTimeout(() => {
+                assert.deepStrictEqual(quickPick.items, result)
+                resolve()
+            }, 1200)
+        })
+    })
+
+    it('appends an error item', async () => {
+        const controller = new picker.IteratingQuickPickController(
+            quickPick,
+            new picker.IteratingQuickPickPopulator<string>(
+                () => errIteratorFn(),
+                val => {
+                    if (val) {
+                        return [{ label: val.toUpperCase() }]
+                    }
+
+                    return []
+                }
+            )
+        )
+
+        controller.startRequests()
+
+        await new Promise(resolve => {
+            setTimeout(() => {
+                assert.deepStrictEqual(quickPick.items, [
+                    {
+                        ...picker.IteratingQuickPickController.ERROR_ITEM,
+                        detail: errMessage,
+                    },
+                ])
+                resolve()
+            }, 300)
+        })
+    })
+
+    it('appends a no items item', async () => {
+        const controller = new picker.IteratingQuickPickController(
+            quickPick,
+            new picker.IteratingQuickPickPopulator<string>(
+                () => blankIteratorFn(),
+                val => {
+                    if (val) {
+                        return [{ label: val.toUpperCase() }]
+                    }
+
+                    return []
+                }
+            )
+        )
+
+        controller.startRequests()
+
+        await new Promise(resolve => {
+            setTimeout(() => {
+                assert.deepStrictEqual(quickPick.items, [picker.IteratingQuickPickController.NO_ITEMS_ITEM])
+                resolve()
+            }, 300)
+        })
+    })
+
+    it('only appends values from the current refresh cycle', async () => {
+        const controller = new picker.IteratingQuickPickController(
+            quickPick,
+            new picker.IteratingQuickPickPopulator<string>(
+                () => iteratorFn(),
+                val => {
+                    if (val) {
+                        return [{ label: val.toUpperCase() }]
+                    }
+
+                    return []
+                }
+            )
+        )
+
+        controller.startRequests()
+        controller.reset()
+        controller.reset()
+        controller.reset()
+        controller.reset()
+
+        await new Promise(resolve => {
+            setTimeout(() => {
+                assert.deepStrictEqual(quickPick.items, result)
+                resolve()
+            }, 1500)
+        })
+    })
+})
