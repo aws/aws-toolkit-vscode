@@ -4,6 +4,7 @@
  */
 
 import * as assert from 'assert'
+import * as lolex from 'lolex'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import * as picker from '../../../shared/ui/picker'
@@ -489,29 +490,18 @@ describe('IteratingQuickPickController', async () => {
     const values = ['a', 'b', 'c']
     const result = [{ label: 'A' }, { label: 'B' }, { label: 'C' }]
     const errMessage = 'ahhhhhhhhh!!!'
-
-    async function* iteratorFn(): AsyncIterator<string> {
-        for (const [i, value] of values.entries()) {
-            await new Promise(resolve => {
-                setTimeout(() => {
-                    resolve()
-                }, 300)
-            })
-            if (i === values.length - 1) {
-                return value
-            }
-            yield value
-        }
-    }
-
-    async function* errIteratorFn(): AsyncIterator<string> {
-        throw new Error(errMessage)
-        yield 'nope'
-    }
-
-    async function* blankIteratorFn(): AsyncIterator<string> {}
+    const interval = 30
 
     let quickPick: vscode.QuickPick<vscode.QuickPickItem>
+    let clock: lolex.InstalledClock
+
+    before(() => {
+        clock = lolex.install()
+    })
+
+    after(() => {
+        clock.uninstall()
+    })
 
     beforeEach(() => {
         quickPick = picker.createQuickPick<vscode.QuickPickItem>({})
@@ -521,19 +511,39 @@ describe('IteratingQuickPickController', async () => {
         quickPick.dispose()
     })
 
+    async function* iteratorFn(): AsyncIterator<string> {
+        for (const [i, value] of values.entries()) {
+            await new Promise(resolve => {
+                clock.setTimeout(() => {
+                    resolve()
+                }, interval)
+            })
+            if (i === values.length - 1) {
+                return value
+            }
+            yield value
+        }
+    }
+
+    function converter(val: string): vscode.QuickPickItem[] {
+        if (val) {
+            return [{ label: val.toUpperCase() }]
+        }
+
+        return []
+    }
+
+    async function* errIteratorFn(): AsyncIterator<string> {
+        throw new Error(errMessage)
+        yield 'nope'
+    }
+
+    async function* blankIteratorFn(): AsyncIterator<string> {}
+
     it('appends a refresh button to the quickPick', () => {
         new picker.IteratingQuickPickController(
             quickPick,
-            new picker.IteratingQuickPickPopulator<string>(
-                () => iteratorFn(),
-                val => {
-                    if (val) {
-                        return [{ label: val.toUpperCase() }]
-                    }
-
-                    return []
-                }
-            )
+            new picker.IteratingQuickPickPopulator<string>(() => iteratorFn(), converter)
         )
 
         assert.strictEqual(quickPick.buttons.length, 1)
@@ -543,95 +553,91 @@ describe('IteratingQuickPickController', async () => {
     it('returns iterated values on start and on reset', async () => {
         const controller = new picker.IteratingQuickPickController(
             quickPick,
-            new picker.IteratingQuickPickPopulator<string>(
-                () => iteratorFn(),
-                val => {
-                    if (val) {
-                        return [{ label: val.toUpperCase() }]
-                    }
-
-                    return []
-                }
-            )
+            new picker.IteratingQuickPickPopulator<string>(() => iteratorFn(), converter)
         )
 
         controller.startRequests()
 
-        await new Promise(resolve => {
-            setTimeout(() => {
+        await clock.nextAsync()
+        await clock.nextAsync()
+        await clock.nextAsync()
+        new Promise(resolve => {
+            clock.setTimeout(() => {
+                assert.strictEqual(quickPick.items.length, 3)
                 assert.deepStrictEqual(quickPick.items, result)
                 resolve()
-            }, 1200)
+            }, interval - 15)
         })
+        await clock.nextAsync()
 
         controller.reset()
 
-        await new Promise(resolve => {
-            setTimeout(() => {
+        await clock.nextAsync()
+        new Promise(resolve => {
+            clock.setTimeout(() => {
+                assert.strictEqual(quickPick.items.length, 1)
+                assert.deepStrictEqual(quickPick.items, [{ label: 'A' }])
+                resolve()
+            }, interval - 15)
+        })
+        await clock.nextAsync()
+        await clock.nextAsync()
+        await clock.nextAsync()
+        new Promise(resolve => {
+            clock.setTimeout(() => {
+                assert.strictEqual(quickPick.items.length, 3)
                 assert.deepStrictEqual(quickPick.items, result)
                 resolve()
-            }, 1200)
+            }, interval - 15)
         })
+        await clock.nextAsync()
     })
 
     it('pauses and restarts iteration', async () => {
         const controller = new picker.IteratingQuickPickController(
             quickPick,
-            new picker.IteratingQuickPickPopulator<string>(
-                () => iteratorFn(),
-                val => {
-                    if (val) {
-                        return [{ label: val.toUpperCase() }]
-                    }
-
-                    return []
-                }
-            )
+            new picker.IteratingQuickPickPopulator<string>(() => iteratorFn(), converter)
         )
 
         // pause almost immediately. This should cause this to output a single item.
         controller.startRequests()
-        await new Promise(resolve => {
+        new Promise(resolve => {
             setTimeout(() => {
                 controller.pauseRequests()
                 resolve()
-            }, 50)
+            }, interval - 15)
         })
-        // check after a long enough time period that a second iteration should have occurred had it not paused
-        await new Promise(resolve => {
+        await clock.nextAsync()
+        await clock.nextAsync()
+        new Promise(resolve => {
             setTimeout(() => {
-                assert.deepStrictEqual(quickPick.items, [{ label: 'A' }])
+                assert.deepStrictEqual(quickPick.items, [{ label: 'A' }], `items at pause are: ${quickPick.items}`)
                 resolve()
-            }, 400)
+            }, interval - 15)
         })
+        await clock.nextAsync()
 
         controller.startRequests()
-        await new Promise(resolve => {
+        await clock.nextAsync()
+        await clock.nextAsync()
+        new Promise(resolve => {
             setTimeout(() => {
-                assert.deepStrictEqual(quickPick.items, result)
+                assert.deepStrictEqual(quickPick.items, result, `items at end are: ${quickPick.items}`)
                 resolve()
-            }, 1200)
+            }, interval - 15)
         })
+        await clock.nextAsync()
     })
 
     it('appends an error item', async () => {
         const controller = new picker.IteratingQuickPickController(
             quickPick,
-            new picker.IteratingQuickPickPopulator<string>(
-                () => errIteratorFn(),
-                val => {
-                    if (val) {
-                        return [{ label: val.toUpperCase() }]
-                    }
-
-                    return []
-                }
-            )
+            new picker.IteratingQuickPickPopulator<string>(() => errIteratorFn(), converter)
         )
 
         controller.startRequests()
-
-        await new Promise(resolve => {
+        await clock.nextAsync()
+        new Promise(resolve => {
             setTimeout(() => {
                 assert.deepStrictEqual(quickPick.items, [
                     {
@@ -640,61 +646,66 @@ describe('IteratingQuickPickController', async () => {
                     },
                 ])
                 resolve()
-            }, 300)
+            }, interval - 15)
         })
+        await clock.nextAsync()
     })
 
     it('appends a no items item', async () => {
         const controller = new picker.IteratingQuickPickController(
             quickPick,
-            new picker.IteratingQuickPickPopulator<string>(
-                () => blankIteratorFn(),
-                val => {
-                    if (val) {
-                        return [{ label: val.toUpperCase() }]
-                    }
-
-                    return []
-                }
-            )
+            new picker.IteratingQuickPickPopulator<string>(() => blankIteratorFn(), converter)
         )
 
         controller.startRequests()
-
-        await new Promise(resolve => {
+        await clock.nextAsync()
+        new Promise(resolve => {
             setTimeout(() => {
                 assert.deepStrictEqual(quickPick.items, [picker.IteratingQuickPickController.NO_ITEMS_ITEM])
                 resolve()
-            }, 300)
+            }, interval - 15)
         })
+        await clock.nextAsync()
     })
 
     it('only appends values from the current refresh cycle', async () => {
         const controller = new picker.IteratingQuickPickController(
             quickPick,
-            new picker.IteratingQuickPickPopulator<string>(
-                () => iteratorFn(),
-                val => {
-                    if (val) {
-                        return [{ label: val.toUpperCase() }]
-                    }
-
-                    return []
-                }
-            )
+            new picker.IteratingQuickPickPopulator<string>(() => iteratorFn(), converter)
         )
 
         controller.startRequests()
+        await clock.nextAsync()
+        await clock.nextAsync()
+        await clock.nextAsync()
+        await clock.nextAsync()
         controller.reset()
+        await clock.nextAsync()
+        await clock.nextAsync()
+        await clock.nextAsync()
+        await clock.nextAsync()
         controller.reset()
+        await clock.nextAsync()
+        await clock.nextAsync()
+        await clock.nextAsync()
+        await clock.nextAsync()
         controller.reset()
+        await clock.nextAsync()
+        await clock.nextAsync()
+        await clock.nextAsync()
+        await clock.nextAsync()
         controller.reset()
+        await clock.nextAsync()
+        await clock.nextAsync()
+        await clock.nextAsync()
+        await clock.nextAsync()
 
-        await new Promise(resolve => {
+        new Promise(resolve => {
             setTimeout(() => {
                 assert.deepStrictEqual(quickPick.items, result)
                 resolve()
-            }, 1500)
+            }, interval - 15)
         })
+        await clock.nextAsync()
     })
 })
