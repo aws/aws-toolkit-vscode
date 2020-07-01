@@ -16,6 +16,7 @@ import { ext } from '../../shared/extensionGlobals'
 import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
+import { getPaginatedAwsCallIter } from '../../shared/utilities/collectionUtils'
 
 export interface SelectLogStreamResponse {
     region: string
@@ -49,19 +50,48 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
 
     public async pickLogStream(): Promise<string | undefined> {
         let telemetryResult: telemetry.Result = 'Succeeded'
-        const quickPick = createDescribeLogStreamsCallPicker(this.regionCode, this.logGroupName)
 
-        const choices = await quickPick.promptUser()
-        const val = picker.verifySinglePickerOutput(choices)
+        const client: CloudWatchLogsClient = ext.toolkitClientBuilder.createCloudWatchLogsClient(this.regionCode)
+        const logGroupName = this.logGroupName
+        const qp = picker.createQuickPick({})
+        const populator = new picker.IteratingQuickPickPopulator(
+            () =>
+                getPaginatedAwsCallIter({
+                    awsCall: (request: CloudWatchLogs.DescribeLogStreamsRequest) => client.describeLogStreams(request),
+                    nextTokenNames: {
+                        request: 'nextToken',
+                        response: 'nextToken',
+                    },
+                    request: {
+                        logGroupName,
+                        orderBy: 'LastEventTime',
+                        descending: true,
+                        limit: 1, // TODO: Remove debug val
+                    },
+                }),
+            response => convertDescribeLogStreamsToQuickPickItems(response)
+        )
+
+        const controller = new picker.IteratingQuickPickController(qp, populator)
+        controller.startRequests()
+        const choices2 = await picker.promptUser({
+            picker: qp,
+            onDidTriggerButton: (button, resolve, reject) =>
+                picker.iteratingOnDidTriggerButton(button, resolve, reject, controller),
+        })
+
+        const val = picker.verifySinglePickerOutput(choices2)
 
         let result = val?.label
 
         // handle no items for a group as a cancel
-        if (!result || result === quickPick.noItemsItem.label) {
+        // if (!result || result === quickPick.noItemsItem.label) {
+        if (!result || result === picker.IteratingQuickPickController.NO_ITEMS_ITEM.label) {
             result = undefined
             telemetryResult = 'Cancelled'
         }
-        if (result === quickPick.errorItem.label) {
+        // if (result === quickPick.errorItem.label) {
+        if (result === picker.IteratingQuickPickController.ERROR_ITEM.label) {
             result = undefined
             telemetryResult = 'Failed'
         }
@@ -69,41 +99,6 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
         telemetry.recordCloudwatchlogsOpenGroup({ result: telemetryResult })
         return result
     }
-}
-
-function createDescribeLogStreamsCallPicker(
-    regionCode: string,
-    logGroupName: string
-): picker.IteratingAWSCallPicker<CloudWatchLogs.DescribeLogStreamsRequest, CloudWatchLogs.DescribeLogStreamsResponse> {
-    const client: CloudWatchLogsClient = ext.toolkitClientBuilder.createCloudWatchLogsClient(regionCode)
-
-    return new picker.IteratingAWSCallPicker<
-        CloudWatchLogs.DescribeLogStreamsRequest,
-        CloudWatchLogs.DescribeLogStreamsResponse
-    >(
-        {
-            iteratorParams: {
-                awsCall: request => client.describeLogStreams(request),
-                nextTokenNames: {
-                    request: 'nextToken',
-                    response: 'nextToken',
-                },
-                request: {
-                    logGroupName,
-                    orderBy: 'LastEventTime',
-                    descending: true,
-                },
-            },
-            awsCallResponseToQuickPickItemFn: convertDescribeLogStreamsToQuickPickItems,
-        },
-        {
-            options: {
-                title: localize('aws.cloudWatchLogs.viewLogStream.workflow.prompt', 'Select a log stream'),
-                matchOnDetail: true,
-            },
-            isRefreshable: true,
-        }
-    )
 }
 
 export function convertDescribeLogStreamsToQuickPickItems(

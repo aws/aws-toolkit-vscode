@@ -188,6 +188,7 @@ export async function* getPaginatedAwsCallIter<TRequest, TResponse>(
         if (response[params.nextTokenNames.response]) {
             nextToken = (response[params.nextTokenNames.response] as any) as string
         } else {
+            // done; returns last response with { done: true }
             return response
         }
 
