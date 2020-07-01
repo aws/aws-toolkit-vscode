@@ -565,7 +565,6 @@ describe('IteratingQuickPickController', async () => {
         })
 
         controller.reset()
-        // assert.strictEqual(quickPick.items.length, 0)
 
         await new Promise(resolve => {
             setTimeout(() => {
