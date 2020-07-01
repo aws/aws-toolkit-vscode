@@ -7,6 +7,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as assert from 'assert'
+import * as moment from 'moment'
 import {
     SelectLogStreamWizardContext,
     SelectLogStreamWizard,
@@ -14,6 +15,7 @@ import {
 } from '../../../cloudWatchLogs/commands/viewLogStream'
 import { LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
 import { FakeParentNode } from '../../cdk/explorer/constructNode.test'
+import { LOCALIZED_DATE_FORMAT } from '../../../shared/constants'
 
 class MockSelectLogStreamWizardContext implements SelectLogStreamWizardContext {
     public constructor(private readonly pickLogStreamResponses: (string | undefined)[] = []) {
@@ -84,7 +86,7 @@ describe('convertDescribeLogStreamsToQuickPickItems', () => {
         })
         assert.deepStrictEqual(results[1], {
             label: 'streamWithTimestamp',
-            detail: new Date(time).toString(),
+            detail: moment(time).format(LOCALIZED_DATE_FORMAT),
         })
         const noResults = convertDescribeLogStreamsToQuickPickItems({})
         assert.strictEqual(noResults.length, 0)

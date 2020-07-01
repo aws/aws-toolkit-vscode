@@ -4,8 +4,10 @@
  */
 
 import * as assert from 'assert'
+import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import * as picker from '../../../shared/ui/picker'
+import { stringList } from 'aws-sdk/clients/datapipeline'
 
 describe('createQuickPick', async () => {
     let testPicker: vscode.QuickPick<vscode.QuickPickItem> | undefined
@@ -365,4 +367,121 @@ describe('promptUser', async () => {
 
         return pickerDialog
     }
+})
+
+describe('iteratingOnDidTriggerButton', async () => {
+    let sandbox: sinon.SinonSandbox
+    class fakeIteratingQuickPickController extends picker.IteratingQuickPickController<undefined> {
+        public constructor(private readonly spy: sinon.SinonSpy) {
+            super(
+                picker.createQuickPick({}),
+                new picker.IteratingQuickPickPopulator(
+                    () => {
+                        return {
+                            next: async () => {
+                                return { value: undefined, done: true }
+                            },
+                        }
+                    },
+                    () => []
+                )
+            )
+        }
+        public reset(): void {
+            this.spy()
+        }
+    }
+
+    beforeEach(() => {
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(() => {
+        sandbox.restore
+    })
+
+    it('triggers a refresh and returns undefined', async () => {
+        const spy = sandbox.spy()
+        const out = await picker.iteratingOnDidTriggerButton(
+            picker.IteratingQuickPickController.REFRESH_BUTTON,
+            () => {},
+            () => {},
+            new fakeIteratingQuickPickController(spy)
+        )
+        assert.strictEqual(out, undefined)
+        assert.ok(spy.calledOnce)
+    })
+
+    it('returns undefined if no override is provided', async () => {
+        const spy = sandbox.spy()
+        const out = await picker.iteratingOnDidTriggerButton(
+            { iconPath: new vscode.ThemeIcon('squirrel') },
+            () => {},
+            () => {},
+            new fakeIteratingQuickPickController(spy)
+        )
+        assert.strictEqual(out, undefined)
+        assert.ok(spy.notCalled)
+    })
+
+    it('returns a value from the override function', async () => {
+        const spy = sandbox.spy()
+        const items: vscode.QuickPickItem[] = [{ label: 'asdf' }, { label: 'jkl;' }]
+        const out = await picker.iteratingOnDidTriggerButton(
+            { iconPath: new vscode.ThemeIcon('squirrel') },
+            () => {},
+            () => {},
+            new fakeIteratingQuickPickController(spy),
+            async () => {
+                return items
+            }
+        )
+        assert.deepStrictEqual(out, items)
+        assert.ok(spy.notCalled)
+    })
+})
+
+describe('IteratingQuickPickPopulator', async () => {
+    it('transforms values from the iterator and can reset itself', async () => {
+        const values = ['a', 'b', 'c']
+        async function* iteratorFn(): AsyncIterator<string> {
+            for (const val of values) {
+                yield val
+            }
+        }
+        const populator = new picker.IteratingQuickPickPopulator<string>(
+            () => iteratorFn(),
+            val => {
+                if (val) {
+                    return [{ label: val.toUpperCase() }]
+                }
+
+                return []
+            }
+        )
+
+        const firstIter = populator.getPickIterator()
+        let firstI = 0
+        let firstItem = await firstIter.next()
+        while (!firstItem.done) {
+            assert.ok(Array.isArray(firstItem.value)),
+                assert.strictEqual(firstItem.value.length, 1),
+                assert.deepStrictEqual(firstItem.value[0], { label: values[firstI].toUpperCase() })
+            firstI++
+            firstItem = await firstIter.next()
+        }
+
+        populator.reset()
+
+        const secondIter = populator.getPickIterator()
+        let secondI = 0
+        let secondItem = await secondIter.next()
+        while (!secondItem.done) {
+            assert.ok(Array.isArray(secondItem.value)),
+                assert.strictEqual(secondItem.value.length, 1),
+                assert.deepStrictEqual(secondItem.value[0], { label: values[secondI].toUpperCase() })
+            secondI++
+            secondItem = await secondIter.next()
+        }
+    })
 })
