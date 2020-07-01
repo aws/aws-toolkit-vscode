@@ -73,13 +73,13 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
 
         const controller = new picker.IteratingQuickPickController(qp, populator)
         controller.startRequests()
-        const choices2 = await picker.promptUser({
+        const choices = await picker.promptUser({
             picker: qp,
             onDidTriggerButton: (button, resolve, reject) =>
                 picker.iteratingOnDidTriggerButton(button, resolve, reject, controller),
         })
 
-        const val = picker.verifySinglePickerOutput(choices2)
+        const val = picker.verifySinglePickerOutput(choices)
 
         let result = val?.label
 
