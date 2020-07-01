@@ -11,7 +11,7 @@ import com.intellij.psi.SmartPsiElementPointer
 import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.lambda.model.TracingMode
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplateIndex
 import software.aws.toolkits.jetbrains.services.iam.IamRole
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
@@ -42,7 +42,7 @@ class CreateLambdaFunction(
         val project = e.getRequiredData(LangDataKeys.PROJECT)
         val runtime = e.runtime()
 
-        if (!ProjectAccountSettingsManager.getInstance(project).isValidConnectionSettings()) {
+        if (!AwsConnectionManager.getInstance(project).isValidConnectionSettings()) {
             notifyNoActiveCredentialsError(project = project)
             return
         }

@@ -24,11 +24,11 @@ import kotlin.Unit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.lambda.model.Runtime;
-import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier;
+import software.aws.toolkits.core.credentials.CredentialIdentifier;
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider;
 import software.aws.toolkits.core.region.AwsRegion;
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager;
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager;
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager;
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance;
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager;
 import software.aws.toolkits.jetbrains.core.executables.ExecutableType;
@@ -169,7 +169,7 @@ public class SamInitSelectionPanel implements ValidatablePanel {
         this.awsCredentialSelectionUi = AwsConnectionSettingsPanel.create(selectedTemplate, generator, this::awsCredentialsUpdated);
         addAwsConnectionSettingsPanel(awsCredentialSelectionUi);
 
-        ProjectAccountSettingsManager accountSettingsManager = ProjectAccountSettingsManager.Companion.getInstance(generator.getDefaultSourceCreatingProject());
+        AwsConnectionManager accountSettingsManager = AwsConnectionManager.Companion.getInstance(generator.getDefaultSourceCreatingProject());
         if (accountSettingsManager.isValidConnectionSettings()) {
             awsCredentialsUpdated(accountSettingsManager.getActiveRegion(), accountSettingsManager.getActiveCredentialProvider().getId());
         } else {
@@ -183,7 +183,7 @@ public class SamInitSelectionPanel implements ValidatablePanel {
         }
 
         CredentialManager credentialManager = CredentialManager.getInstance();
-        ToolkitCredentialsIdentifier credentialIdentifier = credentialManager.getCredentialIdentifierById(credentialProviderId);
+        CredentialIdentifier credentialIdentifier = credentialManager.getCredentialIdentifierById(credentialProviderId);
         if (credentialIdentifier == null) {
             throw new IllegalArgumentException("Unknown credential provider selected");
         }
@@ -191,8 +191,8 @@ public class SamInitSelectionPanel implements ValidatablePanel {
         return awsCredentialsUpdated(awsRegion, credentialIdentifier);
     }
 
-    private Unit awsCredentialsUpdated(@NotNull AwsRegion awsRegion, @NotNull ToolkitCredentialsIdentifier credentialIdentifier) {
-        ProjectAccountSettingsManager accountSettingsManager = ProjectAccountSettingsManager.getInstance(generator.getDefaultSourceCreatingProject());
+    private Unit awsCredentialsUpdated(@NotNull AwsRegion awsRegion, @NotNull CredentialIdentifier credentialIdentifier) {
+        AwsConnectionManager accountSettingsManager = AwsConnectionManager.getInstance(generator.getDefaultSourceCreatingProject());
         if (!accountSettingsManager.isValidConnectionSettings() ||
             !accountSettingsManager.getActiveCredentialProvider().getId().equals(credentialIdentifier.getId())) {
             accountSettingsManager.changeCredentialProvider(credentialIdentifier);
@@ -204,7 +204,7 @@ public class SamInitSelectionPanel implements ValidatablePanel {
         return initSchemaSelectionPanel(awsRegion, credentialIdentifier);
     }
 
-    private Unit initSchemaSelectionPanel(AwsRegion awsRegion, ToolkitCredentialsIdentifier credentialIdentifier) {
+    private Unit initSchemaSelectionPanel(AwsRegion awsRegion, CredentialIdentifier credentialIdentifier) {
         Runtime selectedRuntime = (Runtime) runtimeComboBox.getSelectedItem();
         if (selectedRuntime == null) {
             addNoOpConditionalPanels();

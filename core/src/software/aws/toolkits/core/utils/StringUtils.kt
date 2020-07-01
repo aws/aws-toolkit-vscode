@@ -8,3 +8,5 @@ package software.aws.toolkits.core.utils
  */
 fun String.splitNoBlank(vararg delimiters: Char, ignoreCase: Boolean = false, limit: Int = 0): List<String> =
     split(*delimiters, ignoreCase = ignoreCase, limit = limit).filter { it.isNotBlank() }
+
+fun ByteArray.toHexString() = joinToString("") { "%02x".format(it) }

@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletionException;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -54,6 +55,10 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
     private JPanel serverlessSettings;
     private JPanel remoteDebugSettings;
     private JPanel applicationLevelSettings;
+
+    private JRadioButton prompt;
+    private JRadioButton always;
+    private JRadioButton never;
 
     public AwsSettingsConfigurable(Project project) {
         this.project = project;
@@ -99,7 +104,10 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
         return !Objects.equals(getSamTextboxInput(), getSavedExecutablePath(getSamExecutableInstance(), false)) ||
                !Objects.equals(getCloudDebugTextboxInput(), getSavedExecutablePath(getCloudDebugExecutableInstance(), false)) ||
                isModified(showAllHandlerGutterIcons, lambdaSettings.getShowAllHandlerGutterIcons()) ||
-               isModified(enableTelemetry, awsSettings.isTelemetryEnabled());
+               isModified(enableTelemetry, awsSettings.isTelemetryEnabled()) ||
+               isModified(always, awsSettings.getUseDefaultCredentialRegion() == UseAwsCredentialRegion.Always) ||
+               isModified(never, awsSettings.getUseDefaultCredentialRegion() == UseAwsCredentialRegion.Never) ||
+               isModified(prompt, awsSettings.getUseDefaultCredentialRegion() == UseAwsCredentialRegion.Prompt);
     }
 
     @Override
@@ -115,7 +123,7 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
                                    getSavedExecutablePath(getCloudDebugExecutableInstance(), false),
                                    getCloudDebugTextboxInput());
 
-        saveTelemetrySettings();
+        saveAwsSettings();
         saveLambdaSettings();
     }
 
@@ -128,6 +136,9 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
         cloudDebugExecutablePath.setText(getSavedExecutablePath(getCloudDebugExecutableInstance(), false));
         showAllHandlerGutterIcons.setSelected(lambdaSettings.getShowAllHandlerGutterIcons());
         enableTelemetry.setSelected(awsSettings.isTelemetryEnabled());
+        always.setSelected(awsSettings.getUseDefaultCredentialRegion() == UseAwsCredentialRegion.Always);
+        never.setSelected(awsSettings.getUseDefaultCredentialRegion() == UseAwsCredentialRegion.Never);
+        prompt.setSelected(awsSettings.getUseDefaultCredentialRegion() == UseAwsCredentialRegion.Prompt);
     }
 
     @NotNull
@@ -252,9 +263,16 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
         ExecutableManager.getInstance().setExecutablePath(executableType, path);
     }
 
-    private void saveTelemetrySettings() {
+    private void saveAwsSettings() {
         AwsSettings awsSettings = AwsSettings.getInstance();
         awsSettings.setTelemetryEnabled(enableTelemetry.isSelected());
+        if (always.isSelected()) {
+            awsSettings.setUseDefaultCredentialRegion(UseAwsCredentialRegion.Always);
+        } else if (never.isSelected()) {
+            awsSettings.setUseDefaultCredentialRegion(UseAwsCredentialRegion.Never);
+        } else {
+            awsSettings.setUseDefaultCredentialRegion(UseAwsCredentialRegion.Prompt);
+        }
     }
 
     private void saveLambdaSettings() {

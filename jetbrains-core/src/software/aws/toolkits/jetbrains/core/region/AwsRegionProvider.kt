@@ -1,9 +1,10 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.core.region
 
 import com.intellij.openapi.components.ServiceManager
+import org.slf4j.event.Level
 import software.amazon.awssdk.regions.providers.AwsProfileRegionProvider
 import software.amazon.awssdk.regions.providers.AwsRegionProviderChain
 import software.amazon.awssdk.regions.providers.SystemSettingsRegionProvider
@@ -14,10 +15,15 @@ import software.aws.toolkits.core.region.ServiceEndpointResource
 import software.aws.toolkits.core.region.ToolkitRegionProvider
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.inputStream
-import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.core.utils.logWhenNull
+import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.RemoteResourceResolverProvider
 
 class AwsRegionProvider constructor(remoteResourceResolverProvider: RemoteResourceResolverProvider) : ToolkitRegionProvider() {
+    private val regionChain by lazy {
+        // Querying the instance metadata is expensive due to high timeouts and retries
+        AwsRegionProviderChain(SystemSettingsRegionProvider(), AwsProfileRegionProvider())
+    }
     private val partitions: Map<String, PartitionData> by lazy {
         val inputStream = remoteResourceResolverProvider.get().resolve(ServiceEndpointResource).toCompletableFuture().get()?.inputStream()
         val partitions = inputStream?.use { PartitionParser.parse(it) }?.partitions ?: return@lazy emptyMap<String, PartitionData>()
@@ -33,25 +39,27 @@ class AwsRegionProvider constructor(remoteResourceResolverProvider: RemoteResour
 
     override fun partitionData(): Map<String, PartitionData> = partitions
 
-    override fun defaultPartition(): AwsPartition = partitions()[DEFAULT_PARTITION]
-        ?: throw IllegalStateException("Could not find default partition: $DEFAULT_PARTITION")
+    override fun defaultPartition(): AwsPartition = partitions().getValue(defaultRegion().partitionId)
 
-    override fun defaultRegion(): AwsRegion = try {
-        // Querying the instance metadata is expensive due to high timeouts and retries
-        val regionProviderChange = AwsRegionProviderChain(SystemSettingsRegionProvider(), AwsProfileRegionProvider())
-        regionProviderChange.region.id().let { regions(DEFAULT_PARTITION)[it] } ?: fallbackRegion()
-    } catch (e: Exception) {
-        LOG.warn(e) { "Failed to find default region" }
-        fallbackRegion()
-    }
+    override fun defaultRegion(): AwsRegion {
+        val regionIdFromChain = LOG.tryOrNull("Failed to find default region in chain", level = Level.WARN) {
+            regionChain.region.id()
+        }
 
-    private fun fallbackRegion(): AwsRegion = regions(DEFAULT_PARTITION).getOrElse(DEFAULT_REGION) {
-        throw IllegalStateException("Region provider data is missing default data")
+        val regionFromChain = regionIdFromChain?.let { regionId ->
+            LOG.logWhenNull("Could not find $regionId in endpoint data") {
+                this[regionId]
+            }
+        }
+
+        return regionFromChain
+            ?: this[DEFAULT_REGION]
+            ?: allRegions().values.firstOrNull()
+            ?: throw IllegalStateException("Region provider data is missing default data")
     }
 
     companion object {
         private const val DEFAULT_REGION = "us-east-1"
-        private const val DEFAULT_PARTITION = "aws"
         private val LOG = getLogger<AwsRegionProvider>()
 
         @JvmStatic
