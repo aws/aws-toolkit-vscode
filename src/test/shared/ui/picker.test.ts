@@ -7,7 +7,6 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import * as picker from '../../../shared/ui/picker'
-import { stringList } from 'aws-sdk/clients/datapipeline'
 
 describe('createQuickPick', async () => {
     let testPicker: vscode.QuickPick<vscode.QuickPickItem> | undefined
