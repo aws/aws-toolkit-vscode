@@ -73,6 +73,9 @@ dependencies {
     api("software.amazon.awssdk:cloudwatchlogs:$awsSdkVersion")
     api("software.amazon.awssdk:apache-client:$awsSdkVersion")
     api("software.amazon.awssdk:resourcegroupstaggingapi:$awsSdkVersion")
+    api("software.amazon.awssdk:rds:$awsSdkVersion")
+    api("software.amazon.awssdk:redshift:$awsSdkVersion")
+    api("software.amazon.awssdk:secretsmanager:$awsSdkVersion")
 
     testImplementation project(path: ":core", configuration: 'testArtifacts')
     testImplementation('com.github.tomakehurst:wiremock-jre8:2.26.0')

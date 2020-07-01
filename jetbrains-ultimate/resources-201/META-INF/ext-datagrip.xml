@@ -1,0 +1,39 @@
+<!-- Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
+<idea-plugin>
+    <extensions defaultExtensionNs="aws.toolkit">
+        <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.RdsExplorerRootNode"/>
+        <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.RedshiftExplorerRootNode"/>
+    </extensions>
+    <extensions defaultExtensionNs="com.intellij.database">
+        <connectionInterceptor implementation="software.aws.toolkits.jetbrains.services.rds.auth.IamAuth"/>
+        <connectionInterceptor implementation="software.aws.toolkits.jetbrains.services.redshift.auth.IamAuth"/>
+        <connectionInterceptor implementation="software.aws.toolkits.jetbrains.datagrip.auth.SecretsManagerAuth"/>
+    </extensions>
+    <actions>
+        <group id="aws.toolkit.explorer.rds" popup="true" compact="false">
+            <action id="rds.secretsmanager" class="software.aws.toolkits.jetbrains.datagrip.actions.AddSecretsManagerConnection"/>
+            <separator/>
+        </group>
+        <group id="aws.toolkit.explorer.redshift" popup="true" compact="false">
+            <action id="redshift.secretsmanager" class="software.aws.toolkits.jetbrains.datagrip.actions.AddSecretsManagerConnection"/>
+            <separator/>
+        </group>
+        <group id="aws.toolkit.explorer.rds.mysql" popup="true" compact="false">
+            <action id="rds.mysql.iamauth" class="software.aws.toolkits.jetbrains.services.rds.actions.CreateIamDataSourceAction"/>
+            <action id="rds.mysql.secretsmanager" class="software.aws.toolkits.jetbrains.datagrip.actions.AddSecretsManagerConnection"/>
+            <separator/>
+        </group>
+        <group id="aws.toolkit.explorer.rds.postgres" popup="true" compact="false">
+            <action id="rds.postgres.iamauth" class="software.aws.toolkits.jetbrains.services.rds.actions.CreateIamDataSourceAction"/>
+            <action id="rds.postgres.secretsmanager" class="software.aws.toolkits.jetbrains.datagrip.actions.AddSecretsManagerConnection"/>
+            <separator/>
+        </group>
+        <group id="aws.toolkit.explorer.redshift.cluster" popup="true" compact="false">
+            <action id="redshift.cluster.iamauth" class="software.aws.toolkits.jetbrains.services.redshift.actions.CreateDataSourceAction"/>
+            <action id="redshift.cluster.secretsmanager" class="software.aws.toolkits.jetbrains.datagrip.actions.AddSecretsManagerConnection"/>
+            <separator/>
+        </group>
+    </actions>
+</idea-plugin>

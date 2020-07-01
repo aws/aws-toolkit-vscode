@@ -22,6 +22,7 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.region.ToolkitRegionProvider
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.AwsToolkit
+import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
@@ -84,3 +85,7 @@ inline fun <reified T : SdkClient> Project.awsClient(
 ): T = AwsClientManager
     .getInstance(this)
     .getClient(credentialsProviderOverride = credentialsProviderOverride, regionOverride = regionOverride)
+
+inline fun <reified T : SdkClient> Project.awsClient(connectionSettings: ConnectionSettings): T = AwsClientManager
+    .getInstance(this)
+    .getClient(connectionSettings.credentials, connectionSettings.region)

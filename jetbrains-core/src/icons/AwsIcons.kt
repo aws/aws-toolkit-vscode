@@ -37,10 +37,15 @@ object AwsIcons {
         @JvmField val SCHEMA = IconLoader.getIcon("/icons/resources/Schema.svg") // 16x16
         @JvmField val SERVERLESS_APP = IconLoader.getIcon("/icons/resources/ServerlessApp.svg") // 16x16
         @JvmField val S3_BUCKET = IconLoader.getIcon("/icons/resources/S3Bucket.svg") // 16x16
+        @JvmField val REDSHIFT = IconLoader.getIcon("/icons/resources/Redshift.svg") // 16x16
         object Ecs {
             @JvmField val ECS_CLUSTER = IconLoader.getIcon("/icons/resources/ecs/EcsCluster.svg")
             @JvmField val ECS_SERVICE = IconLoader.getIcon("/icons/resources/ecs/EcsService.svg")
             @JvmField val ECS_TASK_DEFINITION = IconLoader.getIcon("/icons/resources/ecs/EcsTaskDefinition.svg")
+        }
+        object Rds {
+            @JvmField val MYSQL = IconLoader.getIcon("/icons/resources/rds/Mysql.svg") // 16x16
+            @JvmField val POSTGRES = IconLoader.getIcon("/icons/resources/rds/Postgres.svg") // 16x16
         }
     }
 

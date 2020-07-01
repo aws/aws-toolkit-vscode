@@ -74,6 +74,10 @@ class MockClientManagerRule(private val project: () -> Project) : ExternalResour
     @Deprecated("Do not use, visible for inline")
     internal fun manager() = mockClientManager
 
+    fun reset() {
+        mockClientManager.reset()
+    }
+
     inline fun <reified T : SdkClient> create(): T = delegateMock<T>().also {
         @Suppress("DEPRECATION")
         manager().register(T::class, it)
