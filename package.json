@@ -135,6 +135,16 @@
                 }
             }
         },
+        "snippets": [
+            {
+                "language": "javascript",
+                "path": "./snippets/out/snippets.json"
+            },
+            {
+                "language": "typescript",
+                "path": "./snippets/out/snippets.json"
+            }
+        ],
         "debuggers": [
             {
                 "type": "aws-sam",
@@ -845,7 +855,7 @@
         "compile": "webpack --mode development && npm run buildScripts",
         "recompile": "npm run clean && npm run compile",
         "watch": "npm run buildScripts && tsc -watch -p ./",
-        "postinstall": "ts-node ./build-scripts/generateServiceClient.ts && npm run generateTelemetry && npm run generateConfigurationAttributes",
+        "postinstall": "ts-node ./build-scripts/generateServiceClient.ts && npm run generateTelemetry && npm run generateConfigurationAttributes && npm run generateSnippets",
         "testCompile": "tsc -p ./ && npm run buildScripts",
         "test": "npm run testCompile && ts-node ./test-scripts/test.ts",
         "integrationTest": "npm run testCompile && ts-node ./test-scripts/integrationTest.ts",
@@ -856,6 +866,7 @@
         "install-plugin": "vsce package -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix",
         "generateTelemetry": "node node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts",
         "generateConfigurationAttributes": "ts-node ./build-scripts/generateConfigurationAttributes.ts",
+        "generateSnippets": "ts-node ./build-scripts/generateSnippets.ts",
         "newChange": "ts-node ./build-scripts/newChange.ts",
         "createRelease": "ts-node ./build-scripts/createRelease.ts"
     },
