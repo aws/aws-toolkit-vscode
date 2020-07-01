@@ -23,7 +23,7 @@ export class FeedbackTemplates {
                 cols="90"
                 v-model="comment"
             ></textarea>
-            <p id="remaining" :class="comment.length > 2000 ? 'exceeds-max-length' : ''">{{ comment.length }} / 2000 character(s) remaining</p>
+            <p id="remaining" :class="comment.length > 2000 ? 'exceeds-max-length' : ''">{{ 2000 - comment.length }} character(s) remaining</p>
         </div>
 
         <p>Have an issue or feature request?
