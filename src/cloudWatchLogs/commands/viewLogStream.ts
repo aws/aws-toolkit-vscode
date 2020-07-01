@@ -52,22 +52,21 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
         let telemetryResult: telemetry.Result = 'Succeeded'
 
         const client: CloudWatchLogsClient = ext.toolkitClientBuilder.createCloudWatchLogsClient(this.regionCode)
-        const logGroupName = this.logGroupName
+        const request: CloudWatchLogs.DescribeLogStreamsRequest = {
+            logGroupName: this.logGroupName,
+            orderBy: 'LastEventTime',
+            descending: true,
+        }
         const qp = picker.createQuickPick({})
         const populator = new picker.IteratingQuickPickPopulator(
             () =>
                 getPaginatedAwsCallIter({
-                    awsCall: (request: CloudWatchLogs.DescribeLogStreamsRequest) => client.describeLogStreams(request),
+                    awsCall: request => client.describeLogStreams(request),
                     nextTokenNames: {
                         request: 'nextToken',
                         response: 'nextToken',
                     },
-                    request: {
-                        logGroupName,
-                        orderBy: 'LastEventTime',
-                        descending: true,
-                        limit: 1, // TODO: Remove debug val
-                    },
+                    request,
                 }),
             response => convertDescribeLogStreamsToQuickPickItems(response)
         )
@@ -85,12 +84,11 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
         let result = val?.label
 
         // handle no items for a group as a cancel
-        // if (!result || result === quickPick.noItemsItem.label) {
         if (!result || result === picker.IteratingQuickPickController.NO_ITEMS_ITEM.label) {
             result = undefined
             telemetryResult = 'Cancelled'
         }
-        // if (result === quickPick.errorItem.label) {
+        // TODO: retry instead of exit?
         if (result === picker.IteratingQuickPickController.ERROR_ITEM.label) {
             result = undefined
             telemetryResult = 'Failed'
