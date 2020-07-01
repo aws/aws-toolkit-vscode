@@ -80,7 +80,7 @@ class SubmitFeedbackPanel(initialSentiment: Sentiment? = null) {
 
     private fun onTextAreaUpdate() {
         val currentLength = comment?.length ?: 0
-        val lengthText = message("feedback.limit.label", currentLength, MAX_LENGTH)
+        val lengthText = message("feedback.limit.label", MAX_LENGTH - currentLength)
         lengthLimitLabel.text = if (currentLength >= MAX_LENGTH) {
             "<html><font color='#${ColorUtil.toHex(DialogWrapper.ERROR_FOREGROUND_COLOR)}'>$lengthText</font></html>"
         } else {
