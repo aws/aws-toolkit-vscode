@@ -165,7 +165,9 @@ export async function makeCoreCLRDebugConfiguration(
         name: 'SamLocalDebug',
         runtimeFamily: RuntimeFamily.DotNetCore,
         request: 'attach',
-        processId: '1',
+        // Since SAM CLI 1.0 we cannot assume PID=1. So use processName=dotnet
+        // instead of processId=1.
+        processName: 'dotnet',
         pipeTransport: {
             pipeProgram: 'sh',
             pipeArgs,

@@ -650,7 +650,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 // Csharp-related fields
                 //
                 debuggerPath: codeRoot + '/.vsdbg', // Normalized to absolute path.
-                processId: '1',
+                processName: 'dotnet',
                 pipeTransport: {
                     debuggerPath: '/tmp/lambci_debug_files/vsdbg',
                     // tslint:disable-next-line: no-invalid-template-strings
@@ -720,7 +720,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
             }
-            delete expectedNoDebug.processId
+            delete expectedNoDebug.processName
             delete expectedNoDebug.pipeTransport
             delete expectedNoDebug.sourceFileMap
             delete expectedNoDebug.windows
@@ -790,7 +790,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 // Csharp-related fields
                 //
                 debuggerPath: codeRoot + '/.vsdbg', // Normalized to absolute path.
-                processId: '1',
+                processName: 'dotnet',
                 pipeTransport: {
                     debuggerPath: '/tmp/lambci_debug_files/vsdbg',
                     // tslint:disable-next-line: no-invalid-template-strings
@@ -891,7 +891,7 @@ Outputs:
                 envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
             }
-            delete expectedNoDebug.processId
+            delete expectedNoDebug.processName
             delete expectedNoDebug.pipeTransport
             delete expectedNoDebug.sourceFileMap
             delete expectedNoDebug.windows

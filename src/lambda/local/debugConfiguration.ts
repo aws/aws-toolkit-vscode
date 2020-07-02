@@ -46,7 +46,7 @@ export interface PythonDebugConfiguration extends SamLaunchRequestArgs {
 
 export interface DotNetCoreDebugConfiguration extends SamLaunchRequestArgs {
     readonly runtimeFamily: RuntimeFamily.DotNetCore
-    processId: string
+    processName: string
     pipeTransport: PipeTransport
     windows: {
         pipeTransport: PipeTransport
