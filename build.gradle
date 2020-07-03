@@ -182,6 +182,16 @@ subprojects {
         mustRunAfter tasks.test
     }
 
+    project.plugins.withId("org.jetbrains.intellij") {
+        downloadRobotServerPlugin.version = remoteRobotVersion
+
+        tasks.withType(org.jetbrains.intellij.tasks.RunIdeForUiTestTask).all {
+            systemProperty "robot-server.port", remoteRobotPort
+        }
+
+        jacoco.applyTo(runIdeForUiTests)
+    }
+
     tasks.withType(KotlinCompile).all {
         kotlinOptions.jvmTarget = "1.8"
     }
