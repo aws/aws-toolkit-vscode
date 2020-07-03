@@ -59,4 +59,22 @@ fun foo() {
             )
         ).isEmpty()
     }
+
+    @Test
+    fun methodCallIsUsedToLogInUiTests() {
+        assertThat(
+            rule.lint(
+                """
+package software.aws.toolkits.jetbrains.uitests.really.cool.test
+
+import org.slf4j.LoggerFactory
+
+val LOG = LoggerFactory.getLogger(T::class.java)
+fun foo() {
+    LOG.debug("Hi")
+}
+        """.trimIndent()
+            )
+        ).isEmpty()
+    }
 }
