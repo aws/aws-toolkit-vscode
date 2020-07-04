@@ -65,6 +65,7 @@ describe('SamCliConfiguration', () => {
 
         await samCliConfig.initialize()
 
+        assert.strictEqual(samCliConfig.getSamCliLocation(), fakeCliLocation)
         assert.strictEqual(timesCalled, 1)
     })
 
