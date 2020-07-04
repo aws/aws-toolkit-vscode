@@ -78,6 +78,13 @@ export async function activate(activateArguments: {
     )
 
     await detectSamCli(false)
+    activateArguments.extensionContext.subscriptions.push(
+        vscode.workspace.onDidChangeConfiguration(configurationChangeEvent => {
+            if (configurationChangeEvent.affectsConfiguration('aws.samcli.location')) {
+                detectSamCli(false)
+            }
+        })
+    )
 
     await resumeCreateNewSamApp()
 }

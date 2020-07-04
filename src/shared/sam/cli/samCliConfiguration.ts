@@ -27,7 +27,7 @@ export class DefaultSamCliConfiguration implements SamCliConfiguration {
     }
 
     public getSamCliLocation(): string | undefined {
-        return this._configuration.readSetting(DefaultSamCliConfiguration.CONFIGURATION_KEY_SAMCLI_LOCATION)
+        return this._configuration.readSetting<string>(DefaultSamCliConfiguration.CONFIGURATION_KEY_SAMCLI_LOCATION)
     }
 
     public async setSamCliLocation(location: string | undefined): Promise<void> {
