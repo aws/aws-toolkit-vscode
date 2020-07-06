@@ -1,0 +1,4 @@
+{
+    "type": "Bug Fix",
+    "description": "Amazon States Language Server: Replaces \"True\" strings of End with boolean in snippets."
+}
