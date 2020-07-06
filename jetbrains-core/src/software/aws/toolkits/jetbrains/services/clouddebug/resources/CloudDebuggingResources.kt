@@ -14,13 +14,13 @@ import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessHandlerFactory
 import com.intellij.execution.process.ProcessOutputTypes
-import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
+import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
+import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.ExecutableBackedCacheResource
 import software.aws.toolkits.jetbrains.core.Resource
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.core.executables.CloudDebugExecutable
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.MessageEmitter
@@ -47,7 +47,12 @@ object CloudDebuggingResources {
     /*
      * Describes instrumented resources using cluster name/arn and service name/arn. Input can be original or instrumented service
      */
-    fun describeInstrumentedResource(project: Project, clusterName: String, serviceName: String): DescribeResult? {
+    fun describeInstrumentedResource(
+        credentialsProvider: ToolkitCredentialsProvider,
+        region: AwsRegion,
+        clusterName: String,
+        serviceName: String
+    ): DescribeResult? {
         val execTask = try {
             CloudDebugCliValidate.validateAndLoadCloudDebugExecutable()
         } catch (e: Exception) {
@@ -55,9 +60,8 @@ object CloudDebuggingResources {
             return null
         }
 
-        val accountSettings = ProjectAccountSettingsManager.getInstance(project)
-        val credentials = accountSettings.activeCredentialProvider.resolveCredentials().toEnvironmentVariables()
-        val region = accountSettings.activeRegion.toEnvironmentVariables()
+        val credentialsEnvVars = credentialsProvider.resolveCredentials().toEnvironmentVariables()
+        val regionEnvVars = region.toEnvironmentVariables()
 
         val generalCommandLine = execTask.getCommandLine()
             .withParameters("describe")
@@ -65,8 +69,8 @@ object CloudDebuggingResources {
             .withParameters(EcsUtils.serviceArnToName(clusterName))
             .withParameters("--service")
             .withParameters(EcsUtils.originalServiceName(serviceName))
-            .withEnvironment(credentials)
-            .withEnvironment(region)
+            .withEnvironment(credentialsEnvVars)
+            .withEnvironment(regionEnvVars)
 
         return try {
             val processOutput = CapturingProcessRunner(

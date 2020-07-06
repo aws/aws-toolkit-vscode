@@ -28,7 +28,12 @@ class RetrieveRole(private val settings: EcsServiceCloudDebuggingRunSettings) : 
         val startTime = Instant.now()
         var result = Result.Succeeded
         try {
-            val description = CloudDebuggingResources.describeInstrumentedResource(context.project, settings.clusterArn, settings.serviceArn)
+            val description = CloudDebuggingResources.describeInstrumentedResource(
+                settings.credentialProvider,
+                settings.region,
+                settings.clusterArn,
+                settings.serviceArn
+            )
             if (description == null || description.status != INSTRUMENTED_STATUS || description.taskRole.isEmpty()) {
                 throw RuntimeException("Resource somehow became de-instrumented?")
             }

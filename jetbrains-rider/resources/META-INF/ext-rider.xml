@@ -21,7 +21,6 @@
     <extensions defaultExtensionNs="com.intellij">
         <projectTemplateProvider implementation="software.aws.toolkits.jetbrains.ui.wizard.DotNetSamProjectProvider" order="last"/>
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.icons.RiderAwsIconsPatcherRegistrar"/>
-        <registryKey key="software.aws.toolkits.jetbrains.rider.debugger.useDotnetCoreRuntime" description="Use .net core runtime for debugger (only for 2019.3+)" defaultValue="true" restartRequired="false"/>
     </extensions>
 
     <extensions defaultExtensionNs="aws.toolkit.lambda">

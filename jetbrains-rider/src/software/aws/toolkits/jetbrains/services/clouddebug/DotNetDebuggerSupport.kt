@@ -5,22 +5,14 @@ package software.aws.toolkits.jetbrains.services.clouddebug
 
 import com.intellij.execution.configurations.RuntimeConfigurationError
 import com.intellij.execution.filters.TextConsoleBuilderFactory
-import com.intellij.execution.process.CapturingProcessHandler
 import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.ui.RunContentDescriptor
-import com.intellij.ide.plugins.PluginManager
-import com.intellij.ide.plugins.PluginManagerCore
-import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.rd.defineNestedLifetime
-import com.intellij.openapi.util.BuildNumber
 import com.intellij.openapi.util.io.FileUtil
-import com.intellij.openapi.util.registry.Registry
-import com.intellij.openapi.util.text.StringUtil
-import com.intellij.util.execution.ParametersListUtil
 import com.intellij.xdebugger.XDebugProcessStarter
 import com.intellij.xdebugger.XDebuggerManager
 import com.jetbrains.rd.framework.IdKind
@@ -51,8 +43,6 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.trace
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.Context
-import software.aws.toolkits.jetbrains.services.clouddebug.execution.steps.CloudDebugCliValidate
-import software.aws.toolkits.jetbrains.services.clouddebug.execution.steps.ResourceInstrumenter
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.steps.ResourceTransferStep
 import software.aws.toolkits.jetbrains.services.ecs.execution.ImmutableContainerOptions
 import software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetSamDebugSupport
@@ -67,20 +57,12 @@ import java.util.concurrent.CompletableFuture
 import kotlin.concurrent.schedule
 
 class DotNetDebuggerSupport : DebuggerSupport() {
-
     companion object {
         private val logger = getLogger<DotNetSamDebugSupport>()
 
-        const val USE_DOTNET_CORE_RUNTIME_FLAG_NAME = "software.aws.toolkits.jetbrains.rider.debugger.useDotnetCoreRuntime"
         private const val DOTNET_EXECUTABLE = "dotnet"
         private const val START_COMMAND_ASSEMBLY_PLACEHOLDER = "$DOTNET_EXECUTABLE <path_to_assembly>"
         private const val DEBUGGER_MODE = "server"
-        private const val BUSYBOX_PATH = "/aws/cloud-debug/common/busybox"
-
-        val useDotnetCoreRuntime
-            get() = Registry.`is`(USE_DOTNET_CORE_RUNTIME_FLAG_NAME) && isRider20193OrLater
-
-        val isRider20193OrLater = BuildNumber.fromString("193.0")?.let { ApplicationInfo.getInstance().build >= it } == true
     }
 
     private var exeRemotePath: String = ""
@@ -118,26 +100,6 @@ class DotNetDebuggerSupport : DebuggerSupport() {
         val manager = XDebuggerManager.getInstance(environment.project)
         val future = CompletableFuture<RunContentDescriptor?>()
 
-        val applicationInfo = ApplicationInfo.getInstance()
-        val dbgshimPath =
-            // Run custom dbgshim detection logic on Rider 2019.2 only. Further versions has correct autodetection logic.
-            if (!isRider20193OrLater) {
-                logger.info { "Rider build is ${applicationInfo.build}. Using dbgdhim detecting tool." }
-                val dbgshimTool =
-                    "${debuggerPath.getRemoteDebuggerPath()}/${DotNetDebuggerUtils.cloudDebuggerTempDirName}/${DotNetDebuggerUtils.cloudDebuggerToolsName}.exe"
-
-                getRiderDebuggerDbgshimPath(
-                    context = context,
-                    debuggerToolRemotePath = dbgshimTool,
-                    userAssemblyRemotePath = exeRemotePath,
-                    selector = containerName,
-                    target = ResourceInstrumenter.getTargetForContainer(context, containerName)
-                )
-            } else {
-                logger.info { "Rider build is ${applicationInfo.build}. DbgShim will be detected automatically by debugger." }
-                null
-            }
-
         if (exeRemotePath.isEmpty()) {
             future.completeExceptionally(RuntimeException("DotNet executable to debug is not specified"))
             return future
@@ -153,7 +115,7 @@ class DotNetDebuggerSupport : DebuggerSupport() {
 
         runInEdt {
             try {
-                createDebugProcessAsync(environment, frontendPort, backendPort, exeRemotePath, dbgshimPath).then {
+                createDebugProcessAsync(environment, frontendPort, backendPort, exeRemotePath).then {
                     it?.let {
                         future.complete(
                             manager.startSessionAndShowTab(
@@ -174,7 +136,6 @@ class DotNetDebuggerSupport : DebuggerSupport() {
     }
 
     override fun createDebuggerUploadStep(context: Context, containerName: String): ResourceTransferStep? {
-
         val debuggerAssemblyNames =
             DebuggerHelperHost.getInstance(context.project).model.getDebuggerAssemblies.sync(Unit, RpcTimeouts.longRunning)
 
@@ -197,22 +158,6 @@ class DotNetDebuggerSupport : DebuggerSupport() {
         )
     }
 
-    override fun augmentStatement(input: String, ports: List<Int>, debuggerPath: String): String =
-        if (useDotnetCoreRuntime)
-            super.augmentStatement(input, ports, debuggerPath)
-        else {
-            // Rsync on Windows drops the 'executable' flag when copy files into a remote container. Set the flag explicitly.
-            val runtimeSh = "${this.debuggerPath.getRemoteDebuggerPath()}/${DotNetDebuggerUtils.cloudDebuggerTempDirName}/runtime.sh"
-            val monoSgen = "${this.debuggerPath.getRemoteDebuggerPath()}/${DotNetDebuggerUtils.cloudDebuggerTempDirName}/linux-x64/mono/bin/mono-sgen"
-            val chmodCommand = ParametersListUtil.join(BUSYBOX_PATH, "chmod", "+x", runtimeSh, monoSgen)
-            ParametersListUtil.join(
-                BUSYBOX_PATH,
-                "sh",
-                "-c",
-                "$chmodCommand && ${super.augmentStatement(input, ports, debuggerPath)}"
-            )
-        }
-
     override fun automaticallyAugmentable(input: List<String>): Boolean {
         if (input.first().trim() != DOTNET_EXECUTABLE)
             throw RuntimeConfigurationError(message("cloud_debug.run_configuration.dotnet.start_command.miss_runtime", DOTNET_EXECUTABLE))
@@ -234,7 +179,6 @@ class DotNetDebuggerSupport : DebuggerSupport() {
         val debuggerRemoteDirPath = "${this.debuggerPath.getRemoteDebuggerPath()}/${DotNetDebuggerUtils.cloudDebuggerTempDirName}"
 
         val remoteDebuggerLogPath = "$debuggerRemoteDirPath/Logs"
-        val remoteDebuggerRuntimeShPath = "$debuggerRemoteDirPath/runtime.sh"
 
         if (ports.size < 2) {
             val message = message("cloud_debug.step.dotnet.two_ports_required")
@@ -247,7 +191,7 @@ class DotNetDebuggerSupport : DebuggerSupport() {
 
         val debugArgs = StringBuilder()
             .append("RESHARPER_HOST_LOG_DIR=$remoteDebuggerLogPath ")
-            .append(if (useDotnetCoreRuntime) "dotnet " else "$remoteDebuggerRuntimeShPath ")
+            .append("dotnet ")
             .append("$debuggerPath ")
             .append("--mode=$DEBUGGER_MODE ")
             .append("--frontend-port=$frontendPort ")
@@ -261,8 +205,7 @@ class DotNetDebuggerSupport : DebuggerSupport() {
         environment: ExecutionEnvironment,
         frontendPort: Int,
         backendPort: Int,
-        exeRemotePath: String,
-        dbgshimPath: String?
+        exeRemotePath: String
     ): Promise<XDebugProcessStarter?> {
         val promise = AsyncPromise<XDebugProcessStarter?>()
         val project = environment.project
@@ -273,11 +216,11 @@ class DotNetDebuggerSupport : DebuggerSupport() {
 
         val scheduler = RdDispatcher(debuggerLifetime)
         val startInfo = createNetCoreStartInfo(
-            exePath = exeRemotePath,
-            dbgshimPath = dbgshimPath
+            exePath = exeRemotePath
         )
 
         val protocol = Protocol(
+            name = "",
             serializers = Serializers(),
             identity = Identities(IdKind.Client),
             scheduler = scheduler,
@@ -338,7 +281,9 @@ class DotNetDebuggerSupport : DebuggerSupport() {
                     processHandler.addProcessListener(object : ProcessAdapter() {
                         override fun processTerminated(event: ProcessEvent) {
                             logger.trace { "Process exited. Terminating debugger lifetime" }
-                            debuggerLifetimeDefinition.terminate()
+                            runInEdt {
+                                debuggerLifetimeDefinition.terminate()
+                            }
                         }
                     })
 
@@ -383,9 +328,9 @@ class DotNetDebuggerSupport : DebuggerSupport() {
         return promise
     }
 
-    private fun createNetCoreStartInfo(exePath: String, dbgshimPath: String?): DotNetCoreExeStartInfo =
+    private fun createNetCoreStartInfo(exePath: String): DotNetCoreExeStartInfo =
         DotNetCoreExeStartInfo(
-            dotNetCoreInfo = DotNetCoreInfo(null, dbgshimPath),
+            dotNetCoreInfo = DotNetCoreInfo(null, null),
             exePath = exePath,
             workingDirectory = "",
             arguments = "",
@@ -396,50 +341,7 @@ class DotNetDebuggerSupport : DebuggerSupport() {
             needToBeInitializedImmediately = true
         )
 
-    private fun getRiderDebuggerDbgshimPath(
-        context: Context,
-        debuggerToolRemotePath: String,
-        userAssemblyRemotePath: String,
-        selector: String,
-        target: String
-    ): String {
-        val cloudDebugExec = context.getRequiredAttribute(CloudDebugCliValidate.EXECUTABLE_ATTRIBUTE).getCommandLine()
-
-        val remoteDebuggerLogPath = "${this.debuggerPath.getRemoteDebuggerPath()}/${DotNetDebuggerUtils.cloudDebuggerTempDirName}/Logs"
-
-        val getDbgshimCmd = cloudDebugExec
-            .withParameters("--target")
-            .withParameters(target)
-            .withParameters("--selector")
-            .withParameters(selector)
-            .withParameters("exec")
-            .withParameters(
-                "env",
-                "RESHARPER_HOST_LOG_DIR=$remoteDebuggerLogPath",
-                "RESHARPER_TRACE=AWS.RiderDebuggerTools",
-                "dotnet",
-                debuggerToolRemotePath,
-                "--command=DbgShimDetect",
-                "--assembly-path=$userAssemblyRemotePath")
-
-        val process = CapturingProcessHandler(getDbgshimCmd).runProcess()
-        if (process.exitCode != 0 || process.isTimeout) {
-            throw IllegalStateException("Dbgshim detection process has exit with code: '${process.exitCode}'. Message: '${process.stderr}'")
-        }
-
-        val response = CliOutputParser.parseLogEvent(process.stdout)
-        val outString = response.text
-        logger.trace { "DbgShim detector has returned output: $outString" }
-        val detectorResult = StringUtil.splitByLines(outString)
-        if (detectorResult.size != 2)
-            throw IllegalStateException("DbgShim detector returned unexpected output: $outString")
-        val dbgshimPath = detectorResult[1] // the second line is a path to dbgshim directory
-        logger.info { "DbgShim path is $dbgshimPath" }
-        return dbgshimPath
-    }
-
     private fun prepareDebuggerArtifacts(targetPath: File, assemblyNames: Array<String>) {
-
         val assemblyFileErrors = mutableListOf<String>()
 
         for (assemblyName in assemblyNames) {
@@ -494,44 +396,14 @@ class DotNetDebuggerSupport : DebuggerSupport() {
 
         val linuxSubdirectoryName = "linux-x64"
 
-        if (!useDotnetCoreRuntime) {
-            // Copy runtime.sh
-            val runtimeSh = RiderEnvironment.getBundledFile("runtime.sh")
-            FileUtil.copy(runtimeSh, File(targetPath, runtimeSh.name))
-
-            // Copy mono
-            val linuxMono = RiderEnvironment.getBundledFile(linuxSubdirectoryName, allowDir = true)
-            FileUtil.copyDir(linuxMono, File(targetPath, linuxMono.name))
-        } else {
-            val linuxMonoSubdirectory = File(targetPath, linuxSubdirectoryName)
-            if (linuxMonoSubdirectory.isDirectory) {
-                try {
-                    // remove existing linux Mono distribution since we run debugger on container .net core
-                    linuxMonoSubdirectory.deleteRecursively()
-                } catch (e: Throwable) {
-                    logger.trace(e) { "Error while trying to delete unused linux Mono directory ${linuxMonoSubdirectory.absolutePath}" }
-                }
+        val linuxMonoSubdirectory = File(targetPath, linuxSubdirectoryName)
+        if (linuxMonoSubdirectory.isDirectory) {
+            try {
+                // remove existing linux Mono distribution since we run debugger on container .net core
+                linuxMonoSubdirectory.deleteRecursively()
+            } catch (e: Throwable) {
+                logger.trace(e) { "Error while trying to delete unused linux Mono directory ${linuxMonoSubdirectory.absolutePath}" }
             }
         }
-
-        // Copy tool to detect dbgshim 'AWS.DebuggerTools'
-        val pluginId = PluginManagerCore.getPluginByClassName(this.javaClass.name)
-            ?: throw IllegalStateException("Unable to find plugin id")
-
-        val pluginBasePath = PluginManager.getPlugin(pluginId)?.path
-            ?: throw IllegalStateException("Unable to find plugin with id: '$pluginId'")
-
-        val dotnetPluginDir = File(pluginBasePath, "dotnet")
-        if (!dotnetPluginDir.exists()) throw IllegalStateException("Unable to find 'dotnet' folder inside path: '$dotnetPluginDir'")
-
-        FileUtil.copy(
-            File(dotnetPluginDir, "${DotNetDebuggerUtils.cloudDebuggerToolsName}.exe"),
-            File(targetPath, "${DotNetDebuggerUtils.cloudDebuggerToolsName}.exe")
-        )
-
-        FileUtil.copy(
-            File(dotnetPluginDir, "${DotNetDebuggerUtils.cloudDebuggerToolsName}.runtimeconfig.json"),
-            File(targetPath, "${DotNetDebuggerUtils.cloudDebuggerToolsName}.runtimeconfig.json")
-        )
     }
 }
