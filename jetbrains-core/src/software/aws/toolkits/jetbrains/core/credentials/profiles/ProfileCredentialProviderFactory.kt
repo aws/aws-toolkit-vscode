@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.core.credentials.profiles
 
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
@@ -70,8 +69,7 @@ private class ProfileCredentialsIdentifierSso(
 ) : ProfileCredentialsIdentifier(profileName, defaultRegionId),
     SsoRequiredInteractiveCredentials
 
-class ProfileCredentialProviderFactory : CredentialProviderFactory, Disposable {
-    private val profileWatcher = ProfileWatcher(this)
+class ProfileCredentialProviderFactory : CredentialProviderFactory {
     private val profileHolder = ProfileHolder()
 
     override val id = PROFILE_FACTORY_ID
@@ -80,9 +78,9 @@ class ProfileCredentialProviderFactory : CredentialProviderFactory, Disposable {
         // Load the initial data, then start the background watcher
         loadProfiles(credentialLoadCallback, true)
 
-        profileWatcher.start(onFileChange = {
+        ProfileWatcher.getInstance().addListener {
             loadProfiles(credentialLoadCallback, false)
-        })
+        }
     }
 
     private fun loadProfiles(credentialLoadCallback: CredentialsChangeListener, initialLoad: Boolean) {
@@ -170,8 +168,6 @@ class ProfileCredentialProviderFactory : CredentialProviderFactory, Disposable {
             )
         }
     }
-
-    override fun dispose() {}
 
     override fun createAwsCredentialProvider(
         providerId: CredentialIdentifier,

@@ -9,13 +9,13 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.ui.TestInputDialog
-import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.VfsTestUtil
+import com.intellij.testFramework.replaceService
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.mock
@@ -45,6 +45,7 @@ import software.aws.toolkits.core.credentials.CredentialsChangeListener
 import software.aws.toolkits.core.region.ToolkitRegionProvider
 import software.aws.toolkits.core.rules.SystemPropertyHelper
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileCredentialProviderFactory
+import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileWatcher
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import java.io.File
 import java.time.ZonedDateTime
@@ -72,6 +73,7 @@ class ProfileCredentialProviderFactoryTest {
     private lateinit var profileFile: File
     private lateinit var credentialsFile: File
 
+    private val mockProfileWatcher = MockProfileWatcher()
     private val mockSdkHttpClient = mock<SdkHttpClient>()
     private val mockRegionProvider = mock<ToolkitRegionProvider>()
     private val profileLoadCallback = mock<CredentialsChangeListener>()
@@ -92,12 +94,15 @@ class ProfileCredentialProviderFactoryTest {
             on { profileLoadCallback.invoke(credentialChangeEvent.capture()) }.thenReturn(Unit)
         }
 
+        ApplicationManager.getApplication().replaceService(ProfileWatcher::class.java, mockProfileWatcher, disposableRule.disposable)
+
         Messages.setTestInputDialog { MFA_TOKEN }
     }
 
     @After
     fun tearDown() {
         Messages.setTestInputDialog(TestInputDialog.DEFAULT)
+        mockProfileWatcher.reset()
     }
 
     @Test
@@ -375,6 +380,8 @@ class ProfileCredentialProviderFactoryTest {
             """.trimIndent()
         )
 
+        mockProfileWatcher.triggerListeners()
+
         argumentCaptor<CredentialsChangeEvent>().apply {
             verify(profileLoadCallback, times(2)).invoke(capture())
 
@@ -411,6 +418,8 @@ class ProfileCredentialProviderFactoryTest {
 
         profileFile.writeToFile("")
 
+        mockProfileWatcher.triggerListeners()
+
         assertThatThrownBy {
             providerFactory.createProvider(validProfile)
         }.isInstanceOf(IllegalStateException::class.java)
@@ -442,6 +451,8 @@ class ProfileCredentialProviderFactoryTest {
             aws_session_token=FooSessionToken
             """.trimIndent()
         )
+
+        mockProfileWatcher.triggerListeners()
 
         val validProfile = findCredentialIdentifier("foo")
         val credentialsProvider = providerFactory.createProvider(validProfile)
@@ -479,6 +490,8 @@ class ProfileCredentialProviderFactoryTest {
             aws_session_token=FooSessionToken
             """.trimIndent()
         )
+
+        mockProfileWatcher.triggerListeners()
 
         val validProfile = findCredentialIdentifier("foo")
         val credentialsProvider = providerFactory.createProvider(validProfile)
@@ -525,6 +538,8 @@ class ProfileCredentialProviderFactoryTest {
 
         VfsTestUtil.deleteFile(LocalFileSystem.getInstance().findFileByIoFile(profileFile)!!)
 
+        mockProfileWatcher.triggerListeners()
+
         assertThatThrownBy {
             providerFactory.createProvider(validProfile)
         }.isInstanceOf(IllegalStateException::class.java)
@@ -560,8 +575,6 @@ class ProfileCredentialProviderFactoryTest {
     private fun createProviderFactory(): ProfileCredentialProviderFactory {
         val factory = ProfileCredentialProviderFactory()
         factory.setUp(profileLoadCallback)
-
-        Disposer.register(disposableRule.disposable, factory)
 
         return factory
     }
@@ -608,6 +621,22 @@ class ProfileCredentialProviderFactoryTest {
         MockRegionProvider.getInstance().defaultRegion(),
         sdkHttpClientSupplier = { mockSdkHttpClient }
     )
+
+    private class MockProfileWatcher : ProfileWatcher {
+        private val listeners = mutableListOf<() -> Unit>()
+
+        override fun addListener(listener: () -> Unit) {
+            listeners.add(listener)
+        }
+
+        fun reset() {
+            listeners.clear()
+        }
+
+        fun triggerListeners() {
+            listeners.forEach { it() }
+        }
+    }
 
     private companion object {
         val TEST_PROFILE_FILE_CONTENTS = """
