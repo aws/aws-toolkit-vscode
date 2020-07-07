@@ -10,6 +10,7 @@ import com.intellij.remoterobot.fixtures.ComponentFixture
 import com.intellij.remoterobot.fixtures.DefaultXpath
 import com.intellij.remoterobot.fixtures.FixtureName
 import com.intellij.remoterobot.search.locators.byXpath
+import java.nio.file.Path
 
 fun RemoteRobot.welcomeFrame(function: WelcomeFrame.() -> Unit) {
     find(WelcomeFrame::class.java).apply(function)
@@ -28,5 +29,17 @@ class WelcomeFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) :
         find(ComponentFixture::class.java, byXpath("//div[@class='MyList']"))
             .findText(remoteRobot.preferencesTitle())
             .click()
+    }
+
+    fun openFolder(path: Path) {
+        try {
+            // 2020.1
+            actionLink("Open or Import").click()
+        } catch (e: Exception) {
+            // 2019.3
+            actionLink("Open").click()
+        }
+        fillSingleTextField(path.toAbsolutePath().toString())
+        pressOk()
     }
 }

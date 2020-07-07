@@ -10,6 +10,7 @@ import com.intellij.remoterobot.fixtures.ComponentFixture
 import com.intellij.remoterobot.fixtures.ContainerFixture
 import com.intellij.remoterobot.fixtures.DefaultXpath
 import com.intellij.remoterobot.fixtures.FixtureName
+import com.intellij.remoterobot.fixtures.JListFixture
 import com.intellij.remoterobot.search.locators.byXpath
 import com.intellij.remoterobot.stepsProcessing.step
 import com.intellij.remoterobot.utils.keyboard
@@ -18,7 +19,10 @@ import java.awt.event.KeyEvent
 import java.time.Duration
 
 fun RemoteRobot.idea(function: IdeaFrame.() -> Unit) {
-    find<IdeaFrame>().apply(function)
+    val frame = find<IdeaFrame>()
+    // FIX_WHEN_MIN_IS_203 remove this and set the system property "ide.show.tips.on.startup.default.value"
+    frame.apply { tryCloseTips() }
+    frame.apply(function)
 }
 
 @FixtureName("Idea frame")
@@ -56,10 +60,52 @@ class IdeaFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) : Co
 
     fun openProjectStructure() = step("Open Project Structure dialog") {
         if (remoteRobot.isMac()) {
-            keyboard { this.hotKey(KeyEvent.VK_META, KeyEvent.VK_SEMICOLON) }
+            keyboard { hotKey(KeyEvent.VK_META, KeyEvent.VK_SEMICOLON) }
         } else {
-            keyboard { this.hotKey(KeyEvent.VK_SHIFT, KeyEvent.VK_SHIFT, KeyEvent.VK_ALT, KeyEvent.VK_S) }
+            keyboard { hotKey(KeyEvent.VK_SHIFT, KeyEvent.VK_SHIFT, KeyEvent.VK_ALT, KeyEvent.VK_S) }
         }
         find(ComponentFixture::class.java, byXpath("//div[@accessiblename='Project Structure']")).click()
+    }
+
+    // Show AWS Explorer, or leave it open if it is already open
+    fun showAwsExplorer() {
+        try {
+            find<AwsExplorer>(byXpath("//div[@class='ExplorerToolWindow']"))
+        } catch (e: Exception) {
+            find(ComponentFixture::class.java, byXpath("//div[@accessiblename='AWS Explorer' and @class='StripeButton' and @text='AWS Explorer']")).click()
+        }
+    }
+
+    fun setCredentials(profile: String, region: String) {
+        openCredentialsPanel()
+        // This will grab both the region and credentials
+        findAll<JListFixture>(byXpath("//div[@class='MyList']")).forEach {
+            if (it.items.contains(profile)) {
+                it.selectItem(profile)
+            }
+        }
+        openCredentialsPanel()
+        findAll<JListFixture>(byXpath("//div[@class='MyList']")).forEach {
+            if (it.items.contains(region)) {
+                it.selectItem(region)
+            }
+        }
+    }
+
+    // Tips sometimes open when running locally, close it if it opens
+    fun tryCloseTips() {
+        try {
+            find<ComponentFixture>(byXpath("//div[@accessiblename='Close' and @class='JButton' and @text='Close']")).click()
+        } catch (e: Exception) {
+        }
+    }
+
+    private fun openCredentialsPanel() = try {
+        // 2020.1
+        findAndClick("//div[@class='MultipleTextValues']")
+    } catch (e: Exception) {
+        // TODO FIX_WHEN_MIN_IS_201 remove this
+        // 2019.3
+        findAndClick("//div[@class='MultipleTextValuesPresentationWrapper']")
     }
 }
