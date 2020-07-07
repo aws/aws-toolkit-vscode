@@ -388,6 +388,7 @@ describe('IteratingQuickPickController', async () => {
     })
 
     beforeEach(() => {
+        clock.reset()
         quickPick = picker.createQuickPick<vscode.QuickPickItem>({})
     })
 
@@ -468,6 +469,38 @@ describe('IteratingQuickPickController', async () => {
         await clock.nextAsync()
         await clock.nextAsync()
         await clock.nextAsync()
+        await clock.nextAsync()
+        new Promise(resolve => {
+            clock.setTimeout(() => {
+                assert.strictEqual(quickPick.items.length, 3)
+                assert.deepStrictEqual(quickPick.items, result)
+                resolve()
+            }, interval - 15)
+        })
+        await clock.nextAsync()
+    })
+
+    it('does not return additional values if start is called on a finished iterator', async () => {
+        const controller = new picker.IteratingQuickPickController(
+            quickPick,
+            new IteratorTransformer<string, vscode.QuickPickItem>(() => iteratorFn(), converter)
+        )
+
+        controller.startRequests()
+
+        await clock.nextAsync()
+        await clock.nextAsync()
+        await clock.nextAsync()
+        new Promise(resolve => {
+            clock.setTimeout(() => {
+                assert.strictEqual(quickPick.items.length, 3)
+                assert.deepStrictEqual(quickPick.items, result)
+                resolve()
+            }, interval - 15)
+        })
+        await clock.nextAsync()
+
+        controller.startRequests()
         await clock.nextAsync()
         new Promise(resolve => {
             clock.setTimeout(() => {

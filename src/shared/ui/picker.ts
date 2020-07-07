@@ -214,12 +214,14 @@ export class IteratingQuickPickController<TResponse> {
      * Useful for manual pagination, losing quick pick focus (e.g. via external link), throttling, etc.
      */
     public startRequests(): void {
-        getLogger().debug(
-            this.state.isPaused
-                ? 'Starting IteratingQuickPickController requests'
-                : 'IteratingQuickPickController already iterating'
-        )
-        if (this.state.isPaused) {
+        getLogger().debug('Starting IteratingQuickPickController iteration')
+        if (!this.state.isPaused) {
+            getLogger().debug('IteratingQuickPickController already iterating')
+        }
+        if (this.state.isDone) {
+            getLogger().debug('IteratingQuickPickController is already done iterating. Call reset() and start again')
+        }
+        if (this.state.isPaused && !this.state.isDone) {
             this.loadItems()
         }
     }
@@ -272,7 +274,7 @@ export class IteratingQuickPickController<TResponse> {
         // use a while loop so we have greater control over the iterator.
         // breaking out of a for..of loop for an iterator will automatically set the iterator to `done`
         // manual iteration means that we can use the same iterator no matter how many times we call loadItems()
-        while (!this.state.isPaused) {
+        while (!this.state.isDone && !this.state.isPaused) {
             this.quickPick.busy = true
 
             try {
@@ -313,6 +315,7 @@ export class IteratingQuickPickController<TResponse> {
                     }),
                 ])
                 if (!loadedItems) {
+                    this.state.isDone = true
                     break
                 }
                 // TODO: Is there a way to append to this ReadOnlyArray so it doesn't constantly pop focus back to the top?
@@ -323,6 +326,7 @@ export class IteratingQuickPickController<TResponse> {
                         this.quickPick.items = [IteratingQuickPickController.NO_ITEMS_ITEM]
                     }
 
+                    this.state.isDone = true
                     break
                 }
             } catch (rejectedCallback) {
@@ -343,6 +347,7 @@ export class IteratingQuickPickController<TResponse> {
     private resetState(): IteratingQuickPickControllerState {
         return {
             cancelExecutionFn: undefined,
+            isDone: false,
             isPaused: true,
             iterator: this.populator.createPickIterator(),
         }
@@ -351,6 +356,7 @@ export class IteratingQuickPickController<TResponse> {
 
 interface IteratingQuickPickControllerState {
     cancelExecutionFn: undefined | (() => void)
+    isDone: boolean
     isPaused: boolean
     iterator: AsyncIterator<vscode.QuickPickItem[]>
 }
