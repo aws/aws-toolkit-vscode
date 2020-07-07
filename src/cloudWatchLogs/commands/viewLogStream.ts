@@ -16,7 +16,7 @@ import { ext } from '../../shared/extensionGlobals'
 import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
-import { getPaginatedAwsCallIter } from '../../shared/utilities/collectionUtils'
+import { getPaginatedAwsCallIter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
 
 export interface SelectLogStreamResponse {
     region: string
@@ -58,7 +58,7 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
             descending: true,
         }
         const qp = picker.createQuickPick({})
-        const populator = new picker.IteratingQuickPickPopulator(
+        const populator = new IteratorTransformer(
             () =>
                 getPaginatedAwsCallIter({
                     awsCall: request => client.describeLogStreams(request),
@@ -76,7 +76,7 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
         const choices = await picker.promptUser({
             picker: qp,
             onDidTriggerButton: (button, resolve, reject) =>
-                picker.iteratingOnDidTriggerButton(button, resolve, reject, controller),
+                controller.iteratingOnDidTriggerButton(button, resolve, reject),
         })
 
         const val = picker.verifySinglePickerOutput(choices)

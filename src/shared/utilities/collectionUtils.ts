@@ -195,3 +195,38 @@ export async function* getPaginatedAwsCallIter<TRequest, TResponse>(
         yield response
     }
 }
+
+/**
+ * Represents an iterator that tranforms another iterator into an array of QuickPickItems.
+ * Additionally, has a reset functionality to reset the iterator to its initial state.
+ * @template TIteratorOutput Iterator output value type
+ * @template TTransformerOutput Transformer output value type
+ */
+export class IteratorTransformer<TIteratorOutput, TTransformerOutput> {
+    /**
+     * @param iteratorFactory Function that returns an iterator, with all default state values set. E.g. `collectionUtils.getPaginatedAwsCallIter`
+     * @param transform Function which transforms a response from the iterator into an array of `vscode.QuickPickItem`s.
+     */
+    public constructor(
+        private readonly iteratorFactory: () => AsyncIterator<TIteratorOutput>,
+        private readonly transform: (response: TIteratorOutput) => TTransformerOutput[]
+    ) {}
+
+    /**
+     * Generates an iterator which returns an array of formatted QuickPickItems on `.next()`
+     */
+    public async *createPickIterator(): AsyncIterator<TTransformerOutput[]> {
+        const iterator = this.iteratorFactory()
+        while (true) {
+            const nextResult = await iterator.next()
+            const transformedResult = this.transform(nextResult.value)
+
+            // return (instead of yield) marks final value as done
+            if (nextResult.done) {
+                return transformedResult
+            }
+
+            yield transformedResult
+        }
+    }
+}

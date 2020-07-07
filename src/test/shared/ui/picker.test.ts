@@ -8,6 +8,7 @@ import * as lolex from 'lolex'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import * as picker from '../../../shared/ui/picker'
+import { IteratorTransformer } from '../../../shared/utilities/collectionUtils'
 
 describe('createQuickPick', async () => {
     let testPicker: vscode.QuickPick<vscode.QuickPickItem> | undefined
@@ -369,123 +370,6 @@ describe('promptUser', async () => {
     }
 })
 
-describe('iteratingOnDidTriggerButton', async () => {
-    let sandbox: sinon.SinonSandbox
-    class fakeIteratingQuickPickController extends picker.IteratingQuickPickController<undefined> {
-        public constructor(private readonly spy: sinon.SinonSpy) {
-            super(
-                picker.createQuickPick({}),
-                new picker.IteratingQuickPickPopulator(
-                    () => {
-                        return {
-                            next: async () => {
-                                return { value: undefined, done: true }
-                            },
-                        }
-                    },
-                    () => []
-                )
-            )
-        }
-        public reset(): void {
-            this.spy()
-        }
-    }
-
-    beforeEach(() => {
-        sandbox = sinon.createSandbox()
-    })
-
-    afterEach(() => {
-        sandbox.restore
-    })
-
-    it('triggers a refresh and returns undefined', async () => {
-        const spy = sandbox.spy()
-        const out = await picker.iteratingOnDidTriggerButton(
-            picker.IteratingQuickPickController.REFRESH_BUTTON,
-            () => {},
-            () => {},
-            new fakeIteratingQuickPickController(spy)
-        )
-        assert.strictEqual(out, undefined)
-        assert.ok(spy.calledOnce)
-    })
-
-    it('returns undefined if no override is provided', async () => {
-        const spy = sandbox.spy()
-        const out = await picker.iteratingOnDidTriggerButton(
-            { iconPath: new vscode.ThemeIcon('squirrel') },
-            () => {},
-            () => {},
-            new fakeIteratingQuickPickController(spy)
-        )
-        assert.strictEqual(out, undefined)
-        assert.ok(spy.notCalled)
-    })
-
-    it('returns a value from the override function', async () => {
-        const spy = sandbox.spy()
-        const items: vscode.QuickPickItem[] = [{ label: 'asdf' }, { label: 'jkl;' }]
-        const out = await picker.iteratingOnDidTriggerButton(
-            { iconPath: new vscode.ThemeIcon('squirrel') },
-            () => {},
-            () => {},
-            new fakeIteratingQuickPickController(spy),
-            async () => {
-                return items
-            }
-        )
-        assert.deepStrictEqual(out, items)
-        assert.ok(spy.notCalled)
-    })
-})
-
-describe('IteratingQuickPickPopulator', async () => {
-    it('transforms values from the iterator and can reset itself', async () => {
-        const values = ['a', 'b', 'c']
-        async function* iteratorFn(): AsyncIterator<string> {
-            for (const val of values) {
-                yield val
-            }
-        }
-        const populator = new picker.IteratingQuickPickPopulator<string>(
-            () => iteratorFn(),
-            val => {
-                if (val) {
-                    return [{ label: val.toUpperCase() }]
-                }
-
-                return []
-            }
-        )
-
-        const firstIter = populator.getPickIterator()
-        let firstI = 0
-        let firstItem = await firstIter.next()
-        while (!firstItem.done) {
-            assert.ok(Array.isArray(firstItem.value)),
-                assert.strictEqual(firstItem.value.length, 1),
-                assert.deepStrictEqual(firstItem.value[0], { label: values[firstI].toUpperCase() })
-            firstI++
-            firstItem = await firstIter.next()
-        }
-
-        populator.reset()
-
-        const secondIter = populator.getPickIterator()
-        let secondI = 0
-        let secondItem = await secondIter.next()
-        while (!secondItem.done) {
-            assert.ok(Array.isArray(secondItem.value)),
-                assert.strictEqual(secondItem.value.length, 1),
-                assert.deepStrictEqual(secondItem.value[0], { label: values[secondI].toUpperCase() })
-            secondI++
-            secondItem = await secondIter.next()
-        }
-    })
-})
-
 describe('IteratingQuickPickController', async () => {
     const values = ['a', 'b', 'c']
     const result = [{ label: 'A' }, { label: 'B' }, { label: 'C' }]
@@ -543,7 +427,7 @@ describe('IteratingQuickPickController', async () => {
     it('appends a refresh button to the quickPick', () => {
         new picker.IteratingQuickPickController(
             quickPick,
-            new picker.IteratingQuickPickPopulator<string>(() => iteratorFn(), converter)
+            new IteratorTransformer<string, vscode.QuickPickItem>(() => iteratorFn(), converter)
         )
 
         assert.strictEqual(quickPick.buttons.length, 1)
@@ -553,7 +437,7 @@ describe('IteratingQuickPickController', async () => {
     it('returns iterated values on start and on reset', async () => {
         const controller = new picker.IteratingQuickPickController(
             quickPick,
-            new picker.IteratingQuickPickPopulator<string>(() => iteratorFn(), converter)
+            new IteratorTransformer<string, vscode.QuickPickItem>(() => iteratorFn(), converter)
         )
 
         controller.startRequests()
@@ -571,6 +455,7 @@ describe('IteratingQuickPickController', async () => {
         await clock.nextAsync()
 
         controller.reset()
+        controller.startRequests()
 
         await clock.nextAsync()
         new Promise(resolve => {
@@ -580,6 +465,7 @@ describe('IteratingQuickPickController', async () => {
                 resolve()
             }, interval - 15)
         })
+        await clock.nextAsync()
         await clock.nextAsync()
         await clock.nextAsync()
         await clock.nextAsync()
@@ -596,7 +482,7 @@ describe('IteratingQuickPickController', async () => {
     it('pauses and restarts iteration', async () => {
         const controller = new picker.IteratingQuickPickController(
             quickPick,
-            new picker.IteratingQuickPickPopulator<string>(() => iteratorFn(), converter)
+            new IteratorTransformer<string, vscode.QuickPickItem>(() => iteratorFn(), converter)
         )
 
         // pause almost immediately. This should cause this to output a single item.
@@ -620,6 +506,7 @@ describe('IteratingQuickPickController', async () => {
         controller.startRequests()
         await clock.nextAsync()
         await clock.nextAsync()
+        await clock.nextAsync()
         new Promise(resolve => {
             setTimeout(() => {
                 assert.deepStrictEqual(quickPick.items, result, `items at end are: ${quickPick.items}`)
@@ -632,10 +519,11 @@ describe('IteratingQuickPickController', async () => {
     it('appends an error item', async () => {
         const controller = new picker.IteratingQuickPickController(
             quickPick,
-            new picker.IteratingQuickPickPopulator<string>(() => errIteratorFn(), converter)
+            new IteratorTransformer<string, vscode.QuickPickItem>(() => errIteratorFn(), converter)
         )
 
         controller.startRequests()
+        await clock.nextAsync()
         await clock.nextAsync()
         new Promise(resolve => {
             setTimeout(() => {
@@ -654,7 +542,7 @@ describe('IteratingQuickPickController', async () => {
     it('appends a no items item', async () => {
         const controller = new picker.IteratingQuickPickController(
             quickPick,
-            new picker.IteratingQuickPickPopulator<string>(() => blankIteratorFn(), converter)
+            new IteratorTransformer<string, vscode.QuickPickItem>(() => blankIteratorFn(), converter)
         )
 
         controller.startRequests()
@@ -671,7 +559,7 @@ describe('IteratingQuickPickController', async () => {
     it('only appends values from the current refresh cycle', async () => {
         const controller = new picker.IteratingQuickPickController(
             quickPick,
-            new picker.IteratingQuickPickPopulator<string>(() => iteratorFn(), converter)
+            new IteratorTransformer<string, vscode.QuickPickItem>(() => iteratorFn(), converter)
         )
 
         controller.startRequests()
@@ -680,21 +568,25 @@ describe('IteratingQuickPickController', async () => {
         await clock.nextAsync()
         await clock.nextAsync()
         controller.reset()
+        controller.startRequests()
         await clock.nextAsync()
         await clock.nextAsync()
         await clock.nextAsync()
         await clock.nextAsync()
         controller.reset()
+        controller.startRequests()
         await clock.nextAsync()
         await clock.nextAsync()
         await clock.nextAsync()
         await clock.nextAsync()
         controller.reset()
+        controller.startRequests()
         await clock.nextAsync()
         await clock.nextAsync()
         await clock.nextAsync()
         await clock.nextAsync()
         controller.reset()
+        controller.startRequests()
         await clock.nextAsync()
         await clock.nextAsync()
         await clock.nextAsync()
@@ -707,5 +599,82 @@ describe('IteratingQuickPickController', async () => {
             }, interval - 15)
         })
         await clock.nextAsync()
+    })
+
+    describe('iteratingOnDidTriggerButton', async () => {
+        class fakeIteratingQuickPickController extends picker.IteratingQuickPickController<undefined> {
+            public constructor(
+                private readonly spy: sinon.SinonSpy,
+                callback?: () => Promise<vscode.QuickPickItem[] | undefined>
+            ) {
+                super(
+                    picker.createQuickPick({}),
+                    new IteratorTransformer(
+                        () => {
+                            return {
+                                next: async () => {
+                                    return { value: undefined, done: true }
+                                },
+                            }
+                        },
+                        () => []
+                    ),
+                    callback
+                )
+            }
+            public async reset(): Promise<void> {
+                this.spy()
+            }
+        }
+
+        let sandbox: sinon.SinonSandbox
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+        })
+
+        afterEach(() => {
+            sandbox.restore
+        })
+
+        it('triggers a refresh and returns undefined', async () => {
+            const spy = sandbox.spy()
+            const controller = new fakeIteratingQuickPickController(spy)
+            const out = await controller.iteratingOnDidTriggerButton(
+                picker.IteratingQuickPickController.REFRESH_BUTTON,
+                () => {},
+                () => {}
+            )
+            assert.strictEqual(out, undefined)
+            assert.ok(spy.calledOnce)
+        })
+
+        it('returns undefined if no override is provided', async () => {
+            const spy = sandbox.spy()
+            const controller = new fakeIteratingQuickPickController(spy)
+            const out = await controller.iteratingOnDidTriggerButton(
+                { iconPath: new vscode.ThemeIcon('squirrel') },
+                () => {},
+                () => {}
+            )
+            assert.strictEqual(out, undefined)
+            assert.ok(spy.notCalled)
+        })
+
+        it('returns a value from the override function', async () => {
+            const spy = sandbox.spy()
+            const callback = async () => {
+                return items
+            }
+            const controller = new fakeIteratingQuickPickController(spy, callback)
+            const items: vscode.QuickPickItem[] = [{ label: 'asdf' }, { label: 'jkl;' }]
+            const out = await controller.iteratingOnDidTriggerButton(
+                { iconPath: new vscode.ThemeIcon('squirrel') },
+                () => {},
+                () => {}
+            )
+            assert.deepStrictEqual(out, items)
+            assert.ok(spy.notCalled)
+        })
     })
 })
