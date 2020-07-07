@@ -17,6 +17,7 @@ import {
     SamCliValidator,
     SamCliValidatorResult,
     SamCliVersionValidation,
+    SamCliVersionValidatorResult,
 } from '../../../../shared/sam/cli/samCliValidator'
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
 import { assertThrowsError } from '../../utilities/assertUtils'
@@ -64,6 +65,9 @@ describe('DefaultValidatingSamCliProcessInvoker', async () => {
                         },
                     }
                 },
+                getVersionValidatorResult: async (): Promise<SamCliVersionValidatorResult> => {
+                    return { validation: test.versionValidation }
+                },
             }
 
             const invoker = new DefaultValidatingSamCliProcessInvoker({
@@ -95,6 +99,9 @@ describe('DefaultValidatingSamCliProcessInvoker', async () => {
                     samCliFound: false,
                 }
             },
+            getVersionValidatorResult: async (): Promise<SamCliVersionValidatorResult> => {
+                return { validation: SamCliVersionValidation.VersionNotParseable }
+            },
         }
 
         const invoker = new DefaultValidatingSamCliProcessInvoker({
@@ -118,6 +125,9 @@ describe('DefaultValidatingSamCliProcessInvoker', async () => {
                     samCliFound: true,
                     versionValidation: undefined,
                 }
+            },
+            getVersionValidatorResult: async (): Promise<SamCliVersionValidatorResult> => {
+                return { validation: SamCliVersionValidation.VersionNotParseable }
             },
         }
 
@@ -147,6 +157,9 @@ describe('DefaultValidatingSamCliProcessInvoker', async () => {
                         validation: SamCliVersionValidation.Valid,
                     },
                 }
+            },
+            getVersionValidatorResult: async (): Promise<SamCliVersionValidatorResult> => {
+                return { validation: SamCliVersionValidation.Valid }
             },
         }
 

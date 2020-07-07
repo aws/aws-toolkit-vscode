@@ -51,6 +51,7 @@ export interface SamCliValidatorResult {
 
 export interface SamCliValidator {
     detectValidSamCli(): Promise<SamCliValidatorResult>
+    getVersionValidatorResult(): Promise<SamCliVersionValidatorResult>
 }
 
 export interface SamCliValidatorContext {

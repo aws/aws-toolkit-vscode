@@ -4,6 +4,7 @@
  */
 
 import * as path from 'path'
+import * as semver from 'semver'
 import * as vscode from 'vscode'
 
 import { access } from 'fs-extra'
@@ -39,6 +40,7 @@ import {
     makeInputTemplate,
     waitForDebugPort,
 } from './localLambdaRunner'
+import { getSamCliContext } from '../sam/cli/samCliContext'
 
 export const CSHARP_LANGUAGE = 'csharp'
 export const CSHARP_ALLFILES: vscode.DocumentFilter[] = [
@@ -463,15 +465,25 @@ async function _installDebugger(
     try {
         const vsdbgPath = getDebuggerPath(targetFolder)
 
+        const samCliContext = getSamCliContext()
+        const samCliVersionValidatorResult = await samCliContext.validator.getVersionValidatorResult()
+        const samCliVersion = samCliVersionValidatorResult.version
+
+        const imageStr =
+            !samCliVersion || semver.gte(samCliVersion, '1.0.0')
+                ? `amazon/aws-sam-cli-emulation-image-${lambdaRuntime}`
+                : `lambci/lambda:${lambdaRuntime}`
+
         channelLogger.info(
             'AWS.samcli.local.invoke.debugger.install',
-            'Installing .NET Core Debugger to {0}...',
-            vsdbgPath
+            'Installing .NET Core Debugger to {0} using Docker image {1}...',
+            vsdbgPath,
+            imageStr
         )
 
         await dockerClient.invoke({
             command: 'run',
-            image: `lambci/lambda:${lambdaRuntime}`,
+            image: imageStr,
             removeOnExit: true,
             mount: {
                 type: 'bind',
