@@ -81,7 +81,6 @@ export class DefaultSamCliValidator implements SamCliValidator {
         return result
     }
 
-    // This method is public for testing purposes
     public async getVersionValidatorResult(): Promise<SamCliVersionValidatorResult> {
         const samCliId: string = await this.context.getSamCliExecutableId()
         if (!this.isSamCliVersionCached(samCliId)) {
