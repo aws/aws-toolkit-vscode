@@ -1,0 +1,4 @@
+{
+    "type": "Bug Fix",
+    "description": "Amazon States Language Server: Adds missing \"Comment\" property for ChoiceRules, Catcher and Retrier."
+}
