@@ -6,6 +6,9 @@
 import * as path from 'path'
 import * as semver from 'semver'
 import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
+
+const localize = nls.loadMessageBundle()
 
 import { access } from 'fs-extra'
 import { getHandlerConfig } from '../../lambda/config/templates'
@@ -153,6 +156,17 @@ async function onLocalInvokeCommand(
     })
     let invokeResult: Result = 'Succeeded'
     const lambdaRuntime = CloudFormation.getRuntime(resource)
+
+    // TODO: Remove this line to enable dotnetcore3.1 debugging when it becomes available
+    if (lambdaRuntime === 'dotnetcore3.1' && lambdaLocalInvokeParams.isDebug) {
+        vscode.window.showInformationMessage(
+            localize(
+                'AWS.output.sam.local.no.net.3.1.debug',
+                'NOTE! The dotnetcore3.1 runtime is not currently supported for SAM debugging. The following run will be executed without debugging.'
+            )
+        )
+        lambdaLocalInvokeParams.isDebug = false
+    }
 
     try {
         // Switch over to the output channel so the user has feedback that we're getting things ready
