@@ -196,8 +196,14 @@ export class IteratingQuickPickController<TResponse> {
     ) {
         // append buttons specific to iterating quickPick
         this.quickPick.buttons = [...this.quickPick.buttons, IteratingQuickPickController.REFRESH_BUTTON]
+        this.quickPick.onDidHide(() => {
+            // on selection, not "done" but we do want to stop background loading.
+            // the caller should own the quick pick lifecycle, so we can either restart the picker from where it left off or dispose at that level.
+            getLogger().debug('IteratingQuickPickController item selected. Pausing additional loading.')
+            this.state.isPaused = true
+        })
 
-        this.state = this.resetState()
+        this.state = new IteratingQuickPickControllerState(this.populator.createPickIterator())
     }
 
     /**
@@ -239,7 +245,7 @@ export class IteratingQuickPickController<TResponse> {
 
             this.quickPick.items = []
 
-            this.state = this.resetState()
+            this.state = new IteratingQuickPickControllerState(this.populator.createPickIterator())
 
             resolve()
         })
@@ -289,9 +295,7 @@ export class IteratingQuickPickController<TResponse> {
                             })
                             .catch(e => {
                                 // append error node
-                                // clicking error node should either go backwards (return undefined) or refresh
-                                // maybe have one of each?
-                                // give quickpick an error message
+                                // give quickpick item an error message
                                 // we should not blow away the existing items, they should still be viable
                                 const err = e as Error
                                 getLogger().error('Error while loading items for IteratingQuickPickController:', err)
@@ -343,20 +347,11 @@ export class IteratingQuickPickController<TResponse> {
         // disable loading bar
         this.quickPick.busy = false
     }
-
-    private resetState(): IteratingQuickPickControllerState {
-        return {
-            cancelExecutionFn: undefined,
-            isDone: false,
-            isPaused: true,
-            iterator: this.populator.createPickIterator(),
-        }
-    }
 }
 
-interface IteratingQuickPickControllerState {
-    cancelExecutionFn: undefined | (() => void)
-    isDone: boolean
-    isPaused: boolean
-    iterator: AsyncIterator<vscode.QuickPickItem[]>
+class IteratingQuickPickControllerState {
+    public cancelExecutionFn: undefined | (() => void) = undefined
+    public isDone: boolean = false
+    public isPaused: boolean = true
+    public constructor(public iterator: AsyncIterator<vscode.QuickPickItem[]>) {}
 }

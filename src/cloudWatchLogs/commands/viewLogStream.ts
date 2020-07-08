@@ -88,9 +88,9 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
             result = undefined
             telemetryResult = 'Cancelled'
         }
-        // TODO: retry instead of exit?
+        // retry handled by caller -- should this be a "Failed"?
+        // of note: we don't track if an error pops up, we just track if the error is selected.
         if (result === picker.IteratingQuickPickController.ERROR_ITEM.label) {
-            result = undefined
             telemetryResult = 'Failed'
         }
 
@@ -144,7 +144,14 @@ export class SelectLogStreamWizard extends MultiStepWizard<SelectLogStreamRespon
     }
 
     private readonly SELECT_STREAM: WizardStep = async () => {
-        this.response.logStreamName = await this.context.pickLogStream()
+        const returnVal = await this.context.pickLogStream()
+
+        // retry on error
+        if (returnVal === picker.IteratingQuickPickController.ERROR_ITEM.label) {
+            return this.SELECT_STREAM
+        }
+
+        this.response.logStreamName = returnVal
 
         return undefined
     }
