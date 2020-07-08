@@ -162,7 +162,7 @@ async function onLocalInvokeCommand(
         vscode.window.showInformationMessage(
             localize(
                 'AWS.output.sam.local.no.net.3.1.debug',
-                'NOTE! The dotnetcore3.1 runtime is not currently supported for SAM debugging. The following run will be executed without debugging.'
+                'NOTE! The `dotnetcore3.1` runtime does not support SAM debugging. This function will be run locally without debug.'
             )
         )
         lambdaLocalInvokeParams.isDebug = false
