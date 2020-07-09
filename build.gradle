@@ -68,6 +68,7 @@ allprojects {
         runtimeClasspath.exclude group: "org.slf4j"
         runtimeClasspath.exclude group: "org.jetbrains.kotlin"
         runtimeClasspath.exclude group: "org.jetbrains.kotlinx"
+        runtimeClasspath.exclude group: "software.amazon.awssdk", module: "netty-nio-client"
     }
 }
 
