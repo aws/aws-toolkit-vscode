@@ -5,8 +5,8 @@ package software.aws.toolkits.jetbrains.services.lambda.execution.local
 
 import com.intellij.execution.configurations.CommandLineState
 import com.intellij.execution.executors.DefaultDebugExecutor
+import com.intellij.execution.process.KillableColoredProcessHandler
 import com.intellij.execution.process.ProcessHandler
-import com.intellij.execution.process.ProcessHandlerFactory
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.util.io.FileUtil
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
@@ -70,7 +70,9 @@ class SamRunningState(
 
         runner.patchCommandLine(commandLine)
 
-        return ProcessHandlerFactory.getInstance().createColoredProcessHandler(commandLine)
+        // Unix: Sends SIGINT on destroy so Docker container is shut down
+        // Windows: Run with mediator to allow for Cntrl+C to be used
+        return KillableColoredProcessHandler(commandLine, true)
     }
 
     private fun createEventFile(): String {
