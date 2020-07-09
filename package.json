@@ -135,16 +135,6 @@
                 }
             }
         },
-        "snippets": [
-            {
-                "language": "javascript",
-                "path": "./snippets/out/snippets.json"
-            },
-            {
-                "language": "typescript",
-                "path": "./snippets/out/snippets.json"
-            }
-        ],
         "debuggers": [
             {
                 "type": "aws-sam",
@@ -941,6 +931,7 @@
         "js-yaml": "^3.13.1",
         "jsonc-parser": "^2.0.2",
         "lodash": "^4.17.19",
+        "mnemonist": "^0.38.0",
         "moment": "^2.24.0",
         "original-fs": "^1.1.0",
         "portfinder": "^1.0.25",

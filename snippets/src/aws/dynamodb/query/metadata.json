@@ -1,4 +1,0 @@
-{
-  "prefix": "aws.dynamodb.query",
-  "description": "The Query operation finds items based on primary key values. You can query any table or secondary index that has a composite primary key (a partition key and a sort key)."
-}
