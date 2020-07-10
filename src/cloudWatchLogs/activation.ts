@@ -6,11 +6,24 @@
 import * as vscode from 'vscode'
 import { LogStreamDocumentProvider } from './document/logStreamDocumentProvider'
 import { CLOUDWATCH_LOGS_SCHEME } from './constants'
+import { LogStreamRegistry } from './registry/logStreamRegistry'
+import { viewLogStream } from './commands/viewLogStream'
+import { LogGroupNode } from './explorer/logGroupNode'
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-    const logStreamProvider = new LogStreamDocumentProvider()
+    const registry = new LogStreamRegistry()
+
+    const logStreamProvider = new LogStreamDocumentProvider(registry)
+
     context.subscriptions.push(
         vscode.workspace.registerTextDocumentContentProvider(CLOUDWATCH_LOGS_SCHEME, logStreamProvider)
+    )
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand(
+            'aws.cloudWatchLogs.viewLogStream',
+            async (node: LogGroupNode) => await viewLogStream(node, registry)
+        )
     )
 
     // // this can only be called from a button in the editor pane. activeTextEditor should always be accurate

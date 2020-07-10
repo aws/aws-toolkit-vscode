@@ -54,6 +54,7 @@
         "onView:aws.cdk.explorer",
         "onCommand:aws.refreshCdkExplorer",
         "onCommand:aws.aboutToolkit",
+        "onCommand:aws.cloudWatchLogs.viewLogStream",
         "onLanguage:asl"
     ],
     "main": "./extensionMain",

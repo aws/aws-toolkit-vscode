@@ -5,8 +5,6 @@
 
 import * as vscode from 'vscode'
 
-import { viewLogStream } from '../cloudWatchLogs/commands/viewLogStream'
-import { LogGroupNode } from '../cloudWatchLogs/explorer/logGroupNode'
 import { submitFeedback } from '../feedback/commands/submitFeedback'
 import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { deleteLambda } from '../lambda/commands/deleteLambda'
@@ -197,13 +195,6 @@ async function registerAwsExplorerCommands(
                     recordAwsRefreshExplorer()
                 }
             }
-        )
-    )
-
-    context.subscriptions.push(
-        vscode.commands.registerCommand(
-            'aws.cloudWatchLogs.viewLogStream',
-            async (node: LogGroupNode) => await viewLogStream(node)
         )
     )
 }

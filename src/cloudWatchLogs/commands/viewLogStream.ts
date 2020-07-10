@@ -26,13 +26,10 @@ export interface SelectLogStreamResponse {
     logStreamName: string
 }
 
-export async function viewLogStream(node: LogGroupNode): Promise<void> {
+export async function viewLogStream(node: LogGroupNode, registry: LogStreamRegistry): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
     const logStreamResponse = await new SelectLogStreamWizard(node).run()
     if (logStreamResponse) {
-        // create a registry which holds log group/stream
-        const registry = LogStreamRegistry.getLogStreamRegistry()
-
         const uri = convertLogGroupInfoToUri(
             logStreamResponse.logGroupName,
             logStreamResponse.logStreamName,

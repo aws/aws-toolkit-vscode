@@ -17,18 +17,18 @@ export function convertUriToLogGroupInfo(
 ): { groupName: string; streamName: string; regionName: string } {
     const parts = uri.path.split(':')
 
-    // splits into <CLOUDWATCH_LOGS_SCHEME>:<groupName>:<streamName>:<regionName>
+    // splits into <CLOUDWATCH_LOGS_SCHEME>:"<groupName>:<streamName>:<regionName>"
     if (uri.scheme !== CLOUDWATCH_LOGS_SCHEME || parts.length !== 3) {
         throw new Error(`URI ${uri} is not parseable for CloudWatch Logs`)
     }
 
     return {
-        groupName: parts[0],
+        groupName: parts[0].substring(1),
         streamName: parts[1],
-        regionName: parts[2],
+        regionName: parts[2].substring(0, parts[2].length - 1),
     }
 }
 
 export function convertLogGroupInfoToUri(groupName: string, streamName: string, regionName: string): vscode.Uri {
-    return vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:${groupName}:${streamName}:${regionName}`)
+    return vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:"${groupName}:${streamName}:${regionName}"`)
 }

@@ -8,7 +8,7 @@ import { LogStreamRegistry } from '../registry/logStreamRegistry'
 import { getLogger } from '../../shared/logger'
 
 export class LogStreamDocumentProvider implements vscode.TextDocumentContentProvider {
-    public constructor() {}
+    public constructor(private readonly registry: LogStreamRegistry) {}
 
     // Expose an event to signal changes of _virtual_ documents
     // to the editor
@@ -18,9 +18,8 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
     }
 
     public provideTextDocumentContent(uri: vscode.Uri): string {
-        const registry = LogStreamRegistry.getLogStreamRegistry()
         // get latest content and return
-        const content = registry.getLogContent(uri)
+        const content = this.registry.getLogContent(uri)
         if (!content) {
             getLogger().error(`No content found for URI: ${uri}`)
         }
