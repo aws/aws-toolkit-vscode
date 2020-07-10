@@ -49,9 +49,13 @@ class IamAuthWidget : AwsAuthWidget() {
 
     override fun updateFromUrl(holder: ParametersHolder) {
         super.updateFromUrl(holder)
-        val url = (holder as? UrlEditorModel)?.url
-        val clusterId = RdsResources.extractIdentifierFromUrl(url)
-        clusterId?.let { instanceIdTextField.text = it }
+        // cluster id does not always match what is in the url (like Aurora), so if we already
+        // have something in the box, don't update it
+        if (instanceIdTextField.text.isNullOrEmpty()) {
+            val url = (holder as? UrlEditorModel)?.url
+            val clusterId = RdsResources.extractIdentifierFromUrl(url)
+            clusterId?.let { instanceIdTextField.text = it }
+        }
     }
 
     @TestOnly
