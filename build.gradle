@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 import java.nio.file.Files
 import java.nio.file.Paths
 
@@ -52,11 +53,11 @@ allprojects {
     tasks.withType(org.jetbrains.intellij.tasks.RunIdeTask) {
         intellij {
             if (System.env.ALTERNATIVE_IDE) {
-                if(file(System.env.ALTERNATIVE_IDE).exists()) {
+                if (file(System.env.ALTERNATIVE_IDE).exists()) {
                     alternativeIdePath = System.env.ALTERNATIVE_IDE
                 } else {
                     throw new GradleException("ALTERNATIVE_IDE path not found"
-                      + (System.env.ALTERNATIVE_IDE ==~ /.*[\/\\] *$/
+                        + (System.env.ALTERNATIVE_IDE ==~ /.*[\/\\] *$/
                         ? " (HINT: remove trailing slash '/')"
                         : ": ${System.env.ALTERNATIVE_IDE}"))
                 }
@@ -189,6 +190,9 @@ subprojects {
         tasks.withType(org.jetbrains.intellij.tasks.RunIdeForUiTestTask).all {
             systemProperty "robot-server.port", remoteRobotPort
             systemProperty "ide.mac.file.chooser.native", "false"
+            systemProperty "jb.consents.confirmation.enabled", "false"
+            // This does some magic in EndUserAgreement.java to make it not show the privacy policy
+            systemProperty "jb.privacy.policy.text", "<!--999.999-->"
             if (System.getenv("CI") != null) {
                 systemProperty("aws.sharedCredentialsFile", "/tmp/.aws/credentials")
             }
@@ -204,7 +208,7 @@ subprojects {
     // Force us to compile the integration tests even during check even though we don't run them
     check.dependsOn(integrationTestClasses)
 
-    task testJar (type: Jar) {
+    task testJar(type: Jar) {
         baseName = "${project.name}-test"
         from sourceSets.test.output
         from sourceSets.integrationTest.output
@@ -257,7 +261,7 @@ prepareSandbox {
 
 publishPlugin {
     token publishToken
-    channels publishChannel ? publishChannel.split(',').collect{ it.trim() } : []
+    channels publishChannel ? publishChannel.split(',').collect { it.trim() } : []
 }
 
 generateChangeLog {
@@ -343,24 +347,13 @@ if (gradle.startParameter.taskNames.contains("runIde")) {
         println("Top level runIde selected, excluding sub-projects' runIde")
         gradle.taskGraph.whenReady { graph ->
             graph.allTasks.forEach {
-                if (gradle.startParameter.systemPropertiesArgs.getOrDefault("exec.args", "").contains("guitest")) {
-                    if (it.name == "runIde" &&
-                        it.project != project(':jetbrains-core-gui')) {
-                        it.enabled = false
-                    }
-                } else {
-                    if (it.name == "runIde" &&
-                        it.project != project(':jetbrains-core')) {
-                        it.enabled = false
-                    }
+                if (it.name == "runIde" &&
+                    it.project != project(':jetbrains-core')) {
+                    it.enabled = false
                 }
             }
         }
     }
-}
-
-task guiTest(type: Test) {
-    dependsOn ":jetbrains-core-gui:guiTest"
 }
 
 dependencies {

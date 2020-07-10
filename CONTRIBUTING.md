@@ -103,11 +103,12 @@ To test your changes locally, you can run the project from IntelliJ or gradle.
   - Requires `sam` CLI to be on your `$PATH`.
 - To run **GUI tests**:
   ```
-  ./gradlew guiTest
+  ./gradlew uiTestCore
   ```
   - To debug GUI tests,
-    1. Set `runIde.debugOptions.enabled=true` in the gradle file.
-    2. When prompted, attach your (IntelliJ) debugger to port 5005.
+    1. Start the IDE that will be debugged `./gradlew :jetbrains-core:runIdeForUiTests --debug-jvm`
+	2. In your running Intellij instance `Run -> Attach to process` attach to the ide test debug process.
+    4. Run `./gradlew uiTestCore`. This will attach to the running debug IDE instance and run tests.
 
 ### Logging
 

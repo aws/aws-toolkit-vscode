@@ -39,7 +39,6 @@ class WelcomeFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) :
             // 2019.3
             actionLink("Open").click()
         }
-        fillSingleTextField(path.toAbsolutePath().toString())
-        pressOk()
+        fillFileExplorer(path)
     }
 }

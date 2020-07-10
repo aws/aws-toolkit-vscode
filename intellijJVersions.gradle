@@ -1,7 +1,6 @@
 static def ideProfiles() {
     return [
         "2019.3": [
-            "guiTestFramework": "com.intellij.testGuiFramework:193.SNAPSHOT.1@nightly",
             "sinceVersion": "193",
             "untilVersion": "193.*",
             "products": [
@@ -109,14 +108,6 @@ def ideUntilVersion() {
     return guiVersion
 }
 
-def guiTestFramework() {
-    def guiVersion = ideProfile()["guiTestFramework"]
-    if (guiVersion == null) {
-        throw new IllegalArgumentException("Missing 'guiTestFramework' key for ${resolveIdeProfileName()}")
-    }
-    return guiVersion
-}
-
 // https://www.myget.org/feed/rd-snapshots/package/maven/com.jetbrains.rd/rd-gen
 def rdGenVersion() {
     def rdGen = ideProduct("RD").rdGenVersion
@@ -171,7 +162,6 @@ ext {
     ideSinceVersion = this.&ideSinceVersion
     ideUntilVersion = this.&ideUntilVersion
     ideProfile = this.&ideProfile
-    guiTestFramework = this.&guiTestFramework
     rdGenVersion = this.&rdGenVersion
     riderNugetSdkVersion = this.&riderNugetSdkVersion
     resolveIdeProfileName = this.&resolveIdeProfileName

@@ -7,10 +7,6 @@ include 'resources'
 include 'telemetry-client'
 include 'core'
 include 'jetbrains-core'
-// skip gui on 2020.1
-if (properties.get("ideProfileName") != "2020.1" && System.env.ALTERNATIVE_IDE_PROFILE_NAME != "2020.1") {
-    include 'jetbrains-core-gui'
-}
 include 'jetbrains-ultimate'
 if (!properties.containsKey("skipRider")) {
     include 'jetbrains-rider'

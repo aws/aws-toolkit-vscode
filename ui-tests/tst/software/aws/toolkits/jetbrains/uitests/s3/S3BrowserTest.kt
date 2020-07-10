@@ -22,6 +22,7 @@ import software.aws.toolkits.jetbrains.uitests.extensions.uiTest
 import software.aws.toolkits.jetbrains.uitests.fixtures.JTreeFixture
 import software.aws.toolkits.jetbrains.uitests.fixtures.actionButton
 import software.aws.toolkits.jetbrains.uitests.fixtures.awsExplorer
+import software.aws.toolkits.jetbrains.uitests.fixtures.fillFileExplorer
 import software.aws.toolkits.jetbrains.uitests.fixtures.fillSingleTextField
 import software.aws.toolkits.jetbrains.uitests.fixtures.findAndClick
 import software.aws.toolkits.jetbrains.uitests.fixtures.idea
@@ -95,13 +96,8 @@ class S3BrowserTest {
             s3Tree { click() }
 
             step("Upload object to top-level") {
-                findAndClick("//div[@accessiblename='$upload' and @class='ActionButton']")
-                // Wait for the file selector to load. if we don't wait, On 193, we try to upload the folder instead
-                // of the file. The file selection is messed up in some way.
-                // TODO FIX_WHEN_MIN_IS_201 don't need to wait on 201+
-                Thread.sleep(2000)
-                fillSingleTextField(testDataPath.resolve("testFiles").resolve(jsonFile).toString())
-                pressOk()
+                actionButton(upload).click()
+                fillFileExplorer(testDataPath.resolve("testFiles").resolve(jsonFile))
                 // Wait for the item to be uploaded
                 Thread.sleep(1000)
                 s3Tree {
@@ -110,7 +106,7 @@ class S3BrowserTest {
             }
 
             step("Create folder") {
-                findAndClick("//div[@accessiblename='$newFolder' and @class='ActionButton']")
+                actionButton(newFolder).click()
                 fillSingleTextField(folder)
                 pressOk()
                 // Wait for the folder to be created
@@ -127,8 +123,7 @@ class S3BrowserTest {
                     findText(folder).click()
                 }
                 actionButton(upload).click()
-                fillSingleTextField(testDataPath.resolve("testFiles").resolve(jsonFile2).toString())
-                pressOk()
+                fillFileExplorer(testDataPath.resolve("testFiles").resolve(jsonFile2))
                 // Wait for the item to be uploaded
                 Thread.sleep(1000)
                 s3Tree {

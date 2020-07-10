@@ -62,7 +62,7 @@ class IdeaFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) : Co
         if (remoteRobot.isMac()) {
             keyboard { hotKey(KeyEvent.VK_META, KeyEvent.VK_SEMICOLON) }
         } else {
-            keyboard { hotKey(KeyEvent.VK_SHIFT, KeyEvent.VK_SHIFT, KeyEvent.VK_ALT, KeyEvent.VK_S) }
+            keyboard { hotKey(KeyEvent.VK_CONTROL, KeyEvent.VK_ALT, KeyEvent.VK_SHIFT, KeyEvent.VK_S) }
         }
         find(ComponentFixture::class.java, byXpath("//div[@accessiblename='Project Structure']")).click()
     }
@@ -92,10 +92,10 @@ class IdeaFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) : Co
         }
     }
 
-    // Tips sometimes open when running locally, close it if it opens
+    // Tips sometimes open when running, close it if it opens
     fun tryCloseTips() {
         try {
-            find<ComponentFixture>(byXpath("//div[@accessiblename='Close' and @class='JButton' and @text='Close']")).click()
+            pressClose()
         } catch (e: Exception) {
         }
     }
