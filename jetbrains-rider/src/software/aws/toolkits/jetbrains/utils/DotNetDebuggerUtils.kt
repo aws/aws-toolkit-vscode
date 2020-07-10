@@ -21,13 +21,13 @@ import com.jetbrains.rider.run.IDebuggerOutputListener
 import java.io.File
 
 object DotNetDebuggerUtils {
-    val debuggerAssemblyFile: File = RiderEnvironment.getBundledFile(DebuggerWorkerPlatform.AnyCpu.assemblyName)
+    val debuggerName = DebuggerWorkerPlatform.AnyCpu.assemblyName
+
+    val debuggerAssemblyFile: File = RiderEnvironment.getBundledFile(debuggerName)
 
     val debuggerBinDir: File = debuggerAssemblyFile.parentFile
 
     const val cloudDebuggerTempDirName = "aws_rider_debugger_files"
-
-    const val dotnetCoreDebuggerLauncherName = "JetBrains.Rider.Debugger.Launcher"
 
     fun createAndStartSession(
         executionConsole: ExecutionConsole,
@@ -41,19 +41,19 @@ object DotNetDebuggerUtils {
         val fireInitializedManually = env.getUserData(DotNetDebugRunner.FIRE_INITIALIZED_MANUALLY) ?: false
 
         return object : XDebugProcessStarter() {
-            override fun start(session: XDebugSession): XDebugProcess =
-                // TODO: Update to use 'sessionId' parameter in ctr when min SDK version is 193 FIX_WHEN_MIN_IS_193.
-                DotNetDebugProcess(
-                    sessionLifetime = sessionLifetime,
-                    session = session,
-                    debuggerWorkerProcessHandler = processHandler,
-                    console = executionConsole,
-                    protocol = protocol,
-                    sessionProxy = sessionModel,
-                    fireInitializedManually = fireInitializedManually,
-                    customListener = outputEventsListener,
-                    debugKind = OptionsUtil.toDebugKind(sessionModel.sessionProperties.debugKind.valueOrNull),
-                    project = env.project)
+            override fun start(session: XDebugSession): XDebugProcess = DotNetDebugProcess(
+                sessionLifetime = sessionLifetime,
+                session = session,
+                sessionId = env.executionId,
+                debuggerWorkerProcessHandler = processHandler,
+                console = executionConsole,
+                protocol = protocol,
+                sessionProxy = sessionModel,
+                fireInitializedManually = fireInitializedManually,
+                customListener = outputEventsListener,
+                debugKind = OptionsUtil.toDebugKind(sessionModel.sessionProperties.debugKind.valueOrNull),
+                project = env.project
+            )
         }
     }
 }
