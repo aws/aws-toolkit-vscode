@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import * as moment from 'moment'
 import * as vscode from 'vscode'
-import { CloudWatchLogStreamData, LogStreamRegistry } from '../../../cloudwatchlogs/registry/logStreamRegistry'
+import { CloudWatchLogStreamData, LogStreamRegistry } from '../../../cloudWatchLogs/registry/logStreamRegistry'
 
 describe('LogStreamRegistry', async () => {
     let registry: LogStreamRegistry

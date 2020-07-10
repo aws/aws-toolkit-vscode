@@ -5,8 +5,8 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import { LogStreamDocumentProvider } from '../../../cloudwatchlogs/document/logStreamDocumentProvider'
-import { LogStreamRegistry, CloudWatchLogStreamData } from '../../../cloudwatchlogs/registry/logStreamRegistry'
+import { LogStreamDocumentProvider } from '../../../cloudWatchLogs/document/logStreamDocumentProvider'
+import { LogStreamRegistry, CloudWatchLogStreamData } from '../../../cloudWatchLogs/registry/logStreamRegistry'
 
 describe('LogStreamDocumentProvider', () => {
     let registry: LogStreamRegistry

@@ -5,8 +5,8 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import { CLOUDWATCH_LOGS_SCHEME } from '../../cloudwatchlogs/constants'
-import { convertLogGroupInfoToUri, convertUriToLogGroupInfo } from '../../cloudwatchlogs/utils'
+import { CLOUDWATCH_LOGS_SCHEME } from '../../cloudWatchLogs/constants'
+import { convertLogGroupInfoToUri, convertUriToLogGroupInfo } from '../../cloudWatchLogs/utils'
 import { assertThrowsError } from '../shared/utilities/assertUtils'
 
 const goodComponents = {
