@@ -6,12 +6,9 @@ package software.aws.toolkits.jetbrains.services.clouddebug
 import base.AwsReuseSolutionTestBase
 import com.intellij.execution.configurations.RuntimeConfigurationError
 import com.intellij.execution.configurations.RuntimeConfigurationException
-import com.intellij.openapi.util.registry.Registry
 import com.intellij.util.execution.ParametersListUtil
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
-import org.testng.annotations.AfterMethod
-import org.testng.annotations.BeforeMethod
 import org.testng.annotations.Test
 import software.aws.toolkits.resources.message
 
@@ -21,18 +18,6 @@ class DotNetStartupCommandAugmenterTest : AwsReuseSolutionTestBase() {
 
     companion object {
         private const val DEFAULT_STARTUP_COMMAND = "dotnet /prog/netcoreapp2.1/ConsoleApp.dll"
-    }
-
-    var useNetCoreDebuggerOriginal: Boolean = true
-
-    @BeforeMethod(alwaysRun = true)
-    fun setRegistry() {
-        useNetCoreDebuggerOriginal = Registry.get(DotNetDebuggerSupport.USE_DOTNET_CORE_RUNTIME_FLAG_NAME).asBoolean()
-    }
-
-    @AfterMethod(alwaysRun = true)
-    fun resetRegistry() {
-        Registry.get(DotNetDebuggerSupport.USE_DOTNET_CORE_RUNTIME_FLAG_NAME).setValue(useNetCoreDebuggerOriginal)
     }
 
     @Test
@@ -50,40 +35,7 @@ class DotNetStartupCommandAugmenterTest : AwsReuseSolutionTestBase() {
     }
 
     @Test
-    fun testAugmentStatement_MonoRuntime() {
-        Registry.get(DotNetDebuggerSupport.USE_DOTNET_CORE_RUNTIME_FLAG_NAME).setValue(false)
-
-        val pathToDebugger = "/path/to/debugger"
-        val statement = DotNetDebuggerSupport().augmentStatement(DEFAULT_STARTUP_COMMAND, listOf(123, 456), pathToDebugger)
-        val expectedCommand =
-            ParametersListUtil.join(
-                "/aws/cloud-debug/common/busybox",
-                "sh",
-                "-c",
-                ParametersListUtil.join(
-                    "/aws/cloud-debug/common/busybox",
-                    "chmod",
-                    "+x",
-                    "/aws/DOTNET/aws_rider_debugger_files/runtime.sh",
-                    "/aws/DOTNET/aws_rider_debugger_files/linux-x64/mono/bin/mono-sgen",
-                    "&&",
-                    "env",
-                    "REMOTE_DEBUG_PORT=123",
-                    "RESHARPER_HOST_LOG_DIR=/aws/DOTNET/aws_rider_debugger_files/Logs",
-                    "/aws/DOTNET/aws_rider_debugger_files/runtime.sh",
-                    pathToDebugger,
-                    "--mode=server",
-                    "--frontend-port=123",
-                    "--backend-port=456"
-                )
-            )
-        assertThat(statement).isEqualTo(expectedCommand)
-    }
-
-    @Test
-    fun testAugmentStatement_DotNetCoreRuntime() {
-        Registry.get(DotNetDebuggerSupport.USE_DOTNET_CORE_RUNTIME_FLAG_NAME).setValue(true)
-
+    fun testAugmentStatement() {
         val pathToDebugger = "/path/to/debugger"
         val statement = DotNetDebuggerSupport().augmentStatement(DEFAULT_STARTUP_COMMAND, listOf(123, 456), pathToDebugger)
         val expectedCommand =

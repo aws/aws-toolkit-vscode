@@ -12,14 +12,32 @@ class JTreeFixture(
     remoteRobot: RemoteRobot,
     remoteComponent: RemoteComponent
 ) : ComponentFixture(remoteRobot, remoteComponent) {
+    fun clickPath(vararg paths: String) = runJsPathMethod("clickPath", *paths)
+    fun expandPath(vararg paths: String) = runJsPathMethod("expandPath", *paths)
+    fun rightClickPath(vararg paths: String) = runJsPathMethod("rightClickPath", *paths)
+    fun doubleClickPath(vararg paths: String) = runJsPathMethod("doubleClickPath", *paths)
 
-    fun selectPath(vararg paths: String) {
+    fun clickRow(row: Int) = runJsRowMethod("clickRow", row)
+    fun expandRow(row: Int) = runJsRowMethod("expandRow", row)
+
+    private fun runJsPathMethod(name: String, vararg paths: String) {
         val path = paths.joinToString("/")
-        step("select $path") {
+        step("$name $path") {
             runJs(
                 """
                 const jTreeFixture = JTreeFixture(robot, component);
-                jTreeFixture.clickPath('$path') 
+                jTreeFixture.$name('$path') 
+                """.trimIndent()
+            )
+        }
+    }
+
+    private fun runJsRowMethod(name: String, row: Int) {
+        step("$name $row") {
+            runJs(
+                """
+                const jTreeFixture = JTreeFixture(robot, component);
+                jTreeFixture.$name($row) 
                 """.trimIndent()
             )
         }

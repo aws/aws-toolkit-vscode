@@ -44,6 +44,8 @@ sourceSets {
 }
 
 test {
+    // TODO remove, workaround for Corretto-11.0.7.10.1 mac crashing on test runs.
+    jvmArgs '-XX:CompileCommand=exclude,com/intellij/openapi/progress/impl/CoreProgressManager.registerIndicatorAndRun'
     systemProperty("log.dir", "${project.intellij.sandboxDirectory}-test/logs")
 }
 

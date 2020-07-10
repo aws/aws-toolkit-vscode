@@ -13,7 +13,6 @@ import com.intellij.remoterobot.search.locators.byXpath
 fun ContainerFixture.editorTab(title: String, function: EditorTab.() -> Unit = {}): EditorTab {
     val editorTabb = find<EditorTab>(byXpath("//div[@class='EditorTabs']//div[@accessiblename='$title' and @class='SingleHeightLabel']"))
     editorTabb.click()
-
     return editorTabb.apply(function)
 }
 

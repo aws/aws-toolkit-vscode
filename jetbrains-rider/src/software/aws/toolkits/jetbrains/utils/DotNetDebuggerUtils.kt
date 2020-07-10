@@ -21,18 +21,13 @@ import com.jetbrains.rider.run.IDebuggerOutputListener
 import java.io.File
 
 object DotNetDebuggerUtils {
-
     val debuggerAssemblyFile: File = RiderEnvironment.getBundledFile(DebuggerWorkerPlatform.AnyCpu.assemblyName)
 
     val debuggerBinDir: File = debuggerAssemblyFile.parentFile
 
-    val cloudDebuggerTempDirName = "aws_rider_debugger_files"
+    const val cloudDebuggerTempDirName = "aws_rider_debugger_files"
 
-    // This tool is used to detect dbgshim inside a remote container to replace Rider dbgshim autodetection logic
-    // that works not correctly in 192 Rider. It is fixed in 193 and should not be used.
-    val cloudDebuggerToolsName = "AWS.DebuggerTools"
-
-    val dotnetCoreDebuggerLauncherName = "JetBrains.Rider.Debugger.Launcher"
+    const val dotnetCoreDebuggerLauncherName = "JetBrains.Rider.Debugger.Launcher"
 
     fun createAndStartSession(
         executionConsole: ExecutionConsole,
@@ -43,7 +38,6 @@ object DotNetDebuggerUtils {
         sessionModel: DotNetDebuggerSessionModel,
         outputEventsListener: IDebuggerOutputListener
     ): XDebugProcessStarter {
-
         val fireInitializedManually = env.getUserData(DotNetDebugRunner.FIRE_INITIALIZED_MANUALLY) ?: false
 
         return object : XDebugProcessStarter() {

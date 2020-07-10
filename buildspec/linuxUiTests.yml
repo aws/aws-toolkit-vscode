@@ -24,11 +24,14 @@ phases:
       - apt-get install -y xvfb icewm procps ffmpeg libswt-gtk-3-java mono-complete
       - mkdir -p /tmp/.aws
       - aws sts assume-role --role-arn $ASSUME_ROLE_ARN --role-session-name ui-test > /tmp/.aws/creds.json
+      - export KEY_ID=`jq -r '.Credentials.AccessKeyId' /tmp/.aws/creds.json`
+      - export SECRET=`jq -r '.Credentials.SecretAccessKey' /tmp/.aws/creds.json`
+      - export TOKEN=`jq -r '.Credentials.SessionToken' /tmp/.aws/creds.json`
       - |
         >/tmp/.aws/credentials echo "[default]
-        aws_access_key_id=`jq -r '.Credentials.AccessKeyId' /tmp/.aws/creds.json`
-        aws_secret_access_key=`jq -r '.Credentials.SecretAccessKey' /tmp/.aws/creds.json`
-        aws_session_token=`jq -r '.Credentials.SessionToken' /tmp/.aws/creds.json`"
+        aws_access_key_id=$KEY_ID
+        aws_secret_access_key=$SECRET
+        aws_session_token=$TOKEN"
       - pip3 install --user --upgrade  aws-sam-cli
 
   build:
@@ -46,19 +49,18 @@ phases:
         if [ "$RECORD_UI" ]; then
         ffmpeg -loglevel warning -f x11grab -video_size 1920x1080 -i :99 -codec:v libx264 -r 12 /tmp/screen_recording.mp4 &
         fi
-      - ./gradlew guiTest coverageReport --console plain --info
+      - env AWS_ACCESS_KEY_ID=$KEY_ID AWS_SECRET_ACCESS_KEY=$SECRET AWS_SESSION_TOKEN=$TOKEN ./gradlew uiTestCore coverageReport --console plain --info
 
   post_build:
     commands:
       - TEST_ARTIFACTS="/tmp/testArtifacts"
       - mkdir -p $TEST_ARTIFACTS/test-reports
-      - rsync -r guitest.log $TEST_ARTIFACTS/gui/ || true
       - rsync -rmq --include='*/' --include '**/build/idea-sandbox/system*/log/**' --exclude='*' . $TEST_ARTIFACTS/ || true
       - rsync -rmq --include='*/' --include '**/build/reports/**' --exclude='*' . $TEST_ARTIFACTS/ || true
       - rsync -rmq --include='*/' --include '**/test-results/**/*.xml' --exclude='*' . $TEST_ARTIFACTS/test-reports || true
 
       - if [ "$RECORD_UI" ]; then pkill -2 ffmpeg; while pgrep ffmpeg > /dev/null; do sleep 1; done; fi
-      - if [ "$RECORD_UI" ]; then cp /tmp/screen_recording.mp4 $TEST_ARTIFACTS/gui/; fi
+      - if [ "$RECORD_UI" ]; then cp /tmp/screen_recording.mp4 $TEST_ARTIFACTS/; fi
 
       - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
       - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site

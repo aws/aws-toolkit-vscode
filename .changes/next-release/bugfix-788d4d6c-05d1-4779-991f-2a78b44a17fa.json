@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Change the way we stop SAM CLI processes when debugging to allow docker container to shut down"
+}

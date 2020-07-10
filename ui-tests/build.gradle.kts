@@ -7,6 +7,7 @@ val remoteRobotPort: String by project
 val junit5Version: String by project
 val remoteRobotVersion: String by project
 val uiTestFixturesVersion: String by project
+val awsSdkVersion: String by project
 
 repositories {
     maven { url = URI("https://jetbrains.bintray.com/intellij-third-party-dependencies") }
@@ -21,6 +22,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junit5Version")
     testImplementation("com.intellij.remoterobot:remote-robot:$remoteRobotVersion")
     testImplementation("com.intellij.remoterobot:remote-fixtures:$uiTestFixturesVersion")
+    testImplementation("software.amazon.awssdk:s3:$awsSdkVersion")
 
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junit5Version")
 }
@@ -34,6 +36,7 @@ tasks.register<Test>("uiTestCore") {
 
     systemProperty("robot-server.port", remoteRobotPort)
     systemProperty("junit.jupiter.extensions.autodetection.enabled", true)
+    systemProperty("testDataPath", project.rootDir.toPath().resolve("testdata").toString())
 
     systemProperty("GRADLE_PROJECT", "jetbrains-core")
     useJUnitPlatform {
