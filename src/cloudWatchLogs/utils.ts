@@ -6,10 +6,12 @@
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from './constants'
 
+// URIs are the only vehicle for delivering information to a TextDocumentContentProvider.
+// The following functions are used to structure and destructure relevant information to/from a URI.
+// Colons are not valid characters in either the group name or stream name and will be used as separators.
+
 /**
- * The only way to provide a tectDocumentContentProvider knowledge about what it should provide is via the URI
- * This means that we need to mash the log group and log stream together and make it uniformely parseable.
- * Colons are not valid characters in either the group name or stream name and will be used as separators.
+ * Destructures an awsCloudWatchLogs URI into its component pieces.
  * @param uri URI for a Cloudwatch Logs file
  */
 export function convertUriToLogGroupInfo(
@@ -23,12 +25,18 @@ export function convertUriToLogGroupInfo(
     }
 
     return {
-        groupName: parts[0].substring(1),
+        groupName: parts[0],
         streamName: parts[1],
-        regionName: parts[2].substring(0, parts[2].length - 1),
+        regionName: parts[2],
     }
 }
 
+/**
+ * Converts relevant information for CloudWatch Logs Streams into an awsCloudWatchLogs URI
+ * @param groupName Log group name
+ * @param streamName Log stream name
+ * @param regionName AWS region
+ */
 export function convertLogGroupInfoToUri(groupName: string, streamName: string, regionName: string): vscode.Uri {
-    return vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:"${groupName}:${streamName}:${regionName}"`)
+    return vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:${groupName}:${streamName}:${regionName}`)
 }
