@@ -19,6 +19,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         vscode.workspace.registerTextDocumentContentProvider(CLOUDWATCH_LOGS_SCHEME, logStreamProvider)
     )
 
+    // these actions are typically in the explorer activation but this requires knowledge of the registry.
     context.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.cloudWatchLogs.viewLogStream',

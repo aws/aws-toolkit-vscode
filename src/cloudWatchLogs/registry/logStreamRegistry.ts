@@ -18,11 +18,12 @@ import { getLogger } from '../../shared/logger'
  * Class which contains CRUD operations and persistence for CloudWatch Logs streams.
  */
 export class LogStreamRegistry {
-    private readonly activeStreams: Map<string, CloudWatchLogStreamData>
-
-    public constructor() {
-        this.activeStreams = new Map<string, CloudWatchLogStreamData>()
-    }
+    public constructor(
+        private readonly activeStreams: Map<string, CloudWatchLogStreamData> = new Map<
+            string,
+            CloudWatchLogStreamData
+        >()
+    ) {}
 
     /**
      * Returns whether or not the log is registered.
@@ -126,7 +127,7 @@ export class LogStreamRegistry {
     }
 }
 
-class CloudWatchLogStreamData {
+export class CloudWatchLogStreamData {
     data: CloudWatchLogs.OutputLogEvents = []
     next?: {
         token: CloudWatchLogs.NextToken
