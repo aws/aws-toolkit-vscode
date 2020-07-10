@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import * as moment from 'moment'
 const localize = nls.loadMessageBundle()
 
+import * as vscode from 'vscode'
+import * as moment from 'moment'
 import * as picker from '../../shared/ui/picker'
 import { MultiStepWizard, WizardStep } from '../../shared/wizards/multiStepWizard'
 import { LogGroupNode } from '../explorer/logGroupNode'

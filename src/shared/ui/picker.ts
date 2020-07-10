@@ -200,7 +200,7 @@ export class IteratingQuickPickController<TResponse> {
             // on selection, not "done" but we do want to stop background loading.
             // the caller should own the quick pick lifecycle, so we can either restart the picker from where it left off or dispose at that level.
             getLogger().debug('IteratingQuickPickController item selected. Pausing additional loading.')
-            this.state.isPaused = true
+            this.state.isRunning = false
         })
 
         this.state = new IteratingQuickPickControllerState(this.populator.createPickIterator())
@@ -212,7 +212,7 @@ export class IteratingQuickPickController<TResponse> {
      */
     public pauseRequests(): void {
         getLogger().debug('Pausing IteratingQuickPickController')
-        this.state.isPaused = true
+        this.state.isRunning = false
     }
 
     /**
@@ -221,21 +221,23 @@ export class IteratingQuickPickController<TResponse> {
      */
     public startRequests(): void {
         getLogger().debug('Starting IteratingQuickPickController iteration')
-        if (!this.state.isPaused) {
+        if (this.state.isRunning) {
             getLogger().debug('IteratingQuickPickController already iterating')
+            return
         }
         if (this.state.isDone) {
             getLogger().debug('IteratingQuickPickController is already done iterating. Call reset() and start again')
+            return
         }
-        if (this.state.isPaused && !this.state.isDone) {
-            this.loadItems()
-        }
+        this.loadItems()
     }
 
     /**
      * Resets quick pick's state to default and stops any current execution
      */
     public async reset(): Promise<void> {
+        // Promise is necessary to ensure that cancelExecutionFn() is called to completion before reset() completes.
+        // Open to suggestions if you know a better way to do this.
         await new Promise<void>(resolve => {
             getLogger().debug('Resetting IteratingQuickPickController and cancelling any current execution')
 
@@ -275,12 +277,12 @@ export class IteratingQuickPickController<TResponse> {
 
     private async loadItems(): Promise<void> {
         // unpause the loader (if it was paused previously by a selection)
-        this.state.isPaused = false
+        this.state.isRunning = true
 
         // use a while loop so we have greater control over the iterator.
         // breaking out of a for..of loop for an iterator will automatically set the iterator to `done`
         // manual iteration means that we can use the same iterator no matter how many times we call loadItems()
-        while (!this.state.isDone && !this.state.isPaused) {
+        while (!this.state.isDone && this.state.isRunning) {
             this.quickPick.busy = true
 
             try {
@@ -351,7 +353,7 @@ export class IteratingQuickPickController<TResponse> {
 
 class IteratingQuickPickControllerState {
     public cancelExecutionFn: undefined | (() => void) = undefined
-    public isDone: boolean = false
-    public isPaused: boolean = true
+    public isDone?: boolean
+    public isRunning?: boolean
     public constructor(public iterator: AsyncIterator<vscode.QuickPickItem[]>) {}
 }
