@@ -171,7 +171,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         val debuggerIsHit = checkBreakPointHit(projectRule.project)
         val executeLambda = executeRunConfiguration(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
 
-        assertThat(executeLambda.exitCode).isEqualTo(137)
+        assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(executeLambda.stdout).contains("Hello World")
 
         assertThat(debuggerIsHit.get()).isTrue()
@@ -202,7 +202,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         val debuggerIsHit = checkBreakPointHit(projectRule.project)
         val executeLambda = executeRunConfiguration(runConfiguration, DefaultDebugExecutor.EXECUTOR_ID)
 
-        assertThat(executeLambda.exitCode).isEqualTo(137)
+        assertThat(executeLambda.exitCode).isEqualTo(0)
         assertThat(executeLambda.stdout).contains("Hello World")
 
         assertThat(debuggerIsHit.get()).isTrue()
