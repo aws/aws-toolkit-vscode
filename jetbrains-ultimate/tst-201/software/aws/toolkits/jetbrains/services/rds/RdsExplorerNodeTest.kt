@@ -26,7 +26,7 @@ class RdsExplorerNodeTest {
     val resourceCache = MockResourceCacheRule(projectRule)
 
     @Test
-    fun mySqlResourcesAreListed() {
+    fun `MySQL resources are listed`() {
         val name = RuleUtils.randomName()
         val name2 = RuleUtils.randomName()
         resourceCache.get().addEntry(
@@ -48,7 +48,28 @@ class RdsExplorerNodeTest {
     }
 
     @Test
-    fun postgreSqlResourcesAreListed() {
+    fun `Aurora MySQL resources are listed`() {
+        val name = RuleUtils.randomName()
+        val name2 = RuleUtils.randomName()
+        resourceCache.get().addEntry(
+            RdsResources.LIST_INSTANCES_AURORA_MYSQL, listOf(
+                DBInstance.builder().engine(auroraMysqlEngineType).dbName(name).dbInstanceArn("").build(),
+                DBInstance.builder().engine(auroraMysqlEngineType).dbName(name2).dbInstanceArn("").build()
+            )
+        )
+        val serviceRootNode = sut.buildServiceRootNode(projectRule.project)
+        assertThat(serviceRootNode.children).anyMatch { it.displayName() == message("rds.aurora") }
+        val auroraNode = serviceRootNode.children.first { it.displayName() == message("rds.aurora") }
+        assertThat(auroraNode).isInstanceOf(AuroraParentNode::class.java)
+        assertThat(auroraNode.children).hasSize(2)
+        val mysqlNode = (auroraNode as AuroraParentNode).children.first { it.displayName() == message("rds.mysql") }
+        assertThat(mysqlNode.children).hasSize(2)
+        assertThat(mysqlNode.children).anyMatch { (it as RdsNode).dbInstance.dbName() == name }
+        assertThat(mysqlNode.children).anyMatch { (it as RdsNode).dbInstance.dbName() == name2 }
+    }
+
+    @Test
+    fun `PostgreSQL resources are listed`() {
         val name = RuleUtils.randomName()
         val name2 = RuleUtils.randomName()
         resourceCache.get().addEntry(
@@ -59,35 +80,68 @@ class RdsExplorerNodeTest {
         )
         val serviceRootNode = sut.buildServiceRootNode(projectRule.project)
         assertThat(serviceRootNode.children).anyMatch { it.displayName() == message("rds.postgres") }
-        val mySqlNode = serviceRootNode.children.first { it.displayName() == message("rds.postgres") }
-        assertThat(mySqlNode.children).hasSize(2)
-        assertThat(mySqlNode.children).anyMatch {
-            (it as RdsNode).dbInstance.dbName() == name
-        }
-        assertThat(mySqlNode.children).anyMatch {
-            (it as RdsNode).dbInstance.dbName() == name2
-        }
+        val postgresNode = serviceRootNode.children.first { it.displayName() == message("rds.postgres") }
+        assertThat(postgresNode.children).hasSize(2)
+        assertThat(postgresNode.children).anyMatch { (it as RdsNode).dbInstance.dbName() == name }
+        assertThat(postgresNode.children).anyMatch { (it as RdsNode).dbInstance.dbName() == name2 }
     }
 
     @Test
-    fun noResourcesEmptyNodes() {
+    fun `Aurora PostgreSQL resources are listed`() {
+        val name = RuleUtils.randomName()
+        val name2 = RuleUtils.randomName()
+        resourceCache.get().addEntry(
+            RdsResources.LIST_INSTANCES_AURORA_POSTGRES, listOf(
+                DBInstance.builder().engine(auroraPostgresEngineType).dbName(name).dbInstanceArn("").build(),
+                DBInstance.builder().engine(auroraPostgresEngineType).dbName(name2).dbInstanceArn("").build()
+            )
+        )
+        val serviceRootNode = sut.buildServiceRootNode(projectRule.project)
+        assertThat(serviceRootNode.children).anyMatch { it.displayName() == message("rds.aurora") }
+        val auroraNode = serviceRootNode.children.first { it.displayName() == message("rds.aurora") }
+        assertThat(auroraNode).isInstanceOf(AuroraParentNode::class.java)
+        assertThat(auroraNode.children).hasSize(2)
+        val postgresNode = (auroraNode as AuroraParentNode).children.first { it.displayName() == message("rds.postgres") }
+        assertThat(postgresNode.children).hasSize(2)
+        assertThat(postgresNode.children).anyMatch { (it as RdsNode).dbInstance.dbName() == name }
+        assertThat(postgresNode.children).anyMatch { (it as RdsNode).dbInstance.dbName() == name2 }
+    }
+
+    @Test
+    fun `No resources leads to empty nodes`() {
         resourceCache.get().addEntry(RdsResources.LIST_INSTANCES_MYSQL, listOf())
         resourceCache.get().addEntry(RdsResources.LIST_INSTANCES_POSTGRES, listOf())
+        resourceCache.get().addEntry(RdsResources.LIST_INSTANCES_AURORA_MYSQL, listOf())
+        resourceCache.get().addEntry(RdsResources.LIST_INSTANCES_AURORA_POSTGRES, listOf())
         val serviceRootNode = sut.buildServiceRootNode(projectRule.project)
         assertThat(serviceRootNode.children).isNotEmpty
         serviceRootNode.children.forEach { node ->
-            assertThat(node.children).hasOnlyOneElementSatisfying { it is AwsExplorerEmptyNode }
+            if (node is AuroraParentNode) {
+                node.children.forEach {
+                    assertThat(it.children).hasOnlyOneElementSatisfying { it is AwsExplorerEmptyNode }
+                }
+            } else {
+                assertThat(node.children).hasOnlyOneElementSatisfying { it is AwsExplorerEmptyNode }
+            }
         }
     }
 
     @Test
-    fun exceptionMakesErrorNodes() {
+    fun `Exception makes error nodes`() {
         resourceCache.get().addEntry(RdsResources.LIST_INSTANCES_MYSQL, CompletableFutureUtils.failedFuture(RuntimeException("Simulated error")))
         resourceCache.get().addEntry(RdsResources.LIST_INSTANCES_POSTGRES, CompletableFutureUtils.failedFuture(RuntimeException("Simulated error")))
+        resourceCache.get().addEntry(RdsResources.LIST_INSTANCES_AURORA_MYSQL, CompletableFutureUtils.failedFuture(RuntimeException("Simulated error")))
+        resourceCache.get().addEntry(RdsResources.LIST_INSTANCES_AURORA_POSTGRES, CompletableFutureUtils.failedFuture(RuntimeException("Simulated error")))
         val serviceRootNode = sut.buildServiceRootNode(projectRule.project)
         assertThat(serviceRootNode.children).isNotEmpty
         serviceRootNode.children.forEach { node ->
-            assertThat(node.children).hasOnlyOneElementSatisfying { it is AwsExplorerErrorNode }
+            if (node is AuroraParentNode) {
+                node.children.forEach {
+                    assertThat(it.children).hasOnlyOneElementSatisfying { it is AwsExplorerErrorNode }
+                }
+            } else {
+                assertThat(node.children).hasOnlyOneElementSatisfying { it is AwsExplorerErrorNode }
+            }
         }
     }
 

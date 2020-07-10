@@ -30,6 +30,16 @@
             <action id="rds.postgres.secretsmanager" class="software.aws.toolkits.jetbrains.datagrip.actions.AddSecretsManagerConnection"/>
             <separator/>
         </group>
+        <group id="aws.toolkit.explorer.rds.aurora.mysql" popup="true" compact="false">
+            <action id="rds.aurora.mysql.iamauth" class="software.aws.toolkits.jetbrains.services.rds.actions.CreateIamDataSourceAction"/>
+            <action id="rds.aurora.mysql.secretsmanager" class="software.aws.toolkits.jetbrains.datagrip.actions.AddSecretsManagerConnection"/>
+            <separator/>
+        </group>
+        <group id="aws.toolkit.explorer.rds.aurora.postgres" popup="true" compact="false">
+            <action id="rds.aurora.postgres.iamauth" class="software.aws.toolkits.jetbrains.services.rds.actions.CreateIamDataSourceAction"/>
+            <action id="rds.aurora.postgres.secretsmanager" class="software.aws.toolkits.jetbrains.datagrip.actions.AddSecretsManagerConnection"/>
+            <separator/>
+        </group>
         <group id="aws.toolkit.explorer.redshift.cluster" popup="true" compact="false">
             <action id="redshift.cluster.iamauth" class="software.aws.toolkits.jetbrains.services.redshift.actions.CreateDataSourceAction"/>
             <action id="redshift.cluster.secretsmanager" class="software.aws.toolkits.jetbrains.datagrip.actions.AddSecretsManagerConnection"/>

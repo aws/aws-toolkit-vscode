@@ -12,7 +12,17 @@ import software.aws.toolkits.jetbrains.core.Resource
 // These are the member engine in DBInstance, but it is a string
 const val mysqlEngineType = "mysql"
 const val postgresEngineType = "postgres"
+const val auroraMysqlEngineType = "aurora"
+const val auroraPostgresEngineType = "aurora-postgresql"
+
+fun String.getEngineFromAuroraEngine(): String = when (this) {
+    auroraMysqlEngineType -> mysqlEngineType
+    auroraPostgresEngineType -> postgresEngineType
+    else -> throw IllegalArgumentException("Unknown Aurora engine $this")
+}
+
 const val jdbcMysql = "mysql"
+const val jdbcMariadb = "mariadb"
 const val jdbcPostgres = "postgresql"
 
 // Filters are also just a string
@@ -27,6 +37,8 @@ object RdsResources {
 
     val LIST_INSTANCES_MYSQL: Resource.Cached<List<DBInstance>> = listInstancesFilter(mysqlEngineType)
     val LIST_INSTANCES_POSTGRES: Resource.Cached<List<DBInstance>> = listInstancesFilter(postgresEngineType)
+    val LIST_INSTANCES_AURORA_MYSQL: Resource.Cached<List<DBInstance>> = listInstancesFilter(auroraMysqlEngineType)
+    val LIST_INSTANCES_AURORA_POSTGRES: Resource.Cached<List<DBInstance>> = listInstancesFilter(auroraPostgresEngineType)
 
     private fun listInstancesFilter(engine: String) = ClientBackedCachedResource(RdsClient::class, "rds.list_instances.$engine") {
         this.describeDBInstancesPaginator {

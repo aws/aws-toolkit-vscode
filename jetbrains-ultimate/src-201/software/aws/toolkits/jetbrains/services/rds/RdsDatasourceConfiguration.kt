@@ -3,12 +3,11 @@
 
 package software.aws.toolkits.jetbrains.services.rds
 
-import software.amazon.awssdk.services.rds.model.Endpoint
+import software.amazon.awssdk.services.rds.model.DBInstance
 
 data class RdsDatasourceConfiguration(
     val regionId: String,
     val credentialId: String,
-    val dbEngine: String,
-    val endpoint: Endpoint,
+    val dbInstance: DBInstance,
     val username: String
 )
