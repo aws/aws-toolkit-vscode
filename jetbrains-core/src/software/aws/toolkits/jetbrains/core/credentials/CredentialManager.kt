@@ -3,11 +3,9 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.extensions.ExtensionPointName
-import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.SimpleModificationTracker
 import com.intellij.util.messages.MessageBus
 import com.intellij.util.messages.Topic
@@ -104,22 +102,13 @@ abstract class CredentialManager : SimpleModificationTracker() {
 }
 
 class DefaultCredentialManager : CredentialManager() {
-    private val rootDisposable = Disposer.newDisposable()
-
     private val extensionMap: Map<String, CredentialProviderFactory> by lazy {
-        EP_NAME.extensionList
-            .onEach {
-                if (it is Disposable) {
-                    Disposer.register(rootDisposable, it)
-                }
-            }.associateBy {
+        EP_NAME.extensionList.associateBy {
                 it.id
             }
     }
 
     init {
-        Disposer.register(ApplicationManager.getApplication(), rootDisposable)
-
         extensionMap.values.forEach { providerFactory ->
             LOG.tryOrNull("Failed to set up $providerFactory") {
                 providerFactory.setUp { change ->
