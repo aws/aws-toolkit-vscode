@@ -20,3 +20,18 @@ fun spinUntil(duration: Duration, condition: () -> Boolean) {
         }
     }
 }
+
+/**
+ * Keeps running the function until it returns a non-null value. Checks every 100ms
+ */
+suspend fun <T> spinUntilResult(duration: Duration, func: () -> T?): T {
+    val start = System.nanoTime()
+    while (System.nanoTime() - start <= duration.toNanos()) {
+        func()?.let {
+            return it
+        }
+
+        delay(100)
+    }
+    throw IllegalStateException("Function did not return value within $duration")
+}
