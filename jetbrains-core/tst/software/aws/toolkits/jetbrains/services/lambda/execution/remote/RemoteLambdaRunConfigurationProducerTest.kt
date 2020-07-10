@@ -16,7 +16,7 @@ import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.region.AwsRegion
-import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
 import software.aws.toolkits.jetbrains.services.iam.IamRole
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 
@@ -29,7 +29,7 @@ class RemoteLambdaRunConfigurationProducerTest {
     fun validRunConfigurationIsCreated() {
         val functionName = "SomeFunction"
         val region = AwsRegion("us-east-1", "us-east-1", "aws")
-        val credentialProviderId = MockProjectAccountSettingsManager.getInstance(projectRule.project).connectionSettings()?.credentials
+        val credentialProviderId = MockAwsConnectionManager.getInstance(projectRule.project).connectionSettings()?.credentials
 
         val lambdaLocation = LambdaFunction(
             name = functionName,

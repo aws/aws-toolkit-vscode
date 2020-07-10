@@ -60,7 +60,7 @@ class JavaCodeInsightTestFixtureRule(testDescription: DefaultLightProjectDescrip
  *
  * If you wish to have just a [Project], you may use Intellij's [com.intellij.testFramework.ProjectRule]
  */
-class HeavyJavaCodeInsightTestFixtureRule() : CodeInsightTestFixtureRule() {
+class HeavyJavaCodeInsightTestFixtureRule : CodeInsightTestFixtureRule() {
     override fun createTestFixture(): CodeInsightTestFixture {
         val fixtureBuilder = IdeaTestFixtureFactory.getFixtureFactory().createFixtureBuilder(testName)
         val newFixture = JavaTestFixtureFactory.getFixtureFactory().createCodeInsightFixture(fixtureBuilder.fixture)

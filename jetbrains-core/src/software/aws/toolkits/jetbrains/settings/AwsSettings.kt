@@ -14,12 +14,17 @@ import java.util.prefs.Preferences
 interface AwsSettings {
     var isTelemetryEnabled: Boolean
     var promptedForTelemetry: Boolean
+    var useDefaultCredentialRegion: UseAwsCredentialRegion
     val clientId: UUID
 
     companion object {
         @JvmStatic
         fun getInstance(): AwsSettings = ServiceManager.getService(AwsSettings::class.java)
     }
+}
+
+enum class UseAwsCredentialRegion {
+    Always, Never, Prompt;
 }
 
 @State(name = "aws", storages = [Storage("aws.xml")])
@@ -46,6 +51,12 @@ class DefaultAwsSettings : PersistentStateComponent<AwsConfiguration>, AwsSettin
             state.promptedForTelemetry = value
         }
 
+    override var useDefaultCredentialRegion: UseAwsCredentialRegion
+        get() = state.useDefaultCredentialRegion?.let { UseAwsCredentialRegion.valueOf(it) } ?: UseAwsCredentialRegion.Prompt
+        set(value) {
+            state.useDefaultCredentialRegion = value.name
+        }
+
     override val clientId: UUID
         @Synchronized get() = UUID.fromString(preferences.get(CLIENT_ID_KEY, UUID.randomUUID().toString())).also {
             preferences.put(CLIENT_ID_KEY, it.toString())
@@ -58,5 +69,6 @@ class DefaultAwsSettings : PersistentStateComponent<AwsConfiguration>, AwsSettin
 
 data class AwsConfiguration(
     var isTelemetryEnabled: Boolean? = null,
-    var promptedForTelemetry: Boolean? = null
+    var promptedForTelemetry: Boolean? = null,
+    var useDefaultCredentialRegion: String? = null
 )

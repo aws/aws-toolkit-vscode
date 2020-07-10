@@ -21,7 +21,7 @@ import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.awsClient
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.services.iam.CreateIamRoleDialog
@@ -146,7 +146,7 @@ class EditFunctionDialog(
         view.xrayEnabled.isSelected = xrayEnabled
 
         val regionProvider = AwsRegionProvider.getInstance()
-        val settings = ProjectAccountSettingsManager.getInstance(project)
+        val settings = AwsConnectionManager.getInstance(project)
         view.setXrayControlVisibility(mode != UPDATE_CODE && lambdaTracingConfigIsAvailable(settings.activeRegion))
 
         view.iamRole.selectedItem = role

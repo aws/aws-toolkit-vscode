@@ -14,11 +14,12 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.http.SdkHttpClient
+import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.CredentialProviderFactory
 import software.aws.toolkits.core.credentials.CredentialProviderNotFoundException
 import software.aws.toolkits.core.credentials.CredentialsChangeEvent
 import software.aws.toolkits.core.credentials.CredentialsChangeListener
-import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
+import software.aws.toolkits.core.credentials.CredentialIdentifierBase
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import kotlin.test.assertNotNull
@@ -231,7 +232,7 @@ class CredentialManagerTest {
         }
 
         override fun createAwsCredentialProvider(
-            providerId: ToolkitCredentialsIdentifier,
+            providerId: CredentialIdentifier,
             region: AwsRegion,
             sdkHttpClientSupplier: () -> SdkHttpClient
         ): AwsCredentialsProvider = credentialsMapping.getValue(providerId.id).getValue(region)
@@ -261,7 +262,7 @@ class CredentialManagerTest {
         }
     }
 
-    private class TestCredentialProviderIdentifier(override val id: String, override val factoryId: String) : ToolkitCredentialsIdentifier() {
+    private class TestCredentialProviderIdentifier(override val id: String, override val factoryId: String) : CredentialIdentifierBase() {
         override val displayName: String = "$factoryId:$id"
     }
 }

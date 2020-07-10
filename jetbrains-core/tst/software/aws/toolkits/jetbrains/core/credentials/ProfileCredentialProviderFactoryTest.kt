@@ -1,23 +1,23 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.core.credentials
 
+import com.intellij.notification.Notification
 import com.intellij.notification.Notifications
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.ui.TestInputDialog
-import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.VfsTestUtil
+import com.intellij.testFramework.replaceService
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.check
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.reset
 import com.nhaarman.mockitokotlin2.stub
@@ -39,12 +39,13 @@ import software.amazon.awssdk.http.HttpExecuteRequest
 import software.amazon.awssdk.http.HttpExecuteResponse
 import software.amazon.awssdk.http.SdkHttpClient
 import software.amazon.awssdk.http.SdkHttpFullResponse
+import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.CredentialsChangeEvent
 import software.aws.toolkits.core.credentials.CredentialsChangeListener
-import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
 import software.aws.toolkits.core.region.ToolkitRegionProvider
 import software.aws.toolkits.core.rules.SystemPropertyHelper
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileCredentialProviderFactory
+import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileWatcher
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import java.io.File
 import java.time.ZonedDateTime
@@ -72,6 +73,7 @@ class ProfileCredentialProviderFactoryTest {
     private lateinit var profileFile: File
     private lateinit var credentialsFile: File
 
+    private val mockProfileWatcher = MockProfileWatcher()
     private val mockSdkHttpClient = mock<SdkHttpClient>()
     private val mockRegionProvider = mock<ToolkitRegionProvider>()
     private val profileLoadCallback = mock<CredentialsChangeListener>()
@@ -92,24 +94,28 @@ class ProfileCredentialProviderFactoryTest {
             on { profileLoadCallback.invoke(credentialChangeEvent.capture()) }.thenReturn(Unit)
         }
 
+        ApplicationManager.getApplication().replaceService(ProfileWatcher::class.java, mockProfileWatcher, disposableRule.disposable)
+
         Messages.setTestInputDialog { MFA_TOKEN }
     }
 
     @After
     fun tearDown() {
         Messages.setTestInputDialog(TestInputDialog.DEFAULT)
+        mockProfileWatcher.reset()
     }
 
     @Test
     fun testLoadingWithEmptyProfiles() {
         createProviderFactory()
-        verify(profileLoadCallback).invoke(
-            check {
-                assertThat(it.added).isEmpty()
-                assertThat(it.modified).isEmpty()
-                assertThat(it.removed).isEmpty()
-            }
-        )
+
+        argumentCaptor<CredentialsChangeEvent>().apply {
+            verify(profileLoadCallback).invoke(capture())
+
+            assertThat(firstValue.added).isEmpty()
+            assertThat(firstValue.modified).isEmpty()
+            assertThat(firstValue.removed).isEmpty()
+        }
     }
 
     @Test
@@ -118,17 +124,18 @@ class ProfileCredentialProviderFactoryTest {
 
         createProviderFactory()
 
-        verify(profileLoadCallback).invoke(
-            check {
-                assertThat(it.added).hasSize(3)
-                    .has(profileName(FOO_PROFILE_NAME))
-                    .has(profileName(BAR_PROFILE_NAME))
-                    .has(profileName(BAZ_PROFILE_NAME))
+        argumentCaptor<CredentialsChangeEvent>().apply {
+            verify(profileLoadCallback).invoke(capture())
 
-                assertThat(it.modified).isEmpty()
-                assertThat(it.removed).isEmpty()
-            }
-        )
+            assertThat(firstValue.added).hasSize(4)
+                .has(profileName(FOO_PROFILE_NAME))
+                .has(profileName(BAR_PROFILE_NAME))
+                .has(profileName(BAZ_PROFILE_NAME))
+                .has(profileName(REGIONALIZED_PROFILE_NAME, defaultRegion = "us-west-2"))
+
+            assertThat(firstValue.modified).isEmpty()
+            assertThat(firstValue.removed).isEmpty()
+        }
     }
 
     @Test
@@ -145,9 +152,11 @@ class ProfileCredentialProviderFactoryTest {
 
         createProviderFactory()
 
-        verify(notificationMock).notify(check {
-            assertThat(it.content).contains("Expected an '=' sign defining a property on line 2")
-        })
+        argumentCaptor<Notification>().apply {
+            verify(notificationMock).notify(capture())
+
+            assertThat(firstValue.content).contains("Expected an '=' sign defining a property on line 2")
+        }
     }
 
     @Test
@@ -167,13 +176,14 @@ class ProfileCredentialProviderFactoryTest {
         )
 
         createProviderFactory()
-        verify(profileLoadCallback).invoke(
-            check {
-                assertThat(it.added).hasSize(1).has(profileName("another_profile"))
-                assertThat(it.modified).isEmpty()
-                assertThat(it.removed).isEmpty()
-            }
-        )
+
+        argumentCaptor<CredentialsChangeEvent>().apply {
+            verify(profileLoadCallback).invoke(capture())
+
+            assertThat(firstValue.added).hasSize(1).has(profileName("another_profile"))
+            assertThat(firstValue.modified).isEmpty()
+            assertThat(firstValue.removed).isEmpty()
+        }
     }
 
     @Test
@@ -234,7 +244,6 @@ class ProfileCredentialProviderFactoryTest {
         }
 
         val providerFactory = createProviderFactory()
-        println(credentialChangeEvent.allValues)
         val validProfile = findCredentialIdentifier("role")
         val credentialsProvider = providerFactory.createProvider(validProfile).resolveCredentials()
 
@@ -356,14 +365,6 @@ class ProfileCredentialProviderFactoryTest {
         val validProfile = findCredentialIdentifier("foo")
         val credentialsProvider = providerFactory.createProvider(validProfile)
 
-        verify(profileLoadCallback).invoke(
-            check {
-                assertThat(it.added).hasSize(1).has(profileName("foo"))
-                assertThat(it.modified).isEmpty()
-                assertThat(it.removed).isEmpty()
-            }
-        )
-
         assertThat(credentialsProvider.resolveCredentials()).isInstanceOfSatisfying(AwsSessionCredentials::class.java) {
             assertThat(it.accessKeyId()).isEqualTo("FooAccessKey")
             assertThat(it.secretAccessKey()).isEqualTo("FooSecretKey")
@@ -379,13 +380,19 @@ class ProfileCredentialProviderFactoryTest {
             """.trimIndent()
         )
 
-        verify(profileLoadCallback).invoke(
-            check {
-                assertThat(it.added).isEmpty()
-                assertThat(it.modified).hasSize(1).has(profileName("foo"))
-                assertThat(it.removed).isEmpty()
-            }
-        )
+        mockProfileWatcher.triggerListeners()
+
+        argumentCaptor<CredentialsChangeEvent>().apply {
+            verify(profileLoadCallback, times(2)).invoke(capture())
+
+            assertThat(firstValue.added).hasSize(1).has(profileName("foo"))
+            assertThat(firstValue.modified).isEmpty()
+            assertThat(firstValue.removed).isEmpty()
+
+            assertThat(secondValue.added).isEmpty()
+            assertThat(secondValue.modified).hasSize(1).has(profileName("foo"))
+            assertThat(secondValue.removed).isEmpty()
+        }
     }
 
     @Test
@@ -411,17 +418,23 @@ class ProfileCredentialProviderFactoryTest {
 
         profileFile.writeToFile("")
 
+        mockProfileWatcher.triggerListeners()
+
         assertThatThrownBy {
             providerFactory.createProvider(validProfile)
         }.isInstanceOf(IllegalStateException::class.java)
 
-        verify(profileLoadCallback).invoke(
-            check {
-                assertThat(it.added).isEmpty()
-                assertThat(it.modified).isEmpty()
-                assertThat(it.removed).hasSize(1).has(profileName("foo"))
-            }
-        )
+        argumentCaptor<CredentialsChangeEvent>().apply {
+            verify(profileLoadCallback, times(2)).invoke(capture())
+
+            assertThat(firstValue.added).hasSize(1).has(profileName("foo"))
+            assertThat(firstValue.modified).isEmpty()
+            assertThat(firstValue.removed).isEmpty()
+
+            assertThat(secondValue.added).isEmpty()
+            assertThat(secondValue.modified).isEmpty()
+            assertThat(secondValue.removed).hasSize(1).has(profileName("foo"))
+        }
     }
 
     @Test
@@ -429,14 +442,6 @@ class ProfileCredentialProviderFactoryTest {
         profileFile.writeToFile("")
 
         val providerFactory = createProviderFactory()
-
-        verify(profileLoadCallback).invoke(
-            check {
-                assertThat(it.added).isEmpty()
-                assertThat(it.modified).isEmpty()
-                assertThat(it.removed).isEmpty()
-            }
-        )
 
         profileFile.writeToFile(
             """
@@ -446,6 +451,8 @@ class ProfileCredentialProviderFactoryTest {
             aws_session_token=FooSessionToken
             """.trimIndent()
         )
+
+        mockProfileWatcher.triggerListeners()
 
         val validProfile = findCredentialIdentifier("foo")
         val credentialsProvider = providerFactory.createProvider(validProfile)
@@ -456,13 +463,17 @@ class ProfileCredentialProviderFactoryTest {
             assertThat(it.sessionToken()).isEqualTo("FooSessionToken")
         }
 
-        verify(profileLoadCallback).invoke(
-            check {
-                assertThat(it.added).hasSize(1).has(profileName("foo"))
-                assertThat(it.modified).isEmpty()
-                assertThat(it.removed).isEmpty()
-            }
-        )
+        argumentCaptor<CredentialsChangeEvent>().apply {
+            verify(profileLoadCallback, times(2)).invoke(capture())
+
+            assertThat(firstValue.added).isEmpty()
+            assertThat(firstValue.modified).isEmpty()
+            assertThat(firstValue.removed).isEmpty()
+
+            assertThat(secondValue.added).hasSize(1).has(profileName("foo"))
+            assertThat(secondValue.modified).isEmpty()
+            assertThat(secondValue.removed).isEmpty()
+        }
     }
 
     @Test
@@ -470,14 +481,6 @@ class ProfileCredentialProviderFactoryTest {
         assertThat(profileFile).doesNotExist()
 
         val providerFactory = createProviderFactory()
-
-        verify(profileLoadCallback).invoke(
-            check {
-                assertThat(it.added).isEmpty()
-                assertThat(it.modified).isEmpty()
-                assertThat(it.removed).isEmpty()
-            }
-        )
 
         profileFile.writeToFile(
             """
@@ -488,13 +491,7 @@ class ProfileCredentialProviderFactoryTest {
             """.trimIndent()
         )
 
-        verify(profileLoadCallback).invoke(
-            check {
-                assertThat(it.added).hasSize(1).has(profileName("foo"))
-                assertThat(it.modified).isEmpty()
-                assertThat(it.removed).isEmpty()
-            }
-        )
+        mockProfileWatcher.triggerListeners()
 
         val validProfile = findCredentialIdentifier("foo")
         val credentialsProvider = providerFactory.createProvider(validProfile)
@@ -503,6 +500,18 @@ class ProfileCredentialProviderFactoryTest {
             assertThat(it.accessKeyId()).isEqualTo("FooAccessKey")
             assertThat(it.secretAccessKey()).isEqualTo("FooSecretKey")
             assertThat(it.sessionToken()).isEqualTo("FooSessionToken")
+        }
+
+        argumentCaptor<CredentialsChangeEvent>().apply {
+            verify(profileLoadCallback, times(2)).invoke(capture())
+
+            assertThat(firstValue.added).isEmpty()
+            assertThat(firstValue.modified).isEmpty()
+            assertThat(firstValue.removed).isEmpty()
+
+            assertThat(secondValue.added).hasSize(1).has(profileName("foo"))
+            assertThat(secondValue.modified).isEmpty()
+            assertThat(secondValue.removed).isEmpty()
         }
     }
 
@@ -529,17 +538,23 @@ class ProfileCredentialProviderFactoryTest {
 
         VfsTestUtil.deleteFile(LocalFileSystem.getInstance().findFileByIoFile(profileFile)!!)
 
+        mockProfileWatcher.triggerListeners()
+
         assertThatThrownBy {
             providerFactory.createProvider(validProfile)
         }.isInstanceOf(IllegalStateException::class.java)
 
-        verify(profileLoadCallback).invoke(
-            check {
-                assertThat(it.added).isEmpty()
-                assertThat(it.modified).isEmpty()
-                assertThat(it.removed).hasSize(1).has(profileName("foo"))
-            }
-        )
+        argumentCaptor<CredentialsChangeEvent>().apply {
+            verify(profileLoadCallback, times(2)).invoke(capture())
+
+            assertThat(firstValue.added).hasSize(1).has(profileName("foo"))
+            assertThat(firstValue.modified).isEmpty()
+            assertThat(firstValue.removed).isEmpty()
+
+            assertThat(secondValue.added).isEmpty()
+            assertThat(secondValue.modified).isEmpty()
+            assertThat(secondValue.removed).hasSize(1).has(profileName("foo"))
+        }
     }
 
     private fun File.writeToFile(content: String) {
@@ -550,18 +565,16 @@ class ProfileCredentialProviderFactoryTest {
         }
     }
 
-    private fun profileName(expectedProfileName: String): Condition<Iterable<ToolkitCredentialsIdentifier>> =
-        object : Condition<Iterable<ToolkitCredentialsIdentifier>>(expectedProfileName) {
-            override fun matches(value: Iterable<ToolkitCredentialsIdentifier>): Boolean = value.any {
-                it.id == "profile:$expectedProfileName"
+    private fun profileName(expectedProfileName: String, defaultRegion: String? = null): Condition<Iterable<CredentialIdentifier>> =
+        object : Condition<Iterable<CredentialIdentifier>>(expectedProfileName) {
+            override fun matches(value: Iterable<CredentialIdentifier>): Boolean = value.any {
+                it.id == "profile:$expectedProfileName" && defaultRegion?.let { dr -> it.defaultRegionId == dr } ?: true
             }
         }
 
     private fun createProviderFactory(): ProfileCredentialProviderFactory {
         val factory = ProfileCredentialProviderFactory()
         factory.setUp(profileLoadCallback)
-
-        Disposer.register(disposableRule.disposable, factory)
 
         return factory
     }
@@ -603,11 +616,27 @@ class ProfileCredentialProviderFactoryTest {
         }
     }
 
-    private fun ProfileCredentialProviderFactory.createProvider(validProfile: ToolkitCredentialsIdentifier) = this.createAwsCredentialProvider(
+    private fun ProfileCredentialProviderFactory.createProvider(validProfile: CredentialIdentifier) = this.createAwsCredentialProvider(
         validProfile,
         MockRegionProvider.getInstance().defaultRegion(),
         sdkHttpClientSupplier = { mockSdkHttpClient }
     )
+
+    private class MockProfileWatcher : ProfileWatcher {
+        private val listeners = mutableListOf<() -> Unit>()
+
+        override fun addListener(listener: () -> Unit) {
+            listeners.add(listener)
+        }
+
+        fun reset() {
+            listeners.clear()
+        }
+
+        fun triggerListeners() {
+            listeners.forEach { it() }
+        }
+    }
 
     private companion object {
         val TEST_PROFILE_FILE_CONTENTS = """
@@ -622,11 +651,17 @@ class ProfileCredentialProviderFactoryTest {
 
             [profile baz]
             credential_process = /path/to/credential/process
+            
+            [profile regionalized]
+            aws_access_key_id=RegionAccessKey
+            aws_secret_access_key=RegionSecretKey
+            region=us-west-2
         """.trimIndent()
 
         const val FOO_PROFILE_NAME = "foo"
         const val BAR_PROFILE_NAME = "bar"
         const val BAZ_PROFILE_NAME = "baz"
+        const val REGIONALIZED_PROFILE_NAME = "regionalized"
         const val MFA_TOKEN = "MfaToken"
     }
 }

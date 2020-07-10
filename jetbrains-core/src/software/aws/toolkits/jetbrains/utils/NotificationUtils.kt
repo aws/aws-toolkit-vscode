@@ -17,6 +17,7 @@ import com.intellij.ui.ScrollPaneFactory
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.AwsToolkit
+import software.aws.toolkits.jetbrains.core.credentials.ChangeAccountSettingsMode
 import software.aws.toolkits.jetbrains.core.credentials.SettingsSelectorAction
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable
@@ -42,11 +43,9 @@ fun Throwable.notifyError(title: String = "", project: Project? = null) {
 
 private fun notify(type: NotificationType, title: String, content: String = "", project: Project? = null, notificationActions: Collection<AnAction>) {
     val notification = Notification(GROUP_DISPLAY_ID, title, content, type)
-
     notificationActions.forEach {
-        notification.addAction(it)
+        notification.addAction(if (it !is NotificationAction) createNotificationExpiringAction(it) else it)
     }
-
     notify(notification, project)
 }
 
@@ -80,7 +79,7 @@ fun notifyNoActiveCredentialsError(
         title = title,
         content = content,
         project = project,
-        action = SettingsSelectorAction(showRegions = false)
+        action = SettingsSelectorAction(ChangeAccountSettingsMode.CREDENTIALS)
     )
 }
 

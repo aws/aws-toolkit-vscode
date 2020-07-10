@@ -10,14 +10,14 @@ import com.intellij.openapi.project.Project
 import com.intellij.util.Alarm
 import com.intellij.util.AlarmFactory
 import software.amazon.awssdk.core.SdkClient
+import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.ToolkitCredentialsChangeListener
-import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
@@ -42,7 +42,7 @@ interface AwsResourceCache {
 
     /**
      * Get a [resource] either by making a call or returning it from the cache if present and unexpired. Uses the currently [AwsRegion]
-     * & [ToolkitCredentialsProvider] active in [ProjectAccountSettingsManager].
+     * & [ToolkitCredentialsProvider] active in [AwsConnectionManager].
      *
      * @param[useStale] if an exception occurs attempting to refresh the resource return a cached version if it exists (even if it's expired). Default: true
      * @param[forceFetch] force the resource to refresh (and update cache) even if a valid cache version exists. Default: false
@@ -226,7 +226,7 @@ class DefaultAwsResourceCache(
     constructor(project: Project) : this(project, Clock.systemDefaultZone(), MAXIMUM_CACHE_ENTRIES, DEFAULT_MAINTENANCE_INTERVAL)
 
     private val cache = ConcurrentHashMap<CacheKey, Entry<*>>()
-    private val accountSettings by lazy { ProjectAccountSettingsManager.getInstance(project) }
+    private val accountSettings by lazy { AwsConnectionManager.getInstance(project) }
     private val alarm = AlarmFactory.getInstance().create(Alarm.ThreadToUse.POOLED_THREAD, project)
 
     init {
@@ -315,9 +315,9 @@ class DefaultAwsResourceCache(
         cache.clear()
     }
 
-    override fun providerRemoved(identifier: ToolkitCredentialsIdentifier) = clearByCredential(identifier.id)
+    override fun providerRemoved(identifier: CredentialIdentifier) = clearByCredential(identifier.id)
 
-    override fun providerModified(identifier: ToolkitCredentialsIdentifier) = clearByCredential(identifier.id)
+    override fun providerModified(identifier: CredentialIdentifier) = clearByCredential(identifier.id)
 
     private fun clearByCredential(providerId: String) {
         cache.keys.removeIf { it.credentialsId == providerId }
