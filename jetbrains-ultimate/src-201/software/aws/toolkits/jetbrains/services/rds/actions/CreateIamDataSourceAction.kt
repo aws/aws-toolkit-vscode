@@ -22,7 +22,10 @@ import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
 import software.aws.toolkits.jetbrains.services.rds.RdsDatasourceConfiguration
 import software.aws.toolkits.jetbrains.services.rds.RdsNode
+import software.aws.toolkits.jetbrains.services.rds.auroraMysqlEngineType
+import software.aws.toolkits.jetbrains.services.rds.auroraPostgresEngineType
 import software.aws.toolkits.jetbrains.services.rds.auth.IamAuth
+import software.aws.toolkits.jetbrains.services.rds.jdbcMariadb
 import software.aws.toolkits.jetbrains.services.rds.jdbcMysql
 import software.aws.toolkits.jetbrains.services.rds.jdbcPostgres
 import software.aws.toolkits.jetbrains.services.rds.mysqlEngineType
@@ -96,8 +99,7 @@ class CreateIamDataSourceAction : SingleExplorerNodeAction<RdsNode>(message("rds
             RdsDatasourceConfiguration(
                 regionId = node.nodeProject.activeRegion().id,
                 credentialId = node.nodeProject.activeCredentialProvider().id,
-                dbEngine = node.dbInstance.engine(),
-                endpoint = node.dbInstance.endpoint(),
+                dbInstance = node.dbInstance,
                 username = username
             )
         )
@@ -109,25 +111,33 @@ class CreateIamDataSourceAction : SingleExplorerNodeAction<RdsNode>(message("rds
 }
 
 fun DataSourceRegistry.createRdsDatasource(config: RdsDatasourceConfiguration) {
-    val url = "${config.endpoint.address()}:${config.endpoint.port()}"
+    val dbEngine = config.dbInstance.engine()
+    val url = "${config.dbInstance.endpoint().address()}:${config.dbInstance.endpoint().port()}"
 
     val builder = builder
         .withJdbcAdditionalProperty(CREDENTIAL_ID_PROPERTY, config.credentialId)
         .withJdbcAdditionalProperty(REGION_ID_PROPERTY, config.regionId)
-    when (config.dbEngine) {
+    when (dbEngine) {
         mysqlEngineType -> {
             builder
                 .withUrl("jdbc:$jdbcMysql://$url/")
                 .withUser(config.username)
         }
-        postgresEngineType -> {
+        postgresEngineType, auroraPostgresEngineType -> {
             builder
                 .withUrl("jdbc:$jdbcPostgres://$url/")
                 // In postgres this is case sensitive as lower case. If you add a db user for
                 // IAM role "Admin", it is inserted as "admin"
                 .withUser(config.username.toLowerCase())
         }
-        else -> throw IllegalArgumentException("Engine ${config.dbEngine} is not supported for IAM auth!")
+        auroraMysqlEngineType -> {
+            builder
+                // The docs recommend using MariaDB instead of MySQL to connect to MySQL Aurora DBs:
+                // https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.Connecting.html#Aurora.Connecting.AuroraMySQL
+                .withUrl("jdbc:$jdbcMariadb://$url/")
+                .withUser(config.username)
+        }
+        else -> throw IllegalArgumentException("Engine $dbEngine is not supported for IAM auth!")
     }
     builder.commit()
     // TODO FIX_WHEN_MIN_IS_202 set auth provider ID in builder. There is no way to set it in the builder,

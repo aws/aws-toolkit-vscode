@@ -102,6 +102,16 @@ class IamAuthWidgetTest {
         assertThat(widget.getInstanceId()).isEqualTo("abc")
     }
 
+    @Test
+    fun `Does not change instance on editing url`() {
+        widget.reset(mock(), false)
+        val endpointUrl = "jdbc:postgresql://def.host.$defaultRegion.rds.amazonaws.com:5432/dev"
+        widget.updateFromUrl(mock<UrlEditorModel> { on { url } doReturn endpointUrl })
+        val badUrl = "jdbc:postgresql://aurorawriter.host.$defaultRegion.rds.amazonaws.com:5432/dev"
+        widget.updateFromUrl(mock<UrlEditorModel> { on { url } doReturn badUrl })
+        assertThat(widget.getInstanceId()).isEqualTo("def")
+    }
+
     private fun buildDataSource(
         hasCredentials: Boolean = true,
         hasRegion: Boolean = true
