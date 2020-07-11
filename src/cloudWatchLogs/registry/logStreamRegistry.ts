@@ -12,7 +12,8 @@ import { CloudWatchLogs } from 'aws-sdk'
 import { convertUriToLogGroupInfo } from '../utils'
 import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { ext } from '../../shared/extensionGlobals'
-import { getLogger } from '../../shared/logger'
+
+// TODO: Add debug logging statements
 
 /**
  * Class which contains CRUD operations and persistence for CloudWatch Logs streams.
@@ -34,23 +35,12 @@ export class LogStreamRegistry {
     }
 
     /**
-     * Adds a log to the registry if it didn't previously exist. No impact on existing log entries.
-     * @param uri Document URI
-     */
-    public async addLog(uri: vscode.Uri): Promise<void> {
-        if (!this.hasLog(uri)) {
-            this.setLog(uri, new CloudWatchLogStreamData())
-            await this.updateLogContent(uri, 'tail')
-        }
-    }
-
-    /**
      * Returns the currently-held log content for a URI as a formatted string.
      * @param uri Document URI
      * @param formatting Optional params for outputting log messages.
      */
     public getLogContent(uri: vscode.Uri, formatting?: { timestamps?: boolean }): string | undefined {
-        const currData = this.activeStreams.get(uri.path)
+        const currData = this.getLog(uri)
 
         if (!currData) {
             return undefined
@@ -61,7 +51,7 @@ export class LogStreamRegistry {
             let line: string = data.message ?? ''
             if (formatting?.timestamps) {
                 // moment().format() matches console timestamp, e.g.: 2019-03-04T11:40:08.781-08:00
-                // if no timestamp for some reason, entering a blank of equal length (29 characters)
+                // if no timestamp for some reason, entering a blank of equal length (29 characters long)
                 const timestamp = data.timestamp ? moment(data.timestamp).format() : '                             '
                 line = timestamp.concat('\t', line)
             }
@@ -72,27 +62,26 @@ export class LogStreamRegistry {
     }
 
     /**
-     * Retrieves the next set of data for a log and adds it to the registry. Data can either be added to the front of the log ('head') or end ('tail')
+     * Retrieves the next set of data for a log and adds it to the registry. Data can either be added to the front of the log (`'head'`) or end (`'tail'`)
      * @param uri Document URI
-     * @param headOrTail Determines update behavior: 'head' retrieves the most recent previous token and appends data to the top of the log, 'tail' does the opposite.
+     * @param headOrTail Determines update behavior: `'head'` retrieves the most recent previous token and appends data to the top of the log, `'tail'` does the opposite. Default: `'tail'`
+     * @param getLogEventsFromUriComponentsFn Override for testing purposes.
      */
-    public async updateLogContent(uri: vscode.Uri, headOrTail: 'head' | 'tail'): Promise<void> {
-        const stream = this.activeStreams.get(uri.path)
-        if (!stream) {
-            getLogger().debug('Log stream not active. Call addLog() first.')
-            return
-        }
+    public async upsertLog(
+        uri: vscode.Uri,
+        headOrTail: 'head' | 'tail' = 'tail',
+        getLogEventsFromUriComponentsFn: (logGroupInfo: {
+            groupName: string
+            streamName: string
+            regionName: string
+        }) => Promise<CloudWatchLogs.GetLogEventsResponse> = getLogEventsFromUriComponents
+    ): Promise<void> {
+        const stream = this.getLog(uri) ?? new CloudWatchLogStreamData()
         // TODO: append next/previous token to stream object
         const logGroupInfo = convertUriToLogGroupInfo(uri)
         try {
-            const client: CloudWatchLogsClient = ext.toolkitClientBuilder.createCloudWatchLogsClient(
-                logGroupInfo.regionName
-            )
             // TODO: append next/previous token
-            const logEvents = await client.getLogEvents({
-                logGroupName: logGroupInfo.groupName,
-                logStreamName: logGroupInfo.streamName,
-            })
+            const logEvents = await getLogEventsFromUriComponentsFn(logGroupInfo)
             const newData =
                 headOrTail === 'head'
                     ? (logEvents.events ?? []).concat(stream.data)
@@ -118,12 +107,16 @@ export class LogStreamRegistry {
      * Deletes a stream from the registry.
      * @param uri Document URI
      */
-    public deleteLogContent(uri: vscode.Uri) {
+    public deregisterLog(uri: vscode.Uri) {
         this.activeStreams.delete(uri.path)
     }
 
-    private setLog(uri: vscode.Uri, stream: CloudWatchLogStreamData) {
+    private setLog(uri: vscode.Uri, stream: CloudWatchLogStreamData): void {
         this.activeStreams.set(uri.path, stream)
+    }
+
+    private getLog(uri: vscode.Uri): CloudWatchLogStreamData | undefined {
+        return this.activeStreams.get(uri.path)
     }
 }
 
@@ -138,4 +131,19 @@ export class CloudWatchLogStreamData {
         expiry: Date
     }
     mostRecentExpiry?: Date
+}
+
+// TODO: Add pagination logic here
+async function getLogEventsFromUriComponents(logGroupInfo: {
+    groupName: string
+    streamName: string
+    regionName: string
+}): Promise<CloudWatchLogs.GetLogEventsResponse> {
+    const client: CloudWatchLogsClient = ext.toolkitClientBuilder.createCloudWatchLogsClient(logGroupInfo.regionName)
+
+    // TODO: append next/previous token
+    return await client.getLogEvents({
+        logGroupName: logGroupInfo.groupName,
+        logStreamName: logGroupInfo.streamName,
+    })
 }

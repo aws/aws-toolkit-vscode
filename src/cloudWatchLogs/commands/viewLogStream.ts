@@ -35,7 +35,7 @@ export async function viewLogStream(node: LogGroupNode, registry: LogStreamRegis
             logStreamResponse.logStreamName,
             logStreamResponse.region
         )
-        await registry.addLog(uri)
+        await registry.upsertLog(uri)
         const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
         await vscode.window.showTextDocument(doc, { preview: false })
     } else {
