@@ -31,6 +31,20 @@
                     "type": "result"
                 }
             ]
+        },
+        {
+            "name": "ssmDocument_createSsmDocumentFromTemplate",
+            "description": ""
+        },
+        {
+            "name": "ssmDocument_openDocument",
+            "description": "",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
         }
     ]
 }

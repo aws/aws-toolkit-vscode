@@ -55,6 +55,7 @@ import {
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { getChannelLogger } from './shared/utilities/vsCodeUtils'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
+import { activate as activateSsmDocument } from './ssmDocument/activation'
 
 let localize: nls.LocalizeFunc
 
@@ -178,6 +179,8 @@ export async function activate(context: vscode.ExtensionContext) {
             context: context,
             outputChannel: toolkitOutputChannel,
         })
+
+        await activateSsmDocument(context, awsContext, toolkitOutputChannel)
 
         await ExtensionDisposableFiles.initialize(context)
 

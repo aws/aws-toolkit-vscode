@@ -54,7 +54,11 @@
         "onView:aws.cdk.explorer",
         "onCommand:aws.refreshCdkExplorer",
         "onCommand:aws.aboutToolkit",
-        "onLanguage:asl"
+        "onLanguage:asl",
+        "onLanguage:ssm-json",
+        "onLanguage:ssm-yaml",
+        "onCommand:aws.ssmDocument.createDocumentFromTemplate",
+        "onCommand:aws.ssmDocument.openDocument"
     ],
     "main": "./extensionMain",
     "contributes": {
@@ -131,6 +135,11 @@
                     "type": "number",
                     "default": 5000,
                     "description": "%AWS.stepFunctions.asl.maxItemsComputed.desc%"
+                },
+                "aws.ssmDocument.ssm.maxItemsComputed": {
+                    "type": "number",
+                    "default": 5000,
+                    "description": "%AWS.ssmDocument.ssm.maxItemsComputed.desc%"
                 }
             }
         },
@@ -447,6 +456,10 @@
                 {
                     "command": "aws.showErrorDetails",
                     "when": "false"
+                },
+                {
+                    "command": "aws.ssmDocument.openDocument",
+                    "when": "false"
                 }
             ],
             "editor/title": [
@@ -603,6 +616,11 @@
                     "command": "aws.cloudWatchLogs.viewLogStream",
                     "group": "0@1",
                     "when": "view == aws.explorer && viewItem == awsCloudWatchLogNode"
+                },
+                {
+                    "command": "aws.ssmDocument.openDocument",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem == awsDocumentItemNode"
                 }
             ]
         },
@@ -792,6 +810,16 @@
                 "command": "aws.cloudWatchLogs.viewLogStream",
                 "title": "%AWS.command.viewLogStream%",
                 "category": "AWS"
+            },
+            {
+                "command": "aws.ssmDocument.createDocumentFromTemplate",
+                "title": "%AWS.command.ssmDocument.createDocumentFromTemplate%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.ssmDocument.openDocument",
+                "title": "%AWS.command.ssmDocument.openDocument%",
+                "category": "AWS"
             }
         ],
         "jsonValidation": [
@@ -814,6 +842,25 @@
                 "aliases": [
                     "Amazon States Language"
                 ]
+            },
+            {
+                "id": "ssm-json",
+                "extensions": [
+                    ".ssm.json"
+                ],
+                "aliases": [
+                    "Amazon SSM Document Language (JSON)"
+                ]
+            },
+            {
+                "id": "ssm-yaml",
+                "extensions": [
+                    ".ssm.yaml",
+                    ".ssm.yml"
+                ],
+                "aliases": [
+                    "Amazon SSM Document Language (YAML)"
+                ]
             }
         ],
         "keybindings": [
@@ -829,6 +876,16 @@
                 "language": "asl",
                 "scopeName": "source.asl",
                 "path": "./syntaxes/ASL.tmLanguage"
+            },
+            {
+                "language": "ssm-json",
+                "scopeName": "source.ssmjson",
+                "path": "./syntaxes/SSMJSON.tmLanguage"
+            },
+            {
+                "language": "ssm-yaml",
+                "scopeName": "source.ssmyaml",
+                "path": "./syntaxes/SSMYAML.tmLanguage"
             }
         ]
     },
