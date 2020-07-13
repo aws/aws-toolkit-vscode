@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import * as moment from 'moment'
 import * as vscode from 'vscode'
 import { CloudWatchLogStreamData, LogStreamRegistry } from '../../../cloudWatchLogs/registry/logStreamRegistry'
-import { CLOUDWATCH_LOGS_SCHEME } from '../../../cloudwatchlogs/constants'
+import { CLOUDWATCH_LOGS_SCHEME } from '../../../cloudWatchLogs/constants'
 import { CloudWatchLogs } from 'aws-sdk'
 
 describe('LogStreamRegistry', async () => {
