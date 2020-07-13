@@ -15,6 +15,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 const LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE = 'Disable'
+const LEGACY_SETTINGS_TELEMETRY_VALUE_ENABLE = 'Enable'
 
 const telemetryNoticeText: string = localize(
     'AWS.telemetry.notificationMessage',
@@ -68,6 +69,7 @@ export async function activate(activateArguments: {
                     return
                 }
 
+                validateTelemetrySettingType(activateArguments.toolkitSettings)
                 applyTelemetryEnabledState(ext.telemetry, activateArguments.toolkitSettings)
             }
         },
@@ -86,11 +88,10 @@ export async function sanitizeTelemetrySetting(toolkitSettings: SettingsConfigur
         return
     }
 
-    // Set to false if original setting was opt-out
-    // Treat anything else (unexpected values, datatypes, or undefined) as opt-in
+    // Set telemetry value to boolean if the current value matches the legacy value
     if (value === LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE) {
         await toolkitSettings.writeSetting<any>(AWS_TELEMETRY_KEY, false, vscode.ConfigurationTarget.Global)
-    } else {
+    } else if (value === LEGACY_SETTINGS_TELEMETRY_VALUE_ENABLE) {
         await toolkitSettings.writeSetting<any>(AWS_TELEMETRY_KEY, true, vscode.ConfigurationTarget.Global)
     }
 }
@@ -105,17 +106,18 @@ export function isTelemetryEnabled(toolkitSettings: SettingsConfiguration): bool
         return false
     }
 
-    //Will throw an error if type is not a boolean
-    try {
-        if (typeof value !== 'boolean') {
-            throw new TypeError(`${value} is not a boolean`)
-        } else {
-            return value
-        }
-    } catch (error) {
-        getLogger().error(error)
-        // Treat anything else (unexpected values, datatypes, or undefined) as opt-in
+    if (typeof value === 'boolean') {
+        return value
+    } else {
+        //TODO  Change to a contant
         return true
+    }
+}
+
+function validateTelemetrySettingType(toolkitSettings: SettingsConfiguration): void {
+    const value = toolkitSettings.readSetting<any>(AWS_TELEMETRY_KEY)
+    if (typeof value !== 'boolean') {
+        throw new TypeError('aws.telemetry value must be a boolean')
     }
 }
 
