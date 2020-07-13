@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "Amazon States Language Server: Adds validation of JSON Paths within Parameters."
+}
