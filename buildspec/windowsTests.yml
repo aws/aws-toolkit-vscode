@@ -5,11 +5,10 @@ env:
         VSCODE_TEST_VERSION: '1.46.0' # TODO: Remove when we resolve debugger issues with integration tests
 phases:
     install:
-        commands:
-            - |
-                if(-Not($Env:CODE_COV_TOKEN -eq $null)) {
-                    choco install -y --no-progress codecov
-                }
+        commands: if(-Not($Env:CODE_COV_TOKEN -eq $null)) {
+            choco install -y --no-progress codecov
+            }
+            }
 
     pre_build:
         commands:
@@ -17,7 +16,6 @@ phases:
 
     build:
         commands:
-            - export VSCODE_TEST_VERSION 1.46.0
             - npm run testCompile
             - npm run lint
             - $env:TEST_REPORT_DIR="$env:CODEBUILD_SRC_DIR/.test_reports"; npm run test
