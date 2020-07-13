@@ -69,16 +69,14 @@ class S3TreeTable(
     }
 
     private val openFileListener = object : DoubleClickListener() {
-        override fun onDoubleClick(e: MouseEvent?): Boolean {
-            e ?: return false
+        override fun onDoubleClick(e: MouseEvent): Boolean {
             val row = rowAtPoint(e.point).takeIf { it >= 0 } ?: return false
             return handleOpeningFile(row)
         }
     }
 
     private val loadMoreListener = object : DoubleClickListener() {
-        override fun onDoubleClick(e: MouseEvent?): Boolean {
-            e ?: return false
+        override fun onDoubleClick(e: MouseEvent): Boolean {
             val row = rowAtPoint(e.point).takeIf { it >= 0 } ?: return false
             return handleLoadingMore(row)
         }

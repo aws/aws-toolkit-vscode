@@ -3,10 +3,10 @@ static def ideProfiles() {
         "2019.3": [
             "sinceVersion": "193",
             "untilVersion": "193.*",
-            "products": [
+            "products"    : [
                 "IC": [
                     sdkVersion: "IC-2019.3",
-                    plugins: [
+                    plugins   : [
                         "org.jetbrains.plugins.terminal",
                         "org.jetbrains.plugins.yaml",
                         "PythonCore:193.5233.139",
@@ -18,7 +18,7 @@ static def ideProfiles() {
                 ],
                 "IU": [
                     sdkVersion: "IU-2019.3",
-                    plugins: [
+                    plugins   : [
                         "org.jetbrains.plugins.terminal",
                         "Pythonid:193.5233.109",
                         "org.jetbrains.plugins.yaml",
@@ -27,10 +27,10 @@ static def ideProfiles() {
                     ]
                 ],
                 "RD": [
-                    sdkVersion: "RD-2019.3.4",
+                    sdkVersion  : "RD-2019.3.4",
                     rdGenVersion: "0.193.146",
                     nugetVersion: "2019.3.4",
-                    plugins: [
+                    plugins     : [
                         "org.jetbrains.plugins.yaml"
                     ]
                 ]
@@ -39,10 +39,10 @@ static def ideProfiles() {
         "2020.1": [
             "sinceVersion": "201",
             "untilVersion": "201.*",
-            "products": [
+            "products"    : [
                 "IC": [
                     sdkVersion: "IC-2020.1",
-                    plugins: [
+                    plugins   : [
                         "org.jetbrains.plugins.terminal",
                         "org.jetbrains.plugins.yaml",
                         "PythonCore:201.6668.31",
@@ -54,7 +54,7 @@ static def ideProfiles() {
                 ],
                 "IU": [
                     sdkVersion: "IU-2020.1",
-                    plugins: [
+                    plugins   : [
                         "org.jetbrains.plugins.terminal",
                         "Pythonid:201.6668.31",
                         "org.jetbrains.plugins.yaml",
@@ -64,10 +64,47 @@ static def ideProfiles() {
                     ]
                 ],
                 "RD": [
-                    sdkVersion: "RD-2020.1-SNAPSHOT",
+                    sdkVersion  : "RD-2020.1-SNAPSHOT",
                     rdGenVersion: "0.201.69",
                     nugetVersion: "2020.1.0-eap05",
-                    plugins: [
+                    plugins     : [
+                        "org.jetbrains.plugins.yaml"
+                    ]
+                ]
+            ]
+        ],
+        "2020.2": [
+            "sinceVersion": "202",
+            "untilVersion": "202.*",
+            "products"    : [
+                "IC": [
+                    sdkVersion: "IC-202.6250.13-EAP-SNAPSHOT",
+                    plugins   : [
+                        "org.jetbrains.plugins.terminal",
+                        "org.jetbrains.plugins.yaml",
+                        "PythonCore:202.6250.13",
+                        "java",
+                        "com.intellij.gradle",
+                        "org.jetbrains.idea.maven",
+                        "Docker:202.6250.6"
+                    ]
+                ],
+                "IU": [
+                    sdkVersion: "IU-202.6250.13-EAP-SNAPSHOT",
+                    plugins   : [
+                        "org.jetbrains.plugins.terminal",
+                        "Pythonid:202.6250.13",
+                        "org.jetbrains.plugins.yaml",
+                        "JavaScript",
+                        "JavaScriptDebugger",
+                        "com.intellij.database",
+                    ]
+                ],
+                "RD": [
+                    sdkVersion  : "RD-2020.2-SNAPSHOT",
+                    rdGenVersion: "0.202.113",
+                    nugetVersion: "2020.2.0-eap06",
+                    plugins     : [
                         "org.jetbrains.plugins.yaml"
                     ]
                 ]
@@ -151,7 +188,8 @@ static def shortenVersion(String ver) {
         if (result) {
             return result.group(1) + result.group(2)
         }
-    } catch(Exception ignored) { }
+    } catch (Exception ignored) {
+    }
     return ver
 }
 

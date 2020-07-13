@@ -3,11 +3,8 @@
 
 package software.aws.toolkits.jetbrains.icons
 
-import com.intellij.icons.AllIcons
 import com.intellij.openapi.util.IconLoader
 import com.intellij.openapi.util.IconPathPatcher
-import icons.AwsIcons
-import javax.swing.Icon
 
 /**
  * Icons Patcher for icons set from Rider backend (R#).
@@ -23,14 +20,6 @@ internal class RiderAwsIconsPatcher : IconPathPatcher() {
         private val myInstallPatcher: Unit by lazy {
             IconLoader.installPathPatcher(RiderAwsIconsPatcher())
         }
-
-        private fun path(icon: Icon): String {
-            val iconToProcess = icon as? IconLoader.CachedImageIcon
-                ?: throw RuntimeException("${icon.javaClass.simpleName} should be CachedImageIcon")
-
-            return iconToProcess.originalPath
-                ?: throw RuntimeException("Unable to get original path for icon: ${iconToProcess.javaClass.simpleName}")
-        }
     }
 
     override fun patchPath(path: String, classLoader: ClassLoader?): String? = myIconsOverrideMap[path]
@@ -40,7 +29,7 @@ internal class RiderAwsIconsPatcher : IconPathPatcher() {
         else originalClassLoader
 
     private val myIconsOverrideMap = mapOf(
-        "/resharper/LambdaRunMarkers/Lambda.svg" to path(AwsIcons.Resources.LAMBDA_FUNCTION),
-        "/resharper/LambdaRunMarkers/CreateNew.svg" to path(AllIcons.Actions.New)
+        "/resharper/LambdaRunMarkers/Lambda.svg" to "AwsIcons.Resources.LAMBDA_FUNCTION",
+        "/resharper/LambdaRunMarkers/CreateNew.svg" to "AllIcons.Actions.New"
     )
 }

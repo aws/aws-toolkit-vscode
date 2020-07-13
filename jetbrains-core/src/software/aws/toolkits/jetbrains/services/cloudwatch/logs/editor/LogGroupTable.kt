@@ -102,8 +102,7 @@ class LogGroupTable(
 
     private fun addTableMouseListener(table: JBTable) {
         object : DoubleClickListener() {
-            override fun onDoubleClick(e: MouseEvent?): Boolean {
-                e ?: return false
+            override fun onDoubleClick(e: MouseEvent): Boolean {
                 val logStream = table.getSelectedRowLogStream() ?: return false
                 val window = CloudWatchLogWindow.getInstance(project)
                 window.showLogStream(logGroup, logStream)
