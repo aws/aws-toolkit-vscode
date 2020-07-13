@@ -42,17 +42,17 @@ object DotNetDebuggerUtils {
 
         return object : XDebugProcessStarter() {
             override fun start(session: XDebugSession): XDebugProcess = DotNetDebugProcess(
-                sessionLifetime = sessionLifetime,
-                session = session,
-                sessionId = env.executionId,
-                debuggerWorkerProcessHandler = processHandler,
-                console = executionConsole,
-                protocol = protocol,
-                sessionProxy = sessionModel,
-                fireInitializedManually = fireInitializedManually,
-                customListener = outputEventsListener,
-                debugKind = OptionsUtil.toDebugKind(sessionModel.sessionProperties.debugKind.valueOrNull),
-                project = env.project
+                sessionLifetime,
+                session,
+                processHandler,
+                executionConsole,
+                protocol,
+                sessionModel,
+                fireInitializedManually,
+                outputEventsListener,
+                OptionsUtil.toDebugKind(sessionModel.sessionProperties.debugKind.valueOrNull),
+                env.project,
+                env.executionId
             )
         }
     }

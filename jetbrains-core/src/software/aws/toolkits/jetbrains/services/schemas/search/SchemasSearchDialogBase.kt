@@ -281,7 +281,7 @@ abstract class SchemasSearchDialogBase(
         top.add(JBLabel(headerText), BorderLayout.WEST)
         top.add(searchTextField, BorderLayout.CENTER)
 
-        resultsList.installCellRenderer<SchemaSearchResultWithRegistry>(createResultRenderer())
+        resultsList.installCellRenderer(createResultRenderer())
         versionsCombo.renderer = SimpleListCellRenderer.create("") { message("schemas.search.version.prefix", it) }
 
         val resultsScrollPane = JBScrollPane()

@@ -74,12 +74,6 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
         } else null
     }
 
-    override fun collectSlowLineMarkers(
-        elements: MutableList<PsiElement>,
-        result: MutableCollection<LineMarkerInfo<PsiElement>>
-    ) {
-    }
-
     private fun shouldShowLineMarker(psiFile: PsiFile, handler: String, runtimeGroup: RuntimeGroup): Boolean {
         val project = psiFile.project
         return LambdaSettings.getInstance(project).showAllHandlerGutterIcons ||

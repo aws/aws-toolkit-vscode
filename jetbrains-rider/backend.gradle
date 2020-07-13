@@ -61,7 +61,7 @@ task buildReSharperPlugin {
         def executableName = (isWindows) ? "dotnet" : "msbuild"
         def arguments = (isWindows) ? [ "build" ] : []
         arguments << "${resharperPluginPath.canonicalPath}/ReSharper.AWS.sln"
-
+        arguments << "/p:DefineConstants=\"PROFILE_${resolveIdeProfileName().replace(".", "_")}\""
         exec {
             executable = executableName
             args = arguments

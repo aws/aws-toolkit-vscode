@@ -8,6 +8,14 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
+#if PROFILE_2020_2 // TODO: Remove preprocessor conditions FIX_WHEN_MIN_IS_202
+using TiImage = global::JetBrains.Util.Icons.TiImage;
+using TiImageConverter = global::JetBrains.Util.Icons.TiImageConverter;
+#else 
+using TiImage = global::JetBrains.Application.UI.Icons.Images.TiImage;
+using TiImageConverter = global::JetBrains.Application.UI.Icons.Images.TiImageConverter;
+#endif
+
 namespace JetBrains.UI.ThemedIcons
 {
 	/// <summary>
@@ -98,24 +106,24 @@ namespace JetBrains.UI.ThemedIcons
 			public static global::JetBrains.UI.Icons.IconId Id = new global::JetBrains.Application.Icons.CompiledIconsCs.CompiledIconCsId(typeof(RunThis));
 
 			/// <summary>Loads the image for Themed Icon RunThis theme aspect Color.</summary>
-			public global::JetBrains.Application.UI.Icons.Images.TiImage Load_Color()
+			public TiImage Load_Color()
 			{
-				return global::JetBrains.Application.UI.Icons.Images.TiImageConverter.FromTiSvg(@"<svg ti:v='1' width='16' height='16' viewBox='0,0,16,16' xmlns='http://www.w3.org/2000/svg' xmlns:ti='urn:schemas-jetbrains-com:tisvg'><g><path d='M0,0L16,0L16,16L0,16Z' fill='#FFFFFF' opacity='0'/><linearGradient id='F1' x1='0.5' y1='0.0064999999999999919' x2='0.5' y2='1.0135'><stop offset='0' stop-color='#38AC0E'/><stop offset='1' stop-color='#007034'/></linearGradient><path fill-rule='evenodd' d='M3,1L3,15L4.278,15L15,8.566L15,7.434L4.278,1L3,1Z' fill='url(#F1)'/><linearGradient id='F2' x1='0.5' y1='-0.015166666666666662' x2='0.5' y2='1.0075833333333331'><stop offset='0' stop-color='#8CFF63'/><stop offset='1' stop-color='#2AC672'/></linearGradient><path fill-rule='evenodd' d='M4,14L14,8L4,2L4,14Z' fill='url(#F2)'/></g></svg>");
+				return TiImageConverter.FromTiSvg(@"<svg ti:v='1' width='16' height='16' viewBox='0,0,16,16' xmlns='http://www.w3.org/2000/svg' xmlns:ti='urn:schemas-jetbrains-com:tisvg'><g><path d='M0,0L16,0L16,16L0,16Z' fill='#FFFFFF' opacity='0'/><linearGradient id='F1' x1='0.5' y1='0.0064999999999999919' x2='0.5' y2='1.0135'><stop offset='0' stop-color='#38AC0E'/><stop offset='1' stop-color='#007034'/></linearGradient><path fill-rule='evenodd' d='M3,1L3,15L4.278,15L15,8.566L15,7.434L4.278,1L3,1Z' fill='url(#F1)'/><linearGradient id='F2' x1='0.5' y1='-0.015166666666666662' x2='0.5' y2='1.0075833333333331'><stop offset='0' stop-color='#8CFF63'/><stop offset='1' stop-color='#2AC672'/></linearGradient><path fill-rule='evenodd' d='M4,14L14,8L4,2L4,14Z' fill='url(#F2)'/></g></svg>");
 			}
 
 			/// <summary>Loads the image for Themed Icon RunThis theme aspect Gray.</summary>
-			public global::JetBrains.Application.UI.Icons.Images.TiImage Load_Gray()
+			public TiImage Load_Gray()
 			{
-				return global::JetBrains.Application.UI.Icons.Images.TiImageConverter.FromTiSvg("<svg ti:v=\'1\' width=\'16\' height=\'16\' viewBox=\'0,0,16,16\' xmlns=\'http://www.w3.org" +
+				return TiImageConverter.FromTiSvg("<svg ti:v=\'1\' width=\'16\' height=\'16\' viewBox=\'0,0,16,16\' xmlns=\'http://www.w3.org" +
 						"/2000/svg\' xmlns:ti=\'urn:schemas-jetbrains-com:tisvg\'><g><path d=\'M0,0L16,0L16,1" +
 						"6L0,16Z\' fill=\'#FFFFFF\' opacity=\'0\'/><path d=\'M4,14L14,8L4,2L4,14Z\' fill=\'#59A86" +
 						"9\'/></g></svg>");
 			}
 
 			/// <summary>Loads the image for Themed Icon RunThis theme aspect GrayDark.</summary>
-			public global::JetBrains.Application.UI.Icons.Images.TiImage Load_GrayDark()
+			public TiImage Load_GrayDark()
 			{
-				return global::JetBrains.Application.UI.Icons.Images.TiImageConverter.FromTiSvg("<svg ti:v=\'1\' width=\'16\' height=\'16\' viewBox=\'0,0,16,16\' xmlns=\'http://www.w3.org" +
+				return TiImageConverter.FromTiSvg("<svg ti:v=\'1\' width=\'16\' height=\'16\' viewBox=\'0,0,16,16\' xmlns=\'http://www.w3.org" +
 						"/2000/svg\' xmlns:ti=\'urn:schemas-jetbrains-com:tisvg\'><g><path d=\'M0,0L16,0L16,1" +
 						"6L0,16Z\' fill=\'#FFFFFF\' opacity=\'0\'/><path d=\'M4,14L14,8L4,2L4,14Z\' fill=\'#499C5" +
 						"4\'/></g></svg>");
@@ -183,9 +191,9 @@ namespace JetBrains.UI.ThemedIcons
 			public static global::JetBrains.UI.Icons.IconId Id = new global::JetBrains.Application.Icons.CompiledIconsCs.CompiledIconCsId(typeof(DebugThis));
 
 			/// <summary>Loads the image for Themed Icon DebugThis theme aspect Color.</summary>
-			public global::JetBrains.Application.UI.Icons.Images.TiImage Load_Color()
+			public TiImage Load_Color()
 			{
-				return global::JetBrains.Application.UI.Icons.Images.TiImageConverter.FromTiSvg("<svg ti:v=\'1\' width=\'16\' height=\'16\' viewBox=\'0,0,16,16\' xmlns=\'http://www.w3.org" +
+				return TiImageConverter.FromTiSvg("<svg ti:v=\'1\' width=\'16\' height=\'16\' viewBox=\'0,0,16,16\' xmlns=\'http://www.w3.org" +
 						"/2000/svg\' xmlns:ti=\'urn:schemas-jetbrains-com:tisvg\'><g><path d=\'M0,0L16,0L16,1" +
 						"6L0,16Z\' fill=\'#FFFFFF\' opacity=\'0\'/><path fill-rule=\'evenodd\' d=\'M15,14.385L15," +
 						"4.308L12.347,4.308C12.114154949744872,3.99775376586475,11.848257147593641,3.7137" +
@@ -223,9 +231,9 @@ namespace JetBrains.UI.ThemedIcons
 			}
 
 			/// <summary>Loads the image for Themed Icon DebugThis theme aspect Gray.</summary>
-			public global::JetBrains.Application.UI.Icons.Images.TiImage Load_Gray()
+			public TiImage Load_Gray()
 			{
-				return global::JetBrains.Application.UI.Icons.Images.TiImageConverter.FromTiSvg("<svg ti:v=\'1\' width=\'16\' height=\'16\' viewBox=\'0,0,16,16\' xmlns=\'http://www.w3.org" +
+				return TiImageConverter.FromTiSvg("<svg ti:v=\'1\' width=\'16\' height=\'16\' viewBox=\'0,0,16,16\' xmlns=\'http://www.w3.org" +
 						"/2000/svg\' xmlns:ti=\'urn:schemas-jetbrains-com:tisvg\'><g><path d=\'M0,0L16,0L16,1" +
 						"6L0,16Z\' fill=\'#FFFFFF\' opacity=\'0\'/><path d=\'M9.977,3.613L11.466000000000001,2." +
 						"143L10.308,1L8.12,3.17C8.0989999999999984,3.17,8.02,3.16,7.9999999999999991,3.16" +
@@ -250,9 +258,9 @@ namespace JetBrains.UI.ThemedIcons
 			}
 
 			/// <summary>Loads the image for Themed Icon DebugThis theme aspect GrayDark.</summary>
-			public global::JetBrains.Application.UI.Icons.Images.TiImage Load_GrayDark()
+			public TiImage Load_GrayDark()
 			{
-				return global::JetBrains.Application.UI.Icons.Images.TiImageConverter.FromTiSvg("<svg ti:v=\'1\' width=\'16\' height=\'16\' viewBox=\'0,0,16,16\' xmlns=\'http://www.w3.org" +
+				return TiImageConverter.FromTiSvg("<svg ti:v=\'1\' width=\'16\' height=\'16\' viewBox=\'0,0,16,16\' xmlns=\'http://www.w3.org" +
 						"/2000/svg\' xmlns:ti=\'urn:schemas-jetbrains-com:tisvg\'><g><path d=\'M0,0L16,0L16,1" +
 						"6L0,16Z\' fill=\'#FFFFFF\' opacity=\'0\'/><path d=\'M9.977,3.613L11.466000000000001,2." +
 						"143L10.308,1L8.12,3.17C8.0989999999999984,3.17,8.02,3.16,7.9999999999999991,3.16" +
@@ -296,23 +304,23 @@ namespace JetBrains.UI.ThemedIcons
 			public static global::JetBrains.UI.Icons.IconId Id = new global::JetBrains.Application.Icons.CompiledIconsCs.CompiledIconCsId(typeof(Lambda));
 
 			/// <summary>Loads the image for Themed Icon Lambda theme aspect Color.</summary>
-			public global::JetBrains.Application.UI.Icons.Images.TiImage Load_Color()
+			public TiImage Load_Color()
 			{
-				return global::JetBrains.Application.UI.Icons.Images.TiImageConverter.FromTiSvg(
+				return TiImageConverter.FromTiSvg(
 					"<svg ti:v=\'1\' width=\'16\' height=\'16\' viewBox=\'0,0,16,16\' xmlns=\'http://www.w3.org/2000/svg\' xmlns:ti=\'urn:schemas-jetbrains-com:tisvg\'></svg>");
 			}
 
 			/// <summary>Loads the image for Themed Icon Lambda theme aspect Gray.</summary>
-			public global::JetBrains.Application.UI.Icons.Images.TiImage Load_Gray()
+			public TiImage Load_Gray()
 			{
-				return global::JetBrains.Application.UI.Icons.Images.TiImageConverter.FromTiSvg(
+				return TiImageConverter.FromTiSvg(
 					"<svg ti:v=\'1\' width=\'16\' height=\'16\' viewBox=\'0,0,16,16\' xmlns=\'http://www.w3.org/2000/svg\' xmlns:ti=\'urn:schemas-jetbrains-com:tisvg\'></svg>");
 			}
 
 			/// <summary>Loads the image for Themed Icon Lambda theme aspect GrayDark.</summary>
-			public global::JetBrains.Application.UI.Icons.Images.TiImage Load_GrayDark()
+			public TiImage Load_GrayDark()
 			{
-				return global::JetBrains.Application.UI.Icons.Images.TiImageConverter.FromTiSvg(
+				return TiImageConverter.FromTiSvg(
 					"<svg ti:v=\'1\' width=\'16\' height=\'16\' viewBox=\'0,0,16,16\' xmlns=\'http://www.w3.org/2000/svg\' xmlns:ti=\'urn:schemas-jetbrains-com:tisvg\'></svg>");
 			}
 
@@ -336,23 +344,23 @@ namespace JetBrains.UI.ThemedIcons
 			public static global::JetBrains.UI.Icons.IconId Id = new global::JetBrains.Application.Icons.CompiledIconsCs.CompiledIconCsId(typeof(CreateNew));
 
 			/// <summary>Loads the image for Themed Icon CreateNew theme aspect Color.</summary>
-			public global::JetBrains.Application.UI.Icons.Images.TiImage Load_Color()
+			public TiImage Load_Color()
 			{
-				return global::JetBrains.Application.UI.Icons.Images.TiImageConverter.FromTiSvg(
+				return TiImageConverter.FromTiSvg(
 					"<svg ti:v=\'1\' width=\'16\' height=\'16\' viewBox=\'0,0,16,16\' xmlns=\'http://www.w3.org/2000/svg\' xmlns:ti=\'urn:schemas-jetbrains-com:tisvg\'></svg>");
 			}
 
 			/// <summary>Loads the image for Themed Icon CreateNew theme aspect Gray.</summary>
-			public global::JetBrains.Application.UI.Icons.Images.TiImage Load_Gray()
+			public TiImage Load_Gray()
 			{
-				return global::JetBrains.Application.UI.Icons.Images.TiImageConverter.FromTiSvg(
+				return TiImageConverter.FromTiSvg(
 					"<svg ti:v=\'1\' width=\'16\' height=\'16\' viewBox=\'0,0,16,16\' xmlns=\'http://www.w3.org/2000/svg\' xmlns:ti=\'urn:schemas-jetbrains-com:tisvg\'></svg>");
 			}
 
 			/// <summary>Loads the image for Themed Icon CreateNew theme aspect GrayDark.</summary>
-			public global::JetBrains.Application.UI.Icons.Images.TiImage Load_GrayDark()
+			public TiImage Load_GrayDark()
 			{
-				return global::JetBrains.Application.UI.Icons.Images.TiImageConverter.FromTiSvg(
+				return TiImageConverter.FromTiSvg(
 					"<svg ti:v=\'1\' width=\'16\' height=\'16\' viewBox=\'0,0,16,16\' xmlns=\'http://www.w3.org/2000/svg\' xmlns:ti=\'urn:schemas-jetbrains-com:tisvg\'></svg>");
 			}
 
