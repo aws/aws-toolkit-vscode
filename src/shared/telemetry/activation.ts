@@ -16,6 +16,7 @@ const localize = nls.loadMessageBundle()
 
 const LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE = 'Disable'
 const LEGACY_SETTINGS_TELEMETRY_VALUE_ENABLE = 'Enable'
+const TELEMETRY_SETTING_DEFAULT = true
 
 const telemetryNoticeText: string = localize(
     'AWS.telemetry.notificationMessage',
@@ -109,15 +110,17 @@ export function isTelemetryEnabled(toolkitSettings: SettingsConfiguration): bool
     if (typeof value === 'boolean') {
         return value
     } else {
-        //TODO  Change to a contant
-        return true
+        return TELEMETRY_SETTING_DEFAULT
     }
 }
 
 function validateTelemetrySettingType(toolkitSettings: SettingsConfiguration): void {
     const value = toolkitSettings.readSetting<any>(AWS_TELEMETRY_KEY)
     if (typeof value !== 'boolean') {
-        throw new TypeError('aws.telemetry value must be a boolean')
+        getLogger().error('In settings.json, aws.telemetry value must be a boolean')
+        vscode.window.showErrorMessage(
+            localize('AWS.message.error.settings.telemetry.invalid_type', 'The aws.telemetry value must be a boolean')
+        )
     }
 }
 
