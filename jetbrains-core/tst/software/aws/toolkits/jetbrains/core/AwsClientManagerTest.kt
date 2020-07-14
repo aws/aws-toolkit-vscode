@@ -105,7 +105,7 @@ class AwsClientManagerTest {
         val projectManager = ProjectManagerEx.getInstanceEx()
 
         runInEdtAndWait {
-            projectManager.openTestProject(project)
+            projectManager.openProject(project)
         }
 
         val sut = getClientManager(project)
