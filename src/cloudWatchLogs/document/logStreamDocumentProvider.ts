@@ -19,7 +19,7 @@ export class LogStreamDocumentProvider implements vscode.TextDocumentContentProv
 
     public provideTextDocumentContent(uri: vscode.Uri): string {
         // get latest content and return
-        const content = this.registry.getLogContent(uri)
+        const content = this.registry.getLogContent(uri, { timestamps: true })
         if (!content) {
             getLogger().error(`No content found for URI: ${uri}`)
         }
