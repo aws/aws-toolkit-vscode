@@ -62,7 +62,7 @@ export async function getSamCliVersion(context: SamCliContext): Promise<string> 
  * @param samCliVersion Version to evaluate
  * @param lambdaRuntime Runtime name to append to Docker image
  */
-export function getSamCliDockerImageNameWithRuntime(samCliVersion: string | undefined, lambdaRuntime: string): string {
+export function getSamCliDockerImageName(samCliVersion: string | undefined, lambdaRuntime: string): string {
     const amazonImage = `amazon/aws-sam-cli-emulation-image-${lambdaRuntime}`
     const legacyImage = `lambci/lambda:${lambdaRuntime}`
     try {

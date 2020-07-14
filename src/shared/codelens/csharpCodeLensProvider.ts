@@ -42,7 +42,7 @@ import {
     makeInputTemplate,
     waitForDebugPort,
 } from './localLambdaRunner'
-import { getSamCliContext, getSamCliDockerImageNameWithRuntime } from '../sam/cli/samCliContext'
+import { getSamCliContext, getSamCliDockerImageName } from '../sam/cli/samCliContext'
 
 export const CSHARP_LANGUAGE = 'csharp'
 export const CSHARP_ALLFILES: vscode.DocumentFilter[] = [
@@ -482,7 +482,7 @@ async function _installDebugger(
         const samCliVersionValidatorResult = await samCliContext.validator.getVersionValidatorResult()
         const samCliVersion = samCliVersionValidatorResult.version
 
-        const imageStr = getSamCliDockerImageNameWithRuntime(samCliVersion, lambdaRuntime)
+        const imageStr = getSamCliDockerImageName(samCliVersion, lambdaRuntime)
 
         channelLogger.info(
             'AWS.samcli.local.invoke.debugger.install',
