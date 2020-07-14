@@ -15,7 +15,7 @@ describe('LogStreamDocumentProvider', () => {
 
     const registeredUri = vscode.Uri.parse('has:This')
     // TODO: Make this less flaky when we add manual timestamp controls.
-    const message = "                             \ti'm just putting something here because it's a friday"
+    const message = "i'm just putting something here because it's a friday"
     const stream: CloudWatchLogStreamData = {
         data: [
             {
@@ -32,7 +32,10 @@ describe('LogStreamDocumentProvider', () => {
     })
 
     it('provides content if it exists and a blank string if it does not', () => {
-        assert.strictEqual(provider.provideTextDocumentContent(registeredUri), message)
+        assert.strictEqual(
+            provider.provideTextDocumentContent(registeredUri),
+            `                             \t${message}`
+        )
         assert.strictEqual(provider.provideTextDocumentContent(vscode.Uri.parse('has:Not')), '')
     })
 })
