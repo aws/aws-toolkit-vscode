@@ -14,7 +14,8 @@ describe('LogStreamDocumentProvider', () => {
     let provider: LogStreamDocumentProvider
 
     const registeredUri = vscode.Uri.parse('has:This')
-    const message = "i'm just putting something here because it's a friday"
+    // TODO: Make this less flaky when we add manual timestamp controls.
+    const message = "                             \ti'm just putting something here because it's a friday"
     const stream: CloudWatchLogStreamData = {
         data: [
             {
