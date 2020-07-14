@@ -184,6 +184,7 @@
     "AWS.message.error.schemas.downloadCodeBindings.cancelled:": "Download code bindings cancelled",
     "AWS.message.error.schemas.downloadCodeBindings.invalid_code_generation_status": "Invalid Code generation status {0}",
     "AWS.message.error.schemas.downloadCodeBindings.timout": "Failed to download code for schema {0} before timeout. Please try again later",
+    "AWS.message.error.settings.telemetry.invalid_type": "The aws.telemetry value must be a boolean",
     "AWS.message.info.schemas.downloadCodeBindings.start": "Downloading code for schema {0}...",
     "AWS.message.info.schemas.downloadCodeBindings.generate": "{0}: Generating code (this may take a few seconds the first time)...",
     "AWS.message.info.schemas.downloadCodeBindings.extracting": "{0}: Extracting/copying code...",
