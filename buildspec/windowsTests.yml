@@ -2,14 +2,14 @@ version: 0.2
 env:
     variables:
         AWS_TOOLKIT_TEST_NO_COLOR: '1'
+        VSCODE_TEST_VERSION: '1.46.0' # TODO: Remove when we resolve debugger issues with Windows tests
 phases:
     install:
         commands:
             - |
-              if(-Not($Env:CODE_COV_TOKEN -eq $null)) {
-                  choco install -y --no-progress codecov
-              }
-
+                if(-Not($Env:CODE_COV_TOKEN -eq $null)) {
+                    choco install -y --no-progress codecov
+                }
     pre_build:
         commands:
             - npm install
@@ -29,7 +29,6 @@ phases:
                     -f "build/reports/jacoco/coverageReport/coverageReport.xml" `
                     -c $Env:CODEBUILD_RESOLVED_SOURCE_VERSION
                 }
-
 reports:
     unit-test:
         files:

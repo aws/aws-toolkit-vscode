@@ -1,5 +1,9 @@
 version: 0.2
 
+env:
+    variables:
+        VSCODE_TEST_VERSION: '1.46.0' # TODO: Remove when we resolve debugger issues with integration tests
+
 phases:
     install:
         runtime-versions:
