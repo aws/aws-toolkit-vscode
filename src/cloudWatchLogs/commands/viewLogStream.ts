@@ -18,7 +18,7 @@ import * as telemetry from '../../shared/telemetry/telemetry'
 import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 import { getPaginatedAwsCallIter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
 import { LogStreamRegistry } from '../registry/logStreamRegistry'
-import { convertLogGroupInfoToUri } from '../utils'
+import { convertLogGroupInfoToUri } from '../cloudWatchLogsUtils'
 
 export interface SelectLogStreamResponse {
     region: string

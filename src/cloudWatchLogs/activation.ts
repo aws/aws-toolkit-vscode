@@ -4,11 +4,11 @@
  */
 
 import * as vscode from 'vscode'
-import { LogStreamDocumentProvider } from './document/logStreamDocumentProvider'
-import { CLOUDWATCH_LOGS_SCHEME } from './constants'
-import { LogStreamRegistry } from './registry/logStreamRegistry'
+import { CLOUDWATCH_LOGS_SCHEME } from '../shared/constants'
 import { viewLogStream } from './commands/viewLogStream'
+import { LogStreamDocumentProvider } from './document/logStreamDocumentProvider'
 import { LogGroupNode } from './explorer/logGroupNode'
+import { LogStreamRegistry } from './registry/logStreamRegistry'
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     const registry = new LogStreamRegistry()
@@ -19,7 +19,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         vscode.workspace.registerTextDocumentContentProvider(CLOUDWATCH_LOGS_SCHEME, logStreamProvider)
     )
 
-    // these actions are typically in the explorer activation but this requires knowledge of the registry.
+    // AWS Explorer right-click action
+    // Here instead of in ../awsexplorer/activation due to dependence on the registry.
     context.subscriptions.push(
         vscode.commands.registerCommand(
             'aws.cloudWatchLogs.viewLogStream',

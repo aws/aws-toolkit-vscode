@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 import * as moment from 'moment'
 import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
-import { convertUriToLogGroupInfo } from '../utils'
+import { parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
 import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { ext } from '../../shared/extensionGlobals'
 
@@ -78,7 +78,7 @@ export class LogStreamRegistry {
     ): Promise<void> {
         const stream = this.getLog(uri) ?? new CloudWatchLogStreamData()
         // TODO: append next/previous token to stream object
-        const logGroupInfo = convertUriToLogGroupInfo(uri)
+        const logGroupInfo = parseCloudWatchLogsUri(uri)
         try {
             // TODO: append next/previous token
             const logEvents = await getLogEventsFromUriComponentsFn(logGroupInfo)

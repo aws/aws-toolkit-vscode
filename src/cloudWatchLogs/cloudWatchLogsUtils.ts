@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { CLOUDWATCH_LOGS_SCHEME } from './constants'
+import { CLOUDWATCH_LOGS_SCHEME } from '../shared/constants'
 
 // URIs are the only vehicle for delivering information to a TextDocumentContentProvider.
 // The following functions are used to structure and destructure relevant information to/from a URI.
@@ -14,9 +14,7 @@ import { CLOUDWATCH_LOGS_SCHEME } from './constants'
  * Destructures an awsCloudWatchLogs URI into its component pieces.
  * @param uri URI for a Cloudwatch Logs file
  */
-export function convertUriToLogGroupInfo(
-    uri: vscode.Uri
-): { groupName: string; streamName: string; regionName: string } {
+export function parseCloudWatchLogsUri(uri: vscode.Uri): { groupName: string; streamName: string; regionName: string } {
     const parts = uri.path.split(':')
 
     // splits into <CLOUDWATCH_LOGS_SCHEME>:"<groupName>:<streamName>:<regionName>"
