@@ -10,14 +10,10 @@ import com.intellij.javascript.nodejs.interpreter.local.NodeJsLocalInterpreterMa
 import com.intellij.lang.javascript.dialects.JSLanguageLevel
 import com.intellij.lang.javascript.psi.JSFile
 import com.intellij.lang.javascript.settings.JSRootConfiguration
-import com.intellij.openapi.application.WriteAction
-import com.intellij.openapi.module.Module
-import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.module.WebModuleTypeBase
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.util.Ref
-import com.intellij.openapi.util.io.FileUtil
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.LightProjectDescriptor
@@ -29,7 +25,6 @@ import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.util.text.SemVer
 import com.intellij.xdebugger.XDebuggerUtil
 import software.amazon.awssdk.services.lambda.model.Runtime
-import java.io.File
 
 /**
  * JUnit test Rule that will create a Light [Project] and [CodeInsightTestFixture] with NodeJs support. Projects are
@@ -69,13 +64,7 @@ class NodeJsCodeInsightTestFixtureRule : CodeInsightTestFixtureRule() {
 class NodeJsLightProjectDescriptor : LightProjectDescriptor() {
     override fun getSdk(): Sdk? = null
 
-    override fun createModule(project: Project, moduleFilePath: String): Module? = WriteAction.compute<Module?, Throwable> {
-        val imlFile = File(moduleFilePath)
-        if (imlFile.exists()) {
-            FileUtil.delete(imlFile)
-        }
-        ModuleManager.getInstance(project).newModule(moduleFilePath, WebModuleTypeBase.getInstance().id)
-    }
+    override fun getModuleTypeId(): String = WebModuleTypeBase.getInstance().id
 }
 
 class MockNodeJsInterpreter(private var version: SemVer) : NodeJsLocalInterpreter("/path/to/$version/mock/node") {

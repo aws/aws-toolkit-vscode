@@ -54,7 +54,14 @@ open class CodeInsightTestFixtureRule(protected val testDescription: LightProjec
     }
 
     override fun starting(description: Description) {
-        appRule.before()
+        // TODO: Make this extend AppRule and remove reflection FIX_WHEN_MIN_IS_202
+        val beforeMethod = appRule.javaClass.declaredMethods.first { it.name == "before" }
+        beforeMethod.trySetAccessible()
+        if (beforeMethod.parameterCount == 1) {
+            beforeMethod.invoke(appRule, description)
+        } else {
+            beforeMethod.invoke(appRule)
+        }
         this.description = description
     }
 

@@ -18,13 +18,11 @@ import software.aws.toolkits.resources.message
 @RunWith(Suite::class)
 @Suite.SuiteClasses(FeedbackTest.NonParameterizedTests::class, FeedbackTest.NoCommentSetTest::class)
 class FeedbackTest {
-    companion object {
+    class NonParameterizedTests {
         @Rule
         @JvmField
         val projectRule = ProjectRule()
-    }
 
-    class NonParameterizedTests {
         @Test
         fun panelInitiallyNegative() {
             val panel = SubmitFeedbackPanel(Sentiment.NEGATIVE)
@@ -66,6 +64,10 @@ class FeedbackTest {
 
     @RunWith(Parameterized::class)
     class NoCommentSetTest(private val name: String, private val case: String) {
+        @Rule
+        @JvmField
+        val projectRule = ProjectRule()
+
         companion object {
             @Parameterized.Parameters(name = "{0}")
             @JvmStatic
