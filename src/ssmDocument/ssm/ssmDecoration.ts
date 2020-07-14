@@ -17,11 +17,18 @@ const keywordDecoration = vscode.window.createTextEditorDecorationType({
 export function activate(context: vscode.ExtensionContext) {
     // add keyword highlighting when active editor changed
     context.subscriptions.push(
-        vscode.window.onDidChangeActiveTextEditor(editor => {
-            if (editor && (editor.document.languageId === 'ssm-yaml' || editor.document.languageId === 'ssm-json')) {
-                updateKeywordHighlight(editor), null, context.subscriptions
-            }
-        })
+        vscode.window.onDidChangeActiveTextEditor(
+            editor => {
+                if (
+                    editor &&
+                    (editor.document.languageId === 'ssm-yaml' || editor.document.languageId === 'ssm-json')
+                ) {
+                    updateKeywordHighlight(editor)
+                }
+            },
+            null,
+            context.subscriptions
+        )
     )
 
     // add keyword highlighting when document changed
