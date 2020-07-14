@@ -3,11 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/*!
- *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the MIT License. See License.txt in the project root for license information.
- */
-
 import * as path from 'path'
 import * as nls from 'vscode-nls'
 
@@ -24,15 +19,25 @@ import {
     TransportKind,
 } from 'vscode-languageclient'
 
+import { Settings } from './ssmServer'
+
 namespace ResultLimitReachedNotification {
     export const type: NotificationType<string, any> = new NotificationType('ssm/resultLimitReached')
 }
 
-interface Settings {
-    ssm?: {
-        format?: { enable: boolean }
-        resultLimit?: number
-    }
+const jsonLanguageConfiguration: LanguageConfiguration = {
+    wordPattern: /("(?:[^\\\"]*(?:\\.)?)*"?)|[^\s{}\[\],:]+/,
+    indentationRules: {
+        increaseIndentPattern: /({+(?=([^"]*"[^"]*")*[^"}]*$))|(\[+(?=([^"]*"[^"]*")*[^"\]]*$))/,
+        decreaseIndentPattern: /^\s*[}\]],?\s*$/,
+    },
+}
+
+const yamlLanguageConfiguration: LanguageConfiguration = {
+    indentationRules: {
+        increaseIndentPattern: /^\\s*.*(:|-) ?(&amp;\\w+)?(\\{[^}\"']*|\\\([^)\"']*)?$/,
+        decreaseIndentPattern: /^\\s+\\}$/,
+    },
 }
 
 export async function activate(extensionContext: ExtensionContext) {
@@ -89,15 +94,8 @@ export async function activate(extensionContext: ExtensionContext) {
     const disposable = client.start()
     toDispose.push(disposable)
 
-    const languageConfiguration: LanguageConfiguration = {
-        wordPattern: /("(?:[^\\\"]*(?:\\.)?)*"?)|[^\s{}\[\],:]+/,
-        indentationRules: {
-            increaseIndentPattern: /({+(?=([^"]*"[^"]*")*[^"}]*$))|(\[+(?=([^"]*"[^"]*")*[^"\]]*$))/,
-            decreaseIndentPattern: /^\s*[}\]],?\s*$/,
-        },
-    }
-    languages.setLanguageConfiguration('ssm-json', languageConfiguration)
-    languages.setLanguageConfiguration('ssm-yaml', languageConfiguration)
+    languages.setLanguageConfiguration('ssm-json', jsonLanguageConfiguration)
+    languages.setLanguageConfiguration('ssm-yaml', yamlLanguageConfiguration)
 
     return client.onReady().then(() => {
         client.onNotification(ResultLimitReachedNotification.type, message => {
@@ -106,10 +104,6 @@ export async function activate(extensionContext: ExtensionContext) {
             )
         })
     })
-}
-
-export async function deactivate(): Promise<any> {
-    return Promise.resolve(undefined)
 }
 
 function getSettings(): Settings {

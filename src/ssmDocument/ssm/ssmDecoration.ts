@@ -10,7 +10,6 @@ import { plugins, automationActions } from 'aws-ssm-document-language-service'
 let pendingKeywordHighlight: NodeJS.Timeout
 
 const keywordDecoration = vscode.window.createTextEditorDecorationType({
-    //color: new vscode.ThemeColor('textLink.foreground'),
     fontStyle: 'italic',
     fontWeight: 'bold',
 })
@@ -18,14 +17,22 @@ const keywordDecoration = vscode.window.createTextEditorDecorationType({
 export function activate(context: vscode.ExtensionContext) {
     // add keyword highlighting when active editor changed
     context.subscriptions.push(
-        vscode.window.onDidChangeActiveTextEditor(editor => updateKeywordHighlight(editor), null, context.subscriptions)
+        vscode.window.onDidChangeActiveTextEditor(editor => {
+            if (editor && (editor.document.languageId === 'ssm-yaml' || editor.document.languageId === 'ssm-json')) {
+                updateKeywordHighlight(editor), null, context.subscriptions
+            }
+        })
     )
 
     // add keyword highlighting when document changed
     context.subscriptions.push(
         vscode.workspace.onDidChangeTextDocument(
             event => {
-                if (vscode.window.activeTextEditor && event.document === vscode.window.activeTextEditor.document) {
+                if (
+                    vscode.window.activeTextEditor &&
+                    event.document === vscode.window.activeTextEditor.document &&
+                    (event.document.languageId === 'ssm-yaml' || event.document.languageId === 'ssm-json')
+                ) {
                     if (pendingKeywordHighlight) {
                         clearTimeout(pendingKeywordHighlight)
                     }
@@ -41,16 +48,13 @@ export function activate(context: vscode.ExtensionContext) {
     )
 
     // add keyword highlighting for the current active editor
-    updateKeywordHighlight(vscode.window.activeTextEditor)
-
-    // add keyword highlighting when cursor moves
-    context.subscriptions.push(
-        vscode.window.onDidChangeTextEditorSelection(event => {
-            if (event.textEditor === vscode.window.activeTextEditor) {
-                updateKeywordHighlight(event.textEditor)
-            }
-        })
-    )
+    if (
+        vscode.window.activeTextEditor &&
+        (vscode.window.activeTextEditor.document.languageId === 'ssm-json' ||
+            vscode.window.activeTextEditor?.document.languageId === 'ssm-yaml')
+    ) {
+        updateKeywordHighlight(vscode.window.activeTextEditor)
+    }
 }
 
 function isValidAction(action: string) {
@@ -59,9 +63,6 @@ function isValidAction(action: string) {
 
 function updateKeywordHighlight(editor: vscode.TextEditor | undefined) {
     if (!editor) {
-        return
-    }
-    if (editor.document.languageId !== 'ssm-yaml' && editor.document.languageId !== 'ssm-json') {
         return
     }
 

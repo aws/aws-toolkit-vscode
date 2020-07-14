@@ -3,19 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/*!
- *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the MIT License. See License.txt in the project root for license information.
- */
-
-// tslint:disable: no-inferred-empty-object-type
-
 import { JsonLS, getLanguageServiceSSM as getLanguageService } from 'aws-ssm-document-language-service'
 
 import {
     createConnection,
-    Disposable,
-    DocumentRangeFormattingRequest,
+    DidChangeWatchedFilesParams,
+    FileEvent,
     IConnection,
     InitializeParams,
     InitializeResult,
@@ -74,7 +67,6 @@ const documents = new TextDocuments(JsonLS.TextDocument)
 documents.listen(connection)
 
 let clientSnippetSupport = false
-let dynamicFormatterRegistration = false
 let hierarchicalDocumentSymbolSupport = false
 
 let foldingRangeLimitDefault = Number.MAX_VALUE
@@ -104,11 +96,9 @@ connection.onInitialize(
 
             return c
         }
+        // tslint:enable: no-unsafe-any
 
         clientSnippetSupport = getClientCapability('textDocument.completion.completionItem.snippetSupport', false)
-        dynamicFormatterRegistration =
-            getClientCapability('textDocument.rangeFormatting.dynamicRegistration', false) &&
-            typeof params.initializationOptions.provideFormatter !== 'boolean'
         foldingRangeLimitDefault = getClientCapability('textDocument.foldingRange.rangeLimit', Number.MAX_VALUE)
         hierarchicalDocumentSymbolSupport = getClientCapability(
             'textDocument.documentSymbol.hierarchicalDocumentSymbolSupport',
@@ -147,7 +137,7 @@ connection.onInitialize(
             'y',
             'z',
         ]
-        // tslint:enable: no-unsafe-any
+
         const capabilities: ServerCapabilities = {
             textDocumentSync: TextDocumentSyncKind.Incremental,
             completionProvider: clientSnippetSupport
@@ -167,14 +157,9 @@ connection.onInitialize(
 )
 
 // The settings interface describes the server relevant settings part
-interface Settings {
-    aws?: {
-        ssmDocument?: {
-            ssm?: {
-                format?: { enable: boolean }
-                resultLimit?: number
-            }
-        }
+export interface Settings {
+    ssm?: {
+        resultLimit?: number
     }
 }
 
@@ -217,30 +202,13 @@ namespace LimitExceededWarnings {
     }
 }
 
-let formatterRegistration: Thenable<Disposable> | undefined
-
 connection.onDidChangeConfiguration(change => {
     const settings = <Settings>change.settings
 
     foldingRangeLimit = Math.trunc(
-        Math.max(settings?.aws?.ssmDocument?.ssm?.resultLimit || foldingRangeLimitDefault, 0)
+        settings?.ssm?.resultLimit ? Math.max(settings?.ssm?.resultLimit, 0) : foldingRangeLimitDefault
     )
-    resultLimit = Math.trunc(Math.max(settings?.aws?.ssmDocument?.ssm?.resultLimit || Number.MAX_VALUE, 0))
-
-    // dynamically enable & disable the formatter
-    if (dynamicFormatterRegistration) {
-        const enableFormatter = settings?.aws?.ssmDocument?.ssm?.format?.enable
-        if (enableFormatter) {
-            if (!formatterRegistration) {
-                formatterRegistration = connection.client.register(DocumentRangeFormattingRequest.type, {
-                    documentSelector: [{ language: 'ssm-json' }, { language: 'ssm-yaml' }],
-                })
-            }
-        } else if (formatterRegistration) {
-            formatterRegistration.then(r => r.dispose())
-            formatterRegistration = undefined
-        }
-    }
+    resultLimit = Math.trunc(settings?.ssm?.resultLimit ? Math.max(settings?.ssm?.resultLimit, 0) : Number.MAX_VALUE)
 })
 
 // Retry schema validation on all open documents
@@ -248,7 +216,6 @@ connection.onRequest(ForceValidateRequest.type, async uri => {
     return new Promise<JsonLS.Diagnostic[]>(resolve => {
         const document = documents.get(uri)
         if (document) {
-            // updateConfiguration()
             validateTextDocument(document, diagnostics => {
                 resolve(diagnostics)
             })
@@ -322,11 +289,11 @@ function validateTextDocument(
     )
 }
 
-connection.onDidChangeWatchedFiles(change => {
+connection.onDidChangeWatchedFiles((change: DidChangeWatchedFilesParams) => {
     // Monitored files have changed in VSCode
     let hasChanges = false
-    // tslint:disable-next-line: no-unsafe-any
-    change.changes.forEach(c => {
+
+    change.changes.forEach((c: FileEvent) => {
         if (languageService.resetSchema(c.uri)) {
             hasChanges = true
         }
@@ -422,7 +389,6 @@ connection.onDocumentSymbol((documentSymbolParams, token) => {
             }
 
             return []
-            // tslint:disable: no-unsafe-any
         },
         [],
         `Error while computing document symbols for ${documentSymbolParams.textDocument.uri}`,
