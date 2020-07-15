@@ -22,6 +22,7 @@ import {
     SamCliValidator,
     SamCliValidatorResult,
     SamCliVersionValidation,
+    SamCliVersionValidatorResult,
 } from '../../../shared/sam/cli/samCliValidator'
 import { ChildProcessResult } from '../../../shared/utilities/childProcess'
 import { getTestLogger } from '../../globalSetup.test'
@@ -37,6 +38,9 @@ describe('deploySamApplication', async () => {
 
     const badValidator: SamCliValidator = {
         detectValidSamCli: async (): Promise<SamCliValidatorResult> => badValidatorResult,
+        getVersionValidatorResult: async (): Promise<SamCliVersionValidatorResult> => {
+            return { validation: SamCliVersionValidation.VersionNotParseable }
+        },
     }
 
     // Bad Invoker
@@ -59,6 +63,9 @@ describe('deploySamApplication', async () => {
 
     const goodValidator: SamCliValidator = {
         detectValidSamCli: async (): Promise<SamCliValidatorResult> => goodValidatorResult,
+        getVersionValidatorResult: async (): Promise<SamCliVersionValidatorResult> => {
+            return { validation: SamCliVersionValidation.Valid }
+        },
     }
 
     // Good Invoker
