@@ -20,7 +20,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         )
     )
 
-    // handle log window closures--onDidChangeVisibleTextEditors is more reliable than onDidCloseTextDocument
+    // handle log window closures by discarding logs that aren't shown--do we want this behavior?
+    // according to VS Code API docs, onDidChangeVisibleTextEditors is more reliable than onDidCloseTextDocument
     context.subscriptions.push(
         vscode.window.onDidChangeVisibleTextEditors(editors => {
             const logsUriStrings = editors
