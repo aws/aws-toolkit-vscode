@@ -123,6 +123,7 @@ subprojects {
         implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
         implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
         testImplementation "com.nhaarman.mockitokotlin2:mockito-kotlin:$mockitoKotlinVersion"
+        testImplementation "org.mockito:mockito-core:$mockitoVersion"
         testImplementation "org.assertj:assertj-core:$assertjVersion"
         testImplementation "junit:junit:$junitVersion"
     }
