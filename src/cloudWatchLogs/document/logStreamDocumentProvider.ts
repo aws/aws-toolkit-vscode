@@ -8,13 +8,18 @@ import { LogStreamRegistry } from '../registry/logStreamRegistry'
 import { getLogger } from '../../shared/logger'
 
 export class LogStreamDocumentProvider implements vscode.TextDocumentContentProvider {
-    public constructor(private readonly registry: LogStreamRegistry) {}
-
     // Expose an event to signal changes of _virtual_ documents
     // to the editor
     private _onDidChange = new vscode.EventEmitter<vscode.Uri>()
     public get onDidChange() {
         return this._onDidChange.event
+    }
+
+    public constructor(private readonly registry: LogStreamRegistry) {
+        this.registry.onDidChange(uri => {
+            getLogger().debug('Registry item changed: ', uri.toString())
+            this._onDidChange.fire(uri)
+        })
     }
 
     public provideTextDocumentContent(uri: vscode.Uri): string {
