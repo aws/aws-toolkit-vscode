@@ -44,7 +44,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
                 language: 'log',
                 scheme: CLOUDWATCH_LOGS_SCHEME,
             },
-            new LogStreamCodeLensProvider()
+            new LogStreamCodeLensProvider(registry)
         )
     )
 
@@ -61,7 +61,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 }
 
 function copyLogStreamName(uri: vscode.Uri): void {
-    const params = parseCloudWatchLogsUri(uri)
+    const parsedUri = parseCloudWatchLogsUri(uri)
 
-    vscode.env.clipboard.writeText(params.streamName)
+    vscode.env.clipboard.writeText(parsedUri.streamName)
 }
