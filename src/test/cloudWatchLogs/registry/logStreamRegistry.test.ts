@@ -41,6 +41,17 @@ describe('LogStreamRegistry', async () => {
         ],
     }
 
+    const newText = 'a little longer now\n'
+    const getLogEventsFromUriComponentsFn = async (): Promise<CloudWatchLogs.GetLogEventsResponse> => {
+        return {
+            events: [
+                {
+                    message: newText,
+                },
+            ],
+        }
+    }
+
     const registeredUri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:This:Is:Registered`)
     const shorterRegisteredUri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:Less:Is:More`)
     const missingRegisteredUri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:Not:Here:Dude`)
@@ -56,6 +67,18 @@ describe('LogStreamRegistry', async () => {
         it('correctly returns whether or not the log is registered', () => {
             assert.strictEqual(registry.hasLog(registeredUri), true)
             assert.strictEqual(registry.hasLog(missingRegisteredUri), false)
+        })
+    })
+
+    describe('registerLog', async () => {
+        it("registers logs and doesn't overwrite existing logs", async () => {
+            await registry.registerLog(missingRegisteredUri, getLogEventsFromUriComponentsFn)
+            const blankPostRegister = registry.getLogContent(missingRegisteredUri)
+            assert.strictEqual(blankPostRegister, newText)
+
+            await registry.registerLog(shorterRegisteredUri, getLogEventsFromUriComponentsFn)
+            const preregisteredLog = registry.getLogContent(shorterRegisteredUri)
+            assert.strictEqual(preregisteredLog, `${simplerStream.data[0].message}`)
         })
     })
 
@@ -83,29 +106,18 @@ describe('LogStreamRegistry', async () => {
         })
     })
 
-    describe('upsertLog', async () => {
-        it('adds content to new streams and to existing streams at both head and tail ends', async () => {
-            const newText = 'a little longer now\n'
-            const getLogEventsFromUriComponentsFn = async (): Promise<CloudWatchLogs.GetLogEventsResponse> => {
-                return {
-                    events: [
-                        {
-                            message: newText,
-                        },
-                    ],
-                }
-            }
-
-            await registry.upsertLog(missingRegisteredUri, 'tail', getLogEventsFromUriComponentsFn)
-            const blankPostUpsert = registry.getLogContent(missingRegisteredUri)
-            assert.strictEqual(blankPostUpsert, newText)
-
-            await registry.upsertLog(shorterRegisteredUri, 'tail', getLogEventsFromUriComponentsFn)
+    describe('updateLog', async () => {
+        it("adds content to existing streams at both head and tail ends and doesn't do anything if the log isn't registered", async () => {
+            await registry.updateLog(shorterRegisteredUri, 'tail', getLogEventsFromUriComponentsFn)
             const initialWithTail = registry.getLogContent(shorterRegisteredUri)
             assert.strictEqual(initialWithTail, `${simplerStream.data[0].message}${newText}`)
-            await registry.upsertLog(shorterRegisteredUri, 'head', getLogEventsFromUriComponentsFn)
+            await registry.updateLog(shorterRegisteredUri, 'head', getLogEventsFromUriComponentsFn)
             const initialWithHeadAndTail = registry.getLogContent(shorterRegisteredUri)
             assert.strictEqual(initialWithHeadAndTail, `${newText}${simplerStream.data[0].message}${newText}`)
+
+            await registry.updateLog(missingRegisteredUri, 'tail', getLogEventsFromUriComponentsFn)
+            const unregisteredGet = registry.getLogContent(missingRegisteredUri)
+            assert.strictEqual(unregisteredGet, undefined)
         })
     })
 
