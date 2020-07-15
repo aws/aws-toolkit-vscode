@@ -12,6 +12,7 @@ import { ChildProcess } from '../../utilities/childProcess'
 import { removeAnsi } from '../../utilities/textUtilities'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { ChannelLogger } from '../../utilities/vsCodeUtils'
+import { DefaultSamCliProcessInvokerContext, SamCliProcessInvokerContext } from './samCliInvoker'
 
 const localize = nls.loadMessageBundle()
 
@@ -189,6 +190,7 @@ export class SamCliLocalInvokeInvocation {
     private readonly dockerNetwork?: string
     private readonly skipPullImage: boolean
     private readonly debuggerPath?: string
+    private readonly invokerContext: SamCliProcessInvokerContext
 
     /**
      * @see SamCliLocalInvokeInvocationArguments for parameter info
@@ -204,11 +206,14 @@ export class SamCliLocalInvokeInvocation {
         this.dockerNetwork = params.dockerNetwork
         this.skipPullImage = skipPullImage
         this.debuggerPath = params.debuggerPath
+        // Enterprise!
+        this.invokerContext = new DefaultSamCliProcessInvokerContext()
     }
 
     public async execute(timeout?: Timeout): Promise<void> {
         await this.validate()
 
+        const samCommand = this.invokerContext.cliConfig.getSamCliLocation() ?? 'sam'
         const args = [
             'local',
             'invoke',
@@ -227,7 +232,7 @@ export class SamCliLocalInvokeInvocation {
         this.addArgumentIf(args, !!this.debuggerPath, '--debugger-path', this.debuggerPath!)
 
         await this.invoker.invoke({
-            command: 'sam',
+            command: samCommand,
             args,
             isDebug: !!this.debugPort,
             timeout,
