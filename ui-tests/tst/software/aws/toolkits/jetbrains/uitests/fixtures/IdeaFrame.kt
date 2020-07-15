@@ -51,7 +51,10 @@ class IdeaFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) : Co
     fun waitForBackgroundTasks(timeout: Duration = Duration.ofMinutes(5)) {
         step("Wait for background tasks to finish") {
             waitFor(duration = timeout, interval = Duration.ofSeconds(5)) {
-                findAll<ComponentFixture>(byXpath("//div[@myname='Background process']")).isEmpty()
+                // TODO FIX_WHEN_MIN_IS_202 remove the background process one
+                findAll<ComponentFixture>(byXpath("//div[@myname='Background process']")).isEmpty() &&
+                    // search for the progress bar
+                    findAll<ComponentFixture>(byXpath("//div[@class='JProgressBar']")).isEmpty()
             }
         }
     }
