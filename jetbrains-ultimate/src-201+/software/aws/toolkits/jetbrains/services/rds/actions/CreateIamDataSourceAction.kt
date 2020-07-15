@@ -41,19 +41,19 @@ import software.aws.toolkits.telemetry.Result
 // It is registered in ext-datagrip.xml FIX_WHEN_MIN_IS_201
 @Suppress("ComponentNotRegistered")
 class CreateIamDataSourceAction : SingleExplorerNodeAction<RdsNode>(message("rds.iam_config")), DumbAware {
-    override fun actionPerformed(node: RdsNode, e: AnActionEvent) {
-        if (!checkPrerequisites(node)) {
+    override fun actionPerformed(selected: RdsNode, e: AnActionEvent) {
+        if (!checkPrerequisites(selected)) {
             return
         }
         object : Task.Backgroundable(
-            node.nodeProject,
+            selected.nodeProject,
             DatabaseBundle.message("message.text.refreshing.data.source"),
             true,
             PerformInBackgroundOption.ALWAYS_BACKGROUND
         ) {
             override fun run(indicator: ProgressIndicator) {
-                val registry = DataSourceRegistry(node.nodeProject)
-                createDatasource(node, registry)
+                val registry = DataSourceRegistry(selected.nodeProject)
+                createDatasource(selected, registry)
                 // Asynchronously show the user the configuration dialog to let them save/edit/test the profile
                 runInEdt {
                     registry.showDialog()
@@ -65,10 +65,10 @@ class CreateIamDataSourceAction : SingleExplorerNodeAction<RdsNode>(message("rds
             override fun onSuccess() = recordTelemetry(Result.Succeeded)
 
             private fun recordTelemetry(result: Result) = RdsTelemetry.createConnectionConfiguration(
-                node.nodeProject,
+                selected.nodeProject,
                 result,
                 DatabaseCredentials.IAM,
-                node.dbInstance.engine()
+                selected.dbInstance.engine()
             )
         }.queue()
     }

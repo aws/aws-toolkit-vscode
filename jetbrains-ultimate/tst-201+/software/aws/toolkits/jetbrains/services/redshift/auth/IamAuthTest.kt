@@ -31,9 +31,9 @@ import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
+import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
-import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 
 class IamAuthTest {
     @Rule
@@ -114,8 +114,8 @@ class IamAuthTest {
         val password = RuleUtils.randomName()
         val (createCaptor, redshiftMock) = getWorkingRedshiftMock(password)
         val creds = apiAuth.getCredentials(redshiftSettings, redshiftMock)
-        assertThat(creds?.userName).isEqualTo(redshiftSettings.username)
-        assertThat(creds?.password).isEqualTo(password)
+        assertThat(creds.userName).isEqualTo(redshiftSettings.username)
+        assertThat(creds.password).isEqualTo(password)
         assertThat(createCaptor.firstValue.autoCreate()).isFalse()
         assertThat(createCaptor.firstValue.dbUser()).isEqualTo(redshiftSettings.username)
         assertThat(createCaptor.firstValue.clusterIdentifier()).isEqualTo(clusterId)
@@ -133,7 +133,8 @@ class IamAuthTest {
     @Test
     fun `Intercept credentials succeeds`() {
         val password = RuleUtils.randomName()
-        val (createCaptor, redshiftMock) = getWorkingRedshiftMock(password)
+        // we call this for the side effects only in this function
+        getWorkingRedshiftMock(password)
         val connection = apiAuth.intercept(buildConnection(), false)?.toCompletableFuture()?.get()
         assertThat(connection).isNotNull
         assertThat(connection!!.connectionProperties).containsKey("user")
