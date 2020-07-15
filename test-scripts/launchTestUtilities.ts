@@ -68,5 +68,7 @@ function getMinVsCodeVersion(): string {
         throw Error('Minimum version specified to run tests, but package.json does not have a .engine.vscode!')
     }
     // We assume that we specify a minium, so it matches ^<number>, so remove ^'s
-    return vsCodeVersion.replace('^', '')
+    const sanitizedVersion = vsCodeVersion.replace('^', '')
+    console.log(`Using minimum VSCode version specified in package.json: ${sanitizedVersion}`)
+    return sanitizedVersion
 }
