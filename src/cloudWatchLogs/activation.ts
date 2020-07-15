@@ -15,19 +15,27 @@ import { parseCloudWatchLogsUri } from './cloudWatchLogsUtils'
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     const registry = new LogStreamRegistry()
 
-    const logStreamProvider = new LogStreamDocumentProvider(registry)
-
     context.subscriptions.push(
-        // swap to onDidChangeVisibleTextEditors
-        vscode.workspace.onDidCloseTextDocument(doc => {
-            if (doc.uri.scheme === CLOUDWATCH_LOGS_SCHEME) {
-                registry.deregisterLog(doc.uri)
-            }
-        })
+        vscode.workspace.registerTextDocumentContentProvider(
+            CLOUDWATCH_LOGS_SCHEME,
+            new LogStreamDocumentProvider(registry)
+        )
     )
 
+    // handle log window closures by discarding logs that aren't shown--do we want this behavior?
+    // according to VS Code API docs, onDidChangeVisibleTextEditors is more reliable than onDidCloseTextDocument
     context.subscriptions.push(
-        vscode.workspace.registerTextDocumentContentProvider(CLOUDWATCH_LOGS_SCHEME, logStreamProvider)
+        vscode.window.onDidChangeVisibleTextEditors(editors => {
+            const logsUriStrings = editors
+                .filter(value => value.document.uri.scheme === CLOUDWATCH_LOGS_SCHEME)
+                .map(value => value.document.uri.path)
+            registry.getRegisteredLogs().forEach(registeredLog => {
+                if (!logsUriStrings.includes(registeredLog)) {
+                    // parse back to URI, should we change deregisterLog to work directly off strings?
+                    registry.deregisterLog(vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:${registeredLog}`))
+                }
+            })
+        })
     )
 
     context.subscriptions.push(

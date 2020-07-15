@@ -19,12 +19,21 @@ import { ext } from '../../shared/extensionGlobals'
  * Class which contains CRUD operations and persistence for CloudWatch Logs streams.
  */
 export class LogStreamRegistry {
+    private readonly _onDidChange: vscode.EventEmitter<vscode.Uri> = new vscode.EventEmitter<vscode.Uri>()
+
     public constructor(
         private readonly activeStreams: Map<string, CloudWatchLogStreamData> = new Map<
             string,
             CloudWatchLogStreamData
         >()
     ) {}
+
+    /**
+     * Event fired on log content change
+     */
+    public get onDidChange(): vscode.Event<vscode.Uri> {
+        return this._onDidChange.event
+    }
 
     /**
      * Returns whether or not the log is registered.
@@ -90,6 +99,8 @@ export class LogStreamRegistry {
                 ...stream,
                 data: newData,
             })
+
+            this._onDidChange.fire(uri)
         } catch (e) {
             const err = e as Error
             vscode.window.showErrorMessage(
@@ -109,6 +120,14 @@ export class LogStreamRegistry {
      */
     public deregisterLog(uri: vscode.Uri) {
         this.activeStreams.delete(uri.path)
+    }
+
+    /**
+     * Gets an array of registered logs.
+     * Logs are represented as the URI's path.
+     */
+    public getRegisteredLogs(): string[] {
+        return [...this.activeStreams.keys()]
     }
 
     private setLog(uri: vscode.Uri, stream: CloudWatchLogStreamData): void {
