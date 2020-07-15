@@ -12,6 +12,7 @@ import { CloudWatchLogs } from 'aws-sdk'
 import { parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
 import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { ext } from '../../shared/extensionGlobals'
+import { getLogger } from '../../shared/logger'
 
 // TODO: Add debug logging statements
 
@@ -33,6 +34,25 @@ export class LogStreamRegistry {
      */
     public get onDidChange(): vscode.Event<vscode.Uri> {
         return this._onDidChange.event
+    }
+
+    /**
+     * Adds an entry to the registry for the given URI.
+     * @param uri Document URI
+     * @param getLogEventsFromUriComponentsFn Override for testing purposes.
+     */
+    public async registerLog(
+        uri: vscode.Uri,
+        getLogEventsFromUriComponentsFn?: (logGroupInfo: {
+            groupName: string
+            streamName: string
+            regionName: string
+        }) => Promise<CloudWatchLogs.GetLogEventsResponse>
+    ): Promise<void> {
+        if (parseCloudWatchLogsUri(uri) && !this.hasLog(uri)) {
+            this.setLog(uri, new CloudWatchLogStreamData())
+            await this.updateLog(uri, 'tail', getLogEventsFromUriComponentsFn)
+        }
     }
 
     /**
@@ -76,7 +96,7 @@ export class LogStreamRegistry {
      * @param headOrTail Determines update behavior: `'head'` retrieves the most recent previous token and appends data to the top of the log, `'tail'` does the opposite. Default: `'tail'`
      * @param getLogEventsFromUriComponentsFn Override for testing purposes.
      */
-    public async upsertLog(
+    public async updateLog(
         uri: vscode.Uri,
         headOrTail: 'head' | 'tail' = 'tail',
         getLogEventsFromUriComponentsFn: (logGroupInfo: {
@@ -85,7 +105,11 @@ export class LogStreamRegistry {
             regionName: string
         }) => Promise<CloudWatchLogs.GetLogEventsResponse> = getLogEventsFromUriComponents
     ): Promise<void> {
-        const stream = this.getLog(uri) ?? new CloudWatchLogStreamData()
+        const stream = this.getLog(uri)
+        if (!stream) {
+            getLogger().debug(`No registry entry for ${uri.path}`)
+            return
+        }
         // TODO: append next/previous token to stream object
         const logGroupInfo = parseCloudWatchLogsUri(uri)
         try {
