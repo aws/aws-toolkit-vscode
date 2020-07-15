@@ -28,7 +28,6 @@ class AddSecretsManagerConnectionTest {
         val address = RuleUtils.randomName()
         val username = RuleUtils.randomName()
         val password = RuleUtils.randomName()
-        val dbName = RuleUtils.randomName()
         val secretArn = RuleUtils.randomName()
         val engine = RuleUtils.randomName()
         val registry = DataSourceRegistry(projectRule.project)
