@@ -100,15 +100,15 @@ subprojects {
     }
 
     sourceSets {
-        main.java.srcDirs = ['src', "src-$ideVersion"]
-        main.resources.srcDirs = ['resources', "resources-$ideVersion"]
-        test.java.srcDirs = ['tst', "tst-$ideVersion"]
-        test.resources.srcDirs = ['tst-resources', "tst-resources-$ideVersion"]
+        main.java.srcDirs = SourceUtils.findFolders(project, "src", ideVersion)
+        main.resources.srcDirs = SourceUtils.findFolders(project, "resources", ideVersion)
+        test.java.srcDirs = SourceUtils.findFolders(project, "tst", ideVersion)
+        test.resources.srcDirs = SourceUtils.findFolders(project, "tst-resources", ideVersion)
         integrationTest {
             compileClasspath += main.output + test.output
             runtimeClasspath += main.output + test.output
-            java.srcDirs = ['it', "it-$ideVersion"]
-            resources.srcDirs = ['it-resources', "it-resources-$ideVersion"]
+            java.srcDirs = SourceUtils.findFolders(project, "it", ideVersion)
+            resources.srcDirs = SourceUtils.findFolders(project, "it-resources", ideVersion)
         }
     }
 
@@ -150,8 +150,8 @@ subprojects {
 
     idea {
         module {
-            sourceDirs += file("src-$ideVersion")
-            resourceDirs += file("resources-$ideVersion")
+            sourceDirs += sourceSets.main.java.srcDirs
+            resourceDirs += sourceSets.main.resources.srcDirs
             testSourceDirs += file("tst-$ideVersion")
             testResourceDirs += file("tst-resources-$ideVersion")
 
