@@ -4,18 +4,18 @@
  */
 
 import * as assert from 'assert'
-import { getSamCliDockerImageNameWithRuntime } from '../../../../shared/sam/cli/samCliContext'
+import { getSamCliDockerImageName } from '../../../../shared/sam/cli/samCliContext'
 
-describe('getSamCliDockerImageNameWithRuntime', () => {
+describe('getSamCliDockerImageName', () => {
     it('returns the correct values', () => {
         const runtime = 'funtime'
         const amazonImage = `amazon/aws-sam-cli-emulation-image-${runtime}`
         const legacyImage = `lambci/lambda:${runtime}`
 
-        assert.strictEqual(getSamCliDockerImageNameWithRuntime('0.0.0', runtime), legacyImage)
-        assert.strictEqual(getSamCliDockerImageNameWithRuntime('1.0.0', runtime), amazonImage)
-        assert.strictEqual(getSamCliDockerImageNameWithRuntime('999.999.9999', runtime), amazonImage)
-        assert.strictEqual(getSamCliDockerImageNameWithRuntime(undefined, runtime), amazonImage)
-        assert.strictEqual(getSamCliDockerImageNameWithRuntime('1.0.0rc', runtime), amazonImage)
+        assert.strictEqual(getSamCliDockerImageName('0.0.0', runtime), legacyImage)
+        assert.strictEqual(getSamCliDockerImageName('1.0.0', runtime), amazonImage)
+        assert.strictEqual(getSamCliDockerImageName('999.999.9999', runtime), amazonImage)
+        assert.strictEqual(getSamCliDockerImageName(undefined, runtime), amazonImage)
+        assert.strictEqual(getSamCliDockerImageName('1.0.0rc', runtime), amazonImage)
     })
 })
