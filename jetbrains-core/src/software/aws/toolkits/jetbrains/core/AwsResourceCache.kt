@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.core
 
 import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
@@ -220,7 +221,7 @@ class DefaultAwsResourceCache(
     private val clock: Clock,
     private val maximumCacheEntries: Int,
     private val maintenanceInterval: Duration
-) : AwsResourceCache, ToolkitCredentialsChangeListener {
+) : AwsResourceCache, Disposable, ToolkitCredentialsChangeListener {
 
     @Suppress("unused")
     constructor(project: Project) : this(project, Clock.systemDefaultZone(), MAXIMUM_CACHE_ENTRIES, DEFAULT_MAINTENANCE_INTERVAL)
@@ -230,7 +231,7 @@ class DefaultAwsResourceCache(
     private val alarm = AlarmFactory.getInstance().create(Alarm.ThreadToUse.POOLED_THREAD, project)
 
     init {
-        ApplicationManager.getApplication().messageBus.connect().subscribe(CredentialManager.CREDENTIALS_CHANGED, this)
+        ApplicationManager.getApplication().messageBus.connect(this).subscribe(CredentialManager.CREDENTIALS_CHANGED, this)
         scheduleCacheMaintenance()
     }
 
@@ -313,6 +314,10 @@ class DefaultAwsResourceCache(
 
     override fun clear() {
         cache.clear()
+    }
+
+    override fun dispose() {
+        clear()
     }
 
     override fun providerRemoved(identifier: ToolkitCredentialsIdentifier) = clearByCredential(identifier.id)

@@ -49,8 +49,8 @@ class AwsResourceCacheTest {
 
     private val mockClock = mock<Clock>()
     private val mockResource = mock<Resource.Cached<String>>()
-    private val sut = DefaultAwsResourceCache(projectRule.project, mockClock, 1000, Duration.ofMinutes(1))
 
+    private lateinit var sut: AwsResourceCache
     private lateinit var cred1Identifier: ToolkitCredentialsIdentifier
     private lateinit var cred1Provider: ToolkitCredentialsProvider
     private lateinit var cred2Identifier: ToolkitCredentialsIdentifier
@@ -67,7 +67,9 @@ class AwsResourceCacheTest {
         cred2Identifier = credentialsManager.addCredentials("Cred2")
         cred2Provider = credentialsManager.getAwsCredentialProvider(cred2Identifier, MockRegionProvider.getInstance().defaultRegion())
 
+        sut = DefaultAwsResourceCache(projectRule.project, mockClock, 1000, Duration.ofMinutes(1))
         sut.clear()
+
         reset(mockClock, mockResource)
         whenever(mockResource.expiry()).thenReturn(DEFAULT_EXPIRY)
         whenever(mockResource.id).thenReturn("mock")
