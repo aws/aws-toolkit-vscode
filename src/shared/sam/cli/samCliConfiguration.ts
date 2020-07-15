@@ -26,10 +26,12 @@ export class DefaultSamCliConfiguration implements SamCliConfiguration {
         this._samCliLocationProvider = samCliLocationProvider
     }
 
+    /** Gets the current SAM CLI location from the VSCode settings store. */
     public getSamCliLocation(): string | undefined {
-        return this._configuration.readSetting(DefaultSamCliConfiguration.CONFIGURATION_KEY_SAMCLI_LOCATION)
+        return this._configuration.readSetting<string>(DefaultSamCliConfiguration.CONFIGURATION_KEY_SAMCLI_LOCATION)
     }
 
+    /** Sets the SAM CLI location in the VSCode settings store. */
     public async setSamCliLocation(location: string | undefined): Promise<void> {
         await this._configuration.writeSetting(
             DefaultSamCliConfiguration.CONFIGURATION_KEY_SAMCLI_LOCATION,
@@ -38,6 +40,10 @@ export class DefaultSamCliConfiguration implements SamCliConfiguration {
         )
     }
 
+    /**
+     * Initializes this SamCliConfiguration object from the VSCode user settings,
+     * or tries to auto-detect `sam` in the environment.
+     */
     public async initialize(): Promise<void> {
         const configLocation: string | undefined = this.getSamCliLocation()
         if (!!configLocation) {
