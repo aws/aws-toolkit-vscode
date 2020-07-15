@@ -455,6 +455,11 @@
                     "command": "aws.previewStateMachine",
                     "when": "editorLangId == asl",
                     "group": "navigation"
+                },
+                {
+                    "command": "aws.copyLogStreamName",
+                    "when": "resourceScheme == awsCloudWatchLogs",
+                    "group": "navigation"
                 }
             ],
             "view/title": [
@@ -793,6 +798,12 @@
                 "command": "aws.cloudWatchLogs.viewLogStream",
                 "title": "%AWS.command.viewLogStream%",
                 "category": "AWS"
+            },
+            {
+                "command": "aws.copyLogStreamName",
+                "title": "%AWS.command.copyLogStreamName%",
+                "category": "AWS",
+                "icon": "$(files)"
             }
         ],
         "jsonValidation": [

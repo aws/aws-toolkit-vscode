@@ -124,6 +124,7 @@
     "AWS.command.stepFunctions.createStateMachineFromTemplate": "Create a new Step Functions state machine",
     "AWS.command.stepFunctions.publishStateMachine": "Publish state machine to Step Functions",
     "AWS.command.stepFunctions.previewStateMachine": "Render state machine graph",
+    "AWS.command.copyLogStreamName": "Copy Log Stream Name",
     "AWS.command.viewLogStream": "View Log Stream...",
     "AWS.stepFunctions.graph.titlePrefix": "Graph: {0}",
     "AWS.credentials.statusbar.no.credentials": "(not connected)",
