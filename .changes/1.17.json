@@ -1,0 +1,35 @@
+{
+  "date" : "2020-07-16",
+  "version" : "1.17",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Wrap logstream entries when they are selected (#1863)"
+  }, {
+    "type" : "feature",
+    "description" : "Adding 'Outputs' tab to the CloudFormation Stack Viewer"
+  }, {
+    "type" : "feature",
+    "description" : "Support for SAM CLI version 1.x"
+  }, {
+    "type" : "feature",
+    "description" : "Add support for 2020.2"
+  }, {
+    "type" : "feature",
+    "description" : "Add word wrap to CloudFormation status reasons on selection (#1858)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix CloudWatch Logs logstream scrolling up automatically in certain circumstances"
+  }, {
+    "type" : "bugfix",
+    "description" : "Change the way we stop SAM CLI processes when debugging to allow docker container to shut down"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix double clicking Cloud Formation node not opening the stack viewer"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix Cloud Formation event viewer not expanding as the window expands"
+  }, {
+    "type" : "bugfix",
+    "description" : "The project SDK is now passed as JAVA_HOME to SAM when building Java functions when not using the build in container option"
+  } ]
+}

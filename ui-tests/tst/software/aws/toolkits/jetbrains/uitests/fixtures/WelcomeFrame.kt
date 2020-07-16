@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.uitests.fixtures
 
 import com.intellij.remoterobot.RemoteRobot
 import com.intellij.remoterobot.data.RemoteComponent
+import com.intellij.remoterobot.fixtures.ActionLinkFixture
 import com.intellij.remoterobot.fixtures.CommonContainerFixture
 import com.intellij.remoterobot.fixtures.ComponentFixture
 import com.intellij.remoterobot.fixtures.DefaultXpath
@@ -20,7 +21,7 @@ fun RemoteRobot.welcomeFrame(function: WelcomeFrame.() -> Unit) {
 @DefaultXpath("type", "//div[@class='FlatWelcomeFrame' and @visible='true']")
 class WelcomeFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) : CommonContainerFixture(remoteRobot, remoteComponent) {
     fun openNewProjectWizard() {
-        actionLink("Create New Project").click()
+        actionLink(ActionLinkFixture.byTextContains("New Project")).click()
     }
 
     fun openPreferences() {
@@ -32,13 +33,9 @@ class WelcomeFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) :
     }
 
     fun openFolder(path: Path) {
-        try {
-            // 2020.1
-            actionLink("Open or Import").click()
-        } catch (e: Exception) {
-            // 2019.3
-            actionLink("Open").click()
+        actionLink(ActionLinkFixture.byTextContains("Open")).click()
+        fileBrowser("Open") {
+            selectFile(path)
         }
-        fillFileExplorer(path)
     }
 }

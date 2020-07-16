@@ -1,3 +1,15 @@
+# _1.17_ (2020-07-16)
+- **(Feature)** Wrap logstream entries when they are selected ([#1863](https://github.com/aws/aws-toolkit-jetbrains/issues/1863))
+- **(Feature)** Adding 'Outputs' tab to the CloudFormation Stack Viewer
+- **(Feature)** Support for SAM CLI version 1.x
+- **(Feature)** Add support for 2020.2
+- **(Feature)** Add word wrap to CloudFormation status reasons on selection ([#1858](https://github.com/aws/aws-toolkit-jetbrains/issues/1858))
+- **(Bug Fix)** Fix CloudWatch Logs logstream scrolling up automatically in certain circumstances
+- **(Bug Fix)** Change the way we stop SAM CLI processes when debugging to allow docker container to shut down
+- **(Bug Fix)** Fix double clicking Cloud Formation node not opening the stack viewer
+- **(Bug Fix)** Fix Cloud Formation event viewer not expanding as the window expands
+- **(Bug Fix)** The project SDK is now passed as JAVA_HOME to SAM when building Java functions when not using the build in container option
+
 # _1.16_ (2020-05-27)
 - **(Breaking Change)** The toolkit now requires 2019.3 or newer
 - **(Feature)** Add support for GoLand, CLion, RubyMine, and PhpStorm
