@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "The project SDK is now passed as JAVA_HOME to SAM when building Java functions when not using the build in container option"
-}
