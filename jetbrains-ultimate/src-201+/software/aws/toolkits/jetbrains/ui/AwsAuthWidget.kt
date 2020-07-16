@@ -14,9 +14,9 @@ import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.text.nullize
 import org.jetbrains.annotations.TestOnly
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
+import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
-import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import software.aws.toolkits.resources.message
 import javax.swing.JPanel
@@ -81,13 +81,16 @@ abstract class AwsAuthWidget(private val userField: Boolean = true) : DatabaseCr
         val credentialManager = CredentialManager.getInstance()
         credentialSelector.setCredentialsProviders(credentialManager.getCredentialIdentifiers())
         val credentialId = dataSource.additionalJdbcProperties[CREDENTIAL_ID_PROPERTY]?.nullize()
-        credentialId?.let {
-            credentialManager.getCredentialIdentifierById(credentialId)?.let {
-                credentialSelector.setSelectedCredentialsProvider(it)
-                return
+        if (credentialId != null) {
+            val credentialIdentifierById = credentialManager.getCredentialIdentifierById(credentialId)
+            if (credentialIdentifierById != null) {
+                credentialSelector.setSelectedCredentialsProvider(credentialIdentifierById)
+            } else {
+                credentialSelector.setSelectedInvalidCredentialsProvider(credentialId)
             }
+        } else {
+            credentialSelector.model.selectedItem = null
         }
-        credentialSelector.setSelectedInvalidCredentialsProvider(credentialId)
     }
 
     override fun isPasswordChanged(): Boolean = false
