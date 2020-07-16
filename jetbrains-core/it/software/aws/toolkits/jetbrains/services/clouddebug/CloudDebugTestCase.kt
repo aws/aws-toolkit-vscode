@@ -20,7 +20,7 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.rules.ECSTemporaryServiceRule
 import software.aws.toolkits.jetbrains.core.MockResourceCache
 import software.aws.toolkits.jetbrains.core.Resource
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.runUnderRealCredentials
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import software.aws.toolkits.jetbrains.services.clouddebug.actions.DeinstrumentResourceFromExplorerAction
@@ -56,7 +56,7 @@ abstract class CloudDebugTestCase(private val taskDefName: String) {
         // does not validate that a SSM session is successfully created
         val region = AwsRegion("us-west-2", "US West 2", "aws")
         MockRegionProvider.getInstance().addRegion(region)
-        ProjectAccountSettingsManager.getInstance(getProject()).changeRegion(region)
+        AwsConnectionManager.getInstance(getProject()).changeRegion(region)
         instrumentationRole = cfnRule.outputs["TaskRole"] ?: throw RuntimeException("Could not find instrumentation role in CloudFormation outputs")
         service = createService()
         runUnderRealCredentials(getProject()) {

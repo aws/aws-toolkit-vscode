@@ -24,7 +24,7 @@ import com.intellij.platform.HideableProjectGenerator
 import com.intellij.platform.ProjectGeneratorPeer
 import com.intellij.platform.ProjectTemplate
 import icons.AwsIcons
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.services.lambda.SamNewProjectSettings
 import software.aws.toolkits.jetbrains.services.lambda.SamProjectTemplate
@@ -80,7 +80,7 @@ class SamProjectGenerator : ProjectTemplate,
         val newDefaultProject = DefaultProjectFactory.getInstance().defaultProject
 
         // Explicitly eager load ProjectAccountSettingsManager for the project to subscribe to credential change events
-        ProjectAccountSettingsManager.getInstance(newDefaultProject)
+        AwsConnectionManager.getInstance(newDefaultProject)
         return newDefaultProject
     }
 

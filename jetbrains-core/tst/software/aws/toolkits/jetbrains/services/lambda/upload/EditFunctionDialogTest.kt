@@ -29,8 +29,8 @@ import software.amazon.awssdk.services.s3.model.HeadBucketResponse
 import software.amazon.awssdk.services.s3.model.ListBucketsResponse
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 
 class EditFunctionDialogTest {
@@ -43,7 +43,7 @@ class EditFunctionDialogTest {
     @Rule
     val mockClientManager = MockClientManagerRule(projectRule)
 
-    private val mockSettingsManager by lazy { ProjectAccountSettingsManager.getInstance(projectRule.project) as MockProjectAccountSettingsManager }
+    private val mockSettingsManager by lazy { AwsConnectionManager.getInstance(projectRule.project) as MockAwsConnectionManager }
 
     private lateinit var s3Client: S3Client
     private lateinit var iamClient: IamClient

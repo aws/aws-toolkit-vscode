@@ -3,21 +3,19 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.extensions.ExtensionPointName
-import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.SimpleModificationTracker
 import com.intellij.util.messages.MessageBus
 import com.intellij.util.messages.Topic
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
+import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.CredentialProviderFactory
 import software.aws.toolkits.core.credentials.CredentialProviderNotFoundException
 import software.aws.toolkits.core.credentials.ToolkitCredentialsChangeListener
-import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.getLogger
@@ -26,36 +24,36 @@ import software.aws.toolkits.jetbrains.core.AwsSdkClient
 import java.util.concurrent.ConcurrentHashMap
 
 abstract class CredentialManager : SimpleModificationTracker() {
-    private val providerIds = ConcurrentHashMap<String, ToolkitCredentialsIdentifier>()
-    private val awsCredentialProviderCache = ConcurrentHashMap<ToolkitCredentialsIdentifier, ConcurrentHashMap<String, AwsCredentialsProvider>>()
+    private val providerIds = ConcurrentHashMap<String, CredentialIdentifier>()
+    private val awsCredentialProviderCache = ConcurrentHashMap<CredentialIdentifier, ConcurrentHashMap<String, AwsCredentialsProvider>>()
 
     protected abstract fun factoryMapping(): Map<String, CredentialProviderFactory>
 
     @Throws(CredentialProviderNotFoundException::class)
-    fun getAwsCredentialProvider(providerId: ToolkitCredentialsIdentifier, region: AwsRegion): ToolkitCredentialsProvider =
+    fun getAwsCredentialProvider(providerId: CredentialIdentifier, region: AwsRegion): ToolkitCredentialsProvider =
         ToolkitCredentialsProvider(providerId, AwsCredentialProviderProxy(providerId, region))
 
-    fun getCredentialIdentifiers(): List<ToolkitCredentialsIdentifier> = providerIds.values
+    fun getCredentialIdentifiers(): List<CredentialIdentifier> = providerIds.values
         .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.displayName })
 
-    fun getCredentialIdentifierById(id: String): ToolkitCredentialsIdentifier? = providerIds[id]
+    fun getCredentialIdentifierById(id: String): CredentialIdentifier? = providerIds[id]
 
     // TODO: Convert these to bulk listeners so we only send N messages where N is # of extensions vs # of providers
-    protected fun addProvider(identifier: ToolkitCredentialsIdentifier) {
+    protected fun addProvider(identifier: CredentialIdentifier) {
         providerIds[identifier.id] = identifier
 
         incModificationCount()
         ApplicationManager.getApplication().messageBus.syncPublisher(CREDENTIALS_CHANGED).providerAdded(identifier)
     }
 
-    protected fun modifyProvider(identifier: ToolkitCredentialsIdentifier) {
+    protected fun modifyProvider(identifier: CredentialIdentifier) {
         awsCredentialProviderCache.remove(identifier)
 
         incModificationCount()
         ApplicationManager.getApplication().messageBus.syncPublisher(CREDENTIALS_CHANGED).providerModified(identifier)
     }
 
-    protected fun removeProvider(identifier: ToolkitCredentialsIdentifier) {
+    protected fun removeProvider(identifier: CredentialIdentifier) {
         providerIds.remove(identifier.id)
         awsCredentialProviderCache.remove(identifier)
 
@@ -68,11 +66,11 @@ abstract class CredentialManager : SimpleModificationTracker() {
      * ToolkitCredentialsProvider (like ones passed to existing SDK clients), to keep operating even if the credentials they represent have been updated such
      * as loading from disk when new values.
      */
-    private inner class AwsCredentialProviderProxy(private val providerId: ToolkitCredentialsIdentifier, private val region: AwsRegion) :
+    private inner class AwsCredentialProviderProxy(private val providerId: CredentialIdentifier, private val region: AwsRegion) :
         AwsCredentialsProvider {
         override fun resolveCredentials(): AwsCredentials = getOrCreateAwsCredentialsProvider(providerId, region).resolveCredentials()
 
-        private fun getOrCreateAwsCredentialsProvider(providerId: ToolkitCredentialsIdentifier, region: AwsRegion): AwsCredentialsProvider {
+        private fun getOrCreateAwsCredentialsProvider(providerId: CredentialIdentifier, region: AwsRegion): AwsCredentialsProvider {
             val partitionCache = awsCredentialProviderCache.computeIfAbsent(providerId) { ConcurrentHashMap() }
 
             // If we already resolved creds for this partition and provider ID, just return it
@@ -104,22 +102,13 @@ abstract class CredentialManager : SimpleModificationTracker() {
 }
 
 class DefaultCredentialManager : CredentialManager() {
-    private val rootDisposable = Disposer.newDisposable()
-
     private val extensionMap: Map<String, CredentialProviderFactory> by lazy {
-        EP_NAME.extensionList
-            .onEach {
-                if (it is Disposable) {
-                    Disposer.register(rootDisposable, it)
-                }
-            }.associateBy {
+        EP_NAME.extensionList.associateBy {
                 it.id
             }
     }
 
     init {
-        Disposer.register(ApplicationManager.getApplication(), rootDisposable)
-
         extensionMap.values.forEach { providerFactory ->
             LOG.tryOrNull("Failed to set up $providerFactory") {
                 providerFactory.setUp { change ->

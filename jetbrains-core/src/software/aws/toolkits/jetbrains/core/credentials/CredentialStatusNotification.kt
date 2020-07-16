@@ -4,24 +4,21 @@
 package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.startup.StartupActivity
 import software.aws.toolkits.jetbrains.utils.createNotificationExpiringAction
 import software.aws.toolkits.jetbrains.utils.createShowMoreInfoDialogAction
 import software.aws.toolkits.jetbrains.utils.notifyWarn
 import software.aws.toolkits.resources.message
 
-class CredentialStatusNotification : StartupActivity, DumbAware, ConnectionSettingsChangeNotifier {
-    override fun runActivity(project: Project) {
-        project.messageBus.connect().subscribe(ProjectAccountSettingsManager.CONNECTION_SETTINGS_CHANGED, this)
-    }
-
-    override fun settingsChanged(event: ConnectionSettingsChangeEvent) {
-        if (event is InvalidConnectionSettings) {
+class CredentialStatusNotification(private val project: Project) : ConnectionSettingsStateChangeNotifier {
+    private val actionManager = ActionManager.getInstance()
+    override fun settingsStateChanged(newState: ConnectionState) {
+        if (newState is ConnectionState.InvalidConnection) {
             val title = message("credentials.invalid.title")
-            val message = message("credentials.profile.validation_error", event.credentialsProvider.displayName)
+            val message = newState.displayMessage
+
             notifyWarn(
+                project = project,
                 title = title,
                 content = message,
                 notificationActions = listOf(
@@ -29,9 +26,10 @@ class CredentialStatusNotification : StartupActivity, DumbAware, ConnectionSetti
                         message("credentials.invalid.more_info"),
                         title,
                         message,
-                        event.cause.localizedMessage
+                        newState.cause.localizedMessage
                     ),
-                    createNotificationExpiringAction(ActionManager.getInstance().getAction("aws.settings.upsertCredentials"))
+                    createNotificationExpiringAction(actionManager.getAction("aws.settings.upsertCredentials")),
+                    createNotificationExpiringAction(RefreshConnectionAction(message("settings.retry")))
                 )
             )
         }

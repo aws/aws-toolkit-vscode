@@ -8,18 +8,28 @@ import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
+import software.aws.toolkits.resources.message
 import java.util.UUID
 import java.util.prefs.Preferences
 
 interface AwsSettings {
     var isTelemetryEnabled: Boolean
     var promptedForTelemetry: Boolean
+    var useDefaultCredentialRegion: UseAwsCredentialRegion
     val clientId: UUID
 
     companion object {
         @JvmStatic
         fun getInstance(): AwsSettings = ServiceManager.getService(AwsSettings::class.java)
     }
+}
+
+enum class UseAwsCredentialRegion(private val description: String) {
+    Always(message("settings.credentials.prompt_for_default_region_switch.always.description")),
+    Prompt(message("settings.credentials.prompt_for_default_region_switch.ask.description")),
+    Never(message("settings.credentials.prompt_for_default_region_switch.never.description"));
+
+    override fun toString(): String = description
 }
 
 @State(name = "aws", storages = [Storage("aws.xml")])
@@ -46,6 +56,12 @@ class DefaultAwsSettings : PersistentStateComponent<AwsConfiguration>, AwsSettin
             state.promptedForTelemetry = value
         }
 
+    override var useDefaultCredentialRegion: UseAwsCredentialRegion
+        get() = state.useDefaultCredentialRegion?.let { UseAwsCredentialRegion.valueOf(it) } ?: UseAwsCredentialRegion.Prompt
+        set(value) {
+            state.useDefaultCredentialRegion = value.name
+        }
+
     override val clientId: UUID
         @Synchronized get() = UUID.fromString(preferences.get(CLIENT_ID_KEY, UUID.randomUUID().toString())).also {
             preferences.put(CLIENT_ID_KEY, it.toString())
@@ -58,5 +74,6 @@ class DefaultAwsSettings : PersistentStateComponent<AwsConfiguration>, AwsSettin
 
 data class AwsConfiguration(
     var isTelemetryEnabled: Boolean? = null,
-    var promptedForTelemetry: Boolean? = null
+    var promptedForTelemetry: Boolean? = null,
+    var useDefaultCredentialRegion: String? = null
 )
