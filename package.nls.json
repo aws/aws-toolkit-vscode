@@ -302,7 +302,7 @@
     "AWS.samcli.deploy.stackName.error.length": "A stack name must not be longer than 128 characters",
     "AWS.samcli.deploy.statusbar.message": "$(cloud-upload) Deploying SAM Application to {0}...",
     "AWS.samcli.deploy.template.prompt": "Which SAM Template would you like to deploy to AWS?",
-    "AWS.samcli.configured.location": "Configured SAM CLI Location: {0}",
+    "AWS.samcli.configured.location": "SAM CLI Location: {0}",
     "AWS.samcli.error.notFound": "Unable to find the SAM CLI, which is required to create new Serverless Applications and debug them locally. If you have already installed the SAM CLI, update your User Settings by locating it.",
     "AWS.samcli.error.notFound.brief": "Could not get SAM CLI location",
     "AWS.samcli.error.invalid_schema_support_version": "Installed SAM executable does not support templates that require Event Schema selection. Required minimum version {0}, but found {1}",
