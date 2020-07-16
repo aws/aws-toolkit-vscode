@@ -12,6 +12,7 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.options.SearchableConfigurable;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.ui.ComboBox;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.ui.IdeBorderFactory;
@@ -26,7 +27,6 @@ import java.util.Objects;
 import java.util.concurrent.CompletionException;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
-import javax.swing.JRadioButton;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -56,9 +56,7 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
     private JPanel remoteDebugSettings;
     private JPanel applicationLevelSettings;
 
-    private JRadioButton prompt;
-    private JRadioButton always;
-    private JRadioButton never;
+    private ComboBox<UseAwsCredentialRegion> defaultRegionHandling;
 
     public AwsSettingsConfigurable(Project project) {
         this.project = project;
@@ -82,6 +80,7 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
         cloudDebugExecutablePath = createCliConfigurationElement(getCloudDebugExecutableInstance(), CLOUDDEBUG);
         samHelp = createHelpLink(HelpIds.SAM_CLI_INSTALL);
         samExecutablePath = createCliConfigurationElement(getSamExecutableInstance(), SAM);
+        defaultRegionHandling = new ComboBox<>(UseAwsCredentialRegion.values());
     }
 
     @NotNull
@@ -105,9 +104,7 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
                !Objects.equals(getCloudDebugTextboxInput(), getSavedExecutablePath(getCloudDebugExecutableInstance(), false)) ||
                isModified(showAllHandlerGutterIcons, lambdaSettings.getShowAllHandlerGutterIcons()) ||
                isModified(enableTelemetry, awsSettings.isTelemetryEnabled()) ||
-               isModified(always, awsSettings.getUseDefaultCredentialRegion() == UseAwsCredentialRegion.Always) ||
-               isModified(never, awsSettings.getUseDefaultCredentialRegion() == UseAwsCredentialRegion.Never) ||
-               isModified(prompt, awsSettings.getUseDefaultCredentialRegion() == UseAwsCredentialRegion.Prompt);
+               isModified(defaultRegionHandling, awsSettings.getUseDefaultCredentialRegion());
     }
 
     @Override
@@ -136,9 +133,7 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
         cloudDebugExecutablePath.setText(getSavedExecutablePath(getCloudDebugExecutableInstance(), false));
         showAllHandlerGutterIcons.setSelected(lambdaSettings.getShowAllHandlerGutterIcons());
         enableTelemetry.setSelected(awsSettings.isTelemetryEnabled());
-        always.setSelected(awsSettings.getUseDefaultCredentialRegion() == UseAwsCredentialRegion.Always);
-        never.setSelected(awsSettings.getUseDefaultCredentialRegion() == UseAwsCredentialRegion.Never);
-        prompt.setSelected(awsSettings.getUseDefaultCredentialRegion() == UseAwsCredentialRegion.Prompt);
+        defaultRegionHandling.setSelectedItem(awsSettings.getUseDefaultCredentialRegion());
     }
 
     @NotNull
@@ -266,13 +261,7 @@ public class AwsSettingsConfigurable implements SearchableConfigurable {
     private void saveAwsSettings() {
         AwsSettings awsSettings = AwsSettings.getInstance();
         awsSettings.setTelemetryEnabled(enableTelemetry.isSelected());
-        if (always.isSelected()) {
-            awsSettings.setUseDefaultCredentialRegion(UseAwsCredentialRegion.Always);
-        } else if (never.isSelected()) {
-            awsSettings.setUseDefaultCredentialRegion(UseAwsCredentialRegion.Never);
-        } else {
-            awsSettings.setUseDefaultCredentialRegion(UseAwsCredentialRegion.Prompt);
-        }
+        awsSettings.setUseDefaultCredentialRegion((UseAwsCredentialRegion) Objects.requireNonNull(defaultRegionHandling.getSelectedItem()));
     }
 
     private void saveLambdaSettings() {

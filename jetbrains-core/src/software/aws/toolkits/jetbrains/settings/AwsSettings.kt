@@ -8,6 +8,7 @@ import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
+import software.aws.toolkits.resources.message
 import java.util.UUID
 import java.util.prefs.Preferences
 
@@ -23,8 +24,12 @@ interface AwsSettings {
     }
 }
 
-enum class UseAwsCredentialRegion {
-    Always, Never, Prompt;
+enum class UseAwsCredentialRegion(private val description: String) {
+    Always(message("settings.credentials.prompt_for_default_region_switch.always.description")),
+    Prompt(message("settings.credentials.prompt_for_default_region_switch.ask.description")),
+    Never(message("settings.credentials.prompt_for_default_region_switch.never.description"));
+
+    override fun toString(): String = description
 }
 
 @State(name = "aws", storages = [Storage("aws.xml")])
