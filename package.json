@@ -32,7 +32,6 @@
     "preview": false,
     "qna": "https://github.com/aws/aws-toolkit-vscode/issues",
     "activationEvents": [
-        "onStartupFinished",
         "onCommand:aws.login",
         "onCommand:aws.credential.profile.create",
         "onCommand:aws.logout",
