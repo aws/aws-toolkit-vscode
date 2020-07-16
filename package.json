@@ -929,7 +929,7 @@
         "immutable": "^4.0.0-rc.12",
         "js-yaml": "^3.13.1",
         "jsonc-parser": "^2.0.2",
-        "lodash": "^4.17.15",
+        "lodash": "^4.17.19",
         "moment": "^2.24.0",
         "original-fs": "^1.1.0",
         "portfinder": "^1.0.25",
