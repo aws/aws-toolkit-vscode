@@ -4,9 +4,13 @@
  */
 
 import * as child_process from 'child_process'
+import * as path from 'path'
 import { downloadAndUnzipVSCode, resolveCliPathFromVSCodeExecutablePath } from 'vscode-test'
 
 const ENVVAR_VSCODE_TEST_VERSION = 'VSCODE_TEST_VERSION'
+
+const STABLE = 'stable'
+const MINIMUM = 'minimum'
 
 /**
  * Downloads and unzips a copy of VS Code to run tests against.
@@ -17,7 +21,12 @@ const ENVVAR_VSCODE_TEST_VERSION = 'VSCODE_TEST_VERSION'
  * VSCODE_TEST_VERSION prior to running the tests.
  */
 export async function setupVSCodeTestInstance(): Promise<string> {
-    const vsCodeVersion = process.env[ENVVAR_VSCODE_TEST_VERSION] || 'stable'
+    let vsCodeVersion = process.env[ENVVAR_VSCODE_TEST_VERSION]
+    if (!vsCodeVersion) {
+        vsCodeVersion = STABLE
+    } else if (vsCodeVersion === MINIMUM) {
+        vsCodeVersion = getMinVsCodeVersion()
+    }
 
     console.log(`About to set up test instance of VS Code, version ${vsCodeVersion}...`)
     const vsCodeExecutablePath = await downloadAndUnzipVSCode(vsCodeVersion)
@@ -36,7 +45,7 @@ export async function installVSCodeExtension(vsCodeExecutablePath: string, exten
     }
     const spawnResult = child_process.spawnSync(vsCodeCliPath, cmdArgs, {
         encoding: 'utf-8',
-        stdio: 'inherit'
+        stdio: 'inherit',
     })
 
     if (spawnResult.status !== 0) {
@@ -50,4 +59,16 @@ export async function installVSCodeExtension(vsCodeExecutablePath: string, exten
     if (spawnResult.stdout) {
         console.log(spawnResult.stdout)
     }
+}
+
+function getMinVsCodeVersion(): string {
+    // tslint:disable-next-line:no-var-requires no-unsafe-any
+    const vsCodeVersion: string | undefined = require(path.join('..', 'package.json'))?.engines?.vscode
+    if (!vsCodeVersion) {
+        throw Error('Minimum version specified to run tests, but package.json does not have a .engine.vscode!')
+    }
+    // We assume that we specify a minium, so it matches ^<number>, so remove ^'s
+    const sanitizedVersion = vsCodeVersion.replace('^', '')
+    console.log(`Using minimum VSCode version specified in package.json: ${sanitizedVersion}`)
+    return sanitizedVersion
 }
