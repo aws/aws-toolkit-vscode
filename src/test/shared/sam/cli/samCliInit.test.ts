@@ -18,6 +18,7 @@ import {
     SamCliValidator,
     SamCliValidatorResult,
     SamCliVersionValidation,
+    SamCliVersionValidatorResult,
 } from '../../../../shared/sam/cli/samCliValidator'
 import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
 import { getTestLogger } from '../../../globalSetup.test'
@@ -64,6 +65,10 @@ describe('runSamCliInit', async () => {
                     validation: SamCliVersionValidation.Valid,
                 },
             }
+        }
+
+        public async getVersionValidatorResult(): Promise<SamCliVersionValidatorResult> {
+            return { validation: SamCliVersionValidation.VersionNotParseable }
         }
     }
 
