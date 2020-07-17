@@ -3,8 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.java
 
-import com.intellij.ide.plugins.PluginManager
-import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.externalSystem.ExternalSystemModulePropertyManager
 import com.intellij.openapi.externalSystem.util.ExternalSystemApiUtil
 import com.intellij.openapi.module.Module
@@ -13,6 +11,7 @@ import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.psi.PsiElement
 import org.jetbrains.idea.maven.project.MavenProjectsManager
+import software.aws.toolkits.jetbrains.core.plugins.pluginIsInstalledAndEnabled
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.resources.message
@@ -48,7 +47,7 @@ class JavaLambdaBuilder : LambdaBuilder() {
             ?: throw IllegalStateException(message("lambda.build.unable_to_locate_project_root", module))
 
     private fun isMaven(module: Module): Boolean {
-        if (PluginManager.getPlugin(PluginId.getId("org.jetbrains.idea.maven"))?.isEnabled == true) {
+        if (pluginIsInstalledAndEnabled("org.jetbrains.idea.maven")) {
             return MavenProjectsManager.getInstance(module.project).isMavenizedModule(module)
         }
 
