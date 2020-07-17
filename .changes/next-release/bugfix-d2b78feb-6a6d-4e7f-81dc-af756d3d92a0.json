@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix several uncaught exceptions caused by plugins being installed but not enabled"
+}
