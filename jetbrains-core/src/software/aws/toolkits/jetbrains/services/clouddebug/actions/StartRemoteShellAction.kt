@@ -4,11 +4,9 @@
 package software.aws.toolkits.jetbrains.services.clouddebug.actions
 
 import com.intellij.execution.process.CapturingProcessHandler
-import com.intellij.ide.plugins.PluginManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.runInEdt
-import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
@@ -25,6 +23,7 @@ import software.aws.toolkits.jetbrains.core.executables.CloudDebugExecutable
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutable
+import software.aws.toolkits.jetbrains.core.plugins.pluginIsInstalledAndEnabled
 import software.aws.toolkits.jetbrains.services.clouddebug.CliOutputParser
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugConstants
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugConstants.INSTRUMENTED_STATUS
@@ -46,7 +45,7 @@ class StartRemoteShellAction(private val project: Project, private val container
 ) {
 
     private val disabled by lazy {
-        !PluginManager.isPluginInstalled(PluginId.findId("org.jetbrains.plugins.terminal")) ||
+        !pluginIsInstalledAndEnabled("org.jetbrains.plugins.terminal") ||
             // exec doesn't allow you to go into the sidecar container
             container.containerDefinition.name() == CloudDebugConstants.CLOUD_DEBUG_SIDECAR_CONTAINER_NAME ||
             !EcsUtils.isInstrumented(container.service.serviceArn())
