@@ -6,6 +6,9 @@
 import * as path from 'path'
 import * as nls from 'vscode-nls'
 
+import { readFile } from 'fs-extra'
+import { getPortPromise } from 'portfinder'
+
 const localize = nls.loadMessageBundle()
 
 import { ExtensionContext, LanguageConfiguration, languages, window, workspace } from 'vscode'
@@ -40,14 +43,56 @@ const yamlLanguageConfiguration: LanguageConfiguration = {
     },
 }
 
+interface LaunchJSON {
+    version: string
+    configurations: {
+        name: string
+        port?: number
+    }[]
+    compounds: {
+        name: string
+        configuarations: string[]
+    }[]
+}
+
+const SSMDOCUMENT_LANGUAGESERVER_DEFAULTPORT = 6010
+
+async function getLanguageServerDebuggerPort(extensionContext: ExtensionContext): Promise<number> {
+    // get the port from launch.json or use 6010 as default if not set
+    const launchJSONString: string = await readFile(
+        path.join(extensionContext.extensionPath, '.vscode', 'launch.json'),
+        {
+            encoding: 'utf8',
+        }
+    )
+
+    const commentRemoved = launchJSONString
+        .split('\n')
+        .map(line => {
+            if (!line.startsWith('//')) {
+                return line
+            }
+        })
+        .join('\n')
+
+    const launchJSON: LaunchJSON = JSON.parse(commentRemoved)
+    const launchPort =
+        launchJSON.configurations.find(config => config.name === 'Attach to SSM Document Language Server')?.port ||
+        SSMDOCUMENT_LANGUAGESERVER_DEFAULTPORT
+
+    return getPortPromise({ port: launchPort })
+}
+
 export async function activate(extensionContext: ExtensionContext) {
     const toDispose = extensionContext.subscriptions
 
     // The server is implemented in node
     const serverModule = extensionContext.asAbsolutePath(path.join('dist/src/ssmDocument/ssm/', 'ssmServer.js'))
     // The debug options for the server
-    // --inspect=6010: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
-    const debugOptions = { execArgv: ['--nolazy', '--inspect=6010'] }
+
+    const debuggerPort = await getLanguageServerDebuggerPort(extensionContext)
+    // --inspect=${port}: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
+    const debugOptions = { execArgv: ['--nolazy', `--inspect=${debuggerPort}`] }
 
     // If the extension is launch in debug mode the debug server options are use
     // Otherwise the run options are used

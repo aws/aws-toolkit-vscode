@@ -26,6 +26,14 @@
             "outFiles": ["${workspaceRoot}/dist/src/stepFunctions/amazonStatesLanguage/server.js"]
         },
         {
+            "name": "Attach to SSM Document Language Server",
+            "type": "node",
+            "request": "attach",
+            "port": 6010,
+            "restart": true,
+            "outFiles": ["${workspaceRoot}/dist/src/ssmDocument/ssm/ssmServer.js"]
+        },
+        {
             "name": "Extension (webpack)",
             "type": "extensionHost",
             "request": "launch",
@@ -88,6 +96,12 @@
             },
             "outFiles": ["${workspaceFolder}/dist/src/integrationTest/**/*.js"],
             "preLaunchTask": "npm: testCompile"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Extension + Attach to SSM Document Language Server",
+            "configurations": ["Extension", "Attach to SSM Document Language Server"]
         }
     ]
 }
