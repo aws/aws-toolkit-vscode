@@ -12,6 +12,7 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNo
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.CacheBackedAwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.services.sqs.resources.SqsResources
+import software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindow
 
 class SqsServiceNode(
     project: Project,
@@ -33,7 +34,7 @@ class SqsQueueNode(
     queueUrl,
     AwsIcons.Resources.Sqs.SQS_QUEUE
 ) {
-    private val queue = Queue(queueUrl, nodeProject.activeRegion())
+    val queue = Queue(queueUrl, nodeProject.activeRegion())
 
     override fun resourceType() = "queue"
 
@@ -42,6 +43,6 @@ class SqsQueueNode(
     override fun displayName(): String = queue.queueName
 
     override fun onDoubleClick() {
-        // TODO: create SQS tool window
+        SqsWindow.getInstance(nodeProject)?.pollMessage(queue)
     }
 }
