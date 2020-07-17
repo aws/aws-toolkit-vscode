@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.core.credentials.sso
 
+import com.nhaarman.mockitokotlin2.KStubbing
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
@@ -79,54 +80,11 @@ class SsoAccessTokenProviderTest {
     @Test
     fun getAccessTokenWithClientRegistrationCache() {
         val expirationClientRegistration = clock.instant().plusSeconds(120)
-        ssoCache.stub {
-            on(
-                ssoCache.loadAccessToken(ssoUrl)
-            ).thenReturn(
-                null
-            )
-
-            on(
-                ssoCache.loadClientRegistration(ssoRegion)
-            ).thenReturn(
-                ClientRegistration(clientId, clientSecret, expirationClientRegistration)
-            )
-        }
+        setupCacheStub(expirationClientRegistration)
 
         ssoOidcClient.stub {
-            on(
-                ssoOidcClient.startDeviceAuthorization(
-                    StartDeviceAuthorizationRequest.builder()
-                        .clientId(clientId)
-                        .clientSecret(clientSecret)
-                        .startUrl(ssoUrl)
-                        .build()
-                )
-            ).thenReturn(
-                StartDeviceAuthorizationResponse.builder()
-                    .expiresIn(120)
-                    .deviceCode("dummyCode")
-                    .userCode("dummyUserCode")
-                    .verificationUri("someUrl")
-                    .verificationUriComplete("someUrlComplete")
-                    .build()
-            )
-
-            on(
-                ssoOidcClient.createToken(
-                    CreateTokenRequest.builder()
-                        .clientId(clientId)
-                        .clientSecret(clientSecret)
-                        .deviceCode("dummyCode")
-                        .grantType("urn:ietf:params:oauth:grant-type:device_code")
-                        .build()
-                )
-            ).thenReturn(
-                CreateTokenResponse.builder()
-                    .accessToken("accessToken")
-                    .expiresIn(180)
-                    .build()
-            )
+            stubStartDeviceAuthorization()
+            stubCreateToken()
         }
 
         val accessToken = runBlocking { sut.accessToken() }
@@ -150,20 +108,7 @@ class SsoAccessTokenProviderTest {
     @Test
     fun getAccessTokenWithoutCaches() {
         val expirationClientRegistration = clock.instant().plusSeconds(120)
-
-        ssoCache.stub {
-            on(
-                ssoCache.loadAccessToken(ssoUrl)
-            ).thenReturn(
-                null
-            )
-
-            on(
-                ssoCache.loadClientRegistration(ssoRegion)
-            ).thenReturn(
-                null
-            )
-        }
+        setupCacheStub(returnValue = null)
 
         ssoOidcClient.stub {
             on(
@@ -181,39 +126,8 @@ class SsoAccessTokenProviderTest {
                     .build()
             )
 
-            on(
-                ssoOidcClient.startDeviceAuthorization(
-                    StartDeviceAuthorizationRequest.builder()
-                        .clientId(clientId)
-                        .clientSecret(clientSecret)
-                        .startUrl(ssoUrl)
-                        .build()
-                )
-            ).thenReturn(
-                StartDeviceAuthorizationResponse.builder()
-                    .expiresIn(120)
-                    .deviceCode("dummyCode")
-                    .userCode("dummyUserCode")
-                    .verificationUri("someUrl")
-                    .verificationUriComplete("someUrlComplete")
-                    .build()
-            )
-
-            on(
-                ssoOidcClient.createToken(
-                    CreateTokenRequest.builder()
-                        .clientId(clientId)
-                        .clientSecret(clientSecret)
-                        .deviceCode("dummyCode")
-                        .grantType("urn:ietf:params:oauth:grant-type:device_code")
-                        .build()
-                )
-            ).thenReturn(
-                CreateTokenResponse.builder()
-                    .accessToken("accessToken")
-                    .expiresIn(180)
-                    .build()
-            )
+            stubStartDeviceAuthorization()
+            stubCreateToken()
         }
 
         val accessToken = runBlocking { sut.accessToken() }
@@ -240,56 +154,16 @@ class SsoAccessTokenProviderTest {
     fun getAccessTokenWithoutCachesMultiplePolls() {
         val expirationClientRegistration = clock.instant().plusSeconds(120)
 
-        ssoCache.stub {
-            on(
-                ssoCache.loadAccessToken(ssoUrl)
-            ).thenReturn(
-                null
-            )
-
-            on(
-                ssoCache.loadClientRegistration(ssoRegion)
-            ).thenReturn(
-                ClientRegistration(clientId, clientSecret, expirationClientRegistration)
-            )
-        }
+        setupCacheStub(expirationClientRegistration)
 
         ssoOidcClient.stub {
+            stubStartDeviceAuthorization(interval = 1)
             on(
-                ssoOidcClient.startDeviceAuthorization(
-                    StartDeviceAuthorizationRequest.builder()
-                        .clientId(clientId)
-                        .clientSecret(clientSecret)
-                        .startUrl(ssoUrl)
-                        .build()
-                )
-            ).thenReturn(
-                StartDeviceAuthorizationResponse.builder()
-                    .expiresIn(120)
-                    .deviceCode("dummyCode")
-                    .userCode("dummyUserCode")
-                    .verificationUri("someUrl")
-                    .verificationUriComplete("someUrlComplete")
-                    .interval(1)
-                    .build()
-            )
-
-            on(
-                ssoOidcClient.createToken(
-                    CreateTokenRequest.builder()
-                        .clientId(clientId)
-                        .clientSecret(clientSecret)
-                        .deviceCode("dummyCode")
-                        .grantType("urn:ietf:params:oauth:grant-type:device_code")
-                        .build()
-                )
+                ssoOidcClient.createToken(createTokenRequest())
             ).thenThrow(
                 AuthorizationPendingException.builder().build()
             ).thenReturn(
-                CreateTokenResponse.builder()
-                    .accessToken("accessToken")
-                    .expiresIn(180)
-                    .build()
+                createTokenResponse()
             )
         }
 
@@ -320,51 +194,11 @@ class SsoAccessTokenProviderTest {
     fun exceptionStopsPolling() {
         val expirationClientRegistration = clock.instant().plusSeconds(120)
 
-        ssoCache.stub {
-            on(
-                ssoCache.loadAccessToken(ssoUrl)
-            ).thenReturn(
-                null
-            )
-
-            on(
-                ssoCache.loadClientRegistration(ssoRegion)
-            ).thenReturn(
-                ClientRegistration(clientId, clientSecret, expirationClientRegistration)
-            )
-        }
+        setupCacheStub(expirationClientRegistration)
 
         ssoOidcClient.stub {
-            on(
-                ssoOidcClient.startDeviceAuthorization(
-                    StartDeviceAuthorizationRequest.builder()
-                        .clientId(clientId)
-                        .clientSecret(clientSecret)
-                        .startUrl(ssoUrl)
-                        .build()
-                )
-            ).thenReturn(
-                StartDeviceAuthorizationResponse.builder()
-                    .expiresIn(120)
-                    .deviceCode("dummyCode")
-                    .userCode("dummyUserCode")
-                    .verificationUri("someUrl")
-                    .verificationUriComplete("someUrlComplete")
-                    .build()
-            )
-
-            on(
-                ssoOidcClient.createToken(
-                    CreateTokenRequest.builder()
-                        .clientId(clientId)
-                        .clientSecret(clientSecret)
-                        .deviceCode("dummyCode")
-                        .grantType("urn:ietf:params:oauth:grant-type:device_code")
-                        .build()
-                )
-            ).thenThrow(
-                InvalidRequestException.builder().build()
-            )
+            stubStartDeviceAuthorization()
+            stubCreateToken(throws = true)
         }
 
         assertThatThrownBy { runBlocking { sut.accessToken() } }.isInstanceOf(InvalidRequestException::class.java)
@@ -378,57 +212,17 @@ class SsoAccessTokenProviderTest {
     @Test
     fun backOffTimeIsRespected() {
         val expirationClientRegistration = clock.instant().plusSeconds(120)
-
-        ssoCache.stub {
-            on(
-                ssoCache.loadAccessToken(ssoUrl)
-            ).thenReturn(
-                null
-            )
-
-            on(
-                ssoCache.loadClientRegistration(ssoRegion)
-            ).thenReturn(
-                ClientRegistration(clientId, clientSecret, expirationClientRegistration)
-            )
-        }
+        setupCacheStub(expirationClientRegistration)
 
         ssoOidcClient.stub {
-            on(
-                ssoOidcClient.startDeviceAuthorization(
-                    StartDeviceAuthorizationRequest.builder()
-                        .clientId(clientId)
-                        .clientSecret(clientSecret)
-                        .startUrl(ssoUrl)
-                        .build()
-                )
-            ).thenReturn(
-                StartDeviceAuthorizationResponse.builder()
-                    .expiresIn(120)
-                    .deviceCode("dummyCode")
-                    .userCode("dummyUserCode")
-                    .verificationUri("someUrl")
-                    .verificationUriComplete("someUrlComplete")
-                    .interval(1)
-                    .build()
-            )
+            stubStartDeviceAuthorization(interval = 1)
 
             on(
-                ssoOidcClient.createToken(
-                    CreateTokenRequest.builder()
-                        .clientId(clientId)
-                        .clientSecret(clientSecret)
-                        .deviceCode("dummyCode")
-                        .grantType("urn:ietf:params:oauth:grant-type:device_code")
-                        .build()
-                )
+                ssoOidcClient.createToken(createTokenRequest())
             ).thenThrow(
                 SlowDownException.builder().build()
             ).thenReturn(
-                CreateTokenResponse.builder()
-                    .accessToken("accessToken")
-                    .expiresIn(180)
-                    .build()
+                createTokenResponse()
             )
         }
 
@@ -459,19 +253,7 @@ class SsoAccessTokenProviderTest {
 
     @Test
     fun failToGetClientRegistrationLeadsToError() {
-        ssoCache.stub {
-            on(
-                ssoCache.loadAccessToken(ssoUrl)
-            ).thenReturn(
-                null
-            )
-
-            on(
-                ssoCache.loadClientRegistration(ssoRegion)
-            ).thenReturn(
-                null
-            )
-        }
+        setupCacheStub(returnValue = null)
 
         ssoOidcClient.stub {
             on(
@@ -490,19 +272,7 @@ class SsoAccessTokenProviderTest {
 
     @Test
     fun invalidClientRegistrationClearsTheCache() {
-        ssoCache.stub {
-            on(
-                ssoCache.loadAccessToken(ssoUrl)
-            ).thenReturn(
-                null
-            )
-
-            on(
-                ssoCache.loadClientRegistration(ssoRegion)
-            ).thenReturn(
-                ClientRegistration(clientId, clientSecret, Instant.now(clock))
-            )
-        }
+        setupCacheStub(Instant.now(clock))
 
         ssoOidcClient.stub {
             on(
@@ -523,4 +293,69 @@ class SsoAccessTokenProviderTest {
 
         verify(ssoCache).invalidateAccessToken(ssoUrl)
     }
+
+    private fun setupCacheStub(expirationClientRegistration: Instant) {
+        setupCacheStub(ClientRegistration(clientId, clientSecret, expirationClientRegistration))
+    }
+
+    private fun setupCacheStub(returnValue: ClientRegistration?) {
+        ssoCache.stub {
+            on(
+                ssoCache.loadAccessToken(ssoUrl)
+            ).thenReturn(
+                null
+            )
+
+            on(
+                ssoCache.loadClientRegistration(ssoRegion)
+            ).thenReturn(
+                returnValue
+            )
+        }
+    }
+
+    private fun KStubbing<SsoOidcClient>.stubStartDeviceAuthorization(interval: Int? = null) {
+        on(
+            ssoOidcClient.startDeviceAuthorization(
+                StartDeviceAuthorizationRequest.builder()
+                    .clientId(clientId)
+                    .clientSecret(clientSecret)
+                    .startUrl(ssoUrl)
+                    .build()
+            )
+        ).thenReturn(
+            StartDeviceAuthorizationResponse.builder()
+                .expiresIn(120)
+                .deviceCode("dummyCode")
+                .userCode("dummyUserCode")
+                .verificationUri("someUrl")
+                .verificationUriComplete("someUrlComplete")
+                .apply { if (interval != null) interval(interval) }
+                .build()
+        )
+    }
+
+    private fun KStubbing<SsoOidcClient>.stubCreateToken(throws: Boolean = false) {
+        on(
+            ssoOidcClient.createToken(createTokenRequest())
+        ).apply {
+            if (throws) {
+                thenThrow(InvalidRequestException.builder().build())
+            } else {
+                thenReturn(createTokenResponse())
+            }
+        }
+    }
+
+    private fun createTokenRequest(): CreateTokenRequest = CreateTokenRequest.builder()
+        .clientId(clientId)
+        .clientSecret(clientSecret)
+        .deviceCode("dummyCode")
+        .grantType("urn:ietf:params:oauth:grant-type:device_code")
+        .build()
+
+    private fun createTokenResponse(): CreateTokenResponse = CreateTokenResponse.builder()
+        .accessToken("accessToken")
+        .expiresIn(180)
+        .build()
 }

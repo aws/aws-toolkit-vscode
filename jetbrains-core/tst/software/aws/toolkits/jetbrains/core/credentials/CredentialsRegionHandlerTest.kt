@@ -18,6 +18,7 @@ import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.jetbrains.settings.AwsSettingsRule
 import software.aws.toolkits.jetbrains.settings.UseAwsCredentialRegion
 import software.aws.toolkits.jetbrains.utils.NotificationListenerRule
+import software.aws.toolkits.resources.message
 
 class CredentialsRegionHandlerTest {
 
@@ -119,9 +120,8 @@ class CredentialsRegionHandlerTest {
         val newSelected = sut.determineSelectedRegion(identifier, selectedRegion = selectedRegion)
 
         assertThat(newSelected).isEqualTo(selectedRegion)
-        assertThat(notificationListener.notifications).hasSize(1).hasOnlyOneElementSatisfying {
-            assertThat(it.actions).hasSize(3)
-        }
+        val notification = getOnlyNotification()
+        assertThat(notification.actions).hasSize(3)
     }
 
     @Test
@@ -134,7 +134,7 @@ class CredentialsRegionHandlerTest {
         val newSelected = sut.determineSelectedRegion(identifier, selectedRegion = defaultRegion)
 
         assertThat(newSelected).isEqualTo(defaultRegion)
-        assertThat(notificationListener.notifications).isEmpty()
+        assertThat(notificationListener.notifications.filter { it.title == message("aws.notification.title") }).isEmpty()
     }
 
     @Test
@@ -147,9 +147,7 @@ class CredentialsRegionHandlerTest {
 
         sut.determineSelectedRegion(identifier, selectedRegion = selectedRegion)
 
-        assertThat(notificationListener.notifications).hasSize(1)
-
-        val notification = notificationListener.notifications.first()
+        val notification = getOnlyNotification()
 
         runInEdtAndWait {
             Notification.fire(notification, notification.actions.first { it.templateText == "Never" })
@@ -168,14 +166,19 @@ class CredentialsRegionHandlerTest {
 
         sut.determineSelectedRegion(identifier, selectedRegion = selectedRegion)
 
-        assertThat(notificationListener.notifications).hasSize(1)
-
-        val notification = notificationListener.notifications.first()
+        val notification = getOnlyNotification()
 
         runInEdtAndWait {
             Notification.fire(notification, notification.actions.first { it.templateText == "Always" }, TestDataProvider(projectRule.project))
         }
 
         assertThat(AwsSettings.getInstance().useDefaultCredentialRegion).isEqualTo(UseAwsCredentialRegion.Always)
+    }
+
+    private fun getOnlyNotification(): Notification {
+        val credentialNotifications = notificationListener.notifications.filter { it.title == message("aws.notification.title") }
+        assertThat(credentialNotifications).hasSize(1)
+
+        return credentialNotifications.first()
     }
 }
