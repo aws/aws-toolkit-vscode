@@ -5,8 +5,6 @@ package software.aws.toolkits.jetbrains.services.ecs.execution
 
 import com.intellij.docker.dockerFile.DockerFileType
 import com.intellij.docker.dockerFile.parser.psi.DockerPsiCommand
-import com.intellij.ide.plugins.PluginManager
-import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.project.Project
@@ -22,6 +20,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiManager
 import com.intellij.psi.impl.source.tree.LeafPsiElement
 import software.aws.toolkits.core.utils.tryOrNull
+import software.aws.toolkits.jetbrains.core.plugins.pluginIsInstalledAndEnabled
 import software.aws.toolkits.resources.message
 import java.awt.event.ActionEvent
 import java.awt.event.ActionListener
@@ -29,7 +28,7 @@ import java.io.File
 
 object DockerUtil {
     @JvmStatic
-    fun dockerPluginAvailable() = PluginId.findId("Docker")?.let { PluginManager.isPluginInstalled(it) } == true
+    fun dockerPluginAvailable() = pluginIsInstalledAndEnabled("Docker")
 }
 
 class ImportFromDockerfile @JvmOverloads constructor(
