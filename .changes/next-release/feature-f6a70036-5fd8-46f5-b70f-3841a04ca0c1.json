@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Several enhancements to the UX around connecting to AWS including:\n- Making connection settings more visible (now visible in the AWS Explorer)\n- Automatically selecting 'default' profile if it exists\n- Better visibility of connection validation workflow (more information when unable to connect)\n- Improved handling of profile-file refreshes\n- Handling of default regions on credential profile\n- Better UX around partitions\n- Adding ability to refresh connection from the UI"
+}
