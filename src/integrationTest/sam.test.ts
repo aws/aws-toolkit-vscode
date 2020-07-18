@@ -141,6 +141,7 @@ function logSeparator() {
 
 function configureToolkitLogging() {
     const logger = getLogger()
+    console.log('***** configureToolkitLogging *****')
 
     if (logger instanceof WinstonToolkitLogger) {
         // Ensure we're logging everything possible
