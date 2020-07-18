@@ -11,13 +11,14 @@ import { mkdir, rmrf } from '../../shared/filesystem'
 import { getLogger, setLogger } from '../../shared/logger/logger'
 import { makeSampleSamTemplateYaml, strToYamlFile } from '../../test/shared/cloudformation/cloudformationTestUtils'
 import { TestLogger } from '../../test/testLogger'
-import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
+import { getTestWorkspaceFolder, activateExtension } from '../integrationTestsUtilities'
+import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 
 /**
  * Note: these tests are pretty shallow right now. They do not test the following:
  * * Adding/removing workspace folders
  */
-describe.skip('CloudFormation Template Registry Manager', async () => {
+describe('CloudFormation Template Registry Manager', async () => {
     let registry: CloudFormationTemplateRegistry
     let manager: CloudFormationTemplateRegistryManager
     let workspaceDir: string
@@ -26,7 +27,11 @@ describe.skip('CloudFormation Template Registry Manager', async () => {
     let dir: number = 0
     let testLogger: TestLogger | undefined
 
-    before(() => {
+    before(async () => {
+        console.log('Activating extensions...')
+        await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
+        console.log('Extensions activated')
+
         try {
             getLogger()
         } catch (e) {
