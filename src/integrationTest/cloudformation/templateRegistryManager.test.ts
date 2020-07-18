@@ -24,14 +24,14 @@ describe('CloudFormation Template Registry Manager', async () => {
     let testDir: string
     let testDirNested: string
     let dir: number = 0
-    let removeLoggerAfterTest: boolean = false
+    let testLogger: TestLogger | undefined
 
     before(() => {
         try {
             getLogger()
         } catch (e) {
-            removeLoggerAfterTest = true
-            setLogger(new TestLogger())
+            testLogger = new TestLogger()
+            setLogger(testLogger)
         }
         workspaceDir = getTestWorkspaceFolder()
     })
@@ -51,9 +51,11 @@ describe('CloudFormation Template Registry Manager', async () => {
     })
 
     after(() => {
-        if (removeLoggerAfterTest) {
+        if (getLogger() === testLogger) {
             console.log('***** Clearing test logger *****')
             setLogger(undefined)
+        } else {
+            console.log('***** logger is something else (extension assigned?), leaving *****')
         }
     })
 
