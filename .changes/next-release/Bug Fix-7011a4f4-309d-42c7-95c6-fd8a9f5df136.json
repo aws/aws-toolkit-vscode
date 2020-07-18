@@ -1,4 +1,0 @@
-{
-    "type": "Bug Fix",
-    "description": "Amazon States Language Server: Adds validation of next property for Catch of Map state."
-}

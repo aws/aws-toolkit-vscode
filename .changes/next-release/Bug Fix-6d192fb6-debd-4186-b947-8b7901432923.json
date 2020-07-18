@@ -1,4 +1,0 @@
-{
-    "type": "Bug Fix",
-    "description": "Makes the ItemsPath property of Map state optional in ASL linter."
-}
