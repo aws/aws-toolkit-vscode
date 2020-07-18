@@ -47,7 +47,7 @@ phases:
         commands:
             - export AWS_TOOLKIT_TEST_USER_DIR=/tmp/
             - export AWS_TOOLKIT_TEST_NO_COLOR=1
-            - export NO_COVERAGE=true
+            # - export NO_COVERAGE=true
             - npm install --unsafe-perm
             - xvfb-run npm run integrationTest
 
