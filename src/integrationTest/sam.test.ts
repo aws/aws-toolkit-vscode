@@ -177,7 +177,9 @@ describe('SAM Integration Tests', async () => {
     })
 
     after(async () => {
-        tryRemoveFolder(testSuiteRoot)
+        if (testSuiteRoot) {
+            tryRemoveFolder(testSuiteRoot)
+        }
     })
 
     for (const scenario of scenarios) {
