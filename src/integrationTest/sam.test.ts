@@ -32,17 +32,17 @@ interface TestScenario {
 // When testing additional runtimes, consider pulling the docker container in buildspec\linuxIntegrationTests.yml
 // to reduce the chance of automated tests timing out.
 const scenarios: TestScenario[] = [
-    {
-        runtime: 'nodejs10.x',
-        path: 'hello-world/app.js',
-        debugSessionType: 'node2',
-        language: 'javascript',
-    },
+    // {
+    //     runtime: 'nodejs10.x',
+    //     path: 'hello-world/app.js',
+    //     debugSessionType: 'node2',
+    //     language: 'javascript',
+    // },
     { runtime: 'nodejs12.x', path: 'hello-world/app.js', debugSessionType: 'node2', language: 'javascript' },
-    { runtime: 'python2.7', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
-    { runtime: 'python3.6', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
+    // { runtime: 'python2.7', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
+    // { runtime: 'python3.6', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
     { runtime: 'python3.7', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
-    { runtime: 'python3.8', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
+    // { runtime: 'python3.8', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
     // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr' }
 ]
 
@@ -148,7 +148,11 @@ function configureToolkitLogging() {
         // The logs help to diagnose SAM integration test failures
         logger.logToConsole()
     } else {
-        assert.fail('Unexpected extension logger')
+        const x = `WEIRD LOGGER ${typeof logger}`
+        logSeparator()
+        console.log(x)
+        logSeparator()
+        assert.fail('Unexpected extension logger ' + x)
     }
 }
 

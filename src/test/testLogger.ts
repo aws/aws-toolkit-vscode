@@ -9,6 +9,10 @@ import { Loggable, Logger, LogLevel } from '../shared/logger'
  * In-memory Logger implementation suitable for use by tests.
  */
 export class TestLogger implements Logger {
+    public constructor() {
+        console.log('***** TEST LOGGER CREATED *****')
+    }
+
     private readonly loggedEntries: {
         logLevel: LogLevel
         entry: Loggable
