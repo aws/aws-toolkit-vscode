@@ -1,4 +1,0 @@
-{
-    "type": "Feature",
-    "description": "Added `dotnetcore3.1` app creation and local run support. Local debug is not currently supported."
-}
