@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "An extension for working with Amazon Web Services",
-    "version": "1.11.0-SNAPSHOT",
+    "version": "1.12.0-SNAPSHOT",
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {
@@ -918,7 +918,7 @@
     },
     "dependencies": {
         "adm-zip": "^0.4.13",
-        "amazon-states-language-service": "^1.1.2",
+        "amazon-states-language-service": "^1.1.6",
         "async-lock": "^1.1.3",
         "aws-sdk": "^2.581.0",
         "cloudformation-schema-js-yaml": "^1.0.1",
@@ -929,7 +929,7 @@
         "immutable": "^4.0.0-rc.12",
         "js-yaml": "^3.13.1",
         "jsonc-parser": "^2.0.2",
-        "lodash": "^4.17.15",
+        "lodash": "^4.17.19",
         "moment": "^2.24.0",
         "original-fs": "^1.1.0",
         "portfinder": "^1.0.25",

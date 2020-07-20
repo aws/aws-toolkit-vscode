@@ -5,6 +5,9 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
+
+const localize = nls.loadMessageBundle()
 
 import { access } from 'fs-extra'
 import { getHandlerConfig } from '../../lambda/config/templates'
@@ -39,6 +42,7 @@ import {
     makeInputTemplate,
     waitForDebugPort,
 } from './localLambdaRunner'
+import { getSamCliContext, getSamCliDockerImageName } from '../sam/cli/samCliContext'
 
 export const CSHARP_LANGUAGE = 'csharp'
 export const CSHARP_ALLFILES: vscode.DocumentFilter[] = [
@@ -151,6 +155,17 @@ async function onLocalInvokeCommand(
     })
     let invokeResult: Result = 'Succeeded'
     const lambdaRuntime = CloudFormation.getRuntime(resource)
+
+    // TODO: Remove this line to enable dotnetcore3.1 debugging when it becomes available
+    if (lambdaRuntime === 'dotnetcore3.1' && lambdaLocalInvokeParams.isDebug) {
+        vscode.window.showWarningMessage(
+            localize(
+                'AWS.output.sam.local.no.net.3.1.debug',
+                'SAM debugging is not supported for dotnetcore3.1 runtime. Function will run locally without debug.'
+            )
+        )
+        lambdaLocalInvokeParams.isDebug = false
+    }
 
     try {
         // Switch over to the output channel so the user has feedback that we're getting things ready
@@ -463,15 +478,22 @@ async function _installDebugger(
     try {
         const vsdbgPath = getDebuggerPath(targetFolder)
 
+        const samCliContext = getSamCliContext()
+        const samCliVersionValidatorResult = await samCliContext.validator.getVersionValidatorResult()
+        const samCliVersion = samCliVersionValidatorResult.version
+
+        const imageStr = getSamCliDockerImageName(samCliVersion, lambdaRuntime)
+
         channelLogger.info(
             'AWS.samcli.local.invoke.debugger.install',
-            'Installing .NET Core Debugger to {0}...',
-            vsdbgPath
+            'Installing .NET Core Debugger to {0} using Docker image {1}...',
+            vsdbgPath,
+            imageStr
         )
 
         await dockerClient.invoke({
             command: 'run',
-            image: `lambci/lambda:${lambdaRuntime}`,
+            image: imageStr,
             removeOnExit: true,
             mount: {
                 type: 'bind',
