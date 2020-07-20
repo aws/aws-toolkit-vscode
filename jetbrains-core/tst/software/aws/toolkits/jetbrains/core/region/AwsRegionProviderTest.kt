@@ -173,11 +173,45 @@ class AwsRegionProviderTest {
     }
 
     @Test
+    fun noUsEast1FallbackToFirstRegionInMetadata() {
+        val regionProvider = createRegionDataProvider(
+            """
+            {
+                "partitions": [
+                    {
+                        "defaults": {
+                            "hostname": "{service}.{region}.{dnsSuffix}",
+                            "protocols": ["https"],
+                            "signatureVersions": ["v4"]
+                        },
+                        "dnsSuffix": "amazonaws.com",
+                        "partition": "aws",
+                        "partitionName": "AWS Standard",
+                        "regionRegex": "^(us|eu|ap|sa|ca|me)\\-\\w+\\-\\d+$",
+                        "regions": {
+                            "us-region-1": {
+                                "description": "Blah"
+                            }
+                        },
+                        "services": {}
+                    }
+                ],
+                "version": 3
+            }
+            """.trimIndent()
+        )
+
+        val awsRegionProvider = AwsRegionProvider(regionProvider)
+        assertThat(awsRegionProvider.defaultRegion().id).isEqualTo("us-region-1")
+    }
+
+    @Test
     fun emptyRegionsCantHaveADefaultDueToError() {
         val regionProvider = createRegionDataProvider("")
 
         val awsRegionProvider = AwsRegionProvider(regionProvider)
-        assertThatThrownBy { awsRegionProvider.defaultRegion() }.isInstanceOf(IllegalArgumentException::class.java)
+
+        assertThatThrownBy { awsRegionProvider.defaultRegion() }.isInstanceOf(IllegalStateException::class.java)
     }
 
     @Test
@@ -294,6 +328,70 @@ class AwsRegionProviderTest {
 
         assertThat(awsRegionProvider.isServiceGlobal(usEast1, "iam")).isTrue()
         assertThat(awsRegionProvider.getGlobalRegionForService(usEast1, "iam").id).isEqualTo("aws-global")
+    }
+
+    @Test
+    fun defaultPartitionIsBasedOnDefaultRegion() {
+        val awsFolder = Files.createTempDirectory("aws")
+        val configFile = awsFolder.resolve("config")
+        System.getProperties().setProperty("aws.configFile", configFile.toAbsolutePath().toString())
+
+        configFile.writeText(
+            """
+            [default]
+            region = moon-east-2001
+            """.trimIndent()
+        )
+
+        val regionProvider = createRegionDataProvider(
+            """
+            {
+                "partitions": [
+                    {
+                        "defaults": {
+                            "hostname": "{service}.{region}.{dnsSuffix}",
+                            "protocols": ["https"],
+                            "signatureVersions": ["v4"]
+                        },
+                        "dnsSuffix": "amazonaws.com",
+                        "partition": "aws",
+                        "partitionName": "AWS Standard",
+                        "regionRegex": "^(us|eu|ap|sa|ca|me)\\-\\w+\\-\\d+$",
+                        "regions": {
+                            "us-west-2001": {
+                                "description": "US West (Cascadia)"
+                            }
+                        },
+                        "services": {}
+                    },
+                    {
+                        "defaults": {
+                            "hostname": "{service}.{region}.{dnsSuffix}",
+                            "protocols": ["https"],
+                            "signatureVersions": ["v4"]
+                        },
+                        "dnsSuffix": "moon.amazonaws.com",
+                        "partition": "moon",
+                        "partitionName": "AWS Moon",
+                        "regionRegex": "^(moon)\\-\\w+\\-\\d+${'$'}",
+                        "regions": {
+                            "moon-east-2001": {
+                                "description": "Moon East (Tranquillitatis)"
+                            }
+                        },
+                        "services": {}
+                    }
+                ],
+                "version": 3
+            }
+            """.trimIndent()
+        )
+
+        val awsRegionProvider = AwsRegionProvider(regionProvider)
+
+        assertThat(awsRegionProvider.defaultPartition()).satisfies {
+            assertThat(it.id).isEqualTo("moon")
+        }
     }
 
     private fun createRegionDataProvider(endpointsData: String) = object : RemoteResourceResolverProvider {

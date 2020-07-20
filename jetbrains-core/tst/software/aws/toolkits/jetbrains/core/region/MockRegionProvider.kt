@@ -4,10 +4,13 @@
 package software.aws.toolkits.jetbrains.core.region
 
 import com.intellij.openapi.components.ServiceManager
+import com.intellij.testFramework.ApplicationRule
 import software.aws.toolkits.core.region.AwsPartition
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.region.Service
 import software.aws.toolkits.core.region.ToolkitRegionProvider
+import software.aws.toolkits.core.region.anAwsRegion
+import software.aws.toolkits.core.utils.test.aString
 
 class MockRegionProvider : ToolkitRegionProvider() {
     private val overrideRegions: MutableMap<String, AwsRegion> = mutableMapOf()
@@ -32,7 +35,7 @@ class MockRegionProvider : ToolkitRegionProvider() {
         return combinedRegions.asSequence()
             .associate {
                 it.value.partitionId to PartitionData(
-                    "MockPartition",
+                    it.value.partitionId,
                     services,
                     combinedRegions.filterValues { regions -> regions.partitionId == it.value.partitionId }
                 )
@@ -53,5 +56,15 @@ class MockRegionProvider : ToolkitRegionProvider() {
         private val AWS_CLASSIC = AwsPartition("aws", "AWS Classic", listOf(US_EAST_1))
         private val regions = mapOf(US_EAST_1.id to US_EAST_1)
         fun getInstance(): MockRegionProvider = ServiceManager.getService(ToolkitRegionProvider::class.java) as MockRegionProvider
+    }
+
+    class RegionProviderRule : ApplicationRule() {
+        val regionProvider by lazy { getInstance() }
+
+        override fun after() {
+            regionProvider.reset()
+        }
+
+        fun createAwsRegion(partitionId: String = aString()) = anAwsRegion(partitionId = partitionId).also { regionProvider.addRegion(it) }
     }
 }

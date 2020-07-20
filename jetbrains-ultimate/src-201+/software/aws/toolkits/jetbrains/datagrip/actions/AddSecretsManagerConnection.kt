@@ -8,7 +8,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
-import software.aws.toolkits.jetbrains.core.credentials.connectionSettings
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeAction
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
@@ -84,7 +84,7 @@ class AddSecretsManagerConnection : SingleExplorerNodeAction<AwsExplorerNode<*>>
 }
 
 fun DataSourceRegistry.createDatasource(project: Project, secret: SecretsManagerDbSecret, secretArn: String, jdbcAdapter: String) {
-    val connectionSettings = project.connectionSettings()
+    val connectionSettings = AwsConnectionManager.getInstance(project).connectionSettings()
     builder
         .withJdbcAdditionalProperty(CREDENTIAL_ID_PROPERTY, connectionSettings?.credentials?.id)
         .withJdbcAdditionalProperty(REGION_ID_PROPERTY, connectionSettings?.region?.id)

@@ -10,7 +10,7 @@ import com.intellij.testFramework.ProjectRule
 import org.junit.rules.ExternalResource
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.services.sts.StsResources
 import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
 import java.util.concurrent.CompletableFuture
@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap
 class MockResourceCache(private val project: Project) : AwsResourceCache {
 
     private val map = ConcurrentHashMap<CacheKey, Any>()
-    private val accountSettings by lazy { ProjectAccountSettingsManager.getInstance(project) }
+    private val accountSettings by lazy { AwsConnectionManager.getInstance(project) }
 
     override fun <T> getResourceIfPresent(resource: Resource<T>, useStale: Boolean): T? =
         getResourceIfPresent(resource, accountSettings.activeRegion, accountSettings.activeCredentialProvider, useStale)
@@ -91,6 +91,8 @@ class MockResourceCache(private val project: Project) : AwsResourceCache {
     override fun clear() {
         map.clear()
     }
+
+    fun entryCount() = map.size
 
     fun <T> addEntry(resource: Resource.Cached<T>, value: T) =
         addEntry(resource, accountSettings.activeRegion.id, accountSettings.activeCredentialProvider.id, value)

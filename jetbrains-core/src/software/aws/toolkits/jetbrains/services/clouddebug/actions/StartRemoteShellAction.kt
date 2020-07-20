@@ -15,7 +15,7 @@ import icons.TerminalIcons
 import org.jetbrains.plugins.terminal.LocalTerminalDirectRunner
 import org.jetbrains.plugins.terminal.TerminalTabState
 import org.jetbrains.plugins.terminal.TerminalView
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.activeCredentialProvider
 import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
@@ -78,9 +78,9 @@ class StartRemoteShellAction(private val project: Project, private val container
                         throw Exception("cloud debug executable not found")
                     }
 
-                    val accountSettings = ProjectAccountSettingsManager.getInstance(project)
-                    val credentials = accountSettings.activeCredentialProvider
-                    val region = accountSettings.activeRegion
+                    val connectionManager = AwsConnectionManager.getInstance(project)
+                    val credentials = connectionManager.activeCredentialProvider
+                    val region = connectionManager.activeRegion
 
                     val description = CloudDebuggingResources.describeInstrumentedResource(credentials, region, cluster, service)
                     if (description == null || description.status != INSTRUMENTED_STATUS || description.taskRole.isEmpty()) {

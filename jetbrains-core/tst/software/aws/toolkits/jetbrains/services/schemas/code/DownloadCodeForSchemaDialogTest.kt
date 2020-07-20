@@ -27,8 +27,8 @@ import software.amazon.awssdk.services.schemas.model.SchemaVersionSummary
 import software.aws.toolkits.core.utils.failedFuture
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.MockResourceCache
-import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.services.schemas.Schema
 import software.aws.toolkits.jetbrains.services.schemas.SchemaCodeLangs
 import software.aws.toolkits.jetbrains.services.schemas.SchemaSummary
@@ -54,7 +54,7 @@ class DownloadCodeForSchemaDialogTest {
     val tempFolder = TemporaryFolder()
 
     private lateinit var fileEditorManager: FileEditorManager
-    private lateinit var mockSettingsManager: MockProjectAccountSettingsManager
+    private lateinit var mockSettingsManager: MockAwsConnectionManager
 
     private var infoNotification: Notification? = null
     private var errorNotification: Notification? = null
@@ -72,7 +72,7 @@ class DownloadCodeForSchemaDialogTest {
     @Before
     fun setup() {
         fileEditorManager = FileEditorManager.getInstance(projectRule.project)
-        mockSettingsManager = ProjectAccountSettingsManager.getInstance(projectRule.project) as MockProjectAccountSettingsManager
+        mockSettingsManager = AwsConnectionManager.getInstance(projectRule.project) as MockAwsConnectionManager
 
         resourceCache().mockSchemaVersions(
             REGISTRY, SCHEMA_NAME, VERSIONS

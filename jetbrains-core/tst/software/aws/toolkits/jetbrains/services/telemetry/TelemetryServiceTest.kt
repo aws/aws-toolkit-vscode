@@ -20,7 +20,7 @@ import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryBatcher
 import software.aws.toolkits.jetbrains.core.MockResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
-import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import java.util.concurrent.CountDownLatch
@@ -37,7 +37,7 @@ class TelemetryServiceTest {
     fun tearDown() {
         AwsSettings.getInstance().isTelemetryEnabled = false
 
-        MockProjectAccountSettingsManager.getInstance(projectRule.project).reset()
+        MockAwsConnectionManager.getInstance(projectRule.project).reset()
         MockCredentialsManager.getInstance().reset()
         MockRegionProvider.getInstance().reset()
     }
@@ -98,9 +98,9 @@ class TelemetryServiceTest {
 
     @Test
     fun metricEventMetadataIsNotSet() {
-        val accountSettings = MockProjectAccountSettingsManager.getInstance(projectRule.project)
+        val accountSettings = MockAwsConnectionManager.getInstance(projectRule.project)
 
-        accountSettings.changeCredentialProvider(null)
+        accountSettings.nullifyCredentialProviderAndWait()
 
         val eventCaptor = argumentCaptor<MetricEvent>()
 
@@ -119,7 +119,7 @@ class TelemetryServiceTest {
 
     @Test
     fun metricEventMetadataIsSet() {
-        val accountSettings = MockProjectAccountSettingsManager.getInstance(projectRule.project)
+        val accountSettings = MockAwsConnectionManager.getInstance(projectRule.project)
         MockResourceCache.getInstance(projectRule.project).addValidAwsCredential(accountSettings.activeRegion.id, "profile:admin", "111111111111")
 
         accountSettings.changeCredentialProvider(
@@ -147,7 +147,7 @@ class TelemetryServiceTest {
 
     @Test
     fun metricEventMetadataIsOverridden() {
-        val accountSettings = MockProjectAccountSettingsManager.getInstance(projectRule.project)
+        val accountSettings = MockAwsConnectionManager.getInstance(projectRule.project)
         MockResourceCache.getInstance(projectRule.project).addValidAwsCredential(accountSettings.activeRegion.id, "profile:admin", "111111111111")
 
         accountSettings.changeCredentialProvider(

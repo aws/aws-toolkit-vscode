@@ -12,7 +12,7 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
 import software.aws.toolkits.jetbrains.core.Resource
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.filter
 import software.aws.toolkits.jetbrains.core.map
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
@@ -42,7 +42,7 @@ object S3Resources {
     }
 
     fun listBucketsByActiveRegion(project: Project): Resource<List<Bucket>> {
-        val activeRegion = ProjectAccountSettingsManager.getInstance(project).activeRegion
+        val activeRegion = AwsConnectionManager.getInstance(project).activeRegion
         return LIST_REGIONALIZED_BUCKETS.filter { it.region == activeRegion }.map { it.bucket }
     }
 

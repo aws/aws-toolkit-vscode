@@ -21,7 +21,7 @@ import software.amazon.awssdk.services.ecs.model.ContainerDefinition
 import software.amazon.awssdk.services.ecs.model.Service
 import software.amazon.awssdk.services.ecs.model.ServiceNotFoundException
 import software.amazon.awssdk.services.ecs.model.TaskDefinition
-import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
+import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.jetbrains.core.MockResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugConstants
@@ -384,7 +384,7 @@ class EcsCloudDebugRunConfigurationTest {
         }
         setFakeContainersInResourceCache(listOf("abc"))
         assertThatThrownBy {
-            config.checkConfiguration()
+            config.checkSettingsBeforeRun()
         }.isInstanceOf(RuntimeConfigurationError::class.java)
             .hasMessage(
                 message(
@@ -407,7 +407,7 @@ class EcsCloudDebugRunConfigurationTest {
             .addEntry(EcsResources.describeService("arn", "notarealservice"), defaultRegion, mockCredentials.id, future)
 
         assertThatThrownBy {
-            config.checkConfiguration()
+            config.checkSettingsBeforeRun()
         }.isInstanceOf(RuntimeConfigurationError::class.java)
             .hasMessageContaining(
                 // doesn't match real string because we're testing against a mock
@@ -466,7 +466,7 @@ class EcsCloudDebugRunConfigurationTest {
         clusterArn: String = defaultClusterArn,
         serviceArn: String = defaultServiceArn,
         regionId: String = defaultRegion,
-        credentialsIdentifier: ToolkitCredentialsIdentifier = mockCredentials
+        credentialsIdentifier: CredentialIdentifier = mockCredentials
     ) {
         val resourceCache = MockResourceCache.getInstance(projectRule.project)
         val taskDefinitionName = "taskDefinition"
@@ -484,7 +484,7 @@ class EcsCloudDebugRunConfigurationTest {
         resourceCache.addEntry(EcsResources.describeTaskDefinition(taskDefinitionName), regionId, credentialsIdentifier.id, fakeTaskDefinition)
     }
 
-    private val mockCredentials: ToolkitCredentialsIdentifier
+    private val mockCredentials: CredentialIdentifier
         get() = MockCredentialsManager.getInstance().addCredentials(
             "mockCreds",
             AwsBasicCredentials.create("foo", "bar")
