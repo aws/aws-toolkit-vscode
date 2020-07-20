@@ -3,11 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/*!
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ */
+
 import * as path from 'path'
 import * as nls from 'vscode-nls'
 
-import { readFile } from 'fs-extra'
 import { getPortPromise } from 'portfinder'
+import { EnvironmentVariables } from '../../shared/environmentVariables'
 
 const localize = nls.loadMessageBundle()
 
@@ -43,44 +48,16 @@ const yamlLanguageConfiguration: LanguageConfiguration = {
     },
 }
 
-interface LaunchJSON {
-    version: string
-    configurations: {
-        name: string
-        port?: number
-    }[]
-    compounds: {
-        name: string
-        configuarations: string[]
-    }[]
-}
-
 const SSMDOCUMENT_LANGUAGESERVER_DEFAULTPORT = 6010
 
 async function getLanguageServerDebuggerPort(extensionContext: ExtensionContext): Promise<number> {
-    // get the port from launch.json or use 6010 as default if not set
-    const launchJSONString: string = await readFile(
-        path.join(extensionContext.extensionPath, '.vscode', 'launch.json'),
-        {
-            encoding: 'utf8',
-        }
-    )
+    // get the port from env variable or use 6010 as default if not set
+    const env = process.env as EnvironmentVariables
+    const port = env.SSMDOCUMENT_LANGUAGESERVER_PORT
+        ? parseInt(env.SSMDOCUMENT_LANGUAGESERVER_PORT as string)
+        : SSMDOCUMENT_LANGUAGESERVER_DEFAULTPORT
 
-    const commentRemoved = launchJSONString
-        .split('\n')
-        .map(line => {
-            if (!line.startsWith('//')) {
-                return line
-            }
-        })
-        .join('\n')
-
-    const launchJSON: LaunchJSON = JSON.parse(commentRemoved)
-    const launchPort =
-        launchJSON.configurations.find(config => config.name === 'Attach to SSM Document Language Server')?.port ||
-        SSMDOCUMENT_LANGUAGESERVER_DEFAULTPORT
-
-    return getPortPromise({ port: launchPort })
+    return getPortPromise({ port: port })
 }
 
 export async function activate(extensionContext: ExtensionContext) {

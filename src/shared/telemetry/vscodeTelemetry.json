@@ -33,11 +33,11 @@
             ]
         },
         {
-            "name": "ssmDocument_createSsmDocumentFromTemplate",
+            "name": "ssm_createDocument",
             "description": ""
         },
         {
-            "name": "ssmDocument_openDocument",
+            "name": "ssm_openDocument",
             "description": "",
             "unit": "None",
             "metadata": [

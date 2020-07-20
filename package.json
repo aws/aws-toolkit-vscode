@@ -57,8 +57,8 @@
         "onLanguage:asl",
         "onLanguage:ssm-json",
         "onLanguage:ssm-yaml",
-        "onCommand:aws.ssmDocument.createDocumentFromTemplate",
-        "onCommand:aws.ssmDocument.openDocument"
+        "onCommand:aws.ssmDocument.createLocalDocument",
+        "onCommand:aws.ssmDocument.openLocalDocument"
     ],
     "main": "./extensionMain",
     "contributes": {
@@ -458,7 +458,7 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.ssmDocument.openDocument",
+                    "command": "aws.ssmDocument.openLocalDocument",
                     "when": "false"
                 }
             ],
@@ -618,7 +618,7 @@
                     "when": "view == aws.explorer && viewItem == awsCloudWatchLogNode"
                 },
                 {
-                    "command": "aws.ssmDocument.openDocument",
+                    "command": "aws.ssmDocument.openLocalDocument",
                     "group": "0@1",
                     "when": "view == aws.explorer && viewItem == awsDocumentItemNode"
                 }
@@ -812,13 +812,13 @@
                 "category": "AWS"
             },
             {
-                "command": "aws.ssmDocument.createDocumentFromTemplate",
-                "title": "%AWS.command.ssmDocument.createDocumentFromTemplate%",
+                "command": "aws.ssmDocument.createLocalDocument",
+                "title": "%AWS.command.ssmDocument.createLocalDocument%",
                 "category": "AWS"
             },
             {
-                "command": "aws.ssmDocument.openDocument",
-                "title": "%AWS.command.ssmDocument.openDocument%",
+                "command": "aws.ssmDocument.openLocalDocument",
+                "title": "%AWS.command.ssmDocument.openLocalDocument%",
                 "category": "AWS"
             }
         ],

@@ -34,7 +34,7 @@ async function registerSsmDocumentCommands(
     outputChannel: vscode.OutputChannel
 ): Promise<void> {
     extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.ssmDocument.createDocumentFromTemplate', async () => {
+        vscode.commands.registerCommand('aws.ssmDocument.createLocalDocument', async () => {
             try {
                 await createSsmDocumentFromTemplate(extensionContext)
             } finally {
@@ -43,7 +43,7 @@ async function registerSsmDocumentCommands(
         })
     )
     extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.ssmDocument.openDocument', async (node: DocumentItemNode) => {
+        vscode.commands.registerCommand('aws.ssmDocument.openLocalDocument', async (node: DocumentItemNode) => {
             await openDocumentItem(node, awsContext)
         })
     )

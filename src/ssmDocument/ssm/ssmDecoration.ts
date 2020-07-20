@@ -3,63 +3,45 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { debounce } from 'lodash'
 import * as vscode from 'vscode'
-import { clearTimeout } from 'timers'
 import { plugins, automationActions } from 'aws-ssm-document-language-service'
-
-let pendingKeywordHighlight: NodeJS.Timeout
 
 const keywordDecoration = vscode.window.createTextEditorDecorationType({
     fontStyle: 'italic',
     fontWeight: 'bold',
 })
 
+function isSSMDocument(languageId: string): boolean {
+    return languageId === 'ssm-json' || languageId === 'ssm-yaml'
+}
+
 export function activate(context: vscode.ExtensionContext) {
     // add keyword highlighting when active editor changed
     context.subscriptions.push(
-        vscode.window.onDidChangeActiveTextEditor(
-            editor => {
-                if (
-                    editor &&
-                    (editor.document.languageId === 'ssm-yaml' || editor.document.languageId === 'ssm-json')
-                ) {
-                    updateKeywordHighlight(editor)
-                }
-            },
-            null,
-            context.subscriptions
-        )
+        vscode.window.onDidChangeActiveTextEditor(editor => {
+            if (editor && isSSMDocument(editor.document.languageId)) {
+                updateKeywordHighlight(editor)
+            }
+        })
     )
 
     // add keyword highlighting when document changed
+    const debounceUpdate = debounce(updateKeywordHighlight, 1000)
     context.subscriptions.push(
-        vscode.workspace.onDidChangeTextDocument(
-            event => {
-                if (
-                    vscode.window.activeTextEditor &&
-                    event.document === vscode.window.activeTextEditor.document &&
-                    (event.document.languageId === 'ssm-yaml' || event.document.languageId === 'ssm-json')
-                ) {
-                    if (pendingKeywordHighlight) {
-                        clearTimeout(pendingKeywordHighlight)
-                    }
-                    pendingKeywordHighlight = setTimeout(
-                        () => updateKeywordHighlight(vscode.window.activeTextEditor),
-                        1000
-                    )
-                }
-            },
-            null,
-            context.subscriptions
-        )
+        vscode.workspace.onDidChangeTextDocument(event => {
+            if (
+                vscode.window.activeTextEditor &&
+                event.document === vscode.window.activeTextEditor.document &&
+                isSSMDocument(event.document.languageId)
+            ) {
+                debounceUpdate(vscode.window.activeTextEditor)
+            }
+        })
     )
 
     // add keyword highlighting for the current active editor
-    if (
-        vscode.window.activeTextEditor &&
-        (vscode.window.activeTextEditor.document.languageId === 'ssm-json' ||
-            vscode.window.activeTextEditor?.document.languageId === 'ssm-yaml')
-    ) {
+    if (vscode.window.activeTextEditor && isSSMDocument(vscode.window.activeTextEditor.document.languageId)) {
         updateKeywordHighlight(vscode.window.activeTextEditor)
     }
 }

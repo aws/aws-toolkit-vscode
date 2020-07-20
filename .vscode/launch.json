@@ -12,7 +12,8 @@
             "runtimeExecutable": "${execPath}",
             "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
             "env": {
-                "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true"
+                "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true",
+                "SSMDOCUMENT_LANGUAGESERVER_PORT": "6010"
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
             "preLaunchTask": "npm: watch"
