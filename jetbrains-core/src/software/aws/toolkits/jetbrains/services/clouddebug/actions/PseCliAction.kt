@@ -30,7 +30,7 @@ import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.core.executables.CloudDebugExecutable
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
@@ -88,8 +88,8 @@ abstract class PseCliAction(val project: Project, val actionName: String, privat
                     // validate CLI
                     CloudDebugResolver.validateOrUpdateCloudDebug(project, messageEmitter, null)
 
-                    val region = ProjectAccountSettingsManager.getInstance(project).activeRegion.toEnvironmentVariables()
-                    val credentials = ProjectAccountSettingsManager.getInstance(project).activeCredentialProvider.resolveCredentials().toEnvironmentVariables()
+                    val region = AwsConnectionManager.getInstance(project).activeRegion.toEnvironmentVariables()
+                    val credentials = AwsConnectionManager.getInstance(project).activeCredentialProvider.resolveCredentials().toEnvironmentVariables()
 
                     val clouddebug = ExecutableManager.getInstance().getExecutable<CloudDebugExecutable>().thenApply {
                         if (it is ExecutableInstance.Executable) {

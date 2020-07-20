@@ -9,7 +9,7 @@ import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.s3.model.Bucket
 import software.aws.toolkits.jetbrains.core.MockResourceCache
-import software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerErrorNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.S3ExplorerRootNode
@@ -27,7 +27,7 @@ class S3ServiceNodeTest {
     @Before
     fun setUp() {
         resourceCache().clear()
-        MockProjectAccountSettingsManager.getInstance(projectRule.project).reset()
+        MockAwsConnectionManager.getInstance(projectRule.project).reset()
     }
 
     @Test

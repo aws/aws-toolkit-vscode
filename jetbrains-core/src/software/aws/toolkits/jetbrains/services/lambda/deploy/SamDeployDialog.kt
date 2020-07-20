@@ -20,7 +20,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.ExceptionUtil
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
@@ -50,9 +50,10 @@ class SamDeployDialog(
     private val progressIndicator = ProgressIndicatorBase()
     private val view = SamDeployView(project, progressIndicator)
     private var currentStep = 0
-    private val credentialsProvider = ProjectAccountSettingsManager.getInstance(project).activeCredentialProvider
-    private val region = ProjectAccountSettingsManager.getInstance(project).activeRegion
+    private val credentialsProvider = AwsConnectionManager.getInstance(project).activeCredentialProvider
+    private val region = AwsConnectionManager.getInstance(project).activeRegion
     private val changeSetRegex = "(arn:${region.partitionId}:cloudformation:.*changeSet/[^\\s]*)".toRegex()
+
     val deployFuture: CompletableFuture<String>
     lateinit var changeSetName: String
         private set

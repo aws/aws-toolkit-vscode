@@ -281,7 +281,7 @@ class EcsCloudDebugSettingsEditorPanel(private val project: Project) : Disposabl
         val serviceArn = configuration.serviceArn()
         val containerSettings = configuration.containerOptions()
         val credentialProviderId = configuration.credentialProviderId() ?: return
-        val region = AwsRegionProvider.getInstance().lookupRegionById(configuration.regionId())
+        val region = configuration.regionId()?.let { AwsRegionProvider.getInstance()[it] } ?: return
         val credentialIdentifier = credentialManager.getCredentialIdentifierById(credentialProviderId) ?: return
         val credentialProvider = credentialManager.getAwsCredentialProvider(credentialIdentifier, region)
 

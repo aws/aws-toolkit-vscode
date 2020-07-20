@@ -17,6 +17,7 @@ import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.StatusBarWidgetProvider
 import com.intellij.util.Consumer
+import software.aws.toolkits.jetbrains.core.credentials.ChangeAccountSettingsMode.BOTH
 import software.aws.toolkits.resources.message
 import java.awt.Component
 import java.awt.event.MouseEvent
@@ -27,26 +28,17 @@ class AwsSettingsPanelInstaller : StatusBarWidgetProvider {
 
 private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
     StatusBarWidget.MultipleTextValuesPresentation,
-    ConnectionSettingsChangeNotifier {
-    private val accountSettingsManager = ProjectAccountSettingsManager.getInstance(project)
+    ConnectionSettingsStateChangeNotifier {
+    private val accountSettingsManager = AwsConnectionManager.getInstance(project)
     private val settingsSelector = SettingsSelector(project)
     private lateinit var statusBar: StatusBar
 
     @Suppress("FunctionName")
     override fun ID(): String = "AwsSettingsPanel"
 
-    override fun getTooltipText() = SettingsSelector.tooltipText
+    override fun getTooltipText() = "${SettingsSelector.tooltipText} [${accountSettingsManager.connectionState.displayMessage}]"
 
-    override fun getSelectedValue(): String {
-        val credentials = accountSettingsManager.selectedCredentialIdentifier
-        val region = accountSettingsManager.selectedRegion
-        val statusLine = when {
-            credentials == null -> message("settings.credentials.none_selected")
-            region == null -> message("settings.regions.none_selected")
-            else -> "${credentials.displayName}@${region.name}"
-        }
-        return "AWS: $statusLine"
-    }
+    override fun getSelectedValue() = "AWS: ${accountSettingsManager.connectionState.shortMessage}"
 
     override fun getPopupStep() = settingsSelector.settingsPopup(statusBar.component)
 
@@ -56,11 +48,11 @@ private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
 
     override fun install(statusBar: StatusBar) {
         this.statusBar = statusBar
-        project.messageBus.connect().subscribe(ProjectAccountSettingsManager.CONNECTION_SETTINGS_CHANGED, this)
+        project.messageBus.connect(this).subscribe(AwsConnectionManager.CONNECTION_SETTINGS_STATE_CHANGED, this)
         updateWidget()
     }
 
-    override fun settingsChanged(event: ConnectionSettingsChangeEvent) {
+    override fun settingsStateChanged(newState: ConnectionState) {
         updateWidget()
     }
 
@@ -71,28 +63,27 @@ private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
     override fun dispose() {}
 }
 
-class SettingsSelectorAction(private val showRegions: Boolean = true) : AnAction(message("configure.toolkit")), DumbAware {
+class SettingsSelectorAction(private val mode: ChangeAccountSettingsMode = BOTH) : AnAction(message("configure.toolkit")), DumbAware {
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.getRequiredData(PlatformDataKeys.PROJECT)
         val settingsSelector = SettingsSelector(project)
-        settingsSelector.settingsPopup(e.dataContext, showRegions = showRegions).showCenteredInCurrentWindow(project)
+        settingsSelector.settingsPopup(e.dataContext, mode).showCenteredInCurrentWindow(project)
     }
 }
 
 class SettingsSelector(private val project: Project) {
-    fun settingsPopup(contextComponent: Component, showRegions: Boolean = true): ListPopup {
-        val dataContext = DataManager.getInstance().getDataContext(contextComponent)
-        return settingsPopup(dataContext, showRegions)
-    }
+    fun settingsPopup(contextComponent: Component, mode: ChangeAccountSettingsMode = BOTH): ListPopup =
+        settingsPopup(DataManager.getInstance().getDataContext(contextComponent), mode)
 
-    fun settingsPopup(dataContext: DataContext, showRegions: Boolean = true): ListPopup = JBPopupFactory.getInstance().createActionGroupPopup(
-        tooltipText,
-        ChangeAccountSettingsActionGroup(project, showRegions),
-        dataContext,
-        JBPopupFactory.ActionSelectionAid.SPEEDSEARCH,
-        true,
-        ActionPlaces.STATUS_BAR_PLACE
-    )
+    fun settingsPopup(dataContext: DataContext, mode: ChangeAccountSettingsMode = BOTH): ListPopup =
+        JBPopupFactory.getInstance().createActionGroupPopup(
+            tooltipText,
+            ChangeAccountSettingsActionGroup(project, mode),
+            dataContext,
+            JBPopupFactory.ActionSelectionAid.SPEEDSEARCH,
+            true,
+            ActionPlaces.STATUS_BAR_PLACE
+        )
 
     companion object {
         internal val tooltipText = message("settings.title")

@@ -22,9 +22,10 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
+import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.core.utils.test.retryableAssert
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
@@ -51,9 +52,9 @@ class AwsResourceCacheTest {
     private val mockResource = mock<Resource.Cached<String>>()
 
     private lateinit var sut: AwsResourceCache
-    private lateinit var cred1Identifier: ToolkitCredentialsIdentifier
+    private lateinit var cred1Identifier: CredentialIdentifier
     private lateinit var cred1Provider: ToolkitCredentialsProvider
-    private lateinit var cred2Identifier: ToolkitCredentialsIdentifier
+    private lateinit var cred2Identifier: CredentialIdentifier
     private lateinit var cred2Provider: ToolkitCredentialsProvider
 
     @Before
@@ -459,5 +460,7 @@ class AwsResourceCacheTest {
         }
 
         private class StringResource(id: String) : DummyResource<String>(id, id)
+
+        fun dummyResource(value: String = aString()): Resource.Cached<String> = StringResource(value)
     }
 }

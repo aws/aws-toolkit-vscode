@@ -14,7 +14,7 @@ import com.intellij.psi.PsiElement
 import org.jetbrains.yaml.psi.YAMLKeyValue
 import org.jetbrains.yaml.psi.YAMLPsiElement
 import software.aws.toolkits.core.region.AwsRegion
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationType
@@ -106,7 +106,7 @@ class LocalLambdaRunConfigurationProducer : LazyRunConfigurationProducer<LocalLa
         }
 
         private fun accountSettings(project: Project): Pair<String?, AwsRegion?> {
-            val settingsManager = ProjectAccountSettingsManager.getInstance(project)
+            val settingsManager = AwsConnectionManager.getInstance(project)
             val region = try {
                 settingsManager.activeRegion
             } catch (_: Exception) {

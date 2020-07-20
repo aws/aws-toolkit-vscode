@@ -7,9 +7,9 @@ package software.aws.toolkits.core.credentials
  * TODO: Deprecate and remove this since it is less efficient than [CredentialsChangeEvent]
  */
 interface ToolkitCredentialsChangeListener {
-    fun providerAdded(identifier: ToolkitCredentialsIdentifier) {}
-    fun providerModified(identifier: ToolkitCredentialsIdentifier) {}
-    fun providerRemoved(identifier: ToolkitCredentialsIdentifier) {}
+    fun providerAdded(identifier: CredentialIdentifier) {}
+    fun providerModified(identifier: CredentialIdentifier) {}
+    fun providerRemoved(identifier: CredentialIdentifier) {}
 }
 
 class CredentialProviderNotFoundException : RuntimeException {

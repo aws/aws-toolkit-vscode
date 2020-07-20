@@ -10,7 +10,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
-import software.aws.toolkits.core.credentials.ToolkitCredentialsIdentifier
+import software.aws.toolkits.core.credentials.CredentialIdentifierBase
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.test.retryableAssert
@@ -232,7 +232,7 @@ class ResourceSelectorTest {
 
     private companion object {
         fun mockCred(id: String) = ToolkitCredentialsProvider(
-            object : ToolkitCredentialsIdentifier() {
+            object : CredentialIdentifierBase() {
                 override val id: String = id
                 override val displayName: String = id
                 override val factoryId: String = "mockFactory"

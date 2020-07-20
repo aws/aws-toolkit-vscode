@@ -1,0 +1,12 @@
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  SQSQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties: {}
+Outputs:
+  QueueArn:
+    Description: Cool description
+    Value:
+      'Fn::GetAtt':
+        - SQSQueue
+        - Arn
