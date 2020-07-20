@@ -99,28 +99,46 @@ export class LogStreamRegistry {
     public async updateLog(
         uri: vscode.Uri,
         headOrTail: 'head' | 'tail' = 'tail',
-        getLogEventsFromUriComponentsFn: (logGroupInfo: {
-            groupName: string
-            streamName: string
-            regionName: string
-        }) => Promise<CloudWatchLogs.GetLogEventsResponse> = getLogEventsFromUriComponents
+        getLogEventsFromUriComponentsFn: (
+            logGroupInfo: {
+                groupName: string
+                streamName: string
+                regionName: string
+            },
+            nextToken?: string
+        ) => Promise<CloudWatchLogs.GetLogEventsResponse> = getLogEventsFromUriComponents
     ): Promise<void> {
         const stream = this.getLog(uri)
         if (!stream) {
             getLogger().debug(`No registry entry for ${uri.path}`)
             return
         }
-        // TODO: append next/previous token to stream object
+        const nextToken = headOrTail === 'head' ? stream.previous?.token : stream.next?.token
         const logGroupInfo = parseCloudWatchLogsUri(uri)
         try {
-            // TODO: append next/previous token
-            const logEvents = await getLogEventsFromUriComponentsFn(logGroupInfo)
+            // TODO: Consider getPaginatedAwsCallIter? Would need a way to differentiate between head/tail...
+            const logEvents = await getLogEventsFromUriComponentsFn(logGroupInfo, nextToken)
             const newData =
                 headOrTail === 'head'
                     ? (logEvents.events ?? []).concat(stream.data)
                     : stream.data.concat(logEvents.events ?? [])
+
+            const tokens: Pick<CloudWatchLogStreamData, 'next' | 'previous'> = {}
+            // update if no token exists or if the token is updated in the correct direction.
+            if (!stream.previous || headOrTail === 'head') {
+                tokens.previous = {
+                    token: logEvents.nextBackwardToken ?? '',
+                }
+            }
+            if (!stream.next || headOrTail === 'tail') {
+                tokens.next = {
+                    token: logEvents.nextForwardToken ?? '',
+                }
+            }
+
             this.setLog(uri, {
                 ...stream,
+                ...tokens,
                 data: newData,
             })
 
@@ -142,16 +160,24 @@ export class LogStreamRegistry {
      * Deletes a stream from the registry.
      * @param uri Document URI
      */
-    public deregisterLog(uri: vscode.Uri) {
+    public deregisterLog(uri: vscode.Uri): void {
         this.activeStreams.delete(uri.path)
     }
 
-    /**
-     * Gets an array of registered logs.
-     * Logs are represented as the URI's path.
-     */
-    public getRegisteredLogs(): string[] {
-        return [...this.activeStreams.keys()]
+    public setBusyStatus(uri: vscode.Uri, isBusy: boolean): void {
+        const log = this.getLog(uri)
+        if (log) {
+            this.setLog(uri, {
+                ...log,
+                busy: isBusy,
+            })
+        }
+    }
+
+    public getBusyStatus(uri: vscode.Uri): boolean {
+        const log = this.getLog(uri)
+
+        return (log && log.busy) ?? false
     }
 
     private setLog(uri: vscode.Uri, stream: CloudWatchLogStreamData): void {
@@ -167,26 +193,26 @@ export class CloudWatchLogStreamData {
     data: CloudWatchLogs.OutputLogEvents = []
     next?: {
         token: CloudWatchLogs.NextToken
-        expiry: Date
     }
     previous?: {
         token: CloudWatchLogs.NextToken
-        expiry: Date
     }
-    mostRecentExpiry?: Date
+    busy?: boolean
 }
 
-// TODO: Add pagination logic here
-async function getLogEventsFromUriComponents(logGroupInfo: {
-    groupName: string
-    streamName: string
-    regionName: string
-}): Promise<CloudWatchLogs.GetLogEventsResponse> {
+async function getLogEventsFromUriComponents(
+    logGroupInfo: {
+        groupName: string
+        streamName: string
+        regionName: string
+    },
+    nextToken?: string
+): Promise<CloudWatchLogs.GetLogEventsResponse> {
     const client: CloudWatchLogsClient = ext.toolkitClientBuilder.createCloudWatchLogsClient(logGroupInfo.regionName)
 
-    // TODO: append next/previous token
     return await client.getLogEvents({
         logGroupName: logGroupInfo.groupName,
         logStreamName: logGroupInfo.streamName,
+        nextToken,
     })
 }

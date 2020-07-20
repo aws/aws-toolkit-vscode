@@ -121,15 +121,6 @@ describe('LogStreamRegistry', async () => {
         })
     })
 
-    describe('getRegisteredLogs', () => {
-        it('contains string representations of registered logs only', () => {
-            const registeredLogs = registry.getRegisteredLogs()
-            assert.strictEqual(registeredLogs.includes(registeredUri.path), true)
-            assert.strictEqual(registeredLogs.includes(shorterRegisteredUri.path), true)
-            assert.strictEqual(registeredLogs.includes(missingRegisteredUri.path), false)
-        })
-    })
-
     describe('deregisterLog', () => {
         it('deletes a log', () => {
             assert.strictEqual(registry.hasLog(registeredUri), true)

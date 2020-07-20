@@ -13,37 +13,53 @@ import { LogStreamRegistry } from '../registry/logStreamRegistry'
 export class LogStreamCodeLensProvider implements vscode.CodeLensProvider {
     public constructor(private readonly registry: LogStreamRegistry) {}
 
+    private _onDidChangeCodeLenses = new vscode.EventEmitter<void>()
+    public get onDidChangeCodeLenses() {
+        return this._onDidChangeCodeLenses.event
+    }
+
     public provideCodeLenses(
         document: vscode.TextDocument,
         token: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.CodeLens[]> {
-        // should only provide on matching scheme at the provider level but good to double-check
-        return document.uri.scheme === CLOUDWATCH_LOGS_SCHEME
-            ? [
-                  // first line of virtual doc: always show "Load Previous"
-                  {
-                      range: new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0)),
-                      isResolved: true,
-                      command: {
-                          title: localize('', ''),
-                          command: '',
-                          arguments: [],
+        const uri = document.uri
+        const isBusy = this.registry.getBusyStatus(uri)
+
+        const busyCommand: vscode.Command = {
+            title: localize('AWS.message.loading', 'Loading...'),
+            command: 'aws.doNothingCommand',
+        }
+
+        const codelenses = [
+            // first line of virtual doc: always show "Load Older"
+            {
+                range: new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0)),
+                isResolved: true,
+                command: isBusy
+                    ? busyCommand
+                    : {
+                          title: localize('aws.cloudWatchLogs.codeLens.loadOlder', 'Load older events...'),
+                          command: 'aws.addLogEvents',
+                          arguments: [document, this.registry, 'head', this._onDidChangeCodeLenses],
                       },
-                  },
-                  // last line of virtual doc: always show "Load Newer"
-                  {
-                      range: new vscode.Range(
-                          new vscode.Position(document.lineCount - 1, 0),
-                          new vscode.Position(document.lineCount - 1, 0)
-                      ),
-                      isResolved: true,
-                      command: {
-                          title: localize('', ''),
-                          command: '',
-                          arguments: [],
+            },
+            // last line of virtual doc: always show "Load Newer"
+            {
+                range: new vscode.Range(
+                    new vscode.Position(document.lineCount - 1, 0),
+                    new vscode.Position(document.lineCount - 1, 0)
+                ),
+                isResolved: true,
+                command: isBusy
+                    ? busyCommand
+                    : {
+                          title: localize('aws.cloudWatchLogs.codeLens.loadNewer', 'Load newer events...'),
+                          command: 'aws.addLogEvents',
+                          arguments: [document, this.registry, 'tail', this._onDidChangeCodeLenses],
                       },
-                  },
-              ]
-            : []
+            },
+        ]
+
+        return uri.scheme === CLOUDWATCH_LOGS_SCHEME ? codelenses : []
     }
 }
