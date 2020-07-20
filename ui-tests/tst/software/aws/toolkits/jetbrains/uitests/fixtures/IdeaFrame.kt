@@ -111,4 +111,6 @@ class IdeaFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) : Co
         // 2019.3
         findAndClick("//div[@class='MultipleTextValuesPresentationWrapper']")
     }
+
+    fun findToast(timeout: Duration = Duration.ofSeconds(5)): ComponentFixture = find(byXpath("//div[@class='StatusPanel']"), timeout)
 }
