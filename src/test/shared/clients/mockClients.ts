@@ -101,7 +101,15 @@ export class MockCloudWatchLogsClient implements CloudWatchLogsClient {
 
         public readonly describeLogGroups: (
             statusFilter?: string[]
-        ) => AsyncIterableIterator<CloudWatchLogs.LogGroup> = (statusFilter?: string[]) => asyncGenerator([])
+        ) => AsyncIterableIterator<CloudWatchLogs.LogGroup> = (statusFilter?: string[]) => asyncGenerator([]),
+
+        public readonly describeLogStreams: (
+            request: CloudWatchLogs.DescribeLogStreamsRequest
+        ) => Promise<CloudWatchLogs.DescribeLogStreamsResponse> = async (
+            request: CloudWatchLogs.DescribeLogStreamsRequest
+        ) => {
+            return {}
+        }
     ) {}
 }
 
