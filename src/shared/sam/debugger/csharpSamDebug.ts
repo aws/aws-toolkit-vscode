@@ -21,6 +21,7 @@ import { getStartPort } from '../../utilities/debuggerUtils'
 import { ChannelLogger, getChannelLogger } from '../../utilities/vsCodeUtils'
 import { invokeLambdaFunction, makeInputTemplate, waitForDebugPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
+import { getSamCliContext, getSamCliDockerImageName } from '../../sam/cli/samCliContext'
 
 /**
  * Gathers and sets launch-config info by inspecting the workspace and creating
@@ -105,15 +106,22 @@ async function _installDebugger(
     await ensureDebuggerPathExists(debuggerPath)
 
     try {
+        const samCliContext = getSamCliContext()
+        const samCliVersionValidatorResult = await samCliContext.validator.getVersionValidatorResult()
+        const samCliVersion = samCliVersionValidatorResult.version
+
+        const imageStr = getSamCliDockerImageName(samCliVersion, lambdaRuntime)
+
         channelLogger.info(
             'AWS.samcli.local.invoke.debugger.install',
-            'Installing .NET Core Debugger to {0}...',
-            debuggerPath
+            'Installing .NET Core Debugger to {0} using Docker image {1}...',
+            debuggerPath,
+            imageStr
         )
 
         await dockerClient.invoke({
             command: 'run',
-            image: `lambci/lambda:${lambdaRuntime}`,
+            image: imageStr,
             removeOnExit: true,
             mount: {
                 type: 'bind',

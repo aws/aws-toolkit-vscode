@@ -1,0 +1,38 @@
+{
+    "date": "2020-07-18",
+    "version": "1.11.0",
+    "entries": [
+        {
+            "type": "Breaking Change",
+            "description": "Bumped minimum (inclusive) supported SAM CLI version from 0.38.0 to 0.47.0."
+        },
+        {
+            "type": "Bug Fix",
+            "description": "Amazon States Language Server: Replaces \"True\" strings of End with boolean in snippets."
+        },
+        {
+            "type": "Bug Fix",
+            "description": "Makes the ItemsPath property of Map state optional in ASL linter."
+        },
+        {
+            "type": "Bug Fix",
+            "description": "Amazon States Language Server: Adds validation of next property for Catch of Map state."
+        },
+        {
+            "type": "Bug Fix",
+            "description": "Amazon States Language Server: Adds missing \"Comment\" property for ChoiceRules, Catcher and Retrier."
+        },
+        {
+            "type": "Feature",
+            "description": "Amazon States Language Server: Adds validation of JSON Paths within Parameters."
+        },
+        {
+            "type": "Feature",
+            "description": "Added `dotnetcore3.1` app creation and local run support. Local debug is not currently supported."
+        },
+        {
+            "type": "Feature",
+            "description": "support SAM CLI version 1.x"
+        }
+    ]
+}

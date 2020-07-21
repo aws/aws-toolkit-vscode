@@ -6,6 +6,9 @@
 import '../../../shared/utilities/asyncIteratorShim'
 
 import * as assert from 'assert'
+import { CloudWatchLogs } from 'aws-sdk'
+import * as sinon from 'sinon'
+import * as vscode from 'vscode'
 import {
     complement,
     difference,
@@ -19,11 +22,23 @@ import {
     toMapAsync,
     union,
     updateInPlace,
+    getPaginatedAwsCallIter,
+    getPaginatedAwsCallIterParams,
+    IteratorTransformer,
 } from '../../../shared/utilities/collectionUtils'
 
 import { asyncGenerator } from '../../utilities/collectionUtils'
 
 describe('CollectionUtils', async () => {
+    let sandbox: sinon.SinonSandbox
+    beforeEach(() => {
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(() => {
+        sandbox.restore()
+    })
+
     describe('union', async () => {
         it('returns an empty set if both inputs are empty', async () => {
             const result = union([], [])
@@ -354,6 +369,102 @@ describe('CollectionUtils', async () => {
             assert.ok(result)
             assert.strictEqual(result.length, 1)
             assert.strictEqual(result[0], 2)
+        })
+    })
+
+    describe('getPaginatedAwsCallIter', async () => {
+        it('iterates as long as results are present', async () => {
+            const fakeCall = sandbox.stub<
+                [CloudWatchLogs.DescribeLogStreamsRequest],
+                CloudWatchLogs.DescribeLogStreamsResponse
+            >()
+            const responses: CloudWatchLogs.LogStreams[] = [
+                [{ logStreamName: 'stream1' }, { logStreamName: 'stream2' }, { logStreamName: 'stream3' }],
+                [{ logStreamName: 'stream4' }, { logStreamName: 'stream5' }, { logStreamName: 'stream6' }],
+                [{ logStreamName: 'stream7' }, { logStreamName: 'stream8' }, { logStreamName: 'stream9' }],
+            ]
+            fakeCall
+                .onCall(0)
+                .returns({
+                    logStreams: responses[0],
+                    nextToken: 'gotAToken',
+                })
+                .onCall(1)
+                .returns({
+                    logStreams: responses[1],
+                    nextToken: 'gotAnotherToken',
+                })
+                .onCall(2)
+                .returns({
+                    logStreams: responses[2],
+                })
+                .onCall(3)
+                .returns({})
+            const params: getPaginatedAwsCallIterParams<
+                CloudWatchLogs.DescribeLogStreamsRequest,
+                CloudWatchLogs.DescribeLogStreamsResponse
+            > = {
+                awsCall: async req => fakeCall(req),
+                nextTokenNames: {
+                    request: 'nextToken',
+                    response: 'nextToken',
+                },
+                request: {
+                    logGroupName: 'imJustHereSoIWontGetFined',
+                },
+            }
+            const iter: AsyncIterator<CloudWatchLogs.DescribeLogStreamsResponse> = getPaginatedAwsCallIter(params)
+            const firstResult = await iter.next()
+            const secondResult = await iter.next()
+            const thirdResult = await iter.next()
+            const fourthResult = await iter.next()
+            assert.deepStrictEqual(firstResult.value.logStreams, responses[0])
+            assert.deepStrictEqual(secondResult.value.logStreams, responses[1])
+            assert.deepStrictEqual(thirdResult.value.logStreams, responses[2])
+            assert.deepStrictEqual(fourthResult, { done: true, value: undefined })
+        })
+    })
+
+    describe('IteratorTransformer', async () => {
+        it('transforms values from the iterator and does not carry state over when creating another iterator', async () => {
+            const values = ['a', 'b', 'c']
+            async function* iteratorFn(): AsyncIterator<string> {
+                for (const val of values) {
+                    yield val
+                }
+            }
+            const populator = new IteratorTransformer<string, vscode.QuickPickItem>(
+                () => iteratorFn(),
+                val => {
+                    if (val) {
+                        return [{ label: val.toUpperCase() }]
+                    }
+
+                    return []
+                }
+            )
+
+            const firstIter = populator.createPickIterator()
+            let firstI = 0
+            let firstItem = await firstIter.next()
+            while (!firstItem.done) {
+                assert.ok(Array.isArray(firstItem.value)),
+                    assert.strictEqual(firstItem.value.length, 1),
+                    assert.deepStrictEqual(firstItem.value[0], { label: values[firstI].toUpperCase() })
+                firstI++
+                firstItem = await firstIter.next()
+            }
+
+            const secondIter = populator.createPickIterator()
+            let secondI = 0
+            let secondItem = await secondIter.next()
+            while (!secondItem.done) {
+                assert.ok(Array.isArray(secondItem.value)),
+                    assert.strictEqual(secondItem.value.length, 1),
+                    assert.deepStrictEqual(secondItem.value[0], { label: values[secondI].toUpperCase() })
+                secondI++
+                secondItem = await secondIter.next()
+            }
         })
     })
 })
