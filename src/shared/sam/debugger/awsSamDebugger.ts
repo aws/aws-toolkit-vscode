@@ -344,6 +344,17 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
 
         let awsCredentials: Credentials | undefined
 
+        // TODO: Remove this line to enable dotnetcore3.1 debugging when it becomes available
+        if (runtime === 'dotnetcore3.1' && !config.noDebug) {
+            vscode.window.showWarningMessage(
+                localize(
+                    'AWS.output.sam.local.no.net.3.1.debug',
+                    'SAM debugging is not supported for dotnetcore3.1 runtime. Function will run locally without debug.'
+                )
+            )
+            config.noDebug = true
+        }
+
         if (config.aws?.credentials) {
             const credentialsProviderId = fromString(config.aws.credentials)
             try {

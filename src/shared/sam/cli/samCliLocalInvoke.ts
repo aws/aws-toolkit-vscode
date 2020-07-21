@@ -12,6 +12,7 @@ import { ChildProcess } from '../../utilities/childProcess'
 import { removeAnsi } from '../../utilities/textUtilities'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { ChannelLogger } from '../../utilities/vsCodeUtils'
+import { DefaultSamCliProcessInvokerContext, SamCliProcessInvokerContext } from './samCliInvoker'
 
 const localize = nls.loadMessageBundle()
 
@@ -194,13 +195,19 @@ export interface SamCliLocalInvokeInvocationArguments {
  * An elaborate way to run `sam local`.
  */
 export class SamCliLocalInvokeInvocation {
+    private readonly invokerContext: SamCliProcessInvokerContext
+
     public constructor(private readonly args: SamCliLocalInvokeInvocationArguments) {
         this.args.skipPullImage = !!this.args.skipPullImage
+
+        // Enterprise!
+        this.invokerContext = new DefaultSamCliProcessInvokerContext()
     }
 
     public async execute(timeout?: Timeout): Promise<void> {
         await this.validate()
 
+        const samCommand = this.invokerContext.cliConfig.getSamCliLocation() ?? 'sam'
         const invokeArgs = [
             'local',
             'invoke',
@@ -232,7 +239,7 @@ export class SamCliLocalInvokeInvocation {
                     ...this.args.environmentVariables,
                 },
             },
-            command: 'sam',
+            command: samCommand,
             args: invokeArgs,
             isDebug: !!this.args.debugPort,
             timeout,

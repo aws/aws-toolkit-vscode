@@ -22,7 +22,7 @@ export enum RuntimeFamily {
 //       We should be able to eliminate a fair amount of redundancy with that.
 export const nodeJsRuntimes: Set<Runtime> = Set<Runtime>(['nodejs12.x', 'nodejs10.x', 'nodejs8.10'])
 export const pythonRuntimes: Set<Runtime> = Set<Runtime>(['python3.8', 'python3.7', 'python3.6', 'python2.7'])
-export const dotNetRuntimes: Set<Runtime> = Set<Runtime>(['dotnetcore2.1'])
+export const dotNetRuntimes: Set<Runtime> = Set<Runtime>(['dotnetcore2.1', 'dotnetcore3.1'])
 const DEFAULT_RUNTIMES = Map<RuntimeFamily, Runtime>([
     [RuntimeFamily.NodeJS, 'nodejs12.x'],
     [RuntimeFamily.Python, 'python3.8'],
