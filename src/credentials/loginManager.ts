@@ -26,8 +26,11 @@ export class LoginManager {
     /**
      * Establishes a Credentials for the Toolkit to use. Essentially the Toolkit becomes "logged in".
      * If an error occurs while trying to set up and verify these credentials, the Toolkit is "logged out".
+     *
+     * @param credentialsProviderId
+     * @param passive  If true, this was _not_ a user-initiated action.
      */
-    public async login(credentialsProviderId: CredentialsProviderId): Promise<void> {
+    public async login(passive: boolean, credentialsProviderId: CredentialsProviderId): Promise<void> {
         let loginResult: Result = 'Succeeded'
         try {
             const provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(
@@ -70,7 +73,9 @@ export class LoginManager {
 
             this.notifyUserInvalidCredentials(credentialsProviderId)
         } finally {
-            recordAwsSetCredentials({ result: loginResult })
+            if (!passive) {
+                recordAwsSetCredentials({ result: loginResult })
+            }
         }
     }
 

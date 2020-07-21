@@ -56,14 +56,14 @@ describe('LoginManager', async () => {
     it('logs in with credentials (happy path)', async () => {
         const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials')
 
-        await loginManager.login(sampleCredentialsProviderId)
+        await loginManager.login(false, sampleCredentialsProviderId)
         assert.strictEqual(setCredentialsStub.callCount, 1, 'Expected awsContext setCredentials to be called once')
     })
 
     it('logs out (happy path)', async () => {
         const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials')
 
-        await loginManager.login(sampleCredentialsProviderId)
+        await loginManager.login(false, sampleCredentialsProviderId)
         await loginManager.logout()
         assert.strictEqual(setCredentialsStub.callCount, 2, 'Expected awsContext setCredentials to be called twice')
     })
@@ -76,7 +76,7 @@ describe('LoginManager', async () => {
             assert.strictEqual(credentials, undefined)
         })
 
-        await loginManager.login(sampleCredentialsProviderId)
+        await loginManager.login(true, sampleCredentialsProviderId)
         assert.strictEqual(setCredentialsStub.callCount, 1, 'Expected awsContext setCredentials to be called once')
     })
 
@@ -88,7 +88,7 @@ describe('LoginManager', async () => {
             assert.strictEqual(credentials, undefined)
         })
 
-        await loginManager.login(sampleCredentialsProviderId)
+        await loginManager.login(false, sampleCredentialsProviderId)
         assert.strictEqual(setCredentialsStub.callCount, 1, 'Expected awsContext setCredentials to be called once')
     })
 
@@ -100,7 +100,7 @@ describe('LoginManager', async () => {
             assert.strictEqual(credentials, undefined)
         })
 
-        await loginManager.login(sampleCredentialsProviderId)
+        await loginManager.login(false, sampleCredentialsProviderId)
         assert.strictEqual(setCredentialsStub.callCount, 1, 'Expected awsContext setCredentials to be called once')
     })
 })
