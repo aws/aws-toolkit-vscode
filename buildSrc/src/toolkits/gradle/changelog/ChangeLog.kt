@@ -16,7 +16,9 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import java.io.File
 import java.time.LocalDate
 
-val MAPPER: ObjectMapper = jacksonObjectMapper().registerModule(JavaTimeModule()).enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+val MAPPER: ObjectMapper = jacksonObjectMapper()
+    .registerModule(JavaTimeModule())
+    .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
     .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
 
 inline fun <reified T : Any> readFile(f: File): T {

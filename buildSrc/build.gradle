@@ -26,10 +26,11 @@ repositories {
 }
 
 apply plugin: 'kotlin'
+apply plugin: "java-gradle-plugin"
 
 sourceSets {
-    main.java.srcDir 'src'
-    test.java.srcDir 'tst'
+    main.kotlin.srcDir 'src'
+    test.kotlin.srcDir 'tst'
 }
 
 dependencies {
@@ -44,4 +45,13 @@ dependencies {
     testImplementation "junit:junit:$junitVersion"
     testImplementation "com.nhaarman.mockitokotlin2:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
+}
+
+gradlePlugin {
+    plugins {
+        changeLog {
+            id = 'toolkit-change-log'
+            implementationClass = 'toolkits.gradle.changelog.ChangeLogPlugin'
+        }
+    }
 }
