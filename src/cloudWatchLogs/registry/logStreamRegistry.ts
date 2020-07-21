@@ -49,7 +49,9 @@ export class LogStreamRegistry {
             regionName: string
         }) => Promise<CloudWatchLogs.GetLogEventsResponse>
     ): Promise<void> {
-        if (parseCloudWatchLogsUri(uri) && !this.hasLog(uri)) {
+        // ensure this is a CloudWatchLogs URI; don't need the return value, just need to make sure it doesn't throw.
+        parseCloudWatchLogsUri(uri)
+        if (!this.hasLog(uri)) {
             this.setLog(uri, new CloudWatchLogStreamData())
             await this.updateLog(uri, 'tail', getLogEventsFromUriComponentsFn)
         }
@@ -85,7 +87,7 @@ export class LogStreamRegistry {
                 line = timestamp.concat('\t', line)
             }
             if (!line.endsWith('\n')) {
-                line.concat('\n')
+                line = line.concat('\n')
             }
             output = output.concat(line)
         }
