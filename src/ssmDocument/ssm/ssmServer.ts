@@ -27,8 +27,8 @@ import {
 import { posix } from 'path'
 import { clearTimeout, setTimeout } from 'timers'
 import * as URL from 'url'
-import { getLanguageModelCache } from '../../stepFunctions/asl/languageModelCache'
-import { formatError, runSafe, runSafeAsync } from '../../stepFunctions/asl/utils/runner'
+import { getLanguageModelCache } from '../../shared/languageServer/languageModelCache'
+import { formatError, runSafe, runSafeAsync } from '../../shared/languageServer/utils/runner'
 
 namespace ResultLimitReachedNotification {
     export const type: NotificationType<string, any> = new NotificationType('ssm/resultLimitReached')
