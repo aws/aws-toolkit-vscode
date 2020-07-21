@@ -24,6 +24,7 @@ phases:
     commands:
       - chmod +x gradlew
       - ./gradlew check coverageReport --info --full-stacktrace --console plain
+      - ./gradlew buildPlugin
       - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
       - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g') # Encode `#` in the URL because otherwise the url is clipped in the Codecov.io site
       - CI_BUILD_ID="${CODEBUILD_BUILD_ID}"
@@ -32,11 +33,14 @@ phases:
 
   post_build:
     commands:
+      - BUILD_ARTIFACTS="/tmp/buildArtifacts"
       - TEST_ARTIFACTS="/tmp/testArtifacts"
       - mkdir -p $TEST_ARTIFACTS/test-reports
+      - mkdir -p $BUILD_ARTIFACTS
       - rsync -rmq --include='*/' --include '**/build/idea-sandbox/system*/log/**' --exclude='*' . $TEST_ARTIFACTS/ || true
       - rsync -rmq --include='*/' --include '**/build/reports/**' --exclude='*' . $TEST_ARTIFACTS/ || true
       - rsync -rmq --include='*/' --include '**/test-results/**/*.xml' --exclude='*' . $TEST_ARTIFACTS/test-reports || true
+      - cp -r ./build/distributions/*.zip $BUILD_ARTIFACTS/ || true
 
 reports:
   unit-test:
@@ -49,3 +53,9 @@ artifacts:
   files:
     - "**/*"
   base-directory: /tmp/testArtifacts
+  secondary-artifacts:
+    plugin:
+      files:
+        - /tmp/buildArtifacts/*
+      discard-paths: yes
+      name: plugin.zip
