@@ -1,0 +1,334 @@
+{
+    "definitions": {
+        "0.3": {
+            "defaultSnippets": [
+                {
+                    "label": "Snippet: aws:approve",
+                    "description": "Insert snippet for aws:approve\n\nTemporarily pauses an Automation execution until designated principals either approve or reject the action. After the required number of approvals is reached, the Automation execution resumes. You can insert the approval step any place in the mainSteps section of your Automation document.\n\nThe default timeout for this action is 7 days (604800 seconds). You can limit or extend the timeout by specifying the timeoutSeconds parameter for an aws:approve step. If the automation step reaches the timeout value before receiving all required approval decisions, then the step and the automation stop running and return a status of Timed Out.",
+                    "body": {
+                        "name": "exampleApprove",
+                        "action": "aws:approve",
+                        "timeoutSeconds": 1000,
+                        "onFailure": "Abort",
+                        "inputs": {
+                            "NotificationArn": "arn:aws:sns:us-east-2:12345678901:AutomationApproval",
+                            "Message": "{{ message }}",
+                            "MinRequiredApprovals": 1,
+                            "Approvers": ["arn:aws:iam::12345678901:user/AWS-User-1"]
+                        }
+                    }
+                },
+                {
+                    "label": "Snippet: aws:assertAwsResourceProperty",
+                    "description": "Insert snippet for aws:assertAwsResourceProperty\n\nThe aws:assertAwsResourceProperty action enables you to assert a specific resource state or event state for a specific Automation step. For example, you can specify that an Automation step must wait for an EC2 instance to start. Then it will call the Amazon EC2 DescribeInstanceStatus API action with the DesiredValue property of running. This ensures that the Automation workflow waits for a running instance and then continues when the instance is, in fact, running.",
+                    "body": {
+                        "name": "exampleAssertAwsResourceProperty",
+                        "action": "aws:assertAwsResourceProperty",
+                        "inputs": {
+                            "Service": "The official namespace of the service",
+                            "Api": "The API action or method name",
+                            "API action inputs or parameters": "A value",
+                            "PropertySelector": "Response object",
+                            "DesiredValues": ["Desired property values"]
+                        }
+                    }
+                },
+                {
+                    "label": "Snippet: aws:branch",
+                    "description": "Insert snippet for aws:branch\n\nThe aws:branch action enables you to create a dynamic Automation workflow that evaluates different choices in a single step and then jumps to a different step in the Automation document based on the results of that evaluation.\n\nWhen you specify the aws:branch action for a step, you specify Choices that the workflow must evaluate. The Choices can be based on either a value that you specified in the Parameters section of the Automation document, or a dynamic value generated as the output from the previous step. The Automation workflow evaluates each choice by using a Boolean expression. If the first choice is true, then the workflow jumps to the step designated for that choice. If the first choice is false, the workflow evaluates the next choice. The workflow continues evaluating each choice until it process a true choice. The workflow then jumps to the designated step for the true choice.\n\nIf none of the choices are true, the workflow checks to see if the step contains a default value. A default value defines a step that the workflow should jump to if none of the choices are true. If no default value is specified for the step, then the Automation workflow processes the next step in the document.\n\nThe aws:branch action supports complex choice evaluations by using a combination of And, Not, and Or operators.",
+                    "body": {
+                        "name": "exampleBranch",
+                        "action": "aws:branch",
+                        "inputs": {
+                            "Choices": [
+                                {
+                                    "NextStep": "NextStep",
+                                    "Variable": "{{ varName }}",
+                                    "StringEquals": "windows"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "label": "Snippet: aws:changeInstanceState",
+                    "description": "Insert snippet for aws:changeInstanceState\n\nChanges or asserts the state of the instance.\n\nThis action can be used in assert mode (do not run the API to change the state but verify the instance is in the desired state.) To use assert mode, set the CheckStateOnly parameter to true. This mode is useful when running the Sysprep command on Windows, which is an asynchronous command that can run in the background for a long time. You can ensure that the instance is stopped before you create an AMI.",
+                    "body": {
+                        "name": "exampleChangeInstanceState",
+                        "action": "aws:changeInstanceState",
+                        "maxAttempts": 3,
+                        "timeoutSeconds": 3600,
+                        "onFailure": "Abort",
+                        "inputs": {
+                            "InstanceIds": ["i-1234567890abcdef0"],
+                            "CheckStateOnly": true,
+                            "DesiredState": "stopped"
+                        }
+                    }
+                },
+                {
+                    "label": "Snippet: aws:copyImage",
+                    "description": "Insert snippet for aws:copyImage\n\nCopies an AMI from any region into the current region. This action can also encrypt the new AMI.",
+                    "body": {
+                        "name": "exampleCopyImage",
+                        "action": "aws:copyImage",
+                        "maxAttempts": 3,
+                        "onFailure": "Abort",
+                        "inputs": {
+                            "SourceImageId": "ami-0fe10819",
+                            "SourceRegion": "us-east-1",
+                            "ImageName": "Encrypted Copy of LAMP base AMI in us-east-1",
+                            "Encrypted": true
+                        }
+                    }
+                },
+                {
+                    "label": "Snippet: aws:createImage",
+                    "description": "Insert snippet for aws:createImage\n\nCreates a new AMI from an instance that is either running or stopped.",
+                    "body": {
+                        "name": "exampleCreateImage",
+                        "action": "aws:createImage",
+                        "maxAttempts": 3,
+                        "onFailure": "Abort",
+                        "inputs": {
+                            "InstanceId": "i-1234567890abcdef0",
+                            "ImageName": "AMI Created on{{global:DATE_TIME}}",
+                            "NoReboot": true,
+                            "ImageDescription": "My newly created AMI"
+                        }
+                    }
+                },
+                {
+                    "label": "Snippet: aws:createStack",
+                    "description": "Insert snippet for aws:createStack\n\nCreates a new AWS CloudFormation stack from a template.",
+                    "body": {
+                        "name": "exampleCreateStack",
+                        "action": "aws:createStack",
+                        "maxAttempts": 1,
+                        "onFailure": "Abort",
+                        "inputs": {
+                            "Capabilities": ["CAPABILITY_IAM"],
+                            "StackName": "myStack",
+                            "TemplateURL": "http://s3.amazonaws.com/mybucket/myStackTemplate",
+                            "TimeoutInMinutes": 5
+                        }
+                    }
+                },
+                {
+                    "label": "Snippet: aws:createTags",
+                    "description": "Insert snippet for aws:createTags\n\nCreate new tags for EC2 instances or Systems Manager managed instances.",
+                    "body": {
+                        "name": "exampleCreateTags",
+                        "action": "aws:createTags",
+                        "maxAttempts": 3,
+                        "onFailure": "Abort",
+                        "inputs": {
+                            "ResourceType": "EC2",
+                            "ResourceIds": ["ami-9a3768fa", "i-02951acd5111a8169"],
+                            "Tags": [
+                                {
+                                    "Key": "production",
+                                    "Value": ""
+                                },
+                                {
+                                    "Key": "department",
+                                    "Value": "devops"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "label": "Snippet: aws:deleteImage",
+                    "description": "Insert snippet for aws:deleteImage\n\nDeletes the specified image and all related snapshots.",
+                    "body": {
+                        "name": "exampleDeleteImage",
+                        "action": "aws:deleteImage",
+                        "maxAttempts": 3,
+                        "timeoutSeconds": 180,
+                        "onFailure": "Abort",
+                        "inputs": {
+                            "ImageId": "ami-12345678"
+                        }
+                    }
+                },
+                {
+                    "label": "Snippet: aws:deleteStack",
+                    "description": "Insert snippet for aws:deleteStack\n\nDeletes an AWS CloudFormation stack.",
+                    "body": {
+                        "name": "exampleDeleteStack",
+                        "action": "aws:deleteStack",
+                        "maxAttempts": 1,
+                        "onFailure": "Abort",
+                        "inputs": {
+                            "StackName": "{{stackName}}"
+                        }
+                    }
+                },
+                {
+                    "label": "Snippet: aws:executeAutomation",
+                    "description": "Insert snippet for aws:executeAutomation\n\nRuns a secondary Automation workflow by calling a secondary Automation document. With this action, you can create Automation documents for your most common workflows, and reference those documents during an Automation execution. This action can simplify your Automation documents by removing the need to duplicate steps across similar documents.\n\nThe secondary Automation runs in the context of the user who initiated the primary Automation. This means that the secondary Automation uses the same IAM role or user account as the user who started the first Automation.\n\nIf you specify parameters in a secondary Automation that use an assume role (a role that uses the iam:passRole policy), then the user or role that initiated the primary Automation must have permission to pass the assume role specified in the secondary Automation.",
+                    "body": {
+                        "name": "exampleExecuteAutomation",
+                        "action": "aws:executeAutomation",
+                        "maxAttempts": 3,
+                        "timeoutSeconds": 3600,
+                        "onFailure": "Abort",
+                        "inputs": {
+                            "DocumentName": "secondaryWorkflow",
+                            "RuntimeParameters": {
+                                "instanceIds": ["i-1234567890abcdef0"]
+                            }
+                        }
+                    }
+                },
+                {
+                    "label": "Snippet: aws:executeAwsApi",
+                    "description": "Insert snippet for aws:executeAwsApi\n\nCalls and runs AWS API actions. Most API actions are supported, although not all API actions have been tested.",
+                    "body": {
+                        "name": "exampleExecuteAwsApi",
+                        "action": "aws:executeAwsApi",
+                        "inputs": {
+                            "Service": "The official namespace of the service",
+                            "Api": "The API action or method name",
+                            "API action inputs or parameters": "A value"
+                        },
+                        "outputs": [
+                            {
+                                "Name": "The name for a user-specified output key",
+                                "Selector": "A response object specified by using JSONPath format",
+                                "Type": "The data type"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "label": "Snippet: aws:executeScript",
+                    "description": "Insert snippet for aws:executeScript\n\nRuns the Python or PowerShell script provided, using the specified runtime and handler. (For PowerShell, the handler is not required.)\n\nCurrently, the aws:executeScript action contains the following preinstalled PowerShell Core modules.\n\tMicrosoft.PowerShell.Host\n\tMicrosoft.PowerShell.Management\n\tMicrosoft.PowerShell.Security\n\tMicrosoft.PowerShell.Utility\n\tPackageManagement\n\tPowerShellGet",
+                    "body": {
+                        "name": "exampleExecuteScript",
+                        "action": "aws:executeScript",
+                        "inputs": {
+                            "Runtime": "python3.6",
+                            "Handler": "script_handler",
+                            "InputPayload": {
+                                "parameter1": "parameter_value1",
+                                "parameter2": "parameter_value2"
+                            }
+                        }
+                    }
+                },
+                {
+                    "label": "Snippet: aws:executeStateMachine",
+                    "description": "Insert snippet for aws:executeStateMachine\n\nRun an AWS Step Functions state machine.",
+                    "body": {
+                        "name": "exampleExecuteStateMachine",
+                        "action": "aws:executeStateMachine",
+                        "inputs": {
+                            "stateMachineArn": "StateMachine_ARN",
+                            "input": "{\"parameters\":\"values\"}",
+                            "name": "name"
+                        }
+                    }
+                },
+                {
+                    "label": "Snippet: aws:invokeLambdaFunction",
+                    "description": "Insert snippet for aws:invokeLambdaFunction\n\nInvokes the specified Lambda function.",
+                    "body": {
+                        "name": "exampleInvokeLambdaFunction",
+                        "action": "aws:invokeLambdaFunction",
+                        "maxAttempts": 3,
+                        "timeoutSeconds": 120,
+                        "onFailure": "Abort",
+                        "inputs": {
+                            "FunctionName": "MyLambdaFunction"
+                        }
+                    }
+                },
+                {
+                    "label": "Snippet: aws:pause",
+                    "description": "Insert snippet for aws:pause\n\nThis action pauses the Automation execution. Once paused, the execution status is Waiting. To continue the Automation execution, use the SendAutomationSignal API action with the Resume signal type.",
+                    "body": {
+                        "name": "examplePause",
+                        "action": "aws:pause",
+                        "inputs": {}
+                    }
+                },
+                {
+                    "label": "Snippet: aws:runCommand",
+                    "description": "Insert snippet for aws:runCommand\n\nRuns the specified commands.",
+                    "body": {
+                        "name": "exampleRunCommand",
+                        "action": "aws:runCommand",
+                        "inputs": {
+                            "DocumentName": "AWS-RunPowerShellScript",
+                            "InstanceIds": ["{{InstanceIds}}"],
+                            "Parameters": {
+                                "commands": ["(Get-WmiObject -Class Win32_ComputerSystem).PartOfDomain"]
+                            }
+                        }
+                    }
+                },
+                {
+                    "label": "Snippet: aws:runInstances",
+                    "description": "Insert snippet for aws:runInstances\n\nLaunches a new instance.",
+                    "body": {
+                        "name": "exampleRunInstances",
+                        "action": "aws:runInstances",
+                        "maxAttempts": 3,
+                        "timeoutSeconds": 1200,
+                        "onFailure": "Abort",
+                        "inputs": {
+                            "ImageId": "ami-12345678",
+                            "InstanceType": "t2.micro",
+                            "MinInstanceCount": 1,
+                            "MaxInstanceCount": 1,
+                            "IamInstanceProfileName": "myRunCmdRole",
+                            "TagSpecifications": [
+                                {
+                                    "ResourceType": "instance",
+                                    "Tags": [
+                                        {
+                                            "Key": "LaunchedBy",
+                                            "Value": "SSMAutomation"
+                                        },
+                                        {
+                                            "Key": "Category",
+                                            "Value": "HighAvailabilityFleetHost"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "label": "Snippet: aws:sleep",
+                    "description": "Insert snippet for aws:sleep\n\nDelays Automation execution for a specified amount of time. This action uses the International Organization for Standardization (ISO) 8601 date and time format.",
+                    "body": {
+                        "name": "exampleSleep",
+                        "action": "aws:sleep",
+                        "inputs": {
+                            "Duration": "PT10M"
+                        }
+                    }
+                },
+                {
+                    "label": "Snippet: aws:waitForAwsResourceProperty",
+                    "description": "Insert snippet for aws:waitForAwsResourceProperty\n\nThe aws:waitForAwsResourceProperty action enables your Automation workflow to wait for a specific resource state or event state before continuing the workflow.",
+                    "body": {
+                        "name": "exampleWaitForAwsResourceProperty",
+                        "action": "aws:waitForAwsResourceProperty",
+                        "inputs": {
+                            "Service": "The official namespace of the service",
+                            "Api": "The API action or method name",
+                            "API action inputs or parameters": "A value",
+                            "PropertySelector": "Response object",
+                            "DesiredValues": ["Desired property value"]
+                        }
+                    }
+                }
+            ]
+        }
+    }
+}
