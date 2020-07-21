@@ -16,34 +16,41 @@ const localize = nls.loadMessageBundle()
 const lock = new AsyncLock()
 
 const learnMore = localize('AWS.samcli.userChoice.visit.install.url', 'Get SAM CLI')
-
 const browseToSamCli = localize('AWS.samcli.userChoice.browse', 'Locate SAM CLI...')
-
 const settingsUpdated = localize('AWS.samcli.detect.settings.updated', 'Settings updated.')
-
 const settingsNotUpdated = localize('AWS.samcli.detect.settings.not.updated', 'No settings changes necessary.')
 
-export async function detectSamCli(showMessageIfDetected: boolean): Promise<void> {
+/** Most-recent resolved SAM CLI location. */
+let currentsamCliLocation: string | undefined = undefined
+
+/**
+ *
+ * @param opt.showMessage true: always show message, false: never show
+ * message, undefined: show message only if the new setting differs from
+ * the old setting.
+ */
+export async function detectSamCli(opt: { showMessage: boolean | undefined }): Promise<void> {
     await lock.acquire('detect SAM CLI', async () => {
         const samCliConfig = new DefaultSamCliConfiguration(
             new DefaultSettingsConfiguration(extensionSettingsPrefix),
             new DefaultSamCliLocationProvider()
         )
 
-        const initialSamCliLocation = samCliConfig.getSamCliLocation()
-
+        const valueBeforeInit = samCliConfig.getSamCliLocation()
         await samCliConfig.initialize()
+        const valueAfterInit = samCliConfig.getSamCliLocation()
+        const isAutoDetected = valueBeforeInit !== valueAfterInit
+        const isUserSettingChanged = currentsamCliLocation !== valueAfterInit
+        currentsamCliLocation = valueAfterInit
 
-        const currentsamCliLocation = samCliConfig.getSamCliLocation()
-
-        if (showMessageIfDetected) {
-            if (!currentsamCliLocation) {
+        if (opt.showMessage !== false) {
+            if (!valueAfterInit) {
                 notifyUserSamCliNotDetected(samCliConfig)
-            } else {
-                const message: string =
-                    initialSamCliLocation === currentsamCliLocation
-                        ? getSettingsNotUpdatedMessage(initialSamCliLocation)
-                        : getSettingsUpdatedMessage(currentsamCliLocation)
+            } else if (isUserSettingChanged || opt.showMessage === true) {
+                const message =
+                    !isAutoDetected && !isUserSettingChanged
+                        ? getSettingsNotUpdatedMessage(valueBeforeInit ?? '?')
+                        : getSettingsUpdatedMessage(currentsamCliLocation ?? '?')
 
                 vscode.window.showInformationMessage(message)
             }
@@ -86,13 +93,13 @@ function notifyUserSamCliNotDetected(samCliConfig: SamCliConfiguration): void {
 }
 
 function getSettingsUpdatedMessage(location: string): string {
-    const configuredLocation = localize('AWS.samcli.configured.location', 'Configured SAM CLI Location: {0}', location)
+    const configuredLocation = localize('AWS.samcli.configured.location', 'SAM CLI Location: {0}', location)
 
     return `${settingsUpdated} ${configuredLocation}`
 }
 
 function getSettingsNotUpdatedMessage(location: string): string {
-    const configuredLocation = localize('AWS.samcli.configured.location', 'Configured SAM CLI Location: {0}', location)
+    const configuredLocation = localize('AWS.samcli.configured.location', 'SAM CLI Location: {0}', location)
 
     return `${settingsNotUpdated} ${configuredLocation}`
 }
