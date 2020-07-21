@@ -6,7 +6,7 @@ package toolkits.gradle.changelog
 import java.io.File
 import java.time.LocalDate
 
-class ReleaseCreator(private val unreleasedFiles: List<File>, private val nextReleaseFile: File) {
+class ReleaseCreator(private val unreleasedFiles: Collection<File>, private val nextReleaseFile: File) {
     init {
         if (nextReleaseFile.exists()) {
             throw RuntimeException("Release file $nextReleaseFile already exists!")

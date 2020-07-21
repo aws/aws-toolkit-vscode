@@ -5,7 +5,7 @@ package toolkits.gradle.changelog
 
 import java.nio.file.Path
 
-class GithubWriter(private val file: Path, issueUrl: String? = null) : ChangeLogWriter(issueUrl) {
+class GithubWriter(private val file: Path, issueUrl: String?) : ChangeLogWriter(issueUrl) {
     private val writer = file.toFile().bufferedWriter()
 
     override fun append(line: String) {
