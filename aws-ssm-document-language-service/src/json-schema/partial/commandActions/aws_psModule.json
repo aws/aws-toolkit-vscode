@@ -1,0 +1,85 @@
+{
+    "definitions": {
+        "2.2": {
+            "description": "Install PowerShell modules on an EC2 instance. This plugin only runs on Windows Server operating systems.",
+            "properties": {
+                "inputs": {
+                    "properties": {
+                        "runCommand": {
+                            "description": "The PowerShell command to run after the module is installed.",
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "source": {
+                            "description": "The URL or local path on the instance to the application .zip file.",
+                            "type": "string"
+                        },
+                        "sourceHash": {
+                            "description": "The SHA256 hash of the .zip file.",
+                            "type": "string"
+                        },
+                        "timeoutSeconds": {
+                            "description": "The time in seconds for a command to be completed before it is considered to have failed.",
+                            "type": ["string", "number"]
+                        },
+                        "workingDirectory": {
+                            "description": "The path to the working directory on your instance.",
+                            "type": "string"
+                        }
+                    },
+                    "required": ["source"]
+                }
+            },
+            "required": ["inputs"]
+        },
+        "1.2": {
+            "description": "Install PowerShell modules on an EC2 instance. This plugin only runs on Windows Server operating systems.",
+            "properties": {
+                "properties": {
+                    "description": "Properties of plugin aws:psMoudle.",
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "id of the step."
+                            },
+                            "runCommand": {
+                                "description": "The PowerShell command to run after the module is installed",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "default": "{{ runCommand }}"
+                            },
+                            "source": {
+                                "type": "string",
+                                "description": "The URL or local path on the instance to the application .zip file.",
+                                "default": "{{ source }}"
+                            },
+                            "sourceHash": {
+                                "type": "string",
+                                "description": "The SHA256 hash of the .zip file.",
+                                "default": "{{ sourceHash }}"
+                            },
+                            "timeoutSeconds": {
+                                "type": ["string", "integer"],
+                                "description": "The time in seconds for a command to be completed before it is considered to have failed.",
+                                "default": "{{ timeoutSeconds }}"
+                            },
+                            "workingDirectory": {
+                                "type": "string",
+                                "description": "The path to the working directory on your instance.",
+                                "default": "{{ workingDirectory }}"
+                            }
+                        },
+                        "required": ["source"],
+                        "additionalProperties": false
+                    }
+                }
+            }
+        }
+    }
+}

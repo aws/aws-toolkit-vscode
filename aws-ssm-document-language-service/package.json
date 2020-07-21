@@ -1,0 +1,36 @@
+{
+    "name": "aws-ssm-document-language-service",
+    "version": "1.0.0",
+    "description": "AWS Systems Manager Document Language Service",
+    "main": "out/service.js",
+    "types": "out/service.d.ts",
+    "author": "",
+    "license": "MIT",
+    "devDependencies": {},
+    "dependencies": {
+        "@types/mocha": "^7.0.2",
+        "@types/node": "^14.0.11",
+        "json-schema-ref-parser": "^9.0.1",
+        "mocha": "^7.2.0",
+        "tslint": "^5.0.0",
+        "tslint-eslint-rules": "^5.4.0",
+        "tslint-no-circular-imports": "^0.7.0",
+        "typescript": "^3.9.5",
+        "@types/js-yaml": "^3.12.4",
+        "js-yaml": "^3.14.0",
+        "vscode-json-languageservice": "^3.7.0",
+        "vscode-languageserver": "^6.1.1",
+        "vscode-languageserver-textdocument": "^1.0.0",
+        "yaml": "^1.10.0",
+        "yaml-language-server": "^0.9.0"
+    },
+    "scripts": {
+        "prepublish": "npm run compile",
+        "lint": "tslint 'src/**/*.ts' -p .",
+        "compile": "npm run lint && npm run clean && npm run bundle-schema && tsc -b",
+        "watch": "tsc -b -w",
+        "test": "npm run compile && mocha",
+        "bundle-schema": "node ./scripts/bundleSchema.js",
+        "clean": "node ./scripts/clean.js out"
+    }
+}

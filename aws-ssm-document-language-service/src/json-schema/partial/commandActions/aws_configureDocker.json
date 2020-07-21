@@ -1,0 +1,27 @@
+{
+    "definitions": {
+        "2.2": {
+            "description": "(Schema version 2.0 or later) Configure an instance to work with containers and Docker. This plugin is supported on Linux and Windows Server operating systems.",
+            "properties": {
+                "inputs": {
+                    "properties": {
+                        "action": {
+                            "description": "The type of action to perform. Install | Uninstall | set as parameter.",
+                            "type": "string",
+                            "anyOf": [
+                                {
+                                    "enum": ["Install", "Uninstall", "{{ action }}"]
+                                },
+                                {
+                                    "pattern": "^{{[ ]{0,1}[a-zA-Z_.]+[ ]{0,1}}}$"
+                                }
+                            ]
+                        }
+                    },
+                    "required": ["action"]
+                }
+            },
+            "required": ["inputs"]
+        }
+    }
+}

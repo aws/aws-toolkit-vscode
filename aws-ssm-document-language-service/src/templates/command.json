@@ -1,0 +1,20 @@
+{
+    "schemaVersion": "2.2",
+    "description": "Example document description",
+    "parameters": {
+        "example": {
+            "type": "String",
+            "description": "Example parameter",
+            "default": "Hello World"
+        }
+    },
+    "mainSteps": [
+        {
+            "action": "example action",
+            "name": "example",
+            "inputs": {
+                "example input": ["{{ example }}"]
+            }
+        }
+    ]
+}

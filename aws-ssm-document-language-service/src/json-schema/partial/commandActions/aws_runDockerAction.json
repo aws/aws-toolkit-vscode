@@ -1,0 +1,58 @@
+{
+    "definitions": {
+        "2.2": {
+            "description": "(Schema version 2.0 or later) Run Docker actions on containers. This plugin runs on Linux and Microsoft Windows Server operating systems.",
+            "properties": {
+                "inputs": {
+                    "properties": {
+                        "action": {
+                            "description": "The type of action to perform.",
+                            "type": "string"
+                        },
+                        "container": {
+                            "description": "The Docker container ID.",
+                            "type": "string"
+                        },
+                        "image": {
+                            "description": "The Docker image name.",
+                            "type": "string"
+                        },
+                        "cmd": {
+                            "description": "The container command.",
+                            "type": "string"
+                        },
+                        "memory": {
+                            "description": "The container memory limit.",
+                            "type": "string"
+                        },
+                        "cpuShares": {
+                            "description": "The container CPU shares (relative weight).",
+                            "type": "string"
+                        },
+                        "volume": {
+                            "description": "The container volume mounts.",
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "env": {
+                            "description": "The container environment variables.",
+                            "type": "string"
+                        },
+                        "user": {
+                            "description": "The container user name.",
+                            "type": "string"
+                        },
+                        "publish": {
+                            "description": "The container published ports.",
+                            "type": "string"
+                        }
+                    },
+                    "required": ["action"]
+                }
+            },
+            "required": ["inputs"]
+        }
+    }
+}

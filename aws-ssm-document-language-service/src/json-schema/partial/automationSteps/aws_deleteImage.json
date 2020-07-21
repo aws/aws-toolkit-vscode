@@ -1,0 +1,18 @@
+{
+    "definitions": {
+        "0.3": {
+            "description": "Deletes the specified image and all related snapshots.",
+            "properties": {
+                "inputs": {
+                    "properties": {
+                        "ImageId": {
+                            "description": "The ID of the image to be deleted.",
+                            "type": "string"
+                        }
+                    },
+                    "required": ["ImageId"]
+                }
+            }
+        }
+    }
+}

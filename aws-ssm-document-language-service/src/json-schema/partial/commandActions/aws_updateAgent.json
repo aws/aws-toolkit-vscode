@@ -1,0 +1,68 @@
+{
+    "definitions": {
+        "2.2": {
+            "description": "Update the EC2Config service to the latest version or specify an older version. This plugin only runs on Microsoft Windows Server operating systems.",
+            "properties": {
+                "inputs": {
+                    "properties": {
+                        "agentName": {
+                            "description": "EC2Config. This is the name of the agent that runs the EC2Config service.",
+                            "type": "string"
+                        },
+                        "allowDowngrade": {
+                            "description": "Allow the EC2Config service to be downgraded to an earlier version. If set to false, the service can be upgraded to newer versions only (default). If set to true, specify the earlier version.",
+                            "type": ["string", "boolean"]
+                        },
+                        "source": {
+                            "description": "The location where Systems Manager copies the version of EC2Config to install. You can't change this location.",
+                            "type": "string"
+                        },
+                        "targetVersion": {
+                            "description": "A specific version of the EC2Config service to install. If not specified, the service will be updated to the latest version.",
+                            "type": "string"
+                        }
+                    },
+                    "required": ["source"]
+                }
+            },
+            "required": ["inputs"]
+        },
+        "1.2": {
+            "description": "Update the EC2Config service to the latest version or specify an older version. This plugin only runs on Microsoft Windows Server operating systems.",
+            "properties": {
+                "properties": {
+                    "type": "object",
+                    "description": "Properties of plugin aws:updateAgent.",
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "description": "id of the step."
+                        },
+                        "agentName": {
+                            "type": "string",
+                            "description": "EC2Config. This is the name of the agent that runs the EC2Config service.",
+                            "default": "Ec2Config"
+                        },
+                        "source": {
+                            "type": "string",
+                            "description": "",
+                            "default": "https://s3.{Region}.amazonaws.com/aws-ssm-{Region}/manifest.json"
+                        },
+                        "allowDowngrade": {
+                            "type": ["string", "boolean"],
+                            "description": "Allow the EC2Config service to be downgraded to an earlier version. If set to false, the service can be upgraded to newer versions only (default). If set to true, specify the earlier version.",
+                            "default": "{{ allowDowngrade }}"
+                        },
+                        "targetVersion": {
+                            "type": "string",
+                            "description": "A specific version of the EC2Config service to install. If not specified, the service will be updated to the latest version.",
+                            "default": "{{ targetVersion }}"
+                        }
+                    },
+                    "required": ["agentName", "source"],
+                    "additionalProperties": false
+                }
+            }
+        }
+    }
+}

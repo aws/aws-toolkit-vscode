@@ -1,0 +1,80 @@
+[
+    {
+        "name": "$Parameter Snippet MapList",
+        "body": [
+            "param:",
+            "\ttype: MapList",
+            "\tdescription: (Required) Description for this parameter",
+            "\tdefault:",
+            "\t\t- key1: value1",
+            "\t\t\tkey2:",
+            "\t\t\t\tkey2_1: value2",
+            "\t\t- key1: value3",
+            "\t\t\tkey2:",
+            "\t\t\t\tkey2_1: value4",
+            "\tmaxItems: 2"
+        ],
+        "description": "Insert Snippet for MapList.\n\nParameter Type: MapList\n\nA list of StringMap items."
+    },
+    {
+        "name": "$Parameter Snippet StringMap",
+        "body": [
+            "param:",
+            "\ttype: StringMap",
+            "\tdescription: (Required) Description for this parameter.",
+            "\tdefault:",
+            "\t\tkey1: value1",
+            "\t\tkey2:",
+            "\t\t\t- value2",
+            "\t\tkey3: value3",
+            "\tmaxChars: 150"
+        ],
+        "description": "Insert Snippet for StringMap.\n\nParameter Type: StringMap\n\nA mapping of keys to values. A key can only be a string. For example, {\"Env\": \"Prod\"}."
+    },
+    {
+        "name": "$Parameter Snippet Boolean",
+        "body": [
+            "param1:",
+            "\ttype: Boolean",
+            "\tdescription: (Required) Description for this parameter.",
+            "\tdefault: true"
+        ],
+        "description": "Insert Snippet for Boolean.\n\nParameter Type: Boolean\n\nAccepts only true or false. Does not accept \"true\" or 0."
+    },
+    {
+        "name": "$Parameter Snippet Integer",
+        "body": [
+            "param:",
+            "\ttype: Integer,",
+            "\tdescription: (Required) Description for this parameter.",
+            "\tdefault: 100"
+        ],
+        "description": "Insert Snippet for Integer.\n\nParameter Type: Integer\n\nIntegral numbers. Doesn't accept decimal numbers, for example 3.14159, or numbers wrapped in quotation marks, for example \"3\"."
+    },
+    {
+        "name": "$Parameter Snippet StringList",
+        "body": [
+            "param:",
+            "\ttype: StringList",
+            "\tdescription: (Required) Description for this parameter.",
+            "\tminItems: 1",
+            "\tdisplayType: textarea"
+        ],
+        "description": "Insert Snippet for StringList.\n\nParameter Type: StringLIst\n\nA list of String items separated by commas. For example [\"cd ~\", \"pwd\"]"
+    },
+    {
+        "name": "$Parameter Snippet String",
+        "body": [
+            "param:",
+            "\ttype: String",
+            "\tdescription: (Required) Description for this parameter.",
+            "\tdefault: default value",
+            "\tallowedPattern: [a-zA-Z]",
+            "\tallowedValues:",
+            "\t\t- value1",
+            "\t\t- value2",
+            "\tminChars: 0"
+        ],
+        "description": "Insert Snippet for String.\n\nParameter Type: String\n\nA sequence of zero or more Unicode characters wrapped in quotation marks. For example, \"i-1234567890abcdef0\". Use backslashes to escape."
+    }
+]

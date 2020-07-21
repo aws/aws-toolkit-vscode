@@ -1,0 +1,84 @@
+[
+    {
+        "body": [
+            "aws:runPowerShellScript:",
+            "\tproperties:",
+            "\t- runCommand: \"{{ commands }}\"",
+            "\t\tworkingDirectory: \"{{ workingDirectory }}\"",
+            "\t\ttimeoutSeconds: \"{{ executionTimeout }}\""
+        ],
+        "name": "$Plugin Snippet aws:runPowerShellScript",
+        "description": "Insert Snippet for aws:runPowerShellScript.\n\nRun PowerShell scripts or specify the path to a script to run. This plugin runs on Microsoft Windows Server and Linux operating systems."
+    },
+    {
+        "body": [
+            "aws:domainJoin:",
+            "\tproperties:",
+            "\t\tdirectoryId: \"{{ directoryId }}\"",
+            "\t\tdirectoryName: \"{{ directoryName }}\"",
+            "\t\tdirectoryOU: \"{{ directoryOU }}\"",
+            "\t\tdnsIpAddresses: \"{{ dnsIpAddresses }}\""
+        ],
+        "name": "$Plugin Snippet aws:domainJoin",
+        "description": "Insert Snippet for aws:domainJoin.\n\nJoin an EC2 instance to a domain. This plugin only runs on Windows Server operating systems."
+    },
+    {
+        "body": [
+            "aws:updateAgent:",
+            "\tproperties:",
+            "\t\tagentName: Ec2Config",
+            "\t\tsource: https://s3.{Region}.amazonaws.com/aws-ssm-{Region}/manifest.json",
+            "\t\tallowDowngrade: \"{{ allowDowngrade }}\"",
+            "\t\ttargetVersion: \"{{ version }}\""
+        ],
+        "name": "$Plugin Snippet aws:updateAgent",
+        "description": "Insert Snippet for aws:updateAgent.\n\nUpdate the EC2Config service to the latest version or specify an older version. This plugin only runs on Microsoft Windows Server operating systems."
+    },
+    {
+        "body": [
+            "aws:updateSsmAgent:",
+            "\tproperties:",
+            "\t- agentName: amazon-ssm-agent",
+            "\t\tsource: https://s3.{Region}.amazonaws.com/aws-ssm-{Region}/manifest.json",
+            "\t\tallowDowngrade: \"{{ allowDowngrade }}\""
+        ],
+        "name": "$Plugin Snippet aws:updateSsmAgent",
+        "description": "Insert Snippet for aws:updateSsmAgent.\n\nUpdate the SSM Agent to the latest version or specify an older version. This plugin runs on Linux and Windows Server operating systems. "
+    },
+    {
+        "body": [
+            "aws:runShellScript:",
+            "\tproperties:",
+            "\t- runCommand: \"{{ commands }}\"",
+            "\t\tworkingDirectory: \"{{ workingDirectory }}\"",
+            "\t\ttimeoutSeconds: \"{{ executionTimeout }}\""
+        ],
+        "name": "$Plugin Snippet aws:runShellScript",
+        "description": "Insert Snippet for aws:runShellScript.\n\nRun Linux shell scripts or specify the path to a script to run. This plugin only runs on Linux operating systems."
+    },
+    {
+        "body": [
+            "aws:applications:",
+            "\tproperties:",
+            "\t- action: \"{{ action }}\"",
+            "\t\tparameters: \"{{ parameters }}\"",
+            "\t\tsource: \"{{ source }}\"",
+            "\t\tsourceHash: \"{{ sourceHash }}\""
+        ],
+        "name": "$Plugin Snippet aws:applications",
+        "description": "Insert Snippet for aws:applications.\n\nInstall, repair, or uninstall applications on an EC2 instance. This plugin only runs on Windows Server operating systems."
+    },
+    {
+        "body": [
+            "aws:psModule:",
+            "\tproperties:",
+            "\t- runCommand: \"{{ commands }}\"",
+            "\t\tsource: \"{{ source }}\"",
+            "\t\tsourceHash: \"{{ sourceHash }}\"",
+            "\t\tworkingDirectory: \"{{ workingDirectory }}\"",
+            "\t\ttimeoutSeconds: \"{{ executionTimeout }}\""
+        ],
+        "name": "$Plugin Snippet aws:psModule",
+        "description": "Insert Snippet for aws:psModule.\n\nInstall PowerShell modules on an EC2 instance. This plugin only runs on Windows Server operating systems."
+    }
+]

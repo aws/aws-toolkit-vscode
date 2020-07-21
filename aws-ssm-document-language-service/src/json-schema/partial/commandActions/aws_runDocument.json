@@ -1,0 +1,28 @@
+{
+    "definitions": {
+        "2.2": {
+            "description": "(Schema version 2.0 or later) Runs SSM documents stored in Systems Manager or on a local share. You can use this plugin with the aws:downloadContent plugin to download an SSM document from a remote location to a local share, and then run it. This plugin is supported on Linux and Windows Server operating systems.",
+            "properties": {
+                "inputs": {
+                    "properties": {
+                        "documentType": {
+                            "description": "The document type to run. You can run local documents (LocalPath) or documents stored in Systems Manager (SSMDocument).",
+                            "type": "string",
+                            "enum": ["LocalPath", "SSMDocument"]
+                        },
+                        "documentPath": {
+                            "description": "The path to the document. If documentType is LocalPath, then specify the path to the document on the local share. If documentType is SSMDocument, then specify the name of the document.",
+                            "type": "string"
+                        },
+                        "documentParameters": {
+                            "description": "Parameters for the document",
+                            "type": ["object", "string"]
+                        }
+                    },
+                    "required": ["documentType"]
+                }
+            },
+            "required": ["inputs"]
+        }
+    }
+}

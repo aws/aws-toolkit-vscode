@@ -1,0 +1,108 @@
+[
+    {
+        "body": [
+            "\"aws:domainJoin\":{",
+            "\t\"properties\":{",
+            "\t\t\"directoryId\":\"{{ directoryId }}\",",
+            "\t\t\"directoryName\":\"{{ directoryName }}\",",
+            "\t\t\"directoryOU\":\"{{ directoryOU }}\",",
+            "\t\t\"dnsIpAddresses\":\"{{ dnsIpAddresses }}\"",
+            "\t}",
+            "}"
+        ],
+        "name": "$Plugin Snippet aws:domainJoin",
+        "description": "Insert Snippet for aws:domainJoin.\n\nJoin an EC2 instance to a domain. This plugin only runs on Windows Server operating systems."
+    },
+    {
+        "body": [
+            "\"aws:updateAgent\":{",
+            "\t\"properties\":{",
+            "\t\t\"agentName\":\"Ec2Config\",",
+            "\t\t\"source\":\"https://s3.{Region}.amazonaws.com/aws-ssm-{Region}/manifest.json\",",
+            "\t\t\"allowDowngrade\":\"{{ allowDowngrade }}\",",
+            "\t\t\"targetVersion\":\"{{ version }}\"",
+            "\t}",
+            "}"
+        ],
+        "name": "$Plugin Snippet aws:updateAgent",
+        "description": "Insert Snippet for aws:updateAgent.\n\nUpdate the EC2Config service to the latest version or specify an older version. This plugin only runs on Microsoft Windows Server operating systems."
+    },
+    {
+        "body": [
+            "\"aws:runPowerShellScript\":{",
+            "\t\"properties\":[",
+            "\t\t{",
+            "\t\t\t\"runCommand\":\"{{ commands }}\",",
+            "\t\t\t\"workingDirectory\":\"{{ workingDirectory }}\",",
+            "\t\t\t\"timeoutSeconds\":\"{{ executionTimeout }}\"",
+            "\t\t}",
+            "\t]",
+            "}"
+        ],
+        "name": "$Plugin Snippet aws:runPowerShellScript",
+        "description": "Insert Snippet for aws:runPowerShellScript.\n\nRun PowerShell scripts or specify the path to a script to run. This plugin runs on Microsoft Windows Server and Linux operating systems."
+    },
+    {
+        "body": [
+            "\"aws:runShellScript\":{",
+            "\t\"properties\":[",
+            "\t\t{",
+            "\t\t\t\"runCommand\":\"{{ commands }}\",",
+            "\t\t\t\"workingDirectory\":\"{{ workingDirectory }}\",",
+            "\t\t\t\"timeoutSeconds\":\"{{ executionTimeout }}\"",
+            "\t\t}",
+            "\t]",
+            "}"
+        ],
+        "name": "$Plugin Snippet aws:runShellScript",
+        "description": "Insert Snippet for aws:runShellScript.\n\nRun Linux shell scripts or specify the path to a script to run. This plugin only runs on Linux operating systems."
+    },
+    {
+        "body": [
+            "\"aws:updateSsmAgent\":{",
+            "\t\"properties\":[",
+            "\t\t{",
+            "\t\t\t\"agentName\":\"amazon-ssm-agent\",",
+            "\t\t\t\"source\":\"https://s3.{Region}.amazonaws.com/aws-ssm-{Region}/manifest.json\",",
+            "\t\t\t\"allowDowngrade\":\"{{ allowDowngrade }}\"",
+            "\t\t}",
+            "\t]",
+            "}"
+        ],
+        "name": "$Plugin Snippet aws:updateSsmAgent",
+        "description": "Insert Snippet for aws:updateSsmAgent.\n\nUpdate the SSM Agent to the latest version or specify an older version. This plugin runs on Linux and Windows Server operating systems. "
+    },
+    {
+        "body": [
+            "\"aws:applications\": {",
+            "\t\"properties\": [",
+            "\t\t{",
+            "\t\t\t\"action\": \"{{ action }}\",",
+            "\t\t\t\"parameters\": \"{{ parameters }}\",",
+            "\t\t\t\"source\": \"{{ source }}\",",
+            "\t\t\t\"sourceHash\": \"{{ sourceHash }}\"",
+            "\t\t}",
+            "\t]",
+            "}"
+        ],
+        "name": "$Plugin Snippet aws:applications",
+        "description": "Insert Snippet for aws:applications.\n\nInstall, repair, or uninstall applications on an EC2 instance. This plugin only runs on Windows Server operating systems."
+    },
+    {
+        "body": [
+            "\"aws:psModule\":{",
+            "\t\"properties\":[",
+            "\t\t{",
+            "\t\t\t\"runCommand\":\"{{ commands }}\",",
+            "\t\t\t\"source\":\"{{ source }}\",",
+            "\t\t\t\"sourceHash\":\"{{ sourceHash }}\",",
+            "\t\t\t\"workingDirectory\":\"{{ workingDirectory }}\",",
+            "\t\t\t\"timeoutSeconds\":\"{{ executionTimeout }}\"",
+            "\t\t}",
+            "\t]",
+            "}"
+        ],
+        "name": "$Plugin Snippet aws:psModule",
+        "description": "Insert Snippet for aws:psModule.\n\nInstall PowerShell modules on an EC2 instance. This plugin only runs on Windows Server operating systems."
+    }
+]
