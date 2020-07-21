@@ -33,12 +33,12 @@
             ]
         },
         {
-            "name": "ssm_createDocument",
-            "description": ""
+            "name": "ssm_createLocalDocument",
+            "description": "An SSM Document is created locally"
         },
         {
-            "name": "ssm_openDocument",
-            "description": "",
+            "name": "ssm_openLocalDocument",
+            "description": "An SSM Document is opened locally",
             "unit": "None",
             "metadata": [
                 {

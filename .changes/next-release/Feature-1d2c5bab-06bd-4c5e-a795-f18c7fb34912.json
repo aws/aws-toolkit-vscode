@@ -1,4 +1,4 @@
 {
     "type": "Feature",
-    "description": "New Systems Manager (SSM) Document capabilities: SSM Document are now shown in the AWS Explorer. Language Support (auto-completion, validation) for authoring SSM Document files. Local SSM Document can be created from starting templates. SSM Document can be opened from and published to within an account."
+    "description": "New Systems Manager (SSM) Document capabilities: Language Support (auto-completion, validation) for authoring SSM Document files."
 }
