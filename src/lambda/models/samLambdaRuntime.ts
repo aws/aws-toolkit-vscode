@@ -8,7 +8,7 @@ import { Map, Set } from 'immutable'
 
 export const nodeJsRuntimes: Set<Runtime> = Set<Runtime>(['nodejs8.10', 'nodejs10.x', 'nodejs12.x'])
 export const pythonRuntimes: Set<Runtime> = Set<Runtime>(['python3.8', 'python3.7', 'python3.6', 'python2.7'])
-export const dotNetRuntimes: Set<Runtime> = Set<Runtime>(['dotnetcore2.1'])
+export const dotNetRuntimes: Set<Runtime> = Set<Runtime>(['dotnetcore2.1', 'dotnetcore3.1'])
 
 export const samLambdaRuntimes: Set<Runtime> = Set.union([nodeJsRuntimes, pythonRuntimes, dotNetRuntimes])
 

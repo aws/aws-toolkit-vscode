@@ -84,6 +84,9 @@ export class LogStreamRegistry {
                 const timestamp = data.timestamp ? moment(data.timestamp).format() : '                             '
                 line = timestamp.concat('\t', line)
             }
+            if (!line.endsWith('\n')) {
+                line.concat('\n')
+            }
             output = output.concat(line)
         }
 
