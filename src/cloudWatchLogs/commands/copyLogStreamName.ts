@@ -6,8 +6,8 @@
 import * as vscode from 'vscode'
 import { parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
 
-export function copyLogStreamName(uri: vscode.Uri): void {
+export async function copyLogStreamName(uri: vscode.Uri): Promise<void> {
     const parsedUri = parseCloudWatchLogsUri(uri)
 
-    vscode.env.clipboard.writeText(parsedUri.streamName)
+    await vscode.env.clipboard.writeText(parsedUri.streamName)
 }
