@@ -15,7 +15,7 @@ class CredentialStatusNotification(private val project: Project) : ConnectionSet
     override fun settingsStateChanged(newState: ConnectionState) {
         if (newState is ConnectionState.InvalidConnection) {
             val title = message("credentials.invalid.title")
-            val message = newState.displayMessage
+            val message = message("credentials.invalid.description")
 
             notifyWarn(
                 project = project,
@@ -26,7 +26,7 @@ class CredentialStatusNotification(private val project: Project) : ConnectionSet
                         message("credentials.invalid.more_info"),
                         title,
                         message,
-                        newState.cause.localizedMessage
+                        newState.displayMessage
                     ),
                     createNotificationExpiringAction(actionManager.getAction("aws.settings.upsertCredentials")),
                     createNotificationExpiringAction(RefreshConnectionAction(message("settings.retry")))
