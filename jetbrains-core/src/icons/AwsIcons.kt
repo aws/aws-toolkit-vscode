@@ -46,6 +46,10 @@ object AwsIcons {
             @JvmField val MYSQL = IconLoader.getIcon("/icons/resources/rds/Mysql.svg") // 16x16
             @JvmField val POSTGRES = IconLoader.getIcon("/icons/resources/rds/Postgres.svg") // 16x16
         }
+        object Sqs {
+            @JvmField val SQS_QUEUE = IconLoader.getIcon("/icons/resources/sqs/SqsQueue.svg") // 16x16
+            @JvmField val SQS_TOOL_WINDOW = IconLoader.getIcon("/icons/resources/sqs/SqsToolWindow.svg") // 13x13
+        }
     }
 
     object Actions {
