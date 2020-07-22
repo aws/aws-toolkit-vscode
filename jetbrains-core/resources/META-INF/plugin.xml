@@ -197,6 +197,7 @@
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.lambda.validation.LambdaHandlerValidator" />
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowManager" />
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow" />
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindow" />
         <toolWindow id="aws.explorer" anchor="left" secondary="true"
                     factoryClass="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerFactory"
                     icon="AwsIcons.Logos.AWS"/>
@@ -255,6 +256,7 @@
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.S3ExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.EcsExplorerRootNode"/>
         <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.SchemasExplorerRootNode"/>
+        <explorer.serviceNode implementation="software.aws.toolkits.jetbrains.core.explorer.nodes.SqsExplorerRootNode"/>
 
     </extensions>
 
@@ -341,6 +343,15 @@
             <separator/>
             <action id="schemas.schema.downloadCode"
                     class="software.aws.toolkits.jetbrains.services.schemas.code.DownloadCodeForSchemaAction"/>
+        </group>
+
+        <group id="aws.toolkit.explorer.sqs.queue" popup="true" compact="false">
+            <action id="sqs.poll.message"
+                    class="software.aws.toolkits.jetbrains.services.sqs.actions.PollMessageAction"/>
+            <separator/>
+            <action id="sqs.send.message"
+                    class="software.aws.toolkits.jetbrains.services.sqs.actions.SendMessageAction"/>
+            <separator/>
         </group>
 
         <action class="software.aws.toolkits.jetbrains.core.credentials.SettingsSelectorAction" id="aws.settings.selector" icon="AwsIcons.Logos.AWS"/>
