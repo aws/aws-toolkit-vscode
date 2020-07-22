@@ -31,7 +31,7 @@ This design becomes a part of the requirements for future changes to the Toolkit
   * Indicating the operation they are attempting to perform on the resource
   * Indicating the associated CodePipeline
   * Providing a way of seeing additional information (link to User Guide)
-  * Asking the user in clear language if they would like to peform their operation
+  * Asking the user in clear language if they would like to perform their operation
   * If applicable, the default prompt response is to cancel (do not proceed with the operation)
 
 Out-of-Scope
@@ -138,7 +138,7 @@ The confirmation prompt can be implemented using one of two UI facilities:
   * Pros
     * if users press `Esc` on the QuickPick/InputBox, the QuickPick/InputBox is dismissed, and flow returns to the calling code, which in this case can handle it as an intent to cancel
     * More consistent UX if the prompt is used both as a standalone prompt, and in a wizard (CloudFormation Stack Deploy alternate proposal uses a wizard)
-    * Flexability to support actions (like bringing up a help page) while leaving the prompt open
+    * Flexibility to support actions (like bringing up a help page) while leaving the prompt open
     * idiomatic to VS Code - using a QuickPick, the `Yes` and `No` choices appear in a selection list
   * Cons
     * None
