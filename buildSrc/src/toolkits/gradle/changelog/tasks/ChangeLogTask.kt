@@ -7,6 +7,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileTree
 import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
 import toolkits.gradle.changelog.GitStager
 
@@ -17,7 +18,7 @@ abstract class ChangeLogTask : DefaultTask() {
     @InputDirectory
     val changesDirectory: DirectoryProperty = project.objects.directoryProperty().convention(project.rootProject.layout.projectDirectory.dir(".changes"))
 
-    @InputDirectory
+    @InputFiles
     val nextReleaseDirectory: DirectoryProperty = project.objects.directoryProperty().convention(changesDirectory.dir("next-release"))
 
     protected fun DirectoryProperty.jsonFiles(): FileTree = this.asFileTree.matching {
