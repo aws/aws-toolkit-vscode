@@ -157,7 +157,7 @@ class ProfileCredentialProviderFactory : CredentialProviderFactory {
         if (newProfiles.invalidProfiles.isNotEmpty()) {
             val message = newProfiles.invalidProfiles.values.joinToString("\n") { it.message ?: it::class.java.name }
 
-            val errorDialogTitle = message("credentials.invalid.title")
+            val errorDialogTitle = message("credentials.profile.failed_load")
             val numErrorMessage = message("credentials.profile.refresh_errors", newProfiles.invalidProfiles.size)
 
             notifyInfo(

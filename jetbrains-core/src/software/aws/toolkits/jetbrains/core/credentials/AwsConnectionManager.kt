@@ -270,7 +270,7 @@ sealed class ConnectionState(val displayMessage: String, val isTerminal: Boolean
         isTerminal = true
     )
 
-    class InvalidConnection(val cause: Exception) :
+    class InvalidConnection(private val cause: Exception) :
         ConnectionState(message("settings.states.invalid", ExceptionUtil.getMessage(cause) ?: ExceptionUtil.getThrowableText(cause)), isTerminal = true) {
         override val shortMessage = message("settings.states.invalid.short")
 
