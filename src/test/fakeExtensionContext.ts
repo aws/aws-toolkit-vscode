@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ExtensionContext, Memento } from 'vscode'
+import * as vscode from 'vscode'
+import * as del from 'del'
+import { ExtensionDisposableFiles } from '../shared/utilities/disposableFiles'
 
 export interface FakeMementoStorage {
     [key: string]: any
@@ -14,12 +16,12 @@ export interface FakeExtensionState {
     workspaceState?: FakeMementoStorage
 }
 
-export class FakeExtensionContext implements ExtensionContext {
+export class FakeExtensionContext implements vscode.ExtensionContext {
     public subscriptions: {
         dispose(): any
     }[] = []
-    public workspaceState: Memento = new FakeMemento()
-    public globalState: Memento = new FakeMemento()
+    public workspaceState: vscode.Memento = new FakeMemento()
+    public globalState: vscode.Memento = new FakeMemento()
     public storagePath: string | undefined
     public globalStoragePath: string = '.'
     public logPath: string = ''
@@ -43,9 +45,47 @@ export class FakeExtensionContext implements ExtensionContext {
     public asAbsolutePath(relativePath: string): string {
         return relativePath
     }
+
+    /**
+     * Creates a fake `vscode.ExtensionContext` for use in tests.
+     *
+     *  Disposes any existing `ExtensionDisposableFiles` and creates a new one
+     *  with the new `ExtContext`.
+     */
+    public static async getNew(): Promise<FakeExtensionContext> {
+        const ctx = new FakeExtensionContext()
+        try {
+            TestExtensionDisposableFiles.clearInstance()
+        } catch {
+            // Ignore.
+        }
+        await TestExtensionDisposableFiles.initialize(ctx)
+        return ctx
+    }
 }
 
-class FakeMemento implements Memento {
+export class TestExtensionDisposableFiles extends ExtensionDisposableFiles {
+    public static ORIGINAL_INSTANCE = ExtensionDisposableFiles.INSTANCE
+
+    public static clearInstance() {
+        // XXX: INSTANCE=undefined is done first, to avoid a race:
+        //      1. del.sync() does file IO
+        //      2. the Node scheduler looks for pending handlers to execute while waiting on IO
+        //      3. other async handlers may try to use ExtensionDisposableFiles.getInstance()
+        const instance = ExtensionDisposableFiles.INSTANCE
+        ExtensionDisposableFiles.INSTANCE = undefined
+        if (instance) {
+            del.sync([instance.toolkitTempFolder], { force: true })
+            instance.dispose()
+        }
+    }
+
+    public static resetOriginalInstance() {
+        ExtensionDisposableFiles.INSTANCE = TestExtensionDisposableFiles.ORIGINAL_INSTANCE
+    }
+}
+
+class FakeMemento implements vscode.Memento {
     public constructor(private readonly _storage: FakeMementoStorage = {}) {}
     public get<T>(key: string): T | undefined
     public get<T>(key: string, defaultValue: T): T

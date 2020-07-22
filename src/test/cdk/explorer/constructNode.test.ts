@@ -188,7 +188,7 @@ describe('ConstructNode', () => {
     }
 })
 
-class FakeParentNode extends AWSTreeNodeBase {
+export class FakeParentNode extends AWSTreeNodeBase {
     public constructor(label: string) {
         super(label)
         this.id = label

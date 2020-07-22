@@ -16,6 +16,7 @@ import {
     TELEMETRY_NOTICE_VERSION_ACKNOWLEDGED,
     hasUserSeenTelemetryNotice,
     setHasUserSeenTelemetryNotice,
+    sanitizeTelemetrySetting,
 } from '../../../shared/telemetry/activation'
 import { DefaultSettingsConfiguration } from '../../../shared/settingsConfiguration'
 import { extensionSettingsPrefix } from '../../../shared/constants'
@@ -70,7 +71,7 @@ describe('handleTelemetryNoticeResponse', () => {
     })
 })
 
-describe('isTelemetryEnabled', () => {
+describe('Telemetry on activation', () => {
     let settings: vscode.WorkspaceConfiguration
     const toolkitSettings = new DefaultSettingsConfiguration(extensionSettingsPrefix)
 
@@ -88,23 +89,72 @@ describe('isTelemetryEnabled', () => {
     })
 
     const scenarios = [
-        { initialSettingValue: 'Enable', expectedIsEnabledValue: true, desc: 'Original opt-in value' },
-        { initialSettingValue: 'Disable', expectedIsEnabledValue: false, desc: 'Original opt-out value' },
-        { initialSettingValue: 'Use IDE settings', expectedIsEnabledValue: true, desc: 'Original deferral value' },
-        { initialSettingValue: true, expectedIsEnabledValue: true, desc: 'Opt in' },
-        { initialSettingValue: false, expectedIsEnabledValue: false, desc: 'Opt out' },
-        { initialSettingValue: 1234, expectedIsEnabledValue: true, desc: 'Unexpected numbers' },
-        { initialSettingValue: { label: 'garbageData' }, expectedIsEnabledValue: true, desc: 'Unexpected object' },
-        { initialSettingValue: [{ label: 'garbageDataList' }], expectedIsEnabledValue: true, desc: 'Unexpected array' },
-        { initialSettingValue: undefined, expectedIsEnabledValue: true, desc: 'Unset value' },
+        {
+            initialSettingValue: 'Enable',
+            expectedIsEnabledValue: true,
+            desc: 'Original opt-in value',
+            expectedSanitizedValue: true,
+        },
+        {
+            initialSettingValue: 'Disable',
+            expectedIsEnabledValue: false,
+            desc: 'Original opt-out value',
+            expectedSanitizedValue: false,
+        },
+        {
+            initialSettingValue: 'Use IDE settings',
+            expectedIsEnabledValue: true,
+            desc: 'Original deferral value',
+            expectedSanitizedValue: 'Use IDE settings',
+        },
+        { initialSettingValue: true, expectedIsEnabledValue: true, desc: 'Opt in', expectedSanitizedValue: true },
+        { initialSettingValue: false, expectedIsEnabledValue: false, desc: 'Opt out', expectedSanitizedValue: false },
+        {
+            initialSettingValue: 1234,
+            expectedIsEnabledValue: true,
+            desc: 'Unexpected numbers',
+            expectedSanitizedValue: 1234,
+        },
+        {
+            initialSettingValue: { label: 'garbageData' },
+            expectedIsEnabledValue: true,
+            desc: 'Unexpected object',
+            expectedSanitizedValue: { label: 'garbageData' },
+        },
+        {
+            initialSettingValue: [{ label: 'garbageDataList' }],
+            expectedIsEnabledValue: true,
+            desc: 'Unexpected array',
+            expectedSanitizedValue: [{ label: 'garbageDataList' }],
+        },
+        {
+            initialSettingValue: undefined,
+            expectedIsEnabledValue: true,
+            desc: 'Unset value',
+            expectedSanitizedValue: true,
+        }, // The 'expectedSanitizedValue' is true based on the package.json configuration declaration
     ]
 
-    scenarios.forEach(scenario => {
-        it(scenario.desc, async () => {
-            await settings.update('telemetry', scenario.initialSettingValue, vscode.ConfigurationTarget.Global)
+    describe('isTelemetryEnabled', () => {
+        scenarios.forEach(scenario => {
+            it(scenario.desc, async () => {
+                await settings.update('telemetry', scenario.initialSettingValue, vscode.ConfigurationTarget.Global)
 
-            const isEnabled = isTelemetryEnabled(toolkitSettings)
-            assert.strictEqual(isEnabled, scenario.expectedIsEnabledValue)
+                const isEnabled = isTelemetryEnabled(toolkitSettings)
+                assert.strictEqual(isEnabled, scenario.expectedIsEnabledValue)
+            })
+        })
+    })
+
+    describe('sanitizeTelemetrySetting', () => {
+        scenarios.forEach(scenario => {
+            it(scenario.desc, async () => {
+                await settings.update('telemetry', scenario.initialSettingValue, vscode.ConfigurationTarget.Global)
+
+                await sanitizeTelemetrySetting(toolkitSettings)
+                const sanitizedSetting = toolkitSettings.readSetting<any>('telemetry')
+                assert.deepStrictEqual(sanitizedSetting, scenario.expectedSanitizedValue)
+            })
         })
     })
 })

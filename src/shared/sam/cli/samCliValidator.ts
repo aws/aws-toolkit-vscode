@@ -9,8 +9,8 @@ import { SamCliConfiguration } from './samCliConfiguration'
 import { SamCliInfoInvocation, SamCliInfoResponse } from './samCliInfo'
 import { SamCliProcessInvoker } from './samCliInvokerUtils'
 
-export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE = '0.38.0'
-export const MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE = '0.60.0'
+export const MINIMUM_SAM_CLI_VERSION_INCLUSIVE = '0.47.0'
+export const MAXIMUM_SAM_CLI_VERSION_EXCLUSIVE = '2.0.0'
 
 // Errors
 export class InvalidSamCliError extends Error {
@@ -51,6 +51,7 @@ export interface SamCliValidatorResult {
 
 export interface SamCliValidator {
     detectValidSamCli(): Promise<SamCliValidatorResult>
+    getVersionValidatorResult(): Promise<SamCliVersionValidatorResult>
 }
 
 export interface SamCliValidatorContext {
@@ -80,7 +81,6 @@ export class DefaultSamCliValidator implements SamCliValidator {
         return result
     }
 
-    // This method is public for testing purposes
     public async getVersionValidatorResult(): Promise<SamCliVersionValidatorResult> {
         const samCliId: string = await this.context.getSamCliExecutableId()
         if (!this.isSamCliVersionCached(samCliId)) {

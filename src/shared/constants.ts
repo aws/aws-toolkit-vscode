@@ -9,7 +9,7 @@ export const profileSettingKey: string = 'profile'
 export const mostRecentVersionKey: string = 'awsToolkitMostRecentVersion'
 
 export const hostedFilesBaseUrl: string = 'https://d3rrggjwfhwld2.cloudfront.net/'
-export const endpointsFileUrl: string = 'https://aws-toolkit-endpoints.s3.amazonaws.com/endpoints.json'
+export const endpointsFileUrl: string = 'https://idetoolkits.amazonwebservices.com/endpoints.json'
 export const aboutCredentialsFileUrl: string = 'https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html'
 export const samAboutInstallUrl: string = 'https://aws.amazon.com/serverless/sam/'
 // tslint:disable-next-line:max-line-length
@@ -53,3 +53,13 @@ export const sfnCreateStateMachineNameParamUrl: string =
 export const sfnDeveloperGuideUrl: string = 'https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html'
 export const sfnUpdateStateMachineUrl: string =
     'https://docs.aws.amazon.com/step-functions/latest/apireference/API_UpdateStateMachine.html'
+
+/**
+ * Moment format for rendering readable dates.
+ *
+ * Same format used in the S3 console, but it's also locale-aware.
+ *
+ * US: Jan 5, 2020 5:30:20 PM GMT-0700
+ * GB: 5 Jan 2020 17:30:20 GMT+0100
+ */
+export const LOCALIZED_DATE_FORMAT = 'll LTS [GMT]ZZ'

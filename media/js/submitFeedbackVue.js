@@ -5,9 +5,9 @@ console.log('Loaded!')
         el: '#app',
         data: {
             comment: '',
-            sentiment: 'Positive',
+            sentiment: '',
             isSubmitting: false,
-            error: ''
+            error: '',
         },
         mounted() {
             this.$nextTick(function() {
@@ -32,9 +32,9 @@ console.log('Loaded!')
                 vscode.postMessage({
                     command: 'submitFeedback',
                     comment: this.comment,
-                    sentiment: this.sentiment
+                    sentiment: this.sentiment,
                 })
-            }
-        }
+            },
+        },
     })
 })()
