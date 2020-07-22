@@ -17,17 +17,17 @@ interface CredentialProviderFactory {
     val id: String
 
     /**
-     * Invoked on creation of the factory to update the credential system with what [ToolkitCredentialsIdentifier] this factory
+     * Invoked on creation of the factory to update the credential system with what [CredentialIdentifier] this factory
      * is capable of creating. The provided [credentialLoadCallback] is capable of being invoked multiple times in the case that
      * the credentials this factory creates is modified in some way.
      */
     fun setUp(credentialLoadCallback: CredentialsChangeListener)
 
     /**
-     * Creates an [AwsCredentialsProvider] for the specified [ToolkitCredentialsIdentifier] scoped to the specified [region]
+     * Creates an [AwsCredentialsProvider] for the specified [CredentialIdentifier] scoped to the specified [region]
      */
     fun createAwsCredentialProvider(
-        providerId: ToolkitCredentialsIdentifier,
+        providerId: CredentialIdentifier,
         region: AwsRegion,
         sdkHttpClientSupplier: () -> SdkHttpClient
     ): AwsCredentialsProvider

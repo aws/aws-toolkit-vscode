@@ -6,10 +6,13 @@ dependencies {
     compile(project(":telemetry-client"))
     compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
     compile("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
+    compile("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
     compile("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:$jacksonVersion")
     compile("software.amazon.awssdk:cognitoidentity:$awsSdkVersion")
     compile("software.amazon.awssdk:ecs:$awsSdkVersion")
     compile("software.amazon.awssdk:s3:$awsSdkVersion")
+    compile("software.amazon.awssdk:sso:$awsSdkVersion")
+    compile("software.amazon.awssdk:ssooidc:$awsSdkVersion")
     compile("software.amazon.awssdk:sts:$awsSdkVersion")
 
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")

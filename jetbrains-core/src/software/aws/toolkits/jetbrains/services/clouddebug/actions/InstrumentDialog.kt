@@ -17,7 +17,7 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.awsClient
-import software.aws.toolkits.jetbrains.core.credentials.ProjectAccountSettingsManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.services.RoleValidation
 import software.aws.toolkits.jetbrains.services.iam.IamResources
@@ -41,8 +41,8 @@ class InstrumentDialog(private val project: Project, val clusterArn: String, val
     }
 
     private fun createUIComponents() {
-        val credentials = ProjectAccountSettingsManager.getInstance(project).activeCredentialProvider
-        val region = ProjectAccountSettingsManager.getInstance(project).activeRegion
+        val credentials = AwsConnectionManager.getInstance(project).activeCredentialProvider
+        val region = AwsConnectionManager.getInstance(project).activeRegion
 
         iamRole = ResourceSelector.builder(project)
             .resource { IamResources.LIST_ALL }

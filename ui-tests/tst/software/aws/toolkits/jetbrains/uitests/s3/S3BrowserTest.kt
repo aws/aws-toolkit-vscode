@@ -70,7 +70,6 @@ class S3BrowserTest {
         }
         idea {
             waitForBackgroundTasks()
-            setCredentials(credential, region)
             showAwsExplorer()
         }
         idea {
@@ -224,6 +223,7 @@ class S3BrowserTest {
         }
     }
 
+    // TODO when the Java SDK v2 supports waiters this can be removed
     private fun retryableS3(block: (S3Client) -> Boolean) {
         var client: S3Client? = null
         try {

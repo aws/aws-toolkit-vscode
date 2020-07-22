@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
+import toolkits.gradle.changelog.tasks.GenerateGithubChangeLog
 import java.nio.file.Files
 import java.nio.file.Paths
 
@@ -90,14 +90,6 @@ subprojects {
 
     apply plugin: 'java'
     apply plugin: 'idea'
-    apply plugin: 'signing'
-
-    def isReleaseVersion = !version.endsWith("SNAPSHOT")
-
-    signing {
-        required { isReleaseVersion && gradle.startParameter.taskNames.contains("publishPlugin") }
-        sign configurations.archives
-    }
 
     sourceSets {
         main.java.srcDirs = SourceUtils.findFolders(project, "src", ideVersion)
@@ -221,12 +213,9 @@ subprojects {
 
     // Remove the tasks added in by gradle-intellij-plugin so that we don't publish/verify multiple times
     project.afterEvaluate {
-        removeTask(tasks, 'publishPlugin')
-        removeTask(tasks, 'verifyPlugin')
-        removeTask(tasks, 'buildSearchableOptions')
-        if (!isReleaseVersion) {
-            removeTask(tasks, "signArchives")
-        }
+        removeTask(tasks, org.jetbrains.intellij.tasks.PublishTask)
+        removeTask(tasks, org.jetbrains.intellij.tasks.VerifyPluginTask)
+        removeTask(tasks, org.jetbrains.intellij.tasks.BuildSearchableOptionsTask)
     }
 }
 
@@ -234,16 +223,14 @@ configurations {
     ktlint
 }
 
-def removeTask(tasks, taskName) {
-    def task = tasks.findByName("$taskName")
-
-    if (task != null) {
-        task.setEnabled(false)
+def removeTask(TaskContainer tasks, Class<? extends Task> takeType) {
+    tasks.withType(takeType).configureEach {
+        setEnabled(false)
     }
 }
 
 apply plugin: 'org.jetbrains.intellij'
-apply plugin: ChangeLogPlugin
+apply plugin: 'toolkit-change-log'
 
 intellij {
     version ideSdkVersion("IC")
@@ -265,9 +252,8 @@ publishPlugin {
     channels publishChannel ? publishChannel.split(',').collect { it.trim() } : []
 }
 
-generateChangeLog {
-    generateJetbrains = false
-    generateGithub = true
+tasks.register('generateChangeLog', GenerateGithubChangeLog) {
+    changeLogFile = project.file("CHANGELOG.md")
 }
 
 task ktlint(type: JavaExec, group: "verification") {

@@ -19,7 +19,7 @@ class GithubWriterTest {
     @Test
     fun basicWrite() {
         val file = folder.newFile()
-        val sut = GithubWriter(file.toPath())
+        val sut = GithubWriter(file.toPath(), null)
 
         sut.writeLine(
             renderEntry(

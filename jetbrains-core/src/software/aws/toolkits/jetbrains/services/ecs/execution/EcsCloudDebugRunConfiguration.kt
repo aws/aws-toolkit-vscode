@@ -64,7 +64,7 @@ class EcsCloudDebugRunConfiguration(project: Project, private val configFactory:
 
     override fun getState(executor: Executor, environment: ExecutionEnvironment): CloudDebugRunState? =
         try {
-            val cloudDebugRunSettings = resolveEcsServiceCloudDebuggingRunSettings()
+            val cloudDebugRunSettings = resolveEcsServiceCloudDebuggingRunSettings(deepCheck = false)
 
             CloudDebugRunState(environment, cloudDebugRunSettings)
         } catch (e: Exception) {
@@ -80,7 +80,7 @@ class EcsCloudDebugRunConfiguration(project: Project, private val configFactory:
     }
 
     override fun checkSettingsBeforeRun() {
-        val immutableSettings = resolveEcsServiceCloudDebuggingRunSettings()
+        val immutableSettings = resolveEcsServiceCloudDebuggingRunSettings(deepCheck = true)
 
         if (!EcsUtils.isInstrumented(immutableSettings.serviceArn)) {
             throw RuntimeConfigurationError(
@@ -92,7 +92,7 @@ class EcsCloudDebugRunConfiguration(project: Project, private val configFactory:
     }
 
     override fun checkConfiguration() {
-        val immutableSettings = resolveEcsServiceCloudDebuggingRunSettings()
+        val immutableSettings = resolveEcsServiceCloudDebuggingRunSettings(deepCheck = false)
         if (immutableSettings.containerOptions.isEmpty()) {
             throw RuntimeConfigurationError(message("cloud_debug.run_configuration.missing.container"))
         }
@@ -238,7 +238,7 @@ class EcsCloudDebugRunConfiguration(project: Project, private val configFactory:
 
     fun containerOptions(): Map<String, ContainerOptions> = serializableOptions.containerOptions
 
-    private fun resolveEcsServiceCloudDebuggingRunSettings(): EcsServiceCloudDebuggingRunSettings {
+    private fun resolveEcsServiceCloudDebuggingRunSettings(deepCheck: Boolean): EcsServiceCloudDebuggingRunSettings {
         val region = resolveRegion()
         val credentialProvider = resolveCredentials()
         val clusterArn = clusterArn()
@@ -258,25 +258,30 @@ class EcsCloudDebugRunConfiguration(project: Project, private val configFactory:
         }.filterNotNull().toMutableSet()
 
         val resourceCache = AwsResourceCache.getInstance(project)
-        val validContainerNames = try {
-            val service = resourceCache.getResourceNow(
-                EcsResources.describeService(clusterArn, serviceArn),
-                region,
-                credentialProvider
-            )
-            val containers = resourceCache.getResourceNow(
-                EcsResources.listContainers(service.taskDefinition()),
-                region,
-                credentialProvider
-            )
 
-            containers.map { it.name() }.toSet()
-        } catch (e: Exception) {
-            throw RuntimeConfigurationError(e.message)
+        val validContainerNames = if (deepCheck) {
+            try {
+                val service = resourceCache.getResourceNow(
+                    EcsResources.describeService(clusterArn, serviceArn),
+                    region,
+                    credentialProvider
+                )
+                val containers = resourceCache.getResourceNow(
+                    EcsResources.listContainers(service.taskDefinition()),
+                    region,
+                    credentialProvider
+                )
+
+                containers.map { it.name() }.toSet()
+            } catch (e: Exception) {
+                throw RuntimeConfigurationError(e.message)
+            }
+        } else {
+            emptySet<String>()
         }
 
         val containerOptionsMap = containerOptions().mapValues { (containerName, containerOptions) ->
-            if (!validContainerNames.contains(containerName)) {
+            if (deepCheck && !validContainerNames.contains(containerName)) {
                 throw RuntimeConfigurationError(
                     message(
                         "cloud_debug.ecs.run_config.container.doesnt_exist_in_service",

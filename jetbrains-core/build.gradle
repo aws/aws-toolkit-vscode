@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import software.aws.toolkits.telemetry.generator.gradle.GenerateTelemetry
+import toolkits.gradle.changelog.tasks.GeneratePluginChangeLog
 
 apply plugin: 'org.jetbrains.intellij'
 
@@ -49,17 +50,15 @@ test {
     systemProperty("log.dir", "${project.intellij.sandboxDirectory}-test/logs")
 }
 
-task pluginChangeLog(type: GenerateChangeLog) {
+tasks.register('pluginChangeLog', GeneratePluginChangeLog) {
     includeUnreleased = true
-    generateGithub = false
-    issuesUrl = "https://github.com/aws/aws-toolkit-jetbrains/issues"
-    jetbrainsChangeNotesFile = project.file("$buildDir/changelog/change-notes.xml")
+    changeLogFile = project.file("$buildDir/changelog/change-notes.xml")
 }
 
 jar.dependsOn(pluginChangeLog)
 jar {
     archiveBaseName = 'aws-intellij-toolkit-core'
-    from(pluginChangeLog.jetbrainsChangeNotesFile) {
+    from(pluginChangeLog.changeLogFile) {
         into "META-INF"
     }
 }
