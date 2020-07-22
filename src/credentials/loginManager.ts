@@ -21,7 +21,10 @@ export class LoginManager {
     private readonly defaultCredentialsRegion = 'us-east-1'
     private readonly credentialsStore: CredentialsStore = new CredentialsStore()
 
-    public constructor(private readonly awsContext: AwsContext) {}
+    public constructor(
+        private readonly awsContext: AwsContext,
+        public readonly recordAwsSetCredentialsFn: typeof recordAwsSetCredentials = recordAwsSetCredentials
+    ) {}
 
     /**
      * Establishes a Credentials for the Toolkit to use. Essentially the Toolkit becomes "logged in".
@@ -74,7 +77,7 @@ export class LoginManager {
             this.notifyUserInvalidCredentials(credentialsProviderId)
         } finally {
             if (!passive) {
-                recordAwsSetCredentials({ result: loginResult })
+                this.recordAwsSetCredentialsFn({ result: loginResult })
             }
         }
     }
