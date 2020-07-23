@@ -60,7 +60,7 @@ export class DefaultAWSContextCommands {
             return
         }
 
-        await this.loginManager.login(fromString(profileName))
+        await this.loginManager.login({ passive: false, providerId: fromString(profileName) })
     }
 
     public async onCommandCreateCredentialsProfile(): Promise<void> {
@@ -71,7 +71,7 @@ export class DefaultAWSContextCommands {
             const profileName: string | undefined = await this.promptAndCreateNewCredentialsFile()
 
             if (profileName) {
-                await this.loginManager.login(fromString(profileName))
+                await this.loginManager.login({ passive: false, providerId: fromString(profileName) })
             }
         } else {
             // Get the editor set up and turn things over to the user
