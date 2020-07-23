@@ -23,13 +23,5 @@
         "vscode-languageserver-textdocument": "^1.0.0",
         "yaml": "^1.10.0",
         "yaml-language-server": "^0.9.0"
-    },
-    "scripts": {
-        "prepublish": "npm run compile",
-        "lint": "tslint 'src/**/*.ts' -p .",
-        "compile": "npm run lint && rm -rf out/* && npm run bundle-schema && tsc -b",
-        "watch": "tsc -b -w",
-        "test": "npm run compile && mocha",
-        "bundle-schema": "node ./scripts/bundleSchema.js"
     }
 }
