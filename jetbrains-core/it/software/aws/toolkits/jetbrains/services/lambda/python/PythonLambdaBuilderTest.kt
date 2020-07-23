@@ -7,34 +7,42 @@ import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.runInEdtAndGet
 import com.jetbrains.python.psi.PyFile
 import com.jetbrains.python.psi.PyFunction
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
-import software.aws.toolkits.jetbrains.services.lambda.java.BaseLambdaBuilderTest
+import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils
+import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils.buildLambda
+import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils.buildLambdaFromTemplate
+import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils.packageLambda
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
 import java.nio.file.Paths
 
-class PythonLambdaBuilderTest : BaseLambdaBuilderTest() {
+class PythonLambdaBuilderTest {
     @Rule
     @JvmField
     val projectRule = PythonCodeInsightTestFixtureRule()
 
-    override val lambdaBuilder: LambdaBuilder
-        get() = PythonLambdaBuilder()
+    private val sut = PythonLambdaBuilder()
+
+    @Before
+    fun setUp() {
+        setSamExecutableFromEnvironment()
+    }
 
     @Test
     fun contentRootIsAdded() {
         val module = projectRule.module
         val handler = addPythonHandler("hello_world")
         addRequirementsFile("")
-        val builtLambda = buildLambda(module, handler, Runtime.PYTHON3_6, "hello_world/app.handle")
-        verifyEntries(
+        val builtLambda = sut.buildLambda(module, handler, Runtime.PYTHON3_6, "hello_world/app.handle")
+        LambdaBuilderTestUtils.verifyEntries(
             builtLambda,
             "hello_world/app.py",
             "requirements.txt"
         )
-        verifyPathMappings(
+        LambdaBuilderTestUtils.verifyPathMappings(
             module,
             builtLambda,
             "%PROJECT_ROOT%" to "/",
@@ -47,15 +55,16 @@ class PythonLambdaBuilderTest : BaseLambdaBuilderTest() {
         val module = projectRule.module
         val handler = addPythonHandler("src")
         addRequirementsFile("src")
+
         PsiTestUtil.addSourceRoot(projectRule.module, handler.containingFile.virtualFile.parent)
 
-        val builtLambda = buildLambda(module, handler, Runtime.PYTHON3_6, "app.handle")
-        verifyEntries(
+        val builtLambda = sut.buildLambda(module, handler, Runtime.PYTHON3_6, "app.handle")
+        LambdaBuilderTestUtils.verifyEntries(
             builtLambda,
             "app.py",
             "requirements.txt"
         )
-        verifyPathMappings(
+        LambdaBuilderTestUtils.verifyPathMappings(
             module,
             builtLambda,
             "%PROJECT_ROOT%/src" to "/",
@@ -69,13 +78,13 @@ class PythonLambdaBuilderTest : BaseLambdaBuilderTest() {
         val handler = addPythonHandler("src")
         addRequirementsFile("src")
 
-        val builtLambda = buildLambda(module, handler, Runtime.PYTHON3_6, "app.handle")
-        verifyEntries(
+        val builtLambda = sut.buildLambda(module, handler, Runtime.PYTHON3_6, "app.handle")
+        LambdaBuilderTestUtils.verifyEntries(
             builtLambda,
             "app.py",
             "requirements.txt"
         )
-        verifyPathMappings(
+        LambdaBuilderTestUtils.verifyPathMappings(
             module,
             builtLambda,
             "%PROJECT_ROOT%/src" to "/",
@@ -89,13 +98,13 @@ class PythonLambdaBuilderTest : BaseLambdaBuilderTest() {
         val handler = addPythonHandler("hello_world")
         addRequirementsFile("", "requests==2.20.0")
 
-        val builtLambda = buildLambda(module, handler, Runtime.PYTHON3_6, "hello_world/app.handle")
-        verifyEntries(
+        val builtLambda = sut.buildLambda(module, handler, Runtime.PYTHON3_6, "hello_world/app.handle")
+        LambdaBuilderTestUtils.verifyEntries(
             builtLambda,
             "hello_world/app.py",
             "requests/__init__.py"
         )
-        verifyPathMappings(
+        LambdaBuilderTestUtils.verifyPathMappings(
             module,
             builtLambda,
             "%PROJECT_ROOT%" to "/",
@@ -123,13 +132,13 @@ class PythonLambdaBuilderTest : BaseLambdaBuilderTest() {
         )
         val templatePath = Paths.get(templateFile.virtualFile.path)
 
-        val builtLambda = buildLambdaFromTemplate(module, templatePath, "SomeFunction")
-        verifyEntries(
+        val builtLambda = sut.buildLambdaFromTemplate(module, templatePath, "SomeFunction")
+        LambdaBuilderTestUtils.verifyEntries(
             builtLambda,
             "app.py",
             "requests/__init__.py"
         )
-        verifyPathMappings(
+        LambdaBuilderTestUtils.verifyPathMappings(
             module,
             builtLambda,
             "%PROJECT_ROOT%/hello_world" to "/",
@@ -142,8 +151,8 @@ class PythonLambdaBuilderTest : BaseLambdaBuilderTest() {
         val handler = addPythonHandler("hello_world")
         addRequirementsFile("", "requests==2.20.0")
 
-        val lambdaPackage = packageLambda(projectRule.module, handler, Runtime.PYTHON3_6, "hello_world/app.handle")
-        verifyZipEntries(
+        val lambdaPackage = sut.packageLambda(projectRule.module, handler, Runtime.PYTHON3_6, "hello_world/app.handle")
+        LambdaBuilderTestUtils.verifyZipEntries(
             lambdaPackage,
             "hello_world/app.py",
             "requests/__init__.py"
@@ -155,13 +164,13 @@ class PythonLambdaBuilderTest : BaseLambdaBuilderTest() {
         val module = projectRule.module
         val handler = addPythonHandler("hello_world")
         addRequirementsFile("")
-        val builtLambda = buildLambda(module, handler, Runtime.PYTHON3_6, "hello_world/app.handle", true)
-        verifyEntries(
+        val builtLambda = sut.buildLambda(module, handler, Runtime.PYTHON3_6, "hello_world/app.handle", true)
+        LambdaBuilderTestUtils.verifyEntries(
             builtLambda,
             "hello_world/app.py",
             "requirements.txt"
         )
-        verifyPathMappings(
+        LambdaBuilderTestUtils.verifyPathMappings(
             module,
             builtLambda,
             "%PROJECT_ROOT%" to "/",
@@ -174,8 +183,8 @@ class PythonLambdaBuilderTest : BaseLambdaBuilderTest() {
         val handler = addPythonHandler("hello_world")
         addRequirementsFile("", "requests==2.20.0")
 
-        val lambdaPackage = packageLambda(projectRule.module, handler, Runtime.PYTHON3_6, "hello_world/app.handle", true)
-        verifyZipEntries(
+        val lambdaPackage = sut.packageLambda(projectRule.module, handler, Runtime.PYTHON3_6, "hello_world/app.handle", true)
+        LambdaBuilderTestUtils.verifyZipEntries(
             lambdaPackage,
             "hello_world/app.py",
             "requests/__init__.py"

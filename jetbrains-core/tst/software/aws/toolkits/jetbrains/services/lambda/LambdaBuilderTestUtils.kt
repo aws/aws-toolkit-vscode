@@ -1,7 +1,7 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.lambda.java
+package software.aws.toolkits.jetbrains.services.lambda
 
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.roots.ModuleRootManager
@@ -9,27 +9,16 @@ import com.intellij.openapi.util.io.FileUtil
 import com.intellij.psi.PsiElement
 import com.intellij.util.io.isFile
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.zipEntries
 import software.aws.toolkits.jetbrains.services.PathMapping
-import software.aws.toolkits.jetbrains.services.lambda.BuiltLambda
-import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
-import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.streams.toList
 
-abstract class BaseLambdaBuilderTest {
-    protected abstract val lambdaBuilder: LambdaBuilder
-
-    @Before
-    open fun setUp() {
-        setSamExecutableFromEnvironment()
-    }
-
-    protected fun buildLambda(
+object LambdaBuilderTestUtils {
+    fun LambdaBuilder.buildLambda(
         module: Module,
         handlerElement: PsiElement,
         runtime: Runtime,
@@ -39,10 +28,10 @@ abstract class BaseLambdaBuilderTest {
         val samOptions = SamOptions()
         samOptions.buildInContainer = useContainer
 
-        return lambdaBuilder.buildLambda(module, handlerElement, handler, runtime, 0, 0, emptyMap(), samOptions)
+        return this.buildLambda(module, handlerElement, handler, runtime, 0, 0, emptyMap(), samOptions)
     }
 
-    protected fun buildLambdaFromTemplate(
+    fun LambdaBuilder.buildLambdaFromTemplate(
         module: Module,
         template: Path,
         logicalId: String,
@@ -51,10 +40,10 @@ abstract class BaseLambdaBuilderTest {
         val samOptions = SamOptions()
         samOptions.buildInContainer = useContainer
 
-        return lambdaBuilder.buildLambdaFromTemplate(module, template, logicalId, samOptions)
+        return this.buildLambdaFromTemplate(module, template, logicalId, samOptions)
     }
 
-    protected fun packageLambda(
+    fun LambdaBuilder.packageLambda(
         module: Module,
         handlerElement: PsiElement,
         runtime: Runtime,
@@ -64,10 +53,10 @@ abstract class BaseLambdaBuilderTest {
         val samOptions = SamOptions()
         samOptions.buildInContainer = useContainer
 
-        return lambdaBuilder.packageLambda(module, handlerElement, handler, runtime, samOptions)
+        return this.packageLambda(module, handlerElement, handler, runtime, samOptions)
     }
 
-    protected fun verifyEntries(builtLambda: BuiltLambda, vararg entries: String) {
+    fun verifyEntries(builtLambda: BuiltLambda, vararg entries: String) {
         val basePath = builtLambda.codeLocation
         Files.walk(builtLambda.codeLocation).use {
             val lambdaEntries = it.filter(Path::isFile)
@@ -77,11 +66,11 @@ abstract class BaseLambdaBuilderTest {
         }
     }
 
-    protected fun verifyZipEntries(lambdaZip: Path, vararg entries: String) {
+    fun verifyZipEntries(lambdaZip: Path, vararg entries: String) {
         assertThat(zipEntries(lambdaZip)).containsAll(entries.toList())
     }
 
-    protected fun verifyPathMappings(module: Module, builtLambda: BuiltLambda, vararg mappings: Pair<String, String>) {
+    fun verifyPathMappings(module: Module, builtLambda: BuiltLambda, vararg mappings: Pair<String, String>) {
         val basePath = ModuleRootManager.getInstance(module).contentRoots[0].path
         val updatedPaths = mappings
             .map { (path, file) ->

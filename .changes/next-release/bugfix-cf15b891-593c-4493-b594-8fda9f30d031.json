@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix Rider building Lambda into incorrect folders"
+}
