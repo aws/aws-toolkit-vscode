@@ -7,26 +7,34 @@ import com.intellij.openapi.application.invokeAndWaitIfNeeded
 import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.Lambda
-import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
-import software.aws.toolkits.jetbrains.services.lambda.java.BaseLambdaBuilderTest
+import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils
+import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils.buildLambda
+import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils.buildLambdaFromTemplate
+import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils.packageLambda
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.utils.rules.NodeJsCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addLambdaHandler
 import software.aws.toolkits.jetbrains.utils.rules.addPackageJsonFile
 import software.aws.toolkits.jetbrains.utils.rules.addSamTemplate
+import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
 import java.nio.file.Paths
 
-class NodeJsLambdaBuilderTest : BaseLambdaBuilderTest() {
+class NodeJsLambdaBuilderTest {
     @Rule
     @JvmField
     val projectRule = NodeJsCodeInsightTestFixtureRule()
 
-    override val lambdaBuilder: LambdaBuilder
-        get() = NodeJsLambdaBuilder()
+    private val sut = NodeJsLambdaBuilder()
+
+    @Before
+    fun setUp() {
+        setSamExecutableFromEnvironment()
+    }
 
     @Test
     fun findHandlerElementsIgnoresSamBuildLocation() {
@@ -60,13 +68,13 @@ class NodeJsLambdaBuilderTest : BaseLambdaBuilderTest() {
         val module = projectRule.module
         val handler = projectRule.fixture.addLambdaHandler(subPath, fileName, handlerName)
         projectRule.fixture.addPackageJsonFile()
-        val builtLambda = buildLambda(module, handler, Runtime.NODEJS12_X, "$subPath/$fileName.$handlerName")
-        verifyEntries(
+        val builtLambda = sut.buildLambda(module, handler, Runtime.NODEJS12_X, "$subPath/$fileName.$handlerName")
+        LambdaBuilderTestUtils.verifyEntries(
             builtLambda,
             "$subPath/$fileName.js",
             "package.json"
         )
-        verifyPathMappings(
+        LambdaBuilderTestUtils.verifyPathMappings(
             module,
             builtLambda,
             "%PROJECT_ROOT%" to "/",
@@ -88,13 +96,13 @@ class NodeJsLambdaBuilderTest : BaseLambdaBuilderTest() {
             PsiTestUtil.addSourceRoot(module, handler.containingFile.virtualFile.parent)
         }
 
-        val builtLambda = buildLambda(module, handler, Runtime.NODEJS12_X, "$fileName.$handlerName")
-        verifyEntries(
+        val builtLambda = sut.buildLambda(module, handler, Runtime.NODEJS12_X, "$fileName.$handlerName")
+        LambdaBuilderTestUtils.verifyEntries(
             builtLambda,
             "$fileName.js",
             "package.json"
         )
-        verifyPathMappings(
+        LambdaBuilderTestUtils.verifyPathMappings(
             module,
             builtLambda,
             "%PROJECT_ROOT%/$subPath" to "/",
@@ -120,14 +128,14 @@ class NodeJsLambdaBuilderTest : BaseLambdaBuilderTest() {
         )
         val templatePath = Paths.get(templateFile.virtualFile.path)
 
-        val builtLambda = buildLambdaFromTemplate(projectRule.module, templatePath, logicalName)
+        val builtLambda = sut.buildLambdaFromTemplate(projectRule.module, templatePath, logicalName)
 
-        verifyEntries(
+        LambdaBuilderTestUtils.verifyEntries(
             builtLambda,
             "$fileName.js",
             "package.json"
         )
-        verifyPathMappings(
+        LambdaBuilderTestUtils.verifyPathMappings(
             projectRule.module,
             builtLambda,
             "%PROJECT_ROOT%/$subPath" to "/",
@@ -154,14 +162,14 @@ class NodeJsLambdaBuilderTest : BaseLambdaBuilderTest() {
             }
             """.trimIndent()
         )
-        val builtLambda = buildLambda(module, handler, Runtime.NODEJS12_X, "$subPath/$fileName.$handlerName")
-        verifyEntries(
+        val builtLambda = sut.buildLambda(module, handler, Runtime.NODEJS12_X, "$subPath/$fileName.$handlerName")
+        LambdaBuilderTestUtils.verifyEntries(
             builtLambda,
             "$subPath/$fileName.js",
             "node_modules/axios/package.json",
             "package.json"
         )
-        verifyPathMappings(
+        LambdaBuilderTestUtils.verifyPathMappings(
             module,
             builtLambda,
             "%PROJECT_ROOT%" to "/",
@@ -178,8 +186,8 @@ class NodeJsLambdaBuilderTest : BaseLambdaBuilderTest() {
         val handler = projectRule.fixture.addLambdaHandler(subPath)
         projectRule.fixture.addPackageJsonFile()
 
-        val lambdaPackage = packageLambda(projectRule.module, handler, Runtime.NODEJS12_X, "$subPath/$fileName.$handlerName")
-        verifyZipEntries(
+        val lambdaPackage = sut.packageLambda(projectRule.module, handler, Runtime.NODEJS12_X, "$subPath/$fileName.$handlerName")
+        LambdaBuilderTestUtils.verifyZipEntries(
             lambdaPackage,
             "$subPath/$fileName.js",
             "package.json"
@@ -195,13 +203,13 @@ class NodeJsLambdaBuilderTest : BaseLambdaBuilderTest() {
         val handler = projectRule.fixture.addLambdaHandler(subPath)
         projectRule.fixture.addPackageJsonFile()
 
-        val builtLambda = buildLambda(projectRule.module, handler, Runtime.NODEJS12_X, "$subPath/$fileName.$handlerName", true)
-        verifyEntries(
+        val builtLambda = sut.buildLambda(projectRule.module, handler, Runtime.NODEJS12_X, "$subPath/$fileName.$handlerName", true)
+        LambdaBuilderTestUtils.verifyEntries(
             builtLambda,
             "$subPath/$fileName.js",
             "package.json"
         )
-        verifyPathMappings(
+        LambdaBuilderTestUtils.verifyPathMappings(
             projectRule.module,
             builtLambda,
             "%PROJECT_ROOT%" to "/",
@@ -218,9 +226,8 @@ class NodeJsLambdaBuilderTest : BaseLambdaBuilderTest() {
         val handler = projectRule.fixture.addLambdaHandler(subPath)
         projectRule.fixture.addPackageJsonFile()
 
-        val lambdaPackage = packageLambda(projectRule.module, handler, Runtime.NODEJS12_X, "$subPath/$fileName.$handlerName", true)
-
-        verifyZipEntries(
+        val lambdaPackage = sut.packageLambda(projectRule.module, handler, Runtime.NODEJS12_X, "$subPath/$fileName.$handlerName", true)
+        LambdaBuilderTestUtils.verifyZipEntries(
             lambdaPackage,
             "$subPath/$fileName.js",
             "package.json"

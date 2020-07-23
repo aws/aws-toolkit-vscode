@@ -20,7 +20,6 @@ import kotlinx.coroutines.future.await
 import kotlinx.coroutines.runBlocking
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.exists
-import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutable
@@ -185,7 +184,7 @@ abstract class LambdaBuilder {
     /**
      * Returns the build directory of the project. Create this if it doesn't exist yet.
      */
-    private fun getBuildDirectory(module: Module): Path {
+    protected open fun getBuildDirectory(module: Module): Path {
         val contentRoot = module.rootManager.contentRoots.firstOrNull()
             ?: throw IllegalStateException(message("lambda.build.module_with_no_content_root", module.name))
         return Paths.get(contentRoot.path, ".aws-sam", "build")
@@ -193,9 +192,7 @@ abstract class LambdaBuilder {
 
     protected open fun additionalEnvironmentVariables(module: Module, samOptions: SamOptions): Map<String, String> = emptyMap()
 
-    companion object : RuntimeGroupExtensionPointObject<LambdaBuilder>(ExtensionPointName("aws.toolkit.lambda.builder")) {
-        private val LOG = getLogger<LambdaBuilder>()
-    }
+    companion object : RuntimeGroupExtensionPointObject<LambdaBuilder>(ExtensionPointName("aws.toolkit.lambda.builder"))
 }
 
 /**
