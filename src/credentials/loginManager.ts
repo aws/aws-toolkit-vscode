@@ -30,24 +30,22 @@ export class LoginManager {
      * Establishes a Credentials for the Toolkit to use. Essentially the Toolkit becomes "logged in".
      * If an error occurs while trying to set up and verify these credentials, the Toolkit is "logged out".
      *
-     * @param credentialsProviderId
      * @param passive  If true, this was _not_ a user-initiated action.
+     * @param provider  Credentials provider id
      */
-    public async login(passive: boolean, credentialsProviderId: CredentialsProviderId): Promise<void> {
+    public async login(args: { passive: boolean; providerId: CredentialsProviderId }): Promise<void> {
         let loginResult: Result = 'Succeeded'
         try {
-            const provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(
-                credentialsProviderId
-            )
+            const provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(args.providerId)
             if (!provider) {
-                throw new Error(`Could not find Credentials Provider for ${asString(credentialsProviderId)}`)
+                throw new Error(`Could not find Credentials Provider for ${asString(args.providerId)}`)
             }
 
-            await this.updateCredentialsStore(credentialsProviderId, provider)
+            await this.updateCredentialsStore(args.providerId, provider)
 
-            const storedCredentials = await this.credentialsStore.getCredentials(credentialsProviderId)
+            const storedCredentials = await this.credentialsStore.getCredentials(args.providerId)
             if (!storedCredentials) {
-                throw new Error(`No credentials found for id ${asString(credentialsProviderId)}`)
+                throw new Error(`No credentials found for id ${asString(args.providerId)}`)
             }
 
             const credentialsRegion = provider.getDefaultRegion() ?? this.defaultCredentialsRegion
@@ -58,7 +56,7 @@ export class LoginManager {
 
             await this.awsContext.setCredentials({
                 credentials: storedCredentials.credentials,
-                credentialsId: asString(credentialsProviderId),
+                credentialsId: asString(args.providerId),
                 accountId: accountId,
                 defaultRegion: provider.getDefaultRegion(),
             })
@@ -66,17 +64,17 @@ export class LoginManager {
             loginResult = 'Failed'
             getLogger().error(
                 `Error trying to connect to AWS with Credentials Provider ${asString(
-                    credentialsProviderId
+                    args.providerId
                 )}. Toolkit will now disconnect from AWS. %O`,
                 err as Error
             )
-            this.credentialsStore.invalidateCredentials(credentialsProviderId)
+            this.credentialsStore.invalidateCredentials(args.providerId)
 
             await this.logout()
 
-            this.notifyUserInvalidCredentials(credentialsProviderId)
+            this.notifyUserInvalidCredentials(args.providerId)
         } finally {
-            if (!passive) {
+            if (!args.passive) {
                 this.recordAwsSetCredentialsFn({ result: loginResult })
             }
         }
