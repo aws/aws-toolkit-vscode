@@ -12,18 +12,22 @@ import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.rules.EnvironmentVariableHelper
-import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
+import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils
+import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils.buildLambda
+import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils.buildLambdaFromTemplate
+import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils.packageLambda
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addFileToModule
 import software.aws.toolkits.jetbrains.utils.rules.addModule
+import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
 import software.aws.toolkits.jetbrains.utils.setUpGradleProject
 import software.aws.toolkits.jetbrains.utils.setUpJdk
 import software.aws.toolkits.jetbrains.utils.setUpMavenProject
 import software.aws.toolkits.resources.message
 import java.nio.file.Paths
 
-class JavaLambdaBuilderTest : BaseLambdaBuilderTest() {
+class JavaLambdaBuilderTest {
     @Rule
     @JvmField
     val projectRule = HeavyJavaCodeInsightTestFixtureRule()
@@ -32,12 +36,11 @@ class JavaLambdaBuilderTest : BaseLambdaBuilderTest() {
     @JvmField
     val envVarsRule = EnvironmentVariableHelper()
 
-    override val lambdaBuilder: LambdaBuilder
-        get() = JavaLambdaBuilder()
+    private val sut = JavaLambdaBuilder()
 
     @Before
-    override fun setUp() {
-        super.setUp()
+    fun setUp() {
+        setSamExecutableFromEnvironment()
 
         envVarsRule.remove("JAVA_HOME")
 
@@ -49,8 +52,8 @@ class JavaLambdaBuilderTest : BaseLambdaBuilderTest() {
     fun gradleBuiltFromHandler() {
         val handlerPsi = projectRule.setUpGradleProject()
 
-        val builtLambda = buildLambda(projectRule.module, handlerPsi, Runtime.JAVA8, "com.example.SomeClass")
-        verifyEntries(
+        val builtLambda = sut.buildLambda(projectRule.module, handlerPsi, Runtime.JAVA8, "com.example.SomeClass")
+        LambdaBuilderTestUtils.verifyEntries(
             builtLambda,
             "com/example/SomeClass.class",
             "lib/aws-lambda-java-core-1.2.0.jar"
@@ -77,8 +80,8 @@ class JavaLambdaBuilderTest : BaseLambdaBuilderTest() {
         )
         val templatePath = Paths.get(templateFile.virtualFile.path)
 
-        val builtLambda = buildLambdaFromTemplate(projectRule.module, templatePath, "SomeFunction")
-        verifyEntries(
+        val builtLambda = sut.buildLambdaFromTemplate(projectRule.module, templatePath, "SomeFunction")
+        LambdaBuilderTestUtils.verifyEntries(
             builtLambda,
             "com/example/SomeClass.class",
             "lib/aws-lambda-java-core-1.2.0.jar"
@@ -89,8 +92,8 @@ class JavaLambdaBuilderTest : BaseLambdaBuilderTest() {
     fun gradlePackage() {
         val handlerPsi = projectRule.setUpGradleProject()
 
-        val lambdaPackage = packageLambda(projectRule.module, handlerPsi, Runtime.JAVA8, "com.example.SomeClass")
-        verifyZipEntries(
+        val lambdaPackage = sut.packageLambda(projectRule.module, handlerPsi, Runtime.JAVA8, "com.example.SomeClass")
+        LambdaBuilderTestUtils.verifyZipEntries(
             lambdaPackage,
             "com/example/SomeClass.class",
             "lib/aws-lambda-java-core-1.2.0.jar"
@@ -101,8 +104,8 @@ class JavaLambdaBuilderTest : BaseLambdaBuilderTest() {
     fun mavenBuiltFromHandler() {
         val handlerPsi = projectRule.setUpMavenProject()
 
-        val builtLambda = buildLambda(projectRule.module, handlerPsi, Runtime.JAVA8, "com.example.SomeClass")
-        verifyEntries(
+        val builtLambda = sut.buildLambda(projectRule.module, handlerPsi, Runtime.JAVA8, "com.example.SomeClass")
+        LambdaBuilderTestUtils.verifyEntries(
             builtLambda,
             "com/example/SomeClass.class",
             "lib/aws-lambda-java-core-1.2.0.jar"
@@ -129,8 +132,8 @@ class JavaLambdaBuilderTest : BaseLambdaBuilderTest() {
         )
         val templatePath = Paths.get(templateFile.virtualFile.path)
 
-        val builtLambda = buildLambdaFromTemplate(projectRule.module, templatePath, "SomeFunction")
-        verifyEntries(
+        val builtLambda = sut.buildLambdaFromTemplate(projectRule.module, templatePath, "SomeFunction")
+        LambdaBuilderTestUtils.verifyEntries(
             builtLambda,
             "com/example/SomeClass.class",
             "lib/aws-lambda-java-core-1.2.0.jar"
@@ -141,8 +144,8 @@ class JavaLambdaBuilderTest : BaseLambdaBuilderTest() {
     fun mavenPackage() {
         val handlerPsi = projectRule.setUpMavenProject()
 
-        val lambdaPackage = packageLambda(projectRule.module, handlerPsi, Runtime.JAVA8, "com.example.SomeClass")
-        verifyZipEntries(
+        val lambdaPackage = sut.packageLambda(projectRule.module, handlerPsi, Runtime.JAVA8, "com.example.SomeClass")
+        LambdaBuilderTestUtils.verifyZipEntries(
             lambdaPackage,
             "com/example/SomeClass.class",
             "lib/aws-lambda-java-core-1.2.0.jar"
@@ -164,7 +167,7 @@ class JavaLambdaBuilderTest : BaseLambdaBuilderTest() {
         )
 
         assertThatThrownBy {
-            buildLambda(projectRule.module, handlerPsi, Runtime.JAVA8, "com.example.SomeClass")
+            sut.buildLambda(projectRule.module, handlerPsi, Runtime.JAVA8, "com.example.SomeClass")
         }.isInstanceOf(IllegalStateException::class.java)
             .hasMessageEndingWith(message("lambda.build.java.unsupported_build_system", projectRule.module.name))
     }
