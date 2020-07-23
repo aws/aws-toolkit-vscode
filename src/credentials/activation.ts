@@ -44,14 +44,14 @@ export async function loginWithMostRecentCredentials(
             credentialType: SharedCredentialsProvider.getCredentialsType(),
             credentialTypeId: previousCredentialsId,
         }
-        await loginManager.login(loginCredentialsId)
+        await loginManager.login({ passive: true, providerId: loginCredentialsId })
     } else if (
         providerMap &&
         profileNames.length === 1 &&
         (await manager.getCredentialsProvider(providerMap[profileNames[0]]))!.canAutoConnect()
     ) {
         // Auto-connect if there is exactly one profile.
-        await loginManager.login(providerMap[profileNames[0]])
+        await loginManager.login({ passive: true, providerId: providerMap[profileNames[0]] })
         // Toast.
         vscode.window.showInformationMessage(`Connected to AWS as "${profileNames[0]}"`)
     } else {
