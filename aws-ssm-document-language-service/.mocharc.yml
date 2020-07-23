@@ -1,2 +1,0 @@
-spec: ./out/tests/**/*.js
-ui: tdd

@@ -2,8 +2,8 @@
     "name": "aws-ssm-document-language-service",
     "version": "1.0.0",
     "description": "AWS Systems Manager Document Language Service",
-    "main": "out/service.js",
-    "types": "out/service.d.ts",
+    "main": "service.js",
+    "types": "service.d.ts",
     "author": "",
     "license": "MIT",
     "devDependencies": {},
@@ -27,10 +27,9 @@
     "scripts": {
         "prepublish": "npm run compile",
         "lint": "tslint 'src/**/*.ts' -p .",
-        "compile": "npm run lint && npm run clean && npm run bundle-schema && tsc -b",
+        "compile": "npm run lint && rm -rf out/* && npm run bundle-schema && tsc -b",
         "watch": "tsc -b -w",
         "test": "npm run compile && mocha",
-        "bundle-schema": "node ./scripts/bundleSchema.js",
-        "clean": "node ./scripts/clean.js out"
+        "bundle-schema": "node ./scripts/bundleSchema.js"
     }
 }
