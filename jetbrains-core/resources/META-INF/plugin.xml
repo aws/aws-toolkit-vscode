@@ -231,6 +231,7 @@
         <!-- See this post why order="first" is required https://intellij-support.jetbrains.com/hc/en-us/community/posts/360003460619-fileIconProvider-is-not-showing-Icon-for-custom-LightVirtualFile -->
         <fileIconProvider order="first" implementation="software.aws.toolkits.jetbrains.services.s3.editor.S3FileIconProvider"/>
         <registryKey key="aws.sso.enabled" description="(Experimental) Enable SSO AWS Credentials" restartRequired="true" defaultValue="false"/>
+        <registryKey key="aws.credentialProcess.timeout" description="AWS Credential Process timeout (ms)" restartRequired="false" defaultValue="30000"/>
     </extensions>
 
     <extensions defaultExtensionNs="JavaScript.JsonSchema">
