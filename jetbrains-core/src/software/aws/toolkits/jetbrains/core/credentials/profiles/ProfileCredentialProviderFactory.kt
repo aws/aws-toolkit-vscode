@@ -9,7 +9,6 @@ import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
-import software.amazon.awssdk.auth.credentials.ProcessCredentialsProvider
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.http.SdkHttpClient
 import software.amazon.awssdk.profiles.Profile
@@ -40,6 +39,7 @@ import software.aws.toolkits.jetbrains.core.credentials.CorrectThreadCredentials
 import software.aws.toolkits.jetbrains.core.credentials.MfaRequiredInteractiveCredentials
 import software.aws.toolkits.jetbrains.core.credentials.SsoPrompt
 import software.aws.toolkits.jetbrains.core.credentials.SsoRequiredInteractiveCredentials
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitCredentialProcessProvider
 import software.aws.toolkits.jetbrains.core.credentials.diskCache
 import software.aws.toolkits.jetbrains.core.credentials.promptForMfaToken
 import software.aws.toolkits.jetbrains.utils.createNotificationExpiringAction
@@ -311,9 +311,8 @@ class ProfileCredentialProviderFactory : CredentialProviderFactory {
         )
     )
 
-    private fun createCredentialProcessProvider(profile: Profile) = ProcessCredentialsProvider.builder()
-        .command(profile.requiredProperty(ProfileProperty.CREDENTIAL_PROCESS))
-        .build()
+    private fun createCredentialProcessProvider(profile: Profile) =
+        ToolkitCredentialProcessProvider(profile.requiredProperty(ProfileProperty.CREDENTIAL_PROCESS))
 
     private fun Profile.asId(profiles: Map<String, Profile>): ProfileCredentialsIdentifier {
         val name = this.name()
