@@ -8,10 +8,11 @@ import { activate as activateDecor } from './ssm/ssmDecoration'
 import { activate as activateSSMLanguageServer } from './ssm/ssmClient'
 import { AwsContext } from '../shared/awsContext'
 
-/* Please ignore this for now. This will be included in a future CR
 import { createSsmDocumentFromTemplate } from './commands/createDocumentFromTemplate'
-import { openDocumentItem } from './commands/openDocumentItem'
 import * as telemetry from '../shared/telemetry/telemetry'
+
+/* Please ignore this for now. This will be included in a future CR
+import { openDocumentItem } from './commands/openDocumentItem'
 import { DocumentItemNode } from './explorer/documentItemNode'
 */
 
@@ -22,12 +23,11 @@ export async function activate(
     awsContext: AwsContext,
     outputChannel: vscode.OutputChannel
 ): Promise<void> {
-    //await registerSsmDocumentCommands(extensionContext, awsContext, outputChannel)
+    await registerSsmDocumentCommands(extensionContext, awsContext, outputChannel)
     await activateSSMLanguageServer(extensionContext)
     activateDecor(extensionContext)
 }
 
-/* Please ignore this for now. This will be included in a future CR
 async function registerSsmDocumentCommands(
     extensionContext: vscode.ExtensionContext,
     awsContext: AwsContext,
@@ -36,16 +36,17 @@ async function registerSsmDocumentCommands(
     extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.ssmDocument.createLocalDocument', async () => {
             try {
-                await createSsmDocumentFromTemplate(extensionContext)
+                await createSsmDocumentFromTemplate()
             } finally {
-                telemetry.recordSsmDocumentCreateSsmDocumentFromTemplate()
+                telemetry.recordSsmCreateDocument()
             }
         })
     )
+    /* Please ignore this for now. This will be included in a future CR
     extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.ssmDocument.openLocalDocument', async (node: DocumentItemNode) => {
             await openDocumentItem(node, awsContext)
         })
     )
+    */
 }
-*/
