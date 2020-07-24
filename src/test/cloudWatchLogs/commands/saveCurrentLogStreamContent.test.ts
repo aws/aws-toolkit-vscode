@@ -14,7 +14,7 @@ import { rmrf } from '../../../shared/filesystem'
 import { fileExists, makeTemporaryToolkitFolder, readFileAsString } from '../../../shared/filesystemUtilities'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 
-describe.only('saveCurrentLogStreamContent', async () => {
+describe('saveCurrentLogStreamContent', async () => {
     let tempDir: string
 
     beforeEach(async () => {

@@ -128,15 +128,13 @@ describe('addLogEvents', async () => {
 
         new Promise(resolve => {
             clock.setTimeout(() => {
-                sandbox.assert.callCount(setBusyStatus, 4)
-                sandbox.assert.calledWith(setBusyStatus.getCall(0), uri, true)
-                sandbox.assert.calledWith(setBusyStatus.getCall(1), uri, true)
-                sandbox.assert.calledWith(setBusyStatus.getCall(2), uri, false)
-                sandbox.assert.calledWith(setBusyStatus.getCall(3), uri, false)
-                sandbox.assert.callCount(fakeEvent.fire, 4)
-                sandbox.assert.calledTwice(updateLog)
+                sandbox.assert.calledTwice(setBusyStatus)
+                sandbox.assert.calledWith(setBusyStatus.firstCall, uri, true)
+                sandbox.assert.calledWith(setBusyStatus.secondCall, uri, false)
+                sandbox.assert.calledTwice(fakeEvent.fire)
+                sandbox.assert.calledWith(setBusyStatus.secondCall, uri, false)
+                sandbox.assert.calledOnce(updateLog)
                 sandbox.assert.calledWith(updateLog.firstCall, uri, 'head')
-                sandbox.assert.calledWith(updateLog.secondCall, uri, 'head')
                 resolve()
             }, 10000)
         })
