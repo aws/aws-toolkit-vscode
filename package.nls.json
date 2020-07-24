@@ -278,6 +278,7 @@
     "aws.cloudWatchLogs.viewLogStream.errorRetrievingLogs": "Error retrieving logs for Log Stream {0} : {1}",
     "aws.cloudWatchLogs.codeLens.loadOlder": "Load older events...",
     "aws.cloudWatchLogs.codeLens.loadNewer": "Load newer events...",
+    "aws.cloudWatchLogs.invalidEditor": "Current file is not a valid Cloudwatch Logs editor.",
     "AWS.samcli.detect.settings.updated": "Settings updated.",
     "AWS.samcli.detect.settings.not.updated": "No settings changes necessary.",
     "AWS.samcli.deploy.general.error": "An error occurred while deploying a SAM Application. {0}",

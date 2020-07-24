@@ -449,6 +449,14 @@
                 {
                     "command": "aws.showErrorDetails",
                     "when": "false"
+                },
+                {
+                    "command": "aws.copyLogStreamName",
+                    "when": "resourceScheme == awsCloudWatchLogs"
+                },
+                {
+                    "command": "aws.saveCurrentLogStreamContent",
+                    "when": "false"
                 }
             ],
             "editor/title": [
