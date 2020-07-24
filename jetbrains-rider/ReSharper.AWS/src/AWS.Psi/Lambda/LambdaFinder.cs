@@ -9,7 +9,6 @@ using JetBrains.ReSharper.Psi;
 using JetBrains.ReSharper.Psi.CSharp;
 using JetBrains.ReSharper.Psi.Resolve;
 using JetBrains.ReSharper.Psi.Util;
-using JetBrains.UI.ThemedIcons;
 using JetBrains.Util;
 using JetBrains.Util.Logging;
 

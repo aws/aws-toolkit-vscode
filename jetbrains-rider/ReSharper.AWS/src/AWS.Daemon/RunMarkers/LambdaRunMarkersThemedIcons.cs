@@ -16,7 +16,7 @@ using TiImage = global::JetBrains.Application.UI.Icons.Images.TiImage;
 using TiImageConverter = global::JetBrains.Application.UI.Icons.Images.TiImageConverter;
 #endif
 
-namespace JetBrains.UI.ThemedIcons
+namespace AWS.Daemon.RunMarkers
 {
 	/// <summary>
 	///	<para>

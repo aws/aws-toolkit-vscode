@@ -1,5 +1,6 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
+import org.jetbrains.intellij.tasks.PrepareSandboxTask
 
 buildscript {
     ext.rd_version = rdGenVersion()
@@ -59,7 +60,7 @@ intellij {
 // `runIde` depends on `prepareSandbox` task and then executes IJ inside the sandbox dir
 // `prepareSandbox` depends on the standard Java `jar` and then copies everything into the sandbox dir
 
-tasks.withType(prepareSandbox.class).all {
+tasks.withType(PrepareSandboxTask).configureEach {
     dependsOn buildReSharperPlugin
 
     from(buildReSharperPlugin.outputs, {
