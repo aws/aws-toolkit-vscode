@@ -1,0 +1,28 @@
+{
+    "description": "Example document description",
+    "schemaVersion": "0.3",
+    "assumeRole": "example assumeRole",
+    "parameters": {
+        "example": {
+            "type": "String",
+            "description": "Description of an example parameter",
+            "default": ""
+        }
+    },
+    "mainSteps": [
+        {
+            "name": "example",
+            "action": "example action",
+            "inputs": {
+                "example input": ["{{ example }}"]
+            },
+            "outputs": [
+                {
+                    "Name": "example output Name",
+                    "Selector": "example output Selector",
+                    "Type": "example output Type"
+                }
+            ]
+        }
+    ]
+}

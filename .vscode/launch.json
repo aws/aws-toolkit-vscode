@@ -12,7 +12,8 @@
             "runtimeExecutable": "${execPath}",
             "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
             "env": {
-                "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true"
+                "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true",
+                "SSMDOCUMENT_LANGUAGESERVER_PORT": "6010"
             },
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
             "preLaunchTask": "npm: watch"
@@ -24,6 +25,14 @@
             "port": 6009,
             "restart": true,
             "outFiles": ["${workspaceRoot}/dist/src/stepFunctions/amazonStatesLanguage/server.js"]
+        },
+        {
+            "name": "Attach to SSM Document Language Server",
+            "type": "node",
+            "request": "attach",
+            "port": 6010,
+            "restart": true,
+            "outFiles": ["${workspaceRoot}/dist/src/ssmDocument/ssm/ssmServer.js"]
         },
         {
             "name": "Extension (webpack)",
@@ -88,6 +97,12 @@
             },
             "outFiles": ["${workspaceFolder}/dist/src/integrationTest/**/*.js"],
             "preLaunchTask": "npm: testCompile"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Extension + Attach to SSM Document Language Server",
+            "configurations": ["Extension", "Attach to SSM Document Language Server"]
         }
     ]
 }

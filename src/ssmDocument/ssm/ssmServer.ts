@@ -1,5 +1,5 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -8,20 +8,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  */
 
-// tslint:disable: no-inferred-empty-object-type
+import { JsonLS, getLanguageServiceSSM as getLanguageService } from 'aws-ssm-document-language-service'
 
 import {
-    ClientCapabilities,
-    Diagnostic,
-    DocumentLanguageSettings,
-    getLanguageService,
-    JSONDocument,
-    TextDocument,
-} from 'amazon-states-language-service'
-import {
     createConnection,
-    Disposable,
-    DocumentRangeFormattingRequest,
+    DidChangeWatchedFilesParams,
+    FileEvent,
     IConnection,
     InitializeParams,
     InitializeResult,
@@ -39,11 +31,11 @@ import { getLanguageModelCache } from '../../shared/languageServer/languageModel
 import { formatError, runSafe, runSafeAsync } from '../../shared/languageServer/utils/runner'
 
 namespace ResultLimitReachedNotification {
-    export const type: NotificationType<string, any> = new NotificationType('asl/resultLimitReached')
+    export const type: NotificationType<string, any> = new NotificationType('ssm/resultLimitReached')
 }
 
 namespace ForceValidateRequest {
-    export const type: RequestType<string, Diagnostic[], any, any> = new RequestType('asl/validate')
+    export const type: RequestType<string, JsonLS.Diagnostic[], any, any> = new RequestType('ssm/validate')
 }
 
 // Create a connection for the server
@@ -69,18 +61,17 @@ const workspaceContext = {
 let languageService = getLanguageService({
     workspaceContext,
     contributions: [],
-    clientCapabilities: ClientCapabilities.LATEST,
+    clientCapabilities: JsonLS.ClientCapabilities.LATEST,
 })
 
 // Create a text document manager.
-const documents = new TextDocuments(TextDocument)
+const documents = new TextDocuments(JsonLS.TextDocument)
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events
 documents.listen(connection)
 
 let clientSnippetSupport = false
-let dynamicFormatterRegistration = false
 let hierarchicalDocumentSymbolSupport = false
 
 let foldingRangeLimitDefault = Number.MAX_VALUE
@@ -110,21 +101,52 @@ connection.onInitialize(
 
             return c
         }
+        // tslint:enable: no-unsafe-any
 
         clientSnippetSupport = getClientCapability('textDocument.completion.completionItem.snippetSupport', false)
-        dynamicFormatterRegistration =
-            getClientCapability('textDocument.rangeFormatting.dynamicRegistration', false) &&
-            typeof params.initializationOptions.provideFormatter !== 'boolean'
         foldingRangeLimitDefault = getClientCapability('textDocument.foldingRange.rangeLimit', Number.MAX_VALUE)
         hierarchicalDocumentSymbolSupport = getClientCapability(
             'textDocument.documentSymbol.hierarchicalDocumentSymbolSupport',
             false
         )
-        // tslint:enable: no-unsafe-any
+
+        // Need all letters to be trigger characters for YAML completion
+        const triggerCharacters = [
+            '"',
+            '-',
+            '$',
+            'a',
+            'b',
+            'c',
+            'd',
+            'e',
+            'f',
+            'g',
+            'h',
+            'i',
+            'j',
+            'k',
+            'l',
+            'm',
+            'n',
+            'o',
+            'p',
+            'q',
+            'r',
+            's',
+            't',
+            'u',
+            'v',
+            'w',
+            'x',
+            'y',
+            'z',
+        ]
+
         const capabilities: ServerCapabilities = {
             textDocumentSync: TextDocumentSyncKind.Incremental,
             completionProvider: clientSnippetSupport
-                ? { resolveProvider: true, triggerCharacters: ['"', ':'] }
+                ? { resolveProvider: true, triggerCharacters: triggerCharacters }
                 : undefined,
             hoverProvider: true,
             documentSymbolProvider: true,
@@ -134,20 +156,15 @@ connection.onInitialize(
             foldingRangeProvider: true,
             selectionRangeProvider: true,
         }
-
+        console.log('initialized.')
         return { capabilities }
     }
 )
 
 // The settings interface describes the server relevant settings part
-interface Settings {
-    aws?: {
-        stepfunctions?: {
-            asl?: {
-                format?: { enable: boolean }
-                resultLimit?: number
-            }
-        }
+export interface Settings {
+    ssm?: {
+        resultLimit?: number
     }
 }
 
@@ -190,38 +207,20 @@ namespace LimitExceededWarnings {
     }
 }
 
-let formatterRegistration: Thenable<Disposable> | undefined
-
 connection.onDidChangeConfiguration(change => {
     const settings = <Settings>change.settings
 
     foldingRangeLimit = Math.trunc(
-        Math.max(settings?.aws?.stepfunctions?.asl?.resultLimit || foldingRangeLimitDefault, 0)
+        settings?.ssm?.resultLimit ? Math.max(settings?.ssm?.resultLimit, 0) : foldingRangeLimitDefault
     )
-    resultLimit = Math.trunc(Math.max(settings?.aws?.stepfunctions?.asl?.resultLimit || Number.MAX_VALUE, 0))
-
-    // dynamically enable & disable the formatter
-    if (dynamicFormatterRegistration) {
-        const enableFormatter = settings?.aws?.stepfunctions?.asl?.format?.enable
-        if (enableFormatter) {
-            if (!formatterRegistration) {
-                formatterRegistration = connection.client.register(DocumentRangeFormattingRequest.type, {
-                    documentSelector: [{ language: 'asl' }],
-                })
-            }
-        } else if (formatterRegistration) {
-            formatterRegistration.then(r => r.dispose())
-            formatterRegistration = undefined
-        }
-    }
+    resultLimit = Math.trunc(settings?.ssm?.resultLimit ? Math.max(settings?.ssm?.resultLimit, 0) : Number.MAX_VALUE)
 })
 
 // Retry schema validation on all open documents
 connection.onRequest(ForceValidateRequest.type, async uri => {
-    return new Promise<Diagnostic[]>(resolve => {
+    return new Promise<JsonLS.Diagnostic[]>(resolve => {
         const document = documents.get(uri)
         if (document) {
-            // updateConfiguration()
             validateTextDocument(document, diagnostics => {
                 resolve(diagnostics)
             })
@@ -248,7 +247,7 @@ documents.onDidClose(event => {
 const pendingValidationRequests: { [uri: string]: NodeJS.Timer } = {}
 const validationDelayMs = 500
 
-function cleanPendingValidation(textDocument: TextDocument): void {
+function cleanPendingValidation(textDocument: JsonLS.TextDocument): void {
     const request = pendingValidationRequests[textDocument.uri]
     if (request) {
         clearTimeout(request)
@@ -257,7 +256,7 @@ function cleanPendingValidation(textDocument: TextDocument): void {
     }
 }
 
-function triggerValidation(textDocument: TextDocument): void {
+function triggerValidation(textDocument: JsonLS.TextDocument): void {
     cleanPendingValidation(textDocument)
     pendingValidationRequests[textDocument.uri] = setTimeout(() => {
         // tslint:disable-next-line: no-dynamic-delete
@@ -266,27 +265,25 @@ function triggerValidation(textDocument: TextDocument): void {
     }, validationDelayMs)
 }
 
-function validateTextDocument(textDocument: TextDocument, callback?: (diagnostics: Diagnostic[]) => void): void {
-    const respond = (diagnostics: Diagnostic[]) => {
+function validateTextDocument(
+    textDocument: JsonLS.TextDocument,
+    callback?: (diagnostics: JsonLS.Diagnostic[]) => void
+): void {
+    const jsonDocument = getJSONDocument(textDocument)
+    const documentSettings: JsonLS.DocumentLanguageSettings = { comments: 'error', trailingCommas: 'error' }
+    const respond = (diagnostics: JsonLS.Diagnostic[]) => {
         connection.sendDiagnostics({ uri: textDocument.uri, diagnostics })
         if (callback) {
             callback(diagnostics)
         }
     }
-    if (textDocument.getText().length === 0) {
-        respond([])
 
-        return
-    }
-    const jsonDocument = getJSONDocument(textDocument)
-    const version = textDocument.version
-
-    const documentSettings: DocumentLanguageSettings = { comments: 'error', trailingCommas: 'error' }
+    // Validate base on json schema provided for SSM Document
     languageService.doValidation(textDocument, jsonDocument, documentSettings).then(
         diagnostics => {
             setTimeout(() => {
                 const currDocument = documents.get(textDocument.uri)
-                if (currDocument && currDocument.version === version) {
+                if (currDocument) {
                     respond(diagnostics) // Send the computed diagnostics to VSCode.
                 }
             }, 100)
@@ -297,11 +294,11 @@ function validateTextDocument(textDocument: TextDocument, callback?: (diagnostic
     )
 }
 
-connection.onDidChangeWatchedFiles(change => {
+connection.onDidChangeWatchedFiles((change: DidChangeWatchedFilesParams) => {
     // Monitored files have changed in VSCode
     let hasChanges = false
-    // tslint:disable-next-line: no-unsafe-any
-    change.changes.forEach(c => {
+
+    change.changes.forEach((c: FileEvent) => {
         if (languageService.resetSchema(c.uri)) {
             hasChanges = true
         }
@@ -311,7 +308,7 @@ connection.onDidChangeWatchedFiles(change => {
     }
 })
 
-const jsonDocuments = getLanguageModelCache<JSONDocument>(10, 60, document =>
+const jsonDocuments = getLanguageModelCache<JsonLS.JSONDocument>(10, 60, document =>
     languageService.parseJSONDocument(document)
 )
 documents.onDidClose(e => {
@@ -321,7 +318,7 @@ connection.onShutdown(() => {
     jsonDocuments.dispose()
 })
 
-function getJSONDocument(document: TextDocument): JSONDocument {
+function getJSONDocument(document: JsonLS.TextDocument): JsonLS.JSONDocument {
     return jsonDocuments.get(document)
 }
 
@@ -360,7 +357,6 @@ connection.onHover((textDocumentPositionParams, token) => {
             const document = documents.get(textDocumentPositionParams.textDocument.uri)
             if (document) {
                 const jsonDocument = getJSONDocument(document)
-
                 return languageService.doHover(document, textDocumentPositionParams.position, jsonDocument)
             }
 
@@ -398,7 +394,6 @@ connection.onDocumentSymbol((documentSymbolParams, token) => {
             }
 
             return []
-            // tslint:disable: no-unsafe-any
         },
         [],
         `Error while computing document symbols for ${documentSymbolParams.textDocument.uri}`,
