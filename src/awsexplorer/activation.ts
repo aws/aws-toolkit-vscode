@@ -10,6 +10,7 @@ import { LogGroupNode } from '../cloudWatchLogs/explorer/logGroupNode'
 import { submitFeedback } from '../feedback/commands/submitFeedback'
 import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { deleteLambda } from '../lambda/commands/deleteLambda'
+import { importLambdaCommand } from '../lambda/commands/importLambda'
 import { invokeLambda } from '../lambda/commands/invokeLambda'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
 import { LambdaFunctionNode } from '../lambda/explorer/lambdaFunctionNode'
@@ -158,6 +159,13 @@ async function registerAwsExplorerCommands(
                     functionNode: node,
                     outputChannel: lambdaOutputChannel,
                 })
+        )
+    )
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand(
+            'aws.importLambda',
+            async (node: LambdaFunctionNode) => await importLambdaCommand(node)
         )
     )
 

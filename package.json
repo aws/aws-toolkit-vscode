@@ -424,6 +424,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.importLambda",
+                    "when": "false"
+                },
+                {
                     "command": "aws.invokeLambda",
                     "when": "false"
                 },
@@ -552,9 +556,14 @@
                     "group": "0@1"
                 },
                 {
-                    "command": "aws.deleteLambda",
+                    "command": "aws.importLambda",
                     "when": "view == aws.explorer && viewItem == awsRegionFunctionNode",
                     "group": "2@1"
+                },
+                {
+                    "command": "aws.deleteLambda",
+                    "when": "view == aws.explorer && viewItem == awsRegionFunctionNode",
+                    "group": "3@1"
                 },
                 {
                     "command": "aws.deleteCloudFormation",
@@ -662,6 +671,11 @@
             {
                 "command": "aws.invokeLambda",
                 "title": "%AWS.command.invokeLambda%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.importLambda",
+                "title": "%AWS.command.importLambda%",
                 "category": "AWS"
             },
             {
@@ -931,6 +945,7 @@
         "cross-spawn": "^6.0.5",
         "del": "^3.0.0",
         "fs-extra": "^8.1.0",
+        "got": "^11.5.1",
         "handlebars": "^4.7.6",
         "immutable": "^4.0.0-rc.12",
         "js-yaml": "^3.13.1",
