@@ -64,9 +64,9 @@ static def ideProfiles() {
                     ]
                 ],
                 "RD": [
-                    sdkVersion  : "RD-2020.1-SNAPSHOT",
+                    sdkVersion  : "RD-2020.1.0",
                     rdGenVersion: "0.201.69",
-                    nugetVersion: "2020.1.0-eap05",
+                    nugetVersion: "2020.1.0",
                     plugins     : [
                         "org.jetbrains.plugins.yaml"
                     ]
@@ -103,7 +103,7 @@ static def ideProfiles() {
                 "RD": [
                     sdkVersion  : "RD-2020.2-SNAPSHOT",
                     rdGenVersion: "0.202.113",
-                    nugetVersion: "2020.2.0-eap06",
+                    nugetVersion: "2020.2.0-eap07",
                     plugins     : [
                         "org.jetbrains.plugins.yaml"
                     ]

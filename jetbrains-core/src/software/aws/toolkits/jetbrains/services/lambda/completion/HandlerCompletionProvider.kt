@@ -5,7 +5,7 @@ package software.aws.toolkits.jetbrains.services.lambda.completion
 
 import com.intellij.codeInsight.completion.CompletionParameters
 import com.intellij.codeInsight.completion.CompletionResultSet
-import com.intellij.codeInsight.lookup.CharFilter
+import com.intellij.codeInsight.lookup.CharFilter.Result
 import com.intellij.openapi.project.Project
 import com.intellij.util.textCompletion.TextCompletionProvider
 import software.amazon.awssdk.services.lambda.model.Runtime
@@ -13,6 +13,7 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
+import java.lang.IllegalStateException
 
 class HandlerCompletionProvider(private val project: Project, runtime: Runtime?) : TextCompletionProvider {
 
@@ -32,9 +33,11 @@ class HandlerCompletionProvider(private val project: Project, runtime: Runtime?)
     override fun applyPrefixMatcher(result: CompletionResultSet, prefix: String): CompletionResultSet {
         if (!isCompletionSupported) return result
 
-        val prefixMatcher = handlerCompletion!!.getPrefixMatcher(prefix)
-        result.withPrefixMatcher(prefixMatcher)
-        return result
+        val completion = handlerCompletion
+            ?: throw IllegalStateException("handlerCompletion must be defined if completion is enabled.")
+
+        val prefixMatcher = completion.getPrefixMatcher(prefix)
+        return result.withPrefixMatcher(prefixMatcher)
     }
 
     override fun getAdvertisement(): String? = null
@@ -49,12 +52,12 @@ class HandlerCompletionProvider(private val project: Project, runtime: Runtime?)
         result.stopHere()
     }
 
-    override fun acceptChar(c: Char): CharFilter.Result? {
-        if (!isCompletionSupported) return CharFilter.Result.HIDE_LOOKUP
+    override fun acceptChar(char: Char): Result? {
+        if (!isCompletionSupported) return Result.HIDE_LOOKUP
 
         return when {
-            c.isWhitespace() -> CharFilter.Result.SELECT_ITEM_AND_FINISH_LOOKUP
-            else -> CharFilter.Result.ADD_TO_PREFIX
+            char == ':' || char == '.' || Character.isLetterOrDigit(char) -> Result.ADD_TO_PREFIX
+            else -> null
         }
     }
 }

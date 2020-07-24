@@ -4,9 +4,7 @@
 package base
 
 import com.intellij.ide.GeneralSettings
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.newvfs.impl.VfsRootAccess
 import com.jetbrains.rider.test.base.BaseTestWithSolutionBase
 import com.jetbrains.rider.test.scriptingApi.useCachedTemplates
 import org.testng.annotations.AfterClass
@@ -38,10 +36,14 @@ abstract class AwsReuseSolutionTestBase : BaseTestWithSolutionBase() {
     override val testCaseNameToTempDir: String
         get() = getSolutionDirectoryName()
 
+    // TODO: Remove when https://youtrack.jetbrains.com/issue/RIDER-47995 is fixed FIX_WHEN_MIN_IS_203
+    @BeforeClass
+    fun allowDotnetRoots() {
+        allowCustomDotnetRoots()
+    }
+
     @BeforeClass(alwaysRun = true)
     fun setUpClassSolution() {
-        VfsRootAccess.allowRootAccess(ApplicationManager.getApplication(), dotNetSdk)
-
         openSolution(getSolutionDirectoryName())
     }
 

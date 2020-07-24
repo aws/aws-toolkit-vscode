@@ -3,28 +3,12 @@
 
 package base
 
-import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.execution.util.ExecUtil
 import com.intellij.openapi.util.SystemInfo
 import com.jetbrains.rider.test.base.BaseTestWithMarkup
+import com.jetbrains.rider.test.base.PrepareTestEnvironment
 import com.jetbrains.rider.test.scriptingApi.setUpCustomToolset
 import com.jetbrains.rider.test.scriptingApi.setUpDotNetCoreCliPath
 import org.testng.annotations.BeforeClass
-
-val dotNetSdk by lazy {
-    val output = ExecUtil.execAndGetOutput(GeneralCommandLine("dotnet", "--version"))
-    if (output.exitCode == 0) {
-        "C:\\Program Files\\dotnet\\sdk\\${output.stdout.trim()}".also {
-            println("Using dotnet SDK at $it")
-        }
-    } else {
-        throw IllegalStateException("Failed to locate dotnet version: ${output.stderr}")
-    }
-}
-
-val msBuild by lazy {
-    "${dotNetSdk}\\MSBuild.dll"
-}
 
 // BaseTestWithMarkup inherit the logic in EditorTestBase class that prepare test project that create
 // an empty solution and adds project under test to this solution.
@@ -39,8 +23,8 @@ open class AwsMarkupBaseTest : BaseTestWithMarkup() {
     @BeforeClass
     fun setUpBuildToolPath() {
         if (SystemInfo.isWindows) {
-            dotnetCoreCliPath = "C:\\Program Files\\dotnet\\dotnet.exe"
-            setUpDotNetCoreCliPath(dotnetCoreCliPath)
+            PrepareTestEnvironment.dotnetCoreCliPath = "C:\\Program Files\\dotnet\\dotnet.exe"
+            setUpDotNetCoreCliPath(PrepareTestEnvironment.dotnetCoreCliPath)
             setUpCustomToolset(msBuild)
         }
     }
