@@ -63,6 +63,7 @@ export async function invokeLambda(params: {
         const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
 
         view.webview.html = baseTemplateFn({
+            cspSource: view.webview.cspSource,
             content: '<h1>Loading...</h1>',
         })
 
@@ -92,10 +93,11 @@ export async function invokeLambda(params: {
                 })
             })
 
-            const loadScripts = ExtensionUtilities.getScriptsForHtml(['invokeLambdaVue.js'])
-            const loadLibs = ExtensionUtilities.getLibrariesForHtml(['vue.min.js'])
+            const loadScripts = ExtensionUtilities.getScriptsForHtml(['invokeLambdaVue.js'], view.webview)
+            const loadLibs = ExtensionUtilities.getLibrariesForHtml(['vue.min.js'], view.webview)
 
             view.webview.html = baseTemplateFn({
+                cspSource: view.webview.cspSource,
                 content: invokeTemplateFn({
                     FunctionName: functionNode.configuration.FunctionName,
                     InputSamples: inputs,

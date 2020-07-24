@@ -1,0 +1,18 @@
+{
+    "date": "2020-05-27",
+    "version": "1.10.0",
+    "entries": [
+        {
+            "type": "Feature",
+            "description": "Add basic visualisation capability for step function state machines defined in YAML."
+        },
+        {
+            "type": "Feature",
+            "description": "Step Functions Linter: Resource property of Task state will accept any string instead of just arn. Additional disallowed properties will be marked as invalid."
+        },
+        {
+            "type": "Feature",
+            "description": "If a file conflict is detected when downloading event schemas code bindings, a confirmation prompt is shown"
+        }
+    ]
+}

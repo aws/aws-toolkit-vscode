@@ -107,10 +107,10 @@ export class AslVisualization {
 
         // Set the initial html for the webpage
         panel.webview.html = this.getWebviewContent(
-            ext.visualizationResourcePaths.webviewBodyScript.with({ scheme: 'vscode-resource' }),
-            ext.visualizationResourcePaths.visualizationLibraryScript.with({ scheme: 'vscode-resource' }),
-            ext.visualizationResourcePaths.visualizationLibraryCSS.with({ scheme: 'vscode-resource' }),
-            ext.visualizationResourcePaths.stateMachineCustomThemeCSS.with({ scheme: 'vscode-resource' }),
+            panel.webview.asWebviewUri(ext.visualizationResourcePaths.webviewBodyScript),
+            panel.webview.asWebviewUri(ext.visualizationResourcePaths.visualizationLibraryScript),
+            panel.webview.asWebviewUri(ext.visualizationResourcePaths.visualizationLibraryCSS),
+            panel.webview.asWebviewUri(ext.visualizationResourcePaths.stateMachineCustomThemeCSS),
             {
                 inSync: localize(
                     'AWS.stepFunctions.graph.status.inSync',

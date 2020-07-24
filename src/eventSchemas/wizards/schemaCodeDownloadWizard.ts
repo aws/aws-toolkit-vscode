@@ -27,7 +27,7 @@ import { SchemaItemNode } from '../explorer/schemaItemNode'
 
 export interface SchemaCodeDownloadWizardContext {
     readonly schemaLangs: Set<codeLang.SchemaCodeLangs>
-    readonly workspaceFolders: vscode.WorkspaceFolder[] | undefined
+    readonly workspaceFolders: ReadonlyArray<vscode.WorkspaceFolder> | undefined
 
     promptUserForVersion(currSchemaVersion?: string): Promise<string | undefined>
 
@@ -40,7 +40,7 @@ export interface SchemaCodeDownloadWizardContext {
 
 export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implements SchemaCodeDownloadWizardContext {
     public readonly schemaLangs = codeLang.schemaCodeLangs
-    private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Documentation'))
+    private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Toolkit Documentation'))
     public constructor(private readonly node: SchemaItemNode) {
         super()
         this.node = node

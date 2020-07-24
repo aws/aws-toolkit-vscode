@@ -80,7 +80,7 @@ works like this:
             (refresh entire S3 tree).
 -   (P1) `Filter...` action:
     -   Users can _filter_ S3 folders. This uses the _server-side_ filter
-        capabilties. (Note: S3 only supports prefix-filtering.)
+        capabilities. (Note: S3 only supports prefix-filtering.)
     -   The `Filter...` action prompts user for a prefix string.
         -   Pre-populate the prompt with the current active filter pattern, if any.
     -   Store the current active filter per-folder.
@@ -128,7 +128,7 @@ Buckets are listed as children of the S3 root node.
         -   Works like `Upload...`, except targeting the parent of the current item.
             This allows the user to avoid needing to navigate to the parent folder.
     -   _Destructive operations (separator):_
-        -   (P1) `Delete bucket`
+        -   (P0) `Delete bucket`
             -   "Super confirm": similar to AWS web console, show a prompt which
                 requires typing the word "Delete".
 
@@ -162,22 +162,26 @@ S3 objects and folders are listed as children of their respective parent bucket/
                     experiences in the Toolkit.
             -   (P1) Loading bar or updating percentage.
         -   (P1) Toolkit tracks current downloads so that they are cancellable.
-            -   User can cancel all downloads by clicking a button in the Toolkit
-                explorer toolbar, or by the `AWS: Cancel downloads` VSCode command.
+            -   User can cancel _all_ downloads by clicking a button in the Toolkit
+                explorer toolbar, or by the `AWS: Cancel Downloads` VSCode command.
         -   (P2) User can download multiple files/folders by selecting them in the S3
             tree and using the `Download` context-menu item.
     -   (P0) `Download as...`
         -   Presents the standard file-chooser dialog. Otherwise behaves like the `Download` action.
     -   (P2) `Edit`
         -   Downloads the object to a temp folder and opens it in a [readonly view](https://code.visualstudio.com/api/extension-guides/virtual-documents).
-    -   (P0) Upload... (similar UX as [S3 buckets](#s3-buckets) `Upload...` item)
+    -   (P0) `Upload...` (similar UX as [S3 buckets](#s3-buckets) `Upload...` item)
+        -   (P1) User can cancel upload by clicking a button in the progress popup.
+        -   (P1) User can cancel _all_ uploads by clicking a button in the
+            Toolkit explorer toolbar, or by the `AWS: Cancel Uploads` VSCode command.
+    -   (P1) `Upload current file...` allows uploading the current file (i.e.
+        the "active editor" in VSCode) to the selected S3 folder.
     -   _Destructive operations (separator):_
-        -   (P1) `Delete`
-            -   If versioning is enabled, do _not_ prompt to confirm deletion.
-                -   Show a passive toaster message: _Deleted `foo.txt`. `Undo` from previous versions?_
-                -   If user clicks `Undo` in the toaster message, restore the file from the previous versions list.
-            -   If versioning is not enabled, show a prompt to confirm deletion :(
-                -   Show a passive toaster message: _Deleted `foo.txt`. (Cannot undo because S3 bucket versioning is disabled.)_
+        -   `Delete`
+            -   (P0) Show a prompt to confirm deletion.
+                -   Show a passive message: _Deleted `foo.txt`. (Cannot undo because S3 bucket versioning is disabled.)_
+            -   (P1) If versioning is enabled, do _not_ prompt to confirm deletion.
+                -   Show a passive message: _Deleted `foo.txt`. Restore previous version to undo._
 
 ### S3 bucket properties
 

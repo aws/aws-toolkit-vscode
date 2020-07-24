@@ -77,10 +77,14 @@ abstract class BaseSamCliLocator {
         return undefined
     }
 
+    /**
+     * Searches for `getExecutableFilenames()` in `$PATH` and returns the first
+     * path found on the filesystem, if any.
+     */
     private async getSystemPathLocation(): Promise<string | undefined> {
         const envVars = process.env as EnvironmentVariables
 
-        if (!!envVars.PATH) {
+        if (envVars.PATH) {
             const systemPaths: string[] = envVars.PATH.split(path.delimiter).filter(folder => !!folder)
 
             return await this.findFileInFolders(this.getExecutableFilenames(), systemPaths)

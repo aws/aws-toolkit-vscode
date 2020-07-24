@@ -12,6 +12,7 @@ README.cloud9.md
 extension-readme.md
 .gitcommit
 media/libs/
+package.json.bk
 
 # Auto generated definitions
 src/**/*.gen.ts

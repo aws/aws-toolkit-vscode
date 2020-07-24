@@ -15,6 +15,8 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 const LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE = 'Disable'
+const LEGACY_SETTINGS_TELEMETRY_VALUE_ENABLE = 'Enable'
+const TELEMETRY_SETTING_DEFAULT = true
 
 const telemetryNoticeText: string = localize(
     'AWS.telemetry.notificationMessage',
@@ -43,6 +45,9 @@ export async function activate(activateArguments: {
 }) {
     ext.telemetry = new DefaultTelemetryService(activateArguments.extensionContext, activateArguments.awsContext)
 
+    // Convert setting to boolean if it is not already
+    await sanitizeTelemetrySetting(activateArguments.toolkitSettings)
+
     // Configure telemetry based on settings, and default to enabled
     applyTelemetryEnabledState(ext.telemetry, activateArguments.toolkitSettings)
 
@@ -65,12 +70,31 @@ export async function activate(activateArguments: {
                     return
                 }
 
+                validateTelemetrySettingType(activateArguments.toolkitSettings)
                 applyTelemetryEnabledState(ext.telemetry, activateArguments.toolkitSettings)
             }
         },
         undefined,
         activateArguments.extensionContext.subscriptions
     )
+}
+
+/*
+ * Formats the AWS telemetry setting to a boolean: false if setting value was 'Disable' or false, true for everything else
+ */
+export async function sanitizeTelemetrySetting(toolkitSettings: SettingsConfiguration): Promise<void> {
+    const value = toolkitSettings.readSetting<any>(AWS_TELEMETRY_KEY)
+
+    if (typeof value === 'boolean') {
+        return
+    }
+
+    // Set telemetry value to boolean if the current value matches the legacy value
+    if (value === LEGACY_SETTINGS_TELEMETRY_VALUE_DISABLE) {
+        await toolkitSettings.writeSetting<any>(AWS_TELEMETRY_KEY, false, vscode.ConfigurationTarget.Global)
+    } else if (value === LEGACY_SETTINGS_TELEMETRY_VALUE_ENABLE) {
+        await toolkitSettings.writeSetting<any>(AWS_TELEMETRY_KEY, true, vscode.ConfigurationTarget.Global)
+    }
 }
 
 export function isTelemetryEnabled(toolkitSettings: SettingsConfiguration): boolean {
@@ -83,13 +107,21 @@ export function isTelemetryEnabled(toolkitSettings: SettingsConfiguration): bool
         return false
     }
 
-    // Current value is expected to be a boolean
     if (typeof value === 'boolean') {
         return value
+    } else {
+        return TELEMETRY_SETTING_DEFAULT
     }
+}
 
-    // Treat anything else (unexpected values, datatypes, or undefined) as opt-in
-    return true
+function validateTelemetrySettingType(toolkitSettings: SettingsConfiguration): void {
+    const value = toolkitSettings.readSetting<any>(AWS_TELEMETRY_KEY)
+    if (typeof value !== 'boolean') {
+        getLogger().error('In settings.json, aws.telemetry value must be a boolean')
+        vscode.window.showErrorMessage(
+            localize('AWS.message.error.settings.telemetry.invalid_type', 'The aws.telemetry value must be a boolean')
+        )
+    }
 }
 
 function applyTelemetryEnabledState(telemetry: TelemetryService, toolkitSettings: SettingsConfiguration) {

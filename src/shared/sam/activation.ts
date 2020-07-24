@@ -77,7 +77,14 @@ export async function activate(activateArguments: {
         )
     )
 
-    await detectSamCli(false)
+    await detectSamCli({ passive: true, showMessage: false })
+    activateArguments.extensionContext.subscriptions.push(
+        vscode.workspace.onDidChangeConfiguration(configurationChangeEvent => {
+            if (configurationChangeEvent.affectsConfiguration('aws.samcli.location')) {
+                detectSamCli({ passive: true, showMessage: undefined })
+            }
+        })
+    )
 
     await resumeCreateNewSamApp()
 }
@@ -92,7 +99,10 @@ async function registerServerlessCommands(params: {
         vscode.commands.registerCommand(
             'aws.samcli.detect',
             async () =>
-                await PromiseSharer.getExistingPromiseOrCreate('samcli.detect', async () => await detectSamCli(true))
+                await PromiseSharer.getExistingPromiseOrCreate(
+                    'samcli.detect',
+                    async () => await detectSamCli({ passive: false, showMessage: true })
+                )
         ),
         vscode.commands.registerCommand('aws.lambda.createNewSamApp', async () => {
             await createNewSamApplication(params.channelLogger, params.awsContext, params.regionProvider)

@@ -43,7 +43,7 @@ export interface PythonDebugConfiguration extends DebugConfiguration {
 
 export interface DotNetCoreDebugConfiguration extends DebugConfiguration {
     type: 'coreclr'
-    processId: string
+    processName: string
     pipeTransport: PipeTransport
     windows: {
         pipeTransport: PipeTransport
@@ -80,7 +80,9 @@ export function makeCoreCLRDebugConfiguration({
         name: 'SamLocalDebug',
         type: 'coreclr',
         request: 'attach',
-        processId: '1',
+        // Since SAM CLI 1.0 we cannot assume PID=1. So use processName=dotnet
+        // instead of processId=1.
+        processName: 'dotnet',
         pipeTransport: {
             pipeProgram: 'sh',
             pipeArgs,
