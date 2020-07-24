@@ -10,7 +10,7 @@ import { getLogger } from '../../shared/logger/logger'
 
 // TODO: Does this set maxPending for each key to 1, or to all keys?
 // If the latter, we need to make a key registry...
-// TODO: Cut a PR to the async-lock package?...as of now, maxPending = 0 is theoretically ideal, but also falsy:
+// TODO: Cut a PR to the async-lock package?...as of now, maxPending = 0 is theoretically ideal, but also falsy (which sets maxPending = 1000):
 // https://github.com/rogierschouten/async-lock/blob/78cb0c2441650d7bdc148548f99542ccc9c93fd7/lib/index.js#L19
 const lock = new AsyncLock({ maxPending: 1 })
 

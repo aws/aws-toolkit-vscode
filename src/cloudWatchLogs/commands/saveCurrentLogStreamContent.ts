@@ -10,11 +10,16 @@ const localize = nls.loadMessageBundle()
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import { SystemUtilities } from '../../shared/systemUtilities'
+import { recordCloudwatchlogsDownloadStreamToFile, Result } from '../../shared/telemetry/telemetry'
+import { Window } from '../../shared/vscode/window'
 import { parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
 import { LogStreamRegistry } from '../registry/logStreamRegistry'
-import { recordCloudwatchlogsDownloadStreamToFile, Result } from '../../shared/telemetry/telemetry'
 
-export async function saveCurrentLogStreamContent(uri: vscode.Uri, registry: LogStreamRegistry): Promise<void> {
+export async function saveCurrentLogStreamContent(
+    uri: vscode.Uri,
+    registry: LogStreamRegistry,
+    window = Window.vscode()
+): Promise<void> {
     let result: Result = 'Succeeded'
 
     const content = registry.getLogContent(uri, { timestamps: true })
@@ -24,7 +29,7 @@ export async function saveCurrentLogStreamContent(uri: vscode.Uri, registry: Log
     const uriComponents = parseCloudWatchLogsUri(uri)
 
     const localizedLogFile = localize('AWS.command.saveCurrentLogStreamContent.logfile', 'Log File')
-    const selectedUri = await vscode.window.showSaveDialog({
+    const selectedUri = await window.showSaveDialog({
         defaultUri: vscode.Uri.parse(path.join(workspaceDir.toString(), uriComponents.streamName)),
         filters: {
             [localizedLogFile]: ['log'],

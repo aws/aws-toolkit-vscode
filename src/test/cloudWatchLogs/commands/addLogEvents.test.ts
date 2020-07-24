@@ -11,7 +11,7 @@ import { LogStreamRegistry } from '../../../cloudWatchLogs/registry/logStreamReg
 import { CloudWatchLogs } from 'aws-sdk'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../../shared/constants'
 
-describe.only('addLogEvents', async () => {
+describe('addLogEvents', async () => {
     let sandbox: sinon.SinonSandbox
     let clock: lolex.InstalledClock
 
