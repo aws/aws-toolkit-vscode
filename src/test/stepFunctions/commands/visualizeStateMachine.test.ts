@@ -294,7 +294,7 @@ describe('StepFunctions VisualizeStateMachine', async () => {
 
         // Preview with no active text editor
         const error = await assertThrowsError(async () => {
-            await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, undefined)
+            await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, { activeTextEditor: undefined })
         }, 'Expected an error to be thrown')
 
         assert.strictEqual(error.message, 'Could not get active text editor for state machine render.')

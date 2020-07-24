@@ -24,7 +24,11 @@ export class AslVisualizationManager {
 
     public async visualizeStateMachine(
         globalStorage: vscode.Memento,
-        activeTextEditor: vscode.TextEditor | undefined = vscode.window.activeTextEditor
+        params: {
+            activeTextEditor: vscode.TextEditor | undefined
+        } = {
+            activeTextEditor: vscode.window.activeTextEditor,
+        }
     ): Promise<vscode.WebviewPanel | undefined> {
         const logger: Logger = getLogger()
         const cache = new StateMachineGraphCache()
@@ -35,12 +39,12 @@ export class AslVisualizationManager {
          * Ensure tests are written for this use case as well.
          */
 
-        if (!activeTextEditor) {
+        if (!params.activeTextEditor) {
             logger.error('Could not get active text editor for state machine render.')
             throw new Error('Could not get active text editor for state machine render.')
         }
 
-        const textDocument: vscode.TextDocument = activeTextEditor.document
+        const textDocument: vscode.TextDocument = params.activeTextEditor.document
 
         // Attempt to retrieve existing visualization if it exists.
         const existingVisualization = this.getExistingVisualization(textDocument.uri)
