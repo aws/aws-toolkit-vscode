@@ -34,7 +34,6 @@ describe('createDocumentFromTemplate', async () => {
 
     const fakeSelectionResult: SsmDocumentTemplateQuickPickItem = {
         label: 'test template',
-        description: 'an example to test creating from template',
         filename: 'test.command.ssm.json',
         language: 'ssm-json',
         docType: 'command',

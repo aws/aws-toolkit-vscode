@@ -16,7 +16,6 @@ import { getDocumentTemplate } from 'aws-ssm-document-language-service'
 
 export interface SsmDocumentTemplateQuickPickItem extends vscode.QuickPickItem {
     label: string
-    description: string
     filename: string
     language: string
     docType: string
@@ -24,33 +23,9 @@ export interface SsmDocumentTemplateQuickPickItem extends vscode.QuickPickItem {
 
 const SSMDOCUMENT_TEMPLATES: SsmDocumentTemplateQuickPickItem[] = [
     {
-        label: localize('AWS.ssmDocument.template.command22Json.label', 'Command Document (schemaVersion 2.2, JSON)'),
-        description: localize(
-            'AWS.ssmDocument.template.command22Json.description',
-            'An Example of a command document using schemaVersion 2.2 in JSON'
-        ),
-        filename: 'example22.command.ssm.json',
-        language: 'ssm-json',
-        docType: 'command',
-    },
-    {
-        label: localize('AWS.ssmDocument.template.command22Yaml.label', 'Command Document (schemaVersion 2.2, YAML)'),
-        description: localize(
-            'AWS.ssmDocument.template.command22Yaml.description',
-            'An Example of a command document using schemaVersion 2.2 in YAML'
-        ),
-        filename: 'example22.command.ssm.yaml',
-        language: 'ssm-yaml',
-        docType: 'command',
-    },
-    {
         label: localize(
             'AWS.ssmDocument.template.automationJson.label',
             'Automation Document (schemaVersion 0.3, JSON)'
-        ),
-        description: localize(
-            'AWS.ssmDocument.template.automationJson.description',
-            'An Example of a automation document using schemaVersion 0.3 in JSON'
         ),
         filename: 'example.automation.ssm.json',
         language: 'ssm-json',
@@ -61,13 +36,21 @@ const SSMDOCUMENT_TEMPLATES: SsmDocumentTemplateQuickPickItem[] = [
             'AWS.ssmDocument.template.automationYaml.label',
             'Automation Document (schemaVersion 0.3, YAML)'
         ),
-        description: localize(
-            'AWS.ssmDocument.template.automationYaml.description',
-            'An Example of a automation document using schemaVersion 0.3 in YAML'
-        ),
         filename: 'example.automation.ssm.yaml',
         language: 'ssm-yaml',
         docType: 'automation',
+    },
+    {
+        label: localize('AWS.ssmDocument.template.command22Json.label', 'Command Document (schemaVersion 2.2, JSON)'),
+        filename: 'example22.command.ssm.json',
+        language: 'ssm-json',
+        docType: 'command',
+    },
+    {
+        label: localize('AWS.ssmDocument.template.command22Yaml.label', 'Command Document (schemaVersion 2.2, YAML)'),
+        filename: 'example22.command.ssm.yaml',
+        language: 'ssm-yaml',
+        docType: 'command',
     },
 ]
 
