@@ -10,6 +10,8 @@ import { getLogger } from '../../shared/logger/logger'
 
 // TODO: Does this set maxPending for each key to 1, or to all keys?
 // If the latter, we need to make a key registry...
+// TODO: Cut a PR to the async-lock package?...as of now, maxPending = 0 is theoretically ideal, but also falsy:
+// https://github.com/rogierschouten/async-lock/blob/78cb0c2441650d7bdc148548f99542ccc9c93fd7/lib/index.js#L19
 const lock = new AsyncLock({ maxPending: 1 })
 
 export async function addLogEvents(
@@ -21,24 +23,25 @@ export async function addLogEvents(
     const uri = document.uri
     const lockName = `${headOrTail === 'head' ? 'logStreamHeadLock' : 'logStreamTailLock'}:${uri.path}`
 
-    lock.acquire(lockName, async () => {
-        // TODO: Find a way to force this to fire and run through codelens provider prior to updateLog call?
-        // Currently EXTREMELY unreliable that the event signaling that the busy status is set occurs before updateLog completes.
-        registry.setBusyStatus(uri, true)
-        if (onDidChangeCodeLensEvent) {
-            onDidChangeCodeLensEvent.fire()
-        }
-        await registry.updateLog(uri, headOrTail)
-    })
+    await lock
+        .acquire(lockName, async () => {
+            // TODO: Find a way to force this to fire and run through codelens provider prior to updateLog call?
+            // Currently EXTREMELY unreliable that the event signaling that the busy status is set occurs before updateLog completes.
+            registry.setBusyStatus(uri, true)
+            if (onDidChangeCodeLensEvent) {
+                onDidChangeCodeLensEvent.fire()
+            }
+            await registry.updateLog(uri, headOrTail)
+            getLogger().debug('Update done, releasing lock...')
+        })
         .then(() => {
             registry.setBusyStatus(uri, false)
             if (onDidChangeCodeLensEvent) {
                 onDidChangeCodeLensEvent.fire()
             }
         })
-        .catch(err => {
-            // triggers error statement if lock queue is exceeded.
-            // No need to fire event for cleanup as the actively busy async function will handle it.
-            getLogger().debug(`addLogEventseady locked for lock: ${lockName}`)
+        .catch(e => {
+            getLogger().debug(`addLogEvents already locked for lock: ${lockName}`)
+            return
         })
 }
