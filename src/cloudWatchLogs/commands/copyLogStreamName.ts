@@ -13,6 +13,9 @@ export async function copyLogStreamName(uri?: vscode.Uri): Promise<void> {
     if (!uri) {
         uri = vscode.window.activeTextEditor?.document.uri
         if (!uri) {
+            vscode.window.showErrorMessage(
+                localize('aws.cloudWatchLogs.invalidEditor', 'Current editor is not a valid Cloudwatch Logs editor.')
+            )
             return
         }
     }
@@ -21,7 +24,7 @@ export async function copyLogStreamName(uri?: vscode.Uri): Promise<void> {
         await vscode.env.clipboard.writeText(parsedUri.streamName)
     } catch (e) {
         vscode.window.showErrorMessage(
-            localize('aws.cloudWatchLogs.invalidEditor', 'Current file is not a valid Cloudwatch Logs editor.')
+            localize('aws.cloudWatchLogs.invalidEditor', 'Current editor is not a valid Cloudwatch Logs editor.')
         )
         return
     }
