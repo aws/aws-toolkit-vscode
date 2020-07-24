@@ -14,7 +14,7 @@ import { openAndSaveDocument } from '../util/util'
 
 import { getDocumentTemplate } from 'aws-ssm-document-language-service'
 
-export interface SsmDocumentTemplateQuickPickItem {
+export interface SsmDocumentTemplateQuickPickItem extends vscode.QuickPickItem {
     label: string
     description: string
     filename: string
@@ -24,7 +24,7 @@ export interface SsmDocumentTemplateQuickPickItem {
 
 const SSMDOCUMENT_TEMPLATES: SsmDocumentTemplateQuickPickItem[] = [
     {
-        label: localize('AWS.ssmDocument.template.command22Json.label', 'JSON Command Document 2.2'),
+        label: localize('AWS.ssmDocument.template.command22Json.label', 'Command Document (schemaVersion 2.2, JSON)'),
         description: localize(
             'AWS.ssmDocument.template.command22Json.description',
             'An Example of a command document using schemaVersion 2.2 in JSON'
@@ -34,17 +34,7 @@ const SSMDOCUMENT_TEMPLATES: SsmDocumentTemplateQuickPickItem[] = [
         docType: 'command',
     },
     {
-        label: localize('AWS.ssmDocument.template.automationJson.label', 'JSON Automation Document 0.3'),
-        description: localize(
-            'AWS.ssmDocument.template.automationJson.description',
-            'An Example of a automation document using schemaVersion 0.3 in JSON'
-        ),
-        filename: 'example.automation.ssm.json',
-        language: 'ssm-json',
-        docType: 'automation',
-    },
-    {
-        label: localize('AWS.ssmDocument.template.command22Yaml.label', 'YAML Command Document 2.2'),
+        label: localize('AWS.ssmDocument.template.command22Yaml.label', 'Command Document (schemaVersion 2.2, YAML)'),
         description: localize(
             'AWS.ssmDocument.template.command22Yaml.description',
             'An Example of a command document using schemaVersion 2.2 in YAML'
@@ -54,7 +44,23 @@ const SSMDOCUMENT_TEMPLATES: SsmDocumentTemplateQuickPickItem[] = [
         docType: 'command',
     },
     {
-        label: localize('AWS.ssmDocument.template.automationYaml.label', 'YAML Automation Document 0.3'),
+        label: localize(
+            'AWS.ssmDocument.template.automationJson.label',
+            'Automation Document (schemaVersion 0.3, JSON)'
+        ),
+        description: localize(
+            'AWS.ssmDocument.template.automationJson.description',
+            'An Example of a automation document using schemaVersion 0.3 in JSON'
+        ),
+        filename: 'example.automation.ssm.json',
+        language: 'ssm-json',
+        docType: 'automation',
+    },
+    {
+        label: localize(
+            'AWS.ssmDocument.template.automationYaml.label',
+            'Automation Document (schemaVersion 0.3, YAML)'
+        ),
         description: localize(
             'AWS.ssmDocument.template.automationYaml.description',
             'An Example of a automation document using schemaVersion 0.3 in YAML'
@@ -65,9 +71,7 @@ const SSMDOCUMENT_TEMPLATES: SsmDocumentTemplateQuickPickItem[] = [
     },
 ]
 
-export async function createSsmDocumentFromTemplate(): Promise<void> {
-    const logger: Logger = getLogger()
-
+export async function promptUserForTemplate(): Promise<SsmDocumentTemplateQuickPickItem | undefined> {
     const quickPick = picker.createQuickPick<SsmDocumentTemplateQuickPickItem>({
         options: {
             ignoreFocusOut: true,
@@ -84,7 +88,13 @@ export async function createSsmDocumentFromTemplate(): Promise<void> {
         },
     })
 
-    const selection = picker.verifySinglePickerOutput(choices)
+    return picker.verifySinglePickerOutput(choices)
+}
+
+export async function createSsmDocumentFromTemplate(): Promise<void> {
+    const logger: Logger = getLogger()
+
+    const selection = await promptUserForTemplate()
 
     // User pressed escape and didn't select a template
     if (selection === undefined) {
