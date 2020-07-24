@@ -13,7 +13,6 @@ import com.jetbrains.rdclient.icons.FrontendIconHost
 import com.jetbrains.rider.model.HandlerCompletionItem
 import com.jetbrains.rider.model.lambdaPsiModel
 import com.jetbrains.rider.projectView.solution
-import org.jetbrains.annotations.TestOnly
 
 class DotNetHandlerCompletion : HandlerCompletion {
 
@@ -22,14 +21,15 @@ class DotNetHandlerCompletion : HandlerCompletion {
     override fun getLookupElements(project: Project): Collection<LookupElement> {
         val completionItems = getHandlersFromBackend(project)
         return completionItems.map { completionItem ->
-            LookupElementBuilder.create(completionItem.handler).let {
-                if (completionItem.iconId != null) it.withIcon(FrontendIconHost.getInstance(project).toIdeaIcon(completionItem.iconId))
-                else it
-            }
+            LookupElementBuilder.create(completionItem.handler).let { element ->
+                if (completionItem.iconId != null)
+                    element.withIcon(FrontendIconHost.getInstance(project).toIdeaIcon(completionItem.iconId))
+                else
+                    element
+            }.withInsertHandler { context, item -> context.document.setText(item.lookupString) }
         }
     }
 
-    @TestOnly
     fun getHandlersFromBackend(project: Project): List<HandlerCompletionItem> =
         project.solution.lambdaPsiModel.determineHandlers.sync(Unit, RpcTimeouts.default)
 }
