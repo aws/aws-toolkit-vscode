@@ -209,6 +209,12 @@ describe('SamDebugConfigurationProvider', async () => {
             // No workspace folder:
             assert.deepStrictEqual(await debugConfigProvider.makeConfig(undefined, config.config), undefined)
 
+            // No launch.json (vscode will pass an empty config.request):
+            assert.deepStrictEqual(
+                await debugConfigProvider.makeConfig(undefined, { ...config.config, request: '' }),
+                undefined
+            )
+
             // Unknown runtime:
             config.config.lambda = {
                 runtime: 'happy-runtime-42',
