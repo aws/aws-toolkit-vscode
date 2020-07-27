@@ -294,7 +294,7 @@ describe('StepFunctions VisualizeStateMachine', async () => {
 
         // Preview with no active text editor
         const error = await assertThrowsError(async () => {
-            await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, { activeTextEditor: undefined })
+            await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, undefined)
         }, 'Expected an error to be thrown')
 
         assert.strictEqual(error.message, 'Could not get active text editor for state machine render.')
@@ -306,7 +306,7 @@ describe('StepFunctions VisualizeStateMachine', async () => {
 
         // Preview Doc1
         mockVsCode.showTextDocument(mockTextDocumentOne)
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
+        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, vscode.window.activeTextEditor)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
@@ -318,11 +318,11 @@ describe('StepFunctions VisualizeStateMachine', async () => {
 
         // Preview Doc1
         mockVsCode.showTextDocument(mockTextDocumentOne)
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
+        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, vscode.window.activeTextEditor)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
         // Preview Doc1 Again
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
+        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, vscode.window.activeTextEditor)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
@@ -334,12 +334,12 @@ describe('StepFunctions VisualizeStateMachine', async () => {
 
         // Preview Doc1
         mockVsCode.showTextDocument(mockTextDocumentOne)
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
+        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, vscode.window.activeTextEditor)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
         // Preview Doc2
         mockVsCode.showTextDocument(mockTextDocumentTwo)
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
+        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, vscode.window.activeTextEditor)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
@@ -352,22 +352,22 @@ describe('StepFunctions VisualizeStateMachine', async () => {
 
         // Preview Doc1
         mockVsCode.showTextDocument(mockTextDocumentOne)
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
+        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, vscode.window.activeTextEditor)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
         // Preview Doc2
         mockVsCode.showTextDocument(mockTextDocumentTwo)
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
+        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, vscode.window.activeTextEditor)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
         // Preview Doc1 Again
         mockVsCode.showTextDocument(mockTextDocumentOne)
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
+        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, vscode.window.activeTextEditor)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
         // Preview Doc2 Again
         mockVsCode.showTextDocument(mockTextDocumentTwo)
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
+        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, vscode.window.activeTextEditor)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
         const managedVisualizations = aslVisualizationManager.getManagedVisualizations()
@@ -380,7 +380,10 @@ describe('StepFunctions VisualizeStateMachine', async () => {
 
         // Preview Doc1
         mockVsCode.showTextDocument(mockTextDocumentOne)
-        let panel = await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
+        let panel = await aslVisualizationManager.visualizeStateMachine(
+            mockGlobalStorage,
+            vscode.window.activeTextEditor
+        )
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
         // Dispose of visualization panel
@@ -396,12 +399,15 @@ describe('StepFunctions VisualizeStateMachine', async () => {
 
         // Preview Doc1
         mockVsCode.showTextDocument(mockTextDocumentOne)
-        let panel = await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
+        let panel = await aslVisualizationManager.visualizeStateMachine(
+            mockGlobalStorage,
+            vscode.window.activeTextEditor
+        )
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 1)
 
         // Preview Doc2
         mockVsCode.showTextDocument(mockTextDocumentTwo)
-        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage)
+        await aslVisualizationManager.visualizeStateMachine(mockGlobalStorage, vscode.window.activeTextEditor)
         assert.strictEqual(aslVisualizationManager.getManagedVisualizations().size, 2)
 
         // Dispose of first visualization panel
