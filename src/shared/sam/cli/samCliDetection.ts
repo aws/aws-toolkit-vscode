@@ -25,11 +25,12 @@ let currentsamCliLocation: string | undefined = undefined
 
 /**
  *
- * @param opt.showMessage true: always show message, false: never show
+ * @param args.passive  If true, this was _not_ a user-initiated action.
+ * @param args.showMessage true: always show message, false: never show
  * message, undefined: show message only if the new setting differs from
  * the old setting.
  */
-export async function detectSamCli(opt: { showMessage: boolean | undefined }): Promise<void> {
+export async function detectSamCli(args: { passive: boolean; showMessage: boolean | undefined }): Promise<void> {
     await lock.acquire('detect SAM CLI', async () => {
         const samCliConfig = new DefaultSamCliConfiguration(
             new DefaultSettingsConfiguration(extensionSettingsPrefix),
@@ -43,10 +44,10 @@ export async function detectSamCli(opt: { showMessage: boolean | undefined }): P
         const isUserSettingChanged = currentsamCliLocation !== valueAfterInit
         currentsamCliLocation = valueAfterInit
 
-        if (opt.showMessage !== false) {
+        if (args.showMessage !== false) {
             if (!valueAfterInit) {
                 notifyUserSamCliNotDetected(samCliConfig)
-            } else if (isUserSettingChanged || opt.showMessage === true) {
+            } else if (isUserSettingChanged || args.showMessage === true) {
                 const message =
                     !isAutoDetected && !isUserSettingChanged
                         ? getSettingsNotUpdatedMessage(valueBeforeInit ?? '?')
@@ -56,7 +57,9 @@ export async function detectSamCli(opt: { showMessage: boolean | undefined }): P
             }
         }
 
-        recordSamDetect({ result: currentsamCliLocation === undefined ? 'Failed' : 'Succeeded' })
+        if (!args.passive) {
+            recordSamDetect({ result: currentsamCliLocation === undefined ? 'Failed' : 'Succeeded' })
+        }
     })
 }
 
