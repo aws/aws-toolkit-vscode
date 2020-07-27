@@ -22,7 +22,10 @@ export class AslVisualizationManager {
         return this.managedVisualizations
     }
 
-    public async visualizeStateMachine(globalStorage: vscode.Memento): Promise<vscode.WebviewPanel | undefined> {
+    public async visualizeStateMachine(
+        globalStorage: vscode.Memento,
+        activeTextEditor: vscode.TextEditor | undefined
+    ): Promise<vscode.WebviewPanel | undefined> {
         const logger: Logger = getLogger()
         const cache = new StateMachineGraphCache()
 
@@ -31,7 +34,6 @@ export class AslVisualizationManager {
          * specifc subset of file types ( .json only, custom .states extension, etc...)
          * Ensure tests are written for this use case as well.
          */
-        const activeTextEditor: vscode.TextEditor | undefined = vscode.window.activeTextEditor
 
         if (!activeTextEditor) {
             logger.error('Could not get active text editor for state machine render.')
