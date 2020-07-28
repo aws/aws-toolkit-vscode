@@ -66,7 +66,7 @@ describe('viewLogStreamWizard', async () => {
 
 describe('convertDescribeLogStreamsToQuickPickItems', () => {
     it('converts things correctly', () => {
-        const time = new Date().getSeconds()
+        const time = new Date().getTime()
         const results = convertDescribeLogStreamsToQuickPickItems({
             logStreams: [
                 {

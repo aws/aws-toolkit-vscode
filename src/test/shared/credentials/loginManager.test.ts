@@ -33,11 +33,13 @@ describe('LoginManager', async () => {
     let credentialsProvider: CredentialsProvider
     let getAccountIdStub: sinon.SinonStub<[AWS.Credentials, string], Promise<string | undefined>>
     let getCredentialsProviderStub: sinon.SinonStub<[CredentialsProviderId], Promise<CredentialsProvider | undefined>>
+    let recordAwsSetCredentialsSpy: any
 
     beforeEach(async () => {
         sandbox = sinon.createSandbox()
+        recordAwsSetCredentialsSpy = sandbox.spy()
 
-        loginManager = new LoginManager(awsContext, credentialsStore)
+        loginManager = new LoginManager(awsContext, credentialsStore, recordAwsSetCredentialsSpy)
         credentialsProvider = {
             getCredentials: sandbox.stub().resolves(sampleCredentials),
             getCredentialsProviderId: sandbox.stub().returns(sampleCredentialsProviderId),
@@ -56,19 +58,37 @@ describe('LoginManager', async () => {
         sandbox.restore()
     })
 
+    it('passive login does NOT send telemetry', async () => {
+        const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials')
+        await loginManager.login({ passive: true, providerId: sampleCredentialsProviderId })
+
+        assert.strictEqual(setCredentialsStub.callCount, 1)
+        assert.strictEqual(recordAwsSetCredentialsSpy.calledOnce, false)
+    })
+
+    it('non-passive login sends telemetry', async () => {
+        const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials')
+        await loginManager.login({ passive: false, providerId: sampleCredentialsProviderId })
+
+        assert.strictEqual(setCredentialsStub.callCount, 1)
+        assert.strictEqual(recordAwsSetCredentialsSpy.calledOnce, true)
+    })
+
     it('logs in with credentials (happy path)', async () => {
         const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials')
 
-        await loginManager.login(sampleCredentialsProviderId)
+        await loginManager.login({ passive: false, providerId: sampleCredentialsProviderId })
         assert.strictEqual(setCredentialsStub.callCount, 1, 'Expected awsContext setCredentials to be called once')
+        assert.strictEqual(recordAwsSetCredentialsSpy.calledOnce, true)
     })
 
     it('logs out (happy path)', async () => {
         const setCredentialsStub = sandbox.stub(awsContext, 'setCredentials')
 
-        await loginManager.login(sampleCredentialsProviderId)
+        await loginManager.login({ passive: false, providerId: sampleCredentialsProviderId })
         await loginManager.logout()
         assert.strictEqual(setCredentialsStub.callCount, 2, 'Expected awsContext setCredentials to be called twice')
+        assert.strictEqual(recordAwsSetCredentialsSpy.calledOnce, true)
     })
 
     it('logs out if credentials could not be retrieved', async () => {
@@ -79,8 +99,9 @@ describe('LoginManager', async () => {
             assert.strictEqual(credentials, undefined)
         })
 
-        await loginManager.login(sampleCredentialsProviderId)
+        await loginManager.login({ passive: true, providerId: sampleCredentialsProviderId })
         assert.strictEqual(setCredentialsStub.callCount, 1, 'Expected awsContext setCredentials to be called once')
+        assert.strictEqual(recordAwsSetCredentialsSpy.calledOnce, false)
     })
 
     it('logs out if an account Id could not be determined', async () => {
@@ -91,8 +112,9 @@ describe('LoginManager', async () => {
             assert.strictEqual(credentials, undefined)
         })
 
-        await loginManager.login(sampleCredentialsProviderId)
+        await loginManager.login({ passive: false, providerId: sampleCredentialsProviderId })
         assert.strictEqual(setCredentialsStub.callCount, 1, 'Expected awsContext setCredentials to be called once')
+        assert.strictEqual(recordAwsSetCredentialsSpy.calledOnce, true)
     })
 
     it('logs out if getting an account Id throws an Error', async () => {
@@ -103,7 +125,8 @@ describe('LoginManager', async () => {
             assert.strictEqual(credentials, undefined)
         })
 
-        await loginManager.login(sampleCredentialsProviderId)
+        await loginManager.login({ passive: false, providerId: sampleCredentialsProviderId })
         assert.strictEqual(setCredentialsStub.callCount, 1, 'Expected awsContext setCredentials to be called once')
+        assert.strictEqual(recordAwsSetCredentialsSpy.calledOnce, true)
     })
 })
