@@ -40,7 +40,10 @@ async function registerStepFunctionCommands(
     extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.previewStateMachine', async () => {
             try {
-                return await visualizationManager.visualizeStateMachine(extensionContext.globalState)
+                return await visualizationManager.visualizeStateMachine(
+                    extensionContext.globalState,
+                    vscode.window.activeTextEditor
+                )
             } finally {
                 telemetry.recordStepfunctionsPreviewstatemachine()
             }
