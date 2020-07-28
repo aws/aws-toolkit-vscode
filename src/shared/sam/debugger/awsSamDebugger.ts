@@ -257,12 +257,17 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         )
 
         if (!hasLaunchJson) {
-            vscode.window.showErrorMessage(
-                localize(
-                    'AWS.sam.debugger.noLaunchJson',
-                    'AWS SAM: To debug a Lambda locally, first create a launch.json from the VS Code "Run" panel'
+            vscode.window
+                .showErrorMessage(
+                    localize(
+                        'AWS.sam.debugger.noLaunchJson',
+                        'AWS SAM: To debug a Lambda locally, create a launch.json from the Run panel, then select a configuration.'
+                    ),
+                    localize('AWS.gotoRunPanel', 'Run panel')
                 )
-            )
+                .then(async ok => {
+                    await vscode.commands.executeCommand('workbench.view.debug')
+                })
             return undefined
         } else {
             const rv = configValidator.validate(config)
