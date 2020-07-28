@@ -265,7 +265,10 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                     ),
                     localize('AWS.gotoRunPanel', 'Run panel')
                 )
-                .then(async ok => {
+                .then(async result => {
+                    if (!result) {
+                        return
+                    }
                     await vscode.commands.executeCommand('workbench.view.debug')
                 })
             return undefined
