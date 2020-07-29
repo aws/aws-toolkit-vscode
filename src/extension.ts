@@ -41,7 +41,7 @@ import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import { EndpointsProvider } from './shared/regions/endpointsProvider'
 import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetcher'
 import { HttpResourceFetcher } from './shared/resourcefetcher/httpResourceFetcher'
-import { activate as activateServerless } from './shared/sam/activation'
+import { activate as activateSam } from './shared/sam/activation'
 import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
 import { activate as activateTelemetry } from './shared/telemetry/activation'
 import {
@@ -54,7 +54,9 @@ import {
 } from './shared/telemetry/telemetry'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { getChannelLogger } from './shared/utilities/vsCodeUtils'
+import { ExtContext } from './shared/extensions'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
+import { CredentialsStore } from './credentials/credentialsStore'
 
 let localize: nls.LocalizeFunc
 
@@ -80,7 +82,8 @@ export async function activate(context: vscode.ExtensionContext) {
         const awsContext = new DefaultAwsContext(context)
         const awsContextTrees = new AwsContextTreeCollection()
         const regionProvider = new DefaultRegionProvider(endpointsProvider)
-        const loginManager = new LoginManager(awsContext)
+        const credentialsStore = new CredentialsStore()
+        const loginManager = new LoginManager(awsContext, credentialsStore)
 
         const toolkitEnvDetails = getToolkitEnvironmentDetails()
         getLogger().info(toolkitEnvDetails)
@@ -107,6 +110,17 @@ export async function activate(context: vscode.ExtensionContext) {
             toolkitSettings: toolkitSettings,
         })
         await ext.telemetry.start()
+
+        const extContext: ExtContext = {
+            extensionContext: context,
+            awsContext: awsContext,
+            regionProvider: regionProvider,
+            settings: toolkitSettings,
+            outputChannel: toolkitOutputChannel,
+            telemetryService: ext.telemetry,
+            chanLogger: getChannelLogger(toolkitOutputChannel),
+            credentialsStore,
+        }
 
         context.subscriptions.push(
             vscode.commands.registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())
@@ -163,7 +177,7 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateCloudFormationTemplateRegistry(context)
 
         await activateCdk({
-            extensionContext: context,
+            extensionContext: extContext.extensionContext,
         })
 
         await activateAwsExplorer({
@@ -175,20 +189,13 @@ export async function activate(context: vscode.ExtensionContext) {
         })
 
         await activateSchemas({
-            context: context,
+            context: extContext.extensionContext,
             outputChannel: toolkitOutputChannel,
         })
 
         await ExtensionDisposableFiles.initialize(context)
 
-        await activateServerless({
-            awsContext,
-            extensionContext: context,
-            outputChannel: toolkitOutputChannel,
-            regionProvider,
-            telemetryService: ext.telemetry,
-            toolkitSettings,
-        })
+        await activateSam(extContext)
 
         setImmediate(async () => {
             await activateStepFunctions(context, awsContext, toolkitOutputChannel)

@@ -4,10 +4,12 @@
  */
 
 import * as vscode from 'vscode'
+import * as path_ from 'path'
 import { getLogger } from '../logger/logger'
 import { CloudFormation } from './cloudformation'
+import * as pathutils from '../utilities/pathUtils'
 
-export interface TemplateData {
+export interface TemplateDatum {
     path: string
     template: CloudFormation.Template
 }
@@ -18,6 +20,12 @@ export class CloudFormationTemplateRegistry {
 
     public constructor() {
         this.templateRegistryData = new Map<string, CloudFormation.Template>()
+    }
+
+    private assertAbsolute(path: string) {
+        if (!path_.isAbsolute(path)) {
+            throw Error(`CloudFormationTemplateRegistry: path is relative: ${path}`)
+        }
     }
 
     /**
@@ -40,22 +48,32 @@ export class CloudFormationTemplateRegistry {
      * Adds template to registry. Wipes any existing template in its place with newly-parsed copy of the data.
      * @param templateUri vscode.Uri containing the template to load in
      */
-    public async addTemplateToRegistry(templateUri: vscode.Uri): Promise<void> {
-        const pathAsString = templateUri.fsPath
-        const template = await CloudFormation.load(pathAsString)
-        this.templateRegistryData.set(pathAsString, template)
+    public async addTemplateToRegistry(templateUri: vscode.Uri, quiet?: boolean): Promise<void> {
+        const pathAsString = pathutils.normalize(templateUri.fsPath)
+        this.assertAbsolute(pathAsString)
+        try {
+            const template = await CloudFormation.load(pathAsString)
+            this.templateRegistryData.set(pathAsString, template)
+        } catch (e) {
+            if (!quiet) {
+                throw e
+            }
+            getLogger().verbose(`CloudFormationTemplateRegistry: invalid CFN template: ${e}`)
+        }
     }
 
     /**
      * Get a specific template's data
      * @param path Path to template of interest
      */
-    public getRegisteredTemplate(path: string): TemplateData | undefined {
-        const template = this.templateRegistryData.get(path)
+    public getRegisteredTemplate(path: string): TemplateDatum | undefined {
+        const normalizedPath = pathutils.normalize(path)
+        this.assertAbsolute(normalizedPath)
+        const template = this.templateRegistryData.get(normalizedPath)
         if (template) {
             return {
-                path,
-                template,
+                path: normalizedPath,
+                template: template,
             }
         }
     }
@@ -63,8 +81,8 @@ export class CloudFormationTemplateRegistry {
     /**
      * Returns the registry's data as an array of TemplateData objects
      */
-    public get registeredTemplates(): TemplateData[] {
-        const arr: TemplateData[] = []
+    public get registeredTemplates(): TemplateDatum[] {
+        const arr: TemplateDatum[] = []
 
         for (const templatePath of this.templateRegistryData.keys()) {
             const template = this.getRegisteredTemplate(templatePath)
@@ -81,7 +99,8 @@ export class CloudFormationTemplateRegistry {
      * @param templateUri vscode.Uri containing template to remove
      */
     public removeTemplateFromRegistry(templateUri: vscode.Uri): void {
-        const pathAsString = templateUri.fsPath
+        const pathAsString = pathutils.normalize(templateUri.fsPath)
+        this.assertAbsolute(pathAsString)
         this.templateRegistryData.delete(pathAsString)
     }
 
@@ -103,4 +122,21 @@ export class CloudFormationTemplateRegistry {
 
         return CloudFormationTemplateRegistry.INSTANCE
     }
+}
+
+/**
+ * Helper function that returns an map of resource names to CloudFormation.Resource objects.
+ * Unlike a CloudFormation.TemplateResources object, all resources in this array are guaranteed to be defined.
+ * @param templateDatum TemplateDatum object to extract resources from
+ */
+export function getResourcesFromTemplateDatum(templateDatum: TemplateDatum): Map<string, CloudFormation.Resource> {
+    const map = new Map<string, CloudFormation.Resource>()
+    for (const resourceKey of Object.keys(templateDatum.template.Resources!)) {
+        const resource = templateDatum.template.Resources![resourceKey]
+        if (resource) {
+            map.set(resourceKey, resource)
+        }
+    }
+
+    return map
 }
