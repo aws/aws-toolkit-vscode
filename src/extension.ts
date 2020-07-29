@@ -44,6 +44,7 @@ import { HttpResourceFetcher } from './shared/resourcefetcher/httpResourceFetche
 import { activate as activateSam } from './shared/sam/activation'
 import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
 import { activate as activateTelemetry } from './shared/telemetry/activation'
+import { activate as activateS3 } from './s3/activation'
 import {
     recordAwsCreateCredentials,
     recordAwsHelp,
@@ -68,6 +69,7 @@ export async function activate(context: vscode.ExtensionContext) {
     ext.context = context
     await activateLogger(context)
     const toolkitOutputChannel = vscode.window.createOutputChannel(localize('AWS.channel.aws.toolkit', 'AWS Toolkit'))
+    ext.outputChannel = toolkitOutputChannel
 
     try {
         initializeCredentialsProviderManager()
@@ -197,6 +199,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateSam(extContext)
 
+        await activateS3(context)
+
         setImmediate(async () => {
             await activateStepFunctions(context, awsContext, toolkitOutputChannel)
         })
@@ -232,6 +236,15 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
 
     ext.iconPaths.dark.registry = context.asAbsolutePath('resources/dark/registry.svg')
     ext.iconPaths.light.registry = context.asAbsolutePath('resources/light/registry.svg')
+
+    ext.iconPaths.dark.s3 = context.asAbsolutePath('resources/dark/s3/bucket.svg')
+    ext.iconPaths.light.s3 = context.asAbsolutePath('resources/light/s3/bucket.svg')
+
+    ext.iconPaths.dark.folder = context.asAbsolutePath('third-party/resources/from-vscode/dark/folder.svg')
+    ext.iconPaths.light.folder = context.asAbsolutePath('third-party/resources/from-vscode/light/folder.svg')
+
+    ext.iconPaths.dark.file = context.asAbsolutePath('third-party/resources/from-vscode/dark/document.svg')
+    ext.iconPaths.light.file = context.asAbsolutePath('third-party/resources/from-vscode/light/document.svg')
 
     ext.iconPaths.dark.schema = context.asAbsolutePath('resources/dark/schema.svg')
     ext.iconPaths.light.schema = context.asAbsolutePath('resources/light/schema.svg')

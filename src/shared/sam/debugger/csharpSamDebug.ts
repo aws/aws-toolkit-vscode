@@ -66,6 +66,7 @@ export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchReque
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand(getChannelLogger(ctx.outputChannel), [
         WAIT_FOR_DEBUGGER_MESSAGES.DOTNET,
     ])
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     config.onWillAttachDebugger = waitForDebugPort
     return await invokeLambdaFunction(ctx, config, async () => {
         if (!config.noDebug) {

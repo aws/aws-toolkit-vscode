@@ -187,6 +187,7 @@ export async function invokePythonLambda(
     config: PythonDebugConfiguration
 ): Promise<PythonDebugConfiguration> {
     config.samLocalInvokeCommand = new DefaultSamLocalInvokeCommand(ctx.chanLogger, [WAIT_FOR_DEBUGGER_MESSAGES.PYTHON])
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     config.onWillAttachDebugger = waitForPythonDebugAdapter
     const c = (await invokeLambdaFunction(ctx, config, async () => {})) as PythonDebugConfiguration
     return c
