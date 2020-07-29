@@ -7,8 +7,7 @@ ext.csDaemonGeneratedOutput = new File(resharperPluginPath, "src/AWS.Daemon/Prot
 ext.csPsiGeneratedOutput = new File(resharperPluginPath, "src/AWS.Psi/Protocol")
 ext.csAwsSettingGeneratedOutput = new File(resharperPluginPath, "src/AWS.Settings/Protocol")
 ext.csAwsProjectGeneratedOutput = new File(resharperPluginPath, "src/AWS.Project/Protocol")
-
-ext.ktGeneratedOutput = new File(projectDir, "src/software/aws/toolkits/jetbrains/protocol")
+ext.riderGeneratedSources = "$buildDir/generated-src/software/aws/toolkits/jetbrains/protocol"
 
 ext.modelDir = new File(projectDir, "protocol/model")
 ext.rdgenDir = file("${project.buildDir}/rdgen/")
@@ -16,6 +15,11 @@ rdgenDir.mkdirs()
 
 task generateDaemonModel(type: tasks.getByName("rdgen").class) {
     def daemonModelSource = new File(modelDir, "daemon").canonicalPath
+    def ktOutput = new File(riderGeneratedSources, "DaemonProtocol")
+
+    inputs.property("rdgen", rdGenVersion())
+    inputs.dir(daemonModelSource)
+    outputs.dirs(ktOutput, csDaemonGeneratedOutput)
 
     // NOTE: classpath is evaluated lazily, at execution time, because it comes from the unzipped
     // intellij SDK, which is extracted in afterEvaluate
@@ -39,7 +43,7 @@ task generateDaemonModel(type: tasks.getByName("rdgen").class) {
             transform = "asis"
             root = "com.jetbrains.rider.model.nova.ide.IdeRoot"
             namespace = "com.jetbrains.rider.model"
-            directory = "$ktGeneratedOutput"
+            directory = "$ktOutput"
         }
 
         generator {
@@ -54,6 +58,11 @@ task generateDaemonModel(type: tasks.getByName("rdgen").class) {
 
 task generatePsiModel(type: tasks.getByName("rdgen").class) {
     def psiModelSource = new File(modelDir, "psi").canonicalPath
+    def ktOutput = new File(riderGeneratedSources, "PsiProtocol")
+
+    inputs.property("rdgen", rdGenVersion())
+    inputs.dir(psiModelSource)
+    outputs.dirs(ktOutput, csPsiGeneratedOutput)
 
     // NOTE: classpath is evaluated lazily, at execution time, because it comes from the unzipped
     // intellij SDK, which is extracted in afterEvaluate
@@ -77,7 +86,7 @@ task generatePsiModel(type: tasks.getByName("rdgen").class) {
             transform = "asis"
             root = "com.jetbrains.rider.model.nova.ide.IdeRoot"
             namespace = "com.jetbrains.rider.model"
-            directory = "$ktGeneratedOutput"
+            directory = "$ktOutput"
         }
 
         generator {
@@ -92,6 +101,11 @@ task generatePsiModel(type: tasks.getByName("rdgen").class) {
 
 task generateAwsSettingModel(type: tasks.getByName("rdgen").class) {
     def settingModelSource = new File(modelDir, "setting").canonicalPath
+    def ktOutput = new File(riderGeneratedSources, "AwsSettingsProtocol")
+
+    inputs.property("rdgen", rdGenVersion())
+    inputs.dir(settingModelSource)
+    outputs.dirs(ktOutput, csAwsSettingGeneratedOutput)
 
     // NOTE: classpath is evaluated lazily, at execution time, because it comes from the unzipped
     // intellij SDK, which is extracted in afterEvaluate
@@ -115,7 +129,7 @@ task generateAwsSettingModel(type: tasks.getByName("rdgen").class) {
             transform = "asis"
             root = "com.jetbrains.rider.model.nova.ide.IdeRoot"
             namespace = "com.jetbrains.rider.model"
-            directory = "$ktGeneratedOutput"
+            directory = "$ktOutput"
         }
 
         generator {
@@ -130,6 +144,11 @@ task generateAwsSettingModel(type: tasks.getByName("rdgen").class) {
 
 task generateAwsProjectModel(type: tasks.getByName("rdgen").class) {
     def projectModelSource = new File(modelDir, "project").canonicalPath
+    def ktOutput = new File(riderGeneratedSources, "AwsProjectProtocol")
+
+    inputs.property("rdgen", rdGenVersion())
+    inputs.dir(projectModelSource)
+    outputs.dirs(ktOutput, csAwsProjectGeneratedOutput)
 
     // NOTE: classpath is evaluated lazily, at execution time, because it comes from the unzipped
     // intellij SDK, which is extracted in afterEvaluate
@@ -153,7 +172,7 @@ task generateAwsProjectModel(type: tasks.getByName("rdgen").class) {
             transform = "asis"
             root = "com.jetbrains.rider.model.nova.ide.IdeRoot"
             namespace = "com.jetbrains.rider.model"
-            directory = "$ktGeneratedOutput"
+            directory = "$ktOutput"
         }
 
         generator {
@@ -166,25 +185,17 @@ task generateAwsProjectModel(type: tasks.getByName("rdgen").class) {
     }
 }
 
-task generateModel {
+task generateModels {
     group = protocolGroup
     description = 'Generates protocol models'
 
     dependsOn generateDaemonModel, generatePsiModel, generateAwsSettingModel, generateAwsProjectModel
 }
 
-task cleanProtocolModels {
+task cleanGenerateModels {
     group = protocolGroup
     description = 'Clean up generated protocol models'
 
-    def protocolOutDirs = [ ktGeneratedOutput, csDaemonGeneratedOutput, csPsiGeneratedOutput, csAwsSettingGeneratedOutput ]
-
-    for (dir in protocolOutDirs) {
-        if (dir.isDirectory()) {
-            dir.deleteDir()
-        }
-    }
+    dependsOn cleanGenerateDaemonModel, cleanGeneratePsiModel, cleanGenerateAwsSettingModel, cleanGenerateAwsProjectModel
 }
-project.tasks.clean.dependsOn(cleanProtocolModels)
-
-jar.dependsOn generateModel
+project.tasks.clean.dependsOn(cleanGenerateModels)

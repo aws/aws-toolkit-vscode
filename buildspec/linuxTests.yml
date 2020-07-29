@@ -16,10 +16,6 @@ phases:
       java: corretto11
       dotnet: 3.1
 
-    commands:
-      - apt update
-      - apt install -y mono-complete
-
   build:
     commands:
       - chmod +x gradlew

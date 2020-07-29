@@ -240,10 +240,8 @@ intellij {
 }
 
 prepareSandbox {
-    tasks.findByPath(":jetbrains-rider:buildReSharperPlugin")?.collect {
-        from(it, {
-            into("${intellij.pluginName}/dotnet")
-        })
+    tasks.findByPath(":jetbrains-rider:prepareSandbox")?.collect {
+        from(it)
     }
 }
 
