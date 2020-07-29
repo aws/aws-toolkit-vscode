@@ -5,7 +5,15 @@
 
 import * as vscode from 'vscode'
 import * as del from 'del'
+import { CredentialsStore } from '../credentials/credentialsStore'
+import { DefaultSettingsConfiguration } from '../shared/settingsConfiguration'
+import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetryService'
+import { ExtContext } from '../shared/extensions'
 import { ExtensionDisposableFiles } from '../shared/utilities/disposableFiles'
+import { FakeAwsContext, FakeRegionProvider } from './utilities/fakeAwsContext'
+import { FakeChannelLogger } from './shared/fakeChannelLogger'
+import { FakeTelemetryPublisher } from './fake/fakeTelemetryService'
+import { MockOutputChannel } from './mockOutputChannel'
 
 export interface FakeMementoStorage {
     [key: string]: any
@@ -25,6 +33,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
     public storagePath: string | undefined
     public globalStoragePath: string = '.'
     public logPath: string = ''
+
     private _extensionPath: string = ''
 
     public constructor(preload?: FakeExtensionState) {
@@ -61,6 +70,33 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
         }
         await TestExtensionDisposableFiles.initialize(ctx)
         return ctx
+    }
+
+    /**
+     * Creates a fake `ExtContext` for use in tests.
+     *
+     *  Disposes any existing `ExtensionDisposableFiles` and creates a new one
+     *  with the new `ExtContext`.
+     */
+    public static async getFakeExtContext(): Promise<ExtContext> {
+        const ctx = await FakeExtensionContext.getNew()
+        const awsContext = new FakeAwsContext()
+        const regionProvider = new FakeRegionProvider()
+        const settings = new DefaultSettingsConfiguration('aws')
+        const outputChannel = new MockOutputChannel()
+        const channelLogger = new FakeChannelLogger()
+        const fakeTelemetryPublisher = new FakeTelemetryPublisher()
+        const telemetryService = new DefaultTelemetryService(ctx, awsContext, fakeTelemetryPublisher)
+        return {
+            extensionContext: ctx,
+            awsContext: awsContext,
+            regionProvider: regionProvider,
+            settings: settings,
+            outputChannel: outputChannel,
+            telemetryService: telemetryService,
+            chanLogger: channelLogger,
+            credentialsStore: new CredentialsStore(),
+        }
     }
 }
 
