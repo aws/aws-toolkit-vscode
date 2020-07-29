@@ -59,7 +59,7 @@ describe('deleteLambda', async () => {
             expectedRefreshCallCount: 1,
             onAssertOutputChannel(outputChannel: MockOutputChannel) {
                 const expectedMessagePart = String(errorToThrowDuringDelete)
-                assert(!outputChannel.isHidden, 'output channel should not be hidden after error')
+                assert(outputChannel.isShown, 'output channel should be shown after error')
                 assert(
                     outputChannel.value && outputChannel.value.indexOf(expectedMessagePart) > 0,
                     `output channel should contain "${expectedMessagePart}"`

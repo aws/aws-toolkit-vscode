@@ -8,7 +8,7 @@ import * as winston from 'winston'
 import { ConsoleLogTransport } from './consoleLogTransport'
 import { Logger, LogLevel } from './logger'
 import { OutputChannelTransport } from './outputChannelTransport'
-import { isError } from 'lodash'
+import { isError } from 'util'
 
 export class WinstonToolkitLogger implements Logger, vscode.Disposable {
     private readonly logger: winston.Logger
@@ -86,10 +86,27 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
             throw new Error('Cannot write to disposed logger')
         }
 
+        meta.filter(item => isError(item)).forEach(error => coerceNameToString(error))
+
         if (isError(message)) {
+            coerceNameToString(message)
             this.logger.log(level, '%O', message, ...meta)
         } else {
             this.logger.log(level, message, ...meta)
         }
+    }
+}
+
+/**
+ * Workaround for logging Errors with a name that's not a string.
+ *
+ * e.g. AWS SDK for JS can sometimes set the error name to the error code number (like 404).
+ *
+ * Fixed in Node v12.14.1, can be removed once VSCode uses this version.
+ * @see https://github.com/nodejs/node/issues/30572
+ */
+function coerceNameToString(error: any): void {
+    if (typeof error.name === 'number') {
+        error.name = String(error.name)
     }
 }

@@ -270,6 +270,7 @@ export async function invokeLambdaFunction(
     }
     // HACK: remove non-serializable properties before attaching.
     // TODO: revisit this :)
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     config.onWillAttachDebugger = undefined
     config.samLocalInvokeCommand = undefined
 
