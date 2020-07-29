@@ -1,20 +1,11 @@
 <Project>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DefineConstants>TRACE;DEBUG;JET_MODE_ASSERT</DefineConstants>
-  </PropertyGroup>
+  <PropertyGroup>
+    <BaseOutputDirectory>$(MSBuildThisFileDirectory)\..\build\dotnetBuild</BaseOutputDirectory>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <DefineConstants>TRACE</DefineConstants>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <BaseIntermediateOutputPath>$(BaseOutputDirectory)\obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <OutputPath>$(BaseOutputDirectory)\bin\$(MSBuildProjectName)\$(Configuration)</OutputPath>
   </PropertyGroup>
   
-  <PropertyGroup>
-    <ValueTupleVersion>[4.5.0]</ValueTupleVersion>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)ReSharper.AWS.snk</AssemblyOriginatorKeyFile>
-  </PropertyGroup>
-
   <Import Project="RiderSdkPackageVersion.props" />
 </Project>

@@ -3,11 +3,12 @@
 
 def backendGroup = 'backend'
 
-ext.nugetConfigPath = new File(projectDir, "NuGet.Config")
-ext.riderSdkVersionPropsPath = new File(resharperPluginPath, "RiderSdkPackageVersion.props")
-
 task prepareBuildProps {
+    def riderSdkVersionPropsPath = new File(resharperPluginPath, "RiderSdkPackageVersion.props")
     group = backendGroup
+
+    inputs.property("riderNugetSdkVersion", riderNugetSdkVersion())
+    outputs.file(riderSdkVersionPropsPath)
 
     doLast {
         def riderSdkVersion = riderNugetSdkVersion()
@@ -17,12 +18,17 @@ task prepareBuildProps {
   </PropertyGroup>
 </Project>
 """
-        writeTextIfChanged(riderSdkVersionPropsPath, configText)
+        riderSdkVersionPropsPath.write(configText)
     }
 }
 
 task prepareNuGetConfig {
     group = backendGroup
+
+    def nugetConfigPath = new File(projectDir, "NuGet.Config")
+
+    inputs.property("rdVersion", ideSdkVersion("RD"))
+    outputs.file(nugetConfigPath)
 
     doLast {
         def nugetPath = getNugetPackagesPath()
@@ -33,52 +39,37 @@ task prepareNuGetConfig {
   </packageSources>
 </configuration>
 """
-        writeTextIfChanged(nugetConfigPath, configText)
-    }
-}
-
-task restoreReSharperPluginPackages() {
-    group = backendGroup
-    description = 'Restores packages for backend plugin'
-    dependsOn prepareBuildProps, prepareNuGetConfig
-
-    doLast {
-        exec {
-            executable = "dotnet"
-            args = ["restore", "${resharperPluginPath.canonicalPath}/ReSharper.AWS.sln" ]
-        }
+        nugetConfigPath.write(configText)
     }
 }
 
 task buildReSharperPlugin {
     group = backendGroup
     description = 'Builds the full ReSharper backend plugin solution'
-    dependsOn restoreReSharperPluginPackages, generateModel
+    dependsOn generateModels, prepareBuildProps, prepareNuGetConfig
 
-    doLast {
-        // Build using Mono MSBuild on Mac OS and Linux and use dotnet core MSBuild on Windows
-        def isWindows = System.properties['os.name'].toLowerCase().contains('windows')
-        def executableName = (isWindows) ? "dotnet" : "msbuild"
-        def arguments = (isWindows) ? [ "build" ] : []
-        arguments << "${resharperPluginPath.canonicalPath}/ReSharper.AWS.sln"
-        arguments << "/p:DefineConstants=\"PROFILE_${resolveIdeProfileName().replace(".", "_")}\""
-        exec {
-            executable = executableName
-            args = arguments
-        }
-    }
+    inputs.dir(resharperPluginPath)
+    outputs.dir(resharperBuildPath)
 
     outputs.files({
         fileTree(file("${resharperPluginPath.absolutePath}/src")).matching {
             include "**/bin/Debug/**/AWS*.dll"
             include "**/bin/Debug/**/AWS*.pdb"
-            include "**/bin/Debug/**/AWS.DebuggerTools.exe"
-            include "**/bin/Debug/**/AWS.DebuggerTools.runtimeconfig.json"
         }.collect()
     })
+
+    doLast {
+        def arguments = ["build"]
+        arguments << "${resharperPluginPath.canonicalPath}/ReSharper.AWS.sln"
+        arguments << "/p:DefineConstants=\"PROFILE_${resolveIdeProfileName().replace(".", "_")}\""
+        exec {
+            executable = "dotnet"
+            args = arguments
+        }
+    }
 }
 
-project.tasks.clean.dependsOn(project.tasks.cleanBuildReSharperPlugin)
+project.tasks.clean.dependsOn(cleanPrepareBuildProps, cleanPrepareNuGetConfig, cleanBuildReSharperPlugin)
 
 private File getNugetPackagesPath() {
     def sdkPath = intellij.ideaDependency.classes
@@ -95,17 +86,4 @@ private File getNugetPackagesPath() {
     if (!riderSdk.isDirectory()) throw new IllegalStateException("${riderSdk} does not exist or not a directory")
 
     return riderSdk
-}
-
-private static void writeTextIfChanged(File file, String content) {
-    def bytes = content.bytes
-
-    if (!file.isFile() || byteArrayToHexString(file.readBytes()) != byteArrayToHexString(bytes)) {
-        println("Writing ${file.canonicalPath}")
-        file.withOutputStream { it.write(bytes) }
-    }
-}
-
-private static String byteArrayToHexString(byte[] byteArray) {
-    return byteArray.encodeHex().toString()
 }

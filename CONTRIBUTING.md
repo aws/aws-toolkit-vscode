@@ -24,10 +24,9 @@ reported the issue. Please try to include as much information as you can. Detail
 
 * [Java 11](https://docs.aws.amazon.com/corretto/latest/corretto-11-ug/downloads-list.html)
 * [Git](https://git-scm.com/)
-* Dotnet Framework (Windows) or Mono (Linux, macOS)
+* Dotnet Framework (Windows)
   * macOS steps:
     ```
-    brew install mono
     brew cask install dotnet-sdk
     ```
   * Note: You can skip this if you do not want to build Rider support by adding `-PskipRider` to any Gradle command.
