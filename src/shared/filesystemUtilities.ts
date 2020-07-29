@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { access, mkdtemp, readFile } from 'fs-extra'
+import { access, mkdtemp, readFile, existsSync } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import { mkdir } from './filesystem'
@@ -16,6 +16,15 @@ export const tempDirPath = path.join(
     os.type() === 'Darwin' ? '/tmp' : os.tmpdir(),
     'aws-toolkit-vscode'
 )
+
+export function downloadsDir(): string {
+    const downloadPath = path.join(os.homedir(), 'Downloads')
+    if (existsSync(downloadPath)) {
+        return downloadPath
+    } else {
+        return os.tmpdir()
+    }
+}
 
 export async function fileExists(filePath: string): Promise<boolean> {
     try {

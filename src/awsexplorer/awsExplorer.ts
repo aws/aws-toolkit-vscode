@@ -90,7 +90,7 @@ export class AwsExplorer implements vscode.TreeDataProvider<AWSTreeNodeBase>, Re
                     element,
                     localize('AWS.explorerNode.error.retry', 'Unable to get child nodes, click here to retry'),
                     'aws.refreshAwsExplorerNode',
-                    [this, element],
+                    [element],
                     error.message
                 )
             )
