@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "Run/Debug SAM local Lambdas using VS Code launch configs (PR #1215)"
+}
