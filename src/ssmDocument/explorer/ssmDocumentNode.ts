@@ -51,11 +51,6 @@ export class SsmDocumentNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const registries = new Map<string, SSM.Types.DocumentIdentifier[]>()
-        registries.set(amazonRegistryName, [])
-        registries.set(userRegistryName, [])
-        registries.set(sharedRegistryName, [])
-
         updateInPlace(
             this.registryNodes,
             this.childRegistryNames,
