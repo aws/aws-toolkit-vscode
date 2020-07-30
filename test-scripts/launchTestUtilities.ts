@@ -24,7 +24,9 @@ const MINIMUM = 'minimum'
  */
 export async function setupVSCodeTestInstance(): Promise<string> {
     let vsCodeVersion = process.env[ENVVAR_VSCODE_TEST_VERSION]
-    if (!vsCodeVersion) {
+    if (process.platform === 'win32') {
+        vsCodeVersion = getMinVsCodeVersion()
+    } else if (!vsCodeVersion) {
         vsCodeVersion = STABLE
     } else if (vsCodeVersion === MINIMUM) {
         vsCodeVersion = getMinVsCodeVersion()
