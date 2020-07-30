@@ -5,15 +5,22 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { RegistryItemNode } from '../../../ssmDocument/explorer/registryItemNode'
+import {
+    RegistryItemNode,
+    amazonRegistryName,
+    userRegistryName,
+    sharedRegistryName,
+    viewOnlyString,
+} from '../../../ssmDocument/explorer/registryItemNode'
 import { assertNodeListOnlyContainsErrorNode } from '../../utilities/explorerNodeAssertions'
 
 describe('RegistryItemNode', () => {
     let sandbox: sinon.SinonSandbox
 
     const fakeRegion = 'testRegion'
-    const names = ['Owned by Amazon', 'Owned by me', 'Shared with me']
-    const expectedChildNodeNames = ['Automation', 'Command']
+    const expectedAutomationNodeName = 'Automation'
+    const expectedCommandNodeName = 'Command'
+    const expectedChildNodeNames = [expectedAutomationNodeName, expectedCommandNodeName]
 
     beforeEach(() => {
         sandbox = sinon.createSandbox()
@@ -24,17 +31,17 @@ describe('RegistryItemNode', () => {
     })
 
     it('initialized name and [View Only] correctly', async () => {
-        const testAmazonNode: RegistryItemNode = new RegistryItemNode(fakeRegion, names[0])
-        const testMyNode: RegistryItemNode = new RegistryItemNode(fakeRegion, names[1])
-        const testSharedNode: RegistryItemNode = new RegistryItemNode(fakeRegion, names[2])
+        const testAmazonNode: RegistryItemNode = new RegistryItemNode(fakeRegion, amazonRegistryName)
+        const testMyNode: RegistryItemNode = new RegistryItemNode(fakeRegion, userRegistryName)
+        const testSharedNode: RegistryItemNode = new RegistryItemNode(fakeRegion, sharedRegistryName)
 
-        assert.strictEqual(testAmazonNode.label, `${names[0]} [View Only]`)
-        assert.strictEqual(testMyNode.label, `${names[1]}`)
-        assert.strictEqual(testSharedNode.label, `${names[2]} [View Only]`)
+        assert.strictEqual(testAmazonNode.label, `${amazonRegistryName}${viewOnlyString}`)
+        assert.strictEqual(testMyNode.label, `${userRegistryName}`)
+        assert.strictEqual(testSharedNode.label, `${sharedRegistryName}${viewOnlyString}`)
     })
 
     it('has correct child nodes', async () => {
-        const testNode: RegistryItemNode = new RegistryItemNode(fakeRegion, names[0])
+        const testNode: RegistryItemNode = new RegistryItemNode(fakeRegion, amazonRegistryName)
         const childNodes = await testNode.getChildren()
 
         assert.strictEqual(childNodes.length, expectedChildNodeNames.length)
@@ -44,7 +51,7 @@ describe('RegistryItemNode', () => {
     })
 
     it('handles error', async () => {
-        const testNode: RegistryItemNode = new RegistryItemNode(fakeRegion, names[0])
+        const testNode: RegistryItemNode = new RegistryItemNode(fakeRegion, amazonRegistryName)
         sandbox.stub(testNode, 'updateChildren').callsFake(() => {
             throw new Error('Update child error')
         })

@@ -17,6 +17,7 @@ import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { toArrayAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { DocumentItemNode } from './documentItemNode'
+import { amazonRegistryName, userRegistryName, sharedRegistryName } from './registryItemNode'
 
 export class DocumentTypeNode extends AWSTreeNodeBase {
     private readonly documentNodes: Map<string, DocumentItemNode>
@@ -65,10 +66,7 @@ export class DocumentTypeNode extends AWSTreeNodeBase {
         })
     }
 
-    public async updateChildren(): Promise<void> {
-        const client: SsmDocumentClient = ext.toolkitClientBuilder.createSsmClient(this.regionCode)
-        const documents = new Map<string, SSM.Types.DocumentIdentifier>()
-
+    private async getDocumentByOwner(client: SsmDocumentClient): Promise<SSM.DocumentIdentifier[]> {
         let request: SSM.ListDocumentsRequest = {
             Filters: [
                 {
@@ -78,24 +76,31 @@ export class DocumentTypeNode extends AWSTreeNodeBase {
             ],
         }
 
-        if (this.registryName === 'Owned by me') {
+        if (this.registryName === userRegistryName) {
             request.Filters?.push({
                 Key: 'Owner',
                 Values: ['Self'],
             })
-        } else if (this.registryName === 'Shared with me') {
+        } else if (this.registryName === sharedRegistryName) {
             request.Filters?.push({
                 Key: 'Owner',
                 Values: ['Private'],
             })
-        } else if (this.registryName === 'Owned by Amazon') {
+        } else if (this.registryName === amazonRegistryName) {
             request.Filters?.push({
                 Key: 'Owner',
                 Values: ['Amazon'],
             })
         }
 
-        const docs = await toArrayAsync(client.listDocuments(request))
+        return toArrayAsync(client.listDocuments(request))
+    }
+
+    public async updateChildren(): Promise<void> {
+        const client: SsmDocumentClient = ext.toolkitClientBuilder.createSsmClient(this.regionCode)
+        const documents = new Map<string, SSM.Types.DocumentIdentifier>()
+
+        const docs = await this.getDocumentByOwner(client)
         docs.forEach(doc => {
             documents.set(doc.Name!, doc)
         })

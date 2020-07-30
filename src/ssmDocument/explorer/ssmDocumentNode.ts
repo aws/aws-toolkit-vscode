@@ -13,12 +13,13 @@ import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { updateInPlace } from '../../shared/utilities/collectionUtils'
-import { RegistryItemNode } from './registryItemNode'
+import { RegistryItemNode, amazonRegistryName, userRegistryName, sharedRegistryName } from './registryItemNode'
 
 import { SSM } from 'aws-sdk'
 
 export class SsmDocumentNode extends AWSTreeNodeBase {
     private readonly registryNodes: Map<string, RegistryItemNode>
+    private readonly childRegistryNames = [amazonRegistryName, userRegistryName, sharedRegistryName]
 
     public constructor(public readonly regionCode: string) {
         super('SSM Document', vscode.TreeItemCollapsibleState.Collapsed)
@@ -51,15 +52,13 @@ export class SsmDocumentNode extends AWSTreeNodeBase {
 
     public async updateChildren(): Promise<void> {
         const registries = new Map<string, SSM.Types.DocumentIdentifier[]>()
-        registries.set('Owned by Amazon', [])
-        registries.set('Owned by me', [])
-        registries.set('Shared with me', [])
-
-        console.log(registries)
+        registries.set(amazonRegistryName, [])
+        registries.set(userRegistryName, [])
+        registries.set(sharedRegistryName, [])
 
         updateInPlace(
             this.registryNodes,
-            registries.keys(),
+            this.childRegistryNames,
             key => this.registryNodes.get(key)!.update(key),
             key => new RegistryItemNode(this.regionCode, key)
         )

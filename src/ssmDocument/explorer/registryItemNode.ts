@@ -17,6 +17,12 @@ import { DocumentTypeNode } from './documentTypeNode'
 
 import { supportedDocumentTypes } from 'aws-ssm-document-language-service'
 
+export const amazonRegistryName = localize('AWS.explorerNode.registry.name.amazon', 'Owned by Amazon')
+export const userRegistryName = localize('AWS.explorerNode.registry.name.self', 'Owned by me')
+export const sharedRegistryName = localize('AWS.explorerNode.registry.name.shared', 'Shared with me')
+
+export const viewOnlyString = localize('AWS.explorer.registry.viewOnly', ' [View Only]')
+
 export class RegistryItemNode extends AWSTreeNodeBase {
     private readonly documentTypeNodes: Map<string, DocumentTypeNode>
 
@@ -29,7 +35,7 @@ export class RegistryItemNode extends AWSTreeNodeBase {
     }
 
     private setLabel() {
-        const viewOnly: string = this.registryName === 'Owned by me' ? '' : ' [View Only]'
+        const viewOnly: string = this.registryName === userRegistryName ? '' : viewOnlyString
         this.label = `${this.registryName}${viewOnly}`
         this.iconPath = ''
     }
@@ -63,6 +69,7 @@ export class RegistryItemNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
+        // supportedDocumentTypes = ['automation', 'command']
         const documentTypes = supportedDocumentTypes.map((type: string) => {
             return type[0].toUpperCase() + type.slice(1)
         })

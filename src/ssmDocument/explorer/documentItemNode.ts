@@ -19,7 +19,7 @@ export class DocumentItemNode extends AWSTreeNodeBase {
 
     public update(documentItem: SSM.Types.DocumentIdentifier): void {
         this.documentItem = documentItem
-        this.label = this.documentItem.Name || ''
+        this.label = this.documentName
     }
 
     public get documentName(): string {
@@ -34,6 +34,10 @@ export class DocumentItemNode extends AWSTreeNodeBase {
         documentVersion?: string,
         documentFormat?: string
     ): Promise<SSM.Types.GetDocumentResult> {
+        if (!this.documentName || !this.documentName.length) {
+            return Promise.resolve({})
+        }
+
         return await this.client.getDocument(
             this.documentName,
             documentVersion || this.documentItem.DocumentVersion,
