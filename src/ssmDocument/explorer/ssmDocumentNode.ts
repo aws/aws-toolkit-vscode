@@ -15,8 +15,6 @@ import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { updateInPlace } from '../../shared/utilities/collectionUtils'
 import { RegistryItemNode, amazonRegistryName, userRegistryName, sharedRegistryName } from './registryItemNode'
 
-import { SSM } from 'aws-sdk'
-
 export class SsmDocumentNode extends AWSTreeNodeBase {
     private readonly registryNodes: Map<string, RegistryItemNode>
     private readonly childRegistryNames = [amazonRegistryName, userRegistryName, sharedRegistryName]
