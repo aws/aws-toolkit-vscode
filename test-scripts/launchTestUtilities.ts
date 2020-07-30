@@ -75,10 +75,7 @@ export async function invokeVSCodeCli(vsCodeExecutablePath: string, args: string
 
 export async function installVSCodeExtension(vsCodeExecutablePath: string, extensionIdentifier: string): Promise<void> {
     console.log(`Installing VS Code Extension: ${extensionIdentifier}`)
-
-    const cmdArgs = ['--install-extension', extensionIdentifier]
-
-    await invokeVSCodeCli(vsCodeExecutablePath, cmdArgs)
+    await invokeVSCodeCli(vsCodeExecutablePath, ['--install-extension', extensionIdentifier])
 }
 
 function getMinVsCodeVersion(): string {
