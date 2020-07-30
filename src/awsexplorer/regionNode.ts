@@ -9,6 +9,8 @@ import { CloudFormationNode } from '../lambda/explorer/cloudFormationNodes'
 import { CloudWatchLogsNode } from '../cloudWatchLogs/explorer/cloudWatchLogsNode'
 import { LambdaNode } from '../lambda/explorer/lambdaNodes'
 import { ActiveFeatureKeys, FeatureToggle } from '../shared/featureToggle'
+import { S3Node } from '../s3/explorer/s3Nodes'
+import { DefaultS3Client } from '../shared/clients/defaultS3Client'
 import { Region } from '../shared/regions/endpoints'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
@@ -49,6 +51,13 @@ export class RegionNode extends AWSTreeNodeBase {
                 ? [{ serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) }]
                 : []),
             { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },
+            {
+                serviceId: 's3',
+                createFn: () =>
+                    new S3Node(
+                        new DefaultS3Client(this.regionCode, regionProvider.getPartitionId(this.regionCode) ?? 'aws')
+                    ),
+            },
             { serviceId: 'schemas', createFn: () => new SchemasNode(this.regionCode) },
             { serviceId: 'states', createFn: () => new StepFunctionsNode(this.regionCode) },
         ]

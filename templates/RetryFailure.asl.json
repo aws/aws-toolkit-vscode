@@ -7,25 +7,19 @@
             "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:FUNCTION_NAME",
             "Retry": [
                 {
-                    "ErrorEquals": [
-                        "CustomError"
-                    ],
+                    "ErrorEquals": ["CustomError"],
                     "IntervalSeconds": 1,
                     "MaxAttempts": 2,
                     "BackoffRate": 2.0
                 },
                 {
-                    "ErrorEquals": [
-                        "States.TaskFailed"
-                    ],
+                    "ErrorEquals": ["States.TaskFailed"],
                     "IntervalSeconds": 30,
                     "MaxAttempts": 2,
                     "BackoffRate": 2.0
                 },
                 {
-                    "ErrorEquals": [
-                        "States.ALL"
-                    ],
+                    "ErrorEquals": ["States.ALL"],
                     "IntervalSeconds": 5,
                     "MaxAttempts": 5,
                     "BackoffRate": 2.0

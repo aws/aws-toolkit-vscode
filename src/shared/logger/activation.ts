@@ -8,20 +8,20 @@ import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { Logger, LogLevel } from '.'
+import { Logger, LogLevel, getLogger } from '.'
 import { extensionSettingsPrefix } from '../constants'
 import { mkdir } from '../filesystem'
 import { fileExists } from '../filesystemUtilities'
 import { DefaultSettingsConfiguration, SettingsConfiguration } from '../settingsConfiguration'
 import { recordVscodeViewLogs } from '../telemetry/telemetry'
 import { setLogger } from './logger'
+import { LOG_OUTPUT_CHANNEL } from './outputChannel'
 import { WinstonToolkitLogger } from './winstonToolkitLogger'
 
 const localize = nls.loadMessageBundle()
 
 const LOG_PATH = path.join(getLogBasePath(), 'Code', 'logs', 'aws_toolkit', makeLogFilename())
 const DEFAULT_LOG_LEVEL: LogLevel = 'info'
-const LOG_OUTPUT_CHANNEL: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Toolkit Logs')
 
 /**
  * Activate Logger functionality for the extension.
@@ -32,11 +32,9 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
     const logLevel = getLogLevel()
 
     await ensureLogFolderExists(path.dirname(logPath))
-
     setLogger(makeLogger(logLevel, logPath, outputChannel, extensionContext.subscriptions))
-
     await registerLoggerCommands(extensionContext)
-
+    getLogger().info(`log level: ${logLevel}`)
     outputChannel.appendLine(
         localize('AWS.log.fileLocation', 'Error logs for this session are permanently stored in {0}', logPath)
     )

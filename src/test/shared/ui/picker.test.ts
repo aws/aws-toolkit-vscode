@@ -306,15 +306,15 @@ describe('promptUser', async () => {
         public readonly onDidChangeValue: vscode.Event<string>
         public readonly onDidAccept: vscode.Event<void>
         public readonly onDidHide: vscode.Event<void>
-        public buttons: ReadonlyArray<vscode.QuickInputButton> = []
+        public buttons: readonly vscode.QuickInputButton[] = []
         public readonly onDidTriggerButton: vscode.Event<vscode.QuickInputButton>
-        public items: ReadonlyArray<T> = []
+        public items: readonly T[] = []
         public canSelectMany: boolean = false
         public matchOnDescription: boolean = false
         public matchOnDetail: boolean = false
-        public activeItems: ReadonlyArray<T> = []
+        public activeItems: readonly T[] = []
         public readonly onDidChangeActive: vscode.Event<T[]>
-        public selectedItems: ReadonlyArray<T> = []
+        public selectedItems: readonly T[] = []
         public readonly onDidChangeSelection: vscode.Event<T[]>
         public title: string | undefined
         public step: number | undefined
@@ -667,7 +667,7 @@ describe('IteratingQuickPickController', async () => {
         })
 
         afterEach(() => {
-            sandbox.restore
+            sandbox.restore()
         })
 
         it('triggers a refresh and returns undefined', async () => {

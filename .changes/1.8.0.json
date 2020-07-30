@@ -1,26 +1,26 @@
 {
-	"date": "2020-03-31",
-	"version": "1.8.0",
-	"entries": [
-		{
-			"type": "Bug Fix",
-			"description": "SAM applications deployed through the toolkit now support IAM resources with custom names"
-		},
-		{
-			"type": "Bug Fix",
-			"description": "Fix issue where CodeLenses appeared on wrong lines in .js files when adding or removing lines"
-		},
-		{
-			"type": "Feature",
-			"description": "Toolkit dynamically chooses an available port when debugging SAM applications, starting at port 5858 and counting upwards until one is found"
-		},
-		{
-			"type": "Feature",
-			"description": "Rebranding the toolkit as the \"AWS Toolkit\""
-		},
-		{
-			"type": "Feature",
-			"description": "New Step Function capabilities: Step Function state machine resources are now shown in the AWS Explorer. Language support (auto-completion, validation) for authoring state machine files. State machines can be created from starting templates. State machines can be downloaded from, published to, and executed within an account."
-		}
-	]
+    "date": "2020-03-31",
+    "version": "1.8.0",
+    "entries": [
+        {
+            "type": "Bug Fix",
+            "description": "SAM applications deployed through the toolkit now support IAM resources with custom names"
+        },
+        {
+            "type": "Bug Fix",
+            "description": "Fix issue where CodeLenses appeared on wrong lines in .js files when adding or removing lines"
+        },
+        {
+            "type": "Feature",
+            "description": "Toolkit dynamically chooses an available port when debugging SAM applications, starting at port 5858 and counting upwards until one is found"
+        },
+        {
+            "type": "Feature",
+            "description": "Rebranding the toolkit as the \"AWS Toolkit\""
+        },
+        {
+            "type": "Feature",
+            "description": "New Step Function capabilities: Step Function state machine resources are now shown in the AWS Explorer. Language support (auto-completion, validation) for authoring state machine files. State machines can be created from starting templates. State machines can be downloaded from, published to, and executed within an account."
+        }
+    ]
 }
