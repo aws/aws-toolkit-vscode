@@ -19,6 +19,10 @@ buildscript {
     }
 }
 
+plugins {
+    id "de.undercouch.download" version "4.1.1" apply false
+}
+
 apply from: 'intellijJVersions.gradle'
 
 def ideVersion = shortenVersion(resolveIdeProfileName())
@@ -26,7 +30,6 @@ def ideVersion = shortenVersion(resolveIdeProfileName())
 group 'software.aws.toolkits'
 // please check changelog generation logic if this format is changed
 version "$toolkitVersion-$ideVersion".toString()
-
 
 repositories {
     maven { url "https://www.jetbrains.com/intellij-repository/snapshots/" }

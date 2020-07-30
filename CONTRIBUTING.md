@@ -29,7 +29,6 @@ reported the issue. Please try to include as much information as you can. Detail
     ```
     brew cask install dotnet-sdk
     ```
-  * Note: You can skip this if you do not want to build Rider support by adding `-PskipRider` to any Gradle command.
 
 ### Instructions
 
