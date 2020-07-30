@@ -9,8 +9,10 @@ import icons.AwsIcons
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
+import software.amazon.awssdk.services.sqs.SqsClient
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowManager
 import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowType
 import software.aws.toolkits.jetbrains.services.sqs.Queue
@@ -21,13 +23,14 @@ import software.aws.toolkits.resources.message
 class SqsWindow(private val project: Project) : CoroutineScope by ApplicationThreadPoolScope("SqsWindow") {
     private val toolWindow = ToolkitToolWindowManager.getInstance(project, SQS_TOOL_WINDOW)
     private val edtContext = getCoroutineUiContext()
+    private val client: SqsClient = project.awsClient()
 
     fun pollMessage(queue: Queue) {
-        showQueue(queue, SqsWindowUI(project, queue).apply { pollMessage() })
+        showQueue(queue, SqsWindowUI(client, queue).apply { pollMessage() })
     }
 
     fun sendMessage(queue: Queue) {
-        showQueue(queue, SqsWindowUI(project, queue).apply { sendMessage() })
+        showQueue(queue, SqsWindowUI(client, queue).apply { sendMessage() })
     }
 
     private fun showQueue(queue: Queue, component: SqsWindowUI) = launch {
