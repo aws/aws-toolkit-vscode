@@ -227,7 +227,7 @@ describe('promptUser', async () => {
         public readonly onDidChangeValue: vscode.Event<string>
         public readonly onDidAccept: vscode.Event<void>
         public readonly onDidHide: vscode.Event<void>
-        public buttons: ReadonlyArray<vscode.QuickInputButton> = []
+        public buttons: readonly vscode.QuickInputButton[] = []
         public readonly onDidTriggerButton: vscode.Event<vscode.QuickInputButton>
         public prompt: string | undefined
         public validationMessage: string | undefined

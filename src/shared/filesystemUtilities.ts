@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { access, mkdtemp, readFile } from 'fs-extra'
+import { access, mkdtemp, readFile, existsSync } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import { mkdir } from './filesystem'
@@ -16,6 +16,15 @@ export const tempDirPath = path.join(
     os.type() === 'Darwin' ? '/tmp' : os.tmpdir(),
     'aws-toolkit-vscode'
 )
+
+export function downloadsDir(): string {
+    const downloadPath = path.join(os.homedir(), 'Downloads')
+    if (existsSync(downloadPath)) {
+        return downloadPath
+    } else {
+        return os.tmpdir()
+    }
+}
 
 export async function fileExists(filePath: string): Promise<boolean> {
     try {
@@ -40,26 +49,6 @@ export const readFileAsString = async (
     options: { encoding: BufferEncoding; flag?: string } = { encoding: DEFAULT_ENCODING }
 ): Promise<string> => {
     return readFile(pathLike, options)
-}
-
-/**
- * Searches for fileToFind, starting in searchFolder and working up the parent folder chain.
- * If file is not found, undefined is returned.
- */
-export async function findFileInParentPaths(searchFolder: string, fileToFind: string): Promise<string | undefined> {
-    const targetFilePath: string = path.join(searchFolder, fileToFind)
-
-    if (await fileExists(targetFilePath)) {
-        return targetFilePath
-    }
-
-    const parentPath = path.dirname(searchFolder)
-
-    if (!parentPath || parentPath === searchFolder) {
-        return undefined
-    }
-
-    return findFileInParentPaths(parentPath, fileToFind)
 }
 
 export const makeTemporaryToolkitFolder = async (...relativePathParts: string[]) => {
@@ -94,6 +83,11 @@ export function isInDirectory(d: string, p: string): boolean {
     }
     const parentDirPieces = pathutils.normalizeSeparator(d).split('/')
     const containedPathPieces = pathutils.normalizeSeparator(p).split('/')
+
+    if (parentDirPieces.length > containedPathPieces.length) {
+        return false
+    }
+
     // Remove final empty element(s), if `d` ends with slash(es).
     while (parentDirPieces.length > 0 && parentDirPieces[parentDirPieces.length - 1] === '') {
         parentDirPieces.pop()

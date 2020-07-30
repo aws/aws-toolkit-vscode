@@ -138,7 +138,7 @@ describe('SamTemplateGenerator', () => {
         })
 
         assert.ok(error)
-        assert.strictEqual(error.message, 'Missing value: ResourceName')
+        assert.strictEqual(error.message, 'Missing value: at least one of ResourceName or TemplateResources')
         assert.strictEqual(await SystemUtilities.fileExists(templateFilename), false)
     })
 

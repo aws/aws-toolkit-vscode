@@ -6,15 +6,15 @@
 import * as assert from 'assert'
 import * as del from 'del'
 import { readdir } from 'fs-extra'
-import * as path from 'path'
 import * as vscode from 'vscode'
-import { DebugConfiguration } from '../../../lambda/local/debugConfiguration'
-import * as localLambdaRunner from '../../../shared/codelens/localLambdaRunner'
 import * as fsUtils from '../../../shared/filesystemUtilities'
+import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from '../../../shared/sam/cli/samCliBuild'
+import * as localLambdaRunner from '../../../shared/sam/localLambdaRunner'
 import { ChildProcessResult } from '../../../shared/utilities/childProcess'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { FakeChannelLogger } from '../fakeChannelLogger'
 import { assertRejects } from '../utilities/assertUtils'
+import { SamLaunchRequestArgs } from '../../../shared/sam/debugger/awsSamDebugger'
 
 describe('localLambdaRunner', async () => {
     let tempDir: string
@@ -68,7 +68,7 @@ describe('localLambdaRunner', async () => {
 
         it('Successful attach has no retries', async () => {
             await localLambdaRunner.attachDebugger({
-                debugConfig: ({} as any) as DebugConfiguration,
+                debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsTrue,
@@ -80,7 +80,7 @@ describe('localLambdaRunner', async () => {
 
         it('Successful attach logs that the debugger attached', async () => {
             await localLambdaRunner.attachDebugger({
-                debugConfig: ({} as any) as DebugConfiguration,
+                debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsTrue,
@@ -95,7 +95,7 @@ describe('localLambdaRunner', async () => {
 
         it('Successful attach records a success metric', async () => {
             await localLambdaRunner.attachDebugger({
-                debugConfig: ({} as any) as DebugConfiguration,
+                debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsTrue,
@@ -109,7 +109,7 @@ describe('localLambdaRunner', async () => {
 
         it('Successful attach returns success', async () => {
             const results = await localLambdaRunner.attachDebugger({
-                debugConfig: ({} as any) as DebugConfiguration,
+                debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsTrue,
@@ -121,7 +121,7 @@ describe('localLambdaRunner', async () => {
 
         it('Failure to attach has no retries', async () => {
             await localLambdaRunner.attachDebugger({
-                debugConfig: ({} as any) as DebugConfiguration,
+                debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsFalse,
@@ -133,7 +133,7 @@ describe('localLambdaRunner', async () => {
 
         it('Failure to attach logs that the debugger did not attach', async () => {
             await localLambdaRunner.attachDebugger({
-                debugConfig: ({} as any) as DebugConfiguration,
+                debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsFalse,
@@ -148,7 +148,7 @@ describe('localLambdaRunner', async () => {
 
         it('Failure to attach records a fail metric', async () => {
             await localLambdaRunner.attachDebugger({
-                debugConfig: ({} as any) as DebugConfiguration,
+                debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsFalse,
@@ -161,7 +161,7 @@ describe('localLambdaRunner', async () => {
 
         it('Failure to attach returns failure', async () => {
             const results = await localLambdaRunner.attachDebugger({
-                debugConfig: ({} as any) as DebugConfiguration,
+                debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
                 maxRetries: 0,
                 onStartDebugging: startDebuggingReturnsFalse,
@@ -175,7 +175,7 @@ describe('localLambdaRunner', async () => {
             const maxRetries: number = 3
 
             await localLambdaRunner.attachDebugger({
-                debugConfig: ({} as any) as DebugConfiguration,
+                debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
                 maxRetries: maxRetries,
                 onStartDebugging: startDebuggingReturnsUndefined,
@@ -189,7 +189,7 @@ describe('localLambdaRunner', async () => {
             const maxRetries: number = 3
 
             await localLambdaRunner.attachDebugger({
-                debugConfig: ({} as any) as DebugConfiguration,
+                debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
                 maxRetries,
                 onStartDebugging: startDebuggingReturnsUndefined,
@@ -204,7 +204,7 @@ describe('localLambdaRunner', async () => {
 
         it('Does not log metrics when startDebugging returns undefined', async () => {
             await localLambdaRunner.attachDebugger({
-                debugConfig: ({} as any) as DebugConfiguration,
+                debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
                 maxRetries: 2,
                 onStartDebugging: startDebuggingReturnsUndefined,
@@ -219,7 +219,7 @@ describe('localLambdaRunner', async () => {
         it('Returns true if attach succeeds during retries', async () => {
             const maxRetries: number = 5
             const results = await localLambdaRunner.attachDebugger({
-                debugConfig: ({} as any) as DebugConfiguration,
+                debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
                 maxRetries,
                 onStartDebugging: async (
@@ -239,7 +239,7 @@ describe('localLambdaRunner', async () => {
         it('Returns false if attach fails during retries', async () => {
             const maxRetries: number = 5
             const results = await localLambdaRunner.attachDebugger({
-                debugConfig: ({} as any) as DebugConfiguration,
+                debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
                 maxRetries,
                 onStartDebugging: async (
@@ -259,7 +259,7 @@ describe('localLambdaRunner', async () => {
         it('Returns false if retry count exceeded', async () => {
             const maxRetries: number = 3
             const results = await localLambdaRunner.attachDebugger({
-                debugConfig: ({} as any) as DebugConfiguration,
+                debugConfig: ({} as any) as SamLaunchRequestArgs,
                 channelLogger,
                 maxRetries,
                 onStartDebugging: startDebuggingReturnsUndefined,
@@ -296,28 +296,30 @@ describe('localLambdaRunner', async () => {
             stderr: 'nothing to report',
         }
 
-        const generateSamBuildParams = (isSuccessfulBuild: boolean) => {
+        function generateSamBuildParams(isSuccessfulBuild: boolean): SamCliBuildInvocationArguments {
             return {
-                baseBuildDir: tempDir,
-                codeDir: tempDir,
-                inputTemplatePath: tempDir,
-                channelLogger: new FakeChannelLogger(),
-                // not needed for testing
-                manifestPath: undefined,
-                samProcessInvoker: {
+                buildDir: tempDir,
+                baseDir: tempDir,
+                templatePath: tempDir,
+                manifestPath: undefined, // not needed for testing
+                invoker: {
                     invoke: async (): Promise<ChildProcessResult> =>
                         isSuccessfulBuild ? successfulChildProcess : failedChildProcess,
                 },
+                environmentVariables: undefined,
+                useContainer: false,
+                skipPullImage: true,
             }
         }
 
         it('fails when the child process returns a nonzero exit code', async () => {
-            await assertRejects(async () => localLambdaRunner.executeSamBuild(generateSamBuildParams(false)))
+            const samArgs = generateSamBuildParams(false)
+            await assertRejects(async () => await new SamCliBuildInvocation(samArgs).execute())
         })
 
         it('succeeds when the child process returns with an exit code of 0', async () => {
-            const samBuildResult = await localLambdaRunner.executeSamBuild(generateSamBuildParams(true))
-            assert.strictEqual(samBuildResult, path.join(tempDir, 'output', 'template.yaml'))
+            const samArgs = generateSamBuildParams(true)
+            assert.strictEqual(await new SamCliBuildInvocation(samArgs).execute(), 0)
         })
     })
 })
