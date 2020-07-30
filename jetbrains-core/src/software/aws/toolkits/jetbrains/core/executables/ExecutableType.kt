@@ -21,7 +21,7 @@ interface ExecutableType<VersionScheme> {
     companion object {
         val EP_NAME = ExtensionPointName<ExecutableType<*>>("aws.toolkit.executable")
 
-        internal fun executables(): List<ExecutableType<*>> = EP_NAME.extensions.toList()
+        internal fun executables(): List<ExecutableType<*>> = EP_NAME.extensionList
 
         @JvmStatic
         fun <T : ExecutableType<*>> getExecutable(clazz: Class<T>): T = executables().filterIsInstance(clazz).first()
