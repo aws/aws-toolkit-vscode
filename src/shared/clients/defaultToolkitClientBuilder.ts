@@ -14,12 +14,14 @@ import { DefaultLambdaClient } from './defaultLambdaClient'
 import { DefaultSchemaClient } from './defaultSchemaClient'
 import { DefaultStepFunctionsClient } from './defaultStepFunctionsClient'
 import { DefaultStsClient } from './defaultStsClient'
+import { DefaultSsmDocumentClient } from './defaultSsmDocumentClient'
 import { EcsClient } from './ecsClient'
 import { IamClient } from './iamClient'
 import { LambdaClient } from './lambdaClient'
 import { SchemaClient } from './schemaClient'
 import { StepFunctionsClient } from './stepFunctionsClient'
 import { StsClient } from './stsClient'
+import { SsmDocumentClient } from './ssmDocumentClient'
 import { ToolkitClientBuilder } from './toolkitClientBuilder'
 
 export class DefaultToolkitClientBuilder implements ToolkitClientBuilder {
@@ -53,5 +55,9 @@ export class DefaultToolkitClientBuilder implements ToolkitClientBuilder {
 
     public createStsClient(regionCode: string, credentials?: ServiceConfigurationOptions): StsClient {
         return new DefaultStsClient(regionCode, credentials)
+    }
+
+    public createSsmClient(regionCode: string): SsmDocumentClient {
+        return new DefaultSsmDocumentClient(regionCode)
     }
 }

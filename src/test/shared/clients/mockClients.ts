@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CloudFormation, CloudWatchLogs, IAM, Lambda, Schemas, StepFunctions, STS } from 'aws-sdk'
+import { CloudFormation, CloudWatchLogs, IAM, Lambda, Schemas, StepFunctions, STS, SSM } from 'aws-sdk'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { EcsClient } from '../../../shared/clients/ecsClient'
@@ -12,6 +12,7 @@ import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { SchemaClient } from '../../../shared/clients/schemaClient'
 import { StepFunctionsClient } from '../../../shared/clients/stepFunctionsClient'
 import { StsClient } from '../../../shared/clients/stsClient'
+import { SsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 
 import '../../../shared/utilities/asyncIteratorShim'
@@ -26,6 +27,7 @@ interface Clients {
     schemaClient: SchemaClient
     stepFunctionsClient: StepFunctionsClient
     stsClient: StsClient
+    ssmDocumentClient: SsmDocumentClient
 }
 
 export class MockToolkitClientBuilder implements ToolkitClientBuilder {
@@ -40,6 +42,7 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
             schemaClient: new MockSchemaClient(),
             stepFunctionsClient: new MockStepFunctionsClient(),
             stsClient: new MockStsClient({}),
+            ssmDocumentClient: new MockSsmDocumentClient(),
             ...overrideClients,
         }
     }
@@ -74,6 +77,10 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
 
     public createStsClient(regionCode: string): StsClient {
         return this.clients.stsClient
+    }
+
+    public createSsmClient(regionCode: string): SsmDocumentClient {
+        return this.clients.ssmDocumentClient
     }
 }
 
@@ -300,4 +307,35 @@ export class MockStsClient implements StsClient {
         this.regionCode = regionCode
         this.getCallerIdentity = getCallerIdentity
     }
+}
+
+export class MockSsmDocumentClient implements SsmDocumentClient {
+    public constructor(
+        public readonly regionCode: string = '',
+
+        public readonly listDocuments: () => AsyncIterableIterator<SSM.DocumentIdentifier> = () => asyncGenerator([]),
+
+        public readonly listDocumentVersions: (
+            documentName: string
+        ) => AsyncIterableIterator<SSM.Types.DocumentVersionInfo> = (documentName: string) => asyncGenerator([]),
+
+        public readonly getDocument: (
+            documentName: string,
+            documentVersion?: string
+        ) => Promise<SSM.Types.GetDocumentResult> = async (documentName: string, documentVersion?: string) =>
+            ({
+                Name: '',
+                DocumentType: '',
+                Content: '',
+                DocumentFormat: '',
+            } as SSM.Types.GetDocumentResult),
+
+        public readonly createDocument: (
+            request: SSM.Types.CreateDocumentRequest
+        ) => Promise<SSM.Types.CreateDocumentResult> = async (request: SSM.Types.CreateDocumentRequest) => ({}),
+
+        public readonly updateDocument: (
+            request: SSM.Types.UpdateDocumentRequest
+        ) => Promise<SSM.Types.UpdateDocumentResult> = async (request: SSM.Types.UpdateDocumentRequest) => ({})
+    ) {}
 }

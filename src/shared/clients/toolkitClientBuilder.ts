@@ -12,6 +12,7 @@ import { LambdaClient } from './lambdaClient'
 import { SchemaClient } from './schemaClient'
 import { StepFunctionsClient } from './stepFunctionsClient'
 import { StsClient } from './stsClient'
+import { SsmDocumentClient } from './ssmDocumentClient'
 
 export interface ToolkitClientBuilder {
     createCloudFormationClient(regionCode: string): CloudFormationClient
@@ -29,4 +30,6 @@ export interface ToolkitClientBuilder {
     createStsClient(regionCode: string, credentials?: ServiceConfigurationOptions): StsClient
 
     createIamClient(regionCode: string): IamClient
+
+    createSsmClient(regionCode: string): SsmDocumentClient
 }
