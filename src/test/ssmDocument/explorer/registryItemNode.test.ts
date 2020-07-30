@@ -6,12 +6,11 @@
 import * as assert from 'assert'
 import * as sinon from 'sinon'
 import {
-    RegistryItemNode,
     amazonRegistryName,
     userRegistryName,
     sharedRegistryName,
-    viewOnlyString,
-} from '../../../ssmDocument/explorer/registryItemNode'
+} from '../../../ssmDocument/explorer/documentTypeNode'
+import { RegistryItemNode, viewOnlyString } from '../../../ssmDocument/explorer/registryItemNode'
 import { assertNodeListOnlyContainsErrorNode } from '../../utilities/explorerNodeAssertions'
 
 describe('RegistryItemNode', () => {

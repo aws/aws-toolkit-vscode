@@ -13,13 +13,9 @@ import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { updateInPlace } from '../../shared/utilities/collectionUtils'
-import { DocumentTypeNode } from './documentTypeNode'
+import { DocumentTypeNode, userRegistryName } from './documentTypeNode'
 
 import { supportedDocumentTypes } from 'aws-ssm-document-language-service'
-
-export const amazonRegistryName = localize('AWS.explorerNode.registry.name.amazon', 'Owned by Amazon')
-export const userRegistryName = localize('AWS.explorerNode.registry.name.self', 'Owned by me')
-export const sharedRegistryName = localize('AWS.explorerNode.registry.name.shared', 'Shared with me')
 
 export const viewOnlyString = localize('AWS.explorer.registry.viewOnly', ' [View Only]')
 

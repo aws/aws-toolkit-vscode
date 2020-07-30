@@ -13,7 +13,8 @@ import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { updateInPlace } from '../../shared/utilities/collectionUtils'
-import { RegistryItemNode, amazonRegistryName, userRegistryName, sharedRegistryName } from './registryItemNode'
+import { amazonRegistryName, userRegistryName, sharedRegistryName } from './documentTypeNode'
+import { RegistryItemNode } from './registryItemNode'
 
 export class SsmDocumentNode extends AWSTreeNodeBase {
     private readonly registryNodes: Map<string, RegistryItemNode>
