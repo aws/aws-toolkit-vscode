@@ -3,16 +3,18 @@
 
 import toolkits.gradle.sdk.GenerateSdk
 
+val awsSdkVersion: String by project
+
 dependencies {
     implementation("software.amazon.awssdk:services:$awsSdkVersion")
     implementation("software.amazon.awssdk:aws-json-protocol:$awsSdkVersion")
     runtimeOnly("software.amazon.awssdk:core:$awsSdkVersion")
 }
 
-def generatedSources = "$buildDir/generated-src"
+val generatedSources = "$buildDir/generated-src"
 
 sourceSets {
-    main.java.srcDir generatedSources
+    main.get().java.srcDir(generatedSources)
 }
 
 idea {
@@ -21,10 +23,9 @@ idea {
     }
 }
 
-tasks.register('generateTelemetryClient', GenerateSdk) {
+tasks.register<GenerateSdk>("generateTelemetryClient") {
     c2jFolder = file("telemetryC2J")
     outputDir = file(generatedSources)
 }
-tasks.named('compileJava').configure {
-    dependsOn(tasks.named('generateTelemetryClient'))
-}
+
+tasks["compileJava"].dependsOn(tasks.named("generateTelemetryClient"))
