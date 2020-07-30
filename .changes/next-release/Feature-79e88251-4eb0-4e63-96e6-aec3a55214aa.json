@@ -1,4 +1,0 @@
-{
-    "type": "Feature",
-    "description": "Add S3 integration to allow users to create buckets, list buckets, list files and folders, upload files, download files, delete files, delete buckets, and more!"
-}
