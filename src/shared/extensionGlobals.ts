@@ -16,7 +16,6 @@ import { TelemetryService } from './telemetry/telemetryService'
 export namespace ext {
     export let context: ExtensionContext
     export let outputChannel: OutputChannel
-    export let lambdaOutputChannel: OutputChannel
     export let awsContextCommands: AWSContextCommands
     export let sdkClientBuilder: AWSClientBuilder
     export let toolkitClientBuilder: ToolkitClientBuilder
@@ -50,6 +49,9 @@ export interface IconPaths {
     lambda: string
     settings: string
     registry: string
+    s3: string
+    folder: string
+    file: string
     schema: string
     cloudWatchLogGroup: string
 }
@@ -61,6 +63,9 @@ function makeIconPathsObject(): IconPaths {
         lambda: '',
         settings: '',
         registry: '',
+        s3: '',
+        folder: '',
+        file: '',
         schema: '',
         statemachine: '',
         cloudWatchLogGroup: '',

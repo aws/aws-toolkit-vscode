@@ -8,8 +8,10 @@ import * as vscode from 'vscode'
 import { AwsContext, AwsContextCredentials, ContextChangeEventsArgs } from './awsContext'
 import { regionSettingKey } from './constants'
 
-// Wraps an AWS context in terms of credential profile and zero or more regions. The
-// context listens for configuration updates and resets the context accordingly.
+/**
+ * Wraps an AWS context in terms of credential profile and zero or more regions. The
+ * context listens for configuration updates and resets the context accordingly.
+ */
 export class DefaultAwsContext implements AwsContext {
     public readonly onDidChangeContext: vscode.Event<ContextChangeEventsArgs>
     private readonly _onDidChangeContext: vscode.EventEmitter<ContextChangeEventsArgs>

@@ -1,0 +1,11 @@
+Resources:
+    SourceCodeTwoFoldersDeep:
+        Type: AWS::Serverless::Function
+        Properties:
+            CodeUri: .
+            Handler: src/subfolder/app.handlerTwoFoldersDeep
+            Runtime: nodejs10.x
+        Environment:
+            Variables:
+                SAMPLE1: 'value 1 from template.yaml'
+                SAMPLE2: 'value 2 from template.yaml'

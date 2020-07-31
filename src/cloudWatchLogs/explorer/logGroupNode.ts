@@ -33,11 +33,15 @@ export class LogGroupNode extends AWSTreeNodeBase implements AWSResourceNode {
         this.tooltip = `${this.logGroup.logGroupName}${os.EOL}${this.logGroup.arn}`
     }
 
-    public get logGroupName(): string {
-        return this.logGroup.logGroupName || ''
+    public get name(): string {
+        return this.logGroup.logGroupName!
     }
 
-    public getArn(): string {
-        return this.logGroup.arn || ''
+    public get arn(): string {
+        if (this.logGroup.arn === undefined) {
+            throw new Error('Log Group Arn expected but not found')
+        }
+
+        return this.logGroup.arn
     }
 }
