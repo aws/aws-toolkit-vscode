@@ -12,6 +12,7 @@ import {
     promptUserForTemplate,
 } from '../../../ssmDocument/commands/createDocumentFromTemplate'
 import * as openAndSaveDocument from '../../../ssmDocument/util/util'
+import * as vscode from 'vscode'
 
 import * as YAML from 'yaml'
 
@@ -21,6 +22,7 @@ describe('createDocumentFromTemplate', async () => {
         sandbox = sinon.createSandbox()
         sandbox.stub(picker, 'promptUser').returns(Promise.resolve(fakeSelection))
         sandbox.stub(picker, 'verifySinglePickerOutput').returns(fakeSelectionResult)
+        sandbox.stub(vscode.window, 'showTextDocument')
     })
 
     afterEach(() => {
