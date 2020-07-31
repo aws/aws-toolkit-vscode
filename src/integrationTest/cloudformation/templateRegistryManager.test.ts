@@ -24,12 +24,14 @@ describe('CloudFormation Template Registry Manager', async () => {
     let testDir: string
     let testDirNested: string
     let dir: number = 0
+    let testSuiteLogger: TestLogger | undefined
 
     before(() => {
         try {
             getLogger()
         } catch (e) {
-            setLogger(new TestLogger())
+            testSuiteLogger = new TestLogger()
+            setLogger(testSuiteLogger)
         }
         workspaceDir = getTestWorkspaceFolder()
     })
@@ -46,6 +48,12 @@ describe('CloudFormation Template Registry Manager', async () => {
         manager.dispose()
         await rmrf(testDir)
         dir++
+    })
+
+    after(() => {
+        if (!!testSuiteLogger && getLogger() == testSuiteLogger) {
+            setLogger(undefined)
+        }
     })
 
     it('adds initial template files with yaml and yml extensions at various nesting levels', async () => {
