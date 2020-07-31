@@ -1,3 +1,9 @@
+## 1.12.0 2020-07-30
+
+- **Feature** A new experience for locally Running/Debugging Lambdas with SAM that uses VS Code launch configurations (PR #1215)
+- **Feature** SAM Apps that are in SAM Templates are now run/debugged through the Run panel via `aws-sam` Launch Configurations.
+- **Feature** Add S3 integration to allow users to create buckets, list buckets, list files and folders, upload files, download files, delete files, delete buckets, and more!
+
 ## 1.11.0 2020-07-18
 
 - **Breaking Change** Bumped minimum (inclusive) supported SAM CLI version from 0.38.0 to 0.47.0.

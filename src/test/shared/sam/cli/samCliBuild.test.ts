@@ -59,10 +59,19 @@ describe('SamCliBuildInvocation', async () => {
         await del([tempFolder], { force: true })
     })
 
-    it('Passes build command to sam cli', async () => {
+    it('invokes `sam build` with args', async () => {
         const processInvoker: SamCliProcessInvoker = new ExtendedTestSamCliProcessInvoker((args: any[]) => {
-            assert.ok(args.length > 0, 'Expected args to be present')
-            assert.strictEqual(args[0], 'build', 'Expected first arg to be the build command')
+            assert.ok(args.length >= 2, 'Expected args to be present')
+            assert.strictEqual(args[0], 'build')
+            assert.strictEqual(args[3], '--template')
+            assert.strictEqual(args[5], '--base-dir')
+
+            // `extraArgs` are appended to the end.
+            assert.strictEqual(args[7], '--parameter-overrides')
+            assert.strictEqual(args[8], 'math=math')
+            assert.strictEqual(args[9], '--debug')
+            assert.strictEqual(args[10], '--build-dir')
+            assert.strictEqual(args[11], 'my/build/dir/')
         })
 
         await new SamCliBuildInvocation({
@@ -70,6 +79,8 @@ describe('SamCliBuildInvocation', async () => {
             baseDir: nonRelevantArg,
             templatePath: placeholderTemplateFile,
             invoker: processInvoker,
+            extraArgs: ['--debug', '--build-dir', 'my/build/dir/'],
+            parameterOverrides: ['math=math'],
         }).execute()
     })
 

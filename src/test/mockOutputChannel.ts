@@ -6,9 +6,9 @@
 import * as vscode from 'vscode'
 
 export class MockOutputChannel implements vscode.OutputChannel {
-    public value: string = ''
-    public isHidden: boolean = false
-    public preserveFocus: boolean = false
+    private _value: string = ''
+    private _isShown: boolean = false
+    private _isFocused: boolean = false
 
     public readonly name = 'Mock channel'
 
@@ -19,7 +19,7 @@ export class MockOutputChannel implements vscode.OutputChannel {
     }
 
     public append(value: string): void {
-        this.value += value
+        this._value += value
         this.onDidAppendTextEmitter.fire(value)
     }
 
@@ -28,15 +28,31 @@ export class MockOutputChannel implements vscode.OutputChannel {
     }
 
     public clear(): void {
-        this.value = ''
+        this._value = ''
     }
 
     public dispose(): void {
-        this.value = ''
+        this._value = ''
     }
 
     public hide(): void {
-        this.isHidden = true
+        this._isShown = false
+    }
+
+    public get value(): string {
+        return this._value
+    }
+
+    public get lines(): string[] {
+        return this.value.trimRight().split('\n')
+    }
+
+    public get isShown(): boolean {
+        return this._isShown
+    }
+
+    public get isFocused(): boolean {
+        return this._isFocused
     }
 
     /**
@@ -44,11 +60,14 @@ export class MockOutputChannel implements vscode.OutputChannel {
      * show(preserveFocus?: boolean) is really what we should consider.
      */
     public show(columnOrPreserveFocus?: vscode.ViewColumn | boolean, preserveFocus?: boolean): void {
+        this._isShown = true
+
         if (typeof columnOrPreserveFocus === 'boolean') {
-            this.preserveFocus = columnOrPreserveFocus
+            this._isFocused = !columnOrPreserveFocus
         } else if (typeof columnOrPreserveFocus !== 'undefined') {
             throw new TypeError('1st argument must be a boolean if provided. ViewColumn is deprecated')
+        } else {
+            this._isFocused = true
         }
-        this.isHidden = false
     }
 }

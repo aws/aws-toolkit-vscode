@@ -224,15 +224,15 @@ async function validateSamCli(samCliValidator: SamCliValidator): Promise<void> {
 async function getMainUri(
     config: Pick<CreateNewSamAppWizardResponse, 'location' | 'name'>
 ): Promise<vscode.Uri | undefined> {
-    const samTemplatePath = path.resolve(config.location.fsPath, config.name, 'template.yaml')
-    if (await fileExists(samTemplatePath)) {
-        return vscode.Uri.file(samTemplatePath)
+    const cfnTemplatePath = path.resolve(config.location.fsPath, config.name, 'template.yaml')
+    if (await fileExists(cfnTemplatePath)) {
+        return vscode.Uri.file(cfnTemplatePath)
     } else {
         vscode.window.showWarningMessage(
             localize(
                 'AWS.samcli.initWizard.source.error.notFound',
                 'Project created successfully, but main source code file not found: {0}',
-                samTemplatePath
+                cfnTemplatePath
             )
         )
     }

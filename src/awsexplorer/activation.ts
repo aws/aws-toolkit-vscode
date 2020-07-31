@@ -26,12 +26,15 @@ import {
 import { AWSResourceNode } from '../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../shared/treeview/nodes/errorNode'
+import { LoadMoreNode } from '../shared/treeview/nodes/loadMoreNode'
 import { showErrorDetails } from '../shared/treeview/webviews/showErrorDetails'
 import { downloadStateMachineDefinition } from '../stepFunctions/commands/downloadStateMachineDefinition'
 import { executeStateMachine } from '../stepFunctions/commands/executeStateMachine'
 import { StateMachineNode } from '../stepFunctions/explorer/stepFunctionsNodes'
 import { AwsExplorer } from './awsExplorer'
 import { copyArnCommand } from './commands/copyArn'
+import { copyNameCommand } from './commands/copyName'
+import { loadMoreChildrenCommand } from './commands/loadMoreChildren'
 import { checkExplorerForDefaultRegion } from './defaultRegion'
 import { RegionNode } from './regionNode'
 
@@ -186,16 +189,23 @@ async function registerAwsExplorerCommands(
     )
 
     context.subscriptions.push(
-        vscode.commands.registerCommand(
-            'aws.refreshAwsExplorerNode',
-            async (awsexplorer: AwsExplorer, element: AWSTreeNodeBase) => {
-                try {
-                    awsexplorer.refresh(element)
-                } finally {
-                    recordAwsRefreshExplorer()
-                }
+        vscode.commands.registerCommand('aws.copyName', async (node: AWSResourceNode) => await copyNameCommand(node))
+    )
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('aws.refreshAwsExplorerNode', async (element: AWSTreeNodeBase) => {
+            try {
+                awsExplorer.refresh(element)
+            } finally {
+                recordAwsRefreshExplorer()
             }
-        )
+        })
+    )
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('aws.loadMoreChildren', async (node: AWSTreeNodeBase & LoadMoreNode) => {
+            await loadMoreChildrenCommand(node, awsExplorer)
+        })
     )
 }
 

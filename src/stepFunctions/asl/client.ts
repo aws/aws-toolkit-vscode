@@ -135,8 +135,7 @@ export async function activate(extensionContext: ExtensionContext) {
                     }
 
                     return client.sendRequest(DocumentRangeFormattingRequest.type, params, token).then(
-                        // tslint:disable-next-line: no-unbound-method
-                        client.protocol2CodeConverter.asTextEdits,
+                        response => client.protocol2CodeConverter.asTextEdits(response),
                         async error => {
                             client.logFailedRequest(DocumentRangeFormattingRequest.type, error)
 

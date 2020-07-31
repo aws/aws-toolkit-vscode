@@ -42,9 +42,10 @@ import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import { EndpointsProvider } from './shared/regions/endpointsProvider'
 import { FileResourceFetcher } from './shared/resourcefetcher/fileResourceFetcher'
 import { HttpResourceFetcher } from './shared/resourcefetcher/httpResourceFetcher'
-import { activate as activateServerless } from './shared/sam/activation'
+import { activate as activateSam } from './shared/sam/activation'
 import { DefaultSettingsConfiguration } from './shared/settingsConfiguration'
 import { activate as activateTelemetry } from './shared/telemetry/activation'
+import { activate as activateS3 } from './s3/activation'
 import {
     recordAwsCreateCredentials,
     recordAwsHelp,
@@ -55,7 +56,9 @@ import {
 } from './shared/telemetry/telemetry'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { getChannelLogger } from './shared/utilities/vsCodeUtils'
+import { ExtContext } from './shared/extensions'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
+import { CredentialsStore } from './credentials/credentialsStore'
 
 let localize: nls.LocalizeFunc
 
@@ -67,6 +70,7 @@ export async function activate(context: vscode.ExtensionContext) {
     ext.context = context
     await activateLogger(context)
     const toolkitOutputChannel = vscode.window.createOutputChannel(localize('AWS.channel.aws.toolkit', 'AWS Toolkit'))
+    ext.outputChannel = toolkitOutputChannel
 
     try {
         initializeCredentialsProviderManager()
@@ -81,7 +85,8 @@ export async function activate(context: vscode.ExtensionContext) {
         const awsContext = new DefaultAwsContext(context)
         const awsContextTrees = new AwsContextTreeCollection()
         const regionProvider = new DefaultRegionProvider(endpointsProvider)
-        const loginManager = new LoginManager(awsContext)
+        const credentialsStore = new CredentialsStore()
+        const loginManager = new LoginManager(awsContext, credentialsStore)
 
         const toolkitEnvDetails = getToolkitEnvironmentDetails()
         getLogger().info(toolkitEnvDetails)
@@ -108,6 +113,17 @@ export async function activate(context: vscode.ExtensionContext) {
             toolkitSettings: toolkitSettings,
         })
         await ext.telemetry.start()
+
+        const extContext: ExtContext = {
+            extensionContext: context,
+            awsContext: awsContext,
+            regionProvider: regionProvider,
+            settings: toolkitSettings,
+            outputChannel: toolkitOutputChannel,
+            telemetryService: ext.telemetry,
+            chanLogger: getChannelLogger(toolkitOutputChannel),
+            credentialsStore,
+        }
 
         context.subscriptions.push(
             vscode.commands.registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())
@@ -166,7 +182,7 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateCloudFormationTemplateRegistry(context)
 
         await activateCdk({
-            extensionContext: context,
+            extensionContext: extContext.extensionContext,
         })
 
         await activateAwsExplorer({
@@ -178,20 +194,15 @@ export async function activate(context: vscode.ExtensionContext) {
         })
 
         await activateSchemas({
-            context: context,
+            context: extContext.extensionContext,
             outputChannel: toolkitOutputChannel,
         })
 
         await ExtensionDisposableFiles.initialize(context)
 
-        await activateServerless({
-            awsContext,
-            extensionContext: context,
-            outputChannel: toolkitOutputChannel,
-            regionProvider,
-            telemetryService: ext.telemetry,
-            toolkitSettings,
-        })
+        await activateSam(extContext)
+
+        await activateS3(context)
 
         setImmediate(async () => {
             await activateStepFunctions(context, awsContext, toolkitOutputChannel)
@@ -228,6 +239,15 @@ function initializeIconPaths(context: vscode.ExtensionContext) {
 
     ext.iconPaths.dark.registry = context.asAbsolutePath('resources/dark/registry.svg')
     ext.iconPaths.light.registry = context.asAbsolutePath('resources/light/registry.svg')
+
+    ext.iconPaths.dark.s3 = context.asAbsolutePath('resources/dark/s3/bucket.svg')
+    ext.iconPaths.light.s3 = context.asAbsolutePath('resources/light/s3/bucket.svg')
+
+    ext.iconPaths.dark.folder = context.asAbsolutePath('third-party/resources/from-vscode/dark/folder.svg')
+    ext.iconPaths.light.folder = context.asAbsolutePath('third-party/resources/from-vscode/light/folder.svg')
+
+    ext.iconPaths.dark.file = context.asAbsolutePath('third-party/resources/from-vscode/dark/document.svg')
+    ext.iconPaths.light.file = context.asAbsolutePath('third-party/resources/from-vscode/light/document.svg')
 
     ext.iconPaths.dark.schema = context.asAbsolutePath('resources/dark/schema.svg')
     ext.iconPaths.light.schema = context.asAbsolutePath('resources/light/schema.svg')

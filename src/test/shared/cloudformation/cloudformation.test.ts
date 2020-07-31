@@ -170,14 +170,14 @@ describe('CloudFormation', () => {
 
     describe('validateResource', async () => {
         it('can successfully validate a valid resource', () => {
-            assert.doesNotThrow(() => CloudFormation.validateResource(createBaseResource()))
+            assert.doesNotThrow(() => CloudFormation.validateResource(createBaseResource(), createBaseTemplate()))
         })
 
         it('can detect an invalid resource', () => {
             const badResource = createBaseResource()
             delete badResource.Properties!.CodeUri
             assert.throws(
-                () => CloudFormation.validateResource(badResource),
+                () => CloudFormation.validateResource(badResource, createBaseTemplate()),
                 Error,
                 'Missing or invalid value in Template for key: CodeUri'
             )
@@ -237,7 +237,7 @@ describe('CloudFormation', () => {
                 assert.ok(resource)
                 // Verify runtimes as a way of seeing if we got the correct resource when there is more
                 // than one entry with the same handler.
-                const runtime = CloudFormation.getRuntime(resource)
+                const runtime = CloudFormation.getRuntime(resource, createBaseTemplate())
                 assert.strictEqual(runtime, scenario.expectedRuntime, 'Unexpected runtime resolved from SAM Template')
             })
         }
@@ -270,7 +270,7 @@ describe('CloudFormation', () => {
                 assert.ok(resource)
                 // Verify runtimes as a way of seeing if we got the correct resource when there is more
                 // than one entry with the same handler.
-                const runtime = CloudFormation.getRuntime(resource)
+                const runtime = CloudFormation.getRuntime(resource, createBaseTemplate())
                 assert.strictEqual(runtime, scenario.expectedRuntime, 'Unexpected runtime resolved from SAM Template')
             })
         }
@@ -295,44 +295,179 @@ describe('CloudFormation', () => {
             const resource = createBaseResource()
             delete resource.Properties
 
-            assert.throws(() => CloudFormation.getRuntime(resource))
+            assert.throws(() => CloudFormation.getRuntime(resource, createBaseTemplate()))
         })
 
         it('throws if resource does not specify a runtime', async () => {
             const resource = createBaseResource()
             delete resource.Properties!.Runtime
 
-            assert.throws(() => CloudFormation.getRuntime(resource))
+            assert.throws(() => CloudFormation.getRuntime(resource, createBaseTemplate()))
         })
 
         it('returns runtime if specified', async () => {
             const resource = createBaseResource()
-            const runtime = CloudFormation.getRuntime(resource)
+            const runtime = CloudFormation.getRuntime(resource, createBaseTemplate())
 
-            assert.strictEqual(runtime, 'runtime')
+            assert.strictEqual(runtime, 'nodejs12.x')
         })
     })
 
-    describe('getCodeUri', async () => {
-        it('throws if resource does not specify properties', async () => {
-            const resource = createBaseResource()
-            delete resource.Properties
+    describe('Ref handlers', () => {
+        const template: CloudFormation.Template = {
+            Parameters: {
+                strParamVal: {
+                    Type: 'String',
+                    Default: 'asdf',
+                },
+                strParamNoVal: {
+                    Type: 'String',
+                },
+                numParamVal: {
+                    Type: 'Number',
+                    Default: 1,
+                },
+                numParamNoVal: {
+                    Type: 'Number',
+                },
+            },
+        }
 
-            assert.throws(() => CloudFormation.getCodeUri(resource))
+        describe('getStringForProperty', () => {
+            it('returns a string', () => {
+                const property: string = 'good'
+                assert.strictEqual(CloudFormation.getStringForProperty(property, template), property)
+            })
+
+            it('returns a string from a ref with a default value', () => {
+                const property: CloudFormation.Ref = {
+                    Ref: 'strParamVal',
+                }
+                assert.strictEqual(CloudFormation.getStringForProperty(property, template), 'asdf')
+            })
+
+            it('returns undefined if the ref does not have a default value', () => {
+                const property: CloudFormation.Ref = {
+                    Ref: 'strParamNoVal',
+                }
+                assert.strictEqual(CloudFormation.getStringForProperty(property, template), undefined)
+            })
+
+            it('returns undefined if a number is provided', () => {
+                const property: number = 1
+                assert.strictEqual(CloudFormation.getStringForProperty(property, template), undefined)
+            })
+
+            it('returns undefined if a ref to a number is provided', () => {
+                const property: CloudFormation.Ref = {
+                    Ref: 'numParamVal',
+                }
+                assert.strictEqual(CloudFormation.getStringForProperty(property, template), undefined)
+            })
+
+            it('returns undefined if undefined is provided', () => {
+                assert.strictEqual(CloudFormation.getStringForProperty(undefined, template), undefined)
+            })
         })
 
-        it('throws if resource does not specify a code uri', async () => {
-            const resource = createBaseResource()
-            delete resource.Properties!.CodeUri
+        describe('getNumberForProperty', () => {
+            it('returns a number', () => {
+                const property: number = 1
+                assert.strictEqual(CloudFormation.getNumberForProperty(property, template), 1)
+            })
 
-            assert.throws(() => CloudFormation.getCodeUri(resource))
+            it('returns a number from a ref with a default value', () => {
+                const property: CloudFormation.Ref = {
+                    Ref: 'numParamVal',
+                }
+                assert.strictEqual(CloudFormation.getNumberForProperty(property, template), 1)
+            })
+
+            it('returns undefined if the ref does not have a default value', () => {
+                const property: CloudFormation.Ref = {
+                    Ref: 'numParamNoVal',
+                }
+                assert.strictEqual(CloudFormation.getNumberForProperty(property, template), undefined)
+            })
+
+            it('returns undefined is a string', () => {
+                const property: string = 'good'
+                assert.strictEqual(CloudFormation.getNumberForProperty(property, template), undefined)
+            })
+
+            it('returns undefined if a ref to a string is provided', () => {
+                const property: CloudFormation.Ref = {
+                    Ref: 'strParamVal',
+                }
+                assert.strictEqual(CloudFormation.getNumberForProperty(property, template), undefined)
+            })
+
+            it('returns undefined if undefined is provided', () => {
+                assert.strictEqual(CloudFormation.getNumberForProperty(undefined, template), undefined)
+            })
         })
 
-        it('returns code uri if specified', async () => {
-            const resource = createBaseResource()
-            const codeUri = CloudFormation.getCodeUri(resource)
+        describe('resolvePropertyWithOverrides', () => {
+            it('returns a string', () => {
+                const property: string = 'good'
+                assert.strictEqual(CloudFormation.resolvePropertyWithOverrides(property, template), property)
+            })
 
-            assert.strictEqual(codeUri, 'codeuri')
+            it('returns a string from a ref with a default value', () => {
+                const property: CloudFormation.Ref = {
+                    Ref: 'strParamVal',
+                }
+                assert.strictEqual(CloudFormation.resolvePropertyWithOverrides(property, template), 'asdf')
+            })
+
+            it('returns a number', () => {
+                const property: number = 1
+                assert.strictEqual(CloudFormation.resolvePropertyWithOverrides(property, template), 1)
+            })
+
+            it('returns a number from a ref with a default value', () => {
+                const property: CloudFormation.Ref = {
+                    Ref: 'numParamVal',
+                }
+                assert.strictEqual(CloudFormation.resolvePropertyWithOverrides(property, template), 1)
+            })
+
+            it('returns undefined if undefined is provided', () => {
+                assert.strictEqual(CloudFormation.resolvePropertyWithOverrides(undefined, template), undefined)
+            })
+
+            it('returns undefined if the ref does not have a default value and no overrides are present', () => {
+                const property: CloudFormation.Ref = {
+                    Ref: 'strParamNoVal',
+                }
+                assert.strictEqual(CloudFormation.resolvePropertyWithOverrides(property, template), undefined)
+            })
+
+            it('returns the override value if no default value provided', () => {
+                const property: CloudFormation.Ref = {
+                    Ref: 'strParamNoVal',
+                }
+                const overrideParams = {
+                    strParamNoVal: 'surprise!',
+                }
+                assert.strictEqual(
+                    CloudFormation.resolvePropertyWithOverrides(property, template, overrideParams),
+                    'surprise!'
+                )
+            })
+
+            it('returns the override value even if default value provided', () => {
+                const property: CloudFormation.Ref = {
+                    Ref: 'strParamVal',
+                }
+                const overrideParams = {
+                    strParamVal: 'surprise!',
+                }
+                assert.strictEqual(
+                    CloudFormation.resolvePropertyWithOverrides(property, template, overrideParams),
+                    'surprise!'
+                )
+            })
         })
     })
 })

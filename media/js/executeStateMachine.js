@@ -11,7 +11,7 @@ console.log('Loaded!')
             placeholderJson: defaultJsonPlaceholder,
             selectedFile: '',
             fileInputVisible: false,
-            textAreaVisible: true
+            textAreaVisible: true,
         },
         mounted() {
             this.$nextTick(function() {
@@ -21,7 +21,7 @@ console.log('Loaded!')
         watch: {
             inputChoice: function(newValue, oldValue) {
                 this.handleInputChange(newValue)
-            }
+            },
         },
         methods: {
             handleInputChange: function(inputType) {
@@ -64,9 +64,9 @@ console.log('Loaded!')
                 this.isLoading = true
                 vscode.postMessage({
                     command: 'executeStateMachine',
-                    value: this.executionInput
+                    value: this.executionInput,
                 })
-            }
-        }
+            },
+        },
     })
 })()
