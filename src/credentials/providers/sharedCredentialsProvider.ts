@@ -20,6 +20,10 @@ const SHARED_CREDENTIAL_PROPERTIES = {
     ROLE_ARN: 'role_arn',
     SOURCE_PROFILE: 'source_profile',
     MFA_SERIAL: 'mfa_serial',
+    SSO_START_URL: 'sso_start_url',
+    SSO_REGION: 'sso_region',
+    SSO_ACCOUNT_ID: 'sso_account_id',
+    SSO_ROLE_NAME: 'sso_role_name',
 }
 
 /**
