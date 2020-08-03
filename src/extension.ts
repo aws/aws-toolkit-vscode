@@ -9,6 +9,7 @@ import * as nls from 'vscode-nls'
 
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCdk } from './cdk/activation'
+import { activate as activateCloudWatchLogs } from './cloudWatchLogs/activation'
 import { initialize as initializeCredentials, loginWithMostRecentCredentials } from './credentials/activation'
 import { initializeAwsCredentialsStatusBarItem } from './credentials/awsCredentialsStatusBarItem'
 import { LoginManager } from './credentials/loginManager'
@@ -176,6 +177,8 @@ export async function activate(context: vscode.ExtensionContext) {
                 await aboutToolkit()
             })
         )
+
+        await activateCloudWatchLogs(context)
 
         await activateCloudFormationTemplateRegistry(context)
 
