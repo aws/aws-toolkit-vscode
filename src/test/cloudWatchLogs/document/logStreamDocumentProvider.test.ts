@@ -34,7 +34,7 @@ describe('LogStreamDocumentProvider', () => {
     it('provides content if it exists and a blank string if it does not', () => {
         assert.strictEqual(
             provider.provideTextDocumentContent(registeredUri),
-            `                             \t${message}`
+            `                             \t${message}\n`
         )
         assert.strictEqual(provider.provideTextDocumentContent(vscode.Uri.parse('has:Not')), '')
     })
