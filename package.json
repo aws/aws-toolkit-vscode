@@ -515,14 +515,16 @@
                     "group": "navigation"
                 },
                 {
-                    "command": "aws.copyLogStreamName",
-                    "when": "resourceScheme == awsCloudWatchLogs",
-                    "group": "navigation"
-                },
-                {
                     "command": "aws.saveCurrentLogStreamContent",
                     "when": "resourceScheme == awsCloudWatchLogs",
                     "group": "navigation"
+                }
+            ],
+            "editor/title/context": [
+                {
+                    "command": "aws.copyLogStreamName",
+                    "when": "resourceScheme == awsCloudWatchLogs",
+                    "group": "1_cutcopypaste@1"
                 }
             ],
             "view/title": [
