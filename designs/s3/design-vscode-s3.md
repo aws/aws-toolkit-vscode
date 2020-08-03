@@ -80,7 +80,7 @@ works like this:
             (refresh entire S3 tree).
 -   (P1) `Filter...` action:
     -   Users can _filter_ S3 folders. This uses the _server-side_ filter
-        capabilties. (Note: S3 only supports prefix-filtering.)
+        capabilities. (Note: S3 only supports prefix-filtering.)
     -   The `Filter...` action prompts user for a prefix string.
         -   Pre-populate the prompt with the current active filter pattern, if any.
     -   Store the current active filter per-folder.

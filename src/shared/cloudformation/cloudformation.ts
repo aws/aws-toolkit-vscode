@@ -8,9 +8,11 @@ import { writeFile } from 'fs-extra'
 import * as yaml from 'js-yaml'
 import * as filesystemUtilities from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
+import { getLogger } from '../logger'
 
 export namespace CloudFormation {
     export const SERVERLESS_FUNCTION_TYPE = 'AWS::Serverless::Function'
+    export const LAMBDA_FUNCTION_TYPE = 'AWS::Lambda::Function'
 
     export function validateProperties({
         Handler,
@@ -39,12 +41,16 @@ export namespace CloudFormation {
     }
 
     export interface ResourceProperties {
-        Handler: string
-        CodeUri: string
-        Runtime?: string
-        MemorySize?: number
-        Timeout?: number
+        Handler: string | Ref
+        CodeUri: string | Ref
+        Runtime?: string | Ref
+        MemorySize?: number | Ref
+        Timeout?: number | Ref
         Environment?: Environment
+    }
+
+    export interface Ref {
+        Ref: string
     }
 
     export interface Environment {
@@ -56,7 +62,7 @@ export namespace CloudFormation {
     }
 
     export interface Resource {
-        Type: typeof SERVERLESS_FUNCTION_TYPE
+        Type: typeof SERVERLESS_FUNCTION_TYPE | typeof LAMBDA_FUNCTION_TYPE
         Properties?: ResourceProperties
     }
 
@@ -184,46 +190,60 @@ export namespace CloudFormation {
         }
 
         for (const lambdaResource of lambdaResources) {
-            validateResource(lambdaResource)
+            validateResource(lambdaResource, template)
         }
     }
 
-    export function validateResource(resource: Resource): void {
+    /**
+     * Validates whether or not a property is an expected type.
+     * This takes refs into account but doesn't account for value; just whether or not the type is correct.
+     * @param resource
+     * @param template
+     */
+    export function validateResource(resource: Resource, template: Template): void {
         if (!resource.Type) {
             throw new Error('Missing or invalid value in Template for key: Type')
         }
         if (!!resource.Properties) {
-            if (!resource.Properties.Handler || typeof resource.Properties.Handler !== 'string') {
+            if (
+                !resource.Properties.Handler ||
+                !validatePropertyType(resource.Properties.Handler, template, 'string')
+            ) {
                 throw new Error('Missing or invalid value in Template for key: Handler')
             }
-            if (!resource.Properties.CodeUri || typeof resource.Properties.CodeUri !== 'string') {
+            if (
+                !resource.Properties.CodeUri ||
+                !validatePropertyType(resource.Properties.CodeUri, template, 'string')
+            ) {
                 throw new Error('Missing or invalid value in Template for key: CodeUri')
             }
-            if (!!resource.Properties.Runtime && typeof resource.Properties.Runtime !== 'string') {
+            if (
+                !!resource.Properties.Runtime &&
+                !validatePropertyType(resource.Properties.Runtime, template, 'string')
+            ) {
                 throw new Error('Invalid value in Template for key: Runtime')
             }
-            if (!!resource.Properties.Timeout && typeof resource.Properties.Timeout !== 'number') {
+            if (
+                !!resource.Properties.Timeout &&
+                !validatePropertyType(resource.Properties.Timeout, template, 'number')
+            ) {
                 throw new Error('Invalid value in Template for key: Timeout')
             }
         }
     }
 
-    export function getRuntime(resource: Pick<Resource, 'Properties'>): string {
+    export function getRuntime(resource: Pick<Resource, 'Properties'>, template: Template): string {
         const properties = resource.Properties
-        if (!properties || !properties.Runtime) {
+        if (!properties || !validatePropertyType(properties.Runtime, template, 'string')) {
             throw new Error('Resource does not specify a Runtime')
         }
 
-        return properties.Runtime
-    }
-
-    export function getCodeUri(resource: Pick<Resource, 'Properties'>): string {
-        const properties = resource.Properties
-        if (!properties || !properties.CodeUri) {
-            throw new Error('Resource does not specify a CodeUri')
+        const reffedVal = getStringForProperty(properties.Runtime! as Ref, template)
+        // TODO: should we handle this a different way? User could still override in this state.
+        if (!reffedVal) {
+            throw new Error('Resource references a parameter without a default value')
         }
-
-        return properties.CodeUri
+        return reffedVal
     }
 
     export async function getResourceFromTemplate(
@@ -283,5 +303,198 @@ export namespace CloudFormation {
             //       `CodeUri`, rather than to the directory containing the source file.
             resource.Properties.Handler === handlerName
         )
+    }
+
+    /**
+     * Parameter/Ref helper functions
+     */
+
+    /**
+     * Validates whether or not a property is a valid ref.
+     * @param property Property to validate
+     */
+    function isRef(property: string | number | object | undefined): boolean {
+        return (
+            typeof property === 'object' && Object.keys(property).length === 1 && Object.keys(property).includes('Ref')
+        )
+    }
+
+    /**
+     * Gets the string value for a property in a template.
+     * If the value is a Ref to a parameter, returns the default value of the ref; this may be undefined.
+     * Also returns undefined if the property is neither string nor Ref.
+     * @param property Property value to check
+     * @param template Template object to parse through
+     */
+    export function getStringForProperty(
+        property: string | number | object | undefined,
+        template: Template
+    ): string | undefined {
+        return getThingForProperty(property, template, 'string') as string | undefined
+    }
+
+    /**
+     * Gets the numeric value for a property in a template.
+     * If the value is a Ref to a parameter, returns the default value of the ref; this may be undefined.
+     * Also returns undefined if the property is neither number nor Ref.
+     * @param property Property value to check
+     * @param template Template object to parse through
+     */
+    export function getNumberForProperty(
+        property: string | number | object | undefined,
+        template: Template
+    ): number | undefined {
+        return getThingForProperty(property, template, 'number') as number | undefined
+    }
+
+    /**
+     * Returns the "thing" that represents the property:
+     * * string if a string is requested and (the property is a string or if the property is a ref that is not a Number and has a default value)
+     * * number if a number is requested and (the property is a number or if the property is a ref that is Number and has a default value)
+     * * undefined in all other cases
+     *
+     * Ultimately it is up to the caller to ensure the type matches but this should do a more-than-reasonable job.
+     * @param property Property to validate the type of
+     * @param template Template object to parse through
+     * @param type Type to validate the property's type against
+     */
+    function getThingForProperty(
+        property: string | number | object | undefined,
+        template: Template,
+        type: 'string' | 'number'
+    ): string | number | undefined {
+        if (validatePropertyType(property, template, type)) {
+            if (typeof property !== 'object' && typeof property === type) {
+                return property
+            } else if (isRef(property)) {
+                try {
+                    const forcedProperty = property as Ref
+                    return getReffedThing(forcedProperty, template, type)
+                } catch (err) {
+                    getLogger().debug(err)
+                }
+            }
+        }
+
+        return undefined
+    }
+
+    /**
+     * Returns whether or not a property or its underlying ref matches the specified type
+     * Does not validate a default value for a template parameter; just checks the value's type
+     * @param property Property to validate the type of
+     * @param template Template object to parse through
+     * @param type Type to validate the property's type against
+     */
+    function validatePropertyType(
+        property: string | number | object | undefined,
+        template: Template,
+        type: 'string' | 'number'
+    ): boolean {
+        if (typeof property === type) {
+            return true
+        } else if (isRef(property)) {
+            // property has a Ref, force it to abide by that shape
+            const forcedProperty = property as Ref
+            const param = getReffedParam(forcedProperty, template)
+            const paramType = param.Type === 'Number' ? 'number' : 'string'
+
+            return paramType === type
+        }
+
+        return false
+    }
+
+    /**
+     * Gets a number from a Ref.
+     * Throws an error if the value is not specifically a number.
+     * Returns undefined if ref does not have a default value but is a number.
+     * @param ref Ref to pull a number from
+     * @param template Template to parse through
+     * @param thingType Type to validate against
+     */
+    function getReffedThing(ref: Ref, template: Template, thingType: 'number' | 'string'): number | string | undefined {
+        const param = getReffedParam(ref, template)
+        // every other type, including List<Number>, is formatted as a string.
+        if (
+            (thingType === 'number' && param.Type === 'Number') ||
+            (thingType !== 'number' && param.Type !== 'Number')
+        ) {
+            if (param.Default && typeof param.Default !== thingType) {
+                throw new Error(`Parameter ${ref.Ref} is not a ${thingType}`)
+            }
+
+            // returns undefined if no default value is present
+            return param.Default
+        }
+
+        throw new Error(`Parameter ${ref.Ref} is not a ${thingType}`)
+    }
+
+    /**
+     * Given a Ref, pulls the CFN Parameter that the Ref is reffing.
+     * Throws an error if reffed param isn't found.
+     * @param ref Ref containing a reference to a parameter
+     * @param template Template to parse through
+     */
+    function getReffedParam(ref: Ref, template: Template): Parameter {
+        const refParam = ref.Ref
+        const params = template.Parameters
+
+        if (params && Object.keys(params).includes(refParam)) {
+            return params[refParam]!
+        }
+
+        throw new Error(`Parameter not found in template: ${refParam}`)
+    }
+
+    /**
+     * Resolves a value against a list of overrides. Resolution occurs in this order:
+     * * property is not an object = return raw val (possibly undefined)
+     * * property is a Ref object
+     *   * ...with an override = return overridden val
+     *   * ...without an override = return default val (possibly undefined)
+     * * property is a generic object = return undefined
+     * @param property Property to evaluate
+     * @param template Template to parse through
+     * @param overrides Object containing override values
+     */
+    export function resolvePropertyWithOverrides(
+        property: string | number | object | undefined,
+        template: Template,
+        overrides: {
+            [k: string]: string | number
+        } = {}
+    ): string | number | undefined {
+        if (typeof property !== 'object') {
+            return property
+        }
+        if (isRef(property)) {
+            try {
+                // property has a Ref, force it to abide by that shape
+                const forcedProperty = property as Ref
+                const refParam = forcedProperty.Ref
+                const param = getReffedParam(forcedProperty, template)
+                if (param) {
+                    // check overrides first--those take precedent
+                    if (Object.keys(overrides).includes(refParam)) {
+                        return param.Type === 'Number'
+                            ? (overrides[refParam] as number)
+                            : (overrides[refParam] as string)
+                    }
+
+                    // return default val. This can be undefined.
+                    return param.Default
+                        ? param.Type === 'Number'
+                            ? (param.Default as number)
+                            : (param.Default as string)
+                        : undefined
+                }
+            } catch (err) {
+                getLogger().debug(err)
+            }
+        }
+
+        return undefined
     }
 }
