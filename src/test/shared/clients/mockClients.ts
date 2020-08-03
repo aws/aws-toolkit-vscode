@@ -109,6 +109,12 @@ export class MockCloudWatchLogsClient implements CloudWatchLogsClient {
             request: CloudWatchLogs.DescribeLogStreamsRequest
         ) => {
             return {}
+        },
+
+        public readonly getLogEvents: (
+            request: CloudWatchLogs.GetLogEventsRequest
+        ) => Promise<CloudWatchLogs.GetLogEventsResponse> = async (request: CloudWatchLogs.GetLogEventsRequest) => {
+            return {}
         }
     ) {}
 }
