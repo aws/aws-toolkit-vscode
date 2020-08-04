@@ -13,6 +13,7 @@ import { parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
 import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { ext } from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger'
+import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 
 // TODO: Add debug logging statements
 
@@ -71,6 +72,11 @@ export class LogStreamRegistry {
      * @param formatting Optional params for outputting log messages.
      */
     public getLogContent(uri: vscode.Uri, formatting?: { timestamps?: boolean }): string | undefined {
+        const inlineNewLineRegex = /((\r\n)|\n|\r)(?!$)/g
+
+        // if no timestamp for some reason, entering a blank of equal length (29 characters long)
+        const timestampSpaceEquivalent = '                             '
+
         const currData = this.getLog(uri)
 
         if (!currData) {
@@ -78,13 +84,16 @@ export class LogStreamRegistry {
         }
 
         let output: string = ''
-        for (const data of currData.data) {
-            let line: string = data.message ?? ''
+        for (const datum of currData.data) {
+            let line: string = datum.message ?? ''
             if (formatting?.timestamps) {
-                // moment().format() matches console timestamp, e.g.: 2019-03-04T11:40:08.781-08:00
-                // if no timestamp for some reason, entering a blank of equal length (29 characters long)
-                const timestamp = data.timestamp ? moment(data.timestamp).format() : '                             '
+                // TODO: Handle different timezones and unix timestamps?
+                const timestamp = datum.timestamp
+                    ? moment(datum.timestamp).format(INSIGHTS_TIMESTAMP_FORMAT)
+                    : timestampSpaceEquivalent
                 line = timestamp.concat('\t', line)
+                // log entries containing newlines are indented to the same length as the timestamp.
+                line = line.replace(inlineNewLineRegex, `\n${timestampSpaceEquivalent}\t`)
             }
             if (!line.endsWith('\n')) {
                 line = line.concat('\n')
