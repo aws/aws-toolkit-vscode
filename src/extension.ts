@@ -10,6 +10,7 @@ import * as nls from 'vscode-nls'
 import { activate as activateAwsExplorer } from './awsexplorer/activation'
 import { activate as activateCdk } from './cdk/activation'
 import { activate as activateCloudWatchLogs } from './cloudWatchLogs/activation'
+import { activate as activateSnippets } from './snippets/activation'
 import { initialize as initializeCredentials, loginWithMostRecentCredentials } from './credentials/activation'
 import { initializeAwsCredentialsStatusBarItem } from './credentials/awsCredentialsStatusBarItem'
 import { LoginManager } from './credentials/loginManager'
@@ -206,6 +207,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
         setImmediate(async () => {
             await activateStepFunctions(context, awsContext, toolkitOutputChannel)
+        })
+
+        setImmediate(async () => {
+            await activateSnippets(context)
         })
 
         showWelcomeMessage(context)

@@ -15,6 +15,7 @@ const outRoot = path.join(repoRoot, 'dist')
 const relativePaths = [
     path.join('src', 'templates'),
     path.join('src', 'test', 'shared', 'cloudformation', 'yaml'),
+    path.join('snippets', 'out', 'snippets.json'),
     path.join('src', 'testFixtures'),
 ]
 

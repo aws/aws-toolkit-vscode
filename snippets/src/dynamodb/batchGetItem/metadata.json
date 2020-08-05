@@ -1,0 +1,4 @@
+{
+  "prefix": "dynamodb.batchGetItem",
+  "description": "The BatchGetItem operation returns the attributes of one or more items from one or more tables. You identify requested items by primary key."
+}
