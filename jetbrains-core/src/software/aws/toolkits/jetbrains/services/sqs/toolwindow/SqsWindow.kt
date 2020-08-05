@@ -26,11 +26,11 @@ class SqsWindow(private val project: Project) : CoroutineScope by ApplicationThr
     private val client: SqsClient = project.awsClient()
 
     fun pollMessage(queue: Queue) {
-        showQueue(queue, SqsWindowUI(client, queue).apply { pollMessage() })
+        showQueue(queue, SqsWindowUI(project, client, queue).apply { pollMessage() })
     }
 
     fun sendMessage(queue: Queue) {
-        showQueue(queue, SqsWindowUI(client, queue).apply { sendMessage() })
+        showQueue(queue, SqsWindowUI(project, client, queue).apply { sendMessage() })
     }
 
     private fun showQueue(queue: Queue, component: SqsWindowUI) = launch {
