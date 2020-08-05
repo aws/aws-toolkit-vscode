@@ -30,7 +30,7 @@ for (const directory of directories) {
     const body = content
         .toString()
         .split('\n')
-        .map(line => line.replace(/\s?\/\*(?<tabstop>\$\d+)\*\/\s?/g, '$<tabstop>'))
+        .map(line => line.replace(/\s?\/\*(\$\d+)\*\/\s?/g, '$1'))
 
     const name = path
         .relative(snippetsSrcDir, directory)
