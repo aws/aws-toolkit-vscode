@@ -5,7 +5,7 @@
 
 import * as path from 'path'
 import * as ts from 'typescript'
-import { LambdaHandlerCandidate, LambdaHandlerSearch } from './lambdaHandlerSearch'
+import { LambdaHandlerSearch, RootlessLambdaHandlerCandidate } from './lambdaHandlerSearch'
 
 const getRange = (node: ts.Node) => ({
     positionStart: node.getStart(),
@@ -36,7 +36,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
      * @description Looks for functions that appear to be valid Lambda Function Handlers.
      * @returns A collection of information for each detected candidate.
      */
-    public async findCandidateLambdaHandlers(): Promise<LambdaHandlerCandidate[]> {
+    public async findCandidateLambdaHandlers(): Promise<RootlessLambdaHandlerCandidate[]> {
         this._candidateDeclaredFunctionNames.clear()
         this._candidateModuleExportsExpressions = []
         this._candidateExportDeclarations = []
@@ -45,10 +45,10 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
         return await this.getCandidateHandlers()
     }
 
-    private async getCandidateHandlers(): Promise<LambdaHandlerCandidate[]> {
+    private async getCandidateHandlers(): Promise<RootlessLambdaHandlerCandidate[]> {
         const sourceFile = ts.createSourceFile(this.filename, this.fileContents, ts.ScriptTarget.Latest, true)
 
-        const handlers: LambdaHandlerCandidate[] = this.processSourceFile(sourceFile)
+        const handlers: RootlessLambdaHandlerCandidate[] = this.processSourceFile(sourceFile)
 
         return handlers
     }
@@ -60,10 +60,10 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
      * @param sourceFile SourceFile child node to process
      * @returns Collection of candidate Lambda handler information, empty array otherwise
      */
-    private processSourceFile(sourceFile: ts.SourceFile): LambdaHandlerCandidate[] {
+    private processSourceFile(sourceFile: ts.SourceFile): RootlessLambdaHandlerCandidate[] {
         this.scanSourceFile(sourceFile)
 
-        const handlers: LambdaHandlerCandidate[] = []
+        const handlers: RootlessLambdaHandlerCandidate[] = []
 
         handlers.push(...this.findCandidateHandlersInModuleExports())
         handlers.push(...this.findCandidateHandlersInExportedFunctions())
@@ -130,7 +130,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
     /**
      * @description Looks at module.exports assignments to find candidate Lamdba handlers
      */
-    private findCandidateHandlersInModuleExports(): LambdaHandlerCandidate[] {
+    private findCandidateHandlersInModuleExports(): RootlessLambdaHandlerCandidate[] {
         return this._candidateModuleExportsExpressions
             .filter(expression => {
                 return TypescriptLambdaHandlerSearch.isEligibleLambdaHandlerAssignment(
@@ -158,8 +158,8 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
     /**
      * @description Looks at "export { xyz }" statements to find candidate Lambda handlers
      */
-    private findCandidateHandlersInExportDeclarations(): LambdaHandlerCandidate[] {
-        const handlers: LambdaHandlerCandidate[] = []
+    private findCandidateHandlersInExportDeclarations(): RootlessLambdaHandlerCandidate[] {
+        const handlers: RootlessLambdaHandlerCandidate[] = []
 
         this._candidateExportDeclarations.forEach(exportDeclaration => {
             if (exportDeclaration.exportClause) {
@@ -185,8 +185,8 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
     /**
      * @description Looks at export function declarations to find candidate Lamdba handlers
      */
-    private findCandidateHandlersInExportedFunctions(): LambdaHandlerCandidate[] {
-        const handlers: LambdaHandlerCandidate[] = []
+    private findCandidateHandlersInExportedFunctions(): RootlessLambdaHandlerCandidate[] {
+        const handlers: RootlessLambdaHandlerCandidate[] = []
 
         this._candidateExportNodes.forEach(exportNode => {
             if (

@@ -63,3 +63,8 @@ export const sfnUpdateStateMachineUrl: string =
  * GB: 5 Jan 2020 17:30:20 GMT+0100
  */
 export const LOCALIZED_DATE_FORMAT = 'll LTS [GMT]ZZ'
+
+/**
+ * URI scheme for CloudWatch Logs Virtual Documents
+ */
+export const CLOUDWATCH_LOGS_SCHEME = 'awsCloudWatchLogs'
