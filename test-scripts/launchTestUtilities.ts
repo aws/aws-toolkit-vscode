@@ -15,6 +15,8 @@ const MINIMUM = 'minimum'
 /**
  * Downloads and unzips a copy of VS Code to run tests against.
  *
+ * Prints the result of `code --version`.
+ *
  * Test suites can set up an experimental instance of VS Code however they want.
  * This method provides the common use-case, pulling down the latest version (aka 'stable').
  * The VS Code version under test can be altered by setting the environment variable
@@ -22,34 +24,42 @@ const MINIMUM = 'minimum'
  */
 export async function setupVSCodeTestInstance(): Promise<string> {
     let vsCodeVersion = process.env[ENVVAR_VSCODE_TEST_VERSION]
-    if (!vsCodeVersion) {
+    if (process.platform === 'win32') {
+        vsCodeVersion = getMinVsCodeVersion()
+    } else if (!vsCodeVersion) {
         vsCodeVersion = STABLE
     } else if (vsCodeVersion === MINIMUM) {
         vsCodeVersion = getMinVsCodeVersion()
     }
 
-    console.log(`About to set up test instance of VS Code, version ${vsCodeVersion}...`)
+    console.log(`Setting up VS Code test instance, version: ${vsCodeVersion}`)
     const vsCodeExecutablePath = await downloadAndUnzipVSCode(vsCodeVersion)
     console.log(`VS Code test instance location: ${vsCodeExecutablePath}`)
+
+    await invokeVSCodeCli(vsCodeExecutablePath, ['--version'])
 
     return vsCodeExecutablePath
 }
 
-export async function installVSCodeExtension(vsCodeExecutablePath: string, extensionIdentifier: string): Promise<void> {
-    console.log(`Installing VS Code Extension: ${extensionIdentifier}`)
+export async function invokeVSCodeCli(vsCodeExecutablePath: string, args: string[]): Promise<Buffer> {
     const vsCodeCliPath = resolveCliPathFromVSCodeExecutablePath(vsCodeExecutablePath)
 
-    const cmdArgs = ['--install-extension', extensionIdentifier]
+    let cmdArgs = [...args]
+
+    // Workaround: set --user-data-dir to avoid this error in CI:
+    // "You are trying to start Visual Studio Code as a super user …"
     if (process.env.AWS_TOOLKIT_TEST_USER_DIR) {
         cmdArgs.push('--user-data-dir', process.env.AWS_TOOLKIT_TEST_USER_DIR)
     }
+
+    console.log(`Invoking vscode CLI command:\n    "${vsCodeCliPath}" ${JSON.stringify(cmdArgs)}`)
     const spawnResult = child_process.spawnSync(vsCodeCliPath, cmdArgs, {
         encoding: 'utf-8',
         stdio: 'inherit',
     })
 
     if (spawnResult.status !== 0) {
-        throw new Error(`Installing VS Code extension ${extensionIdentifier} had exit code ${spawnResult.status}`)
+        throw new Error(`VS Code CLI command failed (exit-code: ${spawnResult.status}): ${vsCodeCliPath} ${cmdArgs}`)
     }
 
     if (spawnResult.error) {
@@ -59,6 +69,16 @@ export async function installVSCodeExtension(vsCodeExecutablePath: string, exten
     if (spawnResult.stdout) {
         console.log(spawnResult.stdout)
     }
+
+    return spawnResult.stdout
+}
+
+export async function installVSCodeExtension(vsCodeExecutablePath: string, extensionIdentifier: string): Promise<void> {
+    console.log(`Installing VS Code Extension: ${extensionIdentifier}`)
+
+    const cmdArgs = ['--install-extension', extensionIdentifier]
+
+    await invokeVSCodeCli(vsCodeExecutablePath, cmdArgs)
 }
 
 function getMinVsCodeVersion(): string {

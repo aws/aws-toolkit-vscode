@@ -65,11 +65,11 @@ export async function activate(ctx: ExtContext): Promise<void> {
         )
     )
 
-    await detectSamCli({ showMessage: false })
+    await detectSamCli({ passive: true, showMessage: false })
     ctx.extensionContext.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration(configurationChangeEvent => {
             if (configurationChangeEvent.affectsConfiguration('aws.samcli.location')) {
-                detectSamCli({ showMessage: undefined })
+                detectSamCli({ passive: true, showMessage: undefined })
             }
         })
     )
@@ -84,7 +84,7 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
             async () =>
                 await PromiseSharer.getExistingPromiseOrCreate(
                     'samcli.detect',
-                    async () => await detectSamCli({ showMessage: true })
+                    async () => await detectSamCli({ passive: false, showMessage: true })
                 )
         ),
         vscode.commands.registerCommand('aws.lambda.createNewSamApp', async () => {

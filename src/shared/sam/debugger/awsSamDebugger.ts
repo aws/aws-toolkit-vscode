@@ -257,33 +257,21 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         )
 
         if (!hasLaunchJson) {
-            // Try to generate a default config dynamically.
-            const configs: AwsSamDebuggerConfiguration[] | undefined = await this.provideDebugConfigurations(
-                folder,
-                token
-            )
-
-            if (!configs || configs.length === 0) {
-                getLogger().error(
-                    `SAM debug: failed to generate config (found CFN templates: ${cftRegistry.registeredTemplates.length})`
+            vscode.window
+                .showErrorMessage(
+                    localize(
+                        'AWS.sam.debugger.noLaunchJson',
+                        'AWS SAM: To debug a Lambda locally, create a launch.json from the Run panel, then select a configuration.'
+                    ),
+                    localize('AWS.gotoRunPanel', 'Run panel')
                 )
-                if (cftRegistry.registeredTemplates.length > 0) {
-                    vscode.window.showErrorMessage(
-                        localize('AWS.sam.debugger.noTemplates', 'No SAM templates found in workspace')
-                    )
-                } else {
-                    vscode.window.showErrorMessage(
-                        localize('AWS.sam.debugger.failedLaunch', 'AWS SAM failed to launch. Try creating launch.json')
-                    )
-                }
-                return undefined
-            }
-
-            config = {
-                ...config,
-                ...configs[0],
-            }
-            getLogger().verbose(`SAM debug: generated config (no launch.json): ${JSON.stringify(config)}`)
+                .then(async result => {
+                    if (!result) {
+                        return
+                    }
+                    await vscode.commands.executeCommand('workbench.view.debug')
+                })
+            return undefined
         } else {
             const rv = configValidator.validate(config)
             if (!rv.isValid) {

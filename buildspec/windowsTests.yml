@@ -2,7 +2,6 @@ version: 0.2
 env:
     variables:
         AWS_TOOLKIT_TEST_NO_COLOR: '1'
-        VSCODE_TEST_VERSION: '1.46.0' # TODO: Remove when we resolve debugger issues with Windows tests
 phases:
     install:
         commands:

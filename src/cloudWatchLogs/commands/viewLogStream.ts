@@ -17,6 +17,8 @@ import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 import { getPaginatedAwsCallIter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
+import { LogStreamRegistry } from '../registry/logStreamRegistry'
+import { convertLogGroupInfoToUri } from '../cloudWatchLogsUtils'
 
 export interface SelectLogStreamResponse {
     region: string
@@ -24,16 +26,19 @@ export interface SelectLogStreamResponse {
     logStreamName: string
 }
 
-export async function viewLogStream(node: LogGroupNode): Promise<void> {
+export async function viewLogStream(node: LogGroupNode, registry: LogStreamRegistry): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
     const logStreamResponse = await new SelectLogStreamWizard(node).run()
     if (logStreamResponse) {
-        vscode.window.showInformationMessage(
-            `Not implemented but here's the deets:
-region: ${logStreamResponse.region}
-logGroup: ${logStreamResponse.logGroupName}
-logStream: ${logStreamResponse.logStreamName}`
+        const uri = convertLogGroupInfoToUri(
+            logStreamResponse.logGroupName,
+            logStreamResponse.logStreamName,
+            logStreamResponse.region
         )
+        await registry.registerLog(uri)
+        const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
+        vscode.languages.setTextDocumentLanguage(doc, 'log')
+        await vscode.window.showTextDocument(doc, { preview: false })
     } else {
         result = 'Cancelled'
     }
