@@ -7,7 +7,7 @@ import { Lambda } from 'aws-sdk'
 import * as vscode from 'vscode'
 import * as AdmZip from 'adm-zip'
 import got from 'got'
-import { LaunchConfiguration } from '../../shared/debug/launchConfiguration'
+import { LaunchConfiguration, getReferencedHandlerPaths } from '../../shared/debug/launchConfiguration'
 import { ext } from '../../shared/extensionGlobals'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { createCodeAwsSamDebugConfig } from '../../shared/sam/debugger/awsSamDebugConfiguration'
@@ -18,6 +18,7 @@ import { Stream } from 'stream'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import { getLogger } from '../../shared/logger'
+import * as pathutils from '../../shared/utilities/pathUtils'
 import { Window } from '../../shared/vscode/window'
 import { Commands } from '../../shared/vscode/commands'
 import * as _ from 'lodash'
@@ -89,6 +90,7 @@ export async function importLambdaCommand(
     const downloadLocation = path.join(tempFolder, 'function.zip')
 
     const functionArn = functionNode.configuration.FunctionArn!
+    const handler = functionNode.configuration.Handler!
     const response = await lambda.getFunction(functionArn)
     const codeLocation = response.Code?.Location!
 
@@ -108,14 +110,19 @@ export async function importLambdaCommand(
 
     const samDebugConfig = createCodeAwsSamDebugConfig(
         workspaceFolder,
-        functionNode.configuration.Handler!,
+        handler,
         path.dirname(lambdaLocation),
         functionNode.configuration.Runtime!
     )
 
     const launchConfig = new LaunchConfiguration(vscode.Uri.file(lambdaLocation))
-    await launchConfig.addDebugConfiguration(samDebugConfig)
-
+    if (
+        !getReferencedHandlerPaths(launchConfig).has(
+            pathutils.normalize(path.join(path.dirname(lambdaLocation), handler))
+        )
+    ) {
+        await launchConfig.addDebugConfiguration(samDebugConfig)
+    }
     await commands.execute('vscode.open', vscode.Uri.file(lambdaLocation))
 }
 
