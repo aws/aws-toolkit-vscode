@@ -4,10 +4,13 @@
  */
 
 import * as nls from 'vscode-nls'
+import * as _ from 'lodash'
+
 const localize = nls.loadMessageBundle()
 
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { validateBucketName } from '../../s3/util/validateBucketName'
 import { AwsContext } from '../../shared/awsContext'
 import { samDeployDocUrl } from '../../shared/constants'
 import { getLogger } from '../../shared/logger'
@@ -16,11 +19,11 @@ import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtili
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
-import { difference, filter, toArrayAsync } from '../../shared/utilities/collectionUtils'
+import { difference, filter } from '../../shared/utilities/collectionUtils'
 import { MultiStepWizard, WizardStep } from '../../shared/wizards/multiStepWizard'
 import { configureParameterOverrides } from '../config/configureParameterOverrides'
-import { detectLocalTemplates } from '../local/detectLocalTemplates'
 import { getOverriddenParameters, getParameters } from '../utilities/parameterUtils'
+import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
 
 export interface SamDeployWizardResponse {
     parameterOverrides: Map<string, string>
@@ -36,8 +39,6 @@ export const enum ParameterPromptResult {
 }
 
 export interface SamDeployWizardContext {
-    readonly onDetectLocalTemplates: typeof detectLocalTemplates
-
     readonly workspaceFolders: vscode.Uri[] | undefined
 
     /**
@@ -120,7 +121,6 @@ function getSingleResponse(responses: vscode.QuickPickItem[] | undefined): strin
 }
 
 export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
-    public readonly onDetectLocalTemplates = detectLocalTemplates
     public readonly getParameters = getParameters
     public readonly getOverriddenParameters = getOverriddenParameters
     private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Toolkit Documentation'))
@@ -148,7 +148,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 ),
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
-            items: await getTemplateChoices(this.onDetectLocalTemplates, ...workspaceFolders),
+            items: await getTemplateChoices(...workspaceFolders),
         })
 
         const choices = await picker.promptUser({
@@ -327,7 +327,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 
         return await input.promptUser({
             inputBox: inputBox,
-            onValidateInput: validateS3Bucket,
+            onValidateInput: validateBucketName,
             onDidTriggerButton: (button, resolve, reject) => {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
@@ -544,57 +544,6 @@ class SamTemplateQuickPickItem implements vscode.QuickPickItem {
     }
 }
 
-// https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-s3-bucket-naming-requirements.html
-export function validateS3Bucket(value: string): string | undefined {
-    if (value.length < 3 || value.length > 63) {
-        return localize(
-            'AWS.samcli.deploy.s3Bucket.error.length',
-            'S3 bucket name must be between 3 and 63 characters long'
-        )
-    }
-
-    if (!/^[a-z\d\.\-]+$/.test(value)) {
-        return localize(
-            'AWS.samcli.deploy.s3Bucket.error.invalidCharacters',
-            'S3 bucket name may only contain lower-case characters, numbers, periods, and dashes'
-        )
-    }
-
-    if (/^\d+\.\d+\.\d+\.\d+$/.test(value)) {
-        return localize(
-            'AWS.samcli.deploy.s3Bucket.error.ipAddress',
-            'S3 bucket name may not be formatted as an IP address (198.51.100.24)'
-        )
-    }
-
-    if (value.endsWith('-')) {
-        return localize('AWS.samcli.deploy.s3Bucket.error.endsWithDash', 'S3 bucket name may not end with a dash')
-    }
-
-    if (value.includes('..')) {
-        return localize(
-            'AWS.samcli.deploy.s3Bucket.error.consecutivePeriods',
-            'S3 bucket name may not have consecutive periods'
-        )
-    }
-
-    if (value.includes('.-') || value.includes('-.')) {
-        return localize(
-            'AWS.samcli.deploy.s3Bucket.error.dashAdjacentPeriods',
-            'S3 bucket name may not contain a period adjacent to a dash'
-        )
-    }
-
-    if (value.split('.').some(label => !/^[a-z\d]/.test(label))) {
-        return localize(
-            'AWS.samcli.deploy.s3Bucket.error.labelFirstCharacter',
-            'Each label in an S3 bucket name must begin with a number or a lower-case character'
-        )
-    }
-
-    return undefined
-}
-
 // https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_CreateStack.html
 // A stack name can contain only alphanumeric characters (case sensitive) and hyphens.
 // It must start with an alphabetic character and cannot be longer than 128 characters.
@@ -625,16 +574,13 @@ function validateStackName(value: string): string | undefined {
     return undefined
 }
 
-async function getTemplateChoices(
-    onDetectLocalTemplates: typeof detectLocalTemplates = detectLocalTemplates,
-    ...workspaceFolders: vscode.Uri[]
-): Promise<SamTemplateQuickPickItem[]> {
-    const uris = await toArrayAsync(onDetectLocalTemplates({ workspaceUris: workspaceFolders }))
-
+async function getTemplateChoices(...workspaceFolders: vscode.Uri[]): Promise<SamTemplateQuickPickItem[]> {
+    const cfnRegistry = CloudFormationTemplateRegistry.getRegistry()
+    const templateUris = cfnRegistry.registeredTemplates.map(o => vscode.Uri.file(o.path))
     const uriToLabel: Map<vscode.Uri, string> = new Map<vscode.Uri, string>()
     const labelCounts: Map<string, number> = new Map()
 
-    uris.forEach(uri => {
+    templateUris.forEach(uri => {
         const label = SamTemplateQuickPickItem.getLabel(uri)
         uriToLabel.set(uri, label)
         labelCounts.set(label, 1 + (labelCounts.get(label) || 0))

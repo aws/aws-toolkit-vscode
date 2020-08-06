@@ -30,6 +30,15 @@ export function setupTestIconPaths() {
     ext.iconPaths.dark.registry = '/icons/dark/registry'
     ext.iconPaths.light.registry = '/icons/light/registry'
 
+    ext.iconPaths.dark.s3 = '/icons/dark/s3'
+    ext.iconPaths.light.s3 = '/icons/light/s3'
+
+    ext.iconPaths.dark.folder = '/icons/dark/folder'
+    ext.iconPaths.light.folder = '/icons/light/folder'
+
+    ext.iconPaths.dark.file = '/icons/dark/file'
+    ext.iconPaths.light.file = '/icons/light/file'
+
     ext.iconPaths.dark.schema = '/icons/dark/schema'
     ext.iconPaths.light.schema = '/icons/light/schema'
 }
@@ -49,6 +58,15 @@ export function clearTestIconPaths() {
 
     ext.iconPaths.dark.registry = ''
     ext.iconPaths.light.registry = ''
+
+    ext.iconPaths.dark.s3 = ''
+    ext.iconPaths.light.s3 = ''
+
+    ext.iconPaths.dark.folder = ''
+    ext.iconPaths.light.folder = ''
+
+    ext.iconPaths.dark.file = ''
+    ext.iconPaths.light.file = ''
 
     ext.iconPaths.dark.schema = ''
     ext.iconPaths.light.schema = ''

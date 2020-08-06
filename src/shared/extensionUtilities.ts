@@ -16,11 +16,13 @@ import { VSCODE_EXTENSION_ID, EXTENSION_ALPHA_VERSION } from './extensions'
 
 const localize = nls.loadMessageBundle()
 
+const VSCODE_APPNAME = 'Visual Studio Code'
 const CLOUD9_APPNAME = 'AWS Cloud9'
 
 export enum IDE {
     vscode,
     cloud9,
+    unknown,
 }
 
 export function getIdeType(): IDE {
@@ -28,7 +30,13 @@ export function getIdeType(): IDE {
         return IDE.cloud9
     }
 
-    return IDE.vscode
+    // Theia doesn't necessarily have all env propertie
+    // so we should be defensive and assume appName is nullable.
+    if (vscode.env.appName?.startsWith(VSCODE_APPNAME)) {
+        return IDE.vscode
+    }
+
+    return IDE.unknown
 }
 
 interface IdeProperties {

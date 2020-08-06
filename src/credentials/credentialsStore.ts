@@ -4,8 +4,10 @@
  */
 
 import * as AWS from 'aws-sdk'
+import { getLogger } from '../shared/logger/logger'
 import { CredentialsProvider } from './providers/credentialsProvider'
 import { asString, CredentialsProviderId } from './providers/credentialsProviderId'
+import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 
 export interface CachedCredentials {
     credentials: AWS.Credentials
@@ -31,20 +33,21 @@ export class CredentialsStore {
 
     /**
      * If credentials are not stored, the credentialsProvider is used to produce credentials (which are then stored).
+     * If the credentials exist but are outdated, the credentials will be invalidated and updated.
+     * Either way, the credentials tied to the credentialsProviderId will then be returned.
      */
-    public async getOrCreateCredentials(
+    public async upsertCredentials(
         credentialsProviderId: CredentialsProviderId,
         credentialsProvider: CredentialsProvider
     ): Promise<CachedCredentials> {
         let credentials = await this.getCredentials(credentialsProviderId)
 
         if (!credentials) {
-            credentials = {
-                credentials: await credentialsProvider.getCredentials(),
-                credentialsHashCode: credentialsProvider.getHashCode(),
-            }
-
-            this.credentialsCache[asString(credentialsProviderId)] = credentials
+            credentials = await this.setCredentials(credentialsProviderId, credentialsProvider)
+        } else if (credentialsProvider.getHashCode() !== credentials.credentialsHashCode) {
+            getLogger().verbose(`Using updated credentials: ${asString(credentialsProviderId)}`)
+            this.invalidateCredentials(credentialsProviderId)
+            credentials = await this.setCredentials(credentialsProviderId, credentialsProvider)
         }
 
         return credentials
@@ -57,4 +60,32 @@ export class CredentialsStore {
         // tslint:disable-next-line:no-dynamic-delete
         delete this.credentialsCache[asString(credentialsProviderId)]
     }
+
+    private async setCredentials(
+        credentialsProviderId: CredentialsProviderId,
+        credentialsProvider: CredentialsProvider
+    ): Promise<CachedCredentials> {
+        const credentials = {
+            credentials: await credentialsProvider.getCredentials(),
+            credentialsHashCode: credentialsProvider.getHashCode(),
+        }
+
+        this.credentialsCache[asString(credentialsProviderId)] = credentials
+
+        return credentials
+    }
+}
+
+export async function getCredentialsFromStore(
+    credentialsProviderId: CredentialsProviderId,
+    credentialsStore: CredentialsStore
+): Promise<AWS.Credentials> {
+    const provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(credentialsProviderId)
+    if (!provider) {
+        credentialsStore.invalidateCredentials(credentialsProviderId)
+        throw new Error(`Could not find Credentials Provider for ${asString(credentialsProviderId)}`)
+    }
+
+    const cachedCredentials = await credentialsStore.upsertCredentials(credentialsProviderId, provider)
+    return cachedCredentials.credentials
 }
