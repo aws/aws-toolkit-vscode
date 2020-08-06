@@ -552,17 +552,17 @@
             "view/item/context": [
                 {
                     "command": "aws.invokeLambda",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable|awsCloudFormationFunctionNode)$/",
                     "group": "0@1"
                 },
                 {
                     "command": "aws.importLambda",
-                    "when": "view == aws.explorer && viewItem == awsRegionFunctionNode",
+                    "when": "view == aws.explorer && viewItem == awsRegionFunctionNodeImportable",
                     "group": "2@1"
                 },
                 {
                     "command": "aws.deleteLambda",
-                    "when": "view == aws.explorer && viewItem == awsRegionFunctionNode",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/",
                     "group": "3@1"
                 },
                 {
@@ -597,7 +597,7 @@
                 },
                 {
                     "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode)$/",
                     "group": "1@1"
                 },
                 {
