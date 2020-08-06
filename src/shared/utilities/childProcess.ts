@@ -73,6 +73,12 @@ export class ChildProcess {
         }
 
         getLogger().info(`Running command: ${this.process} ${this.args.join(' ')}`)
+
+        // Async.
+        // See also crossSpawn.spawnSync().
+        // Arguments are forwarded[1] to node `child_process` module, see its documentation[2].
+        // [1] https://github.com/moxystudio/node-cross-spawn/blob/master/index.js
+        // [2] https://nodejs.org/api/child_process.html
         this.childProcess = crossSpawn(this.process, this.args, this.options)
 
         this.childProcess.stdout?.on('data', (data: { toString(): string }) => {

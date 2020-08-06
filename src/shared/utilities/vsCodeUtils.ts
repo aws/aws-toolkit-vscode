@@ -116,3 +116,8 @@ export function getChannelLogger(channel: vscode.OutputChannel): ChannelLogger {
             }),
     })
 }
+
+export function isFileIconThemeSeti(): boolean {
+    const iconTheme = vscode.workspace.getConfiguration('workbench').get('iconTheme')
+    return !iconTheme || iconTheme === 'vs-seti'
+}

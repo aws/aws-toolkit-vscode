@@ -10,6 +10,8 @@ export interface CloudWatchLogsClient {
 
     describeLogGroups(): AsyncIterableIterator<CloudWatchLogs.LogGroup>
 
+    getLogEvents(request: CloudWatchLogs.GetLogEventsRequest): Promise<CloudWatchLogs.GetLogEventsResponse>
+
     describeLogStreams(
         request: CloudWatchLogs.DescribeLogStreamsRequest
     ): Promise<CloudWatchLogs.DescribeLogStreamsResponse>
