@@ -14,7 +14,7 @@ import { promisify } from 'util'
 import * as vscode from 'vscode'
 import { LaunchConfiguration, getReferencedHandlerPaths } from '../../shared/debug/launchConfiguration'
 import { ext } from '../../shared/extensionGlobals'
-import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder, fileExists } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import { createCodeAwsSamDebugConfig } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import { ExtensionDisposableFiles } from '../../shared/utilities/disposableFiles'
@@ -95,7 +95,7 @@ export async function importLambdaCommand(
         return
     }
 
-    vscode.window.withProgress<void>(
+    window.withProgress<void>(
         {
             location: vscode.ProgressLocation.Notification,
             cancellable: false,
@@ -131,6 +131,16 @@ export async function importLambdaCommand(
             }
 
             const lambdaLocation = path.join(importLocation, lambdaFileName(functionNode.configuration))
+            if (!(await fileExists(lambdaLocation))) {
+                const warning = localize(
+                    'AWS.lambda.import.fileNotFound',
+                    'Handler file {0} not found in imported function.',
+                    lambdaLocation
+                )
+                getLogger().warn(warning)
+                window.showWarningMessage(warning)
+                return
+            }
 
             const workspaceFolder = isWorkspaceFolder
                 ? labelToWorkspace.get(selectedLocation)!
