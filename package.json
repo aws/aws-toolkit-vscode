@@ -621,13 +621,13 @@
                 },
                 {
                     "command": "aws.importLambda",
-                    "when": "view == aws.explorer && viewItem == awsRegionFunctionNodeImportable",
-                    "group": "2@1"
+                    "when": "view == aws.explorer && viewItem =~/^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/",
+                    "group": "3@1"
                 },
                 {
                     "command": "aws.deleteLambda",
                     "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/",
-                    "group": "3@1"
+                    "group": "4@1"
                 },
                 {
                     "command": "aws.deleteCloudFormation",
@@ -686,7 +686,7 @@
                 },
                 {
                     "command": "aws.copyName",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode)$/",
                     "group": "2@1"
                 },
                 {
@@ -832,7 +832,8 @@
             {
                 "command": "aws.importLambda",
                 "title": "%AWS.command.importLambda%",
-                "category": "AWS"
+                "category": "AWS",
+                "enablement": "viewItem == awsRegionFunctionNodeImportable"
             },
             {
                 "command": "aws.deleteLambda",

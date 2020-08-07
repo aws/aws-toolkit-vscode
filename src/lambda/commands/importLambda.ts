@@ -3,25 +3,27 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Lambda } from 'aws-sdk'
-import * as vscode from 'vscode'
 import * as AdmZip from 'adm-zip'
+import { Lambda } from 'aws-sdk'
+import * as fs from 'fs-extra'
 import got from 'got'
+import * as _ from 'lodash'
+import * as path from 'path'
+import { Stream } from 'stream'
+import { promisify } from 'util'
+import * as vscode from 'vscode'
 import { LaunchConfiguration, getReferencedHandlerPaths } from '../../shared/debug/launchConfiguration'
 import { ext } from '../../shared/extensionGlobals'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { getLogger } from '../../shared/logger'
 import { createCodeAwsSamDebugConfig } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import { ExtensionDisposableFiles } from '../../shared/utilities/disposableFiles'
-import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
-import { promisify } from 'util'
-import { Stream } from 'stream'
-import * as fs from 'fs-extra'
-import * as path from 'path'
-import { getLogger } from '../../shared/logger'
 import * as pathutils from '../../shared/utilities/pathUtils'
-import { Window } from '../../shared/vscode/window'
 import { Commands } from '../../shared/vscode/commands'
-import * as _ from 'lodash'
+import { Window } from '../../shared/vscode/window'
+import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
+import { getFamily, RuntimeFamily } from '../models/samLambdaRuntime'
+import { localize } from '../../shared/utilities/vsCodeUtils'
 
 const pipeline = promisify(Stream.pipeline)
 
@@ -33,10 +35,10 @@ export async function importLambdaCommand(
 ) {
     const workspaceFolders = vscode.workspace.workspaceFolders || []
     const labelToWorkspace = new Map(workspaceFolders.map(folder => [`$(root-folder-opened) ${folder.name}`, folder]))
-    const otherLocationName = '$(folder-opened) Select a folder...'
+    const otherLocationName = `$(folder-opened) ${localize('AWS.lambda.import.otherLocation', 'Select a folder...')}`
 
     const selectedLocation = await vscode.window.showQuickPick([...labelToWorkspace.keys(), otherLocationName], {
-        placeHolder: 'Select the import location',
+        placeHolder: localize('AWS.lambda.import.prompt.placeholder', 'Select the import location'),
     })
 
     if (!selectedLocation) {
@@ -68,14 +70,22 @@ export async function importLambdaCommand(
 
     const directoryExists = await fs.pathExists(importLocation)
 
-    const overwriteWarning = `\nA directory named ${functionName} already exists! Importing will overwrite any existing files!\n`
+    const overwriteWarning = localize(
+        'AWS.lambda.import.overwriteWarning',
+        '\nA directory named {0} already exists! Importing will overwrite any existing files!\n',
+        functionName
+    )
     const isConfirmed = await showConfirmationMessage(
         {
-            prompt: `This will import ${functionName} into ${importLocationName}.\n${
+            prompt: localize(
+                'AWS.lambda.import.prompt',
+                'This will import {0} into {1}.\n{2}\nAre you sure you want to import the function?',
+                functionName,
+                importLocationName,
                 directoryExists ? overwriteWarning : ''
-            }\nAre you sure you want to import the function?`,
-            confirm: 'Import',
-            cancel: 'Cancel',
+            ),
+            confirm: localize('AWS.lambda.import.import', 'Import'),
+            cancel: localize('AWS.generic.cancel', 'Cancel'),
         },
         window
     )
@@ -85,49 +95,79 @@ export async function importLambdaCommand(
         return
     }
 
-    const tempFolder = await makeTemporaryToolkitFolder()
-    ExtensionDisposableFiles.getInstance().addFolder(tempFolder)
-    const downloadLocation = path.join(tempFolder, 'function.zip')
+    vscode.window.withProgress<void>(
+        {
+            location: vscode.ProgressLocation.Notification,
+            cancellable: false,
+            title: localize(
+                'AWS.lambda.import.status',
+                'Importing Lambda function {0} into {1}...',
+                functionName,
+                importLocationName
+            ),
+        },
+        async progress => {
+            const tempFolder = await makeTemporaryToolkitFolder()
+            ExtensionDisposableFiles.getInstance().addFolder(tempFolder)
+            const downloadLocation = path.join(tempFolder, 'function.zip')
 
-    const functionArn = functionNode.configuration.FunctionArn!
-    const handler = functionNode.configuration.Handler!
-    const response = await lambda.getFunction(functionArn)
-    const codeLocation = response.Code?.Location!
+            const functionArn = functionNode.configuration.FunctionArn!
+            const handler = functionNode.configuration.Handler!
+            const response = await lambda.getFunction(functionArn)
+            const codeLocation = response.Code?.Location!
 
-    await pipeline(got.stream(codeLocation), fs.createWriteStream(downloadLocation))
+            progress.report({ increment: 10 })
 
-    new AdmZip(downloadLocation).extractAllTo(importLocation, true)
+            await pipeline(got.stream(codeLocation), fs.createWriteStream(downloadLocation))
 
-    if (!isWorkspaceFolder) {
-        await commands.execute('vscode.openFolder', vscode.Uri.file(importLocation), true)
-    }
+            progress.report({ increment: 70 })
 
-    const lambdaLocation = path.join(importLocation, lambdaFileName(functionNode.configuration))
+            new AdmZip(downloadLocation).extractAllTo(importLocation, true)
 
-    const workspaceFolder = isWorkspaceFolder
-        ? labelToWorkspace.get(selectedLocation)!
-        : vscode.workspace.getWorkspaceFolder(vscode.Uri.file(importLocation))!
+            progress.report({ increment: 10 })
 
-    const samDebugConfig = createCodeAwsSamDebugConfig(
-        workspaceFolder,
-        handler,
-        path.dirname(lambdaLocation),
-        functionNode.configuration.Runtime!
+            if (!isWorkspaceFolder) {
+                await commands.execute('vscode.openFolder', vscode.Uri.file(importLocation), true)
+            }
+
+            const lambdaLocation = path.join(importLocation, lambdaFileName(functionNode.configuration))
+
+            const workspaceFolder = isWorkspaceFolder
+                ? labelToWorkspace.get(selectedLocation)!
+                : vscode.workspace.getWorkspaceFolder(vscode.Uri.file(importLocation))!
+
+            const samDebugConfig = createCodeAwsSamDebugConfig(
+                workspaceFolder,
+                handler,
+                path.dirname(lambdaLocation),
+                functionNode.configuration.Runtime!
+            )
+
+            const launchConfig = new LaunchConfiguration(vscode.Uri.file(lambdaLocation))
+            if (
+                !getReferencedHandlerPaths(launchConfig).has(
+                    pathutils.normalize(path.join(path.dirname(lambdaLocation), handler))
+                )
+            ) {
+                await launchConfig.addDebugConfiguration(samDebugConfig)
+            }
+            await commands.execute('vscode.open', vscode.Uri.file(lambdaLocation))
+        }
     )
-
-    const launchConfig = new LaunchConfiguration(vscode.Uri.file(lambdaLocation))
-    if (
-        !getReferencedHandlerPaths(launchConfig).has(
-            pathutils.normalize(path.join(path.dirname(lambdaLocation), handler))
-        )
-    ) {
-        await launchConfig.addDebugConfiguration(samDebugConfig)
-    }
-    await commands.execute('vscode.open', vscode.Uri.file(lambdaLocation))
 }
 
 function lambdaFileName(configuration: Lambda.FunctionConfiguration): string {
-    const runtimeExtension = configuration.Runtime?.startsWith('python') ? 'py' : 'js'
+    let runtimeExtension: string
+    switch (getFamily(configuration.Runtime!)) {
+        case RuntimeFamily.Python:
+            runtimeExtension = 'py'
+            break
+        case RuntimeFamily.NodeJS:
+            runtimeExtension = 'js'
+            break
+        default:
+            throw new Error(`Toolkit does not currently support imports for runtime: ${configuration.Runtime}`)
+    }
 
     const fileName = _(configuration.Handler!)
         .split('.')
