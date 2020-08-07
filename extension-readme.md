@@ -73,6 +73,17 @@ When you run a debug session, the status and results are shown in the **OUTPUT**
 
 When you're satisfied with performance, you can [deploy your serverless application](https://docs.aws.amazon.com/console/toolkit-for-vscode/deploy-serverless-app). The SAM template is converted to a CloudFormation template, which is then used to deploy all the application's assets to the AWS Cloud.
 
+### Launch config auto-completion ("IntelliSense")
+
+The `Add Debug Configuration` _CodeLens_ creates launch configs of type
+`aws-sam` in the VS Code `launch.json` file. You can also create these entries
+by hand.
+
+When editing `launch.json` configs, AWS Toolkit provides auto-completion and
+contextual documentation, as shown below.
+
+![Debug Configuration inline documentation](./resources/marketplace/sam-launch-config.png)
+
 ### Supported runtimes
 
 The Toolkit _local SAM debugging_ feature supports these runtimes:
