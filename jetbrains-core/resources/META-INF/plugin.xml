@@ -345,6 +345,11 @@
                     class="software.aws.toolkits.jetbrains.services.schemas.code.DownloadCodeForSchemaAction"/>
         </group>
 
+        <group id="aws.toolkit.explorer.sqs" popup="true" compact="false">
+            <action id="sqs.create.queue"
+                    class="software.aws.toolkits.jetbrains.services.sqs.actions.CreateQueueAction"/>
+        </group>
+
         <group id="aws.toolkit.explorer.sqs.queue" popup="true" compact="false">
             <action id="sqs.poll.message"
                     class="software.aws.toolkits.jetbrains.services.sqs.actions.PollMessageAction"/>
