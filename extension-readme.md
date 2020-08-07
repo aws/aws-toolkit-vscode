@@ -82,7 +82,7 @@ by hand.
 When editing `launch.json` configs, AWS Toolkit provides auto-completion and
 contextual documentation, as shown below.
 
-![Debug Configuration inline documentation](./resources/marketplace/sam-launch-config.png)
+<img src="./resources/marketplace/sam-launch-config.png" alt="Debug Configuration inline documentation" width="640"/>
 
 ### Supported runtimes
 
