@@ -304,7 +304,6 @@
         <group id="aws.toolkit.explorer.logs.group" popup="true" compact="false">
             <action id="cloudwatch.logs.open"
                     class="software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.OpenLogGroupAction"/>
-            <separator/>
             <action id="cloudwatch.logs.query.group"
                     class="software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.actions.QueryGroupAction"/>
             <separator/>

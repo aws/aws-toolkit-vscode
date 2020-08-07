@@ -21,7 +21,7 @@ class QueryEditor internal constructor(private val project: Project) {
     lateinit var searchTerm: JRadioButton
     lateinit var querySearchTerm: JTextField
     lateinit var queryLogGroupsRadioButton: JRadioButton
-    var saveQueryButton: JButton? = null
+    lateinit var saveQueryButton: JButton
     lateinit var retrieveSavedQueriesButton: JButton
     private lateinit var tablePanel: SimpleToolWindowPanel
     lateinit var queryBox: JTextArea
@@ -59,5 +59,7 @@ class QueryEditor internal constructor(private val project: Project) {
         relativeTimeUnit.isEnabled = false
         querySearchTerm.isEnabled = false
         queryBox.isEnabled = false
+        saveQueryButton.isEnabled = false
+        queryBox.text = default_query
     }
 }
