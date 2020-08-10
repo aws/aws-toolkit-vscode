@@ -31,7 +31,7 @@ describe('makeSamCliValidationNotification', async () => {
         makeSamCliValidationNotification(
             new SamCliNotFoundError(),
             (message: string, actions: SamCliValidationNotificationAction[]): SamCliValidationNotification => {
-                assert.ok(message.includes('Unable to find SAM CLI'), `unexpected validation message: ${message}`)
+                assert.ok(message.includes('Cannot find SAM CLI'), `unexpected validation message: ${message}`)
                 assert.strictEqual(actions.length, 1, 'unexpected action count')
                 assert.strictEqual(
                     actions[0].label,
@@ -48,19 +48,19 @@ describe('makeSamCliValidationNotification', async () => {
         {
             situation: 'SAM CLI Version is too low',
             versionValidation: SamCliVersionValidation.VersionTooLow,
-            messageFragment: 'Please update your SAM CLI.',
+            messageFragment: 'Update your SAM CLI.',
             actionLabel: actionLabelUpdateSamCli,
         },
         {
             situation: 'SAM CLI Version is too high',
             versionValidation: SamCliVersionValidation.VersionTooHigh,
-            messageFragment: 'Please check the Marketplace for an updated Toolkit.',
+            messageFragment: 'Check the Marketplace for an updated AWS Toolkit.',
             actionLabel: actionLabelUpdateToolkit,
         },
         {
             situation: 'SAM CLI Version is unparsable',
             versionValidation: SamCliVersionValidation.VersionNotParseable,
-            messageFragment: 'Please update your SAM CLI.',
+            messageFragment: 'Update your SAM CLI.',
             actionLabel: actionLabelUpdateSamCli,
         },
     ]

@@ -16,6 +16,23 @@ import { VSCODE_EXTENSION_ID, EXTENSION_ALPHA_VERSION } from './extensions'
 
 const localize = nls.loadMessageBundle()
 
+const VSCODE_APPNAME = 'Visual Studio Code'
+
+export enum IDE {
+    vscode,
+    unknown,
+}
+
+export function getIdeType(): IDE {
+    // Theia doesn't necessarily have all env propertie
+    // so we should be defensive and assume appName is nullable.
+    if (vscode.env.appName?.startsWith(VSCODE_APPNAME)) {
+        return IDE.vscode
+    }
+
+    return IDE.unknown
+}
+
 export class ExtensionUtilities {
     public static getLibrariesForHtml(names: string[], webview: vscode.Webview): vscode.Uri[] {
         const basePath = path.join(ext.context.extensionPath, 'media', 'libs')

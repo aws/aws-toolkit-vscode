@@ -48,7 +48,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
         ]
     ) {}
 
-    public async invoke({ options = {}, ...params }: SamLocalInvokeCommandArgs): Promise<void> {
+    public async invoke({ options, ...params }: SamLocalInvokeCommandArgs): Promise<void> {
         this.channelLogger.info(
             'AWS.running.command',
             'Running command: {0}',
@@ -97,7 +97,7 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                 onError: (error: Error): void => {
                     this.channelLogger.error(
                         'AWS.samcli.local.invoke.error',
-                        'Error encountered running local SAM Application',
+                        'Error running local SAM Application: {0}',
                         error
                     )
                     debuggerPromiseClosed = true
@@ -157,6 +157,10 @@ export interface SamCliLocalInvokeInvocationArguments {
      */
     environmentVariablePath: string
     /**
+     * Environment variables set when invoking the SAM process (NOT passed to the Lambda).
+     */
+    environmentVariables?: NodeJS.ProcessEnv
+    /**
      * When specified, starts the Lambda function container in debug mode and exposes this port on the local host.
      */
     debugPort?: string
@@ -171,41 +175,31 @@ export interface SamCliLocalInvokeInvocationArguments {
      */
     dockerNetwork?: string
     /**
-     * Specifies whether the command should skip pulling down the latest Docker image for Lambda runtime.
+     * - true: Do not pull the latest Docker image for Lambda runtime.
+     * - false: Pull the latest Docker image if necessary
      */
     skipPullImage?: boolean
     /**
      * Host path to a debugger that will be mounted into the Lambda container.
      */
     debuggerPath?: string
+    /**
+     * parameter overrides specified in the `sam.template.parameters` field
+     */
+    parameterOverrides?: string[]
+    /** SAM args specified by user (`sam.localArguments`). */
+    extraArgs?: string[]
 }
 
+/**
+ * An elaborate way to run `sam local`.
+ */
 export class SamCliLocalInvokeInvocation {
-    private readonly templateResourceName: string
-    private readonly templatePath: string
-    private readonly eventPath: string
-    private readonly environmentVariablePath: string
-    private readonly debugPort?: string
-    private readonly invoker: SamLocalInvokeCommand
-    private readonly dockerNetwork?: string
-    private readonly skipPullImage: boolean
-    private readonly debuggerPath?: string
     private readonly invokerContext: SamCliProcessInvokerContext
 
-    /**
-     * @see SamCliLocalInvokeInvocationArguments for parameter info
-     * skipPullImage - Defaults to false (the latest Docker image will be pulled down if necessary)
-     */
-    public constructor({ skipPullImage = false, ...params }: SamCliLocalInvokeInvocationArguments) {
-        this.templateResourceName = params.templateResourceName
-        this.templatePath = params.templatePath
-        this.eventPath = params.eventPath
-        this.environmentVariablePath = params.environmentVariablePath
-        this.debugPort = params.debugPort
-        this.invoker = params.invoker
-        this.dockerNetwork = params.dockerNetwork
-        this.skipPullImage = skipPullImage
-        this.debuggerPath = params.debuggerPath
+    public constructor(private readonly args: SamCliLocalInvokeInvocationArguments) {
+        this.args.skipPullImage = !!this.args.skipPullImage
+
         // Enterprise!
         this.invokerContext = new DefaultSamCliProcessInvokerContext()
     }
@@ -214,42 +208,55 @@ export class SamCliLocalInvokeInvocation {
         await this.validate()
 
         const samCommand = this.invokerContext.cliConfig.getSamCliLocation() ?? 'sam'
-        const args = [
+        const invokeArgs = [
             'local',
             'invoke',
-            this.templateResourceName,
+            this.args.templateResourceName,
             '--template',
-            this.templatePath,
+            this.args.templatePath,
             '--event',
-            this.eventPath,
+            this.args.eventPath,
             '--env-vars',
-            this.environmentVariablePath,
+            this.args.environmentVariablePath,
         ]
 
-        this.addArgumentIf(args, !!this.debugPort, '-d', this.debugPort!)
-        this.addArgumentIf(args, !!this.dockerNetwork, '--docker-network', this.dockerNetwork!)
-        this.addArgumentIf(args, !!this.skipPullImage, '--skip-pull-image')
-        this.addArgumentIf(args, !!this.debuggerPath, '--debugger-path', this.debuggerPath!)
+        this.addArgumentIf(invokeArgs, !!this.args.debugPort, '-d', this.args.debugPort!)
+        this.addArgumentIf(invokeArgs, !!this.args.dockerNetwork, '--docker-network', this.args.dockerNetwork!)
+        this.addArgumentIf(invokeArgs, !!this.args.skipPullImage, '--skip-pull-image')
+        this.addArgumentIf(invokeArgs, !!this.args.debuggerPath, '--debugger-path', this.args.debuggerPath!)
+        this.addArgumentIf(
+            invokeArgs,
+            !!this.args.parameterOverrides && this.args.parameterOverrides.length > 0,
+            '--parameter-overrides',
+            ...(this.args.parameterOverrides ?? [])
+        )
+        invokeArgs.push(...(this.args.extraArgs ?? []))
 
-        await this.invoker.invoke({
+        await this.args.invoker.invoke({
+            options: {
+                env: {
+                    ...process.env,
+                    ...this.args.environmentVariables,
+                },
+            },
             command: samCommand,
-            args,
-            isDebug: !!this.debugPort,
+            args: invokeArgs,
+            isDebug: !!this.args.debugPort,
             timeout,
         })
     }
 
     protected async validate(): Promise<void> {
-        if (!this.templateResourceName) {
+        if (!this.args.templateResourceName) {
             throw new Error('template resource name is missing or empty')
         }
 
-        if (!(await fileExists(this.templatePath))) {
-            throw new Error(`template path does not exist: ${this.templatePath}`)
+        if (!(await fileExists(this.args.templatePath))) {
+            throw new Error(`template path does not exist: ${this.args.templatePath}`)
         }
 
-        if (!(await fileExists(this.eventPath))) {
-            throw new Error(`event path does not exist: ${this.eventPath}`)
+        if (!(await fileExists(this.args.eventPath))) {
+            throw new Error(`event path does not exist: ${this.args.eventPath}`)
         }
     }
 

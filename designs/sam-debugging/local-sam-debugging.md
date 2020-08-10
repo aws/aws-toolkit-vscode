@@ -172,15 +172,15 @@ The required fields are: type, request, invokeTarget
 {
     "configurations": [
         {
-            "name": "Debug HelloWorldResource", // Users name the entry; shown in Debug dropdown
+            "name": "Debug HelloWorldResource", // User-provided name, shown in Debug dropdown.
             "type": "aws-sam",
             // direct-invoke is the "aws-sam" variation for debugging SAM Template resources and Lambda handlers
             "request": "direct-invoke",
             // Reference to the thing (Template or Code) being invoked
             "invokeTarget": {
                 "target": "template", // template | code, influences fields expected by toolkit
-                "samTemplatePath": "path to template yaml file",
-                "samTemplateResource": "HelloWorldResource" // Name of Template resource to debug
+                "templatePath": "path to template yaml file",
+                "logicalId": "HelloWorldResource" // Name of Template resource to debug
             },
             // Lambda Execution related arguments
             "lambda": {
@@ -190,7 +190,7 @@ The required fields are: type, request, invokeTarget
                     "envvar2": "..."
                 },
                 // The event passed to the Lambda handler (defaults to an empty JSON object)
-                "event": {
+                "payload": {
                     // path or json, not both
                     "path": "somepath", // Path to event data
                     "json": {
@@ -203,8 +203,8 @@ The required fields are: type, request, invokeTarget
                 "containerBuild": false,
                 "skipNewImageCheck": false,
                 "dockerNetwork": "aaaaa",
-                "buildArguments": "--foo",
-                "localArguments": "--foo",
+                "buildArguments": ["--foo"],
+                "localArguments": ["--foo"],
                 // used when invokeTarget references a SAM Template
                 "template": {
                     // SAM Template Parameter substitutions
@@ -256,7 +256,7 @@ The required fields are: type, request, invokeTarget, lambda.runtime
                     "envvar2": "..."
                 },
                 // The event passed to the Lambda handler (defaults to an empty JSON object)
-                "event": {
+                "payload": {
                     // path or json, not both
                     "path": "somepath", // Path to event data
                     "json": {
@@ -269,8 +269,8 @@ The required fields are: type, request, invokeTarget, lambda.runtime
                 "containerBuild": false,
                 "skipNewImageCheck": false,
                 "dockerNetwork": "aaaaa",
-                "buildArguments": "--foo",
-                "localArguments": "--foo"
+                "buildArguments": ["--foo"],
+                "localArguments": ["--foo"]
             },
             // AWS related arguments
             "aws": {
@@ -304,14 +304,19 @@ Functions considered by the Toolkit to be eligible Lambda Handlers:
 Python:
 
 -   Top level functions
+-   Must have a `requirements.txt` file in its parent chain, within a workspace folder.
 
 Javascript:
 
 -   exported functions with 3 or fewer parameters
+-   Must have a `package.json` file in its parent chain, within a workspace folder.
 
 C#:
 
--   public functions within public classes
+-   public functions within public classes that have one parameter or a second parameter of type `ILambdaContext`
+-   Must have a `.csproj` file in its parent chain, within a workspace folder.
+
+As a whole, we will not support no-dependencies Lambdas.
 
 ### Comparison to other AWS Toolkits
 
