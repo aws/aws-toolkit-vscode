@@ -51,6 +51,12 @@ class SqsWindow(private val project: Project) : CoroutineScope by ApplicationThr
         }
     }
 
+    fun closeQueue(queueUrl: String) = launch {
+        withContext(edtContext) {
+            toolWindow.find(queueUrl)?.dispose()
+        }
+    }
+
     companion object {
         internal val SQS_TOOL_WINDOW = ToolkitToolWindowType(
             "AWS.Sqs",
