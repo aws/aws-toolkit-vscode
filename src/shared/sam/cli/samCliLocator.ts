@@ -136,7 +136,11 @@ class WindowsSamCliLocator extends BaseSamCliLocator {
 }
 
 class UnixSamCliLocator extends BaseSamCliLocator {
-    private static readonly LOCATION_PATHS: string[] = ['/usr/local/bin', '/usr/bin']
+    private static readonly LOCATION_PATHS: string[] = [
+        '/usr/local/bin',
+        '/usr/bin',
+        `${process.env.HOME}/.linuxbrew/bin`,
+    ]
 
     private static readonly EXECUTABLE_FILENAMES: string[] = ['sam']
 
