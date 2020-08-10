@@ -32,7 +32,7 @@ import { SamCliValidator } from '../../shared/sam/cli/samCliValidator'
 import { recordSamInit, Result, Runtime } from '../../shared/telemetry/telemetry'
 import { makeCheckLogsMessage } from '../../shared/utilities/messages'
 import { ChannelLogger } from '../../shared/utilities/vsCodeUtils'
-import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
+import { addWorkspaceFolder } from '../../shared/utilities/workspaceUtils'
 import { getDependencyManager } from '../models/samLambdaRuntime'
 import { eventBridgeStarterAppTemplate } from '../models/samTemplates'
 import {
@@ -236,13 +236,4 @@ async function getMainUri(
             )
         )
     }
-}
-
-async function addWorkspaceFolder(folder: { uri: vscode.Uri; name?: string }): Promise<void> {
-    // No-op if the folder is already in the workspace.
-    if (vscode.workspace.getWorkspaceFolder(folder.uri)) {
-        return
-    }
-
-    await addFolderToWorkspace(folder)
 }

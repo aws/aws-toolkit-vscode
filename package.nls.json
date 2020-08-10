@@ -188,6 +188,8 @@
     "AWS.lambda.import.overwriteWarning": "\nA directory named {0} already exists! Importing will overwrite any existing files!\n",
     "AWS.lambda.import.import": "Import",
     "AWS.lambda.import.otherLocation": "Select a folder...",
+    "AWS.lambda.import.importError": "Error importing Lambda function {0}: {1}",
+    "AWS.lambda.import.fileNotFound": "Handler file {0} not found in imported function.",
     "AWS.log.fileLocation": "Error logs for this session are permanently stored in {0}",
     "AWS.log.invalidLevel": "Invalid log level: {0}",
     "AWS.message.loading": "Loading...",

@@ -17,6 +17,15 @@ export function tryGetAbsolutePath(folder: vscode.WorkspaceFolder | undefined, r
     return path.resolve(folder?.uri ? folder.uri.fsPath + '/' : '', relPath)
 }
 
+export async function addWorkspaceFolder(folder: { uri: vscode.Uri; name?: string }): Promise<void> {
+    // No-op if the folder is already in the workspace.
+    if (vscode.workspace.getWorkspaceFolder(folder.uri)) {
+        return
+    }
+
+    await addFolderToWorkspace(folder)
+}
+
 /**
  * Encapsulates adding a folder to the VS Code Workspace.
  *
