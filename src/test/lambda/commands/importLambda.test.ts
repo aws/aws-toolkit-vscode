@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import { getLambdaFileNameFromHandler, openLambdaFile } from '../../../lambda/commands/importLambda'
 import { assertThrowsError } from '../../shared/utilities/assertUtils'
 
-describe.only('importLambda', async () => {
+describe('importLambda', async () => {
     describe('getLambdaFileNameFromHandler', () => {
         it('returns valid filenames', () => {
             assert(getLambdaFileNameFromHandler({ Runtime: 'nodejs12.x', Handler: 'app.lambda_handler' }), 'app.js')
