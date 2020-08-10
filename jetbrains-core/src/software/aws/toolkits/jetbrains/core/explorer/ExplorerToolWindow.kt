@@ -116,6 +116,7 @@ class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), 
 
             text = state.displayMessage
             isEditable = false
+            background = UIUtil.getTreeBackground()
         }
 
         panel.add(textPane, gridBag.nextLine().next())
