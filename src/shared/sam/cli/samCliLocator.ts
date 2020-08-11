@@ -139,6 +139,9 @@ class UnixSamCliLocator extends BaseSamCliLocator {
     private static readonly LOCATION_PATHS: string[] = [
         '/usr/local/bin',
         '/usr/bin',
+        // WEIRD BUT TRUE: brew installs to /home/linuxbrew/.linuxbrew if
+        // possible, else to ~/.linuxbrew.  https://docs.brew.sh/Homebrew-on-Linux
+        '/home/linuxbrew/.linuxbrew/bin',
         `${process.env.HOME}/.linuxbrew/bin`,
     ]
 
