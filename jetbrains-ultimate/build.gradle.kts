@@ -4,8 +4,10 @@
 import groovy.lang.Closure
 import org.jetbrains.intellij.IntelliJPluginExtension
 
+plugins {
+    id("org.jetbrains.intellij")
+}
 apply(from = "../intellijJVersions.gradle")
-apply(plugin = "org.jetbrains.intellij")
 
 val ideSdkVersion: Closure<String> by ext
 val idePlugins: Closure<ArrayList<String>> by ext
@@ -17,8 +19,8 @@ dependencies {
     integrationTestImplementation(project(path = ":jetbrains-core", configuration = "testArtifacts"))
 }
 
-extensions.configure<IntelliJPluginExtension>("intellij") {
-    val parentIntellijTask = project(":jetbrains-core").extensions["intellij"] as IntelliJPluginExtension
+intellij {
+    val parentIntellijTask = rootProject.intellij
     version = ideSdkVersion("IU")
     setPlugins(*(idePlugins("IU").toArray()))
     pluginName = parentIntellijTask.pluginName
