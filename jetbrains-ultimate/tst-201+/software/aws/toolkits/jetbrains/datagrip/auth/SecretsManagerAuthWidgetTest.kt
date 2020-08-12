@@ -52,6 +52,14 @@ class SecretsManagerAuthWidgetTest {
     }
 
     @Test
+    fun `Get url from secret property set from widget`() {
+        widget.reset(buildDataSource(getUrlFromSecret = true), false)
+        assertThat(widget.getUrlFromSecretSet()).isEqualTo(true)
+        widget.reset(buildDataSource(getUrlFromSecret = false), false)
+        assertThat(widget.getUrlFromSecretSet()).isEqualTo(false)
+    }
+
+    @Test
     fun `Sets region from Redshift URL`() {
         widget.reset(mock(), false)
         val endpointUrl = "jdbc:redshift://redshift-cluster.host.$defaultRegion.redshift.amazonaws.com:5439/dev"
@@ -77,7 +85,7 @@ class SecretsManagerAuthWidgetTest {
         assertThat(widget.getSelectedRegion()?.id).isEqualTo(defaultRegion)
     }
 
-    private fun buildDataSource(hasSecret: Boolean = true): LocalDataSource = mock {
+    private fun buildDataSource(hasSecret: Boolean = true, getUrlFromSecret: Boolean = false): LocalDataSource = mock {
         on { additionalJdbcProperties } doAnswer {
             mutableMapOf<String, String>().also {
                 it[CREDENTIAL_ID_PROPERTY] = credentialId
@@ -85,6 +93,7 @@ class SecretsManagerAuthWidgetTest {
                 if (hasSecret) {
                     it[SECRET_ID_PROPERTY] = defaultSecretId
                 }
+                it[GET_URL_FROM_SECRET] = getUrlFromSecret.toString()
             }
         }
     }

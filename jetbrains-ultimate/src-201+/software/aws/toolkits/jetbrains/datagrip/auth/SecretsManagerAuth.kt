@@ -61,8 +61,22 @@ class SecretsManagerAuth : DatabaseAuthProvider, CoroutineScope by ApplicationTh
             val project = connection.runConfiguration.project
             try {
                 val connectionSettings = getConfiguration(connection)
-                val credentials = getCredentials(connection.runConfiguration.project, connectionSettings)
-                DatabaseCredentialsAuthProvider.applyCredentials(connection, credentials, true)
+                val dbSecret = getDbSecret(connection.runConfiguration.project, connectionSettings)
+                if (connection.connectionPoint.additionalJdbcProperties[GET_URL_FROM_SECRET]?.toBoolean() == true) {
+                    dbSecret.host ?: throw IllegalArgumentException(message("datagrip.secretsmanager.validation.no_host", connectionSettings.secretId))
+                    dbSecret.port ?: throw IllegalArgumentException(message("datagrip.secretsmanager.validation.no_port", connectionSettings.secretId))
+                    // we have to rewrite the url which is pretty messy. The util is not better than using split (requires magic strings
+                    // to access the properties), so use split instead
+                    val db = connection.url.split("/").last()
+                    val jdbcUrlBeginning = connection.url.split("://").first()
+                    connection.url = "$jdbcUrlBeginning://${dbSecret.host}:${dbSecret.port}/$db"
+                }
+
+                DatabaseCredentialsAuthProvider.applyCredentials(
+                    connection,
+                    Credentials(dbSecret.username, dbSecret.password),
+                    true
+                )
             } catch (e: Throwable) {
                 result = Result.Failed
                 throw e
@@ -87,13 +101,13 @@ class SecretsManagerAuth : DatabaseAuthProvider, CoroutineScope by ApplicationTh
         )
     }
 
-    private fun getCredentials(project: Project, configuration: SecretsManagerConfiguration): Credentials {
+    private fun getDbSecret(project: Project, configuration: SecretsManagerConfiguration): SecretsManagerDbSecret {
         val client = project.awsClient<SecretsManagerClient>(configuration.connectionSettings.credentials, configuration.connectionSettings.region)
         val secret = client.getSecretValue { it.secretId(configuration.secretId) }
         val dbSecret = objectMapper.readValue<SecretsManagerDbSecret>(secret.secretString())
         dbSecret.username ?: throw IllegalArgumentException(message("datagrip.secretsmanager.validation.no_username", secret.name()))
         dbSecret.password ?: throw IllegalArgumentException(message("datagrip.secretsmanager.validation.no_password", secret.name()))
-        return Credentials(dbSecret.username, dbSecret.password)
+        return dbSecret
     }
 
     companion object {
