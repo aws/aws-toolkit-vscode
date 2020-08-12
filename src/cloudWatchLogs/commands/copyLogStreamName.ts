@@ -10,21 +10,24 @@ import * as vscode from 'vscode'
 import { parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
 
 export async function copyLogStreamName(uri?: vscode.Uri): Promise<void> {
-    if (!uri) {
-        uri = vscode.window.activeTextEditor?.document.uri
-        if (!uri) {
-            vscode.window.showErrorMessage(
-                localize('aws.cloudWatchLogs.invalidEditor', 'Current editor is not a valid Cloudwatch Logs editor.')
-            )
-            return
-        }
-    }
     try {
+        if (!uri) {
+            // No URI = used command palette as entrypoint, attempt to get URI from active editor
+            // should work correctly under any normal circumstances since the action only appears in command palette when the editor is a CloudWatch Logs editor
+            uri = vscode.window.activeTextEditor?.document.uri
+            if (!uri) {
+                throw new Error()
+            }
+        }
         const parsedUri = parseCloudWatchLogsUri(uri)
         await vscode.env.clipboard.writeText(parsedUri.streamName)
     } catch (e) {
         vscode.window.showErrorMessage(
-            localize('aws.cloudWatchLogs.invalidEditor', 'Current editor is not a valid Cloudwatch Logs editor.')
+            localize(
+                'aws.cloudWatchLogs.invalidEditor',
+                'Not a Cloudwatch Log stream: {0}',
+                vscode.window.activeTextEditor?.document.fileName
+            )
         )
         return
     }
