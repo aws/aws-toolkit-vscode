@@ -45,7 +45,7 @@ export class DefaultSamCliConfiguration implements SamCliConfiguration {
      * or tries to auto-detect `sam` in the environment.
      */
     public async initialize(): Promise<void> {
-        const configLocation: string | undefined = this.getSamCliLocation() ?? ''
+        const configLocation = this.getSamCliLocation() ?? ''
         if (configLocation) {
             if (await filesystemUtilities.fileExists(configLocation)) {
                 return
