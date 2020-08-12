@@ -3,10 +3,15 @@
 
 package software.aws.toolkits.jetbrains.settings
 
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import com.intellij.openapi.options.ShowSettingsUtil
+import com.intellij.openapi.project.DumbAware
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.resources.message
 import java.util.UUID
@@ -77,3 +82,9 @@ data class AwsConfiguration(
     var promptedForTelemetry: Boolean? = null,
     var useDefaultCredentialRegion: String? = null
 )
+
+class ShowSettingsAction : AnAction(message("aws.settings.show.label")), DumbAware {
+    override fun actionPerformed(e: AnActionEvent) {
+        ShowSettingsUtil.getInstance().showSettingsDialog(e.getRequiredData(LangDataKeys.PROJECT), AwsSettingsConfigurable::class.java)
+    }
+}
