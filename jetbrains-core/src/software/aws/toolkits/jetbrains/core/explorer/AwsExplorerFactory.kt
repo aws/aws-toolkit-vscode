@@ -24,8 +24,9 @@ class AwsExplorerFactory : ToolWindowFactory, DumbAware {
         toolWindow.component.parent.add(explorer)
         toolWindow.helpId = HelpIds.EXPLORER_WINDOW.id
         if (toolWindow is ToolWindowEx) {
+            val actionManager = ActionManager.getInstance()
             toolWindow.setTitleActions(
-                ActionManager.getInstance().getAction("aws.settings.refresh"),
+                actionManager.getAction("aws.settings.refresh"),
                 Separator.create(),
                 FeedbackDialog.getAction(project)
             )
@@ -52,6 +53,7 @@ class AwsExplorerFactory : ToolWindowFactory, DumbAware {
                         )
                     )
                     add(FeedbackDialog.getAction(project))
+                    add(actionManager.getAction("aws.settings.show"))
                 }
             )
         }
