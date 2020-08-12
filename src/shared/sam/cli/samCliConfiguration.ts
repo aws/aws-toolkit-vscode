@@ -53,11 +53,10 @@ export class DefaultSamCliConfiguration implements SamCliConfiguration {
         }
 
         const detectedLocation = (await this._samCliLocationProvider.getLocation()) ?? ''
-        if (configLocation === detectedLocation) {
-            // Avoid setting the value again (could cause a loop because
-            // we listen to the `onDidChangeConfiguration` event).
-            return
+        // Avoid setting the value redundantly (could cause a loop because we
+        // listen to the `onDidChangeConfiguration` event).
+        if (configLocation !== detectedLocation) {
+            await this.setSamCliLocation(detectedLocation)
         }
-        await this.setSamCliLocation(detectedLocation)
     }
 }
