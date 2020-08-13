@@ -11,6 +11,7 @@ import com.intellij.uiDesigner.core.GridConstraints;
 import java.awt.Dimension;
 import java.awt.event.ItemEvent;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import javax.swing.JButton;
@@ -19,6 +20,7 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import com.intellij.util.text.SemVer;
 import kotlin.Pair;
 import kotlin.Unit;
 import org.jetbrains.annotations.NotNull;
@@ -34,6 +36,7 @@ import software.aws.toolkits.jetbrains.core.executables.ExecutableManager;
 import software.aws.toolkits.jetbrains.core.executables.ExecutableType;
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder;
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup;
+import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupUtil;
 import software.aws.toolkits.jetbrains.services.lambda.SamNewProjectSettings;
 import software.aws.toolkits.jetbrains.services.lambda.SamProjectTemplate;
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable;
@@ -336,6 +339,18 @@ public class SamInitSelectionPanel implements ValidatablePanel {
         ExecutableInstance samExecutable = ExecutableManager.getInstance().getExecutableIfPresent(ExecutableType.getExecutable(SamExecutable.class));
         if (samExecutable instanceof ExecutableInstance.BadExecutable) {
             return new ValidationInfo(((ExecutableInstance.BadExecutable) samExecutable).getValidationError(), samExecutableField);
+        } else {
+            Runtime selectedRuntime = (Runtime) runtimeComboBox.getSelectedItem();
+
+            if(selectedRuntime != null) {
+                SemVer samVersion = Objects.requireNonNull(SemVer.parseFromText(samExecutable.getVersion()));
+                RuntimeGroup runtimeGroup = Objects.requireNonNull(RuntimeGroupUtil.getRuntimeGroup(selectedRuntime));
+                try {
+                    runtimeGroup.validateSamVersion(selectedRuntime, samVersion);
+                } catch (Exception e) {
+                    return new ValidationInfo(e.getMessage(), runtimeComboBox);
+                }
+            }
         }
 
         if (sdkSelectionUi == null) {

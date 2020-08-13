@@ -54,7 +54,7 @@ class JavaSamProjectWizard : SamProjectWizard {
 }
 
 abstract class JavaSamProjectTemplate : SamProjectTemplate() {
-    override fun supportedRuntimes() = setOf(Runtime.JAVA8, Runtime.JAVA11)
+    override fun supportedRuntimes() = setOf(Runtime.JAVA8, Runtime.JAVA8_AL2, Runtime.JAVA11)
 
     // Helper method to locate the build file, such as pom.xml in the project content root.
     protected fun locateBuildFile(contentRoot: VirtualFile, buildFileName: String): VirtualFile? {

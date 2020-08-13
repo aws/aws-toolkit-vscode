@@ -13,19 +13,19 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.projectRoots.Sdk
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.BuiltInRuntimeGroups
+import software.aws.toolkits.jetbrains.services.lambda.RuntimeInfo
 import software.aws.toolkits.jetbrains.services.lambda.SdkBasedRuntimeGroup
 
 class NodeJsRuntimeGroup : SdkBasedRuntimeGroup() {
     override val id: String = BuiltInRuntimeGroups.NodeJs
-
-    override val runtimes: Set<Runtime> = setOf(
-        Runtime.NODEJS10_X,
-        Runtime.NODEJS12_X
-    )
-
     override val languageIds: Set<String> = setOf(
         JavascriptLanguage.INSTANCE.id,
         JavaScriptSupportLoader.ECMA_SCRIPT_6.id
+    )
+
+    override val supportedRuntimes = listOf(
+        RuntimeInfo(Runtime.NODEJS10_X),
+        RuntimeInfo(Runtime.NODEJS12_X)
     )
 
     override fun determineRuntime(module: Module): Runtime? = determineRuntime(module.project)

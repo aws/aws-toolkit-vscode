@@ -35,6 +35,7 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runtim
         @Parameterized.Parameters(name = "{0}")
         fun data(): Collection<Array<Runtime>> = listOf(
             arrayOf(Runtime.JAVA8),
+            arrayOf(Runtime.JAVA8_AL2),
             arrayOf(Runtime.JAVA11)
         )
     }
@@ -66,7 +67,7 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runtim
         )
 
         val compatibility = when (runtime) {
-            Runtime.JAVA8 -> "1.8"
+            Runtime.JAVA8, Runtime.JAVA8_AL2 -> "1.8"
             Runtime.JAVA11 -> "11"
             else -> throw NotImplementedError()
         }

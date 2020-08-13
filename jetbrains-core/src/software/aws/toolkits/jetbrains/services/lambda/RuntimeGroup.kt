@@ -16,8 +16,11 @@ import com.intellij.openapi.projectRoots.SdkType
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.util.KeyedExtensionCollector
+import com.intellij.util.text.SemVer
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.IdBasedExtensionPoint
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
+import software.aws.toolkits.resources.message
 
 /**
  * IDs for built-in runtime groups that ship with toolkit
@@ -29,21 +32,36 @@ object BuiltInRuntimeGroups {
     const val NodeJs = "NODEJS"
 }
 
+data class RuntimeInfo(val runtime: Runtime, val minimumVersion: SemVer = SamExecutable.minVersion)
+
 /**
  * Grouping of Lambda [Runtime] by parent language.
  *
  * A Lambda [Runtime] belongs to a single [RuntimeGroup], a [RuntimeGroup] may have several Lambda [Runtime]s, [Language]s or [Sdk]s.
  */
-interface RuntimeGroup {
-    val id: String
-    val runtimes: Set<Runtime>
-    val languageIds: Set<String>
+abstract class RuntimeGroup {
+    abstract val id: String
+    abstract val languageIds: Set<String>
 
-    fun determineRuntime(project: Project): Runtime? = null
-    fun determineRuntime(module: Module): Runtime? = null
-    fun getModuleType(): ModuleType<*>? = null
-    fun getIdeSdkType(): SdkType? = null
-    fun supportsSamBuild(): Boolean = true
+    val runtimes: List<Runtime> by lazy {
+        supportedRuntimes.map { it.runtime }
+    }
+
+    protected abstract val supportedRuntimes: List<RuntimeInfo>
+
+    open fun determineRuntime(project: Project): Runtime? = null
+    open fun determineRuntime(module: Module): Runtime? = null
+    open fun getModuleType(): ModuleType<*>? = null
+    open fun getIdeSdkType(): SdkType? = null
+
+    open fun supportsSamBuild(): Boolean = true
+
+    fun validateSamVersion(runtime: Runtime, samVersion: SemVer) {
+        val minVersion = supportedRuntimes.first { it.runtime == runtime }.minimumVersion
+        if (samVersion < minVersion) {
+            throw RuntimeException(message("sam.executable.minimum_too_low_runtime", runtime, minVersion))
+        }
+    }
 
     companion object {
         private val EP_NAM = ExtensionPointName.create<RuntimeGroup>("aws.toolkit.lambda.runtimeGroup")
@@ -69,7 +87,7 @@ interface RuntimeGroup {
     }
 }
 
-abstract class SdkBasedRuntimeGroup : RuntimeGroup {
+abstract class SdkBasedRuntimeGroup : RuntimeGroup() {
     protected abstract fun runtimeForSdk(sdk: Sdk): Runtime?
 
     override fun determineRuntime(project: Project): Runtime? = ProjectRootManager.getInstance(project).projectSdk?.let { runtimeForSdk(it) }

@@ -11,14 +11,21 @@ import com.intellij.openapi.projectRoots.JavaSdkType
 import com.intellij.openapi.projectRoots.JavaSdkVersion
 import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.projectRoots.SdkType
+import com.intellij.util.text.SemVer
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.BuiltInRuntimeGroups
+import software.aws.toolkits.jetbrains.services.lambda.RuntimeInfo
 import software.aws.toolkits.jetbrains.services.lambda.SdkBasedRuntimeGroup
 
 class JavaRuntimeGroup : SdkBasedRuntimeGroup() {
     override val id: String = BuiltInRuntimeGroups.Java
-    override val runtimes = setOf(Runtime.JAVA8, Runtime.JAVA11)
     override val languageIds = setOf(JavaLanguage.INSTANCE.id)
+
+    override val supportedRuntimes: List<RuntimeInfo> = listOf(
+        RuntimeInfo(Runtime.JAVA8),
+        RuntimeInfo(Runtime.JAVA8_AL2, SemVer("1.1.0", 1, 1, 0)),
+        RuntimeInfo(Runtime.JAVA11)
+    )
 
     override fun runtimeForSdk(sdk: Sdk): Runtime? {
         if (sdk.sdkType is JavaSdkType) {
@@ -29,7 +36,7 @@ class JavaRuntimeGroup : SdkBasedRuntimeGroup() {
     }
 
     private fun determineRuntimeForSdk(sdk: JavaSdkVersion) = when {
-        sdk <= JavaSdkVersion.JDK_1_8 -> Runtime.JAVA8
+        sdk <= JavaSdkVersion.JDK_1_8 -> Runtime.JAVA8_AL2
         sdk <= JavaSdkVersion.JDK_11 -> Runtime.JAVA11
         else -> null
     }
