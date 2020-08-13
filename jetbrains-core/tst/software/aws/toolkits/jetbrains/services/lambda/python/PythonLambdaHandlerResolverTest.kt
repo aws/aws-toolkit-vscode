@@ -257,7 +257,7 @@ class PythonLambdaHandlerResolverTest {
         }
     }
 
-    private fun getHandlerResolver() = Runtime.PYTHON3_6.runtimeGroup?.let { LambdaHandlerResolver.getInstance(it) }!!
+    private fun getHandlerResolver() = Runtime.PYTHON3_6.runtimeGroup?.let { LambdaHandlerResolver.getInstanceOrNull(it) }!!
     private fun findHandler(handler: String): Array<NavigatablePsiElement> =
         Lambda.findPsiElementsForHandler(projectRule.project, Runtime.PYTHON3_6, handler)
 }

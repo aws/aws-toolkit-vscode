@@ -101,34 +101,26 @@
     <extensionPoints>
         <extensionPoint name="credentialProviderFactory" interface="software.aws.toolkits.core.credentials.CredentialProviderFactory"/>
 
-        <extensionPoint name="lambda.runtimeGroup" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
-            <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupInformation"/>
-            <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
+        <extensionPoint name="lambda.runtimeGroup" interface="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup" dynamic="true"/>
+
+        <extensionPoint name="lambda.builder" beanClass="software.aws.toolkits.jetbrains.core.IdBasedExtensionPoint" dynamic="true">
+            <with attribute="implementationClass" implements="software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder"/>
         </extensionPoint>
 
-        <extensionPoint name="lambda.builder" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
-            <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder"/>
-            <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
+        <extensionPoint name="lambda.sam.debugSupport" beanClass="software.aws.toolkits.jetbrains.core.IdBasedExtensionPoint" dynamic="true">
+            <with attribute="implementationClass" implements="software.aws.toolkits.jetbrains.services.lambda.execution.local.SamDebugSupport"/>
         </extensionPoint>
 
-        <extensionPoint name="lambda.sam.debugSupport" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
-            <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.execution.local.SamDebugSupport"/>
-            <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
+        <extensionPoint name="lambda.handlerResolver" beanClass="software.aws.toolkits.jetbrains.core.IdBasedExtensionPoint" dynamic="true">
+            <with attribute="implementationClass" implements="software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver"/>
         </extensionPoint>
 
-        <extensionPoint name="lambda.handlerResolver" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
-            <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver"/>
-            <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
+        <extensionPoint name="lambda.sam.projectWizard" beanClass="software.aws.toolkits.jetbrains.core.IdBasedExtensionPoint" dynamic="true">
+            <with attribute="implementationClass" implements="software.aws.toolkits.jetbrains.services.lambda.SamProjectWizard"/>
         </extensionPoint>
 
-        <extensionPoint name="lambda.sam.projectWizard" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
-            <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.SamProjectWizard"/>
-            <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
-        </extensionPoint>
-
-        <extensionPoint name="lambda.handlerCompletion" beanClass="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPoint">
-            <with attribute="implementation" implements="software.aws.toolkits.jetbrains.services.lambda.completion.HandlerCompletion"/>
-            <with attribute="runtimeGroup" implements="software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup"/>
+        <extensionPoint name="lambda.handlerCompletion" beanClass="software.aws.toolkits.jetbrains.core.IdBasedExtensionPoint" dynamic="true">
+            <with attribute="implementationClass" implements="software.aws.toolkits.jetbrains.services.lambda.completion.HandlerCompletion"/>
         </extensionPoint>
 
         <extensionPoint name="executable" interface="software.aws.toolkits.jetbrains.core.executables.ExecutableType" dynamic="true"/>

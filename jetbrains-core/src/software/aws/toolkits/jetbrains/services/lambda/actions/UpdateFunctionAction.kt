@@ -53,7 +53,7 @@ class UpdateFunctionConfigurationAction : UpdateFunctionAction(EditFunctionMode.
 
 class UpdateFunctionCodeAction : UpdateFunctionAction(EditFunctionMode.UPDATE_CODE, message("lambda.function.updateCode.action")) {
     override fun update(selected: LambdaFunctionNode, e: AnActionEvent) {
-        if (selected.value.runtime.runtimeGroup?.let { LambdaBuilder.getInstance(it) } != null) {
+        if (selected.value.runtime.runtimeGroup?.let { LambdaBuilder.getInstanceOrNull(it) } != null) {
             return
         }
         e.presentation.isVisible = false

@@ -187,8 +187,8 @@ abstract class SamProjectTemplate {
 
         @JvmField
         val SAM_TEMPLATES =
-            SamProjectWizard.supportedRuntimeGroups.flatMap {
-                SamProjectWizard.getInstanceOrThrow(it).listTemplates()
+            SamProjectWizard.supportedRuntimeGroups().flatMap {
+                SamProjectWizard.getInstance(it).listTemplates()
             }
     }
 }

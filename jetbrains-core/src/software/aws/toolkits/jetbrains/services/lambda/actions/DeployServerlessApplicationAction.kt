@@ -153,7 +153,7 @@ class DeployServerlessApplicationAction : AnAction(
         super.update(e)
 
         // If there are no supported runtime groups, it will never succeed so don't show it
-        e.presentation.isVisible = if (LambdaHandlerResolver.supportedRuntimeGroups.isEmpty()) {
+        e.presentation.isVisible = if (LambdaHandlerResolver.supportedRuntimeGroups().isEmpty()) {
             false
         } else {
             getSamTemplateFile(e) != null

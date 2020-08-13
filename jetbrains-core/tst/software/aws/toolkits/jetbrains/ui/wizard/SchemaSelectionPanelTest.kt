@@ -16,7 +16,6 @@ import org.junit.Test
 import software.amazon.awssdk.services.schemas.model.DescribeSchemaResponse
 import software.aws.toolkits.jetbrains.core.MockResourceCache
 import software.aws.toolkits.jetbrains.core.Resource
-import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.schemas.SchemaTemplateParameters
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources.LIST_REGISTRIES_AND_SCHEMAS
@@ -63,7 +62,6 @@ class SchemaSelectionPanelTest {
         File(javaClass.getResource("/customerUploadedEventSchemaMultipleTypes.json.txt").toURI()).readText(Charsets.UTF_8)
 
     private val mockSamProjectBuilder = mock<SamProjectBuilder>()
-    private val RUNTIME_GROUP = RuntimeGroup.JAVA
 
     private val mockResourceSelector = mock<ResourceSelector<SchemaSelectionItem>>()
     private val mockPanel = mock<JPanel>()
@@ -80,7 +78,6 @@ class SchemaSelectionPanelTest {
 
         schemaSelectionPanel = SchemaResourceSelectorSelectionPanel(
             mockSamProjectBuilder,
-            RUNTIME_GROUP,
             projectRule.project,
             resourceSelectorBuilder = mockResourceSelectorBuilder,
             useSpeedSearch = false,
