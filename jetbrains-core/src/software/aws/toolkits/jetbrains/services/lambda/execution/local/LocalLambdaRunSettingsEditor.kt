@@ -25,7 +25,7 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LocalLambd
         // This code is executed once when run configuration form is opened.
         project.service<LambdaHandlerValidator>().clearRequests()
 
-        val supported = LambdaBuilder.supportedRuntimeGroups.flatMap { it.runtimes }.sorted()
+        val supported = LambdaBuilder.supportedRuntimeGroups().flatMap { it.runtimes }.sorted()
         val selected = RuntimeGroup.determineRuntime(project)?.let { if (it in supported) it else null }
         view = LocalLambdaRunSettingsEditorPanel(project)
 

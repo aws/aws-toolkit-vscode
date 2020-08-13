@@ -45,7 +45,7 @@ interface SchemaSelectionPanel {
         ): SchemaSelectionPanel =
             runtime.runtimeGroup?.let { runtimeGroup ->
                 if (selectedTemplate.supportsDynamicSchemas())
-                    SamProjectWizard.getInstanceOrThrow(runtimeGroup).createSchemaSelectionPanel(generator)
+                    SamProjectWizard.getInstance(runtimeGroup).createSchemaSelectionPanel(generator)
                 else
                     NoOpSchemaSelectionPanel()
             } ?: NoOpSchemaSelectionPanel()

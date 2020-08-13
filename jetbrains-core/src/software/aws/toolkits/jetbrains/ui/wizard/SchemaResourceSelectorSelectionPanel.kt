@@ -7,7 +7,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.ComboboxSpeedSearch
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
-import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
 import software.aws.toolkits.jetbrains.ui.AwsConnection
 import software.aws.toolkits.jetbrains.ui.ResourceSelector
@@ -19,14 +18,12 @@ import javax.swing.JPanel
 
 class SchemaResourceSelectorSelectionPanel(
     val builder: SamProjectBuilder,
-    val runtimeGroup: RuntimeGroup,
     val project: Project,
     // Subsequent parameters injectable for unit tests to enable mocking because ResourceSelector has inconsistent unit test behaviour
     val resourceSelectorBuilder: ResourceSelector.ResourceBuilder = ResourceSelector.builder(project),
     useSpeedSearch: Boolean = true,
     rootPanelBuilder: () -> JPanel = { JPanel(BorderLayout()) }
-) :
-    SchemaSelectionPanelBase(project) {
+) : SchemaSelectionPanelBase(project) {
 
     override val schemaSelectionLabel: JLabel? = JLabel(message("sam.init.schema.label"))
 

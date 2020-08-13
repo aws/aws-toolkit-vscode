@@ -44,7 +44,7 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
         }
 
         val runtimeGroup = element.language.runtimeGroup ?: return null
-        val handlerResolver = LambdaHandlerResolver.getInstance(runtimeGroup) ?: return null
+        val handlerResolver = LambdaHandlerResolver.getInstanceOrNull(runtimeGroup) ?: return null
         val handler = handlerResolver.determineHandler(element) ?: return null
 
         return if (handlerResolver.shouldShowLineMarker(handler) || shouldShowLineMarker(element.containingFile, handler, runtimeGroup)) {
@@ -52,7 +52,7 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
 
             val smartPsiElementPointer = SmartPointerManager.createPointer(element)
 
-            if (element.language in LambdaBuilder.supportedLanguages) {
+            if (element.language in LambdaBuilder.supportedLanguages()) {
                 val executorActions = ExecutorAction.getActions(1)
                 executorActions.forEach {
                     actionGroup.add(LineMarkerActionWrapper(element, it))

@@ -83,7 +83,7 @@ public class SamInitSelectionPanel implements ValidatablePanel {
 
         // TODO: Move this to Kotlin...
         // Source all templates, find all the runtimes they support, then filter those by what the IDE supports
-        Set<RuntimeGroup> supportedRuntimeGroups = LambdaBuilder.Companion.getSupportedRuntimeGroups();
+        Set<RuntimeGroup> supportedRuntimeGroups = LambdaBuilder.Companion.supportedRuntimeGroups();
         SamProjectTemplate.SAM_TEMPLATES.stream()
                                         .flatMap(template -> template.supportedRuntimes().stream())
                                         .sorted()

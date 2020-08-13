@@ -7,12 +7,13 @@
     </extensions>
 
     <extensions defaultExtensionNs="aws.toolkit.lambda">
-        <runtimeGroup runtimeGroup="NODEJS" implementation="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJsRuntimeGroup"/>
-        <builder runtimeGroup="NODEJS" implementation="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJsLambdaBuilder"/>
-        <handlerResolver runtimeGroup="NODEJS" implementation="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJsLambdaHandlerResolver"/>
-        <sam.debugSupport runtimeGroup="NODEJS" implementation="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJsSamDebugSupport"/>
-        <sam.projectWizard runtimeGroup="NODEJS" implementation="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJsSamProjectWizard"/>
+        <runtimeGroup implementation="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJsRuntimeGroup"/>
+        <builder id="NODEJS" implementationClass="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJsLambdaBuilder"/>
+        <handlerResolver id="NODEJS" implementationClass="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJsLambdaHandlerResolver"/>
+        <sam.debugSupport id="NODEJS" implementationClass="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJsSamDebugSupport"/>
+        <sam.projectWizard id="NODEJS" implementationClass="software.aws.toolkits.jetbrains.services.lambda.nodejs.NodeJsSamProjectWizard"/>
     </extensions>
+
     <extensions defaultExtensionNs="aws.toolkit.clouddebug">
         <debuggerSupport implementation="software.aws.toolkits.jetbrains.services.clouddebug.nodejs.NodeJsDebuggerSupport"/>
     </extensions>

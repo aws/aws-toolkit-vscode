@@ -33,7 +33,7 @@ object LambdaBuilderUtils {
         module: Module,
         runtimeGroup: RuntimeGroup,
         request: BuildLambdaRequest,
-        lambdaBuilder: LambdaBuilder = LambdaBuilder.getInstanceOrThrow(runtimeGroup)
+        lambdaBuilder: LambdaBuilder = LambdaBuilder.getInstance(runtimeGroup)
     ): CompletionStage<BuiltLambda> {
         val buildViewManager = ServiceManager.getService(module.project, BuildViewManager::class.java)
 
@@ -51,7 +51,7 @@ object LambdaBuilderUtils {
         module: Module,
         runtimeGroup: RuntimeGroup,
         request: PackageLambdaFromHandler,
-        lambdaBuilder: LambdaBuilder = LambdaBuilder.getInstanceOrThrow(runtimeGroup)
+        lambdaBuilder: LambdaBuilder = LambdaBuilder.getInstance(runtimeGroup)
     ): CompletionStage<Path> {
         val buildViewManager = ServiceManager.getService(module.project, BuildViewManager::class.java)
 

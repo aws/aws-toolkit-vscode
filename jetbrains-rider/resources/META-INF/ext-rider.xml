@@ -24,12 +24,12 @@
     </extensions>
 
     <extensions defaultExtensionNs="aws.toolkit.lambda">
-        <runtimeGroup runtimeGroup="DOTNET" implementation="software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetRuntimeGroup"/>
-        <builder runtimeGroup="DOTNET" implementation="software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetLambdaBuilder"/>
-        <handlerResolver runtimeGroup="DOTNET" implementation="software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetLambdaHandlerResolver"/>
-        <handlerCompletion runtimeGroup="DOTNET" implementation="software.aws.toolkits.jetbrains.services.lambda.completion.DotNetHandlerCompletion"/>
-        <sam.debugSupport runtimeGroup="DOTNET" implementation="software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetSamDebugSupport"/>
-        <sam.projectWizard runtimeGroup="DOTNET" implementation="software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetSamProjectWizard"/>
+        <runtimeGroup implementation="software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetRuntimeGroup"/>
+        <builder id="DOTNET" implementationClass="software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetLambdaBuilder"/>
+        <handlerResolver id="DOTNET" implementationClass="software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetLambdaHandlerResolver"/>
+        <handlerCompletion id="DOTNET" implementationClass="software.aws.toolkits.jetbrains.services.lambda.completion.DotNetHandlerCompletion"/>
+        <sam.debugSupport id="DOTNET" implementationClass="software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetSamDebugSupport"/>
+        <sam.projectWizard id="DOTNET" implementationClass="software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetSamProjectWizard"/>
     </extensions>
 
     <extensions defaultExtensionNs="aws.toolkit.clouddebug">

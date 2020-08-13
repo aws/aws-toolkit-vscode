@@ -29,7 +29,7 @@ interface SdkSelectionPanel {
         @JvmStatic
         fun create(runtime: Runtime, generator: SamProjectGenerator): SdkSelectionPanel =
             runtime.runtimeGroup?.let {
-                SamProjectWizard.getInstanceOrThrow(it).createSdkSelectionPanel(generator)
+                SamProjectWizard.getInstance(it).createSdkSelectionPanel(generator)
             } ?: NoOpSdkSelectionPanel()
     }
 }

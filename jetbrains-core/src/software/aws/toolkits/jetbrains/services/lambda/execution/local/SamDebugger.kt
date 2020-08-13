@@ -24,7 +24,7 @@ internal class SamDebugger(runtimeGroup: RuntimeGroup) : SamRunner() {
         private val logger = getLogger<SamDebugger>()
     }
 
-    private val debugExtension = SamDebugSupport.getInstanceOrThrow(runtimeGroup)
+    private val debugExtension = SamDebugSupport.getInstance(runtimeGroup)
 
     private val debugPorts = debugExtension.getDebugPorts()
 
