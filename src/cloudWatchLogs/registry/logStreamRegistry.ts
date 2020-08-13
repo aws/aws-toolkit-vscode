@@ -211,7 +211,7 @@ export class CloudWatchLogStreamData {
     previous?: {
         token: CloudWatchLogs.NextToken
     }
-    busy?: boolean
+    busy: boolean = false
 }
 
 async function getLogEventsFromUriComponents(
