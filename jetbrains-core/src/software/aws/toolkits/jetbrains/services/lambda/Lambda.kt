@@ -34,7 +34,7 @@ object Lambda {
     private val LOG = getLogger<Lambda>()
 
     fun findPsiElementsForHandler(project: Project, runtime: Runtime, handler: String): Array<NavigatablePsiElement> {
-        val resolver = runtime.runtimeGroup?.let { LambdaHandlerResolver.getInstance(it) } ?: return emptyArray()
+        val resolver = runtime.runtimeGroup?.let { LambdaHandlerResolver.getInstanceOrNull(it) } ?: return emptyArray()
 
         // Don't search through ".aws-sam" folders
         val samBuildFileScopes = GlobalSearchScope.filesScope(project, findSamBuildContents(project))
@@ -50,7 +50,7 @@ object Lambda {
 
     fun isHandlerValid(project: Project, runtime: Runtime, handler: String): Boolean = ReadAction.compute<Boolean, Throwable> {
         runtime.runtimeGroup?.let {
-            LambdaHandlerResolver.getInstance(it)
+            LambdaHandlerResolver.getInstanceOrNull(it)
         }?.isHandlerValid(project, handler) == true
     }
 

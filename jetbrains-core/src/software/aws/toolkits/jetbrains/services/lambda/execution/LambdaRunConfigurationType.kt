@@ -20,10 +20,10 @@ class LambdaRunConfigurationType :
         AwsIcons.Resources.LAMBDA_FUNCTION
     ) {
     init {
-        // Although it should work, isApplicable doesn't seem to work for locallambdarunconfigurationfactory
-        // and it still shows up when it is not applicalbe. So we have to decide in the configuration to add it or not.
+        // Although it should work, isApplicable doesn't seem to work for LocalLambdaRunConfigurationFactory
+        // and it still shows up when it is not applicable. So we have to decide in the configuration to add it or not.
         // TODO see if this is resolvable
-        if (LambdaHandlerResolver.supportedRuntimeGroups.isNotEmpty()) {
+        if (LambdaHandlerResolver.supportedRuntimeGroups().isNotEmpty()) {
             addFactory(LocalLambdaRunConfigurationFactory(this))
         }
         addFactory(RemoteLambdaRunConfigurationFactory(this))

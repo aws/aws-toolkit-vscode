@@ -8,6 +8,7 @@ import com.intellij.ide.util.projectWizard.WizardContext
 import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.projectRoots.SdkTypeId
 import com.intellij.openapi.ui.ValidationInfo
+import software.aws.toolkits.jetbrains.services.lambda.BuiltInRuntimeGroups
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.SdkBasedSdkSettings
 import software.aws.toolkits.jetbrains.services.lambda.SdkSettings
@@ -15,7 +16,7 @@ import software.aws.toolkits.resources.message
 import javax.swing.JComponent
 import javax.swing.JLabel
 
-class IntelliJSdkSelectionPanel(val builder: SamProjectBuilder, val runtimeGroup: RuntimeGroup) : SdkSelectionPanelBase() {
+class IntelliJSdkSelectionPanel(private val builder: SamProjectBuilder, private val runtimeGroupId: String) : SdkSelectionPanelBase() {
     private var currentSdk: Sdk? = null
     private val dummyContext = object : WizardContext(null, {}) {
         override fun setProjectJdk(sdk: Sdk?) {
@@ -40,10 +41,11 @@ class IntelliJSdkSelectionPanel(val builder: SamProjectBuilder, val runtimeGroup
     override fun getSdkSettings(): SdkSettings {
         currentSdkPanel.updateDataModel()
 
-        return when (runtimeGroup) {
-            RuntimeGroup.JAVA, RuntimeGroup.PYTHON -> SdkBasedSdkSettings(sdk = currentSdk)
-            RuntimeGroup.DOTNET -> object : SdkSettings {}
-            else -> throw RuntimeException("Unrecognized runtime group: $runtimeGroup")
+        // TODO: This should probably be EP based
+        return when (runtimeGroupId) {
+            BuiltInRuntimeGroups.Java, BuiltInRuntimeGroups.Python -> SdkBasedSdkSettings(sdk = currentSdk)
+            BuiltInRuntimeGroups.Dotnet -> object : SdkSettings {}
+            else -> throw RuntimeException("Unrecognized runtime group ID: $runtimeGroupId")
         }
     }
 
@@ -52,7 +54,7 @@ class IntelliJSdkSelectionPanel(val builder: SamProjectBuilder, val runtimeGroup
         SdkSettingsStep(
             dummyContext,
             builder,
-            { t: SdkTypeId? -> t == runtimeGroup.getIdeSdkType() },
+            { t: SdkTypeId? -> t == RuntimeGroup.getById(runtimeGroupId).getIdeSdkType() },
             null
         )
 }

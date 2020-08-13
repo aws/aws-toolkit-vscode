@@ -143,7 +143,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
     override fun getRefactoringElementListener(element: PsiElement?): RefactoringElementListener? {
         element?.run {
             val handlerResolver = element.language.runtimeGroup?.let { runtimeGroup ->
-                LambdaHandlerResolver.getInstance(runtimeGroup)
+                LambdaHandlerResolver.getInstanceOrNull(runtimeGroup)
             } ?: return null
 
             val handlerPsi = handlerPsiElement() ?: return null
@@ -262,7 +262,7 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
         val handler = serializableOptions.functionOptions.handler ?: return null
         return runtime()
             ?.runtimeGroup
-            ?.let { LambdaHandlerResolver.getInstance(it) }
+            ?.let { LambdaHandlerResolver.getInstanceOrNull(it) }
             ?.handlerDisplayName(handler) ?: handler
     }
 

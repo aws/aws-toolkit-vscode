@@ -217,7 +217,7 @@ class EditFunctionDialog(
 
         val s3Bucket = view.sourceBucket.selectedItem as String
 
-        val lambdaBuilder = psiFile.language.runtimeGroup?.let { LambdaBuilder.getInstance(it) } ?: return
+        val lambdaBuilder = psiFile.language.runtimeGroup?.let { LambdaBuilder.getInstanceOrNull(it) } ?: return
         val lambdaCreator = LambdaCreatorFactory.create(AwsClientManager.getInstance(project), lambdaBuilder)
 
         FileDocumentManager.getInstance().saveAllDocuments()
@@ -338,7 +338,7 @@ class UploadToLambdaValidator {
         val runtime = view.runtime.selected()
             ?: return ValidationInfo(message("lambda.upload_validation.runtime"), view.runtime)
 
-        runtime.runtimeGroup?.let { LambdaBuilder.getInstance(it) } ?: return ValidationInfo(
+        runtime.runtimeGroup?.let { LambdaBuilder.getInstanceOrNull(it) } ?: return ValidationInfo(
             message("lambda.upload_validation.unsupported_runtime", runtime),
             view.runtime
         )
