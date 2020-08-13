@@ -2,14 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import groovy.lang.Closure
-import org.gradle.jvm.tasks.Jar
-import org.jetbrains.intellij.IntelliJPluginExtension
 import org.jetbrains.intellij.tasks.PatchPluginXmlTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import software.aws.toolkits.telemetry.generator.gradle.GenerateTelemetry
 import toolkits.gradle.changelog.tasks.GeneratePluginChangeLog
-// Cannot be removed or else it will fail to compile
-import org.jetbrains.intellij.IntelliJPlugin
 
 plugins {
     id("org.jetbrains.intellij")

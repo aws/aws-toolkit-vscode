@@ -48,7 +48,7 @@ class LocalLambdaRunConfigurationProducerTest {
             assertThat(runConfiguration).isNotNull
             val configuration = runConfiguration?.configuration as LocalLambdaRunConfiguration
             assertThat(configuration.isUsingTemplate()).isFalse()
-            assertThat(configuration.runtime()).isEqualTo(Runtime.JAVA8)
+            assertThat(configuration.runtime()).isEqualTo(Runtime.JAVA8_AL2)
             assertThat(configuration.handler()).isEqualTo("com.example.LambdaHandler::handleRequest")
             assertThat(configuration.name).isEqualTo("[Local] LambdaHandler.handleRequest")
         }
