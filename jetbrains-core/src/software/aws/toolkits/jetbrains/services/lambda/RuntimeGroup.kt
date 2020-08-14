@@ -116,7 +116,7 @@ fun AnActionEvent.runtime(): Runtime? {
  * To be implemented on a companion object of the extension point object to expose factory methods.
  * See [software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder]
  */
-abstract class RuntimeGroupExtensionPointObject<T>(private val extensionPointName: ExtensionPointName<IdBasedExtensionPoint<T>>) {
+abstract class RuntimeGroupExtensionPointObject<T>(val extensionPointName: ExtensionPointName<IdBasedExtensionPoint<T>>) {
     private val collector = KeyedExtensionCollector<T, String>(extensionPointName.name)
 
     fun getInstanceOrNull(runtimeGroup: RuntimeGroup): T? = collector.findSingle(runtimeGroup.id)

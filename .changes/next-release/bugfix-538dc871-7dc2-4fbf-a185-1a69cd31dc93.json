@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix several cases where features not supported by the host IDE are shown (#1980)"
+}
