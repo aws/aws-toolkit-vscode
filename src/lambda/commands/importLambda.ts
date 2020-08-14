@@ -6,9 +6,9 @@
 import * as AdmZip from 'adm-zip'
 import { Lambda } from 'aws-sdk'
 import * as fs from 'fs-extra'
-import got from 'got'
 import * as _ from 'lodash'
 import * as path from 'path'
+import * as request from 'request'
 import { Stream } from 'stream'
 import { promisify } from 'util'
 import * as vscode from 'vscode'
@@ -27,7 +27,8 @@ import { showConfirmationMessage } from '../../s3/util/messages'
 import { addWorkspaceFolder } from '../../shared/utilities/workspaceUtils'
 import { promptUserForLocation, WizardContext } from '../../shared/wizards/multiStepWizard'
 
-const pipeline = promisify(Stream.pipeline)
+// TODO: Move off of deprecated `request` to `got`?
+// const pipeline = promisify(Stream.pipeline)
 
 export async function importLambdaCommand(functionNode: LambdaFunctionNode, window = Window.vscode()) {
     const workspaceFolders = vscode.workspace.workspaceFolders || []
@@ -132,7 +133,25 @@ async function downloadAndUnzipLambda(
         // arbitrary increments since there's no "busy" state for progress bars
         progress.report({ increment: 10 })
 
-        await pipeline(got.stream(codeLocation), fs.createWriteStream(downloadLocation))
+        // TODO: Move off of deprecated `request` to `got`?
+        // await pipeline(got.stream(codeLocation), fs.createWriteStream(downloadLocation))
+
+        await new Promise(resolve => {
+            getLogger().debug('Starting Lambda download...')
+            request
+                .get(codeLocation)
+                .on('response', () => {
+                    getLogger().debug('Established Lambda download')
+                })
+                .on('complete', () => {
+                    getLogger().debug('Lambda download complete')
+                    resolve()
+                })
+                .on('error', err => {
+                    throw err
+                })
+                .pipe(fs.createWriteStream(downloadLocation))
+        })
 
         progress.report({ increment: 70 })
 
@@ -201,6 +220,11 @@ async function addLaunchConfigEntry(
     }
 }
 
+/**
+ * Converts Lambda handler into a filename by stripping the function name and appending the correct file extension.
+ * Only works for supported languages (Python/JS)
+ * @param configuration Lambda configuration object from getFunction
+ */
 export function getLambdaFileNameFromHandler(configuration: Lambda.FunctionConfiguration): string {
     let runtimeExtension: string
     switch (getFamily(configuration.Runtime!)) {

@@ -1110,7 +1110,6 @@
         "cross-spawn": "^6.0.5",
         "del": "^3.0.0",
         "fs-extra": "^8.1.0",
-        "got": "^11.5.1",
         "handlebars": "^4.7.6",
         "immutable": "^4.0.0-rc.12",
         "js-yaml": "^3.13.1",
