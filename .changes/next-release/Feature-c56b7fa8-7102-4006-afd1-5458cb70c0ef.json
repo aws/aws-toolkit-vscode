@@ -1,4 +1,4 @@
 {
     "type": "Feature",
-    "description": "Users can import supported NodeJS and Python Lambda functions from their AWS accounts into their local workspace"
+    "description": "NodeJS and Python Lambda functions can be imported from an AWS account into a local workspace"
 }

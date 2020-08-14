@@ -106,8 +106,8 @@ export async function promptUserForLocation(
             new BrowseFolderQuickPickItem(
                 context,
                 localize(
-                    'AWS.samcli.initWizard.location.prompt',
-                    'The folder you select will be added to your VS Code workspace.'
+                    'AWS.samcli.initWizard.location.select.folder.detail',
+                    'The selected folder will be added to the VS Code workspace.'
                 )
             ),
         ])

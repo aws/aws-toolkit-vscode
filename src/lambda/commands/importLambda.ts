@@ -9,8 +9,6 @@ import * as fs from 'fs-extra'
 import * as _ from 'lodash'
 import * as path from 'path'
 import * as request from 'request'
-import { Stream } from 'stream'
-import { promisify } from 'util'
 import * as vscode from 'vscode'
 import { LaunchConfiguration, getReferencedHandlerPaths } from '../../shared/debug/launchConfiguration'
 import { ext } from '../../shared/extensionGlobals'
@@ -34,10 +32,7 @@ export async function importLambdaCommand(functionNode: LambdaFunctionNode, wind
     const workspaceFolders = vscode.workspace.workspaceFolders || []
     if (workspaceFolders.length === 0) {
         window.showErrorMessage(
-            localize(
-                'AWS.lambda.import.noWorkspaceFolders',
-                'Please add a workspace folder before importing a Lambda function.'
-            )
+            localize('AWS.lambda.import.noWorkspaceFolders', 'Select a workspace before importing a Lambda function.')
         )
         return
     }
@@ -55,14 +50,14 @@ export async function importLambdaCommand(functionNode: LambdaFunctionNode, wind
 
     const overwriteWarning = localize(
         'AWS.lambda.import.overwriteWarning',
-        '\nA directory named {0} already exists! Importing will overwrite any existing files!\n',
+        '\nExisting directory will be overwritten: {0}\n',
         functionName
     )
     const isConfirmed = await showConfirmationMessage(
         {
             prompt: localize(
                 'AWS.lambda.import.prompt',
-                'This will import {0} into {1}.\n{2}\nAre you sure you want to import the function?',
+                'About to import {0} into {1}.\n{2}\nProceed with import?',
                 functionName,
                 importLocationName,
                 directoryExists ? overwriteWarning : ''
