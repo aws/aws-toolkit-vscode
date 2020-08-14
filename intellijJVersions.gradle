@@ -78,22 +78,22 @@ static def ideProfiles() {
             "untilVersion": "202.*",
             "products"    : [
                 "IC": [
-                    sdkVersion: "IC-202.6250.13-EAP-SNAPSHOT",
+                    sdkVersion: "IC-2020.2",
                     plugins   : [
                         "org.jetbrains.plugins.terminal",
                         "org.jetbrains.plugins.yaml",
-                        "PythonCore:202.6250.13",
+                        "PythonCore:202.6397.124",
                         "java",
                         "com.intellij.gradle",
                         "org.jetbrains.idea.maven",
-                        "Docker:202.6250.6"
+                        "Docker:202.6397.93"
                     ]
                 ],
                 "IU": [
-                    sdkVersion: "IU-202.6250.13-EAP-SNAPSHOT",
+                    sdkVersion: "IU-2020.2",
                     plugins   : [
                         "org.jetbrains.plugins.terminal",
-                        "Pythonid:202.6250.13",
+                        "Pythonid:202.6397.98",
                         "org.jetbrains.plugins.yaml",
                         "JavaScript",
                         "JavaScriptDebugger",
@@ -101,9 +101,9 @@ static def ideProfiles() {
                     ]
                 ],
                 "RD": [
-                    sdkVersion  : "RD-2020.2-SNAPSHOT",
+                    sdkVersion  : "RD-2020.2",
                     rdGenVersion: "0.202.113",
-                    nugetVersion: "2020.2.0-eap07",
+                    nugetVersion: "2020.2.0",
                     plugins     : [
                         "org.jetbrains.plugins.yaml"
                     ]
