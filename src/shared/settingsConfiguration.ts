@@ -5,8 +5,10 @@
 
 import * as vscode from 'vscode'
 
-// defines helper methods for interacting with VSCode's configuration
-// persistence mechanisms, allowing us to test with mocks.
+/**
+ * Wraps the VSCode configuration API and provides Toolkit-related
+ * configuration functions.
+ */
 export interface SettingsConfiguration {
     readSetting<T>(settingKey: string): T | undefined
     readSetting<T>(settingKey: string, defaultValue: T): T
