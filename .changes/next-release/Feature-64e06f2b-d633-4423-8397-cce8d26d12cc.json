@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "Automatically add a new launch configuration when creating SAM applications"
+}
