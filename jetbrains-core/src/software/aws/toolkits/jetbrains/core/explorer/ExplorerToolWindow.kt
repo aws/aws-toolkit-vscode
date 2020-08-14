@@ -97,7 +97,8 @@ class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), 
 
         val gridBag = GridBag()
         gridBag.defaultAnchor = GridBagConstraints.CENTER
-        gridBag.defaultInsets = JBUI.insetsBottom(JBUI.scale(6))
+        gridBag.defaultWeightX = 1.0
+        gridBag.defaultInsets = JBUI.insets(0, JBUI.scale(30), JBUI.scale(6), JBUI.scale(30))
 
         val textPane = JTextPane().apply {
             val textColor = if (state is ConnectionState.InvalidConnection) {
@@ -119,7 +120,7 @@ class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), 
             background = UIUtil.getTreeBackground()
         }
 
-        panel.add(textPane, gridBag.nextLine().next())
+        panel.add(textPane, gridBag.nextLine().next().fillCell())
 
         state.actions.forEach {
             panel.add(createActionLabel(it), gridBag.nextLine().next())
