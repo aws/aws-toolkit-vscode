@@ -22,6 +22,7 @@ import software.amazon.awssdk.services.iam.model.ListRolesRequest
 import software.amazon.awssdk.services.iam.model.ListRolesResponse
 import software.amazon.awssdk.services.iam.model.Role
 import software.amazon.awssdk.services.iam.paginators.ListRolesIterable
+import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.Bucket
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest
@@ -29,8 +30,9 @@ import software.amazon.awssdk.services.s3.model.HeadBucketResponse
 import software.amazon.awssdk.services.s3.model.ListBucketsResponse
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
+import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 
 class EditFunctionDialogTest {
@@ -61,6 +63,32 @@ class EditFunctionDialogTest {
                 ProjectRootManager.getInstance(projectRule.project).projectSdk = sdk
             }
         }
+    }
+
+    @Test
+    fun `On new and update code, dialog only shows runtimes we can build`() {
+        val dialog = runInEdtAndGet {
+            EditFunctionDialog(project = projectRule.project, mode = EditFunctionMode.NEW)
+        }
+        assertThat(dialog.getViewForTestAssertions().runtime.model.size).isEqualTo(LambdaHandlerResolver.supportedRuntimeGroups().flatMap { it.runtimes }.size)
+        assertThat(dialog.getViewForTestAssertions().runtime.model.size).isNotEqualTo(Runtime.knownValues().size)
+
+        val dialog2 = runInEdtAndGet {
+            EditFunctionDialog(project = projectRule.project, mode = EditFunctionMode.UPDATE_CODE)
+        }
+        assertThat(dialog2.getViewForTestAssertions().runtime.model.size).isEqualTo(LambdaHandlerResolver.supportedRuntimeGroups().flatMap { it.runtimes }.size)
+        assertThat(dialog2.getViewForTestAssertions().runtime.model.size).isNotEqualTo(Runtime.knownValues().size)
+    }
+
+    @Test
+    fun `On update configuration, dialog shows all runtimes`() {
+        val dialog = runInEdtAndGet {
+            EditFunctionDialog(project = projectRule.project, mode = EditFunctionMode.UPDATE_CONFIGURATION)
+        }
+        assertThat(dialog.getViewForTestAssertions().runtime.model.size).isNotEqualTo(
+            LambdaHandlerResolver.supportedRuntimeGroups().flatMap { it.runtimes }.size
+        )
+        assertThat(dialog.getViewForTestAssertions().runtime.model.size).isEqualTo(Runtime.knownValues().size)
     }
 
     @Test
