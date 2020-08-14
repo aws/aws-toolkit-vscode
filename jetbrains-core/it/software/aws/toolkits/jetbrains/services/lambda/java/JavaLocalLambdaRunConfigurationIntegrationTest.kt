@@ -8,6 +8,7 @@ import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -169,6 +170,7 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runtim
 
     @Test
     fun samIsExecutedWithDebugger() {
+        assumeTrue(runtime != Runtime.JAVA8_AL2)
         projectRule.addBreakpoint()
 
         val runConfiguration = createHandlerBasedRunConfiguration(
