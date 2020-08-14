@@ -12,14 +12,7 @@ import * as vscode from 'vscode'
 import { eventBridgeSchemasDocUrl } from '../../shared/constants'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as picker from '../../shared/ui/picker'
-import {
-    BrowseFolderQuickPickItem,
-    FolderQuickPickItem,
-    MultiStepWizard,
-    WizardContext,
-    WizardStep,
-    WorkspaceFolderQuickPickItem,
-} from '../../shared/wizards/multiStepWizard'
+import { MultiStepWizard, promptUserForLocation, WizardContext, WizardStep } from '../../shared/wizards/multiStepWizard'
 
 import * as codeLang from '../models/schemaCodeLangs'
 
@@ -122,54 +115,7 @@ export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implem
     }
 
     public async promptUserForLocation(): Promise<vscode.Uri | undefined> {
-        const items: FolderQuickPickItem[] = (this.workspaceFolders || [])
-            .map<FolderQuickPickItem>(f => new WorkspaceFolderQuickPickItem(f))
-            .concat([
-                new BrowseFolderQuickPickItem(
-                    this,
-                    localize(
-                        'AWS.schemas.downloadCodeBindings.initWizard.location.select.folder.detail',
-                        'Code bindings will be downloaded to selected folder.'
-                    )
-                ),
-            ])
-
-        const quickPick = picker.createQuickPick({
-            options: {
-                ignoreFocusOut: true,
-                title: localize(
-                    'AWS.schemas.downloadCodeBindings.initWizard.location.prompt',
-                    'Select a workspace folder to download code bindings'
-                ),
-            },
-            items: items,
-            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
-        })
-
-        const choices = await picker.promptUser({
-            picker: quickPick,
-            onDidTriggerButton: (button, resolve, reject) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
-                } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(eventBridgeSchemasDocUrl))
-                }
-            },
-        })
-        const pickerResponse = picker.verifySinglePickerOutput<FolderQuickPickItem>(choices)
-
-        if (!pickerResponse) {
-            return undefined
-        }
-
-        if (pickerResponse instanceof BrowseFolderQuickPickItem) {
-            const browseFolderResult = await pickerResponse.getUri()
-
-            // If user cancels from Open Folder dialog, send them back to the folder picker.
-            return browseFolderResult ? browseFolderResult : this.promptUserForLocation()
-        }
-
-        return pickerResponse.getUri()
+        return promptUserForLocation(this, { button: this.helpButton, url: eventBridgeSchemasDocUrl })
     }
 }
 

@@ -190,6 +190,7 @@
     "AWS.lambda.import.otherLocation": "Select a folder...",
     "AWS.lambda.import.importError": "Error importing Lambda function {0}: {1}",
     "AWS.lambda.import.fileNotFound": "Handler file {0} not found in imported function.",
+    "AWS.lambda.import.noWorkspaceFolders": "Please add a workspace folder before importing a Lambda function.",
     "AWS.log.fileLocation": "Error logs for this session are permanently stored in {0}",
     "AWS.log.invalidLevel": "Invalid log level: {0}",
     "AWS.message.loading": "Loading...",

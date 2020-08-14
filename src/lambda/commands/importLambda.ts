@@ -25,49 +25,30 @@ import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
 import { getFamily, RuntimeFamily } from '../models/samLambdaRuntime'
 import { showConfirmationMessage } from '../../s3/util/messages'
 import { addWorkspaceFolder } from '../../shared/utilities/workspaceUtils'
+import { promptUserForLocation, WizardContext } from '../../shared/wizards/multiStepWizard'
 
 const pipeline = promisify(Stream.pipeline)
 
 export async function importLambdaCommand(functionNode: LambdaFunctionNode, window = Window.vscode()) {
     const workspaceFolders = vscode.workspace.workspaceFolders || []
-    const labelToWorkspace = new Map(workspaceFolders.map(folder => [`$(root-folder-opened) ${folder.name}`, folder]))
-    const otherLocationName = `$(folder-opened) ${localize('AWS.lambda.import.otherLocation', 'Select a folder...')}`
-
-    // TODO: Move to FolderQuickPickItem (would have to modify BrowseFolderQuickPickItem to non-Wizard dependence)?
-    const selectedLocation = await vscode.window.showQuickPick([...labelToWorkspace.keys(), otherLocationName], {
-        placeHolder: localize('AWS.lambda.import.prompt.placeholder', 'Select the import location'),
-    })
-
-    if (!selectedLocation) {
-        getLogger().info('ImportLambda cancelled')
+    if (workspaceFolders.length === 0) {
+        window.showErrorMessage(
+            localize(
+                'AWS.lambda.import.noWorkspaceFolders',
+                'Please add a workspace folder before importing a Lambda function.'
+            )
+        )
         return
     }
-
-    let selectedUri: vscode.Uri
-    const isWorkspaceFolder = selectedLocation != otherLocationName
-    if (isWorkspaceFolder) {
-        selectedUri = labelToWorkspace.get(selectedLocation)!.uri
-    } else {
-        const selectedDirectory = await window.showOpenDialog({
-            openLabel: 'Select',
-            canSelectFiles: false,
-            canSelectFolders: true,
-        })
-        if (!selectedDirectory) {
-            getLogger().info('ImportLambda cancelled')
-            return
-        }
-        selectedUri = selectedDirectory[0]
-        addWorkspaceFolder({ uri: selectedUri })
+    const selectedUri = await promptUserForLocation(new WizardContext())
+    if (!selectedUri) {
+        return
     }
 
     const functionName = functionNode.configuration.FunctionName!
 
     const importLocation = path.join(selectedUri.fsPath, functionName, path.sep)
     const importLocationName = vscode.workspace.asRelativePath(importLocation, true)
-    const workspaceFolder = isWorkspaceFolder
-        ? labelToWorkspace.get(selectedLocation)!
-        : vscode.workspace.getWorkspaceFolder(vscode.Uri.file(importLocation))!
 
     const directoryExists = await fs.pathExists(importLocation)
 
@@ -95,6 +76,15 @@ export async function importLambdaCommand(functionNode: LambdaFunctionNode, wind
         getLogger().info('ImportLambda cancelled')
         return
     }
+
+    if (
+        workspaceFolders.filter(val => {
+            return selectedUri === val.uri
+        }).length === 0
+    ) {
+        await addWorkspaceFolder({ uri: selectedUri })
+    }
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(importLocation))!
 
     window.withProgress<void>(
         {
