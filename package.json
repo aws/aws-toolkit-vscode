@@ -622,7 +622,7 @@
                 {
                     "command": "aws.importLambda",
                     "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/",
-                    "group": "3@1"
+                    "group": "0@2"
                 },
                 {
                     "command": "aws.deleteLambda",
