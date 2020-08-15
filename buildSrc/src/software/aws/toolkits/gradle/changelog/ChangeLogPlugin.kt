@@ -1,12 +1,12 @@
 // Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package toolkits.gradle.changelog
+package software.aws.toolkits.gradle.changelog
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import toolkits.gradle.changelog.tasks.CreateRelease
-import toolkits.gradle.changelog.tasks.NewChange
+import software.aws.toolkits.gradle.changelog.tasks.CreateRelease
+import software.aws.toolkits.gradle.changelog.tasks.NewChange
 
 @Suppress("unused") // Plugin is created by buildSrc/build.gradle
 class ChangeLogPlugin : Plugin<Project> {

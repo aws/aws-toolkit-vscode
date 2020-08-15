@@ -1,7 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import toolkits.gradle.sdk.GenerateSdk
+import software.aws.toolkits.gradle.sdk.GenerateSdk
 
 val awsSdkVersion: String by project
 

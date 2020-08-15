@@ -1,7 +1,7 @@
 // Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package toolkits.gradle.changelog.tasks
+package software.aws.toolkits.gradle.changelog.tasks
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
@@ -9,7 +9,7 @@ import org.gradle.api.file.FileTree
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
-import toolkits.gradle.changelog.GitStager
+import software.aws.toolkits.gradle.changelog.GitStager
 
 abstract class ChangeLogTask : DefaultTask() {
     @Internal

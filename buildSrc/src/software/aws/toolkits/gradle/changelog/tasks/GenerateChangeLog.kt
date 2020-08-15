@@ -1,7 +1,7 @@
 // Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package toolkits.gradle.changelog.tasks
+package software.aws.toolkits.gradle.changelog.tasks
 
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
@@ -10,10 +10,10 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
-import toolkits.gradle.changelog.ChangeLogGenerator
-import toolkits.gradle.changelog.ChangeLogWriter
-import toolkits.gradle.changelog.GithubWriter
-import toolkits.gradle.changelog.JetBrainsWriter
+import software.aws.toolkits.gradle.changelog.ChangeLogGenerator
+import software.aws.toolkits.gradle.changelog.ChangeLogWriter
+import software.aws.toolkits.gradle.changelog.GithubWriter
+import software.aws.toolkits.gradle.changelog.JetBrainsWriter
 
 /* ktlint-disable custom-ktlint-rules:log-not-lazy */
 abstract class GenerateChangeLog(private val shouldStage: Boolean) : ChangeLogTask() {
@@ -31,7 +31,7 @@ abstract class GenerateChangeLog(private val shouldStage: Boolean) : ChangeLogTa
     fun generate() {
         val writer = createWriter()
         logger.info("Generating Changelog with $writer")
-        val generator = ChangeLogGenerator(listOf(writer))
+        val generator = ChangeLogGenerator(listOf(writer), logger)
         if (includeUnreleased.get()) {
             val unreleasedEntries = nextReleaseDirectory.jsonFiles().files
 
