@@ -1,14 +1,14 @@
 // Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package toolkits.gradle.changelog.tasks
+package software.aws.toolkits.gradle.changelog.tasks
 
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
-import toolkits.gradle.changelog.ReleaseCreator
+import software.aws.toolkits.gradle.changelog.ReleaseCreator
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 

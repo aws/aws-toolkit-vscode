@@ -60,7 +60,7 @@ gradlePlugin {
     plugins {
         create("changeLog") {
             id = "toolkit-change-log"
-            implementationClass = "toolkits.gradle.changelog.ChangeLogPlugin"
+            implementationClass = "software.aws.toolkits.gradle.changelog.ChangeLogPlugin"
         }
     }
 }

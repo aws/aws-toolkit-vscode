@@ -1,13 +1,13 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package toolkits.gradle.changelog
+package software.aws.toolkits.gradle.changelog
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import toolkits.gradle.changelog.ChangeLogGenerator.Companion.renderEntry
+import software.aws.toolkits.gradle.changelog.ChangeLogGenerator.Companion.renderEntry
 import java.time.LocalDate
 
 class JetBrainsWriterTest {

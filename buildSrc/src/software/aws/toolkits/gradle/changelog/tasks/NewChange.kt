@@ -1,13 +1,13 @@
 // Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package toolkits.gradle.changelog.tasks
+package software.aws.toolkits.gradle.changelog.tasks
 
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
-import toolkits.gradle.changelog.ChangeType
-import toolkits.gradle.changelog.Entry
-import toolkits.gradle.changelog.MAPPER
+import software.aws.toolkits.gradle.changelog.ChangeType
+import software.aws.toolkits.gradle.changelog.Entry
+import software.aws.toolkits.gradle.changelog.MAPPER
 import java.io.File
 import java.util.Scanner
 import java.util.UUID

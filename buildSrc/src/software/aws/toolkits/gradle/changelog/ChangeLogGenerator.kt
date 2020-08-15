@@ -1,9 +1,9 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package toolkits.gradle.changelog
+package software.aws.toolkits.gradle.changelog
 
-import org.gradle.api.logging.Logging
+import org.gradle.api.logging.Logger
 import java.nio.file.Path
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -13,20 +13,20 @@ import kotlin.streams.toList
 /**
  * Generates a combined change log file based in Markdown syntax
  */
-class ChangeLogGenerator(private val writers: List<ChangeLogWriter>) {
+class ChangeLogGenerator(private val writers: List<ChangeLogWriter>, private val logger: Logger) {
     fun addUnreleasedChanges(unreleasedFiles: List<Path>) {
         val entries = unreleasedFiles.parallelStream()
             .map { readFile<Entry>(it.toFile()) }
             .toList().filterNotNull()
         val unreleasedEntry = ReleaseEntry(LocalDate.now(), "Pending Release", entries)
-        LOGGER.info("Adding unreleased entry: $unreleasedEntry")
+        logger.info("Adding unreleased entry: $unreleasedEntry")
         generateEntry(unreleasedEntry)
     }
 
     fun addReleasedChanges(changelogFiles: List<Path>) {
         val versions = mutableSetOf<String>()
 
-        LOGGER.info("Including release change logs: $changelogFiles")
+        logger.info("Including release change logs: $changelogFiles")
         changelogFiles.parallelStream()
             .map { readFile<ReleaseEntry>(it.toFile()) }
             .toList()
@@ -38,7 +38,7 @@ class ChangeLogGenerator(private val writers: List<ChangeLogWriter>) {
             }
             .sortedByDescending { it.date }
             .forEach {
-                LOGGER.info("Adding release entry: $it")
+                logger.info("Adding release entry: $it")
                 generateEntry(it)
             }
     }
@@ -55,8 +55,6 @@ class ChangeLogGenerator(private val writers: List<ChangeLogWriter>) {
     }
 
     companion object {
-        private val LOGGER = Logging.getLogger(ChangeLogGenerator::class.java)
-
         fun renderEntry(releaseEntry: ReleaseEntry): String {
             val renderedEntry = StringBuilder()
 

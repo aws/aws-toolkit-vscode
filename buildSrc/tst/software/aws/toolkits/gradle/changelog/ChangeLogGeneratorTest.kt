@@ -1,7 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package toolkits.gradle.changelog
+package software.aws.toolkits.gradle.changelog
 
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.inOrder
@@ -14,9 +14,9 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.mockito.ArgumentMatchers.anyString
-import toolkits.gradle.changelog.ChangeLogGenerator.Companion.renderEntry
-import toolkits.gradle.changelog.ChangeType.BUGFIX
-import toolkits.gradle.changelog.ChangeType.FEATURE
+import software.aws.toolkits.gradle.changelog.ChangeLogGenerator.Companion.renderEntry
+import software.aws.toolkits.gradle.changelog.ChangeType.BUGFIX
+import software.aws.toolkits.gradle.changelog.ChangeType.FEATURE
 import java.nio.file.Path
 import java.time.LocalDate
 
