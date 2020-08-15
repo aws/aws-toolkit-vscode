@@ -15,7 +15,8 @@ export class TestSettingsConfiguration implements SettingsConfiguration {
         return this._data[settingKey] as T
     }
 
-    public async writeSetting<T>(settingKey: string, value: T, target?: any): Promise<void> {
+    public async writeSetting<T>(settingKey: string, value: T, target?: any): Promise<boolean> {
         this._data[settingKey] = value
+        return true
     }
 }
