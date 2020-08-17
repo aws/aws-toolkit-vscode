@@ -92,6 +92,7 @@
                 },
                 "aws.samcli.location": {
                     "type": "string",
+                    "scope": "machine",
                     "default": "",
                     "markdownDescription": "%AWS.configuration.description.samcli.location%"
                 },
