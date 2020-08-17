@@ -132,6 +132,6 @@ class QueryingLogGroupsTest {
         val project = projectRule.project
         view = QueryEditor(project)
         client = mockClientManagerRule.create()
-        validator = QueryEditorDialog(project, "log1", client)
+        validator = QueryEditorDialog(project, "log1", client, displayInitialParameters = true)
     }
 }

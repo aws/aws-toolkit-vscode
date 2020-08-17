@@ -29,3 +29,12 @@ data class StartEndDate(
     val startDate: Instant,
     val endDate: Instant
 )
+
+data class EnabledComponentsState(
+    val startDateEnabled: Boolean,
+    val endDateEnabled: Boolean,
+    val relativeTimeNumberEnabled: Boolean,
+    val relativeTimeUnitEnabled: Boolean,
+    val querySearchTermEnabled: Boolean,
+    val queryBoxEnabled: Boolean
+)

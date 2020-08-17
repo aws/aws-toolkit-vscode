@@ -11,5 +11,8 @@ import software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.QueryEd
 import software.aws.toolkits.resources.message
 
 class QueryGroupAction : SingleResourceNodeAction<CloudWatchLogsNode>(message("cloudwatch.logs.query")), DumbAware {
-    override fun actionPerformed(selected: CloudWatchLogsNode, e: AnActionEvent) = QueryEditorDialog(selected.nodeProject, selected.logGroupName).show()
+    override fun actionPerformed(selected: CloudWatchLogsNode, e: AnActionEvent) = QueryEditorDialog(
+        selected.nodeProject,
+        selected.logGroupName,
+        initialParametersDisplayed = true).show()
 }
