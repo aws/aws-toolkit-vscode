@@ -2,6 +2,7 @@ version: 0.2
 
 env:
     variables:
+        AWS_TOOLKIT_TEST_USER_DIR: '/tmp/'
         # needed or else webpack will cause it to run out of memory
         NODE_OPTIONS: '--max-old-space-size=8192'
 
@@ -17,7 +18,6 @@ phases:
 
     build:
         commands:
-            - export AWS_TOOLKIT_TEST_USER_DIR=/tmp/
             - npm run generateNonCodeFiles
             - cp ./extension-readme.md ./README.md
             - npm run package
