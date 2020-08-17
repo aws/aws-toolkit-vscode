@@ -1,5 +1,11 @@
 version: 0.2
 
+env:
+    variables:
+        AWS_TOOLKIT_TEST_USER_DIR: '/tmp/'
+        AWS_TOOLKIT_TEST_NO_COLOR: '1'
+        NO_COVERAGE: 'true'
+
 phases:
     install:
         runtime-versions:
@@ -41,9 +47,6 @@ phases:
 
     build:
         commands:
-            - export AWS_TOOLKIT_TEST_USER_DIR=/tmp/
-            - export AWS_TOOLKIT_TEST_NO_COLOR=1
-            - export NO_COVERAGE=true
             - npm install --unsafe-perm
             - xvfb-run npm run integrationTest
 
