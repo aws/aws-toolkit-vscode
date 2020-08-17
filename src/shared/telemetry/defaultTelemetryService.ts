@@ -148,7 +148,11 @@ export class DefaultTelemetryService implements TelemetryService {
             // this is async so that we don't have pseudo-concurrent invocations of the callback
             async () => {
                 await this.flushRecords()
-                this._timer!.refresh()
+                // Race: _timer may be undefined after shutdown() (this async
+                // closure may be pending on the event-loop, despite clearTimeout()).
+                if (this._timer !== undefined) {
+                    this._timer!.refresh()
+                }
             },
             this._flushPeriod
         )
