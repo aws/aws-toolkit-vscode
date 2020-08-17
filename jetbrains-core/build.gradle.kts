@@ -96,6 +96,7 @@ dependencies {
     api("software.amazon.awssdk:rds:$awsSdkVersion")
     api("software.amazon.awssdk:redshift:$awsSdkVersion")
     api("software.amazon.awssdk:secretsmanager:$awsSdkVersion")
+    api("software.amazon.awssdk:sns:$awsSdkVersion")
     api("software.amazon.awssdk:sqs:$awsSdkVersion")
 
     testImplementation(project(path = ":core", configuration = "testArtifacts"))

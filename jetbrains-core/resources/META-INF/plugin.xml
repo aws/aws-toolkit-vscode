@@ -348,6 +348,9 @@
             <action id="sqs.send.message"
                     class="software.aws.toolkits.jetbrains.services.sqs.actions.SendMessageAction"/>
             <separator/>
+            <action id="sqs.subscribe.sns"
+                    class="software.aws.toolkits.jetbrains.services.sqs.actions.SubscribeSnsAction"/>
+            <separator/>
             <action id="sqs.delete.queue"
                     class="software.aws.toolkits.jetbrains.services.sqs.actions.DeleteQueueAction"/>
         </group>
