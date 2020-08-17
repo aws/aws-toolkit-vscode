@@ -72,6 +72,13 @@ export class LaunchConfiguration {
     }
 
     /**
+     * Adds a collection of debug configurations to the top of the list
+     */
+    public async addDebugConfigurations(debugConfigs: vscode.DebugConfiguration[]): Promise<void> {
+        await this.configSource.setDebugConfigurations([...debugConfigs, ...this.getDebugConfigurations()])
+    }
+
+    /**
      * Adds a debug configuration to the top of the list.
      */
     public async addDebugConfiguration(debugConfig: vscode.DebugConfiguration): Promise<void> {
@@ -95,7 +102,7 @@ class DefaultDebugConfigSource implements DebugConfigurationSource {
     }
 }
 
-function getSamTemplateTargets(launchConfig: LaunchConfiguration): TemplateTargetProperties[] {
+export function getSamTemplateTargets(launchConfig: LaunchConfiguration): TemplateTargetProperties[] {
     return _(launchConfig.getSamDebugConfigurations())
         .map(samConfig => samConfig.invokeTarget)
         .filter(isTemplateTargetProperties)
