@@ -254,12 +254,13 @@ async function getMainUri(
 export async function addInitialLaunchConfiguration(
     extContext: ExtContext,
     folder: vscode.WorkspaceFolder,
-    targetUri: vscode.Uri
+    targetUri: vscode.Uri,
+    launchConfiguration: LaunchConfiguration = new LaunchConfiguration(folder.uri)
 ): Promise<void> {
     let configurations = await new SamDebugConfigProvider(extContext).provideDebugConfigurations(folder)
     if (configurations) {
         // add configurations that target the new template file
-        let filtered = configurations.filter(
+        const filtered = configurations.filter(
             config =>
                 isTemplateTargetProperties(config.invokeTarget) &&
                 pathutils.areEqual(
@@ -268,7 +269,8 @@ export async function addInitialLaunchConfiguration(
                     targetUri.fsPath
                 )
         )
-        await new LaunchConfiguration(folder.uri).addDebugConfigurations(filtered)
+
+        await launchConfiguration.addDebugConfigurations(filtered)
     }
 }
 
@@ -278,6 +280,5 @@ async function addWorkspaceFolder(folder: { uri: vscode.Uri; name?: string }): P
         return
     }
 
-    // this will never return
     await addFolderToWorkspace(folder)
 }

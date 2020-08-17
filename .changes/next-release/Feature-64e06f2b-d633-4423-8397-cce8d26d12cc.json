@@ -1,4 +1,4 @@
 {
     "type": "Feature",
-    "description": "Automatically add a new launch configuration when creating SAM applications"
+    "description": "Toolkit automatically adds a launch configuration to the workspace when creating SAM applications"
 }

@@ -6,7 +6,6 @@
 import * as assert from 'assert'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { mkdirpSync, mkdtemp, readFileSync, removeSync } from 'fs-extra'
-import * as _ from 'lodash'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { getDependencyManager } from '../../src/lambda/models/samLambdaRuntime'
@@ -22,9 +21,6 @@ import { WinstonToolkitLogger } from '../shared/logger/winstonToolkitLogger'
 import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep, TIMEOUT } from './integrationTestsUtilities'
 import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { findParentProjectFile } from '../shared/utilities/workspaceUtils'
-import { getSamTemplateTargets, LaunchConfiguration } from '../shared/debug/launchConfiguration'
-import { addInitialLaunchConfiguration } from '../lambda/commands/createNewSamApp'
-import { FakeExtensionContext } from '../test/fakeExtensionContext'
 
 const projectFolder = getTestWorkspaceFolder()
 
@@ -257,17 +253,6 @@ describe('SAM Integration Tests', async () => {
                     const err = await assertThrowsError(async () => await createSamApplication(subSuiteTestLocation))
                     assert(err.message.includes('directory already exists'))
                 }).timeout(TIMEOUT)
-
-                it('produces an initial launch configuration', async () => {
-                    const fakeContext = await FakeExtensionContext.getFakeExtContext()
-                    const workspaceFolder = vscode.workspace.getWorkspaceFolder(samAppCodeUri)!
-                    const templatePath = vscode.Uri.parse(cfnTemplatePath)
-                    await addInitialLaunchConfiguration(fakeContext, workspaceFolder, templatePath)
-                    const launchConfiguration = new LaunchConfiguration(samAppCodeUri)
-                    const resources = getSamTemplateTargets(launchConfiguration).map(target => target.templatePath)
-
-                    assert.ok(resources.includes(templatePath.fsPath))
-                })
 
                 it('produces an Add Debug Configuration codelens', async () => {
                     const codeLens = await getAddConfigCodeLens(samAppCodeUri)
