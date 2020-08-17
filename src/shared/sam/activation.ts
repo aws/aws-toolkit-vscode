@@ -74,7 +74,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         })
     )
 
-    await resumeCreateNewSamApp()
+    await resumeCreateNewSamApp(ctx)
 }
 
 async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
@@ -88,7 +88,7 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
                 )
         ),
         vscode.commands.registerCommand('aws.lambda.createNewSamApp', async () => {
-            await createNewSamApplication(ctx.chanLogger, ctx.awsContext, ctx.regionProvider)
+            await createNewSamApplication(ctx)
         }),
         vscode.commands.registerCommand('aws.configureLambda', configureLocalLambda),
         vscode.commands.registerCommand('aws.addSamDebugConfiguration', addSamDebugConfiguration),
