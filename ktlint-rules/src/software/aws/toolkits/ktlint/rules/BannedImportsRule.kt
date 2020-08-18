@@ -22,6 +22,12 @@ class BannedImportsRule : Rule("banned-imports") {
             if (element.importedFqName?.asString()?.startsWith("org.hamcrest") == true) {
                 emit(node.startOffset, "Use AssertJ instead of Hamcrest assertions", false)
             }
+
+            if (element.importedFqName?.asString()?.startsWith("kotlin.test.assert") == true &&
+                element.importedFqName?.asString()?.startsWith("kotlin.test.assertNotNull") == false
+            ) {
+                emit(node.startOffset, "Use AssertJ instead of Kotlin test assertions", false)
+            }
         }
     }
 }

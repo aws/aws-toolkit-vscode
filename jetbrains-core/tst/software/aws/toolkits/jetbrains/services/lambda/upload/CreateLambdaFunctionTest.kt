@@ -14,15 +14,13 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.mock
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.openFile
-import kotlin.test.assertFails
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 class CreateLambdaFunctionTest {
     @Rule
@@ -72,7 +70,7 @@ Resources:
         val handlerName = "helloworld.App::handleRequest"
 
         runInEdtAndWait {
-            assertFails { CreateLambdaFunction(handlerName, null, null) }
+            assertThatThrownBy { CreateLambdaFunction(handlerName, null, null) }.isInstanceOf(java.lang.IllegalArgumentException::class.java)
         }
     }
 
@@ -84,7 +82,7 @@ Resources:
         }
 
         runInEdtAndWait {
-            assertFails { CreateLambdaFunction(handlerName, null, handlerResolver) }
+            assertThatThrownBy { CreateLambdaFunction(handlerName, null, handlerResolver) }.isInstanceOf(java.lang.IllegalArgumentException::class.java)
         }
     }
 
@@ -93,7 +91,7 @@ Resources:
         val handlerName = "helloworld.App::handleRequest"
 
         runInEdtAndWait {
-            assertFails { CreateLambdaFunction(handlerName, smartElement, null) }
+            assertThatThrownBy { CreateLambdaFunction(handlerName, smartElement, null) }.isInstanceOf(java.lang.IllegalArgumentException::class.java)
         }
     }
 
@@ -110,7 +108,7 @@ Resources:
             val actionEvent = TestActionEvent()
             action.update(actionEvent)
 
-            assertFalse { actionEvent.presentation.isVisible }
+            assertThat(actionEvent.presentation.isVisible).isFalse()
         }
     }
 
@@ -127,7 +125,7 @@ Resources:
             val actionEvent = TestActionEvent()
             action.update(actionEvent)
 
-            assertTrue { actionEvent.presentation.isVisible }
+            assertThat(actionEvent.presentation.isVisible).isTrue()
         }
     }
 
@@ -144,7 +142,7 @@ Resources:
             val actionEvent = TestActionEvent()
             action.update(actionEvent)
 
-            assertTrue { actionEvent.presentation.isVisible }
+            assertThat(actionEvent.presentation.isVisible).isTrue()
         }
     }
 

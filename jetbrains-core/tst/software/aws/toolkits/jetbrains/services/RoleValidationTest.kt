@@ -3,9 +3,8 @@
 
 package software.aws.toolkits.jetbrains.services
 
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 class RoleValidationTest {
     @Test
@@ -26,7 +25,7 @@ class RoleValidationTest {
               ]
             }
         """.trimIndent()
-        assertTrue { RoleValidation.isRolePolicyValidForCloudDebug(rolePolicy) }
+        assertThat(RoleValidation.isRolePolicyValidForCloudDebug(rolePolicy)).isTrue()
     }
 
     @Test
@@ -50,7 +49,7 @@ class RoleValidationTest {
               ]
             }
         """.trimIndent()
-        assertTrue { RoleValidation.isRolePolicyValidForCloudDebug(rolePolicy) }
+        assertThat(RoleValidation.isRolePolicyValidForCloudDebug(rolePolicy)).isTrue()
     }
 
     @Test
@@ -71,7 +70,7 @@ class RoleValidationTest {
               ]
             }
         """.trimIndent()
-        assertFalse { RoleValidation.isRolePolicyValidForCloudDebug(rolePolicy) }
+        assertThat(RoleValidation.isRolePolicyValidForCloudDebug(rolePolicy)).isFalse()
     }
 
     @Test
@@ -92,7 +91,7 @@ class RoleValidationTest {
               ]
             }
         """.trimIndent()
-        assertFalse { RoleValidation.isRolePolicyValidForCloudDebug(rolePolicy) }
+        assertThat(RoleValidation.isRolePolicyValidForCloudDebug(rolePolicy)).isFalse()
     }
 
     @Test
@@ -113,7 +112,7 @@ class RoleValidationTest {
               ]
             }
         """.trimIndent()
-        assertFalse { RoleValidation.isRolePolicyValidForCloudDebug(rolePolicy) }
+        assertThat(RoleValidation.isRolePolicyValidForCloudDebug(rolePolicy)).isFalse()
     }
 
     @Test
@@ -137,6 +136,6 @@ class RoleValidationTest {
               ]
             }
         """.trimIndent()
-        assertFalse { RoleValidation.isRolePolicyValidForCloudDebug(rolePolicy) }
+        assertThat(RoleValidation.isRolePolicyValidForCloudDebug(rolePolicy)).isFalse()
     }
 }
