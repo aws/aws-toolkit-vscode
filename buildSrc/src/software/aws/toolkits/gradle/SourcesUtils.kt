@@ -1,8 +1,10 @@
 // Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
-@file:JvmName("SourceUtils")
+
+package software.aws.toolkits.gradle
 
 import org.gradle.api.Project
+import java.io.File
 import java.io.FileFilter
 
 /**
@@ -12,9 +14,9 @@ import java.io.FileFilter
  * [type] is the type of the source folder (e.g. 'src', 'tst', 'resources')
  * [ideVersion] is the 3 digit numerical version of the JetBrains SDK (e.g. 192, 201 etc)
  */
-fun findFolders(project: Project, type: String, ideVersion: String): List<String> = project.projectDir.listFiles(FileFilter {
+fun findFolders(project: Project, type: String, ideVersion: String): Set<File> = project.projectDir.listFiles(FileFilter {
     it.isDirectory && includeFolder(type, ideVersion, it.name)
-})?.map { it.name } ?: emptyList()
+})?.map { File(it.name) }?.toSet() ?: setOf()
 
 /**
  * Determines if a folder should be included based on the ideVersion being targeted

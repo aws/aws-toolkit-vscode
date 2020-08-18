@@ -4,11 +4,11 @@
 import com.jetbrains.rd.generator.gradle.RdgenParams
 import com.jetbrains.rd.generator.gradle.RdgenTask
 import org.jetbrains.intellij.tasks.PrepareSandboxTask
+import software.aws.toolkits.gradle.IdeVersions
+import software.aws.toolkits.gradle.ProductCode
 
 buildscript {
-    val rdGenVersion: groovy.lang.Closure<String> by project
-    val rdversion = rdGenVersion()
-    project.extra["rd_version"] = rdversion
+    val rdversion = software.aws.toolkits.gradle.IdeVersions(project).rdGenVersion()
 
     logger.info("Using rd-gen: $rdversion")
 
@@ -28,12 +28,7 @@ plugins {
 
 apply(plugin = "com.jetbrains.rdgen")
 
-// IntellijVerison things
-val rdGenVersion: groovy.lang.Closure<String> by project
-val ideSdkVersion: groovy.lang.Closure<String> by project
-val riderNugetSdkVersion: groovy.lang.Closure<String> by project
-val resolveIdeProfileName: groovy.lang.Closure<String> by project
-val idePlugins: groovy.lang.Closure<ArrayList<String>> by project
+val ideVersions = IdeVersions(project)
 
 val resharperPluginPath = File(projectDir, "ReSharper.AWS")
 val resharperBuildPath = File(project.buildDir, "dotnetBuild")
@@ -56,13 +51,13 @@ rdgenDir.mkdirs()
 
 intellij {
     val parentIntellijTask = rootProject.intellij
-    version = ideSdkVersion("RD")
+    version = ideVersions.sdkVersion(ProductCode.RD)
     pluginName = parentIntellijTask.pluginName
     updateSinceUntilBuild = parentIntellijTask.updateSinceUntilBuild
 
     // Workaround for https://youtrack.jetbrains.com/issue/IDEA-179607
     val extraPlugins = arrayOf("rider-plugins-appender")
-    setPlugins(*(idePlugins("RD") + extraPlugins).toTypedArray())
+    setPlugins(*(ideVersions.plugins(ProductCode.RD) + extraPlugins).toTypedArray())
 
     // Disable downloading source to avoid issues related to Rider SDK naming that is missed in Idea
     // snapshots repository. The task is failed because if is unable to find related IC sources.
@@ -74,7 +69,7 @@ val generateDaemonModel = tasks.register<RdgenTask>("generateDaemonModel") {
     val daemonModelSource = File(modelDir, "daemon").canonicalPath
     val ktOutput = File(riderGeneratedSources, "DaemonProtocol")
 
-    inputs.property("rdgen", rdGenVersion())
+    inputs.property("rdgen", ideVersions.rdGenVersion())
     inputs.dir(daemonModelSource)
     outputs.dirs(ktOutput, csDaemonGeneratedOutput)
 
@@ -118,7 +113,7 @@ val generatePsiModel = tasks.register<RdgenTask>("generatePsiModel") {
     val psiModelSource = File(modelDir, "psi").canonicalPath
     val ktOutput = File(riderGeneratedSources, "PsiProtocol")
 
-    inputs.property("rdgen", rdGenVersion())
+    inputs.property("rdgen", ideVersions.rdGenVersion())
     inputs.dir(psiModelSource)
     outputs.dirs(ktOutput, csPsiGeneratedOutput)
 
@@ -162,7 +157,7 @@ val generateAwsSettingModel = tasks.register<RdgenTask>("generateAwsSettingModel
     val settingModelSource = File(modelDir, "setting").canonicalPath
     val ktOutput = File(riderGeneratedSources, "AwsSettingsProtocol")
 
-    inputs.property("rdgen", rdGenVersion())
+    inputs.property("rdgen", ideVersions.rdGenVersion())
     inputs.dir(settingModelSource)
     outputs.dirs(ktOutput, csAwsSettingGeneratedOutput)
 
@@ -205,7 +200,7 @@ val generateAwsProjectModel = tasks.register<RdgenTask>("generateAwsProjectModel
     val projectModelSource = File(modelDir, "project").canonicalPath
     val ktOutput = File(riderGeneratedSources, "AwsProjectProtocol")
 
-    inputs.property("rdgen", rdGenVersion())
+    inputs.property("rdgen", ideVersions.rdGenVersion())
     inputs.dir(projectModelSource)
     outputs.dirs(ktOutput, csAwsProjectGeneratedOutput)
 
@@ -271,11 +266,11 @@ val prepareBuildProps = tasks.register("prepareBuildProps") {
     val riderSdkVersionPropsPath = File(resharperPluginPath, "RiderSdkPackageVersion.props")
     group = backendGroup
 
-    inputs.property("riderNugetSdkVersion", riderNugetSdkVersion())
+    inputs.property("riderNugetSdkVersion", ideVersions.nugetSdkVersion())
     outputs.file(riderSdkVersionPropsPath)
 
     doLast {
-        val riderSdkVersion = riderNugetSdkVersion()
+        val riderSdkVersion = ideVersions.nugetSdkVersion()
         val configText = """<Project>
   <PropertyGroup>
     <RiderSDKVersion>[$riderSdkVersion]</RiderSDKVersion>
@@ -291,7 +286,7 @@ val prepareNuGetConfig = tasks.register("prepareNuGetConfig") {
 
     val nugetConfigPath = File(projectDir, "NuGet.Config")
 
-    inputs.property("rdVersion", ideSdkVersion("RD"))
+    inputs.property("rdVersion",ideVersions.sdkVersion(ProductCode.RD))
     outputs.file(nugetConfigPath)
 
     doLast {
@@ -326,7 +321,7 @@ val buildReSharperPlugin = tasks.register("buildReSharperPlugin") {
         val arguments = listOf(
             "build",
             "${resharperPluginPath.canonicalPath}/ReSharper.AWS.sln",
-            "/p:DefineConstants=\"PROFILE_${resolveIdeProfileName().replace(".", "_")}\""
+            "/p:DefineConstants=\"PROFILE_${ideVersions.resolveIdeProfileName().replace(".", "_")}\""
         )
         exec {
             executable = "dotnet"
@@ -362,7 +357,9 @@ dependencies {
 }
 
 sourceSets {
-    main.get().java.srcDirs("$buildDir/generated-src")
+    main{
+        java.srcDirs("$buildDir/generated-src")
+    }
 }
 
 val resharperParts = listOf(

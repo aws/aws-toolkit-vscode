@@ -8,7 +8,9 @@ plugins {
 }
 
 sourceSets {
-    main.get().resources.srcDir("$buildDir/downloaded-resources")
+    main {
+        resources.srcDir("$buildDir/downloaded-resources")
+    }
 }
 
 val download = tasks.register<Download>("downloadResources") {
