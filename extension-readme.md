@@ -106,9 +106,9 @@ For more information see [Working with AWS Serverless Applications](https://docs
 The AWS Toolkit provides support for [Amazon CloudWatch Logs](https://aws.amazon.com/cloudwatch/). Using the [AWS Explorer](#ui-components-aws-expl) of the Toolkit, you can perform the following operations on Log Groups:
 
 -   List CloudWatch Log Groups
-    -   View Log Streams for a Log Group
+-   View Log Streams for a Log Group
 
-Viewing a Log Stream will immediately load the most recent 10,000 lines or 1 MB of data (whichever is smaller), as well as their timestamps. From this view, users will have access to the following actions:
+Viewing a Log Stream will immediately load the most recent 10,000 lines or 1 MB of data (whichever is smaller), and their timestamps. From this view, users can access the following actions:
 
 -   Load older or newer log events
 -   Save currently-loaded Log Stream to a log file
