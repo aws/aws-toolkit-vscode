@@ -13,7 +13,7 @@ import java.io.File
 
 open class ValidateMessages : DefaultTask() {
     @InputFiles
-    val paths: ListProperty<File> = project.objects.listProperty(File::class.java)
+    val paths: ListProperty<String> = project.objects.listProperty(String::class.java)
 
     init {
         group = VERIFICATION_GROUP
@@ -24,6 +24,7 @@ open class ValidateMessages : DefaultTask() {
         var hasError = false
         paths
             .get()
+            .map { File(it) }
             .map {
                 it.absolutePath to it.readLines()
             }.forEach { (filePath, fileLines) ->

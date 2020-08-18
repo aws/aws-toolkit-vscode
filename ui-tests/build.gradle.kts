@@ -29,7 +29,9 @@ dependencies {
 }
 
 // don't run gui tests as part of check
-tasks["test"].enabled = false
+tasks.test {
+    enabled = false
+}
 
 tasks.register<Test>("uiTestCore") {
     // we don't want to cache the results of this.
