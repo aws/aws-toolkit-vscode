@@ -9,12 +9,14 @@ See [Setup](#additional-setup-steps) for installation requirements, or [Get help
 
 -   [AWS Explorer](#ui-components-aws-expl)
     -   CloudFormation stacks
+    -   CloudWatch Logs
     -   EventBridge schemas
     -   Lambda functions
     -   S3 explorer
     -   Step Functions
 -   [CDK Explorer](#ui-components-cdk-expl)
 -   [AWS Serverless Applications (SAM)](#sam-and-lambda)
+-   [Amazon CloudWatch Logs](#cloudwatchlogs)
 -   [Amazon EventBridge Schemas](#eventbridge)
 -   [Amazon ECS task definition files](#ecs-files)
 -   [AWS Step Functions](#sfn-files)
@@ -99,6 +101,29 @@ For more information see [Working with AWS Serverless Applications](https://docs
 
 ---
 
+## <a id="cloudwatchlogs"></a>Amazon CloudWatch Logs
+
+The AWS Toolkit provides support for [Amazon CloudWatch Logs](https://aws.amazon.com/cloudwatch/). Using the [AWS Explorer](#ui-components-aws-expl) of the Toolkit, you can perform the following operations on these schemas:
+
+-   List CloudWatch Log Groups
+    -   View Log Streams for a Log Group
+
+Viewing a Log Stream will immediately load the most recent 10,000 lines or 1 MB of data (whichever is smaller), as well as their timestamps. From this view, users will have access to the following actions:
+
+-   Load older or newer log events
+-   Save currently-loaded Log Stream to a log file
+-   Copy Log Stream name
+
+Example:
+
+![View Log Groups](./resources/marketplace/cloudwatch-logs.png)
+
+For full details, see [Working with CloudWatch Logs](https://docs.aws.amazon.com/console/toolkit-for-vscode/latest/userguide/cloudwatchlogs.html) in the Toolkit's user guide.
+
+{ [Return to Top](#top) }
+
+---
+
 ## <a id="eventbridge"></a>Amazon EventBridge Schemas
 
 The AWS Toolkit provides support for [Amazon EventBridge](https://aws.amazon.com/eventbridge) schemas. Using the [AWS Explorer](#ui-components-aws-expl) of the Toolkit, you can perform the following operations on these schemas:
@@ -161,6 +186,7 @@ palette_, available by selecting _View > Command Palette_ or by typing
 | :--------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AWS: About AWS Toolkit`                             | Displays information about the AWS Toolkit.                                                                                                                                                                                                                                                                    |
 | `AWS: Connect to AWS`                                | Connects the Toolkit to an AWS account. For more information, see [Connecting to AWS](https://docs.aws.amazon.com/console/toolkit-for-vscode/connect) in the user guide.                                                                                                                                       |
+| `AWS: Copy Log Stream Name`                          | Copies the name of the active CloudWatch Log Stream                                                                                                                                                                                                                                                            |
 | `AWS: Create a new Step Functions state machine`     | Generates a new Amazon States Language definition to use as the definition for a new Step Functions state machine. For more information, see [State Machine Templates](https://docs.aws.amazon.com//toolkit-for-vscode/latest/userguide/bulding-stepfunctions.html#templates-stepfunctions) in the user guide. |
 | `AWS: Create a new Issue on Github`                  | Opens the AWS Toolkit's [New Issue page on Github](https://github.com/aws/aws-toolkit-vscode/issues/new/choose).                                                                                                                                                                                               |
 | `AWS: Create Credentials Profile`                    | Creates an AWS credentials profile. For more information, see [Setting Up Your AWS Credentials](https://docs.aws.amazon.com/console/toolkit-for-vscode/setup-credentials) in the user guide.                                                                                                                   |
@@ -172,6 +198,7 @@ palette_, available by selecting _View > Command Palette_ or by typing
 | `AWS: Publish state machine to Step Functions`       | Creates or updates a remote state machine using the local Amazon States Language definition file. For more information, see [Work With State Machines in VS Code](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/bulding-stepfunctions.html#starting-stepfunctions) in the user guide.        |
 | `AWS: Render state machine graph`                    | Renders the state machine definition into a graph visualization. For more information, see [State Machine Graph Visualization](https://docs.aws.amazon.com//toolkit-for-vscode/latest/userguide/bulding-stepfunctions.html#bulding-stepfunctions-visualizations) in the user guide.                            |
 | `AWS: Report an Issue`                               | In the [GitHub repository](https://github.com/aws/aws-toolkit-vscode) for the Toolkit, opens the page to [create a new issue](https://github.com/aws/aws-toolkit-vscode/issues/new/choose).                                                                                                                    |
+| `AWS: Save Current Log Content To File`              | Saves currently-loaded CloudWatch Log Stream data to a local `.log` file.                                                                                                                                                                                                                                      |
 | `AWS: Show region in the Explorer`                   | Displays an AWS Region in the **AWS Explorer**.                                                                                                                                                                                                                                                                |
 | `AWS: Sign out`                                      | Disconnects the Toolkit from the currently-connected AWS account.                                                                                                                                                                                                                                              |
 | `AWS: Submit Quick Feedback...`                      | Submit a private, one-way message and sentiment to the AWS Toolkit dev team. For larger issues that warrant conversations or bugfixes, please submit an issue in Github with the **AWS: Create a New Issue on Github** command.                                                                                |
@@ -191,7 +218,7 @@ palette_, available by selecting _View > Command Palette_ or by typing
 To access most features of the AWS Toolkit, complete the [Setting Up](https://docs.aws.amazon.com/console/toolkit-for-vscode/getting-started) steps from the user guide.
 
 1. [Create an AWS account](https://aws.amazon.com/premiumsupport/knowledge-center/create-and-activate-aws-account/) (see also [Prerequisites](https://docs.aws.amazon.com/console/toolkit-for-vscode/setup-toolkit#setup-prereq)).
-1. [Create and configure](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/establish-credentials.html) your AWS credentials.
+1. [Create and configure](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/establish-credentials.html) 5your AWS credentials.
 1. [Connect the Toolkit](https://docs.aws.amazon.com/console/toolkit-for-vscode/connect) to AWS with those credentials.
 
 To develop [serverless applications](https://aws.amazon.com/serverless/) with the Toolkit, you must [set up your toolchain](https://docs.aws.amazon.com/console/toolkit-for-vscode/setup-toolchain) and do the following on the local machine where the Toolkit is installed:
