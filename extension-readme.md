@@ -103,7 +103,7 @@ For more information see [Working with AWS Serverless Applications](https://docs
 
 ## <a id="cloudwatchlogs"></a>Amazon CloudWatch Logs
 
-The AWS Toolkit provides support for [Amazon CloudWatch Logs](https://aws.amazon.com/cloudwatch/). Using the [AWS Explorer](#ui-components-aws-expl) of the Toolkit, you can perform the following operations on these schemas:
+The AWS Toolkit provides support for [Amazon CloudWatch Logs](https://aws.amazon.com/cloudwatch/). Using the [AWS Explorer](#ui-components-aws-expl) of the Toolkit, you can perform the following operations on Log Groups:
 
 -   List CloudWatch Log Groups
     -   View Log Streams for a Log Group
