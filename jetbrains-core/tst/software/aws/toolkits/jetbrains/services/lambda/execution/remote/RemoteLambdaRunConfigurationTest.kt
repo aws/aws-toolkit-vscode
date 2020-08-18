@@ -59,14 +59,14 @@ class RemoteLambdaRunConfigurationTest {
 
     @Test
     fun invalidRegion() {
-            val runConfiguration = createRunConfiguration(
-                project = projectRule.project,
-                regionId = null
-            )
-            assertThat(runConfiguration).isNotNull
-            assertThatThrownBy { runConfiguration.checkConfiguration() }
-                .isInstanceOf(RuntimeConfigurationError::class.java)
-                .hasMessage(message("configure.validate.no_region_specified"))
+        val runConfiguration = createRunConfiguration(
+            project = projectRule.project,
+            regionId = null
+        )
+        assertThat(runConfiguration).isNotNull
+        assertThatThrownBy { runConfiguration.checkConfiguration() }
+            .isInstanceOf(RuntimeConfigurationError::class.java)
+            .hasMessage(message("configure.validate.no_region_specified"))
     }
 
     @Test

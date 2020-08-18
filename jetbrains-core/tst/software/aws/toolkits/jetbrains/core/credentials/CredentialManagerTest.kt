@@ -15,15 +15,14 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.http.SdkHttpClient
 import software.aws.toolkits.core.credentials.CredentialIdentifier
+import software.aws.toolkits.core.credentials.CredentialIdentifierBase
 import software.aws.toolkits.core.credentials.CredentialProviderFactory
 import software.aws.toolkits.core.credentials.CredentialProviderNotFoundException
 import software.aws.toolkits.core.credentials.CredentialsChangeEvent
 import software.aws.toolkits.core.credentials.CredentialsChangeListener
-import software.aws.toolkits.core.credentials.CredentialIdentifierBase
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 
 class CredentialManagerTest {
     @Rule
@@ -191,7 +190,7 @@ class CredentialManagerTest {
             ).resolveCredentials()
         }.isInstanceOf(CredentialProviderNotFoundException::class.java)
 
-        assertNull(credentialManager.getCredentialIdentifierById("testFoo1"))
+        assertThat(credentialManager.getCredentialIdentifierById("testFoo1")).isNull()
     }
 
     private fun addFactories(vararg factories: CredentialProviderFactory) {

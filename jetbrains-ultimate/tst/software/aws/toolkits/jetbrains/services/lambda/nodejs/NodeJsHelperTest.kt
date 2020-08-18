@@ -6,12 +6,12 @@ package software.aws.toolkits.jetbrains.services.lambda.nodejs
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.testFramework.runInEdtAndWait
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.jetbrains.utils.rules.NodeJsCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addLambdaHandler
 import software.aws.toolkits.jetbrains.utils.rules.addPackageJsonFile
-import kotlin.test.assertEquals
 
 class NodeJsHelperTest {
 
@@ -30,7 +30,7 @@ class NodeJsHelperTest {
         runInEdtAndWait {
             val contentRoot = ProjectFileIndex.getInstance(projectRule.project).getContentRootForFile(element.containingFile.virtualFile)
             val sourceRoot = inferSourceRoot(projectRule.project, element.containingFile.virtualFile)
-            assertEquals(contentRoot, sourceRoot)
+            assertThat(contentRoot).isEqualTo(sourceRoot)
         }
     }
 
@@ -49,7 +49,7 @@ class NodeJsHelperTest {
         runInEdtAndWait {
             val contentRoot = ProjectFileIndex.getInstance(projectRule.project).getContentRootForFile(element.containingFile.virtualFile)
             val sourceRoot = inferSourceRoot(projectRule.project, element.containingFile.virtualFile)
-            assertEquals(VfsUtilCore.findRelativeFile("foo", contentRoot), sourceRoot)
+            assertThat(VfsUtilCore.findRelativeFile("foo", contentRoot)).isEqualTo(sourceRoot)
         }
     }
 
@@ -68,7 +68,7 @@ class NodeJsHelperTest {
         runInEdtAndWait {
             val contentRoot = ProjectFileIndex.getInstance(projectRule.project).getContentRootForFile(element.containingFile.virtualFile)
             val sourceRoot = inferSourceRoot(projectRule.project, element.containingFile.virtualFile)
-            assertEquals(contentRoot, sourceRoot)
+            assertThat(contentRoot).isEqualTo(sourceRoot)
         }
     }
 }

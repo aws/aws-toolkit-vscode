@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.utils
 import com.intellij.testFramework.ProjectRule
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.whenever
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.resourcegroupstaggingapi.ResourceGroupsTaggingApiClient
@@ -15,8 +16,6 @@ import software.amazon.awssdk.services.resourcegroupstaggingapi.model.ResourceTa
 import software.amazon.awssdk.services.resourcegroupstaggingapi.model.Tag
 import software.amazon.awssdk.services.resourcegroupstaggingapi.paginators.GetResourcesIterable
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
 
 class ResourceOperationAgainstCodePipelineTest {
 
@@ -45,7 +44,7 @@ class ResourceOperationAgainstCodePipelineTest {
                 }
             )
 
-        assertNull(getCodePipelineArnForResource(projectRule.project, RESOURCE_ARN, RESOURCE_TYPE_FILTER))
+        assertThat(getCodePipelineArnForResource(projectRule.project, RESOURCE_ARN, RESOURCE_TYPE_FILTER)).isNull()
     }
 
     @Test
@@ -63,7 +62,7 @@ class ResourceOperationAgainstCodePipelineTest {
                 }
             )
 
-        assertNull(getCodePipelineArnForResource(projectRule.project, RESOURCE_ARN, RESOURCE_TYPE_FILTER))
+        assertThat(getCodePipelineArnForResource(projectRule.project, RESOURCE_ARN, RESOURCE_TYPE_FILTER)).isNull()
     }
 
     @Test
@@ -81,7 +80,7 @@ class ResourceOperationAgainstCodePipelineTest {
                 }
             )
 
-        assertNull(getCodePipelineArnForResource(projectRule.project, RESOURCE_ARN, RESOURCE_TYPE_FILTER))
+        assertThat(getCodePipelineArnForResource(projectRule.project, RESOURCE_ARN, RESOURCE_TYPE_FILTER)).isNull()
     }
 
     @Test
@@ -99,7 +98,7 @@ class ResourceOperationAgainstCodePipelineTest {
                 }
             )
 
-        assertEquals(CODEPIPELINE_ARN, getCodePipelineArnForResource(projectRule.project, RESOURCE_ARN, RESOURCE_TYPE_FILTER))
+        assertThat(CODEPIPELINE_ARN).isEqualTo(getCodePipelineArnForResource(projectRule.project, RESOURCE_ARN, RESOURCE_TYPE_FILTER))
     }
 
     private fun getResourceTagMapping(resourceARN: String, tagKey: String, tagValue: String) = ResourceTagMapping.builder()

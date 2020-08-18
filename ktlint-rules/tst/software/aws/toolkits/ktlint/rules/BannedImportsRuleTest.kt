@@ -38,6 +38,33 @@ class BannedImportsRuleTest {
     }
 
     @Test
+    fun `Importing Kotlin test assert fails`() {
+        assertThat(rule.lint("import kotlin.test.assertTrue"))
+            .containsExactly(
+                LintError(
+                    1,
+                    1,
+                    "banned-imports",
+                    "Use AssertJ instead of Kotlin test assertions"
+                )
+            )
+        assertThat(rule.lint("import kotlin.test.assertFalse"))
+            .containsExactly(
+                LintError(
+                    1,
+                    1,
+                    "banned-imports",
+                    "Use AssertJ instead of Kotlin test assertions"
+                )
+            )
+    }
+
+    @Test
+    fun `Importing kotlin test notNull succeeds`() {
+        assertThat(rule.lint("import kotlin.test.assertNotNull")).isEmpty()
+    }
+
+    @Test
     fun `Importing Assert assertThat succeeds`() {
         assertThat(rule.lint("import org.assertj.core.api.Assertions.assertThat")).isEmpty()
     }
