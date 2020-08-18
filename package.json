@@ -469,6 +469,18 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.copyLogStreamName",
+                    "when": "resourceScheme == awsCloudWatchLogs"
+                },
+                {
+                    "command": "aws.saveCurrentLogStreamContent",
+                    "when": "resourceScheme == awsCloudWatchLogs"
+                },
+                {
+                    "command": "aws.cloudWatchLogs.viewLogStream",
+                    "when": "false"
+                },
+                {
                     "command": "aws.s3.copyPath",
                     "when": "false"
                 },
@@ -506,6 +518,18 @@
                     "command": "aws.previewStateMachine",
                     "when": "editorLangId == asl",
                     "group": "navigation"
+                },
+                {
+                    "command": "aws.saveCurrentLogStreamContent",
+                    "when": "resourceScheme == awsCloudWatchLogs",
+                    "group": "navigation"
+                }
+            ],
+            "editor/title/context": [
+                {
+                    "command": "aws.copyLogStreamName",
+                    "when": "resourceScheme == awsCloudWatchLogs",
+                    "group": "1_cutcopypaste@1"
                 }
             ],
             "view/title": [
@@ -961,6 +985,18 @@
                 "command": "aws.cloudWatchLogs.viewLogStream",
                 "title": "%AWS.command.viewLogStream%",
                 "category": "AWS"
+            },
+            {
+                "command": "aws.copyLogStreamName",
+                "title": "%AWS.command.copyLogStreamName%",
+                "category": "AWS",
+                "icon": "$(files)"
+            },
+            {
+                "command": "aws.saveCurrentLogStreamContent",
+                "title": "%AWS.command.saveCurrentLogStreamContent%",
+                "category": "AWS",
+                "icon": "$(save-as)"
             }
         ],
         "jsonValidation": [
@@ -998,6 +1034,15 @@
                 "language": "asl",
                 "scopeName": "source.asl",
                 "path": "./syntaxes/ASL.tmLanguage"
+            }
+        ],
+        "resourceLabelFormatters": [
+            {
+                "scheme": "awsCloudWatchLogs",
+                "formatting": {
+                    "label": "${path}",
+                    "separator": "\\"
+                }
             }
         ]
     },

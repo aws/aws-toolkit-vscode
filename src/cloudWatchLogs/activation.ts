@@ -9,6 +9,10 @@ import { viewLogStream } from './commands/viewLogStream'
 import { LogStreamDocumentProvider } from './document/logStreamDocumentProvider'
 import { LogGroupNode } from './explorer/logGroupNode'
 import { LogStreamRegistry } from './registry/logStreamRegistry'
+import { LogStreamCodeLensProvider } from './document/logStreamCodeLensProvider'
+import { copyLogStreamName } from './commands/copyLogStreamName'
+import { saveCurrentLogStreamContent } from './commands/saveCurrentLogStreamContent'
+import { addLogEvents } from './commands/addLogEvents'
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     const registry = new LogStreamRegistry()
@@ -20,20 +24,31 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         )
     )
 
-    // handle log window closures by discarding logs that aren't shown--do we want this behavior?
-    // according to VS Code API docs, onDidChangeVisibleTextEditors is more reliable than onDidCloseTextDocument
     context.subscriptions.push(
-        vscode.window.onDidChangeVisibleTextEditors(editors => {
-            const logsUriStrings = editors
-                .filter(value => value.document.uri.scheme === CLOUDWATCH_LOGS_SCHEME)
-                .map(value => value.document.uri.path)
-            registry.getRegisteredLogs().forEach(registeredLog => {
-                if (!logsUriStrings.includes(registeredLog)) {
-                    // parse back to URI, should we change deregisterLog to work directly off strings?
-                    registry.deregisterLog(vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:${registeredLog}`))
-                }
-            })
+        vscode.workspace.onDidCloseTextDocument(doc => {
+            if (doc.isClosed && doc.uri.scheme === CLOUDWATCH_LOGS_SCHEME) {
+                registry.deregisterLog(doc.uri)
+            }
         })
+    )
+
+    context.subscriptions.push(
+        vscode.languages.registerCodeLensProvider(
+            {
+                language: 'log',
+                scheme: CLOUDWATCH_LOGS_SCHEME,
+            },
+            new LogStreamCodeLensProvider(registry)
+        )
+    )
+
+    context.subscriptions.push(vscode.commands.registerCommand('aws.copyLogStreamName', copyLogStreamName))
+    context.subscriptions.push(vscode.commands.registerCommand('aws.addLogEvents', addLogEvents))
+    context.subscriptions.push(
+        vscode.commands.registerCommand(
+            'aws.saveCurrentLogStreamContent',
+            async (uri?: vscode.Uri) => await saveCurrentLogStreamContent(uri, registry)
+        )
     )
 
     // AWS Explorer right-click action
