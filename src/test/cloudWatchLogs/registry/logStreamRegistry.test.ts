@@ -8,7 +8,7 @@ import * as moment from 'moment'
 import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
 import { CloudWatchLogStreamData, LogStreamRegistry } from '../../../cloudWatchLogs/registry/logStreamRegistry'
-import { CLOUDWATCH_LOGS_SCHEME } from '../../../shared/constants'
+import { CLOUDWATCH_LOGS_SCHEME, INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 
 describe('LogStreamRegistry', async () => {
     let registry: LogStreamRegistry
@@ -31,6 +31,7 @@ describe('LogStreamRegistry', async () => {
                 message: 'does anybody really know what time it is? does anybody really care?\n',
             },
         ],
+        busy: false,
     }
 
     const simplerStream: CloudWatchLogStreamData = {
@@ -39,6 +40,17 @@ describe('LogStreamRegistry', async () => {
                 message: 'short and sweet\n',
             },
         ],
+        busy: false,
+    }
+
+    const newLineStream: CloudWatchLogStreamData = {
+        data: [
+            {
+                timestamp: 12745641600000,
+                message: 'the\nline\rmust\r\nbe\ndrawn\rHERE\nright\nhere\r\nno\nfurther\n',
+            },
+        ],
+        busy: false,
     }
 
     const newText = 'a little longer now\n'
@@ -55,11 +67,13 @@ describe('LogStreamRegistry', async () => {
     const registeredUri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:This:Is:Registered`)
     const shorterRegisteredUri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:Less:Is:More`)
     const missingRegisteredUri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:Not:Here:Dude`)
+    const newLineUri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:ANOTHER:LINE:PIEEEECCCEEEEEE`)
 
     beforeEach(() => {
         map = new Map<string, CloudWatchLogStreamData>()
         map.set(registeredUri.path, stream)
         map.set(shorterRegisteredUri.path, simplerStream)
+        map.set(newLineUri.path, newLineStream)
         registry = new LogStreamRegistry(map)
     })
 
@@ -97,11 +111,24 @@ describe('LogStreamRegistry', async () => {
 
             assert.strictEqual(
                 text,
-                `${moment(1).format()}${'\t'}${stream.data[0].message}${moment(2).format()}${'\t'}${
-                    stream.data[1].message
-                }${moment(3).format()}${'\t'}${stream.data[2].message}                             ${'\t'}${
-                    stream.data[3].message
-                }`
+                `${moment(1).format(INSIGHTS_TIMESTAMP_FORMAT)}${'\t'}${stream.data[0].message}${moment(2).format(
+                    INSIGHTS_TIMESTAMP_FORMAT
+                )}${'\t'}${stream.data[1].message}${moment(3).format(INSIGHTS_TIMESTAMP_FORMAT)}${'\t'}${
+                    stream.data[2].message
+                }                             ${'\t'}${stream.data[3].message}`
+            )
+        })
+
+        it('indents log entries with newlines of all flavors if timestamps are shown but otherwise does not act on them', () => {
+            const timestampText = registry.getLogContent(newLineUri, { timestamps: true })
+            const noTimestampText = registry.getLogContent(newLineUri)
+
+            assert.strictEqual(noTimestampText, newLineStream.data[0].message)
+            assert.strictEqual(
+                timestampText,
+                `${moment(newLineStream.data[0].timestamp).format(
+                    INSIGHTS_TIMESTAMP_FORMAT
+                )}${'\t'}the${'\n'}                             ${'\t'}line${'\n'}                             ${'\t'}must${'\n'}                             ${'\t'}be${'\n'}                             ${'\t'}drawn${'\n'}                             ${'\t'}HERE${'\n'}                             ${'\t'}right${'\n'}                             ${'\t'}here${'\n'}                             ${'\t'}no${'\n'}                             ${'\t'}further\n`
             )
         })
     })
@@ -118,15 +145,6 @@ describe('LogStreamRegistry', async () => {
             await registry.updateLog(missingRegisteredUri, 'tail', getLogEventsFromUriComponentsFn)
             const unregisteredGet = registry.getLogContent(missingRegisteredUri)
             assert.strictEqual(unregisteredGet, undefined)
-        })
-    })
-
-    describe('getRegisteredLogs', () => {
-        it('contains string representations of registered logs only', () => {
-            const registeredLogs = registry.getRegisteredLogs()
-            assert.strictEqual(registeredLogs.includes(registeredUri.path), true)
-            assert.strictEqual(registeredLogs.includes(shorterRegisteredUri.path), true)
-            assert.strictEqual(registeredLogs.includes(missingRegisteredUri.path), false)
         })
     })
 
