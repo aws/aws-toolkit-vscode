@@ -31,6 +31,7 @@ describe('LogStreamRegistry', async () => {
                 message: 'does anybody really know what time it is? does anybody really care?\n',
             },
         ],
+        busy: false,
     }
 
     const simplerStream: CloudWatchLogStreamData = {
@@ -39,6 +40,7 @@ describe('LogStreamRegistry', async () => {
                 message: 'short and sweet\n',
             },
         ],
+        busy: false,
     }
 
     const newLineStream: CloudWatchLogStreamData = {
@@ -48,6 +50,7 @@ describe('LogStreamRegistry', async () => {
                 message: 'the\nline\rmust\r\nbe\ndrawn\rHERE\nright\nhere\r\nno\nfurther\n',
             },
         ],
+        busy: false,
     }
 
     const newText = 'a little longer now\n'

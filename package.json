@@ -473,6 +473,10 @@
                 },
                 {
                     "command": "aws.saveCurrentLogStreamContent",
+                    "when": "resourceScheme == awsCloudWatchLogs"
+                },
+                {
+                    "command": "aws.cloudWatchLogs.viewLogStream",
                     "when": "false"
                 },
                 {

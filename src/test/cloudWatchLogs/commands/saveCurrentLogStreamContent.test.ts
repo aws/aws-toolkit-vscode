@@ -15,10 +15,19 @@ import { fileExists, makeTemporaryToolkitFolder, readFileAsString } from '../../
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 
 describe('saveCurrentLogStreamContent', async () => {
+    const logContent = 'shutdown is imminent'
+    let filename: string
+    let fakeRegistry: LogStreamRegistry
     let tempDir: string
 
     beforeEach(async () => {
         tempDir = await makeTemporaryToolkitFolder()
+        filename = path.join(tempDir, 'bobLoblawsLawB.log')
+        fakeRegistry = ({
+            getLogContent: (uri: vscode.Uri, formatting?: { timestamps?: boolean }) => {
+                return logContent
+            },
+        } as any) as LogStreamRegistry
     })
 
     afterEach(async () => {
@@ -26,14 +35,6 @@ describe('saveCurrentLogStreamContent', async () => {
     })
 
     it('saves log content to a file', async () => {
-        const logContent = 'shutdown is imminent'
-        const filename = path.join(tempDir, 'bobLoblawsLawB.log')
-        const fakeRegistry: LogStreamRegistry = ({
-            getLogContent: (uri: vscode.Uri, formatting?: { timestamps?: boolean }) => {
-                return logContent
-            },
-        } as any) as LogStreamRegistry
-
         await saveCurrentLogStreamContent(
             vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:g:s:r`),
             fakeRegistry,
@@ -46,6 +47,19 @@ describe('saveCurrentLogStreamContent', async () => {
 
         assert.ok(await fileExists(filename))
         assert.strictEqual(await readFileAsString(filename), logContent)
+    })
+
+    it('does not do anything if the URI is invalid', async () => {
+        await saveCurrentLogStreamContent(
+            vscode.Uri.parse(`notCloudWatch:hahahaha`),
+            fakeRegistry,
+            new FakeWindow({
+                dialog: {
+                    saveSelection: vscode.Uri.file(filename),
+                },
+            })
+        )
+        assert.strictEqual(await fileExists(filename), false)
     })
 
     // TODO: Add test for fs.writeFile failure. Apparently `fs.chmod` doesn't work on Windows?
