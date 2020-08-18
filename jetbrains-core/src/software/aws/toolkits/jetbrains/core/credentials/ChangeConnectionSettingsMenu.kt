@@ -34,7 +34,7 @@ class ChangeAccountSettingsActionGroup(project: Project, private val mode: Chang
         accountSettingsManager,
         ChangePartitionActionGroup(accountSettingsManager)
     )
-    private val credentialSelector = ChangeCredentialsActionGroup(true)
+    private val credentialSelector = ChangeCredentialsActionGroup()
 
     override fun createChildrenProvider(actionManager: ActionManager?): CachedValueProvider<Array<AnAction>> = CachedValueProvider {
         val actions = mutableListOf<AnAction>()
@@ -59,8 +59,6 @@ class ChangeAccountSettingsActionGroup(project: Project, private val mode: Chang
             val usedCredentials = accountSettingsManager.recentlyUsedCredentials()
             if (usedCredentials.isEmpty()) {
                 actions.add(Separator.create(message("settings.credentials")))
-
-                credentialSelector.isPopup = false
                 actions.add(credentialSelector)
             } else {
                 actions.add(Separator.create(message("settings.credentials.recent")))
@@ -68,13 +66,20 @@ class ChangeAccountSettingsActionGroup(project: Project, private val mode: Chang
                     actions.add(ChangeCredentialsAction(it))
                 }
 
-                credentialSelector.isPopup = true
-                actions.add(credentialSelector)
+                val allCredentials = DefaultActionGroup(message("settings.credentials.profile_sub_menu"), true)
+                allCredentials.add(credentialSelector)
+                allCredentials.add(Separator.create())
+                allCredentials.add(ActionManager.getInstance().getAction("aws.settings.upsertCredentials"))
+
+                actions.add(allCredentials)
             }
         }
 
-        actions.add(Separator.create())
-        actions.addAll(accountSettingsManager.connectionState.actions)
+        // Both mode == status bar version
+        if (mode == BOTH) {
+            actions.add(Separator.create())
+            actions.addAll(accountSettingsManager.connectionState.actions)
+        }
 
         CachedValueProvider.Result.create(actions.toTypedArray(), accountSettingsManager)
     }
@@ -89,7 +94,7 @@ enum class ChangeAccountSettingsMode(
     BOTH(true, true)
 }
 
-private class ChangeCredentialsActionGroup(popup: Boolean) : ComputableActionGroup(message("settings.credentials.profile_sub_menu"), popup), DumbAware {
+private class ChangeCredentialsActionGroup : ComputableActionGroup(), DumbAware {
     override fun createChildrenProvider(actionManager: ActionManager?): CachedValueProvider<Array<AnAction>> = CachedValueProvider {
         val credentialManager = CredentialManager.getInstance()
 
@@ -97,8 +102,6 @@ private class ChangeCredentialsActionGroup(popup: Boolean) : ComputableActionGro
         credentialManager.getCredentialIdentifiers().forEach {
             actions.add(ChangeCredentialsAction(it))
         }
-        actions.add(Separator.create())
-        actions.add(ActionManager.getInstance().getAction("aws.settings.upsertCredentials"))
 
         CachedValueProvider.Result.create(actions.toTypedArray(), credentialManager)
     }
@@ -123,6 +126,7 @@ internal class ChangeRegionActionGroup(
     name: String = message("settings.regions.region_sub_menu")
 ) : ComputableActionGroup(name, true), DumbAware {
     private val regionProvider = AwsRegionProvider.getInstance()
+
     override fun createChildrenProvider(actionManager: ActionManager?): CachedValueProvider<Array<AnAction>> = CachedValueProvider {
         val (regionMap, partitionGroup) = partition?.let {
             // if a partition has been selected, only show regions in that partition

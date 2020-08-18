@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
+import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.ServiceManager
@@ -242,6 +243,8 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
  * state is temporary in the 'connection validation' workflow or if this is a terminal state.
  */
 sealed class ConnectionState(val displayMessage: String, val isTerminal: Boolean) {
+    protected val editCredsAction: AnAction = ActionManager.getInstance().getAction("aws.settings.upsertCredentials")
+
     /**
      * An optional short message to display in places where space is at a premium
      */
@@ -268,13 +271,15 @@ sealed class ConnectionState(val displayMessage: String, val isTerminal: Boolean
             else -> throw IllegalArgumentException("At least one of regionId ($region) or toolkitCredentialsIdentifier ($credentials) must be null")
         },
         isTerminal = true
-    )
+    ) {
+        override val actions: List<AnAction> = listOf(editCredsAction)
+    }
 
     class InvalidConnection(private val cause: Exception) :
         ConnectionState(message("settings.states.invalid", ExceptionUtil.getMessage(cause) ?: ExceptionUtil.getThrowableText(cause)), isTerminal = true) {
         override val shortMessage = message("settings.states.invalid.short")
 
-        override val actions = listOf(RefreshConnectionAction(message("settings.retry")))
+        override val actions: List<AnAction> = listOf(RefreshConnectionAction(message("settings.retry")), editCredsAction)
     }
 
     class RequiresUserAction(interactiveCredentials: InteractiveCredential) :
