@@ -125,6 +125,9 @@ export async function activate(context: vscode.ExtensionContext) {
             credentialsStore,
         }
 
+        // Used as a command for decoration-only codelenses.
+        context.subscriptions.push(vscode.commands.registerCommand('aws.doNothingCommand', () => {}))
+
         context.subscriptions.push(
             vscode.commands.registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())
         )
