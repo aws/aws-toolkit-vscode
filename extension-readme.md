@@ -218,7 +218,7 @@ palette_, available by selecting _View > Command Palette_ or by typing
 To access most features of the AWS Toolkit, complete the [Setting Up](https://docs.aws.amazon.com/console/toolkit-for-vscode/getting-started) steps from the user guide.
 
 1. [Create an AWS account](https://aws.amazon.com/premiumsupport/knowledge-center/create-and-activate-aws-account/) (see also [Prerequisites](https://docs.aws.amazon.com/console/toolkit-for-vscode/setup-toolkit#setup-prereq)).
-1. [Create and configure](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/establish-credentials.html) 5your AWS credentials.
+1. [Create and configure](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/establish-credentials.html) your AWS credentials.
 1. [Connect the Toolkit](https://docs.aws.amazon.com/console/toolkit-for-vscode/connect) to AWS with those credentials.
 
 To develop [serverless applications](https://aws.amazon.com/serverless/) with the Toolkit, you must [set up your toolchain](https://docs.aws.amazon.com/console/toolkit-for-vscode/setup-toolchain) and do the following on the local machine where the Toolkit is installed:
