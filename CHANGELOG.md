@@ -1,3 +1,9 @@
+## 1.13.0 2020-08-19
+
+- **Feature** Toolkit automatically adds a launch configuration to the workspace when creating SAM applications
+- **Feature** CloudWatch Logs functionality
+- **Feature** Amazon States Language Server: Add validation for new ASL specification released on August 11.
+
 ## 1.12.0 2020-07-30
 
 - **Feature** A new experience for locally Running/Debugging Lambdas with SAM that uses VS Code launch configurations (PR #1215)
