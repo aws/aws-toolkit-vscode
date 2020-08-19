@@ -110,22 +110,23 @@ function initializeCodeLens(context: vscode.ExtensionContext) {
                 command: 'aws.previewStateMachine',
                 title: localize('AWS.stepFunctions.render', 'Render graph'),
             }
-
-            const publishCommand: vscode.Command = {
-                command: 'aws.stepfunctions.publishStateMachine',
-                title: localize('AWS.stepFunctions.publish', 'Publish to Step Functions'),
-            }
-
             const renderCodeLens = new vscode.CodeLens(topOfDocument, renderCommand)
-            const publishCodeLens = new vscode.CodeLens(topOfDocument, publishCommand)
 
-            return [publishCodeLens, renderCodeLens]
+            if (document.languageId === 'asl') {
+                const publishCommand: vscode.Command = {
+                    command: 'aws.stepfunctions.publishStateMachine',
+                    title: localize('AWS.stepFunctions.publish', 'Publish to Step Functions'),
+                }
+                const publishCodeLens = new vscode.CodeLens(topOfDocument, publishCommand)
+
+                return [publishCodeLens, renderCodeLens]
+            } else {
+                return [renderCodeLens]
+            }
         }
     }
 
-    const docSelector = {
-        language: 'asl',
-    }
+    const docSelector = [{ language: 'asl' }, { language: 'yasl' }]
 
     const codeLensProviderDisposable = vscode.languages.registerCodeLensProvider(
         docSelector,

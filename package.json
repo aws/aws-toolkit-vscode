@@ -58,6 +58,7 @@
         "onCommand:aws.aboutToolkit",
         "onCommand:aws.cloudWatchLogs.viewLogStream",
         "onLanguage:asl",
+        "onLanguage:yasl",
         "onLanguage:ssm-json",
         "onLanguage:ssm-yaml",
         "onCommand:aws.ssmDocument.createLocalDocument",
@@ -681,7 +682,7 @@
             "editor/title": [
                 {
                     "command": "aws.previewStateMachine",
-                    "when": "editorLangId == asl",
+                    "when": "editorLangId == asl || editorLangId == yasl",
                     "group": "navigation"
                 },
                 {
@@ -1295,6 +1296,18 @@
                 ]
             },
             {
+                "id": "yasl",
+                "aliases": [
+                    "YASL",
+                    "YAML Amazon States Language"
+                ],
+                "extensions": [
+                    "asl.yml",
+                    "asl.yaml"
+                ],
+                "configuration": "./language-configuration.json"
+            },
+            {
                 "id": "ssm-json",
                 "extensions": [
                     ".ssm.json"
@@ -1319,7 +1332,7 @@
                 "command": "aws.previewStateMachine",
                 "key": "ctrl+shift+v",
                 "mac": "cmd+shift+v",
-                "when": "editorTextFocus && editorLangId == asl"
+                "when": "editorTextFocus && (editorLangId == asl || editorLangId == yasl)"
             }
         ],
         "grammars": [
@@ -1327,6 +1340,11 @@
                 "language": "asl",
                 "scopeName": "source.asl",
                 "path": "./syntaxes/ASL.tmLanguage"
+            },
+            {
+                "language": "yasl",
+                "scopeName": "source.asl.yaml",
+                "path": "./syntaxes/yasl.tmLanguage.json"
             },
             {
                 "language": "ssm-json",
@@ -1419,7 +1437,6 @@
         "mocha": "^7.1.1",
         "mocha-junit-reporter": "^1.23.3",
         "mocha-multi-reporters": "^1.1.7",
-        "prettier": "^1.19.1",
         "pretty-quick": "^1.10.0",
         "readline-sync": "^1.4.9",
         "remap-istanbul": "^0.12.0",
@@ -1434,11 +1451,12 @@
         "vscode-nls-dev": "^3.3.1",
         "vscode-test": "^1.4.0",
         "webpack": "^4.41.2",
-        "webpack-cli": "^3.3.10"
+        "webpack-cli": "^3.3.10",
+        "umd-compat-loader": "^2.1.2"
     },
     "dependencies": {
         "adm-zip": "^0.4.13",
-        "amazon-states-language-service": "^1.4.1",
+        "amazon-states-language-service": "^1.6.0",
         "async-lock": "^1.1.3",
         "aws-sdk": "^2.581.0",
         "aws-ssm-document-language-service": "^1.0.0",
@@ -1450,12 +1468,13 @@
         "handlebars": "^4.7.6",
         "immutable": "^4.0.0-rc.12",
         "js-yaml": "^3.13.1",
-        "jsonc-parser": "^2.0.2",
+        "jsonc-parser": "^2.2.1",
         "lodash": "^4.17.19",
         "mime-types": "^2.1.27",
         "moment": "^2.24.0",
         "original-fs": "^1.1.0",
         "portfinder": "^1.0.25",
+        "prettier": "^1.19.1",
         "request": "^2.88.0",
         "semver": "^5.6.0",
         "sleep-promise": "^8.0.1",
@@ -1464,6 +1483,7 @@
         "triple-beam": "^1.3.0",
         "typescript": "^3.7.2",
         "uuid": "^3.3.2",
+        "vscode-json-languageservice": "^3.4.9",
         "vscode-languageclient": "^6.1.1",
         "vscode-languageserver": "^6.1.1",
         "vscode-languageserver-textdocument": "^1.0.1",

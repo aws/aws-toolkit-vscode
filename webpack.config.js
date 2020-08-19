@@ -68,6 +68,10 @@ const config = {
                     },
                 ],
             },
+            {
+                test: /node_modules[\\|/](amazon-states-language-service)/,
+                use: { loader: 'umd-compat-loader' },
+            },
         ],
     },
     plugins: [

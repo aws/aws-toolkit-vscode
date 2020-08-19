@@ -71,6 +71,8 @@ export async function activate(extensionContext: ExtensionContext) {
     const documentSelector = [
         { schema: 'file', language: 'asl' },
         { schema: 'untitled', language: 'asl' },
+        { schema: 'file', language: 'yasl' },
+        { schema: 'untitled', language: 'yasl' },
     ]
 
     // Options to control the language client
@@ -83,8 +85,8 @@ export async function activate(extensionContext: ExtensionContext) {
         },
         synchronize: {
             // Synchronize the setting section 'json' to the server
-            configurationSection: ['asl'],
-            fileEvents: workspace.createFileSystemWatcher('**/*.{asl.json,asl}'),
+            configurationSection: ['asl', 'yasl'],
+            fileEvents: workspace.createFileSystemWatcher('**/*.{asl.json,asl.yml,asl.yaml,asl}'),
         },
         middleware: {
             workspace: {

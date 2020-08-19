@@ -62,7 +62,7 @@ export class AslVisualization {
 
     public async sendUpdateMessage(updatedTextDocument: vscode.TextDocument) {
         const logger: Logger = getLogger()
-        const isYaml = updatedTextDocument.languageId === 'yaml'
+        const isYaml = updatedTextDocument.languageId === 'yasl'
         const text = updatedTextDocument.getText()
         let stateMachineData = text
         let yamlErrors: string[] = []
