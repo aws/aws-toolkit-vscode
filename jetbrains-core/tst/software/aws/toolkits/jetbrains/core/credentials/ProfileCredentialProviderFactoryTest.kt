@@ -351,6 +351,51 @@ class ProfileCredentialProviderFactoryTest {
     }
 
     @Test
+    fun testRemovingASourceProfile() {
+        profileFile.writeToFile(
+            """
+            [profile role]
+            role_arn=arn1
+            source_profile=source_profile
+
+            [profile source_profile]
+            aws_access_key_id=BarAccessKey
+            aws_secret_access_key=BarSecretKey
+            """.trimIndent()
+        )
+
+        val providerFactory = createProviderFactory()
+        val roleProfile = findCredentialIdentifier("role")
+        providerFactory.createProvider(roleProfile)
+
+        profileFile.writeToFile(
+            """
+            [profile role]
+            role_arn=arn1
+            source_profile=source_profile
+            """.trimIndent()
+        )
+
+        mockProfileWatcher.triggerListeners()
+
+        argumentCaptor<CredentialsChangeEvent>().apply {
+            verify(profileLoadCallback, times(2)).invoke(capture())
+
+            assertThat(firstValue.added).hasSize(2).has(profileName("role")).has(profileName("source_profile"))
+            assertThat(firstValue.modified).isEmpty()
+            assertThat(firstValue.removed).isEmpty()
+
+            assertThat(secondValue.added).isEmpty()
+            assertThat(secondValue.modified).isEmpty()
+            assertThat(secondValue.removed).hasSize(2).has(profileName("role")).has(profileName("source_profile"))
+        }
+
+        assertThatThrownBy {
+            providerFactory.createProvider(roleProfile)
+        }
+    }
+
+    @Test
     fun testRefreshExistingProfiles() {
         profileFile.writeToFile(
             """
@@ -386,6 +431,52 @@ class ProfileCredentialProviderFactoryTest {
             verify(profileLoadCallback, times(2)).invoke(capture())
 
             assertThat(firstValue.added).hasSize(1).has(profileName("foo"))
+            assertThat(firstValue.modified).isEmpty()
+            assertThat(firstValue.removed).isEmpty()
+
+            assertThat(secondValue.added).isEmpty()
+            assertThat(secondValue.modified).hasSize(1).has(profileName("foo"))
+            assertThat(secondValue.removed).isEmpty()
+        }
+    }
+
+    @Test
+    fun testEditingUnrelatedProfilesAreNotNotified() {
+        profileFile.writeToFile(
+            """
+            [profile foo]
+            aws_access_key_id=FooAccessKey
+            aws_secret_access_key=FooSecretKey
+            aws_session_token=FooSessionToken
+            
+            [profile bar]
+            aws_access_key_id=BarAccessKey
+            aws_secret_access_key=BarSecretKey
+            """.trimIndent()
+        )
+
+        createProviderFactory()
+        findCredentialIdentifier("foo")
+
+        profileFile.writeToFile(
+            """
+            [profile foo]
+            aws_access_key_id=FooAccessKey2
+            aws_secret_access_key=FooSecretKey2
+            aws_session_token=FooSessionToken2
+            
+            [profile bar]
+            aws_access_key_id=BarAccessKey
+            aws_secret_access_key=BarSecretKey
+            """.trimIndent()
+        )
+
+        mockProfileWatcher.triggerListeners()
+
+        argumentCaptor<CredentialsChangeEvent>().apply {
+            verify(profileLoadCallback, times(2)).invoke(capture())
+
+            assertThat(firstValue.added).hasSize(2).has(profileName("foo")).has(profileName("bar"))
             assertThat(firstValue.modified).isEmpty()
             assertThat(firstValue.removed).isEmpty()
 
