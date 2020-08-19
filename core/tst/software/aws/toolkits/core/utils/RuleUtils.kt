@@ -7,8 +7,9 @@ import java.util.Random
 
 object RuleUtils {
     fun randomName(prefix: String = "a", length: Int = 63): String {
+        val characters = ('0'..'9') + ('A'..'Z') + ('a'..'Z')
         val userName = System.getProperty("user.name", "unknown")
-        return "${prefix.toLowerCase()}-${userName.toLowerCase()}-${Random().nextInt(10000)}".take(length)
+        return "${prefix.toLowerCase()}-${userName.toLowerCase()}-${List(length) { characters.random() }.joinToString("")}".take(length)
     }
 
     fun prefixFromCallingClass(): String {
