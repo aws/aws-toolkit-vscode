@@ -58,6 +58,7 @@
         "onCommand:aws.aboutToolkit",
         "onCommand:aws.cloudWatchLogs.viewLogStream",
         "onLanguage:asl",
+        "onLanguage:yasl",
         "onLanguage:javascript",
         "onLanguage:python",
         "onLanguage:csharp",
@@ -516,7 +517,7 @@
             "editor/title": [
                 {
                     "command": "aws.previewStateMachine",
-                    "when": "editorLangId == asl",
+                    "when": "editorLangId == asl || editorLangId == yasl",
                     "group": "navigation"
                 },
                 {
@@ -1019,6 +1020,18 @@
                 "aliases": [
                     "Amazon States Language"
                 ]
+            },
+            {
+                "id": "yasl",
+                "aliases": [
+                    "YASL",
+                    "YAML Amazon States Language"
+                ],
+                "extensions": [
+                    "asl.yml",
+                    "asl.yaml"
+                ],
+                "configuration": "./language-configuration.json"
             }
         ],
         "keybindings": [
@@ -1026,7 +1039,7 @@
                 "command": "aws.previewStateMachine",
                 "key": "ctrl+shift+v",
                 "mac": "cmd+shift+v",
-                "when": "editorTextFocus && editorLangId == asl"
+                "when": "editorTextFocus && (editorLangId == asl || editorLangId == yasl)"
             }
         ],
         "grammars": [
@@ -1034,6 +1047,11 @@
                 "language": "asl",
                 "scopeName": "source.asl",
                 "path": "./syntaxes/ASL.tmLanguage"
+            },
+            {
+                "language": "yasl",
+                "scopeName": "source.asl.yaml",
+                "path": "./syntaxes/yasl.tmLanguage.json"
             }
         ],
         "resourceLabelFormatters": [
@@ -1159,6 +1177,7 @@
         "triple-beam": "^1.3.0",
         "typescript": "^3.7.2",
         "uuid": "^3.3.2",
+        "vscode-json-languageservice": "3.8.1",
         "vscode-languageclient": "^6.1.1",
         "vscode-languageserver": "^6.1.1",
         "vscode-languageserver-textdocument": "^1.0.1",
@@ -1167,7 +1186,9 @@
         "winston": "^3.2.1",
         "winston-transport": "^4.3.0",
         "xml2js": "^0.4.19",
-        "yaml": "^1.9.2"
+        "yaml": "^1.9.2",
+        "yaml-ast-parser-custom-tags": "^0.0.43",
+        "yaml-language-server": "^0.9.0"
     },
     "prettier": {
         "printWidth": 120,

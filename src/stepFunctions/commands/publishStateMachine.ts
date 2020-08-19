@@ -30,6 +30,10 @@ export async function publishStateMachine(awsContext: AwsContext, outputChannel:
         throw new Error('Could not get active text editor for state machine definition')
     }
 
+    if (textDocument.languageId == 'yasl') {
+        throw new Error('Cannot publish state machine from Amazon States Language in YAML')
+    }
+
     let region = awsContext.getCredentialDefaultRegion()
     if (!region) {
         region = DEFAULT_REGION
