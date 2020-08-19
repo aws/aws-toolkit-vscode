@@ -33,6 +33,8 @@ export class FakeFileStreams implements FileStreams {
             objectMode: true,
             read() {
                 this.push(readData)
+                // MUST be null or else it will not stop reading
+                // eslint-disable-next-line no-null/no-null
                 this.push(null)
             },
         })
@@ -64,6 +66,8 @@ export class FakeFileStreams implements FileStreams {
             objectMode: true,
             read() {
                 this.push(data)
+                // MUST be null or else it will not stop reading
+                // eslint-disable-next-line no-null/no-null
                 this.push(null)
             },
         })
