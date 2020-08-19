@@ -13,7 +13,12 @@ import {
     getLanguageService as getASLLanguageService,
     LanguageService,
 } from 'amazon-states-language-service'
-import { getLanguageService as getLanguageServiceVscode, LanguageServiceParams } from 'vscode-json-languageservice'
+import {
+    DocumentLanguageSettings,
+    JSONDocument,
+    getLanguageService as getLanguageServiceVscode,
+    LanguageServiceParams,
+} from 'vscode-json-languageservice'
 import {
     parse as parseYAML,
     YAMLDocument,
@@ -74,7 +79,11 @@ export const getLanguageService = function(params: LanguageServiceParams): Langu
         ...builtInParams,
     })
 
-    languageService.doValidation = async function(textDocument: TextDocument) {
+    languageService.doValidation = async function(
+        textDocument: TextDocument,
+        jsonDocument: JSONDocument,
+        documentSettings: DocumentLanguageSettings
+    ) {
         const yamlDocument: YAMLDocument = parseYAML(textDocument.getText())
         const validationResult: any[] = []
 
@@ -93,7 +102,11 @@ export const getLanguageService = function(params: LanguageServiceParams): Langu
         return validationResult
     }
 
-    languageService.doComplete = async function(document: TextDocument, position: Position): Promise<CompletionList> {
+    languageService.doComplete = async function(
+        document: TextDocument,
+        position: Position,
+        doc: JSONDocument
+    ): Promise<CompletionList> {
         let yamldoc = parseYAML(document.getText())
         const offset = document.offsetAt(position)
         let currentDoc = matchOffsetToDocument(offset, yamldoc)
@@ -170,7 +183,11 @@ export const getLanguageService = function(params: LanguageServiceParams): Langu
         return aslLanguageService.doResolve(item)
     }
 
-    languageService.doHover = function(document: TextDocument, position: Position): Thenable<Hover | null> {
+    languageService.doHover = function(
+        document: TextDocument,
+        position: Position,
+        jsonDocument: JSONDocument
+    ): Thenable<Hover | null> {
         const doc = parseYAML(document.getText())
         const offset = document.offsetAt(position)
         const currentDoc = matchOffsetToDocument(offset, doc)
