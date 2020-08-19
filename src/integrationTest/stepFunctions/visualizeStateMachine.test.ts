@@ -153,7 +153,7 @@ describe('visualizeStateMachine', async () => {
     })
 
     it('correctly displays content when given a sample state machine in yaml', async () => {
-        const fileName = 'mysamplestatemachine.yaml'
+        const fileName = 'mysamplestatemachine.asl.yaml'
         const textEditor = await openATextEditorWithText(samleStateMachineYaml, fileName)
 
         const result = await vscode.commands.executeCommand<vscode.WebviewPanel>('aws.previewStateMachine')
