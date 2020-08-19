@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/* eslint-disable no-useless-escape */
 /* eslint-disable @typescript-eslint/unbound-method*/
 
 import {
@@ -89,7 +88,7 @@ export const getLanguageService = function(params: LanguageServiceParams): Langu
 
         for (const currentYAMLDoc of yamlDocument.documents) {
             const validation = await aslLanguageService.doValidation(textDocument, currentYAMLDoc)
-            const syd = (currentYAMLDoc as unknown) as SingleYAMLDocument
+            const syd = ((currentYAMLDoc as unknown) as any) as SingleYAMLDocument
             if (syd.errors.length > 0) {
                 validationResult.push(...syd.errors)
             }
@@ -113,13 +112,10 @@ export const getLanguageService = function(params: LanguageServiceParams): Langu
         let atSpace = false
 
         // if a yaml doc is null, it must be given text to allow auto-completion
-        if (currentDoc === null) {
-            atSpace = true
-            // surrounds empty doc with curly braces
-            const newText = document.getText().substring(0, offset) + '{\n\n}\r' + document.getText().substr(offset)
-            yamldoc = parseYAML(newText)
-            currentDoc = matchOffsetToDocument(offset, yamldoc)
-            position.character += 2
+        if (!currentDoc) {
+            currentDoc = initializeDocument(document, offset)
+            // move cursor position into new empty object
+            position.character += 1
         }
 
         const yamlCompletions = await completer.doComplete(document, position, false)
@@ -136,22 +132,19 @@ export const getLanguageService = function(params: LanguageServiceParams): Langu
             // yaml doesn't allow auto-completion from white-space after certain nodes
             atSpace = true
             // initialize an empty string and adjust position to within the string before parsing yaml to json
-            const newText = document.getText().substring(0, offset) + '""\r' + document.getText().substr(offset)
-            yamldoc = parseYAML(newText)
+            const newText = document.getText().substring(0, offset) + '""\n' + document.getText().substr(offset)
+            const yamldoc = parseYAML(newText)
             currentDoc = matchOffsetToDocument(offset, yamldoc)
             position.character += 1
-        } else if (node.type === 'property') {
+        } else if (node.type === 'property' || (node.type === 'object' && position.character !== 0)) {
             // allow auto-completion of States field from empty space
-            if (node.keyNode.value === 'States') {
-                if (document.getText().substring(offset - 2, offset) === '  ') {
-                    // initialize brackets to surround the empty space when parsing
-                    const newText = document.getText().substring(0, offset) + '{}\r' + document.getText().substr(offset)
-                    yamldoc = parseYAML(newText)
-                    currentDoc = matchOffsetToDocument(offset, yamldoc)
-                    position.character += 1
-                } else {
-                    position.character -= 1
-                }
+            if (document.getText().substring(offset - 2, offset) === '  ') {
+                currentDoc = initializeDocument(document, offset)
+                // move cursor position into new empty object
+                position.character += 1
+            } else {
+                // adjust cursor back after parsing to keep it within States node
+                position.character -= 1
             }
         }
 
@@ -191,8 +184,8 @@ export const getLanguageService = function(params: LanguageServiceParams): Langu
         const doc = parseYAML(document.getText())
         const offset = document.offsetAt(position)
         const currentDoc = matchOffsetToDocument(offset, doc)
-        if (currentDoc === null) {
-            return null!
+        if (!currentDoc) {
+            return Promise.resolve(null)
         }
 
         const currentDocIndex = doc.documents.indexOf(currentDoc)
@@ -243,6 +236,12 @@ export const getLanguageService = function(params: LanguageServiceParams): Langu
         }
 
         return results
+    }
+
+    // initialize brackets to surround the empty space when parsing
+    const initializeDocument = function(text: TextDocument, offset: number) {
+        const newText = text.getText().substring(0, offset) + '{}\r' + text.getText().substr(offset)
+        return matchOffsetToDocument(offset, parseYAML(newText))
     }
 
     return languageService

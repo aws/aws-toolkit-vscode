@@ -1187,8 +1187,7 @@
         "winston-transport": "^4.3.0",
         "xml2js": "^0.4.19",
         "yaml": "^1.9.2",
-        "yaml-ast-parser-custom-tags": "^0.0.43",
-        "yaml-language-server": "^0.9.0"
+        "yaml-language-server": "0.9.0"
     },
     "prettier": {
         "printWidth": 120,

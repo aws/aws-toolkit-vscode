@@ -239,7 +239,7 @@ describe('ASL YAML context-aware completion', () => {
                 labels: itemLabels.filter(label => label !== 'NextState'),
                 json: document4,
                 position: [9, 18],
-                start: [9, 17],
+                start: [9, 16],
                 end: [9, 17],
                 labelToInsertText: label => `${label}"`,
             })
@@ -252,7 +252,7 @@ describe('ASL YAML context-aware completion', () => {
                 labels: nestedItemLabels.filter(label => label !== 'Nested4'),
                 json: documentNested,
                 position: [12, 21],
-                start: [12, 20],
+                start: [12, 19],
                 end: [12, 20],
                 labelToInsertText: label => `${label}"`,
             })

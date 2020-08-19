@@ -16,6 +16,7 @@ import {
     getLanguageService as getAslJsonLanguageService,
     JSONDocument,
     LanguageService,
+    TextDocument,
 } from 'amazon-states-language-service'
 import { getLanguageService as getAslYamlLanguageService } from './asl-yaml-languageservice'
 import {
@@ -34,7 +35,6 @@ import {
     TextDocumentSyncKind,
 } from 'vscode-languageserver'
 
-import { TextDocument } from 'vscode-languageserver-textdocument'
 import { safeDump, safeLoad } from 'js-yaml'
 import { posix } from 'path'
 import { clearTimeout, setTimeout } from 'timers'
@@ -92,7 +92,7 @@ documents.listen(connection)
 let clientSnippetSupport = false
 let dynamicFormatterRegistration = false
 let hierarchicalDocumentSymbolSupport = false
-let languageService: LanguageService
+let langId = 'asl'
 
 let foldingRangeLimitDefault = Number.MAX_VALUE
 let foldingRangeLimit = Number.MAX_VALUE
@@ -250,7 +250,6 @@ connection.onRequest(ForceValidateRequest.type, async uri => {
 // when the text document first opened or when its content has changed.
 documents.onDidChangeContent(change => {
     LimitExceededWarnings.cancel(change.document.uri)
-    setLanguageService(change.document)
     triggerValidation(change.document)
 })
 
@@ -283,11 +282,11 @@ function triggerValidation(textDocument: TextDocument): void {
 }
 
 // sets language service depending on document language
-function setLanguageService(textDocument: TextDocument): void {
-    if (textDocument.languageId == 'yasl') {
-        languageService = aslYamlLanguageService
+function getLanguageService(): LanguageService {
+    if (langId === 'yasl') {
+        return aslYamlLanguageService
     } else {
-        languageService = aslJsonLanguageService
+        return aslJsonLanguageService
     }
 }
 
@@ -303,24 +302,26 @@ function validateTextDocument(textDocument: TextDocument, callback?: (diagnostic
 
         return
     }
-    setLanguageService(textDocument)
     const jsonDocument = getJSONDocument(textDocument)
     const version = textDocument.version
 
     const documentSettings: DocumentLanguageSettings = { comments: 'error', trailingCommas: 'error' }
-    languageService.doValidation(textDocument, jsonDocument, documentSettings).then(
-        diagnostics => {
-            setTimeout(() => {
-                const currDocument = documents.get(textDocument.uri)
-                if (currDocument && currDocument.version === version) {
-                    respond(diagnostics) // Send the computed diagnostics to VSCode.
-                }
-            }, 100)
-        },
-        error => {
-            connection.console.error(formatError(`Error while validating ${textDocument.uri}`, error))
-        }
-    )
+    langId = textDocument.languageId
+    getLanguageService()
+        .doValidation(textDocument, jsonDocument, documentSettings)
+        .then(
+            diagnostics => {
+                setTimeout(() => {
+                    const currDocument = documents.get(textDocument.uri)
+                    if (currDocument && currDocument.version === version) {
+                        respond(diagnostics) // Send the computed diagnostics to VSCode.
+                    }
+                }, 100)
+            },
+            error => {
+                connection.console.error(formatError(`Error while validating ${textDocument.uri}`, error))
+            }
+        )
 }
 
 connection.onDidChangeWatchedFiles(change => {
@@ -328,7 +329,7 @@ connection.onDidChangeWatchedFiles(change => {
     let hasChanges = false
     // tslint:disable-next-line: no-unsafe-any
     change.changes.forEach(c => {
-        if (languageService.resetSchema(c.uri)) {
+        if (aslJsonLanguageService.resetSchema(c.uri)) {
             hasChanges = true
         }
     })
@@ -338,7 +339,7 @@ connection.onDidChangeWatchedFiles(change => {
 })
 
 const jsonDocuments = getLanguageModelCache<JSONDocument>(10, 60, document =>
-    languageService.parseJSONDocument(document)
+    aslJsonLanguageService.parseJSONDocument(document)
 )
 documents.onDidClose(e => {
     jsonDocuments.onDocumentRemoved(e.document)
@@ -356,18 +357,17 @@ connection.onCompletion((textDocumentPosition, token) => {
         async () => {
             const document = documents.get(textDocumentPosition.textDocument.uri)
             if (document) {
-                setLanguageService(document)
                 const jsonDocument = getJSONDocument(document)
-
-                const completions = await languageService.doComplete(
+                langId = document.languageId
+                const completions = await getLanguageService().doComplete(
                     document,
                     textDocumentPosition.position,
                     jsonDocument
                 )
                 // the snippets need to be overwritten each time in the correct language
                 completions?.items.forEach(completion => {
-                    if (completion.kind == CompletionItemKind.Snippet) {
-                        if (document.languageId == 'yasl') {
+                    if (completion.kind === CompletionItemKind.Snippet) {
+                        if (document.languageId === 'yasl') {
                             if (completion.insertText) {
                                 completion.insertText = safeDump(safeLoad(completion.insertText))
                                 // convert single quotes to double quotes for consistency with auto-completions
@@ -397,7 +397,7 @@ connection.onCompletion((textDocumentPosition, token) => {
 connection.onCompletionResolve((completionItem, token) => {
     return runSafeAsync(
         () => {
-            return languageService.doResolve(completionItem)
+            return getLanguageService().doResolve(completionItem)
         },
         completionItem,
         'Error while resolving completion proposal',
@@ -410,10 +410,9 @@ connection.onHover((textDocumentPositionParams, token) => {
         async () => {
             const document = documents.get(textDocumentPositionParams.textDocument.uri)
             if (document) {
-                setLanguageService(document)
                 const jsonDocument = getJSONDocument(document)
-
-                return languageService.doHover(document, textDocumentPositionParams.position, jsonDocument)
+                langId = document.languageId
+                return getLanguageService().doHover(document, textDocumentPositionParams.position, jsonDocument)
             }
 
             return undefined
@@ -430,7 +429,7 @@ connection.onDocumentSymbol((documentSymbolParams, token) => {
             // tslint:disable-next-line no-unsafe-any
             const document = documents.get(documentSymbolParams.textDocument.uri)
             if (document) {
-                setLanguageService(document)
+                langId = document.languageId
                 const jsonDocument = getJSONDocument(document)
                 const onResultLimitExceeded = LimitExceededWarnings.onResultLimitExceeded(
                     document.uri,
@@ -438,12 +437,12 @@ connection.onDocumentSymbol((documentSymbolParams, token) => {
                     'document symbols'
                 )
                 if (hierarchicalDocumentSymbolSupport) {
-                    return languageService.findDocumentSymbols2(document, jsonDocument, {
+                    return getLanguageService().findDocumentSymbols2(document, jsonDocument, {
                         resultLimit,
                         onResultLimitExceeded,
                     })
                 } else {
-                    return languageService.findDocumentSymbols(document, jsonDocument, {
+                    return getLanguageService().findDocumentSymbols(document, jsonDocument, {
                         resultLimit,
                         onResultLimitExceeded,
                     })
@@ -464,8 +463,8 @@ connection.onDocumentRangeFormatting((formatParams, token) => {
         () => {
             const document = documents.get(formatParams.textDocument.uri)
             if (document) {
-                setLanguageService(document)
-                return languageService.format(document, formatParams.range, formatParams.options)
+                langId = document.languageId
+                return getLanguageService().format(document, formatParams.range, formatParams.options)
             }
 
             return []
@@ -481,7 +480,7 @@ connection.onDocumentColor((params, token) => {
         async () => {
             const document = documents.get(params.textDocument.uri)
             if (document) {
-                setLanguageService(document)
+                langId = document.languageId
                 const onResultLimitExceeded = LimitExceededWarnings.onResultLimitExceeded(
                     document.uri,
                     resultLimit,
@@ -489,7 +488,7 @@ connection.onDocumentColor((params, token) => {
                 )
                 const jsonDocument = getJSONDocument(document)
 
-                return languageService.findDocumentColors(document, jsonDocument, {
+                return getLanguageService().findDocumentColors(document, jsonDocument, {
                     resultLimit,
                     onResultLimitExceeded,
                 })
@@ -508,10 +507,10 @@ connection.onColorPresentation((params, token) => {
         () => {
             const document = documents.get(params.textDocument.uri)
             if (document) {
-                setLanguageService(document)
+                langId = document.languageId
                 const jsonDocument = getJSONDocument(document)
 
-                return languageService.getColorPresentations(document, jsonDocument, params.color, params.range)
+                return getLanguageService().getColorPresentations(document, jsonDocument, params.color, params.range)
             }
 
             return []
@@ -532,8 +531,8 @@ connection.onFoldingRanges((params, token) => {
                     foldingRangeLimit,
                     'folding ranges'
                 )
-                setLanguageService(document)
-                return languageService.getFoldingRanges(document, {
+                langId = document.languageId
+                return getLanguageService().getFoldingRanges(document, {
                     rangeLimit: foldingRangeLimit,
                     onRangeLimitExceeded,
                 })
@@ -552,10 +551,10 @@ connection.onSelectionRanges((params, token) => {
         () => {
             const document = documents.get(params.textDocument.uri)
             if (document) {
-                setLanguageService(document)
+                langId = document.languageId
                 const jsonDocument = getJSONDocument(document)
 
-                return languageService.getSelectionRanges(document, params.positions, jsonDocument)
+                return getLanguageService().getSelectionRanges(document, params.positions, jsonDocument)
             }
 
             return []
