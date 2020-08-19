@@ -8,6 +8,7 @@ import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -35,6 +36,7 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runtim
         @Parameterized.Parameters(name = "{0}")
         fun data(): Collection<Array<Runtime>> = listOf(
             arrayOf(Runtime.JAVA8),
+            arrayOf(Runtime.JAVA8_AL2),
             arrayOf(Runtime.JAVA11)
         )
     }
@@ -66,7 +68,7 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runtim
         )
 
         val compatibility = when (runtime) {
-            Runtime.JAVA8 -> "1.8"
+            Runtime.JAVA8, Runtime.JAVA8_AL2 -> "1.8"
             Runtime.JAVA11 -> "11"
             else -> throw NotImplementedError()
         }
@@ -168,6 +170,7 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runtim
 
     @Test
     fun samIsExecutedWithDebugger() {
+        assumeTrue(runtime != Runtime.JAVA8_AL2)
         projectRule.addBreakpoint()
 
         val runConfiguration = createHandlerBasedRunConfiguration(

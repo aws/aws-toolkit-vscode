@@ -9,11 +9,11 @@ import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.command.CommandProcessor
 import com.intellij.openapi.ui.GraphicsConfig
 import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.ui.CellRendererPanel
 import com.intellij.ui.ClickListener
 import com.intellij.ui.EditorTextField
 import com.intellij.ui.JBColor
 import com.intellij.ui.JreHiDpiUtil
-import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextArea
 import com.intellij.ui.paint.LinePainter2D
 import com.intellij.ui.speedSearch.SpeedSearchSupply
@@ -35,12 +35,11 @@ import java.text.SimpleDateFormat
 import javax.swing.AbstractButton
 import javax.swing.JComboBox
 import javax.swing.JComponent
-import javax.swing.JLabel
 import javax.swing.JTable
 import javax.swing.JTextArea
 import javax.swing.JTextField
 import javax.swing.ListModel
-import javax.swing.table.DefaultTableCellRenderer
+import javax.swing.table.TableCellRenderer
 import javax.swing.text.Highlighter
 import javax.swing.text.JTextComponent
 
@@ -172,32 +171,35 @@ private fun JTextArea.speedSearchHighlighter(speedSearchEnabledComponent: JCompo
     }
 }
 
-class WrappingCellRenderer(private val wrapOnSelection: Boolean, private val toggleableWrap: Boolean) : DefaultTableCellRenderer() {
+class WrappingCellRenderer(private val wrapOnSelection: Boolean, private val toggleableWrap: Boolean) : CellRendererPanel(), TableCellRenderer {
     var wrap: Boolean = false
 
-    // JBTextArea has a different font from JBLabel (the default in a table) so harvest the font off of it
-    private val jLabelFont = JBLabel().font
+    private val textArea = JBTextArea()
+
+    init {
+        textArea.font = UIUtil.getLabelFont()
+        textArea.wrapStyleWord = true
+
+        add(textArea)
+    }
 
     override fun getTableCellRendererComponent(table: JTable?, value: Any?, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component {
-        val defaultComponent = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column)
-        table ?: return defaultComponent
-        val component = JBTextArea()
-
-        component.border = (defaultComponent as? JLabel)?.border ?: JBUI.Borders.empty(2, 2)
-        component.wrapStyleWord = (wrapOnSelection && isSelected) || (toggleableWrap && wrap)
-        component.lineWrap = (wrapOnSelection && isSelected) || (toggleableWrap && wrap)
-        component.font = jLabelFont
-        component.text = (value as? String)?.trim()
-        component.setSelectionHighlighting(table, isSelected)
-
-        component.setSize(table.columnModel.getColumn(column).width, component.preferredSize.height)
-        if (table.getRowHeight(row) != component.preferredSize.height) {
-            table.setRowHeight(row, component.preferredSize.height)
+        if (table == null) {
+            return this
         }
 
-        component.speedSearchHighlighter(table)
+        textArea.lineWrap = (wrapOnSelection && isSelected) || (toggleableWrap && wrap)
+        textArea.text = (value as? String) ?: ""
+        textArea.setSelectionHighlighting(table, isSelected)
 
-        return component
+        setSize(table.columnModel.getColumn(column).width, preferredSize.height)
+        if (table.getRowHeight(row) != preferredSize.height) {
+            table.setRowHeight(row, preferredSize.height)
+        }
+
+        textArea.speedSearchHighlighter(table)
+
+        return this
     }
 }
 

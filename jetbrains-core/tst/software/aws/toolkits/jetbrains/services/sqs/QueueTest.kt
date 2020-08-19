@@ -4,9 +4,9 @@
 package software.aws.toolkits.jetbrains.services.sqs
 
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Test
 import software.aws.toolkits.core.region.AwsRegion
-import kotlin.test.assertFailsWith
 
 class QueueTest {
     private val defaultRegion = AwsRegion("us-east-1", "US East (N. Virginia)", "aws")
@@ -43,16 +43,16 @@ class QueueTest {
 
     @Test
     fun `Throw exception with non-url`() {
-        assertFailsWith<IllegalArgumentException> { Queue("Not a URL", defaultRegion) }
+        assertThatThrownBy { Queue("Not a URL", defaultRegion) }.isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test
     fun `Throw exception with no name`() {
-        assertFailsWith<IllegalArgumentException> { Queue("https://sqs.us-east-1.amazonaws.com/123456789012/", defaultRegion) }
+        assertThatThrownBy { Queue("https://sqs.us-east-1.amazonaws.com/123456789012/", defaultRegion) }.isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test
     fun `Throw exception with invalid account ID`() {
-        assertFailsWith<IllegalArgumentException> { Queue("https://sqs.us-east-1.amazonaws.com/123/test-4", defaultRegion) }
+        assertThatThrownBy { Queue("https://sqs.us-east-1.amazonaws.com/123/test-4", defaultRegion) }.isInstanceOf(IllegalArgumentException::class.java)
     }
 }

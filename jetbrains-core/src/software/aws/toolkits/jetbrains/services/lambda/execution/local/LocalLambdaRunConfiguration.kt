@@ -21,13 +21,13 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.refactoring.listeners.RefactoringElementAdapter
 import com.intellij.refactoring.listeners.RefactoringElementListener
+import com.intellij.util.text.SemVer
 import com.intellij.util.text.nullize
 import org.jetbrains.concurrency.isPending
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
@@ -77,15 +77,16 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
     }
 
     override fun checkConfiguration() {
-        checkSamVersion()
+        val (handler, runtime) = resolveLambdaInfo(project = project, functionOptions = serializableOptions.functionOptions)
+        checkSamVersion(runtime)
         resolveRegion()
         resolveCredentials()
-        checkLambdaHandler()
+        checkLambdaHandler(handler, runtime)
         checkInput()
     }
 
-    private fun checkSamVersion() {
-        ExecutableManager.getInstance().getExecutableIfPresent<SamExecutable>().let {
+    private fun checkSamVersion(runtime: Runtime) {
+        val executable = ExecutableManager.getInstance().getExecutableIfPresent<SamExecutable>().let {
             when (it) {
                 is ExecutableInstance.Executable -> it
                 is ExecutableInstance.InvalidExecutable, is ExecutableInstance.UnresolvedExecutable -> throw RuntimeConfigurationError(
@@ -93,24 +94,36 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
                 )
             }
         }
+
+        runtime.runtimeGroup?.let { runtimeGroup ->
+            SemVer.parseFromText(executable.version)?.let { semVer ->
+                // TODO: Executable manager should better expose the VersionScheme of the Executable...
+                try {
+                    runtimeGroup.validateSamVersion(runtime, semVer)
+                } catch (e: Exception) {
+                    throw RuntimeConfigurationError(e.message)
+                }
+            }
+        }
     }
 
-    private fun checkLambdaHandler() {
+    private fun checkLambdaHandler(handler: String, runtime: Runtime): Runtime {
         val handlerValidator = project.service<LambdaHandlerValidator>()
-        val (handler, runtime) = resolveLambdaInfo(project = project, functionOptions = serializableOptions.functionOptions)
         val promise = handlerValidator.evaluate(LambdaHandlerValidator.LambdaEntry(project, runtime, handler))
 
         if (promise.isPending) {
             promise.then { isValid ->
                 messageBus.syncPublisher(LambdaHandlerEvaluationListener.TOPIC).handlerValidationFinished(handler, isValid)
             }
-            logger.info { "Validation will proceed asynchronously for SAM CLI version" }
             throw RuntimeConfigurationError(message("lambda.run_configuration.handler.validation.in_progress"))
         }
 
         val isHandlerValid = promise.blockingGet(0)!!
-        if (!isHandlerValid)
+        if (!isHandlerValid) {
             throw RuntimeConfigurationError(message("lambda.run_configuration.handler_not_found", handler))
+        }
+
+        return runtime
     }
 
     override fun getState(executor: Executor, environment: ExecutionEnvironment): SamRunningState {

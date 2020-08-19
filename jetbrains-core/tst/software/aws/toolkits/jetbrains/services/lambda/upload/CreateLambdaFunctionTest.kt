@@ -6,25 +6,30 @@ package software.aws.toolkits.jetbrains.services.lambda.upload
 import com.intellij.psi.PsiElement
 import com.intellij.psi.SmartPointerManager
 import com.intellij.psi.SmartPsiElementPointer
+import com.intellij.testFramework.DisposableRule
+import com.intellij.testFramework.ExtensionTestUtil
 import com.intellij.testFramework.TestActionEvent
 import com.intellij.testFramework.runInEdtAndWait
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.mock
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.openFile
-import kotlin.test.assertFails
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 class CreateLambdaFunctionTest {
     @Rule
     @JvmField
     val projectRule = JavaCodeInsightTestFixtureRule()
+
+    @Rule
+    @JvmField
+    val disposableRule = DisposableRule()
 
     lateinit var smartElement: SmartPsiElementPointer<PsiElement>
 
@@ -32,19 +37,22 @@ class CreateLambdaFunctionTest {
     fun setup() {
         val fixture = projectRule.fixture
 
-        val element = fixture.addClass("""
+        val element = fixture.addClass(
+            """
 public class Processor {
     public void handler() {
 
     }
 }
-        """).findMethodsByName("handler", false).first()
+        """
+        ).findMethodsByName("handler", false).first()
 
         runInEdtAndWait {
             smartElement = SmartPointerManager.createPointer(element)
         }
 
-        fixture.openFile("template.yaml", """
+        fixture.openFile(
+            "template.yaml", """
 Resources:
   ServerlessFunction:
     Type: AWS::Serverless::Function
@@ -53,7 +61,8 @@ Resources:
       Handler: helloworld.App::handleRequest
       Runtime: foo
       Timeout: 800
-""")
+"""
+        )
     }
 
     @Test
@@ -61,7 +70,7 @@ Resources:
         val handlerName = "helloworld.App::handleRequest"
 
         runInEdtAndWait {
-            assertFails { CreateLambdaFunction(handlerName, null, null) }
+            assertThatThrownBy { CreateLambdaFunction(handlerName, null, null) }.isInstanceOf(java.lang.IllegalArgumentException::class.java)
         }
     }
 
@@ -73,7 +82,7 @@ Resources:
         }
 
         runInEdtAndWait {
-            assertFails { CreateLambdaFunction(handlerName, null, handlerResolver) }
+            assertThatThrownBy { CreateLambdaFunction(handlerName, null, handlerResolver) }.isInstanceOf(java.lang.IllegalArgumentException::class.java)
         }
     }
 
@@ -82,7 +91,7 @@ Resources:
         val handlerName = "helloworld.App::handleRequest"
 
         runInEdtAndWait {
-            assertFails { CreateLambdaFunction(handlerName, smartElement, null) }
+            assertThatThrownBy { CreateLambdaFunction(handlerName, smartElement, null) }.isInstanceOf(java.lang.IllegalArgumentException::class.java)
         }
     }
 
@@ -99,7 +108,7 @@ Resources:
             val actionEvent = TestActionEvent()
             action.update(actionEvent)
 
-            assertFalse { actionEvent.presentation.isVisible }
+            assertThat(actionEvent.presentation.isVisible).isFalse()
         }
     }
 
@@ -116,7 +125,7 @@ Resources:
             val actionEvent = TestActionEvent()
             action.update(actionEvent)
 
-            assertTrue { actionEvent.presentation.isVisible }
+            assertThat(actionEvent.presentation.isVisible).isTrue()
         }
     }
 
@@ -133,7 +142,33 @@ Resources:
             val actionEvent = TestActionEvent()
             action.update(actionEvent)
 
-            assertTrue { actionEvent.presentation.isVisible }
+            assertThat(actionEvent.presentation.isVisible).isTrue()
+        }
+    }
+
+    @Test
+    fun `Supported runtime groups shows action`() {
+        // With no masking it should be visible because we have runtime groups
+        runInEdtAndWait {
+            val action = CreateLambdaFunction()
+            val actionEvent = TestActionEvent()
+            action.update(actionEvent)
+            assertThat(actionEvent.presentation.isVisible).isTrue()
+        }
+    }
+
+    @Test
+    fun `No supported runtime groups hides action`() {
+        ExtensionTestUtil.maskExtensions(
+            LambdaHandlerResolver.extensionPointName,
+            listOf(),
+            disposableRule.disposable
+        )
+        runInEdtAndWait {
+            val action = CreateLambdaFunction()
+            val actionEvent = TestActionEvent()
+            action.update(actionEvent)
+            assertThat(actionEvent.presentation.isVisible).isFalse()
         }
     }
 }

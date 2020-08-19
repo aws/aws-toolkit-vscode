@@ -16,9 +16,9 @@ object SamCommonTestUtils {
         return SamCommon.mapper.writeValueAsString(tree)
     }
 
-    fun getMinVersionAsJson() = getVersionAsJson(SamExecutable().samMinVersion.toString())
+    fun getMinVersionAsJson() = getVersionAsJson(SamExecutable.minVersion.toString())
 
-    fun getMaxVersionAsJson() = getVersionAsJson(SamExecutable().samMaxVersion.toString())
+    fun getMaxVersionAsJson() = getVersionAsJson(SamExecutable.maxVersion.toString())
 
     fun makeATestSam(message: String, path: String? = null, exitCode: Int = 0): Path {
         val sam = path?.let {

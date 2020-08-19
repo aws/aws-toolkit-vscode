@@ -64,7 +64,7 @@ class SamCommonTest {
         runReadAction {
             val dir = file.containingDirectory.virtualFile
             val templateFile = SamCommon.getTemplateFromDirectory(dir)
-            assertNotNull(templateFile)
+            assertThat(templateFile).isNotNull
         }
     }
 

@@ -12,17 +12,19 @@ import com.jetbrains.python.psi.LanguageLevel
 import com.jetbrains.python.sdk.PythonSdkType
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.BuiltInRuntimeGroups
+import software.aws.toolkits.jetbrains.services.lambda.RuntimeInfo
 import software.aws.toolkits.jetbrains.services.lambda.SdkBasedRuntimeGroup
 
 class PythonRuntimeGroup : SdkBasedRuntimeGroup() {
     override val id: String = BuiltInRuntimeGroups.Python
-    override val runtimes: Set<Runtime> = setOf(
-        Runtime.PYTHON2_7,
-        Runtime.PYTHON3_6,
-        Runtime.PYTHON3_7,
-        Runtime.PYTHON3_8
-    )
     override val languageIds: Set<String> = setOf(PythonLanguage.INSTANCE.id)
+
+    override val supportedRuntimes = listOf(
+        RuntimeInfo(Runtime.PYTHON2_7),
+        RuntimeInfo(Runtime.PYTHON3_6),
+        RuntimeInfo(Runtime.PYTHON3_7),
+        RuntimeInfo(Runtime.PYTHON3_8)
+    )
 
     override fun runtimeForSdk(sdk: Sdk): Runtime? = when {
         sdk.sdkType is PythonSdkType && PythonSdkType.getLanguageLevelForSdk(sdk).isAtLeast(LanguageLevel.PYTHON38) -> Runtime.PYTHON3_8

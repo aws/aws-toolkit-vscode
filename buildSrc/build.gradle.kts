@@ -10,6 +10,7 @@ val assertjVersion: String by project
 val junitVersion: String by project
 val mockitoVersion: String by project
 val mockitoKotlinVersion: String by project
+val ideaPluginVersion: String by project
 
 buildscript {
     // This has to be here otherwise properties are not loaded and nothing works
@@ -24,6 +25,7 @@ buildscript {
 }
 
 repositories {
+    maven("https://plugins.gradle.org/m2/")
     mavenLocal()
     mavenCentral()
     jcenter()
@@ -38,8 +40,12 @@ plugins {
 }
 
 sourceSets {
-    main.get().java.srcDir("src")
-    test.get().java.srcDir("src")
+    main {
+        java.srcDir("src")
+    }
+    test {
+        java.srcDir("src")
+    }
 }
 
 dependencies {
@@ -49,6 +55,8 @@ dependencies {
     api("org.eclipse.jgit:org.eclipse.jgit:5.0.2.201807311906-r")
     api("com.atlassian.commonmark:commonmark:0.11.0")
     api("software.amazon.awssdk:codegen:$awsSdkVersion")
+
+    implementation("gradle.plugin.org.jetbrains.intellij.plugins:gradle-intellij-plugin:$ideaPluginVersion")
 
     testImplementation("org.assertj:assertj-core:$assertjVersion")
     testImplementation("junit:junit:$junitVersion")
@@ -60,7 +68,7 @@ gradlePlugin {
     plugins {
         create("changeLog") {
             id = "toolkit-change-log"
-            implementationClass = "toolkits.gradle.changelog.ChangeLogPlugin"
+            implementationClass = "software.aws.toolkits.gradle.changelog.ChangeLogPlugin"
         }
     }
 }
