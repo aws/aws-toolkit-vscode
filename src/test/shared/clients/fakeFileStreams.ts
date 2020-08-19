@@ -33,7 +33,7 @@ export class FakeFileStreams implements FileStreams {
             objectMode: true,
             read() {
                 this.push(readData)
-                this.push(null)
+                this.push(undefined)
             },
         })
 
@@ -64,7 +64,7 @@ export class FakeFileStreams implements FileStreams {
             objectMode: true,
             read() {
                 this.push(data)
-                this.push(null)
+                this.push(undefined)
             },
         })
     }
