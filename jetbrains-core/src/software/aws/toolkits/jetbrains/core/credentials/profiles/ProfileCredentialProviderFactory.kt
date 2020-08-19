@@ -113,7 +113,7 @@ class ProfileCredentialProviderFactory : CredentialProviderFactory {
         }
 
         // Any remaining profiles must have either become invalid or removed from the cred/config files
-        previousProfilesSnapshot.values.asSequence().map { it.asId(newProfiles.validProfiles) }.toCollection(profilesRemoved)
+        previousProfilesSnapshot.values.asSequence().map { it.asId(previousProfilesSnapshot) }.toCollection(profilesRemoved)
 
         profileHolder.update(newProfiles.validProfiles)
         credentialLoadCallback(CredentialsChangeEvent(profilesAdded, profilesModified, profilesRemoved))

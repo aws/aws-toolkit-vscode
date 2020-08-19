@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix removing a source_profile leading to an IDE error on profile file refresh"
+}
