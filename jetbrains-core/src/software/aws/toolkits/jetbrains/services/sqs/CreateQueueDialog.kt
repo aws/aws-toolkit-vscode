@@ -72,15 +72,8 @@ class CreateQueueDialog(
         if (queueName().length > MAX_LENGTH_OF_QUEUE_NAME) {
             return ValidationInfo(message("sqs.create.validation.long.queue.name", MAX_LENGTH_OF_QUEUE_NAME), view.queueName)
         }
-
-        if (view.fifoType.isSelected) {
-            if (!validateCharacters(queueName().substringBefore(FIFO_SUFFIX))) {
-                return ValidationInfo(message("sqs.create.validation.queue.name.invalid"), view.queueName)
-            }
-        } else {
-            if (!validateCharacters(queueName())) {
-                return ValidationInfo(message("sqs.create.validation.queue.name.invalid"), view.queueName)
-            }
+        if (!validateCharacters(view.queueName.text)) {
+            return ValidationInfo(message("sqs.create.validation.queue.name.invalid"), view.queueName)
         }
 
         return null
@@ -90,7 +83,7 @@ class CreateQueueDialog(
 
     private fun queueName(): String {
         val name = view.queueName.text.trim()
-        return if (view.fifoType.isSelected && !name.endsWith(FIFO_SUFFIX)) {
+        return if (view.fifoType.isSelected) {
             name + FIFO_SUFFIX
         } else {
             name

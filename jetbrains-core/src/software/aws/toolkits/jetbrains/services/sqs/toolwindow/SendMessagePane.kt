@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 package software.aws.toolkits.jetbrains.services.sqs.toolwindow
 
+import com.intellij.ide.plugins.newui.UpdateButton
 import com.intellij.ide.util.PropertiesComponent
+import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.components.JBTextArea
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -17,6 +19,7 @@ import java.awt.event.KeyListener
 import javax.swing.JButton
 import javax.swing.JLabel
 import javax.swing.JPanel
+import javax.swing.JScrollPane
 
 class SendMessagePane(
     private val client: SqsClient,
@@ -25,11 +28,12 @@ class SendMessagePane(
 ) : CoroutineScope by ApplicationThreadPoolScope("SendMessagePane") {
     lateinit var component: JPanel
     lateinit var inputText: JBTextArea
-    lateinit var sendButton: JButton
+    lateinit var sendButton: UpdateButton
     lateinit var clearButton: JButton
     lateinit var bodyErrorLabel: JLabel
     lateinit var confirmationLabel: JLabel
     lateinit var fifoFields: FifoPanel
+    lateinit var scrollPane: JScrollPane
 
     init {
         loadComponents()
@@ -50,15 +54,16 @@ class SendMessagePane(
             launch { sendMessage() }
         }
         clearButton.addActionListener {
-            inputText.text = ""
-            fifoFields.deduplicationId.text = ""
-            fifoFields.groupId.text = ""
+            clearFields()
             messageCache.setValue(queue.queueUrl, "")
             confirmationLabel.isVisible = false
         }
     }
 
     private fun setFields() {
+        scrollPane.apply {
+            border = IdeBorderFactory.createBorder()
+        }
         inputText.apply {
             emptyText.text = message("sqs.send.message.body.empty.text")
             text = messageCache.getValue(queue.queueUrl)
@@ -89,6 +94,7 @@ class SendMessagePane(
                     confirmationLabel.text = message("sqs.send.message.success", messageId)
                 }
                 messageCache.setValue(queue.queueUrl, inputText.text)
+                clearFields()
             } catch (e: Exception) {
                 confirmationLabel.text = message("sqs.failed_to_send_message")
             }
@@ -104,6 +110,14 @@ class SendMessagePane(
             (fifoFields.validateFields() && inputIsValid)
         } else {
             inputIsValid
+        }
+    }
+
+    private fun clearFields() {
+        inputText.text = ""
+        if (queue.isFifo) {
+            fifoFields.deduplicationId.text = ""
+            fifoFields.groupId.text = ""
         }
     }
 }

@@ -4,7 +4,10 @@ package software.aws.toolkits.jetbrains.services.sqs
 
 import com.intellij.icons.AllIcons
 import com.intellij.ide.HelpTooltip
+import com.intellij.ui.IdeBorderFactory
+import com.intellij.ui.JBColor
 import software.aws.toolkits.resources.message
+import java.awt.BorderLayout
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JRadioButton
@@ -15,12 +18,14 @@ class CreateQueuePanel {
     lateinit var queueName: JTextField
     lateinit var standardType: JRadioButton
     lateinit var fifoType: JRadioButton
-    lateinit var fifoSuffixLabel: JLabel
     lateinit var queueNameContextHelp: JLabel
+    lateinit var fifoSuffixField: JTextField
+    lateinit var textPanel: JPanel
 
     init {
         setRadioButton()
         setTooltip()
+        setFields()
     }
 
     private fun setRadioButton() {
@@ -38,6 +43,24 @@ class CreateQueuePanel {
         HelpTooltip().apply {
             setDescription(message("sqs.queue.name.tooltip"))
             installOn(queueNameContextHelp)
+        }
+    }
+
+    private fun setFields() {
+        queueName.apply {
+            border = IdeBorderFactory.createBorder(0)
+        }
+        fifoSuffixField.apply {
+            background = queueName.background
+            layout = BorderLayout()
+            border = IdeBorderFactory.createBorder(0)
+            add(fifoSuffixLabel, BorderLayout.WEST)
+        }
+    }
+
+    companion object {
+        val fifoSuffixLabel = JLabel(".fifo").apply {
+            foreground = JBColor.GRAY
         }
     }
 }
