@@ -59,7 +59,7 @@
     "AWS.stepFunctions.graph.status.syncing": "Rendering ASL graph...",
     "AWS.configuration.description.awssam.debug.label": "AWS SAM: Debug Lambda Function Locally",
     "AWS.configuration.description.awssam.debug.invokeTarget": "Configures the application to launch",
-    "AWS.configuration.description.awssam.debug.target": "The type of invocation to launch. Possible values:\n* `template` uses a CFN/SAM Template as an entrypoint\n* `code` invokes Lambda code directly.",
+    "AWS.configuration.description.awssam.debug.target": "The type of invocation to launch. Possible values:\n* `template` uses a CFN/SAM Template as an entrypoint\n* `code` invokes Lambda code directly.\n* `api` uses the CFN/SAM Template to emulate API Gateway",
     "AWS.configuration.description.awssam.debug.lambdaHandler": "Lambda Function handler to invoke.",
     "AWS.configuration.description.awssam.debug.projectRoot": "The root of the project, used to determine where in the file-system to locate the lambdaHandler.",
     "AWS.configuration.description.awssam.debug.templatePath": "Path to the CFN/SAM template.",

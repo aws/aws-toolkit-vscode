@@ -227,6 +227,34 @@
                                             "target"
                                         ],
                                         "type": "object"
+                                    },
+                                    {
+                                        "title": "Template Target Properties",
+                                        "description": "%AWS.configuration.description.awssam.debug.invokeTarget%",
+                                        "properties": {
+                                            "templatePath": {
+                                                "description": "%AWS.configuration.description.awssam.debug.templatePath%",
+                                                "type": "string"
+                                            },
+                                            "logicalId": {
+                                                "description": "%AWS.configuration.description.awssam.debug.logicalId%",
+                                                "type": "string"
+                                            },
+                                            "target": {
+                                                "description": "%AWS.configuration.description.awssam.debug.target%",
+                                                "type": "string",
+                                                "enum": [
+                                                    "api"
+                                                ]
+                                            }
+                                        },
+                                        "additionalProperties": false,
+                                        "required": [
+                                            "templatePath",
+                                            "logicalId",
+                                            "target"
+                                        ],
+                                        "type": "object"
                                     }
                                 ]
                             },
@@ -330,6 +358,79 @@
                                     }
                                 },
                                 "additionalProperties": false,
+                                "type": "object"
+                            },
+                            "api": {
+                                "title": "API Gateway Properties",
+                                "description": "TODO localized description",
+                                "properties": {
+                                    "path": {
+                                        "description": "TODO descritpion",
+                                        "type": "string"
+                                    },
+                                    "httpMethod": {
+                                        "description": "TODO description",
+                                        "type": "string",
+                                        "enum": [
+                                            "DELETE",
+                                            "GET",
+                                            "HEAD",
+                                            "OPTIONS",
+                                            "PATCH",
+                                            "POST",
+                                            "PUT"
+                                        ]
+                                    },
+                                    "payload": {
+                                        "description": "%AWS.configuration.description.awssam.debug.event%",
+                                        "properties": {
+                                            "json": {
+                                                "description": "%AWS.configuration.description.awssam.debug.event.json%",
+                                                "additionalProperties": {
+                                                    "type": [
+                                                        "string",
+                                                        "number",
+                                                        "boolean"
+                                                    ]
+                                                },
+                                                "type": "object"
+                                            },
+                                            "path": {
+                                                "description": "%AWS.configuration.description.awssam.debug.event.path%",
+                                                "type": "string"
+                                            }
+                                        },
+                                        "additionalProperties": false,
+                                        "type": "object"
+                                    },
+                                    "headers": {
+                                        "description": "TODO",
+                                        "type": "object",
+                                        "additionalProperties": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "querystring": {
+                                        "description": "TODO",
+                                        "type": "string"
+                                    },
+                                    "stageVariables": {
+                                        "description": "TODO",
+                                        "type": "object",
+                                        "additionalProperties": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "clientCertificateId": {
+                                        "description": "TODO",
+                                        "type": "string"
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "required": [
+                                    "path",
+                                    "httpMethod"
+                                ],
                                 "type": "object"
                             }
                         },
