@@ -70,10 +70,10 @@ module.exports = {
         '@typescript-eslint/no-explicit-any': 'off',
         // TODO rennable this rule (by removing this off)
         '@typescript-eslint/explicit-function-return-type': 'off',
-        // TODO rennable this rule (by removing this off)
-        'no-null/no-null': 'off',
         // TODO reenable this rule, tests mostly break this one (by changing off to error)
+        // This currently produces 700 non fixable by --fix errors
         'sort-imports': 'off',
+        'no-null/no-null': 'error',
         '@typescript-eslint/no-empty-function': 'off',
         '@typescript-eslint/no-unused-vars': 'off',
         // Do not check loops so while(true) works. Potentially reevalute this.
