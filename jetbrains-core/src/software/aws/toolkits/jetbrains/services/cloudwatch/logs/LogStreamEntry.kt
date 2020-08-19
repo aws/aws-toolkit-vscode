@@ -8,5 +8,5 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.OutputLogEvent
 
 data class LogStreamEntry(val message: String, val timestamp: Long)
 
-fun OutputLogEvent.toLogStreamEntry() = LogStreamEntry(message() ?: "", timestamp() ?: 0)
-fun FilteredLogEvent.toLogStreamEntry() = LogStreamEntry(message() ?: "", timestamp() ?: 0)
+fun OutputLogEvent.toLogStreamEntry() = LogStreamEntry(message()?.trim() ?: "", timestamp() ?: 0)
+fun FilteredLogEvent.toLogStreamEntry() = LogStreamEntry(message()?.trim() ?: "", timestamp() ?: 0)

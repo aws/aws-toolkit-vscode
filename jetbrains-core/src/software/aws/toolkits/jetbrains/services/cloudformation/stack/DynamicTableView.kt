@@ -6,8 +6,8 @@ import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
 import javax.swing.JComponent
 import javax.swing.SwingUtilities
-import javax.swing.table.DefaultTableCellRenderer
 import javax.swing.table.DefaultTableModel
+import javax.swing.table.TableCellRenderer
 
 class DynamicTableView<T>(private vararg val fields: Field<T>) : View {
     private val model = object : DefaultTableModel(fields.map(Field<T>::readableName).toTypedArray(), 0) {
@@ -19,9 +19,9 @@ class DynamicTableView<T>(private vararg val fields: Field<T>) : View {
         autoscrolls = true
         setShowColumns(true)
         setPaintBusy(true)
-        fields.forEach {
-            when (val renderer = it.renderer) {
-                is DefaultTableCellRenderer -> getColumn(it.readableName).cellRenderer = renderer
+        fields.forEach { field ->
+            field.renderer?.let {
+                getColumn(field.readableName).cellRenderer = it
             }
         }
     }
@@ -45,7 +45,7 @@ class DynamicTableView<T>(private vararg val fields: Field<T>) : View {
 
     data class Field<T>(
         val readableName: String,
-        val renderer: DefaultTableCellRenderer? = null,
+        val renderer: TableCellRenderer? = null,
         val getData: (T) -> Any?
     )
 }
