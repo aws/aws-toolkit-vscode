@@ -59,6 +59,9 @@ export NODE_OPTIONS=--max-old-space-size=8192
 
 ### Test
 
+See [TESTPLAN.md](./docs/TESTPLAN.md) to understand the project's test
+structure, mechanics and philosophy.
+
 You can run tests directly from Visual Studio Code:
 
 1. Select `View > Debug`, or select the Debug pane from the sidebar.
