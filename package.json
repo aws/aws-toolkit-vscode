@@ -372,13 +372,13 @@
                                         "description": "%AWS.configuration.description.awssam.debug.api.httpMethod%",
                                         "type": "string",
                                         "enum": [
-                                            "DELETE",
-                                            "GET",
-                                            "HEAD",
-                                            "OPTIONS",
-                                            "PATCH",
-                                            "POST",
-                                            "PUT"
+                                            "delete",
+                                            "get",
+                                            "head",
+                                            "options",
+                                            "patch",
+                                            "post",
+                                            "put"
                                         ]
                                     },
                                     "payload": {

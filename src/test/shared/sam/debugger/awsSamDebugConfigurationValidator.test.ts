@@ -54,7 +54,7 @@ function createApiConfig(): AwsSamDebuggerConfiguration {
         },
         api: {
             path: '/',
-            httpMethod: 'GET',
+            httpMethod: 'get',
         },
     }
 }

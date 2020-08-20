@@ -12,7 +12,7 @@ import { getLogger } from '../logger'
 
 export namespace CloudFormation {
     export const SERVERLESS_FUNCTION_TYPE = 'AWS::Serverless::Function'
-    export const LAMBDA_FUNCTION_TYPE = 'AWS::Lambda::Function'
+    export const LAMBDA_FUNCTION_TYPE = 'AWS::Serverless::Function'
 
     export function validateProperties({
         Handler,
@@ -47,6 +47,7 @@ export namespace CloudFormation {
         MemorySize?: number | Ref
         Timeout?: number | Ref
         Environment?: Environment
+        Events?: Events
     }
 
     export interface Ref {
@@ -55,6 +56,20 @@ export namespace CloudFormation {
 
     export interface Environment {
         Variables?: Variables
+    }
+
+    export interface ApiEventProperties {
+        Path?: string
+        Method?: 'delete' | 'get' | 'head' | 'options' | 'patch' | 'post' | 'put' | 'any'
+    }
+
+    export interface Event {
+        Type?: 'api' | 'httpapi'
+        Properties?: ApiEventProperties
+    }
+
+    export interface Events {
+        [key: string]: Event
     }
 
     export interface Variables {

@@ -198,7 +198,7 @@ export function createApiAwsSamDebugConfig(
     templatePath: string,
     preloadedConfig?: {
         path?: string
-        httpMethod?: APIGatewayProperties['httpMethod']
+        httpMethod?: string
         payload?: APIGatewayProperties['payload']
     }
 ): AwsSamDebuggerConfiguration {
@@ -216,7 +216,9 @@ export function createApiAwsSamDebugConfig(
         },
         api: {
             path: preloadedConfig?.path ?? '/',
-            httpMethod: preloadedConfig?.httpMethod ?? 'GET',
+            // coerce it into the correct type. The types do not entirely overlap (there is an any)
+            // so in that case let the user decide
+            httpMethod: (preloadedConfig?.httpMethod as APIGatewayProperties['httpMethod']) ?? 'get',
             payload: preloadedConfig?.payload ?? { json: {} },
         },
     }
