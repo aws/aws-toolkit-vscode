@@ -141,16 +141,13 @@ describe('SamDebugConfigurationProvider', async () => {
             assert.deepStrictEqual(await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder), [])
         })
 
-        it('returns no items if it is not a function type', async () => {
-            const bigYamlStr = `Resources:
-                                    TestResource:
-                                        Type: AWS::Serverless::Api
-                                            Properties:`
+        it('Ignores non function type resources', async () => {
+            const bigYamlStr = `${makeSampleSamTemplateYaml(true)}\nTestResource2:\n .   Type: AWS::Serverless::Api`
+
             testutil.toFile(bigYamlStr, tempFile.fsPath)
             await registry.addTemplateToRegistry(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
-            assert.strictEqual(provided, undefined)
-            assert.strictEqual(provided!.length, 0)
+            assert.strictEqual(provided!.length, 1)
         })
 
         it('returns one item if a template with one resource is in the workspace', async () => {
@@ -209,6 +206,38 @@ describe('SamDebugConfigurationProvider', async () => {
                 assert.ok(resources.includes((provided[1].invokeTarget as TemplateTargetProperties).logicalId))
                 assert.ok(!resources.includes(badResourceName))
             }
+        })
+
+        it('Returns api function type resources as additional api configurations', async () => {
+            const bigYamlStr = `${makeSampleSamTemplateYaml(true)}
+            Events:
+                HelloWorld2:
+                    Type: Api
+                    Properties:
+                        Path: /hello
+                        Method: get`
+            console.log(bigYamlStr)
+
+            testutil.toFile(bigYamlStr, tempFile.fsPath)
+            await registry.addTemplateToRegistry(tempFile)
+            const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
+            assert.strictEqual(provided!.length, 2)
+            assert.strictEqual(provided![1].invokeTarget.target, 'api')
+            assert.strictEqual(provided![1].api?.path, '/hello')
+            assert.strictEqual(provided![1].api?.httpMethod, 'get')
+        })
+
+        it('Ignores HttpApi events', async () => {
+            const bigYamlStr = `${makeSampleSamTemplateYaml(true)}
+            Events:
+                HelloWorld2:
+                    Type: HttpApi`
+            console.log(bigYamlStr)
+
+            testutil.toFile(bigYamlStr, tempFile.fsPath)
+            await registry.addTemplateToRegistry(tempFile)
+            const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
+            assert.strictEqual(provided!.length, 1)
         })
     })
 
