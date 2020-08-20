@@ -486,7 +486,7 @@
                         "body": {
                             "type": "aws-sam",
                             "request": "direct-invoke",
-                            "name": "${5:Invoke Lambda}",
+                            "name": "${5:Invoke Lambda with API Gateway}",
                             "invokeTarget": {
                                 "target": "api",
                                 "templatePath": "${1:Template Location}",

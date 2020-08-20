@@ -222,7 +222,7 @@ describe('SamDebugConfigurationProvider', async () => {
             await registry.addTemplateToRegistry(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.strictEqual(provided!.length, 2)
-            assert.strictEqual(provided![1].invokeTarget.target, 'api')
+            assert.strictEqual(provided![1].invokeTarget.target, API_TARGET_TYPE)
             assert.strictEqual(provided![1].api?.path, '/hello')
             assert.strictEqual(provided![1].api?.httpMethod, 'get')
         })

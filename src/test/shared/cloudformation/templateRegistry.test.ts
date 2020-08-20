@@ -189,7 +189,7 @@ describe('parseCloudFormationResources', () => {
                 Resources: {
                     ...templateDatum.template.Resources,
                     resource2: {
-                        Type: 'AWS::Lambda::Api',
+                        Type: 'AWS::Serverless::Api',
                         Properties: {
                             Handler: 'handledWith.care',
                             CodeUri: 'overThere',
