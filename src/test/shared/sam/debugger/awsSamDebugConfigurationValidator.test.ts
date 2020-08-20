@@ -52,6 +52,10 @@ function createApiConfig(): AwsSamDebuggerConfiguration {
             templatePath: '/',
             logicalId: 'TestResource',
         },
+        api: {
+            path: '/',
+            httpMethod: 'GET',
+        },
     }
 }
 
@@ -144,8 +148,18 @@ describe('DefaultAwsSamDebugConfigurationValidator', () => {
         assert.strictEqual(result.isValid, false)
     })
 
+    it("API config is invalid when its path does not start with a '/'", () => {
+        const config = createApiConfig()
+
+        config.api!.path = 'noleadingslash'
+
+        const result = validator.validate(config)
+        assert.strictEqual(result.isValid, false)
+    })
+
     it('API config is valid when it has all required fields', () => {
         const result = validator.validate(apiConfig)
+        console.log(result.message)
         assert.strictEqual(result.isValid, true)
     })
 

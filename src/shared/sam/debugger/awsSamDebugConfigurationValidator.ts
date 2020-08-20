@@ -212,6 +212,11 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
                     'api'
                 ),
             }
+        } else if (!debugConfiguration.api.path.startsWith('/')) {
+            return {
+                isValid: false,
+                message: localize('AWS.sam.debugger.missingSlash', "Path must start with a '/'"),
+            }
         }
         return { isValid: true }
     }

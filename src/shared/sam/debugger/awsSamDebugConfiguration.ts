@@ -8,6 +8,7 @@ import * as path from 'path'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { getNormalizedRelativePath } from '../../utilities/pathUtils'
 import {
+    APIGatewayProperties,
     AwsSamDebuggerConfiguration,
     CodeTargetProperties,
     TemplateTargetProperties,
@@ -194,7 +195,12 @@ export function createApiAwsSamDebugConfig(
     folder: vscode.WorkspaceFolder | undefined,
     runtimeName: string | undefined,
     resourceName: string,
-    templatePath: string
+    templatePath: string,
+    preloadedConfig?: {
+        path?: string
+        httpMethod?: APIGatewayProperties['httpMethod']
+        payload?: APIGatewayProperties['payload']
+    }
 ): AwsSamDebuggerConfiguration {
     const workspaceRelativePath = folder ? getNormalizedRelativePath(folder.uri.fsPath, templatePath) : templatePath
     const templateParentDir = path.basename(path.dirname(templatePath))
@@ -204,13 +210,14 @@ export function createApiAwsSamDebugConfig(
         request: DIRECT_INVOKE_TYPE,
         name: makeNameApi(resourceName, templateParentDir, runtimeName),
         invokeTarget: {
-            target: TEMPLATE_TARGET_TYPE,
+            target: API_TARGET_TYPE,
             templatePath: workspaceRelativePath,
             logicalId: resourceName,
         },
         api: {
-            path: '',
-            httpMethod: 'GET',
+            path: preloadedConfig?.path ?? '/',
+            httpMethod: preloadedConfig?.httpMethod ?? 'GET',
+            payload: preloadedConfig?.payload ?? { json: {} },
         },
     }
 }

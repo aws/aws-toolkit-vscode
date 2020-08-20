@@ -1562,9 +1562,37 @@ describe('createApiAwsSamDebugConfig', () => {
                 logicalId: name,
                 templatePath: templatePath,
             },
-            lambda: {
-                payload: {},
-                environmentVariables: {},
+            api: {
+                path: '/',
+                httpMethod: 'GET',
+                payload: {
+                    json: {},
+                },
+            },
+        })
+    })
+
+    it('creates a API-type SAM debugger configuration with additional params', () => {
+        const config = createApiAwsSamDebugConfig(undefined, undefined, name, templatePath, {
+            payload: { json: { key: 'value' } },
+            httpMethod: 'OPTIONS',
+            path: '/api',
+        })
+        assert.deepStrictEqual(config, {
+            name: `API yellow:${name}`,
+            type: AWS_SAM_DEBUG_TYPE,
+            request: DIRECT_INVOKE_TYPE,
+            invokeTarget: {
+                target: API_TARGET_TYPE,
+                logicalId: name,
+                templatePath: templatePath,
+            },
+            api: {
+                path: '/api',
+                httpMethod: 'OPTIONS',
+                payload: {
+                    json: { key: 'value' },
+                },
             },
         })
     })
