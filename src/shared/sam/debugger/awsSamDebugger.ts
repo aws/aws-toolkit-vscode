@@ -203,7 +203,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                         // Check for api resources to add
                         for (const key in events) {
                             const value = events[key]
-                            if (value.Type === 'api') {
+                            if (value.Type === 'Api') {
                                 const properties = value.Properties as CloudFormation.ApiEventProperties
                                 configs.push(
                                     createApiAwsSamDebugConfig(

@@ -1564,7 +1564,7 @@ describe('createApiAwsSamDebugConfig', () => {
             },
             api: {
                 path: '/',
-                httpMethod: 'GET',
+                httpMethod: 'get',
                 payload: {
                     json: {},
                 },

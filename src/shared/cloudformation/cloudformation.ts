@@ -12,7 +12,7 @@ import { getLogger } from '../logger'
 
 export namespace CloudFormation {
     export const SERVERLESS_FUNCTION_TYPE = 'AWS::Serverless::Function'
-    export const LAMBDA_FUNCTION_TYPE = 'AWS::Serverless::Function'
+    export const LAMBDA_FUNCTION_TYPE = 'AWS::Lambda::Function'
 
     export function validateProperties({
         Handler,
@@ -64,7 +64,7 @@ export namespace CloudFormation {
     }
 
     export interface Event {
-        Type?: 'api' | 'httpapi'
+        Type?: 'Api' | 'HttpApi'
         Properties?: ApiEventProperties
     }
 
