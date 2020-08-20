@@ -362,14 +362,14 @@
                             },
                             "api": {
                                 "title": "API Gateway Properties",
-                                "description": "TODO localized description",
+                                "description": "%AWS.configuration.description.awssam.debug.api%",
                                 "properties": {
                                     "path": {
-                                        "description": "TODO descritpion",
+                                        "description": "%AWS.configuration.description.awssam.debug.api.path%",
                                         "type": "string"
                                     },
                                     "httpMethod": {
-                                        "description": "TODO description",
+                                        "description": "%AWS.configuration.description.awssam.debug.api.httpMethod%",
                                         "type": "string",
                                         "enum": [
                                             "DELETE",
@@ -404,25 +404,25 @@
                                         "type": "object"
                                     },
                                     "headers": {
-                                        "description": "TODO",
-                                        "type": "object",
-                                        "additionalProperties": {
+                                        "description": "%AWS.configuration.description.awssam.debug.api.headers%",
+                                        "type": "array",
+                                        "items": {
                                             "type": "string"
                                         }
                                     },
                                     "querystring": {
-                                        "description": "TODO",
+                                        "description": "%AWS.configuration.description.awssam.debug.api.queryString%",
                                         "type": "string"
                                     },
                                     "stageVariables": {
-                                        "description": "TODO",
+                                        "description": "%AWS.configuration.description.awssam.debug.api.stageVariables%",
                                         "type": "object",
                                         "additionalProperties": {
                                             "type": "string"
                                         }
                                     },
                                     "clientCertificateId": {
-                                        "description": "TODO",
+                                        "description": "%AWS.configuration.description.awssam.debug.api.clientCertId%",
                                         "type": "string"
                                     }
                                 },
