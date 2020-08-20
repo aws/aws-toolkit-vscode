@@ -8,6 +8,7 @@ import * as path from 'path'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { getNormalizedRelativePath } from '../../utilities/pathUtils'
 import {
+    APIGatewayProperties,
     AwsSamDebuggerConfiguration,
     CodeTargetProperties,
     TemplateTargetProperties,
@@ -20,8 +21,9 @@ export const AWS_SAM_DEBUG_TYPE = 'aws-sam'
 export const DIRECT_INVOKE_TYPE = 'direct-invoke'
 export const TEMPLATE_TARGET_TYPE: 'template' = 'template'
 export const CODE_TARGET_TYPE: 'code' = 'code'
+export const API_TARGET_TYPE: 'api' = 'api'
 export const AWS_SAM_DEBUG_REQUEST_TYPES = [DIRECT_INVOKE_TYPE]
-export const AWS_SAM_DEBUG_TARGET_TYPES = [TEMPLATE_TARGET_TYPE, CODE_TARGET_TYPE]
+export const AWS_SAM_DEBUG_TARGET_TYPES = [TEMPLATE_TARGET_TYPE, CODE_TARGET_TYPE, API_TARGET_TYPE]
 
 export type TargetProperties = AwsSamDebuggerConfiguration['invokeTarget']
 
@@ -88,6 +90,15 @@ export function ensureRelativePaths(
 function makeName(primaryName: string, parentDir: string | undefined, suffix: string | undefined) {
     const withPrefix = parentDir ? `${parentDir}:${primaryName}` : primaryName
     return suffix ? `${withPrefix} (${suffix})` : withPrefix
+}
+
+/**
+ * Creates a description for a SAM debugconfig entry (in launch.json), preprending API
+ *
+ * see: makeName for the format
+ */
+function makeNameApi(primaryName: string, parentDir: string | undefined, suffix: string | undefined) {
+    return `API ${makeName(primaryName, parentDir, suffix)}`
 }
 
 /**
@@ -176,6 +187,39 @@ export function createCodeAwsSamDebugConfig(
             runtime,
             payload: {},
             environmentVariables: {},
+        },
+    }
+}
+
+export function createApiAwsSamDebugConfig(
+    folder: vscode.WorkspaceFolder | undefined,
+    runtimeName: string | undefined,
+    resourceName: string,
+    templatePath: string,
+    preloadedConfig?: {
+        path?: string
+        httpMethod?: string
+        payload?: APIGatewayProperties['payload']
+    }
+): AwsSamDebuggerConfiguration {
+    const workspaceRelativePath = folder ? getNormalizedRelativePath(folder.uri.fsPath, templatePath) : templatePath
+    const templateParentDir = path.basename(path.dirname(templatePath))
+
+    return {
+        type: AWS_SAM_DEBUG_TYPE,
+        request: DIRECT_INVOKE_TYPE,
+        name: makeNameApi(resourceName, templateParentDir, runtimeName),
+        invokeTarget: {
+            target: API_TARGET_TYPE,
+            templatePath: workspaceRelativePath,
+            logicalId: resourceName,
+        },
+        api: {
+            path: preloadedConfig?.path ?? '/',
+            // coerce it into the correct type. The types do not entirely overlap (there is an any)
+            // so in that case let the user decide
+            httpMethod: (preloadedConfig?.httpMethod as APIGatewayProperties['httpMethod']) ?? 'get',
+            payload: preloadedConfig?.payload ?? { json: {} },
         },
     }
 }

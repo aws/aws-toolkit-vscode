@@ -227,6 +227,34 @@
                                             "target"
                                         ],
                                         "type": "object"
+                                    },
+                                    {
+                                        "title": "API Target Properties",
+                                        "description": "%AWS.configuration.description.awssam.debug.invokeTarget%",
+                                        "properties": {
+                                            "templatePath": {
+                                                "description": "%AWS.configuration.description.awssam.debug.templatePath%",
+                                                "type": "string"
+                                            },
+                                            "logicalId": {
+                                                "description": "%AWS.configuration.description.awssam.debug.logicalId%",
+                                                "type": "string"
+                                            },
+                                            "target": {
+                                                "description": "%AWS.configuration.description.awssam.debug.target%",
+                                                "type": "string",
+                                                "enum": [
+                                                    "api"
+                                                ]
+                                            }
+                                        },
+                                        "additionalProperties": false,
+                                        "required": [
+                                            "templatePath",
+                                            "logicalId",
+                                            "target"
+                                        ],
+                                        "type": "object"
                                     }
                                 ]
                             },
@@ -331,6 +359,79 @@
                                 },
                                 "additionalProperties": false,
                                 "type": "object"
+                            },
+                            "api": {
+                                "title": "API Gateway Properties",
+                                "description": "%AWS.configuration.description.awssam.debug.api%",
+                                "properties": {
+                                    "path": {
+                                        "description": "%AWS.configuration.description.awssam.debug.api.path%",
+                                        "type": "string"
+                                    },
+                                    "httpMethod": {
+                                        "description": "%AWS.configuration.description.awssam.debug.api.httpMethod%",
+                                        "type": "string",
+                                        "enum": [
+                                            "delete",
+                                            "get",
+                                            "head",
+                                            "options",
+                                            "patch",
+                                            "post",
+                                            "put"
+                                        ]
+                                    },
+                                    "payload": {
+                                        "description": "%AWS.configuration.description.awssam.debug.event%",
+                                        "properties": {
+                                            "json": {
+                                                "description": "%AWS.configuration.description.awssam.debug.event.json%",
+                                                "additionalProperties": {
+                                                    "type": [
+                                                        "string",
+                                                        "number",
+                                                        "boolean"
+                                                    ]
+                                                },
+                                                "type": "object"
+                                            },
+                                            "path": {
+                                                "description": "%AWS.configuration.description.awssam.debug.event.path%",
+                                                "type": "string"
+                                            }
+                                        },
+                                        "additionalProperties": false,
+                                        "type": "object"
+                                    },
+                                    "headers": {
+                                        "description": "%AWS.configuration.description.awssam.debug.api.headers%",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "querystring": {
+                                        "description": "%AWS.configuration.description.awssam.debug.api.queryString%",
+                                        "type": "string"
+                                    },
+                                    "stageVariables": {
+                                        "description": "%AWS.configuration.description.awssam.debug.api.stageVariables%",
+                                        "type": "object",
+                                        "additionalProperties": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "clientCertificateId": {
+                                        "description": "%AWS.configuration.description.awssam.debug.api.clientCertId%",
+                                        "type": "string"
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "required": [
+                                    "path",
+                                    "httpMethod"
+                                ],
+                                "type": "object"
                             }
                         },
                         "required": [
@@ -373,6 +474,27 @@
                                 "logicalId": "${2:Function Logical ID}"
                             },
                             "lambda": {
+                                "payload": {
+                                    "json": {}
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "label": "%AWS.configuration.description.awssam.debug.snippets.api.label%",
+                        "description": "%AWS.configuration.description.awssam.debug.snippets.api.description%",
+                        "body": {
+                            "type": "aws-sam",
+                            "request": "direct-invoke",
+                            "name": "${5:Invoke Lambda with API Gateway}",
+                            "invokeTarget": {
+                                "target": "api",
+                                "templatePath": "${1:Template Location}",
+                                "logicalId": "${2:Function Logical ID}"
+                            },
+                            "api": {
+                                "path": "${3:Path}",
+                                "httpMethod": "${4:Method}",
                                 "payload": {
                                     "json": {}
                                 }
