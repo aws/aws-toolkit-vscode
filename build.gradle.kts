@@ -19,6 +19,7 @@ import software.aws.toolkits.gradle.getOrCreate
 import software.aws.toolkits.gradle.intellij
 import software.aws.toolkits.gradle.removeTask
 import software.aws.toolkits.gradle.resources.ValidateMessages
+import java.time.Instant
 
 buildscript {
     repositories {
@@ -220,6 +221,8 @@ subprojects {
     }
 
     project.plugins.withId("org.jetbrains.intellij") {
+        extensions.getByType<JacocoPluginExtension>().applyTo(tasks.getByName<RunIdeForUiTestTask>("runIdeForUiTests"))
+
         tasks.withType(DownloadRobotServerPluginTask::class.java) {
             this.version = remoteRobotVersion
         }
@@ -233,9 +236,11 @@ subprojects {
             if (System.getenv("CI") != null) {
                 systemProperty("aws.sharedCredentialsFile", "/tmp/.aws/credentials")
             }
-        }
 
-        extensions.getByType<JacocoPluginExtension>().applyTo(tasks.getByName<RunIdeForUiTestTask>("runIdeForUiTests"))
+            configure<JacocoTaskExtension> {
+                destinationFile = file("$buildDir/jacoco/${Instant.now()}-jacocoUiTests.exec")
+            }
+        }
     }
 
     tasks.withType<KotlinCompile>().all {
