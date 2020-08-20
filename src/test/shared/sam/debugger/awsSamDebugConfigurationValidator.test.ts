@@ -157,12 +157,6 @@ describe('DefaultAwsSamDebugConfigurationValidator', () => {
         assert.strictEqual(result.isValid, false)
     })
 
-    it('API config is valid when it has all required fields', () => {
-        const result = validator.validate(apiConfig)
-        console.log(result.message)
-        assert.strictEqual(result.isValid, true)
-    })
-
     it('returns invalid when resolving code debug configurations with invalid runtimes', () => {
         codeConfig.lambda = { runtime: 'asd' }
 
