@@ -23,6 +23,10 @@ Resources:
                     Properties:
                         Path: /hello
                         Method: get
+    ServerlessApi:
+        Type: AWS::Serverless::Api
+        Properties:
+            Name: ResourceName
 
 Outputs:
     # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
