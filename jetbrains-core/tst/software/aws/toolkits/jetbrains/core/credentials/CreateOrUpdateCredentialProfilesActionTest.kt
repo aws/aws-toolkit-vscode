@@ -21,6 +21,7 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -36,8 +37,14 @@ class CreateOrUpdateCredentialProfilesActionTest {
     @JvmField
     val projectRule = ProjectRule()
 
-    private val fileEditorManager = FileEditorManager.getInstance(projectRule.project)
-    private val localFileSystem = LocalFileSystem.getInstance()
+    private lateinit var fileEditorManager: FileEditorManager
+    private lateinit var localFileSystem: LocalFileSystem
+
+    @Before
+    fun setUp() {
+        fileEditorManager = FileEditorManager.getInstance(projectRule.project)
+        localFileSystem = LocalFileSystem.getInstance()
+    }
 
     @After
     fun cleanUp() {
