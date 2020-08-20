@@ -203,7 +203,7 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
     }
 
     private validateApiConfig(debugConfiguration: AwsSamDebuggerConfiguration): ValidationResult {
-        if (!debugConfiguration.api?.path) {
+        if (!debugConfiguration.api) {
             return {
                 isValid: false,
                 message: localize(

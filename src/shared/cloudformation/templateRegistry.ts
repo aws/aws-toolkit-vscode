@@ -136,12 +136,8 @@ export function getResourcesFromTemplateDatum(
     const map = new Map<string, CloudFormation.Resource>()
     for (const resourceKey of Object.keys(templateDatum.template.Resources!)) {
         const resource = templateDatum.template.Resources![resourceKey]
-        if (resource) {
-            if (resourceTypes === undefined) {
-                map.set(resourceKey, resource)
-            } else if (resourceTypes.includes(resource.Type)) {
-                map.set(resourceKey, resource)
-            }
+        if (resource && (resourceTypes === undefined || resourceTypes.includes(resource.Type))) {
+            map.set(resourceKey, resource)
         }
     }
 
