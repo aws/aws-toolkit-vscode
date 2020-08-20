@@ -479,6 +479,27 @@
                                 }
                             }
                         }
+                    },
+                    {
+                        "label": "%AWS.configuration.description.awssam.debug.snippets.api.label%",
+                        "description": "%AWS.configuration.description.awssam.debug.snippets.api.description%",
+                        "body": {
+                            "type": "aws-sam",
+                            "request": "direct-invoke",
+                            "name": "${5:Invoke Lambda}",
+                            "invokeTarget": {
+                                "target": "api",
+                                "templatePath": "${1:Template Location}",
+                                "logicalId": "${2:Function Logical ID}"
+                            },
+                            "api": {
+                                "path": "${3:Path}",
+                                "httpMethod": "${4:Method}",
+                                "payload": {
+                                    "json": {}
+                                }
+                            }
+                        }
                     }
                 ]
             }

@@ -94,6 +94,8 @@
     "AWS.configuration.description.awssam.debug.snippets.lambdaCode.description": "A new configuration for invoking an AWS Lambda directly via the SAM CLI.",
     "AWS.configuration.description.awssam.debug.snippets.lambdaTemplate.label": "AWS SAM: Template-based Lambda invoke",
     "AWS.configuration.description.awssam.debug.snippets.lambdaTemplate.description": "A new configuration for invoking an AWS Lambda in a CloudFormation template via the SAM CLI.",
+    "AWS.configuration.description.awssam.debug.snippets.api.label": "AWS SAM: API Gateway lambda invoke",
+    "AWS.configuration.description.awssam.debug.snippets.api.description": "A new configuration for invoking an AWS Lambda in a CloudFormation template, simulating API Gateway",
     "AWS.telemetry.notificationMessage": "The AWS Toolkit collects usage metrics by default. These metrics help drive toolkit improvements. This setting can be changed from the IDE settings.",
     "AWS.telemetry.notificationOk": "OK",
     "AWS.telemetry.notificationViewSettings": "View Settings",
