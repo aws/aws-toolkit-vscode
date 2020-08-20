@@ -5,17 +5,13 @@
 
 /* eslint-disable @typescript-eslint/unbound-method*/
 
+import { ASL_SCHEMA, doCompleteAsl, getLanguageService as getASLLanguageService } from 'amazon-states-language-service'
 import {
-    ASL_SCHEMA,
-    doCompleteAsl,
     ClientCapabilities,
-    getLanguageService as getASLLanguageService,
-    LanguageService,
-} from 'amazon-states-language-service'
-import {
     DocumentLanguageSettings,
     JSONDocument,
     getLanguageService as getLanguageServiceVscode,
+    LanguageService,
     LanguageServiceParams,
 } from 'vscode-json-languageservice'
 import {
@@ -24,7 +20,6 @@ import {
     SingleYAMLDocument,
 } from 'yaml-language-server/out/server/src/languageservice/parser/yamlParser07'
 import {
-    CompletionItem,
     CompletionList,
     DocumentSymbol,
     FormattingOptions,
@@ -38,8 +33,8 @@ import {
 import { matchOffsetToDocument } from 'yaml-language-server/out/server/src/languageservice/utils/arrUtils'
 import { YAMLSchemaService } from 'yaml-language-server/out/server/src/languageservice/services/yamlSchemaService'
 import { YAMLCompletion } from 'yaml-language-server/out/server/src/languageservice/services/yamlCompletion'
-import * as URL from 'url'
 import * as prettier from 'prettier'
+import * as URL from 'url'
 
 const workspaceContext = {
     resolveRelativePath: (relativePath: string, resource: string) => {
@@ -64,9 +59,11 @@ const requestServiceMock = function(uri: string): Promise<string> {
 
 const schemaService = new YAMLSchemaService(requestServiceMock, workspaceContext)
 
+console.log('hello')
 // initialize schema
 schemaService.registerExternalSchema('yasl', ['*.asl.yaml', '*.asl.yml'], ASL_SCHEMA)
-schemaService.getSchemaForResource('test.asl.yaml', undefined)
+const emptyDoc = JSON.parse('{}')
+schemaService.getSchemaForResource('test.asl.yaml', emptyDoc)
 
 const completer = new YAMLCompletion(schemaService)
 
@@ -120,6 +117,9 @@ export const getLanguageService = function(params: LanguageServiceParams): Langu
 
         const yamlCompletions = await completer.doComplete(document, position, false)
 
+        if (!currentDoc) {
+            return { items: [], isIncomplete: false }
+        }
         // adjust position for completion
         const node = currentDoc.getNodeFromOffsetEndInclusive(offset)
         if (node.type === 'array') {
@@ -139,6 +139,7 @@ export const getLanguageService = function(params: LanguageServiceParams): Langu
         } else if (node.type === 'property' || (node.type === 'object' && position.character !== 0)) {
             // allow auto-completion of States field from empty space
             if (document.getText().substring(offset - 2, offset) === '  ') {
+                atSpace = true
                 currentDoc = initializeDocument(document, offset)
                 // move cursor position into new empty object
                 position.character += 1
@@ -147,33 +148,29 @@ export const getLanguageService = function(params: LanguageServiceParams): Langu
                 position.character -= 1
             }
         }
+        if (currentDoc) {
+            const aslCompletions = doCompleteAsl(document, position, currentDoc, yamlCompletions, {
+                ignoreColonOffset: true,
+            })
 
-        const aslCompletions = doCompleteAsl(document, position, currentDoc, yamlCompletions, {
-            ignoreColonOffset: true,
-        })
-
-        aslCompletions.items.forEach(completion => {
-            // format json completions for yaml
-            if (completion.textEdit) {
-                // textEdit can't be done on white-space so insert text is used instead
-                if (atSpace) {
-                    completion.insertText = completion.textEdit.newText
-                    // remove any commas from json-completions
-                    completion.insertText = completion.textEdit.newText.replace(/[\,]/g, '')
-                    completion.textEdit = undefined
-                } else {
-                    completion.textEdit.range.start.character = position.character
+            aslCompletions.items.forEach(completion => {
+                // format json completions for yaml
+                if (completion.textEdit) {
+                    // textEdit can't be done on white-space so insert text is used instead
+                    if (atSpace) {
+                        completion.insertText = completion.textEdit.newText
+                        // remove any commas from json-completions
+                        completion.insertText = completion.textEdit.newText.replace(/[\,]/g, '')
+                        completion.textEdit = undefined
+                    } else {
+                        completion.textEdit.range.start.character = position.character
+                    }
                 }
-            } else {
-                // remove null value auto-completions for 'string' nodes that don't support null values
-                completion.insertText = completion?.insertText?.replace(/\$\{1:null\}/g, '')
-            }
-        })
-        return Promise.resolve(aslCompletions)
-    }
-
-    languageService.doResolve = function(item: CompletionItem): Thenable<CompletionItem> {
-        return aslLanguageService.doResolve(item)
+            })
+            return Promise.resolve(aslCompletions)
+        } else {
+            return { items: [], isIncomplete: false }
+        }
     }
 
     languageService.doHover = function(

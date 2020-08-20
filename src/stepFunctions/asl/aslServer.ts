@@ -92,7 +92,6 @@ documents.listen(connection)
 let clientSnippetSupport = false
 let dynamicFormatterRegistration = false
 let hierarchicalDocumentSymbolSupport = false
-let langId = 'asl'
 
 let foldingRangeLimitDefault = Number.MAX_VALUE
 let foldingRangeLimit = Number.MAX_VALUE
@@ -282,7 +281,7 @@ function triggerValidation(textDocument: TextDocument): void {
 }
 
 // sets language service depending on document language
-function getLanguageService(): LanguageService {
+function getLanguageService(langId: string): LanguageService {
     if (langId === 'yasl') {
         return aslYamlLanguageService
     } else {
@@ -306,8 +305,7 @@ function validateTextDocument(textDocument: TextDocument, callback?: (diagnostic
     const version = textDocument.version
 
     const documentSettings: DocumentLanguageSettings = { comments: 'error', trailingCommas: 'error' }
-    langId = textDocument.languageId
-    getLanguageService()
+    getLanguageService(textDocument.languageId)
         .doValidation(textDocument, jsonDocument, documentSettings)
         .then(
             diagnostics => {
@@ -329,7 +327,7 @@ connection.onDidChangeWatchedFiles(change => {
     let hasChanges = false
     // tslint:disable-next-line: no-unsafe-any
     change.changes.forEach(c => {
-        if (aslJsonLanguageService.resetSchema(c.uri)) {
+        if (getLanguageService('asl').resetSchema(c.uri)) {
             hasChanges = true
         }
     })
@@ -339,7 +337,7 @@ connection.onDidChangeWatchedFiles(change => {
 })
 
 const jsonDocuments = getLanguageModelCache<JSONDocument>(10, 60, document =>
-    aslJsonLanguageService.parseJSONDocument(document)
+    getLanguageService('asl').parseJSONDocument(document)
 )
 documents.onDidClose(e => {
     jsonDocuments.onDocumentRemoved(e.document)
@@ -358,8 +356,7 @@ connection.onCompletion((textDocumentPosition, token) => {
             const document = documents.get(textDocumentPosition.textDocument.uri)
             if (document) {
                 const jsonDocument = getJSONDocument(document)
-                langId = document.languageId
-                const completions = await getLanguageService().doComplete(
+                const completions = await getLanguageService(document.languageId).doComplete(
                     document,
                     textDocumentPosition.position,
                     jsonDocument
@@ -397,7 +394,8 @@ connection.onCompletion((textDocumentPosition, token) => {
 connection.onCompletionResolve((completionItem, token) => {
     return runSafeAsync(
         () => {
-            return getLanguageService().doResolve(completionItem)
+            // the asl-yaml-languageservice uses doResolve from the asl service
+            return getLanguageService('asl').doResolve(completionItem)
         },
         completionItem,
         'Error while resolving completion proposal',
@@ -411,8 +409,11 @@ connection.onHover((textDocumentPositionParams, token) => {
             const document = documents.get(textDocumentPositionParams.textDocument.uri)
             if (document) {
                 const jsonDocument = getJSONDocument(document)
-                langId = document.languageId
-                return getLanguageService().doHover(document, textDocumentPositionParams.position, jsonDocument)
+                return getLanguageService(document.languageId).doHover(
+                    document,
+                    textDocumentPositionParams.position,
+                    jsonDocument
+                )
             }
 
             return undefined
@@ -429,7 +430,6 @@ connection.onDocumentSymbol((documentSymbolParams, token) => {
             // tslint:disable-next-line no-unsafe-any
             const document = documents.get(documentSymbolParams.textDocument.uri)
             if (document) {
-                langId = document.languageId
                 const jsonDocument = getJSONDocument(document)
                 const onResultLimitExceeded = LimitExceededWarnings.onResultLimitExceeded(
                     document.uri,
@@ -437,12 +437,12 @@ connection.onDocumentSymbol((documentSymbolParams, token) => {
                     'document symbols'
                 )
                 if (hierarchicalDocumentSymbolSupport) {
-                    return getLanguageService().findDocumentSymbols2(document, jsonDocument, {
+                    return getLanguageService(document.languageId).findDocumentSymbols2(document, jsonDocument, {
                         resultLimit,
                         onResultLimitExceeded,
                     })
                 } else {
-                    return getLanguageService().findDocumentSymbols(document, jsonDocument, {
+                    return getLanguageService(document.languageId).findDocumentSymbols(document, jsonDocument, {
                         resultLimit,
                         onResultLimitExceeded,
                     })
@@ -463,8 +463,11 @@ connection.onDocumentRangeFormatting((formatParams, token) => {
         () => {
             const document = documents.get(formatParams.textDocument.uri)
             if (document) {
-                langId = document.languageId
-                return getLanguageService().format(document, formatParams.range, formatParams.options)
+                return getLanguageService(document.languageId).format(
+                    document,
+                    formatParams.range,
+                    formatParams.options
+                )
             }
 
             return []
@@ -480,7 +483,6 @@ connection.onDocumentColor((params, token) => {
         async () => {
             const document = documents.get(params.textDocument.uri)
             if (document) {
-                langId = document.languageId
                 const onResultLimitExceeded = LimitExceededWarnings.onResultLimitExceeded(
                     document.uri,
                     resultLimit,
@@ -488,7 +490,7 @@ connection.onDocumentColor((params, token) => {
                 )
                 const jsonDocument = getJSONDocument(document)
 
-                return getLanguageService().findDocumentColors(document, jsonDocument, {
+                return getLanguageService(document.languageId).findDocumentColors(document, jsonDocument, {
                     resultLimit,
                     onResultLimitExceeded,
                 })
@@ -507,10 +509,14 @@ connection.onColorPresentation((params, token) => {
         () => {
             const document = documents.get(params.textDocument.uri)
             if (document) {
-                langId = document.languageId
                 const jsonDocument = getJSONDocument(document)
 
-                return getLanguageService().getColorPresentations(document, jsonDocument, params.color, params.range)
+                return getLanguageService(document.languageId).getColorPresentations(
+                    document,
+                    jsonDocument,
+                    params.color,
+                    params.range
+                )
             }
 
             return []
@@ -531,8 +537,7 @@ connection.onFoldingRanges((params, token) => {
                     foldingRangeLimit,
                     'folding ranges'
                 )
-                langId = document.languageId
-                return getLanguageService().getFoldingRanges(document, {
+                return getLanguageService(document.languageId).getFoldingRanges(document, {
                     rangeLimit: foldingRangeLimit,
                     onRangeLimitExceeded,
                 })
@@ -551,10 +556,13 @@ connection.onSelectionRanges((params, token) => {
         () => {
             const document = documents.get(params.textDocument.uri)
             if (document) {
-                langId = document.languageId
                 const jsonDocument = getJSONDocument(document)
 
-                return getLanguageService().getSelectionRanges(document, params.positions, jsonDocument)
+                return getLanguageService(document.languageId).getSelectionRanges(
+                    document,
+                    params.positions,
+                    jsonDocument
+                )
             }
 
             return []

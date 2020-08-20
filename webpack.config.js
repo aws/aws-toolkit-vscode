@@ -87,8 +87,8 @@ const config = {
                         destination: path.resolve(__dirname, 'dist/src/stepFunctions/asl/aslServer.js'),
                     },
                     {
-                        source: path.resolve(__dirname, 'dist/aslServer.js.LICENSE'),
-                        destination: path.resolve(__dirname, 'dist/src/stepFunctions/asl/aslServer.js.LICENSE'),
+                        source: path.resolve(__dirname, 'dist/aslServer.js.LICENSE.txt'),
+                        destination: path.resolve(__dirname, 'dist/src/stepFunctions/asl/aslServer.js.LICENSE.txt'),
                     },
                     {
                         source: path.resolve(__dirname, 'dist/aslServer.js.map'),
