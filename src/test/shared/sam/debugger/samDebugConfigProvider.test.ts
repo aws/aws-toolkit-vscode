@@ -141,6 +141,18 @@ describe('SamDebugConfigurationProvider', async () => {
             assert.deepStrictEqual(await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder), [])
         })
 
+        it('returns no items if it is not a function type', async () => {
+            const bigYamlStr = `Resources:
+                                    TestResource:
+                                        Type: AWS::Serverless::Api
+                                            Properties:`
+            testutil.toFile(bigYamlStr, tempFile.fsPath)
+            await registry.addTemplateToRegistry(tempFile)
+            const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
+            assert.strictEqual(provided, undefined)
+            assert.strictEqual(provided!.length, 0)
+        })
+
         it('returns one item if a template with one resource is in the workspace', async () => {
             testutil.toFile(makeSampleSamTemplateYaml(true), tempFile.fsPath)
             await registry.addTemplateToRegistry(tempFile)
