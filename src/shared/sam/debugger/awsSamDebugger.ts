@@ -176,17 +176,12 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                         getLogger().error(`provideDebugConfigurations: invalid template: ${templateDatum.path}`)
                         continue
                     }
-                    const resources = getResourcesFromTemplateDatum(templateDatum)
+                    const resources = getResourcesFromTemplateDatum(templateDatum, [
+                        CloudFormation.LAMBDA_FUNCTION_TYPE,
+                        CloudFormation.SERVERLESS_FUNCTION_TYPE,
+                    ])
                     for (const resourceKey of resources.keys()) {
                         const resource = resources.get(resourceKey)
-                        // Skip it if there is not actually a resource or it's not a funciton
-                        if (
-                            !resource ||
-                            (resource.Type !== CloudFormation.LAMBDA_FUNCTION_TYPE &&
-                                resource.Type !== CloudFormation.SERVERLESS_FUNCTION_TYPE)
-                        ) {
-                            continue
-                        }
                         const runtimeName = resource?.Properties?.Runtime
                         configs.push(
                             createTemplateAwsSamDebugConfig(
