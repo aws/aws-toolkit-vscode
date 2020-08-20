@@ -25,6 +25,7 @@ The test suite has two categories of tests:
     -   May mock state where needed, though this is discouraged in favor of "fake" data/objects/files.
     -   May use the filesystem.
     -   Main property is that [the test is fast](https://pycon-2012-notes.readthedocs.io/en/latest/fast_tests_slow_tests.html).
+    -   Global state is shared across tests, thus there is a risk that later tests are polluted by earlier tests.
 -   Integration Tests: **slow** tests
     -   Live in `src/integrationTest/`
     -   Use a full instance of VSCode with an activated instance of the extension.
