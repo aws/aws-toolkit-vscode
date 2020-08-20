@@ -16,6 +16,7 @@ import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtiliti
 import {
     TemplateTargetProperties,
     AwsSamDebuggerConfiguration,
+    API_TARGET_TYPE,
     AWS_SAM_DEBUG_TYPE,
     CODE_TARGET_TYPE,
     DIRECT_INVOKE_TYPE,
@@ -24,6 +25,7 @@ import {
     ensureRelativePaths,
     createCodeAwsSamDebugConfig,
     CodeTargetProperties,
+    createApiAwsSamDebugConfig,
 } from '../../../../shared/sam/debugger/awsSamDebugConfiguration'
 import { SamDebugConfigProvider, SamLaunchRequestArgs } from '../../../../shared/sam/debugger/awsSamDebugger'
 import * as debugConfiguration from '../../../../lambda/local/debugConfiguration'
@@ -1542,6 +1544,29 @@ describe('createTemplateAwsSamDebugConfig', () => {
         assert.deepStrictEqual(config.lambda?.environmentVariables, params.environmentVariables)
         assert.strictEqual(config.sam?.dockerNetwork, params.dockerNetwork)
         assert.strictEqual(config.sam?.containerBuild, undefined)
+    })
+})
+
+describe('createApiAwsSamDebugConfig', () => {
+    const name = 'my body is a template'
+    const templatePath = path.join('two', 'roads', 'diverged', 'in', 'a', 'yellow', 'wood')
+
+    it('creates a API-type SAM debugger configuration with minimal configurations', () => {
+        const config = createApiAwsSamDebugConfig(undefined, undefined, name, templatePath)
+        assert.deepStrictEqual(config, {
+            name: `API yellow:${name}`,
+            type: AWS_SAM_DEBUG_TYPE,
+            request: DIRECT_INVOKE_TYPE,
+            invokeTarget: {
+                target: API_TARGET_TYPE,
+                logicalId: name,
+                templatePath: templatePath,
+            },
+            lambda: {
+                payload: {},
+                environmentVariables: {},
+            },
+        })
     })
 })
 

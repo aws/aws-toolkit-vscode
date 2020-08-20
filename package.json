@@ -229,7 +229,7 @@
                                         "type": "object"
                                     },
                                     {
-                                        "title": "Template Target Properties",
+                                        "title": "API Target Properties",
                                         "description": "%AWS.configuration.description.awssam.debug.invokeTarget%",
                                         "properties": {
                                             "templatePath": {
