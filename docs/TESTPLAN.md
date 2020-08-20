@@ -19,16 +19,16 @@ The test suite has two categories of tests:
 
 -   Unit Tests: **fast** tests
     -   Live in `src/test/`
-    -   The `vscode` API is available, but a full VSCode instance is not started.
-    -   The Toolkit code is invoked as a library, not as an extension loaded in VSCode.
+    -   The `vscode` API is available.
+    -   The Toolkit code is invoked as a library, not as an extension activated in VSCode's typical lifecycle.
     -   Call functions and create objects directly.
     -   May mock state where needed, though this is discouraged in favor of "fake" data/objects/files.
     -   May use the filesystem.
     -   Main property is that [the test is fast](https://pycon-2012-notes.readthedocs.io/en/latest/fast_tests_slow_tests.html).
 -   Integration Tests: **slow** tests
     -   Live in `src/integrationTest/`
-    -   Use a full instance of VSCode.
-    -   Global state is shared across tests, thus later tests can be polluted by earlier tests.
+    -   Use a full instance of VSCode with an activated instance of the extension.
+    -   Global state is shared across tests, thus there is a risk that later tests are polluted by earlier tests.
     -   Trigger VSCode commands and UI elements to test codepaths as from an actual user session, instead of invoking functions directly.
     -   Do not use mocks.
 
@@ -63,6 +63,7 @@ modifications/workarounds in `src/test/testRunner.ts`.
 -   No end-to-end testing which make web requests to AWS.
 -   Many failure modes (as opposed to the "happy path") are not tested.
 -   No performance/benchmark regression tests.
+-   No UI tests (to exercise webviews).
 -   Missing acceptance tests:
     -   Connect to AWS
     -   Fixed credentials and fixed credentials with assume roles
