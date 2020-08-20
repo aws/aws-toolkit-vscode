@@ -120,12 +120,18 @@ export class StateMachineGraphCache {
         const storageFolder = this.dirPath
 
         try {
-            if (!(await this.fileExists(storageFolder))) {
-                this.logger.debug('Folder for graphing script and styling doesnt exist. Creating it.')
-
-                await this.makeDir(storageFolder)
+            this.logger.debug('stepFunctions: creating directory: %O', storageFolder)
+            await this.makeDir(storageFolder)
+        } catch (err) {
+            this.logger.verbose(err as Error)
+            // EEXIST failure is non-fatal. This function is called as part of
+            // a Promise.all() group of tasks wanting to create the same directory.
+            if (err.code && err.code !== 'EEXIST') {
+                throw err
             }
+        }
 
+        try {
             await this.writeFile(destinationPath, data, 'utf8')
         } catch (err) {
             /*
@@ -133,7 +139,6 @@ export class StateMachineGraphCache {
              * but there was an error trying to write them to this extensions globalStorage location.
              */
             this.logger.error(err as Error)
-
             throw err
         }
     }
