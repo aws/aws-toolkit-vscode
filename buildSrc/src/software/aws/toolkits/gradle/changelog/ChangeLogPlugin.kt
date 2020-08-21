@@ -12,21 +12,21 @@ import software.aws.toolkits.gradle.changelog.tasks.NewChange
 class ChangeLogPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         project.tasks.register("createRelease", CreateRelease::class.java) {
-            it.description = "Generates a release entry from unreleased changelog entries"
+            description = "Generates a release entry from unreleased changelog entries"
         }
 
         project.tasks.register("newChange", NewChange::class.java) {
-            it.description = "Creates a new change entry for inclusion in the Change Log"
+            description = "Creates a new change entry for inclusion in the Change Log"
         }
 
         project.tasks.register("newFeature", NewChange::class.java) {
-            it.description = "Creates a new feature change entry for inclusion in the Change Log"
-            it.defaultChangeType = ChangeType.FEATURE
+            description = "Creates a new feature change entry for inclusion in the Change Log"
+            defaultChangeType = ChangeType.FEATURE
         }
 
         project.tasks.register("newBugFix", NewChange::class.java) {
-            it.description = "Creates a new bug-fix change entry for inclusion in the Change Log"
-            it.defaultChangeType = ChangeType.BUGFIX
+            description = "Creates a new bug-fix change entry for inclusion in the Change Log"
+            defaultChangeType = ChangeType.BUGFIX
         }
     }
 }
