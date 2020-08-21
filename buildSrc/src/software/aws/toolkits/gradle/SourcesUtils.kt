@@ -12,10 +12,10 @@ import java.io.FileFilter
  *
  * [project] the project to use as a directory base
  * [type] is the type of the source folder (e.g. 'src', 'tst', 'resources')
- * [ideVersion] is the 3 digit numerical version of the JetBrains SDK (e.g. 192, 201 etc)
+ * [ideProfile] is the IDE [Profile] currently configured in the project
  */
-fun findFolders(project: Project, type: String, ideVersion: String): Set<File> = project.projectDir.listFiles(FileFilter {
-    it.isDirectory && includeFolder(type, ideVersion, it.name)
+fun findFolders(project: Project, type: String, ideProfile: Profile): Set<File> = project.projectDir.listFiles(FileFilter {
+    it.isDirectory && includeFolder(type, ideProfile.shortName, it.name)
 })?.map { File(it.name) }?.toSet() ?: setOf()
 
 /**

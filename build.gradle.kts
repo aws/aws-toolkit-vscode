@@ -12,7 +12,6 @@ import org.jetbrains.intellij.tasks.RunIdeTask
 import org.jetbrains.intellij.tasks.VerifyPluginTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import software.aws.toolkits.gradle.IdeVersions
-import software.aws.toolkits.gradle.ProductCode
 import software.aws.toolkits.gradle.changelog.tasks.GenerateGithubChangeLog
 import software.aws.toolkits.gradle.findFolders
 import software.aws.toolkits.gradle.getOrCreate
@@ -36,8 +35,7 @@ buildscript {
     }
 }
 
-val ideVersions = IdeVersions(project)
-val ideVersion = ideVersions.resolveShortenedIdeProfileName()
+val ideProfile = IdeVersions.ideProfile(project)
 val toolkitVersion: String by project
 val kotlinVersion: String by project
 val mockitoVersion: String by project
@@ -59,7 +57,7 @@ plugins {
 
 group = "software.aws.toolkits"
 // please check changelog generation logic if this format is changed
-version = "$toolkitVersion-$ideVersion".toString()
+version = "$toolkitVersion-${ideProfile.shortName}"
 
 repositories {
     maven("https://www.jetbrains.com/intellij-repository/snapshots/")
@@ -129,18 +127,18 @@ subprojects {
 
     sourceSets {
         main {
-            java.srcDirs(findFolders(project, "src", ideVersion))
-            resources.srcDirs(findFolders(project, "resources", ideVersion))
+            java.srcDirs(findFolders(project, "src", ideProfile))
+            resources.srcDirs(findFolders(project, "resources", ideProfile))
         }
         test {
-            java.srcDirs(findFolders(project, "tst", ideVersion))
-            resources.srcDirs(findFolders(project, "tst-resources", ideVersion))
+            java.srcDirs(findFolders(project, "tst", ideProfile))
+            resources.srcDirs(findFolders(project, "tst-resources", ideProfile))
         }
         getOrCreate("integrationTest") {
             compileClasspath += main.get().output + test.get().output
             runtimeClasspath += main.get().output + test.get().output
-            java.srcDirs(findFolders(project, "it", ideVersion))
-            resources.srcDirs(findFolders(project, "it-resources", ideVersion))
+            java.srcDirs(findFolders(project, "it", ideProfile))
+            resources.srcDirs(findFolders(project, "it-resources", ideProfile))
         }
     }
 
@@ -188,16 +186,16 @@ subprojects {
         model.module.apply {
             sourceDirs.plusAssign(sourceSets.main.get().java.srcDirs)
             resourceDirs.plusAssign(sourceSets.main.get().resources.srcDirs)
-            testSourceDirs.plusAssign(File("tst-$ideVersion"))
-            testResourceDirs.plusAssign(File("tst-resources-$ideVersion"))
+            testSourceDirs.plusAssign(File("tst-${ideProfile.shortName}"))
+            testResourceDirs.plusAssign(File("tst-resources-${ideProfile.shortName}"))
 
             sourceDirs.minusAssign(File("it"))
             testSourceDirs.plusAssign(File("it"))
-            testSourceDirs.plusAssign(File("it-$ideVersion"))
+            testSourceDirs.plusAssign(File("it-${ideProfile.shortName}"))
 
             resourceDirs.minusAssign(File("it-resources"))
             testResourceDirs.plusAssign(File("it-resources"))
-            testResourceDirs.plusAssign(File("it-resources-$ideVersion"))
+            testResourceDirs.plusAssign(File("it-resources-${ideProfile.shortName}"))
         }
     }
 
@@ -278,7 +276,7 @@ apply(plugin = "org.jetbrains.intellij")
 apply(plugin = "toolkit-change-log")
 
 intellij {
-    version = ideVersions.ideSdkVersion(ProductCode.IC)
+    version = ideProfile.community.sdkVersion
     pluginName = "aws-jetbrains-toolkit"
     updateSinceUntilBuild = false
     downloadSources = System.getenv("CI") == null
