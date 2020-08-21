@@ -3,16 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as child_process from 'child_process'
-import * as vscode from 'vscode'
-import * as nls from 'vscode-nls'
 import { fileExists } from '../../filesystemUtilities'
-import { getLogger, Logger } from '../../logger'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { DefaultSamCliProcessInvokerContext, SamCliProcessInvokerContext } from './samCliInvoker'
-import { SamCliLocalInvokeInvocationArguments, SamLocalInvokeCommand } from './samCliLocalInvoke'
-
-const localize = nls.loadMessageBundle()
+import { SamLocalInvokeCommand } from './samCliLocalInvoke'
 
 export interface SamCliStartApiArguments {
     /**
