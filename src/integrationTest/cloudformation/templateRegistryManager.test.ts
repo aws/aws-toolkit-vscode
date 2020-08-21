@@ -8,9 +8,7 @@ import * as path from 'path'
 import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
 import { CloudFormationTemplateRegistryManager } from '../../shared/cloudformation/templateRegistryManager'
 import { mkdir, rmrf } from '../../shared/filesystem'
-import { getLogger, setLogger } from '../../shared/logger/logger'
 import { makeSampleSamTemplateYaml, strToYamlFile } from '../../test/shared/cloudformation/cloudformationTestUtils'
-import { TestLogger } from '../../test/testLogger'
 import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
 
 /**
@@ -24,36 +22,25 @@ describe('CloudFormation Template Registry Manager', async () => {
     let testDir: string
     let testDirNested: string
     let dir: number = 0
-    let testSuiteLogger: TestLogger | undefined
 
-    before(() => {
-        try {
-            getLogger()
-        } catch (e) {
-            testSuiteLogger = new TestLogger()
-            setLogger(testSuiteLogger)
-        }
+    before(async () => {
         workspaceDir = getTestWorkspaceFolder()
     })
 
     beforeEach(async () => {
+        console.log(`xxxx beforeEach 1`)
         testDir = path.join(workspaceDir, dir.toString())
         testDirNested = path.join(testDir, 'nested')
         await mkdir(testDirNested, { recursive: true })
         registry = new CloudFormationTemplateRegistry()
         manager = new CloudFormationTemplateRegistryManager(registry)
+        console.log(`xxxx beforeEach 2`)
     })
 
     afterEach(async () => {
         manager.dispose()
         await rmrf(testDir)
         dir++
-    })
-
-    after(() => {
-        if (!!testSuiteLogger && getLogger() == testSuiteLogger) {
-            setLogger(undefined)
-        }
     })
 
     it('adds initial template files with yaml and yml extensions at various nesting levels', async () => {

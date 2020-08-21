@@ -16,8 +16,6 @@ import { assertThrowsError } from '../../src/test/shared/utilities/assertUtils'
 import { Language } from '../shared/codelens/codeLensUtils'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { fileExists } from '../shared/filesystemUtilities'
-import { Logger, getLogger } from '../shared/logger'
-import { WinstonToolkitLogger } from '../shared/logger/winstonToolkitLogger'
 import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { findParentProjectFile } from '../shared/utilities/workspaceUtils'
 import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep, TIMEOUT } from './integrationTestsUtilities'
@@ -36,11 +34,11 @@ interface TestScenario {
 const scenarios: TestScenario[] = [
     { runtime: 'nodejs10.x', path: 'hello-world/app.js', debugSessionType: 'pwa-node', language: 'javascript' },
     { runtime: 'nodejs12.x', path: 'hello-world/app.js', debugSessionType: 'pwa-node', language: 'javascript' },
-    // { runtime: 'python2.7', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
-    // { runtime: 'python3.6', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
+    { runtime: 'python2.7', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
+    { runtime: 'python3.6', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
     { runtime: 'python3.7', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
-    // { runtime: 'python3.8', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
-    // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr' }
+    { runtime: 'python3.8', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
+    // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 ]
 
 async function openSamAppFile(applicationPath: string): Promise<vscode.Uri> {
@@ -105,7 +103,6 @@ async function activateExtensions(): Promise<void> {
     console.log('Activating extensions...')
     // TODO: silence the python extension output, it is noisy.
     await activateExtension(VSCODE_EXTENSION_ID.python)
-    await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
     console.log('Extensions activated')
 }
 
@@ -131,25 +128,13 @@ function logSeparator() {
     console.log('************************************************************')
 }
 
-function configureToolkitLogging(): Logger {
-    const logger = getLogger()
-
-    if (logger instanceof WinstonToolkitLogger) {
-        // Ensure we're logging everything possible
-        logger.setLogLevel('debug')
-        // The logs help to diagnose SAM integration test failures
-        logger.logToConsole()
-    } else {
-        assert.fail('Unexpected extension logger')
-    }
-
-    return logger
+function runtimeNeedsWorkaround(lang: Language) {
+    return lang === 'csharp' || lang === 'python'
 }
 
-describe.only('SAM Integration Tests', async () => {
+describe('SAM Integration Tests', async () => {
     const samApplicationName = 'testProject'
     let testSuiteRoot: string
-    let logger: Logger
 
     before(async function() {
         // tslint:disable-next-line:no-invalid-this
@@ -159,7 +144,6 @@ describe.only('SAM Integration Tests', async () => {
         await configureAwsToolkitExtension()
         await configurePythonExtension()
 
-        logger = configureToolkitLogging()
         testSuiteRoot = await mkdtemp(path.join(projectFolder, 'inttest'))
         console.log('testSuiteRoot: ', testSuiteRoot)
         mkdirpSync(testSuiteRoot)
@@ -186,7 +170,7 @@ describe.only('SAM Integration Tests', async () => {
             })
 
             function log(o: any) {
-                logger.debug('sam.test.ts: scenario %d (%s): %O', scenarioIndex, scenario.runtime, o)
+                console.log(`sam.test.ts: scenario ${scenarioIndex} (${scenario.runtime}): ${o}`)
             }
 
             /**
@@ -320,8 +304,26 @@ describe.only('SAM Integration Tests', async () => {
                     await vscode.debug.startDebugging(undefined, testConfig)
 
                     await new Promise<void>((resolve, reject) => {
+                        // XXX: temporary workaround because the csharp/python
+                        // debuggers exit without triggering `onDidStartDebugSession`.
+                        if (runtimeNeedsWorkaround(scenario.language)) {
+                            testDisposables.push(
+                                vscode.debug.onDidTerminateDebugSession(async debugSession => {
+                                    resolve()
+                                })
+                            )
+                        }
                         testDisposables.push(
                             vscode.debug.onDidStartDebugSession(async startedSession => {
+                                // If `onDidStartDebugSession` is fired then the debugger doesn't need the workaround anymore.
+                                if (runtimeNeedsWorkaround(scenario.language)) {
+                                    reject(
+                                        new Error(
+                                            `runtime "${scenario.language}" triggered onDidStartDebugSession, so it can be removed from runtimeNeedsWorkaround(), yay!`
+                                        )
+                                    )
+                                }
+
                                 const sessionValidation = validateSamDebugSession(
                                     startedSession,
                                     scenario.debugSessionType
@@ -339,11 +341,9 @@ describe.only('SAM Integration Tests', async () => {
                                             endedSession,
                                             scenario.debugSessionType
                                         )
-
                                         if (endSessionValidation) {
                                             reject(new Error(endSessionValidation))
                                         }
-
                                         if (startedSession.id === endedSession.id) {
                                             resolve()
                                         } else {
@@ -389,8 +389,7 @@ describe.only('SAM Integration Tests', async () => {
             debugSession: vscode.DebugSession,
             expectedSessionType: string
         ): string | undefined {
-            // TODO: also "SamLocalDebug: Remote Process [0]"
-            if (debugSession.name !== 'SamLocalDebug' && debugSession.name !== 'Remote Process [0]') {
+            if (!debugSession.name.startsWith('SamLocalDebug')) {
                 return `Unexpected Session Name ${debugSession}`
             }
 
