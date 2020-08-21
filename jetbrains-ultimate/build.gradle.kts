@@ -3,7 +3,6 @@
 
 import org.jetbrains.intellij.IntelliJPluginExtension
 import software.aws.toolkits.gradle.IdeVersions
-import software.aws.toolkits.gradle.ProductCode
 
 plugins {
     id("org.jetbrains.intellij")
@@ -16,12 +15,12 @@ dependencies {
     integrationTestImplementation(project(path = ":jetbrains-core", configuration = "testArtifacts"))
 }
 
-val ideVersions = IdeVersions(project)
+val ideProfile = IdeVersions.ideProfile(project)
 
 intellij {
     val parentIntellijTask = rootProject.intellij
-    version = ideVersions.sdkVersion(ProductCode.IU)
-    setPlugins(*ideVersions.plugins(ProductCode.IU).toTypedArray())
+    version = ideProfile.ultimate.sdkVersion
+    setPlugins(*ideProfile.ultimate.plugins)
     pluginName = parentIntellijTask.pluginName
     updateSinceUntilBuild = parentIntellijTask.updateSinceUntilBuild
     downloadSources = parentIntellijTask.downloadSources
