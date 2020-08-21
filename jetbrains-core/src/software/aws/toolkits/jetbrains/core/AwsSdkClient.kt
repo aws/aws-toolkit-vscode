@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.core
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.ServiceManager
-import com.intellij.openapi.util.Disposer
 import com.intellij.util.net.ssl.CertificateManager
 import com.intellij.util.proxy.CommonProxy
 import org.apache.http.impl.client.SystemDefaultCredentialsProvider
@@ -21,10 +20,6 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 
 class AwsSdkClient : Disposable {
-    init {
-        Disposer.register(ApplicationManager.getApplication(), this)
-    }
-
     val sdkHttpClient: SdkHttpClient by lazy {
         LOG.info { "Create new Apache client" }
         val httpClientBuilder = ApacheHttpClient.builder()

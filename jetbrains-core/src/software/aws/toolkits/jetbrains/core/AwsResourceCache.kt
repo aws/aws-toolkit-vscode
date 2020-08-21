@@ -228,7 +228,7 @@ class DefaultAwsResourceCache(
 
     private val cache = ConcurrentHashMap<CacheKey, Entry<*>>()
     private val accountSettings by lazy { AwsConnectionManager.getInstance(project) }
-    private val alarm = AlarmFactory.getInstance().create(Alarm.ThreadToUse.POOLED_THREAD, project)
+    private val alarm = AlarmFactory.getInstance().create(Alarm.ThreadToUse.POOLED_THREAD, this)
 
     init {
         ApplicationManager.getApplication().messageBus.connect(this).subscribe(CredentialManager.CREDENTIALS_CHANGED, this)

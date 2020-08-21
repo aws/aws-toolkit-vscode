@@ -28,7 +28,7 @@ interface ToolkitToolWindowTab : Disposable {
     fun show()
 }
 
-class ToolkitToolWindowManager(private val project: Project) {
+class ToolkitToolWindowManager(private val project: Project) : Disposable {
     private val toolWindows = ConcurrentHashMap<ToolkitToolWindowType, ManagedToolkitToolWindow>()
     internal fun getInstance(type: ToolkitToolWindowType) = toolWindows.computeIfAbsent(type) { ManagedToolkitToolWindow(type) }
 
@@ -38,7 +38,7 @@ class ToolkitToolWindowManager(private val project: Project) {
         override fun addTab(title: String, component: JComponent, activate: Boolean, id: String, disposable: Disposable?): ToolkitToolWindowTab {
             val content = ContentImpl(component, title, true)
             val toolWindow = windowManager.getToolWindow(type.id)
-                ?: windowManager.registerToolWindow(type.id, true, type.anchor, project, true).also {
+                ?: windowManager.registerToolWindow(type.id, true, type.anchor, this@ToolkitToolWindowManager, true).also {
                     it.setIcon(type.icon)
                     it.stripeTitle = type.title
                 }
@@ -74,7 +74,7 @@ class ToolkitToolWindowManager(private val project: Project) {
             }
     }
 
-    inner class ManagedToolkitToolWindowTab(private val toolWindow: ToolWindow, internal val content: Content) : ToolkitToolWindowTab {
+    class ManagedToolkitToolWindowTab(private val toolWindow: ToolWindow, internal val content: Content) : ToolkitToolWindowTab {
         override fun show() {
             toolWindow.activate(null, true)
             toolWindow.contentManager.setSelectedContent(content)
@@ -94,6 +94,9 @@ class ToolkitToolWindowManager(private val project: Project) {
         if (window.contentManager.contentCount == 0) {
             windowManager.unregisterToolWindow(id)
         }
+    }
+
+    override fun dispose() {
     }
 
     companion object {
