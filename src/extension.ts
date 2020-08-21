@@ -37,7 +37,7 @@ import {
     showQuickStartWebview,
     showWelcomeMessage,
 } from './shared/extensionUtilities'
-import { getLogger, Logger } from './shared/logger'
+import { getLogger, setLogger, setMaxLogging, Logger } from './shared/logger/logger'
 import { activate as activateLogger } from './shared/logger/activation'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import { EndpointsProvider } from './shared/regions/endpointsProvider'
@@ -56,14 +56,34 @@ import {
     recordToolkitInit,
 } from './shared/telemetry/telemetry'
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
-import { getChannelLogger } from './shared/utilities/vsCodeUtils'
+import { getChannelLogger, ChannelLogger } from './shared/utilities/vsCodeUtils'
 import { ExtContext } from './shared/extensions'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
 import { CredentialsStore } from './credentials/credentialsStore'
 
 let localize: nls.LocalizeFunc
 
-export async function activate(context: vscode.ExtensionContext) {
+export function setGlobalErrorHandlers(logger: Logger, channelLogger: ChannelLogger) {
+    process.on('uncaughtException', err => {
+        const e = err as Error
+        logger.error('uncaughtException: %s: %O\nstacktrace:\n%O', e.name, e.message, e.stack)
+        channelLogger.error('AWS.channel.aws.toolkit', 'AWS Toolkit', e as Error)
+        if (e !== undefined) {
+            throw e
+        }
+    })
+
+    process.on('unhandledRejection', err => {
+        const e = err as Error
+        logger.error('unhandledRejection: %s: %O\nstacktrace:\n%O', e.name, e.message, e.stack)
+        channelLogger.error('AWS.channel.aws.toolkit', 'AWS Toolkit', e as Error)
+        if (e !== undefined) {
+            throw e
+        }
+    })
+}
+
+export async function activate(context: vscode.ExtensionContext): Promise<any> {
     const activationStartedOn = Date.now()
 
     localize = nls.loadMessageBundle()
@@ -71,7 +91,9 @@ export async function activate(context: vscode.ExtensionContext) {
     ext.context = context
     await activateLogger(context)
     const toolkitOutputChannel = vscode.window.createOutputChannel(localize('AWS.channel.aws.toolkit', 'AWS Toolkit'))
+    const channelLogger = getChannelLogger(toolkitOutputChannel)
     ext.outputChannel = toolkitOutputChannel
+    // setGlobalErrorHandlers(getLogger(), channelLogger)
 
     try {
         initializeCredentialsProviderManager()
@@ -219,8 +241,17 @@ export async function activate(context: vscode.ExtensionContext) {
         await loginWithMostRecentCredentials(toolkitSettings, loginManager)
 
         recordToolkitInitialization(activationStartedOn, getLogger())
+
+        console.log(`xxx activate END PID=${process.pid} getLogger()${getLogger()}`)
+
+        let publicApi = {
+            setLogger: setLogger,
+            getLogger: getLogger,
+            setMaxLogging: setMaxLogging,
+        }
+
+        return publicApi
     } catch (error) {
-        const channelLogger = getChannelLogger(toolkitOutputChannel)
         channelLogger.error('AWS.channel.aws.toolkit.activation.error', 'Error Activating AWS Toolkit', error as Error)
         throw error
     }
