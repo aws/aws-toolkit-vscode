@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { addArgumentIf } from '../../utilities/cliUtils'
 import { fileExists } from '../../filesystemUtilities'
 import { getLogger, Logger } from '../../logger'
 import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
@@ -85,12 +86,12 @@ export class SamCliBuildInvocation {
 
         const invokeArgs: string[] = ['build', '--build-dir', this.args.buildDir, '--template', this.args.templatePath]
 
-        this.addArgumentIf(invokeArgs, !!this.args.baseDir, '--base-dir', this.args.baseDir!)
-        this.addArgumentIf(invokeArgs, !!this.args.dockerNetwork, '--docker-network', this.args.dockerNetwork!)
-        this.addArgumentIf(invokeArgs, !!this.args.useContainer, '--use-container')
-        this.addArgumentIf(invokeArgs, !!this.args.skipPullImage, '--skip-pull-image')
-        this.addArgumentIf(invokeArgs, !!this.args.manifestPath, '--manifest', this.args.manifestPath!)
-        this.addArgumentIf(
+        addArgumentIf(invokeArgs, !!this.args.baseDir, '--base-dir', this.args.baseDir!)
+        addArgumentIf(invokeArgs, !!this.args.dockerNetwork, '--docker-network', this.args.dockerNetwork!)
+        addArgumentIf(invokeArgs, !!this.args.useContainer, '--use-container')
+        addArgumentIf(invokeArgs, !!this.args.skipPullImage, '--skip-pull-image')
+        addArgumentIf(invokeArgs, !!this.args.manifestPath, '--manifest', this.args.manifestPath!)
+        addArgumentIf(
             invokeArgs,
             !!this.args.parameterOverrides && this.args.parameterOverrides.length > 0,
             '--parameter-overrides',
@@ -111,12 +112,6 @@ export class SamCliBuildInvocation {
         logAndThrowIfUnexpectedExitCode(childProcessResult, 0)
 
         return childProcessResult.exitCode
-    }
-
-    private addArgumentIf(args: string[], addIfConditional: boolean, ...argsToAdd: string[]) {
-        if (addIfConditional) {
-            args.push(...argsToAdd)
-        }
     }
 
     private async validate(): Promise<void> {

@@ -4,9 +4,7 @@
  */
 
 import { fileExists } from '../../filesystemUtilities'
-import { Timeout } from '../../utilities/timeoutUtils'
-import { DefaultSamCliProcessInvokerContext, SamCliProcessInvokerContext } from './samCliInvoker'
-import { SamLocalInvokeCommand } from './samCliLocalInvoke'
+import { addArgumentIf } from '../../utilities/cliUtils'
 
 export interface SamCliStartApiArguments {
     /**
@@ -37,10 +35,6 @@ export interface SamCliStartApiArguments {
      */
     skipPullImage?: boolean
     /**
-     * Manages the sam cli execution.
-     */
-    invoker: SamLocalInvokeCommand
-    /**
      * Host path to a debugger that will be mounted into the Lambda container.
      */
     debuggerPath?: string
@@ -53,71 +47,39 @@ export interface SamCliStartApiArguments {
 }
 
 /**
- * An elaborate way to run `sam local start-api`.
+ * Build and validate `sam local start-api` arguments
  */
-export class SamCliStartApiInvocation {
-    private readonly invokerContext: SamCliProcessInvokerContext
+export async function buildSamCliStartApiArguments(args: SamCliStartApiArguments): Promise<string[]> {
+    args.skipPullImage = args.skipPullImage == true
 
-    public constructor(private readonly args: SamCliStartApiArguments) {
-        this.args.skipPullImage = this.args.skipPullImage == true
+    await validate(args.templatePath)
 
-        // Enterprise!
-        this.invokerContext = new DefaultSamCliProcessInvokerContext()
-    }
+    const invokeArgs = [
+        'local',
+        'start-api',
+        '--template',
+        args.templatePath,
+        '--env-vars',
+        args.environmentVariablePath,
+    ]
 
-    public async execute(timeout?: Timeout): Promise<void> {
-        await this.validate()
+    addArgumentIf(invokeArgs, !!args.debugPort, '--debug-port', args.debugPort!)
+    addArgumentIf(invokeArgs, !!args.dockerNetwork, '--docker-network', args.dockerNetwork!)
+    addArgumentIf(invokeArgs, !!args.skipPullImage, '--skip-pull-image')
+    addArgumentIf(invokeArgs, !!args.debuggerPath, '--debugger-path', args.debuggerPath!)
+    addArgumentIf(
+        invokeArgs,
+        !!args.parameterOverrides && args.parameterOverrides.length > 0,
+        '--parameter-overrides',
+        ...(args.parameterOverrides ?? [])
+    )
+    invokeArgs.push(...(args.extraArgs ?? []))
 
-        const samCommand = this.invokerContext.cliConfig.getSamCliLocation() ?? 'sam'
-        const args = this.buildArguments()
+    return invokeArgs
+}
 
-        await this.args.invoker.invoke({
-            options: {
-                env: {
-                    ...process.env,
-                    ...this.args.environmentVariables,
-                },
-            },
-            command: samCommand,
-            args: args,
-            isDebug: !!this.args.debugPort,
-            timeout,
-        })
-    }
-
-    protected buildArguments(): string[] {
-        const invokeArgs = [
-            'local',
-            'start-api',
-            '--template',
-            this.args.templatePath,
-            '--env-vars',
-            this.args.environmentVariablePath,
-        ]
-
-        this.addArgumentIf(invokeArgs, !!this.args.debugPort, '--debug-port', this.args.debugPort!)
-        this.addArgumentIf(invokeArgs, !!this.args.dockerNetwork, '--docker-network', this.args.dockerNetwork!)
-        this.addArgumentIf(invokeArgs, !!this.args.skipPullImage, '--skip-pull-image')
-        this.addArgumentIf(invokeArgs, !!this.args.debuggerPath, '--debugger-path', this.args.debuggerPath!)
-        this.addArgumentIf(
-            invokeArgs,
-            !!this.args.parameterOverrides && this.args.parameterOverrides.length > 0,
-            '--parameter-overrides',
-            ...(this.args.parameterOverrides ?? [])
-        )
-        invokeArgs.push(...(this.args.extraArgs ?? []))
-        return invokeArgs
-    }
-
-    protected async validate(): Promise<void> {
-        if (!(await fileExists(this.args.templatePath))) {
-            throw new Error(`template path does not exist: ${this.args.templatePath}`)
-        }
-    }
-
-    private addArgumentIf(args: string[], addIfConditional: boolean, ...argsToAdd: string[]) {
-        if (addIfConditional) {
-            args.push(...argsToAdd)
-        }
+async function validate(templatePath: string): Promise<void> {
+    if (!(await fileExists(templatePath))) {
+        throw new Error(`template path does not exist: ${templatePath}`)
     }
 }

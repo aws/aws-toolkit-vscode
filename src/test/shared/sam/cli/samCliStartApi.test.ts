@@ -7,20 +7,11 @@ import * as assert from 'assert'
 import * as del from 'del'
 import { writeFile } from 'fs-extra'
 import { join } from 'path'
-import { SamLocalInvokeCommand, SamLocalInvokeCommandArgs } from '../../../../shared/sam/cli/samCliLocalInvoke'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
-import { SamCliStartApiInvocation } from '../../../../shared/sam/cli/samCliStartApi'
+import { buildSamCliStartApiArguments } from '../../../../shared/sam/cli/samCliStartApi'
 import { assertArgIsPresent, assertArgNotPresent, assertArgsContainArgument } from './samCliTestUtils'
 
 describe('SamCliStartApi', async () => {
-    class TestSamStartApiCommand implements SamLocalInvokeCommand {
-        public constructor(private readonly onInvoke: ({ ...params }: SamLocalInvokeCommandArgs) => void) {}
-
-        public async invoke({ ...params }: SamLocalInvokeCommandArgs): Promise<void> {
-            this.onInvoke(params)
-        }
-    }
-
     let tempFolder: string
     let placeholderTemplateFile: string
     let placeholderEventFile: string
@@ -39,179 +30,135 @@ describe('SamCliStartApi', async () => {
     })
 
     it('invokes `sam local start-api` with correct args', async () => {
-        const taskInvoker: SamLocalInvokeCommand = new TestSamStartApiCommand(
-            (invokeArgs: SamLocalInvokeCommandArgs) => {
-                assert.ok(invokeArgs.args.length >= 2, 'Expected args to be present')
-                assert.strictEqual(invokeArgs.args[0], 'local')
-                assert.strictEqual(invokeArgs.args[1], 'start-api')
-                assert.strictEqual(invokeArgs.args[2], '--template')
-                assert.strictEqual(invokeArgs.args[4], '--env-vars')
-
-                // `extraArgs` are appended to the end.
-                assert.strictEqual(invokeArgs.args[6], '--debug')
-                assert.strictEqual(invokeArgs.args[7], '--build-dir')
-                assert.strictEqual(invokeArgs.args[8], 'my/build/dir/')
-            }
-        )
-
-        await new SamCliStartApiInvocation({
+        const invokeArgs = await buildSamCliStartApiArguments({
             templatePath: placeholderTemplateFile,
             environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker,
             extraArgs: ['--debug', '--build-dir', 'my/build/dir/'],
-        }).execute()
+        })
+
+        assert.ok(invokeArgs.length >= 2, 'Expected args to be present')
+        assert.strictEqual(invokeArgs[0], 'local')
+        assert.strictEqual(invokeArgs[1], 'start-api')
+        assert.strictEqual(invokeArgs[2], '--template')
+        assert.strictEqual(invokeArgs[4], '--env-vars')
+
+        // `extraArgs` are appended to the end.
+        assert.strictEqual(invokeArgs[6], '--debug')
+        assert.strictEqual(invokeArgs[7], '--build-dir')
+        assert.strictEqual(invokeArgs[8], 'my/build/dir/')
     })
 
     it('Passes template path to sam cli', async () => {
-        const taskInvoker = new TestSamStartApiCommand((invokeArgs: SamLocalInvokeCommandArgs) => {
-            assertArgsContainArgument(invokeArgs.args, '--template', placeholderTemplateFile)
-        })
-
-        await new SamCliStartApiInvocation({
+        const invokeArgs = await buildSamCliStartApiArguments({
             templatePath: placeholderTemplateFile,
             environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker,
-        }).execute()
+        })
+
+        assertArgsContainArgument(invokeArgs, '--template', placeholderTemplateFile)
     })
 
     it('Passes env-vars path to sam cli', async () => {
         const expectedEnvVarsPath = 'envvars.json'
-        const taskInvoker = new TestSamStartApiCommand((invokeArgs: SamLocalInvokeCommandArgs) => {
-            assertArgsContainArgument(invokeArgs.args, '--env-vars', expectedEnvVarsPath)
-        })
-
-        await new SamCliStartApiInvocation({
+        const invokeArgs = await buildSamCliStartApiArguments({
             templatePath: placeholderTemplateFile,
             environmentVariablePath: expectedEnvVarsPath,
-            invoker: taskInvoker,
-        }).execute()
+        })
+
+        assertArgsContainArgument(invokeArgs, '--env-vars', expectedEnvVarsPath)
     })
 
     it('Passes debug port to sam cli', async () => {
         const expectedDebugPort = '1234'
-        const taskInvoker = new TestSamStartApiCommand((invokeArgs: SamLocalInvokeCommandArgs) => {
-            assertArgsContainArgument(invokeArgs.args, '--debug-port', expectedDebugPort)
-        })
 
-        await new SamCliStartApiInvocation({
+        const invokeArgs = await buildSamCliStartApiArguments({
             templatePath: placeholderTemplateFile,
             environmentVariablePath: nonRelevantArg,
             debugPort: expectedDebugPort,
-            invoker: taskInvoker,
-        }).execute()
+        })
+
+        assertArgsContainArgument(invokeArgs, '--debug-port', expectedDebugPort)
     })
 
     it('undefined debug port does not pass to sam cli', async () => {
-        const taskInvoker: SamLocalInvokeCommand = new TestSamStartApiCommand(
-            (invokeArgs: SamLocalInvokeCommandArgs) => {
-                assertArgNotPresent(invokeArgs.args, '--debug-port')
-            }
-        )
-
-        await new SamCliStartApiInvocation({
+        const invokeArgs = await buildSamCliStartApiArguments({
             templatePath: placeholderTemplateFile,
             environmentVariablePath: nonRelevantArg,
             debugPort: undefined,
-            invoker: taskInvoker,
-        }).execute()
+        })
+
+        assertArgNotPresent(invokeArgs, '--debug-port')
     })
 
     it('Passes docker network to sam cli', async () => {
         const expectedDockerNetwork = 'hello-world'
-        const taskInvoker: SamLocalInvokeCommand = new TestSamStartApiCommand(
-            (invokeArgs: SamLocalInvokeCommandArgs) => {
-                assertArgsContainArgument(invokeArgs.args, '--docker-network', expectedDockerNetwork)
-            }
-        )
 
-        await new SamCliStartApiInvocation({
+        const invokeArgs = await buildSamCliStartApiArguments({
             templatePath: placeholderTemplateFile,
             environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker,
             dockerNetwork: expectedDockerNetwork,
-        }).execute()
+        })
+
+        assertArgsContainArgument(invokeArgs, '--docker-network', expectedDockerNetwork)
     })
 
     it('Does not pass docker network to sam cli when undefined', async () => {
-        const taskInvoker = new TestSamStartApiCommand((invokeArgs: SamLocalInvokeCommandArgs) => {
-            assertArgNotPresent(invokeArgs.args, '--docker-network')
-        })
-
-        await new SamCliStartApiInvocation({
+        const invokeArgs = await buildSamCliStartApiArguments({
             templatePath: placeholderTemplateFile,
             environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker,
             dockerNetwork: undefined,
-        }).execute()
+        })
+
+        assertArgNotPresent(invokeArgs, '--docker-network')
     })
 
     it('passes --skip-pull-image to sam cli if skipPullImage is true', async () => {
-        const taskInvoker = new TestSamStartApiCommand((invokeArgs: SamLocalInvokeCommandArgs) => {
-            assertArgIsPresent(invokeArgs.args, '--skip-pull-image')
-        })
-
-        await new SamCliStartApiInvocation({
+        const invokeArgs = await buildSamCliStartApiArguments({
             templatePath: placeholderTemplateFile,
             environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker,
             skipPullImage: true,
-        }).execute()
+        })
+
+        assertArgIsPresent(invokeArgs, '--skip-pull-image')
     })
 
     it('does not pass --skip-pull-image to sam cli if skipPullImage is false', async () => {
-        const taskInvoker: SamLocalInvokeCommand = new TestSamStartApiCommand(
-            (invokeArgs: SamLocalInvokeCommandArgs) => {
-                assertArgNotPresent(invokeArgs.args, '--skip-pull-image')
-            }
-        )
-
-        await new SamCliStartApiInvocation({
+        const invokeArgs = await buildSamCliStartApiArguments({
             templatePath: placeholderTemplateFile,
             environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker,
             skipPullImage: false,
-        }).execute()
+        })
+
+        assertArgNotPresent(invokeArgs, '--skip-pull-image')
     })
 
     it('does not pass --skip-pull-image to sam cli if skipPullImage is undefined', async () => {
-        const taskInvoker = new TestSamStartApiCommand((invokeArgs: SamLocalInvokeCommandArgs) => {
-            assertArgNotPresent(invokeArgs.args, '--skip-pull-image')
-        })
-
-        await new SamCliStartApiInvocation({
+        const invokeArgs = await buildSamCliStartApiArguments({
             templatePath: placeholderTemplateFile,
             environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker,
             skipPullImage: undefined,
-        }).execute()
+        })
+
+        assertArgNotPresent(invokeArgs, '--skip-pull-image')
     })
 
     it('Passes debuggerPath to sam cli', async () => {
         const expectedDebuggerPath = join('foo', 'bar')
 
-        const taskInvoker = new TestSamStartApiCommand((invokeArgs: SamLocalInvokeCommandArgs) => {
-            assertArgsContainArgument(invokeArgs.args, '--debugger-path', expectedDebuggerPath)
-        })
-
-        await new SamCliStartApiInvocation({
+        const invokeArgs = await buildSamCliStartApiArguments({
             templatePath: placeholderTemplateFile,
             environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker,
             debuggerPath: expectedDebuggerPath,
-        }).execute()
+        })
+
+        assertArgsContainArgument(invokeArgs, '--debugger-path', expectedDebuggerPath)
     })
 
     it('Does not pass debuggerPath to sam cli when undefined', async () => {
-        const taskInvoker: SamLocalInvokeCommand = new TestSamStartApiCommand(
-            (invokeArgs: SamLocalInvokeCommandArgs) => {
-                assertArgNotPresent(invokeArgs.args, '--debugger-path')
-            }
-        )
-
-        await new SamCliStartApiInvocation({
+        const invokeArgs = await buildSamCliStartApiArguments({
             templatePath: placeholderTemplateFile,
             environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker,
-        }).execute()
+        })
+
+        assertArgNotPresent(invokeArgs, '--debugger-path')
     })
 })
