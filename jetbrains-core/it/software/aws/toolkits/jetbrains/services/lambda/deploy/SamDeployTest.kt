@@ -22,6 +22,8 @@ import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.runUnderRealCredentials
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
+import java.io.File
+import java.nio.file.Paths
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -36,6 +38,8 @@ class SamDeployTest {
         .httpClient(ApacheHttpClient.builder().build())
         .region(Region.US_WEST_2)
         .build()
+
+    private val largeTemplateLocation = Paths.get(System.getProperty("testDataPath"), "testFiles", "LargeTemplate.yml").toString()
 
     @Rule
     @JvmField
@@ -77,6 +81,31 @@ class SamDeployTest {
     }
 
     @Test
+    // Tests using a stack > the CFN limit of 51200 bytes
+    fun deployLargeAppUsingSam() {
+        val stackName = "SamDeployTest-${UUID.randomUUID()}"
+        val templateFile = setUpProject(largeTemplateLocation)
+        runAssertsAndClean(stackName) {
+            val changeSetArn = createChangeSet(templateFile, stackName, mapOf("InstanceType" to "t2.small"))
+
+            assertThat(changeSetArn).isNotNull()
+
+            val describeChangeSetResponse = cfnClient.describeChangeSet {
+                it.stackName(stackName)
+                it.changeSetName(changeSetArn)
+            }
+
+            assertThat(describeChangeSetResponse).isNotNull
+            assertThat(describeChangeSetResponse.parameters()).contains(
+                Parameter.builder()
+                    .parameterKey("InstanceType")
+                    .parameterValue("t2.small")
+                    .build()
+            )
+        }
+    }
+
+    @Test
     fun deployAppUsingSamWithParameters() {
         val stackName = "SamDeployTest-${UUID.randomUUID()}"
         val templateFile = setUpProject()
@@ -100,7 +129,7 @@ class SamDeployTest {
         }
     }
 
-    private fun setUpProject(): VirtualFile {
+    private fun setUpProject(templateFilePath: String? = null): VirtualFile {
         projectRule.fixture.addFileToProject(
             "hello_world/app.py",
             """
@@ -114,9 +143,10 @@ class SamDeployTest {
             ""
         )
 
-        return projectRule.fixture.addFileToProject(
-            "template.yaml",
-            """
+        return if (templateFilePath == null) {
+            projectRule.fixture.addFileToProject(
+                "template.yaml",
+                """
                 AWSTemplateFormatVersion: '2010-09-09'
                 Transform: AWS::Serverless-2016-10-31
                 Parameters:
@@ -135,7 +165,10 @@ class SamDeployTest {
                       Runtime: python2.7
                       Timeout: 900
                 """.trimIndent()
-        ).virtualFile
+            ).virtualFile
+        } else {
+            projectRule.fixture.addFileToProject("template.yaml", File(templateFilePath).readText()).virtualFile
+        }
     }
 
     private fun createChangeSet(templateFile: VirtualFile, stackName: String, parameters: Map<String, String> = emptyMap()): String? {
