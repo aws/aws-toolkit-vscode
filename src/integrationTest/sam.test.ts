@@ -14,7 +14,6 @@ import { getSamCliContext } from '../../src/shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../src/shared/sam/cli/samCliInit'
 import { assertThrowsError } from '../../src/test/shared/utilities/assertUtils'
 import { Language } from '../shared/codelens/codeLensUtils'
-import { LaunchConfiguration } from '../shared/debug/launchConfiguration'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { fileExists } from '../shared/filesystemUtilities'
 import { getLogger } from '../shared/logger'
@@ -88,8 +87,14 @@ async function continueDebugger(): Promise<void> {
     await vscode.commands.executeCommand('workbench.action.debug.continue')
 }
 
-async function stopDebugger(): Promise<void> {
-    await vscode.commands.executeCommand('workbench.action.debug.stop')
+async function stopDebugger(debugSession: vscode.DebugSession): Promise<void> {
+    if ((vscode.debug as any).stopDebugging) {
+        // VSCode 1.48+
+        ;(vscode.debug as any).stopDebugging(debugSession)
+    } else {
+        // VSCode 1.47 or older
+        await vscode.commands.executeCommand('workbench.action.debug.stop')
+    }
 }
 
 async function closeAllEditors(): Promise<void> {
@@ -209,8 +214,8 @@ describe('SAM Integration Tests', async () => {
              */
             describe(`Starting with a newly created ${scenario.runtime} SAM Application...`, async () => {
                 let testDisposables: vscode.Disposable[]
-                let subSuiteTestLocation: string
 
+                let testProjectDir: string
                 let samAppCodeUri: vscode.Uri
                 let appPath: string
                 let cfnTemplatePath: string
@@ -219,13 +224,12 @@ describe('SAM Integration Tests', async () => {
                     // tslint:disable-next-line: no-invalid-this
                     this.timeout(TIMEOUT)
 
-                    subSuiteTestLocation = await mkdtemp(path.join(runtimeTestRoot, 'samapp-'))
-                    console.log(`subSuiteTestLocation: ${subSuiteTestLocation}`)
+                    testProjectDir = await mkdtemp(path.join(runtimeTestRoot, 'samapp-'))
+                    console.log(`subSuiteTestLocation: ${testProjectDir}`)
 
-                    await createSamApplication(subSuiteTestLocation)
-                    // TODO: useful?
-                    appPath = path.join(subSuiteTestLocation, samApplicationName, scenario.path)
-                    cfnTemplatePath = path.join(subSuiteTestLocation, samApplicationName, 'template.yaml')
+                    await createSamApplication(testProjectDir)
+                    appPath = path.join(testProjectDir, samApplicationName, scenario.path)
+                    cfnTemplatePath = path.join(testProjectDir, samApplicationName, 'template.yaml')
                     samAppCodeUri = await openSamAppFile(appPath)
                 })
 
@@ -240,7 +244,7 @@ describe('SAM Integration Tests', async () => {
                 })
 
                 after(async function() {
-                    tryRemoveFolder(subSuiteTestLocation)
+                    tryRemoveFolder(testProjectDir)
                 })
 
                 it('the SAM Template contains the expected runtime', async () => {
@@ -249,7 +253,7 @@ describe('SAM Integration Tests', async () => {
                 })
 
                 it('produces an error when creating a SAM Application to the same location', async () => {
-                    const err = await assertThrowsError(async () => await createSamApplication(subSuiteTestLocation))
+                    const err = await assertThrowsError(async () => await createSamApplication(testProjectDir))
                     assert(err.message.includes('directory already exists'))
                 }).timeout(TIMEOUT)
 
@@ -284,50 +288,8 @@ describe('SAM Integration Tests', async () => {
                         'unexpected debug session in progress'
                     )
 
-                    const debugSessionStartedAndStoppedPromise = new Promise<void>((resolve, reject) => {
-                        testDisposables.push(
-                            vscode.debug.onDidStartDebugSession(async startedSession => {
-                                const sessionValidation = validateSamDebugSession(
-                                    startedSession,
-                                    scenario.debugSessionType
-                                )
-
-                                if (sessionValidation) {
-                                    await stopDebugger()
-                                    throw new Error(sessionValidation)
-                                }
-
-                                // Wait for this debug session to terminate
-                                testDisposables.push(
-                                    vscode.debug.onDidTerminateDebugSession(async endedSession => {
-                                        const endSessionValidation = validateSamDebugSession(
-                                            endedSession,
-                                            scenario.debugSessionType
-                                        )
-
-                                        if (endSessionValidation) {
-                                            throw new Error(endSessionValidation)
-                                        }
-
-                                        if (startedSession.id === endedSession.id) {
-                                            resolve()
-                                        } else {
-                                            reject(new Error('Unexpected debug session ended'))
-                                        }
-                                    })
-                                )
-
-                                // wait for it to actually start (which we do not get an event for). 800 is
-                                // short enough to finish before the next test is run and long enough to
-                                // actually act after it pauses
-                                await sleep(800)
-                                await continueDebugger()
-                            })
-                        )
-                    })
-
-                    const rootUri = vscode.Uri.file(appPath)
-                    const launchConfig = new LaunchConfiguration(rootUri)
+                    // const rootUri = vscode.Uri.file(appPath)
+                    // const launchConfig = new LaunchConfiguration(rootUri)
                     const testConfig = {
                         type: 'aws-sam',
                         request: 'direct-invoke',
@@ -345,16 +307,55 @@ describe('SAM Integration Tests', async () => {
                             // runtime: scenario.runtime,
                         },
                     }
-                    // TODO: launchConfig.getDebugConfigurations() is empty after this,
-                    // but launch.json *does* have the content in it, so F5 works.
-                    // Bug/quirk with LaunchConfiguration impl?
-                    await launchConfig.addDebugConfiguration(testConfig)
 
-                    // Invoke "F5".
-                    await vscode.commands.executeCommand('workbench.action.debug.start')
-                    // await vscode.commands.executeCommand('workbench.action.debug.selectandstart')
+                    // Simulate "F5".
+                    await vscode.debug.startDebugging(undefined, testConfig)
 
-                    await debugSessionStartedAndStoppedPromise
+                    await new Promise<void>((resolve, reject) => {
+                        testDisposables.push(
+                            vscode.debug.onDidStartDebugSession(async startedSession => {
+                                const sessionValidation = validateSamDebugSession(
+                                    startedSession,
+                                    scenario.debugSessionType
+                                )
+
+                                if (sessionValidation) {
+                                    await stopDebugger(startedSession)
+                                    throw new Error(sessionValidation)
+                                }
+
+                                // Wait for this debug session to terminate
+                                testDisposables.push(
+                                    vscode.debug.onDidTerminateDebugSession(async endedSession => {
+                                        const endSessionValidation = validateSamDebugSession(
+                                            endedSession,
+                                            scenario.debugSessionType
+                                        )
+
+                                        if (endSessionValidation) {
+                                            reject(new Error(endSessionValidation))
+                                        }
+
+                                        if (startedSession.id === endedSession.id) {
+                                            resolve()
+                                        } else {
+                                            reject(
+                                                new Error(
+                                                    `Unexpected debug session ended: ${endedSession.name} (expected: ${startedSession.name})`
+                                                )
+                                            )
+                                        }
+                                    })
+                                )
+
+                                // wait for it to actually start (which we do not get an event for). 800 is
+                                // short enough to finish before the next test is run and long enough to
+                                // actually act after it pauses
+                                await sleep(800)
+                                await continueDebugger()
+                            })
+                        )
+                    })
                 }).timeout(TIMEOUT * 2)
             })
         })
