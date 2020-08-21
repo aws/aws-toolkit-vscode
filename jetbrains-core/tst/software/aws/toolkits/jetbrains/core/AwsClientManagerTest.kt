@@ -5,10 +5,8 @@ package software.aws.toolkits.jetbrains.core
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.project.ex.ProjectManagerEx
-import com.intellij.testFramework.HeavyPlatformTestCase
+import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.ProjectRule
-import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.After
@@ -27,8 +25,8 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.region.Endpoint
 import software.aws.toolkits.core.region.Service
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
-import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.core.credentials.waitUntilConnectionStateIsStable
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import kotlin.reflect.full.declaredMemberProperties
@@ -99,19 +97,11 @@ class AwsClientManagerTest {
 
     @Test
     fun clientsAreClosedWhenProjectIsDisposed() {
-        val project = HeavyPlatformTestCase.createProject(temporaryDirectory.newFolder().toPath())
-        val projectManager = ProjectManagerEx.getInstanceEx()
-
-        runInEdtAndWait {
-            projectManager.openProject(project)
-        }
-
-        val sut = getClientManager(project)
+        val sut = getClientManager(projectRule.project)
         val client = sut.getClient<DummyServiceClient>()
 
-        runInEdtAndWait {
-            projectManager.closeAndDispose(project)
-        }
+        // Frameworks handle this normally but we can't trigger it from tests
+        Disposer.dispose(sut)
 
         assertThat(client.closed).isTrue()
     }

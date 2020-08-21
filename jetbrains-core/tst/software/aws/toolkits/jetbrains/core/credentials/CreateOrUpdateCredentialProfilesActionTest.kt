@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
-import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileTypes.FileTypes
@@ -65,7 +64,7 @@ class CreateOrUpdateCredentialProfilesActionTest {
         val sut = CreateOrUpdateCredentialProfilesAction(writer, configFile, credFile)
         Messages.setTestDialog(TestDialog.OK)
 
-        sut.actionPerformed(TestActionEvent(DataContext { projectRule.project }))
+        sut.actionPerformed(TestActionEvent { projectRule.project })
 
         verify(writer).createFile(configFile)
 
@@ -85,7 +84,7 @@ class CreateOrUpdateCredentialProfilesActionTest {
         val sut = CreateOrUpdateCredentialProfilesAction(writer, configFile, credFile)
         Messages.setTestDialog(TestDialog.OK)
 
-        sut.actionPerformed(TestActionEvent(DataContext { projectRule.project }))
+        sut.actionPerformed(TestActionEvent { projectRule.project })
 
         verifyZeroInteractions(writer)
 
@@ -105,7 +104,7 @@ class CreateOrUpdateCredentialProfilesActionTest {
         val sut = CreateOrUpdateCredentialProfilesAction(writer, configFile, credFile)
         Messages.setTestDialog(TestDialog.OK)
 
-        sut.actionPerformed(TestActionEvent(DataContext { projectRule.project }))
+        sut.actionPerformed(TestActionEvent { projectRule.project })
 
         verifyZeroInteractions(writer)
 
@@ -123,7 +122,7 @@ class CreateOrUpdateCredentialProfilesActionTest {
         val sut = CreateOrUpdateCredentialProfilesAction(writer, configFile, credFile)
         Messages.setTestDialog(TestDialog.OK)
 
-        sut.actionPerformed(TestActionEvent(DataContext { projectRule.project }))
+        sut.actionPerformed(TestActionEvent { projectRule.project })
 
         verifyZeroInteractions(writer)
 
@@ -139,9 +138,9 @@ class CreateOrUpdateCredentialProfilesActionTest {
 
         // Mark the file as unknown for the purpose of the test. This is needed because some
         // other extensions can have weird file type association patterns (like Docker having
-        // *. (?)) which makes this test fail because it is not file type unkown
-        val file = listOf(localFileSystem.refreshAndFindFileByIoFile(credFile))
-        localFileSystem.refreshFiles(file, false, false) {
+        // *. (?)) which makes this test fail because it is not file type unknown
+        localFileSystem.refreshAndFindFileByIoFile(credFile)
+        runInEdtAndWait {
             ApplicationManager.getApplication().runWriteAction {
                 FileTypeManagerEx.getInstanceEx().associatePattern(
                     FileTypes.UNKNOWN,
@@ -153,7 +152,7 @@ class CreateOrUpdateCredentialProfilesActionTest {
         val sut = CreateOrUpdateCredentialProfilesAction(writer, configFile, credFile)
         Messages.setTestDialog(TestDialog.OK)
 
-        sut.actionPerformed(TestActionEvent(DataContext { projectRule.project }))
+        sut.actionPerformed(TestActionEvent { projectRule.project })
 
         verifyZeroInteractions(writer)
 
@@ -173,7 +172,7 @@ class CreateOrUpdateCredentialProfilesActionTest {
         val sut = CreateOrUpdateCredentialProfilesAction(writer, configFile, credFile)
         Messages.setTestDialog(TestDialog.NO)
 
-        sut.actionPerformed(TestActionEvent(DataContext { projectRule.project }))
+        sut.actionPerformed(TestActionEvent { projectRule.project })
 
         verifyZeroInteractions(writer)
     }

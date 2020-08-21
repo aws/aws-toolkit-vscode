@@ -78,7 +78,7 @@ class EcsCloudDebugSettingsEditorPanel(private val project: Project) : Disposabl
     }
 
     private fun createUIComponents() {
-        containerLoadingIndicator = JBLoadingPanel(BorderLayout(), project)
+        containerLoadingIndicator = JBLoadingPanel(BorderLayout(), this)
         containerLoadingIndicator.setLoadingText(message("cloud_debug.ecs.run_config.container.loading"))
         containerLoadingIndicator.border = JBUI.Borders.empty()
 
