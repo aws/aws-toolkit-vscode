@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.lambda.java
 import com.intellij.compiler.CompilerTestUtil
 import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.testFramework.runInEdtAndWait
+import com.intellij.util.text.SemVer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Assume.assumeTrue
@@ -17,8 +18,11 @@ import org.junit.runners.Parameterized
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
+import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
+import software.aws.toolkits.jetbrains.core.executables.getExecutableIfPresent
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createHandlerBasedRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.createTemplateRunConfiguration
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 import software.aws.toolkits.jetbrains.utils.addBreakpoint
 import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
 import software.aws.toolkits.jetbrains.utils.executeRunConfiguration
@@ -170,7 +174,15 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runtim
 
     @Test
     fun samIsExecutedWithDebugger() {
-        assumeTrue(runtime != Runtime.JAVA8_AL2)
+        // TODO Remove when SAM 1.2.0 is out
+        if (runtime == Runtime.JAVA8_AL2) {
+            val samVersion = ExecutableManager.getInstance().getExecutableIfPresent<SamExecutable>().version?.let {
+                SemVer.parseFromText(it)
+            }
+            println(samVersion)
+            assumeTrue(samVersion?.isGreaterOrEqualThan(1, 2, 0) == true)
+        }
+
         projectRule.addBreakpoint()
 
         val runConfiguration = createHandlerBasedRunConfiguration(

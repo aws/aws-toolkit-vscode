@@ -23,7 +23,7 @@ class JavaRuntimeGroup : SdkBasedRuntimeGroup() {
 
     override val supportedRuntimes: List<RuntimeInfo> = listOf(
         RuntimeInfo(Runtime.JAVA8),
-        RuntimeInfo(Runtime.JAVA8_AL2, SemVer("1.1.0", 1, 1, 0)),
+        RuntimeInfo(Runtime.JAVA8_AL2, SemVer("1.2.0", 1, 2, 0)),
         RuntimeInfo(Runtime.JAVA11)
     )
 
