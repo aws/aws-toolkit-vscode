@@ -16,7 +16,7 @@ import { assertThrowsError } from '../../src/test/shared/utilities/assertUtils'
 import { Language } from '../shared/codelens/codeLensUtils'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { fileExists } from '../shared/filesystemUtilities'
-import { getLogger } from '../shared/logger'
+import { Logger, getLogger } from '../shared/logger'
 import { WinstonToolkitLogger } from '../shared/logger/winstonToolkitLogger'
 import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { findParentProjectFile } from '../shared/utilities/workspaceUtils'
@@ -131,7 +131,7 @@ function logSeparator() {
     console.log('************************************************************')
 }
 
-function configureToolkitLogging() {
+function configureToolkitLogging(): Logger {
     const logger = getLogger()
 
     if (logger instanceof WinstonToolkitLogger) {
@@ -142,11 +142,14 @@ function configureToolkitLogging() {
     } else {
         assert.fail('Unexpected extension logger')
     }
+
+    return logger
 }
 
-describe('SAM Integration Tests', async () => {
+describe.only('SAM Integration Tests', async () => {
     const samApplicationName = 'testProject'
     let testSuiteRoot: string
+    let logger: Logger
 
     before(async function() {
         // tslint:disable-next-line:no-invalid-this
@@ -156,8 +159,7 @@ describe('SAM Integration Tests', async () => {
         await configureAwsToolkitExtension()
         await configurePythonExtension()
 
-        configureToolkitLogging()
-
+        logger = configureToolkitLogging()
         testSuiteRoot = await mkdtemp(path.join(projectFolder, 'inttest'))
         console.log('testSuiteRoot: ', testSuiteRoot)
         mkdirpSync(testSuiteRoot)
@@ -167,7 +169,9 @@ describe('SAM Integration Tests', async () => {
         tryRemoveFolder(testSuiteRoot)
     })
 
-    for (const scenario of scenarios) {
+    for (let scenarioIndex = 0; scenarioIndex < scenarios.length; scenarioIndex++) {
+        const scenario = scenarios[scenarioIndex]
+
         describe(`SAM Application Runtime: ${scenario.runtime}`, async () => {
             let runtimeTestRoot: string
 
@@ -181,29 +185,33 @@ describe('SAM Integration Tests', async () => {
                 tryRemoveFolder(runtimeTestRoot)
             })
 
+            function log(o: any) {
+                logger.debug('sam.test.ts: scenario %d (%s): %O', scenarioIndex, scenario.runtime, o)
+            }
+
             /**
              * This suite cleans up at the end of each test.
              */
             describe('Starting from scratch', async () => {
-                let subSuiteTestLocation: string
+                let testDir: string
 
                 beforeEach(async function() {
-                    subSuiteTestLocation = await mkdtemp(path.join(runtimeTestRoot, 'test-'))
-                    console.log(`subSuiteTestLocation: ${subSuiteTestLocation}`)
+                    testDir = await mkdtemp(path.join(runtimeTestRoot, 'test-'))
+                    log(`testDir: ${testDir}`)
                 })
 
                 afterEach(async function() {
-                    tryRemoveFolder(subSuiteTestLocation)
+                    tryRemoveFolder(testDir)
                 })
 
                 it('creates a new SAM Application (happy path)', async function() {
                     // tslint:disable-next-line: no-invalid-this
                     this.timeout(TIMEOUT)
 
-                    await createSamApplication(subSuiteTestLocation)
+                    await createSamApplication(testDir)
 
                     // Check for readme file
-                    const readmePath = path.join(subSuiteTestLocation, samApplicationName, 'README.md')
+                    const readmePath = path.join(testDir, samApplicationName, 'README.md')
                     assert.ok(await fileExists(readmePath), `Expected SAM App readme to exist at ${readmePath}`)
                 })
             })
@@ -225,7 +233,7 @@ describe('SAM Integration Tests', async () => {
                     this.timeout(TIMEOUT)
 
                     testProjectDir = await mkdtemp(path.join(runtimeTestRoot, 'samapp-'))
-                    console.log(`subSuiteTestLocation: ${testProjectDir}`)
+                    log(`testDir: ${testProjectDir}`)
 
                     await createSamApplication(testProjectDir)
                     appPath = path.join(testProjectDir, samApplicationName, scenario.path)
@@ -298,7 +306,7 @@ describe('SAM Integration Tests', async () => {
                             target: 'template',
                             logicalId: 'HelloWorldFunction',
                             templatePath: cfnTemplatePath,
-                            //projectRoot: subSuiteTestLocation,
+                            //projectRoot: testDir,
                             //lambdaHandler: 'StockBuyer::StockBuyer.Function::FunctionHandler',
                         },
                         lambda: {
@@ -321,7 +329,7 @@ describe('SAM Integration Tests', async () => {
 
                                 if (sessionValidation) {
                                     await stopDebugger(startedSession)
-                                    throw new Error(sessionValidation)
+                                    reject(new Error(sessionValidation))
                                 }
 
                                 // Wait for this debug session to terminate
@@ -355,6 +363,8 @@ describe('SAM Integration Tests', async () => {
                                 await continueDebugger()
                             })
                         )
+                    }).catch(e => {
+                        throw e
                     })
                 }).timeout(TIMEOUT * 2)
             })
@@ -379,6 +389,7 @@ describe('SAM Integration Tests', async () => {
             debugSession: vscode.DebugSession,
             expectedSessionType: string
         ): string | undefined {
+            // TODO: also "SamLocalDebug: Remote Process [0]"
             if (debugSession.name !== 'SamLocalDebug' && debugSession.name !== 'Remote Process [0]') {
                 return `Unexpected Session Name ${debugSession}`
             }
