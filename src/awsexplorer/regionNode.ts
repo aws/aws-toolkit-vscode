@@ -51,7 +51,7 @@ export class RegionNode extends AWSTreeNodeBase {
             { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },
             {
                 serviceId: 's3',
-                createFn: () => new S3Node(new DefaultS3Client(this.regionCode, partitionId)),
+                createFn: () => new S3Node(new DefaultS3Client(partitionId, this.regionCode)),
             },
             { serviceId: 'schemas', createFn: () => new SchemasNode(this.regionCode) },
             { serviceId: 'states', createFn: () => new StepFunctionsNode(this.regionCode) },

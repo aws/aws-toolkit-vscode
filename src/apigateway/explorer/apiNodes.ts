@@ -16,7 +16,7 @@ export class RestApiNode extends AWSTreeNodeBase implements AWSResourceNode {
     ) {
         super('')
         this.update(api)
-        this.contextValue = 'awsApiGatewayRestApiNode'
+        this.contextValue = 'awsApiGatewayNode'
     }
 
     public update(api: RestApi): void {
@@ -27,7 +27,7 @@ export class RestApiNode extends AWSTreeNodeBase implements AWSResourceNode {
 
     public get name(): string {
         if (this.api.name === undefined) {
-            throw new Error('Name expected but not found')
+            throw new Error('REST API name expected but not found')
         }
 
         return this.api.name

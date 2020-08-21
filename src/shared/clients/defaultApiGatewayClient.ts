@@ -20,12 +20,12 @@ export class DefaultApiGatewayClient implements ApiGatewayClient {
         do {
             const response: APIGateway.RestApis = await client.getRestApis(request).promise()
 
-            if (!!response.items) {
+            if (response.items !== undefined && response.items.length > 0) {
                 yield* response.items
             }
 
             request.position = response.position
-        } while (!!request.position)
+        } while (request.position !== undefined)
     }
 
     private async createSdkClient(): Promise<APIGateway> {
