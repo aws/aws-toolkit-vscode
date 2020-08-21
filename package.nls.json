@@ -163,6 +163,8 @@
     "AWS.error.check.logs": "Check the logs for more information by running the \"{0}\" command from the Command Palette.",
     "AWS.explorerNode.addRegion": "Add a region to AWS Explorer...",
     "AWS.explorerNode.addRegion.tooltip": "Click here to add a region to AWS Explorer.",
+    "AWS.explorerNode.apigateway.error": "Error loading API Gateway REST APIs",
+    "AWS.explorerNode.apigateway.noRestApis": "[No API Gateway REST APIs found]",
     "AWS.explorerNode.lambda.noFunctions": "[No Functions found]",
     "AWS.explorerNode.cloudFormation.noFunctions": "[Stack has no Lambda Functions]",
     "AWS.explorerNode.cloudformation.noStacks": "[No Stacks found]",
