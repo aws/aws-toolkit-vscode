@@ -14,7 +14,7 @@ import org.jetbrains.intellij.IntelliJPluginExtension
 inline fun <reified T : Task> Project.removeTask() {
     // For some reason in buildSrc, we can't use the <> version
     tasks.withType(T::class.java) {
-        it.enabled = false
+        enabled = false
     }
 }
 
