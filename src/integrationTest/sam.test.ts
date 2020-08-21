@@ -123,7 +123,7 @@ async function configureAwsToolkitExtension(): Promise<void> {
     const configAws = vscode.workspace.getConfiguration('aws')
     await configAws.update('logLevel', 'verbose', false)
     // Prevent the extension from preemptively cancelling a 'sam local' run
-    await configAws.update('samcli.debug.attach.timeout.millis', '90000', false)
+    await configAws.update('samcli.debug.attach.timeout.millis', 90000, false)
     logSeparator()
 }
 
