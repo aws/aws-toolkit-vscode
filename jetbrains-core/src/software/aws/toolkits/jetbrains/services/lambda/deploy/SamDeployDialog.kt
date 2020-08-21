@@ -142,6 +142,8 @@ class SamDeployDialog(
                 .withParameters(packagedTemplateFile.toString())
                 .withParameters("--stack-name")
                 .withParameters(stackName)
+                .withParameters("--s3-bucket")
+                .withParameters(s3Bucket)
 
             if (capabilities.isNotEmpty()) {
                 it.withParameters("--capabilities")
