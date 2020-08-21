@@ -77,7 +77,7 @@ class ChangeLogGeneratorTest {
         )
 
         val writer = mock<ChangeLogWriter>()
-        val sut = ChangeLogGenerator(listOf(writer))
+        val sut = ChangeLogGenerator(listOf(writer), mock())
         sut.addReleasedChanges(listOf(first, third, second))
         sut.close()
 
@@ -148,7 +148,7 @@ class ChangeLogGeneratorTest {
             """
         )
 
-        val sut = ChangeLogGenerator(mock())
+        val sut = ChangeLogGenerator(mock(), mock())
         sut.addReleasedChanges(listOf(first, second))
     }
 
@@ -171,7 +171,7 @@ class ChangeLogGeneratorTest {
 
         val firstWriter = mock<ChangeLogWriter>()
         val secondWriter = mock<ChangeLogWriter>()
-        val sut = ChangeLogGenerator(listOf(firstWriter, secondWriter))
+        val sut = ChangeLogGenerator(listOf(firstWriter, secondWriter), mock())
         sut.addReleasedChanges(listOf(entry))
         sut.close()
 
@@ -184,7 +184,7 @@ class ChangeLogGeneratorTest {
     @Test
     fun basicWrite() {
         val writer = mock<ChangeLogWriter>()
-        val sut = ChangeLogGenerator(listOf(writer))
+        val sut = ChangeLogGenerator(listOf(writer), mock())
 
         val first = createFile(
             """
@@ -246,7 +246,7 @@ class ChangeLogGeneratorTest {
     @Test
     fun canHandleMarkdown() {
         val writer = mock<ChangeLogWriter>()
-        val sut = ChangeLogGenerator(listOf(writer))
+        val sut = ChangeLogGenerator(listOf(writer), mock())
 
         val first = createFile(
             """
@@ -289,7 +289,7 @@ class ChangeLogGeneratorTest {
     @Test
     fun canHandleMultiLine() {
         val writer = mock<ChangeLogWriter>()
-        val sut = ChangeLogGenerator(listOf(writer))
+        val sut = ChangeLogGenerator(listOf(writer), mock())
 
         val first = createFile(
             """

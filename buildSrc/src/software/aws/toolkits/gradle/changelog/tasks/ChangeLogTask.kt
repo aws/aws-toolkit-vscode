@@ -22,6 +22,6 @@ abstract class ChangeLogTask : DefaultTask() {
     val nextReleaseDirectory: DirectoryProperty = project.objects.directoryProperty().convention(changesDirectory.dir("next-release"))
 
     protected fun DirectoryProperty.jsonFiles(): FileTree = this.asFileTree.matching {
-        it.include("*.json")
+        include("*.json")
     }
 }
