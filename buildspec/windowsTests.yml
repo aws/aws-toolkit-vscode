@@ -9,6 +9,13 @@ phases:
                 if(-Not($Env:CODE_COV_TOKEN -eq $null)) {
                     choco install -y --no-progress codecov
                 }
+            # Install getmac to avoid spurious "Command failed: getmac.exe"
+            # error in the build logs. https://github.com/microsoft/vscode/issues/102428
+            - |
+                &python --version
+                &pip --version
+                &pip install getmac
+                &getmac --version
     pre_build:
         commands:
             - npm install

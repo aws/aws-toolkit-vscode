@@ -40,8 +40,17 @@ import {
     CreateNewSamAppWizardResponse,
     DefaultCreateNewSamAppWizardContext,
 } from '../wizards/samInitWizard'
+import { LaunchConfiguration } from '../../shared/debug/launchConfiguration'
+import { SamDebugConfigProvider } from '../../shared/sam/debugger/awsSamDebugger'
+import { ExtContext } from '../../shared/extensions'
+import { isTemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebugConfiguration'
+import { TemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebugConfiguration'
+import * as pathutils from '../../shared/utilities/pathUtils'
 
-export async function resumeCreateNewSamApp(activationLaunchPath: ActivationLaunchPath = new ActivationLaunchPath()) {
+export async function resumeCreateNewSamApp(
+    extContext: ExtContext,
+    activationLaunchPath: ActivationLaunchPath = new ActivationLaunchPath()
+) {
     try {
         const pathToLaunch = activationLaunchPath.getLaunchPath()
         if (!pathToLaunch) {
@@ -49,7 +58,8 @@ export async function resumeCreateNewSamApp(activationLaunchPath: ActivationLaun
         }
 
         const uri = vscode.Uri.file(pathToLaunch)
-        if (!vscode.workspace.getWorkspaceFolder(uri)) {
+        const folder = vscode.workspace.getWorkspaceFolder(uri)
+        if (!folder) {
             // This should never happen, as `pathToLaunch` will only be set if `uri` is in
             // the newly added workspace folder.
             vscode.window.showErrorMessage(
@@ -63,6 +73,7 @@ export async function resumeCreateNewSamApp(activationLaunchPath: ActivationLaun
             return
         }
 
+        await addInitialLaunchConfiguration(extContext, folder, uri)
         await vscode.window.showTextDocument(uri)
     } finally {
         activationLaunchPath.clearLaunchPath()
@@ -80,12 +91,13 @@ type createReason = 'unknown' | 'userCancelled' | 'fileNotFound' | 'complete' | 
  * Runs `sam init` in the given context and returns useful metadata about its invocation
  */
 export async function createNewSamApplication(
-    channelLogger: ChannelLogger,
-    awsContext: AwsContext,
-    regionProvider: RegionProvider,
+    extContext: ExtContext,
     samCliContext: SamCliContext = getSamCliContext(),
     activationLaunchPath: ActivationLaunchPath = new ActivationLaunchPath()
 ): Promise<void> {
+    let channelLogger: ChannelLogger = extContext.chanLogger
+    let awsContext: AwsContext = extContext.awsContext
+    let regionProvider: RegionProvider = extContext.regionProvider
     let createResult: Result = 'Succeeded'
     let reason: createReason = 'unknown'
     let createRuntime: Runtime | undefined
@@ -185,6 +197,7 @@ export async function createNewSamApplication(
             name: path.basename(config.location.fsPath),
         })
 
+        await addInitialLaunchConfiguration(extContext, vscode.workspace.getWorkspaceFolder(uri)!, uri)
         await vscode.window.showTextDocument(uri)
         activationLaunchPath.clearLaunchPath()
 
@@ -236,4 +249,36 @@ async function getMainUri(
             )
         )
     }
+}
+
+export async function addInitialLaunchConfiguration(
+    extContext: ExtContext,
+    folder: vscode.WorkspaceFolder,
+    targetUri: vscode.Uri,
+    launchConfiguration: LaunchConfiguration = new LaunchConfiguration(folder.uri)
+): Promise<void> {
+    let configurations = await new SamDebugConfigProvider(extContext).provideDebugConfigurations(folder)
+    if (configurations) {
+        // add configurations that target the new template file
+        const filtered = configurations.filter(
+            config =>
+                isTemplateTargetProperties(config.invokeTarget) &&
+                pathutils.areEqual(
+                    folder.uri.fsPath,
+                    (config.invokeTarget as TemplateTargetProperties).templatePath,
+                    targetUri.fsPath
+                )
+        )
+
+        await launchConfiguration.addDebugConfigurations(filtered)
+    }
+}
+
+async function addWorkspaceFolder(folder: { uri: vscode.Uri; name?: string }): Promise<void> {
+    // No-op if the folder is already in the workspace.
+    if (vscode.workspace.getWorkspaceFolder(folder.uri)) {
+        return
+    }
+
+    await addFolderToWorkspace(folder)
 }

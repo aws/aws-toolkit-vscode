@@ -64,6 +64,10 @@ export const sfnUpdateStateMachineUrl: string =
  */
 export const LOCALIZED_DATE_FORMAT = 'll LTS [GMT]ZZ'
 
+// moment().format() matches Insights console timestamp, e.g.: 2019-03-04T11:40:08.781-08:00
+// TODO: Do we want this this verbose? Log stream just shows hh:mm:ss
+export const INSIGHTS_TIMESTAMP_FORMAT = 'YYYY-MM-DDThh:mm:ss.SSSZ'
+
 /**
  * URI scheme for CloudWatch Logs Virtual Documents
  */
