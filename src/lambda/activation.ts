@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { AwsExplorer } from '../awsexplorer/awsExplorer'
 import { ext } from '../shared/extensionGlobals'
 import { deleteLambda } from './commands/deleteLambda'
 import { invokeLambda } from './commands/invokeLambda'
@@ -13,7 +12,7 @@ import { LambdaFunctionNode } from './explorer/lambdaFunctionNode'
 /**
  * Activates Lambda components.
  */
-export async function activate(extensionContext: vscode.ExtensionContext, awsExplorer: AwsExplorer): Promise<void> {
+export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
     const outputChannel = vscode.window.createOutputChannel('AWS Lambda')
 
     extensionContext.subscriptions.push(
@@ -24,7 +23,8 @@ export async function activate(extensionContext: vscode.ExtensionContext, awsExp
                     deleteParams: { functionName: node.configuration.FunctionName || '' },
                     lambdaClient: ext.toolkitClientBuilder.createLambdaClient(node.regionCode),
                     outputChannel,
-                    onRefresh: () => awsExplorer.refresh(node.parent),
+                    onRefresh: async () =>
+                        await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node.parent),
                 })
         ),
         vscode.commands.registerCommand(
