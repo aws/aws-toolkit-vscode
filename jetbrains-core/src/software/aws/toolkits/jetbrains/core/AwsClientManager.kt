@@ -10,7 +10,6 @@ import com.intellij.openapi.application.ex.ApplicationInfoEx
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.Disposer
 import software.amazon.awssdk.core.SdkClient
 import software.amazon.awssdk.http.SdkHttpClient
 import software.aws.toolkits.core.ToolkitClientManager
@@ -22,9 +21,9 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.region.ToolkitRegionProvider
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.AwsToolkit
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
-import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 
 open class AwsClientManager(project: Project) : ToolkitClientManager(), Disposable {
@@ -33,9 +32,7 @@ open class AwsClientManager(project: Project) : ToolkitClientManager(), Disposab
     private val regionProvider = AwsRegionProvider.getInstance()
 
     init {
-        Disposer.register(project, Disposable { this.dispose() })
-
-        val busConnection = ApplicationManager.getApplication().messageBus.connect(project)
+        val busConnection = ApplicationManager.getApplication().messageBus.connect(this)
         busConnection.subscribe(CredentialManager.CREDENTIALS_CHANGED, object : ToolkitCredentialsChangeListener {
             override fun providerRemoved(identifier: CredentialIdentifier) {
                 invalidateSdks(identifier.id)

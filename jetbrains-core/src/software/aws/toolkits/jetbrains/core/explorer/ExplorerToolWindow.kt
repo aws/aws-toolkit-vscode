@@ -10,6 +10,7 @@ import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.ide.util.treeView.NodeRenderer
 import com.intellij.ide.util.treeView.TreeState
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
@@ -66,12 +67,12 @@ import javax.swing.text.StyleConstants
 import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.TreeModel
 
-class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), ConnectionSettingsStateChangeNotifier {
+class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), ConnectionSettingsStateChangeNotifier, Disposable {
     private val actionManager = ActionManagerEx.getInstanceEx()
     private val treePanelWrapper = NonOpaquePanel()
     private val awsTreeModel = AwsExplorerTreeStructure(project)
-    private val structureTreeModel = StructureTreeModel(awsTreeModel, project)
-    private val awsTree = createTree(AsyncTreeModel(structureTreeModel, true, project))
+    private val structureTreeModel = StructureTreeModel(awsTreeModel, this)
+    private val awsTree = createTree(AsyncTreeModel(structureTreeModel, true, this))
     private val awsTreePanel = ScrollPaneFactory.createScrollPane(awsTree)
     private val accountSettingsManager = AwsConnectionManager.getInstance(project)
 
@@ -88,7 +89,7 @@ class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), 
         background = UIUtil.getTreeBackground()
         setContent(treePanelWrapper)
 
-        project.messageBus.connect().subscribe(AwsConnectionManager.CONNECTION_SETTINGS_STATE_CHANGED, this)
+        project.messageBus.connect(this).subscribe(AwsConnectionManager.CONNECTION_SETTINGS_STATE_CHANGED, this)
         settingsStateChanged(accountSettingsManager.connectionState)
     }
 
@@ -290,6 +291,9 @@ class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), 
                 icon = (value.userObject as NodeDescriptor<*>).icon
             }
         }
+    }
+
+    override fun dispose() {
     }
 
     companion object {

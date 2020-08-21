@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.application.ApplicationManager
@@ -32,7 +33,7 @@ import software.aws.toolkits.jetbrains.utils.MRUList
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AwsTelemetry
 
-abstract class AwsConnectionManager(private val project: Project) : SimpleModificationTracker() {
+abstract class AwsConnectionManager(private val project: Project) : SimpleModificationTracker(), Disposable {
     private val resourceCache = AwsResourceCache.getInstance(project)
     private val regionProvider = AwsRegionProvider.getInstance()
     private val credentialsRegionHandler = CredentialsRegionHandler.getInstance(project)
@@ -59,7 +60,8 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
     private var selectedCredentialsProvider: ToolkitCredentialsProvider? = null
 
     init {
-        ApplicationManager.getApplication().messageBus.connect(project)
+        @Suppress("LeakingThis")
+        ApplicationManager.getApplication().messageBus.connect(this)
             .subscribe(CredentialManager.CREDENTIALS_CHANGED, object : ToolkitCredentialsChangeListener {
                 override fun providerRemoved(identifier: CredentialIdentifier) {
                     if (selectedCredentialIdentifier == identifier) {
@@ -217,6 +219,9 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
                 forceFetch = true
             ).await()
         }
+    }
+
+    override fun dispose() {
     }
 
     companion object {
