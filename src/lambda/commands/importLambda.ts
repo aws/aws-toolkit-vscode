@@ -22,7 +22,7 @@ import { Window } from '../../shared/vscode/window'
 import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
 import { getFamily, RuntimeFamily } from '../models/samLambdaRuntime'
 import { showConfirmationMessage } from '../../s3/util/messages'
-import { addWorkspaceFolder } from '../../shared/utilities/workspaceUtils'
+import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
 import { promptUserForLocation, WizardContext } from '../../shared/wizards/multiStepWizard'
 
 // TODO: Move off of deprecated `request` to `got`?
@@ -32,7 +32,7 @@ export async function importLambdaCommand(functionNode: LambdaFunctionNode, wind
     const workspaceFolders = vscode.workspace.workspaceFolders || []
     if (workspaceFolders.length === 0) {
         window.showErrorMessage(
-            localize('AWS.lambda.import.noWorkspaceFolders', 'Select a workspace before importing a Lambda function.')
+            localize('AWS.lambda.import.noWorkspaceFolders', 'Open a workspace before importing a Lambda function.')
         )
         return
     }
@@ -46,31 +46,25 @@ export async function importLambdaCommand(functionNode: LambdaFunctionNode, wind
     const importLocation = path.join(selectedUri.fsPath, functionName, path.sep)
     const importLocationName = vscode.workspace.asRelativePath(importLocation, true)
 
-    const directoryExists = await fs.pathExists(importLocation)
+    if (await fs.pathExists(importLocation)) {
+        const isConfirmed = await showConfirmationMessage(
+            {
+                prompt: localize(
+                    'AWS.lambda.import.prompt',
+                    'About to import {0} into {1}.\nExisting directory will be overwritten: {0}\nProceed with import?',
+                    functionName,
+                    importLocationName
+                ),
+                confirm: localize('AWS.lambda.import.import', 'Import'),
+                cancel: localize('AWS.generic.cancel', 'Cancel'),
+            },
+            window
+        )
 
-    const overwriteWarning = localize(
-        'AWS.lambda.import.overwriteWarning',
-        '\nExisting directory will be overwritten: {0}\n',
-        functionName
-    )
-    const isConfirmed = await showConfirmationMessage(
-        {
-            prompt: localize(
-                'AWS.lambda.import.prompt',
-                'About to import {0} into {1}.\n{2}\nProceed with import?',
-                functionName,
-                importLocationName,
-                directoryExists ? overwriteWarning : ''
-            ),
-            confirm: localize('AWS.lambda.import.import', 'Import'),
-            cancel: localize('AWS.generic.cancel', 'Cancel'),
-        },
-        window
-    )
-
-    if (!isConfirmed) {
-        getLogger().info('ImportLambda cancelled')
-        return
+        if (!isConfirmed) {
+            getLogger().info('ImportLambda cancelled')
+            return
+        }
     }
 
     if (
@@ -78,7 +72,7 @@ export async function importLambdaCommand(functionNode: LambdaFunctionNode, wind
             return selectedUri === val.uri
         }).length === 0
     ) {
-        await addWorkspaceFolder({ uri: selectedUri })
+        await addFolderToWorkspace({ uri: selectedUri }, true)
     }
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(importLocation))!
 

@@ -115,7 +115,19 @@ export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implem
     }
 
     public async promptUserForLocation(): Promise<vscode.Uri | undefined> {
-        return promptUserForLocation(this, { button: this.helpButton, url: eventBridgeSchemasDocUrl })
+        return promptUserForLocation(this, {
+            helpButton: { button: this.helpButton, url: eventBridgeSchemasDocUrl },
+            overrideText: {
+                detail: localize(
+                    'AWS.schemas.downloadCodeBindings.initWizard.location.select.folder.detail',
+                    'Code bindings will be downloaded to selected folder.'
+                ),
+                title: localize(
+                    'AWS.schemas.downloadCodeBindings.initWizard.location.prompt',
+                    'Select a workspace folder to download code bindings'
+                ),
+            },
+        })
     }
 }
 

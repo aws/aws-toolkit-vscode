@@ -98,27 +98,37 @@ export class BrowseFolderQuickPickItem implements FolderQuickPickItem {
 
 export async function promptUserForLocation(
     context: WizardContext,
-    helpButton?: { button: vscode.QuickInputButton; url: string }
+    additionalParams?: {
+        helpButton?: { button: vscode.QuickInputButton; url: string }
+        overrideText?: { detail?: string; title?: string }
+    }
 ): Promise<vscode.Uri | undefined> {
     const items: FolderQuickPickItem[] = (context.workspaceFolders || [])
         .map<FolderQuickPickItem>(f => new WorkspaceFolderQuickPickItem(f))
         .concat([
             new BrowseFolderQuickPickItem(
                 context,
-                localize(
-                    'AWS.samcli.initWizard.location.select.folder.detail',
-                    'The selected folder will be added to the VS Code workspace.'
-                )
+                additionalParams?.overrideText?.detail
+                    ? additionalParams.overrideText.detail
+                    : localize(
+                          'AWS.wizard.location.select.folder.detail',
+                          'The selected folder will be added to the VS Code workspace.'
+                      )
             ),
         ])
 
     const quickPick = picker.createQuickPick({
         options: {
             ignoreFocusOut: true,
-            title: localize('AWS.samcli.initWizard.location.prompt', 'Select a workspace folder for your new project'),
+            title: additionalParams?.overrideText?.title
+                ? additionalParams.overrideText.title
+                : localize('AWS.wizard.location.prompt', 'Select a workspace folder for your new project'),
         },
         items: items,
-        buttons: [...(helpButton ? [helpButton.button] : []), vscode.QuickInputButtons.Back],
+        buttons: [
+            ...(additionalParams?.helpButton ? [additionalParams.helpButton.button] : []),
+            vscode.QuickInputButtons.Back,
+        ],
     })
 
     const choices = await picker.promptUser({
@@ -126,8 +136,8 @@ export async function promptUserForLocation(
         onDidTriggerButton: (button, resolve, reject) => {
             if (button === vscode.QuickInputButtons.Back) {
                 resolve(undefined)
-            } else if (button === helpButton?.button) {
-                vscode.env.openExternal(vscode.Uri.parse(helpButton.url))
+            } else if (button === additionalParams?.helpButton?.button) {
+                vscode.env.openExternal(vscode.Uri.parse(additionalParams.helpButton.url))
             }
         },
     })
@@ -141,7 +151,7 @@ export async function promptUserForLocation(
         const browseFolderResult = await pickerResponse.getUri()
 
         // If user cancels from Open Folder dialog, send them back to the folder picker.
-        return browseFolderResult ? browseFolderResult : await promptUserForLocation(context, helpButton)
+        return browseFolderResult ? browseFolderResult : await promptUserForLocation(context, additionalParams)
     }
 
     return pickerResponse.getUri()

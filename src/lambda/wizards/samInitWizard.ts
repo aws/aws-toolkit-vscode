@@ -275,7 +275,7 @@ export class DefaultCreateNewSamAppWizardContext extends WizardContext implement
     }
 
     public async promptUserForLocation(): Promise<vscode.Uri | undefined> {
-        return promptUserForLocation(this, { button: this.helpButton, url: samInitDocUrl })
+        return promptUserForLocation(this, { helpButton: { button: this.helpButton, url: samInitDocUrl } })
     }
 
     public async promptUserForName(defaultValue: string): Promise<string | undefined> {
