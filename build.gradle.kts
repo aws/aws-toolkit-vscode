@@ -217,6 +217,8 @@ subprojects {
             systemProperty("log.dir", "${(project.extensions["intellij"] as org.jetbrains.intellij.IntelliJPluginExtension).sandboxDirectory}-test/logs")
         }
 
+        systemProperty("testDataPath", project.rootDir.toPath().resolve("testdata").toString())
+
         mustRunAfter(tasks.test)
     }
 
