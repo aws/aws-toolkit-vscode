@@ -10,16 +10,15 @@ const SECOND = 1000
 export const TIMEOUT = 30 * SECOND
 
 export async function activateExtension(extensionId: string): Promise<vscode.Extension<void>> {
-    console.log(`activateExtension request: ${extensionId}`)
-    const extension: vscode.Extension<void> | undefined = vscode.extensions.getExtension(extensionId)
-    assert.ok(extension, `Extension not found: ${extensionId}`)
+    console.log(`PID=${process.pid} activateExtension request: ${extensionId}`)
+    const extension: vscode.Extension<any> | undefined = vscode.extensions.getExtension(extensionId)
 
     if (!extension) {
         throw new Error(`Extension not found: ${extensionId}`)
     }
 
     if (!extension.isActive) {
-        console.log(`Activating extension: ${extensionId}`)
+        console.log(`PID=${process.pid} Activating extension: ${extensionId}`)
         await extension.activate()
     } else {
         console.log('Extension is already active')

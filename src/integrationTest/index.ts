@@ -6,5 +6,5 @@
 import { runTestsInFolder } from '../test/testRunner'
 
 export function run(): Promise<void> {
-    return runTestsInFolder('integrationTest')
+    return runTestsInFolder('integrationTest', true)
 }

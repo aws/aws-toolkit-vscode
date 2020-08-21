@@ -14,7 +14,8 @@ const istanbul = require('istanbul')
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const remapIstanbul = require('remap-istanbul')
 
-export function runTestsInFolder(testFolder: string): Promise<void> {
+// TODO : replace integ with an array of relative test paths
+export function runTestsInFolder(testFolder: string, integ: boolean): Promise<void> {
     const outputFile = path.resolve(process.env['TEST_REPORT_DIR'] || '.test-reports', 'report.xml')
     const colorOutput = !process.env['AWS_TOOLKIT_TEST_NO_COLOR']
 
@@ -48,10 +49,18 @@ export function runTestsInFolder(testFolder: string): Promise<void> {
         const testFile = process.env['TEST_FILE'] === 'null' ? undefined : process.env['TEST_FILE']
         const testFilePath = testFile?.replace(/^src[\\\/]/, '')?.concat('.js')
 
-        const globalSetupPath = path.join(testsRoot, 'test', 'globalSetup.test.js')
-        if (testFilePath && fs.existsSync(globalSetupPath)) {
-            // XXX: explicitly add globalSetup, other tests depend on it.
-            mocha.addFile(globalSetupPath)
+        if (!integ) {
+            const globalSetupPath = path.join(testsRoot, 'test/globalSetup.test.js')
+            if (testFilePath && fs.existsSync(globalSetupPath)) {
+                // XXX: explicitly add globalSetup, other tests depend on it.
+                mocha.addFile(globalSetupPath)
+            }
+        } else {
+            const globalSetupIntegPath = path.join(testsRoot, 'integrationTest/globalSetupInteg.test.js')
+            if (fs.existsSync(globalSetupIntegPath)) {
+                // XXX: explicitly add globalSetupInteg.
+                mocha.addFile(globalSetupIntegPath)
+            }
         }
 
         glob(testFilePath ?? `**/${testFolder}/**/**.test.js`, { cwd: testsRoot }, (err, files) => {

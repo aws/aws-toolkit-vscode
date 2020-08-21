@@ -103,7 +103,6 @@ async function closeAllEditors(): Promise<void> {
 async function activateExtensions(): Promise<void> {
     console.log('Activating extensions...')
     await activateExtension(VSCODE_EXTENSION_ID.python)
-    await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
     console.log('Extensions activated')
 }
 

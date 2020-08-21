@@ -122,4 +122,8 @@ export class ChildProcess {
         // default to true for safety
         return this.childProcess ? this.childProcess.killed : true
     }
+
+    public toString(): string {
+        return `[${this.process} ${this.args.join(' ')}]`
+    }
 }
