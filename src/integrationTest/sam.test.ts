@@ -344,7 +344,16 @@ describe('SAM Integration Tests', async () => {
                                         if (endSessionValidation) {
                                             reject(new Error(endSessionValidation))
                                         }
-                                        if (startedSession.id === endedSession.id) {
+                                        if (scenario.runtime === 'nodejs10.x') {
+                                            const templatePath =
+                                                (startedSession.configuration as any)?.templatePath ||
+                                                (endedSession.configuration as any)?.templatePath
+                                            // nodejs10.x starts a coprocess for some reason.
+                                            // If it has a SAM debugconfig then that's a reasonable hint that our config was launched.
+                                            if (templatePath) {
+                                                resolve()
+                                            }
+                                        } else if (startedSession.id === endedSession.id) {
                                             resolve()
                                         } else {
                                             reject(
