@@ -4,7 +4,7 @@
  */
 
 import { fileExists } from '../../filesystemUtilities'
-import { addArgumentIf } from '../../utilities/cliUtils'
+import { pushIf } from '../../utilities/collectionUtils'
 
 export interface SamCliStartApiArguments {
     /**
@@ -63,11 +63,11 @@ export async function buildSamCliStartApiArguments(args: SamCliStartApiArguments
         args.environmentVariablePath,
     ]
 
-    addArgumentIf(invokeArgs, !!args.debugPort, '--debug-port', args.debugPort!)
-    addArgumentIf(invokeArgs, !!args.dockerNetwork, '--docker-network', args.dockerNetwork!)
-    addArgumentIf(invokeArgs, !!args.skipPullImage, '--skip-pull-image')
-    addArgumentIf(invokeArgs, !!args.debuggerPath, '--debugger-path', args.debuggerPath!)
-    addArgumentIf(
+    pushIf(invokeArgs, !!args.debugPort, '--debug-port', args.debugPort!)
+    pushIf(invokeArgs, !!args.dockerNetwork, '--docker-network', args.dockerNetwork!)
+    pushIf(invokeArgs, !!args.skipPullImage, '--skip-pull-image')
+    pushIf(invokeArgs, !!args.debuggerPath, '--debugger-path', args.debuggerPath!)
+    pushIf(
         invokeArgs,
         !!args.parameterOverrides && args.parameterOverrides.length > 0,
         '--parameter-overrides',

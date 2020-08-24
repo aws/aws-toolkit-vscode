@@ -4,7 +4,7 @@
  */
 
 import * as child_process from 'child_process'
-import { addArgumentIf } from '../../utilities/cliUtils'
+import { pushIf } from '../../utilities/collectionUtils'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { fileExists } from '../../filesystemUtilities'
@@ -221,11 +221,11 @@ export class SamCliLocalInvokeInvocation {
             this.args.environmentVariablePath,
         ]
 
-        addArgumentIf(invokeArgs, !!this.args.debugPort, '-d', this.args.debugPort!)
-        addArgumentIf(invokeArgs, !!this.args.dockerNetwork, '--docker-network', this.args.dockerNetwork!)
-        addArgumentIf(invokeArgs, !!this.args.skipPullImage, '--skip-pull-image')
-        addArgumentIf(invokeArgs, !!this.args.debuggerPath, '--debugger-path', this.args.debuggerPath!)
-        addArgumentIf(
+        pushIf(invokeArgs, !!this.args.debugPort, '-d', this.args.debugPort!)
+        pushIf(invokeArgs, !!this.args.dockerNetwork, '--docker-network', this.args.dockerNetwork!)
+        pushIf(invokeArgs, !!this.args.skipPullImage, '--skip-pull-image')
+        pushIf(invokeArgs, !!this.args.debuggerPath, '--debugger-path', this.args.debuggerPath!)
+        pushIf(
             invokeArgs,
             !!this.args.parameterOverrides && this.args.parameterOverrides.length > 0,
             '--parameter-overrides',

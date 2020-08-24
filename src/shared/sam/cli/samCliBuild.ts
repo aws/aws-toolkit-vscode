@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { addArgumentIf } from '../../utilities/cliUtils'
 import { fileExists } from '../../filesystemUtilities'
 import { getLogger, Logger } from '../../logger'
 import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
 import { DefaultSamCliProcessInvoker } from './samCliInvoker'
+import { pushIf } from '../../utilities/collectionUtils'
 
 export interface SamCliBuildInvocationArguments {
     /**
@@ -86,12 +86,12 @@ export class SamCliBuildInvocation {
 
         const invokeArgs: string[] = ['build', '--build-dir', this.args.buildDir, '--template', this.args.templatePath]
 
-        addArgumentIf(invokeArgs, !!this.args.baseDir, '--base-dir', this.args.baseDir!)
-        addArgumentIf(invokeArgs, !!this.args.dockerNetwork, '--docker-network', this.args.dockerNetwork!)
-        addArgumentIf(invokeArgs, !!this.args.useContainer, '--use-container')
-        addArgumentIf(invokeArgs, !!this.args.skipPullImage, '--skip-pull-image')
-        addArgumentIf(invokeArgs, !!this.args.manifestPath, '--manifest', this.args.manifestPath!)
-        addArgumentIf(
+        pushIf(invokeArgs, !!this.args.baseDir, '--base-dir', this.args.baseDir!)
+        pushIf(invokeArgs, !!this.args.dockerNetwork, '--docker-network', this.args.dockerNetwork!)
+        pushIf(invokeArgs, !!this.args.useContainer, '--use-container')
+        pushIf(invokeArgs, !!this.args.skipPullImage, '--skip-pull-image')
+        pushIf(invokeArgs, !!this.args.manifestPath, '--manifest', this.args.manifestPath!)
+        pushIf(
             invokeArgs,
             !!this.args.parameterOverrides && this.args.parameterOverrides.length > 0,
             '--parameter-overrides',
