@@ -1,4 +1,0 @@
-{
-    "type": "Feature",
-    "description": "Import functionality for NodeJS and Python Lambda functions from AWS to local filesystem"
-}
