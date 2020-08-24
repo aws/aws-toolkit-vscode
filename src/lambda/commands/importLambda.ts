@@ -49,6 +49,8 @@ export async function importLambdaCommand(functionNode: LambdaFunctionNode, wind
     const importLocation = path.join(selectedUri.fsPath, functionName, path.sep)
     const importLocationName = vscode.workspace.asRelativePath(importLocation, true)
 
+    let writeablePath: boolean = true
+
     if (await fs.pathExists(importLocation)) {
         const isConfirmed = await showConfirmationMessage(
             {
@@ -67,41 +69,47 @@ export async function importLambdaCommand(functionNode: LambdaFunctionNode, wind
         if (!isConfirmed) {
             getLogger().info('ImportLambda cancelled')
             result = 'Cancelled'
-            return
         }
+
+        writeablePath = isConfirmed
     }
 
-    if (
-        workspaceFolders.filter(val => {
-            return selectedUri === val.uri
-        }).length === 0
-    ) {
-        await addFolderToWorkspace({ uri: selectedUri }, true)
-    }
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(importLocation))!
+    if (writeablePath) {
+        if (
+            workspaceFolders.filter(val => {
+                return selectedUri === val.uri
+            }).length === 0
+        ) {
+            await addFolderToWorkspace({ uri: selectedUri }, true)
+        }
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(importLocation))!
 
-    window.withProgress<void>(
-        {
-            location: vscode.ProgressLocation.Notification,
-            cancellable: false,
-            title: localize(
-                'AWS.lambda.import.status',
-                'Importing Lambda function {0} into {1}...',
-                functionName,
-                importLocationName
-            ),
-        },
-        async progress => {
-            const lambdaLocation = path.join(importLocation, getLambdaFileNameFromHandler(functionNode.configuration))
-            try {
-                await downloadAndUnzipLambda(progress, functionNode, importLocation)
-                await openLambdaFile(lambdaLocation)
-                await addLaunchConfigEntry(lambdaLocation, functionNode, workspaceFolder)
-            } catch (e) {
-                result = 'Failed'
+        window.withProgress<void>(
+            {
+                location: vscode.ProgressLocation.Notification,
+                cancellable: false,
+                title: localize(
+                    'AWS.lambda.import.status',
+                    'Importing Lambda function {0} into {1}...',
+                    functionName,
+                    importLocationName
+                ),
+            },
+            async progress => {
+                const lambdaLocation = path.join(
+                    importLocation,
+                    getLambdaFileNameFromHandler(functionNode.configuration)
+                )
+                try {
+                    await downloadAndUnzipLambda(progress, functionNode, importLocation)
+                    await openLambdaFile(lambdaLocation)
+                    await addLaunchConfigEntry(lambdaLocation, functionNode, workspaceFolder)
+                } catch (e) {
+                    result = 'Failed'
+                }
             }
-        }
-    )
+        )
+    }
 
     telemetry.recordLambdaImport({
         result,
