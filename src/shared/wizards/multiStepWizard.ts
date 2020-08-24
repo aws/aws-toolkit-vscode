@@ -112,7 +112,7 @@ export async function promptUserForLocation(
                     ? additionalParams.overrideText.detail
                     : localize(
                           'AWS.wizard.location.select.folder.detail',
-                          'The selected folder will be added to the VS Code workspace.'
+                          'The selected folder will be added to the workspace.'
                       )
             ),
         ])

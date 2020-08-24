@@ -61,7 +61,7 @@ async function runImportLambda(functionNode: LambdaFunctionNode, window = Window
             {
                 prompt: localize(
                     'AWS.lambda.import.prompt',
-                    'About to import {0} into {1}.\nExisting directory will be overwritten: {0}\nProceed with import?',
+                    'Importing {0} into: {1}\nExisting directory will be overwritten: {0}\nProceed with import?',
                     functionName,
                     importLocationName
                 ),
