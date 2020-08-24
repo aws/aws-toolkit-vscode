@@ -1,0 +1,18 @@
+{
+	"date": "2020-08-24",
+	"version": "1.13.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Toolkit automatically adds a launch configuration to the workspace when creating SAM applications"
+		},
+		{
+			"type": "Feature",
+			"description": "CloudWatch Logs functionality"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon States Language Server: Add validation for new ASL specification released on August 11."
+		}
+	]
+}
