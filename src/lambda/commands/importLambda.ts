@@ -29,27 +29,32 @@ import { promptUserForLocation, WizardContext } from '../../shared/wizards/multi
 // TODO: Move off of deprecated `request` to `got`?
 // const pipeline = promisify(Stream.pipeline)
 
-export async function importLambdaCommand(functionNode: LambdaFunctionNode, window = Window.vscode()) {
-    let result: telemetry.Result = 'Succeeded'
+export async function importLambdaCommand(functionNode: LambdaFunctionNode) {
+    const result = await runImportLambda(functionNode)
 
+    telemetry.recordLambdaImport({
+        result,
+        runtime: functionNode.configuration.Runtime as telemetry.Runtime | undefined,
+    })
+}
+
+async function runImportLambda(functionNode: LambdaFunctionNode, window = Window.vscode()): Promise<telemetry.Result> {
     const workspaceFolders = vscode.workspace.workspaceFolders || []
+    const functionName = functionNode.configuration.FunctionName!
+
     if (workspaceFolders.length === 0) {
         window.showErrorMessage(
             localize('AWS.lambda.import.noWorkspaceFolders', 'Open a workspace before importing a Lambda function.')
         )
-        return
+        return 'Cancelled'
     }
     const selectedUri = await promptUserForLocation(new WizardContext())
     if (!selectedUri) {
-        return
+        return 'Cancelled'
     }
-
-    const functionName = functionNode.configuration.FunctionName!
 
     const importLocation = path.join(selectedUri.fsPath, functionName, path.sep)
     const importLocationName = vscode.workspace.asRelativePath(importLocation, true)
-
-    let writeablePath: boolean = true
 
     if (await fs.pathExists(importLocation)) {
         const isConfirmed = await showConfirmationMessage(
@@ -68,53 +73,50 @@ export async function importLambdaCommand(functionNode: LambdaFunctionNode, wind
 
         if (!isConfirmed) {
             getLogger().info('ImportLambda cancelled')
-            result = 'Cancelled'
+            return 'Cancelled'
         }
-
-        writeablePath = isConfirmed
     }
 
-    if (writeablePath) {
-        if (
-            workspaceFolders.filter(val => {
-                return selectedUri === val.uri
-            }).length === 0
-        ) {
-            await addFolderToWorkspace({ uri: selectedUri }, true)
-        }
-        const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(importLocation))!
+    if (
+        workspaceFolders.filter(val => {
+            return selectedUri === val.uri
+        }).length === 0
+    ) {
+        await addFolderToWorkspace({ uri: selectedUri! }, true)
+    }
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(importLocation))!
 
-        window.withProgress<void>(
-            {
-                location: vscode.ProgressLocation.Notification,
-                cancellable: false,
-                title: localize(
-                    'AWS.lambda.import.status',
-                    'Importing Lambda function {0} into {1}...',
-                    functionName,
-                    importLocationName
-                ),
-            },
-            async progress => {
-                const lambdaLocation = path.join(
-                    importLocation,
-                    getLambdaFileNameFromHandler(functionNode.configuration)
-                )
-                try {
-                    await downloadAndUnzipLambda(progress, functionNode, importLocation)
-                    await openLambdaFile(lambdaLocation)
-                    await addLaunchConfigEntry(lambdaLocation, functionNode, workspaceFolder)
-                } catch (e) {
-                    result = 'Failed'
+    return await window.withProgress<telemetry.Result>(
+        {
+            location: vscode.ProgressLocation.Notification,
+            cancellable: false,
+            title: localize(
+                'AWS.lambda.import.status',
+                'Importing Lambda function {0} into {1}...',
+                functionName,
+                importLocationName
+            ),
+        },
+        async progress => {
+            const lambdaLocation = path.join(importLocation, getLambdaFileNameFromHandler(functionNode.configuration))
+            try {
+                await downloadAndUnzipLambda(progress, functionNode, importLocation)
+                await openLambdaFile(lambdaLocation)
+                await addLaunchConfigEntry(lambdaLocation, functionNode, workspaceFolder)
+
+                return 'Succeeded'
+            } catch (e) {
+                if (e instanceof ImportError) {
+                    // failed the download/unzip step. Non-functional, definite failure
+                    return 'Failed'
                 }
-            }
-        )
-    }
 
-    telemetry.recordLambdaImport({
-        result,
-        runtime: functionNode.configuration.Runtime as telemetry.Runtime | undefined,
-    })
+                // failed to open handler file or add launch config.
+                // not a failure since the function is downloaded to a workspace directory.
+                return 'Succeeded'
+            }
+        }
+    )
 }
 
 async function downloadAndUnzipLambda(
@@ -182,7 +184,7 @@ async function downloadAndUnzipLambda(
             )
         )
 
-        throw e
+        throw new ImportError()
     }
 }
 
@@ -251,3 +253,5 @@ export function getLambdaFileNameFromHandler(configuration: Lambda.FunctionConfi
 
     return `${fileName}.${runtimeExtension}`
 }
+
+class ImportError extends Error {}
