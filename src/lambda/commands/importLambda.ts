@@ -15,6 +15,7 @@ import { ext } from '../../shared/extensionGlobals'
 import { makeTemporaryToolkitFolder, fileExists } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import { createCodeAwsSamDebugConfig } from '../../shared/sam/debugger/awsSamDebugConfiguration'
+import * as telemetry from '../../shared/telemetry/telemetry'
 import { ExtensionDisposableFiles } from '../../shared/utilities/disposableFiles'
 import * as pathutils from '../../shared/utilities/pathUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
@@ -29,6 +30,8 @@ import { promptUserForLocation, WizardContext } from '../../shared/wizards/multi
 // const pipeline = promisify(Stream.pipeline)
 
 export async function importLambdaCommand(functionNode: LambdaFunctionNode, window = Window.vscode()) {
+    let result: telemetry.Result = 'Succeeded'
+
     const workspaceFolders = vscode.workspace.workspaceFolders || []
     if (workspaceFolders.length === 0) {
         window.showErrorMessage(
@@ -63,6 +66,7 @@ export async function importLambdaCommand(functionNode: LambdaFunctionNode, wind
 
         if (!isConfirmed) {
             getLogger().info('ImportLambda cancelled')
+            result = 'Cancelled'
             return
         }
     }
@@ -94,10 +98,15 @@ export async function importLambdaCommand(functionNode: LambdaFunctionNode, wind
                 await openLambdaFile(lambdaLocation)
                 await addLaunchConfigEntry(lambdaLocation, functionNode, workspaceFolder)
             } catch (e) {
-                // swallow error; all functions handle errors themselves
+                result = 'Failed'
             }
         }
     )
+
+    telemetry.recordLambdaImport({
+        result,
+        runtime: functionNode.configuration.Runtime as telemetry.Runtime | undefined,
+    })
 }
 
 async function downloadAndUnzipLambda(
