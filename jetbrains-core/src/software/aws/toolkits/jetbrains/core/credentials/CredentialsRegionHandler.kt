@@ -49,14 +49,16 @@ internal open class DefaultCredentialsRegionHandler(private val project: Project
             message("settings.credentials.prompt_for_default_region_switch", defaultCredentialRegion.id),
             project = project,
             notificationActions = listOf(
-                NotificationAction.create(message("settings.credentials.prompt_for_default_region_switch.yes")) { event, _ ->
+                NotificationAction.create(message("settings.credentials.prompt_for_default_region_switch.yes")) { event, notification ->
                     ChangeRegionAction(defaultCredentialRegion).actionPerformed(event)
+                    notification.expire()
                 },
-                NotificationAction.create(message("settings.credentials.prompt_for_default_region_switch.always")) { event, _ ->
+                NotificationAction.create(message("settings.credentials.prompt_for_default_region_switch.always")) { event, notification ->
                     settings.useDefaultCredentialRegion = UseAwsCredentialRegion.Always
                     ChangeRegionAction(defaultCredentialRegion).actionPerformed(event)
+                    notification.expire()
                 },
-                NotificationAction.createSimple(message("settings.credentials.prompt_for_default_region_switch.never")) {
+                NotificationAction.createSimpleExpiring(message("settings.credentials.prompt_for_default_region_switch.never")) {
                     settings.useDefaultCredentialRegion = UseAwsCredentialRegion.Never
                 }
             )
