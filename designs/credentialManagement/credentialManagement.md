@@ -17,14 +17,14 @@ by third party plugins.
 ## Classes and Concepts
 ![ClassDiagram]
 
-1. `AwsRegion` - Date class that represents an AWS Region and joins together related data for that region. This data is sourced from the endpoints.json file.
+1. `AwsRegion` - Data class that represents an AWS Region and joins together related data for that region. This data is sourced from the endpoints.json file.
 It contains the following data:
     1. `ID` - Contains the ID of the region  (e.g. `us-west-2`)
     1. `Name` - Contains the human readable name for the region (e.g. `US West (Oregon)`)
     1. `Partiton ID` - Contains the ID of the top level AWS partition (e.g. `aws`, `aws-cn`)
 
-1. `CredentialIdentifier` - Represents the globally unique identifier for a possible credential profile in the toolkit. This identifier must be deterministic 
-meaning that if two `CredentialIdentifier`s for the same credential source should be equal even across different IDE sessions. 
+1. `CredentialIdentifier` - Represents the globally unique identifier for a possible credential profile in the toolkit. This identifier must be deterministic, 
+meaning a credential source should have identical `CredentialIdentifier` values when represented by different instances, or when used across different IDE sessions. 
 This is shown to the user as the **Profile** in the UI.
 
 1. `AwsCredentialsProvider` - SDK interface that resolves AWS Credentials from the provider. For more info, see [AwsCredentialsProvider] in the SDK.
@@ -69,8 +69,9 @@ If the call fails, we consider the credentials to be invalid.
 
 The class [AwsConnectionManager] is the entry point into this system.
 
-The concept of _Active Connection Settings_ represents the current user selected credentials and region that the toolkit uses to perform actions in the AWS Explorer as well as 
-being used as defaults when more than one option is possible. 
+The concept of _Active Connection Settings_ represents the user's currently selected credentials and region. They are used by the toolkit:
+* to perform actions in the AWS Explorer
+* as defaults when presenting more than one option in a dialog 
 
 Due to the nature of the IntellJ projects (project level) each has their own windows while existing in one JVM (application level). Since we store active 
 connection settings at the project level,  each window can have a different active `CredenitalIdentifier` and/or `AwsRegion` selected.
