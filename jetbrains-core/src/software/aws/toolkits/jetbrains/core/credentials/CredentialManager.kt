@@ -25,13 +25,13 @@ import java.util.concurrent.ConcurrentHashMap
 
 abstract class CredentialManager : SimpleModificationTracker() {
     private val providerIds = ConcurrentHashMap<String, CredentialIdentifier>()
-    private val awsCredentialProviderCache = ConcurrentHashMap<CredentialIdentifier, ConcurrentHashMap<String, AwsCredentialsProvider>>()
+    private val awsCredentialProviderCache = ConcurrentHashMap<String, ConcurrentHashMap<String, AwsCredentialsProvider>>()
 
     protected abstract fun factoryMapping(): Map<String, CredentialProviderFactory>
 
     @Throws(CredentialProviderNotFoundException::class)
     fun getAwsCredentialProvider(providerId: CredentialIdentifier, region: AwsRegion): ToolkitCredentialsProvider =
-        ToolkitCredentialsProvider(providerId, AwsCredentialProviderProxy(providerId, region))
+        ToolkitCredentialsProvider(providerId, AwsCredentialProviderProxy(providerId.id, region))
 
     fun getCredentialIdentifiers(): List<CredentialIdentifier> = providerIds.values
         .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.displayName })
@@ -47,7 +47,8 @@ abstract class CredentialManager : SimpleModificationTracker() {
     }
 
     protected fun modifyProvider(identifier: CredentialIdentifier) {
-        awsCredentialProviderCache.remove(identifier)
+        awsCredentialProviderCache.remove(identifier.id)
+        providerIds[identifier.id] = identifier
 
         incModificationCount()
         ApplicationManager.getApplication().messageBus.syncPublisher(CREDENTIALS_CHANGED).providerModified(identifier)
@@ -55,7 +56,7 @@ abstract class CredentialManager : SimpleModificationTracker() {
 
     protected fun removeProvider(identifier: CredentialIdentifier) {
         providerIds.remove(identifier.id)
-        awsCredentialProviderCache.remove(identifier)
+        awsCredentialProviderCache.remove(identifier.id)
 
         incModificationCount()
         ApplicationManager.getApplication().messageBus.syncPublisher(CREDENTIALS_CHANGED).providerRemoved(identifier)
@@ -66,20 +67,23 @@ abstract class CredentialManager : SimpleModificationTracker() {
      * ToolkitCredentialsProvider (like ones passed to existing SDK clients), to keep operating even if the credentials they represent have been updated such
      * as loading from disk when new values.
      */
-    private inner class AwsCredentialProviderProxy(private val providerId: CredentialIdentifier, private val region: AwsRegion) :
-        AwsCredentialsProvider {
+    private inner class AwsCredentialProviderProxy(private val providerId: String, private val region: AwsRegion) : AwsCredentialsProvider {
         override fun resolveCredentials(): AwsCredentials = getOrCreateAwsCredentialsProvider(providerId, region).resolveCredentials()
 
-        private fun getOrCreateAwsCredentialsProvider(providerId: CredentialIdentifier, region: AwsRegion): AwsCredentialsProvider {
+        private fun getOrCreateAwsCredentialsProvider(providerId: String, region: AwsRegion): AwsCredentialsProvider {
+            // Validate that the provider ID is still valid and get the latest copy
+            val identifier = providerIds[providerId]
+                ?: throw CredentialProviderNotFoundException("Provider ID $providerId was removed, can't resolve credentials")
+
             val partitionCache = awsCredentialProviderCache.computeIfAbsent(providerId) { ConcurrentHashMap() }
 
-            // If we already resolved creds for this partition and provider ID, just return it
+            // If we already resolved creds for this partition and provider ID, just return it, else compute new one
             return partitionCache.computeIfAbsent(region.partitionId) {
-                val providerFactory = factoryMapping()[providerId.factoryId]
-                    ?: throw CredentialProviderNotFoundException("No provider found with ID ${providerId.id}")
+                val providerFactory = factoryMapping()[identifier.factoryId]
+                    ?: throw CredentialProviderNotFoundException("No provider factory found with ID ${identifier.factoryId}")
 
                 try {
-                    providerFactory.createAwsCredentialProvider(providerId, region) { AwsSdkClient.getInstance().sdkHttpClient }
+                    providerFactory.createAwsCredentialProvider(identifier, region) { AwsSdkClient.getInstance().sdkHttpClient }
                 } catch (e: Exception) {
                     throw CredentialProviderNotFoundException("Failed to create underlying AwsCredentialProvider", e)
                 }
