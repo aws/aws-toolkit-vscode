@@ -137,7 +137,7 @@ describe('DefaultS3Client', () => {
         partitionId = partition,
         fileStreams = new FakeFileStreams(),
     }: { regionCode?: string; partitionId?: string; fileStreams?: FileStreams } = {}): DefaultS3Client {
-        return new DefaultS3Client(regionCode, partitionId, () => Promise.resolve(instance(mockS3)), fileStreams)
+        return new DefaultS3Client(partitionId, regionCode, () => Promise.resolve(instance(mockS3)), fileStreams)
     }
 
     describe('createBucket', () => {
