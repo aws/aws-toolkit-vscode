@@ -132,6 +132,10 @@ function runtimeNeedsWorkaround(lang: Language) {
     return lang === 'csharp' || lang === 'python'
 }
 
+function skippedMsg(prefix: string, session: any) {
+    console.log(`${prefix}: skipping [Child Process] session:\n${JSON.stringify(session)}`)
+}
+
 describe('SAM Integration Tests', async () => {
     const samApplicationName = 'testProject'
     let testSuiteRoot: string
@@ -316,6 +320,11 @@ describe('SAM Integration Tests', async () => {
                                     )
                                 }
 
+                                if (startedSession.name.includes('Child Process')) {
+                                    skippedMsg('onDidStartDebugSession', startedSession)
+                                    return
+                                }
+
                                 const sessionValidation = validateSamDebugSession(
                                     startedSession,
                                     scenario.debugSessionType
@@ -329,6 +338,11 @@ describe('SAM Integration Tests', async () => {
                                 // Wait for this debug session to terminate
                                 testDisposables.push(
                                     vscode.debug.onDidTerminateDebugSession(async endedSession => {
+                                        if (endedSession.name.includes('Child Process')) {
+                                            skippedMsg('onDidTerminateDebugSession', endedSession)
+                                            return
+                                        }
+
                                         function failMsg(expected: string): string {
                                             return (
                                                 `Unexpected debug session (expected ${expected}):` +
