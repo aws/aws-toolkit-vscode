@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.Disposer
 import com.intellij.ui.TableUtil
 import com.intellij.ui.table.TableView
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -22,6 +21,7 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.OrderBy
 import software.amazon.awssdk.services.cloudwatchlogs.model.ResourceNotFoundException
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
@@ -46,7 +46,7 @@ sealed class LogActor<T>(
         LOG.error(e) { "Exception thrown in the LogStreamActor not handled:" }
         notifyError(title = message("general.unknown_error"), project = project)
         table.setPaintBusy(false)
-        Disposer.dispose(this)
+        channel.close()
     }
 
     sealed class Message {
@@ -68,7 +68,17 @@ sealed class LogActor<T>(
             when (message) {
                 is Message.LoadForward -> if (!nextForwardToken.isNullOrEmpty()) {
                     withContext(edtContext) { table.setPaintBusy(true) }
-                    val items = loadMore(nextForwardToken, saveForwardToken = true)
+                    val items = try {
+                        loadMore(nextForwardToken, saveForwardToken = true)
+                    } catch (e: Exception) {
+                        LOG.warn(e) { "Exception thrown while trying to load forwards" }
+                        notifyError(
+                            project = project,
+                            title = message("cloudwatch.logs.client_exception"),
+                            content = message("cloudwatch.logs.failed_to_load_more")
+                        )
+                        listOf<T>()
+                    }
                     withContext(edtContext) {
                         table.listTableModel.addRows(items)
                         table.setPaintBusy(false)
@@ -76,7 +86,17 @@ sealed class LogActor<T>(
                 }
                 is Message.LoadBackward -> if (!nextBackwardToken.isNullOrEmpty()) {
                     withContext(edtContext) { table.setPaintBusy(true) }
-                    val items = loadMore(nextBackwardToken, saveBackwardToken = true)
+                    val items = try {
+                        loadMore(nextBackwardToken, saveBackwardToken = true)
+                    } catch (e: Exception) {
+                        LOG.warn(e) { "Exception thrown while trying to load backwards" }
+                        notifyError(
+                            project = project,
+                            title = message("cloudwatch.logs.client_exception"),
+                            content = message("cloudwatch.logs.failed_to_load_more")
+                        )
+                        listOf<T>()
+                    }
                     if (items.isNotEmpty()) {
                         // Selected rows can be non contiguous so we have to save every row selected
                         val newSelection = table.selectedRows.map { it + items.size }
