@@ -207,7 +207,7 @@ describe('SAM Integration Tests', async () => {
             describe(`Starting with a newly created ${scenario.runtime} SAM Application...`, async () => {
                 let testDisposables: vscode.Disposable[]
 
-                let testProjectDir: string
+                let testDir: string
                 let samAppCodeUri: vscode.Uri
                 let appPath: string
                 let cfnTemplatePath: string
@@ -216,12 +216,12 @@ describe('SAM Integration Tests', async () => {
                     // tslint:disable-next-line: no-invalid-this
                     this.timeout(TIMEOUT)
 
-                    testProjectDir = await mkdtemp(path.join(runtimeTestRoot, 'samapp-'))
-                    log(`testDir: ${testProjectDir}`)
+                    testDir = await mkdtemp(path.join(runtimeTestRoot, 'samapp-'))
+                    log(`testDir: ${testDir}`)
 
-                    await createSamApplication(testProjectDir)
-                    appPath = path.join(testProjectDir, samApplicationName, scenario.path)
-                    cfnTemplatePath = path.join(testProjectDir, samApplicationName, 'template.yaml')
+                    await createSamApplication(testDir)
+                    appPath = path.join(testDir, samApplicationName, scenario.path)
+                    cfnTemplatePath = path.join(testDir, samApplicationName, 'template.yaml')
                     samAppCodeUri = await openSamAppFile(appPath)
                 })
 
@@ -236,7 +236,7 @@ describe('SAM Integration Tests', async () => {
                 })
 
                 after(async function() {
-                    tryRemoveFolder(testProjectDir)
+                    tryRemoveFolder(testDir)
                 })
 
                 it('the SAM Template contains the expected runtime', async () => {
@@ -245,7 +245,7 @@ describe('SAM Integration Tests', async () => {
                 })
 
                 it('produces an error when creating a SAM Application to the same location', async () => {
-                    const err = await assertThrowsError(async () => await createSamApplication(testProjectDir))
+                    const err = await assertThrowsError(async () => await createSamApplication(testDir))
                     assert(err.message.includes('directory already exists'))
                 }).timeout(TIMEOUT)
 
@@ -280,23 +280,15 @@ describe('SAM Integration Tests', async () => {
                         'unexpected debug session in progress'
                     )
 
-                    // const rootUri = vscode.Uri.file(appPath)
-                    // const launchConfig = new LaunchConfiguration(rootUri)
                     const testConfig = {
                         type: 'aws-sam',
                         request: 'direct-invoke',
-                        name: 'test-config-1',
+                        name: `test-config-${scenarioIndex}`,
                         invokeTarget: {
                             target: 'template',
+                            // Resource defined in `src/testFixtures/.../template.yaml`.
                             logicalId: 'HelloWorldFunction',
                             templatePath: cfnTemplatePath,
-                            //projectRoot: testDir,
-                            //lambdaHandler: 'StockBuyer::StockBuyer.Function::FunctionHandler',
-                        },
-                        lambda: {
-                            environmentVariables: {},
-                            payload: {},
-                            // runtime: scenario.runtime,
                         },
                     }
 
@@ -337,6 +329,12 @@ describe('SAM Integration Tests', async () => {
                                 // Wait for this debug session to terminate
                                 testDisposables.push(
                                     vscode.debug.onDidTerminateDebugSession(async endedSession => {
+                                        function failMsg(expected: string): string {
+                                            return (
+                                                `Unexpected debug session (expected ${expected}):` +
+                                                `\n${JSON.stringify(endedSession)}`
+                                            )
+                                        }
                                         const endSessionValidation = validateSamDebugSession(
                                             endedSession,
                                             scenario.debugSessionType
@@ -345,22 +343,20 @@ describe('SAM Integration Tests', async () => {
                                             reject(new Error(endSessionValidation))
                                         }
                                         if (scenario.runtime === 'nodejs10.x') {
-                                            const templatePath =
-                                                (startedSession.configuration as any)?.templatePath ||
-                                                (endedSession.configuration as any)?.templatePath
-                                            // nodejs10.x starts a coprocess for some reason.
-                                            // If it has a SAM debugconfig then that's a reasonable hint that our config was launched.
-                                            if (templatePath) {
+                                            // nodejs10.x starts a coprocess for some reason, so we can't compare `id`.
+                                            // Instead just check that it looks like a SAM debugconfig.
+                                            const isSamDebug = !!(endedSession.configuration as any).templatePath
+                                            const isNode10x =
+                                                (endedSession.configuration as any).runtime === 'nodejs10.x'
+                                            if (isSamDebug && isNode10x) {
                                                 resolve()
+                                            } else {
+                                                reject(new Error(failMsg(`runtime=nodejs10.x`)))
                                             }
                                         } else if (startedSession.id === endedSession.id) {
                                             resolve()
                                         } else {
-                                            reject(
-                                                new Error(
-                                                    `Unexpected debug session ended: ${endedSession.name} (expected: ${startedSession.name})`
-                                                )
-                                            )
+                                            reject(new Error(failMsg(`id=${startedSession.id}`)))
                                         }
                                     })
                                 )
@@ -399,11 +395,11 @@ describe('SAM Integration Tests', async () => {
             expectedSessionType: string
         ): string | undefined {
             if (!debugSession.name.startsWith('SamLocalDebug')) {
-                return `Unexpected Session Name ${debugSession}`
+                return `Unexpected DebugSession name: ${debugSession}:\n${JSON.stringify(debugSession)}`
             }
 
             if (debugSession.type !== expectedSessionType) {
-                return `Unexpected Session Type ${debugSession}`
+                return `Unexpected DebugSession type: ${debugSession.type}:\n${JSON.stringify(debugSession)}`
             }
         }
 

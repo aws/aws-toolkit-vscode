@@ -28,13 +28,11 @@ describe('CloudFormation Template Registry Manager', async () => {
     })
 
     beforeEach(async () => {
-        console.log(`xxxx beforeEach 1`)
         testDir = path.join(workspaceDir, dir.toString())
         testDirNested = path.join(testDir, 'nested')
         await mkdir(testDirNested, { recursive: true })
         registry = new CloudFormationTemplateRegistry()
         manager = new CloudFormationTemplateRegistryManager(registry)
-        console.log(`xxxx beforeEach 2`)
     })
 
     afterEach(async () => {
