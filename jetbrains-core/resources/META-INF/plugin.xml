@@ -155,6 +155,7 @@
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.settings.LambdaSettings"/>
 
         <moduleService serviceImplementation="software.aws.toolkits.jetbrains.settings.DeploySettings"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.UpdateLambdaState"/>
 
         <projectService serviceInterface="software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager"
                         serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultAwsConnectionManager"
