@@ -33,6 +33,14 @@ export class RestApiNode extends AWSTreeNodeBase implements AWSResourceNode {
         return this.api.name
     }
 
+    public get id(): string {
+        if (this.api.id === undefined) {
+            throw new Error('REST API id expected but not found')
+        }
+
+        return this.api.id
+    }
+
     public get arn(): string {
         return `arn:${this.partitionId}:apigateway:${this.regionCode}::/apis/${this.api.id}`
     }

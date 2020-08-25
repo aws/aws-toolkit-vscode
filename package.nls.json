@@ -99,6 +99,7 @@
     "AWS.telemetry.notificationMessage": "The AWS Toolkit collects usage metrics by default. These metrics help drive toolkit improvements. This setting can be changed from the IDE settings.",
     "AWS.telemetry.notificationOk": "OK",
     "AWS.telemetry.notificationViewSettings": "View Settings",
+    "AWS.command.apig.invokeRemoteRestApi": "Invoke on AWS",
     "AWS.command.github": "View Source on GitHub",
     "AWS.command.help": "View Toolkit Documentation",
     "AWS.command.login": "Connect to AWS",

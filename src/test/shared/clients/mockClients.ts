@@ -87,8 +87,22 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
 export class MockApiGatewayClient implements ApiGatewayClient {
     public constructor(public readonly regionCode: string = '') {}
 
+    getResourcesForApi(apiId: string): AsyncIterableIterator<APIGateway.Resource> {
+        return asyncGenerator([])
+    }
+
     listApis(): AsyncIterableIterator<APIGateway.RestApi> {
         return asyncGenerator([])
+    }
+
+    testInvokeMethod(
+        apiId: string,
+        resourceId: string,
+        method: string,
+        body: string,
+        pathWithQueryString: string | undefined
+    ): Promise<APIGateway.TestInvokeMethodResponse> {
+        return Promise.resolve({})
     }
 }
 
