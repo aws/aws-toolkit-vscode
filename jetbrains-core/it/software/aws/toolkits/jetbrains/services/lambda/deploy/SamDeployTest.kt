@@ -171,9 +171,10 @@ class SamDeployTest {
         }
     }
 
-    private fun createChangeSet(templateFile: VirtualFile, stackName: String, parameters: Map<String, String> = emptyMap()): String? {
-        val deployDialog = runInEdtAndGet {
-            runUnderRealCredentials(projectRule.project) {
+    private fun createChangeSet(templateFile: VirtualFile, stackName: String, parameters: Map<String, String> = emptyMap()): String? =
+        runUnderRealCredentials(projectRule.project) {
+            val deployDialog = runInEdtAndGet {
+
                 SamDeployDialog(
                     projectRule.project,
                     stackName,
@@ -187,10 +188,9 @@ class SamDeployTest {
                     Disposer.register(projectRule.fixture.testRootDisposable, it.disposable)
                 }
             }
-        }
 
-        return deployDialog.deployFuture.get(5, TimeUnit.MINUTES)
-    }
+            deployDialog.deployFuture.get(5, TimeUnit.MINUTES)
+        }
 
     private fun runAssertsAndClean(stackName: String, asserts: () -> Unit) {
         try {
