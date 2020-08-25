@@ -13,11 +13,8 @@ import { getLogger } from '../shared/logger/logger'
 // ASSUMPTION: Tests are not run concurrently
 
 before(async () => {
-    console.log('xxxx GLOBAL before 1')
     // Needed for getLogger().
     await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
-    getLogger()
-    console.log('xxxx GLOBAL before 2')
 })
 
 beforeEach(async function() {})
