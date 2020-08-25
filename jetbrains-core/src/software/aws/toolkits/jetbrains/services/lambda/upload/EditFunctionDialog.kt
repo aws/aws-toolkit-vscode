@@ -38,6 +38,7 @@ import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionMode.U
 import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionMode.UPDATE_CONFIGURATION
 import software.aws.toolkits.jetbrains.services.lambda.validOrNull
 import software.aws.toolkits.jetbrains.services.s3.CreateS3BucketDialog
+import software.aws.toolkits.jetbrains.settings.UpdateLambdaSettings
 import software.aws.toolkits.jetbrains.utils.lambdaTracingConfigIsAvailable
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
@@ -61,6 +62,7 @@ class EditFunctionDialog(
     private val project: Project,
     private val mode: EditFunctionMode,
     private val name: String = "",
+    private val arn: String = "",
     private val description: String = "",
     private val runtime: Runtime? = null,
     private val handlerName: String = "",
@@ -76,6 +78,7 @@ class EditFunctionDialog(
             project = project,
             mode = mode,
             name = lambdaFunction.name,
+            arn = lambdaFunction.arn,
             description = lambdaFunction.description ?: "",
             runtime = lambdaFunction.runtime,
             handlerName = lambdaFunction.handler,
@@ -90,6 +93,7 @@ class EditFunctionDialog(
     private val validator = UploadToLambdaValidator()
     private val s3Client: S3Client = project.awsClient()
     private val iamClient: IamClient = project.awsClient()
+    private val updateSettings = UpdateLambdaSettings.getInstance(arn)
 
     private val action: OkAction = when (mode) {
         NEW -> CreateNewLambdaOkAction()
@@ -168,6 +172,8 @@ class EditFunctionDialog(
                 }
             }
         }
+
+        loadSettings()
     }
 
     private fun configurationChanged(): Boolean = mode != NEW && !(name == view.name.text &&
@@ -295,6 +301,7 @@ class EditFunctionDialog(
             // We normally don't validate the deploy settings in case they are editing settings only, but they requested
             // to deploy so start validating that too
             super.doAction(e)
+            saveSettings()
             if (doValidateAll().isNotEmpty()) return
             upsertLambdaCode()
         }
@@ -308,10 +315,21 @@ class EditFunctionDialog(
 
         override fun doAction(e: ActionEvent?) {
             super.doAction(e)
+            saveSettings()
             if (validation() == null) {
                 performUpdate()
             }
         }
+    }
+
+    private fun loadSettings() {
+        view.sourceBucket.selectedItem = updateSettings.bucketName
+        view.buildInContainer.isSelected = updateSettings.useContainer ?: false
+    }
+
+    private fun saveSettings() {
+        updateSettings.bucketName = view.sourceBucket.selectedItem?.toString()
+        updateSettings.useContainer = view.buildInContainer.isSelected
     }
 
     @TestOnly
