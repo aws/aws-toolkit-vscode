@@ -9,6 +9,7 @@ import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.Constraints
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Disposer
 import com.intellij.ui.DoubleClickListener
 import com.intellij.ui.PopupHandler
 import com.intellij.ui.ScrollPaneFactory
@@ -75,6 +76,7 @@ class LogGroupTable(
             TableType.LIST -> LogGroupActor(project, client, groupTable, logGroup)
             TableType.FILTER -> LogGroupSearchActor(project, client, groupTable, logGroup)
         }
+        Disposer.register(this@LogGroupTable, logGroupActor)
 
         channel = logGroupActor.channel
 
