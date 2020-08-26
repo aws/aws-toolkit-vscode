@@ -30,6 +30,7 @@ const DEFAULT_RUNTIMES = Map<RuntimeFamily, Runtime>([
 ])
 
 export const samLambdaRuntimes: Set<Runtime> = Set.union([nodeJsRuntimes, pythonRuntimes, dotNetRuntimes])
+export const samLambdaImportableRuntimes: Set<Runtime> = Set.union([nodeJsRuntimes, pythonRuntimes])
 
 // Filter out node8 until local debugging is no longer supported, and it can be removed from samLambdaRuntimes
 export const samLambdaCreatableRuntimes: Set<Runtime> = samLambdaRuntimes.filter(runtime => runtime !== 'nodejs8.10')
