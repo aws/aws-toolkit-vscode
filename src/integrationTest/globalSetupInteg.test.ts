@@ -8,7 +8,6 @@
  */
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { activateExtension } from './integrationTestsUtilities'
-import { getLogger } from '../shared/logger/logger'
 
 // ASSUMPTION: Tests are not run concurrently
 
