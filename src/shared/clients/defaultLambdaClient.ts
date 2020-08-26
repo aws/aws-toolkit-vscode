@@ -8,6 +8,7 @@ import { _Blob } from 'aws-sdk/clients/lambda'
 import { ext } from '../extensionGlobals'
 import '../utilities/asyncIteratorShim'
 import { LambdaClient } from './lambdaClient'
+import { getLogger } from '../logger'
 
 export class DefaultLambdaClient implements LambdaClient {
     public constructor(public readonly regionCode: string) {}
@@ -53,6 +54,20 @@ export class DefaultLambdaClient implements LambdaClient {
 
             request.Marker = response.NextMarker
         } while (!!request.Marker)
+    }
+
+    public async getFunction(name: string): Promise<Lambda.GetFunctionResponse> {
+        getLogger().debug(`GetFunction called for function: ${name}`)
+        const client = await this.createSdkClient()
+
+        try {
+            const response = await client.getFunction({ FunctionName: name }).promise()
+            getLogger().debug('GetFunction returned response: %O', response)
+            return response
+        } catch (e) {
+            getLogger().error('Failed to get function: %O', e)
+            throw e
+        }
     }
 
     private async createSdkClient(): Promise<Lambda> {

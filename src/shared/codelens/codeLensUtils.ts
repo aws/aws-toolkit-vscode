@@ -20,6 +20,7 @@ import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry
 import { nodeJsRuntimes, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { CODE_TARGET_TYPE } from '../sam/debugger/awsSamDebugConfiguration'
 import { getReferencedHandlerPaths, LaunchConfiguration } from '../debug/launchConfiguration'
+import * as pathutils from '../utilities/pathUtils'
 
 export type Language = 'python' | 'javascript' | 'csharp'
 
@@ -66,7 +67,11 @@ export async function makeCodeLenses({
                 rootUri: handler.manifestUri,
                 runtimeFamily,
             }
-            if (!existingConfigs.has(path.join(path.dirname(baseParams.rootUri.fsPath), baseParams.handlerName))) {
+            if (
+                !existingConfigs.has(
+                    pathutils.normalize(path.join(path.dirname(baseParams.rootUri.fsPath), baseParams.handlerName))
+                )
+            ) {
                 lenses.push(makeAddCodeSamDebugCodeLens(baseParams))
             }
         } catch (err) {
