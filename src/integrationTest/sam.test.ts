@@ -78,7 +78,9 @@ async function getAddConfigCodeLens(documentUri: vscode.Uri): Promise<vscode.Cod
             if (codeLenses.length === 1) {
                 return codeLenses[0]
             }
-        } catch (e) {}
+        } catch (e) {
+            console.log(`getAddConfigCodeLens(): failed, retrying:\n${e}`)
+        }
     }
 }
 
