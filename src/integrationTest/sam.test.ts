@@ -18,7 +18,8 @@ import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { fileExists } from '../shared/filesystemUtilities'
 import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { findParentProjectFile } from '../shared/utilities/workspaceUtils'
-import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep, TIMEOUT } from './integrationTestsUtilities'
+import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep } from './integrationTestsUtilities'
+import { setTestTimeout } from './globalSetup.test'
 
 const projectFolder = getTestWorkspaceFolder()
 
@@ -85,8 +86,8 @@ async function continueDebugger(): Promise<void> {
     await vscode.commands.executeCommand('workbench.action.debug.continue')
 }
 
-async function stopDebugger(debugSession: vscode.DebugSession): Promise<void> {
-    if ((vscode.debug as any).stopDebugging) {
+async function stopDebugger(debugSession: vscode.DebugSession | undefined): Promise<void> {
+    if (stopDebugger && (vscode.debug as any).stopDebugging) {
         // VSCode 1.48+
         ;(vscode.debug as any).stopDebugging(debugSession)
     } else {
@@ -132,34 +133,6 @@ function runtimeNeedsWorkaround(lang: Language) {
     return lang === 'csharp' || lang === 'python'
 }
 
-let timeout: { id: NodeJS.Timeout | undefined; name: string | undefined } = { id: undefined, name: undefined }
-function clearTestTimeout() {
-    if (timeout.id) {
-        clearTimeout(timeout.id)
-        timeout.id = undefined
-    }
-}
-function setTestTimeout(testName: string | undefined, ms: number) {
-    if (!testName) {
-        throw Error()
-    }
-    if (timeout.id) {
-        throw Error(`timeout set by previous test was not cleared: "${timeout.name}"`)
-    }
-    timeout.name = testName
-    timeout.id = setTimeout(function() {
-        const name = timeout.name
-        clearTimeout(timeout.id!)
-        timeout.id = undefined
-        timeout.name = undefined
-        assert.fail(`Exceeded timeout of ${(ms / 1000).toFixed(1)} seconds: "${name}"`)
-    }, ms)
-}
-
-afterEach(function() {
-    clearTestTimeout()
-})
-
 describe('SAM Integration Tests', async function() {
     const samApplicationName = 'testProject'
     /**
@@ -170,9 +143,6 @@ describe('SAM Integration Tests', async function() {
     let testSuiteRoot: string
 
     before(async function() {
-        // tslint:disable-next-line:no-invalid-this
-        this.timeout(600000)
-
         await activateExtensions()
         await configureAwsToolkitExtension()
         await configurePythonExtension()
@@ -182,7 +152,7 @@ describe('SAM Integration Tests', async function() {
         mkdirpSync(testSuiteRoot)
     })
 
-    after(async () => {
+    after(async function() {
         tryRemoveFolder(testSuiteRoot)
         // Print a summary of session that were seen by `onDidStartDebugSession`.
         const sessionReport = `\n    ${sessionLog.join('\n    ')}\n`
@@ -192,7 +162,7 @@ describe('SAM Integration Tests', async function() {
     for (let scenarioIndex = 0; scenarioIndex < scenarios.length; scenarioIndex++) {
         const scenario = scenarios[scenarioIndex]
 
-        describe(`SAM Application Runtime: ${scenario.runtime}`, async () => {
+        describe(`SAM Application Runtime: ${scenario.runtime}`, async function() {
             let runtimeTestRoot: string
 
             before(async function() {
@@ -212,7 +182,7 @@ describe('SAM Integration Tests', async function() {
             /**
              * This suite cleans up at the end of each test.
              */
-            describe('Starting from scratch', async () => {
+            describe('Starting from scratch', async function() {
                 let testDir: string
 
                 beforeEach(async function() {
@@ -225,9 +195,6 @@ describe('SAM Integration Tests', async function() {
                 })
 
                 it('creates a new SAM Application (happy path)', async function() {
-                    // tslint:disable-next-line: no-invalid-this
-                    this.timeout(TIMEOUT)
-
                     await createSamApplication(testDir)
 
                     // Check for readme file
@@ -240,7 +207,7 @@ describe('SAM Integration Tests', async function() {
              * This suite makes a sam app that all tests operate on.
              * Cleanup happens at the end of the suite.
              */
-            describe(`Starting with a newly created ${scenario.runtime} SAM Application...`, async () => {
+            describe(`Starting with a newly created ${scenario.runtime} SAM Application...`, async function() {
                 let testDisposables: vscode.Disposable[]
 
                 let testDir: string
@@ -249,9 +216,6 @@ describe('SAM Integration Tests', async function() {
                 let cfnTemplatePath: string
 
                 before(async function() {
-                    // tslint:disable-next-line: no-invalid-this
-                    this.timeout(TIMEOUT)
-
                     testDir = await mkdtemp(path.join(runtimeTestRoot, 'samapp-'))
                     log(`testDir: ${testDir}`)
 
@@ -269,23 +233,25 @@ describe('SAM Integration Tests', async function() {
                 afterEach(async function() {
                     // tslint:disable-next-line: no-unsafe-any
                     testDisposables.forEach(d => d.dispose())
+                    await stopDebugger(undefined)
                 })
 
                 after(async function() {
                     tryRemoveFolder(testDir)
                 })
 
-                it('the SAM Template contains the expected runtime', async () => {
+                it('the SAM Template contains the expected runtime', async function() {
                     const fileContents = readFileSync(cfnTemplatePath).toString()
                     assert.ok(fileContents.includes(`Runtime: ${scenario.runtime}`))
                 })
 
-                it('produces an error when creating a SAM Application to the same location', async () => {
+                it('produces an error when creating a SAM Application to the same location', async function() {
                     const err = await assertThrowsError(async () => await createSamApplication(testDir))
                     assert(err.message.includes('directory already exists'))
-                }).timeout(TIMEOUT)
+                })
 
-                it('produces an Add Debug Configuration codelens', async () => {
+                it('produces an Add Debug Configuration codelens', async function() {
+                    setTestTimeout(this.test?.fullTitle(), 60000)
                     const codeLens = await getAddConfigCodeLens(samAppCodeUri)
                     assert.ok(codeLens)
 
@@ -307,9 +273,10 @@ describe('SAM Integration Tests', async function() {
                     const projectRoot = await findParentProjectFile(samAppCodeUri, manifestFile)
                     assert.ok(projectRoot, 'projectRoot not found')
                     assertCodeLensReferencesHasSameRoot(codeLens, projectRoot!)
-                }).timeout(TIMEOUT)
+                })
 
-                it('invokes and attaches on debug request (F5)', async () => {
+                it('invokes and attaches on debug request (F5)', async function() {
+                    setTestTimeout(this.test?.fullTitle(), 60000)
                     assert.strictEqual(
                         vscode.debug.activeDebugSession,
                         undefined,
@@ -396,7 +363,7 @@ describe('SAM Integration Tests', async function() {
                     }).catch(e => {
                         throw e
                     })
-                }).timeout(TIMEOUT * 2)
+                })
             })
         })
 
