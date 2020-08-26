@@ -47,7 +47,8 @@ export async function activate(activateArguments: {
     context: vscode.ExtensionContext
     awsContextTrees: AwsContextTreeCollection
     regionProvider: RegionProvider
-    outputChannel: vscode.OutputChannel
+    toolkitOutputChannel: vscode.OutputChannel
+    remoteInvokeOutputChannel: vscode.OutputChannel
 }): Promise<void> {
     const awsExplorer = new AwsExplorer(
         activateArguments.context,
@@ -59,7 +60,12 @@ export async function activate(activateArguments: {
         vscode.window.registerTreeDataProvider(awsExplorer.viewProviderId, awsExplorer)
     )
 
-    await registerAwsExplorerCommands(activateArguments.context, awsExplorer, activateArguments.outputChannel)
+    await registerAwsExplorerCommands(
+        activateArguments.context,
+        awsExplorer,
+        activateArguments.toolkitOutputChannel,
+        activateArguments.remoteInvokeOutputChannel
+    )
 
     recordVscodeActiveRegions({ value: awsExplorer.getRegionNodesSize() })
 
@@ -76,7 +82,7 @@ async function registerAwsExplorerCommands(
     context: vscode.ExtensionContext,
     awsExplorer: AwsExplorer,
     toolkitOutputChannel: vscode.OutputChannel,
-    lambdaOutputChannel: vscode.OutputChannel = vscode.window.createOutputChannel('AWS Lambda')
+    lambdaOutputChannel: vscode.OutputChannel
 ): Promise<void> {
     context.subscriptions.push(
         vscode.commands.registerCommand('aws.showRegion', async () => {

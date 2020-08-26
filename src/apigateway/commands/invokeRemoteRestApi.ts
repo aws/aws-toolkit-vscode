@@ -8,7 +8,7 @@ import { RestApiNode } from '../explorer/apiNodes'
 import { getLogger, Logger } from '../../shared/logger'
 import { BaseTemplates } from '../../shared/templates/baseTemplates'
 import { ext } from '../../shared/extensionGlobals'
-import _ = require('lodash')
+import { template } from 'lodash'
 import { toArrayAsync, toMap } from '../../shared/utilities/collectionUtils'
 import { ExtensionUtilities } from '../../shared/extensionUtilities'
 import { Resource } from 'aws-sdk/clients/apigateway'
@@ -53,14 +53,14 @@ export async function invokeRemoteRestApi(params: { outputChannel: vscode.Output
                 enableScripts: true,
             }
         )
-        const baseTemplateFn = _.template(BaseTemplates.SIMPLE_HTML)
+        const baseTemplateFn = template(BaseTemplates.SIMPLE_HTML)
 
         view.webview.html = baseTemplateFn({
             cspSource: view.webview.cspSource,
             content: '<h1>Loading...</h1>',
         })
 
-        const invokeTemplateFn = _.template(APIG_REMOTE_INVOKE_TEMPLATE)
+        const invokeTemplateFn = template(APIG_REMOTE_INVOKE_TEMPLATE)
 
         const client = ext.toolkitClientBuilder.createApiGatewayClient(params.apiNode.regionCode)
         logger.info(`Loading API Resources for API ${apiNode.name} (id: ${apiNode.id})`)
@@ -104,7 +104,7 @@ export async function invokeRemoteRestApi(params: { outputChannel: vscode.Output
                 resources: resources,
                 client: client,
                 outputChannel: params.outputChannel,
-                onPostMessage: message => view.webview.postMessage(message),
+                postMessage: message => view.webview.postMessage(message),
             }),
             undefined,
             ext.context.subscriptions
@@ -116,16 +116,16 @@ export async function invokeRemoteRestApi(params: { outputChannel: vscode.Output
 
 export function createMessageReceivedFunc({
     api,
-    outputChannel,
     client,
+    outputChannel,
     resources,
-    ...restParams
+    postMessage,
 }: {
     api: RestApiNode
     client: ApiGatewayClient
     outputChannel: vscode.OutputChannel
     resources: Map<string, Resource>
-    onPostMessage(message: any): Thenable<boolean>
+    postMessage: (message: any) => Thenable<boolean>
 }) {
     const logger: Logger = getLogger()
 
@@ -136,12 +136,12 @@ export function createMessageReceivedFunc({
                 throw new Error(`Vue called 'apiResourceSelected', but no resourceId was provided!`)
             }
             logger.info(`Selected ${selectedResourceId}`)
-            restParams.onPostMessage({
+            postMessage({
                 command: 'setMethods',
                 methods: listValidMethods(resources, selectedResourceId),
             })
         } else if (isInvokeApiMessage(message)) {
-            restParams.onPostMessage({ command: 'invokeApiStarted' })
+            postMessage({ command: 'invokeApiStarted' })
 
             logger.info('Invoking API Gateway resource:')
             logger.info(String(message.body))
@@ -170,8 +170,10 @@ export function createMessageReceivedFunc({
                 outputChannel.appendLine(error.toString())
                 outputChannel.appendLine('')
             } finally {
-                restParams.onPostMessage({ command: 'invokeApiFinished' })
+                postMessage({ command: 'invokeApiFinished' })
             }
+        } else {
+            throw new Error(`Received unknown message: ${message.command}\n${JSON.stringify(message)}`)
         }
     }
 }
@@ -184,12 +186,12 @@ export function listValidMethods(resources: Map<string, Resource>, resourceId: s
         throw new Error('Resource not defined')
     }
 
-    // do some transforms because you can simultaneously declare a resource that supports ANY in conjunction with conventional methods
+    // you can simultaneously declare a resource that supports ANY in conjunction with conventional methods
     const isAny = (method: string) => method.toUpperCase() === 'ANY'
     const methods = resource.resourceMethods !== undefined ? Object.keys(resource.resourceMethods) : []
     if (methods.find(isAny)) {
-        methods.push(...supportedOperations)
+        return supportedOperations
     }
 
-    return [...new Set(methods.filter(method => !isAny(method)))].sort()
+    return methods.sort()
 }

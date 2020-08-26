@@ -9,6 +9,7 @@
     "Aws.cdk.explorerNode.noApps": "[No CDK Apps found in Workspaces]",
     "Aws.cdk.explorerNode.app.noConstructTree": "[Unable to load construct tree for this App. Run `cdk synth`]",
     "Aws.cdk.explorerNode.app.noStacks": "[No stacks in this App]",
+    "AWS.channel.remoteInvoke": "AWS Remote Invocations",
     "AWS.channel.aws.toolkit": "AWS Toolkit",
     "AWS.channel.aws.toolkit.activation.error": "Error Activating AWS Toolkit",
     "AWS.codelens.lambda.invoke": "Run Locally",

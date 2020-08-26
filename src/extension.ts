@@ -71,6 +71,9 @@ export async function activate(context: vscode.ExtensionContext) {
     ext.context = context
     await activateLogger(context)
     const toolkitOutputChannel = vscode.window.createOutputChannel(localize('AWS.channel.aws.toolkit', 'AWS Toolkit'))
+    const remoteInvokeOutputChannel = vscode.window.createOutputChannel(
+        localize('AWS.channel.aws.remoteInvoke', 'AWS Remote Invocations')
+    )
     ext.outputChannel = toolkitOutputChannel
 
     try {
@@ -194,12 +197,13 @@ export async function activate(context: vscode.ExtensionContext) {
             context,
             awsContextTrees,
             regionProvider,
-            outputChannel: toolkitOutputChannel,
+            toolkitOutputChannel,
+            remoteInvokeOutputChannel,
         })
 
         await activateApiGateway({
             context: extContext.extensionContext,
-            outputChannel: toolkitOutputChannel,
+            outputChannel: remoteInvokeOutputChannel,
         })
 
         await activateSchemas({
