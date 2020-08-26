@@ -34,4 +34,12 @@ export interface LambdaClient {
      * @param name Function name
      */
     getFunction(name: string): Promise<Lambda.GetFunctionResponse>
+
+    /**
+     * Runs AWS.Lambda.updateFunctionCode
+     * @param name Function name
+     * @param zipFile Zipfile path
+     *
+     */
+    updateFunctionCode(name: string, zipFile: Buffer): Promise<Lambda.FunctionConfiguration>
 }
