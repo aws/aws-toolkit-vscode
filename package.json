@@ -531,6 +531,10 @@
         "menus": {
             "commandPalette": [
                 {
+                    "command": "aws.apig.invokeRemoteRestApi",
+                    "when": "false"
+                },
+                {
                     "command": "aws.deleteCloudFormation",
                     "when": "false"
                 },
@@ -742,6 +746,11 @@
             ],
             "view/item/context": [
                 {
+                    "command": "aws.apig.invokeRemoteRestApi",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsApiGatewayNode)$/",
+                    "group": "0@1"
+                },
+                {
                     "command": "aws.s3.downloadFileAs",
                     "when": "view == aws.explorer && viewItem == awsS3FileNode",
                     "group": "inline@1"
@@ -879,6 +888,11 @@
             ]
         },
         "commands": [
+            {
+                "command": "aws.apig.invokeRemoteRestApi",
+                "title": "%AWS.command.apig.invokeRemoteRestApi%",
+                "category": "AWS"
+            },
             {
                 "command": "aws.lambda.createNewSamApp",
                 "title": "%AWS.command.createNewSamApp%",
