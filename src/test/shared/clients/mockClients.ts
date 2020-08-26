@@ -257,22 +257,26 @@ export class MockLambdaClient implements LambdaClient {
     public readonly deleteFunction: (name: string) => Promise<void>
     public readonly invoke: (name: string, payload?: Lambda._Blob) => Promise<Lambda.InvocationResponse>
     public readonly listFunctions: () => AsyncIterableIterator<Lambda.FunctionConfiguration>
+    public readonly getFunction: (name: string) => Promise<Lambda.GetFunctionResponse>
 
     public constructor({
         regionCode = '',
         deleteFunction = async (name: string) => {},
         invoke = async (name: string, payload?: Lambda._Blob) => ({}),
         listFunctions = () => asyncGenerator([]),
+        getFunction = async (name: string) => ({}),
     }: {
         regionCode?: string
         deleteFunction?(name: string): Promise<void>
         invoke?(name: string, payload?: Lambda._Blob): Promise<Lambda.InvocationResponse>
         listFunctions?(): AsyncIterableIterator<Lambda.FunctionConfiguration>
+        getFunction?(name: string): Promise<Lambda.GetFunctionResponse>
     }) {
         this.regionCode = regionCode
         this.deleteFunction = deleteFunction
         this.invoke = invoke
         this.listFunctions = listFunctions
+        this.getFunction = getFunction
     }
 }
 

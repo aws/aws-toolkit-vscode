@@ -7,8 +7,7 @@ import * as vscode from 'vscode'
 
 import { submitFeedback } from '../feedback/commands/submitFeedback'
 import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
-import { deleteLambda } from '../lambda/commands/deleteLambda'
-import { invokeLambda } from '../lambda/commands/invokeLambda'
+import { importLambdaCommand } from '../lambda/commands/importLambda'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
 import { LambdaFunctionNode } from '../lambda/explorer/lambdaFunctionNode'
 import { AwsContext } from '../shared/awsContext'
@@ -134,19 +133,6 @@ async function registerAwsExplorerCommands(
 
     context.subscriptions.push(
         vscode.commands.registerCommand(
-            'aws.deleteLambda',
-            async (node: LambdaFunctionNode) =>
-                await deleteLambda({
-                    deleteParams: { functionName: node.configuration.FunctionName || '' },
-                    lambdaClient: ext.toolkitClientBuilder.createLambdaClient(node.regionCode),
-                    outputChannel: lambdaOutputChannel,
-                    onRefresh: () => awsExplorer.refresh(node.parent),
-                })
-        )
-    )
-
-    context.subscriptions.push(
-        vscode.commands.registerCommand(
             'aws.deleteCloudFormation',
             async (node: CloudFormationStackNode) =>
                 await deleteCloudFormation(() => awsExplorer.refresh(node.parent), node)
@@ -159,12 +145,8 @@ async function registerAwsExplorerCommands(
 
     context.subscriptions.push(
         vscode.commands.registerCommand(
-            'aws.invokeLambda',
-            async (node: LambdaFunctionNode) =>
-                await invokeLambda({
-                    functionNode: node,
-                    outputChannel: lambdaOutputChannel,
-                })
+            'aws.importLambda',
+            async (node: LambdaFunctionNode) => await importLambdaCommand(node)
         )
     )
 
