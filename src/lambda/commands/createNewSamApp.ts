@@ -192,10 +192,13 @@ export async function createNewSamApplication(
         // In case adding the workspace folder triggers a VS Code restart, instruct extension to
         // launch app file after activation.
         activationLaunchPath.setLaunchPath(uri.fsPath)
-        await addWorkspaceFolder({
-            uri: config.location,
-            name: path.basename(config.location.fsPath),
-        })
+        await addFolderToWorkspace(
+            {
+                uri: config.location,
+                name: path.basename(config.location.fsPath),
+            },
+            true
+        )
 
         await addInitialLaunchConfiguration(extContext, vscode.workspace.getWorkspaceFolder(uri)!, uri)
         await vscode.window.showTextDocument(uri)
@@ -272,13 +275,4 @@ export async function addInitialLaunchConfiguration(
 
         await launchConfiguration.addDebugConfigurations(filtered)
     }
-}
-
-async function addWorkspaceFolder(folder: { uri: vscode.Uri; name?: string }): Promise<void> {
-    // No-op if the folder is already in the workspace.
-    if (vscode.workspace.getWorkspaceFolder(folder.uri)) {
-        return
-    }
-
-    await addFolderToWorkspace(folder)
 }
