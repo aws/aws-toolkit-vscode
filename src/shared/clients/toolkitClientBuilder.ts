@@ -4,6 +4,7 @@
  */
 
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
+import { ApiGatewayClient } from './apiGatewayClient'
 import { CloudFormationClient } from './cloudFormationClient'
 import { CloudWatchLogsClient } from './cloudWatchLogsClient'
 import { EcsClient } from './ecsClient'
@@ -14,6 +15,8 @@ import { StepFunctionsClient } from './stepFunctionsClient'
 import { StsClient } from './stsClient'
 
 export interface ToolkitClientBuilder {
+    createApiGatewayClient(regionCode: string): ApiGatewayClient
+
     createCloudFormationClient(regionCode: string): CloudFormationClient
 
     createCloudWatchLogsClient(regionCode: string): CloudWatchLogsClient
