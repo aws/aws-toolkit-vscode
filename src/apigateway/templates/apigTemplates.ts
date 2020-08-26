@@ -3,11 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export class ApigTemplates {
-    public static readonly REMOTE_INVOKE_TEMPLATE = `
+export const APIG_REMOTE_INVOKE_TEMPLATE = `
     <h1>
-        Invoke function on <%= ApiName %>
+        Invoke methods on <%= ApiName %> (<%= ApiId %>)
     </h1>
+    <pre><%= ApiArn %></pre>
+    <br />
     <div id="app">
         <h3>
             Select a resource:
@@ -63,4 +64,3 @@ export class ApigTemplates {
         <script src="<%= scr %>"></script>
     <% }); %>
     `
-}

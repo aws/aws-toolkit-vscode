@@ -37,8 +37,6 @@ import { copyNameCommand } from './commands/copyName'
 import { loadMoreChildrenCommand } from './commands/loadMoreChildren'
 import { checkExplorerForDefaultRegion } from './defaultRegion'
 import { RegionNode } from './regionNode'
-import { RestApiNode } from '../apigateway/explorer/apiNodes'
-import { invokeRemoteRestApi } from '../apigateway/commands/invokeRemoteRestApi'
 
 /**
  * Activate AWS Explorer related functionality for the extension.
@@ -160,17 +158,6 @@ async function registerAwsExplorerCommands(
                 await invokeLambda({
                     functionNode: node,
                     outputChannel: lambdaOutputChannel,
-                })
-        )
-    )
-
-    context.subscriptions.push(
-        vscode.commands.registerCommand(
-            'aws.apig.invokeRemoteRestApi',
-            async (node: RestApiNode) =>
-                await invokeRemoteRestApi({
-                    apiNode: node,
-                    outputChannel: toolkitOutputChannel,
                 })
         )
     )

@@ -11,6 +11,10 @@ console.log('Loaded!')
             queryString: '',
             errors: [],
             isLoading: false,
+            localizedMessages: {
+                noApiResource: 'noApiResource',
+                noMethod: 'noMethod',
+            },
         },
         mounted() {
             this.$nextTick(function() {
@@ -18,12 +22,6 @@ console.log('Loaded!')
             })
         },
         methods: {
-            setApiResource: function() {
-                vscode.postMessage({
-                    command: 'apiResourceSelected',
-                    value: this.selectedApiResource,
-                })
-            },
             handleMessageReceived: function(e) {
                 const message = event.data
                 console.log(message.command)
@@ -34,6 +32,9 @@ console.log('Loaded!')
                             this.selectedMethod = this.methods[0]
                         }
                         break
+                    case 'setLocalizedMessages':
+                        this.localizedMessages = message.localizedMessages
+                        break
                     case 'invokeApiStarted':
                         this.isLoading = true
                         break
@@ -42,22 +43,28 @@ console.log('Loaded!')
                         break
                 }
             },
+            setApiResource: function() {
+                vscode.postMessage({
+                    command: 'apiResourceSelected',
+                    value: this.selectedApiResource,
+                })
+            },
             sendInput: function() {
                 this.errors = []
-                if (!this.selectedApiResource && !this.selectedMethod) {
-                    if (!this.selectedApiResource) {
-                        this.errors.push('Please select an API resource')
-                    }
-                    if (!this.selectedMethod) {
-                        this.errors.push('Please select a HTTP method')
-                    }
+                if (!this.selectedApiResource) {
+                    this.errors.push(this.localizedMessages.noApiResource)
+                }
+                if (!this.selectedMethod) {
+                    this.errors.push(this.localizedMessages.noMethod)
+                }
+                if (this.errors.length > 0) {
                     return
                 }
 
                 console.log(this.jsonInput)
                 vscode.postMessage({
                     command: 'invokeApi',
-                    value: this.jsonInput,
+                    body: this.jsonInput,
                     selectedApiResource: this.selectedApiResource,
                     selectedMethod: this.selectedMethod,
                     queryString: this.queryString,

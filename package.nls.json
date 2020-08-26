@@ -298,6 +298,8 @@
     "AWS.placeHolder.selectProfile": "Select a credential profile",
     "AWS.profile.recentlyUsed": "recently used",
     "AWS.running.command": "Running command: {0}",
+    "AWS.apig.remoteInvoke.noApiResource": "Select an API Resource",
+    "AWS.apig.remoteInvoke.noMethod": "Select a HTTP method",
     "AWS.s3.createBucket.placeHolder": "Bucket Name",
     "AWS.s3.createBucket.prompt": "Enter a new bucket name",
     "AWS.s3.createBucket.error.general": "Failed to create bucket {0}",
