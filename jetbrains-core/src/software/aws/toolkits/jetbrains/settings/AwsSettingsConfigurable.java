@@ -30,7 +30,7 @@ import javax.swing.JPanel;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import software.aws.toolkits.jetbrains.core.executables.CloudDebugExecutable;
+import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugExecutable;
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance;
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager;
 import software.aws.toolkits.jetbrains.core.executables.ExecutableType;
