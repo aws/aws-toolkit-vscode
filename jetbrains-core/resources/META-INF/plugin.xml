@@ -349,6 +349,8 @@
             <action id="sqs.send.message"
                     class="software.aws.toolkits.jetbrains.services.sqs.actions.SendMessageAction"/>
             <separator/>
+            <action id="sqs.configure.lambda"
+                    class="software.aws.toolkits.jetbrains.services.sqs.actions.ConfigureLambdaAction"/>
             <action id="sqs.subscribe.sns"
                     class="software.aws.toolkits.jetbrains.services.sqs.actions.SubscribeSnsAction"/>
             <separator/>

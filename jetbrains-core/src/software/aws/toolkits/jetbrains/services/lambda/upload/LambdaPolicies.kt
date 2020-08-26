@@ -40,3 +40,21 @@ val DEFAULT_POLICY = """
   ]
 }
 """.trim()
+
+@Language("JSON")
+fun createSqsPollerPolicy(arn: String): String = """
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "sqs:DeleteMessage",
+        "sqs:GetQueueAttributes", 
+        "sqs:ReceiveMessage"
+      ],
+      "Resource": "$arn"
+    }
+  ]
+}
+""".trim()
