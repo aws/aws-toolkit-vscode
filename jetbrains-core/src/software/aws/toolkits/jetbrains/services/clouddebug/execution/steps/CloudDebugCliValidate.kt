@@ -7,7 +7,7 @@ import software.aws.toolkits.core.utils.AttributeBagKey
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutable
-import software.aws.toolkits.jetbrains.core.executables.CloudDebugExecutable
+import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugExecutable
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugResolver
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.Context
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.MessageEmitter

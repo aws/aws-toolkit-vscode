@@ -235,7 +235,7 @@
         <credentialProviderFactory implementation="software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileCredentialProviderFactory"/>
 
         <!-- Executables -->
-        <executable implementation="software.aws.toolkits.jetbrains.core.executables.CloudDebugExecutable"/>
+        <executable implementation="software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugExecutable"/>
         <executable implementation="software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable"/>
 
         <explorer.nodeProcessor implementation="software.aws.toolkits.jetbrains.services.clouddebug.CloudDebuggingExplorerProcessor" />
