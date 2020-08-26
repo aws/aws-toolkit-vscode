@@ -23,6 +23,8 @@ import {
 import * as pathutils from '../utilities/pathUtils'
 import { tryGetAbsolutePath } from '../utilities/workspaceUtils'
 import { getLogger } from '../logger'
+import * as window from '../../shared/vscode/window'
+import { makeFailedWriteMessage } from '../utilities/messages'
 
 /**
  * Reads and writes DebugConfigurations.
@@ -103,6 +105,7 @@ class DefaultDebugConfigSource implements DebugConfigurationSource {
             await this.launch.update('configurations', value)
         } catch (e) {
             getLogger().error('setDebugConfigurations failed: %O', e as Error)
+            window.Window.vscode().showErrorMessage(makeFailedWriteMessage('launch.json'))
         }
     }
 }
