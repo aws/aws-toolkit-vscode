@@ -63,7 +63,7 @@ import { CredentialsStore } from './credentials/credentialsStore'
 
 let localize: nls.LocalizeFunc
 
-export async function activate(context: vscode.ExtensionContext): Promise<any> {
+export async function activate(context: vscode.ExtensionContext) {
     const activationStartedOn = Date.now()
 
     localize = nls.loadMessageBundle()
