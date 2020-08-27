@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import * as vscode from 'vscode'
 
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
-import { getLogger, setLogger } from '../shared/logger/logger'
+import { setMaxLogging } from '../shared/logger/logger'
 
 const SECOND = 1000
 export const TIMEOUT = 30 * SECOND
@@ -23,18 +23,9 @@ export async function activateExtension(extensionId: string): Promise<vscode.Ext
     if (!extension.isActive) {
         console.log(`PID=${process.pid} Activating extension: ${extensionId}`)
         await extension.activate()
-        let importedApi: any = extension.exports
-
         if (extensionId === VSCODE_EXTENSION_ID.awstoolkit) {
-            const logger = importedApi.getLogger()
-            importedApi.setLogger(logger)
-            // HACK: Before removing this, check that the `integrationTest`
-            // task works on your *local* machine:
-            //      $ npm run testCompile && npm run integrationTest
-            setLogger(logger)
-            getLogger()
             // Log as much as possible, useful for debugging integration tests.
-            importedApi.setMaxLogging()
+            setMaxLogging()
         }
     } else {
         console.log('Extension is already active')

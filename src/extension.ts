@@ -37,7 +37,7 @@ import {
     showQuickStartWebview,
     showWelcomeMessage,
 } from './shared/extensionUtilities'
-import { getLogger, setLogger, setMaxLogging, Logger } from './shared/logger/logger'
+import { getLogger, Logger } from './shared/logger/logger'
 import { activate as activateLogger } from './shared/logger/activation'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import { EndpointsProvider } from './shared/regions/endpointsProvider'
@@ -220,14 +220,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<any> {
         await loginWithMostRecentCredentials(toolkitSettings, loginManager)
 
         recordToolkitInitialization(activationStartedOn, getLogger())
-
-        let publicApi = {
-            setLogger: setLogger,
-            getLogger: getLogger,
-            setMaxLogging: setMaxLogging,
-        }
-
-        return publicApi
     } catch (error) {
         channelLogger.error('AWS.channel.aws.toolkit.activation.error', 'Error Activating AWS Toolkit', error as Error)
         throw error
