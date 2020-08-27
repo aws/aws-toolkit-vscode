@@ -88,14 +88,8 @@ async function continueDebugger(): Promise<void> {
     await vscode.commands.executeCommand('workbench.action.debug.continue')
 }
 
-async function stopDebugger(debugSession: vscode.DebugSession | undefined): Promise<void> {
-    if (stopDebugger && (vscode.debug as any).stopDebugging) {
-        // VSCode 1.48+
-        ;(vscode.debug as any).stopDebugging(debugSession)
-    } else {
-        // VSCode 1.47 or older
-        await vscode.commands.executeCommand('workbench.action.debug.stop')
-    }
+async function stopDebugger(): Promise<void> {
+    await vscode.commands.executeCommand('workbench.action.debug.stop')
 }
 
 async function closeAllEditors(): Promise<void> {
@@ -117,7 +111,6 @@ async function configurePythonExtension(): Promise<void> {
 
 async function configureAwsToolkitExtension(): Promise<void> {
     const configAws = vscode.workspace.getConfiguration('aws')
-    await configAws.update('logLevel', 'verbose', false)
     // Prevent the extension from preemptively cancelling a 'sam local' run
     await configAws.update('samcli.debug.attach.timeout.millis', 90000, false)
 }
@@ -148,7 +141,7 @@ describe('SAM Integration Tests', async function() {
     after(async function() {
         tryRemoveFolder(testSuiteRoot)
         // Print a summary of session that were seen by `onDidStartDebugSession`.
-        const sessionReport = `\n    ${sessionLog.join('\n    ')}\n`
+        const sessionReport = sessionLog.map(x => `    {x}`).join('\n')
         console.log(`DebugSessions seen in this run:${sessionReport}`)
     })
 
@@ -226,7 +219,7 @@ describe('SAM Integration Tests', async function() {
                 afterEach(async function() {
                     // tslint:disable-next-line: no-unsafe-any
                     testDisposables.forEach(d => d.dispose())
-                    await stopDebugger(undefined)
+                    await stopDebugger()
                 })
 
                 after(async function() {
@@ -316,7 +309,7 @@ describe('SAM Integration Tests', async function() {
 
                                 // If `onDidStartDebugSession` is fired then the debugger doesn't need the workaround anymore.
                                 if (runtimeNeedsWorkaround(scenario.language)) {
-                                    await stopDebugger(undefined)
+                                    await stopDebugger()
                                     reject(
                                         new Error(
                                             `runtime "${scenario.language}" triggered onDidStartDebugSession, so it can be removed from runtimeNeedsWorkaround(), yay!`
@@ -340,7 +333,7 @@ describe('SAM Integration Tests', async function() {
                                             reject(new Error(failMsg))
                                         }
                                         resolve()
-                                        await stopDebugger(undefined)
+                                        await stopDebugger()
                                     })
                                 )
 

@@ -6,15 +6,12 @@
 import * as assert from 'assert'
 import * as vscode from 'vscode'
 
-import { VSCODE_EXTENSION_ID } from '../shared/extensions'
-import { setMaxLogging } from '../shared/logger/logger'
-
 const SECOND = 1000
 export const TIMEOUT = 30 * SECOND
 
 export async function activateExtension(extensionId: string): Promise<vscode.Extension<void>> {
     console.log(`PID=${process.pid} activateExtension request: ${extensionId}`)
-    const extension: vscode.Extension<any> | undefined = vscode.extensions.getExtension(extensionId)
+    const extension: vscode.Extension<void> | undefined = vscode.extensions.getExtension(extensionId)
 
     if (!extension) {
         throw new Error(`Extension not found: ${extensionId}`)
@@ -23,12 +20,8 @@ export async function activateExtension(extensionId: string): Promise<vscode.Ext
     if (!extension.isActive) {
         console.log(`PID=${process.pid} Activating extension: ${extensionId}`)
         await extension.activate()
-        if (extensionId === VSCODE_EXTENSION_ID.awstoolkit) {
-            // Log as much as possible, useful for debugging integration tests.
-            setMaxLogging()
-        }
     } else {
-        console.log('Extension is already active')
+        console.log(`PID=${process.pid} Extension is already active: ${extensionId}`)
     }
 
     return extension

@@ -49,5 +49,7 @@ export function setMaxLogging() {
         const logger = getLogger() as WinstonToolkitLogger
         logger.setLogLevel('debug')
         logger.logToConsole()
+    } else {
+        throw Error('getLogger() is not a WinstonToolkitLogger')
     }
 }

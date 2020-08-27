@@ -9,21 +9,9 @@
 import * as assert from 'assert'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { activateExtension } from './integrationTestsUtilities'
+import { setMaxLogging } from '../shared/logger/logger'
 
 // ASSUMPTION: Tests are not run concurrently
-
-const oldConsoleLog = console.log
-let silenceLogMessages = 0
-console.log = function(...args: any[]) {
-    // python extension is noisy, it uses console.log() and there are no plans
-    // to address it: https://github.com/microsoft/vscode-python/issues/8527
-    const msg: string = typeof args === 'string' ? args : (args[0] as string)
-    if (msg && msg.includes('Info Python Extension')) {
-        silenceLogMessages += 1
-        return
-    }
-    return oldConsoleLog(...args)
-}
 
 let timeout: { id: NodeJS.Timeout | undefined; name: string | undefined } = { id: undefined, name: undefined }
 function clearTestTimeout() {
@@ -61,10 +49,11 @@ before(async () => {
     console.log('globalSetup: before()')
     // Needed for getLogger().
     await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
+    // Log as much as possible, useful for debugging integration tests.
+    setMaxLogging()
 })
 // After all tests end, once only:
 after(async () => {
-    console.log(`silenced ${silenceLogMessages} log messages`)
     console.log('globalSetup: after()')
 })
 
@@ -83,6 +72,5 @@ afterEach(function() {
 //     }),
 //     // After all tests end, once only:
 //     afterAll(async () => {
-//         console.log(`silenced ${silenceLogMessages} log messages`)
 //     }),
 // }
