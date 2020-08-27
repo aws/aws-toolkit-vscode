@@ -98,7 +98,9 @@ abstract class JavaGradleSamProjectTemplate : JavaSamProjectTemplate() {
 
         val importSpecBuilder = ImportSpecBuilder(rootModel.project, GradleConstants.SYSTEM_ID)
             .forceWhenUptodate()
-            .useDefaultCallback()
+            // replaces useDefaultCallback which is removed in 2020.3
+            // FIX_WHEN_MIN_IS_202 remove this callback (since we don't use it)
+            .callback(null)
             .use(ProgressExecutionMode.IN_BACKGROUND_ASYNC)
 
         ExternalSystemUtil.refreshProjects(importSpecBuilder)
@@ -140,7 +142,6 @@ class SamHelloWorldGradle : JavaGradleSamProjectTemplate() {
         sourceCreatingProject: Project,
         indicator: ProgressIndicator
     ) {
-        super.postCreationAction(settings, contentRoot, rootModel, sourceCreatingProject, indicator)
         val buildFile = locateBuildFile(contentRoot, "build.gradle") ?: return
 
         val gradleProjectSettings = GradleProjectSettings().apply {
@@ -151,12 +152,7 @@ class SamHelloWorldGradle : JavaGradleSamProjectTemplate() {
         val externalSystemSettings = ExternalSystemApiUtil.getSettings(rootModel.project, GradleConstants.SYSTEM_ID)
         externalSystemSettings.setLinkedProjectsSettings(setOf(gradleProjectSettings))
 
-        val importSpecBuilder = ImportSpecBuilder(rootModel.project, GradleConstants.SYSTEM_ID)
-            .forceWhenUptodate()
-            .useDefaultCallback()
-            .use(ProgressExecutionMode.IN_BACKGROUND_ASYNC)
-
-        ExternalSystemUtil.refreshProjects(importSpecBuilder)
+        super.postCreationAction(settings, contentRoot, rootModel, sourceCreatingProject, indicator)
     }
 }
 
