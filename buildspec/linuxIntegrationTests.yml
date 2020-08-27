@@ -14,7 +14,7 @@ phases:
         commands:
             # Install required keys and repos for .NET Core 2.1
             - '>/dev/null apt-get -qq update'
-            - '>/dev/null wget -q https://packages.microsoft.com/keys/microsoft.asc -O- | apt-key add -'
+            - wget -q https://packages.microsoft.com/keys/microsoft.asc -O- | apt-key add -
             - '>/dev/null wget -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb'
             - '>/dev/null dpkg -i packages-microsoft-prod.deb'
             - '>/dev/null add-apt-repository universe'
