@@ -198,7 +198,7 @@
     "AWS.lambda.upload.prebuiltZip": "Built function in a ZIP archive",
     "AWS.lambda.upload.prebuiltZip.detail": "The Toolkit will upload the selected ZIP archive.",
     "AWS.lambda.upload.prebuiltDir": "Built function in a directory",
-    "AWS.lambda.upload.prebuiltDir.detail": "The Toolkit will upload a ZIP of the selected archive.",
+    "AWS.lambda.upload.prebuiltDir.detail": "The Toolkit will upload a ZIP of the selected directory.",
     "AWS.lambda.upload.unbuiltDir": "Unbuilt function in a directory",
     "AWS.lambda.upload.unbuiltDir.detail": "The Toolkit will attempt to build the selected directory using the sam build command.",
     "AWS.lambda.upload.confirm": "This will immediately publish the selected code as a new version of Lambda: {0}.\n\nThe Toolkit cannot guarantee that the built code will work.\n\nContinue?",

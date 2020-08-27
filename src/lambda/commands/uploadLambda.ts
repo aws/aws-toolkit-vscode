@@ -45,7 +45,7 @@ async function selectUploadTypeAndConfirm(
         label: localize('AWS.lambda.upload.prebuiltDir', 'Built function in a directory'),
         detail: localize(
             'AWS.lambda.upload.prebuiltDir.detail',
-            'The Toolkit will upload a ZIP of the selected archive.'
+            'The Toolkit will upload a ZIP of the selected directory.'
         ),
     }
     const buildDirItem: vscode.QuickPickItem = {
