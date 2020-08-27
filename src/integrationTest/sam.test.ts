@@ -316,7 +316,7 @@ describe('SAM Integration Tests', async function() {
 
                                 // If `onDidStartDebugSession` is fired then the debugger doesn't need the workaround anymore.
                                 if (runtimeNeedsWorkaround(scenario.language)) {
-                                    await stopDebugger(startedSession)
+                                    await stopDebugger(undefined)
                                     reject(
                                         new Error(
                                             `runtime "${scenario.language}" triggered onDidStartDebugSession, so it can be removed from runtimeNeedsWorkaround(), yay!`
@@ -340,7 +340,7 @@ describe('SAM Integration Tests', async function() {
                                             reject(new Error(failMsg))
                                         }
                                         resolve()
-                                        await stopDebugger(startedSession)
+                                        await stopDebugger(undefined)
                                     })
                                 )
 
