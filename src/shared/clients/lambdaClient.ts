@@ -38,7 +38,7 @@ export interface LambdaClient {
     /**
      * Runs AWS.Lambda.updateFunctionCode
      * @param name Function name
-     * @param zipFile Zipfile path
+     * @param zipFile Buffer containing zip file data
      *
      */
     updateFunctionCode(name: string, zipFile: Buffer): Promise<Lambda.FunctionConfiguration>
