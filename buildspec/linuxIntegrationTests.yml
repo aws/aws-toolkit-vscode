@@ -29,9 +29,7 @@ phases:
             - pip3 install --upgrade awscli
             - pip3 install pylint
             # login to DockerHub so we don't get throttled
-            - export DOCKER_USERNAME=`echo $DOCKER_HUB_TOKEN | jq -r '.username'`
-            - export DOCKER_PASSWORD=`echo $DOCKER_HUB_TOKEN | jq -r '.password'`
-            - docker login --username $DOCKER_USERNAME --password $DOCKER_PASSWORD || true
+            - docker login --username $(echo $DOCKER_HUB_TOKEN | jq -r '.username') --password $(echo $DOCKER_HUB_TOKEN | jq -r '.password') || true
 
     pre_build:
         commands:
