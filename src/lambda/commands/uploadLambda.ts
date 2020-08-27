@@ -62,7 +62,7 @@ async function selectUploadTypeAndConfirm(
         options: {
             canPickMany: false,
             ignoreFocusOut: true,
-            title: '',
+            title: localize('AWS.lambda.upload.title', 'Select Upload Type'),
         },
         items: [uploadZipItem, zipDirItem, buildDirItem],
     })
