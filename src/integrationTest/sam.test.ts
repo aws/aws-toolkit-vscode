@@ -104,31 +104,22 @@ async function closeAllEditors(): Promise<void> {
 
 async function activateExtensions(): Promise<void> {
     console.log('Activating extensions...')
-    // TODO: silence the python extension output, it is noisy.
     await activateExtension(VSCODE_EXTENSION_ID.python)
     console.log('Extensions activated')
 }
 
 async function configurePythonExtension(): Promise<void> {
-    logSeparator()
     const configPy = vscode.workspace.getConfiguration('python')
     // Disable linting to silence some of the Python extension's log spam
     await configPy.update('linting.pylintEnabled', false, false)
     await configPy.update('linting.enabled', false, false)
-    logSeparator()
 }
 
 async function configureAwsToolkitExtension(): Promise<void> {
-    logSeparator()
     const configAws = vscode.workspace.getConfiguration('aws')
     await configAws.update('logLevel', 'verbose', false)
     // Prevent the extension from preemptively cancelling a 'sam local' run
     await configAws.update('samcli.debug.attach.timeout.millis', 90000, false)
-    logSeparator()
-}
-
-function logSeparator() {
-    console.log('************************************************************')
 }
 
 function runtimeNeedsWorkaround(lang: Language) {
