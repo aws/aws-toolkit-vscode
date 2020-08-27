@@ -160,9 +160,10 @@ async function runUploadLambdaWithSamBuild(
     if (!parentDirArr || parentDirArr.length !== 1) {
         return 'Cancelled'
     }
-    // TODO: Detect if handler is present and error out prematurely?
 
+    // TODO: Detect if handler is present and error out prematurely?
     // TODO: What should we do if no manifest (package.json, requirements.txt, etc.) is present? Directory won't be `sam build`-able.
+
     try {
         const invoker = getSamCliContext().invoker
         const parentDir = parentDirArr[0]
@@ -172,7 +173,6 @@ async function runUploadLambdaWithSamBuild(
         const templatePath = path.join(tempDir, 'template.yaml')
 
         // TODO: Use an existing template file if it's present?
-        // TODO: Should we let users upload arbitrary zips? Should we just let them zip up the selected dir and that's it (a la Cloud9)?
 
         await new SamTemplateGenerator()
             .withFunctionHandler(functionNode.configuration.Handler!)
