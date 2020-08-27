@@ -49,19 +49,17 @@ export function runTestsInFolder(testFolder: string, integ: boolean): Promise<vo
         const testFile = process.env['TEST_FILE'] === 'null' ? undefined : process.env['TEST_FILE']
         const testFilePath = testFile?.replace(/^src[\\\/]/, '')?.concat('.js')
 
-        if (!integ) {
-            const globalSetupPath = path.join(testsRoot, 'test/globalSetup.test.js')
-            if (testFilePath && fs.existsSync(globalSetupPath)) {
-                // XXX: explicitly add globalSetup, other tests depend on it.
-                mocha.addFile(globalSetupPath)
-            }
-        } else {
-            const globalSetupIntegPath = path.join(testsRoot, 'integrationTest/globalSetupInteg.test.js')
-            if (fs.existsSync(globalSetupIntegPath)) {
-                // XXX: explicitly add globalSetupInteg.
-                mocha.addFile(globalSetupIntegPath)
-            }
+        // Explicitly add globalSetup as the first test.
+        // TODO: migrate to mochaHooks (requires mocha 8.x).
+        // https://mochajs.org/#available-root-hooks
+        const globalSetupPath = path.join(testsRoot, 'test/globalSetup.test.js')
+        const globalSetupIntegPath = path.join(testsRoot, 'integrationTest/globalSetup.test.js')
+        if (!fs.existsSync(globalSetupPath) || !fs.existsSync(globalSetupIntegPath)) {
+            console.error('error: missing globalSetup.test.js')
+            throw Error('missing globalSetup.test.js')
         }
+        // Add globalSetup.test.js as the first test.
+        mocha.addFile(integ ? globalSetupIntegPath : globalSetupPath)
 
         glob(testFilePath ?? `**/${testFolder}/**/**.test.js`, { cwd: testsRoot }, (err, files) => {
             if (err) {

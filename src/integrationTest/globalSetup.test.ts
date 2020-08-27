@@ -9,10 +9,15 @@
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { activateExtension } from './integrationTestsUtilities'
 
+// Before all tests begin, once only:
 before(async () => {
+    console.log('globalSetup: before()')
+    // Needed for getLogger().
     await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
 })
+// After all tests end, once only:
+after(async () => {
+    console.log('globalSetup: after()')
+})
 
-beforeEach(async function() {})
-
-afterEach(async function() {})
+afterEach(function() {})
