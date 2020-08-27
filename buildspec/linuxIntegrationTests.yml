@@ -13,18 +13,18 @@ phases:
 
         commands:
             # Install required keys and repos for .NET Core 2.1
-            - apt-get update
+            - apt-get -qq update
             - wget -q https://packages.microsoft.com/keys/microsoft.asc -O- | apt-key add -
             - wget -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
             - dpkg -i packages-microsoft-prod.deb
             - add-apt-repository universe
-            - apt-get install -y apt-transport-https
-            - apt-get update
+            - apt-get -qq install -y apt-transport-https
+            - apt-get -qq update
             # Install .NET Core 2.1
-            - apt-get install -y dotnet-sdk-2.1
+            - apt-get -qq install -y dotnet-sdk-2.1
             # Install other needed dependencies
-            - apt-get install -y python2.7 python-pip python3.6 python3.7 python3.8 python3-pip python3-distutils docker
-            - apt-get install -y libgtk-3-dev libxss1 xvfb libnss3-dev libasound2 libasound2-plugins libsecret-1-0
+            - apt-get -qq install -y python2.7 python-pip python3.6 python3.7 python3.8 python3-pip python3-distutils docker
+            - apt-get -qq install -y libgtk-3-dev libxss1 xvfb libnss3-dev libasound2 libasound2-plugins libsecret-1-0
             - pip3 install --user aws-sam-cli
             - pip3 install --upgrade awscli
             - pip3 install pylint
