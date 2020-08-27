@@ -27,6 +27,10 @@ phases:
       - export TOKEN=`jq -r '.Credentials.SessionToken' creds.json`
       - pip3 install --user --upgrade  aws-sam-cli
       - pip3 install --upgrade awscli
+      # login to DockerHub so we don't get throttled
+      - export DOCKER_USERNAME=`echo $DOCKER_HUB_TOKEN | jq -r '.username'`
+      - export DOCKER_PASSWORD=`echo $DOCKER_HUB_TOKEN | jq -r '.password'`
+      - docker login --username $DOCKER_USERNAME --password $DOCKER_PASSWORD || true
 
   build:
     commands:
