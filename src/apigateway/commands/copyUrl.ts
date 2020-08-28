@@ -49,6 +49,7 @@ export async function copyUrlCommand(
         )
     } catch (e) {
         getLogger().error(`Failed to load stages: %O`, e)
+        return
     }
 
     const quickPickItems = stages.map<StageInvokeUrlQuickPick>(stage => ({
