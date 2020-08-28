@@ -14,7 +14,7 @@ import * as path from 'path'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { Window } from '../../shared/vscode/window'
 import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
-import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder, fileExists } from '../../shared/filesystemUtilities'
 import { SamTemplateGenerator } from '../../shared/templates/sam/samTemplateGenerator'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
 import { getSamCliContext } from '../../shared/sam/cli/samCliContext'
@@ -23,6 +23,7 @@ import { getLogger } from '../../shared/logger'
 import { ext } from '../../shared/extensionGlobals'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../../shared/ui/picker'
 import { showConfirmationMessage } from '../../s3/util/messages'
+import { getLambdaFileNameFromHandler } from '../utils'
 
 export async function uploadLambdaCommand(functionNode: LambdaFunctionNode) {
     const result = await selectUploadTypeAndConfirm(functionNode)
@@ -39,21 +40,20 @@ async function selectUploadTypeAndConfirm(
 ): Promise<telemetry.Result> {
     const uploadZipItem: vscode.QuickPickItem = {
         label: localize('AWS.lambda.upload.prebuiltZip', 'Built function in a ZIP archive'),
-        detail: localize('AWS.lambda.upload.prebuiltZip.detail', 'The Toolkit will upload the selected ZIP archive.'),
+        detail: localize('AWS.lambda.upload.prebuiltZip.detail', 'AWS Toolkit will upload the selected ZIP archive.'),
     }
     const zipDirItem: vscode.QuickPickItem = {
         label: localize('AWS.lambda.upload.prebuiltDir', 'Built function in a directory'),
         detail: localize(
             'AWS.lambda.upload.prebuiltDir.detail',
-            'The Toolkit will upload a ZIP of the selected directory.'
+            'AWS Toolkit will upload a ZIP of the selected directory.'
         ),
     }
     const buildDirItem: vscode.QuickPickItem = {
         label: localize('AWS.lambda.upload.unbuiltDir', 'Unbuilt function in a directory'),
-        description: 'WIP!!!!!!', // TODO: Remove
         detail: localize(
             'AWS.lambda.upload.unbuiltDir.detail',
-            'The Toolkit will attempt to build the selected directory using the sam build command.'
+            'AWS Toolkit will attempt to build the selected directory using the sam build command.'
         ),
     }
 
@@ -76,7 +76,7 @@ async function selectUploadTypeAndConfirm(
         {
             prompt: localize(
                 'AWS.lambda.upload.confirm',
-                'This will immediately publish the selected code as a new version of Lambda: {0}.\n\nThe Toolkit cannot guarantee that the built code will work.\n\nContinue?',
+                'This will immediately publish the selected code as a new version of Lambda: {0}.\n\nAWS Toolkit cannot guarantee that the built code will work.\n\nContinue?',
                 functionNode.functionName
             ),
             confirm: localize('AWS.generic.response.yes', 'Yes'),
@@ -86,7 +86,7 @@ async function selectUploadTypeAndConfirm(
     )
 
     if (!isConfirmed) {
-        getLogger().info('ImportLambda cancelled')
+        getLogger().info('UploadLambda confirmation cancelled.')
         return 'Cancelled'
     }
 
@@ -160,28 +160,56 @@ async function runUploadLambdaWithSamBuild(
     if (!parentDirArr || parentDirArr.length !== 1) {
         return 'Cancelled'
     }
+    const parentDir = parentDirArr[0]
 
-    // TODO: Detect if handler is present and error out prematurely?
-    // TODO: What should we do if no manifest (package.json, requirements.txt, etc.) is present? Directory won't be `sam build`-able.
+    // Detect if handler is present and provide strong guidance against proceeding if not.
+    try {
+        const handlerFile = path.join(parentDir.fsPath, getLambdaFileNameFromHandler(functionNode.configuration))
+        if (!(await fileExists(handlerFile))) {
+            const isConfirmed = await showConfirmationMessage(
+                {
+                    prompt: localize(
+                        'AWS.lambda.upload.handlerNotFound',
+                        "AWS Toolkit can't find a file corresponding to handler: {0} at filepath {1}.\n\nThis directory likely will not work with this function.\n\nProceed with upload anyway?",
+                        functionNode.configuration.Handler,
+                        handlerFile
+                    ),
+                    confirm: localize('AWS.generic.response.yes', 'Yes'),
+                    cancel: localize('AWS.generic.response.no', 'No'),
+                },
+                window
+            )
+
+            if (!isConfirmed) {
+                getLogger().info('Handler file not found. Aborting runUploadLambdaWithSamBuild')
+                return 'Cancelled'
+            }
+        }
+    } catch (e) {
+        // TODO: Give provisional support for Ruby?
+        getLogger().info('Attempting to build a runtime not supported by Toolkit. Ignoring handler check.')
+    }
 
     try {
         const invoker = getSamCliContext().invoker
-        const parentDir = parentDirArr[0]
 
         const tempDir = await makeTemporaryToolkitFolder()
         ExtensionDisposableFiles.getInstance().addFolder(tempDir)
         const templatePath = path.join(tempDir, 'template.yaml')
+        const resourceName = 'tempResource'
 
         // TODO: Use an existing template file if it's present?
 
         await new SamTemplateGenerator()
             .withFunctionHandler(functionNode.configuration.Handler!)
-            .withResourceName('tempResource')
+            .withResourceName(resourceName)
             .withRuntime(functionNode.configuration.Runtime!)
             .withCodeUri(parentDir.fsPath)
             .generate(templatePath)
 
         const buildDir = path.join(tempDir, 'output')
+        // Note: `sam build` will fail if the selected directory does not have a valid manifest file:
+        // https://github.com/awslabs/aws-sam-cli/blob/4f12dc74ca8ff6fddd661711db7c3048812b4119/designs/sam_build_cmd.md#built-in-build-actions
         await new SamCliBuildInvocation({
             buildDir,
             templatePath,
@@ -191,10 +219,8 @@ async function runUploadLambdaWithSamBuild(
             baseDir: parentDir.fsPath,
         }).execute()
 
-        // TODO: Remove template file if generating one?
-        // TODO: Find correct directory to zip. Needs to be compatible with function's handler since we won't overwrite that.
-
-        return await zipAndUploadDirectory(functionNode, buildDir)
+        // App builds into a folder named after the resource name. Zip the contents of that, not the whole output dir.
+        return await zipAndUploadDirectory(functionNode, path.join(buildDir, resourceName))
     } catch (e) {
         const err = e as Error
         window.showErrorMessage(err.message)
