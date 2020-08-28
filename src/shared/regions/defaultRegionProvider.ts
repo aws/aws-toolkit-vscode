@@ -10,6 +10,7 @@ import { EndpointsProvider } from './endpointsProvider'
 import { RegionProvider } from './regionProvider'
 
 interface RegionData {
+    dnsSuffix: string
     partitionId: string
     region: Region
     serviceIds: string[]
@@ -42,6 +43,16 @@ export class DefaultRegionProvider implements RegionProvider {
         return partitionId ?? undefined
     }
 
+    public getDnsSuffixForRegion(regionId: string): string | undefined {
+        const dnsSuffix = this.regionIdToRegionData.get(regionId)?.dnsSuffix
+
+        if (!dnsSuffix) {
+            getLogger().warn(`Unable to determine find region data for ${regionId}`)
+        }
+
+        return dnsSuffix ?? undefined
+    }
+
     public getRegions(partitionId: string): Region[] {
         return [...this.regionIdToRegionData.values()]
             .filter(region => region.partitionId === partitionId)
@@ -62,6 +73,7 @@ export class DefaultRegionProvider implements RegionProvider {
         endpoints.partitions.forEach(partition => {
             partition.regions.forEach(region =>
                 this.regionIdToRegionData.set(region.id, {
+                    dnsSuffix: partition.dnsSuffix,
                     partitionId: partition.id,
                     region: region,
                     serviceIds: [],

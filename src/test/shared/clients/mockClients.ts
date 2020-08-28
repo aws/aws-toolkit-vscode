@@ -91,6 +91,10 @@ export class MockApiGatewayClient implements ApiGatewayClient {
         return asyncGenerator([])
     }
 
+    getStages(apiId: string): Promise<APIGateway.Stages> {
+        return Promise.resolve({})
+    }
+
     listApis(): AsyncIterableIterator<APIGateway.RestApi> {
         return asyncGenerator([])
     }

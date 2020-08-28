@@ -531,6 +531,10 @@
         "menus": {
             "commandPalette": [
                 {
+                    "command": "aws.apig.copyUrl",
+                    "when": "false"
+                },
+                {
                     "command": "aws.apig.invokeRemoteRestApi",
                     "when": "false"
                 },
@@ -851,6 +855,11 @@
                     "group": "2@2"
                 },
                 {
+                    "command": "aws.apig.copyUrl",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsApiGatewayNode)$/",
+                    "group": "2@0"
+                },
+                {
                     "command": "aws.s3.copyPath",
                     "when": "view == aws.explorer && viewItem =~ /^(awsS3FolderNode|awsS3FileNode)$/",
                     "group": "2@3"
@@ -888,6 +897,11 @@
             ]
         },
         "commands": [
+            {
+                "command": "aws.apig.copyUrl",
+                "title": "%AWS.command.apig.copyUrl%",
+                "category": "AWS"
+            },
             {
                 "command": "aws.apig.invokeRemoteRestApi",
                 "title": "%AWS.command.apig.invokeRemoteRestApi%",

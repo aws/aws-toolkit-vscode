@@ -203,7 +203,7 @@ export async function activate(context: vscode.ExtensionContext) {
         })
 
         await activateApiGateway({
-            context: extContext.extensionContext,
+            extContext: extContext,
             outputChannel: remoteInvokeOutputChannel,
         })
 

@@ -7,7 +7,7 @@ import { APIGateway } from 'aws-sdk'
 import { ext } from '../extensionGlobals'
 import '../utilities/asyncIteratorShim'
 import { ApiGatewayClient } from './apiGatewayClient'
-import { RestApi } from 'aws-sdk/clients/apigateway'
+import { RestApi, Stages } from 'aws-sdk/clients/apigateway'
 
 export class DefaultApiGatewayClient implements ApiGatewayClient {
     public constructor(public readonly regionCode: string) {}
@@ -28,6 +28,16 @@ export class DefaultApiGatewayClient implements ApiGatewayClient {
 
             request.position = response.position
         } while (request.position !== undefined)
+    }
+
+    public async getStages(apiId: string): Promise<Stages> {
+        const client = await this.createSdkClient()
+
+        const request: APIGateway.GetResourcesRequest = {
+            restApiId: apiId,
+        }
+
+        return client.getStages(request).promise()
     }
 
     public async *listApis(): AsyncIterableIterator<RestApi> {
