@@ -8,8 +8,7 @@ import { Window } from '../../shared/vscode/window'
 import { getLogger } from '../../shared/logger'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-
-const COPY_NAME_DISPLAY_TIMEOUT_MS = 2000
+import { COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS } from '../../shared/constants'
 
 /**
  * Copies the name of the resource represented by the given node.
@@ -26,7 +25,7 @@ export async function copyNameCommand(
 
     window.setStatusBarMessage(
         localize('AWS.explorerNode.copiedToClipboard', '$(clippy) Copied {0} to clipboard', 'name'),
-        COPY_NAME_DISPLAY_TIMEOUT_MS
+        COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS
     )
 }
 

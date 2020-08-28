@@ -3,12 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { RestApi, Resource, TestInvokeMethodResponse } from 'aws-sdk/clients/apigateway'
+import { RestApi, Resource, TestInvokeMethodResponse, Stages } from 'aws-sdk/clients/apigateway'
 
 export interface ApiGatewayClient {
     readonly regionCode: string
 
     getResourcesForApi(apiId: string): AsyncIterableIterator<Resource>
+
+    getStages(apiId: string): Promise<Stages>
 
     listApis(): AsyncIterableIterator<RestApi>
 

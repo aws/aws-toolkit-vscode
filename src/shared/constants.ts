@@ -72,3 +72,5 @@ export const INSIGHTS_TIMESTAMP_FORMAT = 'YYYY-MM-DDThh:mm:ss.SSSZ'
  * URI scheme for CloudWatch Logs Virtual Documents
  */
 export const CLOUDWATCH_LOGS_SCHEME = 'awsCloudWatchLogs'
+
+export const COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS = 5000
