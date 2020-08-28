@@ -47,7 +47,7 @@ export class DefaultRegionProvider implements RegionProvider {
         const dnsSuffix = this.regionIdToRegionData.get(regionId)?.dnsSuffix
 
         if (!dnsSuffix) {
-            getLogger().warn(`Unable to determine find region data for ${regionId}`)
+            getLogger().warn(`Unable to find region data for: ${regionId}`)
         }
 
         return dnsSuffix ?? undefined
