@@ -9,13 +9,14 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { RestApiNode } from '../explorer/apiNodes'
 import * as picker from '../../shared/ui/picker'
 import * as vscode from 'vscode'
+import { ProgressLocation } from 'vscode'
 import { ext } from '../../shared/extensionGlobals'
 import { Stage } from 'aws-sdk/clients/apigateway'
 import { ApiGatewayClient } from '../../shared/clients/apiGatewayClient'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { DEFAULT_DNS_SUFFIX } from '../../shared/regions/regionUtilities'
-
-const COPY_URL_DISPLAY_TIMEOUT_MS = 2000
+import { COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS } from '../../shared/constants'
+import { getLogger } from '../../shared/logger'
 
 interface StageInvokeUrlQuickPick extends vscode.QuickPickItem {
     // override declaration so this can't be undefined
@@ -32,11 +33,39 @@ export async function copyUrlCommand(
     const dnsSuffix = regionProvider.getDnsSuffixForRegion(region) || DEFAULT_DNS_SUFFIX
     const client: ApiGatewayClient = ext.toolkitClientBuilder.createApiGatewayClient(region)
 
-    const stages: Stage[] = (await client.getStages(node.id)).item || []
+    let stages: Stage[]
+    try {
+        stages = await window.withProgress(
+            {
+                cancellable: false,
+                location: ProgressLocation.Window,
+            },
+            async progress => {
+                progress.report({
+                    message: localize('AWS.apig.loadingStages', 'Loading stage list for API: {0}', node.name),
+                })
+                return (await client.getStages(node.id)).item || []
+            }
+        )
+    } catch (e) {
+        getLogger().error(`Failed to load stages: %O`, e)
+    }
+
     const quickPickItems = stages.map<StageInvokeUrlQuickPick>(stage => ({
         label: stage.stageName!!,
         detail: buildDefaultApiInvokeUrl(node.id, region, dnsSuffix, stage.stageName!!),
     }))
+
+    if (quickPickItems.length === 0) {
+        window.showInformationMessage(
+            localize('AWS.apig.copyUrlNoStages', "Failed to copy URL because '{0}' has no stages", node.name)
+        )
+        return
+    } else if (quickPickItems.length === 1) {
+        const url = quickPickItems[0].detail
+        await copyUrl(window, env, url)
+        return
+    }
 
     const quickPick = picker.createQuickPick({
         options: {
@@ -60,14 +89,19 @@ export async function copyUrlCommand(
         return
     }
 
-    await env.clipboard.writeText(pickerResponse.detail)
-
-    window.setStatusBarMessage(
-        localize('AWS.explorerNode.copiedToClipboard', '$(clippy) Copied {0} to clipboard', 'name'),
-        COPY_URL_DISPLAY_TIMEOUT_MS
-    )
+    const url = pickerResponse.detail
+    await copyUrl(window, env, url)
 }
 
 export function buildDefaultApiInvokeUrl(apiId: string, region: string, dnsSuffix: string, stage: string): string {
     return `https://${apiId}.execute-api.${region}.${dnsSuffix}/${stage}`
+}
+
+async function copyUrl(window: Window, env: Env, url: string) {
+    await env.clipboard.writeText(url)
+
+    window.setStatusBarMessage(
+        localize('AWS.explorerNode.copiedToClipboard', '$(clippy) Copied URL to clipboard: {0}', url),
+        COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS
+    )
 }

@@ -13,7 +13,7 @@ export const DEFAULT_TEST_ACCOUNT_ID = '123456789012'
 export const DEFAULT_TEST_PARTITION_ID = 'partitionQwerty'
 export const DEFAULT_TEST_REGION_CODE = 'regionQuerty'
 export const DEFAULT_TEST_REGION_NAME = 'The Querty Region'
-export const DEFAULT_TEST_DNS_SUFFIX = 'amazon.com'
+export const DEFAULT_TEST_DNS_SUFFIX = 'querty.tld'
 
 // TODO : Introduce Mocking instead of stub implementations
 export class FakeRegionProvider implements RegionProvider {

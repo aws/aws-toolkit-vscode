@@ -58,7 +58,7 @@ import {
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { getChannelLogger } from './shared/utilities/vsCodeUtils'
 import { ExtContext } from './shared/extensions'
-import { activateApiGateway } from './apigateway/activation'
+import { activate as activateApiGateway } from './apigateway/activation'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
 import { CredentialsStore } from './credentials/credentialsStore'
 

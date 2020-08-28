@@ -12,7 +12,7 @@ import { ExtContext } from '../shared/extensions'
 /**
  * Activate API Gateway functionality for the extension.
  */
-export async function activateApiGateway(activateArguments: {
+export async function activate(activateArguments: {
     extContext: ExtContext
     outputChannel: vscode.OutputChannel
 }): Promise<void> {
