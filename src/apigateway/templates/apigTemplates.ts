@@ -8,7 +8,6 @@ export const APIG_REMOTE_INVOKE_TEMPLATE = `
         Invoke methods on <%= ApiName %> (<%= ApiId %>)
     </h1>
     <pre><%= ApiArn %></pre>
-    <br />
     <div id="app">
         <h3>
             Select a resource:
@@ -43,7 +42,7 @@ export const APIG_REMOTE_INVOKE_TEMPLATE = `
         <br />
         <br />
         <textarea
-            rows="20"
+            rows="8"
             cols="90"
             v-model="jsonInput"
         ></textarea>
@@ -62,5 +61,8 @@ export const APIG_REMOTE_INVOKE_TEMPLATE = `
     <% }); %>
     <% Scripts.forEach(function(scr) { %>
         <script src="<%= scr %>"></script>
+    <% }); %>
+    <% Stylesheets.forEach(function(s) { %>
+        <link rel="stylesheet" type="text/css" href="<%= s %>">
     <% }); %>
     `
