@@ -20,10 +20,12 @@ const functionResources: TemplateFunctionResource[] = [
     {
         name: 'existingResource',
         range: range,
+        kind: 'function',
     },
     {
         name: 'newResource',
         range: range,
+        kind: 'function',
     },
 ]
 const debugConfigurations: AwsSamDebuggerConfiguration[] = [
@@ -75,7 +77,7 @@ describe('SamTemplateCodeLensProvider', async () => {
     })
 
     it('provides a CodeLens for a file with a new resource', async () => {
-        when(mockSymbolResolver.getFunctionResources()).thenResolve(functionResources)
+        when(mockSymbolResolver.getResourcesOfKind('function')).thenResolve(functionResources)
 
         const codeLenses = await codeLensProvider.provideCodeLenses(
             instance(mockDocument),
@@ -99,7 +101,7 @@ describe('SamTemplateCodeLensProvider', async () => {
     })
 
     it('provides no code lenses for a file with no resources', async () => {
-        when(mockSymbolResolver.getFunctionResources()).thenResolve([])
+        when(mockSymbolResolver.getResourcesOfKind('function')).thenResolve([])
 
         const codeLenses = await codeLensProvider.provideCodeLenses(
             instance(mockDocument),

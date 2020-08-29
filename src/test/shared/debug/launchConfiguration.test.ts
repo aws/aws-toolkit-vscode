@@ -16,6 +16,7 @@ import {
 import { AwsSamDebuggerConfiguration } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
 import { AwsSamDebugConfigurationValidator } from '../../../shared/sam/debugger/awsSamDebugConfigurationValidator'
 import * as pathutils from '../../../shared/utilities/pathUtils'
+import * as testutil from '../../testUtil'
 
 const samDebugConfiguration: AwsSamDebuggerConfiguration = {
     type: 'aws-sam',
@@ -53,6 +54,38 @@ describe('LaunchConfiguration', () => {
 
         when(mockConfigSource.getDebugConfigurations()).thenReturn(debugConfigurations)
         when(mockSamValidator.validate(deepEqual(samDebugConfiguration))).thenReturn({ isValid: true })
+    })
+
+    it('xxxxxxxx', async () => {
+        const fakeWorkspace = await testutil.createTestWorkspaceFolder()
+        ;(fakeWorkspace as any).uri = vscode.Uri.file('/private/tmp/aws-toolkit-vscode/vsctk3dPF9D')
+        const launchConfigData = {
+            configurations: [
+                {
+                    name: 'Extension',
+                    type: 'extensionHost',
+                    request: 'launch',
+                    runtimeExecutable: '${execPath}',
+                    args: ['--extensionDevelopmentPath=${workspaceFolder}'],
+                    env: {
+                        AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE: 'true',
+                    },
+                    outFiles: ['${workspaceFolder}/dist/**/*.js'],
+                    preLaunchTask: 'npm: watch',
+                },
+            ],
+        }
+        const launchJsonFile = path.join(fakeWorkspace.uri.fsPath, '.vscode/launch.json.2')
+        testutil.toFile(JSON.stringify(launchConfigData), launchJsonFile)
+        // VSCode does not allow adding a workspace from a test:
+        // await workspaceutil.addFolderToWorkspace(fakeWorkspace, true)
+
+        // Some file that is in the same workspace as the .vscode/ directory.
+        const fileInWorkspace = vscode.Uri.file(path.join(fakeWorkspace.uri.fsPath, 'src/template.yaml'))
+        testutil.toFile('line1\nline2\n', fileInWorkspace.fsPath)
+        // const configSource = new DefaultDebugConfigSource(fakeWorkspace.uri)
+        const launchConfig = new LaunchConfiguration(fileInWorkspace)
+        assert.deepStrictEqual(launchConfig.getDebugConfigurations(), debugConfigurations)
     })
 
     it('gets debug configurations', () => {
@@ -167,7 +200,7 @@ describe('getReferencedHandlerPaths', () => {
 })
 
 function createMockLaunchConfig(): LaunchConfiguration {
-    const workspaceFolder = path.resolve('absolutely', 'this', 'is', 'the', 'right', 'path')
+    const workspaceFolder = '/absolutely/this/is/the/right/path'
 
     // init mockLaunchConfig
     const mockLaunchConfig: LaunchConfiguration = mock()

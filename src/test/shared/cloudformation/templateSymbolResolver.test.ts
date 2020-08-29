@@ -76,16 +76,18 @@ describe('TemplateSymbolResolver', () => {
 
     it('gets function resources', async () => {
         const symbolResolver = new TemplateSymbolResolver(document, symbolProvider)
-        const functionResources = await symbolResolver.getFunctionResources()
+        const functionResources = await symbolResolver.getResourcesOfKind('function')
 
         const expectedResources: TemplateFunctionResource[] = [
             {
                 name: firstFunction.name,
                 range: firstFunction.range,
+                kind: 'function',
             },
             {
                 name: secondFunction.name,
                 range: secondFunction.range,
+                kind: 'function',
             },
         ]
 

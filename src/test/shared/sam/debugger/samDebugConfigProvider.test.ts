@@ -106,17 +106,13 @@ describe('SamDebugConfigurationProvider', async () => {
 
     beforeEach(async () => {
         fakeContext = await FakeExtensionContext.getFakeExtContext()
-        tempFolder = await makeTemporaryToolkitFolder()
-        tempFile = vscode.Uri.file(path.join(tempFolder, 'test.yaml'))
         registry = CloudFormationTemplateRegistry.getRegistry()
         debugConfigProvider = new SamDebugConfigProvider(fakeContext)
         sandbox = sinon.createSandbox()
 
-        fakeWorkspaceFolder = {
-            uri: vscode.Uri.file(tempFolder),
-            name: 'It was me, fakeWorkspaceFolder!',
-            index: 0,
-        }
+        fakeWorkspaceFolder = await testutil.createTestWorkspaceFolder()
+        tempFolder = fakeWorkspaceFolder.uri.fsPath
+        tempFile = vscode.Uri.file(path.join(tempFolder, 'test.yaml'))
         tempFolderSimilarName = undefined
     })
 
