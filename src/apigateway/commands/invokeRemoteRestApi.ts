@@ -15,6 +15,7 @@ import { Resource } from 'aws-sdk/clients/apigateway'
 import { ApiGatewayClient } from '../../shared/clients/apiGatewayClient'
 import { APIG_REMOTE_INVOKE_TEMPLATE } from '../templates/apigTemplates'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { recordApigatewayInvokeRemote, Result } from '../../shared/telemetry/telemetry'
 
 // All the commands that we receive
 interface Command {
@@ -128,6 +129,7 @@ export function createMessageReceivedFunc({
     postMessage: (message: any) => Thenable<boolean>
 }) {
     const logger: Logger = getLogger()
+    let result: Result = 'Succeeded'
 
     return async (message: Command) => {
         if (isApiSelectedMessage(message)) {
@@ -166,11 +168,21 @@ export function createMessageReceivedFunc({
                 outputChannel.appendLine(response.body!!)
             } catch (e) {
                 const error = e as Error
+                result = 'Failed'
                 outputChannel.appendLine(`There was an error invoking`)
                 outputChannel.appendLine(error.toString())
                 outputChannel.appendLine('')
             } finally {
                 postMessage({ command: 'invokeApiFinished' })
+                let method: string | undefined = undefined
+                // only set method if it is not empty or undefined
+                if (message.selectedMethod) {
+                    method = message.selectedMethod.toUpperCase()
+                }
+                recordApigatewayInvokeRemote({
+                    result: result,
+                    httpMethod: method,
+                })
             }
         } else {
             throw new Error(`Received unknown message: ${message.command}\n${JSON.stringify(message)}`)

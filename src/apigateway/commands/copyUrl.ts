@@ -17,6 +17,7 @@ import { RegionProvider } from '../../shared/regions/regionProvider'
 import { DEFAULT_DNS_SUFFIX } from '../../shared/regions/regionUtilities'
 import { COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS } from '../../shared/constants'
 import { getLogger } from '../../shared/logger'
+import { recordApigatewayCopyUrl, Result } from '../../shared/telemetry/telemetry'
 
 interface StageInvokeUrlQuickPick extends vscode.QuickPickItem {
     // override declaration so this can't be undefined
@@ -49,6 +50,7 @@ export async function copyUrlCommand(
         )
     } catch (e) {
         getLogger().error(`Failed to load stages: %O`, e)
+        recordApigatewayCopyUrl({ result: 'Failed' })
         return
     }
 
@@ -61,6 +63,7 @@ export async function copyUrlCommand(
         window.showInformationMessage(
             localize('AWS.apig.copyUrlNoStages', "Failed to copy URL because '{0}' has no stages", node.name)
         )
+        recordApigatewayCopyUrl({ result: 'Failed' })
         return
     } else if (quickPickItems.length === 1) {
         const url = quickPickItems[0].detail
@@ -87,6 +90,7 @@ export async function copyUrlCommand(
     const pickerResponse = picker.verifySinglePickerOutput<StageInvokeUrlQuickPick>(choices)
 
     if (!pickerResponse) {
+        recordApigatewayCopyUrl({ result: 'Cancelled' })
         return
     }
 
@@ -100,9 +104,10 @@ export function buildDefaultApiInvokeUrl(apiId: string, region: string, dnsSuffi
 
 async function copyUrl(window: Window, env: Env, url: string) {
     await env.clipboard.writeText(url)
-
     window.setStatusBarMessage(
         localize('AWS.explorerNode.copiedToClipboard', '$(clippy) Copied URL to clipboard: {0}', url),
         COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS
     )
+
+    recordApigatewayCopyUrl({ result: 'Succeeded' })
 }
