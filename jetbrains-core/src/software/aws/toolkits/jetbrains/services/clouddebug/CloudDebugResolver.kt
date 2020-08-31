@@ -14,7 +14,7 @@ import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.ExecutableType
 import software.aws.toolkits.jetbrains.core.getTextFromUrl
-import software.aws.toolkits.jetbrains.core.saveFileFromUrl
+import software.aws.toolkits.jetbrains.core.readBytesFromUrl
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.Context
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.MessageEmitter
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.steps.CloudDebugCliValidate
@@ -24,7 +24,6 @@ import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.ClouddebugTelemetry
 import software.aws.toolkits.telemetry.Result
 import java.net.URL
-import java.nio.file.Files
 import java.time.Duration
 import java.time.Instant
 
@@ -123,18 +122,17 @@ object CloudDebugResolver {
         val startTime = Instant.now()
         try {
             // TODO: Consider a way to handle input stream directly? HttpRequests/Decompressor can do this if we have a tar.gz
-            val zipFile = Files.createTempFile("cloud-debug", ".zip")
             // TODO: add progress indicator, preferably to this implementation as this is synchronous.
-            saveFileFromUrl(manifest.location, zipFile, null)
+            val bytes = readBytesFromUrl(manifest.location, null)
 
             // checksum checker
-            val zipSignature = DigestUtils.sha256Hex(Files.readAllBytes(zipFile))
+            val zipSignature = DigestUtils.sha256Hex(bytes)
             if (zipSignature != manifest.checksum) {
                 throw RuntimeException(message("cloud_debug.step.clouddebug.checksum.fail"))
             }
 
             val directory = ExecutableType.EXECUTABLE_DIRECTORY.toFile()
-            ZipDecompressor(zipFile.toFile()).use {
+            ZipDecompressor(bytes).use {
                 it.extract(directory)
             }
             emitInstallMetric(

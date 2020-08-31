@@ -10,5 +10,8 @@ import java.nio.file.Path
 fun saveFileFromUrl(url: String, path: Path, indicator: ProgressIndicator? = null) =
     HttpRequests.request(url).userAgent(AwsClientManager.userAgent).saveToFile(path.toFile(), indicator)
 
+fun readBytesFromUrl(url: String, indicator: ProgressIndicator? = null) =
+    HttpRequests.request(url).userAgent(AwsClientManager.userAgent).readBytes(indicator)
+
 fun getTextFromUrl(url: String): String =
     HttpRequests.request(url).userAgent(AwsClientManager.userAgent).readString()
