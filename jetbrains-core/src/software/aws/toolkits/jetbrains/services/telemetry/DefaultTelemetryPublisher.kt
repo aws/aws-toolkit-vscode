@@ -62,6 +62,7 @@ class DefaultTelemetryPublisher(
                     .metricName(metricName)
                     .unit(datum.unit)
                     .value(datum.value)
+                    .passive(datum.passive)
                     .metadata(
                         datum.metadata.entries.stream().map {
                             MetadataEntry.builder()

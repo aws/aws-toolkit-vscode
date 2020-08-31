@@ -31,6 +31,7 @@ interface MetricEvent {
         val name: String
         val value: Double
         val unit: MetricUnit
+        val passive: Boolean
         val metadata: Map<String, String>
 
         interface Builder {
@@ -39,6 +40,8 @@ interface MetricEvent {
             fun value(value: Double): Builder
 
             fun unit(unit: MetricUnit): Builder
+
+            fun passive(value: Boolean): Builder
 
             fun metadata(key: String, value: String): Builder
 
@@ -113,11 +116,13 @@ class DefaultMetricEvent internal constructor(
         override val name: String,
         override val value: Double,
         override val unit: MetricUnit,
+        override val passive: Boolean,
         override val metadata: Map<String, String>
     ) : MetricEvent.Datum {
         class BuilderImpl(private var name: String) : MetricEvent.Datum.Builder {
             private var value: Double = 0.0
             private var unit: MetricUnit = MetricUnit.NONE
+            private var passive: Boolean = false
             private val metadata: MutableMap<String, String> = HashMap()
 
             override fun name(name: String): MetricEvent.Datum.Builder {
@@ -132,6 +137,11 @@ class DefaultMetricEvent internal constructor(
 
             override fun unit(unit: MetricUnit): MetricEvent.Datum.Builder {
                 this.unit = unit
+                return this
+            }
+
+            override fun passive(value: Boolean): MetricEvent.Datum.Builder {
+                this.passive = value
                 return this
             }
 
@@ -154,6 +164,7 @@ class DefaultMetricEvent internal constructor(
                 name.replaceIllegal(),
                 this.value,
                 this.unit,
+                this.passive,
                 this.metadata
             )
         }

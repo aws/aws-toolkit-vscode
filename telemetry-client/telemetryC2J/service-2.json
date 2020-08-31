@@ -130,13 +130,15 @@
         "EpochTimestamp":{"shape":"EpochTimestamp"},
         "Unit":{"shape":"Unit"},
         "Value":{"shape":"Datapoint"},
-        "Metadata":{"shape":"Metadata"}
+        "Metadata":{"shape":"Metadata"},
+        "Passive":{"shape":"Passive"}
       }
     },
     "MetricName":{
       "type":"string",
       "pattern":"^[\\w+-.:]{1,255}$"
     },
+    "Passive":{"type":"boolean"},
     "PostErrorReportRequest":{
       "type":"structure",
       "required":[
