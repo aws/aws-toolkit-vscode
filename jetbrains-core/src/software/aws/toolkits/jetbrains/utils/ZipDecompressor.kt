@@ -7,6 +7,7 @@ import com.intellij.openapi.util.SystemInfo
 import com.intellij.openapi.util.io.FileUtil
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry
 import org.apache.commons.compress.archivers.zip.ZipFile
+import org.apache.commons.compress.utils.SeekableInMemoryByteChannel
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -14,8 +15,8 @@ import java.nio.file.Files
 import java.nio.file.attribute.PosixFilePermission
 
 // TODO: Write tests
-class ZipDecompressor(sourceFile: File) : AutoCloseable {
-    private val zipFile = ZipFile(sourceFile)
+class ZipDecompressor(sourceBytes: ByteArray) : AutoCloseable {
+    private val zipFile = ZipFile(SeekableInMemoryByteChannel(sourceBytes))
     private val zipEntries = zipFile.entries.toList()
     private val directorySplitRegex = Regex.fromLiteral("""[/\\]""")
 
