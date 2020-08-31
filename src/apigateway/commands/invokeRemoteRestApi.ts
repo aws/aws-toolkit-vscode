@@ -174,11 +174,8 @@ export function createMessageReceivedFunc({
                 outputChannel.appendLine('')
             } finally {
                 postMessage({ command: 'invokeApiFinished' })
-                let method: string | undefined = undefined
                 // only set method if it is not empty or undefined
-                if (message.selectedMethod) {
-                    method = message.selectedMethod.toUpperCase()
-                }
+                const method = message.selectedMethod ? message.selectedMethod.toUpperCase() : undefined
                 recordApigatewayInvokeRemote({
                     result: result,
                     httpMethod: method,
