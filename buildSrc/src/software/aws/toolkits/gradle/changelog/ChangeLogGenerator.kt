@@ -13,7 +13,7 @@ import kotlin.streams.toList
 /**
  * Generates a combined change log file based in Markdown syntax
  */
-class ChangeLogGenerator(private val writers: List<ChangeLogWriter>, private val logger: Logger) {
+class ChangeLogGenerator(private val writers: List<ChangeLogWriter>, private val logger: Logger) : AutoCloseable {
     fun addUnreleasedChanges(unreleasedFiles: List<Path>) {
         val entries = unreleasedFiles.parallelStream()
             .map { readFile<Entry>(it.toFile()) }
@@ -50,7 +50,7 @@ class ChangeLogGenerator(private val writers: List<ChangeLogWriter>, private val
         }
     }
 
-    fun close() {
+    override fun close() {
         writers.forEach { it.close() }
     }
 
