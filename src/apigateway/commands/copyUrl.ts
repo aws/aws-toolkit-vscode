@@ -17,7 +17,7 @@ import { RegionProvider } from '../../shared/regions/regionProvider'
 import { DEFAULT_DNS_SUFFIX } from '../../shared/regions/regionUtilities'
 import { COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS } from '../../shared/constants'
 import { getLogger } from '../../shared/logger'
-import { recordApigatewayCopyUrl, Result } from '../../shared/telemetry/telemetry'
+import { recordApigatewayCopyUrl } from '../../shared/telemetry/telemetry'
 
 interface StageInvokeUrlQuickPick extends vscode.QuickPickItem {
     // override declaration so this can't be undefined
