@@ -15,16 +15,17 @@ import { env } from 'process'
 
         env['AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE'] = 'true'
         const vsCodeExecutablePath = await setupVSCodeTestInstance()
-        const cwd = process.cwd()
-        const testEntrypoint = resolve(cwd, 'dist', 'src', 'test', 'index.js')
+        const rootDir = resolve(__dirname, '../')
+        const testEntrypoint = resolve(rootDir, 'dist/src/test/index.js')
+        const testWorkspace = resolve(rootDir, 'src/testFixtures/workspaceFolder')
         console.log(`Starting tests: ${testEntrypoint}`)
 
         const result = await runTests({
             vscodeExecutablePath: vsCodeExecutablePath,
-            extensionDevelopmentPath: cwd,
+            extensionDevelopmentPath: rootDir,
             extensionTestsPath: testEntrypoint,
-            // TODO: remove this after some bake-time on master branch (ETA: 2020-12-15).
-            launchArgs: ['--verbose', '--log', 'debug'],
+            // TODO: remove "--verbose --log ..." after some bake-time on master branch (ETA: 2020-12-15).
+            launchArgs: ['--verbose', '--log', 'debug', testWorkspace],
         })
 
         console.log(`Finished running Main test suite with result code: ${result}`)

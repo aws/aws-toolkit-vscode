@@ -24,6 +24,13 @@ export function toFile(o: any, filepath: string) {
     fsextra.writeFileSync(filepath, text, 'utf8')
 }
 
+/**
+ * Gets the contents of `filepath` as UTF-8 encoded string.
+ */
+export function fromFile(filepath: string): string {
+    return fsextra.readFileSync(filepath, { encoding: 'utf8' })
+}
+
 /** Gets the full path to the Toolkit source root on this machine. */
 export function getProjectDir(): string {
     return path.join(__dirname, '../')

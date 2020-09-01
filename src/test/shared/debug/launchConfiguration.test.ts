@@ -17,6 +17,7 @@ import { AwsSamDebuggerConfiguration } from '../../../shared/sam/debugger/awsSam
 import { AwsSamDebugConfigurationValidator } from '../../../shared/sam/debugger/awsSamDebugConfigurationValidator'
 import * as pathutils from '../../../shared/utilities/pathUtils'
 import * as testutil from '../../testUtil'
+import { CloudFormationTemplateRegistry } from '../../../shared/cloudformation/templateRegistry'
 
 const samDebugConfiguration: AwsSamDebuggerConfiguration = {
     type: 'aws-sam',
@@ -47,8 +48,26 @@ const templateUri = vscode.Uri.file('/template.yaml')
 describe('LaunchConfiguration', () => {
     let mockConfigSource: DebugConfigurationSource
     let mockSamValidator: AwsSamDebugConfigurationValidator
+    let registry: CloudFormationTemplateRegistry
+    /** Test workspace. */
+    const workspace = vscode.workspace.workspaceFolders![0]
+    const templateUriJsPlainApp = vscode.Uri.file(path.join(workspace.uri.fsPath, 'js-plain-sam-app/template.yaml'))
+    const testLaunchJson = vscode.Uri.file(path.join(workspace.uri.fsPath, '.vscode/launch.json'))
+    /** Object read from the launch.json test file. */
+    const testLaunchJsonData = JSON.parse(testutil.fromFile(testLaunchJson.fsPath))
 
-    beforeEach(() => {
+    before(() => {
+        // const testLaunchJson = vscode.Uri.file(path.join(workspace.uri.fsPath, '.vscode/launch.json'))
+        // console.log(testLaunchJson)
+        // /** Object read from the launch.json test file. */
+        // const contents = testutil.fromFile(testLaunchJson.fsPath)
+        // const testLaunchJsonData = JSON.parse(contents)
+        // console.log(testLaunchJsonData)
+    })
+
+    beforeEach(async () => {
+        registry = CloudFormationTemplateRegistry.getRegistry()
+        await registry.addTemplateToRegistry(templateUriJsPlainApp)
         mockConfigSource = mock()
         mockSamValidator = mock()
 
@@ -56,9 +75,18 @@ describe('LaunchConfiguration', () => {
         when(mockSamValidator.validate(deepEqual(samDebugConfiguration))).thenReturn({ isValid: true })
     })
 
+    it('getReferencedTemplateResources()', async () => {
+        const launchConfig = new LaunchConfiguration(templateUriJsPlainApp)
+        const resultSet = getReferencedTemplateResources(launchConfig)
+        const expected = new Set<string>(['SourceCodeBesidePackageJson'])
+        assert.deepStrictEqual(resultSet, expected)
+    })
+
     it('xxxxxxxx', async () => {
-        const fakeWorkspace = await testutil.createTestWorkspaceFolder()
-        ;(fakeWorkspace as any).uri = vscode.Uri.file('/private/tmp/aws-toolkit-vscode/vsctk3dPF9D')
+        const workspace = vscode.workspace.workspaceFolders![0]
+        console.log(`xxxxx ${workspace}`)
+        // const fakeWorkspace = await testutil.createTestWorkspaceFolder()
+        // ;(fakeWorkspace as any).uri = vscode.Uri.file('/private/tmp/aws-toolkit-vscode/vsctk3dPF9D')
         const launchConfigData = {
             configurations: [
                 {
@@ -75,13 +103,13 @@ describe('LaunchConfiguration', () => {
                 },
             ],
         }
-        const launchJsonFile = path.join(fakeWorkspace.uri.fsPath, '.vscode/launch.json.2')
+        const launchJsonFile = path.join(workspace.uri.fsPath, '.vscode/launch.json.2')
         testutil.toFile(JSON.stringify(launchConfigData), launchJsonFile)
         // VSCode does not allow adding a workspace from a test:
         // await workspaceutil.addFolderToWorkspace(fakeWorkspace, true)
 
         // Some file that is in the same workspace as the .vscode/ directory.
-        const fileInWorkspace = vscode.Uri.file(path.join(fakeWorkspace.uri.fsPath, 'src/template.yaml'))
+        const fileInWorkspace = vscode.Uri.file(path.join(workspace.uri.fsPath, 'src/template.yaml'))
         testutil.toFile('line1\nline2\n', fileInWorkspace.fsPath)
         // const configSource = new DefaultDebugConfigSource(fakeWorkspace.uri)
         const launchConfig = new LaunchConfiguration(fileInWorkspace)
@@ -89,12 +117,9 @@ describe('LaunchConfiguration', () => {
     })
 
     it('gets debug configurations', () => {
-        const launchConfig = new LaunchConfiguration(
-            templateUri,
-            instance(mockConfigSource),
-            instance(mockSamValidator)
-        )
-        assert.deepStrictEqual(launchConfig.getDebugConfigurations(), debugConfigurations)
+        const launchConfig = new LaunchConfiguration(templateUriJsPlainApp)
+        const expected = testLaunchJsonData['configurations']
+        assert.deepStrictEqual(launchConfig.getDebugConfigurations(), expected)
     })
 
     it('gets sam debug configurations', () => {

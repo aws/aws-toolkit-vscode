@@ -41,7 +41,8 @@
             "runtimeExecutable": "${execPath}",
             "args": [
                 "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/test/index"
+                "--extensionTestsPath=${workspaceFolder}/dist/src/test/index",
+                "${workspaceRoot}/dist/src/testFixtures/workspaceFolder"
             ],
             "env": {
                 "TEST_REPORT_DIR": "${workspaceFolder}/.test-reports",
@@ -59,7 +60,8 @@
             "runtimeExecutable": "${execPath}",
             "args": [
                 "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/test/index.js"
+                "--extensionTestsPath=${workspaceFolder}/dist/src/test/index.js",
+                "${workspaceRoot}/dist/src/testFixtures/workspaceFolder"
             ],
             "env": {
                 "TEST_REPORT_DIR": "${workspaceFolder}/.test-reports",

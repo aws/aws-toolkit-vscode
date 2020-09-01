@@ -65,10 +65,11 @@ export class LaunchConfiguration {
      * Returns all valid Sam Debug Configurations.
      */
     public getSamDebugConfigurations(): AwsSamDebuggerConfiguration[] {
-        return _(this.getDebugConfigurations())
-            .filter(isAwsSamDebugConfiguration)
-            .filter(config => this.samValidator.validate(config)?.isValid)
-            .value()
+        const configs = this.getDebugConfigurations().filter(o =>
+            isAwsSamDebugConfiguration(o)
+        ) as AwsSamDebuggerConfiguration[]
+        const validConfigs = configs.filter(o => this.samValidator.validate(o)?.isValid)
+        return validConfigs
     }
 
     /**
@@ -103,10 +104,9 @@ class DefaultDebugConfigSource implements DebugConfigurationSource {
 }
 
 export function getSamTemplateTargets(launchConfig: LaunchConfiguration): TemplateTargetProperties[] {
-    return _(launchConfig.getSamDebugConfigurations())
-        .map(samConfig => samConfig.invokeTarget)
-        .filter(isTemplateTargetProperties)
-        .value()
+    const invokeTargets = launchConfig.getSamDebugConfigurations().map(o => o.invokeTarget)
+    const isTemplateTarget = invokeTargets.filter(isTemplateTargetProperties)
+    return isTemplateTarget
 }
 
 function getSamCodeTargets(launchConfig: LaunchConfiguration): CodeTargetProperties[] {

@@ -1,0 +1,123 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "name": "js-plain-sam-app:SourceCodeBesidePackageJson (nodejs10.x)",
+            "invokeTarget": {
+                "target": "template",
+                "templatePath": "js-plain-sam-app/template.yaml",
+                "logicalId": "SourceCodeBesidePackageJson"
+            },
+            "lambda": {
+                "payload": {},
+                "environmentVariables": {}
+            }
+        },
+        {
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "name": "js-plain-sam-app:SourceCodeBesidePackageJson (nodejs10.x)",
+            "invokeTarget": {
+                "target": "template",
+                "templatePath": "deeper-projects/js-plain-sam-app/template.yaml",
+                "logicalId": "SourceCodeBesidePackageJson"
+            },
+            "lambda": {
+                "payload": {},
+                "environmentVariables": {}
+            }
+        },
+        {
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "name": "python3.7-plain-sam-app:HelloWorldFunction (python3.7)",
+            "invokeTarget": {
+                "target": "template",
+                "templatePath": "python3.7-plain-sam-app/template.yaml",
+                "logicalId": "HelloWorldFunction"
+            },
+            "lambda": {
+                "payload": {},
+                "environmentVariables": {}
+            }
+        },
+        {
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "name": "API python3.7-plain-sam-app:HelloWorldFunction (python3.7)",
+            "invokeTarget": {
+                "target": "api",
+                "templatePath": "python3.7-plain-sam-app/template.yaml",
+                "logicalId": "HelloWorldFunction"
+            },
+            "api": {
+                "path": "/hello",
+                "httpMethod": "get",
+                "payload": {
+                    "json": {}
+                }
+            }
+        },
+        {
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "name": "js-manifest-in-root:SourceCodeTwoFoldersDeep (nodejs10.x)",
+            "invokeTarget": {
+                "target": "template",
+                "templatePath": "js-manifest-in-root/template.yaml",
+                "logicalId": "SourceCodeTwoFoldersDeep"
+            },
+            "lambda": {
+                "payload": {},
+                "environmentVariables": {}
+            }
+        },
+        {
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "name": "csharp2.1-plain-sam-app:HelloWorldFunction (dotnetcore2.1)",
+            "invokeTarget": {
+                "target": "template",
+                "templatePath": "csharp2.1-plain-sam-app/template.yaml",
+                "logicalId": "HelloWorldFunction"
+            },
+            "lambda": {
+                "payload": {},
+                "environmentVariables": {}
+            }
+        },
+        {
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "name": "API csharp2.1-plain-sam-app:HelloWorldFunction (dotnetcore2.1)",
+            "invokeTarget": {
+                "target": "api",
+                "templatePath": "csharp2.1-plain-sam-app/template.yaml",
+                "logicalId": "HelloWorldFunction"
+            },
+            "api": {
+                "path": "/hello",
+                "httpMethod": "get",
+                "payload": {
+                    "json": {}
+                }
+            }
+        },
+        {
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "name": "js-manifest-in-subfolder:SourceCodeInSubfolderToManifest (nodejs10.x)",
+            "invokeTarget": {
+                "target": "template",
+                "templatePath": "js-manifest-in-subfolder/template.yaml",
+                "logicalId": "SourceCodeInSubfolderToManifest"
+            },
+            "lambda": {
+                "payload": {},
+                "environmentVariables": {}
+            }
+        }
+    ]
+}
