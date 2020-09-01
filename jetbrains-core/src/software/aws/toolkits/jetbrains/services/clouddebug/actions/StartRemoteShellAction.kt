@@ -11,10 +11,12 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
+import com.pty4j.PtyProcess
 import icons.TerminalIcons
-import org.jetbrains.plugins.terminal.LocalTerminalDirectRunner
 import org.jetbrains.plugins.terminal.TerminalTabState
 import org.jetbrains.plugins.terminal.TerminalView
+import org.jetbrains.plugins.terminal.cloud.CloudTerminalProcess
+import org.jetbrains.plugins.terminal.cloud.CloudTerminalRunner
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.activeCredentialProvider
 import software.aws.toolkits.jetbrains.core.credentials.activeRegion
@@ -108,9 +110,11 @@ class StartRemoteShellAction(private val project: Project, private val container
                         .withParameters("--tty")
                         .withParameters("/aws/cloud-debug/common/busybox", "sh", "-i")
 
-                    val runner = object : LocalTerminalDirectRunner(project) {
-                        override fun getCommand(envs: MutableMap<String, String>?) = cmdLine.getCommandLineList(null).toTypedArray()
-                    }
+                    val cmdList = cmdLine.getCommandLineList(null).toTypedArray()
+                    val env = cmdLine.effectiveEnvironment
+                    val ptyProcess = PtyProcess.exec(cmdList, env, null)
+                    val process = CloudTerminalProcess(ptyProcess.outputStream, ptyProcess.inputStream)
+                    val runner = CloudTerminalRunner(project, containerName, process)
 
                     runInEdt {
                         TerminalView.getInstance(project).createNewSession(runner, TerminalTabState().also { it.myTabName = containerName })
