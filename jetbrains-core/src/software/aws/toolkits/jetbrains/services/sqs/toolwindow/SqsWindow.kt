@@ -7,8 +7,8 @@ import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
 import icons.AwsIcons
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.sqs.SqsClient
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger

@@ -7,12 +7,12 @@ import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
+import software.amazon.awssdk.utils.CompletableFutureUtils
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerErrorNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.SqsExplorerRootNode
 import software.aws.toolkits.jetbrains.services.sqs.resources.SqsResources
-import software.amazon.awssdk.utils.CompletableFutureUtils
 
 class SqsServiceNodeTest {
     @JvmField

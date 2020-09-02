@@ -9,9 +9,9 @@ import com.intellij.util.ui.ColumnInfo
 import com.intellij.util.ui.ListTableModel
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogStream
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamEntry
+import software.aws.toolkits.jetbrains.utils.ui.ResizingDateColumnRenderer
 import software.aws.toolkits.jetbrains.utils.ui.WrappingCellRenderer
 import software.aws.toolkits.jetbrains.utils.ui.setSelectionHighlighting
-import software.aws.toolkits.jetbrains.utils.ui.ResizingDateColumnRenderer
 import software.aws.toolkits.resources.message
 import java.awt.Component
 import javax.swing.JTable

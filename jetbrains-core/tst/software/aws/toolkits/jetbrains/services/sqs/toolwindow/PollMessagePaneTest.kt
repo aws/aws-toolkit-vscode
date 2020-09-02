@@ -10,9 +10,9 @@ import org.junit.Before
 import org.junit.Test
 import org.mockito.Mockito
 import software.amazon.awssdk.services.sqs.SqsClient
-import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.GetQueueAttributesRequest
 import software.amazon.awssdk.services.sqs.model.GetQueueAttributesResponse
+import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.MessageSystemAttributeName
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest

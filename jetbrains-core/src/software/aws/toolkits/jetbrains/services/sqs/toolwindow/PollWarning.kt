@@ -3,9 +3,9 @@
 package software.aws.toolkits.jetbrains.services.sqs.toolwindow
 
 import com.intellij.ui.components.JBLabel
+import software.aws.toolkits.resources.message
 import javax.swing.JButton
 import javax.swing.JPanel
-import software.aws.toolkits.resources.message
 
 class PollWarning(private val pane: PollMessagePane) {
     lateinit var content: JPanel
