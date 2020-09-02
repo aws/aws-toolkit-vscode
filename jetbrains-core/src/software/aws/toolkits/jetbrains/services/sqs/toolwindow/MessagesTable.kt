@@ -21,7 +21,8 @@ class MessagesTable {
             MessageBodyColumn(),
             MessageSenderIdColumn(),
             MessageDateColumn()
-        ), mutableListOf<Message>()
+        ),
+        mutableListOf<Message>()
     )
 
     init {

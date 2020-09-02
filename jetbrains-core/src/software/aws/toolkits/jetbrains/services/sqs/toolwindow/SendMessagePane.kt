@@ -67,15 +67,18 @@ class SendMessagePane(
         inputText.apply {
             emptyText.text = message("sqs.send.message.body.empty.text")
             text = messageCache.getValue(queue.queueUrl)
-            addKeyListener(object : KeyListener {
-                override fun keyTyped(e: KeyEvent?) {
-                    if (bodyErrorLabel.isVisible) {
-                        bodyErrorLabel.isVisible = false
+            addKeyListener(
+                object : KeyListener {
+                    override fun keyTyped(e: KeyEvent?) {
+                        if (bodyErrorLabel.isVisible) {
+                            bodyErrorLabel.isVisible = false
+                        }
                     }
+
+                    override fun keyPressed(e: KeyEvent?) {}
+                    override fun keyReleased(e: KeyEvent?) {}
                 }
-                override fun keyPressed(e: KeyEvent?) {}
-                override fun keyReleased(e: KeyEvent?) {}
-            })
+            )
         }
     }
 

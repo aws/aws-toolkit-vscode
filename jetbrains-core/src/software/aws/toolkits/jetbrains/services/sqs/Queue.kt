@@ -4,15 +4,14 @@
 package software.aws.toolkits.jetbrains.services.sqs
 
 import software.aws.toolkits.core.region.AwsRegion
-import java.lang.IllegalArgumentException
 import software.aws.toolkits.resources.message
 
-/*This does not support FIPS*/
+// TODO This does not support FIPS
 class Queue(val queueUrl: String, val region: AwsRegion) {
     val accountId: String by lazy {
         val id = queueUrl.substringAfter("${region.id}").substringAfter("/").substringBefore("/")
         if ((id == queueUrl) || (id.length != 12) || id.isBlank()) {
-                throw IllegalArgumentException(message("sqs.url.parse_error"))
+            throw IllegalArgumentException(message("sqs.url.parse_error"))
         } else {
             id
         }
