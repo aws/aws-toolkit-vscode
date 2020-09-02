@@ -67,7 +67,10 @@ async function selectUploadTypeAndConfirm(
     }
 }
 
-async function runUploadDirectory(functionNode: LambdaFunctionNode): Promise<telemetry.Result> {
+async function runUploadDirectory(
+    functionNode: LambdaFunctionNode,
+    window = Window.vscode()
+): Promise<telemetry.Result> {
     const parentDir = await selectFolderForUpload()
 
     if (!parentDir) {
@@ -109,7 +112,15 @@ async function runUploadDirectory(functionNode: LambdaFunctionNode): Promise<tel
     }
 
     if (response === zipDirItem) {
-        return await zipAndUploadDirectory(functionNode, parentDir.fsPath)
+        return await window.withProgress(
+            {
+                location: vscode.ProgressLocation.Notification,
+                cancellable: false,
+            },
+            async progress => {
+                return await zipAndUploadDirectory(functionNode, parentDir.fsPath, progress)
+            }
+        )
     } else {
         return await runUploadLambdaWithSamBuild(functionNode, parentDir)
     }
@@ -167,44 +178,63 @@ async function runUploadLambdaWithSamBuild(
         )
     }
 
-    try {
-        const invoker = getSamCliContext().invoker
+    return await window.withProgress(
+        {
+            location: vscode.ProgressLocation.Notification,
+            cancellable: false,
+        },
+        async progress => {
+            try {
+                const invoker = getSamCliContext().invoker
 
-        const tempDir = await makeTemporaryToolkitFolder()
-        ExtensionDisposableFiles.getInstance().addFolder(tempDir)
-        const templatePath = path.join(tempDir, 'template.yaml')
-        const resourceName = 'tempResource'
+                const tempDir = await makeTemporaryToolkitFolder()
+                ExtensionDisposableFiles.getInstance().addFolder(tempDir)
+                const templatePath = path.join(tempDir, 'template.yaml')
+                const resourceName = 'tempResource'
 
-        // TODO: Use an existing template file if it's present?
+                // TODO: Use an existing template file if it's present?
+                progress.report({
+                    message: localize(
+                        'AWS.lambda.upload.progress.generatingTemplate',
+                        'Setting up temporary build files...'
+                    ),
+                })
+                await new SamTemplateGenerator()
+                    .withFunctionHandler(functionNode.configuration.Handler!)
+                    .withResourceName(resourceName)
+                    .withRuntime(functionNode.configuration.Runtime!)
+                    .withCodeUri(parentDir.fsPath)
+                    .generate(templatePath)
 
-        await new SamTemplateGenerator()
-            .withFunctionHandler(functionNode.configuration.Handler!)
-            .withResourceName(resourceName)
-            .withRuntime(functionNode.configuration.Runtime!)
-            .withCodeUri(parentDir.fsPath)
-            .generate(templatePath)
+                progress.report({
+                    message: localize(
+                        'AWS.lambda.upload.progress.samBuilding',
+                        'Building project via sam build command...'
+                    ),
+                })
+                const buildDir = path.join(tempDir, 'output')
+                // Note: `sam build` will fail if the selected directory does not have a valid manifest file:
+                // https://github.com/awslabs/aws-sam-cli/blob/4f12dc74ca8ff6fddd661711db7c3048812b4119/designs/sam_build_cmd.md#built-in-build-actions
+                await new SamCliBuildInvocation({
+                    buildDir,
+                    templatePath,
+                    invoker,
+                    skipPullImage: true,
+                    useContainer: false,
+                    baseDir: parentDir.fsPath,
+                }).execute()
 
-        const buildDir = path.join(tempDir, 'output')
-        // Note: `sam build` will fail if the selected directory does not have a valid manifest file:
-        // https://github.com/awslabs/aws-sam-cli/blob/4f12dc74ca8ff6fddd661711db7c3048812b4119/designs/sam_build_cmd.md#built-in-build-actions
-        await new SamCliBuildInvocation({
-            buildDir,
-            templatePath,
-            invoker,
-            skipPullImage: true,
-            useContainer: false,
-            baseDir: parentDir.fsPath,
-        }).execute()
+                // App builds into a folder named after the resource name. Zip the contents of that, not the whole output dir.
+                return await zipAndUploadDirectory(functionNode, path.join(buildDir, resourceName), progress)
+            } catch (e) {
+                const err = e as Error
+                window.showErrorMessage(err.message)
+                getLogger().error('runUploadLambdaWithSamBuild failed: ', err.message)
 
-        // App builds into a folder named after the resource name. Zip the contents of that, not the whole output dir.
-        return await zipAndUploadDirectory(functionNode, path.join(buildDir, resourceName))
-    } catch (e) {
-        const err = e as Error
-        window.showErrorMessage(err.message)
-        getLogger().error('runUploadLambdaWithSamBuild failed: ', err.message)
-
-        return 'Failed'
-    }
+                return 'Failed'
+            }
+        }
+    )
 }
 
 async function confirmLambdaDeployment(functionNode: LambdaFunctionNode, window = Window.vscode()): Promise<boolean> {
@@ -252,18 +282,36 @@ async function runUploadLambdaZipFile(
 
     const isConfirmed = await confirmLambdaDeployment(functionNode)
 
-    return isConfirmed ? await uploadZipBuffer(functionNode, zipFile) : 'Cancelled'
+    return isConfirmed
+        ? await window.withProgress(
+              {
+                  location: vscode.ProgressLocation.Notification,
+                  cancellable: false,
+              },
+              async progress => {
+                  return await uploadZipBuffer(functionNode, zipFile, progress)
+              }
+          )
+        : 'Cancelled'
 }
 
-async function zipAndUploadDirectory(functionNode: LambdaFunctionNode, path: string): Promise<telemetry.Result> {
+async function zipAndUploadDirectory(
+    functionNode: LambdaFunctionNode,
+    path: string,
+    progress: vscode.Progress<{
+        message?: string | undefined
+        increment?: number | undefined
+    }>
+): Promise<telemetry.Result> {
     try {
+        progress.report({ message: localize('AWS.lambda.upload.progress.archivingDir', 'Archiving files...') })
         const zipBuffer = await new Promise<Buffer>(resolve => {
             const zip = new AdmZip()
             zip.addLocalFolder(path)
             resolve(zip.toBuffer())
         })
 
-        return await uploadZipBuffer(functionNode, zipBuffer)
+        return await uploadZipBuffer(functionNode, zipBuffer, progress)
     } catch (e) {
         const err = e as Error
         Window.vscode().showErrorMessage(err.message)
@@ -276,11 +324,21 @@ async function zipAndUploadDirectory(functionNode: LambdaFunctionNode, path: str
 async function uploadZipBuffer(
     functionNode: LambdaFunctionNode,
     zip: Buffer,
+    progress: vscode.Progress<{
+        message?: string | undefined
+        increment?: number | undefined
+    }>,
     lambdaClient = ext.toolkitClientBuilder.createLambdaClient(functionNode.regionCode)
 ): Promise<telemetry.Result> {
     try {
+        progress.report({
+            message: localize('AWS.lambda.upload.progress.uploadingArchive', 'Uploading archive to Lambda...'),
+        })
         await lambdaClient.updateFunctionCode(functionNode.configuration.FunctionName!, zip)
 
+        Window.vscode().showInformationMessage(
+            localize('AWS.lambda.upload.done', 'Successfully uploaded Lambda function {0}', functionNode.functionName)
+        )
         return 'Succeeded'
     } catch (e) {
         const err = e as Error
