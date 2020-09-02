@@ -11,22 +11,28 @@ const localize = nls.loadMessageBundle()
 import * as AdmZip from 'adm-zip'
 import * as fs from 'fs'
 import * as path from 'path'
-import * as telemetry from '../../shared/telemetry/telemetry'
-import { Window } from '../../shared/vscode/window'
-import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
-import { makeTemporaryToolkitFolder, fileExists } from '../../shared/filesystemUtilities'
-import { SamTemplateGenerator } from '../../shared/templates/sam/samTemplateGenerator'
+import { showConfirmationMessage } from '../../s3/util/messages'
+import { ext } from '../../shared/extensionGlobals'
+import { fileExists, makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { getLogger } from '../../shared/logger'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
 import { getSamCliContext } from '../../shared/sam/cli/samCliContext'
-import { ExtensionDisposableFiles } from '../../shared/utilities/disposableFiles'
-import { getLogger } from '../../shared/logger'
-import { ext } from '../../shared/extensionGlobals'
+import * as telemetry from '../../shared/telemetry/telemetry'
+import { SamTemplateGenerator } from '../../shared/templates/sam/samTemplateGenerator'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../../shared/ui/picker'
-import { showConfirmationMessage } from '../../s3/util/messages'
+import { ExtensionDisposableFiles } from '../../shared/utilities/disposableFiles'
+import { Window } from '../../shared/vscode/window'
+import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
 import { getLambdaFileNameFromHandler } from '../utils'
 
+/**
+ * Executes the "Upload Lambda..." command.
+ * Allows for uploads of zip files, and both built and unbuilt directories.
+ * Does not discriminate on runtime.
+ * @param functionNode Function node from AWS Explorer
+ */
 export async function uploadLambdaCommand(functionNode: LambdaFunctionNode) {
-    const result = await selectUploadTypeAndConfirm(functionNode)
+    const result = await selectUploadTypeAndRunUpload(functionNode)
 
     telemetry.recordLambdaUpdateFunctionCode({
         result,
@@ -34,10 +40,11 @@ export async function uploadLambdaCommand(functionNode: LambdaFunctionNode) {
     })
 }
 
-async function selectUploadTypeAndConfirm(
-    functionNode: LambdaFunctionNode,
-    window = Window.vscode()
-): Promise<telemetry.Result> {
+/**
+ * Selects the type of file to upload (zip/dir) and proceeds with the rest of the workflow.
+ * @param functionNode Function node from AWS Explorer
+ */
+async function selectUploadTypeAndRunUpload(functionNode: LambdaFunctionNode): Promise<telemetry.Result> {
     const uploadZipItem: vscode.QuickPickItem = {
         label: `$(file-zip) ${localize('AWS.generic.filetype.zipfile', 'ZIP Archive')}`,
     }
@@ -67,6 +74,11 @@ async function selectUploadTypeAndConfirm(
     }
 }
 
+/**
+ * Allows the user to decide whether or not they want to build the directory in question and proceeds with the rest of the deployment workflow.
+ * @param functionNode Function node from AWS Explorer
+ * @param window Wrapper around vscode.window functionality for testing
+ */
 async function runUploadDirectory(
     functionNode: LambdaFunctionNode,
     window = Window.vscode()
@@ -126,6 +138,12 @@ async function runUploadDirectory(
     }
 }
 
+/**
+ * Selects a folder for upload. Returns selected folder URI on success.
+ * Otherwise, returns undefined if nothing is selected or if more than one folder is selected (should never happen)
+ * Does not vet return URI type; this is left up to VS Code.
+ * @param window Wrapper around vscode.window functionality for testing
+ */
 async function selectFolderForUpload(window = Window.vscode()): Promise<vscode.Uri | undefined> {
     const workspaceFolders = vscode.workspace.workspaceFolders || []
 
@@ -143,6 +161,16 @@ async function selectFolderForUpload(window = Window.vscode()): Promise<vscode.U
     return parentDirArr[0]
 }
 
+/**
+ * Attempts to build a project using `sam build`.
+ * * Checks supported interpreted languages to see if the handler file exists (based on upstream handler name)
+ * * Creates a temporary template based on the parent dir and the upstream handler name
+ * * Executes `sam build` on the temporary template
+ * * Sends directory to be archived and uploaded
+ * @param functionNode Function node from AWS Explorer
+ * @param parentDir Parent dir to build
+ * @param window Wrapper around vscode.window functionality for testing
+ */
 async function runUploadLambdaWithSamBuild(
     functionNode: LambdaFunctionNode,
     parentDir: vscode.Uri,
@@ -237,6 +265,11 @@ async function runUploadLambdaWithSamBuild(
     )
 }
 
+/**
+ * Confirms whether or not the user wants to deploy the Lambda as it is a destructive action.
+ * @param functionNode Function node from AWS Explorer
+ * @param window Wrapper around vscode.window functionality for testing
+ */
 async function confirmLambdaDeployment(functionNode: LambdaFunctionNode, window = Window.vscode()): Promise<boolean> {
     const isConfirmed = await showConfirmationMessage(
         {
@@ -258,6 +291,11 @@ async function confirmLambdaDeployment(functionNode: LambdaFunctionNode, window 
     return isConfirmed
 }
 
+/**
+ * Prompts the user to select a `.zip` file for upload to Lambda, confirms, and attempts to upload.
+ * @param functionNode Function node from AWS Explorer
+ * @param window Wrapper around vscode.window functionality for testing
+ */
 async function runUploadLambdaZipFile(
     functionNode: LambdaFunctionNode,
     window = Window.vscode()
@@ -278,8 +316,6 @@ async function runUploadLambdaZipFile(
         return 'Cancelled'
     }
 
-    const zipFile = fs.readFileSync(zipFileArr[0].fsPath)
-
     const isConfirmed = await confirmLambdaDeployment(functionNode)
 
     return isConfirmed
@@ -289,12 +325,27 @@ async function runUploadLambdaZipFile(
                   cancellable: false,
               },
               async progress => {
-                  return await uploadZipBuffer(functionNode, zipFile, progress)
+                  try {
+                      const zipFile = fs.readFileSync(zipFileArr[0].fsPath)
+                      return await uploadZipBuffer(functionNode, zipFile, progress)
+                  } catch (e) {
+                      const err = e as Error
+                      Window.vscode().showErrorMessage(err.message)
+                      getLogger().error('runUploadLambdaZipFile failed: ', err.message)
+
+                      return 'Failed'
+                  }
               }
           )
         : 'Cancelled'
 }
 
+/**
+ * Zips a selected directory in memory and attempts to upload archive to Lambda
+ * @param functionNode Function node from AWS Explorer
+ * @param path Directory path to zip
+ * @param progress Progress notification for displaying a status message
+ */
 async function zipAndUploadDirectory(
     functionNode: LambdaFunctionNode,
     path: string,
@@ -321,6 +372,13 @@ async function zipAndUploadDirectory(
     }
 }
 
+/**
+ * Attempts to upload Buffer representation of a `.zip` file to an existing Lambda function
+ * @param functionNode Function node from AWS Explorer
+ * @param zip Buffer to upload to Lambda
+ * @param progress Progress notification for displaying a status message
+ * @param lambdaClient Overwriteable Lambda client for testing purposes
+ */
 async function uploadZipBuffer(
     functionNode: LambdaFunctionNode,
     zip: Buffer,
