@@ -5,8 +5,8 @@ package software.aws.toolkits.jetbrains.ui.connection
 
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.core.region.AwsRegion
-import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import javax.swing.JComponent
 

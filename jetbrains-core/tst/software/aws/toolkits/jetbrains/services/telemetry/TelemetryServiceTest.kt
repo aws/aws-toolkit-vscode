@@ -19,8 +19,8 @@ import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADAT
 import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryBatcher
 import software.aws.toolkits.jetbrains.core.MockResourceCache
-import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import java.util.concurrent.CountDownLatch
