@@ -30,10 +30,13 @@ object CloudDebugVersionCache : FileInfoCache<SemVer>() {
                 throw IllegalStateException(message("executableCommon.empty_info", executableName))
             }
             return SemVer.parseFromText(output)
-                ?: throw IllegalStateException(message("executableCommon.version_parse_error",
-                    executableName,
-                    output
-                ))
+                ?: throw IllegalStateException(
+                    message(
+                        "executableCommon.version_parse_error",
+                        executableName,
+                        output
+                    )
+                )
         }
     }
 }

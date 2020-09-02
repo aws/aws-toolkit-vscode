@@ -22,7 +22,8 @@ class YamlWriterTest {
                 }
             }
         }
-        assertThat(text).isEqualTo("""
+        assertThat(text).isEqualTo(
+            """
             Foo:
               Bar:
                 Hello: World
@@ -30,6 +31,7 @@ class YamlWriterTest {
                   More: Keys
                 EvenSome:
                   More2: Keys2
-        """.trimIndent())
+            """.trimIndent()
+        )
     }
 }

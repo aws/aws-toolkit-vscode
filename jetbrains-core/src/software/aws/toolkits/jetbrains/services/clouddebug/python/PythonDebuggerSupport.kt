@@ -27,7 +27,8 @@ class PythonDebuggerSupport : DebuggerSupport() {
 
     // python start command. This is a regex because we can have valid start commands like python3.7 or just python
     // The space after "python" is intentional: it makes statements like "python.sh" not match
-    private val pythonStartRegex = """^python((\d+\.\d+)|(\d+))?$""".toRegex()
+    private val pythonStartRegex =
+        """^python((\d+\.\d+)|(\d+))?$""".toRegex()
 
     override val debuggerPath = object : DebuggerPath {
         override fun getDebuggerPath(): String = PythonHelper.DEBUGGER.pythonPathEntry
@@ -54,7 +55,8 @@ class PythonDebuggerSupport : DebuggerSupport() {
         runInEdt {
             try {
                 val descriptor = manager.startSessionAndShowTab(
-                    displayName, null,
+                    displayName,
+                    null,
                     startDebugProcess(containerOptions, environment.project, ports.first())
                 ).runContentDescriptor
                 future.complete(descriptor)
@@ -85,7 +87,8 @@ class PythonDebuggerSupport : DebuggerSupport() {
                 it.positionConverter = PathMapper.PositionConverter(
                     PathMapper(
                         convertArtifactMappingsToPathMappings(
-                            containerOptions.artifactMappings, debuggerPath
+                            containerOptions.artifactMappings,
+                            debuggerPath
                         ).map { pair ->
                             PathMapping(pair.first, pair.second)
                         }

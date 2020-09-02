@@ -21,7 +21,6 @@ import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.activeCredentialProvider
 import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
-import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugExecutable
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutable
@@ -29,6 +28,7 @@ import software.aws.toolkits.jetbrains.core.plugins.pluginIsInstalledAndEnabled
 import software.aws.toolkits.jetbrains.services.clouddebug.CliOutputParser
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugConstants
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugConstants.INSTRUMENTED_STATUS
+import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugExecutable
 import software.aws.toolkits.jetbrains.services.clouddebug.InstrumentResponse
 import software.aws.toolkits.jetbrains.services.clouddebug.resources.CloudDebuggingResources
 import software.aws.toolkits.jetbrains.services.ecs.ContainerDetails
@@ -69,77 +69,79 @@ class StartRemoteShellAction(private val project: Project, private val container
         val startTime = Instant.now()
 
         ExecutableManager.getInstance().getExecutable<CloudDebugExecutable>().thenAccept { cloudDebugExecutable ->
-            ProgressManager.getInstance().run(object : Task.Backgroundable(project, title, false) {
-                override fun run(indicator: ProgressIndicator) {
-                    if (cloudDebugExecutable !is ExecutableInstance.Executable) {
-                        val error = (cloudDebugExecutable as? ExecutableInstance.BadExecutable)?.validationError ?: message("general.unknown_error")
+            ProgressManager.getInstance().run(
+                object : Task.Backgroundable(project, title, false) {
+                    override fun run(indicator: ProgressIndicator) {
+                        if (cloudDebugExecutable !is ExecutableInstance.Executable) {
+                            val error = (cloudDebugExecutable as? ExecutableInstance.BadExecutable)?.validationError ?: message("general.unknown_error")
+
+                            runInEdt {
+                                notifyError(message("cloud_debug.step.clouddebug.install.fail", error))
+                            }
+                            throw Exception("cloud debug executable not found")
+                        }
+
+                        val connectionManager = AwsConnectionManager.getInstance(project)
+                        val credentials = connectionManager.activeCredentialProvider
+                        val region = connectionManager.activeRegion
+
+                        val description = CloudDebuggingResources.describeInstrumentedResource(credentials, region, cluster, service)
+                        if (description == null || description.status != INSTRUMENTED_STATUS || description.taskRole.isEmpty()) {
+                            runInEdt {
+                                notifyError(message("cloud_debug.execution.failed.not_set_up"))
+                            }
+                            throw RuntimeException("Resource somehow became de-instrumented?")
+                        }
+                        val role = description.taskRole
+
+                        val target = try {
+                            runInstrument(project, cloudDebugExecutable, cluster, service, role).target
+                        } catch (e: Exception) {
+                            e.notifyError(title)
+                            null
+                        } ?: return
+
+                        val cmdLine = buildBaseCmdLine(project, cloudDebugExecutable)
+                            .withParameters("exec")
+                            .withParameters("--target")
+                            .withParameters(target)
+                            /* TODO remove this when the cli conforms to the contract */
+                            .withParameters("--selector")
+                            .withParameters(containerName)
+                            .withParameters("--tty")
+                            .withParameters("/aws/cloud-debug/common/busybox", "sh", "-i")
+
+                        val cmdList = cmdLine.getCommandLineList(null).toTypedArray()
+                        val env = cmdLine.effectiveEnvironment
+                        val ptyProcess = PtyProcess.exec(cmdList, env, null)
+                        val process = CloudTerminalProcess(ptyProcess.outputStream, ptyProcess.inputStream)
+                        val runner = CloudTerminalRunner(project, containerName, process)
 
                         runInEdt {
-                            notifyError(message("cloud_debug.step.clouddebug.install.fail", error))
+                            TerminalView.getInstance(project).createNewSession(runner, TerminalTabState().also { it.myTabName = containerName })
                         }
-                        throw Exception("cloud debug executable not found")
                     }
 
-                    val connectionManager = AwsConnectionManager.getInstance(project)
-                    val credentials = connectionManager.activeCredentialProvider
-                    val region = connectionManager.activeRegion
-
-                    val description = CloudDebuggingResources.describeInstrumentedResource(credentials, region, cluster, service)
-                    if (description == null || description.status != INSTRUMENTED_STATUS || description.taskRole.isEmpty()) {
-                        runInEdt {
-                            notifyError(message("cloud_debug.execution.failed.not_set_up"))
-                        }
-                        throw RuntimeException("Resource somehow became de-instrumented?")
+                    override fun onSuccess() {
+                        recordTelemetry(Result.Succeeded)
                     }
-                    val role = description.taskRole
 
-                    val target = try {
-                        runInstrument(project, cloudDebugExecutable, cluster, service, role).target
-                    } catch (e: Exception) {
-                        e.notifyError(title)
-                        null
-                    } ?: return
+                    override fun onThrowable(error: Throwable) {
+                        recordTelemetry(Result.Failed)
+                    }
 
-                    val cmdLine = buildBaseCmdLine(project, cloudDebugExecutable)
-                        .withParameters("exec")
-                        .withParameters("--target")
-                        .withParameters(target)
-                        /* TODO remove this when the cli conforms to the contract */
-                        .withParameters("--selector")
-                        .withParameters(containerName)
-                        .withParameters("--tty")
-                        .withParameters("/aws/cloud-debug/common/busybox", "sh", "-i")
-
-                    val cmdList = cmdLine.getCommandLineList(null).toTypedArray()
-                    val env = cmdLine.effectiveEnvironment
-                    val ptyProcess = PtyProcess.exec(cmdList, env, null)
-                    val process = CloudTerminalProcess(ptyProcess.outputStream, ptyProcess.inputStream)
-                    val runner = CloudTerminalRunner(project, containerName, process)
-
-                    runInEdt {
-                        TerminalView.getInstance(project).createNewSession(runner, TerminalTabState().also { it.myTabName = containerName })
+                    private fun recordTelemetry(result: Result) {
+                        ClouddebugTelemetry.shell(
+                            project,
+                            // TODO clean up with executable manager changes
+                            version = (cloudDebugExecutable as? ExecutableInstance.Executable)?.version,
+                            result = result,
+                            value = Duration.between(startTime, Instant.now()).toMillis().toDouble(),
+                            createTime = startTime
+                        )
                     }
                 }
-
-                override fun onSuccess() {
-                    recordTelemetry(Result.Succeeded)
-                }
-
-                override fun onThrowable(error: Throwable) {
-                    recordTelemetry(Result.Failed)
-                }
-
-                private fun recordTelemetry(result: Result) {
-                    ClouddebugTelemetry.shell(
-                        project,
-                        // TODO clean up with executable manager changes
-                        version = (cloudDebugExecutable as? ExecutableInstance.Executable)?.version,
-                        result = result,
-                        value = Duration.between(startTime, Instant.now()).toMillis().toDouble(),
-                        createTime = startTime
-                    )
-                }
-            })
+            )
         }
     }
 

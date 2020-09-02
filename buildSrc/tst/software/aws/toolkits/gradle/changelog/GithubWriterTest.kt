@@ -64,7 +64,9 @@ class GithubWriterTest {
         sut.writeLine(
             renderEntry(
                 ReleaseEntry(
-                    LocalDate.of(2017, 2, 1), "2.0.0-preview-3", listOf(
+                    LocalDate.of(2017, 2, 1),
+                    "2.0.0-preview-3",
+                    listOf(
                         Entry(
                             ChangeType.FEATURE,
                             "A feature with some an issue link #45 or (#12) but not regular #hash"

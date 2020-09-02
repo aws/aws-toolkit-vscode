@@ -69,12 +69,14 @@ class AwsExplorerNodeProcessorTest {
 
         ExtensionTestUtil.maskExtensions(
             AwsExplorerNodeProcessor.EP_NAME,
-            listOf(object : AwsExplorerNodeProcessor {
-                override fun postProcessPresentation(node: AwsExplorerNode<*>, presentation: PresentationData) {
-                    ran.set(true)
-                    ran.set(ranOnCorrectThread.get() && !ApplicationManager.getApplication().isDispatchThread)
+            listOf(
+                object : AwsExplorerNodeProcessor {
+                    override fun postProcessPresentation(node: AwsExplorerNode<*>, presentation: PresentationData) {
+                        ran.set(true)
+                        ran.set(ranOnCorrectThread.get() && !ApplicationManager.getApplication().isDispatchThread)
+                    }
                 }
-            }),
+            ),
             disposableRule.disposable
         )
 

@@ -44,7 +44,8 @@ object DotNetRuntimeUtils {
             ?: DEFAULT_DOTNET_CORE_RUNTIME
     }
 
-    const val RUNTIME_CONFIG_JSON_21 = """{
+    const val RUNTIME_CONFIG_JSON_21 =
+        """{
   "runtimeOptions": {
     "tfm": "netcoreapp2.1",
     "framework": {

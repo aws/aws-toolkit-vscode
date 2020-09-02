@@ -64,22 +64,24 @@ object SamTemplateUtils {
         if (!tempFile.exists()) {
             tempFile.createFile()
         }
-        tempFile.writeText(yamlWriter {
-            mapping("Resources") {
-                mapping(logicalId) {
-                    keyValue("Type", SERVERLESS_FUNCTION_TYPE)
-                    mapping("Properties") {
-                        keyValue("Handler", handler)
-                        keyValue("CodeUri", codeUri)
-                        keyValue("Runtime", runtime.toString())
-                        keyValue("Timeout", timeout.toString())
-                        keyValue("MemorySize", memorySize.toString())
+        tempFile.writeText(
+            yamlWriter {
+                mapping("Resources") {
+                    mapping(logicalId) {
+                        keyValue("Type", SERVERLESS_FUNCTION_TYPE)
+                        mapping("Properties") {
+                            keyValue("Handler", handler)
+                            keyValue("CodeUri", codeUri)
+                            keyValue("Runtime", runtime.toString())
+                            keyValue("Timeout", timeout.toString())
+                            keyValue("MemorySize", memorySize.toString())
 
-                        if (envVars.isNotEmpty()) {
-                            mapping("Environment") {
-                                mapping("Variables") {
-                                    envVars.forEach { (key, value) ->
-                                        keyValue(key, value)
+                            if (envVars.isNotEmpty()) {
+                                mapping("Environment") {
+                                    mapping("Variables") {
+                                        envVars.forEach { (key, value) ->
+                                            keyValue(key, value)
+                                        }
                                     }
                                 }
                             }
@@ -87,6 +89,6 @@ object SamTemplateUtils {
                     }
                 }
             }
-        })
+        )
     }
 }

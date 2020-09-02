@@ -31,11 +31,14 @@ internal class RefreshConnectionActionTest {
 
         val states = ConcurrentHashMap.newKeySet<ConnectionState>()
         projectRule.project.messageBus.connect()
-            .subscribe(AwsConnectionManager.CONNECTION_SETTINGS_STATE_CHANGED, object : ConnectionSettingsStateChangeNotifier {
-                override fun settingsStateChanged(newState: ConnectionState) {
-                    states.add(newState)
+            .subscribe(
+                AwsConnectionManager.CONNECTION_SETTINGS_STATE_CHANGED,
+                object : ConnectionSettingsStateChangeNotifier {
+                    override fun settingsStateChanged(newState: ConnectionState) {
+                        states.add(newState)
+                    }
                 }
-            })
+            )
 
         sut.actionPerformed(testAction())
 

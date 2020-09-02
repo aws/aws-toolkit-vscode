@@ -37,20 +37,22 @@ class LambdaSampleEventProviderTest {
                     <filename>second.json</filename>
                 </request>
             </requests>
-        """.trimIndent()
+            """.trimIndent()
         )
 
-        val firstContent = """
+        val firstContent =
+            """
             {
                 "hello": "world"
             }
-        """.trimIndent()
+            """.trimIndent()
 
         firstFile.writeText(firstContent)
 
-        val secondContent = """
+        val secondContent =
+            """
             ["hello"]
-        """.trimIndent()
+            """.trimIndent()
 
         secondFile.writeText(secondContent)
 
@@ -86,7 +88,7 @@ class LambdaSampleEventProviderTest {
                     <filename>first.json</filename>
                 </request>
             </requests>
-        """.trimIndent()
+            """.trimIndent()
         )
 
         val resourceResolver = mock<RemoteResourceResolver> {

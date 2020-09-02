@@ -59,7 +59,8 @@ class SchemasServiceNodeTest {
                         .registryName(it)
                         .build()
                 }
-            ))
+            )
+        )
     }
 
     private companion object {

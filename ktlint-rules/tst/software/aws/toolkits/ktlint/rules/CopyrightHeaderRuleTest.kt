@@ -17,7 +17,7 @@ class CopyrightHeaderRuleTest {
             rule.lint(
                 """
         import a.b.c
-        """.trimIndent()
+                """.trimIndent()
             )
         ).containsExactly(
             LintError(1, 1, "copyright-header", "Missing or incorrect file header")
@@ -33,7 +33,7 @@ class CopyrightHeaderRuleTest {
         // SPDX-License-Identifier: Apache-2.0
 
         import a.b.c
-        """.trimIndent()
+                """.trimIndent()
             )
         ).isEmpty()
     }

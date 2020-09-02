@@ -59,13 +59,14 @@ open class NewChange : ChangeLogTask() {
     }
 
     private fun createChange(changeType: ChangeType, description: String) = newFile(changeType).apply {
-        MAPPER.writerWithDefaultPrettyPrinter().writeValue(this,
+        MAPPER.writerWithDefaultPrettyPrinter().writeValue(
+            this,
             Entry(changeType, description)
         )
     }
 
     private fun newFile(changeType: ChangeType) = nextReleaseDirectory.file("${changeType.name.toLowerCase()}-${UUID.randomUUID()}.json").get().asFile.apply {
-            parentFile?.mkdirs()
-            createNewFile()
-        }
+        parentFile?.mkdirs()
+        createNewFile()
+    }
 }

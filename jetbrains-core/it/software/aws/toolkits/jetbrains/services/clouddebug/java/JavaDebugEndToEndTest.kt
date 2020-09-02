@@ -57,7 +57,11 @@ class JavaDebugEndToEndTest : CloudDebugTestCase("CloudDebugTestECSClusterTaskDe
         }
 
         val future = CompletableFuture<Nothing>()
-        ExternalSystemUtil.runTask(buildSettings, DefaultRunExecutor.EXECUTOR_ID, projectRule.project, GradleConstants.SYSTEM_ID,
+        ExternalSystemUtil.runTask(
+            buildSettings,
+            DefaultRunExecutor.EXECUTOR_ID,
+            projectRule.project,
+            GradleConstants.SYSTEM_ID,
             object : TaskCallback {
                 override fun onSuccess() {
                     future.complete(null)
@@ -66,7 +70,10 @@ class JavaDebugEndToEndTest : CloudDebugTestCase("CloudDebugTestECSClusterTaskDe
                 override fun onFailure() {
                     future.completeExceptionally(RuntimeException("Jar task failed"))
                 }
-            }, ProgressExecutionMode.IN_BACKGROUND_ASYNC, false)
+            },
+            ProgressExecutionMode.IN_BACKGROUND_ASYNC,
+            false
+        )
         future.join()
 
         // set breakpoint
@@ -83,16 +90,22 @@ class JavaDebugEndToEndTest : CloudDebugTestCase("CloudDebugTestECSClusterTaskDe
             beforeRunTasks = mutableListOf(Mockito.mock(BeforeRunTask::class.java))
             clusterArn(service.clusterArn())
             // TODO: remove this once we fix the UX around which service is debugged
-            serviceArn(service.serviceArn().let {
-                // replace service name with instrumented service name
-                val instrumentedServiceName = "cloud-debug-${EcsUtils.serviceArnToName(service.serviceArn())}"
-                it.replace(EcsUtils.serviceArnToName(it), instrumentedServiceName)
-            })
-            containerOptions(mapOf("ContainerName" to ContainerOptions().apply {
-                platform = CloudDebuggingPlatform.JVM
-                startCommand = "java -cp /main.jar Main"
-                artifactMappings = listOf(ArtifactMapping(jarFile.toString(), "/main.jar"))
-            }))
+            serviceArn(
+                service.serviceArn().let {
+                    // replace service name with instrumented service name
+                    val instrumentedServiceName = "cloud-debug-${EcsUtils.serviceArnToName(service.serviceArn())}"
+                    it.replace(EcsUtils.serviceArnToName(it), instrumentedServiceName)
+                }
+            )
+            containerOptions(
+                mapOf(
+                    "ContainerName" to ContainerOptions().apply {
+                        platform = CloudDebuggingPlatform.JVM
+                        startCommand = "java -cp /main.jar Main"
+                        artifactMappings = listOf(ArtifactMapping(jarFile.toString(), "/main.jar"))
+                    }
+                )
+            )
         }
 
         runUnderRealCredentials(projectRule.project) {

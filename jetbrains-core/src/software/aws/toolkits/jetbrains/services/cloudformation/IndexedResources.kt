@@ -15,20 +15,20 @@ import java.io.DataOutput
 open class IndexedResource protected constructor(val type: String, val indexedProperties: Map<String, String>) {
 
     protected constructor(resource: Resource, indexProperties: List<String>) :
-            this(
-                resource.type() ?: throw RuntimeException(message("cloudformation.template_index.missing_type")),
-                indexProperties
-                    .asSequence()
-                    .map {
-                        it to try {
-                            resource.getScalarProperty(it)
-                        } catch (e: Exception) {
-                            null
-                        }
+        this(
+            resource.type() ?: throw RuntimeException(message("cloudformation.template_index.missing_type")),
+            indexProperties
+                .asSequence()
+                .map {
+                    it to try {
+                        resource.getScalarProperty(it)
+                    } catch (e: Exception) {
+                        null
                     }
-                    .mapNotNull { (key, value) -> value?.let { key to it } }
-                    .toMap()
-            )
+                }
+                .mapNotNull { (key, value) -> value?.let { key to it } }
+                .toMap()
+        )
 
     fun save(dataOutput: DataOutput) {
         dataOutput.writeUTF(type)
@@ -58,7 +58,7 @@ open class IndexedResource protected constructor(val type: String, val indexedPr
         }
 
         fun from(type: String, indexedProperties: Map<String, String>) =
-                INDEXED_RESOURCE_MAPPINGS[type]?.first?.invoke(type, indexedProperties) ?: IndexedResource(type, indexedProperties)
+            INDEXED_RESOURCE_MAPPINGS[type]?.first?.invoke(type, indexedProperties) ?: IndexedResource(type, indexedProperties)
 
         fun from(resource: Resource): IndexedResource? = resource.type()?.let {
             INDEXED_RESOURCE_MAPPINGS[it]?.second?.invoke(resource) ?: IndexedResource(resource, listOf())
@@ -80,6 +80,6 @@ class IndexedFunction : IndexedResource {
 }
 
 internal val INDEXED_RESOURCE_MAPPINGS = mapOf<String, Pair<(String, Map<String, String>) -> IndexedResource, (Resource) -> IndexedResource>>(
-        LAMBDA_FUNCTION_TYPE to Pair(::IndexedFunction, ::IndexedFunction),
-        SERVERLESS_FUNCTION_TYPE to Pair(::IndexedFunction, ::IndexedFunction)
+    LAMBDA_FUNCTION_TYPE to Pair(::IndexedFunction, ::IndexedFunction),
+    SERVERLESS_FUNCTION_TYPE to Pair(::IndexedFunction, ::IndexedFunction)
 )

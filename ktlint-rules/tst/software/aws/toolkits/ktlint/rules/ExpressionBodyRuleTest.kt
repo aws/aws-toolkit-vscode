@@ -20,7 +20,8 @@ class ExpressionBodyRuleTest {
             private fun hello(): String {
                 return "hello"
             }
-        """, 1 to 1
+        """,
+            1 to 1
         )
     }
 
@@ -31,7 +32,8 @@ class ExpressionBodyRuleTest {
             fun hello(): List<String> {
                 return blah().map { it.displayName() }
             }
-        """, 1 to 1
+        """,
+            1 to 1
         )
     }
 
@@ -103,7 +105,9 @@ class ExpressionBodyRuleTest {
               //returning something
               return blah()
             }
-        """, 1 to 1)
+        """,
+            1 to 1
+        )
     }
 
     @Test
@@ -117,13 +121,15 @@ class ExpressionBodyRuleTest {
     }
 
     private fun assertExpected(@Language("kotlin") kotlinText: String, vararg expectedErrors: Pair<Int, Int>) {
-        assertThat(rule.lint(kotlinText.trimIndent())).containsExactly(*expectedErrors.map {
-            LintError(
-                it.first,
-                it.second,
-                "expression-body",
-                "Use expression body instead of one line return"
-            )
-        }.toTypedArray())
+        assertThat(rule.lint(kotlinText.trimIndent())).containsExactly(
+            *expectedErrors.map {
+                LintError(
+                    it.first,
+                    it.second,
+                    "expression-body",
+                    "Use expression body instead of one line return"
+                )
+            }.toTypedArray()
+        )
     }
 }

@@ -71,9 +71,12 @@ class CreateConfigurationActionTest {
 
     @Test
     fun `Create data source falls back to master username`() {
-        resourceCache.get().addEntry(StsResources.USER, CompletableFuture<String>().also {
-            it.completeExceptionally(RuntimeException("Failed to get current user"))
-        })
+        resourceCache.get().addEntry(
+            StsResources.USER,
+            CompletableFuture<String>().also {
+                it.completeExceptionally(RuntimeException("Failed to get current user"))
+            }
+        )
         val node = createNode()
         val registry = DataSourceRegistry(projectRule.project)
         CreateIamDataSourceAction().createDatasource(node, registry)

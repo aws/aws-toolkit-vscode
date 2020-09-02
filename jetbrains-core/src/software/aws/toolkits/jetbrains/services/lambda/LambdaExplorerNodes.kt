@@ -29,7 +29,8 @@ open class LambdaFunctionNode(
     LambdaClient.SERVICE_NAME,
     function,
     AwsIcons.Resources.LAMBDA_FUNCTION
-), ResourceLocationNode {
+),
+    ResourceLocationNode {
 
     override fun resourceType() = "function"
 

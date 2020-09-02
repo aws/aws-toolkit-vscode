@@ -56,7 +56,7 @@ class YamlCloudFormationTemplateTest {
         val template = yamlTemplate(
             """
 Description: "Some description"
-        """.trimIndent()
+            """.trimIndent()
         )
         runInEdtAndWait {
             assertThat(template.resources().toList()).isEmpty()
@@ -71,7 +71,7 @@ Description: "Some description"
 Resources:
 
 
-        """.trimIndent()
+            """.trimIndent()
         )
         runInEdtAndWait {
             assertThat(template.resources().toList()).isEmpty()
@@ -85,7 +85,7 @@ Resources:
 Description: "Some description"
 Resources:
     Foo:
-        """.trimIndent()
+            """.trimIndent()
         )
         runInEdtAndWait {
             assertThat(template.resources().toList()).isEmpty()
@@ -105,7 +105,7 @@ Resources:
         val template = yamlTemplate(
             """
 Description: "Some description"
-        """.trimIndent()
+            """.trimIndent()
         )
         runInEdtAndWait {
             assertThat(template.parameters().toList()).isEmpty()
@@ -120,7 +120,7 @@ Description: "Some description"
 Parameters:
 
 
-        """.trimIndent()
+            """.trimIndent()
         )
         runInEdtAndWait {
             assertThat(template.parameters().toList()).isEmpty()
@@ -183,7 +183,7 @@ Resources:
             ProvisionedThroughput:
                 ReadCapacityUnits: 1
                 WriteCapacityUnits: 1
-                """.trimIndent()
+            """.trimIndent()
         )
     }
 
@@ -218,7 +218,7 @@ Resources:
         Type: AWS::Lambda::Function
         Properties:
             Handler: helloworld.App::handleRequest
-                """.trimIndent()
+            """.trimIndent()
         )
     }
 
@@ -255,12 +255,15 @@ Resources:
                 FileTypeManagerEx.getInstance().associate(fakeFileType, matchYml)
             }
 
-            Disposer.register(projectRule.fixture.testRootDisposable, Disposable {
-                runWriteAction {
-                    FileTypeManagerEx.getInstance().removeAssociation(fakeFileType, matchYml)
-                    FileTypeManagerEx.getInstance().removeAssociation(fakeFileType, matchYaml)
+            Disposer.register(
+                projectRule.fixture.testRootDisposable,
+                Disposable {
+                    runWriteAction {
+                        FileTypeManagerEx.getInstance().removeAssociation(fakeFileType, matchYml)
+                        FileTypeManagerEx.getInstance().removeAssociation(fakeFileType, matchYaml)
+                    }
                 }
-            })
+            )
 
             setOf("template.canParseByExtension.yaml", "template.canParseByExtension.yml").forEach {
                 val yamlFile = projectRule.fixture.addFileToProject(it, TEST_TEMPLATE)

@@ -155,14 +155,17 @@ class DotNetSamDebugSupport : SamDebugSupport {
                 val riderDebuggerProcessHandler = startDebugWorker(dockerContainer, backendPort, frontendPort)
 
                 // Link worker process to SAM process lifetime
-                samProcessHandle.addProcessListener(object : ProcessAdapter() {
-                    override fun processTerminated(event: ProcessEvent) {
-                        runInEdt {
-                            debuggerLifetimeDefinition.terminate()
-                            riderDebuggerProcessHandler.destroyProcess()
+                samProcessHandle.addProcessListener(
+                    object : ProcessAdapter() {
+                        override fun processTerminated(event: ProcessEvent) {
+                            runInEdt {
+                                debuggerLifetimeDefinition.terminate()
+                                riderDebuggerProcessHandler.destroyProcess()
+                            }
                         }
-                    }
-                }, environment)
+                    },
+                    environment
+                )
 
                 withContext(edtContext) {
                     protocol.wire.connected.adviseUntil(debuggerLifetime) connected@{ isConnected ->

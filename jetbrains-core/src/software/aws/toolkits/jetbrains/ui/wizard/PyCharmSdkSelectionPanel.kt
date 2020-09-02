@@ -35,12 +35,15 @@ class PyCharmSdkSelectionPanel(val step: SamProjectRuntimeSelectionStep) : SdkSe
     override val sdkSelectionLabel: JLabel? = null
 
     private fun newSdkPanel(): PyAddSdkGroupPanel =
-    // construct a py-specific settings step and grab its sdk panel instance
-        object : ProjectSpecificSettingsStep<PyNewProjectSettings>(object : PythonProjectGenerator<PyNewProjectSettings>() {
-            override fun getLogo(): Icon? = AwsIcons.Logos.AWS
+        // construct a py-specific settings step and grab its sdk panel instance
+        object : ProjectSpecificSettingsStep<PyNewProjectSettings>(
+            object : PythonProjectGenerator<PyNewProjectSettings>() {
+                override fun getLogo(): Icon? = AwsIcons.Logos.AWS
 
-            override fun getName(): String = message("sam.init.name")
-        }, AbstractNewProjectStep.AbstractCallback<PyNewProjectSettings>()) {
+                override fun getName(): String = message("sam.init.name")
+            },
+            AbstractNewProjectStep.AbstractCallback<PyNewProjectSettings>()
+        ) {
             // shim validation back to the user UI...
             override fun setErrorText(text: String?) {
                 step.setErrorText(text)
@@ -77,9 +80,11 @@ class PyCharmSdkSelectionPanel(val step: SamProjectRuntimeSelectionStep) : SdkSe
 
         document.addDocumentListener(documentListener)
 
-        sdkSelectionPanel.addChangeListener(Runnable {
-            step.checkValid()
-        })
+        sdkSelectionPanel.addChangeListener(
+            Runnable {
+                step.checkValid()
+            }
+        )
 
         sdkSelectionPanel.newProjectPath = step.getLocationField().text.trim()
     }

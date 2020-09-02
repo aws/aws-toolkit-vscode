@@ -299,7 +299,7 @@ tasks.register<GenerateGithubChangeLog>("generateChangeLog") {
 
 val ktlintTask = tasks.register<JavaExec>("ktlint") {
     description = "Check Kotlin code style."
-    classpath = configurations.getByName("ktlint")
+    classpath = ktlint
     group = "verification"
     main = "com.pinterest.ktlint.Main"
 

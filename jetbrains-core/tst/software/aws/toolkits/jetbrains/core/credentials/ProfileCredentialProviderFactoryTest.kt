@@ -680,7 +680,8 @@ class ProfileCredentialProviderFactoryTest {
     ): ExecutableHttpRequest {
         val expirationString = DateTimeFormatter.ISO_INSTANT.format(expiration)
 
-        val body = """
+        val body =
+            """
                     <AssumeRoleResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
                         <AssumeRoleResult>
                             <Credentials>
@@ -691,7 +692,7 @@ class ProfileCredentialProviderFactoryTest {
                             </Credentials>
                         </AssumeRoleResult>
                     </AssumeRoleResponse>
-                    """.trimIndent()
+            """.trimIndent()
 
         return object : ExecutableHttpRequest {
             override fun call(): HttpExecuteResponse = HttpExecuteResponse.builder()
@@ -730,7 +731,8 @@ class ProfileCredentialProviderFactoryTest {
     }
 
     private companion object {
-        val TEST_PROFILE_FILE_CONTENTS = """
+        val TEST_PROFILE_FILE_CONTENTS =
+            """
             [profile bar]
             aws_access_key_id=BarAccessKey
             aws_secret_access_key=BarSecretKey
@@ -747,7 +749,7 @@ class ProfileCredentialProviderFactoryTest {
             aws_access_key_id=RegionAccessKey
             aws_secret_access_key=RegionSecretKey
             region=us-west-2
-        """.trimIndent()
+            """.trimIndent()
 
         const val FOO_PROFILE_NAME = "foo"
         const val BAR_PROFILE_NAME = "bar"

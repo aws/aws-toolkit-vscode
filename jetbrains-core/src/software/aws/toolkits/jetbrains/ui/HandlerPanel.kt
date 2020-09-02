@@ -60,22 +60,26 @@ class HandlerPanel(private val project: Project) : JPanel(MigLayout("novisualpad
 
     private fun initSimpleHandler() {
         simpleHandler.toolTipText = message("lambda.function.handler.tooltip")
-        simpleHandler.addComponentListener(object : ComponentAdapter() {
-            override fun componentShown(e: ComponentEvent?) {
-                super.componentShown(e)
-                simpleHandler.text = handlerWithCompletion.text
+        simpleHandler.addComponentListener(
+            object : ComponentAdapter() {
+                override fun componentShown(e: ComponentEvent?) {
+                    super.componentShown(e)
+                    simpleHandler.text = handlerWithCompletion.text
+                }
             }
-        })
+        )
     }
 
     private fun initHandlerWithCompletion() {
         handlerWithCompletion.toolTipText = message("lambda.function.handler.tooltip")
-        handlerWithCompletion.addComponentListener(object : ComponentAdapter() {
-            override fun componentShown(e: ComponentEvent?) {
-                super.componentShown(e)
-                handlerWithCompletion.text = simpleHandler.text
+        handlerWithCompletion.addComponentListener(
+            object : ComponentAdapter() {
+                override fun componentShown(e: ComponentEvent?) {
+                    super.componentShown(e)
+                    handlerWithCompletion.text = simpleHandler.text
+                }
             }
-        })
+        )
     }
 
     private fun switchCompletion() {

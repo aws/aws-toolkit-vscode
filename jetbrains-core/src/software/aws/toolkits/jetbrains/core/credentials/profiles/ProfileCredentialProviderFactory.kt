@@ -260,15 +260,17 @@ class ProfileCredentialProviderFactory : CredentialProviderFactory {
 
         val assumeRoleCredentialsProvider = StsAssumeRoleCredentialsProvider.builder()
             .stsClient(stsClient)
-            .refreshRequest(Supplier {
-                createAssumeRoleRequest(
-                    profile.name(),
-                    mfaSerial,
-                    roleArn,
-                    roleSessionName,
-                    externalId
-                )
-            })
+            .refreshRequest(
+                Supplier {
+                    createAssumeRoleRequest(
+                        profile.name(),
+                        mfaSerial,
+                        roleArn,
+                        roleSessionName,
+                        externalId
+                    )
+                }
+            )
             .build()
 
         // TODO: Do we still need this wrapper?
@@ -320,8 +322,12 @@ class ProfileCredentialProviderFactory : CredentialProviderFactory {
 
         return when {
             this.requiresMfa(profiles) -> ProfileCredentialsIdentifierMfa(name, defaultRegion)
-            this.requiresSso(profiles) -> ProfileCredentialsIdentifierSso(name, defaultRegion,
-                diskCache, this.requiredProperty(SSO_URL))
+            this.requiresSso(profiles) -> ProfileCredentialsIdentifierSso(
+                name,
+                defaultRegion,
+                diskCache,
+                this.requiredProperty(SSO_URL)
+            )
             else -> ProfileCredentialsIdentifier(name, defaultRegion)
         }
     }

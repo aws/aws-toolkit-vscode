@@ -69,7 +69,8 @@ class CloudWatchLogWindow(private val project: Project) : CoroutineScope by Appl
             }
             val title = if (previousEvent != null && duration != null) {
                 message(
-                    "cloudwatch.logs.filtered_log_stream_title", logStream,
+                    "cloudwatch.logs.filtered_log_stream_title",
+                    logStream,
                     DateFormatUtil.getDateTimeFormat().format(previousEvent.timestamp - duration.toMillis()),
                     DateFormatUtil.getDateTimeFormat().format(previousEvent.timestamp + duration.toMillis())
                 )

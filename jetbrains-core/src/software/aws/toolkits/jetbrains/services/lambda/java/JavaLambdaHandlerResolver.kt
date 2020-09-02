@@ -131,7 +131,8 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
     private fun findByClass(clz: PsiClass): String? =
         if (clz.canBeInstantiatedByLambda() &&
             clz.containingFile.virtualFile != null &&
-            clz.implementsLambdaHandlerInterface(clz.containingFile.virtualFile)) {
+            clz.implementsLambdaHandlerInterface(clz.containingFile.virtualFile)
+        ) {
             clz.qualifiedName
         } else {
             null
@@ -147,11 +148,13 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
             clz.qualifiedName?.let { handlers.add(it) }
         }
 
-        handlers.addAll(clz.allMethods
-            .asSequence()
-            .filter { it.isValidHandler(clz, file) }
-            .map { "${clz.qualifiedName}::${it.name}" }
-            .toSet())
+        handlers.addAll(
+            clz.allMethods
+                .asSequence()
+                .filter { it.isValidHandler(clz, file) }
+                .map { "${clz.qualifiedName}::${it.name}" }
+                .toSet()
+        )
 
         return handlers
     }
@@ -187,15 +190,16 @@ class JavaLambdaHandlerResolver : LambdaHandlerResolver {
         !(parentClass.implementsLambdaHandlerInterface(file) && this.name == HANDLER_NAME)
 
     private fun PsiMethod.hasRequiredParameters(): Boolean = when (this.parameters.size) {
-            1 -> true
-            2 -> (this.parameterList.parameters[0].isInputStreamParameter() &&
-                    this.parameterList.parameters[1].isOutputStreamParameter()) ||
-                    this.parameterList.parameters[1].isContextParameter()
-            3 -> this.parameterList.parameters[0].isInputStreamParameter() &&
-                    this.parameterList.parameters[1].isOutputStreamParameter() &&
-                    this.parameterList.parameters[2].isContextParameter()
-            else -> false
-        }
+        1 -> true
+        2 ->
+            (this.parameterList.parameters[0].isInputStreamParameter() && this.parameterList.parameters[1].isOutputStreamParameter()) ||
+                this.parameterList.parameters[1].isContextParameter()
+        3 ->
+            this.parameterList.parameters[0].isInputStreamParameter() &&
+                this.parameterList.parameters[1].isOutputStreamParameter() &&
+                this.parameterList.parameters[2].isContextParameter()
+        else -> false
+    }
 
     private fun PsiParameter.isContextParameter(): Boolean = isClass(LAMBDA_CONTEXT)
     private fun PsiParameter.isInputStreamParameter(): Boolean = isClass(INPUT_STREAM)

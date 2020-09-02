@@ -85,7 +85,8 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LocalLambd
                 override fun handlerValidationFinished(handlerName: String, isHandlerExists: Boolean) {
                     view.invalidateConfiguration()
                 }
-            })
+            }
+        )
 
         connect.subscribe(
             SamCliVersionEvaluationListener.TOPIC,
@@ -93,6 +94,7 @@ class LocalLambdaRunSettingsEditor(project: Project) : SettingsEditor<LocalLambd
                 override fun samVersionValidationFinished(path: String, version: SemVer) {
                     view.invalidateConfiguration()
                 }
-            })
+            }
+        )
     }
 }

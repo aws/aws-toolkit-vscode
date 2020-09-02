@@ -92,7 +92,8 @@ interface ConfigFileWriter {
 }
 
 object DefaultConfigFileWriter : ConfigFileWriter {
-    val TEMPLATE = """
+    val TEMPLATE =
+        """
         # Amazon Web Services Config File used by AWS CLI, SDKs, and tools
         # This file was created by the AWS Toolkit for JetBrains plugin.
         #
@@ -120,7 +121,7 @@ object DefaultConfigFileWriter : ConfigFileWriter {
         # [profile user1]
         # aws_access_key_id = [accessKey1]
         # aws_secret_access_key = [secretKey1]
-    """.trimIndent()
+        """.trimIndent()
 
     override fun createFile(file: File) {
         val parent = file.parentFile

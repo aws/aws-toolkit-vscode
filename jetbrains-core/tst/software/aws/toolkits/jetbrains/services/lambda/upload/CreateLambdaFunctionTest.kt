@@ -52,7 +52,8 @@ public class Processor {
         }
 
         fixture.openFile(
-            "template.yaml", """
+            "template.yaml",
+            """
 Resources:
   ServerlessFunction:
     Type: AWS::Serverless::Function

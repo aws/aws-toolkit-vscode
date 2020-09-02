@@ -23,8 +23,10 @@ class DotNetHandlerCompletionProviderTest : AwsReuseSolutionTestBase() {
         arrayOf("DotNet31", Runtime.DOTNETCORE3_1)
     )
 
-    @Test(dataProvider = "handlerCompletionSupportedData",
-        description = "Check completion in run configuration feature is enabled for DOTNET runtime.")
+    @Test(
+        dataProvider = "handlerCompletionSupportedData",
+        description = "Check completion in run configuration feature is enabled for DOTNET runtime."
+    )
     fun testCompletion_IsSupportedForDotNetRuntime(name: String, runtime: Runtime) {
         val provider = HandlerCompletionProvider(project, runtime)
         assertThat(provider.isCompletionSupported).isTrue()

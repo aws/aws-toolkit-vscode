@@ -28,7 +28,8 @@ interface NoticeManager {
 internal const val NOTICE_NOTIFICATION_GROUP_ID = "AWS Toolkit Notices"
 
 @State(name = "notices", storages = [Storage("aws.xml")])
-class DefaultNoticeManager : PersistentStateComponent<NoticeStateList>,
+class DefaultNoticeManager :
+    PersistentStateComponent<NoticeStateList>,
     NoticeManager {
     private val internalState = mutableMapOf<String, NoticeState>()
     private val notificationGroup = NotificationGroup(NOTICE_NOTIFICATION_GROUP_ID, NotificationDisplayType.STICKY_BALLOON, true)

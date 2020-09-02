@@ -135,7 +135,7 @@ class SamDeployTest {
             """
                 def lambda_handler(event, context):
                     return "Hello world"
-                """.trimIndent()
+            """.trimIndent()
         )
 
         projectRule.fixture.addFileToProject(

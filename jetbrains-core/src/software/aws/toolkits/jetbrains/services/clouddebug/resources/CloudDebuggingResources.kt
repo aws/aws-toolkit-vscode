@@ -98,11 +98,13 @@ object CloudDebuggingResources {
         val generalCommandLine = shutdownTask.getCommandLine().withParameters("shutdown")
         try {
             val handler = CapturingProcessHandler(generalCommandLine)
-            handler.addProcessListener(object : ProcessAdapter() {
-                override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
-                    messageEmitter?.emitMessage(event.text, outputType == ProcessOutputTypes.STDERR)
+            handler.addProcessListener(
+                object : ProcessAdapter() {
+                    override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
+                        messageEmitter?.emitMessage(event.text, outputType == ProcessOutputTypes.STDERR)
+                    }
                 }
-            })
+            )
             handler.runProcess(TimeUnit.SECONDS.toMillis(5).toInt())
         } catch (e: Exception) {
             LOG.warn(e) { "Unable to shutdown the local dispatcher!" }

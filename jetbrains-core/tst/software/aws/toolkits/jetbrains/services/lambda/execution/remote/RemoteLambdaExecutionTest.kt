@@ -137,12 +137,14 @@ class RemoteLambdaExecutionTest {
         val executionFuture = CompletableFuture<Output>()
         runInEdt {
             executionEnvironment.runner.execute(executionEnvironment) {
-                it.processHandler?.addProcessListener(object : OutputListener() {
-                    override fun processTerminated(event: ProcessEvent) {
-                        super.processTerminated(event)
-                        executionFuture.complete(this.output)
+                it.processHandler?.addProcessListener(
+                    object : OutputListener() {
+                        override fun processTerminated(event: ProcessEvent) {
+                            super.processTerminated(event)
+                            executionFuture.complete(this.output)
+                        }
                     }
-                })
+                )
             }
         }
 

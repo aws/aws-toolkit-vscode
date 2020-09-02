@@ -62,9 +62,12 @@ class CreateIamRoleDialog(
             ApplicationManager.getApplication().executeOnPooledThread {
                 try {
                     createIamRole(roleName(), policyDocument(), assumeRolePolicy())
-                    ApplicationManager.getApplication().invokeLater({
-                        close(OK_EXIT_CODE)
-                    }, ModalityState.stateForComponent(view.component))
+                    ApplicationManager.getApplication().invokeLater(
+                        {
+                            close(OK_EXIT_CODE)
+                        },
+                        ModalityState.stateForComponent(view.component)
+                    )
                 } catch (e: Exception) {
                     LOG.warn(e) { "Failed to create IAM role '${roleName()}'" }
                     setErrorText(e.message)

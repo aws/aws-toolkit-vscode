@@ -62,7 +62,8 @@ class AttachDebugger(
             val debuggerAttacher = DebuggerSupport.debuggers()[containerOptions.platform]
                 ?: throw IllegalStateException(
                     message(
-                        "cloud_debug.step.attach_debugger.unknown_platform", containerOptions.platform
+                        "cloud_debug.step.attach_debugger.unknown_platform",
+                        containerOptions.platform
                     )
                 )
 
@@ -130,15 +131,17 @@ class AttachDebugger(
             ConsoleViewContentType.NORMAL_OUTPUT
         }
 
-        handler.addProcessListener(object : OutputListener() {
-            override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
-                // Skip system messages
-                if (outputType == ProcessOutputTypes.SYSTEM) {
-                    return
+        handler.addProcessListener(
+            object : OutputListener() {
+                override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
+                    // Skip system messages
+                    if (outputType == ProcessOutputTypes.SYSTEM) {
+                        return
+                    }
+                    console.print(event.text, viewType)
                 }
-                console.print(event.text, viewType)
             }
-        })
+        )
 
         handler.startNotify()
 

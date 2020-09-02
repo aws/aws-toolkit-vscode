@@ -71,7 +71,8 @@ class DotNetLambdaHandlerResolver : LambdaHandlerResolver {
                 className = type,
                 methodName = methodName,
                 targetFramework = "",
-                projectId = projectModelViewHost.getProjectModeId(projectToProcess.projectFilePath)),
+                projectId = projectModelViewHost.getProjectModeId(projectToProcess.projectFilePath)
+            ),
             timeouts = RpcTimeouts.default
         )
 

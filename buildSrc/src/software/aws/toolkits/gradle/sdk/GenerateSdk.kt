@@ -15,7 +15,6 @@ import software.amazon.awssdk.codegen.model.service.ServiceModel
 import software.amazon.awssdk.codegen.utils.ModelLoaderUtils
 import java.io.File
 
-/* ktlint-disable custom-ktlint-rules:log-not-lazy */
 open class GenerateSdk : DefaultTask() {
     @InputDirectory
     lateinit var c2jFolder: File

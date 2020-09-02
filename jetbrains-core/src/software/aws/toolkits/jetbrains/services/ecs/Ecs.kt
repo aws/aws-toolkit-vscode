@@ -25,10 +25,10 @@ fun EcsClient.waitForServicesStable(
         success = { response ->
             // return true when there are no non-stable services
             response.services().size != 0 &&
-            response.services().map { service ->
-                // service is stable if there is only a single deployment and the running count matches desired
-                service.deployments().size == 1 && service.runningCount() == service.desiredCount()
-            }.all { it }
+                response.services().map { service ->
+                    // service is stable if there is only a single deployment and the running count matches desired
+                    service.deployments().size == 1 && service.runningCount() == service.desiredCount()
+                }.all { it }
         },
         fail = {
             it.failures().mapNotNull { failure ->

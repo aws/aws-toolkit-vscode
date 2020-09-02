@@ -117,7 +117,8 @@ fun CodeInsightTestFixture.addLambdaHandler(
     subPath: String = ".",
     fileName: String = "app",
     handlerName: String = "lambdaHandler",
-    fileContent: String = """
+    fileContent: String =
+        """
         exports.$handlerName = function (event, context, callback) {
             return 'HelloWorld'
         };
@@ -132,12 +133,13 @@ fun CodeInsightTestFixture.addLambdaHandler(
 
 fun CodeInsightTestFixture.addPackageJsonFile(
     subPath: String = ".",
-    content: String = """
+    content: String =
+        """
         {
             "name": "hello-world",
             "version": "1.0.0"
         }
-    """.trimIndent()
+        """.trimIndent()
 ): PsiFile = this.addFileToProject("$subPath/package.json", content)
 
 fun CodeInsightTestFixture.addSamTemplate(
@@ -156,5 +158,5 @@ fun CodeInsightTestFixture.addSamTemplate(
               Handler: $handler
               Runtime: $runtime
               Timeout: 900
-        """.trimIndent()
+    """.trimIndent()
 )

@@ -29,46 +29,46 @@ class EventsFetcher(private val stackName: String) {
      */
     fun fetchEvents(client: CloudFormationClient, pageToSwitchTo: Page?):
         Pair<List<StackEvent>, Set<Page>> {
-        assert(!SwingUtilities.isEventDispatchThread())
+            assert(!SwingUtilities.isEventDispatchThread())
 
-        val pageToFetch: String? = when (pageToSwitchTo) {
-            Page.NEXT -> nextPage
-            Page.PREVIOUS -> previousPages.lastOrNull()
-            else -> currentPage
+            val pageToFetch: String? = when (pageToSwitchTo) {
+                Page.NEXT -> nextPage
+                Page.PREVIOUS -> previousPages.lastOrNull()
+                else -> currentPage
+            }
+
+            val request = DescribeStackEventsRequest.builder().stackName(stackName).nextToken(pageToFetch).build()
+            val response = client.describeStackEvents(request)
+
+            when (pageToSwitchTo) {
+                Page.NEXT -> currentPage?.let { previousPages.add(it) } // Store current as prev
+                Page.PREVIOUS -> if (previousPages.isNotEmpty()) previousPages.removeAt(previousPages.size - 1)
+            }
+            nextPage = response.nextToken()
+            currentPage = pageToFetch
+
+            if (pageToSwitchTo != null) { // page changed, last event is not valid
+                lastEventIdOfCurrentPage = null
+            }
+
+            val eventsUnprocessed = response.stackEvents()
+            val eventsProcessed = when (lastEventIdOfCurrentPage) {
+                null -> eventsUnprocessed
+                else -> eventsUnprocessed.takeWhile { it.id != lastEventIdOfCurrentPage }
+            }
+            eventsProcessed.firstOrNull()?.let { lastEventIdOfCurrentPage = it.id }
+
+            val availablePages = mutableSetOf<Page>()
+
+            if (currentPage != null) { // We only can go prev. if current page is not first (not null)
+                availablePages.add(Page.PREVIOUS)
+            }
+            if (nextPage != null) {
+                availablePages.add(Page.NEXT)
+            }
+
+            return Pair(eventsProcessed, availablePages)
         }
-
-        val request = DescribeStackEventsRequest.builder().stackName(stackName).nextToken(pageToFetch).build()
-        val response = client.describeStackEvents(request)
-
-        when (pageToSwitchTo) {
-            Page.NEXT -> currentPage?.let { previousPages.add(it) } // Store current as prev
-            Page.PREVIOUS -> if (previousPages.isNotEmpty()) previousPages.removeAt(previousPages.size - 1)
-        }
-        nextPage = response.nextToken()
-        currentPage = pageToFetch
-
-        if (pageToSwitchTo != null) { // page changed, last event is not valid
-            lastEventIdOfCurrentPage = null
-        }
-
-        val eventsUnprocessed = response.stackEvents()
-        val eventsProcessed = when (lastEventIdOfCurrentPage) {
-            null -> eventsUnprocessed
-            else -> eventsUnprocessed.takeWhile { it.id != lastEventIdOfCurrentPage }
-        }
-        eventsProcessed.firstOrNull()?.let { lastEventIdOfCurrentPage = it.id }
-
-        val availablePages = mutableSetOf<Page>()
-
-        if (currentPage != null) { // We only can go prev. if current page is not first (not null)
-            availablePages.add(Page.PREVIOUS)
-        }
-        if (nextPage != null) {
-            availablePages.add(Page.NEXT)
-        }
-
-        return Pair(eventsProcessed, availablePages)
-    }
 
     private val StackEvent.id: String get() = eventId()
 }

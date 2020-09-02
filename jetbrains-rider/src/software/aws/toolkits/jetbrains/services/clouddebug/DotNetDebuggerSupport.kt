@@ -119,7 +119,8 @@ class DotNetDebuggerSupport : DebuggerSupport() {
                     it?.let {
                         future.complete(
                             manager.startSessionAndShowTab(
-                                displayName, null,
+                                displayName,
+                                null,
                                 it
                             ).runContentDescriptor
                         )
@@ -165,7 +166,8 @@ class DotNetDebuggerSupport : DebuggerSupport() {
         val restCommands = input.drop(1)
         val path = restCommands.firstOrNull()?.trim()
             ?: throw RuntimeConfigurationError(
-                message("cloud_debug.run_configuration.dotnet.start_command.miss_assembly_path", START_COMMAND_ASSEMBLY_PLACEHOLDER))
+                message("cloud_debug.run_configuration.dotnet.start_command.miss_assembly_path", START_COMMAND_ASSEMBLY_PLACEHOLDER)
+            )
 
         if (!path.contains('/'))
             throw RuntimeConfigurationError(message("cloud_debug.run_configuration.dotnet.start_command.assembly_path_not_valid", path))
@@ -277,14 +279,16 @@ class DotNetDebuggerSupport : DebuggerSupport() {
                         }
                     }
 
-                    processHandler.addProcessListener(object : ProcessAdapter() {
-                        override fun processTerminated(event: ProcessEvent) {
-                            logger.trace { "Process exited. Terminating debugger lifetime" }
-                            runInEdt {
-                                debuggerLifetimeDefinition.terminate()
+                    processHandler.addProcessListener(
+                        object : ProcessAdapter() {
+                            override fun processTerminated(event: ProcessEvent) {
+                                logger.trace { "Process exited. Terminating debugger lifetime" }
+                                runInEdt {
+                                    debuggerLifetimeDefinition.terminate()
+                                }
                             }
                         }
-                    })
+                    )
 
                     workerModel.targetExited.advise(debuggerLifetime) {
                         logger.trace { "Target exited" }
@@ -301,7 +305,8 @@ class DotNetDebuggerSupport : DebuggerSupport() {
                             processHandler = processHandler,
                             protocol = protocol,
                             sessionModel = sessionModel,
-                            outputEventsListener = object : IDebuggerOutputListener {})
+                            outputEventsListener = object : IDebuggerOutputListener {}
+                        )
                     )
 
                     return@initialized true
