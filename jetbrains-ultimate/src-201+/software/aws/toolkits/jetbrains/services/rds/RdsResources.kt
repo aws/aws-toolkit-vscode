@@ -29,8 +29,10 @@ const val jdbcPostgres = "postgresql"
 const val engineFilter = "engine"
 
 object RdsResources {
-    private val RDS_REGION_REGEX = """.*\.(.+).rds\.""".toRegex()
-    private val RDS_IDENTIFIER_REGEX = """.*//(.+)\..*\..*.rds\..""".toRegex()
+    private val RDS_REGION_REGEX =
+        """.*\.(.+).rds\.""".toRegex()
+    private val RDS_IDENTIFIER_REGEX =
+        """.*//(.+)\..*\..*.rds\..""".toRegex()
 
     fun extractRegionFromUrl(url: String?): String? = url?.let { RDS_REGION_REGEX.find(url)?.groupValues?.get(1) }
     fun extractIdentifierFromUrl(url: String?): String? = url?.let { RDS_IDENTIFIER_REGEX.find(url)?.groupValues?.get(1) }

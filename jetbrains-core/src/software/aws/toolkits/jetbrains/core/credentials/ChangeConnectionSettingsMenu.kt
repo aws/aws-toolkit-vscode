@@ -163,7 +163,8 @@ internal class ChangeRegionAction(private val region: AwsRegion) : ToggleAction(
     }
 }
 
-internal class ChangeCredentialsAction(private val credentialsProvider: CredentialIdentifier) : ToggleAction(credentialsProvider.displayName),
+internal class ChangeCredentialsAction(private val credentialsProvider: CredentialIdentifier) :
+    ToggleAction(credentialsProvider.displayName),
     DumbAware {
     override fun isSelected(e: AnActionEvent): Boolean = getAccountSetting(e).selectedCredentialIdentifier == credentialsProvider
 

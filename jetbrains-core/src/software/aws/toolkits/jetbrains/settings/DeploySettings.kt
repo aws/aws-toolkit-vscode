@@ -70,6 +70,6 @@ data class DeploySamConfig(
  * @see DeployConfigs.samConfigs
  */
 fun relativeSamPath(module: Module, templateFile: VirtualFile): String? = module.rootManager.contentRoots
-        .find { Paths.get(templateFile.path).startsWith(it.path) }
-        ?.let { Paths.get(it.path).relativize(Paths.get(templateFile.path)) }
-        ?.toString()
+    .find { Paths.get(templateFile.path).startsWith(it.path) }
+    ?.let { Paths.get(it.path).relativize(Paths.get(templateFile.path)) }
+    ?.toString()

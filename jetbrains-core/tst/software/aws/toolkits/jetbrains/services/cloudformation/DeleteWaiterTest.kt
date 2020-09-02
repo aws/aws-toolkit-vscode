@@ -94,8 +94,8 @@ class DeleteWaiterTest {
         mockClient.stackReturn(stackName, times, failureStatus)
         val describeStacksRequest = argumentCaptor<DescribeStacksRequest>()
         assertThatThrownBy { mockClient.waitForStackDeletionComplete(stackName, delay = DEFAULT_DELAY) }
-                .isInstanceOf(WaiterUnrecoverableException::class.java)
-                .hasMessageContaining(failureStatus.toString())
+            .isInstanceOf(WaiterUnrecoverableException::class.java)
+            .hasMessageContaining(failureStatus.toString())
         verify(mockClient, times(times + 1)).describeStacks(describeStacksRequest.capture())
         assertThat(describeStacksRequest.allValues).allSatisfy { assertThat(it.stackName()).isEqualTo(stackName) }
     }
@@ -104,17 +104,21 @@ class DeleteWaiterTest {
 
         val responses = mutableListOf<DescribeStacksResponse>()
         val inProgressResponseBuilder = DescribeStacksResponse.builder()
-                .stacks(Stack.builder()
-                        .stackName(stackName)
-                        .stackStatus(StackStatus.DELETE_IN_PROGRESS)
-                        .build())
+            .stacks(
+                Stack.builder()
+                    .stackName(stackName)
+                    .stackStatus(StackStatus.DELETE_IN_PROGRESS)
+                    .build()
+            )
 
         val finalResponse = DescribeStacksResponse.builder()
-                .stacks(Stack.builder()
-                        .stackName(stackName)
-                        .stackStatus(status)
-                        .build())
-                .build()
+            .stacks(
+                Stack.builder()
+                    .stackName(stackName)
+                    .stackStatus(status)
+                    .build()
+            )
+            .build()
 
         val firstResponse = if (times <= 0) finalResponse else inProgressResponseBuilder.build()
 
@@ -125,39 +129,55 @@ class DeleteWaiterTest {
             responses.add(finalResponse)
         }
 
-        whenever(describeStacks(DescribeStacksRequest.builder()
-                .stackName(stackName)
-                .build()))
-                .thenReturn(firstResponse, *responses.toTypedArray())
+        whenever(
+            describeStacks(
+                DescribeStacksRequest.builder()
+                    .stackName(stackName)
+                    .build()
+            )
+        )
+            .thenReturn(firstResponse, *responses.toTypedArray())
     }
 
     private fun CloudFormationClient.stackThrowValidationError(stackName: String, times: Int) {
         val responses = mutableListOf<DescribeStacksResponse>()
         val inProgressResponseBuilder = DescribeStacksResponse.builder()
-                .stacks(Stack.builder()
-                        .stackName(stackName)
-                        .stackStatus(StackStatus.DELETE_IN_PROGRESS)
-                        .build())
+            .stacks(
+                Stack.builder()
+                    .stackName(stackName)
+                    .stackStatus(StackStatus.DELETE_IN_PROGRESS)
+                    .build()
+            )
         val finalResponse = CloudFormationException.builder()
-                .awsErrorDetails(AwsErrorDetails.builder()
-                        .errorCode("ValidationError")
-                        .build())
-                .build()
+            .awsErrorDetails(
+                AwsErrorDetails.builder()
+                    .errorCode("ValidationError")
+                    .build()
+            )
+            .build()
 
         if (times <= 0) {
-            whenever(describeStacks(DescribeStacksRequest.builder()
-                    .stackName(stackName)
-                    .build()))
-                    .thenThrow(finalResponse)
+            whenever(
+                describeStacks(
+                    DescribeStacksRequest.builder()
+                        .stackName(stackName)
+                        .build()
+                )
+            )
+                .thenThrow(finalResponse)
         } else {
             repeat(times - 1) {
                 responses.add(inProgressResponseBuilder.build())
             }
-            whenever(describeStacks(DescribeStacksRequest.builder()
-                    .stackName(stackName)
-                    .build()))
-                    .thenReturn(inProgressResponseBuilder.build(), *responses.toTypedArray())
-                    .thenThrow(finalResponse)
+            whenever(
+                describeStacks(
+                    DescribeStacksRequest.builder()
+                        .stackName(stackName)
+                        .build()
+                )
+            )
+                .thenReturn(inProgressResponseBuilder.build(), *responses.toTypedArray())
+                .thenThrow(finalResponse)
         }
     }
 

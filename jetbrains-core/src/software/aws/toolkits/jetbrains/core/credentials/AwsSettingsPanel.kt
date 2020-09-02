@@ -26,7 +26,8 @@ class AwsSettingsPanelInstaller : StatusBarWidgetProvider {
     override fun getWidget(project: Project): StatusBarWidget = AwsSettingsPanel(project)
 }
 
-private class AwsSettingsPanel(private val project: Project) : StatusBarWidget,
+private class AwsSettingsPanel(private val project: Project) :
+    StatusBarWidget,
     StatusBarWidget.MultipleTextValuesPresentation,
     ConnectionSettingsStateChangeNotifier {
     private val accountSettingsManager = AwsConnectionManager.getInstance(project)

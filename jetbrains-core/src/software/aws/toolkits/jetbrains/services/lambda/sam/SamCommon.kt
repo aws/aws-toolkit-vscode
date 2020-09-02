@@ -34,9 +34,11 @@ class SamCommon {
         fun getTemplateFromDirectory(projectRoot: VirtualFile): VirtualFile? {
             // Use Java File so we don't need to do a full VFS refresh
             val projectRootFile = VfsUtil.virtualToIoFile(projectRoot)
-            val yamlFiles = projectRootFile.listFiles(FileFilter {
-                it.isFile && it.name.endsWith("yaml") || it.name.endsWith("yml")
-            })?.toList() ?: emptyList()
+            val yamlFiles = projectRootFile.listFiles(
+                FileFilter {
+                    it.isFile && it.name.endsWith("yaml") || it.name.endsWith("yml")
+                }
+            )?.toList() ?: emptyList()
             assert(yamlFiles.size == 1) { message("cloudformation.yaml.too_many_files", yamlFiles.size) }
             return LocalFileSystem.getInstance().refreshAndFindFileByIoFile(yamlFiles.first())
         }

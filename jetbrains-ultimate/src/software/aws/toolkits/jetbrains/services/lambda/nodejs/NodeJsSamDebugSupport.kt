@@ -45,11 +45,13 @@ class NodeJsSamDebugSupport : SamDebugSupport {
             if (processHandler == null || processHandler.isStartNotified) {
                 connection.open(socketAddress)
             } else {
-                processHandler.addProcessListener(object : ProcessAdapter() {
-                    override fun startNotified(event: ProcessEvent) {
-                        connection.open(socketAddress)
+                processHandler.addProcessListener(
+                    object : ProcessAdapter() {
+                        override fun startNotified(event: ProcessEvent) {
+                            connection.open(socketAddress)
+                        }
                     }
-                })
+                )
             }
             return process
         }

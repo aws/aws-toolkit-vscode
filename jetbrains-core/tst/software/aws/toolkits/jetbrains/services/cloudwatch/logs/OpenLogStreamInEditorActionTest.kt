@@ -55,14 +55,16 @@ class OpenLogStreamInEditorActionTest {
     fun testOpeningFileFromGroup() {
         val client = mockClientManagerRule.create<CloudWatchLogsClient>()
         whenever(client.getLogEventsPaginator(Mockito.any<GetLogEventsRequest>()))
-            .thenReturn(object : GetLogEventsIterable(client, null) {
-                override fun iterator() = mutableListOf(
-                    GetLogEventsResponse.builder().events(
-                        OutputLogEvent.builder().message("abc").build(),
-                        OutputLogEvent.builder().message("def").build()
-                    ).build()
-                ).iterator()
-            })
+            .thenReturn(
+                object : GetLogEventsIterable(client, null) {
+                    override fun iterator() = mutableListOf(
+                        GetLogEventsResponse.builder().events(
+                            OutputLogEvent.builder().message("abc").build(),
+                            OutputLogEvent.builder().message("def").build()
+                        ).build()
+                    ).iterator()
+                }
+            )
 
         val tableModel = ListTableModel<LogStream>(LogStreamsStreamColumn())
         val table = JBTable(tableModel)

@@ -30,7 +30,8 @@ class RdsExplorerNodeTest {
         val name = RuleUtils.randomName()
         val name2 = RuleUtils.randomName()
         resourceCache.get().addEntry(
-            RdsResources.LIST_INSTANCES_MYSQL, listOf(
+            RdsResources.LIST_INSTANCES_MYSQL,
+            listOf(
                 DBInstance.builder().engine(mysqlEngineType).dbName(name).dbInstanceArn("").build(),
                 DBInstance.builder().engine(mysqlEngineType).dbName(name2).dbInstanceArn("").build()
             )
@@ -52,7 +53,8 @@ class RdsExplorerNodeTest {
         val name = RuleUtils.randomName()
         val name2 = RuleUtils.randomName()
         resourceCache.get().addEntry(
-            RdsResources.LIST_INSTANCES_AURORA_MYSQL, listOf(
+            RdsResources.LIST_INSTANCES_AURORA_MYSQL,
+            listOf(
                 DBInstance.builder().engine(auroraMysqlEngineType).dbName(name).dbInstanceArn("").build(),
                 DBInstance.builder().engine(auroraMysqlEngineType).dbName(name2).dbInstanceArn("").build()
             )
@@ -73,7 +75,8 @@ class RdsExplorerNodeTest {
         val name = RuleUtils.randomName()
         val name2 = RuleUtils.randomName()
         resourceCache.get().addEntry(
-            RdsResources.LIST_INSTANCES_POSTGRES, listOf(
+            RdsResources.LIST_INSTANCES_POSTGRES,
+            listOf(
                 DBInstance.builder().engine(postgresEngineType).dbName(name).dbInstanceArn("").build(),
                 DBInstance.builder().engine(postgresEngineType).dbName(name2).dbInstanceArn("").build()
             )
@@ -91,7 +94,8 @@ class RdsExplorerNodeTest {
         val name = RuleUtils.randomName()
         val name2 = RuleUtils.randomName()
         resourceCache.get().addEntry(
-            RdsResources.LIST_INSTANCES_AURORA_POSTGRES, listOf(
+            RdsResources.LIST_INSTANCES_AURORA_POSTGRES,
+            listOf(
                 DBInstance.builder().engine(auroraPostgresEngineType).dbName(name).dbInstanceArn("").build(),
                 DBInstance.builder().engine(auroraPostgresEngineType).dbName(name2).dbInstanceArn("").build()
             )

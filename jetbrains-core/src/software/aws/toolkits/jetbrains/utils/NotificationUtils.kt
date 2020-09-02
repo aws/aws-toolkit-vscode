@@ -37,7 +37,8 @@ fun Throwable.notifyError(title: String = "", project: Project? = null) {
             title,
             message,
             NotificationType.ERROR
-        ), project
+        ),
+        project
     )
 }
 

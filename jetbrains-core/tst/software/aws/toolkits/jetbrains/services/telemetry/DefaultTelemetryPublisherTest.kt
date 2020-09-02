@@ -44,18 +44,20 @@ class DefaultTelemetryPublisherTest {
         )
 
         runBlocking {
-            publisher.publish(listOf(
-                DefaultMetricEvent.builder()
-                    .awsAccount("111111111111")
-                    .awsRegion("us-west-2")
-                    .datum("foobar") { this.count() }
-                    .build(),
-                DefaultMetricEvent.builder()
-                    .awsAccount("111111111111")
-                    .awsRegion("us-west-2")
-                    .datum("spam") { this.count() }
-                    .build()
-            ))
+            publisher.publish(
+                listOf(
+                    DefaultMetricEvent.builder()
+                        .awsAccount("111111111111")
+                        .awsRegion("us-west-2")
+                        .datum("foobar") { this.count() }
+                        .build(),
+                    DefaultMetricEvent.builder()
+                        .awsAccount("111111111111")
+                        .awsRegion("us-west-2")
+                        .datum("spam") { this.count() }
+                        .build()
+                )
+            )
         }
 
         verify(mockTelemetryClient, times(1)).postMetrics(mockPostMetricsRequestCaptor.capture())
@@ -110,18 +112,20 @@ class DefaultTelemetryPublisherTest {
         )
 
         runBlocking {
-            publisher.publish(listOf(
-                DefaultMetricEvent.builder()
-                    .awsAccount("111111111111")
-                    .awsRegion("us-west-2")
-                    .datum("foobar") { this.count() }
-                    .build(),
-                DefaultMetricEvent.builder()
-                    .awsAccount("111111111111")
-                    .awsRegion("us-west-2")
-                    .datum("spam") { this.count() }
-                    .build()
-            ))
+            publisher.publish(
+                listOf(
+                    DefaultMetricEvent.builder()
+                        .awsAccount("111111111111")
+                        .awsRegion("us-west-2")
+                        .datum("foobar") { this.count() }
+                        .build(),
+                    DefaultMetricEvent.builder()
+                        .awsAccount("111111111111")
+                        .awsRegion("us-west-2")
+                        .datum("spam") { this.count() }
+                        .build()
+                )
+            )
         }
 
         verify(mockTelemetryClient, times(1)).postMetrics(mockPostMetricsRequestCaptor.capture())

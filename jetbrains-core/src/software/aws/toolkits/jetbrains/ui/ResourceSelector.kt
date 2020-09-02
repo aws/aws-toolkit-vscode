@@ -98,8 +98,8 @@ class ResourceSelector<T> private constructor(
     }
 
     override fun getModel(): MutableCollectionComboBoxModel<T> =
-    // javax.swing.DefaultComboBoxModel.addAll(java.util.Collection<? extends E>) isn't in Java 8
-    // The addElement method can lead to multiple selection events firing as elements are added
+        // javax.swing.DefaultComboBoxModel.addAll(java.util.Collection<? extends E>) isn't in Java 8
+        // The addElement method can lead to multiple selection events firing as elements are added
         // Use IntelliJ's to work around this short coming
         super.getModel() as MutableCollectionComboBoxModel<T>
 
@@ -261,9 +261,17 @@ class ResourceSelector<T> private constructor(
             it.awsConnection = awsConnection
         }
 
-        fun build() = ResourceSelector(project, resource, comboBoxModel, resolveCustomRenderer(), loadOnCreate, sortOnLoad, awsConnection ?: {
-            val settings = AwsConnectionManager.getInstance(project)
-            settings.activeRegion to settings.activeCredentialProvider
-        })
+        fun build() = ResourceSelector(
+            project,
+            resource,
+            comboBoxModel,
+            resolveCustomRenderer(),
+            loadOnCreate,
+            sortOnLoad,
+            awsConnection ?: {
+                val settings = AwsConnectionManager.getInstance(project)
+                settings.activeRegion to settings.activeCredentialProvider
+            }
+        )
     }
 }

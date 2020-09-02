@@ -48,9 +48,12 @@ class CloudWatchLogsServiceNodeTest {
 
     @Test
     fun exceptionLeadsToErrorNode() {
-        resourceCache().addEntry(CloudWatchResources.LIST_LOG_GROUPS, CompletableFuture<List<LogGroup>>().also {
-            it.completeExceptionally(RuntimeException("Simulated error"))
-        })
+        resourceCache().addEntry(
+            CloudWatchResources.LIST_LOG_GROUPS,
+            CompletableFuture<List<LogGroup>>().also {
+                it.completeExceptionally(RuntimeException("Simulated error"))
+            }
+        )
 
         val children = CloudWatchLogsServiceNode(projectRule.project, CLOUDWATCH_LOGS_EXPLORER_SERVICE_NODE).children
 

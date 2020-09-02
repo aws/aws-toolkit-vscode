@@ -58,14 +58,15 @@ class LocalLambdaRunConfigurationProducerTest {
     fun validRunConfigurationIsCreatedFromTemplate() {
         runInEdtAndWait {
             val psiFile = projectRule.fixture.configureByText(
-                "template.yaml", """
+                "template.yaml",
+                """
 Resources:
     MyFunction:
         Type: AWS::Serverless::Function
         Properties:
             Handler: helloworld.App::handleRequest
             Runtime: java8
-        """.trimIndent()
+                """.trimIndent()
             ) as YAMLFile
             val psiElement = psiFile.findByLocation("Resources.MyFunction")?.key ?: throw RuntimeException("Can't find function")
             val runConfiguration = createRunConfiguration(psiElement)
@@ -82,14 +83,15 @@ Resources:
     fun canRoundTripTemplateBasedConfiguration() {
         runInEdtAndWait {
             val psiFile = projectRule.fixture.configureByText(
-                "template.yaml", """
+                "template.yaml",
+                """
 Resources:
     MyFunction:
         Type: AWS::Serverless::Function
         Properties:
             Handler: helloworld.App::handleRequest
             Runtime: java8
-        """.trimIndent()
+                """.trimIndent()
             ) as YAMLFile
             val psiElement = psiFile.findByLocation("Resources.MyFunction")?.key ?: throw RuntimeException("Can't find function")
             val runConfiguration = createRunConfiguration(psiElement)

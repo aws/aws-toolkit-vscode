@@ -57,15 +57,20 @@ fun setupSamSelectionElements(samExecutableField: JTextField, editButton: JButto
     samExecutableField.toolTipText = toolTipText
     editButton.toolTipText = toolTipText
 
-    ProgressManager.getInstance().runProcessWithProgressSynchronously({
-        try {
-            val validSamPath = when (ExecutableManager.getInstance().getExecutable<SamExecutable>().toCompletableFuture().get()) {
-                is ExecutableInstance.Executable -> true
-                else -> false
+    ProgressManager.getInstance().runProcessWithProgressSynchronously(
+        {
+            try {
+                val validSamPath = when (ExecutableManager.getInstance().getExecutable<SamExecutable>().toCompletableFuture().get()) {
+                    is ExecutableInstance.Executable -> true
+                    else -> false
+                }
+                updateUi(validSamPath)
+            } catch (e: Throwable) {
+                updateUi(validSamPath = false)
             }
-            updateUi(validSamPath)
-        } catch (e: Throwable) {
-            updateUi(validSamPath = false)
-        }
-    }, message("lambda.run_configuration.sam.validating"), false, null)
+        },
+        message("lambda.run_configuration.sam.validating"),
+        false,
+        null
+    )
 }

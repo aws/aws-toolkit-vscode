@@ -42,7 +42,8 @@ class NodeJsDebuggerSupport : DebuggerSupport() {
             it.isV8Legacy = false
             it.mappings.addAll(
                 convertArtifactMappingsToPathMappings(
-                    containerOptions.artifactMappings, debuggerPath
+                    containerOptions.artifactMappings,
+                    debuggerPath
                 ).map { pair ->
                     RemoteUrlMappingBean(pair.first, pair.second)
                 }

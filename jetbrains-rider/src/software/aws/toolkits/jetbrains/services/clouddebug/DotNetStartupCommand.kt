@@ -95,8 +95,10 @@ class DotNetStartupCommand : CloudDebugStartupCommand(CloudDebuggingPlatform.DOT
                     onCommandGet(originalCommand)
                 }
                 is RdTaskResult.Cancelled -> {
-                    logger.info { "Unable to locate project assembly file that inside a selected artifact directory: " +
-                        "'${localBaseFile.canonicalPath}'. Return original startup command: '$originalCommand'." }
+                    logger.info {
+                        "Unable to locate project assembly file that inside a selected artifact directory: " +
+                            "'${localBaseFile.canonicalPath}'. Return original startup command: '$originalCommand'."
+                    }
                     onCommandGet(originalCommand)
                 }
             }

@@ -67,7 +67,8 @@ class CloudFormationServiceNodeTest {
                         .stackStatus(it.second)
                         .build()
                 }
-            ))
+            )
+        )
     }
 
     private companion object {

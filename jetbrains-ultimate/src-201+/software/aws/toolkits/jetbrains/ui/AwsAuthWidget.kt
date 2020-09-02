@@ -54,11 +54,13 @@ abstract class AwsAuthWidget(private val userField: Boolean = true) : DatabaseCr
 
         DataSourceUiUtil.putOrRemove(
             dataSource.additionalJdbcProperties,
-            CREDENTIAL_ID_PROPERTY, credentialSelector.getSelectedCredentialsProvider()
+            CREDENTIAL_ID_PROPERTY,
+            credentialSelector.getSelectedCredentialsProvider()
         )
         DataSourceUiUtil.putOrRemove(
             dataSource.additionalJdbcProperties,
-            REGION_ID_PROPERTY, regionSelector.selectedRegion?.id
+            REGION_ID_PROPERTY,
+            regionSelector.selectedRegion?.id
         )
     }
 

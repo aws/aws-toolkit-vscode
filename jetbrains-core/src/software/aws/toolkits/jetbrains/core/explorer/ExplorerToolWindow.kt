@@ -132,12 +132,14 @@ class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), 
 
     private fun createActionLabel(action: AnAction): HyperlinkLabel {
         val label = HyperlinkLabel(action.templateText ?: "BUG: $action lacks a text description")
-        label.addHyperlinkListener(object : HyperlinkAdapter() {
-            override fun hyperlinkActivated(e: HyperlinkEvent) {
-                val event = AnActionEvent.createFromAnAction(action, e.inputEvent, ActionPlaces.UNKNOWN, DataManager.getInstance().getDataContext(label))
-                action.actionPerformed(event)
+        label.addHyperlinkListener(
+            object : HyperlinkAdapter() {
+                override fun hyperlinkActivated(e: HyperlinkEvent) {
+                    val event = AnActionEvent.createFromAnAction(action, e.inputEvent, ActionPlaces.UNKNOWN, DataManager.getInstance().getDataContext(label))
+                    action.actionPerformed(event)
+                }
             }
-        })
+        )
 
         return label
     }
@@ -196,34 +198,36 @@ class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), 
             }
         }.installOn(awsTree)
 
-        awsTree.addMouseListener(object : PopupHandler() {
-            override fun invokePopup(comp: Component?, x: Int, y: Int) {
-                // Build a right click menu based on the selected first node
-                // All nodes must be the same type (e.g. all S3 buckets, or a service node)
-                val explorerNode = getSelectedNodesSameType<AwsExplorerNode<*>>()?.get(0) ?: return
-                val actionGroupName = (explorerNode as? ResourceActionNode)?.actionGroupName()
+        awsTree.addMouseListener(
+            object : PopupHandler() {
+                override fun invokePopup(comp: Component?, x: Int, y: Int) {
+                    // Build a right click menu based on the selected first node
+                    // All nodes must be the same type (e.g. all S3 buckets, or a service node)
+                    val explorerNode = getSelectedNodesSameType<AwsExplorerNode<*>>()?.get(0) ?: return
+                    val actionGroupName = (explorerNode as? ResourceActionNode)?.actionGroupName()
 
-                val totalActions = mutableListOf<AnAction>()
+                    val totalActions = mutableListOf<AnAction>()
 
-                (actionGroupName?.let { actionManager.getAction(it) } as? ActionGroup)?.let { totalActions.addAll(it.getChildren(null)) }
+                    (actionGroupName?.let { actionManager.getAction(it) } as? ActionGroup)?.let { totalActions.addAll(it.getChildren(null)) }
 
-                if (explorerNode is AwsExplorerResourceNode<*>) {
-                    totalActions.add(CopyArnAction())
-                }
+                    if (explorerNode is AwsExplorerResourceNode<*>) {
+                        totalActions.add(CopyArnAction())
+                    }
 
-                totalActions.find { it is DeleteResourceAction<*> }?.let {
-                    totalActions.remove(it)
-                    totalActions.add(Separator.create())
-                    totalActions.add(it)
-                }
+                    totalActions.find { it is DeleteResourceAction<*> }?.let {
+                        totalActions.remove(it)
+                        totalActions.add(Separator.create())
+                        totalActions.add(it)
+                    }
 
-                val actionGroup = DefaultActionGroup(totalActions)
-                if (actionGroup.childrenCount > 0) {
-                    val popupMenu = actionManager.createActionPopupMenu("ExplorerToolWindow", actionGroup)
-                    popupMenu.component.show(comp, x, y)
+                    val actionGroup = DefaultActionGroup(totalActions)
+                    if (actionGroup.childrenCount > 0) {
+                        val popupMenu = actionManager.createActionPopupMenu("ExplorerToolWindow", actionGroup)
+                        popupMenu.component.show(comp, x, y)
+                    }
                 }
             }
-        })
+        )
 
         return awsTree
     }

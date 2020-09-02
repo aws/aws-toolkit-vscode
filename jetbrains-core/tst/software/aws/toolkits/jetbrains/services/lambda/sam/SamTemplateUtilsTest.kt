@@ -67,7 +67,8 @@ class SamTemplateUtilsTest {
 
     private fun yamlFile(): YAMLFile = runInEdtAndGet {
         PsiFileFactory.getInstance(projectRule.project).createFileFromText(
-            YAMLLanguage.INSTANCE, """
+            YAMLLanguage.INSTANCE,
+            """
 Resources:
     MySamFunction:
         Type: AWS::Serverless::Function
@@ -81,13 +82,14 @@ Resources:
             Code: foo.zip
             Handler: foobar.App::handleRequest
             Runtime: java8
-        """.trimIndent()
+            """.trimIndent()
         ) as YAMLFile
     }
 
     private fun yamlFileWithGlobal(): YAMLFile = runInEdtAndGet {
         PsiFileFactory.getInstance(projectRule.project).createFileFromText(
-            YAMLLanguage.INSTANCE, """
+            YAMLLanguage.INSTANCE,
+            """
 Globals:
     Function:
         Runtime: java8
@@ -104,7 +106,7 @@ Resources:
             Code: foo.zip
             Handler: foobar.App::handleRequest
             Runtime: java8
-        """.trimIndent()
+            """.trimIndent()
         ) as YAMLFile
     }
 

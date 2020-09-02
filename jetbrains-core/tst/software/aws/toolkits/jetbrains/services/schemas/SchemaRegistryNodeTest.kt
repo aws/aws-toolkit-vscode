@@ -64,6 +64,7 @@ class SchemaRegistryNodeTest {
                         .schemaName(it)
                         .build()
                 }
-            ))
+            )
+        )
     }
 }

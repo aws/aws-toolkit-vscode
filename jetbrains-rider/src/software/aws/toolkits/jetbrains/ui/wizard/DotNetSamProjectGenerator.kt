@@ -165,9 +165,14 @@ class DotNetSamProjectGenerator(
             ?: throw Exception(message("sam.init.error.no.virtual.file"))
 
         val progressManager = ProgressManager.getInstance()
-        progressManager.runProcessWithProgressSynchronously({
-            samSettings.template.build(context.project, samSettings.runtime, samSettings.schemaParameters, outDirVf)
-        }, message("sam.init.generating.template"), false, null)
+        progressManager.runProcessWithProgressSynchronously(
+            {
+                samSettings.template.build(context.project, samSettings.runtime, samSettings.schemaParameters, outDirVf)
+            },
+            message("sam.init.generating.template"),
+            false,
+            null
+        )
 
         // Create solution file
         val projectFiles =
@@ -196,8 +201,11 @@ class DotNetSamProjectGenerator(
         val modifiableModel = ModuleManager.getInstance(project).modules.firstOrNull()?.rootManager?.modifiableModel ?: return
         val progressIndicator = if (progressManager.hasProgressIndicator()) progressManager.progressIndicator else DumbProgressIndicator()
         samSettings.template.postCreationAction(
-            settings = samSettings, contentRoot = outDirVf, rootModel = modifiableModel,
-            sourceCreatingProject = generator.defaultSourceCreatingProject, indicator = progressIndicator
+            settings = samSettings,
+            contentRoot = outDirVf,
+            rootModel = modifiableModel,
+            sourceCreatingProject = generator.defaultSourceCreatingProject,
+            indicator = progressIndicator
         )
     }
 
@@ -215,11 +223,13 @@ class DotNetSamProjectGenerator(
         // "ReSharperTemplateGeneratorBase" base class has a logic that synchronize solution and project names.
         // Project name has a constant value for SAM template. This is a workaround to persist project name unchanged.
         // Please use "changeProjectName" flags when switch to 193 min version FIX_WHEN_MIN_IS_193
-        solutionNameField.addKeyListener(object : KeyAdapter() {
-            override fun keyReleased(e: KeyEvent?) {
-                projectNameField.text = SAM_HELLO_WORLD_PROJECT_NAME
+        solutionNameField.addKeyListener(
+            object : KeyAdapter() {
+                override fun keyReleased(e: KeyEvent?) {
+                    projectNameField.text = SAM_HELLO_WORLD_PROJECT_NAME
+                }
             }
-        })
+        )
     }
 
     /**

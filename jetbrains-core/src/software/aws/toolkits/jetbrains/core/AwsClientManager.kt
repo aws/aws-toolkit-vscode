@@ -33,11 +33,14 @@ open class AwsClientManager(project: Project) : ToolkitClientManager(), Disposab
 
     init {
         val busConnection = ApplicationManager.getApplication().messageBus.connect(this)
-        busConnection.subscribe(CredentialManager.CREDENTIALS_CHANGED, object : ToolkitCredentialsChangeListener {
-            override fun providerRemoved(identifier: CredentialIdentifier) {
-                invalidateSdks(identifier.id)
+        busConnection.subscribe(
+            CredentialManager.CREDENTIALS_CHANGED,
+            object : ToolkitCredentialsChangeListener {
+                override fun providerRemoved(identifier: CredentialIdentifier) {
+                    invalidateSdks(identifier.id)
+                }
             }
-        })
+        )
     }
 
     override fun dispose() {

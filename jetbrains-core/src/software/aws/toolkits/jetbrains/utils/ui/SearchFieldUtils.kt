@@ -10,31 +10,35 @@ import java.beans.PropertyChangeEvent
 import java.beans.PropertyChangeListener
 
 fun SearchTextField.onEmpty(block: () -> Unit) {
-    textEditor.addPropertyChangeListener(object : PropertyChangeListener {
-        private var lastText = ""
-        override fun propertyChange(evt: PropertyChangeEvent?) {
-            val searchFieldText = text.trim()
-            if (searchFieldText == lastText) {
-                return
-            }
-            lastText = searchFieldText
-            if (text.isEmpty()) {
-                block()
+    textEditor.addPropertyChangeListener(
+        object : PropertyChangeListener {
+            private var lastText = ""
+            override fun propertyChange(evt: PropertyChangeEvent?) {
+                val searchFieldText = text.trim()
+                if (searchFieldText == lastText) {
+                    return
+                }
+                lastText = searchFieldText
+                if (text.isEmpty()) {
+                    block()
+                }
             }
         }
-    })
+    )
 }
 
 fun SearchTextField.onEnter(block: () -> Unit) {
-    textEditor.addActionListener(object : ActionListener {
-        private var lastText = ""
-        override fun actionPerformed(e: ActionEvent?) {
-            val searchFieldText = text.trim()
-            if (searchFieldText == lastText) {
-                return
+    textEditor.addActionListener(
+        object : ActionListener {
+            private var lastText = ""
+            override fun actionPerformed(e: ActionEvent?) {
+                val searchFieldText = text.trim()
+                if (searchFieldText == lastText) {
+                    return
+                }
+                lastText = searchFieldText
+                block()
             }
-            lastText = searchFieldText
-            block()
         }
-    })
+    )
 }

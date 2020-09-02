@@ -114,15 +114,20 @@ class CloudWatchLogStream(
 
     private fun addActionToolbar() {
         val actionGroup = DefaultActionGroup()
-        actionGroup.addAction(object : AnAction(message("general.refresh"), null, AllIcons.Actions.Refresh), DumbAware {
-            override fun actionPerformed(e: AnActionEvent) {
-                refreshTable()
-                CloudwatchlogsTelemetry.refreshStream(project)
+        actionGroup.addAction(
+            object : AnAction(message("general.refresh"), null, AllIcons.Actions.Refresh), DumbAware {
+                override fun actionPerformed(e: AnActionEvent) {
+                    refreshTable()
+                    CloudwatchlogsTelemetry.refreshStream(project)
+                }
+            },
+            Constraints.FIRST
+        )
+        actionGroup.add(
+            OpenCurrentInEditorAction(project, logStream) {
+                searchStreamTable?.logsTable?.listTableModel?.items ?: logStreamTable.logsTable.listTableModel.items
             }
-        }, Constraints.FIRST)
-        actionGroup.add(OpenCurrentInEditorAction(project, logStream) {
-            searchStreamTable?.logsTable?.listTableModel?.items ?: logStreamTable.logsTable.listTableModel.items
-        })
+        )
         actionGroup.add(TailLogsAction(project) { searchStreamTable?.channel ?: logStreamTable.channel })
         actionGroup.add(WrapLogsAction(project) { searchStreamTable?.logsTable ?: logStreamTable.logsTable })
         val toolbar = ActionManager.getInstance().createActionToolbar("CloudWatchLogStream", actionGroup, false)

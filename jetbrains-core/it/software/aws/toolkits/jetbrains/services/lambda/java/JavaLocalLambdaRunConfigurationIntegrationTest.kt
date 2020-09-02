@@ -113,7 +113,8 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runtim
     @Test
     fun samIsExecutedWhenRunWithATemplateServerless() {
         val templateFile = projectRule.fixture.addFileToProject(
-            "template.yaml", """
+            "template.yaml",
+            """
             Resources:
               SomeFunction:
                 Type: AWS::Serverless::Function
@@ -122,7 +123,7 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runtim
                   CodeUri: main
                   Runtime: $runtime
                   Timeout: 900
-        """.trimIndent()
+            """.trimIndent()
         )
 
         val runConfiguration = createTemplateRunConfiguration(
@@ -144,7 +145,8 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runtim
     @Test
     fun samIsExecutedWhenRunWithATemplateLambda() {
         val templateFile = projectRule.fixture.addFileToProject(
-            "template.yaml", """
+            "template.yaml",
+            """
             Resources:
               SomeFunction:
                 Type: AWS::Lambda::Function
@@ -153,7 +155,7 @@ class JavaLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runtim
                   Code: main
                   Runtime: $runtime
                   Timeout: 900
-        """.trimIndent()
+            """.trimIndent()
         )
 
         val runConfiguration = createTemplateRunConfiguration(

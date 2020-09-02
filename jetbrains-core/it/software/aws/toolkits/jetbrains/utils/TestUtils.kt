@@ -35,22 +35,24 @@ fun executeRunConfiguration(
         val executionEnvironment = ExecutionEnvironmentBuilder.create(executor, runConfiguration).build()
         try {
             executionEnvironment.runner.execute(executionEnvironment) {
-                it.processHandler?.addProcessListener(object : OutputListener() {
-                    override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
-                        // Ansi codes throw off the default logic, so remap it to check the base type
-                        val processOutputType = outputType as? ProcessOutputType
-                        val baseType = processOutputType?.baseOutputType ?: outputType
+                it.processHandler?.addProcessListener(
+                    object : OutputListener() {
+                        override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
+                            // Ansi codes throw off the default logic, so remap it to check the base type
+                            val processOutputType = outputType as? ProcessOutputType
+                            val baseType = processOutputType?.baseOutputType ?: outputType
 
-                        super.onTextAvailable(event, baseType)
+                            super.onTextAvailable(event, baseType)
 
-                        println("[${if (baseType == ProcessOutputTypes.STDOUT) "stdout" else "stderr"}]: ${event.text}")
+                            println("[${if (baseType == ProcessOutputTypes.STDOUT) "stdout" else "stderr"}]: ${event.text}")
+                        }
+
+                        override fun processTerminated(event: ProcessEvent) {
+                            super.processTerminated(event)
+                            executionFuture.complete(this.output)
+                        }
                     }
-
-                    override fun processTerminated(event: ProcessEvent) {
-                        super.processTerminated(event)
-                        executionFuture.complete(this.output)
-                    }
-                })
+                )
             }
         } catch (e: Exception) {
             executionFuture.completeExceptionally(e)
@@ -64,27 +66,32 @@ fun checkBreakPointHit(project: Project, callback: () -> Unit = {}): Ref<Boolean
     val debuggerIsHit = Ref(false)
 
     val messageBusConnection = project.messageBus.connect()
-    messageBusConnection.subscribe(XDebuggerManager.TOPIC, object : XDebuggerManagerListener {
-        override fun processStarted(debugProcess: XDebugProcess) {
-            println("Debugger attached: $debugProcess")
+    messageBusConnection.subscribe(
+        XDebuggerManager.TOPIC,
+        object : XDebuggerManagerListener {
+            override fun processStarted(debugProcess: XDebugProcess) {
+                println("Debugger attached: $debugProcess")
 
-            debugProcess.session.addSessionListener(object : XDebugSessionListener {
-                override fun sessionPaused() {
-                    runInEdt {
-                        val suspendContext = debugProcess.session.suspendContext
-                        println("Resuming: $suspendContext")
-                        callback()
-                        debuggerIsHit.set(true)
-                        debugProcess.resume(suspendContext)
+                debugProcess.session.addSessionListener(
+                    object : XDebugSessionListener {
+                        override fun sessionPaused() {
+                            runInEdt {
+                                val suspendContext = debugProcess.session.suspendContext
+                                println("Resuming: $suspendContext")
+                                callback()
+                                debuggerIsHit.set(true)
+                                debugProcess.resume(suspendContext)
+                            }
+                        }
+
+                        override fun sessionStopped() {
+                            debuggerIsHit.setIfNull(false) // Used to prevent having to wait for max timeout
+                        }
                     }
-                }
-
-                override fun sessionStopped() {
-                    debuggerIsHit.setIfNull(false) // Used to prevent having to wait for max timeout
-                }
-            })
+                )
+            }
         }
-    })
+    )
 
     return debuggerIsHit
 }

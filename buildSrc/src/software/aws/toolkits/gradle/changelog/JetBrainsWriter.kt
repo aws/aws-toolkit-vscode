@@ -24,18 +24,21 @@ class JetBrainsWriter(private val changeNotesFile: File, issueUrl: String? = nul
             .build()
         val parser = Parser.builder()
             .postProcessor {
-                it.accept(object : AbstractVisitor() {
-                    override fun visit(heading: Heading) {
-                        heading.level = max(1, min(heading.level + 2, 6))
+                it.accept(
+                    object : AbstractVisitor() {
+                        override fun visit(heading: Heading) {
+                            heading.level = max(1, min(heading.level + 2, 6))
+                        }
                     }
-                })
+                )
 
                 it
             }
             .build()
         val htmlVersionError = renderer.render(parser.parse(sb.toString()))
 
-        changeNotesFile.writeText("""
+        changeNotesFile.writeText(
+            """
             <idea-plugin>
                 <change-notes>
                 <![CDATA[
@@ -43,7 +46,8 @@ class JetBrainsWriter(private val changeNotesFile: File, issueUrl: String? = nul
                 ]]>
                 </change-notes>
             </idea-plugin>
-        """.trimIndent())
+            """.trimIndent()
+        )
     }
 
     override fun toString(): String = "JetBrainsWriter(file=$changeNotesFile)"

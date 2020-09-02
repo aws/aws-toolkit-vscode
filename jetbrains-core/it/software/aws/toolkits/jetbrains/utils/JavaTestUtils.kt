@@ -87,7 +87,7 @@ fun HeavyJavaCodeInsightTestFixtureRule.setUpGradleProject(compatibility: String
                 compile 'com.amazonaws:aws-lambda-java-core:1.2.0'
                 testImplementation 'junit:junit:4.12'
             }
-            """.trimIndent()
+        """.trimIndent()
     ).virtualFile
 
     // Use our project's own Gradle version
@@ -102,7 +102,7 @@ fun HeavyJavaCodeInsightTestFixtureRule.setUpGradleProject(compatibility: String
                     return input.toUpperCase();
                 }
             }
-            """.trimIndent()
+        """.trimIndent()
     )
 
     val jdkName = "Gradle JDK"
@@ -116,7 +116,8 @@ fun HeavyJavaCodeInsightTestFixtureRule.setUpGradleProject(compatibility: String
                 super.onProjectsLinked(settings)
                 settings.first().gradleJvm = jdkName
             }
-        })
+        }
+    )
 
     val gradleProjectSettings = GradleProjectSettings().apply {
         withQualifiedModuleNames()
@@ -252,7 +253,7 @@ internal fun HeavyJavaCodeInsightTestFixtureRule.setUpMavenProject(): PsiClass {
                     </dependency>
                 </dependencies>
             </project>
-            """.trimIndent()
+        """.trimIndent()
     ).virtualFile
 
     val lambdaClass = fixture.addClass(
@@ -264,7 +265,7 @@ internal fun HeavyJavaCodeInsightTestFixtureRule.setUpMavenProject(): PsiClass {
                     return input.toUpperCase();
                 }
             }
-            """.trimIndent()
+        """.trimIndent()
     )
 
     val projectsManager = MavenProjectsManager.getInstance(project)

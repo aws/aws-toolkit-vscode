@@ -151,11 +151,14 @@ class AwsClientManagerTest {
     @Test
     fun globalServicesCanBeGivenAnyRegion() {
         val sut = getClientManager()
-        MockRegionProvider.getInstance().addService("DummyService", Service(
-            endpoints = mapOf("global" to Endpoint()),
-            isRegionalized = false,
-            partitionEndpoint = "global"
-        ))
+        MockRegionProvider.getInstance().addService(
+            "DummyService",
+            Service(
+                endpoints = mapOf("global" to Endpoint()),
+                isRegionalized = false,
+                partitionEndpoint = "global"
+            )
+        )
         val first = sut.getClient<DummyServiceClient>(regionOverride = AwsRegion("us-east-1", "us-east-1", "aws"))
         val second = sut.getClient<DummyServiceClient>(regionOverride = AwsRegion("us-west-2", "us-west-2", "aws"))
 

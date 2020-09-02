@@ -15,7 +15,6 @@ import software.aws.toolkits.gradle.changelog.ChangeLogWriter
 import software.aws.toolkits.gradle.changelog.GithubWriter
 import software.aws.toolkits.gradle.changelog.JetBrainsWriter
 
-/* ktlint-disable custom-ktlint-rules:log-not-lazy */
 abstract class GenerateChangeLog(private val shouldStage: Boolean) : ChangeLogTask() {
     @Input
     @Optional

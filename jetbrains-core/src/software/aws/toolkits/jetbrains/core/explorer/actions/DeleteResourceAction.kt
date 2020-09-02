@@ -27,7 +27,8 @@ abstract class DeleteResourceAction<in T : AwsExplorerResourceNode<*>>(text: Str
             val resourceType = selected.resourceType()
             val resourceName = selected.displayName()
 
-            val response = Messages.showInputDialog(selected.project,
+            val response = Messages.showInputDialog(
+                selected.project,
                 message("delete_resource.message", resourceType, resourceName),
                 message("delete_resource.title", resourceType, resourceName),
                 Messages.getWarningIcon(),

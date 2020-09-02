@@ -60,9 +60,11 @@ class S3VirtualBucketTest {
 
         s3Client.stub {
             on { deleteObjects(deleteCaptor.capture()) } doReturn
-                (DeleteObjectsResponse.builder()
-                    .requestCharged("yes")
-                    .deleted(listOf(DeletedObject.builder().deleteMarker(true).key("testKey").build()))).build()
+                (
+                    DeleteObjectsResponse.builder()
+                        .requestCharged("yes")
+                        .deleted(listOf(DeletedObject.builder().deleteMarker(true).key("testKey").build()))
+                    ).build()
         }
 
         val sut = S3VirtualBucket(Bucket.builder().name("TestBucket").build(), s3Client)
@@ -158,7 +160,8 @@ class S3VirtualBucketTest {
                         .eTag("1111")
                         .lastModified(Instant.parse("1995-10-23T10:12:35Z"))
                         .contentLength(data.size.toLong())
-                        .build(), AbortableInputStream.create(data.inputStream())
+                        .build(),
+                    AbortableInputStream.create(data.inputStream())
                 )
             }
         }

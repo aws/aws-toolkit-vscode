@@ -44,7 +44,7 @@ class RiderLambdaHandlerFakePsiElement(
     override fun getManager() = PsiManager.getInstance(project)
 
     fun getContainingProjectFile(): VirtualFile? =
-            project.getComponent<ProjectModelViewHost>().getItemById(fileId)
-                    ?.containingProject()
-                    ?.getVirtualFile()
+        project.getComponent<ProjectModelViewHost>().getItemById(fileId)
+            ?.containingProject()
+            ?.getVirtualFile()
 }

@@ -41,17 +41,19 @@ class SamExecutable : ExecutableType<SemVer>, AutoResolvable, Validatable {
     }
 
     override fun resolve(): Path? {
-        val path = (if (SystemInfo.isWindows) {
-            ExecutableDetector().find(
-                arrayOf("C:\\Program Files\\Amazon\\AWSSAMCLI\\bin", "C:\\Program Files (x86)\\Amazon\\AWSSAMCLI\\bin"),
-                arrayOf("sam.cmd", "sam.exe")
-            )
-        } else {
-            ExecutableDetector().find(
-                arrayOf("/usr/local/bin", "/usr/bin"),
-                arrayOf("sam")
-            )
-        }) ?: return null
+        val path = (
+            if (SystemInfo.isWindows) {
+                ExecutableDetector().find(
+                    arrayOf("C:\\Program Files\\Amazon\\AWSSAMCLI\\bin", "C:\\Program Files (x86)\\Amazon\\AWSSAMCLI\\bin"),
+                    arrayOf("sam.cmd", "sam.exe")
+                )
+            } else {
+                ExecutableDetector().find(
+                    arrayOf("/usr/local/bin", "/usr/bin"),
+                    arrayOf("sam")
+                )
+            }
+            ) ?: return null
 
         return Paths.get(path)
     }

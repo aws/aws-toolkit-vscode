@@ -30,7 +30,8 @@ class CreateDataSourceActionTest {
         val username = RuleUtils.randomName()
         val dbName = RuleUtils.randomName()
         val registry = DataSourceRegistry(projectRule.project)
-        registry.createDatasource(projectRule.project,
+        registry.createDatasource(
+            projectRule.project,
             Cluster.builder()
                 .endpoint { it.address(address).port(port) }
                 .masterUsername(username)

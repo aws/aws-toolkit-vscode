@@ -36,9 +36,11 @@ class EnvironmentVariableHelper : ExternalResource() {
 
     private fun getField(processEnvironment: Class<*>, obj: Any?, fieldName: String): MutableMap<String, String>? = try {
         val declaredField = processEnvironment.getDeclaredField(fieldName)
-        AccessController.doPrivileged(PrivilegedAction<Unit> {
-            declaredField.isAccessible = true
-        })
+        AccessController.doPrivileged(
+            PrivilegedAction<Unit> {
+                declaredField.isAccessible = true
+            }
+        )
         @Suppress("UNCHECKED_CAST")
         declaredField.get(obj) as MutableMap<String, String>
     } catch (_: NoSuchFieldException) {

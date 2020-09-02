@@ -14,9 +14,11 @@ import java.io.FileFilter
  * [type] is the type of the source folder (e.g. 'src', 'tst', 'resources')
  * [ideProfile] is the IDE [Profile] currently configured in the project
  */
-fun findFolders(project: Project, type: String, ideProfile: Profile): Set<File> = project.projectDir.listFiles(FileFilter {
-    it.isDirectory && includeFolder(type, ideProfile.shortName, it.name)
-})?.map { File(it.name) }?.toSet() ?: setOf()
+fun findFolders(project: Project, type: String, ideProfile: Profile): Set<File> = project.projectDir.listFiles(
+    FileFilter {
+        it.isDirectory && includeFolder(type, ideProfile.shortName, it.name)
+    }
+)?.map { File(it.name) }?.toSet() ?: setOf()
 
 /**
  * Determines if a folder should be included based on the ideVersion being targeted

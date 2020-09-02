@@ -56,13 +56,15 @@ class LogStreamListActorTest : BaseCoroutineTest() {
     @Test
     fun modelIsPopulatedRange() {
         whenever(client.getLogEventsPaginator(Mockito.any<GetLogEventsRequest>()))
-            .thenReturn(object : GetLogEventsIterable(client, null) {
-                override fun iterator() = mutableListOf(
-                    GetLogEventsResponse.builder().events(
-                        OutputLogEvent.builder().message("message").build()
-                    ).build()
-                ).iterator()
-            })
+            .thenReturn(
+                object : GetLogEventsIterable(client, null) {
+                    override fun iterator() = mutableListOf(
+                        GetLogEventsResponse.builder().events(
+                            OutputLogEvent.builder().message("message").build()
+                        ).build()
+                    ).iterator()
+                }
+            )
 
         runBlocking {
             actor.channel.send(LogActor.Message.LoadInitialRange(LogStreamEntry("@@@", 0), Duration.ofMillis(0)))

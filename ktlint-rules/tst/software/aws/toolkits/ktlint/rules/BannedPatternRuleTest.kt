@@ -19,7 +19,7 @@ class BannedPatternRuleTest {
             fun hello() {
                 blah()
             }
-        """.trimIndent()
+                """.trimIndent()
             )
         ).containsExactly(LintError(1, 1, "banned-pattern", "[2:5] Use of method blah() is banned."))
     }
@@ -28,18 +28,29 @@ class BannedPatternRuleTest {
     fun forbidPsiUtil() {
         val rule = BannedPatternRule(BannedPatternRule.DEFAULT_PATTERNS)
         assertThat(
-            rule.lint(""" 
+            rule.lint(
+                """ 
             import com.intellij.psi.util.PsiUtil
             class DockerfileParser(private val project: Project) {
                 fun parse(virtualFile: VirtualFile): DockerfileDetails? {
                     val psiFile = PsiUtil.getPsiFile(project, virtualFile)
                 }
             }
-            """.trimIndent())
+                """.trimIndent()
+            )
         ).containsExactly(
-            LintError(1, 1, "banned-pattern",
-                "[1:8] PsiUtil (java-api.jar) is not available in all IDEs, use PsiUtilCore or PsiManager instead (platform-api.jar)"),
-            LintError(1, 1, "banned-pattern",
-                "[4:23] PsiUtil (java-api.jar) is not available in all IDEs, use PsiManager.getInstance(project).findFile() instead"))
+            LintError(
+                1,
+                1,
+                "banned-pattern",
+                "[1:8] PsiUtil (java-api.jar) is not available in all IDEs, use PsiUtilCore or PsiManager instead (platform-api.jar)"
+            ),
+            LintError(
+                1,
+                1,
+                "banned-pattern",
+                "[4:23] PsiUtil (java-api.jar) is not available in all IDEs, use PsiManager.getInstance(project).findFile() instead"
+            )
+        )
     }
 }

@@ -19,7 +19,9 @@ class CloudFormationTemplateIndexTest {
     fun listFunctions_serverlessAndLambdaFunctions() {
         val fixture = projectRule.fixture
 
-        fixture.openFile("template.yaml", """
+        fixture.openFile(
+            "template.yaml",
+            """
 Resources:
   ServerlessFunction:
     Type: AWS::Serverless::Function
@@ -35,7 +37,8 @@ Resources:
       Code: bar
       Handler: bar::bar
       Runtime: bar
-""")
+"""
+        )
 
         runInEdtAndWait {
             val functions = CloudFormationTemplateIndex.listFunctions(projectRule.project)
@@ -49,7 +52,9 @@ Resources:
     fun listFunctions_serverlessFunction() {
         val fixture = projectRule.fixture
 
-        fixture.openFile("template.yaml", """
+        fixture.openFile(
+            "template.yaml",
+            """
 Resources:
   ServerlessFunction:
     Type: AWS::Serverless::Function
@@ -57,7 +62,8 @@ Resources:
       CodeUri: serverless
       Handler: serverless::foo
       Runtime: java8
-""")
+"""
+        )
 
         runInEdtAndWait {
             val functions = CloudFormationTemplateIndex.listFunctions(projectRule.project)
@@ -72,7 +78,9 @@ Resources:
     fun listFunctions_lambdaFunction() {
         val fixture = projectRule.fixture
 
-        fixture.openFile("template.yaml", """
+        fixture.openFile(
+            "template.yaml",
+            """
 Resources:
   ServerlessFunction:
     Type: AWS::Lambda::Function
@@ -80,7 +88,8 @@ Resources:
       Code: lambda
       Handler: lambda::bar
       Runtime: java8
-""")
+"""
+        )
 
         runInEdtAndWait {
             val functions = CloudFormationTemplateIndex.listFunctions(projectRule.project)
@@ -95,7 +104,9 @@ Resources:
     fun listFunctions_missingType() {
         val fixture = projectRule.fixture
 
-        fixture.openFile("template.yaml", """
+        fixture.openFile(
+            "template.yaml",
+            """
 Resources:
   ServerlessFunction:
     Type:
@@ -103,7 +114,8 @@ Resources:
       CodeUri: target/HelloWorld-1.0.jar
       Handler: bar
       Runtime: java8
-""")
+"""
+        )
 
         runInEdtAndWait {
             val functions = CloudFormationTemplateIndex.listFunctions(projectRule.project)
@@ -115,14 +127,17 @@ Resources:
     fun listResources_nullType() {
         val fixture = projectRule.fixture
 
-        fixture.openFile("template.yaml", """
+        fixture.openFile(
+            "template.yaml",
+            """
 Resources:
   ServerlessFunction:
     Properties:
       CodeUri: target/HelloWorld-1.0.jar
       Handler: bar
       Runtime: java8
-""")
+"""
+        )
 
         runInEdtAndWait {
             val resources = CloudFormationTemplateIndex.listResources(projectRule.project)
@@ -134,13 +149,16 @@ Resources:
     fun nullHandlerAndRuntime() {
         val fixture = projectRule.fixture
 
-        fixture.openFile("template.yaml", """
+        fixture.openFile(
+            "template.yaml",
+            """
 Resources:
   ServerlessFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: target/HelloWorld-1.0.jar
-""")
+"""
+        )
 
         runInEdtAndWait {
             val functions = CloudFormationTemplateIndex.listFunctions(projectRule.project)
@@ -155,7 +173,9 @@ Resources:
     fun handlerAndRuntimeInGlobals() {
         val fixture = projectRule.fixture
 
-        fixture.openFile("template.yaml", """
+        fixture.openFile(
+            "template.yaml",
+            """
 Globals:
     Function:
         Runtime: java8
@@ -165,7 +185,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: target/HelloWorld-1.0.jar
-""")
+"""
+        )
 
         runInEdtAndWait {
             val functions = CloudFormationTemplateIndex.listFunctions(projectRule.project)
@@ -180,7 +201,9 @@ Resources:
     fun onlyHandlerInGlobals() {
         val fixture = projectRule.fixture
 
-        fixture.openFile("template.yaml", """
+        fixture.openFile(
+            "template.yaml",
+            """
 Globals:
     Function:
         Handler: bar
@@ -189,7 +212,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: target/HelloWorld-1.0.jar
-""")
+"""
+        )
 
         runInEdtAndWait {
             val functions = CloudFormationTemplateIndex.listFunctions(projectRule.project)
@@ -204,7 +228,9 @@ Resources:
     fun localRuntimeOverridesGlobals() {
         val fixture = projectRule.fixture
 
-        fixture.openFile("template.yaml", """
+        fixture.openFile(
+            "template.yaml",
+            """
 Globals:
     Function:
         Runtime: python2.7
@@ -215,7 +241,8 @@ Resources:
     Properties:
       CodeUri: target/HelloWorld-1.0.jar
       Runtime: python3.6
-""")
+"""
+        )
 
         runInEdtAndWait {
             val functions = CloudFormationTemplateIndex.listFunctions(projectRule.project)
@@ -230,7 +257,9 @@ Resources:
     fun emptyHandlerAndRuntime() {
         val fixture = projectRule.fixture
 
-        fixture.openFile("template.yaml", """
+        fixture.openFile(
+            "template.yaml",
+            """
 Resources:
   ServerlessFunction:
     Type: AWS::Serverless::Function
@@ -238,7 +267,8 @@ Resources:
       CodeUri: target/HelloWorld-1.0.jar
       Handler:
       Runtime:
-""")
+"""
+        )
 
         runInEdtAndWait {
             val functions = CloudFormationTemplateIndex.listFunctions(projectRule.project)
@@ -253,7 +283,9 @@ Resources:
     fun listResourcesByType_simpleTable() {
         val fixture = projectRule.fixture
 
-        fixture.openFile("template.yaml", """
+        fixture.openFile(
+            "template.yaml",
+            """
 Resources:
   ServerlessFunction:
     Type: AWS::Serverless::Function
@@ -280,7 +312,8 @@ Resources:
         AppType: Serverless
       SSESpecification:
         SSEEnabled: true
-""")
+"""
+        )
 
         runInEdtAndWait {
             val resources = CloudFormationTemplateIndex.listResourcesByType(projectRule.project, "AWS::Serverless::SimpleTable")
@@ -294,7 +327,9 @@ Resources:
     fun listResources_fromFile() {
         val fixture = projectRule.fixture
 
-        val file1 = fixture.openFile("template1.yaml", """
+        val file1 = fixture.openFile(
+            "template1.yaml",
+            """
 Resources:
   ServerlessFunction:
     Type: AWS::Serverless::Function
@@ -305,8 +340,11 @@ Resources:
       Environment:
         Variables:
           TABLE_NAME: my-table
-""")
-        val file2 = fixture.openFile("template2.yaml", """
+"""
+        )
+        val file2 = fixture.openFile(
+            "template2.yaml",
+            """
 Resources:
   DynamodbTable:
     Type: AWS::Serverless::SimpleTable
@@ -323,7 +361,8 @@ Resources:
         AppType: Serverless
       SSESpecification:
         SSEEnabled: true
-""")
+"""
+        )
 
         runInEdtAndWait {
             val resources = CloudFormationTemplateIndex.listResources(projectRule.project).toList()

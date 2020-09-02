@@ -53,9 +53,11 @@ class S3TreeDirectoryNode(private val bucket: S3VirtualBucket, parent: S3TreeDir
             bucket.listObjects(key, continuationToken)
         }
 
-        val continuation = listOfNotNull(response.nextContinuationToken()?.let {
-            S3TreeContinuationNode(bucketName, this, "${this.key}/${message("s3.load_more")}", it)
-        })
+        val continuation = listOfNotNull(
+            response.nextContinuationToken()?.let {
+                S3TreeContinuationNode(bucketName, this, "${this.key}/${message("s3.load_more")}", it)
+            }
+        )
 
         val folders = response.commonPrefixes()?.map { S3TreeDirectoryNode(bucket, this, it.prefix()) } ?: emptyList()
 

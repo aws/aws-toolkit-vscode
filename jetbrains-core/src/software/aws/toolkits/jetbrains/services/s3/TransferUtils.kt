@@ -50,19 +50,21 @@ fun S3Client.upload(
 ): CompletionStage<PutObjectResponse> {
     val future = CompletableFuture<PutObjectResponse>()
     val request = PutObjectRequest.builder().bucket(bucket).key(key).build()
-    ProgressManager.getInstance().run(object : Task.Backgroundable(project, message, true, if (startInBackground) ALWAYS_BACKGROUND else null) {
-        override fun run(indicator: ProgressIndicator) {
-            indicator.isIndeterminate = false
-            try {
-                val result = ProgressMonitorInputStream(indicator, source, length = length).use {
-                    this@upload.putObject(request, RequestBody.fromInputStream(it, length))
+    ProgressManager.getInstance().run(
+        object : Task.Backgroundable(project, message, true, if (startInBackground) ALWAYS_BACKGROUND else null) {
+            override fun run(indicator: ProgressIndicator) {
+                indicator.isIndeterminate = false
+                try {
+                    val result = ProgressMonitorInputStream(indicator, source, length = length).use {
+                        this@upload.putObject(request, RequestBody.fromInputStream(it, length))
+                    }
+                    future.complete(result)
+                } catch (e: Exception) {
+                    future.completeExceptionally(e)
                 }
-                future.complete(result)
-            } catch (e: Exception) {
-                future.completeExceptionally(e)
             }
         }
-    })
+    )
     return future
 }
 
@@ -85,22 +87,24 @@ fun S3Client.download(
 ): CompletionStage<GetObjectResponse> {
     val future = CompletableFuture<GetObjectResponse>()
     val request = GetObjectRequest.builder().bucket(bucket).key(key).build()
-    ProgressManager.getInstance().run(object : Task.Backgroundable(project, message, true, if (startInBackground) ALWAYS_BACKGROUND else null) {
-        override fun run(indicator: ProgressIndicator) {
-            try {
-                this@download.getObject(request) { response, inputStream ->
-                    indicator.isIndeterminate = false
-                    inputStream.use { input ->
-                        ProgressMonitorOutputStream(indicator, destination, response.contentLength()).use { output ->
-                            IoUtils.copy(input, output)
+    ProgressManager.getInstance().run(
+        object : Task.Backgroundable(project, message, true, if (startInBackground) ALWAYS_BACKGROUND else null) {
+            override fun run(indicator: ProgressIndicator) {
+                try {
+                    this@download.getObject(request) { response, inputStream ->
+                        indicator.isIndeterminate = false
+                        inputStream.use { input ->
+                            ProgressMonitorOutputStream(indicator, destination, response.contentLength()).use { output ->
+                                IoUtils.copy(input, output)
+                            }
                         }
+                        future.complete(response)
                     }
-                    future.complete(response)
+                } catch (e: Exception) {
+                    future.completeExceptionally(e)
                 }
-            } catch (e: Exception) {
-                future.completeExceptionally(e)
             }
         }
-    })
+    )
     return future
 }

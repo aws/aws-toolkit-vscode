@@ -37,16 +37,18 @@ internal class SamDebugger(runtimeGroup: RuntimeGroup) : SamRunner() {
 
         var isDebuggerAttachDone = false
 
-        ProgressManager.getInstance().run(object : Task.Backgroundable(environment.project, message("lambda.debug.waiting"), false) {
-            override fun run(indicator: ProgressIndicator) {
-                val debugAttachedResult = spinUntil(debugExtension.debuggerAttachTimeoutMs) { isDebuggerAttachDone }
-                if (!debugAttachedResult) {
-                    val message = message("lambda.debug.attach.fail")
-                    logger.error { message }
-                    notifyError(message("lambda.debug.attach.error"), message, environment.project)
+        ProgressManager.getInstance().run(
+            object : Task.Backgroundable(environment.project, message("lambda.debug.waiting"), false) {
+                override fun run(indicator: ProgressIndicator) {
+                    val debugAttachedResult = spinUntil(debugExtension.debuggerAttachTimeoutMs) { isDebuggerAttachDone }
+                    if (!debugAttachedResult) {
+                        val message = message("lambda.debug.attach.fail")
+                        logger.error { message }
+                        notifyError(message("lambda.debug.attach.error"), message, environment.project)
+                    }
                 }
             }
-        })
+        )
 
         debugExtension.createDebugProcessAsync(environment, state, state.settings.debugHost, debugPorts)
             .onSuccess { debugProcessStarter ->

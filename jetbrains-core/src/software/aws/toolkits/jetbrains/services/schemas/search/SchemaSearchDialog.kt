@@ -49,11 +49,11 @@ class SchemaSearchAllRegistriesDialog(
     schemaViewer: SchemaViewer = SchemaViewer(project),
     onCancelCallback: (SchemaSearchDialogState) -> Unit
 ) : SchemasSearchDialogBase(
-        project,
-        schemaViewer,
-        message("schemas.search.header.text.allRegistries"),
-        onCancelCallback
-    ) {
+    project,
+    schemaViewer,
+    message("schemas.search.header.text.allRegistries"),
+    onCancelCallback
+) {
 
     override fun createResultRenderer(): (SchemaSearchResultWithRegistry) -> JComponent = {
         JBLabel("${it.registry}/${it.name}")

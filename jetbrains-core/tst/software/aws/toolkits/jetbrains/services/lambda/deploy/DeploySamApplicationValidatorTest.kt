@@ -31,8 +31,8 @@ class DeploySamApplicationValidatorTest {
     fun wireMocksTogetherWithValidOptions() {
 
         val parameters = listOf<Parameter>(
-                TestParameter("param1", "value1"),
-                TestParameter("param2", "value2")
+            TestParameter("param1", "value1"),
+            TestParameter("param2", "value2")
         )
 
         view = runInEdtAndGet {
@@ -87,7 +87,7 @@ class DeploySamApplicationValidatorTest {
         view.createStack.isSelected = true
         view.newStackName.text = "x".repeat(DeploySamApplicationValidator.MAX_STACK_NAME_LENGTH + 1)
         assertThat(sut.validateSettings()?.message).contains(
-                message("serverless.application.deploy.validation.new.stack.name.too.long", DeploySamApplicationValidator.MAX_STACK_NAME_LENGTH)
+            message("serverless.application.deploy.validation.new.stack.name.too.long", DeploySamApplicationValidator.MAX_STACK_NAME_LENGTH)
         )
     }
 
@@ -124,8 +124,8 @@ class DeploySamApplicationValidatorTest {
     @Test
     fun templateParameterMissing_Single() {
         val parameters = listOf<Parameter>(
-                TestParameter("param1", "value1"),
-                TestParameter("param2", "")
+            TestParameter("param1", "value1"),
+            TestParameter("param2", "")
         )
         view.withTemplateParameters(parameters)
         assertThat(sut.validateSettings()?.message).contains("Template values are missing:")
@@ -135,8 +135,8 @@ class DeploySamApplicationValidatorTest {
     @Test
     fun templateParameterMissing_Multi() {
         val parameters = listOf<Parameter>(
-                TestParameter("param1", ""),
-                TestParameter("param2", "")
+            TestParameter("param1", ""),
+            TestParameter("param2", "")
         )
         view.withTemplateParameters(parameters)
         assertThat(sut.validateSettings()?.message).contains("Template values are missing:")

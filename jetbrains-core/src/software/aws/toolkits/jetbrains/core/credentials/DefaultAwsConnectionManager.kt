@@ -22,7 +22,8 @@ data class ConnectionSettingsState(
 )
 
 @State(name = "accountSettings", storages = [Storage("aws.xml")])
-class DefaultAwsConnectionManager(private val project: Project) : AwsConnectionManager(project),
+class DefaultAwsConnectionManager(private val project: Project) :
+    AwsConnectionManager(project),
     PersistentStateComponent<ConnectionSettingsState> {
     override fun getState(): ConnectionSettingsState = ConnectionSettingsState(
         activeProfile = selectedCredentialIdentifier?.id,

@@ -476,9 +476,11 @@ class EcsCloudDebugRunConfigurationTest {
             .taskDefinition(taskDefinitionName)
             .build()
         val fakeTaskDefinition = TaskDefinition.builder()
-            .containerDefinitions(containerNames.plus(containerOptionsKey).map {
-                ContainerDefinition.builder().name(it).build()
-            })
+            .containerDefinitions(
+                containerNames.plus(containerOptionsKey).map {
+                    ContainerDefinition.builder().name(it).build()
+                }
+            )
             .build()
         resourceCache.addEntry(EcsResources.describeService(clusterArn, serviceArn), regionId, credentialsIdentifier.id, fakeService)
         resourceCache.addEntry(EcsResources.describeTaskDefinition(taskDefinitionName), regionId, credentialsIdentifier.id, fakeTaskDefinition)

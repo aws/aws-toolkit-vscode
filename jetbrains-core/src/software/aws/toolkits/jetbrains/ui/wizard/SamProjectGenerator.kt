@@ -33,11 +33,13 @@ import javax.swing.Icon
 import javax.swing.JComponent
 
 // ref: https://github.com/JetBrains/intellij-plugins/blob/master/vuejs/src/org/jetbrains/vuejs/cli/VueCliProjectGenerator.kt
-class SamProjectGenerator : ProjectTemplate,
-                            WebProjectTemplate<SamNewProjectSettings>(), // pycharm hack
-                            DirectoryProjectGenerator<SamNewProjectSettings>,
-                            CustomStepProjectGenerator<SamNewProjectSettings>,
-                            HideableProjectGenerator {
+class SamProjectGenerator :
+    ProjectTemplate,
+    WebProjectTemplate<SamNewProjectSettings>(),
+    // pycharm hack
+    DirectoryProjectGenerator<SamNewProjectSettings>,
+    CustomStepProjectGenerator<SamNewProjectSettings>,
+    HideableProjectGenerator {
     val builder = SamProjectBuilder(this)
     val step = SamProjectRuntimeSelectionStep(this)
     val peer = SamProjectGeneratorSettingsPeer(this)

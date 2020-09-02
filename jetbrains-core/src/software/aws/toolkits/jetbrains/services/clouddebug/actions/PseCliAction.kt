@@ -119,37 +119,39 @@ abstract class PseCliAction(val project: Project, val actionName: String, privat
 
                     val handler = CapturingProcessHandler(cmd)
 
-                    handler.addProcessListener(object : ProcessAdapter() {
-                        val cliOutput = AtomicReference<String?>()
-                        override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
-                            if (outputType == ProcessOutputTypes.STDOUT) {
-                                cliOutput.set(event.text)
-                            } else {
-                                val (text, level) = event.text.asLogEvent()
-                                @Suppress("DEPRECATION")
-                                messageEmitter.emitMessage(text, level == Level.ERROR)
-                                indicator.text2 = text
-                                // output to the log for diagnostic and integrations tests
-                                LOG.debug { event.text.trim() }
-                            }
-                        }
-
-                        override fun processTerminated(event: ProcessEvent) {
-                            val result = if (event.exitCode == 0) {
-                                SuccessResultImpl()
-                            } else {
-                                // TODO: really need to refactor this and steps - it's getting a bit crazy
-                                messageEmitter.emitMessage("Error details:\n", true)
-                                cliOutput.get()?.let { CliOutputParser.parseErrorOutput(it) }?.errors?.forEach {
-                                    messageEmitter.emitMessage("\t- $it\n", true)
+                    handler.addProcessListener(
+                        object : ProcessAdapter() {
+                            val cliOutput = AtomicReference<String?>()
+                            override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
+                                if (outputType == ProcessOutputTypes.STDOUT) {
+                                    cliOutput.set(event.text)
+                                } else {
+                                    val (text, level) = event.text.asLogEvent()
+                                    @Suppress("DEPRECATION")
+                                    messageEmitter.emitMessage(text, level == Level.ERROR)
+                                    indicator.text2 = text
                                     // output to the log for diagnostic and integrations tests
-                                    LOG.debug { "Error details:\n $it" }
+                                    LOG.debug { event.text.trim() }
                                 }
-                                FailureResultImpl()
                             }
-                            buildViewManager.onEvent(actionName, FinishBuildEventImpl(actionName, null, System.currentTimeMillis(), "", result))
+
+                            override fun processTerminated(event: ProcessEvent) {
+                                val result = if (event.exitCode == 0) {
+                                    SuccessResultImpl()
+                                } else {
+                                    // TODO: really need to refactor this and steps - it's getting a bit crazy
+                                    messageEmitter.emitMessage("Error details:\n", true)
+                                    cliOutput.get()?.let { CliOutputParser.parseErrorOutput(it) }?.errors?.forEach {
+                                        messageEmitter.emitMessage("\t- $it\n", true)
+                                        // output to the log for diagnostic and integrations tests
+                                        LOG.debug { "Error details:\n $it" }
+                                    }
+                                    FailureResultImpl()
+                                }
+                                buildViewManager.onEvent(actionName, FinishBuildEventImpl(actionName, null, System.currentTimeMillis(), "", result))
+                            }
                         }
-                    })
+                    )
 
                     val exit = handler.runProcess().exitCode
                     if (exit == 0) {

@@ -22,7 +22,7 @@ val LOG = LoggerFactory.getLogger(T::class.java)
 fun foo() {
     LOG.debug {"Hi" }
 }
-        """.trimIndent()
+                """.trimIndent()
             )
         ).isEmpty()
     }
@@ -38,7 +38,7 @@ val LOG = LoggerFactory.getLogger(T::class.java)
 fun foo() {
     LOG.debug("Hi")
 }
-        """.trimIndent()
+                """.trimIndent()
             )
         ).containsExactly(LintError(5, 9, "log-not-lazy", "Use the Lambda version of LOG.debug instead"))
     }
@@ -55,7 +55,7 @@ fun foo() {
     val e = RuntimeException()
     LOG.debug(e) {"Hi" }
 }
-        """.trimIndent()
+                """.trimIndent()
             )
         ).isEmpty()
     }
@@ -73,7 +73,7 @@ val LOG = LoggerFactory.getLogger(T::class.java)
 fun foo() {
     LOG.debug("Hi")
 }
-        """.trimIndent()
+                """.trimIndent()
             )
         ).isEmpty()
     }

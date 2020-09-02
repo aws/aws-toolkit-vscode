@@ -17,23 +17,26 @@ class CloudDebuggingExplorerTreeStructureProvider : AwsExplorerTreeStructureProv
         settings: ViewSettings?
     ): MutableCollection<AbstractTreeNode<*>> =
         when (parent) {
-            is EcsClusterNode -> children
-                .sortedWith(Comparator { x, y ->
-                    val service1 = (x as? EcsServiceNode)?.resourceArn()?.toLowerCase() ?: ""
-                    val service2 = (y as? EcsServiceNode)?.resourceArn()?.toLowerCase() ?: ""
-                    val value = EcsUtils.originalServiceName(service1).compareTo(EcsUtils.originalServiceName(service2))
-                    if (value != 0) {
-                        value
-                    } else {
-                        // Always put the instrumented service first
-                        if (EcsUtils.isInstrumented(service1)) {
-                            -1
-                        } else {
-                            1
+            is EcsClusterNode ->
+                children
+                    .sortedWith(
+                        Comparator { x, y ->
+                            val service1 = (x as? EcsServiceNode)?.resourceArn()?.toLowerCase() ?: ""
+                            val service2 = (y as? EcsServiceNode)?.resourceArn()?.toLowerCase() ?: ""
+                            val value = EcsUtils.originalServiceName(service1).compareTo(EcsUtils.originalServiceName(service2))
+                            if (value != 0) {
+                                value
+                            } else {
+                                // Always put the instrumented service first
+                                if (EcsUtils.isInstrumented(service1)) {
+                                    -1
+                                } else {
+                                    1
+                                }
+                            }
                         }
-                    }
-                })
-                .toMutableList()
+                    )
+                    .toMutableList()
             else -> children
         }
 }

@@ -98,13 +98,16 @@ class ProfileWatcherTest {
      */
     private fun assertFileChange(block: () -> Unit) {
         val fileWatcher = (LocalFileSystem.getInstance() as LocalFileSystemImpl).fileWatcher
-        Disposer.register(projectRule.fixture.testRootDisposable, Disposable {
-            fileWatcher.shutdown()
+        Disposer.register(
+            projectRule.fixture.testRootDisposable,
+            Disposable {
+                fileWatcher.shutdown()
 
-            spinUntil(Duration.ofSeconds(10)) {
-                !fileWatcher.isOperational
+                spinUntil(Duration.ofSeconds(10)) {
+                    !fileWatcher.isOperational
+                }
             }
-        })
+        )
 
         val watcherTriggered = CountDownLatch(1)
         fileWatcher.startup {
