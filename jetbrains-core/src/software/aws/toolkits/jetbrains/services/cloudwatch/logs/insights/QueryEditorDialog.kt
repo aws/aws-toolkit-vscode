@@ -20,7 +20,8 @@ val relativeTimeUnit = mapOf(
     message("cloudwatch.logs.time_minutes") to ChronoUnit.MINUTES,
     message("cloudwatch.logs.time_hours") to ChronoUnit.HOURS,
     message("cloudwatch.logs.time_days") to ChronoUnit.DAYS,
-    message("cloudwatch.logs.time_weeks") to ChronoUnit.WEEKS)
+    message("cloudwatch.logs.time_weeks") to ChronoUnit.WEEKS
+)
 
 class QueryEditorDialog(
     private val project: Project,
@@ -74,12 +75,12 @@ class QueryEditorDialog(
             SaveQueryDialog(project, query, logGroupNames).show()
         }
     }
+
     override fun createCenterPanel(): JComponent? = view.queryEditorBasePanel
+
     override fun doValidate(): ValidationInfo? = validateEditorEntries(view)
+
     override fun getOKAction(): Action = action
-    override fun doCancelAction() {
-        super.doCancelAction()
-    }
 
     override fun doOKAction() {
         // Do nothing, close logic is handled separately
@@ -107,17 +108,17 @@ class QueryEditorDialog(
 
     private fun getCurrentTime() = Calendar.getInstance().toInstant()
 
-    private fun getRelativeTime(unitOfTime: ChronoUnit?, relTimeNumber: Long): StartEndDate = StartEndDate(getCurrentTime().minus(relTimeNumber, unitOfTime),
-        getCurrentTime())
+    private fun getRelativeTime(unitOfTime: ChronoUnit?, relTimeNumber: Long): StartEndDate = StartEndDate(
+        getCurrentTime().minus(relTimeNumber, unitOfTime),
+        getCurrentTime()
+    )
 
     private fun getAbsoluteTime(startDate: Date, endDate: Date): StartEndDate = StartEndDate(startDate.toInstant(), endDate.toInstant())
 
     private fun getFilterQuery(searchTerm: String): String {
-        if (searchTerm.contains("/")) {
-            val regexTerm = searchTerm.replace("/", "\\/")
-            return "fields @message, @timestamp | filter @message like /$regexTerm/"
-        }
-        return "fields @message, @timestamp | filter @message like /$searchTerm/"
+        val regexTerm = searchTerm.replace("/", "\\/")
+
+        return "fields @message, @timestamp | filter @message like /$regexTerm/"
     }
 
     private fun beginQuerying() {
@@ -126,15 +127,19 @@ class QueryEditorDialog(
         }
         val funDetails = getFunctionDetails()
         val queryStartEndDate: StartEndDate
-        queryStartEndDate = (if (funDetails.absoluteTimeSelected) {
+
+        queryStartEndDate = if (funDetails.absoluteTimeSelected) {
             getAbsoluteTime(funDetails.startDateAbsolute, funDetails.endDateAbsolute)
         } else {
             getRelativeTime(relativeTimeUnit[funDetails.relativeTimeUnit], funDetails.relativeTimeNumber.toLong())
-        })
+        }
+
         val query = if (funDetails.enterQuery) {
-            funDetails.query } else {
+            funDetails.query
+        } else {
             getFilterQuery(funDetails.searchTerm)
         }
+
         QueryEditorSavedState().setQueryEditorState(getFunctionDetails(), getEnabledDisabledComponentsState())
         close(OK_EXIT_CODE)
         queryingLogGroupApiCall.executeStartQuery(queryStartEndDate, funDetails.logGroupName, query, client)
@@ -174,7 +179,7 @@ class QueryEditorDialog(
         }
     }
 
-    public fun validateEditorEntries(view: QueryEditor): ValidationInfo? {
+    fun validateEditorEntries(view: QueryEditor): ValidationInfo? {
         if (!view.absoluteTimeRadioButton.isSelected && !view.relativeTimeRadioButton.isSelected) {
             return ValidationInfo(message("cloudwatch.logs.validation.timerange"), view.absoluteTimeRadioButton)
         }

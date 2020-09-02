@@ -56,8 +56,8 @@ sealed class QueryActor<T>(
     }
 
     private suspend fun handleMessages(message: MessageLoadQueryResults) {
-            when (message) {
-                is MessageLoadQueryResults.LoadNextQueryBatch -> {
+        when (message) {
+            is MessageLoadQueryResults.LoadNextQueryBatch -> {
                 if (moreResultsAvailable) {
                     withContext(edtContext) { table.setPaintBusy(true) }
                     val items = loadNext()
@@ -69,14 +69,14 @@ sealed class QueryActor<T>(
                     notifyInfo(message("cloudwatch.logs.query_result_completion_status"), message("cloudwatch.logs.query_result_completion_successful"))
                 }
             }
-                is MessageLoadQueryResults.LoadInitialQueryResults -> {
-                    loadInitialQueryResults()
-                    val rect = table.getCellRect(0, 0, true)
-                    withContext(edtContext) {
-                        table.scrollRectToVisible(rect)
-                    }
+            is MessageLoadQueryResults.LoadInitialQueryResults -> {
+                loadInitialQueryResults()
+                val rect = table.getCellRect(0, 0, true)
+                withContext(edtContext) {
+                    table.scrollRectToVisible(rect)
                 }
             }
+        }
     }
 
     protected suspend fun loadAndPopulateResultsTable(loadBlock: suspend() -> List<T>) {
@@ -142,8 +142,9 @@ class QueryResultsActor(
             response = client.getQueryResults(request)
         }
         val queryResults = response.results().filterNotNull()
-        val listOfResults = queryResults.map {
-            result -> result.map { it.field().toString() to it.value().toString() }.toMap() }
+        val listOfResults = queryResults.map { result ->
+            result.map { it.field().toString() to it.value().toString() }.toMap()
+        }
         listOfResults.iterator().forEach { it["@ptr"]?.let { it1 -> queryResultsIdentifierList.add(it1) } }
         moreResultsAvailable = response.status() != QueryStatus.COMPLETE
 
@@ -161,7 +162,7 @@ class QueryResultsActor(
         // Since the results are cumulative, if the order of results change, this function ensures that the same results are not displayed repeatedly
         val listOfResults = arrayListOf<Map<String, String>>()
         for (result in queryResultList) {
-            var fieldToValueMap = result.map { it.field() to it.value() }.toMap()
+            val fieldToValueMap = result.map { it.field() to it.value() }.toMap()
             // @ptr is a unique identifier for each resultant log event which is used here to ensure results are not repeatedly displayed
             if (fieldToValueMap["@ptr"] !in queryResultsIdentifierList) {
                 fieldToValueMap["@ptr"]?.let { queryResultsIdentifierList.add(it) }
@@ -170,6 +171,7 @@ class QueryResultsActor(
         }
         return listOfResults
     }
+
     companion object {
         val queryResultsIdentifierList = arrayListOf<String>()
     }

@@ -27,7 +27,7 @@ class SaveQueryDialog(
     private val client: CloudWatchLogsClient = project.awsClient()
 ) : DialogWrapper(project), CoroutineScope by ApplicationThreadPoolScope("SavingQuery") {
 
-    val view = EnterQueryName(project)
+    val view = EnterQueryName()
     private val action: OkAction = object : OkAction() {
         init {
             putValue(Action.NAME, message("cloudwatch.logs.save_query"))

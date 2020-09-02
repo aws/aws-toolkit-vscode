@@ -48,8 +48,9 @@ class QueryEditor internal constructor(private val project: Project) {
             message("cloudwatch.logs.time_minutes"),
             message("cloudwatch.logs.time_hours"),
             message("cloudwatch.logs.time_days"),
-            message("cloudwatch.logs.time_weeks"))
-        relativeTimeUnit = ComboBox<String>(timeUnits)
+            message("cloudwatch.logs.time_weeks")
+        )
+        relativeTimeUnit = ComboBox(timeUnits)
     }
 
     init {

@@ -35,13 +35,13 @@ class QueryingLogGroups(private val project: Project) : CoroutineScope by Applic
     }
 
     fun getFields(query: String): List<String> {
-        var fieldList = mutableListOf<List<String>>()
+        val fieldList = mutableListOf<List<String>>()
         query.replace("\\|", "")
         val queries = query.split("|")
         for (item in queries) {
             val splitQuery = item.trim()
             if (splitQuery.startsWith(fields, ignoreCase = false)) {
-                var fields = splitQuery.substring(fields.length + 1)
+                val fields = splitQuery.substring(fields.length + 1)
                 fieldList.add(fields.split(",").map { it.trim() })
             }
         }

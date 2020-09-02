@@ -16,6 +16,7 @@ class AddRemoveLogGroupTable(project: Project) : ListTableWithButtons<SelectedLo
     override fun cloneElement(variable: SelectedLogGroups): SelectedLogGroups = variable.copy()
     override fun createElement(): SelectedLogGroups = SelectedLogGroups()
     fun getSelLogGroups(): List<SelectedLogGroups> = elements.toList()
+
     override fun createListModel(): ListTableModel<*> = ListTableModel<SelectedLogGroups>(
         StringColInfo(
             message("cloudwatch.logs.selected_log_groups"),
@@ -23,6 +24,9 @@ class AddRemoveLogGroupTable(project: Project) : ListTableWithButtons<SelectedLo
             { mapping, value -> mapping.logGroups = value }
         )
     )
+
+    override fun canDeleteElement(selection: SelectedLogGroups?): Boolean = true
+    override fun isEmpty(element: SelectedLogGroups): Boolean = element.logGroups.isNullOrEmpty()
 
     private inner class StringColInfo(
         name: String,
@@ -43,7 +47,4 @@ class AddRemoveLogGroupTable(project: Project) : ListTableWithButtons<SelectedLo
         override fun isCellEditable(item: SelectedLogGroups?): Boolean = false
         override fun getDescription(element: SelectedLogGroups?): String? = null
     }
-
-    override fun canDeleteElement(selection: SelectedLogGroups?): Boolean = true
-    override fun isEmpty(element: SelectedLogGroups): Boolean = element.logGroups.isNullOrEmpty()
 }

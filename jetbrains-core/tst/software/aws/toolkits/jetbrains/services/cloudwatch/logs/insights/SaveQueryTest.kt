@@ -37,7 +37,7 @@ class SaveQueryTest {
     fun `Query name not entered, error message displayed`() {
         runInEdtAndWait {
             val project = projectRule.project
-            view = EnterQueryName(project)
+            view = EnterQueryName()
             client = mockClientManagerRule.create()
             validator = SaveQueryDialog(project, "fields @timestamp", listOf("log1"), client)
             view.queryName.text = ""
@@ -49,7 +49,7 @@ class SaveQueryTest {
     fun `Path with correctly entered Query name returns no validation error`() {
         runInEdtAndWait {
             val project = projectRule.project
-            view = EnterQueryName(project)
+            view = EnterQueryName()
             client = mockClientManagerRule.create()
             validator = SaveQueryDialog(project, "fields @timestamp", listOf("log1"), client)
             view.queryName.text = "TrialQuery"

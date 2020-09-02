@@ -30,8 +30,7 @@ class QueryEditorSavedState {
             "fields @timestamp, @message\n" +
                 "| sort @timestamp desc\n" +
                 "| limit 20"
-
-            )
+        )
         var enabledDisabledOptionsState = EnabledComponentsState(
             startDateEnabled = false,
             endDateEnabled = false,

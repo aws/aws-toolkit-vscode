@@ -15,7 +15,7 @@ import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.resources.message
 
 class QueryResultsWindow(private val project: Project) : CoroutineScope by ApplicationThreadPoolScope("openResultsWindow") {
-    private val toolWindow = ToolkitToolWindowManager.getInstance(project, QueryResultsWindow.INSIGHTS_RESULTS_TOOL_WINDOW)
+    private val toolWindow = ToolkitToolWindowManager.getInstance(project, INSIGHTS_RESULTS_TOOL_WINDOW)
     private val edtContext = getCoroutineUiContext()
     fun showResults(queryId: String, fieldList: List<String>, selectedlogGroup: String) = launch {
         val existingWindow = toolWindow.find(queryId)

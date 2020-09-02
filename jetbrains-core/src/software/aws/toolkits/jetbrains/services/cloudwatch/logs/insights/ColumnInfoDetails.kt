@@ -12,12 +12,14 @@ import javax.swing.table.TableCellRenderer
 
 class ColumnInfoDetails(private val fieldName: String) : ColumnInfo<Map<String, String>, String>(fieldName) {
     private val renderer = FieldColumnRenderer()
+
     override fun valueOf(item: Map<String, String>?): String? {
         if (item != null) {
             return item[fieldName]
         }
         return null
     }
+
     override fun isCellEditable(item: Map<String, String>?): Boolean = false
     override fun getRenderer(item: Map<String, String>?): TableCellRenderer? = renderer
 }

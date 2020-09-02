@@ -18,10 +18,10 @@ import software.aws.toolkits.resources.message
 import javax.swing.JComponent
 
 class QueryResultsTable(
-    private val project: Project,
-    private val client: CloudWatchLogsClient,
-    private val fieldList: List<String>,
-    private val queryId: String
+    project: Project,
+    client: CloudWatchLogsClient,
+    fieldList: List<String>,
+    queryId: String
 ) : CoroutineScope by ApplicationThreadPoolScope("QueryResultsTable"), Disposable {
     val component: JComponent
     val channel: Channel<QueryActor.MessageLoadQueryResults>
@@ -29,14 +29,15 @@ class QueryResultsTable(
     private val queryActor: QueryActor<Map<String, String>>
 
     init {
-            val columnInfoList: ArrayList<ColumnInfoDetails> = arrayListOf()
-            for (field in fieldList) {
-                columnInfoList.add(ColumnInfoDetails(field))
-            }
-            val columnInfoArray = columnInfoList.toTypedArray()
-            val tableModel = ListTableModel(
-                columnInfoArray, listOf<Map<String, String>>()
-            )
+        val columnInfo = fieldList.map {
+            ColumnInfoDetails(it)
+        }.toTypedArray()
+
+        val tableModel = ListTableModel(
+            columnInfo,
+            listOf<Map<String, String>>()
+        )
+
         resultsTable = TableView(tableModel).apply {
             setPaintBusy(true)
             autoscrolls = true
