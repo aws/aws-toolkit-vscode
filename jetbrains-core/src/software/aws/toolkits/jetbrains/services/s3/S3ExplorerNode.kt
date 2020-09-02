@@ -10,8 +10,8 @@ import software.amazon.awssdk.services.s3.model.Bucket
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
-import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
+import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
 

@@ -5,10 +5,10 @@ package software.aws.toolkits.jetbrains.services
 
 import com.intellij.openapi.util.SystemInfo
 import com.intellij.openapi.util.io.FileUtil
+import com.intellij.util.io.isFile
 import com.intellij.xdebugger.XSourcePosition
 import com.jetbrains.python.debugger.PyLocalPositionConverter
 import com.jetbrains.python.debugger.PySourcePosition
-import com.intellij.util.io.isFile
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.services.PathMapper.Companion.normalizeLocal

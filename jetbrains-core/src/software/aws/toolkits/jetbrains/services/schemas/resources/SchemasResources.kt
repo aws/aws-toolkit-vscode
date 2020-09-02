@@ -12,7 +12,6 @@ import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
 import software.aws.toolkits.jetbrains.core.Resource
 import software.aws.toolkits.jetbrains.ui.wizard.SchemaSelectionItem
 import java.time.Duration
-import kotlin.streams.toList
 
 object SchemasResources {
     @JvmField

@@ -27,8 +27,8 @@ import software.amazon.awssdk.services.schemas.model.SchemaVersionSummary
 import software.aws.toolkits.core.utils.failedFuture
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.MockResourceCache
-import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
 import software.aws.toolkits.jetbrains.services.schemas.Schema
 import software.aws.toolkits.jetbrains.services.schemas.SchemaCodeLangs
 import software.aws.toolkits.jetbrains.services.schemas.SchemaSummary
