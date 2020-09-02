@@ -43,7 +43,7 @@ class DockerfileParserTest {
                 COPY /build/libs/app.jar /home/app.jar
                 EXPOSE 80
                 CMD java -jar -Dserver.port=80 /home/app.jar
-                """.trimIndent()
+            """.trimIndent()
         )
 
         runInEdtAndWait {
@@ -70,7 +70,7 @@ class DockerfileParserTest {
                 COPY /build/libs/thing.txt thing.txt
                 EXPOSE 80
                 CMD java -jar -Dserver.port=80 /home/app.jar
-                """.trimIndent()
+            """.trimIndent()
         )
 
         runInEdtAndWait {
@@ -95,7 +95,7 @@ class DockerfileParserTest {
             """
                 FROM amazoncorretto:8
                 ADD /build/libs/thing.txt thing.txt
-                """.trimIndent()
+            """.trimIndent()
         )
 
         runInEdtAndWait {
@@ -112,7 +112,7 @@ class DockerfileParserTest {
                 COPY
                 COPY /foo
                 COPY /hello /world
-                """.trimIndent()
+            """.trimIndent()
         )
 
         runInEdtAndWait {
@@ -133,7 +133,7 @@ class DockerfileParserTest {
                 COPY /build/libs/app.jar /home/app.jar
                 EXPOSE 80
                 CMD java -jar -Dserver.port=80 /home/app.jar
-                """.trimIndent()
+            """.trimIndent()
         )
 
         runInEdtAndWait {
@@ -155,7 +155,8 @@ class DockerfileParserTest {
                 FROM amazoncorretto:8
                 COPY build/libs/app.jar /home/app.jar
                 WORKDIR /blah
-                COPY . .""".trimIndent()
+                COPY . .
+            """.trimIndent()
         )
         val directory = file.parent.path.normalizeDirectory(matchPlatform = true)
         runInEdtAndWait {

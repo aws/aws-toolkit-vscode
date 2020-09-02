@@ -139,28 +139,30 @@ class DownloadCodeForSchemaDialog(
         SchemasTelemetry.download(project, success = true, schemalanguage = SchemaLanguage.from(schemaCodeDownloadDetails.language.apiValue))
 
         val schemaName = schemaCodeDownloadDetails.schema.name
-        ProgressManager.getInstance().run(object : Task.Backgroundable(project, message("schemas.schema.download_code_bindings.title", schemaName), false) {
-            override fun run(indicator: ProgressIndicator) {
-                notifyInfo(
-                    title = NOTIFICATION_TITLE,
-                    content = message("schemas.schema.download_code_bindings.notification.start", schemaName),
-                    project = project
-                )
+        ProgressManager.getInstance().run(
+            object : Task.Backgroundable(project, message("schemas.schema.download_code_bindings.title", schemaName), false) {
+                override fun run(indicator: ProgressIndicator) {
+                    notifyInfo(
+                        title = NOTIFICATION_TITLE,
+                        content = message("schemas.schema.download_code_bindings.notification.start", schemaName),
+                        project = project
+                    )
 
-                schemaCodeDownloader.downloadCode(schemaCodeDownloadDetails, indicator)
-                    .thenCompose { schemaCoreCodeFile ->
-                        refreshDownloadCodeDirectory(schemaCodeDownloadDetails)
-                        openSchemaCoreCodeFileInEditor(schemaCoreCodeFile, project)
-                    }
-                    .thenApply {
-                        showDownloadCompletionNotification(schemaName, project)
-                    }
-                    .exceptionally { error ->
-                        showDownloadCompletionErrorNotification(error, project)
-                    }
-                    .toCompletableFuture().get()
+                    schemaCodeDownloader.downloadCode(schemaCodeDownloadDetails, indicator)
+                        .thenCompose { schemaCoreCodeFile ->
+                            refreshDownloadCodeDirectory(schemaCodeDownloadDetails)
+                            openSchemaCoreCodeFileInEditor(schemaCoreCodeFile, project)
+                        }
+                        .thenApply {
+                            showDownloadCompletionNotification(schemaName, project)
+                        }
+                        .exceptionally { error ->
+                            showDownloadCompletionErrorNotification(error, project)
+                        }
+                        .toCompletableFuture().get()
+                }
             }
-        })
+        )
 
         onClose?.let { it() }
 

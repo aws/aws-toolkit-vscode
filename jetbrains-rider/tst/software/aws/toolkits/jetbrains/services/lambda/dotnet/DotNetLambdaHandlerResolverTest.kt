@@ -22,20 +22,20 @@ class DotNetLambdaHandlerResolverTest : AwsReuseSolutionTestBase() {
     fun testHandler_SingleValidHandler() {
         val handler = "HelloWorld::HelloWorld.Function::FunctionHandler"
         val handlerElements = Lambda.findPsiElementsForHandler(
-                project,
-                Runtime.DOTNETCORE2_1,
-                handler
+            project,
+            Runtime.DOTNETCORE2_1,
+            handler
         )
         handlerElements.size.shouldBe(1, "Mismatch number of elements found for a specified handler string: $handler")
     }
 
     @DataProvider(name = "invalidHandlerData")
     fun invalidHandlerNameData() = arrayOf(
-            arrayOf("InvalidMethodName", "HelloWorld::HelloWorld.Function::InvalidFunctionHandler"),
-            arrayOf("MissTypeAndMethodHandler", "HelloWorld"),
-            arrayOf("MissMethodName", "HelloWorld::HelloWorld.Function"),
-            arrayOf("InvalidType", "HelloWorld::HelloWorld::FunctionHandler"),
-            arrayOf("EmptyHandler", "")
+        arrayOf("InvalidMethodName", "HelloWorld::HelloWorld.Function::InvalidFunctionHandler"),
+        arrayOf("MissTypeAndMethodHandler", "HelloWorld"),
+        arrayOf("MissMethodName", "HelloWorld::HelloWorld.Function"),
+        arrayOf("InvalidType", "HelloWorld::HelloWorld::FunctionHandler"),
+        arrayOf("EmptyHandler", "")
     )
 
     @Test(dataProvider = "invalidHandlerData")
@@ -44,9 +44,9 @@ class DotNetLambdaHandlerResolverTest : AwsReuseSolutionTestBase() {
         //       Log a name here as a placeholder to avoid linter errors
         frameworkLogger.info("Test name: $name")
         val handlerElements = Lambda.findPsiElementsForHandler(
-                project,
-                Runtime.DOTNETCORE2_1,
-                handler
+            project,
+            Runtime.DOTNETCORE2_1,
+            handler
         )
         handlerElements.size.shouldBe(0, "Mismatch number of elements found for a specified handler string: $handler")
     }

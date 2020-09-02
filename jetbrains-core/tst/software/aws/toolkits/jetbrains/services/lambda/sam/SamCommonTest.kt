@@ -92,7 +92,7 @@ Resources:
             Handler: helloworld.App::handleRequest
             Runtime: java8
             CodeUri: target/out.jar
-        """.trimIndent()
+            """.trimIndent()
         )
         runInEdtAndWait {
             projectRule.fixture.addFileToProject("target/out.jar", "")
@@ -118,7 +118,7 @@ Resources:
             CodeUri: hello_world/
             Handler: app.handle_request
             Runtime: java8
-        """.trimIndent()
+            """.trimIndent()
         )
         createChildren("hello_world")
         runInEdtAndWait {
@@ -162,7 +162,7 @@ Resources:
             ProvisionedThroughput:
                 ReadCapacityUnits: 1
                 WriteCapacityUnits: 1
-        """.trimIndent()
+            """.trimIndent()
         )
         createChildren("hello_world")
         runReadAction {
@@ -199,7 +199,7 @@ Resources:
             CodeUri: hello_world_42/
             Handler: app.handle_request
             Runtime: java8
-        """.trimIndent()
+            """.trimIndent()
         )
         createChildren("hello_world")
         createChildren("hello_world_42")

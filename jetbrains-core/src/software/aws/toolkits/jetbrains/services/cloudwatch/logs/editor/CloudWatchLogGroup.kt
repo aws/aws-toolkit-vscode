@@ -97,12 +97,14 @@ class CloudWatchLogGroup(
 
     private fun addToolbar() {
         val actionGroup = DefaultActionGroup()
-        actionGroup.addAction(object : AnAction(message("general.refresh"), null, AllIcons.Actions.Refresh), DumbAware {
-            override fun actionPerformed(e: AnActionEvent) {
-                CloudwatchlogsTelemetry.refreshGroup(project)
-                refreshTable()
+        actionGroup.addAction(
+            object : AnAction(message("general.refresh"), null, AllIcons.Actions.Refresh), DumbAware {
+                override fun actionPerformed(e: AnActionEvent) {
+                    CloudwatchlogsTelemetry.refreshGroup(project)
+                    refreshTable()
+                }
             }
-        })
+        )
         tablePanel.toolbar = ActionManager.getInstance().createActionToolbar("CloudWatchLogStream", actionGroup, false).component
     }
 

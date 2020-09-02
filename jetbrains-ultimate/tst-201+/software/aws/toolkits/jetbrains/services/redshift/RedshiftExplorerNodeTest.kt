@@ -28,7 +28,8 @@ class RedshiftExplorerNodeTest {
     fun `Redshift resources are listed`() {
         val name = RuleUtils.randomName()
         resourceCache.get().addEntry(
-            RedshiftResources.LIST_CLUSTERS, listOf(Cluster.builder().clusterIdentifier(name).build())
+            RedshiftResources.LIST_CLUSTERS,
+            listOf(Cluster.builder().clusterIdentifier(name).build())
         )
         val serviceRootNode = sut.buildServiceRootNode(projectRule.project)
         assertThat(serviceRootNode.children).hasOnlyOneElementSatisfying {

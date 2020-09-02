@@ -124,7 +124,8 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         projectRule.fixture.addPackageJsonFile(subPath = "hello_world")
 
         val templateFile = projectRule.fixture.addFileToProject(
-            "template.yaml", """
+            "template.yaml",
+            """
             Resources:
               SomeFunction:
                 Type: AWS::Serverless::Function
@@ -133,7 +134,7 @@ class NodeJsLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
                   CodeUri: hello_world
                   Runtime: $runtime
                   Timeout: 900
-        """.trimIndent()
+            """.trimIndent()
         )
 
         val runConfiguration = createTemplateRunConfiguration(

@@ -9,7 +9,6 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import kotlin.streams.toList
 
-/* ktlint-disable custom-ktlint-rules:log-not-lazy */
 /**
  * Generates a combined change log file based in Markdown syntax
  */

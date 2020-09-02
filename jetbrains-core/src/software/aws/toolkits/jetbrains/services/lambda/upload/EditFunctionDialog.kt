@@ -176,15 +176,17 @@ class EditFunctionDialog(
         loadSettings()
     }
 
-    private fun configurationChanged(): Boolean = mode != NEW && !(name == view.name.text &&
-        description == view.description.text &&
-        runtime == view.runtime.selected() &&
-        handlerName == view.handlerPanel.handler.text &&
-        envVariables.entries == view.envVars.envVars.entries &&
-        timeout == view.timeoutSlider.value &&
-        memorySize == view.memorySlider.value &&
-        xrayEnabled == view.xrayEnabled.isSelected &&
-        role == view.iamRole.selected())
+    private fun configurationChanged(): Boolean = mode != NEW && !(
+        name == view.name.text &&
+            description == view.description.text &&
+            runtime == view.runtime.selected() &&
+            handlerName == view.handlerPanel.handler.text &&
+            envVariables.entries == view.envVars.envVars.entries &&
+            timeout == view.timeoutSlider.value &&
+            memorySize == view.memorySlider.value &&
+            xrayEnabled == view.xrayEnabled.isSelected &&
+            role == view.iamRole.selected()
+        )
 
     override fun createCenterPanel(): JComponent? = view.content
 

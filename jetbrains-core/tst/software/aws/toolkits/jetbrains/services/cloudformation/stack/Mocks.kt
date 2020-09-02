@@ -23,14 +23,17 @@ internal class MockEventsGenerator {
     }
 
     fun addEvent() {
-        events.add(0, StackEvent.builder()
-            .physicalResourceId("P$lastEventId")
-            .logicalResourceId("L$lastEventId")
-            .resourceType("Type")
-            .resourceStatus(ResourceStatus.CREATE_IN_PROGRESS)
-            .timestamp(Instant.now())
-            .eventId(lastEventId.toString())
-            .build())
+        events.add(
+            0,
+            StackEvent.builder()
+                .physicalResourceId("P$lastEventId")
+                .logicalResourceId("L$lastEventId")
+                .resourceType("Type")
+                .resourceStatus(ResourceStatus.CREATE_IN_PROGRESS)
+                .timestamp(Instant.now())
+                .eventId(lastEventId.toString())
+                .build()
+        )
         lastEventId++
     }
 

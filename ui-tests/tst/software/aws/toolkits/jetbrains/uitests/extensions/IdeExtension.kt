@@ -68,9 +68,11 @@ class Ide : BeforeAllCallback, BeforeEachCallback, AfterAllCallback {
                     }
 
                     // Try to get back to starting point by closing all windows
-                    val dialogs = findAll<DialogFixture>(LambdaLocator("any dialog") {
-                        it is Window && it.isShowing
-                    })
+                    val dialogs = findAll<DialogFixture>(
+                        LambdaLocator("any dialog") {
+                            it is Window && it.isShowing
+                        }
+                    )
 
                     dialogs.filterNot { it.remoteComponent.className.contains("FlatWelcomeFrame") }
                         .forEach {
@@ -139,15 +141,17 @@ private class GradleProcess {
             .setColorOutput(false)
             .setStandardOutput(OutputWrapper(true))
             .setStandardError(OutputWrapper(false))
-            .run(object : ResultHandler<Any> {
-                override fun onFailure(failure: GradleConnectionException) {
-                    isRunning.set(false)
-                }
+            .run(
+                object : ResultHandler<Any> {
+                    override fun onFailure(failure: GradleConnectionException) {
+                        isRunning.set(false)
+                    }
 
-                override fun onComplete(result: Any) {
-                    isRunning.set(false)
+                    override fun onComplete(result: Any) {
+                        isRunning.set(false)
+                    }
                 }
-            })
+            )
 
         isRunning.set(true)
 

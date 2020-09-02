@@ -20,8 +20,8 @@ class CorrectThreadCredentialsProvider(private val delegate: AwsCredentialsProvi
                 delegate.resolveCredentials()
             },
             message("credentials.retrieving"),
-            /* canBeCancelled */false,
-            /* project */null
+            false,
+            null
         )
     } else {
         delegate.resolveCredentials()

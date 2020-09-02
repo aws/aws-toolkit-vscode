@@ -90,16 +90,18 @@ class LogGroupTable(
     }
 
     private fun addKeyListener(table: JBTable) {
-        table.addKeyListener(object : KeyAdapter() {
-            override fun keyTyped(e: KeyEvent) {
-                val logStream = table.getSelectedRowLogStream() ?: return
-                if (!e.isConsumed && e.keyCode == KeyEvent.VK_ENTER) {
-                    e.consume()
-                    val window = CloudWatchLogWindow.getInstance(project)
-                    window.showLogStream(logGroup, logStream)
+        table.addKeyListener(
+            object : KeyAdapter() {
+                override fun keyTyped(e: KeyEvent) {
+                    val logStream = table.getSelectedRowLogStream() ?: return
+                    if (!e.isConsumed && e.keyCode == KeyEvent.VK_ENTER) {
+                        e.consume()
+                        val window = CloudWatchLogWindow.getInstance(project)
+                        window.showLogStream(logGroup, logStream)
+                    }
                 }
             }
-        })
+        )
     }
 
     private fun addTableMouseListener(table: JBTable) {
@@ -115,10 +117,13 @@ class LogGroupTable(
 
     private fun addActions(table: JBTable) {
         val actionGroup = DefaultActionGroup()
-        actionGroup.addAction(ExportActionGroup(project, client, logGroup) {
-            val row = groupTable.selectedRow.takeIf { it >= 0 } ?: return@ExportActionGroup null
-            table.getValueAt(row, 0) as? String
-        }, Constraints.FIRST)
+        actionGroup.addAction(
+            ExportActionGroup(project, client, logGroup) {
+                val row = groupTable.selectedRow.takeIf { it >= 0 } ?: return@ExportActionGroup null
+                table.getValueAt(row, 0) as? String
+            },
+            Constraints.FIRST
+        )
         PopupHandler.installPopupHandler(
             table,
             actionGroup,

@@ -19,18 +19,20 @@ class TextUtilsTest {
     @Test
     fun textGetsFormatted() {
         @Language("JSON")
-        val actual = """
+        val actual =
+            """
             {
               "hello":
                       "world"}
-        """.trimIndent()
+            """.trimIndent()
 
         @Language("JSON")
-        val expected = """
+        val expected =
+            """
             {
               "hello": "world"
             }
-        """.trimIndent()
+            """.trimIndent()
 
         lateinit var formatted: String
         runInEdtAndWait {

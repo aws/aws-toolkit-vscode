@@ -144,15 +144,18 @@ class S3TreeTable(
     init {
         // Associate the drop target listener with this instance which will allow uploading by drag and drop
         DropTarget(this, dropTargetListener)
-        TreeTableSpeedSearch(this, Convertor { obj ->
-            val node = obj.lastPathComponent as DefaultMutableTreeNode
-            val userObject = node.userObject as? S3TreeNode ?: return@Convertor null
-            return@Convertor if (userObject !is S3TreeContinuationNode) {
-                userObject.name
-            } else {
-                null
+        TreeTableSpeedSearch(
+            this,
+            Convertor { obj ->
+                val node = obj.lastPathComponent as DefaultMutableTreeNode
+                val userObject = node.userObject as? S3TreeNode ?: return@Convertor null
+                return@Convertor if (userObject !is S3TreeContinuationNode) {
+                    userObject.name
+                } else {
+                    null
+                }
             }
-        })
+        )
         loadMoreListener.installOn(this)
         openFileListener.installOn(this)
         super.addKeyListener(keyListener)

@@ -35,7 +35,10 @@ class SamSchemaDownloadPostCreationAction {
 
         codeGenDownloader.downloadCode(
             SchemaCodeDownloadRequestDetails(
-                schemaTemplateParameters.schema, schemaTemplateParameters.schemaVersion, language, schemaSourceRoot.toString()
+                schemaTemplateParameters.schema,
+                schemaTemplateParameters.schemaVersion,
+                language,
+                schemaSourceRoot.toString()
             ),
             indicator
         ).toCompletableFuture().get()

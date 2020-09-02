@@ -79,47 +79,53 @@ private class StackUI(private val project: Project, private val stackName: Strin
         val mainPanel = OnePixelSplitter(false, TREE_TABLE_INITIAL_PROPORTION).apply {
             firstComponent = tree.component
             secondComponent = JBTabbedPane().apply {
-                this.add(message("cloudformation.stack.tab_labels.events"), JPanel(GridLayoutManager(2, 1)).apply {
-                    add(
-                        eventsTable.component,
-                        GridConstraints(
-                            0,
-                            0,
-                            1,
-                            1,
-                            0,
-                            GridConstraints.FILL_BOTH,
-                            GridConstraints.SIZEPOLICY_CAN_GROW or GridConstraints.SIZEPOLICY_WANT_GROW or GridConstraints.SIZEPOLICY_CAN_SHRINK,
-                            GridConstraints.SIZEPOLICY_CAN_GROW or GridConstraints.SIZEPOLICY_WANT_GROW or GridConstraints.SIZEPOLICY_CAN_SHRINK,
-                            null,
-                            null,
-                            null
+                this.add(
+                    message("cloudformation.stack.tab_labels.events"),
+                    JPanel(GridLayoutManager(2, 1)).apply {
+                        add(
+                            eventsTable.component,
+                            GridConstraints(
+                                0,
+                                0,
+                                1,
+                                1,
+                                0,
+                                GridConstraints.FILL_BOTH,
+                                GridConstraints.SIZEPOLICY_CAN_GROW or GridConstraints.SIZEPOLICY_WANT_GROW or GridConstraints.SIZEPOLICY_CAN_SHRINK,
+                                GridConstraints.SIZEPOLICY_CAN_GROW or GridConstraints.SIZEPOLICY_WANT_GROW or GridConstraints.SIZEPOLICY_CAN_SHRINK,
+                                null,
+                                null,
+                                null
+                            )
                         )
-                    )
-                    add(
-                        pageButtons.component,
-                        GridConstraints(
-                            1,
-                            0,
-                            1,
-                            1,
-                            0,
-                            GridConstraints.FILL_HORIZONTAL,
-                            GridConstraints.SIZEPOLICY_CAN_GROW or GridConstraints.SIZEPOLICY_WANT_GROW or GridConstraints.SIZEPOLICY_CAN_SHRINK,
-                            GridConstraints.SIZEPOLICY_CAN_GROW or GridConstraints.SIZEPOLICY_CAN_SHRINK,
-                            null,
-                            null,
-                            null
+                        add(
+                            pageButtons.component,
+                            GridConstraints(
+                                1,
+                                0,
+                                1,
+                                1,
+                                0,
+                                GridConstraints.FILL_HORIZONTAL,
+                                GridConstraints.SIZEPOLICY_CAN_GROW or GridConstraints.SIZEPOLICY_WANT_GROW or GridConstraints.SIZEPOLICY_CAN_SHRINK,
+                                GridConstraints.SIZEPOLICY_CAN_GROW or GridConstraints.SIZEPOLICY_CAN_SHRINK,
+                                null,
+                                null,
+                                null
+                            )
                         )
-                    )
-                    tabComponentInsets = JBUI.emptyInsets()
-                    border = JBUI.Borders.empty()
-                })
+                        tabComponentInsets = JBUI.emptyInsets()
+                        border = JBUI.Borders.empty()
+                    }
+                )
 
-                this.add(message("cloudformation.stack.tab_labels.outputs"), JPanel().apply {
-                    layout = BoxLayout(this, BoxLayout.Y_AXIS)
-                    add(outputsTable.component)
-                })
+                this.add(
+                    message("cloudformation.stack.tab_labels.outputs"),
+                    JPanel().apply {
+                        layout = BoxLayout(this, BoxLayout.Y_AXIS)
+                        add(outputsTable.component)
+                    }
+                )
             }
         }
 

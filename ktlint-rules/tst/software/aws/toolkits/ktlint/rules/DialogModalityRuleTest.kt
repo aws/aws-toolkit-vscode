@@ -22,7 +22,8 @@ class DialogModalityRuleTest {
                 runInEdt { }
               }
             }
-        """, 3 to 5
+        """,
+            3 to 5
         )
     }
 
@@ -48,18 +49,21 @@ class DialogModalityRuleTest {
                 runInEdt(ModalityState.current()) { }
               }
             }
-        """, 3 to 5
+        """,
+            3 to 5
         )
     }
 
     private fun assertExpected(@Language("kotlin") kotlinText: String, vararg expectedErrors: Pair<Int, Int>) {
-        assertThat(rule.lint(kotlinText.trimIndent())).containsExactly(*expectedErrors.map {
-            LintError(
-                it.first,
-                it.second,
-                rule.id,
-                "Call to runInEdt without ModalityState.any() within Dialog will not run until Dialog exits."
-            )
-        }.toTypedArray())
+        assertThat(rule.lint(kotlinText.trimIndent())).containsExactly(
+            *expectedErrors.map {
+                LintError(
+                    it.first,
+                    it.second,
+                    rule.id,
+                    "Call to runInEdt without ModalityState.any() within Dialog will not run until Dialog exits."
+                )
+            }.toTypedArray()
+        )
     }
 }

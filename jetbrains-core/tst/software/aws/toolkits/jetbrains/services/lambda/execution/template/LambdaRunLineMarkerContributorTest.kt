@@ -21,7 +21,9 @@ class LambdaRunLineMarkerContributorTest {
 
     @Test
     fun testServerlessFunctionIsMarked() {
-        projectRule.fixture.openFile("template.yaml", """
+        projectRule.fixture.openFile(
+            "template.yaml",
+            """
 Resources:
   ServerlessFunction:
     Type: AWS::Serverless::Function
@@ -29,7 +31,8 @@ Resources:
       CodeUri: target/HelloWorld-1.0.jar
       Handler: helloworld.ConcreteClass::handleRequest
       Runtime: java8
-""")
+"""
+        )
 
         runAndAssertionMarks(projectRule.fixture) { marks ->
             assertThat(marks).hasSize(1)
@@ -41,7 +44,9 @@ Resources:
 
     @Test
     fun testLambdaFunctionIsMarked() {
-        projectRule.fixture.openFile("template.yaml", """
+        projectRule.fixture.openFile(
+            "template.yaml",
+            """
 Resources:
   LambdaFunction:
     Type: AWS::Lambda::Function
@@ -49,7 +54,8 @@ Resources:
       CodeUri: target/HelloWorld-1.0.jar
       Handler: helloworld.ConcreteClass::handleRequest
       Runtime: java8
-""")
+"""
+        )
         runAndAssertionMarks(projectRule.fixture) { marks ->
             assertThat(marks).hasSize(1)
             assertThat(marks.first().lineMarkerInfo.element).isNotNull.satisfies {
@@ -60,14 +66,17 @@ Resources:
 
     @Test
     fun testEmptyMarks() {
-        projectRule.fixture.openFile("template.yaml", """
+        projectRule.fixture.openFile(
+            "template.yaml",
+            """
 Resources:
   FooApi:
     Type: AWS::Serverless::Api
     Properties:
       StageName: prod
       DefinitionUri: swagger.yml
-""")
+"""
+        )
         runAndAssertionMarks(projectRule.fixture) { marks ->
             assertThat(marks).isEmpty()
         }

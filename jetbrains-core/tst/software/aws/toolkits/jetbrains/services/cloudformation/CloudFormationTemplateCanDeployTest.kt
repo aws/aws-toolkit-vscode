@@ -20,7 +20,9 @@ class CloudFormationTemplateCanDeployTest {
 
     @Test
     fun deployable() {
-        val virtualFile = projectRule.fixture.openFile("template.yaml", """
+        val virtualFile = projectRule.fixture.openFile(
+            "template.yaml",
+            """
 Resources:
   ServerlessFunction:
     Type: AWS::Serverless::Function
@@ -35,7 +37,8 @@ Resources:
       Code: bar
       Handler: bar::bar
       Runtime: python2.7
-""")
+"""
+        )
 
         runInEdtAndWait {
             assertThat(projectRule.project.validateSamTemplateLambdaRuntimes(virtualFile)).isNull()
@@ -44,7 +47,9 @@ Resources:
 
     @Test
     fun notDeployable_unknownRuntimes() {
-        val virtualFile = projectRule.fixture.openFile("template.yaml", """
+        val virtualFile = projectRule.fixture.openFile(
+            "template.yaml",
+            """
 Resources:
   ServerlessFunction:
     Type: AWS::Serverless::Function
@@ -52,18 +57,22 @@ Resources:
       CodeUri: foo
       Handler: foo::foo
       Runtime: foo
-""")
+"""
+        )
 
         runInEdtAndWait {
             assertThat(projectRule.project.validateSamTemplateLambdaRuntimes(virtualFile)).isEqualTo(
-                message("serverless.application.deploy.error.invalid_runtime", "foo", virtualFile.path))
+                message("serverless.application.deploy.error.invalid_runtime", "foo", virtualFile.path)
+            )
         }
     }
 
     @Test
     @Ignore("All supported runtimes are deployable now")
     fun notDeployable_notSupportedRuntimes() {
-        val virtualFile = projectRule.fixture.openFile("template.yaml", """
+        val virtualFile = projectRule.fixture.openFile(
+            "template.yaml",
+            """
 Resources:
   ServerlessFunction:
     Type: AWS::Serverless::Function
@@ -78,18 +87,22 @@ Resources:
       Code: bar
       Handler: bar::bar
       Runtime: java8
-""")
+"""
+        )
 
         runInEdtAndWait {
             assertThat(projectRule.project.validateSamTemplateLambdaRuntimes(virtualFile)).isEqualTo(
-                message("serverless.application.deploy.error.unsupported_runtime_group", "java8", virtualFile.path))
+                message("serverless.application.deploy.error.unsupported_runtime_group", "java8", virtualFile.path)
+            )
         }
     }
 
     @Test
     @Ignore("All supported runtimes are deployable now")
     fun multipleTemplates() {
-        val virtualFile1 = projectRule.fixture.openFile("template1.yaml", """
+        val virtualFile1 = projectRule.fixture.openFile(
+            "template1.yaml",
+            """
 Resources:
   LambdaFunction:
     Type: AWS::Lambda::Function
@@ -97,8 +110,11 @@ Resources:
       Code: bar
       Handler: bar::bar
       Runtime: java8
-""")
-        val virtualFile2 = projectRule.fixture.openFile("template2.yaml", """
+"""
+        )
+        val virtualFile2 = projectRule.fixture.openFile(
+            "template2.yaml",
+            """
 Resources:
   ServerlessFunction:
     Type: AWS::Serverless::Function
@@ -106,11 +122,13 @@ Resources:
       CodeUri: foo
       Handler: foo::foo
       Runtime: python3.6
-""")
+"""
+        )
 
         runInEdtAndWait {
             assertThat(projectRule.project.validateSamTemplateLambdaRuntimes(virtualFile1)).isEqualTo(
-                message("serverless.application.deploy.error.unsupported_runtime_group", "java8", virtualFile1.path))
+                message("serverless.application.deploy.error.unsupported_runtime_group", "java8", virtualFile1.path)
+            )
             assertThat(projectRule.project.validateSamTemplateLambdaRuntimes(virtualFile2)).isNull()
         }
     }
@@ -131,10 +149,13 @@ Resources:
 
     @Test
     fun nonDeployable_incompleteResources() {
-        val virtualFile = projectRule.fixture.openFile("template.yaml", """
+        val virtualFile = projectRule.fixture.openFile(
+            "template.yaml",
+            """
 Resources:
   ServerlessFunction:
-""")
+"""
+        )
 
         runInEdtAndWait {
             assertThat(projectRule.project.validateSamTemplateHasResources(virtualFile)).isEqualTo(
@@ -148,11 +169,14 @@ Resources:
 
     @Test
     fun deployable_validatableEnough() {
-        val virtualFile = projectRule.fixture.openFile("template.yaml", """
+        val virtualFile = projectRule.fixture.openFile(
+            "template.yaml",
+            """
 Resources:
   ServerlessFunction:
     Type: AWS::Serverless::Function
-""")
+"""
+        )
 
         runInEdtAndWait {
             assertThat(projectRule.project.validateSamTemplateHasResources(virtualFile)).isNull()

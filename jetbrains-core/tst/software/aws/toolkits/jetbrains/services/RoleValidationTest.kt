@@ -9,7 +9,8 @@ import org.junit.Test
 class RoleValidationTest {
     @Test
     fun validPolicyWithServiceString() {
-        val rolePolicy = """
+        val rolePolicy =
+            """
             {
               "Version": "2008-10-17",
               "Statement": [
@@ -24,13 +25,14 @@ class RoleValidationTest {
                 }
               ]
             }
-        """.trimIndent()
+            """.trimIndent()
         assertThat(RoleValidation.isRolePolicyValidForCloudDebug(rolePolicy)).isTrue()
     }
 
     @Test
     fun validPolicyWithServiceArray() {
-        val rolePolicy = """
+        val rolePolicy =
+            """
             {
               "Version": "2008-10-17",
               "Statement": [
@@ -48,13 +50,14 @@ class RoleValidationTest {
                 }
               ]
             }
-        """.trimIndent()
+            """.trimIndent()
         assertThat(RoleValidation.isRolePolicyValidForCloudDebug(rolePolicy)).isTrue()
     }
 
     @Test
     fun invalidPolicyWithDeny() {
-        val rolePolicy = """
+        val rolePolicy =
+            """
             {
               "Version": "2008-10-17",
               "Statement": [
@@ -69,13 +72,14 @@ class RoleValidationTest {
                 }
               ]
             }
-        """.trimIndent()
+            """.trimIndent()
         assertThat(RoleValidation.isRolePolicyValidForCloudDebug(rolePolicy)).isFalse()
     }
 
     @Test
     fun invalidPolicyWithSomeOtherAction() {
-        val rolePolicy = """
+        val rolePolicy =
+            """
             {
               "Version": "2008-10-17",
               "Statement": [
@@ -90,13 +94,14 @@ class RoleValidationTest {
                 }
               ]
             }
-        """.trimIndent()
+            """.trimIndent()
         assertThat(RoleValidation.isRolePolicyValidForCloudDebug(rolePolicy)).isFalse()
     }
 
     @Test
     fun invalidPolicyWithOtherServiceAsString() {
-        val rolePolicy = """
+        val rolePolicy =
+            """
             {
               "Version": "2008-10-17",
               "Statement": [
@@ -111,13 +116,14 @@ class RoleValidationTest {
                 }
               ]
             }
-        """.trimIndent()
+            """.trimIndent()
         assertThat(RoleValidation.isRolePolicyValidForCloudDebug(rolePolicy)).isFalse()
     }
 
     @Test
     fun invalidPolicyWithOtherServiceInArray() {
-        val rolePolicy = """
+        val rolePolicy =
+            """
             {
               "Version": "2008-10-17",
               "Statement": [
@@ -135,7 +141,7 @@ class RoleValidationTest {
                 }
               ]
             }
-        """.trimIndent()
+            """.trimIndent()
         assertThat(RoleValidation.isRolePolicyValidForCloudDebug(rolePolicy)).isFalse()
     }
 }

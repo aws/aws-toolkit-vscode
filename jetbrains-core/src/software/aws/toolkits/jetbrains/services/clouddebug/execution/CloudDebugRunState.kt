@@ -42,11 +42,16 @@ class CloudDebugRunState(
             System.currentTimeMillis()
         )
 
-        val buildView = BuildView(project, descriptor, null, object : ViewManager {
-            override fun isConsoleEnabledByDefault() = false
+        val buildView = BuildView(
+            project,
+            descriptor,
+            null,
+            object : ViewManager {
+                override fun isConsoleEnabledByDefault() = false
 
-            override fun isBuildContentView() = true
-        })
+                override fun isBuildContentView() = true
+            }
+        )
 
         val rootStep = RootStep(settings, environment)
         val context = Context(project)

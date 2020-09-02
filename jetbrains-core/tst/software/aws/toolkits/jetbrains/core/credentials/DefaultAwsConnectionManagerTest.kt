@@ -84,7 +84,8 @@ class DefaultAwsConnectionManagerTest {
 
     @Test
     fun `On load, default region of credential is used if there is no other active region`() {
-        val element = """
+        val element =
+            """
             <AccountState>
                 <option name="activeProfile" value="Mock" />
             </AccountState>
@@ -160,11 +161,14 @@ class DefaultAwsConnectionManagerTest {
         var gotNotification = false
 
         val busConnection = project.messageBus.connect()
-        busConnection.subscribe(AwsConnectionManager.CONNECTION_SETTINGS_STATE_CHANGED, object : ConnectionSettingsStateChangeNotifier {
-            override fun settingsStateChanged(newState: ConnectionState) {
-                gotNotification = true
+        busConnection.subscribe(
+            AwsConnectionManager.CONNECTION_SETTINGS_STATE_CHANGED,
+            object : ConnectionSettingsStateChangeNotifier {
+                override fun settingsStateChanged(newState: ConnectionState) {
+                    gotNotification = true
+                }
             }
-        })
+        )
 
         changeRegion(AwsRegionProvider.getInstance().defaultRegion())
 
@@ -178,11 +182,14 @@ class DefaultAwsConnectionManagerTest {
         var gotNotification = false
 
         val busConnection = project.messageBus.connect()
-        busConnection.subscribe(AwsConnectionManager.CONNECTION_SETTINGS_STATE_CHANGED, object : ConnectionSettingsStateChangeNotifier {
-            override fun settingsStateChanged(newState: ConnectionState) {
-                gotNotification = true
+        busConnection.subscribe(
+            AwsConnectionManager.CONNECTION_SETTINGS_STATE_CHANGED,
+            object : ConnectionSettingsStateChangeNotifier {
+                override fun settingsStateChanged(newState: ConnectionState) {
+                    gotNotification = true
+                }
             }
-        })
+        )
 
         changeCredentialProvider(
             mockCredentialManager.addCredentials("Mock")
@@ -232,7 +239,8 @@ class DefaultAwsConnectionManagerTest {
 
     @Test
     fun `Active credential can be restored from persistence`() {
-        val element = """
+        val element =
+            """
             <AccountState>
                 <option name="activeProfile" value="Mock" />
                 <option name="recentlyUsedProfiles">
@@ -256,7 +264,8 @@ class DefaultAwsConnectionManagerTest {
 
     @Test
     fun `Active region can be restored from persistence`() {
-        val element = """
+        val element =
+            """
             <AccountState>
                 <option name="activeRegion" value="${MockRegionProvider.getInstance().defaultRegion().id}" />
                 <option name="recentlyUsedRegions">
@@ -279,7 +288,8 @@ class DefaultAwsConnectionManagerTest {
 
     @Test
     fun `Attempting to restore a region that no longer exists is handled gracefully`() {
-        val element = """
+        val element =
+            """
             <AccountState>
                 <option name="activeRegion" value="DoesNotExist" />
                 <option name="recentlyUsedRegions">
@@ -299,7 +309,8 @@ class DefaultAwsConnectionManagerTest {
 
     @Test
     fun `Attempting to restore a credential that no longer exists is handled gracefully`() {
-        val element = """
+        val element =
+            """
             <AccountState>
                 <option name="activeProfile" value="DoesNotExist" />
                 <option name="recentlyUsedProfiles">
@@ -325,7 +336,8 @@ class DefaultAwsConnectionManagerTest {
 
         markConnectionSettingsAsInvalid(mockCredentials, MockRegionProvider.getInstance().defaultRegion())
 
-        val element = """
+        val element =
+            """
             <AccountState>
                 <option name="activeProfile" value="${mockCredentials.id}" />
                 <option name="recentlyUsedProfiles">
@@ -348,7 +360,8 @@ class DefaultAwsConnectionManagerTest {
         val credentials = mockCredentialManager.addCredentials(DEFAULT_PROFILE_ID)
         markConnectionSettingsAsValid(credentials, MockRegionProvider.getInstance().defaultRegion())
 
-        val element = """
+        val element =
+            """
             <AccountState/>
         """.toElement()
 

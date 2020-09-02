@@ -230,7 +230,7 @@ class LocalLambdaRunConfigurationTest {
                       CodeUri: /some/dummy/code/location
                       Runtime: java8
                       Timeout: 900
-                """.trimIndent()
+                    """.trimIndent()
                 )
             }.canonicalPath
             val logicalName = "NotSomeFunction"
@@ -261,7 +261,7 @@ class LocalLambdaRunConfigurationTest {
                       Handler: com.example.LambdaHandler::handleRequest
                       CodeUri: /some/dummy/code/location
                       Timeout: 900
-                """.trimIndent()
+                    """.trimIndent()
                 )
             }.canonicalPath
             val logicalName = "SomeFunction"
@@ -293,7 +293,7 @@ class LocalLambdaRunConfigurationTest {
                       CodeUri: /some/dummy/code/location
                       Runtime: FAKE
                       Timeout: 900
-                """.trimIndent()
+                    """.trimIndent()
                 )
             }.canonicalPath
             val logicalName = "SomeFunction"
@@ -324,7 +324,7 @@ class LocalLambdaRunConfigurationTest {
                       Runtime: java8
                       CodeUri: /some/dummy/code/location
                       Timeout: 900
-                """.trimIndent()
+                    """.trimIndent()
                 )
             }.canonicalPath
             val logicalName = "SomeFunction"
@@ -513,7 +513,8 @@ class LocalLambdaRunConfigurationTest {
     @Test
     fun readExternalHandlerBasedDoesNotThrowException() {
         // This tests for backwards compatibility, data should not be changed except in backwards compatible ways
-        val element = """
+        val element =
+            """
             <configuration name="HelloWorldFunction" type="aws.lambda" factoryName="Local" temporary="true" nameIsGenerated="true">
               <option name="credentialProviderId" value="profile:default" />
               <option name="environmentVariables">
@@ -552,7 +553,8 @@ class LocalLambdaRunConfigurationTest {
     @Test
     fun readExternalTemplateBasedDoesNotThrowException() {
         // This tests for backwards compatibility, data should not be changed except in backwards compatible ways
-        val element = """
+        val element =
+            """
                 <configuration name="HelloWorldFunction" type="aws.lambda" factoryName="Local" temporary="true" nameIsGenerated="true">
                   <option name="credentialProviderId" value="profile:default" />
                   <option name="environmentVariables">
@@ -591,7 +593,8 @@ class LocalLambdaRunConfigurationTest {
     @Test
     fun readInputFileBasedDoesNotThrowException() {
         // This tests for backwards compatibility, data should not be changed except in backwards compatible ways
-        val element = """
+        val element =
+            """
                 <configuration name="HelloWorldFunction" type="aws.lambda" factoryName="Local" temporary="true" nameIsGenerated="true">
                   <option name="credentialProviderId" value="profile:default" />
                   <option name="environmentVariables">
@@ -624,7 +627,8 @@ class LocalLambdaRunConfigurationTest {
     @Test
     fun readInputTextBasedDoesNotThrowException() {
         // This tests for backwards compatibility, data should not be changed except in backwards compatible ways
-        val element = """
+        val element =
+            """
                 <configuration name="HelloWorldFunction" type="aws.lambda" factoryName="Local" temporary="true" nameIsGenerated="true">
                   <option name="credentialProviderId" value="profile:default" />
                   <option name="environmentVariables">
@@ -657,7 +661,8 @@ class LocalLambdaRunConfigurationTest {
     @Test
     fun readSamSettings() {
         // This tests for backwards compatibility, data should not be changed except in backwards compatible ways
-        val element = """
+        val element =
+            """
                 <configuration name="HelloWorldFunction" type="aws.lambda" factoryName="Local" temporary="true" nameIsGenerated="true">
                   <option name="credentialProviderId" value="profile:default" />
                   <option name="environmentVariables">

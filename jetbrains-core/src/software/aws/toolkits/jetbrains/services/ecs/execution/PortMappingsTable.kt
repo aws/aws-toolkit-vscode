@@ -24,11 +24,13 @@ class PortMappingsTable : ContainerMappingTable<PortMapping>(
         NumericColumnInfo(
             message("cloud_debug.ecs.run_config.container.ports.local"),
             { it.localPort },
-            { mapping, value -> mapping.localPort = value }),
+            { mapping, value -> mapping.localPort = value }
+        ),
         NumericColumnInfo(
             message("cloud_debug.ecs.run_config.container.ports.remote"),
             { it.remotePort },
-            { mapping, value -> mapping.remotePort = value })
+            { mapping, value -> mapping.remotePort = value }
+        )
     )
 
     private inner class NumericColumnInfo(

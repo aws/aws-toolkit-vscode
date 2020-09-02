@@ -62,19 +62,22 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
     init {
         @Suppress("LeakingThis")
         ApplicationManager.getApplication().messageBus.connect(this)
-            .subscribe(CredentialManager.CREDENTIALS_CHANGED, object : ToolkitCredentialsChangeListener {
-                override fun providerRemoved(identifier: CredentialIdentifier) {
-                    if (selectedCredentialIdentifier == identifier) {
-                        changeConnectionSettings(null, selectedRegion)
+            .subscribe(
+                CredentialManager.CREDENTIALS_CHANGED,
+                object : ToolkitCredentialsChangeListener {
+                    override fun providerRemoved(identifier: CredentialIdentifier) {
+                        if (selectedCredentialIdentifier == identifier) {
+                            changeConnectionSettings(null, selectedRegion)
+                        }
                     }
-                }
 
-                override fun providerModified(identifier: CredentialIdentifier) {
-                    if (selectedCredentialIdentifier == identifier) {
-                        refreshConnectionState()
+                    override fun providerModified(identifier: CredentialIdentifier) {
+                        if (selectedCredentialIdentifier == identifier) {
+                            refreshConnectionState()
+                        }
                     }
                 }
-            })
+            )
     }
 
     fun isValidConnectionSettings(): Boolean = connectionState is ConnectionState.ValidConnection

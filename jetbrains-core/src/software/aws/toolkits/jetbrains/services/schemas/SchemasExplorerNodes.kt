@@ -30,7 +30,8 @@ open class SchemaRegistryNode(
     SchemasClient.SERVICE_NAME,
     registry,
     AwsIcons.Resources.SCHEMA_REGISTRY
-), ResourceParentNode {
+),
+    ResourceParentNode {
     override fun resourceType() = "registry"
 
     override fun resourceArn(): String = value.registryArn() ?: value.registryName()

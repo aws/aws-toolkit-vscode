@@ -466,7 +466,7 @@ class SchemaCodeDownloaderTest {
         }
 
         val schema = SchemaCodeDownloader(codeGenerator, codePoller, codeDownloader, codeExtractor, progressUpdater)
-                .downloadCode(REQUEST, progressIndicator).toCompletableFuture().get()
+            .downloadCode(REQUEST, progressIndicator).toCompletableFuture().get()
         assertThat(schema).isEqualTo(schemaCodeCoreFile)
 
         // Assert no error notifications

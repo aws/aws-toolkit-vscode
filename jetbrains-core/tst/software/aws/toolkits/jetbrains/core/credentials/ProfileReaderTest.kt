@@ -76,8 +76,10 @@ class ProfileReaderTest {
         val (validProfiles, invalidProfiles) = validateAndGetProfiles()
         assertThat(validProfiles).isEmpty()
         assertThat(invalidProfiles.map { it.key to it.value.message })
-            .contains("role" to "Profile 'role' is invalid due to a circular profile dependency was found between " +
-                "role->source_profile->source_profile2->source_profile3->source_profile")
+            .contains(
+                "role" to "Profile 'role' is invalid due to a circular profile dependency was found between " +
+                    "role->source_profile->source_profile2->source_profile3->source_profile"
+            )
     }
 
     @Test

@@ -83,16 +83,22 @@ class NodeJsDebugEndToEndTest : CloudDebugTestCase("CloudDebugTestECSClusterTask
         ).apply {
             clusterArn(service.clusterArn())
             // TODO: remove this once we fix the UX around which service is debugged
-            serviceArn(service.serviceArn().let {
-                // replace service name with instrumented service name
-                val instrumentedServiceName = "cloud-debug-${EcsUtils.serviceArnToName(service.serviceArn())}"
-                it.replace(EcsUtils.serviceArnToName(it), instrumentedServiceName)
-            })
-            containerOptions(mapOf("ContainerName" to ContainerOptions().apply {
-                platform = CloudDebuggingPlatform.NODE
-                startCommand = "node /app.js"
-                artifactMappings = listOf(ArtifactMapping(testScript, "/app.js"))
-            }))
+            serviceArn(
+                service.serviceArn().let {
+                    // replace service name with instrumented service name
+                    val instrumentedServiceName = "cloud-debug-${EcsUtils.serviceArnToName(service.serviceArn())}"
+                    it.replace(EcsUtils.serviceArnToName(it), instrumentedServiceName)
+                }
+            )
+            containerOptions(
+                mapOf(
+                    "ContainerName" to ContainerOptions().apply {
+                        platform = CloudDebuggingPlatform.NODE
+                        startCommand = "node /app.js"
+                        artifactMappings = listOf(ArtifactMapping(testScript, "/app.js"))
+                    }
+                )
+            )
         }
 
         val debuggerIsHit = checkBreakPointHit(projectRule.project)

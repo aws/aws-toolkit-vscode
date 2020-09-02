@@ -23,12 +23,18 @@ class BannedPatternRule(private val patterns: List<BannedPattern>) : Rule("banne
     companion object {
         val DEFAULT_PATTERNS = listOf(
             BannedPattern("Runtime\\.valueOf".toRegex(), "Runtime.valueOf banned, use Runtime.fromValue instead."),
-            BannedPattern("""com\.intellij\.openapi\.actionSystem\.DataKeys""".toRegex(),
-                "DataKeys is not available in all IDEs, use LangDataKeys instead"),
-            BannedPattern("""PsiUtil\.getPsiFile""".toRegex(),
-                "PsiUtil (java-api.jar) is not available in all IDEs, use PsiManager.getInstance(project).findFile() instead"),
-            BannedPattern("""com\.intellij\.psi\.util\.PsiUtil""".toRegex(),
-                "PsiUtil (java-api.jar) is not available in all IDEs, use PsiUtilCore or PsiManager instead (platform-api.jar)")
+            BannedPattern(
+                """com\.intellij\.openapi\.actionSystem\.DataKeys""".toRegex(),
+                "DataKeys is not available in all IDEs, use LangDataKeys instead"
+            ),
+            BannedPattern(
+                """PsiUtil\.getPsiFile""".toRegex(),
+                "PsiUtil (java-api.jar) is not available in all IDEs, use PsiManager.getInstance(project).findFile() instead"
+            ),
+            BannedPattern(
+                """com\.intellij\.psi\.util\.PsiUtil""".toRegex(),
+                "PsiUtil (java-api.jar) is not available in all IDEs, use PsiUtilCore or PsiManager instead (platform-api.jar)"
+            )
         )
     }
 }

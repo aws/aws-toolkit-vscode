@@ -30,7 +30,7 @@ class ReleaseCreatorTest {
                 "type": "bugfix",
                 "description": "Some bugfix"
             }
-        """.trimIndent()
+                """.trimIndent()
             )
         }
 
@@ -41,7 +41,7 @@ class ReleaseCreatorTest {
                 "type": "feature",
                 "description": "Some feature"
             }
-        """.trimIndent()
+                """.trimIndent()
             )
         }
 
@@ -62,7 +62,7 @@ class ReleaseCreatorTest {
                 "description" : "Some bugfix"
               } ]
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         assertThat(firstFile).doesNotExist()

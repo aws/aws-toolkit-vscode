@@ -23,9 +23,11 @@ open class CreateRelease @Inject constructor(projectLayout: ProjectLayout) : Cha
     val releaseDate: Property<String> = project.objects.property(String::class.java).convention(DateTimeFormatter.ISO_DATE.format(LocalDate.now()))
 
     @Input
-    val releaseVersion: Property<String> = project.objects.property(String::class.java).convention(project.provider {
-        (project.version as String).substringBeforeLast('-')
-    })
+    val releaseVersion: Property<String> = project.objects.property(String::class.java).convention(
+        project.provider {
+            (project.version as String).substringBeforeLast('-')
+        }
+    )
 
     @Input
     @Optional

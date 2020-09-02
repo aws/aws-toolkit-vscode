@@ -54,22 +54,24 @@ class CloudFormationTemplateIndex : FileBasedIndexExtension<String, MutableList<
     override fun getIndexer(): DataIndexer<String, MutableList<IndexedResource>, FileContent> = DataIndexer { fileContent ->
         val indexedResources = mutableMapOf<String, MutableList<IndexedResource>>()
 
-        fileContent.psiFile.acceptNode(object : PsiElementVisitor() {
-            override fun visitElement(element: PsiElement) {
-                super.visitElement(element)
-                // element is nullable in versions prior to 2020.1 FIX_WHEN_MIN_IS_201
-                element?.run {
-                    val parent = element.parent as? YAMLKeyValue ?: return
-                    if (parent.value != this) return
+        fileContent.psiFile.acceptNode(
+            object : PsiElementVisitor() {
+                override fun visitElement(element: PsiElement) {
+                    super.visitElement(element)
+                    // element is nullable in versions prior to 2020.1 FIX_WHEN_MIN_IS_201
+                    element?.run {
+                        val parent = element.parent as? YAMLKeyValue ?: return
+                        if (parent.value != this) return
 
-                    val resource = YamlCloudFormationTemplate.convertPsiToResource(parent) ?: return
-                    val resourceType = resource.type() ?: return
-                    IndexedResource.from(resource)?.let {
-                        indexedResources.computeIfAbsent(resourceType) { mutableListOf() }.add(it)
+                        val resource = YamlCloudFormationTemplate.convertPsiToResource(parent) ?: return
+                        val resourceType = resource.type() ?: return
+                        IndexedResource.from(resource)?.let {
+                            indexedResources.computeIfAbsent(resourceType) { mutableListOf() }.add(it)
+                        }
                     }
                 }
             }
-        })
+        )
 
         indexedResources
     }

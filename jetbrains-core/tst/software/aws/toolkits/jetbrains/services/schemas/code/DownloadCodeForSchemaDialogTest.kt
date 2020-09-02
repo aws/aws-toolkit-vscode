@@ -75,7 +75,9 @@ class DownloadCodeForSchemaDialogTest {
         mockSettingsManager = AwsConnectionManager.getInstance(projectRule.project) as MockAwsConnectionManager
 
         resourceCache().mockSchemaVersions(
-            REGISTRY, SCHEMA_NAME, VERSIONS
+            REGISTRY,
+            SCHEMA_NAME,
+            VERSIONS
         )
 
         subscribeToNotifications()
@@ -236,12 +238,14 @@ class DownloadCodeForSchemaDialogTest {
     private fun MockResourceCache.mockSchemaVersions(registryName: String, schemaName: String, schemaVersions: List<String>) {
         this.addEntry(
             SchemasResources.getSchemaVersions(registryName, schemaName),
-            completedFuture(schemaVersions.map { v ->
-                SchemaVersionSummary.builder()
-                    .schemaName(schemaName)
-                    .schemaVersion(v)
-                    .build()
-            })
+            completedFuture(
+                schemaVersions.map { v ->
+                    SchemaVersionSummary.builder()
+                        .schemaName(schemaName)
+                        .schemaVersion(v)
+                        .build()
+                }
+            )
         )
     }
 }

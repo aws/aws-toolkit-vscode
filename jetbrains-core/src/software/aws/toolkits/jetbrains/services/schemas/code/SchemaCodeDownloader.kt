@@ -247,21 +247,23 @@ class CodeExtractor {
 
     // Ensure that the downloaded code hierarchy has no collisions with the destination directory
     private fun validateNoFileCollisions(codeZipFile: File, destinationDirectory: File) {
-        ZipFile(codeZipFile).use({ zipFile ->
-            val zipEntries = zipFile.entries()
-            Collections.list(zipEntries).forEach { zipEntry ->
-                if (zipEntry.isDirectory()) {
-                    // Ignore directories because those can/will be merged
-                } else {
-                    val intendedDestinationPath = Paths.get(destinationDirectory.path, zipEntry.name)
-                    val intendedDestinationFile = intendedDestinationPath.toFile()
-                    if (intendedDestinationFile.exists() && !intendedDestinationFile.isDirectory) {
-                        val name = intendedDestinationFile.name
-                        throw SchemaCodeDownloadFileCollisionException(name)
+        ZipFile(codeZipFile).use(
+            { zipFile ->
+                val zipEntries = zipFile.entries()
+                Collections.list(zipEntries).forEach { zipEntry ->
+                    if (zipEntry.isDirectory()) {
+// Ignore directories because those can/will be merged
+                    } else {
+                        val intendedDestinationPath = Paths.get(destinationDirectory.path, zipEntry.name)
+                        val intendedDestinationFile = intendedDestinationPath.toFile()
+                        if (intendedDestinationFile.exists() && !intendedDestinationFile.isDirectory) {
+                            val name = intendedDestinationFile.name
+                            throw SchemaCodeDownloadFileCollisionException(name)
+                        }
                     }
                 }
             }
-        })
+        )
     }
 }
 

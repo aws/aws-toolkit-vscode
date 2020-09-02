@@ -21,7 +21,7 @@ abstract class ChangeLogWriter(issueUrl: String? = null) {
             return entry
         }
 
-        val regex = """#(\d+)""".toRegex()
+        val regex = "#(\\d+)".toRegex()
         return regex.replace(entry) {
             val issue = it.groups[1]?.value ?: return@replace it.value
             "[#$issue]($issueUrl$issue)"

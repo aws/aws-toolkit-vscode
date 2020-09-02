@@ -73,7 +73,7 @@ class SamInvokeRunnerTest {
                       Handler: com.example.LambdaHandler::handleRequest
                       CodeUri: /some/dummy/code/location
                       Runtime: java8
-                """.trimIndent()
+            """.trimIndent()
         )
 
         val runConfig = createTemplateRunConfiguration(
@@ -98,7 +98,7 @@ class SamInvokeRunnerTest {
                       Handler: com.example.LambdaHandler::handleRequest
                       CodeUri: /some/dummy/code/location
                       Runtime: FAKE
-                """.trimIndent()
+            """.trimIndent()
         )
 
         val runConfig = createTemplateRunConfiguration(
@@ -123,7 +123,7 @@ class SamInvokeRunnerTest {
                       Handler: com.example.LambdaHandler::handleRequest
                       CodeUri: /some/dummy/code/location
                       Runtime: java8
-                """.trimIndent()
+            """.trimIndent()
         )
 
         val runConfig = createTemplateRunConfiguration(
@@ -148,7 +148,7 @@ class SamInvokeRunnerTest {
                       Handler: com.example.LambdaHandler::handleRequest
                       CodeUri: /some/dummy/code/location
                       Runtime: FAKE
-                """.trimIndent()
+            """.trimIndent()
         )
 
         val runConfig = createTemplateRunConfiguration(

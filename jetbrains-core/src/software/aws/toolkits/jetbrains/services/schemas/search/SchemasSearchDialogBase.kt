@@ -118,39 +118,44 @@ abstract class SchemasSearchDialogBase(
             }
         }
 
-        searchTextField.document.addDocumentListener(object : DocumentListener {
-            override fun changedUpdate(e: DocumentEvent?) = search()
-            override fun insertUpdate(e: DocumentEvent?) = search()
-            override fun removeUpdate(e: DocumentEvent?) = search()
+        searchTextField.document.addDocumentListener(
+            object : DocumentListener {
+                override fun changedUpdate(e: DocumentEvent?) = search()
+                override fun insertUpdate(e: DocumentEvent?) = search()
+                override fun removeUpdate(e: DocumentEvent?) = search()
 
-            private fun search() {
-                if (searchTextAlarm.isDisposed) return
+                private fun search() {
+                    if (searchTextAlarm.isDisposed) return
 
-                searchTextAlarm.cancelAllRequests()
+                    searchTextAlarm.cancelAllRequests()
 
-                searchTextAlarm.addRequest({
-                    val searchText = searchTextField.text
+                    searchTextAlarm.addRequest(
+                        {
+                            val searchText = searchTextField.text
 
-                    if (searchText.isNullOrEmpty()) {
-                        clearState()
-                        return@addRequest
-                    }
+                            if (searchText.isNullOrEmpty()) {
+                                clearState()
+                                return@addRequest
+                            }
 
-                    clearState()
-                    resultsList.setEmptyText(message("schemas.search.searching"))
-                    searchSchemas(searchText, { onSearchResultsReturned(it) }, { onErrorSearchingRegistry(it) })
-                }, SEARCH_DELAY_MS)
+                            clearState()
+                            resultsList.setEmptyText(message("schemas.search.searching"))
+                            searchSchemas(searchText, { onSearchResultsReturned(it) }, { onErrorSearchingRegistry(it) })
+                        },
+                        SEARCH_DELAY_MS
+                    )
+                }
+
+                private fun clearState() {
+                    previewText.text = ""
+                    resultsList.setEmptyText(message("schemas.search.no_results"))
+                    getDownloadButton()?.isEnabled = false
+                    resultsModel.removeAllElements()
+                    versionsModel.removeAllElements()
+                    currentSearchErrors.clear()
+                }
             }
-
-            private fun clearState() {
-                previewText.text = ""
-                resultsList.setEmptyText(message("schemas.search.no_results"))
-                getDownloadButton()?.isEnabled = false
-                resultsModel.removeAllElements()
-                versionsModel.removeAllElements()
-                currentSearchErrors.clear()
-            }
-        })
+        )
     }
 
     private fun onSearchResultsReturned(searchResults: List<SchemaSearchResultWithRegistry>) {

@@ -38,7 +38,8 @@ class NodeJsLambdaBuilderTest {
 
     @Test
     fun findHandlerElementsIgnoresSamBuildLocation() {
-        val sampleHandler = """
+        val sampleHandler =
+            """
             exports.myLambdaHandler = async (event, context) => {}
             """.trimIndent()
 
@@ -152,7 +153,8 @@ class NodeJsLambdaBuilderTest {
         val module = projectRule.module
         val handler = projectRule.fixture.addLambdaHandler(subPath, fileName, handlerName)
         projectRule.fixture.addPackageJsonFile(
-            content = """
+            content =
+                """
             {
                 "name": "hello-world",
                 "version": "1.0.0",
@@ -160,7 +162,7 @@ class NodeJsLambdaBuilderTest {
                     "axios": "^0.18.0"
                 }
             }
-            """.trimIndent()
+                """.trimIndent()
         )
         val builtLambda = sut.buildLambda(module, handler, Runtime.NODEJS12_X, "$subPath/$fileName.$handlerName")
         LambdaBuilderTestUtils.verifyEntries(

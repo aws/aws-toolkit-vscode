@@ -18,8 +18,10 @@ import software.aws.toolkits.jetbrains.services.redshift.auth.IamAuth
 import software.aws.toolkits.jetbrains.services.sts.StsResources
 
 object RedshiftUtils {
-    private val REDSHIFT_REGION_REGEX = """.*\..*\.(.+).redshift\.""".toRegex()
-    private val REDSHIFT_IDENTIFIER_REGEX = """.*//(.+)\..*\..*.redshift\..""".toRegex()
+    private val REDSHIFT_REGION_REGEX =
+        """.*\..*\.(.+).redshift\.""".toRegex()
+    private val REDSHIFT_IDENTIFIER_REGEX =
+        """.*//(.+)\..*\..*.redshift\..""".toRegex()
 
     fun extractRegionFromUrl(url: String?): String? = url?.let { REDSHIFT_REGION_REGEX.find(url)?.groupValues?.get(1) }
     fun extractClusterIdFromUrl(url: String?): String? = url?.let { REDSHIFT_IDENTIFIER_REGEX.find(url)?.groupValues?.get(1) }
