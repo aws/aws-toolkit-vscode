@@ -8,13 +8,13 @@ import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.aws.toolkits.jetbrains.core.awsClient
-import java.awt.event.ActionEvent
-import javax.swing.Action
-import javax.swing.JComponent
 import software.aws.toolkits.resources.message
+import java.awt.event.ActionEvent
 import java.time.temporal.ChronoUnit
 import java.util.Calendar
 import java.util.Date
+import javax.swing.Action
+import javax.swing.JComponent
 
 val relativeTimeUnit = mapOf(
     message("cloudwatch.logs.time_minutes") to ChronoUnit.MINUTES,
@@ -172,6 +172,7 @@ class QueryEditorDialog(
         init {
             putValue(Action.NAME, message("cloudwatch.logs.query.form.ok_Button"))
         }
+
         override fun doAction(e: ActionEvent?) {
             super.doAction(e)
             if (doValidateAll().isNotEmpty()) return

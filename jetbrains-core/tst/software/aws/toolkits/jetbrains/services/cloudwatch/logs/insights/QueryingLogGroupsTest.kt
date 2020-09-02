@@ -5,12 +5,12 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights
 
 import com.intellij.testFramework.RunsInEdt
 import com.intellij.testFramework.runInEdtAndWait
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
-import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
-import org.assertj.core.api.Assertions.assertThat
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
+import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.resources.message
 import java.util.Calendar
 import java.util.Date

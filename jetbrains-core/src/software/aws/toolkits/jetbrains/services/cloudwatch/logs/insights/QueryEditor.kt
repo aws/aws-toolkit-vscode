@@ -7,12 +7,12 @@ import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.michaelbaranov.microba.calendar.DatePicker
 import software.aws.toolkits.resources.message
+import javax.swing.JButton
 import javax.swing.JComboBox
+import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JRadioButton
-import javax.swing.JLabel
 import javax.swing.JTextArea
-import javax.swing.JButton
 import javax.swing.JTextField
 
 class QueryEditor internal constructor(private val project: Project) {

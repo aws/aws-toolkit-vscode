@@ -7,18 +7,18 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
+import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeQueryDefinitionsRequest
 import software.amazon.awssdk.services.cloudwatchlogs.model.PutQueryDefinitionRequest
 import software.aws.toolkits.jetbrains.core.awsClient
+import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
+import software.aws.toolkits.jetbrains.utils.notifyError
+import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 import java.awt.event.ActionEvent
 import javax.swing.Action
 import javax.swing.JComponent
-import kotlinx.coroutines.launch
-import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeQueryDefinitionsRequest
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
-import software.aws.toolkits.jetbrains.utils.notifyError
-import software.aws.toolkits.jetbrains.utils.notifyInfo
 
 class SaveQueryDialog(
     private val project: Project,
@@ -32,6 +32,7 @@ class SaveQueryDialog(
         init {
             putValue(Action.NAME, message("cloudwatch.logs.save_query"))
         }
+
         override fun doAction(e: ActionEvent?) {
             super.doAction(e)
             if (doValidateAll().isNotEmpty()) return
@@ -40,6 +41,7 @@ class SaveQueryDialog(
             close(OK_EXIT_CODE)
         }
     }
+
     init {
         super.init()
         title = message("cloudwatch.logs.save_query_dialog_name")
