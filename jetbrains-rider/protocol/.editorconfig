@@ -1,0 +1,2 @@
+[{*.kts,*.kt}]
+disabled_rules = import-ordering

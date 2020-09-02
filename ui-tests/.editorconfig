@@ -1,4 +1,3 @@
 [{*.kts,*.kt}]
-# Temporary disabled this rule through .editorconfig due to https://youtrack.jetbrains.com/issue/KT-10974 and https://github.com/pinterest/ktlint/issues/527
 # Disable log rule, due to this code is using a logger that isn't compatible with the lazy syntax
-disabled_rules = import-ordering, log-not-lazy
+disabled_rules = log-not-lazy

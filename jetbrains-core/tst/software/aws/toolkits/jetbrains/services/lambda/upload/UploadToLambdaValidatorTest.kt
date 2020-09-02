@@ -6,11 +6,11 @@ package software.aws.toolkits.jetbrains.services.lambda.upload
 import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.projectRoots.ProjectJdkTable
 import com.intellij.openapi.roots.ProjectRootManager
-import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.testFramework.EdtRule
 import com.intellij.testFramework.IdeaTestUtil
 import com.intellij.testFramework.RuleChain
 import com.intellij.testFramework.RunsInEdt
+import com.intellij.testFramework.runInEdtAndWait
 import com.intellij.ui.MutableCollectionComboBoxModel
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before

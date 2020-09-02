@@ -3,8 +3,8 @@
 
 package software.aws.toolkits.jetbrains.services.redshift
 
-import icons.AwsIcons
 import com.intellij.openapi.project.Project
+import icons.AwsIcons
 import software.amazon.awssdk.services.redshift.RedshiftClient
 import software.amazon.awssdk.services.redshift.model.Cluster
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
