@@ -24,6 +24,7 @@ export const CODE_TARGET_TYPE: 'code' = 'code'
 export const API_TARGET_TYPE: 'api' = 'api'
 export const AWS_SAM_DEBUG_REQUEST_TYPES = [DIRECT_INVOKE_TYPE]
 export const AWS_SAM_DEBUG_TARGET_TYPES = [TEMPLATE_TARGET_TYPE, CODE_TARGET_TYPE, API_TARGET_TYPE]
+export type AwsSamTargetType = 'api' | 'code' | 'template'
 
 export type TargetProperties = AwsSamDebuggerConfiguration['invokeTarget']
 
@@ -54,6 +55,10 @@ export function ensureRelativePaths(
     folder: vscode.WorkspaceFolder | undefined,
     config: AwsSamDebuggerConfiguration
 ): void {
+    if (!config?.invokeTarget?.target) {
+        // User has an invalid type=aws-sam launch-config.
+        return
+    }
     const filepath =
         config.invokeTarget.target === CODE_TARGET_TYPE
             ? config.invokeTarget.projectRoot

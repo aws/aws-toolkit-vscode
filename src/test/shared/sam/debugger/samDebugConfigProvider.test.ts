@@ -49,8 +49,8 @@ import { CredentialsProvider } from '../../../../credentials/providers/credentia
  * Asserts the contents of a "launch config" (the result of `makeConfig()` or
  * `resolveDebugConfiguration()` invoked on a user-provided "debug config").
  */
-function assertEqualLaunchConfigs(actual: SamLaunchRequestArgs, expected: SamLaunchRequestArgs, appDir: string) {
-    // Do not modify the original variables.
+function assertEqualLaunchConfigs(actual: SamLaunchRequestArgs, expected: SamLaunchRequestArgs) {
+    // Deep copy, do not modify the original variables.
     actual = { ...actual }
     expected = { ...expected }
 
@@ -477,7 +477,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 parameterOverrides: undefined,
             }
 
-            assertEqualLaunchConfigs(actual, expected, appDir)
+            assertEqualLaunchConfigs(actual, expected)
             assertFileText(
                 expected.envFile,
                 '{"awsToolkitSamLocalResource":{"test-envvar-1":"test value 1","test-envvar-2":"test value 2"}}'
@@ -520,7 +520,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
             }
-            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug, appDir)
+            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 
         it('target=template: javascript', async () => {
@@ -599,7 +599,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 parameterOverrides: undefined,
             }
 
-            assertEqualLaunchConfigs(actual, expected, appDir)
+            assertEqualLaunchConfigs(actual, expected)
             assertFileText(
                 expected.envFile,
                 '{"SourceCodeTwoFoldersDeep":{"test-js-template-envvar-1":"test target=template envvar value 1","test-js-template-envvar-2":"test target=template envvar value 2"}}'
@@ -639,7 +639,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
             }
-            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug, appDir)
+            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 
         it('target=code: dotnet/csharp', async () => {
@@ -730,7 +730,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 assert.ok(/^[A-Z]:/.test(sourceFileMap.substring(0, 2)), 'sourceFileMap driveletter must be uppercase')
             }
 
-            assertEqualLaunchConfigs(actual, expected, appDir)
+            assertEqualLaunchConfigs(actual, expected)
             assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{}}')
             assertFileText(expected.eventPayloadFile, '{}')
             assertFileText(
@@ -769,7 +769,7 @@ describe('SamDebugConfigurationProvider', async () => {
             delete expectedNoDebug.pipeTransport
             delete expectedNoDebug.sourceFileMap
             delete expectedNoDebug.windows
-            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug, appDir)
+            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 
         it('target=template: dotnet/csharp', async () => {
@@ -870,7 +870,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 assert.ok(/^[A-Z]:/.test(sourceFileMap.substring(0, 2)), 'sourceFileMap driveletter must be uppercase')
             }
 
-            assertEqualLaunchConfigs(actual, expected, appDir)
+            assertEqualLaunchConfigs(actual, expected)
             assertFileText(expected.envFile, '{"HelloWorldFunction":{"test-envvar-1":"test value 1"}}')
             assertFileText(expected.eventPayloadFile, '{"test-payload-key-1":"test payload value 1"}')
 
@@ -940,7 +940,7 @@ Outputs:
             delete expectedNoDebug.pipeTransport
             delete expectedNoDebug.sourceFileMap
             delete expectedNoDebug.windows
-            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug, appDir)
+            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 
         it('target=code: python 3.7', async () => {
@@ -1022,7 +1022,7 @@ Outputs:
                 })
             }
 
-            assertEqualLaunchConfigs(actual, expected, appDir)
+            assertEqualLaunchConfigs(actual, expected)
             assertFileText(expected.envFile, '{"awsToolkitSamLocalResource":{}}')
             assert.strictEqual(
                 readFileSync(actual.eventPayloadFile, 'utf-8'),
@@ -1060,7 +1060,7 @@ Outputs:
                 envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
             }
-            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug, appDir)
+            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 
         it('target=template: python 3.7 (deep project tree)', async () => {
@@ -1141,7 +1141,7 @@ Outputs:
                 })
             }
 
-            assertEqualLaunchConfigs(actual, expected, appDir)
+            assertEqualLaunchConfigs(actual, expected)
             assertFileText(expected.envFile, '{"HelloWorldFunction":{}}')
             assertFileText(expected.eventPayloadFile, '{}')
 
@@ -1206,7 +1206,7 @@ Outputs:
                 envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
             }
-            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug, appDir)
+            assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 
         it('debugconfig with extraneous env vars', async () => {
@@ -1294,7 +1294,7 @@ Outputs:
                 parameterOverrides: undefined,
             }
 
-            assertEqualLaunchConfigs(actual, expected, appDir)
+            assertEqualLaunchConfigs(actual, expected)
             assertFileText(expected.envFile, '{"myResource":{"var1":"2","var2":"1"}}')
             assertFileText(expected.eventPayloadFile, '{}')
 
@@ -1436,7 +1436,7 @@ Resources:
                 parameterOverrides: undefined,
             }
 
-            assertEqualLaunchConfigs(actual, expected, appDir)
+            assertEqualLaunchConfigs(actual, expected)
         })
     })
 })

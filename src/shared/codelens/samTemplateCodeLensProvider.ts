@@ -6,13 +6,14 @@
 import * as _ from 'lodash'
 import * as vscode from 'vscode'
 import { TemplateFunctionResource, TemplateSymbolResolver } from '../cloudformation/templateSymbolResolver'
-import { getReferencedTemplateResources, LaunchConfiguration } from '../debug/launchConfiguration'
+import { getConfigsMappedToTemplates, LaunchConfiguration } from '../debug/launchConfiguration'
 import { TEMPLATE_TARGET_TYPE, API_TARGET_TYPE } from '../sam/debugger/awsSamDebugConfiguration'
 import { AddSamDebugConfigurationInput } from '../sam/debugger/commands/addSamDebugConfiguration'
 import { localize } from '../utilities/vsCodeUtils'
 
 /**
- * Provides Code Lenses for generating debug configurations for SAM templates.
+ * Provides "Add Debug Configuration" CodeLenses to SAM template.yaml files,
+ * for resources that do not already have a mapped config in launch.json.
  */
 export class SamTemplateCodeLensProvider implements vscode.CodeLensProvider {
     public async provideCodeLenses(
@@ -21,19 +22,24 @@ export class SamTemplateCodeLensProvider implements vscode.CodeLensProvider {
         symbolResolver = new TemplateSymbolResolver(document),
         launchConfig = new LaunchConfiguration(document.uri)
     ): Promise<vscode.CodeLens[]> {
-        const functionResources = (await symbolResolver.getResourcesOfKind('function')) ?? []
         const apiResources = (await symbolResolver.getResourcesOfKind('api')) ?? []
-        if (_(functionResources).isEmpty() && _(apiResources).isEmpty()) {
+        const funResources = (await symbolResolver.getResourcesOfKind('function')) ?? []
+        if (_(funResources).isEmpty() && _(apiResources).isEmpty()) {
             return []
         }
 
-        // User already has launch configs for these:
-        const existingConfigs = getReferencedTemplateResources(launchConfig)
+        // User already has launch configs for:
+        const mappedApiConfigs = Array.from(getConfigsMappedToTemplates(launchConfig, 'api'))
+        const mappedFunConfigs = Array.from(getConfigsMappedToTemplates(launchConfig, 'template'))
 
-        return _([...functionResources, ...apiResources])
-            .reject(r => existingConfigs.has(r.name))
-            .map(r => this.createCodeLens(r, document.uri))
-            .value()
+        const unmappedApis = apiResources.filter(
+            r => undefined === mappedApiConfigs.find(o => o.name === r.name && o.invokeTarget.target === 'api')
+        )
+        const unmappedFuns = funResources.filter(
+            r => undefined === mappedFunConfigs.find(o => o.name === r.name && o.invokeTarget.target === 'template')
+        )
+        const codelensInfo = [...unmappedApis, ...unmappedFuns].map(r => this.createCodeLens(r, document.uri))
+        return codelensInfo
     }
 
     private createCodeLens(resource: TemplateFunctionResource, templateUri: vscode.Uri): vscode.CodeLens {

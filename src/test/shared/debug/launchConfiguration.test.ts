@@ -10,7 +10,7 @@ import * as vscode from 'vscode'
 import {
     DebugConfigurationSource,
     LaunchConfiguration,
-    getReferencedTemplateResources,
+    getConfigsMappedToTemplates,
     getReferencedHandlerPaths,
 } from '../../../shared/debug/launchConfiguration'
 import { AwsSamDebuggerConfiguration } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
@@ -18,6 +18,8 @@ import { AwsSamDebugConfigurationValidator } from '../../../shared/sam/debugger/
 import * as pathutils from '../../../shared/utilities/pathUtils'
 import * as testutil from '../../testUtil'
 import { CloudFormationTemplateRegistry } from '../../../shared/cloudformation/templateRegistry'
+import { CloudFormationTemplateRegistryManager } from '../../../shared/cloudformation/templateRegistryManager'
+import { TEMPLATE_FILE_GLOB_PATTERN } from '../../../shared/cloudformation/activation'
 
 const samDebugConfiguration: AwsSamDebuggerConfiguration = {
     type: 'aws-sam',
@@ -30,6 +32,49 @@ const samDebugConfiguration: AwsSamDebuggerConfiguration = {
     },
 }
 
+/**
+ * Asserts that the given launch.json representations are equivalent.
+ *
+ * @param assertSam  If true, assert that all configs are valid type=aws-sam configs.
+ *
+ * @see samDebugConfigProvider.test.ts:assertEqualLaunchConfigs() which
+ * compares a single launch-config item (as opposed to the entire launch.json)
+ */
+function assertEqualLaunchJsons(actual: any, expected: any, workspace: vscode.Uri, assertSam: boolean) {
+    // Deep-copy, don't modify the original structures.
+    actual = JSON.parse(JSON.stringify(actual))
+    expected = JSON.parse(JSON.stringify(expected))
+    // Skip special checks if the inputs are completely wrong, go straight to
+    // the deep-compare. This gives more meaningful output.
+    const sameLength = actual.length === expected.length
+
+    if (assertSam && sameLength) {
+        for (let i = 0; i < actual.length; i++) {
+            const configActual = actual[i]
+            const configExpected = expected[i]
+            const isCodeTarget = 'code' === configActual?.invokeTarget?.target
+            const templateActual = configActual?.invokeTarget?.templatePath
+            const templateExpected = configExpected?.invokeTarget?.templatePath
+            if (templateExpected !== undefined) {
+                if (!isCodeTarget && templateActual === undefined) {
+                    assert.fail(`not a valid type=aws-sam config: ${JSON.stringify(configActual)}`)
+                }
+                const fullpath = pathutils.normalize(path.resolve(workspace.fsPath, templateExpected))
+                testutil.assertEqualPaths(templateActual, fullpath)
+            }
+        }
+    }
+
+    // Remove noisy properties before doing a deep-compare.
+    for (let i = 0; i < actual.length; i++) {
+        for (const o of [actual[i], expected[i]]) {
+            if (o.invokeTarget?.templatePath) {
+                delete o.invokeTarget.templatePath
+            }
+        }
+    }
+    assert.deepStrictEqual(actual, expected)
+}
 function createMockSamDebugConfig(addons?: Partial<AwsSamDebuggerConfiguration>): AwsSamDebuggerConfiguration {
     return {
         ...samDebugConfiguration,
@@ -48,87 +93,80 @@ const templateUri = vscode.Uri.file('/template.yaml')
 describe('LaunchConfiguration', () => {
     let mockConfigSource: DebugConfigurationSource
     let mockSamValidator: AwsSamDebugConfigurationValidator
-    let registry: CloudFormationTemplateRegistry
     /** Test workspace. */
     const workspace = vscode.workspace.workspaceFolders![0]
-    const templateUriJsPlainApp = vscode.Uri.file(path.join(workspace.uri.fsPath, 'js-plain-sam-app/template.yaml'))
     const testLaunchJson = vscode.Uri.file(path.join(workspace.uri.fsPath, '.vscode/launch.json'))
-    /** Object read from the launch.json test file. */
+    /** Object representation of the launch.json test file. */
     const testLaunchJsonData = JSON.parse(testutil.fromFile(testLaunchJson.fsPath))
-
-    before(() => {
-        // const testLaunchJson = vscode.Uri.file(path.join(workspace.uri.fsPath, '.vscode/launch.json'))
-        // console.log(testLaunchJson)
-        // /** Object read from the launch.json test file. */
-        // const contents = testutil.fromFile(testLaunchJson.fsPath)
-        // const testLaunchJsonData = JSON.parse(contents)
-        // console.log(testLaunchJsonData)
-    })
+    const templateUriJsPlainApp = vscode.Uri.file(path.join(workspace.uri.fsPath, 'js-plain-sam-app/template.yaml'))
+    const templateUriPython37 = vscode.Uri.file(
+        path.join(workspace.uri.fsPath, 'python3.7-plain-sam-app/template.yaml')
+    )
+    const templateUriCsharp = vscode.Uri.file(path.join(workspace.uri.fsPath, 'csharp2.1-plain-sam-app/template.yaml'))
 
     beforeEach(async () => {
-        registry = CloudFormationTemplateRegistry.getRegistry()
-        await registry.addTemplateToRegistry(templateUriJsPlainApp)
+        // Ensure that template.yaml file(s) in src/testFixtures/ is tracked by
+        // our inotify thing.
+        const registry = CloudFormationTemplateRegistry.getRegistry()
+        // TODO: can registry and registry-manager be combined?
+        const manager = new CloudFormationTemplateRegistryManager(registry)
+        await manager.addTemplateGlob(TEMPLATE_FILE_GLOB_PATTERN)
+
+        // TODO: remove mocks in favor of testing src/testFixtures/ data.
         mockConfigSource = mock()
         mockSamValidator = mock()
-
         when(mockConfigSource.getDebugConfigurations()).thenReturn(debugConfigurations)
         when(mockSamValidator.validate(deepEqual(samDebugConfiguration))).thenReturn({ isValid: true })
     })
 
-    it('getReferencedTemplateResources()', async () => {
-        const launchConfig = new LaunchConfiguration(templateUriJsPlainApp)
-        const resultSet = getReferencedTemplateResources(launchConfig)
-        const expected = new Set<string>(['SourceCodeBesidePackageJson'])
-        assert.deepStrictEqual(resultSet, expected)
+    it('getConfigsMappedToTemplates(type=api)', async () => {
+        const actual = getConfigsMappedToTemplates(new LaunchConfiguration(templateUriJsPlainApp), 'api')
+        assert.deepStrictEqual(actual.size, 0)
+
+        const actual2 = Array.from(getConfigsMappedToTemplates(new LaunchConfiguration(templateUriPython37), 'api'))
+        assert.deepStrictEqual(actual2.length, 1)
+        assert.deepStrictEqual(actual2[0].name, 'test-launchconfig-6-python3.7')
+        assert.deepStrictEqual(actual2[0].invokeTarget.target, 'api')
+
+        const actual3 = Array.from(getConfigsMappedToTemplates(new LaunchConfiguration(templateUriCsharp), 'api'))
+        assert.deepStrictEqual(actual3.length, 1)
+        assert.deepStrictEqual(actual3[0].name, 'test-launchconfig-8-api')
+        assert.deepStrictEqual(actual3[0].invokeTarget.target, 'api')
     })
 
-    it('xxxxxxxx', async () => {
-        const workspace = vscode.workspace.workspaceFolders![0]
-        console.log(`xxxxx ${workspace}`)
-        // const fakeWorkspace = await testutil.createTestWorkspaceFolder()
-        // ;(fakeWorkspace as any).uri = vscode.Uri.file('/private/tmp/aws-toolkit-vscode/vsctk3dPF9D')
-        const launchConfigData = {
-            configurations: [
-                {
-                    name: 'Extension',
-                    type: 'extensionHost',
-                    request: 'launch',
-                    runtimeExecutable: '${execPath}',
-                    args: ['--extensionDevelopmentPath=${workspaceFolder}'],
-                    env: {
-                        AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE: 'true',
-                    },
-                    outFiles: ['${workspaceFolder}/dist/**/*.js'],
-                    preLaunchTask: 'npm: watch',
-                },
-            ],
-        }
-        const launchJsonFile = path.join(workspace.uri.fsPath, '.vscode/launch.json.2')
-        testutil.toFile(JSON.stringify(launchConfigData), launchJsonFile)
-        // VSCode does not allow adding a workspace from a test:
-        // await workspaceutil.addFolderToWorkspace(fakeWorkspace, true)
+    it('getConfigsMappedToTemplates(type=undefined) returns target=template + target=api resources', async () => {
+        const actual = Array.from(
+            getConfigsMappedToTemplates(new LaunchConfiguration(templateUriJsPlainApp), undefined)
+        )
+        assert.deepStrictEqual(actual.length, 1)
+        assert.deepStrictEqual((actual[0].invokeTarget as any).logicalId, 'SourceCodeBesidePackageJson')
 
-        // Some file that is in the same workspace as the .vscode/ directory.
-        const fileInWorkspace = vscode.Uri.file(path.join(workspace.uri.fsPath, 'src/template.yaml'))
-        testutil.toFile('line1\nline2\n', fileInWorkspace.fsPath)
-        // const configSource = new DefaultDebugConfigSource(fakeWorkspace.uri)
-        const launchConfig = new LaunchConfiguration(fileInWorkspace)
-        assert.deepStrictEqual(launchConfig.getDebugConfigurations(), debugConfigurations)
+        const actual2 = Array.from(getConfigsMappedToTemplates(new LaunchConfiguration(templateUriPython37), undefined))
+        assert.deepStrictEqual(actual2.length, 2)
+        assert.deepStrictEqual(actual2[0].name, 'test-launchconfig-5-python3.7')
+        assert.deepStrictEqual(actual2[1].name, 'test-launchconfig-6-python3.7')
+        assert.deepStrictEqual(actual2[0].invokeTarget.target, 'template')
+        assert.deepStrictEqual(actual2[1].invokeTarget.target, 'api')
+
+        const actual3 = Array.from(getConfigsMappedToTemplates(new LaunchConfiguration(templateUriCsharp), undefined))
+        assert.deepStrictEqual(actual3.length, 1)
+        assert.deepStrictEqual(actual3[0].name, 'test-launchconfig-8-api')
+        assert.deepStrictEqual((actual3[0].invokeTarget as any).logicalId, 'HelloWorldFunction')
     })
 
     it('gets debug configurations', () => {
         const launchConfig = new LaunchConfiguration(templateUriJsPlainApp)
         const expected = testLaunchJsonData['configurations']
-        assert.deepStrictEqual(launchConfig.getDebugConfigurations(), expected)
+        assertEqualLaunchJsons(launchConfig.getDebugConfigurations(), expected, workspace.uri, false)
     })
 
-    it('gets sam debug configurations', () => {
-        const launchConfig = new LaunchConfiguration(
-            templateUri,
-            instance(mockConfigSource),
-            instance(mockSamValidator)
+    it('gets aws-sam debug configurations', () => {
+        const launchConfig = new LaunchConfiguration(templateUriJsPlainApp)
+        const expected = (testLaunchJsonData['configurations'] as any[]).filter(
+            o => o.type === 'aws-sam' && o.request === 'direct-invoke'
         )
-        assert.deepStrictEqual(launchConfig.getSamDebugConfigurations(), [samDebugConfiguration])
+        const actual = launchConfig.getSamDebugConfigurations()
+        assertEqualLaunchJsons(actual, expected, workspace.uri, true)
     })
 
     it('adds single debug configuration', async () => {
@@ -153,41 +191,6 @@ describe('LaunchConfiguration', () => {
 
         const expected = [samDebugConfiguration, samDebugConfiguration, ...debugConfigurations]
         verify(mockConfigSource.setDebugConfigurations(deepEqual(expected))).once()
-    })
-})
-
-describe('getReferencedTemplateResources', () => {
-    it('includes resources that are in the given template', () => {
-        const mockLaunchConfig = instance(createMockLaunchConfig())
-
-        const resultSet = getReferencedTemplateResources(mockLaunchConfig)
-        const workspaceFolder = mockLaunchConfig.workspaceFolder!.uri.fsPath
-
-        // relative and absolute path of the correct template.yaml file
-        assert.strictEqual(resultSet.has('absolutePathGoodTemplate'), true)
-        assert.strictEqual(resultSet.has('relativePathGoodTemplate'), true)
-        // default case: absolute pathed to root dir
-        assert.strictEqual(resultSet.has('resource'), false)
-        // relative and absolute paths to incorrect template.yaml file in correct dir
-        assert.strictEqual(resultSet.has('relativePathBadTemplate'), false)
-        assert.strictEqual(resultSet.has('absolutePathBadTemplate'), false)
-        // code type handlers, filtered out
-        assert.strictEqual(
-            resultSet.has(pathutils.normalize(path.resolve(workspaceFolder, 'inProject', 'relativeRoot'))),
-            false
-        )
-        assert.strictEqual(
-            resultSet.has(pathutils.normalize(path.resolve(workspaceFolder, 'inProject', 'absoluteRoot'))),
-            false
-        )
-        assert.strictEqual(
-            resultSet.has(pathutils.normalize(path.resolve(workspaceFolder, 'notInProject', 'relativeRoot'))),
-            false
-        )
-        assert.strictEqual(
-            resultSet.has(pathutils.normalize(path.resolve(workspaceFolder, 'notInProject', 'absoluteRoot'))),
-            false
-        )
     })
 })
 

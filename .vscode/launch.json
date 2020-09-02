@@ -69,7 +69,7 @@
                 "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true",
                 "NO_COVERAGE": "true"
             },
-            "outFiles": ["${workspaceFolder}/dist/src/test/**/*.js"],
+            "outFiles": ["${workspaceFolder}/dist/.vscode/*", "${workspaceFolder}/dist/src/test/**/*.js"],
             "preLaunchTask": "${defaultBuildTask}"
         },
         {
