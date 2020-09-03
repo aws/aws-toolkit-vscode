@@ -26,6 +26,10 @@ abstract class AwsAuthWidget(private val userField: Boolean = true) : DatabaseCr
     private val credentialSelector = CredentialProviderSelector()
     private val regionSelector = RegionSelector()
 
+    // These are defined in DataGrip and used in the url holder which is called in `updateFromUrl`
+    protected val hostParameter = "host"
+    protected val portParameter = "port"
+
     abstract fun getRegionFromUrl(url: String?): String?
 
     open val rowCount: Int = 3
