@@ -108,7 +108,7 @@ class CloudWatchLogGroup(
         tablePanel.toolbar = ActionManager.getInstance().createActionToolbar("CloudWatchLogStream", actionGroup, false).component
     }
 
-    private fun refreshTable() {
+    internal fun refreshTable() {
         launch { groupTable.channel.send(LogActor.Message.LoadInitial) }
     }
 

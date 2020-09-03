@@ -134,7 +134,7 @@ class CloudWatchLogStream(
         tablePanel.toolbar = toolbar.component
     }
 
-    private fun refreshTable() = launch {
+    internal fun refreshTable() = launch {
         if (searchField.text.isNotEmpty() && searchStreamTable != null) {
             searchStreamTable?.channel?.send(LogActor.Message.LoadInitialFilter(searchField.text.trim()))
         } else if (previousEvent != null && duration != null) {
