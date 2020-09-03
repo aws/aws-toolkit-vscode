@@ -33,14 +33,14 @@ class CloudWatchLogWindow(private val project: Project) : CoroutineScope by Appl
             val existingWindow = toolWindow.find(logGroup)
             if (existingWindow != null) {
                 withContext(edtContext) {
-                    existingWindow.show()
+                    existingWindow.show(refresh = true)
                 }
                 return@launch
             }
             val group = CloudWatchLogGroup(project, logGroup)
             val title = message("cloudwatch.logs.log_group_title", logGroup.split("/").last())
             withContext(edtContext) {
-                toolWindow.addTab(title, group.content, activate = true, id = logGroup, disposable = group)
+                toolWindow.addTab(title, group.content, activate = true, id = logGroup, disposable = group, refresh = { group.refreshTable() })
             }
         } catch (e: Exception) {
             LOG.error(e) { "Exception thrown while trying to show log group '$logGroup'" }
@@ -63,7 +63,7 @@ class CloudWatchLogWindow(private val project: Project) : CoroutineScope by Appl
             val existingWindow = toolWindow.find(id)
             if (existingWindow != null) {
                 withContext(edtContext) {
-                    existingWindow.show()
+                    existingWindow.show(refresh = true)
                 }
                 return@launch
             }
@@ -79,7 +79,7 @@ class CloudWatchLogWindow(private val project: Project) : CoroutineScope by Appl
             }
             val stream = CloudWatchLogStream(project, logGroup, logStream, previousEvent, duration)
             withContext(edtContext) {
-                toolWindow.addTab(title, stream.content, activate = true, id = id, disposable = stream)
+                toolWindow.addTab(title, stream.content, activate = true, id = id, disposable = stream, refresh = { stream.refreshTable() })
             }
         } catch (e: Exception) {
             LOG.error(e) { "Exception thrown while trying to show log group '$logGroup' stream '$logStream'" }

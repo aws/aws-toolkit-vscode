@@ -18,14 +18,23 @@ import javax.swing.Icon
 import javax.swing.JComponent
 
 interface ToolkitToolWindow {
-    fun addTab(title: String, component: JComponent, activate: Boolean = false, id: String = title, disposable: Disposable? = null): ToolkitToolWindowTab
+    fun addTab(
+        title: String,
+        component: JComponent,
+        activate: Boolean = false,
+        id: String = title,
+        disposable: Disposable? = null,
+        refresh: () -> Unit = { }
+    ): ToolkitToolWindowTab
+
     fun find(id: String): ToolkitToolWindowTab?
+
     // prefix is prefix of the id. Assumes the window is using id composed of paths, like: "loggroup/logstream"
     fun findPrefix(prefix: String): List<ToolkitToolWindowTab>
 }
 
 interface ToolkitToolWindowTab : Disposable {
-    fun show()
+    fun show(refresh: Boolean = false)
 }
 
 class ToolkitToolWindowManager(private val project: Project) : Disposable {
@@ -35,7 +44,14 @@ class ToolkitToolWindowManager(private val project: Project) : Disposable {
     inner class ManagedToolkitToolWindow(private val type: ToolkitToolWindowType) : ToolkitToolWindow {
         private val tabs = mutableMapOf<String, ManagedToolkitToolWindowTab>()
 
-        override fun addTab(title: String, component: JComponent, activate: Boolean, id: String, disposable: Disposable?): ToolkitToolWindowTab {
+        override fun addTab(
+            title: String,
+            component: JComponent,
+            activate: Boolean,
+            id: String,
+            disposable: Disposable?,
+            refresh: () -> Unit
+        ): ToolkitToolWindowTab {
             val content = ContentImpl(component, title, true)
             val toolWindow = windowManager.getToolWindow(type.id)
                 ?: windowManager.registerToolWindow(type.id, true, type.anchor, this@ToolkitToolWindowManager, true).also {
@@ -45,7 +61,7 @@ class ToolkitToolWindowManager(private val project: Project) : Disposable {
             Disposer.register(content, Disposable { closeWindowIfEmpty(toolWindow, type.id) })
             disposable?.let { Disposer.register(content, it) }
             toolWindow.contentManager.addContent(content)
-            return ManagedToolkitToolWindowTab(toolWindow, content).also {
+            return ManagedToolkitToolWindowTab(toolWindow, content, refresh).also {
                 tabs[id] = it
                 if (activate) {
                     it.show()
@@ -74,10 +90,14 @@ class ToolkitToolWindowManager(private val project: Project) : Disposable {
             }
     }
 
-    class ManagedToolkitToolWindowTab(private val toolWindow: ToolWindow, internal val content: Content) : ToolkitToolWindowTab {
-        override fun show() {
+    class ManagedToolkitToolWindowTab(private val toolWindow: ToolWindow, internal val content: Content, private val refresh: () -> Unit) :
+        ToolkitToolWindowTab {
+        override fun show(refresh: Boolean) {
             toolWindow.activate(null, true)
             toolWindow.contentManager.setSelectedContent(content)
+            if (refresh) {
+                refresh()
+            }
         }
 
         override fun dispose() {
