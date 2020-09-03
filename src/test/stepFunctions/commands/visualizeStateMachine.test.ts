@@ -24,11 +24,11 @@ const mockGlobalStorage: vscode.Memento = {
 }
 
 const mockUriOne: vscode.Uri = {
-    authority: 'MockAuthorityOne',
+    authority: 'amazon.com',
     fragment: 'MockFragmentOne',
     fsPath: 'MockFSPathOne',
     query: 'MockQueryOne',
-    path: 'MockPathOne',
+    path: '/MockPathOne',
     scheme: 'MockSchemeOne',
     with: () => {
         return mockUriOne
@@ -59,11 +59,11 @@ const mockTextDocumentOne: vscode.TextDocument = {
 }
 
 const mockUriTwo: vscode.Uri = {
-    authority: 'MockAuthorityTwo',
+    authority: 'amazon.org',
     fragment: 'MockFragmentTwo',
     fsPath: 'MockFSPathTwo',
     query: 'MockQueryTwo',
-    path: 'MockPathTwo',
+    path: '/MockPathTwo',
     scheme: 'MockSchemeTwo',
     with: sinon.spy(),
     toJSON: sinon.spy(),
@@ -92,11 +92,11 @@ const mockTextDocumentTwo: vscode.TextDocument = {
 }
 
 const mockUriThree: vscode.Uri = {
-    authority: 'MockAuthorityYaml',
+    authority: 'amazon.de',
     fragment: 'MockFragmentYaml',
     fsPath: 'MockFSPathYaml',
     query: 'MockQueryYaml',
-    path: 'MockPathYaml',
+    path: '/MockPathYaml',
     scheme: 'MockSchemeYaml',
     with: sinon.spy(),
     toJSON: sinon.spy(),

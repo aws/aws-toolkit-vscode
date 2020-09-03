@@ -5,16 +5,27 @@
 
 import * as assert from 'assert'
 import { IAM } from 'aws-sdk'
+import * as del from 'del'
 import * as sinon from 'sinon'
-import { isStepFunctionsRole, StateMachineGraphCache, isDocumentValid } from '../../stepFunctions/utils'
 import * as vscode from 'vscode'
+import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { isDocumentValid, isStepFunctionsRole, StateMachineGraphCache } from '../../stepFunctions/utils'
 
 const REQUEST_BODY = 'request body string'
 const ASSET_URL = 'https://something'
 const FILE_PATH = '/some/path'
 const STORAGE_KEY = 'KEY'
+let tempFolder = ''
 
 describe('StateMachineGraphCache', () => {
+    before(async function() {
+        tempFolder = await makeTemporaryToolkitFolder()
+    })
+
+    after(async () => {
+        await del([tempFolder], { force: true })
+    })
+
     describe('updateCachedFile', () => {
         it('downloads a file when it is not in cache and stores it', async () => {
             const globalStorage = {
@@ -38,7 +49,7 @@ describe('StateMachineGraphCache', () => {
                 writeFile,
                 cssFilePath: '',
                 jsFilePath: '',
-                dirPath: '',
+                dirPath: tempFolder,
             })
 
             await cache.updateCachedFile({
@@ -74,7 +85,7 @@ describe('StateMachineGraphCache', () => {
                 writeFile,
                 cssFilePath: '',
                 jsFilePath: '',
-                dirPath: '',
+                dirPath: tempFolder,
             })
 
             await cache.updateCachedFile({
