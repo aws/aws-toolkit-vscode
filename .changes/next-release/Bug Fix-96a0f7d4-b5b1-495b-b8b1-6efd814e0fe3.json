@@ -1,0 +1,4 @@
+{
+    "type": "Bug Fix",
+    "description": "Fix ASL validation bug marking states as unreachable when defined before a Choice state"
+}
