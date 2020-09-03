@@ -25,6 +25,8 @@ import software.aws.toolkits.jetbrains.services.rds.RdsNode
 import software.aws.toolkits.jetbrains.services.rds.auroraMysqlEngineType
 import software.aws.toolkits.jetbrains.services.rds.auroraPostgresEngineType
 import software.aws.toolkits.jetbrains.services.rds.auth.IamAuth
+import software.aws.toolkits.jetbrains.services.rds.auth.RDS_SIGNING_HOST_PROPERTY
+import software.aws.toolkits.jetbrains.services.rds.auth.RDS_SIGNING_PORT_PROPERTY
 import software.aws.toolkits.jetbrains.services.rds.jdbcMariadb
 import software.aws.toolkits.jetbrains.services.rds.jdbcMysql
 import software.aws.toolkits.jetbrains.services.rds.jdbcPostgres
@@ -112,11 +114,15 @@ class CreateIamDataSourceAction : SingleExplorerNodeAction<RdsNode>(message("rds
 
 fun DataSourceRegistry.createRdsDatasource(config: RdsDatasourceConfiguration) {
     val dbEngine = config.dbInstance.engine()
-    val url = "${config.dbInstance.endpoint().address()}:${config.dbInstance.endpoint().port()}"
+    val port = config.dbInstance.endpoint().port()
+    val host = config.dbInstance.endpoint().address()
+    val url = "$host:$port"
 
     val builder = builder
         .withJdbcAdditionalProperty(CREDENTIAL_ID_PROPERTY, config.credentialId)
         .withJdbcAdditionalProperty(REGION_ID_PROPERTY, config.regionId)
+        .withJdbcAdditionalProperty(RDS_SIGNING_HOST_PROPERTY, host)
+        .withJdbcAdditionalProperty(RDS_SIGNING_PORT_PROPERTY, port.toString())
     when (dbEngine) {
         mysqlEngineType -> {
             builder
@@ -127,7 +133,7 @@ fun DataSourceRegistry.createRdsDatasource(config: RdsDatasourceConfiguration) {
             builder
                 .withUrl("jdbc:$jdbcPostgres://$url/")
                 // In postgres this is case sensitive as lower case. If you add a db user for
-                // IAM role "Admin", it is inserted as "admin"
+                // IAM role "Admin", it is inserted to the db as "admin"
                 .withUser(config.username.toLowerCase())
         }
         auroraMysqlEngineType -> {
