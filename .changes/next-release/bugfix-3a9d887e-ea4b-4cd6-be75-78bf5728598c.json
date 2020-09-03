@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Quote template parameters when deploying a cloudformation template"
+}

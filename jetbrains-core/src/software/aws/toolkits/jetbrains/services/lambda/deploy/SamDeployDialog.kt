@@ -27,6 +27,9 @@ import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutable
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
+import software.aws.toolkits.jetbrains.services.lambda.sam.samBuildCommand
+import software.aws.toolkits.jetbrains.services.lambda.sam.samDeployCommand
+import software.aws.toolkits.jetbrains.services.lambda.sam.samPackageCommand
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.SamTelemetry
 import java.nio.file.Files
@@ -96,19 +99,12 @@ class SamDeployDialog(
         Files.createDirectories(buildDir)
 
         return createBaseCommand().thenApply {
-            it
-                .withParameters("build")
-                .withParameters("--template")
-                .withParameters(template.path)
-                .withParameters("--build-dir")
-                .withParameters(buildDir.toString())
-                .apply {
-                    if (useContainer) {
-                        withParameters("--use-container")
-                    }
-                }
-
-            it
+            it.samBuildCommand(
+                environmentVariables = createCommonEnvVars(),
+                templatePath = Paths.get(template.path),
+                buildDir = buildDir,
+                useContainer = useContainer
+            )
         }.thenCompose {
             val builtTemplate = buildDir.resolve("template.yaml")
             runCommand(message("serverless.application.deploy.step_name.build"), it) { builtTemplate }
@@ -119,16 +115,12 @@ class SamDeployDialog(
         advanceStep()
         val packagedTemplatePath = builtTemplateFile.parent.resolve("packaged-${builtTemplateFile.fileName}")
         return createBaseCommand().thenApply {
-            it
-                .withParameters("package")
-                .withParameters("--template-file")
-                .withParameters(builtTemplateFile.toString())
-                .withParameters("--output-template-file")
-                .withParameters(packagedTemplatePath.toString())
-                .withParameters("--s3-bucket")
-                .withParameters(s3Bucket)
-
-            it
+            it.samPackageCommand(
+                environmentVariables = createCommonEnvVars(),
+                templatePath = builtTemplateFile,
+                packagedTemplatePath = packagedTemplatePath,
+                s3Bucket = s3Bucket
+            )
         }.thenCompose {
             runCommand(message("serverless.application.deploy.step_name.package"), it) { packagedTemplatePath }
         }
@@ -136,36 +128,29 @@ class SamDeployDialog(
 
     private fun runSamDeploy(packagedTemplateFile: Path): CompletionStage<String> {
         advanceStep()
-        return createBaseCommand().thenApply { it ->
-            it.withParameters("deploy")
-                .withParameters("--template-file")
-                .withParameters(packagedTemplateFile.toString())
-                .withParameters("--stack-name")
-                .withParameters(stackName)
-                .withParameters("--s3-bucket")
-                .withParameters(s3Bucket)
-
-            if (capabilities.isNotEmpty()) {
-                it.withParameters("--capabilities")
-                    .withParameters(capabilities.map { it.capability })
-            }
-
-            it.withParameters("--no-execute-changeset")
-
-            if (parameters.isNotEmpty()) {
-                it.withParameters("--parameter-overrides")
-                parameters.forEach { (key, value) ->
-                    it.withParameters("$key=$value")
-                }
-            }
-
-            it
+        return createBaseCommand().thenApply {
+            it.samDeployCommand(
+                environmentVariables = createCommonEnvVars(),
+                templatePath = packagedTemplateFile,
+                stackName = stackName,
+                s3Bucket = s3Bucket,
+                capabilities = capabilities,
+                parameters = parameters
+            )
         }.thenCompose { command ->
             runCommand(message("serverless.application.deploy.step_name.create_change_set"), command) { output ->
                 changeSetRegex.find(output.stdout)?.value
                     ?: throw RuntimeException(message("serverless.application.deploy.change_set_not_found"))
             }
         }
+    }
+
+    private fun createCommonEnvVars(): Map<String, String> {
+        val envVars = mutableMapOf<String, String>()
+        envVars.putAll(region.toEnvironmentVariables())
+        envVars.putAll(credentialsProvider.resolveCredentials().toEnvironmentVariables())
+
+        return envVars
     }
 
     private fun finish(changeSet: String): String = changeSet.also {
@@ -209,20 +194,10 @@ class SamDeployDialog(
         throw error
     }
 
-    private fun createBaseCommand(): CompletionStage<GeneralCommandLine> {
-        val envVars = mutableMapOf<String, String>()
-        envVars.putAll(region.toEnvironmentVariables())
-        envVars.putAll(credentialsProvider.resolveCredentials().toEnvironmentVariables())
-
-        return ExecutableManager.getInstance().getExecutable<SamExecutable>().thenApply {
-            val samExecutable = when (it) {
-                is ExecutableInstance.Executable -> it
-                else -> throw RuntimeException((it as? ExecutableInstance.BadExecutable)?.validationError)
-            }
-            return@thenApply samExecutable
-                .getCommandLine()
-                .withWorkDirectory(template.parent.path)
-                .withEnvironment(envVars)
+    private fun createBaseCommand(): CompletionStage<GeneralCommandLine> = ExecutableManager.getInstance().getExecutable<SamExecutable>().thenApply {
+        when (it) {
+            is ExecutableInstance.Executable -> return@thenApply it.getCommandLine()
+            else -> throw RuntimeException((it as? ExecutableInstance.BadExecutable)?.validationError)
         }
     }
 
