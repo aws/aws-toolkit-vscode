@@ -12,6 +12,6 @@ import software.aws.toolkits.resources.message
 
 class PollMessageAction : SingleResourceNodeAction<SqsQueueNode>(message("sqs.poll.message")), DumbAware {
     override fun actionPerformed(selected: SqsQueueNode, e: AnActionEvent) {
-        SqsWindow.getInstance(selected.nodeProject)?.pollMessage(selected.queue)
+        SqsWindow.getInstance(selected.nodeProject).pollMessage(selected.queue)
     }
 }

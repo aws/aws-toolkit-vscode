@@ -43,6 +43,6 @@ class SqsQueueNode(
     override fun displayName(): String = queue.queueName
 
     override fun onDoubleClick() {
-        SqsWindow.getInstance(nodeProject)?.pollMessage(queue)
+        SqsWindow.getInstance(nodeProject).pollMessage(queue)
     }
 }

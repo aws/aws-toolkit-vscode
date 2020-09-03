@@ -7,8 +7,8 @@ import com.intellij.ide.HelpTooltip
 import com.intellij.openapi.project.Project
 import com.intellij.ui.IdeBorderFactory
 import software.amazon.awssdk.services.sns.model.Topic
-import software.aws.toolkits.jetbrains.services.sqs.resources.SnsResources
-import software.aws.toolkits.jetbrains.services.sqs.resources.getName
+import software.aws.toolkits.jetbrains.services.sns.resources.SnsResources
+import software.aws.toolkits.jetbrains.services.sns.resources.getName
 import software.aws.toolkits.jetbrains.ui.ResourceSelector
 import software.aws.toolkits.resources.message
 import javax.swing.JLabel

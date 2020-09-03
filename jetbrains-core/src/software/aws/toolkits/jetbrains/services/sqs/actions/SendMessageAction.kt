@@ -12,6 +12,6 @@ import software.aws.toolkits.resources.message
 
 class SendMessageAction : SingleResourceNodeAction<SqsQueueNode>(message("sqs.send.message")), DumbAware {
     override fun actionPerformed(selected: SqsQueueNode, e: AnActionEvent) {
-        SqsWindow.getInstance(selected.nodeProject)?.sendMessage(selected.queue)
+        SqsWindow.getInstance(selected.nodeProject).sendMessage(selected.queue)
     }
 }

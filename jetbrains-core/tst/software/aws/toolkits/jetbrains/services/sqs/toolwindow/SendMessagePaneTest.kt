@@ -3,11 +3,12 @@
 
 package software.aws.toolkits.jetbrains.services.sqs.toolwindow
 
-import com.intellij.ide.util.PropertiesComponent
+import com.intellij.testFramework.ProjectRule
 import com.nhaarman.mockitokotlin2.whenever
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mockito
 import software.amazon.awssdk.services.sqs.SqsClient
@@ -15,41 +16,46 @@ import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.RuleUtils
+import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import software.aws.toolkits.jetbrains.services.sqs.MAX_LENGTH_OF_FIFO_ID
 import software.aws.toolkits.jetbrains.services.sqs.Queue
-import software.aws.toolkits.jetbrains.utils.BaseCoroutineTest
 import software.aws.toolkits.jetbrains.utils.waitForTrue
 import software.aws.toolkits.resources.message
 
-class SendMessagePaneTest : BaseCoroutineTest() {
+class SendMessagePaneTest {
+    @Rule
+    @JvmField
+    val projectRule = ProjectRule()
+
+    @JvmField
+    @Rule
+    val mockClientManager = MockClientManagerRule(projectRule)
+
     private lateinit var client: SqsClient
     private lateinit var region: AwsRegion
     private lateinit var standardQueue: Queue
     private lateinit var fifoQueue: Queue
     private lateinit var standardPane: SendMessagePane
     private lateinit var fifoPane: SendMessagePane
-    private lateinit var cache: PropertiesComponent
 
     @Before
     fun reset() {
-        client = mockClientManagerRule.create()
+        client = mockClientManager.create()
         region = MockRegionProvider.getInstance().defaultRegion()
         standardQueue = Queue("https://sqs.us-east-1.amazonaws.com/123456789012/standard", region)
         fifoQueue = Queue("https://sqs.us-east-1.amazonaws.com/123456789012/fifo.fifo", region)
-        cache = PropertiesComponent.getInstance(projectRule.project)
-        standardPane = SendMessagePane(client, standardQueue, cache)
-        fifoPane = SendMessagePane(client, fifoQueue, cache)
+        standardPane = SendMessagePane(client, standardQueue)
+        fifoPane = SendMessagePane(client, fifoQueue)
     }
 
     @Test
     fun `No input fails to send for standard`() {
         standardPane.apply {
             inputText.text = ""
-            runBlocking { sendMessage() }
         }
 
-        assertThat(standardPane.bodyErrorLabel.isVisible).isTrue()
+        assertThat(standardPane.validateFields()).isFalse()
         assertThat(standardPane.fifoFields.component.isVisible).isFalse()
     }
 
@@ -59,12 +65,9 @@ class SendMessagePaneTest : BaseCoroutineTest() {
             inputText.text = ""
             fifoFields.deduplicationId.text = ""
             fifoFields.groupId.text = ""
-            runBlocking { sendMessage() }
         }
 
-        assertThat(fifoPane.bodyErrorLabel.isVisible).isTrue()
-        assertThat(fifoPane.fifoFields.deduplicationErrorLabel.isVisible).isTrue()
-        assertThat(fifoPane.fifoFields.groupErrorLabel.isVisible).isTrue()
+        assertThat(fifoPane.validateFields()).isFalse()
     }
 
     @Test
@@ -73,12 +76,9 @@ class SendMessagePaneTest : BaseCoroutineTest() {
             inputText.text = MESSAGE
             fifoFields.deduplicationId.text = ""
             fifoFields.groupId.text = GROUP_ID
-            runBlocking { sendMessage() }
         }
 
-        assertThat(fifoPane.bodyErrorLabel.isVisible).isFalse()
-        assertThat(fifoPane.fifoFields.deduplicationErrorLabel.isVisible).isTrue()
-        assertThat(fifoPane.fifoFields.groupErrorLabel.isVisible).isFalse()
+        assertThat(fifoPane.validateFields()).isFalse()
     }
 
     @Test
@@ -90,9 +90,7 @@ class SendMessagePaneTest : BaseCoroutineTest() {
             runBlocking { sendMessage() }
         }
 
-        assertThat(fifoPane.bodyErrorLabel.isVisible).isFalse()
-        assertThat(fifoPane.fifoFields.deduplicationErrorLabel.isVisible).isFalse()
-        assertThat(fifoPane.fifoFields.groupErrorLabel.isVisible).isTrue()
+        assertThat(fifoPane.validateFields()).isFalse()
     }
 
     @Test
@@ -104,10 +102,7 @@ class SendMessagePaneTest : BaseCoroutineTest() {
             runBlocking { sendMessage() }
         }
 
-        assertThat(fifoPane.bodyErrorLabel.isVisible).isFalse()
-        assertThat(fifoPane.fifoFields.deduplicationErrorLabel.isVisible).isTrue()
-        assertThat(fifoPane.fifoFields.groupErrorLabel.isVisible).isFalse()
-        assertThat(fifoPane.fifoFields.deduplicationErrorLabel.text).isEqualTo(message("sqs.message.validation.long.id"))
+        assertThat(fifoPane.validateFields()).isFalse()
     }
 
     @Test

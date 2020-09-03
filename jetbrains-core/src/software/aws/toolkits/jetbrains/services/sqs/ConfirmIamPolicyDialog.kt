@@ -22,12 +22,12 @@ import java.awt.Component
 import javax.swing.JComponent
 
 class ConfirmIamPolicyDialog(
-    private val project: Project,
+    project: Project,
     private val iamClient: IamClient,
     private val lambdaClient: LambdaClient,
     private val functionName: String,
     private val queue: Queue,
-    private val parent: Component? = null
+    parent: Component? = null
 ) : DialogWrapper(project, parent, false, IdeModalityType.PROJECT), CoroutineScope by ApplicationThreadPoolScope("ConfirmIamPolicy") {
     private val rolePolicy: String by lazy { createSqsPollerPolicy(queue.arn) }
     private val policyName: String by lazy { "AWSLambdaSQSPollerExecutionRole-$functionName-${queue.queueName}-${queue.region.id}" }

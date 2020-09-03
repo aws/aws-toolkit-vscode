@@ -34,25 +34,35 @@ class QueueTest {
     @Test
     fun `AWS region endpoint parsed`() {
         val queueRegion = AwsRegion("us-west-2", "US West (Oregon)", "aws")
-        val queue = Queue("https://sqs.us-west-2.amazonaws.com/123456789012/test-3", queueRegion)
+        val queue = Queue("https://sqs.us-west-2.amazonaws.com/123456789012/test-_3", queueRegion)
 
-        assertThat(queue.arn).isEqualTo("arn:aws:sqs:us-west-2:123456789012:test-3")
+        assertThat(queue.arn).isEqualTo("arn:aws:sqs:us-west-2:123456789012:test-_3")
         assertThat(queue.accountId).isEqualTo("123456789012")
-        assertThat(queue.queueName).isEqualTo("test-3")
+        assertThat(queue.queueName).isEqualTo("test-_3")
     }
 
     @Test
-    fun `Throw exception with non-url`() {
+    fun `Throws exception with non-url`() {
         assertThatThrownBy { Queue("Not a URL", defaultRegion) }.isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test
-    fun `Throw exception with no name`() {
+    fun `Throws exception with no name`() {
         assertThatThrownBy { Queue("https://sqs.us-east-1.amazonaws.com/123456789012/", defaultRegion) }.isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test
-    fun `Throw exception with invalid account ID`() {
+    fun `Throws exception with invalid account ID`() {
         assertThatThrownBy { Queue("https://sqs.us-east-1.amazonaws.com/123/test-4", defaultRegion) }.isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
+    fun `Throws exception with blank account ID`() {
+        assertThatThrownBy {
+            Queue(
+                "https://sqs.us-east-1.amazonaws.com/            /test_a",
+                defaultRegion
+            )
+        }.isInstanceOf(IllegalArgumentException::class.java)
     }
 }
