@@ -4,7 +4,6 @@
  */
 
 import { safeLoad } from 'js-yaml'
-import * as _ from 'lodash'
 import * as vscode from 'vscode'
 import { CloudFormation } from './cloudformation'
 
@@ -44,19 +43,33 @@ export class TemplateSymbolResolver {
      */
     public async getResourcesOfKind(kind: 'function' | 'api'): Promise<TemplateFunctionResource[]> {
         const allSymbols = await this.symbolProvider.getSymbols(this.document)
-        const wantSymbol = kind === 'function' ? 'Resources' : 'Events'
-        let symbols
+        // Only want top level (TODO: is this actually true?)
+        const funSymbols = (
+            allSymbols.find(o => o.name === 'Resources' && o.kind === vscode.SymbolKind.Module)?.children ?? []
+        ).filter(r => this.isKind('function', r))
+        const apiSymbols: { name: string; range: vscode.Range; kind: 'function' | 'api' }[] = []
         if (kind === 'function') {
-            // Only want top level (todo: is this actually true?)
-            symbols = _(allSymbols).find({ name: wantSymbol, kind: vscode.SymbolKind.Module })?.children ?? []
-        } else {
-            symbols = this.findDescendants(allSymbols, wantSymbol, vscode.SymbolKind.Module)
+            return funSymbols.map(r => ({ name: r.name, range: r.range, kind: kind }))
         }
-        return _(symbols)
-            .filter({ kind: vscode.SymbolKind.Module })
-            .filter(r => this.isKind(kind, r))
-            .map(r => ({ name: r.name, range: r.range, kind: kind }))
-            .value()
+        // Api symbols:
+        //
+        // For each Function symbol, find its Api descendants, keeping
+        // track of the associated resource (Function) name.
+        for (let funSymbol of funSymbols) {
+            const found = this.findDescendants([funSymbol], 'Events', vscode.SymbolKind.Module).filter(r =>
+                this.isKind('api', r)
+            )
+            apiSymbols.push(
+                ...found.map(o => ({
+                    // We want the resource name of the Function node (not Api,
+                    // that node is always named "Events".)
+                    name: funSymbol.name,
+                    range: o.range,
+                    kind: kind,
+                }))
+            )
+        }
+        return apiSymbols
     }
 
     /**

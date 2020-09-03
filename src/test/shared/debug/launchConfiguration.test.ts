@@ -127,11 +127,13 @@ describe('LaunchConfiguration', () => {
         assert.deepStrictEqual(actual2.length, 1)
         assert.deepStrictEqual(actual2[0].name, 'test-launchconfig-6-python3.7')
         assert.deepStrictEqual(actual2[0].invokeTarget.target, 'api')
+        assert.deepStrictEqual((actual2[0].invokeTarget as any).logicalId, 'HelloWorldFunction')
 
         const actual3 = Array.from(getConfigsMappedToTemplates(new LaunchConfiguration(templateUriCsharp), 'api'))
         assert.deepStrictEqual(actual3.length, 1)
         assert.deepStrictEqual(actual3[0].name, 'test-launchconfig-8-api')
         assert.deepStrictEqual(actual3[0].invokeTarget.target, 'api')
+        assert.deepStrictEqual((actual3[0].invokeTarget as any).logicalId, 'HelloWorldFunction')
     })
 
     it('getConfigsMappedToTemplates(type=undefined) returns target=template + target=api resources', async () => {
