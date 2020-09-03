@@ -6,23 +6,27 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
 import com.intellij.ui.table.TableView
+import com.intellij.util.ExceptionUtil
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.time.delay
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
-import software.amazon.awssdk.services.cloudwatchlogs.model.GetQueryResultsRequest
+import software.amazon.awssdk.services.cloudwatchlogs.model.GetQueryResultsResponse
 import software.amazon.awssdk.services.cloudwatchlogs.model.QueryStatus
 import software.amazon.awssdk.services.cloudwatchlogs.model.ResourceNotFoundException
 import software.amazon.awssdk.services.cloudwatchlogs.model.ResultField
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
+import java.time.Duration
 
 sealed class QueryActor<T>(
     private val project: Project,
@@ -60,7 +64,17 @@ sealed class QueryActor<T>(
             is MessageLoadQueryResults.LoadNextQueryBatch -> {
                 if (moreResultsAvailable) {
                     withContext(edtContext) { table.setPaintBusy(true) }
-                    val items = loadNext()
+                    val items = try {
+                        loadNext()
+                    } catch (e: Exception) {
+                        LOG.warn(e) { "Exception thrown while trying to load more" }
+                        notifyError(
+                            project = project,
+                            title = message("cloudwatch.logs.exception"),
+                            content = ExceptionUtil.getThrowableText(e)
+                        )
+                        listOf<T>()
+                    }
                     withContext(edtContext) {
                         table.listTableModel.addRows(items)
                         table.setPaintBusy(false)
@@ -70,7 +84,16 @@ sealed class QueryActor<T>(
                 }
             }
             is MessageLoadQueryResults.LoadInitialQueryResults -> {
-                loadInitialQueryResults()
+                try {
+                    loadInitialQueryResults()
+                } catch (e: Exception) {
+                    LOG.warn(e) { "Exception thrown while performing initial load" }
+                    notifyError(
+                        project = project,
+                        title = message("cloudwatch.logs.exception"),
+                        content = ExceptionUtil.getThrowableText(e)
+                    )
+                }
                 val rect = table.getCellRect(0, 0, true)
                 withContext(edtContext) {
                     table.scrollRectToVisible(rect)
@@ -135,12 +158,19 @@ class QueryResultsActor(
     override val notFoundText = message("cloudwatch.logs.no_results_found")
 
     override suspend fun loadInitialQueryResults() {
-        var request = GetQueryResultsRequest.builder().queryId(queryId).build()
-        var response = client.getQueryResults(request)
-        while (response.results().size == 0) {
-            request = GetQueryResultsRequest.builder().queryId(queryId).build()
-            response = client.getQueryResults(request)
+        var response: GetQueryResultsResponse
+        while (true) {
+            response = client.getQueryResults {
+                it.queryId(queryId)
+            }
+
+            if (response.results().isNotEmpty() || response.status() == QueryStatus.COMPLETE) {
+                break
+            }
+
+            delay(Duration.ofSeconds(1))
         }
+
         val queryResults = response.results().filterNotNull()
         val listOfResults = queryResults.map { result ->
             result.map { it.field().toString() to it.value().toString() }.toMap()
@@ -152,8 +182,9 @@ class QueryResultsActor(
     }
 
     override suspend fun loadNext(): List<Map<String, String>> {
-        val request = GetQueryResultsRequest.builder().queryId(queryId).build()
-        val response = client.getQueryResults(request)
+        val response = client.getQueryResults {
+            it.queryId(queryId)
+        }
         moreResultsAvailable = response.status() != QueryStatus.COMPLETE
         return checkIfNewResult(response.results().filterNotNull())
     }
@@ -172,7 +203,24 @@ class QueryResultsActor(
         return listOfResults
     }
 
+    override fun dispose() {
+        try {
+            if (moreResultsAvailable) {
+                client.stopQuery {
+                    it.queryId(queryId)
+                }
+            }
+        } catch (e: Exception) {
+            // best effort; this will fail if the query raced to completion or user does not have permission
+            LOG.warn("Failed to stop query", e)
+        }
+
+        super.dispose()
+    }
+
     companion object {
+        private val LOG = getLogger<QueryResultsActor>()
+
         val queryResultsIdentifierList = arrayListOf<String>()
     }
 }

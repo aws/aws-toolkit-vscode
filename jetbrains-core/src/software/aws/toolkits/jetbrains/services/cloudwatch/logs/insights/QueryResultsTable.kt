@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Disposer
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.table.TableView
 import com.intellij.util.ui.ListTableModel
@@ -47,6 +48,7 @@ class QueryResultsTable(
         }
 
         queryActor = QueryResultsActor(project, client, resultsTable, queryId)
+        Disposer.register(this, queryActor)
         channel = queryActor.channel
         component = ScrollPaneFactory.createScrollPane(resultsTable).also {
             it.bottomReached {
