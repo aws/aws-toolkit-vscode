@@ -31,6 +31,9 @@ class IamAuthWidgetTest {
     private val defaultRegion = RuleUtils.randomName()
     private val mockCreds = AwsBasicCredentials.create("Access", "ItsASecret")
 
+    private val hostParameter = "host"
+    private val portParameter = "port"
+
     @Before
     fun setUp() {
         widget = IamAuthWidget()
@@ -85,31 +88,20 @@ class IamAuthWidgetTest {
     }
 
     @Test
-    fun `Sets instance from URL`() {
-        widget.reset(mock(), false)
-        val endpointUrl = "jdbc:postgresql://abc.host.$defaultRegion.rds.amazonaws.com:5432/dev"
-        widget.updateFromUrl(mock<UrlEditorModel> { on { url } doReturn endpointUrl })
-        assertThat(widget.getInstanceId()).isEqualTo("abc")
+    fun `Save saves set signing host and port if set`() {
+        widget.reset(mock { on { additionalJdbcProperties } doReturn mapOf(RDS_SIGNING_HOST_PROPERTY to "host", RDS_SIGNING_PORT_PROPERTY to "port") }, false)
+        val m = mutableMapOf<String, String>()
+        widget.save(mock { on { additionalJdbcProperties } doReturn m }, false)
+        assertThat(m[RDS_SIGNING_HOST_PROPERTY]).isEqualTo("host")
+        assertThat(m[RDS_SIGNING_PORT_PROPERTY]).isEqualTo("port")
     }
 
     @Test
-    fun `Does not unset instance on invalid url`() {
-        widget.reset(mock(), false)
-        val endpointUrl = "jdbc:postgresql://abc.host.$defaultRegion.rds.amazonaws.com:5432/dev"
-        widget.updateFromUrl(mock<UrlEditorModel> { on { url } doReturn endpointUrl })
-        val badUrl = "jdbc:postgresql://abcdefg/dev"
-        widget.updateFromUrl(mock<UrlEditorModel> { on { url } doReturn badUrl })
-        assertThat(widget.getInstanceId()).isEqualTo("abc")
-    }
-
-    @Test
-    fun `Does not change instance on editing url`() {
-        widget.reset(mock(), false)
-        val endpointUrl = "jdbc:postgresql://def.host.$defaultRegion.rds.amazonaws.com:5432/dev"
-        widget.updateFromUrl(mock<UrlEditorModel> { on { url } doReturn endpointUrl })
-        val badUrl = "jdbc:postgresql://aurorawriter.host.$defaultRegion.rds.amazonaws.com:5432/dev"
-        widget.updateFromUrl(mock<UrlEditorModel> { on { url } doReturn badUrl })
-        assertThat(widget.getInstanceId()).isEqualTo("def")
+    fun `Save saves null signing host and port if not set`() {
+        val m = mutableMapOf<String, String>()
+        widget.save(mock { on { additionalJdbcProperties } doReturn m }, false)
+        assertThat(m[RDS_SIGNING_HOST_PROPERTY]).isNull()
+        assertThat(m[RDS_SIGNING_PORT_PROPERTY]).isNull()
     }
 
     private fun buildDataSource(

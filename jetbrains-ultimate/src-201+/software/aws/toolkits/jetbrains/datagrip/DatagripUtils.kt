@@ -49,3 +49,7 @@ fun jdbcAdapterFromRuntime(runtime: String?): String? = when (runtime) {
 // which matches up with the engine field for mysql, postgres, and redshift which is what we currently
 // support. TODO find a more direct way to do this
 fun ProtoConnection.getDatabaseEngine() = connectionPoint.databaseDriver.id
+
+// The format for a jdbc url is: jdbc:<drivertype>://<host>:<port>/<dbName>
+fun String?.hostFromJdbcString(): String? = this?.substringAfter("://")?.substringBefore(":")
+fun String?.portFromJdbcString(): String? = this?.substringAfter("://")?.substringAfter(":")?.substringBefore("/")
