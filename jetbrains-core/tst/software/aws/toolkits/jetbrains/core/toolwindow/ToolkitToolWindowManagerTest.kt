@@ -33,6 +33,20 @@ class ToolkitToolWindowManagerTest {
     }
 
     @Test
+    fun canRefreshAnExistingToolWindow() {
+        val testToolWindow = aToolkitToolWindow()
+
+        val sut = ToolkitToolWindowManager.getInstance(projectRule.project, testToolWindow)
+
+        val component = JLabel().also { it.text = "Hello" }
+        sut.addTab("Refreshable", component, refresh = { component.text = "World" })
+
+        sut.find("Refreshable")?.show(refresh = true)
+
+        assertThat(component.text).isEqualTo("World")
+    }
+
+    @Test
     fun toolWindowIsRemovedWhenAllComponentsAreClosed() {
         val testToolWindow = aToolkitToolWindow()
 
