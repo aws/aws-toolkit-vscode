@@ -22,6 +22,7 @@ describe('LogStreamDocumentProvider', () => {
                 message,
             },
         ],
+        busy: false,
     }
 
     beforeEach(() => {

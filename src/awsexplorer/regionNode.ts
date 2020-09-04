@@ -8,7 +8,6 @@ import { SchemasNode } from '../eventSchemas/explorer/schemasNode'
 import { CloudFormationNode } from '../lambda/explorer/cloudFormationNodes'
 import { CloudWatchLogsNode } from '../cloudWatchLogs/explorer/cloudWatchLogsNode'
 import { LambdaNode } from '../lambda/explorer/lambdaNodes'
-import { ActiveFeatureKeys, FeatureToggle } from '../shared/featureToggle'
 import { S3Node } from '../s3/explorer/s3Nodes'
 import { DefaultS3Client } from '../shared/clients/defaultS3Client'
 import { Region } from '../shared/regions/endpoints'
@@ -46,11 +45,7 @@ export class RegionNode extends AWSTreeNodeBase {
         //  This interface exists so we can add additional nodes to the array (otherwise Typescript types the array to what's already in the array at creation)
         const serviceCandidates = [
             { serviceId: 'cloudformation', createFn: () => new CloudFormationNode(this.regionCode) },
-            // Feature Toggle for CloudWatch Logs
-            // REMOVE_WHEN_CLOUDWATCH_LOGS_READY
-            ...(FeatureToggle.getFeatureToggle().isFeatureActive(ActiveFeatureKeys.CloudWatchLogs)
-                ? [{ serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) }]
-                : []),
+            { serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) },
             { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },
             {
                 serviceId: 's3',

@@ -13,21 +13,23 @@ phases:
 
         commands:
             # Install required keys and repos for .NET Core 2.1
-            - apt-get update
+            - '>/dev/null apt-get -qq update'
             - wget -q https://packages.microsoft.com/keys/microsoft.asc -O- | apt-key add -
-            - wget -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-            - dpkg -i packages-microsoft-prod.deb
-            - add-apt-repository universe
-            - apt-get install -y apt-transport-https
-            - apt-get update
+            - '>/dev/null wget -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb'
+            - '>/dev/null dpkg -i packages-microsoft-prod.deb'
+            - '>/dev/null add-apt-repository universe'
+            - '>/dev/null apt-get -qq install -y apt-transport-https'
+            - '>/dev/null apt-get -qq update'
             # Install .NET Core 2.1
-            - apt-get install -y dotnet-sdk-2.1
+            - '>/dev/null apt-get -qq install -y dotnet-sdk-2.1'
             # Install other needed dependencies
-            - apt-get install -y python2.7 python-pip python3.6 python3.7 python3.8 python3-pip python3-distutils docker
-            - apt-get install -y libgtk-3-dev libxss1 xvfb libnss3-dev libasound2 libasound2-plugins libsecret-1-0
-            - pip3 install --user aws-sam-cli
-            - pip3 install --upgrade awscli
-            - pip3 install pylint
+            - '>/dev/null apt-get -qq install -y jq python2.7 python-pip python3.6 python3.7 python3.8 python3-pip python3-distutils docker'
+            - '>/dev/null apt-get -qq install -y libgtk-3-dev libxss1 xvfb libnss3-dev libasound2 libasound2-plugins libsecret-1-0'
+            - '>/dev/null pip3 install --user aws-sam-cli'
+            - '>/dev/null pip3 install --upgrade awscli'
+            - '>/dev/null pip3 install pylint'
+            # login to DockerHub so we don't get throttled
+            - docker login --username $(echo $DOCKER_HUB_TOKEN | jq -r '.username') --password $(echo $DOCKER_HUB_TOKEN | jq -r '.password') || true
 
     pre_build:
         commands:
@@ -37,13 +39,13 @@ phases:
             - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay&
             - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
             # Pull SAM related images to avoid delays/timeouts during 'sam local invoke' calls within tests
-            - docker pull lambci/lambda:nodejs8.10
-            - docker pull lambci/lambda:nodejs10.x
-            - docker pull lambci/lambda:nodejs12.x
-            - docker pull lambci/lambda:python2.7
-            - docker pull lambci/lambda:python3.6
-            - docker pull lambci/lambda:python3.7
-            - docker pull lambci/lambda:python3.8
+            - docker pull -q lambci/lambda:nodejs8.10
+            - docker pull -q lambci/lambda:nodejs10.x
+            - docker pull -q lambci/lambda:nodejs12.x
+            - docker pull -q lambci/lambda:python2.7
+            - docker pull -q lambci/lambda:python3.6
+            - docker pull -q lambci/lambda:python3.7
+            - docker pull -q lambci/lambda:python3.8
 
     build:
         commands:

@@ -17,8 +17,10 @@ import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { listLambdaFunctions } from '../utils'
 import { LambdaFunctionNode } from './lambdaFunctionNode'
+import { samLambdaImportableRuntimes } from '../models/samLambdaRuntime'
 
 export const CONTEXT_VALUE_LAMBDA_FUNCTION = 'awsRegionFunctionNode'
+export const CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE = 'awsRegionFunctionNodeImportable'
 
 /**
  * An AWS Explorer node representing the Lambda Service.
@@ -70,7 +72,9 @@ function makeLambdaFunctionNode(
     configuration: Lambda.FunctionConfiguration
 ): LambdaFunctionNode {
     const node = new LambdaFunctionNode(parent, regionCode, configuration)
-    node.contextValue = CONTEXT_VALUE_LAMBDA_FUNCTION
+    node.contextValue = samLambdaImportableRuntimes.contains(node.configuration.Runtime ?? '')
+        ? CONTEXT_VALUE_LAMBDA_FUNCTION_IMPORTABLE
+        : CONTEXT_VALUE_LAMBDA_FUNCTION
 
     return node
 }

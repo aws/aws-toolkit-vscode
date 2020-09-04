@@ -40,16 +40,26 @@ async function generateServiceClients(serviceClientDefinitions: ServiceClientDef
     }
 }
 
+/** When cloning aws-sdk-js, we want to pull the version actually used in package-lock.json. */
+function getJsSdkVersion(): string {
+    const json = fs.readFileSync(path.resolve(__dirname, '..', 'package-lock.json')).toString()
+    const packageLock = JSON.parse(json)
+
+    return packageLock['dependencies']['aws-sdk']['version']
+}
+
 async function cloneJsSdk(destinationPath: string): Promise<void> {
     console.log('Cloning AWS JS SDK...')
 
     // Output stderr while it clones so it doesn't look frozen
     return new Promise<void>((resolve, reject) => {
+        const sdkVersion = `v${getJsSdkVersion()}`
+        console.log(`Using tag: ${sdkVersion}`)
         const exec = child_process.execFile(
             'git',
-            ['clone', '--depth', '1', 'https://github.com/aws/aws-sdk-js.git', destinationPath],
+            ['clone', '-b', sdkVersion, '--depth', '1', 'https://github.com/aws/aws-sdk-js.git', destinationPath],
             {
-                encoding: 'utf8'
+                encoding: 'utf8',
             }
         )
 
@@ -128,7 +138,7 @@ async function runTypingsGenerator(repoPath: string): Promise<void> {
 
     const stdout = child_process.execFileSync('node', ['scripts/typings-generator.js'], {
         encoding: 'utf8',
-        cwd: repoPath
+        cwd: repoPath,
     })
     console.log(stdout)
 }
@@ -194,8 +204,8 @@ ${fileContents}
     const serviceClientDefinitions: ServiceClientDefinition[] = [
         {
             serviceJsonPath: 'src/shared/telemetry/service-2.json',
-            serviceName: 'ClientTelemetry'
-        }
+            serviceName: 'ClientTelemetry',
+        },
     ]
     await generateServiceClients(serviceClientDefinitions)
 })()
