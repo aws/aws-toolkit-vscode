@@ -571,6 +571,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.uploadLambda",
+                    "when": "false"
+                },
+                {
                     "command": "aws.invokeLambda",
                     "when": "false"
                 },
@@ -783,6 +787,11 @@
                     "command": "aws.importLambda",
                     "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/",
                     "group": "0@2"
+                },
+                {
+                    "command": "aws.uploadLambda",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/",
+                    "group": "1@1"
                 },
                 {
                     "command": "aws.deleteLambda",
@@ -1009,6 +1018,12 @@
                 "title": "%AWS.command.importLambda%",
                 "category": "AWS",
                 "enablement": "viewItem == awsRegionFunctionNodeImportable"
+            },
+            {
+                "command": "aws.uploadLambda",
+                "title": "%AWS.command.uploadLambda%",
+                "category": "AWS",
+                "enablement": "viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/"
             },
             {
                 "command": "aws.deleteLambda",

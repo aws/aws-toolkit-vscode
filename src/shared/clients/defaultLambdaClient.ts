@@ -70,6 +70,26 @@ export class DefaultLambdaClient implements LambdaClient {
         }
     }
 
+    public async updateFunctionCode(name: string, zipFile: Buffer): Promise<Lambda.FunctionConfiguration> {
+        getLogger().debug(`updateFunctionCode called for function: ${name}`)
+        const client = await this.createSdkClient()
+
+        try {
+            const response = await client
+                .updateFunctionCode({
+                    FunctionName: name,
+                    Publish: true,
+                    ZipFile: zipFile,
+                })
+                .promise()
+            getLogger().debug('updateFunctionCode returned response: %O', response)
+            return response
+        } catch (e) {
+            getLogger().error('Failed to run updateFunctionCode: %O', e)
+            throw e
+        }
+    }
+
     private async createSdkClient(): Promise<Lambda> {
         return await ext.sdkClientBuilder.createAndConfigureServiceClient(
             options => new Lambda(options),
