@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "Lambda functions can be updated with code from ZIP files and directories containing built or unbuilt code"
+}

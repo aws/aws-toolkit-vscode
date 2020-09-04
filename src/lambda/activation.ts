@@ -7,7 +7,9 @@ import * as vscode from 'vscode'
 import { ext } from '../shared/extensionGlobals'
 import { deleteLambda } from './commands/deleteLambda'
 import { invokeLambda } from './commands/invokeLambda'
+import { uploadLambdaCommand } from './commands/uploadLambda'
 import { LambdaFunctionNode } from './explorer/lambdaFunctionNode'
+import { importLambdaCommand } from './commands/importLambda'
 
 /**
  * Activates Lambda components.
@@ -34,6 +36,13 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
                     functionNode: node,
                     outputChannel,
                 })
-        )
+        ),
+        vscode.commands.registerCommand(
+            'aws.importLambda',
+            async (node: LambdaFunctionNode) => await importLambdaCommand(node)
+        ),
+        vscode.commands.registerCommand('aws.uploadLambda', async (node: LambdaFunctionNode) => {
+            await uploadLambdaCommand(node)
+        })
     )
 }
