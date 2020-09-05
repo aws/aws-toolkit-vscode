@@ -476,6 +476,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 // Node-related fields
                 //
                 address: 'localhost',
+                apiPort: actual.apiPort,
                 port: actual.debugPort,
                 preLaunchTask: undefined,
                 protocol: 'inspector',
@@ -598,6 +599,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 // Node-related fields
                 //
                 address: 'localhost',
+                apiPort: actual.apiPort,
                 port: actual.debugPort,
                 preLaunchTask: undefined,
                 protocol: 'inspector',
@@ -686,6 +688,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: expectedCodeRoot, // Normalized to absolute path.
+                apiPort: actual.apiPort,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'HelloWorld::HelloWorld.Function::FunctionHandler',
@@ -827,6 +830,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: expectedCodeRoot,
+                apiPort: actual.apiPort,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'HelloWorld::HelloWorld.Function::FunctionHandler',
@@ -995,6 +999,7 @@ Outputs:
                 debugArgs: [
                     `/tmp/lambci_debug_files/py_debug_wrapper.py --host 0.0.0.0 --port ${actual.debugPort} --wait`,
                 ],
+                apiPort: actual.apiPort,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 invokeTarget: { ...input.invokeTarget },
@@ -1112,6 +1117,7 @@ Outputs:
                 debugArgs: [
                     `/tmp/lambci_debug_files/py_debug_wrapper.py --host 0.0.0.0 --port ${actual.debugPort} --wait`,
                 ],
+                apiPort: actual.apiPort,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 invokeTarget: { ...input.invokeTarget },
@@ -1286,6 +1292,7 @@ Outputs:
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
+                apiPort: actual.apiPort,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'my.test.handler',
@@ -1430,6 +1437,7 @@ Resources:
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
+                apiPort: actual.apiPort,
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'my.test.handler',

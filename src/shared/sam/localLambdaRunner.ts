@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { copyFile, unlink, writeFile } from 'fs-extra'
+import { copyFile, unlink, readFile, writeFile } from 'fs-extra'
 import * as path from 'path'
+import * as request from 'request'
 import * as tcpPortUsed from 'tcp-port-used'
 import * as vscode from 'vscode'
 import { getTemplate, getTemplateResource } from '../../lambda/local/debugConfiguration'
@@ -15,6 +16,7 @@ import * as pathutils from '../../shared/utilities/pathUtils'
 import { getLogger } from '../logger'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { recordLambdaInvokeLocal, Result, Runtime, recordSamAttachDebugger } from '../telemetry/telemetry'
+import * as telemetry from '../telemetry/telemetry'
 import { TelemetryService } from '../telemetry/telemetryService'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { ExtensionDisposableFiles } from '../utilities/disposableFiles'
@@ -29,6 +31,7 @@ import { SamLaunchRequestArgs } from './debugger/awsSamDebugger'
 import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
 import { buildSamCliStartApiArguments } from './cli/samCliStartApi'
 import { DefaultSamCliProcessInvoker, DefaultSamCliProcessInvokerContext } from './cli/samCliInvoker'
+import { APIGatewayProperties } from './debugger/awsSamDebugConfiguration.gen'
 
 // TODO: remove this and all related code.
 export interface LambdaLocalInvokeParams {
@@ -151,13 +154,12 @@ export async function invokeLambdaFunction(
     // Switch over to the output channel so the user has feedback that we're getting things ready
     ctx.chanLogger.channel.show(true)
     if (!config.noDebug) {
-        ctx.chanLogger.info(
-            'AWS.output.sam.local.startDebug',
-            "Preparing to debug '{0}' locally...",
-            config.handlerName
-        )
+        const msg =
+            (config.invokeTarget.target === 'api' ? `API "${config.api?.path}", ` : '') +
+            `Lambda "${config.handlerName}"`
+        ctx.chanLogger.info('AWS.output.sam.local.startDebug', 'Preparing to debug locally: {0}', msg)
     } else {
-        ctx.chanLogger.info('AWS.output.sam.local.startRun', "Preparing to run '{0}' locally...", config.handlerName)
+        ctx.chanLogger.info('AWS.output.sam.local.startRun', 'Preparing to run locally: {0}', config.handlerName)
     }
 
     const processInvoker = new DefaultSamCliProcessInvoker()
@@ -228,6 +230,7 @@ export async function invokeLambdaFunction(
             dockerNetwork: config.sam?.dockerNetwork,
             environmentVariablePath: config.envFile,
             environmentVariables: envVars,
+            port: config.apiPort?.toString(),
             debugPort: debugPort,
             debuggerPath: config.debuggerPath,
             debugArgs: config.debugArgs,
@@ -236,9 +239,17 @@ export async function invokeLambdaFunction(
             extraArgs: config.sam?.localArguments,
         })
 
-        let invokeResult: Result = 'Failed'
-        try {
-            await config.samLocalInvokeCommand!.invoke({
+        function recordApigwTelemetry(result: telemetry.Result) {
+            telemetry.recordApigatewayInvokeLocal({
+                result: result,
+                runtime: config.runtime as Runtime,
+                debug: !config.noDebug,
+                httpMethod: config.api?.httpMethod,
+            })
+        }
+
+        config
+            .samLocalInvokeCommand!.invoke({
                 options: {
                     env: {
                         ...process.env,
@@ -247,23 +258,21 @@ export async function invokeLambdaFunction(
                 },
                 command: samCommand,
                 args: samArgs,
-                isDebug: !!debugPort,
+                isDebug: !config.noDebug,
                 timeout: timer,
             })
-            invokeResult = 'Succeeded'
-        } catch (err) {
-            ctx.chanLogger.error(
-                'AWS.error.during.sam.local',
-                'Failed to run SAM Application locally: {0}',
-                err as Error
-            )
-        } finally {
-            recordLambdaInvokeLocal({
-                result: invokeResult,
-                runtime: config.runtime as Runtime,
-                debug: !config.noDebug,
+            .then(r => {
+                recordApigwTelemetry('Succeeded')
             })
-        }
+            .catch(e => {
+                recordApigwTelemetry('Failed')
+                getLogger().warn(e as Error)
+                ctx.chanLogger.error(
+                    'AWS.error.during.apig.local',
+                    'Failed to start local API Gateway: {0}',
+                    e as Error
+                )
+            })
     } else {
         // 'target=code' or 'target=template'
         const localInvokeArgs: SamCliLocalInvokeInvocationArguments = {
@@ -305,8 +314,8 @@ export async function invokeLambdaFunction(
 
     if (!config.noDebug) {
         if (config.onWillAttachDebugger) {
-            messageUserWaitingToAttach(ctx.chanLogger)
-            await config.onWillAttachDebugger(config.debugPort!, timer, ctx.chanLogger)
+            ctx.chanLogger.info('AWS.output.sam.local.waiting', 'Waiting for SAM application to start...')
+            config.onWillAttachDebugger(config.debugPort!, timer, ctx.chanLogger)
         }
     }
     // HACK: remove non-serializable properties before attaching.
@@ -316,7 +325,7 @@ export async function invokeLambdaFunction(
     config.samLocalInvokeCommand = undefined
 
     if (!config.noDebug) {
-        const attachResults = await attachDebugger({
+        const tryAttach = attachDebugger({
             debugConfig: config,
             maxRetries,
             retryDelayMillis: ATTACH_DEBUGGER_RETRY_DELAY_MILLIS,
@@ -331,12 +340,85 @@ export async function invokeLambdaFunction(
                 })
             },
         })
-        if (attachResults.success) {
-            await showDebugConsole()
+            .then(r => {
+                if (r.success) {
+                    showDebugConsole()
+                }
+            })
+            .catch(e => {
+                getLogger().error(`Failed to debug: ${e}`)
+                ctx.chanLogger.channel.appendLine(`Failed to debug: ${e}`)
+            })
+
+        if (config.invokeTarget.target !== 'api') {
+            await tryAttach
+        } else {
+            const payload = JSON.parse(await readFile(config.eventPayloadFile, { encoding: 'utf-8' }))
+            await requestLocalApi(ctx, config.api!, config.apiPort!, payload)
+            const timer2 = createInvokeTimer(ctx.settings)
+            await waitForPort(config.apiPort!, timer2, ctx.chanLogger, false)
+            await tryAttach
         }
     }
 
     return config
+}
+
+/**
+ * Sends an HTTP request to the local API webserver, which invokes the backing
+ * Lambda, which will then enter debugging.
+ */
+function requestLocalApi(ctx: ExtContext, api: APIGatewayProperties, apiPort: number, payload: any): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const reqMethod = api?.httpMethod?.toUpperCase() ?? 'GET'
+        let reqOpts = {
+            // Sets body to JSON value and adds Content-type: application/json header.
+            json: true,
+            uri: `http://127.0.0.1:${apiPort}${api?.path}`,
+            method: reqMethod,
+            timeout: 4000,
+            headers: api?.headers,
+            body: payload,
+            qs: api?.querystring,
+            // TODO: api?.stageVariables,
+        }
+        ctx.chanLogger.info('AWS.sam.localApi.request', `Sending request to local API: ${reqOpts.uri}`)
+
+        async function retryRequest(retries: number, retriesRemaining: number) {
+            if (retriesRemaining !== retries) {
+                await new Promise<void>(r => setTimeout(r, 200))
+            }
+            request(reqOpts)
+                .on('response', resp => {
+                    getLogger().debug('Response from local API: %O: %O', reqOpts.uri, JSON.stringify(resp))
+                    resolve()
+                })
+                .on('complete', () => {
+                    resolve()
+                })
+                .on('error', e => {
+                    if ((e as any).code === 'ESOCKETTIMEDOUT') {
+                        // HACK: request timeout (as opposed to ECONNREFUSED)
+                        // is a hint that debugger is attached, so we can stop requesting now.
+                        getLogger().debug('Request failed, local API: %O: %O', reqOpts.uri, e)
+                        resolve()
+                        return
+                    }
+                    getLogger().debug(
+                        `Retrying request (${retries - retriesRemaining} of ${retries}), local API: ${reqOpts.uri}: ${
+                            e.name
+                        }`
+                    )
+                    if (retriesRemaining > 0) {
+                        retryRequest(retries, retriesRemaining - 1)
+                    } else {
+                        // Timeout: local APIGW took too long to respond.
+                        reject(`Local API failed to respond (wrong path?): ${api?.path}`)
+                    }
+                })
+        }
+        retryRequest(30, 30)
+    })
 }
 
 export interface AttachDebuggerContext {
@@ -412,23 +494,35 @@ export async function attachDebugger({
     }
 }
 
-export async function waitForDebugPort(
-    debugPort: number,
-    timeoutDuration: Timeout,
-    channelLogger: ChannelLogger
+/**
+ * Waits for a port to be in use.
+ *
+ * @param port  Port number to wait for
+ * @param timeout  Time to wait
+ * @param channelLogger  Logger
+ * @param isDebugPort  Is this a debugger port or a `sam local start-api` HTTP port?
+ */
+export async function waitForPort(
+    port: number,
+    timeout: Timeout,
+    channelLogger: ChannelLogger,
+    isDebugPort: boolean = true
 ): Promise<void> {
-    const remainingTime = timeoutDuration.remainingTime
+    const remainingTime = timeout.remainingTime
     try {
         // this function always attempts once no matter the timeoutDuration
-        await tcpPortUsed.waitUntilUsed(debugPort, SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS, remainingTime)
+        await tcpPortUsed.waitUntilUsed(port, SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS, remainingTime)
     } catch (err) {
-        getLogger().warn(`Timed out after ${remainingTime} ms waiting for port ${debugPort} to open: %O`, err as Error)
-
-        channelLogger.warn(
-            'AWS.samcli.local.invoke.port.not.open',
-            // tslint:disable-next-line:max-line-length
-            "The debug port doesn't appear to be open. The debugger might not succeed when attaching to your SAM Application."
-        )
+        getLogger().warn(`Timed out after ${remainingTime} ms waiting for port ${port} to open: %O`, err as Error)
+        if (isDebugPort) {
+            channelLogger.warn(
+                'AWS.samcli.local.invoke.portUnavailable',
+                'Port {0} is unavailable. Debugger may fail to attach.',
+                port.toString()
+            )
+        } else {
+            channelLogger.warn('AWS.apig.portUnavailable', 'Port is unavailable: {0}', port.toString())
+        }
     }
 }
 
@@ -490,13 +584,6 @@ async function showDebugConsole(): Promise<void> {
     }
 }
 
-function messageUserWaitingToAttach(channelLogger: ChannelLogger) {
-    channelLogger.info(
-        'AWS.output.sam.local.waiting',
-        'Waiting for SAM Application to start before attaching debugger...'
-    )
-}
-
 /**
  * Common logic shared by `makeCsharpConfig`, `makeTypescriptConfig`, `makePythonDebugConfig`.
  *
@@ -523,10 +610,17 @@ export async function makeConfig(config: SamLaunchRequestArgs): Promise<void> {
     await writeFile(config.envFile, env)
 
     // event.json
-    if (config.lambda?.payload?.path) {
-        const fullpath = tryGetAbsolutePath(config.workspaceFolder, config.lambda?.payload?.path)
+    const payloadObj = config.lambda?.payload?.json ?? config.api?.payload?.json
+    const payloadPath = config.lambda?.payload?.path ?? config.api?.payload?.path
+    if (payloadPath) {
+        const fullpath = tryGetAbsolutePath(config.workspaceFolder, payloadPath)
+        try {
+            JSON.parse(await readFile(payloadPath, { encoding: 'utf-8' }))
+        } catch (e) {
+            throw Error(`Invalid JSON in payload file: ${payloadPath}`)
+        }
         await copyFile(fullpath, config.eventPayloadFile)
     } else {
-        await writeFile(config.eventPayloadFile, JSON.stringify(config.lambda?.payload?.json || {}))
+        await writeFile(config.eventPayloadFile, JSON.stringify(payloadObj || {}))
     }
 }
