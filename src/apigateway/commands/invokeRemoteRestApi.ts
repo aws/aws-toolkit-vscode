@@ -138,7 +138,7 @@ export function createMessageReceivedFunc({
             if (!selectedResourceId) {
                 throw new Error(`Vue called 'apiResourceSelected', but no resourceId was provided!`)
             }
-            logger.info(`Selected ${selectedResourceId}`)
+            logger.verbose(`Selected ${selectedResourceId}`)
             postMessage({
                 command: 'setMethods',
                 methods: listValidMethods(resources, selectedResourceId),

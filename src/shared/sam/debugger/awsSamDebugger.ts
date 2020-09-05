@@ -119,6 +119,8 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
     debuggerPath?: string
     debugArgs?: string[]
     debugPort?: number
+    /** Local API webserver port. */
+    apiPort?: number
 
     /**
      * Credentials to add as env vars if available
@@ -380,6 +382,10 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             }
         }
 
+        if (config.api) {
+            config.api.headers = ['Content-Type: application/json', ...(config.api.headers ? config.api.headers : [])]
+        }
+
         let parameterOverrideArr: string[] | undefined
         const params = config.sam?.template?.parameters
         if (params) {
@@ -389,6 +395,10 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             }
         }
 
+        // TODO: Let the OS (or SAM CLI) assign the port, then we need to
+        // scrape SAM CLI to find the port that was actually used?
+        const apiPort = config.invokeTarget.target === 'api' ? await getStartPort() : undefined
+        const debugPort = config.noDebug ? undefined : (apiPort ?? (await getStartPort())) + 1
         let launchConfig: SamLaunchRequestArgs = {
             ...config,
             request: 'attach',
@@ -401,7 +411,8 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             templatePath: pathutil.normalize(templateInvoke?.templatePath),
             eventPayloadFile: '', // Populated by makeConfig().
             envFile: '', // Populated by makeConfig().
-            debugPort: config.noDebug ? undefined : await getStartPort(),
+            apiPort: apiPort,
+            debugPort: debugPort,
             lambda: {
                 ...config.lambda,
                 memoryMb: lambdaMemory,
