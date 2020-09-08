@@ -3,4 +3,9 @@
 
 package software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights
 
-const val default_query = "fields @timestamp, @message| sort @timestamp desc| limit 20"
+const val DEFAULT_INSIGHTS_QUERY_STRING =
+"""
+fields @timestamp, @message
+| sort @timestamp desc
+| limit 20
+"""

@@ -8,25 +8,26 @@ import com.intellij.util.ui.ListTableModel
 import software.aws.toolkits.resources.message
 import javax.swing.table.TableCellEditor
 
+// TODO: fix this whole thing
 class AddRemoveLogGroupTable(project: Project) : ListTableWithButtons<SelectedLogGroups> () {
     init {
         // Currently shows a sample table
         // TODO Display log entries, Add and Remove log groups
     }
-    override fun cloneElement(variable: SelectedLogGroups): SelectedLogGroups = variable.copy()
-    override fun createElement(): SelectedLogGroups = SelectedLogGroups()
+    override fun cloneElement(variable: SelectedLogGroups): SelectedLogGroups = variable
+    override fun createElement(): SelectedLogGroups = mutableListOf()
     fun getSelLogGroups(): List<SelectedLogGroups> = elements.toList()
 
     override fun createListModel(): ListTableModel<*> = ListTableModel<SelectedLogGroups>(
         StringColInfo(
             message("cloudwatch.logs.selected_log_groups"),
-            { it.logGroups },
-            { mapping, value -> mapping.logGroups = value }
+            { it.first() },
+            { mapping, value -> }
         )
     )
 
     override fun canDeleteElement(selection: SelectedLogGroups?): Boolean = true
-    override fun isEmpty(element: SelectedLogGroups): Boolean = element.logGroups.isNullOrEmpty()
+    override fun isEmpty(element: SelectedLogGroups): Boolean = element.isNullOrEmpty()
 
     private inner class StringColInfo(
         name: String,

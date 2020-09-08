@@ -21,7 +21,7 @@ import javax.swing.JComponent
 class QueryResultsTable(
     project: Project,
     client: CloudWatchLogsClient,
-    fieldList: List<String>,
+    fields: List<String>,
     queryId: String
 ) : CoroutineScope by ApplicationThreadPoolScope("QueryResultsTable"), Disposable {
     val component: JComponent
@@ -30,7 +30,7 @@ class QueryResultsTable(
     private val queryActor: QueryActor<Map<String, String>>
 
     init {
-        val columnInfo = fieldList.map {
+        val columnInfo = fields.map {
             ColumnInfoDetails(it)
         }.toTypedArray()
 

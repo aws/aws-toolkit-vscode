@@ -18,20 +18,21 @@ import javax.swing.JPanel
 
 class QueryResultList(
     private val project: Project,
-    private val fieldList: List<String>,
-    private val queryId: String,
-    private val selectedLogGroup: String
+    fields: List<String>,
+    queryId: String,
+    private val queryDetails: QueryDetails
 ) : CoroutineScope by ApplicationThreadPoolScope("CloudWatchLogsGroup"), Disposable {
     lateinit var resultsPanel: JPanel
     private lateinit var tablePanel: SimpleToolWindowPanel
     private lateinit var openQueryEditor: JButton
     private lateinit var resultsTitle: JLabel
     val client: CloudWatchLogsClient = project.awsClient()
-    private val resultsTable: QueryResultsTable = QueryResultsTable(project, client, fieldList, queryId)
+    private val resultsTable: QueryResultsTable = QueryResultsTable(project, client, fields, queryId)
+
     private fun createUIComponents() {
-        // TODO: place custom component creation code here
         tablePanel = SimpleToolWindowPanel(false, true)
     }
+
     init {
         openQueryEditor.text = message("cloudwatch.logs.query")
         resultsTitle.text = message("cloudwatch.logs.query_result")
@@ -39,12 +40,14 @@ class QueryResultList(
         tablePanel.setContent(resultsTable.component)
         loadInitialResultsTable()
         openQueryEditor.addActionListener {
-            QueryEditorDialog(project, selectedLogGroup, initialParametersDisplayed = false).show()
+            QueryEditorDialog(project, queryDetails).show()
         }
     }
+
     private fun loadInitialResultsTable() {
         launch { resultsTable.channel.send(QueryActor.MessageLoadQueryResults.LoadInitialQueryResults) }
     }
+
     override fun dispose() {
     }
 }
