@@ -31,7 +31,7 @@ class SendMessagePane(
     lateinit var inputText: JBTextArea
     lateinit var sendButton: UpdateButton
     lateinit var clearButton: JButton
-    lateinit var confirmationLabel: JLabel
+    lateinit var messageSentLabel: JLabel
     lateinit var fifoFields: FifoPanel
     lateinit var scrollPane: JScrollPane
 
@@ -45,7 +45,7 @@ class SendMessagePane(
         if (!queue.isFifo) {
             fifoFields.component.isVisible = false
         }
-        confirmationLabel.isVisible = false
+        messageSentLabel.isVisible = false
     }
 
     private fun setButtons() {
@@ -53,8 +53,8 @@ class SendMessagePane(
             launch { sendMessage() }
         }
         clearButton.addActionListener {
-            clearFields()
-            confirmationLabel.isVisible = false
+            clear()
+            messageSentLabel.isVisible = false
         }
     }
 
@@ -79,13 +79,13 @@ class SendMessagePane(
                             it.messageGroupId(fifoFields.groupId.text)
                         }
                     }.messageId()
-                    confirmationLabel.text = message("sqs.send.message.success", messageId)
+                    messageSentLabel.text = message("sqs.send.message.success", messageId)
                 }
-                clearFields()
+                clear(isSend = true)
             } catch (e: Exception) {
-                confirmationLabel.text = message("sqs.failed_to_send_message")
+                messageSentLabel.text = message("sqs.failed_to_send_message")
             }
-            confirmationLabel.isVisible = true
+            messageSentLabel.isVisible = true
         }
     }
 
@@ -103,23 +103,22 @@ class SendMessagePane(
         } else {
             runInEdt(ModalityState.any()) {
                 validationIssues.forEach { validationIssue ->
-                    validationIssue.component?.let { component ->
-                        ComponentValidator.createPopupBuilder(validationIssue, null)
-                            .setCancelOnClickOutside(true)
-                            .createPopup()
-                            .showUnderneathOf(component)
-                    }
+                    val errorComponent = validationIssue.component ?: inputText
+                    ComponentValidator
+                        .createPopupBuilder(validationIssue, null)
+                        .setCancelOnClickOutside(true)
+                        .createPopup()
+                        .showUnderneathOf(errorComponent)
                 }
             }
             false
         }
     }
 
-    private fun clearFields() {
+    private fun clear(isSend: Boolean = false) {
         inputText.text = ""
         if (queue.isFifo) {
-            fifoFields.deduplicationId.text = ""
-            fifoFields.groupId.text = ""
+            fifoFields.clear(isSend)
         }
     }
 }

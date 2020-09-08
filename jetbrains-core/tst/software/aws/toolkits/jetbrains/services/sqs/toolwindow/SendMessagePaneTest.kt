@@ -115,11 +115,11 @@ class SendMessagePaneTest {
             inputText.text = MESSAGE
             runBlocking {
                 sendMessage()
-                waitForTrue { standardPane.confirmationLabel.isVisible }
+                waitForTrue { standardPane.messageSentLabel.isVisible }
             }
         }
 
-        assertThat(standardPane.confirmationLabel.text).isEqualTo(message("sqs.failed_to_send_message"))
+        assertThat(standardPane.messageSentLabel.text).isEqualTo(message("sqs.failed_to_send_message"))
     }
 
     @Test
@@ -131,11 +131,11 @@ class SendMessagePaneTest {
             inputText.text = MESSAGE
             runBlocking {
                 sendMessage()
-                waitForTrue { standardPane.confirmationLabel.isVisible }
+                waitForTrue { standardPane.messageSentLabel.isVisible }
             }
         }
 
-        assertThat(standardPane.confirmationLabel.text).isEqualTo(message("sqs.send.message.success", MESSAGE_ID))
+        assertThat(standardPane.messageSentLabel.text).isEqualTo(message("sqs.send.message.success", MESSAGE_ID))
     }
 
     @Test
@@ -149,11 +149,11 @@ class SendMessagePaneTest {
             fifoFields.groupId.text = GROUP_ID
             runBlocking {
                 sendMessage()
-                waitForTrue { fifoPane.confirmationLabel.isVisible }
+                waitForTrue { fifoPane.messageSentLabel.isVisible }
             }
         }
 
-        assertThat(fifoPane.confirmationLabel.text).isEqualTo(message("sqs.send.message.success", MESSAGE_ID))
+        assertThat(fifoPane.messageSentLabel.text).isEqualTo(message("sqs.send.message.success", MESSAGE_ID))
     }
 
     private companion object {

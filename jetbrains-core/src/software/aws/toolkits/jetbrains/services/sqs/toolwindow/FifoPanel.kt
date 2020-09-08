@@ -8,6 +8,7 @@ import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.components.JBTextField
 import software.aws.toolkits.jetbrains.services.sqs.MAX_LENGTH_OF_FIFO_ID
 import software.aws.toolkits.resources.message
+import java.util.UUID
 import javax.swing.JLabel
 import javax.swing.JPanel
 
@@ -19,11 +20,6 @@ class FifoPanel {
     lateinit var groupContextHelp: JLabel
 
     init {
-        loadComponents()
-        setFields()
-    }
-
-    private fun loadComponents() {
         deduplicationContextHelp.icon = AllIcons.General.ContextHelp
         HelpTooltip().apply {
             setDescription(message("sqs.message.deduplication_id.tooltip"))
@@ -34,17 +30,22 @@ class FifoPanel {
             setDescription(message("sqs.message.group_id.tooltip"))
             installOn(groupContextHelp)
         }
-    }
-
-    private fun setFields() {
         deduplicationId.emptyText.text = message("sqs.required.empty.text")
         groupId.emptyText.text = message("sqs.required.empty.text")
+        clear()
     }
 
     fun validateFields(): List<ValidationInfo> = listOfNotNull(
         validateDedupeId(),
         validateGroupId()
     )
+
+    fun clear(isSend: Boolean = false) {
+        deduplicationId.text = UUID.randomUUID().toString()
+        if (!isSend) {
+            groupId.text = ""
+        }
+    }
 
     private fun validateDedupeId(): ValidationInfo? = when {
         deduplicationId.text.length > MAX_LENGTH_OF_FIFO_ID -> {

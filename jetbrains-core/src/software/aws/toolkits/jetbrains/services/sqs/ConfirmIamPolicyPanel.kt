@@ -8,7 +8,6 @@ import com.intellij.ui.EditorTextField
 import com.intellij.ui.EditorTextFieldProvider
 import com.intellij.ui.components.JBLabel
 import software.aws.toolkits.resources.message
-import java.util.Collections
 import javax.swing.JPanel
 
 class ConfirmIamPolicyPanel(private val project: Project) {
@@ -21,6 +20,6 @@ class ConfirmIamPolicyPanel(private val project: Project) {
     }
 
     private fun createUIComponents() {
-        policyDocument = EditorTextFieldProvider.getInstance().getEditorField(JsonLanguage.INSTANCE, project, Collections.emptyList())
+        policyDocument = EditorTextFieldProvider.getInstance().getEditorField(JsonLanguage.INSTANCE, project, emptyList())
     }
 }
