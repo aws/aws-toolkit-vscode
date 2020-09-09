@@ -19,6 +19,9 @@ import software.aws.toolkits.jetbrains.services.sqs.resources.SqsResources
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.Result
+import software.aws.toolkits.telemetry.SqsQueueType
+import software.aws.toolkits.telemetry.SqsTelemetry
 import javax.swing.JComponent
 
 class CreateQueueDialog(
@@ -41,13 +44,15 @@ class CreateQueueDialog(
 
     override fun doValidate(): ValidationInfo? = validateFields()
 
-    // TODO: Override cancel action when telemetry added
+    override fun doCancelAction() {
+        SqsTelemetry.createQueue(project, Result.Cancelled)
+        super.doCancelAction()
+    }
 
     override fun doOKAction() {
         if (!isOKActionEnabled) {
             return
         }
-
         setOKButtonText(message("sqs.create.queue.in_progress"))
         isOKActionEnabled = false
 
@@ -58,12 +63,14 @@ class CreateQueueDialog(
                     close(OK_EXIT_CODE)
                 }
                 project.refreshAwsTree(SqsResources.LIST_QUEUE_URLS)
+                SqsTelemetry.createQueue(project, Result.Succeeded, if (view.fifoType.isSelected) SqsQueueType.Fifo else SqsQueueType.Standard)
             } catch (e: Exception) {
                 // API only throws QueueNameExistsException if the request includes attributes whose values differ from those of the existing queue.
                 LOG.warn(e) { message("sqs.create.queue.failed", queueName()) }
                 setErrorText(e.message)
                 setOKButtonText(message("sqs.create.queue.create"))
                 isOKActionEnabled = true
+                SqsTelemetry.createQueue(project, Result.Failed, if (view.fifoType.isSelected) SqsQueueType.Fifo else SqsQueueType.Standard)
             }
         }
     }

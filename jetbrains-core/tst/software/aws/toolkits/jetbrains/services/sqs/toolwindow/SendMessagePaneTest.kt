@@ -45,8 +45,8 @@ class SendMessagePaneTest {
         region = MockRegionProvider.getInstance().defaultRegion()
         standardQueue = Queue("https://sqs.us-east-1.amazonaws.com/123456789012/standard", region)
         fifoQueue = Queue("https://sqs.us-east-1.amazonaws.com/123456789012/fifo.fifo", region)
-        standardPane = SendMessagePane(client, standardQueue)
-        fifoPane = SendMessagePane(client, fifoQueue)
+        standardPane = SendMessagePane(projectRule.project, client, standardQueue)
+        fifoPane = SendMessagePane(projectRule.project, client, fifoQueue)
     }
 
     @Test

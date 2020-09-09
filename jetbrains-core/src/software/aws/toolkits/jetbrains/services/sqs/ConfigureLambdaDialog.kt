@@ -10,6 +10,7 @@ import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.iam.IamClient
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.InvalidParameterValueException
@@ -23,8 +24,11 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
+import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.Result
+import software.aws.toolkits.telemetry.SqsTelemetry
 import java.time.Duration
 import javax.swing.JComponent
 
@@ -55,6 +59,11 @@ class ConfigureLambdaDialog(
         return null
     }
 
+    override fun doCancelAction() {
+        SqsTelemetry.configureLambdaTrigger(project, Result.Cancelled, queue.telemetryType())
+        super.doCancelAction()
+    }
+
     override fun doOKAction() {
         if (!isOKActionEnabled) {
             return
@@ -70,9 +79,10 @@ class ConfigureLambdaDialog(
                     close(OK_EXIT_CODE)
                 }
                 notifyInfo(message("sqs.service_name"), message("sqs.configure.lambda.success", functionSelected()), project)
+                SqsTelemetry.configureLambdaTrigger(project, Result.Succeeded, queue.telemetryType())
             } catch (e: InvalidParameterValueException) {
                 // Exception thrown for invalid permission
-                runInEdt(ModalityState.any()) {
+                withContext(getCoroutineUiContext(ModalityState.any())) {
                     if (ConfirmIamPolicyDialog(project, iamClient, lambdaClient, functionSelected(), queue, view.component).showAndGet()) {
                         retryConfiguration(functionSelected())
                     } else {
@@ -85,6 +95,7 @@ class ConfigureLambdaDialog(
                 setErrorText(e.message)
                 setOKButtonText(message("general.configure_button"))
                 isOKActionEnabled = true
+                SqsTelemetry.configureLambdaTrigger(project, Result.Failed, queue.telemetryType())
             }
         }
     }
@@ -132,10 +143,12 @@ class ConfigureLambdaDialog(
                     close(OK_EXIT_CODE)
                 }
                 notifyInfo(message("sqs.service_name"), message("sqs.configure.lambda.success", functionName), project)
+                SqsTelemetry.configureLambdaTrigger(project, Result.Succeeded, queue.telemetryType())
             } else {
                 setErrorText(message("sqs.configure.lambda.error", functionName))
                 setOKButtonText(message("general.configure_button"))
                 isOKActionEnabled = true
+                SqsTelemetry.configureLambdaTrigger(project, Result.Failed, queue.telemetryType())
             }
         }
     }

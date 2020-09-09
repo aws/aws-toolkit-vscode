@@ -16,10 +16,13 @@ import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeAction
 import software.aws.toolkits.jetbrains.services.sqs.SqsQueueNode
+import software.aws.toolkits.jetbrains.services.sqs.telemetryType
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.Result
+import software.aws.toolkits.telemetry.SqsTelemetry
 
 class PurgeQueueAction :
     SingleResourceNodeAction<SqsQueueNode>(message("sqs.purge_queue")),
@@ -37,18 +40,21 @@ class PurgeQueueAction :
                     title = message("aws.notification.title"),
                     content = message("sqs.purge_queue.succeeded", selected.queueUrl)
                 )
+                SqsTelemetry.purgeQueue(project, Result.Succeeded, selected.queue.telemetryType())
             } catch (e: PurgeQueueInProgressException) {
                 LOG.warn { "${selected.queueUrl} already has a query purge in progress" }
                 notifyError(
                     project = project,
                     content = message("sqs.purge_queue.failed.60_seconds", selected.queueUrl)
                 )
+                SqsTelemetry.purgeQueue(project, Result.Succeeded, selected.queue.telemetryType())
             } catch (e: Exception) {
                 LOG.error(e) { "Exception thrown while trying to purge query ${selected.queueUrl}" }
                 notifyError(
                     project = project,
                     content = message("sqs.purge_queue.failed", selected.queueUrl)
                 )
+                SqsTelemetry.purgeQueue(project, Result.Failed, selected.queue.telemetryType())
             }
         }
     }
