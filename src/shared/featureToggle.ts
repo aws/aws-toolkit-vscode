@@ -14,7 +14,10 @@ import { SettingsConfiguration, DefaultSettingsConfiguration } from './settingsC
  * You cannot have more active features than FeatureToggle.maxFeatures (default: 5)
  * Any features that are flagged in the code but not added here will always return false.
  */
-export enum ActiveFeatureKeys {}
+export enum ActiveFeatureKeys {
+    LambdaUpload = 'LambdaUpload',
+    LambdaImport = 'LambdaImport',
+}
 
 /**
  * This class handles feature access for unreleased or gated features.
