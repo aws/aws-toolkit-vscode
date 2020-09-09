@@ -4,7 +4,6 @@
  */
 
 import * as AdmZip from 'adm-zip'
-import { Lambda } from 'aws-sdk'
 import * as fs from 'fs-extra'
 import * as _ from 'lodash'
 import * as path from 'path'
@@ -21,10 +20,10 @@ import * as pathutils from '../../shared/utilities/pathUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Window } from '../../shared/vscode/window'
 import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
-import { getFamily, RuntimeFamily } from '../models/samLambdaRuntime'
 import { showConfirmationMessage } from '../../s3/util/messages'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
 import { promptUserForLocation, WizardContext } from '../../shared/wizards/multiStepWizard'
+import { getLambdaFileNameFromHandler } from '../utils'
 
 // TODO: Move off of deprecated `request` to `got`?
 // const pipeline = promisify(Stream.pipeline)
@@ -226,32 +225,6 @@ async function addLaunchConfigEntry(
     ) {
         await launchConfig.addDebugConfiguration(samDebugConfig)
     }
-}
-
-/**
- * Converts Lambda handler into a filename by stripping the function name and appending the correct file extension.
- * Only works for supported languages (Python/JS)
- * @param configuration Lambda configuration object from getFunction
- */
-export function getLambdaFileNameFromHandler(configuration: Lambda.FunctionConfiguration): string {
-    let runtimeExtension: string
-    switch (getFamily(configuration.Runtime!)) {
-        case RuntimeFamily.Python:
-            runtimeExtension = 'py'
-            break
-        case RuntimeFamily.NodeJS:
-            runtimeExtension = 'js'
-            break
-        default:
-            throw new Error(`Toolkit does not currently support imports for runtime: ${configuration.Runtime}`)
-    }
-
-    const fileName = _(configuration.Handler!)
-        .split('.')
-        .initial()
-        .join('.')
-
-    return `${fileName}.${runtimeExtension}`
 }
 
 class ImportError extends Error {}
