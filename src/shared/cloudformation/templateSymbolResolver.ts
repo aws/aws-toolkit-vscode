@@ -17,21 +17,13 @@ export interface TemplateFunctionResource {
 }
 
 /**
- * Provides symbols for a TextDocument.
- */
-export interface TemplateSymbolProvider {
-    getSymbols(document: vscode.TextDocument): Promise<vscode.DocumentSymbol[]>
-    getText(symbol: vscode.DocumentSymbol, document: vscode.TextDocument): string
-}
-
-/**
  * Parses symbols in a CloudFormation text document.
  */
 export class TemplateSymbolResolver {
     public constructor(
         private readonly document: vscode.TextDocument,
         // YAML symbol provider (we registered *.yaml in activateCodeLensProviders()).
-        private readonly symbolProvider: TemplateSymbolProvider = new DefaultSymbolProvider()
+        private readonly symbolProvider = new TemplateSymbolProvider()
     ) {}
 
     /**
@@ -41,13 +33,15 @@ export class TemplateSymbolResolver {
      * - Implicit Api: `AWS::Serverless::Function` with `Events.Type=Api`.
      * - Explicit Api: `AWS::Serverless::Api`.
      */
-    public async getResourcesOfKind(kind: 'function' | 'api'): Promise<TemplateFunctionResource[]> {
-        const allSymbols = await this.symbolProvider.getSymbols(this.document)
+    public async getResourcesOfKind(
+        kind: 'function' | 'api',
+        waitForSymbols: boolean
+    ): Promise<TemplateFunctionResource[]> {
+        const allSymbols = await this.symbolProvider.getSymbols(this.document, waitForSymbols)
         // Only want top level (TODO: is this actually true?)
         const funSymbols = (
             allSymbols.find(o => o.name === 'Resources' && o.kind === vscode.SymbolKind.Module)?.children ?? []
-        ).filter(r => this.isKind('function', r))
-        const apiSymbols: { name: string; range: vscode.Range; kind: 'function' | 'api' }[] = []
+        ).filter(r => this.isCfnType(CloudFormation.SERVERLESS_FUNCTION_TYPE, r))
         if (kind === 'function') {
             return funSymbols.map(r => ({ name: r.name, range: r.range, kind: kind }))
         }
@@ -55,9 +49,10 @@ export class TemplateSymbolResolver {
         //
         // For each Function symbol, find its Api descendants, keeping
         // track of the associated resource (Function) name.
+        const apiSymbols: TemplateFunctionResource[] = []
         for (let funSymbol of funSymbols) {
             const found = this.findDescendants([funSymbol], 'Events', vscode.SymbolKind.Module).filter(r =>
-                this.isKind('api', r)
+                this.isCfnType('Api', r)
             )
             apiSymbols.push(
                 ...found.map(o => ({
@@ -73,7 +68,7 @@ export class TemplateSymbolResolver {
     }
 
     /**
-     * Searches the tree and returns all matching nodes.
+     * Searches the tree (recursively) and returns all matching nodes.
      */
     private findDescendants(
         symbols: vscode.DocumentSymbol[],
@@ -87,7 +82,13 @@ export class TemplateSymbolResolver {
         return found
     }
 
-    private isKind(kind: 'function' | 'api', symbol: vscode.DocumentSymbol) {
+    /**
+     * Checks if `symbol` has a "Type: ..." child node where "..." is the
+     * (case-sensitive) value given by `cfnType` .
+     *
+     * @param cfnType  Type name found in a "Type: ..." child node.
+     */
+    private isCfnType(cfnType: 'AWS::Serverless::Function' | 'Api', symbol: vscode.DocumentSymbol) {
         // Example:
         // ------------------------------------
         // Resources:
@@ -102,23 +103,29 @@ export class TemplateSymbolResolver {
         //             Path: /        /
         //             Method: get   /
         const typeSymbol = this.findDescendants(symbol.children, 'Type', vscode.SymbolKind.String)[0]
-        const wantType = kind === 'function' ? CloudFormation.SERVERLESS_FUNCTION_TYPE : 'Api'
         if (!typeSymbol) {
             return false
         }
         const parsedSymbol = safeLoad(this.symbolProvider.getText(typeSymbol, this.document)) as { Type: string }
-        return parsedSymbol.Type === wantType
+        return parsedSymbol.Type === cfnType
     }
 }
 
-class DefaultSymbolProvider implements TemplateSymbolProvider {
-    public async getSymbols(document: vscode.TextDocument): Promise<vscode.DocumentSymbol[]> {
-        const symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
-            'vscode.executeDocumentSymbolProvider',
-            document.uri
-        )
+export class TemplateSymbolProvider {
+    public async getSymbols(document: vscode.TextDocument, waitForSymbols: boolean): Promise<vscode.DocumentSymbol[]> {
+        for (let i = 0; i < 30; i++) {
+            const symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
+                'vscode.executeDocumentSymbolProvider',
+                document.uri
+            )
+            if (symbols !== undefined || !waitForSymbols) {
+                return symbols ?? []
+            }
 
-        return symbols ?? []
+            await new Promise(r => setTimeout(r, 1000))
+        }
+
+        return []
     }
 
     public getText(symbol: vscode.DocumentSymbol, document: vscode.TextDocument): string {

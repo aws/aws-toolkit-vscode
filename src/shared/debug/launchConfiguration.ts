@@ -67,8 +67,7 @@ export class LaunchConfiguration {
         const configs = this.getDebugConfigurations().filter(o =>
             isAwsSamDebugConfiguration(o)
         ) as AwsSamDebuggerConfiguration[]
-        const validConfigs = configs.filter(o => this.samValidator.validate(o)?.isValid)
-        return validConfigs
+        return configs.filter(o => this.samValidator.validate(o)?.isValid)
     }
 
     /**

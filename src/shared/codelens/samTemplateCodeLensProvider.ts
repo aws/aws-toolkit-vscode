@@ -20,10 +20,11 @@ export class SamTemplateCodeLensProvider implements vscode.CodeLensProvider {
         document: vscode.TextDocument,
         token: vscode.CancellationToken,
         symbolResolver = new TemplateSymbolResolver(document),
-        launchConfig = new LaunchConfiguration(document.uri)
+        launchConfig = new LaunchConfiguration(document.uri),
+        waitForSymbols: boolean = false
     ): Promise<vscode.CodeLens[]> {
-        const apiResources = (await symbolResolver.getResourcesOfKind('api')) ?? []
-        const funResources = (await symbolResolver.getResourcesOfKind('function')) ?? []
+        const apiResources = await symbolResolver.getResourcesOfKind('api', waitForSymbols)
+        const funResources = await symbolResolver.getResourcesOfKind('function', waitForSymbols)
         if (_(funResources).isEmpty() && _(apiResources).isEmpty()) {
             return []
         }
@@ -56,8 +57,12 @@ export class SamTemplateCodeLensProvider implements vscode.CodeLensProvider {
             resourceName: resource.name,
             rootUri: templateUri,
         }
+        const title =
+            resource.kind === 'api'
+                ? localize('AWS.command.addSamApiDebugConfiguration', 'Add API Debug Configuration')
+                : localize('AWS.command.addSamDebugConfiguration', 'Add Debug Configuration')
         return new vscode.CodeLens(resource.range, {
-            title: localize('AWS.command.addSamDebugConfiguration', 'Add Debug Configuration'),
+            title: title,
             command: 'aws.addSamDebugConfiguration',
             arguments: [input, target],
         })

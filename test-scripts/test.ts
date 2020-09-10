@@ -5,8 +5,15 @@
 
 import { resolve } from 'path'
 import { runTests } from 'vscode-test'
-import { setupVSCodeTestInstance } from './launchTestUtilities'
+import { VSCODE_EXTENSION_ID } from '../src/shared/extensions'
+import { installVSCodeExtension, setupVSCodeTestInstance } from './launchTestUtilities'
 import { env } from 'process'
+
+async function setupVSCode(): Promise<string> {
+    const vsCodeExecutablePath = await setupVSCodeTestInstance()
+    await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.yaml)
+    return vsCodeExecutablePath
+}
 
 // tslint:disable-next-line: no-floating-promises
 ;(async () => {
@@ -14,7 +21,7 @@ import { env } from 'process'
         console.log('Running Main test suite...')
 
         env['AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE'] = 'true'
-        const vsCodeExecutablePath = await setupVSCodeTestInstance()
+        const vsCodeExecutablePath = await setupVSCode()
         const rootDir = resolve(__dirname, '../')
         const testEntrypoint = resolve(rootDir, 'dist/src/test/index.js')
         const testWorkspace = resolve(rootDir, 'src/testFixtures/workspaceFolder')
