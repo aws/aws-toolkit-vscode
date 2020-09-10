@@ -10,7 +10,6 @@ const localize = nls.loadMessageBundle()
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { validateBucketName } from '../../s3/util/validateBucketName'
 import { AwsContext } from '../../shared/awsContext'
 import { samDeployDocUrl } from '../../shared/constants'
 import { getLogger } from '../../shared/logger'
@@ -24,6 +23,7 @@ import { MultiStepWizard, WizardStep } from '../../shared/wizards/multiStepWizar
 import { configureParameterOverrides } from '../config/configureParameterOverrides'
 import { getOverriddenParameters, getParameters } from '../utilities/parameterUtils'
 import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
+import { DefaultS3Client } from '../../shared/clients/defaultS3Client'
 
 export interface SamDeployWizardResponse {
     parameterOverrides: Map<string, string>
@@ -299,35 +299,83 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     /**
      * Retrieves an S3 Bucket to deploy to from the user.
      *
+     * @param selectedRegion Selected region for S3 client usage
      * @param initialValue Optional, Initial value to prompt with
      *
      * @returns S3 Bucket name. Undefined represents cancel.
      */
     public async promptUserForS3Bucket(selectedRegion: string, initialValue?: string): Promise<string | undefined> {
-        const inputBox = input.createInputBox({
+        const loadingBuckets: string = localize('AWS.samcli.deploy.s3bucket.picker.loading', 'Loading S3 buckets...')
+        const noBuckets: string = localize('AWS.samcli.deploy.s3bucket.picker.noBuckets', 'No buckets found.')
+        const bucketError: string = localize(
+            'AWS.samcli.deploy.s3bucket.picker.error',
+            'There was an error loading S3 buckets.'
+        )
+
+        const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             options: {
                 title: localize(
                     'AWS.samcli.deploy.s3Bucket.prompt',
                     'Enter the AWS S3 bucket to which your code should be deployed'
                 ),
+                value: initialValue,
+                matchOnDetail: true,
                 ignoreFocusOut: true,
-                prompt: localize(
-                    'AWS.samcli.deploy.s3Bucket.region',
-                    'S3 bucket must be in selected region: {0}',
-                    selectedRegion
-                ),
             },
+            items: [
+                {
+                    label: loadingBuckets,
+                },
+            ],
         })
 
-        // Pre-populate the value if it was already set
-        if (initialValue) {
-            inputBox.value = initialValue
-        }
+        quickPick.busy = true
+        quickPick.enabled = false
 
-        return await input.promptUser({
-            inputBox: inputBox,
-            onValidateInput: validateBucketName,
+        new Promise(async resolve => {
+            const goBack: string = localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back')
+
+            try {
+                const s3Client = new DefaultS3Client(
+                    selectedRegion,
+                    this.regionProvider.getPartitionId(selectedRegion) ?? 'aws'
+                )
+
+                const buckets = await s3Client.listBuckets()
+
+                quickPick.items = buckets.buckets.map(bucket => {
+                    return {
+                        label: bucket.name,
+                    }
+                })
+
+                if (quickPick.items.length === 0) {
+                    quickPick.items = [
+                        {
+                            label: noBuckets,
+                            description: goBack,
+                        },
+                    ]
+                }
+            } catch (e) {
+                const err = e as Error
+                quickPick.items = [
+                    {
+                        label: bucketError,
+                        description: goBack,
+                        detail: err.message,
+                    },
+                ]
+            } finally {
+                quickPick.busy = false
+                quickPick.enabled = true
+                resolve()
+            }
+        })
+
+        const choices = await picker.promptUser<vscode.QuickPickItem>({
+            picker: quickPick,
             onDidTriggerButton: (button, resolve, reject) => {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
@@ -336,6 +384,9 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 }
             },
         })
+        const val = picker.verifySinglePickerOutput(choices)
+
+        return val?.label && ![loadingBuckets, noBuckets, bucketError].includes(val.label) ? val.label : undefined
     }
 
     /**
