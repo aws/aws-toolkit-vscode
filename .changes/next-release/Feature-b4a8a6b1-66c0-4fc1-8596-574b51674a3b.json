@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "Added two commands for aws-ssm: openDocumentLocally and publishDocument"
+}
