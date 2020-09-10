@@ -21,10 +21,10 @@ class MessageIdColumn : ColumnInfo<Message, String>(message("sqs.message.message
 }
 
 class MessageBodyColumn : ColumnInfo<Message, String>(message("sqs.message.message_body")) {
-    private val renderer = WrappingCellRenderer(wrapOnSelection = true, toggleableWrap = false)
-
     // Truncated the message body to show up to 1024 characters, as it can be up to 256KB in size. Cannot limit the retrieved message size through API.
-    override fun valueOf(item: Message?): String? = item?.body()?.take(MAX_LENGTH_OF_POLLED_MESSAGES)
+    private val renderer = WrappingCellRenderer(wrapOnSelection = true, wrapOnToggle = false, truncateAfterChars = MAX_LENGTH_OF_POLLED_MESSAGES)
+
+    override fun valueOf(item: Message?): String? = item?.body()
     override fun isCellEditable(item: Message?): Boolean = false
     override fun getRenderer(item: Message?): TableCellRenderer? = renderer
 }

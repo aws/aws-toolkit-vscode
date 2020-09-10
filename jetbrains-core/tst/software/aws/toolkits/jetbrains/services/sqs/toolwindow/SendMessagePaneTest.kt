@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.sqs.toolwindow
 
-import com.intellij.testFramework.ProjectRule
 import com.nhaarman.mockitokotlin2.whenever
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
@@ -20,14 +19,11 @@ import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import software.aws.toolkits.jetbrains.services.sqs.MAX_LENGTH_OF_FIFO_ID
 import software.aws.toolkits.jetbrains.services.sqs.Queue
+import software.aws.toolkits.jetbrains.utils.BaseCoroutineTest
 import software.aws.toolkits.jetbrains.utils.waitForTrue
 import software.aws.toolkits.resources.message
 
-class SendMessagePaneTest {
-    @Rule
-    @JvmField
-    val projectRule = ProjectRule()
-
+class SendMessagePaneTest : BaseCoroutineTest() {
     @JvmField
     @Rule
     val mockClientManager = MockClientManagerRule(projectRule)
@@ -55,7 +51,7 @@ class SendMessagePaneTest {
             inputText.text = ""
         }
 
-        assertThat(standardPane.validateFields()).isFalse()
+        assertThat(runBlocking { standardPane.validateFields() }).isFalse()
         assertThat(standardPane.fifoFields.component.isVisible).isFalse()
     }
 
@@ -67,7 +63,9 @@ class SendMessagePaneTest {
             fifoFields.groupId.text = ""
         }
 
-        assertThat(fifoPane.validateFields()).isFalse()
+        runBlocking {
+            assertThat(fifoPane.validateFields()).isFalse()
+        }
     }
 
     @Test
@@ -78,7 +76,7 @@ class SendMessagePaneTest {
             fifoFields.groupId.text = GROUP_ID
         }
 
-        assertThat(fifoPane.validateFields()).isFalse()
+        assertThat(runBlocking { fifoPane.validateFields() }).isFalse()
     }
 
     @Test
@@ -87,10 +85,11 @@ class SendMessagePaneTest {
             inputText.text = MESSAGE
             fifoFields.deduplicationId.text = DEDUPLICATION_ID
             fifoFields.groupId.text = ""
-            runBlocking { sendMessage() }
         }
 
-        assertThat(fifoPane.validateFields()).isFalse()
+        runBlocking { fifoPane.sendMessage() }
+
+        assertThat(runBlocking { fifoPane.validateFields() }).isFalse()
     }
 
     @Test
@@ -99,10 +98,11 @@ class SendMessagePaneTest {
             inputText.text = MESSAGE
             fifoFields.deduplicationId.text = RuleUtils.randomName(length = MAX_LENGTH_OF_FIFO_ID + 1)
             fifoFields.groupId.text = GROUP_ID
-            runBlocking { sendMessage() }
         }
 
-        assertThat(fifoPane.validateFields()).isFalse()
+        runBlocking { fifoPane.sendMessage() }
+
+        assertThat(runBlocking { fifoPane.validateFields() }).isFalse()
     }
 
     @Test
@@ -113,10 +113,11 @@ class SendMessagePaneTest {
 
         standardPane.apply {
             inputText.text = MESSAGE
-            runBlocking {
-                sendMessage()
-                waitForTrue { standardPane.messageSentLabel.isVisible }
-            }
+        }
+
+        runBlocking {
+            standardPane.sendMessage()
+            waitForTrue { standardPane.messageSentLabel.isVisible }
         }
 
         assertThat(standardPane.messageSentLabel.text).isEqualTo(message("sqs.failed_to_send_message"))
@@ -129,10 +130,11 @@ class SendMessagePaneTest {
         )
         standardPane.apply {
             inputText.text = MESSAGE
-            runBlocking {
-                sendMessage()
-                waitForTrue { standardPane.messageSentLabel.isVisible }
-            }
+        }
+
+        runBlocking {
+            standardPane.sendMessage()
+            waitForTrue { standardPane.messageSentLabel.isVisible }
         }
 
         assertThat(standardPane.messageSentLabel.text).isEqualTo(message("sqs.send.message.success", MESSAGE_ID))
@@ -147,10 +149,11 @@ class SendMessagePaneTest {
             inputText.text = MESSAGE
             fifoFields.deduplicationId.text = DEDUPLICATION_ID
             fifoFields.groupId.text = GROUP_ID
-            runBlocking {
-                sendMessage()
-                waitForTrue { fifoPane.messageSentLabel.isVisible }
-            }
+        }
+
+        runBlocking {
+            fifoPane.sendMessage()
+            waitForTrue { fifoPane.messageSentLabel.isVisible }
         }
 
         assertThat(fifoPane.messageSentLabel.text).isEqualTo(message("sqs.send.message.success", MESSAGE_ID))

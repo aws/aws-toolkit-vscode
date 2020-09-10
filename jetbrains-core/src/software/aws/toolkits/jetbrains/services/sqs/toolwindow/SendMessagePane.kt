@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.services.sqs.toolwindow
 
 import com.intellij.ide.plugins.newui.UpdateButton
 import com.intellij.openapi.application.ModalityState
-import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComponentValidator
 import com.intellij.openapi.ui.ValidationInfo
@@ -76,31 +75,33 @@ class SendMessagePane(
     }
 
     suspend fun sendMessage() {
-        if (validateFields()) {
-            try {
-                withContext(Dispatchers.IO) {
-                    val messageId = client.sendMessage {
-                        it.queueUrl(queue.queueUrl)
-                        it.messageBody(inputText.text)
-                        if (queue.isFifo) {
-                            it.messageDeduplicationId(fifoFields.deduplicationId.text)
-                            it.messageGroupId(fifoFields.groupId.text)
-                        }
-                    }.messageId()
-                    messageSentLabel.text = message("sqs.send.message.success", messageId)
-                }
-                clear(isSend = true)
-                SqsTelemetry.sendMessage(project, Result.Succeeded, queue.telemetryType())
-            } catch (e: Exception) {
-                messageSentLabel.text = message("sqs.failed_to_send_message")
-                SqsTelemetry.sendMessage(project, Result.Failed, queue.telemetryType())
-                clear(isSend = true)
+        if (!validateFields()) {
+            return
+        }
+        try {
+            withContext(Dispatchers.IO) {
+                val messageId = client.sendMessage {
+                    it.queueUrl(queue.queueUrl)
+                    it.messageBody(inputText.text)
+                    if (queue.isFifo) {
+                        it.messageDeduplicationId(fifoFields.deduplicationId.text)
+                        it.messageGroupId(fifoFields.groupId.text)
+                    }
+                }.messageId()
+                messageSentLabel.text = message("sqs.send.message.success", messageId)
             }
+            clear(isSend = true)
+            SqsTelemetry.sendMessage(project, Result.Succeeded, queue.telemetryType())
+        } catch (e: Exception) {
+            messageSentLabel.text = message("sqs.failed_to_send_message")
+            SqsTelemetry.sendMessage(project, Result.Failed, queue.telemetryType())
+            clear(isSend = true)
+        } finally {
             messageSentLabel.isVisible = true
         }
     }
 
-    fun validateFields(): Boolean {
+    suspend fun validateFields(): Boolean {
         val validationIssues = mutableListOf<ValidationInfo>().apply {
             if (inputText.text.isEmpty()) {
                 add(ValidationInfo(message("sqs.message.validation.empty.message.body"), inputText))
@@ -112,7 +113,7 @@ class SendMessagePane(
         return if (validationIssues.isEmpty()) {
             true
         } else {
-            runInEdt(ModalityState.any()) {
+            withContext(getCoroutineUiContext(ModalityState.any())) {
                 validationIssues.forEach { validationIssue ->
                     val errorComponent = validationIssue.component ?: inputText
                     ComponentValidator

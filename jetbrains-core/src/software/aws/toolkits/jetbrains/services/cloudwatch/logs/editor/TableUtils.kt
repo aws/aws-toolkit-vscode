@@ -74,7 +74,7 @@ class LogStreamDateColumn : ColumnInfo<LogStreamEntry, String>(message("general.
 }
 
 class LogStreamMessageColumn : ColumnInfo<LogStreamEntry, String>(message("general.message")) {
-    private val renderer = WrappingCellRenderer(wrapOnSelection = true, toggleableWrap = true)
+    private val renderer = WrappingCellRenderer(wrapOnSelection = true, wrapOnToggle = true)
     fun wrap() {
         renderer.wrap = true
     }

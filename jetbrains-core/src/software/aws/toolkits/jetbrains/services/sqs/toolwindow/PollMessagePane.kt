@@ -9,6 +9,7 @@ import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.CommonShortcuts
 import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.actionSystem.Separator
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.ui.PopupHandler
@@ -21,6 +22,7 @@ import software.amazon.awssdk.services.sqs.model.Message
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.aws.toolkits.jetbrains.services.sqs.MAX_NUMBER_OF_POLLED_MESSAGES
 import software.aws.toolkits.jetbrains.services.sqs.Queue
+import software.aws.toolkits.jetbrains.services.sqs.actions.CopyMessageAction
 import software.aws.toolkits.jetbrains.services.sqs.actions.DeleteMessageAction
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.resources.message
@@ -100,6 +102,8 @@ class PollMessagePane(
 
     private fun addActionsToTable() {
         val actionGroup = DefaultActionGroup().apply {
+            add(CopyMessageAction(messagesTable.table).apply { registerCustomShortcutSet(CommonShortcuts.getCopy(), component) })
+            add(Separator.create())
             add(
                 DeleteMessageAction(project, client, messagesTable.table, pollButton, queue).apply {
                     registerCustomShortcutSet(CommonShortcuts.getDelete(), component)
