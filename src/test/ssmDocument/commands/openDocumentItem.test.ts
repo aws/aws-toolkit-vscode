@@ -81,6 +81,6 @@ describe('openDocumentItem', async () => {
         const ssmDocumentClient = new MockSsmDocumentClient()
         sandbox.stub(ssmDocumentClient, 'getDocument').returns(Promise.resolve(rawContent))
 
-        return new DocumentItemNode(fakeDoc, ssmDocumentClient)
+        return new DocumentItemNode(fakeDoc, ssmDocumentClient, 'us-east-1')
     }
 })
