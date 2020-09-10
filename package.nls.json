@@ -145,6 +145,7 @@
     "AWS.command.viewLogStream": "View Log Stream...",
     "AWS.command.ssmDocument.createLocalDocument": "Create a new SSM Document locally",
     "AWS.command.ssmDocument.openLocalDocument": "Open a SSM Document locally",
+    "AWS.command.ssmDocument.publishDocument": "Publish a SSM Document",
     "AWS.stepFunctions.graph.titlePrefix": "Graph: {0}",
     "AWS.credentials.statusbar.no.credentials": "(not connected)",
     "AWS.credentials.statusbar.text": "AWS: {0}",

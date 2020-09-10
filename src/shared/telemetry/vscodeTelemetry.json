@@ -45,6 +45,26 @@
                     "type": "result"
                 }
             ]
+        },
+        {
+            "name": "ssm_publishDocument_create",
+            "description": "An SSM Document is created remotely",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "ssm_publishDocument_update",
+            "description": "An SSM Document is updated remotely",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
         }
     ]
 }

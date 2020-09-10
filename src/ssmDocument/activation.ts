@@ -9,15 +9,12 @@ import { activate as activateSSMLanguageServer } from './ssm/ssmClient'
 import { AwsContext } from '../shared/awsContext'
 
 import { createSsmDocumentFromTemplate } from './commands/createDocumentFromTemplate'
+import { publishSSMDocument } from './commands/publishDocument'
 import * as telemetry from '../shared/telemetry/telemetry'
-
-/* Please ignore this for now. This will be included in a future CR
 import { openDocumentItem } from './commands/openDocumentItem'
 import { DocumentItemNode } from './explorer/documentItemNode'
-*/
 
 // Activate SSM Document related functionality for the extension.
-
 export async function activate(
     extensionContext: vscode.ExtensionContext,
     awsContext: AwsContext,
@@ -42,11 +39,14 @@ async function registerSsmDocumentCommands(
             }
         })
     )
-    /* Please ignore this for now. This will be included in a future CR
     extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.ssmDocument.openLocalDocument', async (node: DocumentItemNode) => {
             await openDocumentItem(node, awsContext)
         })
     )
-    */
+    extensionContext.subscriptions.push(
+        vscode.commands.registerCommand('aws.ssmDocument.publishDocument', async () => {
+            await publishSSMDocument(awsContext, outputChannel)
+        })
+    )
 }

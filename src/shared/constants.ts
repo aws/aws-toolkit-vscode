@@ -54,6 +54,10 @@ export const sfnDeveloperGuideUrl: string = 'https://docs.aws.amazon.com/step-fu
 export const sfnUpdateStateMachineUrl: string =
     'https://docs.aws.amazon.com/step-functions/latest/apireference/API_UpdateStateMachine.html'
 
+// URLs for SSM Documents
+export const ssmDocumentPublishGuideUrl: string =
+    'https://docs.aws.amazon.com/systems-manager/latest/userguide/create-ssm-doc.html'
+
 /**
  * Moment format for rendering readable dates.
  *
