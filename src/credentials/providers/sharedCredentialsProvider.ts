@@ -7,9 +7,13 @@ import * as AWS from 'aws-sdk'
 import { Profile } from '../../shared/credentials/credentialsFile'
 import { getLogger } from '../../shared/logger'
 import { getStringHash } from '../../shared/utilities/textUtilities'
+import { validateSsoProfile } from '../ssoSupport'
 import { getMfaTokenFromUser } from '../credentialsCreator'
 import { CredentialsProvider } from './credentialsProvider'
 import { CredentialsProviderId } from './credentialsProviderId'
+// import { SsoCredentialProvider } from './ssoCredentialProvider'
+// import { SsoAccessTokenProvider } from '../ssoAccessTokenProvider'
+import { endToEndSSO } from '../ENDTOENDSSO' //TODO Delete this, only for POC
 
 const SHARED_CREDENTIAL_PROPERTIES = {
     AWS_ACCESS_KEY_ID: 'aws_access_key_id',
@@ -89,6 +93,8 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             )
         } else if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.AWS_ACCESS_KEY_ID)) {
             expectedProperties.push(SHARED_CREDENTIAL_PROPERTIES.AWS_SECRET_ACCESS_KEY)
+        } else if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL)) {
+            return validateSsoProfile(this.profile, this.profileName)
         } else {
             return `Profile ${this.profileName} is not supported by the Toolkit.`
         }
@@ -109,11 +115,15 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         const originalStsConfiguration = AWS.config.sts
 
         try {
+            const logger = getLogger()
             const validationMessage = this.validate()
             if (validationMessage) {
                 throw new Error(`Profile ${this.profileName} is not a valid Credential Profile: ${validationMessage}`)
             }
-
+            //  POC:  TO DELETE
+            if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL)) {
+                return await endToEndSSO(logger)
+            }
             const provider = new AWS.CredentialProviderChain([this.makeCredentialsProvider()])
 
             // Profiles with references involving non-aws partitions need help getting the right STS endpoint
@@ -202,6 +212,17 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             return this.makeSharedIniFileCredentialsProvider()
         }
 
+        if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL)) {
+            logger.verbose(
+                `PROFILE ${this.profileName} contains ${SHARED_CREDENTIAL_PROPERTIES.SSO_ACCOUNT_ID} - treating as an SSO Shared Credentials`
+            )
+            logger.info(`SSO prototype test recognition of sso profile, not validated yet - to be deleted`)
+            // For POC
+            // return endToEndSSO(logger)
+            //return this.ssoCredProvider(logger)
+            // return this.makeSsoCredentialProvider()
+        }
+
         logger.error(`Profile ${this.profileName} did not contain any supported properties`)
         throw new Error(`Shared Credentials profile ${this.profileName} is not supported`)
     }
@@ -214,6 +235,25 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                     await getMfaTokenFromUser(mfaSerial, this.profileName, callback),
             })
     }
+
+    // private ssoCredProvider(logger: Logger): () => AWS.Credentials {
+    //     return () => {
+    //         let roleCreds = endToEndSSO(logger)
+    //         return new AWS.Credentials({accessKeyId: roleCreds.roleCredentials!.accessKeyId!, secretAccessKey: roleCreds.roleCredentials!.secretAccessKey!, sessionToken: roleCreds.roleCredentials!.sessionToken})
+    //     }
+    // }
+    // private makeSsoCredentialProvider(): () => AWS.Credentials {
+
+    // private createSsoProvider() {
+    //     const ssoRegion = this.profile[SHARED_CREDENTIAL_PROPERTIES.SSO_REGION]
+    //     const ssoClient = new AWS.SSO({region: ssoRegion})
+    //     const ssoOidcClient = new AWS.SSOOIDC({region: ssoRegion})
+    //     const ssoAccount = this.profile[SHARED_CREDENTIAL_PROPERTIES.SSO_ACCOUNT_ID]
+    //     const ssoRole = this.profile[SHARED_CREDENTIAL_PROPERTIES.SSO_ROLE_NAME]
+    //     const ssoAccessTokenProvider = new SsoAccessTokenProvider(ssoRegion, ssoOidcClient)
+
+    //     return new SsoCredentialProvider(ssoAccount, ssoRole, ssoClient, ssoAccessTokenProvider)
+    // }
 
     private applyProfileRegionToGlobalStsConfig() {
         if (!AWS.config.sts) {
