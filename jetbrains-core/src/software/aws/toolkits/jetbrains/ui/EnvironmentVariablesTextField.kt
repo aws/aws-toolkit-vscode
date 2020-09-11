@@ -9,19 +9,28 @@ import com.intellij.execution.util.EnvironmentVariable
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
+import com.intellij.openapi.util.text.StringUtil
+import com.intellij.ui.DocumentAdapter
+import com.intellij.ui.UserActivityProviderComponent
 import software.aws.toolkits.resources.message
 import java.awt.Component
 import java.util.LinkedHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 import javax.swing.Icon
 import javax.swing.JComponent
+import javax.swing.event.ChangeEvent
+import javax.swing.event.ChangeListener
+import javax.swing.event.DocumentEvent
 
 /**
  * Our version of [com.intellij.execution.configuration.EnvironmentVariablesTextFieldWithBrowseButton] to fit our
  * needs but with same UX so users are used to it. Namely we do not support inheriting system env vars, but rest
  * of UX is the same
  */
-class EnvironmentVariablesTextField : TextFieldWithBrowseButton() {
+class EnvironmentVariablesTextField : TextFieldWithBrowseButton(), UserActivityProviderComponent {
     private var data = EnvironmentVariablesData.create(emptyMap(), false)
+    private val listeners = CopyOnWriteArrayList<ChangeListener>()
+
     var envVars: Map<String, String>
         get() = data.envs
         set(value) {
@@ -30,10 +39,21 @@ class EnvironmentVariablesTextField : TextFieldWithBrowseButton() {
         }
 
     init {
-        isEditable = false
         addActionListener {
             EnvironmentVariablesDialog(this).show()
         }
+
+        textField.document.addDocumentListener(
+            object : DocumentAdapter() {
+                override fun textChanged(e: DocumentEvent) {
+                    if (!StringUtil.equals(stringify(data.envs), text)) {
+                        val textEnvs = EnvVariablesTable.parseEnvsFromText(text)
+                        data = EnvironmentVariablesData.create(textEnvs, data.isPassParentEnvs)
+                        fireStateChanged()
+                    }
+                }
+            }
+        )
     }
 
     private fun convertToVariables(envVars: Map<String, String>, readOnly: Boolean): List<EnvironmentVariable> = envVars.map { (key, value) ->
@@ -46,20 +66,35 @@ class EnvironmentVariablesTextField : TextFieldWithBrowseButton() {
 
     override fun getHoveredIcon(): Icon = AllIcons.General.InlineVariablesHover
 
+    override fun addChangeListener(changeListener: ChangeListener) {
+        listeners.add(changeListener)
+    }
+
+    override fun removeChangeListener(changeListener: ChangeListener) {
+        listeners.remove(changeListener)
+    }
+
+    private fun fireStateChanged() {
+        listeners.forEach {
+            it.stateChanged(ChangeEvent(this))
+        }
+    }
+
     private fun stringify(envVars: Map<String, String>): String {
         if (envVars.isEmpty()) {
             return ""
         }
 
-        val buf = StringBuilder()
-        for ((key, value) in envVars) {
-            if (buf.isNotEmpty()) {
-                buf.append(";")
+        return buildString {
+            for ((key, value) in envVars) {
+                if (isNotEmpty()) {
+                    append(";")
+                }
+                append(StringUtil.escapeChar(key, ';'))
+                append("=")
+                append(StringUtil.escapeChar(value, ';'))
             }
-            buf.append(key).append("=").append(value)
         }
-
-        return buf.toString()
     }
 
     private inner class EnvironmentVariablesDialog(parent: Component) : DialogWrapper(parent, true) {
