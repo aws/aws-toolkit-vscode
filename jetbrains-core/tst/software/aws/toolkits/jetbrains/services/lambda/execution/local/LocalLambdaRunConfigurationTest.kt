@@ -32,6 +32,7 @@ import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtu
 import software.aws.toolkits.jetbrains.utils.rules.addClass
 import software.aws.toolkits.jetbrains.utils.rules.addModule
 import software.aws.toolkits.jetbrains.utils.toElement
+import software.aws.toolkits.jetbrains.utils.value
 import software.aws.toolkits.resources.message
 import java.nio.file.Paths
 import kotlin.test.assertNotNull
@@ -58,7 +59,7 @@ class LocalLambdaRunConfigurationTest {
     fun setUp() {
         val validSam = SamCommonTestUtils.makeATestSam(SamCommonTestUtils.getMinVersionAsJson())
         preWarmSamVersionCache(validSam.toString())
-        ExecutableManager.getInstance().setExecutablePath(SamExecutable(), validSam)
+        ExecutableManager.getInstance().setExecutablePath(SamExecutable(), validSam).value
 
         MockCredentialsManager.getInstance().addCredentials(mockId, mockCreds)
 
