@@ -1,4 +1,12 @@
 {
+    "types": [
+        {
+            "name": "ssmOperation",
+            "type": "string",
+            "allowedValues": ["Create", "Update"],
+            "description": "SSM Publish Document operation type"
+        }
+    ],
     "metrics": [
         {
             "name": "stepfunctions_previewstatemachine",
@@ -43,6 +51,19 @@
             "metadata": [
                 {
                     "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "ssm_publishDocument",
+            "description": "SSM Document related metrics for create and update",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "ssmOperation"
                 }
             ]
         }

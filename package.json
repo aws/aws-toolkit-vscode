@@ -62,6 +62,7 @@
         "onLanguage:ssm-yaml",
         "onCommand:aws.ssmDocument.createLocalDocument",
         "onCommand:aws.ssmDocument.openLocalDocument",
+        "onCommand:aws.ssmDocument.publishDocument",
         "onLanguage:javascript",
         "onLanguage:python",
         "onLanguage:csharp",
@@ -1028,6 +1029,21 @@
             {
                 "command": "aws.cloudWatchLogs.viewLogStream",
                 "title": "%AWS.command.viewLogStream%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.ssmDocument.createLocalDocument",
+                "title": "%AWS.command.ssmDocument.createLocalDocument%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.ssmDocument.openLocalDocument",
+                "title": "%AWS.command.ssmDocument.openLocalDocument%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.ssmDocument.publishDocument",
+                "title": "%AWS.command.ssmDocument.publishDocument%",
                 "category": "AWS"
             },
             {

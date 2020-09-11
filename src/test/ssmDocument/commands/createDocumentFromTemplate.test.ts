@@ -9,10 +9,8 @@ import * as picker from '../../../shared/ui/picker'
 import {
     createSsmDocumentFromTemplate,
     SsmDocumentTemplateQuickPickItem,
-    promptUserForTemplate,
 } from '../../../ssmDocument/commands/createDocumentFromTemplate'
 import * as openAndSaveDocument from '../../../ssmDocument/util/util'
-import * as vscode from 'vscode'
 
 import * as YAML from 'yaml'
 
@@ -20,9 +18,6 @@ describe('createDocumentFromTemplate', async () => {
     let sandbox: sinon.SinonSandbox
     beforeEach(() => {
         sandbox = sinon.createSandbox()
-        sandbox.stub(picker, 'promptUser').returns(Promise.resolve(fakeSelection))
-        sandbox.stub(picker, 'verifySinglePickerOutput').returns(fakeSelectionResult)
-        sandbox.stub(vscode.window, 'showTextDocument')
     })
 
     afterEach(() => {
@@ -36,6 +31,7 @@ describe('createDocumentFromTemplate', async () => {
 
     const fakeSelectionResult: SsmDocumentTemplateQuickPickItem = {
         label: 'test template',
+        description: 'an example to test creating from template',
         filename: 'test.command.ssm.json',
         language: 'ssm-json',
         docType: 'command',
@@ -44,12 +40,9 @@ describe('createDocumentFromTemplate', async () => {
     const fakeSelection: SsmDocumentTemplateQuickPickItem[] = []
     fakeSelection.push(fakeSelectionResult)
 
-    it('prompt users for templates', async () => {
-        const res = await promptUserForTemplate()
-        assert.strictEqual(res, fakeSelectionResult)
-    })
-
     it('open and save document based on selected template', async () => {
+        sandbox.stub(picker, 'promptUser').returns(Promise.resolve(fakeSelection))
+        sandbox.stub(picker, 'verifySinglePickerOutput').returns(fakeSelectionResult)
         sandbox.stub(JSON, 'stringify').returns(fakeContent)
         sandbox.stub(YAML, 'stringify').returns(fakeContent)
 
