@@ -9,6 +9,8 @@ const localize = nls.loadMessageBundle()
 import * as os from 'os'
 import * as vscode from 'vscode'
 
+import * as picker from '../../shared/ui/picker'
+
 export interface WizardStep {
     (): Thenable<WizardStep | undefined>
 }
@@ -39,7 +41,7 @@ export class WorkspaceFolderQuickPickItem implements FolderQuickPickItem {
     public readonly label: string
 
     public constructor(private readonly folder: vscode.WorkspaceFolder) {
-        this.label = folder.name
+        this.label = `$(root-folder-opened) ${folder.name}`
     }
 
     public async getUri(): Promise<vscode.Uri | undefined> {
@@ -61,7 +63,10 @@ export class BrowseFolderQuickPickItem implements FolderQuickPickItem {
 
     public get label(): string {
         if (this.context.workspaceFolders && this.context.workspaceFolders.length > 0) {
-            return localize('AWS.initWizard.location.select.folder', 'Select a different folder...')
+            return `$(folder-opened) ${localize(
+                'AWS.initWizard.location.select.folder',
+                'Select a different folder...'
+            )}`
         }
 
         return localize(
@@ -89,4 +94,65 @@ export class BrowseFolderQuickPickItem implements FolderQuickPickItem {
 
         return result[0]
     }
+}
+
+export async function promptUserForLocation(
+    context: WizardContext,
+    additionalParams?: {
+        helpButton?: { button: vscode.QuickInputButton; url: string }
+        overrideText?: { detail?: string; title?: string }
+    }
+): Promise<vscode.Uri | undefined> {
+    const items: FolderQuickPickItem[] = (context.workspaceFolders || [])
+        .map<FolderQuickPickItem>(f => new WorkspaceFolderQuickPickItem(f))
+        .concat([
+            new BrowseFolderQuickPickItem(
+                context,
+                additionalParams?.overrideText?.detail
+                    ? additionalParams.overrideText.detail
+                    : localize(
+                          'AWS.wizard.location.select.folder.detail',
+                          'The selected folder will be added to the workspace.'
+                      )
+            ),
+        ])
+
+    const quickPick = picker.createQuickPick({
+        options: {
+            ignoreFocusOut: true,
+            title: additionalParams?.overrideText?.title
+                ? additionalParams.overrideText.title
+                : localize('AWS.wizard.location.prompt', 'Select a workspace folder for your new project'),
+        },
+        items: items,
+        buttons: [
+            ...(additionalParams?.helpButton ? [additionalParams.helpButton.button] : []),
+            vscode.QuickInputButtons.Back,
+        ],
+    })
+
+    const choices = await picker.promptUser({
+        picker: quickPick,
+        onDidTriggerButton: (button, resolve, reject) => {
+            if (button === vscode.QuickInputButtons.Back) {
+                resolve(undefined)
+            } else if (button === additionalParams?.helpButton?.button) {
+                vscode.env.openExternal(vscode.Uri.parse(additionalParams.helpButton.url))
+            }
+        },
+    })
+    const pickerResponse = picker.verifySinglePickerOutput<FolderQuickPickItem>(choices)
+
+    if (!pickerResponse) {
+        return undefined
+    }
+
+    if (pickerResponse instanceof BrowseFolderQuickPickItem) {
+        const browseFolderResult = await pickerResponse.getUri()
+
+        // If user cancels from Open Folder dialog, send them back to the folder picker.
+        return browseFolderResult ? browseFolderResult : await promptUserForLocation(context, additionalParams)
+    }
+
+    return pickerResponse.getUri()
 }

@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "An extension for working with Amazon Web Services",
-    "version": "1.13.0-SNAPSHOT",
+    "version": "1.14.0-SNAPSHOT",
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {
@@ -88,6 +88,7 @@
                 },
                 "aws.samcli.location": {
                     "type": "string",
+                    "scope": "machine",
                     "default": "",
                     "markdownDescription": "%AWS.configuration.description.samcli.location%"
                 },
@@ -436,6 +437,14 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.importLambda",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.uploadLambda",
+                    "when": "false"
+                },
+                {
                     "command": "aws.invokeLambda",
                     "when": "false"
                 },
@@ -465,6 +474,18 @@
                 },
                 {
                     "command": "aws.showErrorDetails",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.copyLogStreamName",
+                    "when": "resourceScheme == awsCloudWatchLogs"
+                },
+                {
+                    "command": "aws.saveCurrentLogStreamContent",
+                    "when": "resourceScheme == awsCloudWatchLogs"
+                },
+                {
+                    "command": "aws.cloudWatchLogs.viewLogStream",
                     "when": "false"
                 },
                 {
@@ -505,6 +526,18 @@
                     "command": "aws.previewStateMachine",
                     "when": "editorLangId == asl",
                     "group": "navigation"
+                },
+                {
+                    "command": "aws.saveCurrentLogStreamContent",
+                    "when": "resourceScheme == awsCloudWatchLogs",
+                    "group": "navigation"
+                }
+            ],
+            "editor/title/context": [
+                {
+                    "command": "aws.copyLogStreamName",
+                    "when": "resourceScheme == awsCloudWatchLogs",
+                    "group": "1_cutcopypaste@1"
                 }
             ],
             "view/title": [
@@ -612,13 +645,23 @@
                 },
                 {
                     "command": "aws.invokeLambda",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable|awsCloudFormationFunctionNode)$/",
                     "group": "0@1"
                 },
                 {
+                    "command": "aws.importLambda",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/ && aws-toolkit-vscode:LambdaImport",
+                    "group": "0@2"
+                },
+                {
+                    "command": "aws.uploadLambda",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/ && aws-toolkit-vscode:LambdaUpload",
+                    "group": "1@1"
+                },
+                {
                     "command": "aws.deleteLambda",
-                    "when": "view == aws.explorer && viewItem == awsRegionFunctionNode",
-                    "group": "2@1"
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/",
+                    "group": "4@1"
                 },
                 {
                     "command": "aws.deleteCloudFormation",
@@ -677,12 +720,12 @@
                 },
                 {
                     "command": "aws.copyName",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode)$/",
                     "group": "2@1"
                 },
                 {
                     "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode)$/",
                     "group": "2@2"
                 },
                 {
@@ -819,6 +862,18 @@
                 "command": "aws.invokeLambda",
                 "title": "%AWS.command.invokeLambda%",
                 "category": "AWS"
+            },
+            {
+                "command": "aws.importLambda",
+                "title": "%AWS.command.importLambda%",
+                "category": "AWS",
+                "enablement": "viewItem == awsRegionFunctionNodeImportable"
+            },
+            {
+                "command": "aws.uploadLambda",
+                "title": "%AWS.command.uploadLambda%",
+                "category": "AWS",
+                "enablement": "viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/"
             },
             {
                 "command": "aws.deleteLambda",
@@ -960,6 +1015,18 @@
                 "command": "aws.cloudWatchLogs.viewLogStream",
                 "title": "%AWS.command.viewLogStream%",
                 "category": "AWS"
+            },
+            {
+                "command": "aws.copyLogStreamName",
+                "title": "%AWS.command.copyLogStreamName%",
+                "category": "AWS",
+                "icon": "$(files)"
+            },
+            {
+                "command": "aws.saveCurrentLogStreamContent",
+                "title": "%AWS.command.saveCurrentLogStreamContent%",
+                "category": "AWS",
+                "icon": "$(save-as)"
             }
         ],
         "jsonValidation": [
@@ -998,6 +1065,15 @@
                 "scopeName": "source.asl",
                 "path": "./syntaxes/ASL.tmLanguage"
             }
+        ],
+        "resourceLabelFormatters": [
+            {
+                "scheme": "awsCloudWatchLogs",
+                "formatting": {
+                    "label": "${path}",
+                    "separator": "\\"
+                }
+            }
         ]
     },
     "scripts": {
@@ -1027,7 +1103,7 @@
         "createRelease": "ts-node ./build-scripts/createRelease.ts"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "0.0.30",
+        "@aws-toolkits/telemetry": "0.0.40",
         "@types/adm-zip": "^0.4.32",
         "@types/async-lock": "^1.1.0",
         "@types/bytes": "^3.1.0",
@@ -1075,10 +1151,11 @@
         "remap-istanbul": "^0.12.0",
         "sinon": "^7.4.2",
         "source-map-support": "^0.5.19",
-        "terser-webpack-plugin": "^2.3.1",
+        "terser-webpack-plugin": "^4.1.0",
         "ts-loader": "^6.2.0",
         "ts-mockito": "^2.5.0",
         "ts-node": "^8.5.2",
+        "tslint": "^6.1.3",
         "vsce": "^1.69.0",
         "vscode-nls-dev": "^3.3.1",
         "vscode-test": "^1.4.0",
@@ -1087,7 +1164,7 @@
     },
     "dependencies": {
         "adm-zip": "^0.4.13",
-        "amazon-states-language-service": "^1.1.6",
+        "amazon-states-language-service": "^1.4.1",
         "async-lock": "^1.1.3",
         "aws-sdk": "^2.581.0",
         "bytes": "^3.1.0",

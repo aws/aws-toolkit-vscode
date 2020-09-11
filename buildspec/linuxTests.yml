@@ -1,4 +1,10 @@
 version: 0.2
+
+env:
+    variables:
+        AWS_TOOLKIT_TEST_USER_DIR: '/tmp/'
+        AWS_TOOLKIT_TEST_NO_COLOR: '1'
+
 phases:
     install:
         runtime-versions:
@@ -10,8 +16,6 @@ phases:
 
     build:
         commands:
-            - export AWS_TOOLKIT_TEST_USER_DIR=/tmp/
-            - export AWS_TOOLKIT_TEST_NO_COLOR=1
             - npm run testCompile
             - npm run lint
             - xvfb-run npm test --silent

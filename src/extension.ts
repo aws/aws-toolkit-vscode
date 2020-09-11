@@ -16,6 +16,7 @@ import { LoginManager } from './credentials/loginManager'
 import { CredentialsProviderManager } from './credentials/providers/credentialsProviderManager'
 import { SharedCredentialsProviderFactory } from './credentials/providers/sharedCredentialsProviderFactory'
 import { activate as activateSchemas } from './eventSchemas/activation'
+import { activate as activateLambda } from './lambda/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
@@ -125,6 +126,9 @@ export async function activate(context: vscode.ExtensionContext) {
             credentialsStore,
         }
 
+        // Used as a command for decoration-only codelenses.
+        context.subscriptions.push(vscode.commands.registerCommand('aws.doNothingCommand', () => {}))
+
         context.subscriptions.push(
             vscode.commands.registerCommand('aws.login', async () => await ext.awsContextCommands.onCommandLogin())
         )
@@ -192,6 +196,8 @@ export async function activate(context: vscode.ExtensionContext) {
             regionProvider,
             outputChannel: toolkitOutputChannel,
         })
+
+        await activateLambda(context)
 
         await activateSchemas({
             context: extContext.extensionContext,

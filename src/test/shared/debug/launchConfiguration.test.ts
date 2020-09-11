@@ -73,7 +73,7 @@ describe('LaunchConfiguration', () => {
         assert.deepStrictEqual(launchConfig.getSamDebugConfigurations(), [samDebugConfiguration])
     })
 
-    it('adds debug configurations', async () => {
+    it('adds single debug configuration', async () => {
         const launchConfig = new LaunchConfiguration(
             templateUri,
             instance(mockConfigSource),
@@ -82,6 +82,18 @@ describe('LaunchConfiguration', () => {
         await launchConfig.addDebugConfiguration(samDebugConfiguration)
 
         const expected = [samDebugConfiguration, ...debugConfigurations]
+        verify(mockConfigSource.setDebugConfigurations(deepEqual(expected))).once()
+    })
+
+    it('adds multiple debug configurations', async () => {
+        const launchConfig = new LaunchConfiguration(
+            templateUri,
+            instance(mockConfigSource),
+            instance(mockSamValidator)
+        )
+        await launchConfig.addDebugConfigurations([samDebugConfiguration, samDebugConfiguration])
+
+        const expected = [samDebugConfiguration, samDebugConfiguration, ...debugConfigurations]
         verify(mockConfigSource.setDebugConfigurations(deepEqual(expected))).once()
     })
 })

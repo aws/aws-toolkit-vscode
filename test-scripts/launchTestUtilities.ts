@@ -24,9 +24,7 @@ const MINIMUM = 'minimum'
  */
 export async function setupVSCodeTestInstance(): Promise<string> {
     let vsCodeVersion = process.env[ENVVAR_VSCODE_TEST_VERSION]
-    if (process.platform === 'win32') {
-        vsCodeVersion = getMinVsCodeVersion()
-    } else if (!vsCodeVersion) {
+    if (!vsCodeVersion) {
         vsCodeVersion = STABLE
     } else if (vsCodeVersion === MINIMUM) {
         vsCodeVersion = getMinVsCodeVersion()
@@ -75,10 +73,7 @@ export async function invokeVSCodeCli(vsCodeExecutablePath: string, args: string
 
 export async function installVSCodeExtension(vsCodeExecutablePath: string, extensionIdentifier: string): Promise<void> {
     console.log(`Installing VS Code Extension: ${extensionIdentifier}`)
-
-    const cmdArgs = ['--install-extension', extensionIdentifier]
-
-    await invokeVSCodeCli(vsCodeExecutablePath, cmdArgs)
+    await invokeVSCodeCli(vsCodeExecutablePath, ['--install-extension', extensionIdentifier])
 }
 
 function getMinVsCodeVersion(): string {

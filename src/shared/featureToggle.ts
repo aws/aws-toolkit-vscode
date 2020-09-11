@@ -15,7 +15,8 @@ import { SettingsConfiguration, DefaultSettingsConfiguration } from './settingsC
  * Any features that are flagged in the code but not added here will always return false.
  */
 export enum ActiveFeatureKeys {
-    CloudWatchLogs = 'CloudWatchLogs',
+    LambdaUpload = 'LambdaUpload',
+    LambdaImport = 'LambdaImport',
 }
 
 /**
