@@ -2,19 +2,21 @@
 import * as AWS from 'aws-sdk'
 import { Logger } from '../../src/shared/logger/logger'
 import { DiskCache } from './sso/diskCache'
-import { SsoAccessTokenProvider } from './ssoAccessTokenProvider'
+import { SsoAccessTokenProvider } from './sso/ssoAccessTokenProvider'
+import { SsoCredentialProvider } from './providers/ssoCredentialProvider'
 
 const profile = {
-    sso_start_url: 'https://d-92670706af.awsapps.com/start',
+    sso_start_url: '',
     sso_region: 'us-west-2',
-    sso_role_name: 'AdministratorAccess',
-    sso_account_id: 342492324002,
+    sso_role_name: '',
+    sso_account_id: '',
 }
 
 export async function endToEndSSO(logger: Logger) {
     logger.info(`--------------------------starting workbench-----------------`)
     logger.info(`--------------------------register client--------------------`)
     const sso_oidc_client = new AWS.SSOOIDC({ region: profile.sso_region })
+    const sso_client = new AWS.SSO({ region: profile.sso_region })
     const diskCache = new DiskCache()
 
     const ssoAccessTokenProvider = new SsoAccessTokenProvider(
@@ -23,7 +25,17 @@ export async function endToEndSSO(logger: Logger) {
         sso_oidc_client,
         diskCache
     )
-    const accessToken = await ssoAccessTokenProvider.accessToken()
+
+    const ssoCredProvider = new SsoCredentialProvider(
+        profile.sso_account_id,
+        profile.sso_role_name,
+        sso_client,
+        ssoAccessTokenProvider
+    )
+
+    return await ssoCredProvider.refreshCredentials()
+    // const accessToken = await ssoAccessTokenProvider.accessToken()
+
     // const regParams = {
     //     clientName: `toolkit-testing-${Date.now()}`,
     //     clientType: 'public'
@@ -98,24 +110,24 @@ export async function endToEndSSO(logger: Logger) {
 
     // diskCache.saveAccessToken(profile.sso_start_url, accessToken)
 
-    const sso_client = new AWS.SSO({ region: profile.sso_region })
-    const awsCreds = await sso_client
-        .getRoleCredentials({
-            accountId: profile.sso_account_id.toString(),
-            roleName: profile.sso_role_name,
-            accessToken: accessToken.accessToken!,
-        })
-        .promise()
-    logger.info(`NEW AWS CREDS`)
-    logger.info(JSON.stringify(awsCreds))
+    // const sso_client = new AWS.SSO({ region: profile.sso_region })
+    // const awsCreds = await sso_client
+    //     .getRoleCredentials({
+    //         accountId: profile.sso_account_id.toString(),
+    //         roleName: profile.sso_role_name,
+    //         accessToken: accessToken.accessToken!,
+    //     })
+    //     .promise()
+    // logger.info(`NEW AWS CREDS`)
+    // logger.info(JSON.stringify(awsCreds))
 
-    const creds = new AWS.Credentials({
-        accessKeyId: awsCreds.roleCredentials?.accessKeyId!,
-        secretAccessKey: awsCreds.roleCredentials?.secretAccessKey!,
-        sessionToken: awsCreds.roleCredentials?.sessionToken,
-    })
-    logger.info(JSON.stringify(creds))
-    return creds
+    // const creds = new AWS.Credentials({
+    //     accessKeyId: awsCreds.roleCredentials?.accessKeyId!,
+    //     secretAccessKey: awsCreds.roleCredentials?.secretAccessKey!,
+    //     sessionToken: awsCreds.roleCredentials?.sessionToken,
+    // })
+    // logger.info(JSON.stringify(creds))
+    // return creds
 
     // return () => creds
 }

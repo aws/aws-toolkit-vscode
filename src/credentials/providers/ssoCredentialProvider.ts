@@ -4,7 +4,7 @@
  */
 
 import * as AWS from 'aws-sdk'
-import { SsoAccessTokenProvider } from '../ssoAccessTokenProvider'
+import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
 
 export class SsoCredentialProvider {
     private ssoAccount: string
@@ -24,15 +24,27 @@ export class SsoCredentialProvider {
         this.ssoAccessTokenProvider = ssoAccessTokenProvider
     }
 
-    //  private refreshCredentials(): AWS.Credentials {
-    //     let roleCredentials
-    //     try {
-    //         const accessToken = this.ssoAccessTokenProvider.accessToken()
-    //     }
-    //  }
+    public async refreshCredentials() {
+        let roleCredentials
+        try {
+            const accessToken = await this.ssoAccessTokenProvider.accessToken()
+            roleCredentials = await this.ssoClient
+                .getRoleCredentials({
+                    accountId: this.ssoAccount,
+                    roleName: this.ssoRole,
+                    accessToken: accessToken.accessToken,
+                })
+                .promise()
+        } catch (err) {
+            this.ssoAccessTokenProvider.invalidate()
+            throw err
+        }
 
-    deleteThis() {
-        console.log(typeof this.ssoAccount + this.ssoRole + this.ssoClient)
-        this.ssoAccessTokenProvider
+        const awsCredentials = new AWS.Credentials({
+            accessKeyId: roleCredentials.roleCredentials?.accessKeyId!,
+            secretAccessKey: roleCredentials.roleCredentials?.secretAccessKey!,
+            sessionToken: roleCredentials.roleCredentials?.sessionToken,
+        })
+        return awsCredentials
     }
 }

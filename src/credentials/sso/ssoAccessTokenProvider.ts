@@ -4,11 +4,11 @@
  */
 
 import * as vscode from 'vscode'
-import { ClientRegistration } from './sso/clientRegistration'
-import { AccessToken } from './sso/accessToken'
-import { DiskCache } from './sso/diskCache'
-import { Authorization } from './sso/authorization'
-import { getLogger } from '../shared/logger'
+import { ClientRegistration } from './clientRegistration'
+import { AccessToken } from './accessToken'
+import { DiskCache } from './diskCache'
+import { Authorization } from './authorization'
+import { getLogger } from '../../shared/logger'
 
 const CLIENT_REGISTRATION_TYPE = 'public'
 const GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:device_code'
@@ -44,13 +44,10 @@ export class SsoAccessTokenProvider {
     private async pollForToken(): Promise<AccessToken> {
         const registration = await this.registerClient()
         const authorization = await this.authorizeClient(registration)
+
         //temporary logging to get URL
         const logger = getLogger()
         logger.info(JSON.stringify(authorization))
-
-        // This next section of the block will be made into its own method
-        const signInInstructionMessage = `User Code: ${authorization.userCode}\nVerificationUri: ${authorization.verificationUri}\nVerificationComplete: ${authorization.verificationUriComplete}\n\nUsing a browser, visit: ${authorization.verificationUri}\n\nAnd enter the code: ${authorization.userCode}`
-        await vscode.window.showInformationMessage(signInInstructionMessage)
 
         let retryInterval = authorization.interval
         const createTokenParams = {
@@ -70,10 +67,15 @@ export class SsoAccessTokenProvider {
                 }
                 return accessToken
             } catch (err) {
-                //can't seem to find the list of exceptions from SSOOIDC, just add time for now
-                retryInterval += 5
+                if (err.code === 'SlowDownException') {
+                    retryInterval += 5
+                } else if (err.code === 'AuthorizationPendingException') {
+                    //the tool must add the current polling Interval to the current time and check to see if that time is later than the previously calculated expiration time. If not, then the tool will wait for the Interval and then retry the request.
+                } else if (err.code === 'ExpiredTokenException') {
+                    //MUST raise an exception indicating that the sso login window expired and the ssl login flow must be reinitiated
+                }
             }
-
+            retryInterval *= 2
             setInterval(() => {}, retryInterval * 1000)
         }
     }
@@ -96,6 +98,10 @@ export class SsoAccessTokenProvider {
                 expiresIn: authorizationResponse.expiresIn!,
                 interval: authorizationResponse.interval!,
             }
+
+            const signInInstructionMessage = `You have chosen an SSO profile that requires authorization. `
+            vscode.window.showInformationMessage(signInInstructionMessage)
+            vscode.env.openExternal(vscode.Uri.parse(authorization.verificationUriComplete))
             return authorization
         } catch (err) {
             throw err
@@ -124,5 +130,9 @@ export class SsoAccessTokenProvider {
         this.cache.saveClientRegistration(this.ssoRegion, registration)
 
         return registration
+    }
+
+    public invalidate() {
+        this.cache.invalidateAccessToken(this.ssoUrl)
     }
 }
