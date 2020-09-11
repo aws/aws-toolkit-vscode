@@ -301,16 +301,22 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
      *
      * @param selectedRegion Selected region for S3 client usage
      * @param initialValue Optional, Initial value to prompt with
+     * @param messages Passthrough strings for testing
      *
      * @returns S3 Bucket name. Undefined represents cancel.
      */
-    public async promptUserForS3Bucket(selectedRegion: string, initialValue?: string): Promise<string | undefined> {
+    public async promptUserForS3Bucket(
+        selectedRegion: string,
+        initialValue: string | undefined = undefined,
+        messages: {
+            noBuckets: string
+            bucketError: string
+        } = {
+            noBuckets: localize('AWS.samcli.deploy.s3bucket.picker.noBuckets', 'No buckets found.'),
+            bucketError: localize('AWS.samcli.deploy.s3bucket.picker.error', 'There was an error loading S3 buckets.'),
+        }
+    ): Promise<string | undefined> {
         const loadingBuckets: string = localize('AWS.samcli.deploy.s3bucket.picker.loading', 'Loading S3 buckets...')
-        const noBuckets: string = localize('AWS.samcli.deploy.s3bucket.picker.noBuckets', 'No buckets found.')
-        const bucketError: string = localize(
-            'AWS.samcli.deploy.s3bucket.picker.error',
-            'There was an error loading S3 buckets.'
-        )
 
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
@@ -330,43 +336,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         quickPick.busy = true
         quickPick.enabled = false
 
-        new Promise(async resolve => {
-            const goBack: string = localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back')
-
-            try {
-                const s3Client = ext.toolkitClientBuilder.createS3Client(selectedRegion)
-
-                const buckets = await s3Client.listBuckets()
-
-                quickPick.items = buckets.buckets.map(bucket => {
-                    return {
-                        label: bucket.name,
-                    }
-                })
-
-                if (quickPick.items.length === 0) {
-                    quickPick.items = [
-                        {
-                            label: noBuckets,
-                            description: goBack,
-                        },
-                    ]
-                }
-            } catch (e) {
-                const err = e as Error
-                quickPick.items = [
-                    {
-                        label: bucketError,
-                        description: goBack,
-                        detail: err.message,
-                    },
-                ]
-            } finally {
-                quickPick.busy = false
-                quickPick.enabled = true
-                resolve()
-            }
-        })
+        populateS3QuickPick(quickPick, selectedRegion, messages)
 
         const choices = await picker.promptUser<vscode.QuickPickItem>({
             picker: quickPick,
@@ -380,7 +350,9 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         })
         const val = picker.verifySinglePickerOutput(choices)
 
-        return val?.label && ![loadingBuckets, noBuckets, bucketError].includes(val.label) ? val.label : undefined
+        return val?.label && ![loadingBuckets, messages.noBuckets, messages.bucketError].includes(val.label)
+            ? val.label
+            : undefined
     }
 
     /**
@@ -636,4 +608,48 @@ async function getTemplateChoices(...workspaceFolders: vscode.Uri[]): Promise<Sa
 
         return new SamTemplateQuickPickItem(uri, showWorkspaceFolderDetails)
     }).sort((a, b) => a.compareTo(b))
+}
+
+async function populateS3QuickPick(
+    quickPick: vscode.QuickPick<vscode.QuickPickItem>,
+    selectedRegion: string,
+    messages: { noBuckets: string; bucketError: string }
+): Promise<void> {
+    return new Promise(async resolve => {
+        const goBack: string = localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back')
+
+        try {
+            const s3Client = ext.toolkitClientBuilder.createS3Client(selectedRegion)
+
+            const buckets = await s3Client.listBuckets()
+
+            quickPick.items = buckets.buckets.map(bucket => {
+                return {
+                    label: bucket.name,
+                }
+            })
+
+            if (quickPick.items.length === 0) {
+                quickPick.items = [
+                    {
+                        label: messages.noBuckets,
+                        description: goBack,
+                    },
+                ]
+            }
+        } catch (e) {
+            const err = e as Error
+            quickPick.items = [
+                {
+                    label: messages.bucketError,
+                    description: goBack,
+                    detail: err.message,
+                },
+            ]
+        } finally {
+            quickPick.busy = false
+            quickPick.enabled = true
+            resolve()
+        }
+    })
 }
