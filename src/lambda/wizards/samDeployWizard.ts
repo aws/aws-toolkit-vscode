@@ -23,7 +23,7 @@ import { MultiStepWizard, WizardStep } from '../../shared/wizards/multiStepWizar
 import { configureParameterOverrides } from '../config/configureParameterOverrides'
 import { getOverriddenParameters, getParameters } from '../utilities/parameterUtils'
 import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
-import { DefaultS3Client } from '../../shared/clients/defaultS3Client'
+import { ext } from '../../shared/extensionGlobals'
 
 export interface SamDeployWizardResponse {
     parameterOverrides: Map<string, string>
@@ -315,10 +315,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             options: {
-                title: localize(
-                    'AWS.samcli.deploy.s3Bucket.prompt',
-                    'Enter the AWS S3 bucket to which your code should be deployed'
-                ),
+                title: localize('AWS.samcli.deploy.s3Bucket.prompt', 'Select an AWS S3 Bucket to deploy code to'),
                 value: initialValue,
                 matchOnDetail: true,
                 ignoreFocusOut: true,
@@ -337,10 +334,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             const goBack: string = localize('AWS.picker.dynamic.noItemsFound.detail', 'Click here to go back')
 
             try {
-                const s3Client = new DefaultS3Client(
-                    selectedRegion,
-                    this.regionProvider.getPartitionId(selectedRegion) ?? 'aws'
-                )
+                const s3Client = ext.toolkitClientBuilder.createS3Client(selectedRegion)
 
                 const buckets = await s3Client.listBuckets()
 
