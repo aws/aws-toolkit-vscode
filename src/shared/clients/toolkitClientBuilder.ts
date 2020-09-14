@@ -13,6 +13,7 @@ import { SchemaClient } from './schemaClient'
 import { StepFunctionsClient } from './stepFunctionsClient'
 import { StsClient } from './stsClient'
 import { SsmDocumentClient } from './ssmDocumentClient'
+import { S3Client } from './s3Client'
 
 export interface ToolkitClientBuilder {
     createCloudFormationClient(regionCode: string): CloudFormationClient
@@ -32,4 +33,6 @@ export interface ToolkitClientBuilder {
     createIamClient(regionCode: string): IamClient
 
     createSsmClient(regionCode: string): SsmDocumentClient
+    
+    createS3Client(regionCode: string): S3Client
 }
