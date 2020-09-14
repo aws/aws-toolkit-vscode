@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "User can select an S3 bucket when deploying a SAM app"
+}

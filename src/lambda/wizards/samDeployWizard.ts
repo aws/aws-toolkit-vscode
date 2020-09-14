@@ -336,6 +336,10 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         quickPick.busy = true
         quickPick.enabled = false
 
+        // NOTE: Do not await this promise.
+        // This will background load the S3 buckets and load them all (in one chunk) when the operation completes.
+        // Not awaiting lets us display a "loading" quick pick for immediate feedback.
+        // Does not use an IteratingQuickPick because listing S3 buckets by region is not a paginated operation.
         populateS3QuickPick(quickPick, selectedRegion, messages)
 
         const choices = await picker.promptUser<vscode.QuickPickItem>({
@@ -610,6 +614,14 @@ async function getTemplateChoices(...workspaceFolders: vscode.Uri[]): Promise<Sa
     }).sort((a, b) => a.compareTo(b))
 }
 
+/**
+ * Loads S3 buckets into a quick pick.
+ * Fully replaces the quick pick's `items` field on loading S3 buckets.
+ * Operation is not paginated as S3 does not offer paginated listing of regionalized buckets.
+ * @param quickPick Quick pick to modify the items and busy/enabled state of.
+ * @param selectedRegion AWS region to display buckets for
+ * @param messages Messages to denote no available buckets and errors.
+ */
 async function populateS3QuickPick(
     quickPick: vscode.QuickPick<vscode.QuickPickItem>,
     selectedRegion: string,
