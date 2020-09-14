@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { access } from 'fs-extra'
+import { access, writeFile } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import {
@@ -13,15 +13,15 @@ import {
 } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import * as pathutil from '../../../shared/utilities/pathUtils'
-import { DefaultDockerClient, DockerClient } from '../../clients/dockerClient'
 import { ExtContext } from '../../extensions'
 import { mkdir } from '../../filesystem'
-import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../../sam/cli/samCliLocalInvoke'
+import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
 import { getStartPort } from '../../utilities/debuggerUtils'
 import { ChannelLogger, getChannelLogger } from '../../utilities/vsCodeUtils'
 import { invokeLambdaFunction, makeInputTemplate, waitForDebugPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
-import { getSamCliContext, getSamCliDockerImageName } from '../../sam/cli/samCliContext'
+import { ChildProcess } from '../../utilities/childProcess'
+import { HttpResourceFetcher } from '../../resourcefetcher/httpResourceFetcher'
 
 /**
  * Gathers and sets launch-config info by inspecting the workspace and creating
@@ -70,21 +70,16 @@ export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchReque
     config.onWillAttachDebugger = waitForDebugPort
     return await invokeLambdaFunction(ctx, config, async () => {
         if (!config.noDebug) {
-            await _installDebugger(
-                {
-                    debuggerPath: config.debuggerPath!!,
-                    lambdaRuntime: config.runtime,
-                    channelLogger: ctx.chanLogger,
-                },
-                { dockerClient: new DefaultDockerClient(ctx.outputChannel) }
-            )
+            await _installDebugger({
+                debuggerPath: config.debuggerPath!!,
+                channelLogger: ctx.chanLogger,
+            })
         }
     })
 }
 
 interface InstallDebuggerArgs {
     debuggerPath: string
-    lambdaRuntime: string
     channelLogger: ChannelLogger
 }
 
@@ -100,40 +95,69 @@ async function ensureDebuggerPathExists(debuggerPath: string): Promise<void> {
     }
 }
 
-async function _installDebugger(
-    { debuggerPath, lambdaRuntime, channelLogger }: InstallDebuggerArgs,
-    { dockerClient }: { dockerClient: DockerClient }
-): Promise<void> {
+async function _installDebugger({ debuggerPath, channelLogger }: InstallDebuggerArgs): Promise<void> {
     await ensureDebuggerPathExists(debuggerPath)
 
     try {
-        const samCliContext = getSamCliContext()
-        const samCliVersionValidatorResult = await samCliContext.validator.getVersionValidatorResult()
-        const samCliVersion = samCliVersionValidatorResult.version
-
-        const imageStr = getSamCliDockerImageName(samCliVersion, lambdaRuntime)
-
         channelLogger.info(
             'AWS.samcli.local.invoke.debugger.install',
-            'Installing .NET Core Debugger to {0} using Docker image {1}...',
-            debuggerPath,
-            imageStr
+            'Installing .NET Core Debugger to {0}...',
+            debuggerPath
         )
 
-        await dockerClient.invoke({
-            command: 'run',
-            image: imageStr,
-            removeOnExit: true,
-            mount: {
-                type: 'bind',
-                source: debuggerPath,
-                destination: '/vsdbg',
-            },
-            entryPoint: {
-                command: 'bash',
-                args: ['-c', 'curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg'],
-            },
+        const vsDbgVersion = 'latest'
+        const vsDbgRuntime = 'linux-x64'
+
+        const installScriptPath = await downloadInstallScript(debuggerPath)
+
+        let installCommand: string
+        let installArgs: string[]
+        if (os.platform() == 'win32') {
+            installCommand = `${process.env['WINDIR']}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`
+            installArgs = [
+                '-NonInteractive',
+                '-NoProfile',
+                '-WindowStyle',
+                'Hidden',
+                '-ExecutionPolicy',
+                'RemoteSigned',
+                '-File',
+                installScriptPath,
+                '-Version',
+                vsDbgVersion,
+                '-RuntimeID',
+                vsDbgRuntime,
+                '-InstallPath',
+                debuggerPath,
+            ]
+        } else {
+            await new ChildProcess('chmod', {}, 'u+x', installScriptPath).run()
+
+            installCommand = installScriptPath
+            installArgs = ['-v', vsDbgVersion, '-r', vsDbgRuntime, '-l', debuggerPath]
+        }
+
+        const childProcess = new ChildProcess(installCommand, {}, ...installArgs)
+
+        const installPromise = new Promise<void>(async (resolve, reject) => {
+            await childProcess.start({
+                onStdout: (text: string) => {
+                    channelLogger.channel.append(text)
+                },
+                onStderr: (text: string) => {
+                    channelLogger.channel.append(text)
+                },
+                onClose(code: number) {
+                    if (code) {
+                        reject(`Exited with code ${code}`)
+                    } else {
+                        resolve()
+                    }
+                },
+            })
         })
+
+        await installPromise
     } catch (err) {
         channelLogger.info(
             'AWS.samcli.local.invoke.debugger.install.failed',
@@ -143,6 +167,27 @@ async function _installDebugger(
 
         throw err
     }
+}
+
+async function downloadInstallScript(debuggerPath: string): Promise<string> {
+    let installScriptUrl: string
+    if (os.platform() == 'win32') {
+        installScriptUrl = 'https://aka.ms/getvsdbgps1'
+    } else {
+        installScriptUrl = 'https://aka.ms/getvsdbgsh'
+    }
+
+    const installScriptFetcher = new HttpResourceFetcher(installScriptUrl)
+    const installScript = await installScriptFetcher.get()
+    if (!installScript) {
+        throw Error(`Failed to download ${installScriptUrl}`)
+    }
+
+    const installScriptPath = path.join(debuggerPath, 'installVsdbgScript')
+
+    await writeFile(installScriptPath, installScript, 'utf8')
+
+    return installScriptPath
 }
 
 function getSamProjectDirPathForFile(filepath: string): string {
