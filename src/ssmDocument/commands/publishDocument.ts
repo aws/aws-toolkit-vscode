@@ -9,6 +9,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 import { AwsContext } from '../../shared/awsContext'
 import { SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
+import { ssmJson, ssmYaml } from '../../shared/constants'
 import { ext } from '../../shared/extensionGlobals'
 import { getLogger, Logger } from '../../shared/logger'
 import {
@@ -27,15 +28,17 @@ export async function publishSSMDocument(awsContext: AwsContext, outputChannel: 
 
     const textDocument = vscode.window.activeTextEditor?.document
     if (!textDocument) {
-        logger.error('Could not get active text editor for local SSM Document definition')
-        throw new Error('Could not get active text editor for local SSM Document definition')
+        let error = new Error('Could not get active text editor for local SSM Document definition')
+        logger.error(error.message)
+        throw error
     }
 
-    if (textDocument.languageId !== 'ssm-json' && textDocument.languageId !== 'ssm-yaml') {
-        logger.error(
-            'Could not get SSM Document from current active text editor. Please set the document language to ssm-yaml or ssm-json.'
+    if (textDocument.languageId !== ssmJson && textDocument.languageId !== ssmYaml) {
+        let error = new Error(
+            'Current editor language does not match the supported formats. Please set the document language to ssm-yaml or ssm-json.'
         )
-        throw new Error('Could not get active text editor for local SSM Document definition')
+        logger.error(error.message)
+        throw error
     }
 
     let region = awsContext.getCredentialDefaultRegion()
@@ -53,9 +56,9 @@ export async function publishSSMDocument(awsContext: AwsContext, outputChannel: 
         const wizardResponse: PublishSSMDocumentWizardResponse | undefined = await new PublishSSMDocumentWizard(
             wizardContext
         ).run()
-        if (wizardResponse?.createResponse) {
+        if (wizardResponse?.PublishSsmDocAction == 'Create') {
             await createDocument(wizardResponse, textDocument, outputChannel, region, client)
-        } else if (wizardResponse?.updateResponse) {
+        } else if (wizardResponse?.PublishSsmDocAction == 'Update') {
             await updateDocument(wizardResponse, textDocument, outputChannel, region, client)
         }
     } catch (err) {
@@ -70,14 +73,17 @@ export async function createDocument(
     region: string,
     client: SsmDocumentClient
 ) {
+    let result: telemetry.Result = 'Succeeded'
+    let ssmOperation: telemetry.SsmOperation = wizardResponse.PublishSsmDocAction as telemetry.SsmOperation
+
     const logger: Logger = getLogger()
-    logger.info(`Creating SSM Document '${wizardResponse.createResponse!.name}'`)
+    logger.info(`Creating SSM Document '${wizardResponse.name}'`)
     outputChannel.show()
     outputChannel.appendLine(
         localize(
             'AWS.message.info.ssmDocument.publishDocument.creating',
             "Creating SSM Document '{0}' in {1}...",
-            wizardResponse.createResponse!.name,
+            wizardResponse.name,
             region
         )
     )
@@ -85,9 +91,9 @@ export async function createDocument(
     try {
         const request: SSM.CreateDocumentRequest = {
             Content: textDocument.getText(),
-            Name: wizardResponse.createResponse!.name,
-            DocumentType: wizardResponse.createResponse!.documentType,
-            DocumentFormat: textDocument.languageId === 'ssm-yaml' ? 'YAML' : 'JSON',
+            Name: wizardResponse.name,
+            DocumentType: wizardResponse.documentType,
+            DocumentFormat: textDocument.languageId === ssmYaml ? 'YAML' : 'JSON',
         }
 
         const result = await client.createDocument(request)
@@ -95,32 +101,31 @@ export async function createDocument(
             localize(
                 'AWS.message.info.ssmDocument.publishDocument.createSuccess',
                 "Successfully created and uploaded SSM Document '{0}'",
-                wizardResponse.createResponse!.name
+                wizardResponse.name
             )
         )
         if (result.DocumentDescription) {
             outputChannel.appendLine(stringify(result.DocumentDescription))
         }
-
-        telemetry.recordSsmPublishDocumentCreate({ result: 'Succeeded' })
         logger.info(`Created SSM Document successfully ${stringify(result.DocumentDescription)}`)
         vscode.window.showInformationMessage(`Created SSM Document successfully`)
         outputChannel.appendLine('')
     } catch (err) {
+        logger.info(`Failed to create SSM Document '${wizardResponse.name}'. %0`, err as Error)
+        result = 'Failed'
         outputChannel.appendLine(
             localize(
                 'AWS.message.info.ssmDocument.publishDocument.createFailure',
                 "There was an error creating and uploading SSM Document '{0}', check logs for more information.",
-                wizardResponse.createResponse!.name
+                wizardResponse.name
             )
         )
-
-        telemetry.recordSsmPublishDocumentCreate({ result: 'Failed' })
-        logger.info(`Failed to create SSM Document '${wizardResponse.createResponse!.name}'. %0`, err as Error)
         vscode.window.showErrorMessage(
-            `Failed to create SSM Document '${wizardResponse.createResponse!.name}'. ${(err as Error).message}`
+            `Failed to create SSM Document '${wizardResponse.name}'. ${(err as Error).message}`
         )
         outputChannel.appendLine('')
+    } finally {
+        telemetry.recordSsmPublishDocument({ result: result, ssmOperation: ssmOperation })
     }
 }
 
@@ -131,14 +136,17 @@ export async function updateDocument(
     region: string,
     client: SsmDocumentClient
 ) {
+    let result: telemetry.Result = 'Succeeded'
+    let ssmOperation: telemetry.SsmOperation = wizardResponse.PublishSsmDocAction as telemetry.SsmOperation
+
     const logger: Logger = getLogger()
-    logger.info(`Updating SSM Document '${wizardResponse.updateResponse!.name}'`)
+    logger.info(`Updating SSM Document '${wizardResponse.name}'`)
     outputChannel.show()
     outputChannel.appendLine(
         localize(
             'AWS.message.info.ssmDocument.publishDocument.updating',
             "Updating SSM Document '{0}' in {1}...",
-            wizardResponse.updateResponse!.name,
+            wizardResponse.name,
             region
         )
     )
@@ -146,39 +154,37 @@ export async function updateDocument(
     try {
         const request: SSM.UpdateDocumentRequest = {
             Content: textDocument.getText(),
-            Name: wizardResponse.updateResponse!.name,
+            Name: wizardResponse.name,
             DocumentVersion: '$LATEST',
-            DocumentFormat: textDocument.languageId === 'ssm-yaml' ? 'YAML' : 'JSON',
+            DocumentFormat: textDocument.languageId === ssmYaml ? 'YAML' : 'JSON',
         }
 
-        // Add more to request
         const result = await client.updateDocument(request)
         outputChannel.appendLine(
             localize(
                 'AWS.message.info.ssmDocument.publishDocument.updateSuccess',
                 "Successfully updated SSM Document '{0}'",
-                wizardResponse.updateResponse!.name
+                wizardResponse.name
             )
         )
         if (result.DocumentDescription) {
             outputChannel.appendLine(stringify(result.DocumentDescription))
         }
-
-        telemetry.recordSsmPublishDocumentUpdate({ result: 'Succeeded' })
-        vscode.window.showInformationMessage(`Updated SSM Document successfully`)
         logger.info(`Updated SSM Document successfully ${stringify(result.DocumentDescription)}`)
+        vscode.window.showInformationMessage(`Updated SSM Document successfully`)
         outputChannel.appendLine('')
     } catch (err) {
+        logger.info(`Failed to update SSM Document '${wizardResponse.name}'. %0`, err as Error)
+        result = 'Failed'
         outputChannel.appendLine(
             localize(
                 'AWS.message.info.ssmDocument.publishDocument.updateFailure',
                 "There was an error updating SSM Document '{0}', check logs for more information.",
-                wizardResponse.updateResponse!.name
+                wizardResponse.name
             )
         )
-
-        telemetry.recordSsmPublishDocumentUpdate({ result: 'Failed' })
-        logger.info(`Failed to update SSM Document '${wizardResponse.updateResponse!.name}'. %0`, err as Error)
         outputChannel.appendLine('')
+    } finally {
+        telemetry.recordSsmPublishDocument({ result: result, ssmOperation: ssmOperation })
     }
 }

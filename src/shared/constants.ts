@@ -57,7 +57,8 @@ export const sfnUpdateStateMachineUrl: string =
 // URLs for SSM Documents
 export const ssmDocumentPublishGuideUrl: string =
     'https://docs.aws.amazon.com/systems-manager/latest/userguide/create-ssm-doc.html'
-
+export const ssmJson: string = 'ssm-json'
+export const ssmYaml: string = 'ssm-yaml'
 /**
  * Moment format for rendering readable dates.
  *

@@ -18,8 +18,7 @@ describe('RegistryItemNode', () => {
 
     const fakeRegion = 'testRegion'
     const expectedAutomationNodeName = 'Automation'
-    const expectedCommandNodeName = 'Command'
-    const expectedChildNodeNames = [expectedAutomationNodeName, expectedCommandNodeName]
+    const expectedChildNodeNames = [expectedAutomationNodeName]
 
     beforeEach(() => {
         sandbox = sinon.createSandbox()

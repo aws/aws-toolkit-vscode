@@ -50,7 +50,7 @@ describe('openDocumentItem', async () => {
     const fakeFormatSelection = [
         {
             label: 'JSON',
-            description: 'Open document with format JSON',
+            description: 'Open document in JSON format',
         },
     ]
 

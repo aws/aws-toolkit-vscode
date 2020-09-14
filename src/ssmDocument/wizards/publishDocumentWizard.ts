@@ -18,13 +18,9 @@ import { MultiStepWizard, WizardContext, WizardStep } from '../../shared/wizards
 const localize = nls.loadMessageBundle()
 
 export interface PublishSSMDocumentWizardResponse {
-    createResponse?: {
-        name: string
-        documentType: SSM.DocumentType
-    }
-    updateResponse?: {
-        name: string
-    }
+    PublishSsmDocAction: string
+    name: string
+    documentType?: SSM.DocumentType
 }
 
 export enum PublishSSMDocumentAction {
@@ -63,10 +59,9 @@ export class PublishSSMDocumentWizard extends MultiStepWizard<PublishSSMDocument
                 }
 
                 return {
-                    createResponse: {
-                        name: this.name,
-                        documentType: this.documentType,
-                    },
+                    PublishSsmDocAction: 'Create',
+                    name: this.name,
+                    documentType: this.documentType,
                 }
             }
 
@@ -76,9 +71,8 @@ export class PublishSSMDocumentWizard extends MultiStepWizard<PublishSSMDocument
                 }
 
                 return {
-                    updateResponse: {
-                        name: this.name,
-                    },
+                    PublishSsmDocAction: 'Update',
+                    name: this.name,
                 }
             }
 
@@ -173,34 +167,36 @@ export class DefaultPublishSSMDocumentWizardContext extends WizardContext implem
         }
     }
 
+    // TODO: Uncomment code when supporting more document types in future
     public async promptUserForDocumentType(): Promise<SSM.DocumentType | undefined> {
-        const documentTypeItems: DocumentTypeQuickPickItem[] = [
-            {
-                label: localize('AWS.ssmDocument.publishWizard.documentType.automation.label', 'Automation'),
-                documentType: 'Automation',
-            },
-        ]
+        // const documentTypeItems: DocumentTypeQuickPickItem[] = [
+        //     {
+        //         label: localize('AWS.ssmDocument.publishWizard.documentType.automation.label', 'Automation'),
+        //         documentType: 'Automation',
+        //     },
+        // ]
 
-        const quickPick = picker.createQuickPick<DocumentTypeQuickPickItem>({
-            options: {
-                ignoreFocusOut: true,
-                title: localize('AWS.ssmDocument.publishWizard.documentType.title', 'Select document type'),
-            },
-            buttons: [vscode.QuickInputButtons.Back],
-            items: documentTypeItems,
-        })
+        // const quickPick = picker.createQuickPick<DocumentTypeQuickPickItem>({
+        //     options: {
+        //         ignoreFocusOut: true,
+        //         title: localize('AWS.ssmDocument.publishWizard.documentType.title', 'Select document type'),
+        //     },
+        //     buttons: [vscode.QuickInputButtons.Back],
+        //     items: documentTypeItems,
+        // })
 
-        const choices = await picker.promptUser({
-            picker: quickPick,
-            onDidTriggerButton: (button, resolve, _reject) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
-                }
-            },
-        })
-        const picked = picker.verifySinglePickerOutput(choices)
+        // const choices = await picker.promptUser({
+        //     picker: quickPick,
+        //     onDidTriggerButton: (button, resolve, _reject) => {
+        //         if (button === vscode.QuickInputButtons.Back) {
+        //             resolve(undefined)
+        //         }
+        //     },
+        // })
+        // const picked = picker.verifySinglePickerOutput(choices)
 
-        return picked ? picked.documentType : undefined
+        // return picked ? picked.documentType : undefined
+        return 'Automation'
     }
 
     public async promptUserForDocumentName(): Promise<string | undefined> {
@@ -245,31 +241,19 @@ export class DefaultPublishSSMDocumentWizardContext extends WizardContext implem
 
                 return undefined
             },
-            onDidTriggerButton: (button, resolve, _reject) => {
-                if (button === vscode.QuickInputButtons.Back) {
-                    resolve(undefined)
-                }
-            },
         })
     }
 
     public async promptUserForDocumentToUpdate(): Promise<string | undefined> {
         let documentItems: UpdateDocumentQuickPickItem[]
         if (!this.documents || !this.documents.length) {
-            documentItems = [
-                {
-                    label: localize(
-                        'AWS.ssmDocument.publishWizard.ssmDocumentToUpdate.noDocument.label',
-                        'No document owned by me could be found'
-                    ),
-                    alwaysShow: true,
-                    name: undefined,
-                    detail: localize(
-                        'AWS.ssmDocument.publishWizard.ssmDocumentToUpdate.noDocument.detail',
-                        'Please create and upload a SSM Document before updating.'
-                    ),
-                },
-            ]
+            vscode.window.showErrorMessage(
+                localize(
+                    'AWS.ssmDocument.publishWizard.ssmDocumentToUpdate.noDocument',
+                    'No self-owned documents could be found. Please create and upload a SSM Document before updating.'
+                )
+            )
+            return undefined
         } else {
             documentItems = this.documents.map(doc => ({
                 label: doc.Name!,

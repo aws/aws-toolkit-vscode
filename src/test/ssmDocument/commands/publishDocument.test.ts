@@ -93,10 +93,9 @@ describe('publishSSMDocument', async () => {
     it('tests calling createDocument', async () => {
         const wizardStub = sandbox.stub(PublishSSMDocumentWizard.prototype, 'run').returns(
             Promise.resolve({
-                createResponse: {
-                    name: 'testName',
-                    documentType: 'Command',
-                },
+                PublishSsmDocAction: 'Create',
+                name: 'testName',
+                documentType: 'Command',
             })
         )
 
@@ -109,9 +108,8 @@ describe('publishSSMDocument', async () => {
     it('tests calling updateDocument', async () => {
         const wizardStub = sandbox.stub(PublishSSMDocumentWizard.prototype, 'run').returns(
             Promise.resolve({
-                updateResponse: {
-                    name: 'testName',
-                },
+                PublishSsmDocAction: 'Update',
+                name: 'testName',
             })
         )
 
@@ -154,13 +152,9 @@ describe('publishDocument', async () => {
         channelOutput = []
 
         wizardResponse = {
-            createResponse: {
-                name: 'testName',
-                documentType: 'Command',
-            },
-            updateResponse: {
-                name: 'testName',
-            },
+            PublishSsmDocAction: 'Update',
+            name: 'test',
+            documentType: 'Automation',
         }
         textDocument = { ...mockDoc }
         result = {
@@ -200,7 +194,7 @@ describe('publishDocument', async () => {
             assert.strictEqual(channelOutput.length, 4)
             assert.strictEqual(
                 channelOutput[1],
-                `Successfully created and uploaded SSM Document '${wizardResponse.createResponse?.name}'`
+                `Successfully created and uploaded SSM Document '${wizardResponse.name}'`
             )
             assert.strictEqual(channelOutput[2], stringify(result.DocumentDescription))
         })
@@ -224,7 +218,7 @@ describe('publishDocument', async () => {
             assert.strictEqual(channelOutput.length, 3)
             assert.strictEqual(
                 channelOutput[1],
-                `There was an error creating and uploading SSM Document '${wizardResponse.createResponse?.name}', check logs for more information.`
+                `There was an error creating and uploading SSM Document '${wizardResponse.name}', check logs for more information.`
             )
         })
     })
@@ -239,10 +233,7 @@ describe('publishDocument', async () => {
             await publish.updateDocument(wizardResponse, textDocument, channel, 'us-east-1', client)
 
             assert.strictEqual(channelOutput.length, 4)
-            assert.strictEqual(
-                channelOutput[1],
-                `Successfully updated SSM Document '${wizardResponse.updateResponse?.name}'`
-            )
+            assert.strictEqual(channelOutput[1], `Successfully updated SSM Document '${wizardResponse.name}'`)
             assert.strictEqual(channelOutput[2], stringify(result.DocumentDescription))
         })
 
@@ -258,7 +249,7 @@ describe('publishDocument', async () => {
             assert.strictEqual(channelOutput.length, 3)
             assert.strictEqual(
                 channelOutput[1],
-                `There was an error updating SSM Document '${wizardResponse.updateResponse?.name}', check logs for more information.`
+                `There was an error updating SSM Document '${wizardResponse.name}', check logs for more information.`
             )
         })
     })

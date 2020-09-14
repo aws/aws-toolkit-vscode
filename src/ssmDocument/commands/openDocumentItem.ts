@@ -14,11 +14,6 @@ import { getLogger, Logger } from '../../shared/logger'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import * as picker from '../../shared/ui/picker'
 
-export interface SsmDocumentQuickPickItem {
-    label: string
-    description: string
-}
-
 export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsContext) {
     const logger: Logger = getLogger()
 
@@ -49,10 +44,11 @@ export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsCo
             localize(
                 'AWS.message.error.ssmDocumet.openDocument.could_not_open',
                 'Could not fetch and display document {0} contents',
+                'Please check logs for more details',
                 node.documentName
             )
         )
-        logger.error('Error on openning document: %0', error)
+        logger.error('Error on opening document: %0', error)
     } finally {
         telemetry.recordSsmOpenDocument({ result: result })
     }
@@ -60,7 +56,7 @@ export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsCo
 
 async function promptUserforDocumentFormat(formats: string[]): Promise<string | undefined> {
     // Prompt user to pick document format
-    const quickPickItems: SsmDocumentQuickPickItem[] = formats.map(format => {
+    const quickPickItems: vscode.QuickPickItem[] = formats.map(format => {
         return {
             label: format,
             description: `Open document with format ${format}`,
@@ -72,7 +68,6 @@ async function promptUserforDocumentFormat(formats: string[]): Promise<string | 
             ignoreFocusOut: true,
             title: localize('AWS.message.prompt.selectSsmDocumentFormat.placeholder', 'Select a document format'),
         },
-        buttons: [vscode.QuickInputButtons.Back],
         items: quickPickItems,
     })
 
@@ -95,7 +90,7 @@ async function promptUserforDocumentFormat(formats: string[]): Promise<string | 
 
 async function promptUserforDocumentVersion(versions: SSM.Types.DocumentVersionInfo[]): Promise<string | undefined> {
     // Prompt user to pick document version
-    const quickPickItems: SsmDocumentQuickPickItem[] = []
+    const quickPickItems: vscode.QuickPickItem[] = []
     versions.forEach(version => {
         if (version.DocumentVersion) {
             quickPickItems.push({
@@ -111,24 +106,16 @@ async function promptUserforDocumentVersion(versions: SSM.Types.DocumentVersionI
                 ignoreFocusOut: true,
                 title: localize('AWS.message.prompt.selectSsmDocumentVersion.placeholder', 'Select a document version'),
             },
-            buttons: [vscode.QuickInputButtons.Back],
             items: quickPickItems,
         })
 
         const versionChoices = await picker.promptUser({
             picker: versionPick,
-            onDidTriggerButton: (_, resolve) => {
-                resolve(undefined)
-            },
         })
 
         const versionSelection = picker.verifySinglePickerOutput(versionChoices)
 
         // User pressed escape and didn't select a template
-        if (versionSelection === undefined) {
-            return undefined
-        }
-
-        return versionSelection.label
+        return versionSelection?.label
     }
 }

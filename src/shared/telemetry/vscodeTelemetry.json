@@ -1,4 +1,12 @@
 {
+    "types": [
+        {
+            "name": "ssmOperation",
+            "type": "string",
+            "allowedValues": ["Create", "Update"],
+            "description": "SSM Publish Document operation type"
+        }
+    ],
     "metrics": [
         {
             "name": "stepfunctions_previewstatemachine",
@@ -47,22 +55,15 @@
             ]
         },
         {
-            "name": "ssm_publishDocument_create",
-            "description": "An SSM Document is created remotely",
+            "name": "ssm_publishDocument",
+            "description": "SSM Document related metrics for create and update",
             "unit": "None",
             "metadata": [
                 {
                     "type": "result"
-                }
-            ]
-        },
-        {
-            "name": "ssm_publishDocument_update",
-            "description": "An SSM Document is updated remotely",
-            "unit": "None",
-            "metadata": [
+                },
                 {
-                    "type": "result"
+                    "type": "ssmOperation"
                 }
             ]
         }
