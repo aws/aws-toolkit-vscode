@@ -3,6 +3,11 @@
 
 package software.aws.toolkits.jetbrains.services.sqs
 
+import software.amazon.awssdk.services.sqs.SqsClient
+import software.amazon.awssdk.services.sqs.model.QueueAttributeName
+import software.amazon.awssdk.services.sqs.model.SqsException
+import software.aws.toolkits.core.utils.error
+import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.telemetry.SqsQueueType
 
 const val MAX_NUMBER_OF_POLLED_MESSAGES = 10
@@ -30,3 +35,18 @@ const val WAIT_TIME_TICK = 1
 
 // Extension function to get telemetry type from Queue
 fun Queue.telemetryType() = if (isFifo) SqsQueueType.Fifo else SqsQueueType.Standard
+
+/*
+ * Get the approximate number of messages from a queue. Returns null when there is a service exception
+ * thrown, or the value returned is not an int.
+ * @param queueUrl The queue url to retrieve the approximate number of messages from
+ */
+fun SqsClient.approximateNumberOfMessages(queueUrl: String): Int? = try {
+    getQueueAttributes {
+        it.queueUrl(queueUrl)
+        it.attributeNames(QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES)
+    }.attributes().getValue(QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES).toIntOrNull()
+} catch (e: SqsException) {
+    getLogger<SqsClient>().error(e) { "SqsClient threw an exception getting approximate number of messages" }
+    null
+}

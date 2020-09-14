@@ -4,62 +4,90 @@
 package software.aws.toolkits.jetbrains.services.sqs.actions
 
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.project.DumbAware
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
+import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.progress.Task
+import com.intellij.openapi.project.DumbAwareAction
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.MessageDialogBuilder
+import com.intellij.openapi.ui.Messages
+import kotlinx.coroutines.runBlocking
 import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.PurgeQueueInProgressException
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.warn
-import software.aws.toolkits.jetbrains.core.awsClient
-import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeAction
-import software.aws.toolkits.jetbrains.services.sqs.SqsQueueNode
+import software.aws.toolkits.jetbrains.services.sqs.Queue
+import software.aws.toolkits.jetbrains.services.sqs.approximateNumberOfMessages
 import software.aws.toolkits.jetbrains.services.sqs.telemetryType
-import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
+import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
 import software.aws.toolkits.telemetry.SqsTelemetry
 
-class PurgeQueueAction :
-    SingleResourceNodeAction<SqsQueueNode>(message("sqs.purge_queue")),
-    CoroutineScope by ApplicationThreadPoolScope("PurgeQueueAction "),
-    DumbAware {
-    override fun actionPerformed(selected: SqsQueueNode, e: AnActionEvent) {
-        val project = selected.nodeProject
-        val client: SqsClient = project.awsClient()
-        launch {
-            try {
-                client.purgeQueue { it.queueUrl(selected.queueUrl) }
-                LOG.info { "Started purging ${selected.queueUrl}" }
-                notifyInfo(
-                    project = project,
-                    title = message("aws.notification.title"),
-                    content = message("sqs.purge_queue.succeeded", selected.queueUrl)
-                )
-                SqsTelemetry.purgeQueue(project, Result.Succeeded, selected.queue.telemetryType())
-            } catch (e: PurgeQueueInProgressException) {
-                LOG.warn { "${selected.queueUrl} already has a query purge in progress" }
-                notifyError(
-                    project = project,
-                    content = message("sqs.purge_queue.failed.60_seconds", selected.queueUrl)
-                )
-                SqsTelemetry.purgeQueue(project, Result.Succeeded, selected.queue.telemetryType())
-            } catch (e: Exception) {
-                LOG.error(e) { "Exception thrown while trying to purge query ${selected.queueUrl}" }
-                notifyError(
-                    project = project,
-                    content = message("sqs.purge_queue.failed", selected.queueUrl)
-                )
-                SqsTelemetry.purgeQueue(project, Result.Failed, selected.queue.telemetryType())
+class PurgeQueueAction(
+    private val project: Project,
+    private val client: SqsClient,
+    private val queue: Queue
+) : DumbAwareAction(message("sqs.purge_queue.action")) {
+    private val edtContext = getCoroutineUiContext()
+
+    override fun actionPerformed(e: AnActionEvent) {
+        ProgressManager.getInstance().run(
+            object : Task.Backgroundable(
+                project,
+                message("sqs.purge_queue.action"),
+                false,
+                ALWAYS_BACKGROUND
+            ) {
+                override fun run(indicator: ProgressIndicator) {
+                    val numMessages = client.approximateNumberOfMessages(queue.queueUrl) ?: 0
+                    val response = runBlocking(edtContext) {
+                        MessageDialogBuilder
+                            .yesNo(
+                                message("sqs.purge_queue.confirm.title"),
+                                message("sqs.purge_queue.confirm", queue.queueName, numMessages)
+                            )
+                            .icon(Messages.getWarningIcon())
+                            .show()
+                    }
+                    if (response != Messages.YES) {
+                        SqsTelemetry.purgeQueue(project, Result.Cancelled, queue.telemetryType())
+                        return
+                    }
+                    try {
+                        client.purgeQueue { it.queueUrl(queue.queueUrl) }
+                        LOG.info { "Started purging ${queue.queueUrl}" }
+                        notifyInfo(
+                            project = project,
+                            title = message("aws.notification.title"),
+                            content = message("sqs.purge_queue.succeeded", queue.queueUrl)
+                        )
+                        SqsTelemetry.purgeQueue(project, Result.Succeeded, queue.telemetryType())
+                    } catch (e: PurgeQueueInProgressException) {
+                        LOG.warn { "${queue.queueUrl} already has a query purge in progress" }
+                        notifyError(
+                            project = project,
+                            content = message("sqs.purge_queue.failed.60_seconds", queue.queueUrl)
+                        )
+                        SqsTelemetry.purgeQueue(project, Result.Succeeded, queue.telemetryType())
+                    } catch (e: Exception) {
+                        LOG.error(e) { "Exception thrown while trying to purge query ${queue.queueUrl}" }
+                        notifyError(
+                            project = project,
+                            content = message("sqs.purge_queue.failed", queue.queueUrl)
+                        )
+                        SqsTelemetry.purgeQueue(project, Result.Failed, queue.telemetryType())
+                    }
+                }
             }
-        }
+        )
     }
 
     private companion object {
-        private val LOG = getLogger<PurgeQueueAction>()
+        val LOG = getLogger<PurgeQueueAction>()
     }
 }

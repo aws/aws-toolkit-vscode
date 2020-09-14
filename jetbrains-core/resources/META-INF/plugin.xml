@@ -346,7 +346,7 @@
         <group id="aws.toolkit.explorer.sqs.queue" popup="true" compact="false">
             <action id="sqs.poll.message" class="software.aws.toolkits.jetbrains.services.sqs.actions.PollMessageAction"/>
             <action id="sqs.send.message" class="software.aws.toolkits.jetbrains.services.sqs.actions.SendMessageAction"/>
-            <action id="sqs.purge" class="software.aws.toolkits.jetbrains.services.sqs.actions.PurgeQueueAction"/>
+            <action id="sqs.purge" class="software.aws.toolkits.jetbrains.services.sqs.actions.PurgeQueueNodeAction"/>
             <separator/>
             <action id="sqs.configure.lambda" class="software.aws.toolkits.jetbrains.services.sqs.actions.ConfigureLambdaAction"/>
             <action id="sqs.subscribe.sns" class="software.aws.toolkits.jetbrains.services.sqs.actions.SubscribeSnsAction"/>
