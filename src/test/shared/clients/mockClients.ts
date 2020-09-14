@@ -45,7 +45,6 @@ interface Clients {
     schemaClient: SchemaClient
     stepFunctionsClient: StepFunctionsClient
     stsClient: StsClient
-    ssmDocumentClient: SsmDocumentClient
     s3Client: S3Client
 }
 
@@ -61,7 +60,6 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
             schemaClient: new MockSchemaClient(),
             stepFunctionsClient: new MockStepFunctionsClient(),
             stsClient: new MockStsClient({}),
-            ssmDocumentClient: new MockSsmDocumentClient(),
             s3Client: new MockS3Client({}),
             ...overrideClients,
         }
@@ -99,10 +97,6 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
         return this.clients.stsClient
     }
 
-    public createSsmClient(regionCode: string): SsmDocumentClient {
-        return this.clients.ssmDocumentClient
-    }
-    
     public createS3Client(regionCode: string): S3Client {
         return this.clients.s3Client
     }
@@ -345,41 +339,6 @@ export class MockStsClient implements StsClient {
         this.regionCode = regionCode
         this.getCallerIdentity = getCallerIdentity
     }
-}
-
-export class MockSsmDocumentClient implements SsmDocumentClient {
-    public constructor(
-        public readonly regionCode: string = '',
-
-        public readonly deleteDocument: (documentName: string) => Promise<SSM.Types.DeleteDocumentResult> = async (
-            documentName: string
-        ) => ({} as SSM.Types.DeleteDocumentResult),
-
-        public readonly listDocuments: () => AsyncIterableIterator<SSM.DocumentIdentifier> = () => asyncGenerator([]),
-
-        public readonly listDocumentVersions: (
-            documentName: string
-        ) => AsyncIterableIterator<SSM.Types.DocumentVersionInfo> = (documentName: string) => asyncGenerator([]),
-
-        public readonly getDocument: (
-            documentName: string,
-            documentVersion?: string
-        ) => Promise<SSM.Types.GetDocumentResult> = async (documentName: string, documentVersion?: string) =>
-            ({
-                Name: '',
-                DocumentType: '',
-                Content: '',
-                DocumentFormat: '',
-            } as SSM.Types.GetDocumentResult),
-
-        public readonly createDocument: (
-            request: SSM.Types.CreateDocumentRequest
-        ) => Promise<SSM.Types.CreateDocumentResult> = async (request: SSM.Types.CreateDocumentRequest) => ({}),
-
-        public readonly updateDocument: (
-            request: SSM.Types.UpdateDocumentRequest
-        ) => Promise<SSM.Types.UpdateDocumentResult> = async (request: SSM.Types.UpdateDocumentRequest) => ({})
-    ) {}
 }
 
 export class MockS3Client implements S3Client {
