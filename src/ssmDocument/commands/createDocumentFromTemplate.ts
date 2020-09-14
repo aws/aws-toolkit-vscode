@@ -27,11 +27,7 @@ const SSMDOCUMENT_TEMPLATES: SsmDocumentTemplateQuickPickItem[] = [
         label: localize('AWS.ssmDocument.template.automationJson.label', 'JSON Automation Document 0.3'),
         description: localize(
             'AWS.ssmDocument.template.automationJson.description',
-<<<<<<< HEAD
             'Sample automation document using schemaVersion 0.3 in JSON'
-=======
-            'An Example of a automation document using schemaVersion 0.3 in JSON'
->>>>>>> Added OpenDocumentLocally and PublishDocument commands
         ),
         filename: 'example.automation.ssm.json',
         language: 'ssm-json',
@@ -41,11 +37,7 @@ const SSMDOCUMENT_TEMPLATES: SsmDocumentTemplateQuickPickItem[] = [
         label: localize('AWS.ssmDocument.template.automationYaml.label', 'YAML Automation Document 0.3'),
         description: localize(
             'AWS.ssmDocument.template.automationYaml.description',
-<<<<<<< HEAD
             'Sample automation document using schemaVersion 0.3 in YAML'
-=======
-            'An Example of a automation document using schemaVersion 0.3 in YAML'
->>>>>>> Added OpenDocumentLocally and PublishDocument commands
         ),
         filename: 'example.automation.ssm.yaml',
         language: 'ssm-yaml',

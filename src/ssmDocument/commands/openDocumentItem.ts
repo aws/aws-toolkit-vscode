@@ -14,14 +14,6 @@ import { getLogger, Logger } from '../../shared/logger'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import * as picker from '../../shared/ui/picker'
 
-<<<<<<< HEAD
-=======
-export interface SsmDocumentQuickPickItem {
-    label: string
-    description: string
-}
-
->>>>>>> Added OpenDocumentLocally and PublishDocument commands
 export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsContext) {
     const logger: Logger = getLogger()
 
@@ -51,19 +43,11 @@ export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsCo
         vscode.window.showErrorMessage(
             localize(
                 'AWS.message.error.ssmDocumet.openDocument.could_not_open',
-<<<<<<< HEAD
                 'Could not fetch and display document {0} contents. Please check logs for more details.',
                 node.documentName
             )
         )
         logger.error('Error on opening document: %0', error)
-=======
-                'Could not fetch and display document {0} contents',
-                node.documentName
-            )
-        )
-        logger.error('Error on openning document: %0', error)
->>>>>>> Added OpenDocumentLocally and PublishDocument commands
     } finally {
         telemetry.recordSsmOpenDocument({ result: result })
     }
@@ -71,11 +55,7 @@ export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsCo
 
 async function promptUserforDocumentFormat(formats: string[]): Promise<string | undefined> {
     // Prompt user to pick document format
-<<<<<<< HEAD
     const quickPickItems: vscode.QuickPickItem[] = formats.map(format => {
-=======
-    const quickPickItems: SsmDocumentQuickPickItem[] = formats.map(format => {
->>>>>>> Added OpenDocumentLocally and PublishDocument commands
         return {
             label: format,
             description: `Open document with format ${format}`,
@@ -87,10 +67,6 @@ async function promptUserforDocumentFormat(formats: string[]): Promise<string | 
             ignoreFocusOut: true,
             title: localize('AWS.message.prompt.selectSsmDocumentFormat.placeholder', 'Select a document format'),
         },
-<<<<<<< HEAD
-=======
-        buttons: [vscode.QuickInputButtons.Back],
->>>>>>> Added OpenDocumentLocally and PublishDocument commands
         items: quickPickItems,
     })
 
@@ -113,11 +89,7 @@ async function promptUserforDocumentFormat(formats: string[]): Promise<string | 
 
 async function promptUserforDocumentVersion(versions: SSM.Types.DocumentVersionInfo[]): Promise<string | undefined> {
     // Prompt user to pick document version
-<<<<<<< HEAD
     const quickPickItems: vscode.QuickPickItem[] = []
-=======
-    const quickPickItems: SsmDocumentQuickPickItem[] = []
->>>>>>> Added OpenDocumentLocally and PublishDocument commands
     versions.forEach(version => {
         if (version.DocumentVersion) {
             quickPickItems.push({
@@ -133,34 +105,16 @@ async function promptUserforDocumentVersion(versions: SSM.Types.DocumentVersionI
                 ignoreFocusOut: true,
                 title: localize('AWS.message.prompt.selectSsmDocumentVersion.placeholder', 'Select a document version'),
             },
-<<<<<<< HEAD
-=======
-            buttons: [vscode.QuickInputButtons.Back],
->>>>>>> Added OpenDocumentLocally and PublishDocument commands
             items: quickPickItems,
         })
 
         const versionChoices = await picker.promptUser({
             picker: versionPick,
-<<<<<<< HEAD
-=======
-            onDidTriggerButton: (_, resolve) => {
-                resolve(undefined)
-            },
->>>>>>> Added OpenDocumentLocally and PublishDocument commands
         })
 
         const versionSelection = picker.verifySinglePickerOutput(versionChoices)
 
         // User pressed escape and didn't select a template
-<<<<<<< HEAD
         return versionSelection?.label
-=======
-        if (versionSelection === undefined) {
-            return undefined
-        }
-
-        return versionSelection.label
->>>>>>> Added OpenDocumentLocally and PublishDocument commands
     }
 }
