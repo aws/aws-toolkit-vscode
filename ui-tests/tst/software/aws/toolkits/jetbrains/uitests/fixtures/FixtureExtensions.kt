@@ -6,9 +6,11 @@ package software.aws.toolkits.jetbrains.uitests.fixtures
 import com.intellij.remoterobot.fixtures.CommonContainerFixture
 import com.intellij.remoterobot.fixtures.ComponentFixture
 import com.intellij.remoterobot.fixtures.ContainerFixture
+import com.intellij.remoterobot.fixtures.JTextAreaFixture
 import com.intellij.remoterobot.fixtures.JTextFieldFixture
 import com.intellij.remoterobot.search.locators.byXpath
 import com.intellij.remoterobot.stepsProcessing.step
+import com.intellij.remoterobot.utils.keyboard
 import org.intellij.lang.annotations.Language
 import java.time.Duration
 
@@ -26,6 +28,28 @@ fun ContainerFixture.findByXpath(@Language("XPath") xPath: String) = find<Compon
 
 fun ContainerFixture.fillSingleTextField(text: String) = step("Fill single text field with $text") {
     find<JTextFieldFixture>(byXpath("//div[@class='JTextField']"), Duration.ofSeconds(5)).text = text
+}
+
+// There is no function to write text to this directly :(
+fun ContainerFixture.fillSingleJBTextArea(text: String) = step("Fill single JBTextArea with $text") {
+    find<JTextAreaFixture>(byXpath("//div[@class='JBTextArea']")).click()
+    keyboard { this.enterText(text) }
+}
+
+fun ContainerFixture.fillAllJBTextFields(text: String) = step("Fill all visible text fields with $text") {
+    findAll(JTextFieldFixture::class.java, byXpath("//div[@class='JBTextField']")).forEach { it.text = text }
+}
+
+fun ContainerFixture.pressCreate() = step("Press the \"Create\" button") {
+    find<ComponentFixture>(byXpath("//div[@text='Create']")).click()
+}
+
+fun ContainerFixture.pressSave() = step("""Press the "Save" button""") {
+    find<ComponentFixture>(byXpath("//div[@text='Save']")).click()
+}
+
+fun ContainerFixture.pressYes() = step("""Press the visible "yes" button""") {
+    findAndClick("//div[@class='JButton' and @text='Yes']")
 }
 
 /*

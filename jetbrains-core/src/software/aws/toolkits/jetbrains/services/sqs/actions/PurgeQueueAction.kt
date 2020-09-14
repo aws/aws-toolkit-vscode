@@ -39,7 +39,7 @@ class PurgeQueueAction(
         ProgressManager.getInstance().run(
             object : Task.Backgroundable(
                 project,
-                message("sqs.purge_queue.action"),
+                message("sqs.purge_queue"),
                 false,
                 ALWAYS_BACKGROUND
             ) {

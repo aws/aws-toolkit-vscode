@@ -19,7 +19,7 @@ class CreateQueuePanel {
     lateinit var standardType: JRadioButton
     lateinit var fifoType: JRadioButton
     lateinit var queueNameContextHelp: JLabel
-    lateinit var fifoSuffixField: JTextField
+    lateinit var fifoSuffix: JPanel
     lateinit var textPanel: JPanel
 
     init {
@@ -50,7 +50,7 @@ class CreateQueuePanel {
         queueName.apply {
             border = IdeBorderFactory.createBorder(0)
         }
-        fifoSuffixField.apply {
+        fifoSuffix.apply {
             background = queueName.background
             layout = BorderLayout()
             border = IdeBorderFactory.createBorder(0)

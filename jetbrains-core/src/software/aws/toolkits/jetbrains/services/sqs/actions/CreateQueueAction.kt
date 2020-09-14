@@ -13,7 +13,7 @@ import software.aws.toolkits.jetbrains.services.sqs.CreateQueueDialog
 import software.aws.toolkits.resources.message
 
 class CreateQueueAction : DumbAwareAction(
-    message("sqs.create.queue.title"),
+    message("sqs.create.queue"),
     null,
     AwsIcons.Resources.Sqs.SQS_QUEUE
 ) {

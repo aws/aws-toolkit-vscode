@@ -39,8 +39,18 @@ class SqsWindow(private val project: Project) : CoroutineScope by ApplicationThr
     private fun showQueue(queue: Queue, component: SqsWindowUi) = launch {
         SqsTelemetry.openQueue(project, queue.telemetryType())
         try {
+            val existingWindow = toolWindow.find(queue.queueUrl)
+            if (existingWindow != null) {
+                withContext(edtContext) {
+                    // We dispose the existing one so we can switch tabs, currently we have no other way to do this
+                    // TODO fix this to switch tabs instead of disposing when we can get the original component out of
+                    // toolwindow
+                    existingWindow.dispose()
+                }
+            }
+
             withContext(edtContext) {
-                toolWindow.find(queue.queueUrl)?.show() ?: toolWindow.addTab(queue.queueName, component.mainPanel, activate = true, id = queue.queueUrl)
+                toolWindow.addTab(queue.queueName, component.mainPanel, activate = true, id = queue.queueUrl)
             }
         } catch (e: Exception) {
             LOG.error(e) { "Exception thrown while trying to open queue '${queue.queueName}'" }

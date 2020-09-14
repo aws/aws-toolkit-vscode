@@ -10,7 +10,6 @@ import java.awt.event.FocusEvent
 import javax.swing.JPanel
 import javax.swing.JSlider
 import javax.swing.JTextField
-import javax.swing.event.ChangeEvent
 
 // A panel with a slider and text field, of which the slider and text field always synced up.
 class SliderPanel(
@@ -35,7 +34,7 @@ class SliderPanel(
         slider.paintLabels = true
         slider.snapToTicks = snap
         slider.value = defaultValue
-        slider.addChangeListener { e: ChangeEvent? -> textField.text = Integer.toString(validValue(slider!!.value)) }
+        slider.addChangeListener { textField.text = validValue(slider.value).toString() }
         textField.text = slider.value.toString()
         textField.addFocusListener(
             object : FocusAdapter() {
