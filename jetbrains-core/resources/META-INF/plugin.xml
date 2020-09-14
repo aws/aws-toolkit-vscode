@@ -351,6 +351,8 @@
             <action id="sqs.configure.lambda" class="software.aws.toolkits.jetbrains.services.sqs.actions.ConfigureLambdaAction"/>
             <action id="sqs.subscribe.sns" class="software.aws.toolkits.jetbrains.services.sqs.actions.SubscribeSnsAction"/>
             <separator/>
+            <action id="sqs.edit.attributes" class="software.aws.toolkits.jetbrains.services.sqs.actions.EditAttributesAction"/>
+            <separator/>
             <action id="sqs.delete.queue" class="software.aws.toolkits.jetbrains.services.sqs.actions.DeleteQueueAction"/>
         </group>
 
