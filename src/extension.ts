@@ -182,8 +182,6 @@ export async function activate(context: vscode.ExtensionContext) {
             })
         )
 
-        await activateCloudWatchLogs(context)
-
         await activateCloudFormationTemplateRegistry(context)
 
         await activateCdk({
@@ -200,20 +198,29 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateLambda(context)
 
-        await activateSchemas({
-            context: extContext.extensionContext,
-            outputChannel: toolkitOutputChannel,
-        })
-
         await ExtensionDisposableFiles.initialize(context)
 
         await activateSam(extContext)
 
-        await activateS3(context)
+        // Features which aren't currently functional in Cloud9
+        if (!isCloud9()) {
+            await vscode.commands.executeCommand('setContext', 'aws-toolkit-vscode:IsCloud9', false)
 
-        setImmediate(async () => {
-            await activateStepFunctions(context, awsContext, toolkitOutputChannel)
-        })
+            await activateCloudWatchLogs(context)
+
+            await activateS3(context)
+
+            await activateSchemas({
+                context: extContext.extensionContext,
+                outputChannel: toolkitOutputChannel,
+            })
+
+            setImmediate(async () => {
+                await activateStepFunctions(context, awsContext, toolkitOutputChannel)
+            })
+        } else {
+            await vscode.commands.executeCommand('setContext', 'aws-toolkit-vscode:IsCloud9', true)
+        }
 
         showWelcomeMessage(context)
 
