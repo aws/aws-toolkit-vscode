@@ -116,7 +116,8 @@ class DotNetSamDebugSupport : SamDebugSupport {
         val promise = AsyncPromise<XDebugProcessStarter?>()
 
         // Define a debugger lifetime to be able to dispose the debugger process and all nested component on termination
-        val debuggerLifetimeDefinition = environment.defineNestedLifetime()
+        // Using the environment as the disposable root seems to make 2nd usage of debug to fail since the lifetime is already terminated
+        val debuggerLifetimeDefinition = environment.project.defineNestedLifetime()
         val debuggerLifetime = debuggerLifetimeDefinition.lifetime
 
         val scheduler = RdDispatcher(debuggerLifetime)
