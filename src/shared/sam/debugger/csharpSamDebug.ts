@@ -113,7 +113,12 @@ async function _installDebugger({ debuggerPath, channelLogger }: InstallDebugger
         let installCommand: string
         let installArgs: string[]
         if (os.platform() == 'win32') {
-            installCommand = `${process.env['WINDIR']}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`
+            const windir = process.env['WINDIR']
+            if (!windir) {
+                throw new Error('Environment variable `WINDIR` not defined')
+            }
+
+            installCommand = `${windir}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`
             installArgs = [
                 '-NonInteractive',
                 '-NoProfile',
