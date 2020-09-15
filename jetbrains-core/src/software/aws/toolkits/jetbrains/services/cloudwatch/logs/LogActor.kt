@@ -74,7 +74,7 @@ sealed class LogActor<T>(
                         LOG.warn(e) { "Exception thrown while trying to load forwards" }
                         notifyError(
                             project = project,
-                            title = message("cloudwatch.logs.client_exception"),
+                            title = message("cloudwatch.logs.exception"),
                             content = message("cloudwatch.logs.failed_to_load_more")
                         )
                         listOf<T>()
@@ -92,7 +92,7 @@ sealed class LogActor<T>(
                         LOG.warn(e) { "Exception thrown while trying to load backwards" }
                         notifyError(
                             project = project,
-                            title = message("cloudwatch.logs.client_exception"),
+                            title = message("cloudwatch.logs.exception"),
                             content = message("cloudwatch.logs.failed_to_load_more")
                         )
                         listOf<T>()
