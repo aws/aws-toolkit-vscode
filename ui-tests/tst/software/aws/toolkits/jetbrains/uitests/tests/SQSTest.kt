@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.uitests.tests
 
+/* TODO uncomment to enable SQS
 import com.intellij.remoterobot.RemoteRobot
 import com.intellij.remoterobot.fixtures.ComponentFixture
 import com.intellij.remoterobot.fixtures.JTextFieldFixture
@@ -266,3 +267,4 @@ class SQSTest {
         }
     }
 }
+*/
