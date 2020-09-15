@@ -17,30 +17,32 @@ import software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable
 import software.aws.toolkits.resources.message
 import javax.swing.event.HyperlinkEvent
 
+// Used by tests to skip telemetry prompt
+internal const val SKIP_TELEMETRY_PROMPT = "aws.telemetry.skip_prompt"
 internal const val GROUP_DISPLAY_ID = "AWS Telemetry"
 
 class AwsTelemetryPrompter : StartupActivity {
-
     override fun runActivity(project: Project) {
-        if (!AwsSettings.getInstance().promptedForTelemetry) {
-            val group = NotificationGroup(GROUP_DISPLAY_ID, NotificationDisplayType.STICKY_BALLOON, true)
-
-            val notification = group.createNotification(
-                message("aws.settings.telemetry.prompt.title"),
-                message("aws.settings.telemetry.prompt.message"),
-                NotificationType.INFORMATION,
-                // 2020.1 fails to compile this when this argument is a lambda instead
-                object : NotificationListener {
-                    override fun hyperlinkUpdate(notification: Notification, event: HyperlinkEvent) {
-                        ShowSettingsUtil.getInstance().showSettingsDialog(project, AwsSettingsConfigurable::class.java)
-                        notification.expire()
-                    }
-                }
-            )
-
-            Notifications.Bus.notify(notification, project)
-
-            AwsSettings.getInstance().promptedForTelemetry = true
+        if (AwsSettings.getInstance().promptedForTelemetry || System.getProperty(SKIP_TELEMETRY_PROMPT, null)?.toBoolean() == true) {
+            return
         }
+        val group = NotificationGroup(GROUP_DISPLAY_ID, NotificationDisplayType.STICKY_BALLOON, true)
+
+        val notification = group.createNotification(
+            message("aws.settings.telemetry.prompt.title"),
+            message("aws.settings.telemetry.prompt.message"),
+            NotificationType.INFORMATION,
+            // 2020.1 fails to compile this when this argument is a lambda instead
+            object : NotificationListener {
+                override fun hyperlinkUpdate(notification: Notification, event: HyperlinkEvent) {
+                    ShowSettingsUtil.getInstance().showSettingsDialog(project, AwsSettingsConfigurable::class.java)
+                    notification.expire()
+                }
+            }
+        )
+
+        Notifications.Bus.notify(notification, project)
+
+        AwsSettings.getInstance().promptedForTelemetry = true
     }
 }

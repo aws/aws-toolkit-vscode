@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="software.aws.toolkits.jetbrains.services.sqs.SubscribeSnsPanel">
+  <grid id="27dc6" binding="component" layout-manager="GridLayoutManager" row-count="1" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+    <margin top="5" left="0" bottom="0" right="0"/>
+    <constraints>
+      <xy x="20" y="20" width="569" height="174"/>
+    </constraints>
+    <properties/>
+    <border type="none"/>
+    <children>
+      <component id="bdc56" class="javax.swing.JLabel">
+        <constraints>
+          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="sqs.subscribe.sns.topic"/>
+        </properties>
+      </component>
+      <component id="ec4ed" class="software.aws.toolkits.jetbrains.ui.ResourceSelector" binding="topicSelector" custom-create="true">
+        <constraints>
+          <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false">
+            <minimum-size width="400" height="-1"/>
+            <preferred-size width="400" height="-1"/>
+          </grid>
+        </constraints>
+        <properties>
+          <toolTipText value=""/>
+        </properties>
+      </component>
+      <component id="17f3b" class="javax.swing.JLabel" binding="selectContextHelp">
+        <constraints>
+          <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <text value=""/>
+          <toolTipText value=""/>
+        </properties>
+      </component>
+    </children>
+  </grid>
+</form>

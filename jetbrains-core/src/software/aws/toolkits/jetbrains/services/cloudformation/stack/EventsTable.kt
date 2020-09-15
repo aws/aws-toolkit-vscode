@@ -48,7 +48,7 @@ internal class EventsTableImpl : EventsTable, Disposable {
         DynamicTableView.Field(message("cloudformation.stack.physical_id")) { e -> e.physicalResourceId() },
         DynamicTableView.Field(
             message("cloudformation.stack.reason"),
-            WrappingCellRenderer(wrapOnSelection = true, toggleableWrap = false)
+            WrappingCellRenderer(wrapOnSelection = true, wrapOnToggle = false)
         ) { e -> e.resourceStatusReason() ?: "" }
     ).apply { component.border = IdeBorderFactory.createBorder(SideBorder.BOTTOM) }
 

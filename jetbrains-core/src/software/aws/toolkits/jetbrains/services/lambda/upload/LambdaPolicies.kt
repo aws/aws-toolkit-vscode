@@ -10,35 +10,54 @@ const val LAMBDA_PRINCIPAL = "lambda.amazonaws.com"
 @Language("JSON")
 val DEFAULT_ASSUME_ROLE_POLICY =
     """
-{
-  "Version": "2012-10-17",
-  "Statement": [
     {
-      "Effect": "Allow",
-      "Principal": {
-        "Service": "lambda.amazonaws.com"
-      },
-      "Action": "sts:AssumeRole"
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "lambda.amazonaws.com"
+          },
+          "Action": "sts:AssumeRole"
+        }
+      ]
     }
-  ]
-}
-""".trim()
+    """.trim()
 
 @Language("JSON")
 val DEFAULT_POLICY =
     """
-{
-  "Version": "2012-10-17",
-  "Statement": [
     {
-      "Effect": "Allow",
-      "Action": [
-        "logs:CreateLogGroup",
-        "logs:CreateLogStream",
-        "logs:PutLogEvents"
-      ],
-      "Resource": "*"
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": [
+            "logs:CreateLogGroup",
+            "logs:CreateLogStream",
+            "logs:PutLogEvents"
+          ],
+          "Resource": "*"
+        }
+      ]
     }
-  ]
-}
-""".trim()
+    """.trim()
+
+@Language("JSON")
+fun createSqsPollerPolicy(arn: String): String =
+    """
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": [
+            "sqs:DeleteMessage",
+            "sqs:GetQueueAttributes", 
+            "sqs:ReceiveMessage"
+          ],
+          "Resource": "$arn"
+        }
+      ]
+    }
+    """.trim()

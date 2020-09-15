@@ -10,7 +10,6 @@ import com.intellij.remoterobot.fixtures.ComponentFixture
 import com.intellij.remoterobot.fixtures.ContainerFixture
 import com.intellij.remoterobot.fixtures.DefaultXpath
 import com.intellij.remoterobot.fixtures.FixtureName
-import com.intellij.remoterobot.fixtures.JListFixture
 import com.intellij.remoterobot.search.locators.byXpath
 import com.intellij.remoterobot.stepsProcessing.step
 import com.intellij.remoterobot.utils.keyboard
@@ -79,22 +78,6 @@ class IdeaFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) : Co
         }
     }
 
-    fun setCredentials(profile: String, region: String) {
-        openCredentialsPanel()
-        // This will grab both the region and credentials
-        findAll<JListFixture>(byXpath("//div[@class='MyList']")).forEach {
-            if (it.items.contains(profile)) {
-                it.selectItem(profile)
-            }
-        }
-        openCredentialsPanel()
-        findAll<JListFixture>(byXpath("//div[@class='MyList']")).forEach {
-            if (it.items.contains(region)) {
-                it.selectItem(region)
-            }
-        }
-    }
-
     // Tips sometimes open when running, close it if it opens
     fun tryCloseTips() {
         try {
@@ -103,13 +86,16 @@ class IdeaFrame(remoteRobot: RemoteRobot, remoteComponent: RemoteComponent) : Co
         }
     }
 
-    private fun openCredentialsPanel() = try {
-        // 2020.1
-        findAndClick("//div[@class='MultipleTextValues']")
-    } catch (e: Exception) {
-        // TODO FIX_WHEN_MIN_IS_201 remove this
-        // 2019.3
-        findAndClick("//div[@class='MultipleTextValuesPresentationWrapper']")
+    fun refreshExplorer() {
+        findAndClick("//div[@accessiblename='Refresh AWS Connection' and @class='ActionButton']")
+        // wait for loading to disappear
+        try {
+            while (true) {
+                findText("loading...")
+                Thread.sleep(100)
+            }
+        } catch (e: Exception) {
+        }
     }
 
     fun findToast(timeout: Duration = Duration.ofSeconds(5)): ComponentFixture = find(byXpath("//div[@class='StatusPanel']"), timeout)
