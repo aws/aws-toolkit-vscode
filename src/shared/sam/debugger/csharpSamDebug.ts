@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { access, writeFile } from 'fs-extra'
+import { access, chmod, writeFile } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import {
@@ -131,8 +131,6 @@ async function _installDebugger({ debuggerPath, channelLogger }: InstallDebugger
                 debuggerPath,
             ]
         } else {
-            await new ChildProcess('chmod', {}, 'u+x', installScriptPath).run()
-
             installCommand = installScriptPath
             installArgs = ['-v', vsDbgVersion, '-r', vsDbgRuntime, '-l', debuggerPath]
         }
@@ -149,7 +147,7 @@ async function _installDebugger({ debuggerPath, channelLogger }: InstallDebugger
                 },
                 onClose(code: number) {
                     if (code) {
-                        reject(`Exited with code ${code}`)
+                        reject(`command failed (exit code: ${code}): ${installCommand}`)
                     } else {
                         resolve()
                     }
@@ -171,10 +169,13 @@ async function _installDebugger({ debuggerPath, channelLogger }: InstallDebugger
 
 async function downloadInstallScript(debuggerPath: string): Promise<string> {
     let installScriptUrl: string
+    let installScriptPath: string
     if (os.platform() == 'win32') {
         installScriptUrl = 'https://aka.ms/getvsdbgps1'
+        installScriptPath = path.join(debuggerPath, 'installVsdbgScript.ps1')
     } else {
         installScriptUrl = 'https://aka.ms/getvsdbgsh'
+        installScriptPath = path.join(debuggerPath, 'installVsdbgScript.sh')
     }
 
     const installScriptFetcher = new HttpResourceFetcher(installScriptUrl)
@@ -183,9 +184,8 @@ async function downloadInstallScript(debuggerPath: string): Promise<string> {
         throw Error(`Failed to download ${installScriptUrl}`)
     }
 
-    const installScriptPath = path.join(debuggerPath, 'installVsdbgScript')
-
     await writeFile(installScriptPath, installScript, 'utf8')
+    await chmod(installScriptPath, 0o700)
 
     return installScriptPath
 }

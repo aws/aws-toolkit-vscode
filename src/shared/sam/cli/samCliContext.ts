@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as semver from 'semver'
 import { SettingsConfiguration } from '../../settingsConfiguration'
 import { DefaultSamCliConfiguration } from './samCliConfiguration'
 import { DefaultSamCliProcessInvoker, SamCliProcessInvokerContext } from './samCliInvoker'
@@ -11,7 +10,6 @@ import { SamCliProcessInvoker } from './samCliInvokerUtils'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
 import { throwAndNotifyIfInvalid } from './samCliValidationUtils'
 import { DefaultSamCliValidator, DefaultSamCliValidatorContext, SamCliValidator } from './samCliValidator'
-import { getLogger } from '../../logger'
 
 export interface SamCliContext {
     validator: SamCliValidator
