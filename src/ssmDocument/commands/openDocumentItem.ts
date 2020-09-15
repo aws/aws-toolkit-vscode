@@ -43,8 +43,7 @@ export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsCo
         vscode.window.showErrorMessage(
             localize(
                 'AWS.message.error.ssmDocumet.openDocument.could_not_open',
-                'Could not fetch and display document {0} contents',
-                'Please check logs for more details',
+                'Could not fetch and display document {0} contents. Please check logs for more details.',
                 node.documentName
             )
         )

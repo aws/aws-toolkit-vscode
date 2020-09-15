@@ -34,8 +34,11 @@ export async function publishSSMDocument(awsContext: AwsContext, outputChannel: 
     }
 
     if (textDocument.languageId !== ssmJson && textDocument.languageId !== ssmYaml) {
+        let supportedFormats = [ssmJson, ssmYaml]
         let error = new Error(
-            'Current editor language does not match the supported formats. Please set the document language to ssm-yaml or ssm-json.'
+            'Current editor language does not match the supported formats: ' +
+                supportedFormats.join(', ') +
+                '. Please set the document language to ssm-yaml or ssm-json.'
         )
         logger.error(error.message)
         throw error

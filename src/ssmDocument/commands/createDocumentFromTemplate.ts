@@ -37,7 +37,7 @@ const SSMDOCUMENT_TEMPLATES: SsmDocumentTemplateQuickPickItem[] = [
         label: localize('AWS.ssmDocument.template.automationYaml.label', 'YAML Automation Document 0.3'),
         description: localize(
             'AWS.ssmDocument.template.automationYaml.description',
-            'Sample of a automation document using schemaVersion 0.3 in YAML'
+            'Sample automation document using schemaVersion 0.3 in YAML'
         ),
         filename: 'example.automation.ssm.yaml',
         language: 'ssm-yaml',
