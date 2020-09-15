@@ -17,6 +17,8 @@ import com.intellij.ui.JreHiDpiUtil
 import com.intellij.ui.components.JBTextArea
 import com.intellij.ui.paint.LinePainter2D
 import com.intellij.ui.speedSearch.SpeedSearchSupply
+import com.intellij.util.text.DateFormatUtil
+import com.intellij.util.text.SyncDateFormat
 import com.intellij.util.ui.GraphicsUtil
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
@@ -29,6 +31,7 @@ import java.awt.Graphics2D
 import java.awt.Shape
 import java.awt.event.MouseEvent
 import java.awt.geom.RoundRectangle2D
+import java.text.SimpleDateFormat
 import javax.swing.AbstractButton
 import javax.swing.JComboBox
 import javax.swing.JComponent
@@ -168,7 +171,11 @@ private fun JTextArea.speedSearchHighlighter(speedSearchEnabledComponent: JCompo
     }
 }
 
-class WrappingCellRenderer(private val wrapOnSelection: Boolean, private val toggleableWrap: Boolean) : CellRendererPanel(), TableCellRenderer {
+class WrappingCellRenderer(
+    private val wrapOnSelection: Boolean = false,
+    private val wrapOnToggle: Boolean = false,
+    private val truncateAfterChars: Int? = null
+) : CellRendererPanel(), TableCellRenderer {
     var wrap: Boolean = false
 
     private val textArea = JBTextArea()
@@ -185,8 +192,13 @@ class WrappingCellRenderer(private val wrapOnSelection: Boolean, private val tog
             return this
         }
 
-        textArea.lineWrap = (wrapOnSelection && isSelected) || (toggleableWrap && wrap)
-        textArea.text = (value as? String) ?: ""
+        textArea.lineWrap = (wrapOnSelection && isSelected) || (wrapOnToggle && wrap)
+        val text = (value as? String) ?: ""
+        textArea.text = if (truncateAfterChars != null) {
+            text.take(truncateAfterChars)
+        } else {
+            text
+        }
         textArea.setSelectionHighlighting(table, isSelected)
 
         setSize(table.columnModel.getColumn(column).width, preferredSize.height)
@@ -198,4 +210,18 @@ class WrappingCellRenderer(private val wrapOnSelection: Boolean, private val tog
 
         return this
     }
+}
+
+class ResizingDateColumnRenderer(showSeconds: Boolean) : ResizingColumnRenderer() {
+    private val formatter: SyncDateFormat = if (showSeconds) {
+        SyncDateFormat(SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS"))
+    } else {
+        DateFormatUtil.getDateTimeFormat()
+    }
+
+    override fun getText(value: Any?): String? = (value as? String)?.toLongOrNull()?.let { formatter.format(it) }
+}
+
+class ResizingTextColumnRenderer : ResizingColumnRenderer() {
+    override fun getText(value: Any?): String? = (value as? String)?.trim()
 }

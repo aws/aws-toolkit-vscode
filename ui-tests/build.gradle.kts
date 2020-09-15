@@ -8,6 +8,7 @@ val junit5Version: String by project
 val remoteRobotVersion: String by project
 val uiTestFixturesVersion: String by project
 val awsSdkVersion: String by project
+val coroutinesVersion: String by project
 
 repositories {
     maven { url = URI("https://jetbrains.bintray.com/intellij-third-party-dependencies") }
@@ -18,6 +19,10 @@ plugins {
 }
 
 dependencies {
+    // This is just for the waiter, TODO remove when the Java SDK v2 adds waiters
+    testImplementation(project(":jetbrains-core"))
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
+    // end todo
     testImplementation(gradleApi())
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junit5Version")
     testImplementation("com.intellij.remoterobot:remote-robot:$remoteRobotVersion")

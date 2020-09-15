@@ -4,13 +4,10 @@
 package software.aws.toolkits.jetbrains.uitests.extensions
 
 import com.intellij.remoterobot.RemoteRobot
-import com.intellij.remoterobot.search.locators.LambdaLocator
 import com.intellij.remoterobot.stepsProcessing.StepLogger
 import com.intellij.remoterobot.stepsProcessing.StepWorker
 import com.intellij.remoterobot.stepsProcessing.log
-import com.intellij.remoterobot.stepsProcessing.step
 import com.intellij.remoterobot.utils.waitFor
-import com.intellij.remoterobot.utils.waitForIgnoringError
 import org.gradle.tooling.CancellationTokenSource
 import org.gradle.tooling.GradleConnectionException
 import org.gradle.tooling.GradleConnector
@@ -18,11 +15,7 @@ import org.gradle.tooling.ProjectConnection
 import org.gradle.tooling.ResultHandler
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
-import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
-import software.aws.toolkits.jetbrains.uitests.fixtures.DialogFixture
-import software.aws.toolkits.jetbrains.uitests.fixtures.WelcomeFrame
-import java.awt.Window
 import java.io.IOException
 import java.io.OutputStream
 import java.net.InetSocketAddress
@@ -43,7 +36,7 @@ fun uiTest(test: RemoteRobot.() -> Unit) {
     RemoteRobot("http://127.0.0.1:$robotPort").apply(test)
 }
 
-class Ide : BeforeAllCallback, BeforeEachCallback, AfterAllCallback {
+class Ide : BeforeAllCallback, AfterAllCallback {
     private val gradleProject = System.getProperty("GRADLE_PROJECT") ?: throw java.lang.IllegalStateException("GRADLE_PROJECT not set")
     private val gradleProcess = GradleProcess()
 
@@ -52,37 +45,6 @@ class Ide : BeforeAllCallback, BeforeEachCallback, AfterAllCallback {
         log.info("Gradle process started, trying to connect to IDE")
         waitForIde()
         log.info("Connected to IDE")
-    }
-
-    override fun beforeEach(context: ExtensionContext) {
-        uiTest {
-            waitForIgnoringError(
-                duration = Duration.ofMinutes(1),
-                interval = Duration.ofMillis(500),
-                errorMessage = "Could not get to Welcome Screen in time"
-            ) {
-                step("Attempt to reset to Welcome Frame") {
-                    // Make sure we find the welcome screen
-                    if (findAll<WelcomeFrame>().isNotEmpty()) {
-                        return@step true
-                    }
-
-                    // Try to get back to starting point by closing all windows
-                    val dialogs = findAll<DialogFixture>(
-                        LambdaLocator("any dialog") {
-                            it is Window && it.isShowing
-                        }
-                    )
-
-                    dialogs.filterNot { it.remoteComponent.className.contains("FlatWelcomeFrame") }
-                        .forEach {
-                            step("Closing ${it.title}") { it.close() }
-                        }
-
-                    true // Earlier code will throw
-                }
-            }
-        }
     }
 
     private fun waitForIde() {
@@ -164,6 +126,14 @@ private class GradleProcess {
 
             cancellationTokenSource = null
         }
+        waitFor(
+            duration = Duration.ofMinutes(1),
+            interval = Duration.ofMillis(500),
+            errorMessage = "Could not stop Gradle task"
+        ) {
+            !isRunning.get()
+        }
+        log.info("Gradle process stopped")
     }
 }
 

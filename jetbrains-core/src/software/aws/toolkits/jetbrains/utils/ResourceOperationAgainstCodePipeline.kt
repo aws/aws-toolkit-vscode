@@ -24,7 +24,8 @@ enum class TaggingResourceType(val value: String, val tagFilter: String) {
     LAMBDA_FUNCTION(message("codepipeline.lambda.resource_type"), "lambda:function"),
     CLOUDFORMATION_STACK(message("codepipeline.stack.resource_type"), "cloudformation:stack"),
     S3_BUCKET(message("codepipeline.bucket.resource_type"), "s3"),
-    CLOUDWATCHLOGS_GROUP(message("codepipeline.cloudwatch_group.resource_type"), "logs:log-group");
+    CLOUDWATCHLOGS_GROUP(message("codepipeline.cloudwatch_group.resource_type"), "logs:log-group"),
+    SQS_QUEUE(message("codepipeline.sqs.resource_type"), "sqs:queue");
 
     override fun toString() = value
 }
