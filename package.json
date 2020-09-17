@@ -227,6 +227,34 @@
                                             "target"
                                         ],
                                         "type": "object"
+                                    },
+                                    {
+                                        "title": "API Target Properties",
+                                        "description": "%AWS.configuration.description.awssam.debug.invokeTarget%",
+                                        "properties": {
+                                            "templatePath": {
+                                                "description": "%AWS.configuration.description.awssam.debug.templatePath%",
+                                                "type": "string"
+                                            },
+                                            "logicalId": {
+                                                "description": "%AWS.configuration.description.awssam.debug.logicalId%",
+                                                "type": "string"
+                                            },
+                                            "target": {
+                                                "description": "%AWS.configuration.description.awssam.debug.target%",
+                                                "type": "string",
+                                                "enum": [
+                                                    "api"
+                                                ]
+                                            }
+                                        },
+                                        "additionalProperties": false,
+                                        "required": [
+                                            "templatePath",
+                                            "logicalId",
+                                            "target"
+                                        ],
+                                        "type": "object"
                                     }
                                 ]
                             },
@@ -331,6 +359,79 @@
                                 },
                                 "additionalProperties": false,
                                 "type": "object"
+                            },
+                            "api": {
+                                "title": "API Gateway Properties",
+                                "description": "%AWS.configuration.description.awssam.debug.api%",
+                                "properties": {
+                                    "path": {
+                                        "description": "%AWS.configuration.description.awssam.debug.api.path%",
+                                        "type": "string"
+                                    },
+                                    "httpMethod": {
+                                        "description": "%AWS.configuration.description.awssam.debug.api.httpMethod%",
+                                        "type": "string",
+                                        "enum": [
+                                            "delete",
+                                            "get",
+                                            "head",
+                                            "options",
+                                            "patch",
+                                            "post",
+                                            "put"
+                                        ]
+                                    },
+                                    "payload": {
+                                        "description": "%AWS.configuration.description.awssam.debug.event%",
+                                        "properties": {
+                                            "json": {
+                                                "description": "%AWS.configuration.description.awssam.debug.event.json%",
+                                                "additionalProperties": {
+                                                    "type": [
+                                                        "string",
+                                                        "number",
+                                                        "boolean"
+                                                    ]
+                                                },
+                                                "type": "object"
+                                            },
+                                            "path": {
+                                                "description": "%AWS.configuration.description.awssam.debug.event.path%",
+                                                "type": "string"
+                                            }
+                                        },
+                                        "additionalProperties": false,
+                                        "type": "object"
+                                    },
+                                    "headers": {
+                                        "description": "%AWS.configuration.description.awssam.debug.api.headers%",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "querystring": {
+                                        "description": "%AWS.configuration.description.awssam.debug.api.queryString%",
+                                        "type": "string"
+                                    },
+                                    "stageVariables": {
+                                        "description": "%AWS.configuration.description.awssam.debug.api.stageVariables%",
+                                        "type": "object",
+                                        "additionalProperties": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "clientCertificateId": {
+                                        "description": "%AWS.configuration.description.awssam.debug.api.clientCertId%",
+                                        "type": "string"
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "required": [
+                                    "path",
+                                    "httpMethod"
+                                ],
+                                "type": "object"
                             }
                         },
                         "required": [
@@ -378,6 +479,27 @@
                                 }
                             }
                         }
+                    },
+                    {
+                        "label": "%AWS.configuration.description.awssam.debug.snippets.api.label%",
+                        "description": "%AWS.configuration.description.awssam.debug.snippets.api.description%",
+                        "body": {
+                            "type": "aws-sam",
+                            "request": "direct-invoke",
+                            "name": "${5:Invoke Lambda with API Gateway}",
+                            "invokeTarget": {
+                                "target": "api",
+                                "templatePath": "${1:Template Location}",
+                                "logicalId": "${2:Function Logical ID}"
+                            },
+                            "api": {
+                                "path": "${3:Path}",
+                                "httpMethod": "${4:Method}",
+                                "payload": {
+                                    "json": {}
+                                }
+                            }
+                        }
                     }
                 ]
             }
@@ -408,6 +530,14 @@
         },
         "menus": {
             "commandPalette": [
+                {
+                    "command": "aws.apig.copyUrl",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.apig.invokeRemoteRestApi",
+                    "when": "false"
+                },
                 {
                     "command": "aws.deleteCloudFormation",
                     "when": "false"
@@ -632,6 +762,11 @@
             ],
             "view/item/context": [
                 {
+                    "command": "aws.apig.invokeRemoteRestApi",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsApiGatewayNode)$/",
+                    "group": "0@1"
+                },
+                {
                     "command": "aws.s3.downloadFileAs",
                     "when": "view == aws.explorer && viewItem == awsS3FileNode && !aws-toolkit-vscode:IsCloud9",
                     "group": "inline@1"
@@ -658,12 +793,12 @@
                 },
                 {
                     "command": "aws.importLambda",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/ && aws-toolkit-vscode:LambdaImport",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/",
                     "group": "0@2"
                 },
                 {
                     "command": "aws.uploadLambda",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/ && aws-toolkit-vscode:LambdaUpload",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/",
                     "group": "1@1"
                 },
                 {
@@ -728,13 +863,18 @@
                 },
                 {
                     "command": "aws.copyName",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode)$/",
                     "group": "2@1"
                 },
                 {
                     "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode)$/",
                     "group": "2@2"
+                },
+                {
+                    "command": "aws.apig.copyUrl",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsApiGatewayNode)$/",
+                    "group": "2@0"
                 },
                 {
                     "command": "aws.s3.copyPath",
@@ -774,6 +914,16 @@
             ]
         },
         "commands": [
+            {
+                "command": "aws.apig.copyUrl",
+                "title": "%AWS.command.apig.copyUrl%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.apig.invokeRemoteRestApi",
+                "title": "%AWS.command.apig.invokeRemoteRestApi%",
+                "category": "AWS"
+            },
             {
                 "command": "aws.lambda.createNewSamApp",
                 "title": "%AWS.command.createNewSamApp%",
@@ -1111,7 +1261,7 @@
         "createRelease": "ts-node ./build-scripts/createRelease.ts"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "0.0.40",
+        "@aws-toolkits/telemetry": "0.0.43",
         "@types/adm-zip": "^0.4.32",
         "@types/async-lock": "^1.1.0",
         "@types/bytes": "^3.1.0",

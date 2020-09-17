@@ -16,6 +16,7 @@ import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtiliti
 import {
     TemplateTargetProperties,
     AwsSamDebuggerConfiguration,
+    API_TARGET_TYPE,
     AWS_SAM_DEBUG_TYPE,
     CODE_TARGET_TYPE,
     DIRECT_INVOKE_TYPE,
@@ -24,6 +25,7 @@ import {
     ensureRelativePaths,
     createCodeAwsSamDebugConfig,
     CodeTargetProperties,
+    createApiAwsSamDebugConfig,
 } from '../../../../shared/sam/debugger/awsSamDebugConfiguration'
 import { SamDebugConfigProvider, SamLaunchRequestArgs } from '../../../../shared/sam/debugger/awsSamDebugger'
 import * as debugConfiguration from '../../../../lambda/local/debugConfiguration'
@@ -139,6 +141,15 @@ describe('SamDebugConfigurationProvider', async () => {
             assert.deepStrictEqual(await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder), [])
         })
 
+        it('Ignores non function type resources', async () => {
+            const bigYamlStr = `${makeSampleSamTemplateYaml(true)}\nTestResource2:\n .   Type: AWS::Serverless::Api`
+
+            testutil.toFile(bigYamlStr, tempFile.fsPath)
+            await registry.addTemplateToRegistry(tempFile)
+            const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
+            assert.strictEqual(provided!.length, 1)
+        })
+
         it('returns one item if a template with one resource is in the workspace', async () => {
             testutil.toFile(makeSampleSamTemplateYaml(true), tempFile.fsPath)
             await registry.addTemplateToRegistry(tempFile)
@@ -195,6 +206,38 @@ describe('SamDebugConfigurationProvider', async () => {
                 assert.ok(resources.includes((provided[1].invokeTarget as TemplateTargetProperties).logicalId))
                 assert.ok(!resources.includes(badResourceName))
             }
+        })
+
+        it('Returns api function type resources as additional api configurations', async () => {
+            const bigYamlStr = `${makeSampleSamTemplateYaml(true)}
+            Events:
+                HelloWorld2:
+                    Type: Api
+                    Properties:
+                        Path: /hello
+                        Method: get`
+            console.log(bigYamlStr)
+
+            testutil.toFile(bigYamlStr, tempFile.fsPath)
+            await registry.addTemplateToRegistry(tempFile)
+            const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
+            assert.strictEqual(provided!.length, 2)
+            assert.strictEqual(provided![1].invokeTarget.target, API_TARGET_TYPE)
+            assert.strictEqual(provided![1].api?.path, '/hello')
+            assert.strictEqual(provided![1].api?.httpMethod, 'get')
+        })
+
+        it('Ignores HttpApi events', async () => {
+            const bigYamlStr = `${makeSampleSamTemplateYaml(true)}
+            Events:
+                HelloWorld2:
+                    Type: HttpApi`
+            console.log(bigYamlStr)
+
+            testutil.toFile(bigYamlStr, tempFile.fsPath)
+            await registry.addTemplateToRegistry(tempFile)
+            const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
+            assert.strictEqual(provided!.length, 1)
         })
     })
 
@@ -1542,6 +1585,57 @@ describe('createTemplateAwsSamDebugConfig', () => {
         assert.deepStrictEqual(config.lambda?.environmentVariables, params.environmentVariables)
         assert.strictEqual(config.sam?.dockerNetwork, params.dockerNetwork)
         assert.strictEqual(config.sam?.containerBuild, undefined)
+    })
+})
+
+describe('createApiAwsSamDebugConfig', () => {
+    const name = 'my body is a template'
+    const templatePath = path.join('two', 'roads', 'diverged', 'in', 'a', 'yellow', 'wood')
+
+    it('creates a API-type SAM debugger configuration with minimal configurations', () => {
+        const config = createApiAwsSamDebugConfig(undefined, undefined, name, templatePath)
+        assert.deepStrictEqual(config, {
+            name: `API yellow:${name}`,
+            type: AWS_SAM_DEBUG_TYPE,
+            request: DIRECT_INVOKE_TYPE,
+            invokeTarget: {
+                target: API_TARGET_TYPE,
+                logicalId: name,
+                templatePath: templatePath,
+            },
+            api: {
+                path: '/',
+                httpMethod: 'get',
+                payload: {
+                    json: {},
+                },
+            },
+        })
+    })
+
+    it('creates a API-type SAM debugger configuration with additional params', () => {
+        const config = createApiAwsSamDebugConfig(undefined, undefined, name, templatePath, {
+            payload: { json: { key: 'value' } },
+            httpMethod: 'OPTIONS',
+            path: '/api',
+        })
+        assert.deepStrictEqual(config, {
+            name: `API yellow:${name}`,
+            type: AWS_SAM_DEBUG_TYPE,
+            request: DIRECT_INVOKE_TYPE,
+            invokeTarget: {
+                target: API_TARGET_TYPE,
+                logicalId: name,
+                templatePath: templatePath,
+            },
+            api: {
+                path: '/api',
+                httpMethod: 'OPTIONS',
+                payload: {
+                    json: { key: 'value' },
+                },
+            },
+        })
     })
 })
 
