@@ -793,12 +793,12 @@
                 },
                 {
                     "command": "aws.importLambda",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/ && aws-toolkit-vscode:LambdaImport",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/",
                     "group": "0@2"
                 },
                 {
                     "command": "aws.uploadLambda",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/ && aws-toolkit-vscode:LambdaUpload",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/",
                     "group": "1@1"
                 },
                 {
