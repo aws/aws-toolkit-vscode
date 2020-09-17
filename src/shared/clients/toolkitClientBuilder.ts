@@ -13,6 +13,7 @@ import { LambdaClient } from './lambdaClient'
 import { SchemaClient } from './schemaClient'
 import { StepFunctionsClient } from './stepFunctionsClient'
 import { StsClient } from './stsClient'
+import { S3Client } from './s3Client'
 
 export interface ToolkitClientBuilder {
     createApiGatewayClient(regionCode: string): ApiGatewayClient
@@ -32,4 +33,6 @@ export interface ToolkitClientBuilder {
     createStsClient(regionCode: string, credentials?: ServiceConfigurationOptions): StsClient
 
     createIamClient(regionCode: string): IamClient
+
+    createS3Client(regionCode: string): S3Client
 }
