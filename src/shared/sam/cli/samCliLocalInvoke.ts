@@ -4,6 +4,7 @@
  */
 
 import * as child_process from 'child_process'
+import { pushIf } from '../../utilities/collectionUtils'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { fileExists } from '../../filesystemUtilities'
@@ -220,11 +221,11 @@ export class SamCliLocalInvokeInvocation {
             this.args.environmentVariablePath,
         ]
 
-        this.addArgumentIf(invokeArgs, !!this.args.debugPort, '-d', this.args.debugPort!)
-        this.addArgumentIf(invokeArgs, !!this.args.dockerNetwork, '--docker-network', this.args.dockerNetwork!)
-        this.addArgumentIf(invokeArgs, !!this.args.skipPullImage, '--skip-pull-image')
-        this.addArgumentIf(invokeArgs, !!this.args.debuggerPath, '--debugger-path', this.args.debuggerPath!)
-        this.addArgumentIf(
+        pushIf(invokeArgs, !!this.args.debugPort, '-d', this.args.debugPort!)
+        pushIf(invokeArgs, !!this.args.dockerNetwork, '--docker-network', this.args.dockerNetwork!)
+        pushIf(invokeArgs, !!this.args.skipPullImage, '--skip-pull-image')
+        pushIf(invokeArgs, !!this.args.debuggerPath, '--debugger-path', this.args.debuggerPath!)
+        pushIf(
             invokeArgs,
             !!this.args.parameterOverrides && this.args.parameterOverrides.length > 0,
             '--parameter-overrides',
@@ -257,12 +258,6 @@ export class SamCliLocalInvokeInvocation {
 
         if (!(await fileExists(this.args.eventPath))) {
             throw new Error(`event path does not exist: ${this.args.eventPath}`)
-        }
-    }
-
-    private addArgumentIf(args: string[], addIfConditional: boolean, ...argsToAdd: string[]) {
-        if (addIfConditional) {
-            args.push(...argsToAdd)
         }
     }
 }

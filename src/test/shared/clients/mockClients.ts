@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CloudFormation, CloudWatchLogs, IAM, Lambda, Schemas, StepFunctions, STS } from 'aws-sdk'
+import { APIGateway, CloudFormation, CloudWatchLogs, IAM, Lambda, Schemas, StepFunctions, STS } from 'aws-sdk'
+import { ApiGatewayClient } from '../../../shared/clients/apiGatewayClient'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { EcsClient } from '../../../shared/clients/ecsClient'
@@ -36,6 +37,7 @@ import {
 } from '../../../shared/clients/s3Client'
 
 interface Clients {
+    apiGatewayClient: ApiGatewayClient
     cloudFormationClient: CloudFormationClient
     cloudWatchLogsClient: CloudWatchLogsClient
     ecsClient: EcsClient
@@ -51,6 +53,7 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
     private readonly clients: Clients
     public constructor(overrideClients?: Partial<Clients>) {
         this.clients = {
+            apiGatewayClient: new MockApiGatewayClient(),
             cloudFormationClient: new MockCloudFormationClient(),
             cloudWatchLogsClient: new MockCloudWatchLogsClient(),
             ecsClient: new MockEcsClient({}),
@@ -62,6 +65,10 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
             s3Client: new MockS3Client({}),
             ...overrideClients,
         }
+    }
+
+    public createApiGatewayClient(regionCode: string): ApiGatewayClient {
+        return this.clients.apiGatewayClient
     }
 
     public createCloudFormationClient(regionCode: string): CloudFormationClient {
@@ -98,6 +105,32 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
 
     public createS3Client(regionCode: string): S3Client {
         return this.clients.s3Client
+    }
+}
+
+export class MockApiGatewayClient implements ApiGatewayClient {
+    public constructor(public readonly regionCode: string = '') {}
+
+    getResourcesForApi(apiId: string): AsyncIterableIterator<APIGateway.Resource> {
+        return asyncGenerator([])
+    }
+
+    getStages(apiId: string): Promise<APIGateway.Stages> {
+        return Promise.resolve({})
+    }
+
+    listApis(): AsyncIterableIterator<APIGateway.RestApi> {
+        return asyncGenerator([])
+    }
+
+    testInvokeMethod(
+        apiId: string,
+        resourceId: string,
+        method: string,
+        body: string,
+        pathWithQueryString: string | undefined
+    ): Promise<APIGateway.TestInvokeMethodResponse> {
+        return Promise.resolve({})
     }
 }
 

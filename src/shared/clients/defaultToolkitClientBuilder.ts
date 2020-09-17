@@ -4,8 +4,10 @@
  */
 
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
+import { ApiGatewayClient } from './apiGatewayClient'
 import { CloudFormationClient } from './cloudFormationClient'
 import { CloudWatchLogsClient } from './cloudWatchLogsClient'
+import { DefaultApiGatewayClient } from './defaultApiGatewayClient'
 import { DefaultCloudFormationClient } from './defaultCloudFormationClient'
 import { DefaultCloudWatchLogsClient } from './defaultCloudWatchLogsClient'
 import { DefaultEcsClient } from './defaultEcsClient'
@@ -28,6 +30,10 @@ import { DEFAULT_PARTITION } from '../regions/regionUtilities'
 
 export class DefaultToolkitClientBuilder implements ToolkitClientBuilder {
     public constructor(private readonly regionProvider: RegionProvider) {}
+
+    public createApiGatewayClient(regionCode: string): ApiGatewayClient {
+        return new DefaultApiGatewayClient(regionCode)
+    }
 
     public createCloudFormationClient(regionCode: string): CloudFormationClient {
         return new DefaultCloudFormationClient(regionCode)
