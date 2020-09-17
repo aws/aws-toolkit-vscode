@@ -1,4 +1,0 @@
-{
-    "type": "Feature",
-    "description": "Added openDocumentLocally and publishDocument commands, removed support for command type documents"
-}
