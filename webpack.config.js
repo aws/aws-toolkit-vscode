@@ -68,6 +68,10 @@ const config = {
                     },
                 ],
             },
+            {
+                test: /node_modules[\\|/](yaml-language-server)/,
+                use: { loader: 'umd-compat-loader' },
+            },
         ],
     },
     plugins: [
