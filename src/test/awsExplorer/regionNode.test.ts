@@ -4,14 +4,36 @@
  */
 
 import * as assert from 'assert'
+import * as sinon from 'sinon'
+import { ext } from '../../shared/extensionGlobals'
 import { RegionNode } from '../../awsexplorer/regionNode'
 import { SchemasNode } from '../../eventSchemas/explorer/schemasNode'
 import { DEFAULT_TEST_REGION_CODE, DEFAULT_TEST_REGION_NAME, FakeRegionProvider } from '../utilities/fakeAwsContext'
+import { ToolkitClientBuilder } from '../../shared/clients/toolkitClientBuilder'
 
 describe('RegionNode', () => {
+    let sandbox: sinon.SinonSandbox
+    let testNode: RegionNode
+
+    beforeEach(() => {
+        sandbox = sinon.createSandbox()
+        console.log('initializing...')
+
+        // contingency for current S3Node impl: requires a client built from ext.toolkitClientBuilder.
+        const clientBuilder = {
+            createS3Client: sandbox.stub().returns({}),
+        }
+        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
+
+        testNode = new RegionNode({ id: regionCode, name: regionName }, new FakeRegionProvider())
+    })
+
+    afterEach(() => {
+        sandbox.reset()
+    })
+
     const regionCode = DEFAULT_TEST_REGION_CODE
     const regionName = DEFAULT_TEST_REGION_NAME
-    const testNode = new RegionNode({ id: regionCode, name: regionName }, new FakeRegionProvider())
 
     it('initializes name and tooltip', async () => {
         assert.strictEqual(testNode.label, regionName)
