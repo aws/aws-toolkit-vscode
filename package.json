@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "An extension for working with Amazon Web Services",
-    "version": "1.13.0-SNAPSHOT",
+    "version": "1.14.0-SNAPSHOT",
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {
@@ -438,6 +438,14 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.importLambda",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.uploadLambda",
+                    "when": "false"
+                },
+                {
                     "command": "aws.invokeLambda",
                     "when": "false"
                 },
@@ -638,13 +646,23 @@
                 },
                 {
                     "command": "aws.invokeLambda",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable|awsCloudFormationFunctionNode)$/",
                     "group": "0@1"
                 },
                 {
+                    "command": "aws.importLambda",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/ && aws-toolkit-vscode:LambdaImport",
+                    "group": "0@2"
+                },
+                {
+                    "command": "aws.uploadLambda",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/ && aws-toolkit-vscode:LambdaUpload",
+                    "group": "1@1"
+                },
+                {
                     "command": "aws.deleteLambda",
-                    "when": "view == aws.explorer && viewItem == awsRegionFunctionNode",
-                    "group": "2@1"
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/",
+                    "group": "4@1"
                 },
                 {
                     "command": "aws.deleteCloudFormation",
@@ -703,12 +721,12 @@
                 },
                 {
                     "command": "aws.copyName",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode)$/",
                     "group": "2@1"
                 },
                 {
                     "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode)$/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode)$/",
                     "group": "2@2"
                 },
                 {
@@ -845,6 +863,18 @@
                 "command": "aws.invokeLambda",
                 "title": "%AWS.command.invokeLambda%",
                 "category": "AWS"
+            },
+            {
+                "command": "aws.importLambda",
+                "title": "%AWS.command.importLambda%",
+                "category": "AWS",
+                "enablement": "viewItem == awsRegionFunctionNodeImportable"
+            },
+            {
+                "command": "aws.uploadLambda",
+                "title": "%AWS.command.uploadLambda%",
+                "category": "AWS",
+                "enablement": "viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable)$/"
             },
             {
                 "command": "aws.deleteLambda",
@@ -1091,7 +1121,7 @@
         "createRelease": "ts-node ./build-scripts/createRelease.ts"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "0.0.30",
+        "@aws-toolkits/telemetry": "0.0.40",
         "@types/adm-zip": "^0.4.32",
         "@types/async-lock": "^1.1.0",
         "@types/bytes": "^3.1.0",
@@ -1152,7 +1182,7 @@
     },
     "dependencies": {
         "adm-zip": "^0.4.13",
-        "amazon-states-language-service": "^1.4.0",
+        "amazon-states-language-service": "^1.4.1",
         "async-lock": "^1.1.3",
         "aws-sdk": "^2.581.0",
         "bytes": "^3.1.0",

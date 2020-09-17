@@ -32,9 +32,16 @@ export function tryGetAbsolutePath(folder: vscode.WorkspaceFolder | undefined, r
  *
  * @returns true if folder was added, false otherwise
  */
-export async function addFolderToWorkspace(folder: { uri: vscode.Uri; name?: string }): Promise<boolean> {
+export async function addFolderToWorkspace(
+    folder: { uri: vscode.Uri; name?: string },
+    skipExisting?: boolean
+): Promise<boolean> {
     const disposables: vscode.Disposable[] = []
     const logger = getLogger()
+
+    if (skipExisting && vscode.workspace.getWorkspaceFolder(folder.uri)) {
+        return true
+    }
 
     try {
         // Wait for the WorkspaceFolders changed notification for the folder of interest before returning to caller

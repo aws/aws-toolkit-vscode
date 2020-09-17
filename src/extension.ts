@@ -16,6 +16,7 @@ import { LoginManager } from './credentials/loginManager'
 import { CredentialsProviderManager } from './credentials/providers/credentialsProviderManager'
 import { SharedCredentialsProviderFactory } from './credentials/providers/sharedCredentialsProviderFactory'
 import { activate as activateSchemas } from './eventSchemas/activation'
+import { activate as activateLambda } from './lambda/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { AwsContextTreeCollection } from './shared/awsContextTreeCollection'
 import { DefaultToolkitClientBuilder } from './shared/clients/defaultToolkitClientBuilder'
@@ -99,7 +100,7 @@ export async function activate(context: vscode.ExtensionContext) {
             loginManager
         )
         ext.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
-        ext.toolkitClientBuilder = new DefaultToolkitClientBuilder()
+        ext.toolkitClientBuilder = new DefaultToolkitClientBuilder(regionProvider)
 
         await initializeCredentials({
             extensionContext: context,
@@ -195,6 +196,8 @@ export async function activate(context: vscode.ExtensionContext) {
             regionProvider,
             outputChannel: toolkitOutputChannel,
         })
+
+        await activateLambda(context)
 
         await activateSchemas({
             context: extContext.extensionContext,

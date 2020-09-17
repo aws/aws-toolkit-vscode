@@ -190,6 +190,7 @@ export async function invokeLambdaFunction(
         useContainer: config.sam?.containerBuild || false,
         extraArgs: config.sam?.buildArguments,
         parameterOverrides: config.parameterOverrides,
+        skipPullImage: config.sam?.skipNewImageCheck,
     }
     if (!config.noDebug) {
         // Needed at least for dotnet case; harmless for others.
@@ -233,6 +234,7 @@ export async function invokeLambdaFunction(
         debuggerPath: config.debuggerPath,
         extraArgs: config.sam?.localArguments,
         parameterOverrides: config.parameterOverrides,
+        skipPullImage: config.sam?.skipNewImageCheck,
     }
 
     delete config.invokeTarget // Must not be used beyond this point.

@@ -59,17 +59,20 @@ export NODE_OPTIONS=--max-old-space-size=8192
 
 ### Test
 
+See [TESTPLAN.md](./docs/TESTPLAN.md) to understand the project's test
+structure, mechanics and philosophy.
+
 You can run tests directly from Visual Studio Code:
 
 1. Select `View > Debug`, or select the Debug pane from the sidebar.
 2. From the dropdown at the top of the Debug pane, select the `Extension Tests` configuration.
 3. Press `F5` to run tests with the debugger attached.
 
-If you prefer, you can also run tests from the command line:
+You can also run tests from the command line:
 
     npm run test
 
-There are also some integration tests, which can be run from the Debug pane, or from the command line:
+There are also integration tests, which can be run from the Run panel, or from the command line:
 
     npm run integrationTest
 
@@ -80,15 +83,16 @@ Code from treating its files as project files.
 
 #### Run a specific test
 
-To run a single test, change its `it()` call to `it.only(…)`.
+To run a single test in VSCode, run the `Extension Tests (current file)` launch-config.
 
-To run a single group of tests, change the `describe()` call to `describe.only(…)`.
+Alternatively:
 
-To run all tests in a particular subdirectory, you can edit
-`src/test/index.ts:rootTestsPath` so that it points to the subdirectory instead
-of the top-level directory:
-
+-   Use Mocha's [it.only()](https://mochajs.org/#exclusive-tests) or `describe.only()`.
+-   To run all tests in a particular subdirectory, you can edit
+    `src/test/index.ts:rootTestsPath` to point to a subdirectory:
+    ```
     rootTestsPath: __dirname + '/shared/sam/debugger/'
+    ```
 
 #### Checking coverage report
 
