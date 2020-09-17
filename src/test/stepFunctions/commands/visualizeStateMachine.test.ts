@@ -28,7 +28,7 @@ const mockUriOne: vscode.Uri = {
     fragment: 'MockFragmentOne',
     fsPath: 'MockFSPathOne',
     query: 'MockQueryOne',
-    path: 'MockPathOne',
+    path: '/MockPathOne',
     scheme: 'MockSchemeOne',
     with: () => {
         return mockUriOne
