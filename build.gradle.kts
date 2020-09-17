@@ -84,12 +84,14 @@ allprojects {
     tasks.withType(RunIdeTask::class.java) {
         val alternativeIde = System.getenv("ALTERNATIVE_IDE")
         if (alternativeIde != null) {
-            if (File(alternativeIde).exists()) {
+            // remove the trailing slash if there is one or else it will not work
+            val path = alternativeIde.trimEnd('/')
+            if (File(path).exists()) {
                 intellij {
-                    alternativeIdePath = System.getenv("ALTERNATIVE_IDE")
+                    alternativeIdePath = path
                 }
             } else {
-                throw GradleException("ALTERNATIVE_IDE path not found $alternativeIde ${if (alternativeIde.endsWith("/")) "remove the trailing slash" else ""}")
+                throw GradleException("ALTERNATIVE_IDE path not found $alternativeIde")
             }
         }
     }
