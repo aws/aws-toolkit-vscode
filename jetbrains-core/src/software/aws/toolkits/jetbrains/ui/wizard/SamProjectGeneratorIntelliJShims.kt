@@ -17,7 +17,6 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.roots.ContentEntry
 import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.roots.ModuleRootModificationUtil
-import com.intellij.openapi.startup.StartupManager
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.ProjectTemplatesFactory
@@ -55,27 +54,26 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
         val contentEntry: ContentEntry = doAddContentEntry(rootModel) ?: throw Exception(message("sam.init.error.no.project.basepath"))
         val outputDir: VirtualFile = contentEntry.file ?: throw Exception(message("sam.init.error.no.virtual.file"))
 
-        StartupManager.getInstance(rootModel.project).runWhenProjectIsInitialized {
-            ProgressManager.getInstance().run(
-                object : Task.Backgroundable(rootModel.project, message("sam.init.generating.template"), false) {
-                    override fun run(indicator: ProgressIndicator) {
-                        ModuleRootModificationUtil.updateModel(rootModel.module) { model ->
-                            val samTemplate = settings.template
-                            samTemplate.build(project, selectedRuntime, settings.schemaParameters, outputDir)
-                            VfsUtil.markDirtyAndRefresh(false, true, true, outputDir)
-                            runInEdt {
-                                try {
-                                    samTemplate.postCreationAction(settings, outputDir, model, generator.defaultSourceCreatingProject, indicator)
-                                } catch (t: Throwable) {
-                                    LOG.error(t) { "Exception thrown during postCreationAction" }
-                                    model.dispose()
-                                }
+        // ModifiableRootModel takes a final ProjectRootManagerImpl which has a final project, so we have guaranteed access to project here
+        ProgressManager.getInstance().run(
+            object : Task.Backgroundable(rootModel.project, message("sam.init.generating.template"), false) {
+                override fun run(indicator: ProgressIndicator) {
+                    ModuleRootModificationUtil.updateModel(rootModel.module) { model ->
+                        val samTemplate = settings.template
+                        samTemplate.build(project, selectedRuntime, settings.schemaParameters, outputDir)
+                        VfsUtil.markDirtyAndRefresh(false, true, true, outputDir)
+                        runInEdt {
+                            try {
+                                samTemplate.postCreationAction(settings, outputDir, model, generator.defaultSourceCreatingProject, indicator)
+                            } catch (t: Throwable) {
+                                LOG.error(t) { "Exception thrown during postCreationAction" }
+                                model.dispose()
                             }
                         }
                     }
                 }
-            )
-        }
+            }
+        )
     }
 
     // add things
