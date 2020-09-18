@@ -1,7 +1,7 @@
 // Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
-
 package software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights
+
 import com.intellij.ui.TableSpeedSearch
 import com.intellij.ui.TableUtil
 import com.intellij.ui.table.TableView
@@ -33,6 +33,20 @@ class LogGroupSelectorTable : TableView<LogGroup>(model) {
         listTableModel.items = modelItems
         TableUtil.setupCheckboxColumn(this, 0)
         TableUtil.updateScroller(this)
+        TableUtil.selectRows(this, selected.filterNotNull().toIntArray())
+        TableUtil.scrollSelectionToVisible(this)
+    }
+
+    /**
+     * Assumes that the model has already been populated
+     */
+    internal fun selectLogGroups(selectedLogGroups: Set<String>) {
+        val selected = listTableModel.items.mapIndexed { index, logGroup ->
+            logGroup.selected = logGroup.name in selectedLogGroups
+
+            if (logGroup.selected) index else null
+        }
+
         TableUtil.selectRows(this, selected.filterNotNull().toIntArray())
         TableUtil.scrollSelectionToVisible(this)
     }

@@ -32,7 +32,7 @@ class QueryResultList(
     }
 
     init {
-        openQueryEditor.text = message("cloudwatch.logs.query")
+        openQueryEditor.text = message("cloudwatch.logs.open_query_editor")
         resultsTitle.text = message("cloudwatch.logs.query_result")
         Disposer.register(this, resultsTable)
         tablePanel.setContent(resultsTable.component)

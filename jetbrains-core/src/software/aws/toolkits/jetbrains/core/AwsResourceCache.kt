@@ -124,7 +124,7 @@ interface AwsResourceCache {
 
         // Getting resources can take a long time on a slow connection or if there are a lot of resources. This call should
         // always be done in an async context so it should be OK to take multiple seconds.
-        private val DEFAULT_TIMEOUT = Duration.ofSeconds(30)
+        val DEFAULT_TIMEOUT = Duration.ofSeconds(30)
 
         private fun <T> wait(timeout: Duration, call: () -> CompletionStage<T>) = try {
             call().toCompletableFuture().get(timeout.toMillis(), TimeUnit.MILLISECONDS)

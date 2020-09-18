@@ -24,6 +24,7 @@ import software.aws.toolkits.core.region.anAwsRegion
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.InsightsUtils.queryDetails
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.resources.CloudWatchResources
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.resources.message
@@ -67,11 +68,22 @@ class QueryEditorDialogTest {
             credentials.id,
             listOf(LogGroup.builder().logGroupName("log1").build())
         )
-        view = QueryEditor(project, queryDetails(listOf()))
+        view = QueryEditor(
+            project,
+            queryDetails(
+                connectionSettings = connectionSettings,
+                logGroups = listOf()
+            )
+        )
         sut = QueryEditorDialog(project, connectionSettings, "log1")
         runBlocking {
             // annoying race between view initialization and test assertion
-            sut.setView(queryDetails(listOf("log1")))
+            sut.setView(
+                queryDetails(
+                    connectionSettings = connectionSettings,
+                    logGroups = listOf("log1")
+                )
+            )
         }
 
         client.stub {
@@ -109,9 +121,13 @@ class QueryEditorDialogTest {
             )
         )
         runBlocking {
-            sut = QueryEditorDialog(projectRule.project, queryDetails(listOf("log0", "log1")))
+            val queryDetails = queryDetails(
+                connectionSettings = connectionSettings,
+                logGroups = listOf("log0", "log1")
+            )
+            sut = QueryEditorDialog(projectRule.project, queryDetails)
             // annoying race between view initialization and test assertion
-            sut.setView(queryDetails(listOf("log0", "log1")))
+            sut.setView(queryDetails)
         }
         assertThat(sut.getQueryDetails().logGroups).containsExactly("log0", "log1")
     }
@@ -199,6 +215,7 @@ class QueryEditorDialogTest {
     @Test
     fun `startQuery with multiple log groups`() {
         val query = queryDetails(
+            connectionSettings = connectionSettings,
             logGroups = mutableListOf("logGroup", "anotherLogGroup")
         )
 
@@ -217,6 +234,7 @@ class QueryEditorDialogTest {
         val end = Instant.now()
         val start = end.minus(Duration.ofDays(1))
         val query = queryDetails(
+            connectionSettings = connectionSettings,
             timeRange = TimeRange.AbsoluteRange(Date.from(start), Date.from(end))
         )
 
@@ -238,6 +256,7 @@ class QueryEditorDialogTest {
         val end = Instant.now()
         val start = end.minus(Duration.ofDays(1))
         val query = queryDetails(
+            connectionSettings = connectionSettings,
             timeRange = TimeRange.RelativeRange(1, ChronoUnit.DAYS)
         )
 
@@ -259,6 +278,7 @@ class QueryEditorDialogTest {
         val end = Instant.now()
         val start = end.minus(Duration.ofDays(1))
         val query = queryDetails(
+            connectionSettings = connectionSettings,
             query = QueryString.SearchTermQueryString("query")
         )
 
@@ -280,6 +300,7 @@ class QueryEditorDialogTest {
         val end = Instant.now()
         val start = end.minus(Duration.ofDays(1))
         val query = queryDetails(
+            connectionSettings = connectionSettings,
             query = QueryString.InsightsQueryString("query")
         )
 
@@ -295,17 +316,6 @@ class QueryEditorDialogTest {
             assertThat(it.queryString()).isEqualTo("query")
         }
     }
-
-    private fun queryDetails(
-        logGroups: List<String> = listOf("logGroup"),
-        timeRange: TimeRange = TimeRange.RelativeRange(1, ChronoUnit.DAYS),
-        query: QueryString = QueryString.InsightsQueryString("query")
-    ) = QueryDetails(
-        connectionSettings = connectionSettings,
-        logGroups = logGroups,
-        timeRange = timeRange,
-        query = query
-    )
 
     private fun setViewDetails(
         logGroups: List<String> = listOf("log1"),

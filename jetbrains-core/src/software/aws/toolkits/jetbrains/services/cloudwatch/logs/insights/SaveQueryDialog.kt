@@ -7,12 +7,16 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
-import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeQueryDefinitionsRequest
-import software.amazon.awssdk.services.cloudwatchlogs.model.PutQueryDefinitionRequest
+import software.aws.toolkits.core.utils.error
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.resources.CloudWatchResources
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
@@ -23,12 +27,11 @@ import javax.swing.JComponent
 
 class SaveQueryDialog(
     private val project: Project,
-    connectionSettings: ConnectionSettings,
+    private val connectionSettings: ConnectionSettings,
     private val query: String,
     private val logGroups: List<String>
 ) : DialogWrapper(project), CoroutineScope by ApplicationThreadPoolScope("SavingQuery") {
     val view = EnterQueryName()
-
     private val action: OkAction = object : OkAction() {
         init {
             putValue(Action.NAME, message("cloudwatch.logs.save_query"))
@@ -42,8 +45,8 @@ class SaveQueryDialog(
             close(OK_EXIT_CODE)
         }
     }
-
     private val client = project.awsClient<CloudWatchLogsClient>(connectionSettings)
+    private val resourceCache = AwsResourceCache.getInstance(project)
 
     init {
         super.init()
@@ -54,31 +57,54 @@ class SaveQueryDialog(
     override fun doValidate(): ValidationInfo? = validateQueryName(view)
     override fun getOKAction(): Action = action
 
-    fun checkQueryName(queryName: String): Boolean {
-        val request = DescribeQueryDefinitionsRequest.builder().queryDefinitionNamePrefix(queryName).build()
-        val response = client.describeQueryDefinitions(request)
-        return response.queryDefinitions().isEmpty()
+    private suspend fun getExistingQueryId(queryName: String): String? {
+        val definitions = withTimeout(AwsResourceCache.DEFAULT_TIMEOUT.toMillis()) {
+            resourceCache.getResource(
+                CloudWatchResources.DESCRIBE_QUERY_DEFINITIONS,
+                region = connectionSettings.region,
+                credentialProvider = connectionSettings.credentials,
+                forceFetch = true
+            ).await()
+        }
+
+        return definitions.find { it.name() == queryName }?.queryDefinitionId()
     }
 
     fun saveQuery() = launch {
         try {
             val queryName = view.queryName.text
-            if (checkQueryName(queryName)) {
-                val request = PutQueryDefinitionRequest.builder().logGroupNames(logGroups).name(queryName).queryString(query).build()
-                val response = client.putQueryDefinition(request)
-                notifyInfo(message("cloudwatch.logs.saved_query_status"), message("cloudwatch.logs.query_saved_successfully"), project)
-            } else {
-                notifyError(message("cloudwatch.logs.saved_query_status"), message("cloudwatch.logs.query_not_saved"))
+            action.isEnabled = false
+
+            val existingQueryId = getExistingQueryId(queryName)
+            client.putQueryDefinition {
+                it.queryDefinitionId(existingQueryId)
+                it.name(queryName)
+                it.logGroupNames(logGroups)
+                it.queryString(query)
             }
+            notifyInfo(message("cloudwatch.logs.saved_query_status"), message("cloudwatch.logs.query_saved_successfully"), project)
+            // invalidate cache
+            resourceCache.clear(
+                CloudWatchResources.DESCRIBE_QUERY_DEFINITIONS,
+                region = connectionSettings.region,
+                credentialProvider = connectionSettings.credentials
+            )
         } catch (e: Exception) {
-            notifyError(message("cloudwatch.logs.saved_query_status"), e.toString())
+            LOG.error(e) { "Failed to save insights query" }
+            notifyError(message("cloudwatch.logs.failed_to_save_query"), e.toString())
+        } finally {
+            action.isEnabled = true
         }
     }
 
     fun validateQueryName(view: EnterQueryName): ValidationInfo? {
         if (view.queryName.text.isEmpty()) {
-            return ValidationInfo(message("cloudwatch.logs.query_name"), view.queryName)
+            return ValidationInfo(message("cloudwatch.logs.query_name_missing"), view.queryName)
         }
         return null
+    }
+
+    companion object {
+        private val LOG = getLogger<SaveQueryDialog>()
     }
 }

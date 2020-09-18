@@ -83,6 +83,10 @@ class QueryEditor internal constructor(
             SaveQueryDialog(project, initialQueryDetails.connectionSettings, query, logGroupTable.getSelectedLogGroups()).show()
         }
 
+        retrieveSavedQueriesButton.addActionListener {
+            RetrieveSavedQueryDialog(this, project, initialQueryDetails.connectionSettings).show()
+        }
+
         startDate.isEnabled = false
         endDate.isEnabled = false
         relativeTimeNumber.isEnabled = true

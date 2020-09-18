@@ -13,7 +13,7 @@ import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogsNo
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.QueryEditorDialog
 import software.aws.toolkits.resources.message
 
-class QueryGroupAction : SingleResourceNodeAction<CloudWatchLogsNode>(message("cloudwatch.logs.query")), DumbAware {
+class QueryGroupAction : SingleResourceNodeAction<CloudWatchLogsNode>(message("cloudwatch.logs.open_query_editor")), DumbAware {
     override fun actionPerformed(selected: CloudWatchLogsNode, e: AnActionEvent) = QueryEditorDialog(
         selected.nodeProject,
         ConnectionSettings(selected.nodeProject.activeCredentialProvider(), selected.nodeProject.activeRegion()),
