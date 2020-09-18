@@ -20,7 +20,7 @@ import {
     PublishSSMDocumentWizard,
 } from '../../../ssmDocument/wizards/publishDocumentWizard'
 import { MockSsmDocumentClient } from '../../shared/clients/mockClients'
-import { FakeAwsContext } from '../../utilities/fakeAwsContext'
+import { FakeAwsContext, FakeRegionProvider } from '../../utilities/fakeAwsContext'
 
 let sandbox: sinon.SinonSandbox
 
@@ -71,6 +71,7 @@ const mockChannel: vscode.OutputChannel = {
 describe('publishSSMDocument', async () => {
     let sandbox = sinon.createSandbox()
     const fakeAwsContext = new FakeAwsContext()
+    const fakeRegionProvider = new FakeRegionProvider()
     let channel: vscode.OutputChannel
     let textDocument: vscode.TextDocument
     let apiCalled: string
@@ -99,7 +100,7 @@ describe('publishSSMDocument', async () => {
             })
         )
 
-        await publish.publishSSMDocument(fakeAwsContext, channel)
+        await publish.publishSSMDocument(fakeAwsContext, fakeRegionProvider, channel)
 
         sinon.assert.calledOnce(wizardStub)
         assert.strictEqual(apiCalled, 'createDocument')
@@ -113,7 +114,7 @@ describe('publishSSMDocument', async () => {
             })
         )
 
-        await publish.publishSSMDocument(fakeAwsContext, channel)
+        await publish.publishSSMDocument(fakeAwsContext, fakeRegionProvider, channel)
 
         sinon.assert.calledOnce(wizardStub)
         assert.strictEqual(apiCalled, 'updateDocument')

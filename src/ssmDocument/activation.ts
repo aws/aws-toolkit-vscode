@@ -10,6 +10,7 @@ import { AwsContext } from '../shared/awsContext'
 
 import { createSsmDocumentFromTemplate } from './commands/createDocumentFromTemplate'
 import { publishSSMDocument } from './commands/publishDocument'
+import { RegionProvider } from '../shared/regions/regionProvider'
 import * as telemetry from '../shared/telemetry/telemetry'
 import { openDocumentItem } from './commands/openDocumentItem'
 import { DocumentItemNode } from './explorer/documentItemNode'
@@ -18,9 +19,10 @@ import { DocumentItemNode } from './explorer/documentItemNode'
 export async function activate(
     extensionContext: vscode.ExtensionContext,
     awsContext: AwsContext,
+    regionProvider: RegionProvider,
     outputChannel: vscode.OutputChannel
 ): Promise<void> {
-    await registerSsmDocumentCommands(extensionContext, awsContext, outputChannel)
+    await registerSsmDocumentCommands(extensionContext, awsContext, regionProvider, outputChannel)
     await activateSSMLanguageServer(extensionContext)
     activateDecor(extensionContext)
 }
@@ -28,6 +30,7 @@ export async function activate(
 async function registerSsmDocumentCommands(
     extensionContext: vscode.ExtensionContext,
     awsContext: AwsContext,
+    regionProvider: RegionProvider,
     outputChannel: vscode.OutputChannel
 ): Promise<void> {
     extensionContext.subscriptions.push(
@@ -46,7 +49,7 @@ async function registerSsmDocumentCommands(
     )
     extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.ssmDocument.publishDocument', async () => {
-            await publishSSMDocument(awsContext, outputChannel)
+            await publishSSMDocument(awsContext, regionProvider, outputChannel)
         })
     )
 }

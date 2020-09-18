@@ -8,9 +8,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
 import { SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
-import { ssmDocumentPublishGuideUrl } from '../../shared/constants'
 import { ext } from '../../shared/extensionGlobals'
-import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
@@ -143,7 +141,6 @@ export interface UpdateDocumentQuickPickItem {
 }
 
 export class DefaultPublishSSMDocumentWizardContext extends WizardContext implements PublishSSMDocumentWizardContext {
-    private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Documentation'))
     private documents: SSM.Types.DocumentIdentifierList | undefined
     private readonly ssmDocumentClient: SsmDocumentClient
 
@@ -205,7 +202,7 @@ export class DefaultPublishSSMDocumentWizardContext extends WizardContext implem
                 title: localize('AWS.ssmDocument.publishWizard.ssmDocumentName.title', 'Name your document'),
                 ignoreFocusOut: true,
             },
-            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
+            buttons: [vscode.QuickInputButtons.Back],
         })
 
         return await input.promptUser({
@@ -326,7 +323,7 @@ export class DefaultPublishSSMDocumentWizardContext extends WizardContext implem
                     this.defaultRegion
                 ),
             },
-            buttons: [this.helpButton, vscode.QuickInputButtons.Back],
+            buttons: [vscode.QuickInputButtons.Back],
             items: publishItems,
         })
 
@@ -335,8 +332,6 @@ export class DefaultPublishSSMDocumentWizardContext extends WizardContext implem
             onDidTriggerButton: (button, resolve, _reject) => {
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
-                } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(ssmDocumentPublishGuideUrl))
                 }
             },
         })

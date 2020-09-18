@@ -12,6 +12,9 @@ import { SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
 import { ssmJson, ssmYaml } from '../../shared/constants'
 import { ext } from '../../shared/extensionGlobals'
 import { getLogger, Logger } from '../../shared/logger'
+import { RegionProvider } from '../../shared/regions/regionProvider'
+import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
+import * as picker from '../../shared/ui/picker'
 import {
     DefaultPublishSSMDocumentWizardContext,
     PublishSSMDocumentWizard,
@@ -23,30 +26,38 @@ import * as telemetry from '../../shared/telemetry/telemetry'
 
 const DEFAULT_REGION: string = 'us-east-1'
 
-export async function publishSSMDocument(awsContext: AwsContext, outputChannel: vscode.OutputChannel): Promise<void> {
+export async function publishSSMDocument(
+    awsContext: AwsContext,
+    regionProvider: RegionProvider,
+    outputChannel: vscode.OutputChannel
+): Promise<void> {
     const logger: Logger = getLogger()
 
     const textDocument = vscode.window.activeTextEditor?.document
     if (!textDocument) {
-        let error = new Error('Could not get active text editor for local SSM Document definition')
-        logger.error(error.message)
-        throw error
+        let errorMsg = 'Could not get active text editor for local SSM Document definition'
+        logger.error(errorMsg)
+        vscode.window.showErrorMessage(
+            localize('AWS.message.error.ssmDocument.publishDocument.could_not_open', errorMsg)
+        )
+        return
     }
 
     if (textDocument.languageId !== ssmJson && textDocument.languageId !== ssmYaml) {
         let supportedFormats = [ssmJson, ssmYaml]
-        let error = new Error(
-            'Current editor language does not match the supported formats: ' + supportedFormats.join(', ')
+        let errorMsg = 'Current editor language does not match the supported formats: ' + supportedFormats.join(', ')
+        logger.error(errorMsg)
+        vscode.window.showErrorMessage(
+            localize('AWS.message.error.ssmDocument.publishDocument.invalid_format', errorMsg)
         )
-        logger.error(error.message)
-        throw error
+        return
     }
 
-    let region = awsContext.getCredentialDefaultRegion()
+    let region = await promptUserForRegion(awsContext, regionProvider, awsContext.getCredentialDefaultRegion())
     if (!region) {
         region = DEFAULT_REGION
         logger.info(
-            `Default region in credentials profile is not set. Falling back to ${DEFAULT_REGION} for publishing a SSM Document.`
+            `Unsuccessful in picking a region. Falling back to ${DEFAULT_REGION} for publishing a SSM Document.`
         )
     }
 
@@ -188,4 +199,46 @@ export async function updateDocument(
     } finally {
         telemetry.recordSsmPublishDocument({ result: result, ssmOperation: ssmOperation })
     }
+}
+
+async function promptUserForRegion(
+    awsContext: AwsContext,
+    regionProvider: RegionProvider,
+    initialRegionCode?: string
+): Promise<string | undefined> {
+    const partitionRegions = getRegionsForActiveCredentials(awsContext, regionProvider)
+
+    const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
+        options: {
+            title: localize(
+                'AWS.message.prompt.ssmDocument.publishDocument.region',
+                'Which AWS Region would you like to publish to?'
+            ),
+            value: initialRegionCode,
+            matchOnDetail: true,
+            ignoreFocusOut: true,
+        },
+        items: partitionRegions.map(region => ({
+            label: region.name,
+            detail: region.id,
+            // this is the only way to get this to show on going back
+            // this will make it so it always shows even when searching for something else
+            alwaysShow: region.id === initialRegionCode,
+            description:
+                region.id === initialRegionCode ? localize('AWS.wizard.selectedPreviously', 'Selected Previously') : '',
+        })),
+        buttons: [vscode.QuickInputButtons.Back],
+    })
+
+    const choices = await picker.promptUser<vscode.QuickPickItem>({
+        picker: quickPick,
+        onDidTriggerButton: (button, resolve, reject) => {
+            if (button === vscode.QuickInputButtons.Back) {
+                resolve(undefined)
+            }
+        },
+    })
+    const val = picker.verifySinglePickerOutput(choices)
+
+    return val?.detail
 }
