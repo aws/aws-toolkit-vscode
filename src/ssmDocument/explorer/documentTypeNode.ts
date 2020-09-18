@@ -62,7 +62,7 @@ export class DocumentTypeNode extends AWSTreeNodeBase {
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(
                     this,
-                    localize('AWS.explorerNode.documentType.noSsmDocument', `[No document found]`)
+                    localize('AWS.explorerNode.documentType.noSsmDocument', `[No documents found]`)
                 ),
             sort: (nodeA: DocumentItemNode, nodeB: DocumentItemNode) =>
                 nodeA.documentName.localeCompare(nodeB.documentName),

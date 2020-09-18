@@ -12,7 +12,7 @@ exports.plugins = exports.automationAction = exports.supportedDocumentTypes = vo
         2. Command document actions (plugins)
         3. Output properties for each automation action (automationActionOutputs)
  */
-exports.supportedDocumentTypes = ['command', 'automation']
+exports.supportedDocumentTypes = ['automation']
 /** Reference: https://docs.aws.amazon.com/systems-manager/latest/userguide/automation-actions.html */
 exports.automationAction = {
     // key: automation action
