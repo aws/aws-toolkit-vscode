@@ -20,6 +20,7 @@ import {
     PublishSSMDocumentWizard,
 } from '../../../ssmDocument/wizards/publishDocumentWizard'
 import { MockSsmDocumentClient } from '../../shared/clients/mockClients'
+import * as picker from '../../../shared/ui/picker'
 import { FakeAwsContext, FakeRegionProvider } from '../../utilities/fakeAwsContext'
 
 let sandbox: sinon.SinonSandbox
@@ -72,6 +73,19 @@ describe('publishSSMDocument', async () => {
     let sandbox = sinon.createSandbox()
     const fakeAwsContext = new FakeAwsContext()
     const fakeRegionProvider = new FakeRegionProvider()
+
+    const fakeRegions = [
+        {
+            label: 'us-east-1',
+            description: 'us-east-1',
+        },
+    ]
+
+    const fakeRegion = {
+        label: 'us-east-1',
+        description: 'us-east-1',
+    }
+
     let channel: vscode.OutputChannel
     let textDocument: vscode.TextDocument
     let apiCalled: string
@@ -84,6 +98,14 @@ describe('publishSSMDocument', async () => {
         sandbox.stub(vscode.window, 'activeTextEditor').value({
             document: textDocument,
         })
+        sandbox
+            .stub(picker, 'promptUser')
+            .onFirstCall()
+            .returns(Promise.resolve(fakeRegions))
+        sandbox
+            .stub(picker, 'verifySinglePickerOutput')
+            .onFirstCall()
+            .returns(fakeRegion)
         initializeClientBuilders()
     })
 

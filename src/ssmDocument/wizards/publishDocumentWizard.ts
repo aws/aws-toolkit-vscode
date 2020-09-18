@@ -13,6 +13,7 @@ import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { MultiStepWizard, WizardContext, WizardStep } from '../../shared/wizards/multiStepWizard'
+import { validateDocumentName } from '../util/validateDocumentName'
 const localize = nls.loadMessageBundle()
 
 export interface PublishSSMDocumentWizardResponse {
@@ -207,37 +208,7 @@ export class DefaultPublishSSMDocumentWizardContext extends WizardContext implem
 
         return await input.promptUser({
             inputBox: inputBox,
-            onValidateInput: (value: string) => {
-                if (!value) {
-                    return localize(
-                        'AWS.ssmDocument.publishWizard.ssmDocumentName.validation.empty',
-                        'Document name cannot be empty'
-                    )
-                }
-
-                if (value.startsWith('AWS-') || value.startsWith('Amazon')) {
-                    return localize(
-                        'AWS.ssmDocument.publishWizard.ssmDocumentName.validation.reservedWord',
-                        'Document name cannot start with Amazon or AWS-'
-                    )
-                }
-
-                if (!value.match(/^[a-zA-Z0-9_\-.]+$/g)) {
-                    return localize(
-                        'AWS.ssmDocument.publishWizard.ssmDocumentName.validation.invalidCharacter',
-                        'Document name contains invalid characters, only a-z, A-Z, 0-9, and _, -, and . are allowed'
-                    )
-                }
-
-                if (value.length < 3 || value.length > 128) {
-                    return localize(
-                        'AWS.ssmDocument.publishWizard.ssmDocumentName.validation.invalidLength',
-                        'Document name length must be between 3 and 128 characters'
-                    )
-                }
-
-                return undefined
-            },
+            onValidateInput: validateDocumentName,
         })
     }
 
