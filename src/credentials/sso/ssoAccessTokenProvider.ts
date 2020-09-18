@@ -44,18 +44,22 @@ export class SsoAccessTokenProvider {
     private async pollForToken(): Promise<AccessToken> {
         const registration = await this.registerClient()
         const authorization = await this.authorizeClient(registration)
+        const deviceCodeExpiration = Date.now() + authorization.expiresIn * 1000
 
         //temporary logging to get URL
         const logger = getLogger()
         logger.info(JSON.stringify(authorization))
 
-        let retryInterval = authorization.interval
+        // The retry interval converted to milliseconds
+        let retryInterval = authorization.interval * 1000
+
         const createTokenParams = {
             clientId: registration.clientId,
             clientSecret: registration.clientSecret,
             grantType: GRANT_TYPE,
             deviceCode: authorization.deviceCode,
         }
+
         while (true) {
             try {
                 const tokenResponse = await this.ssoOidcClient.createToken(createTokenParams).promise()
@@ -68,15 +72,19 @@ export class SsoAccessTokenProvider {
                 return accessToken
             } catch (err) {
                 if (err.code === 'SlowDownException') {
-                    retryInterval += 5
+                    retryInterval += 5000
                 } else if (err.code === 'AuthorizationPendingException') {
-                    //the tool must add the current polling Interval to the current time and check to see if that time is later than the previously calculated expiration time. If not, then the tool will wait for the Interval and then retry the request.
+                    if (Date.now() + retryInterval > deviceCodeExpiration) {
+                        throw Error(
+                            `Device code has expired while polling for SSO token, login flow must be re-initiated.`
+                        )
+                    }
+                    // else, wait the interval and try again
                 } else if (err.code === 'ExpiredTokenException') {
-                    //MUST raise an exception indicating that the sso login window expired and the ssl login flow must be reinitiated
+                    throw Error(`Device code has expired while polling for SSO token, login flow must be re-initiated.`)
                 }
             }
-            retryInterval *= 2
-            setInterval(() => {}, retryInterval * 1000)
+            setTimeout(() => {}, retryInterval)
         }
     }
 
@@ -99,8 +107,8 @@ export class SsoAccessTokenProvider {
                 interval: authorizationResponse.interval!,
             }
 
-            const signInInstructionMessage = `You have chosen an SSO profile that requires authorization. `
-            vscode.window.showInformationMessage(signInInstructionMessage)
+            const signInInstructionMessage = `You have chosen an AWS Single Sign-On profile that requires authorization. `
+            vscode.window.showInformationMessage(signInInstructionMessage, { modal: true })
             vscode.env.openExternal(vscode.Uri.parse(authorization.verificationUriComplete))
             return authorization
         } catch (err) {

@@ -119,15 +119,14 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             if (validationMessage) {
                 throw new Error(`Profile ${this.profileName} is not a valid Credential Profile: ${validationMessage}`)
             }
+            // Profiles with references involving non-aws partitions need help getting the right STS endpoint
+            this.applyProfileRegionToGlobalStsConfig()
             //  SSO entry point
             if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL)) {
                 const ssoCredentialProvider = this.makeSsoProvider()
                 return await ssoCredentialProvider.refreshCredentials()
             }
             const provider = new AWS.CredentialProviderChain([this.makeCredentialsProvider()])
-
-            // Profiles with references involving non-aws partitions need help getting the right STS endpoint
-            this.applyProfileRegionToGlobalStsConfig()
 
             return await provider.resolvePromise()
         } finally {
@@ -212,17 +211,6 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             return this.makeSharedIniFileCredentialsProvider()
         }
 
-        if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL)) {
-            logger.verbose(
-                `PROFILE ${this.profileName} contains ${SHARED_CREDENTIAL_PROPERTIES.SSO_ACCOUNT_ID} - treating as an SSO Shared Credentials`
-            )
-            logger.info(`SSO prototype test recognition of sso profile, not validated yet - to be deleted`)
-            // For POC
-            // return endToEndSSO(logger)
-            //return this.ssoCredProvider(logger)
-            // return this.makeSsoCredentialProvider()
-        }
-
         logger.error(`Profile ${this.profileName} did not contain any supported properties`)
         throw new Error(`Shared Credentials profile ${this.profileName} is not supported`)
     }
@@ -236,25 +224,19 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             })
     }
 
-    // private ssoCredProvider(logger: Logger): () => AWS.Credentials {
-    //     return () => {
-    //         let roleCreds = endToEndSSO(logger)
-    //         return new AWS.Credentials({accessKeyId: roleCreds.roleCredentials!.accessKeyId!, secretAccessKey: roleCreds.roleCredentials!.secretAccessKey!, sessionToken: roleCreds.roleCredentials!.sessionToken})
-    //     }
-    // }
-    // private makeSsoCredentialProvider(): () => AWS.Credentials {
-
     private makeSsoProvider() {
-        const ssoRegion = this.profile[SHARED_CREDENTIAL_PROPERTIES.SSO_REGION]
-        const ssoUrl = this.profile[SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL]
+        // These properties are validated before reaching this method
+        const ssoRegion = this.profile[SHARED_CREDENTIAL_PROPERTIES.SSO_REGION]!
+        const ssoUrl = this.profile[SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL]!
+
         const ssoOidcClient = new AWS.SSOOIDC({ region: ssoRegion })
         const cache = new DiskCache()
-        const ssoAccessTokenProvider = new SsoAccessTokenProvider(ssoRegion!, ssoUrl!, ssoOidcClient, cache)
+        const ssoAccessTokenProvider = new SsoAccessTokenProvider(ssoRegion, ssoUrl, ssoOidcClient, cache)
 
         const ssoClient = new AWS.SSO({ region: ssoRegion })
-        const ssoAccount = this.profile[SHARED_CREDENTIAL_PROPERTIES.SSO_ACCOUNT_ID]
-        const ssoRole = this.profile[SHARED_CREDENTIAL_PROPERTIES.SSO_ROLE_NAME]
-        return new SsoCredentialProvider(ssoAccount!, ssoRole!, ssoClient, ssoAccessTokenProvider)
+        const ssoAccount = this.profile[SHARED_CREDENTIAL_PROPERTIES.SSO_ACCOUNT_ID]!
+        const ssoRole = this.profile[SHARED_CREDENTIAL_PROPERTIES.SSO_ROLE_NAME]!
+        return new SsoCredentialProvider(ssoAccount, ssoRole, ssoClient, ssoAccessTokenProvider)
     }
 
     private applyProfileRegionToGlobalStsConfig() {

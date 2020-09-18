@@ -15,6 +15,9 @@ export class DiskCache implements SsoCache {
     private cacheDir: string = join(homedir(), '.aws', 'sso', 'cache')
 
     loadClientRegistration(ssoRegion: string): ClientRegistration | null {
+        if (!this.registrationExists(ssoRegion)) {
+            return null
+        }
         const registration = JSON.parse(
             fs.readFileSync(join(this.cacheDir, `aws-toolkit-vscode-client-id-${ssoRegion}.json`)).toString()
         )
@@ -56,10 +59,6 @@ export class DiskCache implements SsoCache {
         }
     }
 
-    private registrationExists(ssoRegion: string): boolean {
-        return fs.existsSync(join(this.cacheDir, `aws-toolkit-vscode-client-id-${ssoRegion}.json`))
-    }
-
     private accessTokenCache(ssoUrl: string): string {
         // According to the SEP 'SSO Login Token Flow' the access token should be cached as
         // the SHA1 hash of the bytes of the UTF-8 encoded startUrl value with .json appended to the end.
@@ -67,6 +66,10 @@ export class DiskCache implements SsoCache {
         let shasum = crypto.createHash('sha1')
         shasum.update(encoded)
         return shasum.digest('hex')
+    }
+
+    private registrationExists(ssoRegion: string): boolean {
+        return fs.existsSync(join(this.cacheDir, `aws-toolkit-vscode-client-id-${ssoRegion}.json`))
     }
 
     private tokenExists(ssoUrl: string): boolean {
