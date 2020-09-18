@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights
 
+import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
@@ -10,10 +11,9 @@ import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import java.util.Date
 
-typealias SelectedLogGroups = MutableList<String>
-
 data class QueryDetails(
-    val logGroups: SelectedLogGroups,
+    val connectionSettings: ConnectionSettings,
+    val logGroups: List<String>,
     val timeRange: TimeRange,
     val query: QueryString
 ) {

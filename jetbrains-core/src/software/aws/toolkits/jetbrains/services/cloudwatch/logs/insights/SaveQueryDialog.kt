@@ -12,6 +12,7 @@ import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeQueryDefinitionsRequest
 import software.amazon.awssdk.services.cloudwatchlogs.model.PutQueryDefinitionRequest
 import software.aws.toolkits.jetbrains.core.awsClient
+import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
@@ -22,12 +23,12 @@ import javax.swing.JComponent
 
 class SaveQueryDialog(
     private val project: Project,
+    connectionSettings: ConnectionSettings,
     private val query: String,
-    private val logGroups: List<String>,
-    private val client: CloudWatchLogsClient = project.awsClient()
+    private val logGroups: List<String>
 ) : DialogWrapper(project), CoroutineScope by ApplicationThreadPoolScope("SavingQuery") {
-
     val view = EnterQueryName()
+
     private val action: OkAction = object : OkAction() {
         init {
             putValue(Action.NAME, message("cloudwatch.logs.save_query"))
@@ -41,6 +42,8 @@ class SaveQueryDialog(
             close(OK_EXIT_CODE)
         }
     }
+
+    private val client = project.awsClient<CloudWatchLogsClient>(connectionSettings)
 
     init {
         super.init()

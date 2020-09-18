@@ -3,16 +3,23 @@
 
 package software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights
 
+import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
+import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.amazon.awssdk.services.cloudwatchlogs.model.StartQueryRequest
+import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.awsClient
+import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.resources.CloudWatchResources
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
+import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import java.awt.event.ActionEvent
@@ -22,20 +29,21 @@ import javax.swing.JComponent
 
 class QueryEditorDialog(
     private val project: Project,
-    queryDetails: QueryDetails,
-    private val client: CloudWatchLogsClient = project.awsClient()
+    private val initialQueryDetails: QueryDetails
 ) : DialogWrapper(project), CoroutineScope by ApplicationThreadPoolScope("QueryEditorDialog") {
-    constructor(project: Project, logGroupName: String, client: CloudWatchLogsClient = project.awsClient()) :
-        this(project, defaultQuery(logGroupName), client)
+    constructor(project: Project, connectionSettings: ConnectionSettings, logGroupName: String) :
+        this(project, defaultQuery(connectionSettings, logGroupName))
 
-    private val view = QueryEditor(project, queryDetails.logGroups)
+    private val view = QueryEditor(project, initialQueryDetails)
     private val action: OkAction = QueryLogGroupOkAction()
 
     init {
         super.init()
 
         title = message("cloudwatch.logs.query_editor_title")
-        setView(queryDetails)
+        launch {
+            setView(initialQueryDetails)
+        }
     }
 
     override fun createCenterPanel(): JComponent? = view.queryEditorBasePanel
@@ -48,10 +56,7 @@ class QueryEditorDialog(
         // Do nothing, close logic is handled separately
     }
 
-    private fun setView(queryDetails: QueryDetails) {
-        // TODO: handle multiple groups
-        view.logGroupLabel.text = "Log Group : ${queryDetails.logGroups.first()}"
-
+    suspend fun setView(queryDetails: QueryDetails) {
         when (val timeRange = queryDetails.timeRange) {
             is TimeRange.AbsoluteRange -> {
                 view.setAbsolute()
@@ -77,6 +82,15 @@ class QueryEditorDialog(
                 view.queryBox.text = query.query
             }
         }
+
+        val availableLogGroups = AwsResourceCache.getInstance(project).getResource(
+            CloudWatchResources.LIST_LOG_GROUPS,
+            region = initialQueryDetails.connectionSettings.region,
+            credentialProvider = initialQueryDetails.connectionSettings.credentials
+        ).await().map { it.logGroupName() }
+        withContext(getCoroutineUiContext(ModalityState.stateForComponent(view.logGroupTable))) {
+            view.logGroupTable.populateLogGroups(initialQueryDetails.logGroups.toSet(), availableLogGroups)
+        }
     }
 
     private fun beginQuerying() {
@@ -93,7 +107,7 @@ class QueryEditorDialog(
         }
     }
 
-    private fun getQueryDetails(): QueryDetails {
+    fun getQueryDetails(): QueryDetails {
         val timeRange = if (view.absoluteTimeRadioButton.isSelected) {
             TimeRange.AbsoluteRange(
                 startDate = view.startDate.date,
@@ -101,7 +115,7 @@ class QueryEditorDialog(
             )
         } else {
             TimeRange.RelativeRange(
-                relativeTimeAmount = view.relativeTimeNumber.text.toLong(),
+                relativeTimeAmount = view.getRelativeTimeAmount(),
                 relativeTimeUnit = view.getSelectedTimeUnit()
             )
         }
@@ -117,7 +131,8 @@ class QueryEditorDialog(
         }
 
         return QueryDetails(
-            logGroups = view.logGroupNames.toMutableList(),
+            connectionSettings = initialQueryDetails.connectionSettings,
+            logGroups = view.logGroupTable.getSelectedLogGroups(),
             timeRange = timeRange,
             query = query
         )
@@ -151,10 +166,14 @@ class QueryEditorDialog(
         if (view.searchTerm.isSelected && view.querySearchTerm.text.isEmpty()) {
             return ValidationInfo(message("cloudwatch.logs.no_term_entered"), view.querySearchTerm)
         }
+        if (view.logGroupTable.getSelectedLogGroups().isEmpty()) {
+            return ValidationInfo(message("cloudwatch.logs.no_log_group"), view.logGroupTable)
+        }
         return null
     }
 
     fun startQueryAsync(queryDetails: QueryDetails) = async {
+        val client = project.awsClient<CloudWatchLogsClient>(queryDetails.connectionSettings)
         val timeRange = queryDetails.getQueryRange()
         val queryString = queryDetails.getQueryString()
         try {
@@ -174,7 +193,8 @@ class QueryEditorDialog(
     }
 
     companion object {
-        private fun defaultQuery(logGroupName: String) = QueryDetails(
+        private fun defaultQuery(connectionSettings: ConnectionSettings, logGroupName: String) = QueryDetails(
+            connectionSettings,
             mutableListOf(logGroupName),
             TimeRange.RelativeRange(10, ChronoUnit.MINUTES),
             QueryString.InsightsQueryString(DEFAULT_INSIGHTS_QUERY_STRING)

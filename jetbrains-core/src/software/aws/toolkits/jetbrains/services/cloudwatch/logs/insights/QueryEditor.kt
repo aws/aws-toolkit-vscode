@@ -5,7 +5,11 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.SimpleToolWindowPanel
+import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.SimpleListCellRenderer
+import com.intellij.ui.components.JBScrollPane
+import com.intellij.util.ui.JBUI
+import com.intellij.util.ui.UIUtil
 import com.michaelbaranov.microba.calendar.DatePicker
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.utils.ui.selected
@@ -15,7 +19,6 @@ import java.time.temporal.ChronoUnit
 import javax.swing.JButton
 import javax.swing.JComboBox
 import javax.swing.JFormattedTextField
-import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JRadioButton
 import javax.swing.JTextArea
@@ -23,7 +26,7 @@ import javax.swing.JTextField
 
 class QueryEditor internal constructor(
     private val project: Project,
-    val logGroupNames: List<String>
+    val initialQueryDetails: QueryDetails
 ) {
     lateinit var absoluteTimeRadioButton: JRadioButton
     lateinit var relativeTimeRadioButton: JRadioButton
@@ -32,27 +35,28 @@ class QueryEditor internal constructor(
     lateinit var queryLogGroupsRadioButton: JRadioButton
     lateinit var saveQueryButton: JButton
     lateinit var retrieveSavedQueriesButton: JButton
-    private lateinit var tablePanel: SimpleToolWindowPanel
+    lateinit var tablePanel: SimpleToolWindowPanel
     lateinit var queryBox: JTextArea
-    lateinit var logGroupLabel: JLabel
     lateinit var endDate: DatePicker
     lateinit var queryEditorBasePanel: JPanel
     lateinit var relativeTimeUnit: JComboBox<Pair<String, ChronoUnit>>
+    private lateinit var numberFormat: NumberFormat
     lateinit var relativeTimeNumber: JFormattedTextField
     lateinit var startDate: DatePicker
-    private lateinit var showLogGroupTable: AddRemoveLogGroupTable
-
-    private fun initArLogGroupTable() {
-        showLogGroupTable.tableView.listTableModel
-        showLogGroupTable.getSelLogGroups()
-    }
+    lateinit var queryGroupScrollPane: JBScrollPane
+    lateinit var logGroupTable: LogGroupSelectorTable
+    private lateinit var timePanel: JPanel
+    private lateinit var searchPanel: JPanel
 
     private fun createUIComponents() {
         tablePanel = SimpleToolWindowPanel(false, true)
-        showLogGroupTable = AddRemoveLogGroupTable(project)
-        initArLogGroupTable()
-        // tablePanel.setContent(showLogGroupTable.component)
-        relativeTimeNumber = JFormattedTextField(NumberFormat.getIntegerInstance())
+        logGroupTable = LogGroupSelectorTable()
+        tablePanel.setContent(logGroupTable.component)
+        // lateinit since this method runs before the standard initialization flow
+        numberFormat = NumberFormat.getIntegerInstance()
+        relativeTimeNumber = JFormattedTextField(numberFormat)
+        // arbitrary length
+        relativeTimeNumber.columns = 5
         relativeTimeUnit = ComboBox(timeUnits)
         relativeTimeUnit.renderer = timeUnitComboBoxRenderer
     }
@@ -76,7 +80,7 @@ class QueryEditor internal constructor(
 
         saveQueryButton.addActionListener {
             val query = if (queryBox.text.isNotEmpty()) queryBox.text else DEFAULT_INSIGHTS_QUERY_STRING
-            SaveQueryDialog(project, query, logGroupNames).show()
+            SaveQueryDialog(project, initialQueryDetails.connectionSettings, query, logGroupTable.getSelectedLogGroups()).show()
         }
 
         startDate.isEnabled = false
@@ -88,6 +92,10 @@ class QueryEditor internal constructor(
         saveQueryButton.isEnabled = false
         queryLogGroupsRadioButton.isSelected = true
         queryBox.text = DEFAULT_INSIGHTS_QUERY_STRING
+
+        queryGroupScrollPane.border = IdeBorderFactory.createTitledBorder(message("cloudwatch.logs.log_groups"), false, JBUI.emptyInsets())
+        timePanel.border = JBUI.Borders.emptyTop(UIUtil.DEFAULT_VGAP)
+        searchPanel.border = JBUI.Borders.emptyTop(UIUtil.DEFAULT_VGAP)
     }
 
     fun setAbsolute() {
@@ -119,6 +127,8 @@ class QueryEditor internal constructor(
         querySearchTerm.isEnabled = false
         saveQueryButton.isEnabled = true
     }
+
+    fun getRelativeTimeAmount() = numberFormat.parse(relativeTimeNumber.text).toLong()
 
     fun getSelectedTimeUnit(): ChronoUnit {
         val unit = relativeTimeUnit.selected() ?: let {

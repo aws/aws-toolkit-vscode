@@ -26,7 +26,8 @@ class QueryResultList(
     private lateinit var tablePanel: SimpleToolWindowPanel
     private lateinit var openQueryEditor: JButton
     private lateinit var resultsTitle: JLabel
-    val client: CloudWatchLogsClient = project.awsClient()
+
+    private val client: CloudWatchLogsClient = project.awsClient(queryDetails.connectionSettings)
     private val resultsTable: QueryResultsTable = QueryResultsTable(project, client, fields, queryId)
 
     private fun createUIComponents() {
