@@ -8,12 +8,18 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import { getLogger, Logger } from '../../shared/logger'
-import * as telemetry from '../../shared/telemetry/telemetry'
-import { showConfirmationMessage } from '../util/util'
-import { Window } from '../../shared/vscode/window'
 import { DocumentItemNodeWriteable } from '../explorer/documentItemNodeWriteable'
+import { RegistryItemNode } from '../explorer/registryItemNode'
+import { showConfirmationMessage } from '../util/util'
+import * as telemetry from '../../shared/telemetry/telemetry'
+import { Window } from '../../shared/vscode/window'
+import { Commands } from '../../shared/vscode/commands'
 
-export async function deleteDocument(node: DocumentItemNodeWriteable, window = Window.vscode()) {
+export async function deleteDocument(
+    node: DocumentItemNodeWriteable,
+    window = Window.vscode(),
+    commands = Commands.vscode()
+) {
     const logger: Logger = getLogger()
 
     let result: telemetry.Result = 'Succeeded'
@@ -45,6 +51,7 @@ export async function deleteDocument(node: DocumentItemNodeWriteable, window = W
                 node.documentName
             )
         )
+        await refreshNode(node.parent, commands)
     } catch (err) {
         result = 'Failed'
         const error = err as Error
@@ -59,4 +66,8 @@ export async function deleteDocument(node: DocumentItemNodeWriteable, window = W
     } finally {
         telemetry.recordSsmDeleteDocument({ result: result })
     }
+}
+
+async function refreshNode(node: RegistryItemNode, commands: Commands): Promise<void> {
+    return commands.execute('aws.refreshAwsExplorerNode', node)
 }

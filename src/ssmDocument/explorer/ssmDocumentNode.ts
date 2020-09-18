@@ -21,8 +21,8 @@ export class SsmDocumentNode extends AWSTreeNodeBase {
     private readonly documentTypeNodes: Map<string, DocumentTypeNode>
 
     public constructor(public readonly regionCode: string) {
-        super('Systems Manager', vscode.TreeItemCollapsibleState.Collapsed)
-        this.documentTypeNodes = new Map<string, DocumentTypeNode>()
+        super('Systems Manager Documents', vscode.TreeItemCollapsibleState.Collapsed)
+        this.registryNodes = new Map<string, RegistryItemNode>()
         this.contextValue = 'awsSsmDocumentNode'
     }
 
@@ -37,15 +37,12 @@ export class SsmDocumentNode extends AWSTreeNodeBase {
                 new ErrorNode(
                     this,
                     error,
-                    localize(
-                        'AWS.explorerNode.registry.error',
-                        'Error loading registry Systems Manager documentType items'
-                    )
+                    localize('AWS.explorerNode.ssmDocument.error', 'Error loading Systems Manager Document resources')
                 ),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(
                     this,
-                    localize('AWS.explorerNode.registry.noSsmDocument', `[No documentType found]`)
+                    localize('AWS.explorerNode.ssmDocument.noRegistry', '[No Systems Manager Document Registries]')
                 ),
             sort: (nodeA: DocumentTypeNode, nodeB: DocumentTypeNode) =>
                 nodeA.documentType.localeCompare(nodeB.documentType),

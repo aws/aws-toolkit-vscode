@@ -218,7 +218,7 @@ export class DefaultPublishSSMDocumentWizardContext extends WizardContext implem
             vscode.window.showErrorMessage(
                 localize(
                     'AWS.ssmDocument.publishWizard.ssmDocumentToUpdate.noDocument',
-                    'No self-owned documents could be found. Please create and upload a Systems Manager Document before updating.'
+                    'No self-owned documents could be found. Please create and upload a SSM Document before updating.'
                 )
             )
             return undefined
@@ -265,7 +265,7 @@ export class DefaultPublishSSMDocumentWizardContext extends WizardContext implem
                 label: localize('AWS.ssmDocument.publishWizard.publishAction.quickCreate.label', 'Quick Create'),
                 detail: localize(
                     'AWS.ssmDocument.publishWizard.publishAction.quickCreate.detail',
-                    'Create a Systems Manager Document'
+                    'Upload a local SSM Document as a new Document'
                 ),
                 action: PublishSSMDocumentAction.QuickCreate,
             },
@@ -273,7 +273,7 @@ export class DefaultPublishSSMDocumentWizardContext extends WizardContext implem
                 label: localize('AWS.ssmDocument.publishWizard.publishAction.quickUpdate.label', 'Quick Update'),
                 detail: localize(
                     'AWS.ssmDocument.publishWizard.publishAction.quickUpdate.detail',
-                    'Update an existing Systems Manager Document'
+                    'Upload a local SSM Document to update an existing Document'
                 ),
                 action: PublishSSMDocumentAction.QuickUpdate,
             },
@@ -290,7 +290,7 @@ export class DefaultPublishSSMDocumentWizardContext extends WizardContext implem
                 ignoreFocusOut: true,
                 title: localize(
                     'AWS.ssmDocument.publishWizard.publishAction.title',
-                    'Publish to AWS Systems Manager Document ({0})',
+                    'Publish to AWS SSM Document ({0})',
                     this.defaultRegion
                 ),
             },

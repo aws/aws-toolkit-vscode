@@ -12,11 +12,8 @@ import { createSsmDocumentFromTemplate } from './commands/createDocumentFromTemp
 import { publishSSMDocument } from './commands/publishDocument'
 import { RegionProvider } from '../shared/regions/regionProvider'
 import * as telemetry from '../shared/telemetry/telemetry'
-import { openDocumentItem, openDocumentItemJson, openDocumentItemYaml } from './commands/openDocumentItem'
+import { openDocumentItem } from './commands/openDocumentItem'
 import { DocumentItemNode } from './explorer/documentItemNode'
-import { deleteDocument } from './commands/deleteDocument'
-import { DocumentItemNodeWriteable } from './explorer/documentItemNodeWriteable'
-import { executeDocument } from './commands/executeDocument'
 
 // Activate SSM Document related functionality for the extension.
 export async function activate(
@@ -45,37 +42,11 @@ async function registerSsmDocumentCommands(
             }
         })
     )
-
-    extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.ssmDocument.deleteDocument', async (node: DocumentItemNodeWriteable) => {
-            await deleteDocument(node)
-        })
-    )
-
-    extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.ssmDocument.executeDocument', async (node: DocumentItemNodeWriteable) => {
-            await executeDocument(node)
-        })
-    )
-
     extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.ssmDocument.openLocalDocument', async (node: DocumentItemNode) => {
             await openDocumentItem(node, awsContext)
         })
     )
-
-    extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.ssmDocument.openLocalDocumentJson', async (node: DocumentItemNode) => {
-            await openDocumentItemJson(node, awsContext)
-        })
-    )
-
-    extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.ssmDocument.openLocalDocumentYaml', async (node: DocumentItemNode) => {
-            await openDocumentItemYaml(node, awsContext)
-        })
-    )
-
     extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.ssmDocument.publishDocument', async () => {
             await publishSSMDocument(awsContext, regionProvider, outputChannel)

@@ -47,8 +47,6 @@ describe('openDocumentItem', async () => {
 
     const fakeAwsContext = new FakeAwsContext()
 
-    const fakeRegion = 'us-east-1'
-
     const fakeFormatSelection = [
         {
             label: 'JSON',
@@ -83,6 +81,6 @@ describe('openDocumentItem', async () => {
         const ssmDocumentClient = new MockSsmDocumentClient()
         sandbox.stub(ssmDocumentClient, 'getDocument').returns(Promise.resolve(rawContent))
 
-        return new DocumentItemNode(fakeDoc, ssmDocumentClient, fakeRegion)
+        return new DocumentItemNode(fakeDoc, ssmDocumentClient)
     }
 })

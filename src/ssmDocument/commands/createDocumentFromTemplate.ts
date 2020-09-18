@@ -24,7 +24,7 @@ export interface SsmDocumentTemplateQuickPickItem {
 
 const SSMDOCUMENT_TEMPLATES: SsmDocumentTemplateQuickPickItem[] = [
     {
-        label: localize('AWS.ssmDocument.template.automationJson.label', 'JSON Automation Document'),
+        label: localize('AWS.ssmDocument.template.automationJson.label', 'JSON Automation Document 0.3'),
         description: localize(
             'AWS.ssmDocument.template.automationJson.description',
             'Sample automation document using schemaVersion 0.3 in JSON'
@@ -34,7 +34,7 @@ const SSMDOCUMENT_TEMPLATES: SsmDocumentTemplateQuickPickItem[] = [
         docType: 'automation',
     },
     {
-        label: localize('AWS.ssmDocument.template.automationYaml.label', 'YAML Automation Document'),
+        label: localize('AWS.ssmDocument.template.automationYaml.label', 'YAML Automation Document 0.3'),
         description: localize(
             'AWS.ssmDocument.template.automationYaml.description',
             'Sample automation document using schemaVersion 0.3 in YAML'

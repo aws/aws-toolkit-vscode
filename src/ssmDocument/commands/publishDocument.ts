@@ -119,7 +119,7 @@ export async function createDocument(
         outputChannel.appendLine(
             localize(
                 'AWS.message.info.ssmDocument.publishDocument.createSuccess',
-                "Successfully created and uploaded Systems Manager Document '{0}'",
+                "Successfully created and uploaded SSM Document '{0}'",
                 wizardResponse.name
             )
         )
@@ -130,12 +130,12 @@ export async function createDocument(
         vscode.window.showInformationMessage(`Created SSM Document successfully`)
         outputChannel.appendLine('')
     } catch (err) {
-        logger.info(`Failed to create Systems Manager Document '${wizardResponse.name}'. %0`, err as Error)
+        logger.info(`Failed to create SSM Document '${wizardResponse.name}'. %0`, err as Error)
         result = 'Failed'
         outputChannel.appendLine(
             localize(
                 'AWS.message.info.ssmDocument.publishDocument.createFailure',
-                "There was an error creating and uploading Systems Manager Document '{0}', check logs for more information.",
+                "There was an error creating and uploading SSM Document '{0}', check logs for more information.",
                 wizardResponse.name
             )
         )
@@ -164,7 +164,7 @@ export async function updateDocument(
     outputChannel.appendLine(
         localize(
             'AWS.message.info.ssmDocument.publishDocument.updating',
-            "Updating Systems Manager Document '{0}' in {1}...",
+            "Updating SSM Document '{0}' in {1}...",
             wizardResponse.name,
             region
         )
@@ -182,18 +182,18 @@ export async function updateDocument(
         outputChannel.appendLine(
             localize(
                 'AWS.message.info.ssmDocument.publishDocument.updateSuccess',
-                "Successfully updated Systems Manager Document '{0}'",
+                "Successfully updated SSM Document '{0}'",
                 wizardResponse.name
             )
         )
         if (result.DocumentDescription) {
             outputChannel.appendLine(stringify(result.DocumentDescription))
         }
-        logger.info(`Updated Systems Manager Document successfully ${stringify(result.DocumentDescription)}`)
-        vscode.window.showInformationMessage(`Updated Systems Manager Document successfully`)
+        logger.info(`Updated SSM Document successfully ${stringify(result.DocumentDescription)}`)
+        vscode.window.showInformationMessage(`Updated SSM Document successfully`)
         outputChannel.appendLine('')
     } catch (err) {
-        logger.info(`Failed to update Systems Manager Document '${wizardResponse.name}'. %0`, err as Error)
+        logger.info(`Failed to update SSM Document '${wizardResponse.name}'. %0`, err as Error)
         result = 'Failed'
         outputChannel.appendLine(
             localize(
