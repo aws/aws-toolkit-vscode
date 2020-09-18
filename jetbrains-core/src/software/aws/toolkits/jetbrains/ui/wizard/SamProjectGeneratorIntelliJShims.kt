@@ -66,8 +66,7 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
                             try {
                                 samTemplate.postCreationAction(settings, outputDir, model, generator.defaultSourceCreatingProject, indicator)
                             } catch (t: Throwable) {
-                                LOG.error(t) { "Exception thrown during postCreationAction" }
-                                model.dispose()
+                                LOG.error(t) { "Exception thrown during postCreationAction!" }
                             }
                         }
                     }

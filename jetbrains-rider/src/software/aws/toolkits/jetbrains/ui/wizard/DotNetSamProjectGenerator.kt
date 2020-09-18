@@ -194,19 +194,24 @@ class DotNetSamProjectGenerator(
             projectToClose = null,
             forceOpenInNewFrame = false,
             solutionFile = solutionFile
-        )
+        ) ?: return
+
         vcsPanel?.initRepository(project)
 
-        project ?: return
         val modifiableModel = ModuleManager.getInstance(project).modules.firstOrNull()?.rootManager?.modifiableModel ?: return
-        val progressIndicator = if (progressManager.hasProgressIndicator()) progressManager.progressIndicator else DumbProgressIndicator()
-        samSettings.template.postCreationAction(
-            settings = samSettings,
-            contentRoot = outDirVf,
-            rootModel = modifiableModel,
-            sourceCreatingProject = generator.defaultSourceCreatingProject,
-            indicator = progressIndicator
-        )
+        try {
+            val progressIndicator = if (progressManager.hasProgressIndicator()) progressManager.progressIndicator else DumbProgressIndicator()
+
+            samSettings.template.postCreationAction(
+                settings = samSettings,
+                contentRoot = outDirVf,
+                rootModel = modifiableModel,
+                sourceCreatingProject = generator.defaultSourceCreatingProject,
+                indicator = progressIndicator
+            )
+        } finally {
+            modifiableModel.dispose()
+        }
     }
 
     override fun refreshUI() {
