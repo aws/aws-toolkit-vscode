@@ -38,7 +38,7 @@ data class QueryDetails(
             is QueryString.SearchTermQueryString -> {
                 val regexTerm = query.searchTerm.replace("/", "\\/")
 
-                "fields @message, @timestamp | filter @message like /$regexTerm/"
+                "fields @timestamp, @message | filter @message like /$regexTerm/"
             }
 
             is QueryString.InsightsQueryString -> query.query

@@ -213,7 +213,7 @@ class QueryEditorDialog(
                 }
             }
             if (fieldList.isEmpty()) {
-                return listOf("@message", "@timestamp")
+                return listOf("@timestamp", "@message")
             }
             return fieldList.flatten()
         }

@@ -150,12 +150,13 @@ sealed class QueryActor<T>(
 class QueryResultsActor(
     project: Project,
     client: CloudWatchLogsClient,
-    table: TableView<Map<String, String>>,
+    table: TableView<LogResult>,
     private val queryId: String
-) : QueryActor<Map<String, String>>(project, client, table) {
+) : QueryActor<LogResult>(project, client, table) {
     override val emptyText = message("cloudwatch.logs.no_results_found")
     override val tableErrorMessage = message("cloudwatch.logs.query_results_table_error")
     override val notFoundText = message("cloudwatch.logs.no_results_found")
+    private val loadedQueryResults = mutableSetOf<String>()
 
     override suspend fun loadInitialQueryResults() {
         var response: GetQueryResultsResponse
@@ -175,13 +176,13 @@ class QueryResultsActor(
         val listOfResults = queryResults.map { result ->
             result.map { it.field().toString() to it.value().toString() }.toMap()
         }
-        listOfResults.iterator().forEach { it["@ptr"]?.let { it1 -> queryResultsIdentifierList.add(it1) } }
+        listOfResults.forEach { loadedQueryResults.add(it.identifier()) }
         moreResultsAvailable = response.status() != QueryStatus.COMPLETE
 
         loadAndPopulateResultsTable { listOfResults }
     }
 
-    override suspend fun loadNext(): List<Map<String, String>> {
+    override suspend fun loadNext(): List<LogResult> {
         val response = client.getQueryResults {
             it.queryId(queryId)
         }
@@ -189,19 +190,18 @@ class QueryResultsActor(
         return checkIfNewResult(response.results().filterNotNull())
     }
 
-    fun checkIfNewResult(queryResultList: List<MutableList<ResultField>>): List<Map<String, String>> {
+    fun checkIfNewResult(queryResultList: List<List<ResultField>>): List<LogResult> =
         // Since the results are cumulative, if the order of results change, this function ensures that the same results are not displayed repeatedly
-        val listOfResults = arrayListOf<Map<String, String>>()
-        for (result in queryResultList) {
-            val fieldToValueMap = result.map { it.field() to it.value() }.toMap()
-            // @ptr is a unique identifier for each resultant log event which is used here to ensure results are not repeatedly displayed
-            if (fieldToValueMap["@ptr"] !in queryResultsIdentifierList) {
-                fieldToValueMap["@ptr"]?.let { queryResultsIdentifierList.add(it) }
-                listOfResults.add(fieldToValueMap)
+        queryResultList.mapNotNull { result ->
+            val logResult = result.toLogResult()
+            val ptr = logResult.identifier()
+            if (ptr !in loadedQueryResults) {
+                loadedQueryResults.add(ptr)
+                logResult
+            } else {
+                null
             }
         }
-        return listOfResults
-    }
 
     override fun dispose() {
         try {
@@ -220,7 +220,5 @@ class QueryResultsActor(
 
     companion object {
         private val LOG = getLogger<QueryResultsActor>()
-
-        val queryResultsIdentifierList = arrayListOf<String>()
     }
 }

@@ -190,7 +190,7 @@ class QueryEditorDialogTest {
         val twoFieldsQuery = "fields @timestamp, @logStream | limit 10 | fields @message"
         val fieldsInFilterQuery = "filter @message like /fields/ | fields @logStream"
         assertThat(QueryEditorDialog.getFields(fieldsAsSecondPartOfQuery)).isEqualTo(listOf("@message"))
-        assertThat(QueryEditorDialog.getFields(noFieldsQuery)).isEqualTo(listOf("@message", "@timestamp"))
+        assertThat(QueryEditorDialog.getFields(noFieldsQuery)).isEqualTo(listOf("@timestamp", "@message"))
         assertThat(QueryEditorDialog.getFields(onlyFieldsQuery)).isEqualTo(listOf("@logStream", "@timestamp"))
         assertThat(QueryEditorDialog.getFields(twoFieldsQuery)).isEqualTo(listOf("@timestamp", "@logStream", "@message"))
         assertThat(QueryEditorDialog.getFields(fieldsInFilterQuery)).isEqualTo(listOf("@logStream"))
@@ -271,7 +271,7 @@ class QueryEditorDialogTest {
             assertThat(it.logGroupNames()).containsExactly("logGroup")
             assertThat(it.startTime()).isEqualTo(start.epochSecond)
             assertThat(it.endTime()).isEqualTo(end.epochSecond)
-            assertThat(it.queryString()).isEqualTo("fields @message, @timestamp | filter @message like /query/")
+            assertThat(it.queryString()).isEqualTo("fields @timestamp, @message | filter @message like /query/")
         }
     }
 

@@ -8,8 +8,6 @@ import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
-import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.resources.message
 import javax.swing.JButton
@@ -27,8 +25,7 @@ class QueryResultList(
     private lateinit var openQueryEditor: JButton
     private lateinit var resultsTitle: JLabel
 
-    private val client: CloudWatchLogsClient = project.awsClient(queryDetails.connectionSettings)
-    private val resultsTable: QueryResultsTable = QueryResultsTable(project, client, fields, queryId)
+    private val resultsTable: QueryResultsTable = QueryResultsTable(project, queryDetails.connectionSettings, fields, queryId)
 
     private fun createUIComponents() {
         tablePanel = SimpleToolWindowPanel(false, true)

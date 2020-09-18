@@ -5,14 +5,14 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights
 
 import com.intellij.ui.SimpleColoredComponent
 import com.intellij.util.ui.ColumnInfo
+import software.aws.toolkits.jetbrains.utils.ui.ResizingTextColumnRenderer
 import software.aws.toolkits.jetbrains.utils.ui.setSelectionHighlighting
+import software.aws.toolkits.resources.message
 import java.awt.Component
 import javax.swing.JTable
 import javax.swing.table.TableCellRenderer
 
-class ColumnInfoDetails(private val fieldName: String) : ColumnInfo<Map<String, String>, String>(fieldName) {
-    private val renderer = FieldColumnRenderer()
-
+class LogResultColumnInfo(private val fieldName: String) : ColumnInfo<LogResult, String>(fieldName) {
     override fun valueOf(item: Map<String, String>?): String? {
         if (item != null) {
             return item[fieldName]
@@ -21,10 +21,10 @@ class ColumnInfoDetails(private val fieldName: String) : ColumnInfo<Map<String, 
     }
 
     override fun isCellEditable(item: Map<String, String>?): Boolean = false
-    override fun getRenderer(item: Map<String, String>?): TableCellRenderer? = renderer
+    override fun getRenderer(item: Map<String, String>?) = LogResultColumnRenderer()
 }
 
-class FieldColumnRenderer : TableCellRenderer {
+class LogResultColumnRenderer : TableCellRenderer {
     override fun getTableCellRendererComponent(table: JTable?, value: Any?, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component {
         val component = SimpleColoredComponent()
         component.append((value as? String)?.trim() ?: "")
@@ -34,4 +34,13 @@ class FieldColumnRenderer : TableCellRenderer {
         component.setSelectionHighlighting(table, isSelected)
         return component
     }
+}
+
+class LogRecordFieldColumn : ColumnInfo<LogRecordFieldPair, String>(message("cloudwatch.logs.log_record_field")) {
+    override fun getRenderer(item: LogRecordFieldPair?) = ResizingTextColumnRenderer()
+    override fun valueOf(item: LogRecordFieldPair?) = item?.first
+}
+
+class LogRecordValueColumn : ColumnInfo<LogRecordFieldPair, String>(message("cloudwatch.logs.log_record_value")) {
+    override fun valueOf(item: LogRecordFieldPair?) = item?.second
 }
