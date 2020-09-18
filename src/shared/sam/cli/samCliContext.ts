@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as semver from 'semver'
 import { SettingsConfiguration } from '../../settingsConfiguration'
 import { DefaultSamCliConfiguration } from './samCliConfiguration'
 import { DefaultSamCliProcessInvoker, SamCliProcessInvokerContext } from './samCliInvoker'
@@ -11,7 +10,6 @@ import { SamCliProcessInvoker } from './samCliInvokerUtils'
 import { DefaultSamCliLocationProvider } from './samCliLocator'
 import { throwAndNotifyIfInvalid } from './samCliValidationUtils'
 import { DefaultSamCliValidator, DefaultSamCliValidatorContext, SamCliValidator } from './samCliValidator'
-import { getLogger } from '../../logger'
 
 export interface SamCliContext {
     validator: SamCliValidator
@@ -53,26 +51,6 @@ export async function getSamCliVersion(context: SamCliContext): Promise<string> 
     throwAndNotifyIfInvalid(result)
 
     return result.versionValidation!.version!
-}
-
-/**
- * Returns the correct Docker image name based on SAM CLI version.
- * Anything not greater than 1.0.0, undefined, or non-parseable will use `amazon/aws-sam-cli-emulation-image-${lambdaRuntime}`
- * Else, use `lambci/lambda:${lambdaRuntime}`
- * @param samCliVersion Version to evaluate
- * @param lambdaRuntime Runtime name to append to Docker image
- */
-export function getSamCliDockerImageName(samCliVersion: string | undefined, lambdaRuntime: string): string {
-    const amazonImage = `amazon/aws-sam-cli-emulation-image-${lambdaRuntime}`
-    const legacyImage = `lambci/lambda:${lambdaRuntime}`
-    try {
-        return !samCliVersion || semver.gte(samCliVersion, '1.0.0') ? amazonImage : legacyImage
-    } catch (e) {
-        const err = e as Error
-        getLogger().error('Could not parse SAM CLI version:', samCliVersion, err.message)
-
-        return amazonImage
-    }
 }
 
 function makeSamCliContext(): SamCliContext {
