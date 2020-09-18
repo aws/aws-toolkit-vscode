@@ -194,6 +194,10 @@ class DeploySamApplicationValidator(private val view: DeployServerlessApplicatio
             return it
         }
 
+        // Is the bucket loading
+        if (view.s3Bucket.isLoading) {
+            return view.s3Bucket.validationInfo(message("serverless.application.deploy.validation.s3.bucket.loading"))
+        }
         // Has the user selected a bucket
         view.s3Bucket.selected() ?: return view.s3Bucket.validationInfo(message("serverless.application.deploy.validation.s3.bucket.empty"))
 
