@@ -38,7 +38,10 @@ export async function publishSSMDocument(
         let errorMsg = 'Could not get active text editor for local SSM Document definition'
         logger.error(errorMsg)
         vscode.window.showErrorMessage(
-            localize('AWS.message.error.ssmDocument.publishDocument.could_not_open', errorMsg)
+            localize(
+                'AWS.message.error.ssmDocument.publishDocument.could_not_open',
+                'Could not get active text editor for local SSM Document definition'
+            )
         )
         return
     }
@@ -48,7 +51,11 @@ export async function publishSSMDocument(
         let errorMsg = 'Current editor language does not match the supported formats: ' + supportedFormats.join(', ')
         logger.error(errorMsg)
         vscode.window.showErrorMessage(
-            localize('AWS.message.error.ssmDocument.publishDocument.invalid_format', errorMsg)
+            localize(
+                'AWS.message.error.ssmDocument.publishDocument.invalid_format',
+                'Current editor language does not match the supported formats: {0}',
+                supportedFormats.join(', ')
+            )
         )
         return
     }
