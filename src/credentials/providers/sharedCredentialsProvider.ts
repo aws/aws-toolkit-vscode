@@ -72,7 +72,14 @@ export class SharedCredentialsProvider implements CredentialsProvider {
      * should _not_ attempt to auto-connect).
      */
     public canAutoConnect(): boolean {
-        return !this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.MFA_SERIAL)
+        if (
+            this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.MFA_SERIAL) ||
+            this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL)
+        ) {
+            return false
+        } else {
+            return true
+        }
     }
 
     /**

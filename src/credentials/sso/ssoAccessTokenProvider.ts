@@ -48,7 +48,9 @@ export class SsoAccessTokenProvider {
 
         //temporary logging to get URL
         const logger = getLogger()
-        logger.info(JSON.stringify(authorization))
+        logger.info(
+            `To complete authentication for this SSO account, please continue to this SSO portal:${authorization.verificationUriComplete}`
+        )
 
         // The retry interval converted to milliseconds
         let retryInterval = authorization.interval * 1000
