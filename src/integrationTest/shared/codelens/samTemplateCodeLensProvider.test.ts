@@ -13,16 +13,18 @@ import { API_TARGET_TYPE, TEMPLATE_TARGET_TYPE } from '../../../shared/sam/debug
 import * as workspaceUtils from '../../../shared/utilities/workspaceUtils'
 
 describe('SamTemplateCodeLensProvider', async () => {
-    const codeLensProvider = new SamTemplateCodeLensProvider()
+    let codeLensProvider: SamTemplateCodeLensProvider = new SamTemplateCodeLensProvider()
     let document: vscode.TextDocument
     let launchConfig: LaunchConfiguration
     let templateUri: vscode.Uri
-    let mockCancellationToken: vscode.CancellationToken = mock()
+    let mockCancellationToken: vscode.CancellationToken
 
     beforeEach(async () => {
+        codeLensProvider = new SamTemplateCodeLensProvider()
         document = (await workspaceUtils.openTextDocument('python3.7-plain-sam-app/template.yaml'))!
         templateUri = document.uri
         launchConfig = new LaunchConfiguration(document.uri)
+        mockCancellationToken = mock()
     })
 
     it('provides a CodeLens for a file with a new resource', async () => {
