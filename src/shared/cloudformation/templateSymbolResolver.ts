@@ -6,6 +6,7 @@
 import { safeLoad } from 'js-yaml'
 import * as vscode from 'vscode'
 import { CloudFormation } from './cloudformation'
+import { waitUntil } from '../utilities/timeoutUtils'
 
 /**
  * SAM template Lambda resource or API Gateway resource.
@@ -113,19 +114,16 @@ export class TemplateSymbolResolver {
 
 export class TemplateSymbolProvider {
     public async getSymbols(document: vscode.TextDocument, waitForSymbols: boolean): Promise<vscode.DocumentSymbol[]> {
-        for (let i = 0; i < 30; i++) {
-            const symbols = await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
-                'vscode.executeDocumentSymbolProvider',
-                document.uri
-            )
-            if (symbols !== undefined || !waitForSymbols) {
-                return symbols ?? []
-            }
-
-            await new Promise(r => setTimeout(r, 1000))
-        }
-
-        return []
+        const symbols = await waitUntil(
+            async function() {
+                return await vscode.commands.executeCommand<vscode.DocumentSymbol[]>(
+                    'vscode.executeDocumentSymbolProvider',
+                    document.uri
+                )
+            },
+            { timeout: waitForSymbols ? 5000 : 0, interval: 500 }
+        )
+        return symbols ?? []
     }
 
     public getText(symbol: vscode.DocumentSymbol, document: vscode.TextDocument): string {
