@@ -9,6 +9,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAware
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.AwsTelemetry
 
 class RefreshConnectionAction(text: String = message("settings.refresh.description")) : AnAction(text, null, AllIcons.Actions.Refresh), DumbAware {
     override fun update(e: AnActionEvent) {
@@ -23,5 +24,7 @@ class RefreshConnectionAction(text: String = message("settings.refresh.descripti
         val project = e.project ?: return
         AwsResourceCache.getInstance(project).clear()
         AwsConnectionManager.getInstance(project).refreshConnectionState()
+
+        AwsTelemetry.refreshExplorer(project)
     }
 }
