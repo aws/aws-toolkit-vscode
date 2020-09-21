@@ -23,8 +23,14 @@ import { StepFunctionsClient } from './stepFunctionsClient'
 import { StsClient } from './stsClient'
 import { SsmDocumentClient } from './ssmDocumentClient'
 import { ToolkitClientBuilder } from './toolkitClientBuilder'
+import { DefaultS3Client } from './defaultS3Client'
+import { S3Client } from './s3Client'
+import { RegionProvider } from '../regions/regionProvider'
+import { DEFAULT_PARTITION } from '../regions/regionUtilities'
 
 export class DefaultToolkitClientBuilder implements ToolkitClientBuilder {
+    public constructor(private readonly regionProvider: RegionProvider) {}
+
     public createCloudFormationClient(regionCode: string): CloudFormationClient {
         return new DefaultCloudFormationClient(regionCode)
     }
@@ -59,5 +65,9 @@ export class DefaultToolkitClientBuilder implements ToolkitClientBuilder {
 
     public createSsmClient(regionCode: string): SsmDocumentClient {
         return new DefaultSsmDocumentClient(regionCode)
+    }
+
+    public createS3Client(regionCode: string): S3Client {
+        return new DefaultS3Client(regionCode, this.regionProvider.getPartitionId(regionCode) ?? DEFAULT_PARTITION)
     }
 }

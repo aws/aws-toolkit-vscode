@@ -17,6 +17,24 @@ import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuild
 
 import '../../../shared/utilities/asyncIteratorShim'
 import { asyncGenerator } from '../../utilities/collectionUtils'
+import {
+    S3Client,
+    CreateBucketRequest,
+    ListFilesRequest,
+    CreateFolderRequest,
+    DownloadFileRequest,
+    UploadFileRequest,
+    ListObjectVersionsRequest,
+    DeleteObjectRequest,
+    DeleteObjectsRequest,
+    DeleteBucketRequest,
+    CreateBucketResponse,
+    ListBucketsResponse,
+    ListFilesResponse,
+    CreateFolderResponse,
+    ListObjectVersionsResponse,
+    DeleteObjectsResponse,
+} from '../../../shared/clients/s3Client'
 
 interface Clients {
     cloudFormationClient: CloudFormationClient
@@ -28,6 +46,7 @@ interface Clients {
     stepFunctionsClient: StepFunctionsClient
     stsClient: StsClient
     ssmDocumentClient: SsmDocumentClient
+    s3Client: S3Client
 }
 
 export class MockToolkitClientBuilder implements ToolkitClientBuilder {
@@ -43,6 +62,7 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
             stepFunctionsClient: new MockStepFunctionsClient(),
             stsClient: new MockStsClient({}),
             ssmDocumentClient: new MockSsmDocumentClient(),
+            s3Client: new MockS3Client({}),
             ...overrideClients,
         }
     }
@@ -81,6 +101,10 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
 
     public createSsmClient(regionCode: string): SsmDocumentClient {
         return this.clients.ssmDocumentClient
+    }
+
+    public createS3Client(regionCode: string): S3Client {
+        return this.clients.s3Client
     }
 }
 
@@ -356,4 +380,64 @@ export class MockSsmDocumentClient implements SsmDocumentClient {
             request: SSM.Types.UpdateDocumentRequest
         ) => Promise<SSM.Types.UpdateDocumentResult> = async (request: SSM.Types.UpdateDocumentRequest) => ({})
     ) {}
+}
+export class MockS3Client implements S3Client {
+    public readonly regionCode: string
+
+    public readonly createBucket: (request: CreateBucketRequest) => Promise<CreateBucketResponse>
+    public readonly listBuckets: () => Promise<ListBucketsResponse>
+    public readonly listFiles: (request: ListFilesRequest) => Promise<ListFilesResponse>
+    public readonly createFolder: (request: CreateFolderRequest) => Promise<CreateFolderResponse>
+    public readonly downloadFile: (request: DownloadFileRequest) => Promise<void>
+    public readonly uploadFile: (request: UploadFileRequest) => Promise<void>
+    public readonly listObjectVersions: (request: ListObjectVersionsRequest) => Promise<ListObjectVersionsResponse>
+    public readonly listObjectVersionsIterable: (
+        request: ListObjectVersionsRequest
+    ) => AsyncIterableIterator<ListObjectVersionsResponse>
+    public readonly deleteObject: (request: DeleteObjectRequest) => Promise<void>
+    public readonly deleteObjects: (request: DeleteObjectsRequest) => Promise<DeleteObjectsResponse>
+    public readonly deleteBucket: (request: DeleteBucketRequest) => Promise<void>
+
+    public constructor({
+        regionCode = '',
+        createBucket = async (request: CreateBucketRequest) => ({ bucket: { name: '', region: '', arn: '' } }),
+        listBuckets = async () => ({ buckets: [] }),
+        listFiles = async (request: ListFilesRequest) => ({ files: [], folders: [] }),
+        createFolder = async (request: CreateFolderRequest) => ({ folder: { name: '', path: '', arn: '' } }),
+        downloadFile = async (request: DownloadFileRequest) => {},
+        uploadFile = async (request: UploadFileRequest) => {},
+        listObjectVersions = async (request: ListObjectVersionsRequest) => ({ objects: [] }),
+        listObjectVersionsIterable = (request: ListObjectVersionsRequest) => asyncGenerator([]),
+        deleteObject = async (request: DeleteObjectRequest) => {},
+        deleteObjects = async (request: DeleteObjectsRequest) => ({ errors: [] }),
+        deleteBucket = async (request: DeleteBucketRequest) => {},
+    }: {
+        regionCode?: string
+        createBucket?(request: CreateBucketRequest): Promise<CreateBucketResponse>
+        listBuckets?(): Promise<ListBucketsResponse>
+        listFiles?(request: ListFilesRequest): Promise<ListFilesResponse>
+        createFolder?(request: CreateFolderRequest): Promise<CreateFolderResponse>
+        downloadFile?(request: DownloadFileRequest): Promise<void>
+        uploadFile?(request: UploadFileRequest): Promise<void>
+        listObjectVersions?(request: ListObjectVersionsRequest): Promise<ListObjectVersionsResponse>
+        listObjectVersionsIterable?(
+            request: ListObjectVersionsRequest
+        ): AsyncIterableIterator<ListObjectVersionsResponse>
+        deleteObject?(request: DeleteObjectRequest): Promise<void>
+        deleteObjects?(request: DeleteObjectsRequest): Promise<DeleteObjectsResponse>
+        deleteBucket?(request: DeleteBucketRequest): Promise<void>
+    }) {
+        this.regionCode = regionCode
+        this.createBucket = createBucket
+        this.listBuckets = listBuckets
+        this.listFiles = listFiles
+        this.createFolder = createFolder
+        this.downloadFile = downloadFile
+        this.uploadFile = uploadFile
+        this.listObjectVersions = listObjectVersions
+        this.listObjectVersionsIterable = listObjectVersionsIterable
+        this.deleteObject = deleteObject
+        this.deleteObjects = deleteObjects
+        this.deleteBucket = deleteBucket
+    }
 }

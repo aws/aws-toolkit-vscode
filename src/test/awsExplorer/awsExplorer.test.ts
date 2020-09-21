@@ -7,6 +7,8 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import { AwsExplorer } from '../../awsexplorer/awsExplorer'
 import { RegionNode } from '../../awsexplorer/regionNode'
+import { ToolkitClientBuilder } from '../../shared/clients/toolkitClientBuilder'
+import { ext } from '../../shared/extensionGlobals'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import {
     DEFAULT_TEST_REGION_CODE,
@@ -20,6 +22,11 @@ describe('AwsExplorer', () => {
 
     beforeEach(() => {
         sandbox = sinon.createSandbox()
+        // contingency for current S3Node impl: requires a client built from ext.toolkitClientBuilder.
+        const clientBuilder = {
+            createS3Client: sandbox.stub().returns({}),
+        }
+        ext.toolkitClientBuilder = (clientBuilder as any) as ToolkitClientBuilder
     })
 
     afterEach(() => {
