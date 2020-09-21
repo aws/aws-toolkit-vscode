@@ -64,6 +64,8 @@
         "onCommand:aws.ssmDocument.deleteDocument",
         "onCommand:aws.ssmDocument.executeDocument",
         "onCommand:aws.ssmDocument.openLocalDocument",
+        "onCommand:aws.ssmDocument.openLocalDocumentJson",
+        "onCommand:aws.ssmDocument.openLocalDocumentYaml",
         "onCommand:aws.ssmDocument.publishDocument",
         "onLanguage:javascript",
         "onLanguage:python",
@@ -1105,9 +1107,15 @@
                 "category": "AWS"
             },
             {
+                "command": "aws.ssmDocument.openLocalDocumentYaml",
+                "title": "%AWS.command.ssmDocument.openLocalDocumentYaml%",
+                "category": "AWS"
+            },
+            {
                 "command": "aws.ssmDocument.publishDocument",
                 "title": "%AWS.command.ssmDocument.publishDocument%",
-                "category": "AWS"
+                "category": "AWS",
+                "icon": "$(cloud-upload)"
             },
             {
                 "command": "aws.copyLogStreamName",

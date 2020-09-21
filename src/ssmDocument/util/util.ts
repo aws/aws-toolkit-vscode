@@ -10,10 +10,6 @@ import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 import { Window } from '../../shared/vscode/window'
 
-export const amazonRegistryName = localize('AWS.explorerNode.registry.name.amazon', 'Owned by Amazon')
-export const userRegistryName = localize('AWS.explorerNode.registry.name.self', 'Owned by me')
-export const sharedRegistryName = localize('AWS.explorerNode.registry.name.shared', 'Shared with me')
-
 export async function openAndSaveDocument(
     content: string,
     filename: string,

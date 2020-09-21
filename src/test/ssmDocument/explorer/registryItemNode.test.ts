@@ -13,6 +13,7 @@ describe('RegistryItemNode', () => {
     let sandbox: sinon.SinonSandbox
 
     const fakeRegion = 'testRegion'
+    const fakeDocumentType = 'Automation'
     const expectedAutomationNodeName = 'Automation'
     const expectedChildNodeNames = [expectedAutomationNodeName]
 
