@@ -219,9 +219,10 @@ export async function activate(context: vscode.ExtensionContext) {
         await loginWithMostRecentCredentials(toolkitSettings, loginManager)
 
         recordToolkitInitialization(activationStartedOn, getLogger())
-    } catch (e) {
-        getLogger().error(localize('AWS.channel.aws.toolkit.activation.error', 'Error Activating AWS Toolkit'), e)
-        throw e
+    } catch (error) {
+        const channelLogger = getChannelLogger(toolkitOutputChannel)
+        channelLogger.error('AWS.channel.aws.toolkit.activation.error', 'Error Activating AWS Toolkit', error as Error)
+        throw error
     }
 }
 

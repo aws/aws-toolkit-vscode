@@ -25,12 +25,12 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
         await manager.addTemplateGlob(TEMPLATE_FILE_GLOB_PATTERN)
         extensionContext.subscriptions.push(manager)
     } catch (e) {
-        getLogger().error(
+        await vscode.window.showErrorMessage(
             localize(
                 'AWS.codelens.failToInitialize',
                 "Unable to activate the template registry, SAM CodeLense's will not work"
-            ),
-            e
+            )
         )
+        getLogger().error('Activating the template registry failed', e)
     }
 }
