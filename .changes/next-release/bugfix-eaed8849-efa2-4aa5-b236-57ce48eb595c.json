@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Improve watching of the AWS profile files to incorporate changes made to the files outisde of the IDE"
-}

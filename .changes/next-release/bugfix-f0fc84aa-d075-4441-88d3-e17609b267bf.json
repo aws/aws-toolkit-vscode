@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix the CloudWatch Logs table breaking when the service returns an exception during loading more entries (#1951)"
-}

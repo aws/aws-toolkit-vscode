@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Improved rendering speed of wrapped text in CloudWatch logs and CloudFormation events tables"
-}
