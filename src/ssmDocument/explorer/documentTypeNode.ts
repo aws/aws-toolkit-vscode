@@ -14,10 +14,7 @@ import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { updateInPlace } from '../../shared/utilities/collectionUtils'
 import { RegistryItemNode } from './registryItemNode'
-
-export const amazonRegistryName = localize('AWS.explorerNode.registry.name.amazon', 'Owned by Amazon')
-export const userRegistryName = localize('AWS.explorerNode.registry.name.self', 'Owned by me')
-export const sharedRegistryName = localize('AWS.explorerNode.registry.name.shared', 'Shared with me')
+import { amazonRegistryName, userRegistryName, sharedRegistryName } from '../util/util'
 
 export class DocumentTypeNode extends AWSTreeNodeBase {
     private readonly registryNodes: Map<string, RegistryItemNode>
