@@ -5,8 +5,13 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { amazonRegistryName, userRegistryName, sharedRegistryName } from '../../../ssmDocument/util/util'
-import { RegistryItemNode, viewOnlyString } from '../../../ssmDocument/explorer/registryItemNode'
+import {
+    amazonRegistryName,
+    RegistryItemNode,
+    sharedRegistryName,
+    userRegistryName,
+    viewOnlyString,
+} from '../../../ssmDocument/explorer/registryItemNode'
 import { assertNodeListOnlyContainsErrorNode } from '../../utilities/explorerNodeAssertions'
 
 describe('RegistryItemNode', () => {
