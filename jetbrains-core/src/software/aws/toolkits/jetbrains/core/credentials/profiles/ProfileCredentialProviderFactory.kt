@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.core.credentials.profiles
 
 import com.intellij.openapi.actionSystem.ActionManager
-import com.intellij.openapi.util.registry.Registry
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
@@ -26,7 +25,6 @@ import software.aws.toolkits.core.credentials.CredentialProviderFactory
 import software.aws.toolkits.core.credentials.CredentialsChangeEvent
 import software.aws.toolkits.core.credentials.CredentialsChangeListener
 import software.aws.toolkits.core.credentials.sso.SSO_ACCOUNT
-import software.aws.toolkits.core.credentials.sso.SSO_EXPERIMENTAL_REGISTRY_KEY
 import software.aws.toolkits.core.credentials.sso.SSO_REGION
 import software.aws.toolkits.core.credentials.sso.SSO_ROLE_NAME
 import software.aws.toolkits.core.credentials.sso.SSO_URL
@@ -186,7 +184,7 @@ class ProfileCredentialProviderFactory : CredentialProviderFactory {
     }
 
     private fun createAwsCredentialProvider(profile: Profile, region: AwsRegion, sdkHttpClientSupplier: () -> SdkHttpClient) = when {
-        profile.propertyExists(SSO_URL) && Registry.`is`(SSO_EXPERIMENTAL_REGISTRY_KEY) -> createSsoProvider(profile, sdkHttpClientSupplier)
+        profile.propertyExists(SSO_URL) -> createSsoProvider(profile, sdkHttpClientSupplier)
         profile.propertyExists(ProfileProperty.ROLE_ARN) -> createAssumeRoleProvider(profile, region, sdkHttpClientSupplier)
         profile.propertyExists(ProfileProperty.AWS_SESSION_TOKEN) -> createStaticSessionProvider(profile)
         profile.propertyExists(ProfileProperty.AWS_ACCESS_KEY_ID) -> createBasicProvider(profile)

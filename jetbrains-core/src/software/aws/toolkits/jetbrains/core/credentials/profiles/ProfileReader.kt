@@ -3,12 +3,10 @@
 
 package software.aws.toolkits.jetbrains.core.credentials.profiles
 
-import com.intellij.openapi.util.registry.Registry
 import software.amazon.awssdk.profiles.Profile
 import software.amazon.awssdk.profiles.ProfileFile
 import software.amazon.awssdk.profiles.ProfileProperty
 import software.aws.toolkits.core.credentials.sso.SSO_ACCOUNT
-import software.aws.toolkits.core.credentials.sso.SSO_EXPERIMENTAL_REGISTRY_KEY
 import software.aws.toolkits.core.credentials.sso.SSO_REGION
 import software.aws.toolkits.core.credentials.sso.SSO_ROLE_NAME
 import software.aws.toolkits.core.credentials.sso.SSO_URL
@@ -39,7 +37,7 @@ fun validateAndGetProfiles(): Profiles {
 
 private fun validateProfile(profile: Profile, allProfiles: Map<String, Profile>) {
     when {
-        profile.propertyExists(SSO_URL) && Registry.`is`(SSO_EXPERIMENTAL_REGISTRY_KEY) -> validateSsoProfile(profile)
+        profile.propertyExists(SSO_URL) -> validateSsoProfile(profile)
         profile.propertyExists(ProfileProperty.ROLE_ARN) -> validateAssumeRoleProfile(profile, allProfiles)
         profile.propertyExists(ProfileProperty.AWS_SESSION_TOKEN) -> validateStaticSessionProfile(profile)
         profile.propertyExists(ProfileProperty.AWS_ACCESS_KEY_ID) -> validateBasicProfile(profile)

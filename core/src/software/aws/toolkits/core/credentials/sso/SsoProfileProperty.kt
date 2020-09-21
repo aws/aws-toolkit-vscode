@@ -7,5 +7,3 @@ const val SSO_URL = "sso_start_url"
 const val SSO_REGION = "sso_region"
 const val SSO_ACCOUNT = "sso_account_id"
 const val SSO_ROLE_NAME = "sso_role_name"
-
-const val SSO_EXPERIMENTAL_REGISTRY_KEY = "aws.sso.enabled"
