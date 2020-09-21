@@ -28,7 +28,7 @@ describe('RegistryItemNode', () => {
     })
 
     it('handles error', async () => {
-        const testNode: DocumentTypeNode = new DocumentTypeNode(fakeRegion, 'Command', 'Owned by me')
+        const testNode: DocumentTypeNode = new DocumentTypeNode(fakeRegion, 'Automation')
         sandbox.stub(testNode, 'updateChildren').callsFake(() => {
             throw new Error('Update child error')
         })
@@ -40,7 +40,7 @@ describe('RegistryItemNode', () => {
     it('puts documents into right registry', async () => {
         documentTypes.forEach(async docType => {
             registryNames.forEach(async registry => {
-                const testNode: DocumentTypeNode = new DocumentTypeNode(fakeRegion, docType, registry)
+                const testNode: DocumentTypeNode = new DocumentTypeNode(fakeRegion, docType)
                 let owner: string
                 if (registry === 'Owned by Amazon') {
                     owner = 'Amazon'

@@ -12,6 +12,16 @@ import { SsmDocumentClient } from './ssmDocumentClient'
 export class DefaultSsmDocumentClient implements SsmDocumentClient {
     public constructor(public readonly regionCode: string) {}
 
+    public async deleteDocument(documentName: string): Promise<SSM.Types.DeleteDocumentResult> {
+        const client = await this.createSdkClient()
+
+        const request: SSM.Types.DeleteDocumentRequest = {
+            Name: documentName,
+        }
+
+        return await client.deleteDocument(request).promise()
+    }
+
     public async *listDocuments(
         request: SSM.Types.ListDocumentsRequest = {}
     ): AsyncIterableIterator<SSM.DocumentIdentifier> {

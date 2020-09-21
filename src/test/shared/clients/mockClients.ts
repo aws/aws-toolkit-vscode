@@ -327,6 +327,10 @@ export class MockSsmDocumentClient implements SsmDocumentClient {
     public constructor(
         public readonly regionCode: string = '',
 
+        public readonly deleteDocument: (documentName: string) => Promise<SSM.Types.DeleteDocumentResult> = async (
+            documentName: string
+        ) => ({} as SSM.Types.DeleteDocumentResult),
+
         public readonly listDocuments: () => AsyncIterableIterator<SSM.DocumentIdentifier> = () => asyncGenerator([]),
 
         public readonly listDocumentVersions: (

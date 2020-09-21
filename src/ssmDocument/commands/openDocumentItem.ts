@@ -14,7 +14,7 @@ import { getLogger, Logger } from '../../shared/logger'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import * as picker from '../../shared/ui/picker'
 
-export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsContext) {
+export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsContext, format?: string) {
     const logger: Logger = getLogger()
 
     let result: telemetry.Result = 'Succeeded'
@@ -28,7 +28,11 @@ export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsCo
     }
 
     // Currently only JSON/YAML formats are supported
-    documentFormat = await promptUserforDocumentFormat(['JSON', 'YAML'])
+    if (!format) {
+        documentFormat = await promptUserforDocumentFormat(['JSON', 'YAML'])
+    } else {
+        documentFormat = format
+    }
 
     try {
         const rawContent = await node.getDocumentContent(documentVersion, documentFormat)
@@ -42,7 +46,7 @@ export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsCo
         const error = err as Error
         vscode.window.showErrorMessage(
             localize(
-                'AWS.message.error.ssmDocumet.openDocument.could_not_open',
+                'AWS.message.error.ssmDocument.openDocument.could_not_open',
                 'Could not fetch and display document {0} contents. Please check logs for more details.',
                 node.documentName
             )
@@ -51,6 +55,14 @@ export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsCo
     } finally {
         telemetry.recordSsmOpenDocument({ result: result })
     }
+}
+
+export async function openDocumentItemJson(node: DocumentItemNode, awsContext: AwsContext) {
+    openDocumentItem(node, awsContext, 'JSON')
+}
+
+export async function openDocumentItemYaml(node: DocumentItemNode, awsContext: AwsContext) {
+    openDocumentItem(node, awsContext, 'YAML')
 }
 
 async function promptUserforDocumentFormat(formats: string[]): Promise<string | undefined> {

@@ -16,10 +16,11 @@ describe('DocumentItemNode', async () => {
         Name: 'testDoc',
         Owner: 'Amazon',
     }
+    const fakeRegion = 'us-east-1'
 
     beforeEach(() => {
         sandbox = sinon.createSandbox()
-        testNode = new DocumentItemNode(testDoc, new MockSsmDocumentClient())
+        testNode = new DocumentItemNode(testDoc, new MockSsmDocumentClient(), fakeRegion)
     })
 
     afterEach(() => {
