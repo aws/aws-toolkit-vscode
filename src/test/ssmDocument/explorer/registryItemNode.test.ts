@@ -18,7 +18,7 @@ describe('RegistryItemNode', () => {
 
     const fakeRegion = 'testRegion'
     const fakeDocumentType = 'Automation'
-    const expectedAutomationNodeName = 'Automation'
+    const expectedAutomationNodeName = 'Automation Documents'
     const expectedChildNodeNames = [expectedAutomationNodeName]
 
     beforeEach(() => {

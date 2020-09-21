@@ -114,7 +114,7 @@ export class RegistryItemNode extends AWSTreeNodeBase {
                 this.documentNodes,
                 documents.keys(),
                 key => this.documentNodes.get(key)!.update(documents.get(key)!),
-                key => new DocumentItemNodeWriteable(documents.get(key)!, client, this.regionCode)
+                key => new DocumentItemNodeWriteable(documents.get(key)!, client, this.regionCode, this)
             )
         } else {
             updateInPlace(

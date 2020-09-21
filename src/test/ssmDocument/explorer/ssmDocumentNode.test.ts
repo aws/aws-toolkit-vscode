@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import { SSM } from 'aws-sdk'
 import * as sinon from 'sinon'
 import { SsmDocumentNode } from '../../../ssmDocument/explorer/ssmDocumentNode'
-import { RegistryItemNode } from '../../../ssmDocument/explorer/registryItemNode'
+import { DocumentTypeNode } from '../../../ssmDocument/explorer/documentTypeNode'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 import { ext } from '../../../shared/extensionGlobals'
 import { assertNodeListOnlyContainsErrorNode } from '../../utilities/explorerNodeAssertions'
@@ -53,18 +53,14 @@ describe('SsmDocumentNode', () => {
         sandbox.restore()
     })
 
-    it('always has 3 nodes: Owned by Amazon, Owned by me, Shared with me, if any child exists', async () => {
+    it('always has 1 node: Automation Documents, if any child exists', async () => {
         const childNodes = await testNode.getChildren()
-        const expectedChildNodeNames: string[] = [
-            'Owned by Amazon [View Only]',
-            'Owned by me',
-            'Shared with me [View Only]',
-        ]
+        const expectedChildNodeNames: string[] = ['Automation Documents']
 
         assert.strictEqual(childNodes.length, expectedChildNodeNames.length, 'Unexpected child node length')
 
         childNodes.forEach((node, index) => {
-            assert.ok(node instanceof RegistryItemNode, 'Expected child node to be RegistryItemNode')
+            assert.ok(node instanceof DocumentTypeNode, 'Expected child node to be RegistryItemNode')
             assert.strictEqual(node.label, expectedChildNodeNames[index])
         })
     })
