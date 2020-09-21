@@ -66,7 +66,6 @@ export class DefaultToolkitClientBuilder implements ToolkitClientBuilder {
     public createSsmClient(regionCode: string): SsmDocumentClient {
         return new DefaultSsmDocumentClient(regionCode)
     }
-    
     public createS3Client(regionCode: string): S3Client {
         return new DefaultS3Client(regionCode, this.regionProvider.getPartitionId(regionCode) ?? DEFAULT_PARTITION)
     }

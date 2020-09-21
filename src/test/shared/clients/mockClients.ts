@@ -102,7 +102,7 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
     public createSsmClient(regionCode: string): SsmDocumentClient {
         return this.clients.ssmDocumentClient
     }
-    
+
     public createS3Client(regionCode: string): S3Client {
         return this.clients.s3Client
     }
@@ -381,7 +381,6 @@ export class MockSsmDocumentClient implements SsmDocumentClient {
         ) => Promise<SSM.Types.UpdateDocumentResult> = async (request: SSM.Types.UpdateDocumentRequest) => ({})
     ) {}
 }
-
 export class MockS3Client implements S3Client {
     public readonly regionCode: string
 
