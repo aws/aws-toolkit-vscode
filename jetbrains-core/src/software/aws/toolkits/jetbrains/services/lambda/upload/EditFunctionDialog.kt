@@ -22,6 +22,7 @@ import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
+import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.services.iam.CreateIamRoleDialog
 import software.aws.toolkits.jetbrains.services.iam.IamRole
@@ -31,6 +32,7 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.LambdaLimits.DEFAULT_MEMORY_SIZE
 import software.aws.toolkits.jetbrains.services.lambda.LambdaLimits.DEFAULT_TIMEOUT
+import software.aws.toolkits.jetbrains.services.lambda.resources.LambdaResources
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionMode.NEW
@@ -245,6 +247,10 @@ class EditFunctionDialog(
                 null -> {
                     notifyInfo(title = NOTIFICATION_TITLE, content = message, project = project)
                     LambdaTelemetry.editFunction(project, update = false, result = Result.Succeeded)
+                    // If we created a new lambda, clear the resource cache for LIST_FUNCTIONS
+                    if (mode == NEW) {
+                        project.refreshAwsTree(LambdaResources.LIST_FUNCTIONS)
+                    }
                 }
                 is Exception -> {
                     error.notifyError(title = NOTIFICATION_TITLE)

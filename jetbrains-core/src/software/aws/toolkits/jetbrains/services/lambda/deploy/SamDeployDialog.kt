@@ -165,12 +165,6 @@ class SamDeployDialog(
                 doOKAction()
             }
         }
-
-        SamTelemetry.deploy(
-            project = project,
-            success = true,
-            version = SamCommon.getVersionString()
-        )
     }
 
     private fun handleError(error: Throwable): String {

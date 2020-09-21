@@ -22,6 +22,7 @@ import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutable
+import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
 import software.aws.toolkits.jetbrains.services.cloudformation.describeStack
 import software.aws.toolkits.jetbrains.services.cloudformation.executeChangeSetAndWait
 import software.aws.toolkits.jetbrains.services.cloudformation.stack.StackWindowManager
@@ -142,6 +143,8 @@ class DeployServerlessApplicationAction : AnAction(
                     project
                 )
                 SamTelemetry.deploy(project, Result.Succeeded)
+                // Since we could update anything, do a full refresh of the resource cache and explorer
+                project.refreshAwsTree()
             } catch (e: Exception) {
                 e.notifyError(message("cloudformation.execute_change_set.failed", stackName), project)
                 SamTelemetry.deploy(project, Result.Failed)
