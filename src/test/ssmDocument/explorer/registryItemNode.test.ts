@@ -17,6 +17,7 @@ describe('RegistryItemNode', () => {
     let sandbox: sinon.SinonSandbox
 
     const fakeRegion = 'testRegion'
+    const fakeDocumentType = 'Automation'
     const expectedAutomationNodeName = 'Automation'
     const expectedChildNodeNames = [expectedAutomationNodeName]
 
@@ -29,9 +30,9 @@ describe('RegistryItemNode', () => {
     })
 
     it('initialized name and [View Only] correctly', async () => {
-        const testAmazonNode: RegistryItemNode = new RegistryItemNode(fakeRegion, amazonRegistryName)
-        const testMyNode: RegistryItemNode = new RegistryItemNode(fakeRegion, userRegistryName)
-        const testSharedNode: RegistryItemNode = new RegistryItemNode(fakeRegion, sharedRegistryName)
+        const testAmazonNode: RegistryItemNode = new RegistryItemNode(fakeRegion, amazonRegistryName, fakeDocumentType)
+        const testMyNode: RegistryItemNode = new RegistryItemNode(fakeRegion, userRegistryName, fakeDocumentType)
+        const testSharedNode: RegistryItemNode = new RegistryItemNode(fakeRegion, sharedRegistryName, fakeDocumentType)
 
         assert.strictEqual(testAmazonNode.label, `${amazonRegistryName}${viewOnlyString}`)
         assert.strictEqual(testMyNode.label, `${userRegistryName}`)
@@ -39,7 +40,7 @@ describe('RegistryItemNode', () => {
     })
 
     it('has correct child nodes', async () => {
-        const testNode: RegistryItemNode = new RegistryItemNode(fakeRegion, amazonRegistryName)
+        const testNode: RegistryItemNode = new RegistryItemNode(fakeRegion, amazonRegistryName, fakeDocumentType)
         const childNodes = await testNode.getChildren()
 
         assert.strictEqual(childNodes.length, expectedChildNodeNames.length)
@@ -49,7 +50,7 @@ describe('RegistryItemNode', () => {
     })
 
     it('handles error', async () => {
-        const testNode: RegistryItemNode = new RegistryItemNode(fakeRegion, amazonRegistryName)
+        const testNode: RegistryItemNode = new RegistryItemNode(fakeRegion, amazonRegistryName, fakeDocumentType)
         sandbox.stub(testNode, 'updateChildren').callsFake(() => {
             throw new Error('Update child error')
         })
