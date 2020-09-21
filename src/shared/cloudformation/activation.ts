@@ -28,7 +28,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
         await vscode.window.showErrorMessage(
             localize(
                 'AWS.codelens.failToInitialize',
-                'Failed to activate template registry. CodeLenses will appear on SAM template files.'
+                'Failed to activate template registry. CodeLenses will not appear on SAM template files.'
             )
         )
         getLogger().error('Activating the template registry failed', e)
