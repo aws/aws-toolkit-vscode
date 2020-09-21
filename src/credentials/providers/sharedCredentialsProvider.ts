@@ -7,13 +7,14 @@ import * as AWS from 'aws-sdk'
 import { Profile } from '../../shared/credentials/credentialsFile'
 import { getLogger } from '../../shared/logger'
 import { getStringHash } from '../../shared/utilities/textUtilities'
-import { validateSsoProfile } from '../ssoSupport'
+import { validateSsoProfile } from '../sso/ssoSupport'
 import { getMfaTokenFromUser } from '../credentialsCreator'
 import { CredentialsProvider } from './credentialsProvider'
 import { CredentialsProviderId } from './credentialsProviderId'
 import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
 import { DiskCache } from '../sso/diskCache'
 import { SsoCredentialProvider } from './ssoCredentialProvider'
+import { isSsoProfile } from '../sso/ssoSupport'
 
 const SHARED_CREDENTIAL_PROPERTIES = {
     AWS_ACCESS_KEY_ID: 'aws_access_key_id',
@@ -72,14 +73,10 @@ export class SharedCredentialsProvider implements CredentialsProvider {
      * should _not_ attempt to auto-connect).
      */
     public canAutoConnect(): boolean {
-        if (
-            this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.MFA_SERIAL) ||
-            this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL)
-        ) {
-            return false
-        } else {
-            return true
-        }
+        return (
+            !this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.MFA_SERIAL) &&
+            !this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL)
+        )
     }
 
     /**
@@ -100,7 +97,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             )
         } else if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.AWS_ACCESS_KEY_ID)) {
             expectedProperties.push(SHARED_CREDENTIAL_PROPERTIES.AWS_SECRET_ACCESS_KEY)
-        } else if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL)) {
+        } else if (isSsoProfile(this.profile)) {
             return validateSsoProfile(this.profile, this.profileName)
         } else {
             return `Profile ${this.profileName} is not supported by the Toolkit.`
@@ -129,7 +126,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             // Profiles with references involving non-aws partitions need help getting the right STS endpoint
             this.applyProfileRegionToGlobalStsConfig()
             //  SSO entry point
-            if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL)) {
+            if (isSsoProfile(this.profile)) {
                 const ssoCredentialProvider = this.makeSsoProvider()
                 return await ssoCredentialProvider.refreshCredentials()
             }

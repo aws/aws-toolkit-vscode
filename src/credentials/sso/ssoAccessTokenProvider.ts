@@ -4,93 +4,103 @@
  */
 
 import * as vscode from 'vscode'
-import { ClientRegistration } from './clientRegistration'
-import { AccessToken } from './accessToken'
+import { SSOOIDC } from 'aws-sdk'
+import { SsoClientRegistration } from './ssoClientRegistration'
+import { SsoAccessToken } from './ssoAccessToken'
 import { DiskCache } from './diskCache'
-import { Authorization } from './authorization'
 import { getLogger } from '../../shared/logger'
+import { StartDeviceAuthorizationResponse } from 'aws-sdk/clients/ssooidc'
 
 const CLIENT_REGISTRATION_TYPE = 'public'
+const CLIENT_NAME = `aws-toolkit-vscode-${Date.now()}`
+// According to Spec 'SSO Login Token Flow' the grant type must be the following string
 const GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:device_code'
+// Used to convert seconds to milliseconds
+const MILLISECONDS_PER_SECOND = 1000
+const BACKOFF_TIME = 5000
 
 export class SsoAccessTokenProvider {
     private ssoRegion: string
     private ssoUrl: string
-    private ssoOidcClient: AWS.SSOOIDC
+    private ssoOidcClient: SSOOIDC
     private cache: DiskCache
 
-    constructor(ssoRegion: string, ssoUrl: string, ssoOidcClient: AWS.SSOOIDC, cache: DiskCache) {
+    constructor(ssoRegion: string, ssoUrl: string, ssoOidcClient: SSOOIDC, cache: DiskCache) {
         this.ssoRegion = ssoRegion
         this.ssoOidcClient = ssoOidcClient
         this.cache = cache
         this.ssoUrl = ssoUrl
     }
 
-    public async accessToken(): Promise<AccessToken> {
+    public async accessToken(): Promise<SsoAccessToken> {
         const accessToken = this.cache.loadAccessToken(this.ssoUrl)
         if (accessToken) {
             return accessToken
         }
-
-        try {
-            const token = await this.pollForToken()
-            this.cache.saveAccessToken(this.ssoUrl, token)
-            return token
-        } catch (err) {
-            throw err
-        }
-    }
-
-    private async pollForToken(): Promise<AccessToken> {
         const registration = await this.registerClient()
         const authorization = await this.authorizeClient(registration)
-        const deviceCodeExpiration = Date.now() + authorization.expiresIn * 1000
+        const token = await this.pollForToken(registration, authorization)
+        this.cache.saveAccessToken(this.ssoUrl, token)
+        return token
+    }
 
-        //temporary logging to get URL
-        const logger = getLogger()
-        logger.info(
+    public invalidate() {
+        this.cache.invalidateAccessToken(this.ssoUrl)
+    }
+
+    private async pollForToken(
+        registration: SsoClientRegistration,
+        authorization: StartDeviceAuthorizationResponse
+    ): Promise<SsoAccessToken> {
+        // Calculate the device code expirtation in milliseconds
+        const deviceCodeExpiration = Date.now() + authorization.expiresIn! * MILLISECONDS_PER_SECOND
+
+        getLogger().info(
             `To complete authentication for this SSO account, please continue to this SSO portal:${authorization.verificationUriComplete}`
         )
 
         // The retry interval converted to milliseconds
-        let retryInterval = authorization.interval * 1000
+        let retryInterval =
+            authorization.interval! > 0 ? authorization.interval! * MILLISECONDS_PER_SECOND : BACKOFF_TIME
 
         const createTokenParams = {
             clientId: registration.clientId,
             clientSecret: registration.clientSecret,
             grantType: GRANT_TYPE,
-            deviceCode: authorization.deviceCode,
+            deviceCode: authorization.deviceCode!,
         }
 
         while (true) {
             try {
                 const tokenResponse = await this.ssoOidcClient.createToken(createTokenParams).promise()
-                const accessToken: AccessToken = {
+                const accessToken: SsoAccessToken = {
                     startUrl: this.ssoUrl,
                     region: this.ssoRegion,
                     accessToken: tokenResponse.accessToken!,
-                    expiresAt: new Date(Date.now() + tokenResponse.expiresIn! * 1000).toISOString(),
+                    expiresAt: new Date(Date.now() + tokenResponse.expiresIn! * MILLISECONDS_PER_SECOND).toISOString(),
                 }
                 return accessToken
             } catch (err) {
                 if (err.code === 'SlowDownException') {
-                    retryInterval += 5000
+                    retryInterval += BACKOFF_TIME
                 } else if (err.code === 'AuthorizationPendingException') {
-                    if (Date.now() + retryInterval > deviceCodeExpiration) {
-                        throw Error(
-                            `Device code has expired while polling for SSO token, login flow must be re-initiated.`
-                        )
-                    }
-                    // else, wait the interval and try again
+                    // do nothing, wait the interval and try again
                 } else if (err.code === 'ExpiredTokenException') {
                     throw Error(`Device code has expired while polling for SSO token, login flow must be re-initiated.`)
+                } else {
+                    getLogger().info(err)
+                    throw err
                 }
             }
+            if (Date.now() + retryInterval > deviceCodeExpiration) {
+                throw Error(`Device code has expired while polling for SSO token, login flow must be re-initiated.`)
+            }
             setTimeout(() => {}, retryInterval)
+            retryInterval *= 2
         }
     }
 
-    private async authorizeClient(registration: ClientRegistration): Promise<Authorization> {
+    private async authorizeClient(registration: SsoClientRegistration): Promise<StartDeviceAuthorizationResponse> {
         const authorizationParams = {
             clientId: registration.clientId,
             clientSecret: registration.clientSecret,
@@ -100,38 +110,31 @@ export class SsoAccessTokenProvider {
             const authorizationResponse = await this.ssoOidcClient
                 .startDeviceAuthorization(authorizationParams)
                 .promise()
-            const authorization: Authorization = {
-                deviceCode: authorizationResponse.deviceCode!,
-                userCode: authorizationResponse.userCode!,
-                verificationUri: authorizationResponse.verificationUri!,
-                verificationUriComplete: authorizationResponse.verificationUriComplete!,
-                expiresIn: authorizationResponse.expiresIn!,
-                interval: authorizationResponse.interval!,
-            }
 
             const signInInstructionMessage = `You have chosen an AWS Single Sign-On profile that requires authorization. `
             vscode.window.showInformationMessage(signInInstructionMessage, { modal: true })
-            vscode.env.openExternal(vscode.Uri.parse(authorization.verificationUriComplete))
-            return authorization
+            vscode.env.openExternal(vscode.Uri.parse(authorizationResponse.verificationUriComplete!))
+            return authorizationResponse
         } catch (err) {
             throw err
         }
     }
 
-    private async registerClient(): Promise<ClientRegistration> {
-        if (this.cache.loadClientRegistration(this.ssoRegion)) {
-            return this.cache.loadClientRegistration(this.ssoRegion)!
+    private async registerClient(): Promise<SsoClientRegistration> {
+        const currentRegistration = this.cache.loadClientRegistration(this.ssoRegion)
+        if (currentRegistration) {
+            return currentRegistration
         }
 
         // If ClientRegistration token is expired or does not exist, register ssoOidc client
         const registerParams = {
             clientType: CLIENT_REGISTRATION_TYPE,
-            clientName: `aws-toolkit-vscode-${Date.now()}`,
+            clientName: CLIENT_NAME,
         }
         const registerResponse = await this.ssoOidcClient.registerClient(registerParams).promise()
         const formattedExpiry = new Date(registerResponse.clientSecretExpiresAt!).toISOString()
 
-        const registration: ClientRegistration = {
+        const registration: SsoClientRegistration = {
             clientId: registerResponse.clientId!,
             clientSecret: registerResponse.clientSecret!,
             expiresAt: formattedExpiry,
@@ -140,9 +143,5 @@ export class SsoAccessTokenProvider {
         this.cache.saveClientRegistration(this.ssoRegion, registration)
 
         return registration
-    }
-
-    public invalidate() {
-        this.cache.invalidateAccessToken(this.ssoUrl)
     }
 }

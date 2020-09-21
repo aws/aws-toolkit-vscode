@@ -3,21 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as AWS from 'aws-sdk'
+import { Credentials, SSO } from 'aws-sdk'
 import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
 
 export class SsoCredentialProvider {
     private ssoAccount: string
     private ssoRole: string
-    private ssoClient: AWS.SSO
+    private ssoClient: SSO
     private ssoAccessTokenProvider: SsoAccessTokenProvider
 
-    constructor(
-        ssoAccount: string,
-        ssoRole: string,
-        ssoClient: AWS.SSO,
-        ssoAccessTokenProvider: SsoAccessTokenProvider
-    ) {
+    constructor(ssoAccount: string, ssoRole: string, ssoClient: SSO, ssoAccessTokenProvider: SsoAccessTokenProvider) {
         this.ssoAccount = ssoAccount
         this.ssoRole = ssoRole
         this.ssoClient = ssoClient
@@ -25,26 +20,24 @@ export class SsoCredentialProvider {
     }
 
     public async refreshCredentials() {
-        let roleCredentials
         try {
             const accessToken = await this.ssoAccessTokenProvider.accessToken()
-            roleCredentials = await this.ssoClient
+            const roleCredentials = await this.ssoClient
                 .getRoleCredentials({
                     accountId: this.ssoAccount,
                     roleName: this.ssoRole,
                     accessToken: accessToken.accessToken,
                 })
                 .promise()
+
+            return new Credentials({
+                accessKeyId: roleCredentials.roleCredentials?.accessKeyId!,
+                secretAccessKey: roleCredentials.roleCredentials?.secretAccessKey!,
+                sessionToken: roleCredentials.roleCredentials?.sessionToken,
+            })
         } catch (err) {
             this.ssoAccessTokenProvider.invalidate()
             throw err
         }
-
-        const awsCredentials = new AWS.Credentials({
-            accessKeyId: roleCredentials.roleCredentials?.accessKeyId!,
-            secretAccessKey: roleCredentials.roleCredentials?.secretAccessKey!,
-            sessionToken: roleCredentials.roleCredentials?.sessionToken,
-        })
-        return awsCredentials
     }
 }

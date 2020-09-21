@@ -3,9 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export interface AccessToken {
-    readonly startUrl: string
-    readonly region: string
-    readonly accessToken: string
+export interface SsoClientRegistration {
+    readonly clientId: string
+    readonly clientSecret: string
     readonly expiresAt: string
 }

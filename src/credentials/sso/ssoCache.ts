@@ -3,15 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ClientRegistration } from './clientRegistration'
-import { AccessToken } from './accessToken'
+import { SsoClientRegistration } from './ssoClientRegistration'
+import { SsoAccessToken } from './ssoAccessToken'
 
 export interface SsoCache {
-    loadClientRegistration(ssoRegion: string): ClientRegistration | null
-    saveClientRegistration(ssoRegion: string, registration: ClientRegistration): any
-    invalidateClientRegistration(ssoRegion: string): any
+    loadClientRegistration(ssoRegion: string): SsoClientRegistration | undefined
+    saveClientRegistration(ssoRegion: string, registration: SsoClientRegistration): void
+    invalidateClientRegistration(ssoRegion: string): void
 
-    loadAccessToken(ssoUrl: string): AccessToken
-    saveAccessToken(ssoUrl: string, accessToken: AccessToken): any
-    invalidateAccessToken(ssoUrl: string): any
+    loadAccessToken(ssoUrl: string): SsoAccessToken | undefined
+    saveAccessToken(ssoUrl: string, accessToken: SsoAccessToken): void
+    invalidateAccessToken(ssoUrl: string): void
 }

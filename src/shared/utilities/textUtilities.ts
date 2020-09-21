@@ -28,3 +28,9 @@ export function getStringHash(text: string): string {
 
     return hash.digest('hex')
 }
+
+export function getSHA1StringHash(text: string): string {
+    const shasum = crypto.createHash('sha1')
+    shasum.update(text)
+    return shasum.digest('hex')
+}
