@@ -2,30 +2,46 @@
  * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as path from 'path'
+
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 import * as vscode from 'vscode'
-import * as fs from 'fs-extra'
+import * as picker from '../../shared/ui/picker'
 import { Window } from '../../shared/vscode/window'
 
-export async function openAndSaveDocument(
-    content: string,
-    filename: string,
-    language: string
-): Promise<vscode.TextDocument> {
-    const wsPath = vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders[0].uri.fsPath : '/'
-    let filePath = path.join(wsPath, filename)
-    const fileInfo = await vscode.window.showSaveDialog({ defaultUri: vscode.Uri.file(filePath) })
+export async function promptUserForDocumentFormat(formats: string[]): Promise<string | undefined> {
+    // Prompt user to pick document format
+    const quickPickItems: vscode.QuickPickItem[] = formats.map(format => {
+        return {
+            label: format,
+            description: `Open document with format ${format}`,
+        }
+    })
 
-    if (fileInfo) {
-        filePath = fileInfo.fsPath
-        fs.writeFileSync(filePath, content)
-        const openPath = vscode.Uri.file(filePath)
+    const formatPick = picker.createQuickPick({
+        options: {
+            ignoreFocusOut: true,
+            title: localize('AWS.message.prompt.selectSsmDocumentFormat.placeholder', 'Select a document format'),
+        },
+        items: quickPickItems,
+    })
 
-        return await vscode.workspace.openTextDocument(openPath)
+    const formatChoices = await picker.promptUser({
+        picker: formatPick,
+        onDidTriggerButton: (_, resolve) => {
+            resolve(undefined)
+        },
+    })
+
+    const formatSelection = picker.verifySinglePickerOutput(formatChoices)
+
+    // User pressed escape and didn't select a template
+    if (formatSelection === undefined) {
+        return undefined
     }
 
-    // The user didn't save the file, so just open an untitiled file
-    return await vscode.workspace.openTextDocument({ content: content, language: language })
+    return formatSelection.label
 }
 
 export async function showConfirmationMessage(

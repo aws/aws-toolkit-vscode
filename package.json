@@ -1157,7 +1157,7 @@
                     ".ssm.json"
                 ],
                 "aliases": [
-                    "Amazon SSM Document Language (JSON)"
+                    "AWS Systems Manager Document (JSON)"
                 ]
             },
             {
@@ -1167,7 +1167,7 @@
                     ".ssm.yml"
                 ],
                 "aliases": [
-                    "Amazon SSM Document Language (YAML)"
+                    "AWS Systems Manager Document (YAML)"
                 ]
             }
         ],

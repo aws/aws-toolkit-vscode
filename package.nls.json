@@ -150,7 +150,7 @@
     "AWS.command.ssmDocument.openLocalDocument": "Download as...",
     "AWS.command.ssmDocument.openLocalDocumentJson": "Download As JSON",
     "AWS.command.ssmDocument.openLocalDocumentYaml": "Download As YAML",
-    "AWS.command.ssmDocument.publishDocument": "Create/Update a Systems Manager Document",
+    "AWS.command.ssmDocument.publishDocument": "Publish a Systems Manager Document",
     "AWS.stepFunctions.graph.titlePrefix": "Graph: {0}",
     "AWS.credentials.statusbar.no.credentials": "(not connected)",
     "AWS.credentials.statusbar.text": "AWS: {0}",

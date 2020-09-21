@@ -13,6 +13,7 @@ import { AwsContext } from '../../shared/awsContext'
 import { getLogger, Logger } from '../../shared/logger'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import * as picker from '../../shared/ui/picker'
+import { promptUserForDocumentFormat } from '../util/util'
 
 export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsContext, format?: string) {
     const logger: Logger = getLogger()
@@ -29,7 +30,7 @@ export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsCo
 
     // Currently only JSON/YAML formats are supported
     if (!format) {
-        documentFormat = await promptUserforDocumentFormat(['JSON', 'YAML'])
+        documentFormat = await promptUserForDocumentFormat(['JSON', 'YAML'])
     } else {
         documentFormat = format
     }
@@ -63,40 +64,6 @@ export async function openDocumentItemJson(node: DocumentItemNode, awsContext: A
 
 export async function openDocumentItemYaml(node: DocumentItemNode, awsContext: AwsContext) {
     openDocumentItem(node, awsContext, 'YAML')
-}
-
-async function promptUserforDocumentFormat(formats: string[]): Promise<string | undefined> {
-    // Prompt user to pick document format
-    const quickPickItems: vscode.QuickPickItem[] = formats.map(format => {
-        return {
-            label: format,
-            description: `Open document with format ${format}`,
-        }
-    })
-
-    const formatPick = picker.createQuickPick({
-        options: {
-            ignoreFocusOut: true,
-            title: localize('AWS.message.prompt.selectSsmDocumentFormat.placeholder', 'Select a document format'),
-        },
-        items: quickPickItems,
-    })
-
-    const formatChoices = await picker.promptUser({
-        picker: formatPick,
-        onDidTriggerButton: (_, resolve) => {
-            resolve(undefined)
-        },
-    })
-
-    const formatSelection = picker.verifySinglePickerOutput(formatChoices)
-
-    // User pressed escape and didn't select a template
-    if (formatSelection === undefined) {
-        return undefined
-    }
-
-    return formatSelection.label
 }
 
 async function promptUserforDocumentVersion(versions: SSM.Types.DocumentVersionInfo[]): Promise<string | undefined> {
