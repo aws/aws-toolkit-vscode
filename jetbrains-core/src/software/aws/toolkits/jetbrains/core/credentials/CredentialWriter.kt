@@ -42,7 +42,11 @@ class CreateOrUpdateCredentialProfilesAction @TestOnly constructor(
         // if both config and credential files do not exist, create a new config file
         if (!configFile.exists() && !credentialsFile.exists()) {
             if (confirm(project, configFile)) {
-                writer.createFile(configFile)
+                try {
+                    writer.createFile(configFile)
+                } finally {
+                    AwsTelemetry.createCredentials(project)
+                }
             } else {
                 return
             }
