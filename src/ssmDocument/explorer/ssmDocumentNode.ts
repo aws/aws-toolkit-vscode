@@ -15,8 +15,6 @@ import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { updateInPlace } from '../../shared/utilities/collectionUtils'
 import { DocumentTypeNode } from './documentTypeNode'
 
-import { supportedDocumentTypes } from 'aws-ssm-document-language-service'
-
 export class SsmDocumentNode extends AWSTreeNodeBase {
     private readonly documentTypeNodes: Map<string, DocumentTypeNode>
 
@@ -53,10 +51,7 @@ export class SsmDocumentNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        // supportedDocumentTypes = ['automation']
-        const documentTypes = supportedDocumentTypes.map((type: string) => {
-            return type[0].toUpperCase() + type.slice(1)
-        })
+        const documentTypes = ['Automation']
 
         updateInPlace(
             this.documentTypeNodes,
