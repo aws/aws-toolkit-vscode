@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix the function selection panel not reloading when changing SAM templates (#955)"
-}

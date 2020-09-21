@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Start generating SAM project before the IDE is done indexing"
-}

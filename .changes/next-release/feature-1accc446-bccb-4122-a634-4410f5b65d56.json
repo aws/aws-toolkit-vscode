@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "Allow connecting to RDS/Redshift databases with temporary IAM AWS credentials or a SecretsManager secret"
-}

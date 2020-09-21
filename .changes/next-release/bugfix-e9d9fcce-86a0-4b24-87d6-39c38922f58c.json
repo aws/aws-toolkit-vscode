@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix issue where templates > 51200 bytes would not deploy with \"Deploy Serverless Application\" (#1973)"
-}

@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix SAM Gradle Hello World syncing twice (#2003)"
-}

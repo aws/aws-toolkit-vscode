@@ -1,0 +1,62 @@
+{
+  "date" : "2020-09-21",
+  "version" : "1.18",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Add support for AWS SSO based credential profiles"
+  }, {
+    "type" : "feature",
+    "description" : "Support colons (`:`) in credential profile names"
+  }, {
+    "type" : "feature",
+    "description" : "Add support for Lambda runtime java8.al2"
+  }, {
+    "type" : "feature",
+    "description" : "Allow connecting to RDS/Redshift databases with temporary IAM AWS credentials or a SecretsManager secret"
+  }, {
+    "type" : "feature",
+    "description" : "Several enhancements to the UX around connecting to AWS including:\n- Making connection settings more visible (now visible in the AWS Explorer)\n- Automatically selecting 'default' profile if it exists\n- Better visibility of connection validation workflow (more information when unable to connect)\n- Handling of default regions on credential profile\n- Better UX around partitions\n- Adding ability to refresh connection from the UI"
+  }, {
+    "type" : "feature",
+    "description" : "Save update Lambda code settings"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix several cases where features not supported by the host IDE are shown (#1980)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Start generating SAM project before the IDE is done indexing"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix several uncaught exceptions caused by plugins being installed but not enabled"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix removing a source_profile leading to an IDE error on profile file refresh"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix issue where templates > 51200 bytes would not deploy with \"Deploy Serverless Application\" (#1973)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix the function selection panel not reloading when changing SAM templates (#955)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix remote terminal start issue on 2020.2"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix Rider building Lambda into incorrect folders"
+  }, {
+    "type" : "bugfix",
+    "description" : "Improved rendering speed of wrapped text in CloudWatch logs and CloudFormation events tables"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix the CloudWatch Logs table breaking when the service returns an exception during loading more entries (#1951)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Improve watching of the AWS profile files to incorporate changes made to the files outisde of the IDE"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix SAM Gradle Hello World syncing twice (#2003)"
+  }, {
+    "type" : "bugfix",
+    "description" : "Quote template parameters when deploying a cloudformation template"
+  } ]
+}

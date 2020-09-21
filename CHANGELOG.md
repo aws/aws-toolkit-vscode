@@ -1,3 +1,30 @@
+# _1.18_ (2020-09-21)
+- **(Feature)** Add support for AWS SSO based credential profiles
+- **(Feature)** Support colons (`:`) in credential profile names
+- **(Feature)** Add support for Lambda runtime java8.al2
+- **(Feature)** Allow connecting to RDS/Redshift databases with temporary IAM AWS credentials or a SecretsManager secret
+- **(Feature)** Several enhancements to the UX around connecting to AWS including:
+  - Making connection settings more visible (now visible in the AWS Explorer)
+  - Automatically selecting 'default' profile if it exists
+  - Better visibility of connection validation workflow (more information when unable to connect)
+  - Handling of default regions on credential profile
+  - Better UX around partitions
+  - Adding ability to refresh connection from the UI
+- **(Feature)** Save update Lambda code settings
+- **(Bug Fix)** Fix several cases where features not supported by the host IDE are shown ([#1980](https://github.com/aws/aws-toolkit-jetbrains/issues/1980))
+- **(Bug Fix)** Start generating SAM project before the IDE is done indexing
+- **(Bug Fix)** Fix several uncaught exceptions caused by plugins being installed but not enabled
+- **(Bug Fix)** Fix removing a source_profile leading to an IDE error on profile file refresh
+- **(Bug Fix)** Fix issue where templates > 51200 bytes would not deploy with "Deploy Serverless Application" ([#1973](https://github.com/aws/aws-toolkit-jetbrains/issues/1973))
+- **(Bug Fix)** Fix the function selection panel not reloading when changing SAM templates ([#955](https://github.com/aws/aws-toolkit-jetbrains/issues/955))
+- **(Bug Fix)** Fix remote terminal start issue on 2020.2
+- **(Bug Fix)** Fix Rider building Lambda into incorrect folders
+- **(Bug Fix)** Improved rendering speed of wrapped text in CloudWatch logs and CloudFormation events tables
+- **(Bug Fix)** Fix the CloudWatch Logs table breaking when the service returns an exception during loading more entries ([#1951](https://github.com/aws/aws-toolkit-jetbrains/issues/1951))
+- **(Bug Fix)** Improve watching of the AWS profile files to incorporate changes made to the files outisde of the IDE
+- **(Bug Fix)** Fix SAM Gradle Hello World syncing twice ([#2003](https://github.com/aws/aws-toolkit-jetbrains/issues/2003))
+- **(Bug Fix)** Quote template parameters when deploying a cloudformation template
+
 # _1.17_ (2020-07-16)
 - **(Feature)** Wrap logstream entries when they are selected ([#1863](https://github.com/aws/aws-toolkit-jetbrains/issues/1863))
 - **(Feature)** Adding 'Outputs' tab to the CloudFormation Stack Viewer
