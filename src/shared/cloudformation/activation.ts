@@ -31,6 +31,6 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
                 'Failed to activate template registry. CodeLenses will not appear on SAM template files.'
             )
         )
-        getLogger().error('Activating the template registry failed', e)
+        getLogger().error('Failed to activate template registry', e)
     }
 }
