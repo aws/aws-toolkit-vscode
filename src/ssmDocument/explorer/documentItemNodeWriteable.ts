@@ -4,6 +4,7 @@
  */
 
 import { SSM } from 'aws-sdk'
+import { RegistryItemNode } from './registryItemNode'
 import { SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
 import { DocumentItemNode } from './documentItemNode'
 
@@ -11,10 +12,12 @@ export class DocumentItemNodeWriteable extends DocumentItemNode {
     public constructor(
         documentItem: SSM.Types.DocumentIdentifier,
         public readonly client: SsmDocumentClient,
-        public readonly regionCode: string
+        public readonly regionCode: string,
+        public readonly parent: RegistryItemNode
     ) {
         super(documentItem, client, regionCode)
         this.contextValue = 'awsDocumentItemNodeWriteable'
+        this.parent = parent
     }
     public async deleteDocument(): Promise<SSM.Types.DeleteDocumentResult> {
         if (!this.documentName || !this.documentName.length) {
