@@ -8,6 +8,7 @@ import { SSM } from 'aws-sdk'
 export interface SsmDocumentClient {
     readonly regionCode: string
 
+    deleteDocument(documentName: string): Promise<SSM.Types.DeleteDocumentResult>
     listDocuments(request: SSM.Types.ListDocumentsRequest): AsyncIterableIterator<SSM.Types.DocumentIdentifier>
     listDocumentVersions(documentName: string): AsyncIterableIterator<SSM.Types.DocumentVersionInfo>
     getDocument(

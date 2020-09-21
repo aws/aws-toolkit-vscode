@@ -6,6 +6,7 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
+import { Window } from '../../shared/vscode/window'
 
 export async function openAndSaveDocument(
     content: string,
@@ -26,4 +27,15 @@ export async function openAndSaveDocument(
 
     // The user didn't save the file, so just open an untitiled file
     return await vscode.workspace.openTextDocument({ content: content, language: language })
+}
+
+export async function showConfirmationMessage(
+    { prompt, confirm, cancel }: { prompt: string; confirm: string; cancel: string },
+    window: Window
+): Promise<boolean> {
+    const confirmItem: vscode.MessageItem = { title: confirm }
+    const cancelItem: vscode.MessageItem = { title: cancel, isCloseAffordance: true }
+
+    const selection = await window.showWarningMessage(prompt, { modal: true }, confirmItem, cancelItem)
+    return selection === confirmItem
 }
