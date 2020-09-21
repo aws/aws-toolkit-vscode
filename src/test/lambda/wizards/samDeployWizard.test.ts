@@ -5,9 +5,17 @@
 
 import * as assert from 'assert'
 import * as path from 'path'
+import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import * as paramUtils from '../../../lambda/utilities/parameterUtils'
-import { ParameterPromptResult, SamDeployWizard, SamDeployWizardContext } from '../../../lambda/wizards/samDeployWizard'
+import * as picker from '../../../shared/ui/picker'
+import {
+    ParameterPromptResult,
+    SamDeployWizard,
+    SamDeployWizardContext,
+    DefaultSamDeployWizardContext,
+} from '../../../lambda/wizards/samDeployWizard'
+import { FakeAwsContext, FakeRegionProvider } from '../../utilities/fakeAwsContext'
 
 interface QuickPickUriResponseItem extends vscode.QuickPickItem {
     uri: vscode.Uri
@@ -537,6 +545,58 @@ describe('SamDeployWizard', async () => {
 
                 await assertValidationFails(parts.join(''))
             })
+        })
+    })
+})
+
+describe('DefaultSamDeployWizardContext', async () => {
+    const context = new DefaultSamDeployWizardContext(new FakeRegionProvider(), new FakeAwsContext())
+    let sandbox: sinon.SinonSandbox
+
+    beforeEach(() => {
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(() => {
+        sandbox.restore()
+    })
+
+    describe('promptUserForS3Bucket', async () => {
+        it('returns an s3 bucket name', async () => {
+            const bucketName = 'strictlyForBuckets'
+            sandbox
+                .stub(picker, 'promptUser')
+                .onFirstCall()
+                .returns(Promise.resolve([{ label: bucketName }]))
+            const output = await context.promptUserForS3Bucket('us-weast-1')
+            assert.strictEqual(output, bucketName)
+        })
+
+        it('returns undefined on receiving undefined from the picker (back button)', async () => {
+            sandbox
+                .stub(picker, 'promptUser')
+                .onFirstCall()
+                .returns(Promise.resolve(undefined))
+            const output = await context.promptUserForS3Bucket('us-weast-1')
+            assert.strictEqual(output, undefined)
+        })
+
+        it('returns undefined if the user selects a no items/error message', async () => {
+            const messages = {
+                noBuckets: "NO! We're out of bear claws",
+                bucketError: 'One box of one dozen, starving, crazed weasels',
+            }
+            sandbox
+                .stub(picker, 'promptUser')
+                .onFirstCall()
+                .returns(Promise.resolve([{ label: messages.noBuckets }]))
+                .onSecondCall()
+                .returns(Promise.resolve([{ label: messages.bucketError }]))
+            const firstOutput = await context.promptUserForS3Bucket('us-weast-1', undefined, messages)
+            assert.strictEqual(firstOutput, undefined)
+
+            const secondOutput = await context.promptUserForS3Bucket('us-weast-1', undefined, messages)
+            assert.strictEqual(secondOutput, undefined)
         })
     })
 })
