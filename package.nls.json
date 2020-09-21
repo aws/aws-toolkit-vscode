@@ -11,7 +11,7 @@
     "Aws.cdk.explorerNode.app.noStacks": "[No stacks in this App]",
     "AWS.channel.aws.toolkit": "AWS Toolkit",
     "AWS.channel.aws.toolkit.activation.error": "Error Activating AWS Toolkit",
-    "AWS.codelens.failToInitialize": "Failed to activate template registry. CodeLenses will appear on SAM template files.",
+    "AWS.codelens.failToInitialize": "Failed to activate template registry. CodeLenses will not appear on SAM template files.",
     "AWS.codelens.lambda.invoke": "Run Locally",
     "AWS.codelens.lambda.invoke.debug": "Debug Locally",
     "AWS.configuration.title": "AWS Configuration",
