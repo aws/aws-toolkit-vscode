@@ -16,7 +16,7 @@ import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
 import { toArrayAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
-import { amazonRegistryName, userRegistryName, sharedRegistryName } from './documentTypeNode'
+import { amazonRegistryName, userRegistryName, sharedRegistryName } from '../util/util'
 import { DocumentItemNode } from './documentItemNode'
 import { DocumentItemNodeWriteable } from './documentItemNodeWriteable'
 
