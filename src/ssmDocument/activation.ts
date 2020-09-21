@@ -37,7 +37,7 @@ async function registerSsmDocumentCommands(
     extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.ssmDocument.createLocalDocument', async () => {
             try {
-                await createSsmDocumentFromTemplate()
+                await createSsmDocumentFromTemplate(extensionContext)
             } finally {
                 telemetry.recordSsmCreateDocument()
             }

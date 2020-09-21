@@ -1,0 +1,44 @@
+# Hello world using Python
+schemaVersion: '0.3'
+description: |-
+    **An example of an Automation document using "`aws:executeScript`" with a Python script.**
+
+    *You can use Markdown to format the description.*
+
+    ---
+    # What is Markdown?
+    Markdown is a lightweight markup language that converts your content with plain text formatting to structurally valid rich text.
+    ## You can add headings
+    You can add *italics* or make the font **bold**.  
+    1. Create numbered lists 
+    * Add bullet points 
+    >Indent `code samples` 
+
+    You can create a [link to another webpage](https://aws.amazon.com/).
+parameters:
+    Name:
+        type: String
+        description: Input name parameter.
+        default: World
+mainSteps:
+    - name: helloWorld
+      action: aws:executeScript
+      description: Executes a Python script
+      inputs:
+          Runtime: python3.7
+          InputPayload:
+              Name: '{{ Name }}'
+          Handler: handler
+          Script: |-
+              def handler(events, context):
+                  input_name = events['Name']
+                  return {
+                      'Message': "Hello " + input_name
+                  }
+      timeoutSeconds: 30
+      outputs:
+          - Name: Message
+            Selector: $.Payload.Message
+            Type: String
+outputs:
+    - helloWorld.Message

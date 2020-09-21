@@ -3,11 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/*!
- *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the MIT License. See License.txt in the project root for license information.
- */
-
 import * as path from 'path'
 import * as nls from 'vscode-nls'
 
@@ -62,9 +57,10 @@ export async function activate(extensionContext: ExtensionContext) {
     const toDispose = extensionContext.subscriptions
 
     // The server is implemented in node
+    // This file is copied by webpack from "aws-ssm-document-language-service" dependency at build time
     const serverModule = extensionContext.asAbsolutePath(path.join('dist/src/ssmDocument/ssm/', 'ssmServer.js'))
-    // The debug options for the server
 
+    // The debug options for the server
     const debuggerPort = await getLanguageServerDebuggerPort(extensionContext)
     // --inspect=${port}: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
     const debugOptions = { execArgv: ['--nolazy', `--inspect=${debuggerPort}`] }
