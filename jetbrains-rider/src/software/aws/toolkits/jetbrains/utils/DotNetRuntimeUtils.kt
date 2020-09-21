@@ -13,20 +13,20 @@ object DotNetRuntimeUtils {
 
     private val logger = getLogger<DotNetRuntimeUtils>()
 
-    val DEFAULT_DOTNET_CORE_RUNTIME: Runtime = Runtime.DOTNETCORE2_1
+    val defaultDotNetCoreRuntime: Runtime = Runtime.DOTNETCORE2_1
 
     /**
      * Get information about current .NET runtime
      *
      * @return the [software.amazon.awssdk.services.lambda.model.Runtime] instance of current available runtime or
-     *         [DEFAULT_DOTNET_CORE_RUNTIME] value if not defined.
+     *         defaultDotnetCoreRuntime value if not defined.
      */
     fun getCurrentDotNetCoreRuntime(): Runtime {
         val runtimeList = try {
             java.lang.Runtime.getRuntime().exec("dotnet --list-runtimes").inputStream.bufferedReader().readLines()
         } catch (e: IOException) {
             logger.warn { "Error getting current runtime version: $e" }
-            return DEFAULT_DOTNET_CORE_RUNTIME
+            return defaultDotNetCoreRuntime
         }
 
         val versionRegex = Regex("(\\d+.\\d+.\\d+)")
@@ -38,10 +38,10 @@ object DotNetRuntimeUtils {
             }
             .filterNotNull()
 
-        val version = versions.maxBy { it } ?: return DEFAULT_DOTNET_CORE_RUNTIME
+        val version = versions.maxBy { it } ?: return defaultDotNetCoreRuntime
 
         return Runtime.fromValue("dotnetcore${version.split('.').take(2).joinToString(".")}").validOrNull
-            ?: DEFAULT_DOTNET_CORE_RUNTIME
+            ?: defaultDotNetCoreRuntime
     }
 
     const val RUNTIME_CONFIG_JSON_21 =
