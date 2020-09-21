@@ -11,6 +11,7 @@ const path = require('path')
 const webpack = require('webpack')
 const fs = require('fs')
 const TerserPlugin = require('terser-webpack-plugin')
+const CopyPlugin = require('copy-webpack-plugin')
 const FileManagerPlugin = require('filemanager-webpack-plugin')
 const { NLSBundlePlugin } = require('vscode-nls-dev/lib/webpack-bundler')
 const CircularDependencyPlugin = require('circular-dependency-plugin')
@@ -87,8 +88,8 @@ const config = {
                         destination: path.resolve(__dirname, 'dist/src/stepFunctions/asl/aslServer.js'),
                     },
                     {
-                        source: path.resolve(__dirname, 'dist/aslServer.js.LICENSE'),
-                        destination: path.resolve(__dirname, 'dist/src/stepFunctions/asl/aslServer.js.LICENSE'),
+                        source: path.resolve(__dirname, 'dist/aslServer.js.LICENSE.txt'),
+                        destination: path.resolve(__dirname, 'dist/src/stepFunctions/asl/aslServer.js.LICENSE.txt'),
                     },
                     {
                         source: path.resolve(__dirname, 'dist/aslServer.js.map'),
@@ -96,6 +97,25 @@ const config = {
                     },
                 ],
             },
+        }),
+        new CopyPlugin({
+            patterns: [
+                {
+                    from: path.resolve(__dirname, 'node_modules/aws-ssm-document-language-service/dist/server.js'),
+                    to: path.resolve(__dirname, 'dist/src/ssmDocument/ssm/ssmServer.js'),
+                },
+                {
+                    from: path.resolve(
+                        __dirname,
+                        'node_modules/aws-ssm-document-language-service/dist/server.js.LICENSE.txt'
+                    ),
+                    to: path.resolve(__dirname, 'dist/src/ssmDocument/ssm/ssmServer.js.LICENSE.txt'),
+                },
+                {
+                    from: path.resolve(__dirname, 'node_modules/aws-ssm-document-language-service/dist/server.js.map'),
+                    to: path.resolve(__dirname, 'dist/src/ssmDocument/ssm/ssmServer.js.map'),
+                },
+            ],
         }),
         new CircularDependencyPlugin({
             exclude: /node_modules/,

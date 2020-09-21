@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { activate as activateDecor } from './ssm/ssmDecoration'
 import { activate as activateSSMLanguageServer } from './ssm/ssmClient'
 import { AwsContext } from '../shared/awsContext'
 
@@ -27,7 +26,6 @@ export async function activate(
 ): Promise<void> {
     await registerSsmDocumentCommands(extensionContext, awsContext, regionProvider, outputChannel)
     await activateSSMLanguageServer(extensionContext)
-    activateDecor(extensionContext)
 }
 
 async function registerSsmDocumentCommands(

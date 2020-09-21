@@ -27,8 +27,6 @@ import {
     TransportKind,
 } from 'vscode-languageclient'
 
-import { Settings } from './ssmServer'
-
 namespace ResultLimitReachedNotification {
     export const type: NotificationType<string, any> = new NotificationType('ssm/resultLimitReached')
 }
@@ -128,7 +126,7 @@ export async function activate(extensionContext: ExtensionContext) {
     })
 }
 
-function getSettings(): Settings {
+function getSettings() {
     const resultLimit: number =
         Math.trunc(Math.max(0, Number(workspace.getConfiguration().get('aws.ssmDocument.ssm.maxItemsComputed')))) ||
         5000

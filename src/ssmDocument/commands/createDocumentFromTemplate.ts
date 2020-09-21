@@ -12,8 +12,6 @@ import { getLogger, Logger } from '../../shared/logger'
 import * as picker from '../../shared/ui/picker'
 import { openAndSaveDocument } from '../util/util'
 
-import { getDocumentTemplate } from 'aws-ssm-document-language-service'
-
 export interface SsmDocumentTemplateQuickPickItem {
     label: string
     description: string
@@ -87,7 +85,7 @@ export async function createSsmDocumentFromTemplate(): Promise<void> {
 }
 
 async function openTextDocumentFromSelection(item: SsmDocumentTemplateQuickPickItem): Promise<vscode.TextDocument> {
-    const template: object = getDocumentTemplate(item.docType)
+    const template: object = {} //TODO: load template from filesystem
     let content: string
     if (item.language === 'ssm-yaml') {
         content = YAML.stringify(template)
