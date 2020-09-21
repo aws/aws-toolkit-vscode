@@ -145,6 +145,9 @@
     "AWS.command.saveCurrentLogStreamContent.logfile": "Log File",
     "AWS.command.saveCurrentLogStreamContent.error": "Error saving current log to {0}: {1}",
     "AWS.command.viewLogStream": "View Log Stream...",
+    "AWS.command.ssmDocument.createLocalDocument": "Create a new SSM Document locally",
+    "AWS.command.ssmDocument.openLocalDocument": "Open a SSM Document locally",
+    "AWS.command.ssmDocument.publishDocument": "Publish a SSM Document",
     "AWS.stepFunctions.graph.titlePrefix": "Graph: {0}",
     "AWS.credentials.statusbar.no.credentials": "(not connected)",
     "AWS.credentials.statusbar.text": "AWS: {0}",
@@ -453,6 +456,7 @@
     "AWS.template.error.showErrorDetails.title": "Error details for",
     "AWS.template.error.showErrorDetails.errorCode": "Error code",
     "AWS.template.error.showErrorDetails.errorMessage": "Error message",
+    "AWS.ssmDocument.ssm.maxItemsComputed.desc": "Controls the maximum number of problems produced by the SSM Document language server.",
     "AWS.picker.dynamic.noItemsFound.detail": "Click here to go back",
     "AWS.picker.dynamic.noItemsFound.label": "[No items found]",
     "AWS.picker.dynamic.errorNode.label": "There was an error retrieving more items."

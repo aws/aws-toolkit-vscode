@@ -5,3 +5,4 @@ third-party
 **/*.gen.ts
 **/*.d.ts
 test-scripts
+aws-ssm-document-language-service

@@ -1,4 +1,12 @@
 {
+    "types": [
+        {
+            "name": "ssmOperation",
+            "type": "string",
+            "allowedValues": ["Create", "Update"],
+            "description": "SSM Publish Document operation type"
+        }
+    ],
     "metrics": [
         {
             "name": "stepfunctions_previewstatemachine",
@@ -29,6 +37,33 @@
             "metadata": [
                 {
                     "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "ssm_createDocument",
+            "description": "An SSM Document is created locally"
+        },
+        {
+            "name": "ssm_openDocument",
+            "description": "An SSM Document is opened locally",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "ssm_publishDocument",
+            "description": "SSM Document related metrics for create and update",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "ssmOperation"
                 }
             ]
         }
