@@ -115,7 +115,7 @@ export async function createDocument(
             DocumentFormat: textDocument.languageId === ssmYaml ? 'YAML' : 'JSON',
         }
 
-        const result = await client.createDocument(request)
+        const createResult = await client.createDocument(request)
         outputChannel.appendLine(
             localize(
                 'AWS.message.info.ssmDocument.publishDocument.createSuccess',
@@ -123,10 +123,10 @@ export async function createDocument(
                 wizardResponse.name
             )
         )
-        if (result.DocumentDescription) {
-            outputChannel.appendLine(stringify(result.DocumentDescription))
+        if (createResult.DocumentDescription) {
+            outputChannel.appendLine(stringify(createResult.DocumentDescription))
         }
-        logger.info(`Created SSM Document successfully ${stringify(result.DocumentDescription)}`)
+        logger.info(`Created SSM Document successfully ${stringify(createResult.DocumentDescription)}`)
         vscode.window.showInformationMessage(`Created SSM Document successfully`)
         outputChannel.appendLine('')
     } catch (err) {
@@ -178,7 +178,7 @@ export async function updateDocument(
             DocumentFormat: textDocument.languageId === ssmYaml ? 'YAML' : 'JSON',
         }
 
-        const result = await client.updateDocument(request)
+        const updateResult = await client.updateDocument(request)
         outputChannel.appendLine(
             localize(
                 'AWS.message.info.ssmDocument.publishDocument.updateSuccess',
@@ -186,10 +186,10 @@ export async function updateDocument(
                 wizardResponse.name
             )
         )
-        if (result.DocumentDescription) {
-            outputChannel.appendLine(stringify(result.DocumentDescription))
+        if (updateResult.DocumentDescription) {
+            outputChannel.appendLine(stringify(updateResult.DocumentDescription))
         }
-        logger.info(`Updated SSM Document successfully ${stringify(result.DocumentDescription)}`)
+        logger.info(`Updated SSM Document successfully ${stringify(updateResult.DocumentDescription)}`)
         vscode.window.showInformationMessage(`Updated SSM Document successfully`)
         outputChannel.appendLine('')
     } catch (err) {
