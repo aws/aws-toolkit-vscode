@@ -18,4 +18,8 @@ export interface SsmDocumentClient {
     ): Promise<SSM.Types.GetDocumentResult>
     createDocument(request: SSM.Types.CreateDocumentRequest): Promise<SSM.Types.CreateDocumentResult>
     updateDocument(request: SSM.Types.UpdateDocumentRequest): Promise<SSM.Types.UpdateDocumentResult>
+    updateDocumentVersion(
+        documentName: string,
+        documentVersion: string
+    ): Promise<SSM.Types.UpdateDocumentDefaultVersionResult>
 }

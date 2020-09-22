@@ -23,6 +23,8 @@ import {
 } from '../wizards/publishDocumentWizard'
 import { stringify } from 'querystring'
 import * as telemetry from '../../shared/telemetry/telemetry'
+import { Window } from '../../shared/vscode/window'
+import { showConfirmationMessage } from '../util/util'
 
 const DEFAULT_REGION: string = 'us-east-1'
 
@@ -192,6 +194,38 @@ export async function updateDocument(
         logger.info(`Updated Systems Manager Document successfully ${stringify(result.DocumentDescription)}`)
         vscode.window.showInformationMessage(`Updated Systems Manager Document successfully`)
         outputChannel.appendLine('')
+
+        const isConfirmed = await showConfirmationMessage(
+            {
+                prompt: localize(
+                    'AWS.ssmDocument.publishDocument.updateVersion.prompt',
+                    'Would you like to make this the default version for {0}?',
+                    wizardResponse.name
+                ),
+                confirm: localize('AWS.ssmDocument.publishDocument.updateVersion.confirm', 'Yes'),
+                cancel: localize('AWS.ssmDocument.publishDocument.updateVersion.cancel', 'No'),
+            },
+            Window.vscode()
+        )
+
+        if (!isConfirmed) {
+            logger.info('Declined update default version on update document success.')
+        } else {
+            try {
+                let documentVersion: string | undefined = result.DocumentDescription?.DocumentVersion
+                if (documentVersion !== undefined) {
+                    await client.updateDocumentVersion(wizardResponse.name, documentVersion)
+                    vscode.window.showInformationMessage(
+                        `Updated Systems Manager Document default version successfully`
+                    )
+                }
+            } catch (err) {
+                logger.info(
+                    `Failed to update Systems Manager Document '${wizardResponse.name}' default version. %0`,
+                    err as Error
+                )
+            }
+        }
     } catch (err) {
         logger.info(`Failed to update Systems Manager Document '${wizardResponse.name}'. %0`, err as Error)
         result = 'Failed'

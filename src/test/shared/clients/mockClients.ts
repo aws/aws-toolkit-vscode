@@ -341,6 +341,48 @@ export class MockStsClient implements StsClient {
     }
 }
 
+export class MockSsmDocumentClient implements SsmDocumentClient {
+    public constructor(
+        public readonly regionCode: string = '',
+
+        public readonly deleteDocument: (documentName: string) => Promise<SSM.Types.DeleteDocumentResult> = async (
+            documentName: string
+        ) => ({} as SSM.Types.DeleteDocumentResult),
+
+        public readonly listDocuments: () => AsyncIterableIterator<SSM.DocumentIdentifier> = () => asyncGenerator([]),
+
+        public readonly listDocumentVersions: (
+            documentName: string
+        ) => AsyncIterableIterator<SSM.Types.DocumentVersionInfo> = (documentName: string) => asyncGenerator([]),
+
+        public readonly getDocument: (
+            documentName: string,
+            documentVersion?: string
+        ) => Promise<SSM.Types.GetDocumentResult> = async (documentName: string, documentVersion?: string) =>
+            ({
+                Name: '',
+                DocumentType: '',
+                Content: '',
+                DocumentFormat: '',
+            } as SSM.Types.GetDocumentResult),
+
+        public readonly createDocument: (
+            request: SSM.Types.CreateDocumentRequest
+        ) => Promise<SSM.Types.CreateDocumentResult> = async (request: SSM.Types.CreateDocumentRequest) => ({}),
+
+        public readonly updateDocument: (
+            request: SSM.Types.UpdateDocumentRequest
+        ) => Promise<SSM.Types.UpdateDocumentResult> = async (request: SSM.Types.UpdateDocumentRequest) => ({}),
+
+        public readonly updateDocumentVersion: (
+            documentName: string,
+            documentVersion: string
+        ) => Promise<SSM.Types.UpdateDocumentDefaultVersionResult> = async (
+            documentName: string,
+            documentVersion: string
+        ) => ({})
+    ) {}
+}
 export class MockS3Client implements S3Client {
     public readonly regionCode: string
 

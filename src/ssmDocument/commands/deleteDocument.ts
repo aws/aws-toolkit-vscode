@@ -36,7 +36,7 @@ export async function deleteDocument(
         window
     )
     if (!isConfirmed) {
-        getLogger().info('DeleteDocument cancelled')
+        logger.info('DeleteDocument cancelled')
         telemetry.recordSsmDeleteDocument({ result: 'Cancelled' })
         return
     }

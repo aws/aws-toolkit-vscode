@@ -8,62 +8,58 @@ const localize = nls.loadMessageBundle()
 
 import { SSM } from 'aws-sdk'
 import * as vscode from 'vscode'
-import { DocumentItemNode } from '../explorer/documentItemNode'
 import { AwsContext } from '../../shared/awsContext'
 import { getLogger, Logger } from '../../shared/logger'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import * as picker from '../../shared/ui/picker'
-import { promptUserForDocumentFormat } from '../util/util'
+import { DocumentItemNodeWriteable } from '../explorer/documentItemNodeWriteable'
 
-export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsContext, format?: string) {
+export async function updateDocumentVersion(node: DocumentItemNodeWriteable, awsContext: AwsContext, format?: string) {
     const logger: Logger = getLogger()
 
     let result: telemetry.Result = 'Succeeded'
 
-    let documentVersion: string | undefined = undefined
-    let documentFormat: string | undefined = undefined
-
-    if (node.documentOwner === awsContext.getCredentialAccountId()) {
-        const versions = await node.listSchemaVersion()
-        documentVersion = await promptUserforDocumentVersion(versions)
-    }
-
     // Currently only JSON/YAML formats are supported
-    if (!format) {
-        documentFormat = await promptUserForDocumentFormat(['JSON', 'YAML'])
-    } else {
-        documentFormat = format
-    }
-
     try {
-        const rawContent = await node.getDocumentContent(documentVersion, documentFormat)
-        const textDocument = await vscode.workspace.openTextDocument({
-            content: rawContent.Content,
-            language: `ssm-${rawContent.DocumentFormat!.toLowerCase()}`,
-        })
-        vscode.window.showTextDocument(textDocument)
+        if (node.documentOwner === awsContext.getCredentialAccountId()) {
+            const versions = await node.listSchemaVersion()
+            let documentVersion: string | undefined = await promptUserforDocumentVersion(versions)
+            if (!documentVersion) {
+                result = 'Cancelled'
+            } else {
+                await node.updateDocumentVersion(documentVersion)
+                vscode.window.showInformationMessage(
+                    localize(
+                        'AWS.message.info.ssmDocument.updateDocumentVersion.success',
+                        'Updated document {0} default version successfully',
+                        node.documentName
+                    )
+                )
+            }
+        } else {
+            result = 'Failed'
+            vscode.window.showErrorMessage(
+                localize(
+                    'AWS.message.error.ssmDocument.updateDocumentVersion.does_not_own',
+                    'Could not update document {0} default version. The current account does not have ownership of this document.',
+                    node.documentName
+                )
+            )
+        }
     } catch (err) {
         result = 'Failed'
         const error = err as Error
         vscode.window.showErrorMessage(
             localize(
-                'AWS.message.error.ssmDocument.openDocument.could_not_open',
-                'Could not fetch and display document {0} contents. Please check logs for more details.',
+                'AWS.message.error.ssmDocument.updateDocumentVersion.could_not_update_version',
+                'Could not update document {0} default version. Please check logs for more details.',
                 node.documentName
             )
         )
-        logger.error('Error on opening document: %0', error)
+        logger.error('Error on updating document version: %0', error)
     } finally {
-        telemetry.recordSsmOpenDocument({ result: result })
+        telemetry.recordSsmUpdateDocumentVersion({ result: result })
     }
-}
-
-export async function openDocumentItemJson(node: DocumentItemNode, awsContext: AwsContext) {
-    openDocumentItem(node, awsContext, 'JSON')
-}
-
-export async function openDocumentItemYaml(node: DocumentItemNode, awsContext: AwsContext) {
-    openDocumentItem(node, awsContext, 'YAML')
 }
 
 async function promptUserforDocumentVersion(versions: SSM.Types.DocumentVersionInfo[]): Promise<string | undefined> {
@@ -98,5 +94,13 @@ async function promptUserforDocumentVersion(versions: SSM.Types.DocumentVersionI
 
         // User pressed escape and didn't select a template
         return versionSelection?.label
+    } else {
+        vscode.window.showErrorMessage(
+            localize(
+                'AWS.message.error.ssmDocument.updateDocumentVersion.no_other_versions',
+                'Selected document only has one version. Unable to change default version.'
+            )
+        )
+        return undefined
     }
 }

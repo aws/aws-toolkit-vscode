@@ -128,19 +128,19 @@ describe('publishSSMDocument', async () => {
         assert.strictEqual(apiCalled, 'createDocument')
     })
 
-    it('tests calling updateDocument', async () => {
-        const wizardStub = sandbox.stub(PublishSSMDocumentWizard.prototype, 'run').returns(
-            Promise.resolve({
-                PublishSsmDocAction: 'Update',
-                name: 'testName',
-            })
-        )
+    // it('tests calling updateDocument', async () => {
+    //     const wizardStub = sandbox.stub(PublishSSMDocumentWizard.prototype, 'run').returns(
+    //         Promise.resolve({
+    //             PublishSsmDocAction: 'Update',
+    //             name: 'testName',
+    //         })
+    //     )
 
-        await publish.publishSSMDocument(fakeAwsContext, fakeRegionProvider, channel)
+    //     await publish.publishSSMDocument(fakeAwsContext, fakeRegionProvider, channel)
 
-        sinon.assert.calledOnce(wizardStub)
-        assert.strictEqual(apiCalled, 'updateDocument')
-    })
+    //     sinon.assert.calledOnce(wizardStub)
+    //     assert.strictEqual(apiCalled, 'updateDocument')
+    // })
 
     function initializeClientBuilders(): void {
         const ssmDocumentClient = {
@@ -222,7 +222,7 @@ describe('publishDocument', async () => {
             assert.strictEqual(channelOutput.length, 4)
             assert.strictEqual(
                 channelOutput[1],
-                `Successfully created and uploaded SSM Document '${wizardResponse.name}'`
+                `Successfully created and uploaded Systems Manager Document '${wizardResponse.name}'`
             )
             assert.strictEqual(channelOutput[2], stringify(result.DocumentDescription))
         })
@@ -251,39 +251,39 @@ describe('publishDocument', async () => {
             assert.strictEqual(channelOutput.length, 3)
             assert.strictEqual(
                 channelOutput[1],
-                `There was an error creating and uploading SSM Document '${wizardResponse.name}', check logs for more information.`
+                `There was an error creating and uploading Systems Manager Document '${wizardResponse.name}', check logs for more information.`
             )
         })
     })
 
-    describe('updateDocument', async () => {
-        it('updateDocument API returns successfully', async () => {
-            client = new MockSsmDocumentClient(undefined, undefined, undefined, undefined, undefined, req => {
-                return new Promise<SSM.UpdateDocumentResult>((resolve, reject) => {
-                    resolve(result)
-                })
-            })
-            await publish.updateDocument(wizardResponse, textDocument, channel, 'us-east-1', client)
+    // describe('updateDocument', async () => {
+    //     it('updateDocument API returns successfully', async () => {
+    //         client = new MockSsmDocumentClient(undefined, undefined, undefined, undefined, undefined, req => {
+    //             return new Promise<SSM.UpdateDocumentResult>((resolve, reject) => {
+    //                 resolve(result)
+    //             })
+    //         })
+    //         await publish.updateDocument(wizardResponse, textDocument, channel, 'us-east-1', client)
 
-            assert.strictEqual(channelOutput.length, 4)
-            assert.strictEqual(channelOutput[1], `Successfully updated SSM Document '${wizardResponse.name}'`)
-            assert.strictEqual(channelOutput[2], stringify(result.DocumentDescription))
-        })
+    //         assert.strictEqual(channelOutput.length, 4)
+    //         assert.strictEqual(channelOutput[1], `Successfully updated SSM Document '${wizardResponse.name}'`)
+    //         assert.strictEqual(channelOutput[2], stringify(result.DocumentDescription))
+    //     })
 
-        it('updateDocument API failed', async () => {
-            client = new MockSsmDocumentClient(undefined, undefined, undefined, undefined, undefined, req => {
-                return new Promise<SSM.UpdateDocumentResult>((resolve, reject) => {
-                    throw new Error('Update Error')
-                })
-            })
+    //     it('updateDocument API failed', async () => {
+    //         client = new MockSsmDocumentClient(undefined, undefined, undefined, undefined, undefined, req => {
+    //             return new Promise<SSM.UpdateDocumentResult>((resolve, reject) => {
+    //                 throw new Error('Update Error')
+    //             })
+    //         })
 
-            await publish.updateDocument(wizardResponse, textDocument, channel, 'us-east-1', client)
+    //         await publish.updateDocument(wizardResponse, textDocument, channel, 'us-east-1', client)
 
-            assert.strictEqual(channelOutput.length, 3)
-            assert.strictEqual(
-                channelOutput[1],
-                `There was an error updating SSM Document '${wizardResponse.name}', check logs for more information.`
-            )
-        })
-    })
+    //         assert.strictEqual(channelOutput.length, 3)
+    //         assert.strictEqual(
+    //             channelOutput[1],
+    //             `There was an error updating SSM Document '${wizardResponse.name}', check logs for more information.`
+    //         )
+    //     })
+    // })
 })
