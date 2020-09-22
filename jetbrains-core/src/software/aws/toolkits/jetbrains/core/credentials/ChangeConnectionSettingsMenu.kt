@@ -25,6 +25,7 @@ import software.aws.toolkits.jetbrains.core.credentials.ChangeAccountSettingsMod
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.utils.actions.ComputableActionGroup
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.AwsTelemetry
 import javax.swing.JComponent
 
 class ChangeAccountSettingsActionGroup(project: Project, private val mode: ChangeAccountSettingsMode) : ComputableActionGroup(), DumbAware {
@@ -158,7 +159,19 @@ internal class ChangeRegionAction(private val region: AwsRegion) : ToggleAction(
 
     override fun setSelected(e: AnActionEvent, state: Boolean) {
         if (state) {
+            val oldRegion = getAccountSetting(e).selectedRegion
+
             getAccountSetting(e).changeRegion(region)
+
+            if (oldRegion?.partitionId != region.partitionId) {
+                AwsTelemetry.setPartition(
+                    partitionid = region.partitionId
+                )
+            }
+
+            AwsTelemetry.setRegion(
+                regionid = region.id
+            )
         }
     }
 }
