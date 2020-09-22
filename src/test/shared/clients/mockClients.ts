@@ -378,7 +378,15 @@ export class MockSsmDocumentClient implements SsmDocumentClient {
 
         public readonly updateDocument: (
             request: SSM.Types.UpdateDocumentRequest
-        ) => Promise<SSM.Types.UpdateDocumentResult> = async (request: SSM.Types.UpdateDocumentRequest) => ({})
+        ) => Promise<SSM.Types.UpdateDocumentResult> = async (request: SSM.Types.UpdateDocumentRequest) => ({}),
+
+        public readonly updateDocumentVersion: (
+            documentName: string,
+            documentVersion: string
+        ) => Promise<SSM.Types.UpdateDocumentDefaultVersionResult> = async (
+            documentName: string,
+            documentVersion: string
+        ) => ({})
     ) {}
 }
 export class MockS3Client implements S3Client {

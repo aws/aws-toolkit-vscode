@@ -19,11 +19,21 @@ export class DocumentItemNodeWriteable extends DocumentItemNode {
         this.contextValue = 'awsDocumentItemNodeWriteable'
         this.parent = parent
     }
+
     public async deleteDocument(): Promise<SSM.Types.DeleteDocumentResult> {
         if (!this.documentName || !this.documentName.length) {
             return Promise.resolve({})
         }
 
         return await this.client.deleteDocument(this.documentName)
+    }
+
+    public async updateDocumentVersion(
+        documentVersion?: string
+    ): Promise<SSM.Types.UpdateDocumentDefaultVersionResult> {
+        if (!documentVersion || !documentVersion.length) {
+            return Promise.resolve({})
+        }
+        return await this.client.updateDocumentVersion(this.documentName, documentVersion)
     }
 }

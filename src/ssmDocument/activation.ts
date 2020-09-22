@@ -16,6 +16,7 @@ import { DocumentItemNode } from './explorer/documentItemNode'
 import { deleteDocument } from './commands/deleteDocument'
 import { DocumentItemNodeWriteable } from './explorer/documentItemNodeWriteable'
 import { executeDocument } from './commands/executeDocument'
+import { updateDocumentVersion } from './commands/updateDocumentVersion'
 
 // Activate SSM Document related functionality for the extension.
 export async function activate(
@@ -51,7 +52,7 @@ async function registerSsmDocumentCommands(
     )
 
     extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.ssmDocument.executeDocument', async (node: DocumentItemNodeWriteable) => {
+        vscode.commands.registerCommand('aws.ssmDocument.executeDocument', async (node: DocumentItemNode) => {
             await executeDocument(node)
         })
     )
@@ -78,5 +79,14 @@ async function registerSsmDocumentCommands(
         vscode.commands.registerCommand('aws.ssmDocument.publishDocument', async () => {
             await publishSSMDocument(awsContext, regionProvider, outputChannel)
         })
+    )
+
+    extensionContext.subscriptions.push(
+        vscode.commands.registerCommand(
+            'aws.ssmDocument.updateDocumentVersion',
+            async (node: DocumentItemNodeWriteable) => {
+                await updateDocumentVersion(node, awsContext)
+            }
+        )
     )
 }

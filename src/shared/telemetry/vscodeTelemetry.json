@@ -86,6 +86,16 @@
                     "type": "ssmOperation"
                 }
             ]
+        },
+        {
+            "name": "ssm_updateDocumentVersion",
+            "description": "SSM Document related metrics for updating document default version",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
         }
     ]
 }

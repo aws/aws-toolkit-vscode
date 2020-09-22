@@ -61,12 +61,13 @@
         "onLanguage:ssm-json",
         "onLanguage:ssm-yaml",
         "onCommand:aws.ssmDocument.createLocalDocument",
-        "onCommand:aws.ssmDocument.deleteDocument",
-        "onCommand:aws.ssmDocument.executeDocument",
         "onCommand:aws.ssmDocument.openLocalDocument",
         "onCommand:aws.ssmDocument.openLocalDocumentJson",
         "onCommand:aws.ssmDocument.openLocalDocumentYaml",
+        "onCommand:aws.ssmDocument.executeDocument",
+        "onCommand:aws.ssmDocument.deleteDocument",
         "onCommand:aws.ssmDocument.publishDocument",
+        "onCommand:aws.ssmDocument.updateDocumentVersion",
         "onLanguage:javascript",
         "onLanguage:python",
         "onLanguage:csharp",
@@ -491,14 +492,6 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.ssmDocument.deleteDocument",
-                    "when": "false"
-                },
-                {
-                    "command": "aws.ssmDocument.executeDocument",
-                    "when": "false"
-                },
-                {
                     "command": "aws.ssmDocument.openLocalDocument",
                     "when": "false"
                 },
@@ -508,6 +501,18 @@
                 },
                 {
                     "command": "aws.ssmDocument.openLocalDocumentYaml",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.ssmDocument.executeDocument",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.ssmDocument.deleteDocument",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.ssmDocument.updateDocumentVersion",
                     "when": "false"
                 },
                 {
@@ -808,16 +813,6 @@
                     "when": "view == aws.explorer && viewItem == awsCloudWatchLogNode"
                 },
                 {
-                    "command": "aws.ssmDocument.deleteDocument",
-                    "group": "0@1",
-                    "when": "view == aws.explorer && viewItem == awsDocumentItemNodeWriteable"
-                },
-                {
-                    "command": "aws.ssmDocument.executeDocument",
-                    "group": "0@1",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsDocumentItemNode|awsDocumentItemNodeWriteable)$/"
-                },
-                {
                     "command": "aws.ssmDocument.openLocalDocumentJson",
                     "group": "0@1",
                     "when": "view == aws.explorer && viewItem =~ /^(awsDocumentItemNode|awsDocumentItemNodeWriteable)$/"
@@ -826,6 +821,21 @@
                     "command": "aws.ssmDocument.openLocalDocumentYaml",
                     "group": "0@1",
                     "when": "view == aws.explorer && viewItem =~ /^(awsDocumentItemNode|awsDocumentItemNodeWriteable)$/"
+                },
+                {
+                    "command": "aws.ssmDocument.executeDocument",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsDocumentItemNode|awsDocumentItemNodeWriteable)$/"
+                },
+                {
+                    "command": "aws.ssmDocument.deleteDocument",
+                    "group": "1@1",
+                    "when": "view == aws.explorer && viewItem == awsDocumentItemNodeWriteable"
+                },
+                {
+                    "command": "aws.ssmDocument.updateDocumentVersion",
+                    "group": "1@1",
+                    "when": "view == aws.explorer && viewItem == awsDocumentItemNodeWriteable"
                 }
             ]
         },
@@ -1086,16 +1096,6 @@
                 "category": "AWS"
             },
             {
-                "command": "aws.ssmDocument.deleteDocument",
-                "title": "%AWS.command.ssmDocument.deleteDocument%",
-                "category": "AWS"
-            },
-            {
-                "command": "aws.ssmDocument.executeDocument",
-                "title": "%AWS.command.ssmDocument.executeDocument%",
-                "category": "AWS"
-            },
-            {
                 "command": "aws.ssmDocument.openLocalDocument",
                 "title": "%AWS.command.ssmDocument.openLocalDocument%",
                 "category": "AWS",
@@ -1112,10 +1112,25 @@
                 "category": "AWS"
             },
             {
+                "command": "aws.ssmDocument.executeDocument",
+                "title": "%AWS.command.ssmDocument.executeDocument%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.ssmDocument.deleteDocument",
+                "title": "%AWS.command.ssmDocument.deleteDocument%",
+                "category": "AWS"
+            },
+            {
                 "command": "aws.ssmDocument.publishDocument",
                 "title": "%AWS.command.ssmDocument.publishDocument%",
                 "category": "AWS",
                 "icon": "$(cloud-upload)"
+            },
+            {
+                "command": "aws.ssmDocument.updateDocumentVersion",
+                "title": "%AWS.command.ssmDocument.updateDocumentVersion%",
+                "category": "AWS"
             },
             {
                 "command": "aws.copyLogStreamName",

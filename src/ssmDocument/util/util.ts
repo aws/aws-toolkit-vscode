@@ -15,7 +15,7 @@ export async function promptUserForDocumentFormat(formats: string[]): Promise<st
     const quickPickItems: vscode.QuickPickItem[] = formats.map(format => {
         return {
             label: format,
-            description: `Open document with format ${format}`,
+            description: `Download document as ${format}`,
         }
     })
 

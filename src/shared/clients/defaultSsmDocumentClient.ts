@@ -84,6 +84,17 @@ export class DefaultSsmDocumentClient implements SsmDocumentClient {
         return await client.updateDocument(request).promise()
     }
 
+    public async updateDocumentVersion(documentName: string, documentVersion: string) {
+        const client = await this.createSdkClient()
+
+        const request: SSM.Types.UpdateDocumentDefaultVersionRequest = {
+            Name: documentName,
+            DocumentVersion: documentVersion,
+        }
+
+        return await client.updateDocumentDefaultVersion(request).promise()
+    }
+
     private async createSdkClient(): Promise<SSM> {
         return await ext.sdkClientBuilder.createAndConfigureServiceClient(
             options => new SSM(options),
