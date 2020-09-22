@@ -29,13 +29,11 @@ import software.aws.toolkits.telemetry.S3Telemetry
 import java.nio.file.Path
 import java.nio.file.Paths
 
-// TODO: Cant replace the file chooser service until newer IDE version, switch to ServiceContainerUtil to use a fake file chooser instead of
-// fileDownloadBackDoor example:
-// https://github.com/JetBrains/intellij-community/blob/54e4a2ad3b73973b3123c87d48749cc0ff36c4cd/platform/external-system-impl/testSrc/com/intellij/openapi/externalSystem/importing/ExternalSystemSetupProjectTestCase.kt#L102 FIX_WHEN_MIN_IS_193
-class DownloadObjectAction @JvmOverloads constructor(private val project: Project, treeTable: S3TreeTable, private val fileDownloadBackDoor: Path? = null) :
+class DownloadObjectAction constructor(private val project: Project, treeTable: S3TreeTable) :
     S3ObjectAction(treeTable, message("s3.download.object.action"), AllIcons.Actions.Download) {
 
     private data class DownloadInfo(val s3Object: String, val diskLocation: Path)
+
     enum class ConflictResolution(val message: String) {
         SKIP(message("s3.download.object.conflict.skip")),
         OVERWRITE(message("s3.download.object.conflict.overwrite")),
@@ -96,10 +94,6 @@ class DownloadObjectAction @JvmOverloads constructor(private val project: Projec
     }
 
     private fun getDownloadLocation(foldersOnly: Boolean): Path? {
-        fileDownloadBackDoor?.let {
-            return it
-        }
-
         val baseDir = VfsUtil.getUserHomeDir()
 
         val descriptor = if (foldersOnly) {
