@@ -8,6 +8,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.ui.TestDialog
+import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ProjectRule
 import com.intellij.util.io.createFile
 import com.nhaarman.mockitokotlin2.any
@@ -32,6 +33,7 @@ import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeObjectNode
 import software.aws.toolkits.jetbrains.services.s3.editor.S3TreeTable
 import software.aws.toolkits.jetbrains.services.s3.editor.S3VirtualBucket
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction.ConflictResolution
+import software.aws.toolkits.jetbrains.utils.createMockFileChooser
 import java.io.ByteArrayInputStream
 import java.time.Instant
 import java.util.concurrent.CountDownLatch
@@ -50,6 +52,10 @@ class DownloadObjectActionTest {
     @JvmField
     val mockClientManager = MockClientManagerRule(projectRule)
 
+    @Rule
+    @JvmField
+    val testDisposable = DisposableRule()
+
     @After
     fun tearDown() {
         Messages.setTestDialog(TestDialog.DEFAULT)
@@ -57,12 +63,14 @@ class DownloadObjectActionTest {
 
     @Test
     fun downloadSingleFileToFile() {
-        val destinationFile = tempFolder.newFile()
+        val destinationFile = tempFolder.newFile().toPath()
+
+        createMockFileChooser(testDisposable.disposable, destinationFile)
 
         val (s3Client, countDownLatch) = setUpS3Mock(1)
         val s3TreeTable = setUpS3TreeTable(s3Client, "testFile-1")
 
-        val action = DownloadObjectAction(projectRule.project, s3TreeTable, destinationFile.toPath())
+        val action = DownloadObjectAction(projectRule.project, s3TreeTable)
         action.actionPerformed(AnActionEvent.createFromDataContext(ActionPlaces.UNKNOWN, null, DataContext.EMPTY_CONTEXT))
 
         assertThat(countDownLatch.await(5, TimeUnit.SECONDS)).isTrue()
@@ -74,10 +82,12 @@ class DownloadObjectActionTest {
     fun downloadSingleFileToFolder() {
         val destinationFolder = tempFolder.newFolder().toPath()
 
+        createMockFileChooser(testDisposable.disposable, destinationFolder)
+
         val (s3Client, countDownLatch) = setUpS3Mock(1)
         val s3TreeTable = setUpS3TreeTable(s3Client, "testFile-1")
 
-        val action = DownloadObjectAction(projectRule.project, s3TreeTable, destinationFolder)
+        val action = DownloadObjectAction(projectRule.project, s3TreeTable)
         action.actionPerformed(AnActionEvent.createFromDataContext(ActionPlaces.UNKNOWN, null, DataContext.EMPTY_CONTEXT))
 
         assertThat(countDownLatch.await(5, TimeUnit.SECONDS)).isTrue()
@@ -90,6 +100,8 @@ class DownloadObjectActionTest {
         val destinationFolder = tempFolder.newFolder().toPath()
         destinationFolder.resolve("testFile-1").createFile()
 
+        createMockFileChooser(testDisposable.disposable, destinationFolder)
+
         val (s3Client, countDownLatch) = setUpS3Mock(0)
         val s3TreeTable = setUpS3TreeTable(s3Client, "testFile-1")
 
@@ -98,7 +110,7 @@ class DownloadObjectActionTest {
             ConflictResolution.SKIP
         )
 
-        val action = DownloadObjectAction(projectRule.project, s3TreeTable, destinationFolder)
+        val action = DownloadObjectAction(projectRule.project, s3TreeTable)
         action.actionPerformed(AnActionEvent.createFromDataContext(ActionPlaces.UNKNOWN, null, DataContext.EMPTY_CONTEXT))
 
         assertThat(countDownLatch.await(5, TimeUnit.SECONDS)).isTrue()
@@ -110,6 +122,8 @@ class DownloadObjectActionTest {
     fun downloadSingleFileToFolderWithConflictOverwrite() {
         val destinationFolder = tempFolder.newFolder().toPath()
 
+        createMockFileChooser(testDisposable.disposable, destinationFolder)
+
         val (s3Client, countDownLatch) = setUpS3Mock(1)
         val s3TreeTable = setUpS3TreeTable(s3Client, "testFile-1")
 
@@ -118,7 +132,7 @@ class DownloadObjectActionTest {
             ConflictResolution.OVERWRITE
         )
 
-        val action = DownloadObjectAction(projectRule.project, s3TreeTable, destinationFolder)
+        val action = DownloadObjectAction(projectRule.project, s3TreeTable)
         action.actionPerformed(AnActionEvent.createFromDataContext(ActionPlaces.UNKNOWN, null, DataContext.EMPTY_CONTEXT))
 
         assertThat(countDownLatch.await(5, TimeUnit.SECONDS)).isTrue()
@@ -130,10 +144,12 @@ class DownloadObjectActionTest {
     fun downloadMultipleFiles() {
         val destinationFolder = tempFolder.newFolder().toPath()
 
+        createMockFileChooser(testDisposable.disposable, destinationFolder)
+
         val (s3Client, countDownLatch) = setUpS3Mock(3)
         val s3TreeTable = setUpS3TreeTable(s3Client, "testFile-1", "testFile-2", "testFile-3")
 
-        val action = DownloadObjectAction(projectRule.project, s3TreeTable, destinationFolder)
+        val action = DownloadObjectAction(projectRule.project, s3TreeTable)
         action.actionPerformed(AnActionEvent.createFromDataContext(ActionPlaces.UNKNOWN, null, DataContext.EMPTY_CONTEXT))
 
         assertThat(countDownLatch.await(5, TimeUnit.SECONDS)).isTrue()
@@ -149,6 +165,8 @@ class DownloadObjectActionTest {
         destinationFolder.resolve("testFile-2").createFile()
         destinationFolder.resolve("testFile-4").createFile()
 
+        createMockFileChooser(testDisposable.disposable, destinationFolder)
+
         val (s3Client, countDownLatch) = setUpS3Mock(3)
         val s3TreeTable = setUpS3TreeTable(s3Client, "testFile-1", "testFile-2", "testFile-3", "testFile-4", "testFile-5")
 
@@ -158,7 +176,7 @@ class DownloadObjectActionTest {
             ConflictResolution.SKIP
         )
 
-        val action = DownloadObjectAction(projectRule.project, s3TreeTable, destinationFolder)
+        val action = DownloadObjectAction(projectRule.project, s3TreeTable)
         action.actionPerformed(AnActionEvent.createFromDataContext(ActionPlaces.UNKNOWN, null, DataContext.EMPTY_CONTEXT))
 
         assertThat(countDownLatch.await(5, TimeUnit.SECONDS)).isTrue()
@@ -177,6 +195,8 @@ class DownloadObjectActionTest {
         destinationFolder.resolve("testFile-4").createFile()
         destinationFolder.resolve("testFile-5").createFile()
 
+        createMockFileChooser(testDisposable.disposable, destinationFolder)
+
         val (s3Client, countDownLatch) = setUpS3Mock(4)
         val s3TreeTable = setUpS3TreeTable(s3Client, "testFile-1", "testFile-2", "testFile-3", "testFile-4", "testFile-5")
 
@@ -186,7 +206,7 @@ class DownloadObjectActionTest {
             ConflictResolution.OVERWRITE_ALL
         )
 
-        val action = DownloadObjectAction(projectRule.project, s3TreeTable, destinationFolder)
+        val action = DownloadObjectAction(projectRule.project, s3TreeTable)
         action.actionPerformed(AnActionEvent.createFromDataContext(ActionPlaces.UNKNOWN, null, DataContext.EMPTY_CONTEXT))
 
         assertThat(countDownLatch.await(5, TimeUnit.SECONDS)).isTrue()
@@ -204,6 +224,8 @@ class DownloadObjectActionTest {
         destinationFolder.resolve("testFile-2").createFile()
         destinationFolder.resolve("testFile-4").createFile()
 
+        createMockFileChooser(testDisposable.disposable, destinationFolder)
+
         val (s3Client, countDownLatch) = setUpS3Mock(3)
         val s3TreeTable = setUpS3TreeTable(s3Client, "testFile-1", "testFile-2", "testFile-3", "testFile-4", "testFile-5")
 
@@ -212,7 +234,7 @@ class DownloadObjectActionTest {
             ConflictResolution.SKIP_ALL
         )
 
-        val action = DownloadObjectAction(projectRule.project, s3TreeTable, destinationFolder)
+        val action = DownloadObjectAction(projectRule.project, s3TreeTable)
         action.actionPerformed(AnActionEvent.createFromDataContext(ActionPlaces.UNKNOWN, null, DataContext.EMPTY_CONTEXT))
 
         assertThat(countDownLatch.await(5, TimeUnit.SECONDS)).isTrue()
@@ -228,10 +250,12 @@ class DownloadObjectActionTest {
     fun singleExceptionLeadsToPartialDownload() {
         val destinationFolder = tempFolder.newFolder().toPath()
 
+        createMockFileChooser(testDisposable.disposable, destinationFolder)
+
         val (s3Client, countDownLatch) = setUpS3Mock(2, setOf("testFile-2"))
         val s3TreeTable = setUpS3TreeTable(s3Client, "testFile-1", "testFile-2", "testFile-3")
 
-        val action = DownloadObjectAction(projectRule.project, s3TreeTable, destinationFolder)
+        val action = DownloadObjectAction(projectRule.project, s3TreeTable)
         action.actionPerformed(AnActionEvent.createFromDataContext(ActionPlaces.UNKNOWN, null, DataContext.EMPTY_CONTEXT))
 
         assertThat(countDownLatch.await(5, TimeUnit.SECONDS)).isTrue()
@@ -249,6 +273,8 @@ class DownloadObjectActionTest {
         val destinationFolder = tempFolder.newFolder().toPath()
         destinationFolder.resolve("testFile-1").createFile()
 
+        createMockFileChooser(testDisposable.disposable, destinationFolder)
+
         val (s3Client, countDownLatch) = setUpS3Mock(0)
         val s3TreeTable = setUpS3TreeTable(s3Client, "testFile-1")
 
@@ -256,7 +282,7 @@ class DownloadObjectActionTest {
             -1 // Means cancel (esc)
         }
 
-        val action = DownloadObjectAction(projectRule.project, s3TreeTable, destinationFolder)
+        val action = DownloadObjectAction(projectRule.project, s3TreeTable)
         action.actionPerformed(AnActionEvent.createFromDataContext(ActionPlaces.UNKNOWN, null, DataContext.EMPTY_CONTEXT))
 
         assertThat(countDownLatch.await(5, TimeUnit.SECONDS)).isTrue()
