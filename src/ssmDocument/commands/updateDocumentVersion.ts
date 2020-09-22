@@ -94,5 +94,13 @@ async function promptUserforDocumentVersion(versions: SSM.Types.DocumentVersionI
 
         // User pressed escape and didn't select a template
         return versionSelection?.label
+    } else {
+        vscode.window.showErrorMessage(
+            localize(
+                'AWS.message.error.ssmDocument.updateDocumentVersion.no_other_versions',
+                'Selected document only has one version. Unable to change default version.'
+            )
+        )
+        return undefined
     }
 }
