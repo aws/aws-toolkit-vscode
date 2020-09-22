@@ -42,7 +42,13 @@
         },
         {
             "name": "ssm_createDocument",
-            "description": "An SSM Document is created locally"
+            "description": "An SSM Document is created locally",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
         },
         {
             "name": "ssm_openDocument",

@@ -9,6 +9,7 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import * as YAML from 'yaml'
 import { getLogger, Logger } from '../../shared/logger'
+import * as telemetry from '../../shared/telemetry/telemetry'
 import * as picker from '../../shared/ui/picker'
 import { openAndSaveDocument } from '../util/util'
 
@@ -46,6 +47,7 @@ const SSMDOCUMENT_TEMPLATES: SsmDocumentTemplateQuickPickItem[] = [
 ]
 
 export async function createSsmDocumentFromTemplate(): Promise<void> {
+    let result: telemetry.Result = 'Succeeded'
     const logger: Logger = getLogger()
 
     const quickPick = picker.createQuickPick<SsmDocumentTemplateQuickPickItem>({
@@ -66,16 +68,17 @@ export async function createSsmDocumentFromTemplate(): Promise<void> {
 
     const selection = picker.verifySinglePickerOutput(choices)
 
-    // User pressed escape and didn't select a template
-    if (selection === undefined) {
-        return
-    }
-
     try {
-        logger.debug(`User selected the ${selection.label} template.`)
-        const textDocument: vscode.TextDocument = await openTextDocumentFromSelection(selection)
-        vscode.window.showTextDocument(textDocument)
+        // User pressed escape and didn't select a template
+        if (selection === undefined) {
+            result = 'Cancelled'
+        } else {
+            logger.debug(`User selected the ${selection.label} template.`)
+            const textDocument: vscode.TextDocument = await openTextDocumentFromSelection(selection)
+            vscode.window.showTextDocument(textDocument)
+        }
     } catch (err) {
+        result = 'Failed'
         logger.error(err as Error)
         vscode.window.showErrorMessage(
             localize(
@@ -83,6 +86,8 @@ export async function createSsmDocumentFromTemplate(): Promise<void> {
                 'There was an error creating the SSM Document from the template, check log for details.'
             )
         )
+    } finally {
+        telemetry.recordSsmCreateDocument({ result })
     }
 }
 
