@@ -216,7 +216,7 @@ export async function updateDocument(
                 if (documentVersion !== undefined) {
                     await client.updateDocumentVersion(wizardResponse.name, documentVersion)
                     vscode.window.showInformationMessage(
-                        `Updated Systems Manager Document deafult version successfully`
+                        `Updated Systems Manager Document default version successfully`
                     )
                 }
             } catch (err) {
