@@ -73,7 +73,7 @@ export async function createSsmDocumentFromTemplate(): Promise<void> {
         if (selection === undefined) {
             result = 'Cancelled'
         } else {
-            logger.debug(`User selected the ${selection.label} template.`)
+            logger.debug(`User selected template: ${selection.label}`)
             const textDocument: vscode.TextDocument = await openTextDocumentFromSelection(selection)
             vscode.window.showTextDocument(textDocument)
         }
