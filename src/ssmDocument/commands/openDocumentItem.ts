@@ -13,7 +13,6 @@ import { AwsContext } from '../../shared/awsContext'
 import { getLogger, Logger } from '../../shared/logger'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import * as picker from '../../shared/ui/picker'
-import { promptUserForDocumentFormat } from '../util/util'
 
 export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsContext, format?: string) {
     const logger: Logger = getLogger()
@@ -21,22 +20,20 @@ export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsCo
     let result: telemetry.Result = 'Succeeded'
 
     let documentVersion: string | undefined = undefined
-    let documentFormat: string | undefined = undefined
 
     if (node.documentOwner === awsContext.getCredentialAccountId()) {
         const versions = await node.listSchemaVersion()
-        documentVersion = await promptUserforDocumentVersion(versions)
-    }
-
-    // Currently only JSON/YAML formats are supported
-    if (!format) {
-        documentFormat = await promptUserForDocumentFormat(['JSON', 'YAML'])
-    } else {
-        documentFormat = format
+        if (versions.length > 1) {
+            documentVersion = await promptUserforDocumentVersion(versions)
+            if (documentVersion == undefined) {
+                // user pressed escape and didn't select a version
+                return
+            }
+        }
     }
 
     try {
-        const rawContent = await node.getDocumentContent(documentVersion, documentFormat)
+        const rawContent = await node.getDocumentContent(documentVersion, format)
         const textDocument = await vscode.workspace.openTextDocument({
             content: rawContent.Content,
             language: `ssm-${rawContent.DocumentFormat!.toLowerCase()}`,

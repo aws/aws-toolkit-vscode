@@ -813,28 +813,28 @@
                     "when": "view == aws.explorer && viewItem == awsCloudWatchLogNode"
                 },
                 {
-                    "command": "aws.ssmDocument.openLocalDocumentJson",
-                    "group": "0@1",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsDocumentItemNode|awsDocumentItemNodeWriteable)$/"
-                },
-                {
                     "command": "aws.ssmDocument.openLocalDocumentYaml",
                     "group": "0@1",
                     "when": "view == aws.explorer && viewItem =~ /^(awsDocumentItemNode|awsDocumentItemNodeWriteable)$/"
                 },
                 {
-                    "command": "aws.ssmDocument.executeDocument",
-                    "group": "0@1",
+                    "command": "aws.ssmDocument.openLocalDocumentJson",
+                    "group": "0@2",
                     "when": "view == aws.explorer && viewItem =~ /^(awsDocumentItemNode|awsDocumentItemNodeWriteable)$/"
                 },
                 {
-                    "command": "aws.ssmDocument.deleteDocument",
+                    "command": "aws.ssmDocument.executeDocument",
                     "group": "1@1",
-                    "when": "view == aws.explorer && viewItem == awsDocumentItemNodeWriteable"
+                    "when": "view == aws.explorer && viewItem =~ /^(awsDocumentItemNode|awsDocumentItemNodeWriteable)$/"
                 },
                 {
                     "command": "aws.ssmDocument.updateDocumentVersion",
-                    "group": "1@1",
+                    "group": "2@1",
+                    "when": "view == aws.explorer && viewItem == awsDocumentItemNodeWriteable"
+                },
+                {
+                    "command": "aws.ssmDocument.deleteDocument",
+                    "group": "2@2",
                     "when": "view == aws.explorer && viewItem == awsDocumentItemNodeWriteable"
                 }
             ]

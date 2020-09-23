@@ -207,6 +207,7 @@ describe('publishDocument', async () => {
                 undefined,
                 undefined,
                 undefined,
+                undefined,
                 req => {
                     return new Promise<SSM.CreateDocumentResult>((resolve, reject) => {
                         resolve(result)
@@ -228,6 +229,7 @@ describe('publishDocument', async () => {
 
         it('createDocument API failed', async () => {
             client = new MockSsmDocumentClient(
+                undefined,
                 undefined,
                 undefined,
                 undefined,
@@ -261,6 +263,7 @@ describe('publishDocument', async () => {
                 undefined,
                 undefined,
                 undefined,
+                undefined,
                 req => {
                     return new Promise<SSM.UpdateDocumentResult>((resolve, reject) => {
                         resolve(result)
@@ -281,6 +284,7 @@ describe('publishDocument', async () => {
 
         it('updateDocument API failed', async () => {
             client = new MockSsmDocumentClient(
+                undefined,
                 undefined,
                 undefined,
                 undefined,
