@@ -4,7 +4,6 @@
  */
 
 import { SSM } from 'aws-sdk'
-import * as vscode from 'vscode'
 
 import { SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
@@ -35,17 +34,6 @@ export class DocumentItemNode extends AWSTreeNodeBase {
 
     public get documentOwner(): string {
         return this.documentItem.Owner || ''
-    }
-
-    public async executeDocument() {
-        let executeDocumentUrl: string =
-            'https://console.aws.amazon.com/systems-manager/automation/execute/' +
-            this.documentName +
-            '?region=' +
-            this.regionCode
-        return await vscode.env.openExternal(vscode.Uri.parse(executeDocumentUrl)).then(success => {
-            return success
-        })
     }
 
     public async getDocumentContent(

@@ -34,7 +34,7 @@ export interface PublishSSMDocumentWizardContext {
     promptUserForDocumentName(): Promise<string | undefined>
     promptUserForDocumentToUpdate(): Promise<string | undefined>
     promptUserForDocumentType(): Promise<SSM.DocumentType | undefined>
-    loadSSMDocument(): Promise<void>
+    loadSSMDocument(documentType?: SSM.Types.DocumentType): Promise<void>
 }
 
 export class PublishSSMDocumentWizard extends MultiStepWizard<PublishSSMDocumentWizardResponse> {
@@ -112,7 +112,8 @@ export class PublishSSMDocumentWizard extends MultiStepWizard<PublishSSMDocument
     }
 
     private readonly EXISTING_SSM_DOCUMENT_NAME: WizardStep = async () => {
-        await this.context.loadSSMDocument()
+        this.documentType = await this.context.promptUserForDocumentType()
+        await this.context.loadSSMDocument(this.documentType)
         this.name = await this.context.promptUserForDocumentToUpdate()
 
         return this.name ? undefined : this.PUBLISH_ACTION
@@ -150,16 +151,23 @@ export class DefaultPublishSSMDocumentWizardContext extends WizardContext implem
         this.ssmDocumentClient = ext.toolkitClientBuilder.createSsmClient(this.defaultRegion)
     }
 
-    public async loadSSMDocument(): Promise<void> {
+    public async loadSSMDocument(documentType?: SSM.Types.DocumentType): Promise<void> {
         if (!this.documents) {
+            let filters: SSM.Types.DocumentKeyValuesFilterList = [
+                {
+                    Key: 'Owner',
+                    Values: ['Self'],
+                },
+            ]
+            if (documentType !== undefined) {
+                filters.push({
+                    Key: 'DocumentType',
+                    Values: [documentType],
+                })
+            }
             this.documents = await toArrayAsync(
                 this.ssmDocumentClient.listDocuments({
-                    Filters: [
-                        {
-                            Key: 'Owner',
-                            Values: ['Self'],
-                        },
-                    ],
+                    Filters: filters,
                 })
             )
         }
