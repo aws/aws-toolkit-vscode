@@ -45,6 +45,7 @@ export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsCo
     } catch (err) {
         result = 'Failed'
         const error = err as Error
+        logger.error('Error on opening document: %0', error)
         vscode.window.showErrorMessage(
             localize(
                 'AWS.message.error.ssmDocument.openDocument.could_not_open',
@@ -52,7 +53,6 @@ export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsCo
                 node.documentName
             )
         )
-        logger.error('Error on opening document: %0', error)
     } finally {
         telemetry.recordSsmOpenDocument({ result: result })
     }

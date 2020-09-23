@@ -132,7 +132,8 @@ export async function createDocument(
         vscode.window.showInformationMessage(`Created Systems Manager Document successfully`)
         outputChannel.appendLine('')
     } catch (err) {
-        logger.info(`Failed to create Systems Manager Document '${wizardResponse.name}'. %0`, err as Error)
+        const error = err as Error
+        logger.error(`Failed to create Systems Manager Document '${wizardResponse.name}'. %0`, error)
         result = 'Failed'
         outputChannel.appendLine(
             localize(
@@ -142,7 +143,7 @@ export async function createDocument(
             )
         )
         vscode.window.showErrorMessage(
-            `Failed to create Systems Manager Document '${wizardResponse.name}'. ${(err as Error).message}`
+            `Failed to create Systems Manager Document '${wizardResponse.name}'. ${error.message}`
         )
         outputChannel.appendLine('')
     } finally {
@@ -221,14 +222,14 @@ export async function updateDocument(
                     )
                 }
             } catch (err) {
-                logger.info(
+                logger.error(
                     `Failed to update Systems Manager Document '${wizardResponse.name}' default version. %0`,
                     err as Error
                 )
             }
         }
     } catch (err) {
-        logger.info(`Failed to update Systems Manager Document '${wizardResponse.name}'. %0`, err as Error)
+        logger.error(`Failed to update Systems Manager Document '${wizardResponse.name}'. %0`, err as Error)
         result = 'Failed'
         outputChannel.appendLine(
             localize(

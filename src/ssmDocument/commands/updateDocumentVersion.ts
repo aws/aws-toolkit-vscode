@@ -26,14 +26,27 @@ export async function updateDocumentVersion(node: DocumentItemNodeWriteable, aws
             if (!documentVersion) {
                 result = 'Cancelled'
             } else {
-                await node.updateDocumentVersion(documentVersion)
-                vscode.window.showInformationMessage(
-                    localize(
-                        'AWS.message.info.ssmDocument.updateDocumentVersion.success',
-                        'Updated document {0} default version successfully',
-                        node.documentName
+                const updateDocumentResult = await node.updateDocumentVersion(documentVersion)
+                if (!updateDocumentResult) {
+                    result = 'Failed'
+                    logger.error(`Update document version failed: empty document version`)
+                    vscode.window.showErrorMessage(
+                        localize(
+                            'AWS.message.info.ssmDocument.updateDocumentVersion.failed.emptyversion',
+                            'ould not update document {0} default version. An empty version was provided.',
+                            node.documentName
+                        )
                     )
-                )
+                } else {
+                    vscode.window.showInformationMessage(
+                        localize(
+                            'AWS.message.info.ssmDocument.updateDocumentVersion.success',
+                            'Updated document {0} default version to {1} successfully',
+                            node.documentName,
+                            documentVersion
+                        )
+                    )
+                }
             }
         } else {
             result = 'Failed'
@@ -94,7 +107,7 @@ async function promptUserforDocumentVersion(versions: SSM.Types.DocumentVersionI
         // User pressed escape and didn't select a template
         return versionSelection?.label
     } else {
-        vscode.window.showErrorMessage(
+        vscode.window.showInformationMessage(
             localize(
                 'AWS.message.error.ssmDocument.updateDocumentVersion.no_other_versions',
                 'Selected document only has one version. Unable to change default version.'

@@ -19,13 +19,6 @@ export async function executeDocument(node: DocumentItemNode) {
     try {
         await node.executeDocument()
         logger.info(`Opened external link to execute document ${node.documentName} successfully.`)
-        vscode.window.showInformationMessage(
-            localize(
-                'AWS.message.info.ssmDocument.executeDocument.execute_success',
-                'Opened external link to execute document {0} successfully.',
-                node.documentName
-            )
-        )
     } catch (err) {
         result = 'Failed'
         const error = err as Error

@@ -97,6 +97,8 @@ async function openTextDocumentFromSelection(
     item: SsmDocumentTemplateQuickPickItem,
     extensionPath: string
 ): Promise<vscode.TextDocument | undefined> {
+    // By default the template content is YAML, so when the format is not Yaml, we convert to JSON.
+    // We only support JSON and YAML for ssm documents
     const templateYamlContent = await readFileAsString(path.join(extensionPath, 'templates', item.filename))
     const selectedDocumentFormat = await promptUserForDocumentFormat(['YAML', 'JSON'])
 
