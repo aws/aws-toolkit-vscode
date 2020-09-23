@@ -14,7 +14,7 @@ services:
 
 script:
     - npm install
-    - npm run vscode:prepublish
+    - NODE_OPTIONS='--max-old-space-size=8192' npm run vscode:prepublish
     - npm test
 
 after_success:
