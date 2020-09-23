@@ -42,16 +42,27 @@ export async function deleteDocument(
     }
 
     try {
-        await node.deleteDocument()
-        logger.info(`Deleted Systems Manager Document successfully ${node.documentName}`)
-        vscode.window.showInformationMessage(
-            localize(
-                'AWS.message.info.ssmDocument.deleteDocument.delete_success',
-                'Deleted document {0} successfully.',
-                node.documentName
+        const deleteDocumentResult = await node.deleteDocument()
+        if (!deleteDocumentResult) {
+            result = 'Failed'
+            logger.error(`Delete document failed: Empty document name`)
+            vscode.window.showErrorMessage(
+                localize(
+                    'AWS.message.info.ssmDocument.deleteDocument.failed.empty_document_name',
+                    'Delete document failed: Empty document name'
+                )
             )
-        )
-        await refreshNode(node.parent, commands)
+        } else {
+            logger.info(`Deleted Systems Manager Document successfully ${node.documentName}`)
+            vscode.window.showInformationMessage(
+                localize(
+                    'AWS.message.info.ssmDocument.deleteDocument.delete_success',
+                    'Deleted document {0} successfully.',
+                    node.documentName
+                )
+            )
+            await refreshNode(node.parent, commands)
+        }
     } catch (err) {
         result = 'Failed'
         const error = err as Error

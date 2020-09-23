@@ -9,9 +9,8 @@ import * as vscode from 'vscode'
 import { SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
-import { ext } from '../../shared/extensionGlobals'
+import { fileIconPath } from '../../awsexplorer/utils'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
-import { isFileIconThemeSeti } from '../../shared/utilities/vsCodeUtils'
 
 export class DocumentItemNode extends AWSTreeNodeBase {
     public constructor(
@@ -44,7 +43,9 @@ export class DocumentItemNode extends AWSTreeNodeBase {
             this.documentName +
             '?region=' +
             this.regionCode
-        vscode.env.openExternal(vscode.Uri.parse(executeDocumentUrl))
+        return await vscode.env.openExternal(vscode.Uri.parse(executeDocumentUrl)).then(success => {
+            return success
+        })
     }
 
     public async getDocumentContent(
@@ -64,18 +65,5 @@ export class DocumentItemNode extends AWSTreeNodeBase {
 
     public async listSchemaVersion(): Promise<SSM.Types.DocumentVersionInfo[]> {
         return await toArrayAsync(this.client.listDocumentVersions(this.documentName))
-    }
-}
-
-function fileIconPath(): vscode.ThemeIcon | { light: vscode.Uri; dark: vscode.Uri } {
-    // Workaround for https://github.com/microsoft/vscode/issues/85654
-    // Once this is resolved, ThemeIcons can be used for seti as well
-    if (isFileIconThemeSeti()) {
-        return {
-            dark: vscode.Uri.file(ext.iconPaths.dark.file),
-            light: vscode.Uri.file(ext.iconPaths.light.file),
-        }
-    } else {
-        return vscode.ThemeIcon.File
     }
 }

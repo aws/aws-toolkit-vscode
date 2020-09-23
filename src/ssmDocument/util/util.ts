@@ -29,9 +29,6 @@ export async function promptUserForDocumentFormat(formats: string[]): Promise<st
 
     const formatChoices = await picker.promptUser({
         picker: formatPick,
-        onDidTriggerButton: (_, resolve) => {
-            resolve(undefined)
-        },
     })
 
     const formatSelection = picker.verifySinglePickerOutput(formatChoices)
