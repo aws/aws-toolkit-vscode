@@ -6,23 +6,21 @@
 import * as fs from 'fs'
 import { SsoCache } from './ssoCache'
 import { SsoClientRegistration } from './ssoClientRegistration'
-import { join as joinPath } from 'path'
+import { join } from 'path'
 import { homedir } from 'os'
 import { SsoAccessToken } from './ssoAccessToken'
 import { getSHA1StringHash } from '../../shared/utilities/textUtilities'
 
 export class DiskCache implements SsoCache {
-    private cacheDir: string = joinPath(homedir(), '.aws', 'sso', 'cache')
+    private cacheDir: string = join(homedir(), '.aws', 'sso', 'cache')
     // Treat the token or client registration as expired if within 15 minutes of expiration.
-    private TIME_ADDED_BEFORE_EXPIRY = 900000
+    private TOKEN_EXPIRATION_BUFFER_MS = 900000
 
     public loadClientRegistration(ssoRegion: string): SsoClientRegistration | undefined {
         if (!this.registrationExists(ssoRegion)) {
             return undefined
         }
-        const registration = JSON.parse(
-            fs.readFileSync(joinPath(this.cacheDir, this.registrationFilename(ssoRegion))).toString()
-        )
+        const registration = JSON.parse(fs.readFileSync(this.registrationCache(ssoRegion)).toString())
         if (registration && this.isNotExpired(registration)) {
             return registration
         }
@@ -30,34 +28,32 @@ export class DiskCache implements SsoCache {
     }
 
     public saveClientRegistration(ssoRegion: string, registration: SsoClientRegistration): void {
-        // fs.mkdirSync(joinPath(homedir(), '.aws', 'sso'), { recursive: true })
         fs.mkdirSync(this.cacheDir, { recursive: true })
         // According to the Spec: 'SSO Login Token Flow': the file permissions for the cached client registration
         // must be 0600 (owner read and write)
-        fs.writeFileSync(joinPath(this.cacheDir, this.registrationFilename(ssoRegion)), JSON.stringify(registration), {
+        fs.writeFileSync(this.registrationCache(ssoRegion), JSON.stringify(registration), {
             mode: 0o600,
         })
     }
     public invalidateClientRegistration(ssoRegion: string): void {
         if (this.registrationExists(ssoRegion)) {
-            fs.unlinkSync(joinPath(this.cacheDir, this.registrationFilename(ssoRegion)))
+            fs.unlinkSync(this.registrationCache(ssoRegion))
         }
     }
     public loadAccessToken(ssoUrl: string): SsoAccessToken | undefined {
         if (this.tokenExists(ssoUrl)) {
-            return JSON.parse(fs.readFileSync(joinPath(this.cacheDir, this.accessTokenCache(ssoUrl))).toString())
+            return JSON.parse(fs.readFileSync(this.accessTokenCache(ssoUrl)).toString())
         }
         return undefined
     }
 
     public saveAccessToken(ssoUrl: string, accessToken: SsoAccessToken): void {
-        const fileName = this.accessTokenCache(ssoUrl)
-        fs.writeFileSync(joinPath(this.cacheDir, `${fileName}.json`), JSON.stringify(accessToken), { mode: 0o600 })
+        fs.writeFileSync(this.accessTokenCache(ssoUrl), JSON.stringify(accessToken), { mode: 0o600 })
     }
 
     public invalidateAccessToken(ssoUrl: string): void {
         if (this.tokenExists(ssoUrl)) {
-            fs.unlinkSync(joinPath(this.cacheDir, this.accessTokenCache(ssoUrl)))
+            fs.unlinkSync(this.accessTokenCache(ssoUrl))
         }
     }
 
@@ -65,22 +61,22 @@ export class DiskCache implements SsoCache {
         // According to the Spec: 'SSO Login Token Flow' the access token should be cached as
         // the SHA1 hash of the bytes of the UTF-8 encoded startUrl value with .json appended to the end.
         const encoded = encodeURI(ssoUrl)
-        return getSHA1StringHash(encoded)
+        return join(this.cacheDir, getSHA1StringHash(encoded) + `.json`)
     }
 
     private registrationExists(ssoRegion: string): boolean {
-        return fs.existsSync(joinPath(this.cacheDir, this.registrationFilename(ssoRegion)))
+        return fs.existsSync(this.registrationCache(ssoRegion))
     }
 
     private tokenExists(ssoUrl: string): boolean {
-        return fs.existsSync(joinPath(this.cacheDir, this.accessTokenCache(ssoUrl)))
+        return fs.existsSync(this.accessTokenCache(ssoUrl))
     }
 
     private isNotExpired(token: any): boolean {
-        return Date.parse(token.expiresAt) - this.TIME_ADDED_BEFORE_EXPIRY > Date.now()
+        return Date.parse(token.expiresAt) - this.TOKEN_EXPIRATION_BUFFER_MS > Date.now()
     }
 
-    private registrationFilename(ssoRegion: string): string {
-        return `aws-toolkit-vscode-client-id-${ssoRegion}.json`
+    private registrationCache(ssoRegion: string): string {
+        return join(this.cacheDir, `aws-toolkit-vscode-client-id-${ssoRegion}.json`)
     }
 }

@@ -7,14 +7,14 @@ import * as AWS from 'aws-sdk'
 import { Profile } from '../../shared/credentials/credentialsFile'
 import { getLogger } from '../../shared/logger'
 import { getStringHash } from '../../shared/utilities/textUtilities'
-import { validateSsoProfile } from '../sso/ssoSupport'
+import { isSsoProfile, validateSsoProfile } from '../sso/ssoSupport'
 import { getMfaTokenFromUser } from '../credentialsCreator'
 import { CredentialsProvider } from './credentialsProvider'
 import { CredentialsProviderId } from './credentialsProviderId'
+import { hasProfileProperty } from '../credentialsUtilities'
 import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
 import { DiskCache } from '../sso/diskCache'
 import { SsoCredentialProvider } from './ssoCredentialProvider'
-import { isSsoProfile } from '../sso/ssoSupport'
 
 const SHARED_CREDENTIAL_PROPERTIES = {
     AWS_ACCESS_KEY_ID: 'aws_access_key_id',
@@ -73,10 +73,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
      * should _not_ attempt to auto-connect).
      */
     public canAutoConnect(): boolean {
-        return (
-            !this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.MFA_SERIAL) &&
-            !this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.SSO_START_URL)
-        )
+        return !hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.MFA_SERIAL) && !isSsoProfile(this.profile)
     }
 
     /**
@@ -85,17 +82,17 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     public validate(): string | undefined {
         const expectedProperties: string[] = []
 
-        if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.ROLE_ARN)) {
+        if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.ROLE_ARN)) {
             return this.validateSourceProfileChain()
-        } else if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_PROCESS)) {
+        } else if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_PROCESS)) {
             // No validation. Don't check anything else.
             return undefined
-        } else if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.AWS_SESSION_TOKEN)) {
+        } else if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.AWS_SESSION_TOKEN)) {
             expectedProperties.push(
                 SHARED_CREDENTIAL_PROPERTIES.AWS_ACCESS_KEY_ID,
                 SHARED_CREDENTIAL_PROPERTIES.AWS_SECRET_ACCESS_KEY
             )
-        } else if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.AWS_ACCESS_KEY_ID)) {
+        } else if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.AWS_ACCESS_KEY_ID)) {
             expectedProperties.push(SHARED_CREDENTIAL_PROPERTIES.AWS_SECRET_ACCESS_KEY)
         } else if (isSsoProfile(this.profile)) {
             return validateSsoProfile(this.profile, this.profileName)
@@ -139,10 +136,6 @@ export class SharedCredentialsProvider implements CredentialsProvider {
         }
     }
 
-    private hasProfileProperty(propertyName: string): boolean {
-        return !!this.profile[propertyName]
-    }
-
     private getMissingProperties(propertyNames: string[]): string[] {
         return propertyNames.filter(propertyName => !this.profile[propertyName])
     }
@@ -183,7 +176,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     private makeCredentialsProvider(): () => AWS.Credentials {
         const logger = getLogger()
 
-        if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.ROLE_ARN)) {
+        if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.ROLE_ARN)) {
             logger.verbose(
                 `Profile ${this.profileName} contains ${SHARED_CREDENTIAL_PROPERTIES.ROLE_ARN} - treating as regular Shared Credentials`
             )
@@ -191,7 +184,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             return this.makeSharedIniFileCredentialsProvider()
         }
 
-        if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_PROCESS)) {
+        if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_PROCESS)) {
             logger.verbose(
                 `Profile ${this.profileName} contains ${SHARED_CREDENTIAL_PROPERTIES.CREDENTIAL_PROCESS} - treating as Process Credentials`
             )
@@ -199,7 +192,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             return () => new AWS.ProcessCredentials({ profile: this.profileName })
         }
 
-        if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.AWS_SESSION_TOKEN)) {
+        if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.AWS_SESSION_TOKEN)) {
             logger.verbose(
                 `Profile ${this.profileName} contains ${SHARED_CREDENTIAL_PROPERTIES.AWS_SESSION_TOKEN} - treating as regular Shared Credentials`
             )
@@ -207,7 +200,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             return this.makeSharedIniFileCredentialsProvider()
         }
 
-        if (this.hasProfileProperty(SHARED_CREDENTIAL_PROPERTIES.AWS_ACCESS_KEY_ID)) {
+        if (hasProfileProperty(this.profile, SHARED_CREDENTIAL_PROPERTIES.AWS_ACCESS_KEY_ID)) {
             logger.verbose(
                 `Profile ${this.profileName} contains ${SHARED_CREDENTIAL_PROPERTIES.AWS_ACCESS_KEY_ID} - treating as regular Shared Credentials`
             )

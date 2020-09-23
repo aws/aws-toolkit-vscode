@@ -4,32 +4,19 @@
  */
 
 import { Profile } from '../../shared/credentials/credentialsFile'
+import { hasProfileProperty } from '../credentialsUtilities'
 
-const SSO_PROFILE_PROPERTY = {
-    SSO_START_URL: 'sso_start_url',
-    SSO_REGION: 'sso_region',
-    SSO_ACCOUNT_ID: 'sso_account_id',
-    SSO_ROLE_NAME: 'sso_role_name',
-}
+const SSO_PROFILE_PROPERTIES = ['sso_start_url', 'sso_region', 'sso_account_id', 'sso_role_name']
 
 export function validateSsoProfile(profile: Profile, profileName: string): string | undefined {
     const missingProperties = []
 
-    if (!hasProfileProperty(profile, SSO_PROFILE_PROPERTY.SSO_START_URL)) {
-        missingProperties.push(SSO_PROFILE_PROPERTY.SSO_START_URL)
+    for (let propertyName of SSO_PROFILE_PROPERTIES) {
+        if (!hasProfileProperty(profile, propertyName)) {
+            missingProperties.push(propertyName)
+        }
     }
 
-    if (!hasProfileProperty(profile, SSO_PROFILE_PROPERTY.SSO_REGION)) {
-        missingProperties.push(SSO_PROFILE_PROPERTY.SSO_REGION)
-    }
-
-    if (!hasProfileProperty(profile, SSO_PROFILE_PROPERTY.SSO_ACCOUNT_ID)) {
-        missingProperties.push(SSO_PROFILE_PROPERTY.SSO_ACCOUNT_ID)
-    }
-
-    if (!hasProfileProperty(profile, SSO_PROFILE_PROPERTY.SSO_ROLE_NAME)) {
-        missingProperties.push(SSO_PROFILE_PROPERTY.SSO_ROLE_NAME)
-    }
     if (missingProperties.length !== 0) {
         return `Profile ${profileName} is missing properties: ${missingProperties.join(', ')}`
     }
@@ -38,14 +25,10 @@ export function validateSsoProfile(profile: Profile, profileName: string): strin
 }
 
 export function isSsoProfile(profile: Profile): boolean {
-    return (
-        hasProfileProperty(profile, SSO_PROFILE_PROPERTY.SSO_START_URL) ||
-        hasProfileProperty(profile, SSO_PROFILE_PROPERTY.SSO_REGION) ||
-        hasProfileProperty(profile, SSO_PROFILE_PROPERTY.SSO_ACCOUNT_ID) ||
-        hasProfileProperty(profile, SSO_PROFILE_PROPERTY.SSO_ROLE_NAME)
-    )
-}
-
-function hasProfileProperty(profile: Profile, propertyName: string): boolean {
-    return !!profile[propertyName]
+    for (const propertyName of SSO_PROFILE_PROPERTIES) {
+        if (hasProfileProperty(profile, propertyName)) {
+            return true
+        }
+    }
+    return false
 }

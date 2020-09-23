@@ -4,6 +4,7 @@
  */
 
 import { Credentials, SSO } from 'aws-sdk'
+import { getLogger } from '../../shared/logger'
 import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
 
 export class SsoCredentialProvider {
@@ -37,6 +38,7 @@ export class SsoCredentialProvider {
             })
         } catch (err) {
             this.ssoAccessTokenProvider.invalidate()
+            getLogger().error(err)
             throw err
         }
     }

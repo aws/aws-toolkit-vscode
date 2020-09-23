@@ -6,5 +6,9 @@
 export interface SsoClientRegistration {
     readonly clientId: string
     readonly clientSecret: string
+
+    /**
+     * The expiration time of the registration saved as an RFC 3339 formatted timestamp.
+     */
     readonly expiresAt: string
 }

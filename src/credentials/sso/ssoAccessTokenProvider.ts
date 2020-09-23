@@ -12,12 +12,12 @@ import { getLogger } from '../../shared/logger'
 import { StartDeviceAuthorizationResponse } from 'aws-sdk/clients/ssooidc'
 
 const CLIENT_REGISTRATION_TYPE = 'public'
-const CLIENT_NAME = `aws-toolkit-vscode-${Date.now()}`
+const CLIENT_NAME = `aws-toolkit-vscode`
 // According to Spec 'SSO Login Token Flow' the grant type must be the following string
 const GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:device_code'
 // Used to convert seconds to milliseconds
 const MILLISECONDS_PER_SECOND = 1000
-const BACKOFF_TIME = 5000
+const BACKOFF_DELAY_MINUTES = 5000
 
 export class SsoAccessTokenProvider {
     private ssoRegion: string
@@ -37,11 +37,16 @@ export class SsoAccessTokenProvider {
         if (accessToken) {
             return accessToken
         }
-        const registration = await this.registerClient()
-        const authorization = await this.authorizeClient(registration)
-        const token = await this.pollForToken(registration, authorization)
-        this.cache.saveAccessToken(this.ssoUrl, token)
-        return token
+        try {
+            const registration = await this.registerClient()
+            const authorization = await this.authorizeClient(registration)
+            const token = await this.pollForToken(registration, authorization)
+            this.cache.saveAccessToken(this.ssoUrl, token)
+            return token
+        } catch (error) {
+            getLogger().error(error)
+            throw error
+        }
     }
 
     public invalidate() {
@@ -53,15 +58,19 @@ export class SsoAccessTokenProvider {
         authorization: StartDeviceAuthorizationResponse
     ): Promise<SsoAccessToken> {
         // Calculate the device code expirtation in milliseconds
-        const deviceCodeExpiration = Date.now() + authorization.expiresIn! * MILLISECONDS_PER_SECOND
+        const deviceCodeExpiration = this.currentTimePlusSecondsInMs(authorization.expiresIn!)
 
         getLogger().info(
             `To complete authentication for this SSO account, please continue to this SSO portal:${authorization.verificationUriComplete}`
         )
 
         // The retry interval converted to milliseconds
-        let retryInterval =
-            authorization.interval! > 0 ? authorization.interval! * MILLISECONDS_PER_SECOND : BACKOFF_TIME
+        let retryInterval: number
+        if (authorization.interval != undefined && authorization.interval! > 0) {
+            retryInterval = authorization.interval! * MILLISECONDS_PER_SECOND
+        } else {
+            retryInterval = BACKOFF_DELAY_MINUTES
+        }
 
         const createTokenParams = {
             clientId: registration.clientId,
@@ -77,26 +86,29 @@ export class SsoAccessTokenProvider {
                     startUrl: this.ssoUrl,
                     region: this.ssoRegion,
                     accessToken: tokenResponse.accessToken!,
-                    expiresAt: new Date(Date.now() + tokenResponse.expiresIn! * MILLISECONDS_PER_SECOND).toISOString(),
+                    expiresAt: new Date(this.currentTimePlusSecondsInMs(tokenResponse.expiresIn!)).toISOString(),
                 }
                 return accessToken
             } catch (err) {
                 if (err.code === 'SlowDownException') {
-                    retryInterval += BACKOFF_TIME
+                    retryInterval += BACKOFF_DELAY_MINUTES
                 } else if (err.code === 'AuthorizationPendingException') {
                     // do nothing, wait the interval and try again
                 } else if (err.code === 'ExpiredTokenException') {
+                    getLogger().error(err)
                     throw Error(`Device code has expired while polling for SSO token, login flow must be re-initiated.`)
+                } else if (err.code === 'TimeoutException') {
+                    retryInterval *= 2
                 } else {
-                    getLogger().info(err)
+                    getLogger().error(err)
                     throw err
                 }
             }
             if (Date.now() + retryInterval > deviceCodeExpiration) {
                 throw Error(`Device code has expired while polling for SSO token, login flow must be re-initiated.`)
             }
-            setTimeout(() => {}, retryInterval)
-            retryInterval *= 2
+            // Delay each attempt by the interval
+            await new Promise(resolve => setTimeout(resolve, retryInterval))
         }
     }
 
@@ -116,6 +128,7 @@ export class SsoAccessTokenProvider {
             vscode.env.openExternal(vscode.Uri.parse(authorizationResponse.verificationUriComplete!))
             return authorizationResponse
         } catch (err) {
+            getLogger().error(err)
             throw err
         }
     }
@@ -143,5 +156,12 @@ export class SsoAccessTokenProvider {
         this.cache.saveClientRegistration(this.ssoRegion, registration)
 
         return registration
+    }
+
+    /**
+     * Takes a number of seconds and returns the number of milliseconds elapsed since January 1, 1970 00:00:00 UTC plus the passed seconds.
+     */
+    private currentTimePlusSecondsInMs(seconds: number) {
+        return seconds * MILLISECONDS_PER_SECOND + Date.now()
     }
 }
