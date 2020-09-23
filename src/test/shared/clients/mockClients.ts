@@ -45,8 +45,8 @@ interface Clients {
     schemaClient: SchemaClient
     stepFunctionsClient: StepFunctionsClient
     stsClient: StsClient
-    ssmDocumentClient: SsmDocumentClient
     s3Client: S3Client
+    ssmDocumentClient: SsmDocumentClient
 }
 
 export class MockToolkitClientBuilder implements ToolkitClientBuilder {
@@ -61,8 +61,8 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
             schemaClient: new MockSchemaClient(),
             stepFunctionsClient: new MockStepFunctionsClient(),
             stsClient: new MockStsClient({}),
-            ssmDocumentClient: new MockSsmDocumentClient(),
             s3Client: new MockS3Client({}),
+            ssmDocumentClient: new MockSsmDocumentClient(),
             ...overrideClients,
         }
     }
@@ -99,12 +99,12 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
         return this.clients.stsClient
     }
 
-    public createSsmClient(regionCode: string): SsmDocumentClient {
-        return this.clients.ssmDocumentClient
-    }
-
     public createS3Client(regionCode: string): S3Client {
         return this.clients.s3Client
+    }
+
+    public createSsmClient(regionCode: string): SsmDocumentClient {
+        return this.clients.ssmDocumentClient
     }
 }
 
