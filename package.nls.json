@@ -146,7 +146,7 @@
     "AWS.command.viewLogStream": "View Log Stream...",
     "AWS.command.ssmDocument.createLocalDocument": "Create a new Systems Manager Document locally",
     "AWS.command.ssmDocument.deleteDocument": "Delete Document",
-    "AWS.command.ssmDocument.updateDocumentVersion": "Change Default Version",
+    "AWS.command.ssmDocument.updateDocumentVersion": "Set Default Version",
     "AWS.command.ssmDocument.executeDocument": "Execute Document in AWS Console",
     "AWS.command.ssmDocument.openLocalDocument": "Download as...",
     "AWS.command.ssmDocument.openLocalDocumentJson": "Download as JSON",

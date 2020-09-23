@@ -14,12 +14,11 @@ import * as telemetry from '../../shared/telemetry/telemetry'
 import * as picker from '../../shared/ui/picker'
 import { DocumentItemNodeWriteable } from '../explorer/documentItemNodeWriteable'
 
-export async function updateDocumentVersion(node: DocumentItemNodeWriteable, awsContext: AwsContext, format?: string) {
+export async function updateDocumentVersion(node: DocumentItemNodeWriteable, awsContext: AwsContext) {
     const logger: Logger = getLogger()
 
     let result: telemetry.Result = 'Succeeded'
 
-    // Currently only JSON/YAML formats are supported
     try {
         if (node.documentOwner === awsContext.getCredentialAccountId()) {
             const versions = await node.listSchemaVersion()
