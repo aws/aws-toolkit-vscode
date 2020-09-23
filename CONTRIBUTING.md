@@ -83,11 +83,19 @@ Code from treating its files as project files.
 
 #### Run a specific test
 
-To run a single test in VSCode, run the `Extension Tests (current file)` launch-config.
+To run a single test in VSCode, do any one of:
 
-Alternatively:
-
+-   Run the _Extension Tests (current file)_ launch-config.
 -   Use Mocha's [it.only()](https://mochajs.org/#exclusive-tests) or `describe.only()`.
+-   Run in your terminal:
+    -   Unix/macOS/POSIX shell:
+        ```
+        NO_COVERAGE=true TEST_FILE=src/test/foo.test npm run test
+        ```
+    -   Powershell:
+        ```
+        $Env:NO_COVERAGE = "true"; $Env:TEST_FILE = "src/test/foo.test"; npm run test
+        ```
 -   To run all tests in a particular subdirectory, you can edit
     `src/test/index.ts:rootTestsPath` to point to a subdirectory:
     ```
@@ -118,9 +126,9 @@ reported the issue. Please try to include as much information as you can. Detail
 -   Any modifications you've made relevant to the bug
 -   Anything unusual about your environment or deployment
 
-## Contributing via Pull Requests
+## Pull Requests
 
-Contributions via pull requests are much appreciated. Before sending us a pull request, please ensure that:
+We appreciate contributions via pull requests! Before sending a pull request, ensure that:
 
 1. You are working against the latest source on the _master_ branch.
 2. You check existing open, and recently merged, pull requests to make sure someone else hasn't addressed the problem already.
@@ -139,7 +147,14 @@ To send us a pull request, please:
 GitHub provides additional document on [forking a repository](https://help.github.com/articles/fork-a-repo/) and
 [creating a pull request](https://help.github.com/articles/creating-a-pull-request/).
 
-### Importing icons from other open source repos
+## CI artifact
+
+Each commit and pull request is processed by an automated system which runs
+all tests and provides the build result via the _Details_ link as shown below.
+
+<img src="./docs/images/ci-artifact.png" alt="CI artifact" width="512"/>
+
+## Importing icons from other open source repos
 
 If you are contribuing visual assets from other open source repos, the source repo must have a compatible license (such as MIT), and we need to document the source of the images. Follow these steps:
 
