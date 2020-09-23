@@ -44,11 +44,16 @@ export async function* listLambdaFunctions(client: LambdaClient): AsyncIterableI
 }
 
 /**
- * Converts Lambda handler into a filename by stripping the function name and appending the correct file extension.
+ * Parses Lambda handler into a filename by stripping the function name and appending the correct file extension and a function name, by taking what's left.
  * Only works for supported languages (Python/JS)
  * @param configuration Lambda configuration object from getFunction
  */
-export function getLambdaFileNameFromHandler(configuration: Lambda.FunctionConfiguration): string {
+export function parseLambdaDetailsFromConfiguration(
+    configuration: Lambda.FunctionConfiguration
+): {
+    fileName: string
+    functionName: string
+} {
     let runtimeExtension: string
     switch (getFamily(configuration.Runtime!)) {
         case RuntimeFamily.Python:
@@ -61,10 +66,10 @@ export function getLambdaFileNameFromHandler(configuration: Lambda.FunctionConfi
             throw new Error(`Toolkit does not currently support imports for runtime: ${configuration.Runtime}`)
     }
 
-    const fileName = _(configuration.Handler!)
-        .split('.')
-        .initial()
-        .join('.')
+    const handlerArr = _(configuration.Handler!).split('.')
 
-    return `${fileName}.${runtimeExtension}`
+    return {
+        fileName: `${handlerArr.initial().join('.')}.${runtimeExtension}`,
+        functionName: handlerArr.last()!,
+    }
 }

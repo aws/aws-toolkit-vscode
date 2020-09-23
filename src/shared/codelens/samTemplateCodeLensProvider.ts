@@ -35,6 +35,7 @@ export class SamTemplateCodeLensProvider implements vscode.CodeLensProvider {
     }
 
     private createCodeLens(functionResource: TemplateFunctionResource, templateUri: vscode.Uri): vscode.CodeLens {
+        // TODO: Find a way to add `runtime` or `runtimeFamily` to this input for naming?
         const input: AddSamDebugConfigurationInput = {
             resourceName: functionResource.name,
             rootUri: templateUri,

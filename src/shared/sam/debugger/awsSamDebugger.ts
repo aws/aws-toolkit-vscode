@@ -16,7 +16,7 @@ import {
     getTemplate,
 } from '../../../lambda/local/debugConfiguration'
 import { getDefaultRuntime, getFamily, getRuntimeFamily, RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
-import { CloudFormationTemplateRegistry, getResourcesFromTemplateDatum } from '../../cloudformation/templateRegistry'
+import { CloudFormationTemplateRegistry } from '../../cloudformation/templateRegistry'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { ChannelLogger } from '../../utilities/vsCodeUtils'
 import * as csharpDebug from './csharpSamDebug'
@@ -175,17 +175,19 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                         getLogger().error(`provideDebugConfigurations: invalid template: ${templateDatum.path}`)
                         continue
                     }
-                    const resources = getResourcesFromTemplateDatum(templateDatum)
-                    for (const resourceKey of resources.keys()) {
-                        const runtimeName = resources.get(resourceKey)?.Properties?.Runtime
-                        configs.push(
-                            createTemplateAwsSamDebugConfig(
-                                folder,
-                                CloudFormation.getStringForProperty(runtimeName, templateDatum.template),
-                                resourceKey,
-                                templateDatum.path
+                    for (const resourceKey of Object.keys(templateDatum.template.Resources)) {
+                        const resource = templateDatum.template.Resources[resourceKey]
+                        if (resource) {
+                            const runtimeName = resource.Properties?.Runtime
+                            configs.push(
+                                createTemplateAwsSamDebugConfig(
+                                    folder,
+                                    CloudFormation.getStringForProperty(runtimeName, templateDatum.template),
+                                    resourceKey,
+                                    templateDatum.path
+                                )
                             )
-                        )
+                        }
                     }
                 }
             }

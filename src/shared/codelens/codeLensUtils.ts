@@ -21,6 +21,10 @@ import { nodeJsRuntimes, RuntimeFamily } from '../../lambda/models/samLambdaRunt
 import { CODE_TARGET_TYPE } from '../sam/debugger/awsSamDebugConfiguration'
 import { getReferencedHandlerPaths, LaunchConfiguration } from '../debug/launchConfiguration'
 import * as pathutils from '../utilities/pathUtils'
+import {
+    getResourceAssociatedWithHandlerFromTemplateDatum,
+    getTemplatesAssociatedWithHandler,
+} from '../cloudformation/templateRegistry'
 
 export type Language = 'python' | 'javascript' | 'csharp'
 
@@ -29,6 +33,7 @@ interface MakeAddDebugConfigCodeLensParams {
     range: vscode.Range
     rootUri: vscode.Uri
     runtimeFamily: RuntimeFamily
+    runtime?: string | undefined
 }
 
 export async function makeCodeLenses({
@@ -61,11 +66,26 @@ export async function makeCodeLenses({
                   )
 
         try {
+            const associatedTemplates = getTemplatesAssociatedWithHandler(handler.filename, handler.handlerName)
+            let runtime: string | undefined
+            // just take the first runtime if associated templates exist.
+            // TODO: is this good enough?
+            if (associatedTemplates.length > 0) {
+                runtime = CloudFormation.getStringForProperty(
+                    getResourceAssociatedWithHandlerFromTemplateDatum(
+                        handler.filename,
+                        handler.handlerName,
+                        associatedTemplates[0]
+                    )?.Properties?.Runtime,
+                    associatedTemplates[0].template
+                )
+            }
             const baseParams: MakeAddDebugConfigCodeLensParams = {
                 handlerName: handler.handlerName,
                 range,
                 rootUri: handler.manifestUri,
                 runtimeFamily,
+                runtime,
             }
             if (
                 !existingConfigs.has(
@@ -100,6 +120,7 @@ function makeAddCodeSamDebugCodeLens(params: MakeAddDebugConfigCodeLensParams): 
                 resourceName: params.handlerName,
                 rootUri: params.rootUri,
                 runtimeFamily: params.runtimeFamily,
+                runtime: params.runtime,
             },
             CODE_TARGET_TYPE,
         ],

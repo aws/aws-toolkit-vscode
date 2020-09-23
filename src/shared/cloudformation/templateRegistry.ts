@@ -8,6 +8,9 @@ import * as path_ from 'path'
 import { getLogger } from '../logger/logger'
 import { CloudFormation } from './cloudformation'
 import * as pathutils from '../utilities/pathUtils'
+import { isInDirectory } from '../filesystemUtilities'
+import { dotNetRuntimes } from '../../lambda/models/samLambdaRuntime'
+import { parseLambdaDetailsFromConfiguration } from '../../lambda/utils'
 
 export interface TemplateDatum {
     path: string
@@ -125,18 +128,93 @@ export class CloudFormationTemplateRegistry {
 }
 
 /**
- * Helper function that returns an map of resource names to CloudFormation.Resource objects.
- * Unlike a CloudFormation.TemplateResources object, all resources in this array are guaranteed to be defined.
- * @param templateDatum TemplateDatum object to extract resources from
+ * Filters an array of TemplateDatum objects to those that are tied to the given filepath and handler function.
+ * @param filepath Handler file's path
+ * @param handler Handler function from aforementioned file
+ * @param unfilteredTemplates Array containing TemplateDatum objects to filter
  */
-export function getResourcesFromTemplateDatum(templateDatum: TemplateDatum): Map<string, CloudFormation.Resource> {
-    const map = new Map<string, CloudFormation.Resource>()
-    for (const resourceKey of Object.keys(templateDatum.template.Resources!)) {
-        const resource = templateDatum.template.Resources![resourceKey]
-        if (resource) {
-            map.set(resourceKey, resource)
+export function getTemplatesAssociatedWithHandler(
+    filepath: string,
+    handler: string,
+    unfilteredTemplates: TemplateDatum[] = CloudFormationTemplateRegistry.getRegistry().registeredTemplates
+): TemplateDatum[] {
+    // find potential matching templates
+    return unfilteredTemplates.filter(templateDatum => {
+        return !!getResourceAssociatedWithHandlerFromTemplateDatum(filepath, handler, templateDatum)
+    })
+}
+
+/**
+ * Returns the first Cloudformation Resource in a TemplateDatum that is tied to the filepath and handler given.
+ * Returns undefined if none are found.
+ * TODO: Is there a reason to return more than the first resource?
+ * @param filepath Handler file's path
+ * @param handler Handler function from aforementioned file
+ * @param templateDatum TemplateDatum object to search through
+ */
+export function getResourceAssociatedWithHandlerFromTemplateDatum(
+    filepath: string,
+    handler: string,
+    templateDatum: TemplateDatum
+): CloudFormation.Resource | undefined {
+    const templateDirname = path_.dirname(templateDatum.path)
+    // template isn't a parent or sibling of file
+    if (!isInDirectory(templateDirname, path_.dirname(filepath))) {
+        return undefined
+    }
+
+    const resources = templateDatum.template.Resources
+    if (!resources) {
+        return undefined
+    }
+
+    for (const key of Object.keys(resources)) {
+        const resource = resources[key]
+        // check if some sort of serverless function
+        if (
+            resource &&
+            [CloudFormation.SERVERLESS_FUNCTION_TYPE, CloudFormation.LAMBDA_FUNCTION_TYPE].includes(resource.Type)
+        ) {
+            const registeredRuntime = CloudFormation.getStringForProperty(
+                resource.Properties?.Runtime,
+                templateDatum.template
+            )
+            const registeredCodeUri = CloudFormation.getStringForProperty(
+                resource.Properties?.CodeUri,
+                templateDatum.template
+            )
+            const registeredHandler = CloudFormation.getStringForProperty(
+                resource.Properties?.Handler,
+                templateDatum.template
+            )
+
+            if (registeredRuntime && registeredHandler && registeredCodeUri) {
+                if (dotNetRuntimes.includes(registeredRuntime) && handler === registeredHandler) {
+                    return resource
+                } else {
+                    try {
+                        const parsedLambda = parseLambdaDetailsFromConfiguration({
+                            Handler: registeredHandler,
+                            Runtime: registeredRuntime,
+                        })
+                        const functionName = handler.split('.').pop()
+                        if (
+                            pathutils.normalize(filepath) ===
+                                pathutils.normalize(
+                                    path_.join(templateDirname, registeredCodeUri, parsedLambda.fileName)
+                                ) &&
+                            functionName === parsedLambda.functionName
+                        ) {
+                            return resource
+                        }
+                    } catch (e) {
+                        // swallow error from parseLambdaDetailsFromConfiguration: handler not a valid runtime, so skip to the next one
+                    }
+                }
+            }
         }
     }
 
-    return map
+    // no matching handlers detected
+    return undefined
 }

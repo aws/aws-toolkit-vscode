@@ -30,13 +30,14 @@ export interface AddSamDebugConfigurationInput {
     resourceName: string
     rootUri: vscode.Uri
     runtimeFamily?: RuntimeFamily
+    runtime?: string
 }
 
 /**
  * Adds a new debug configuration for the given sam function resource and template.
  */
 export async function addSamDebugConfiguration(
-    { resourceName, rootUri, runtimeFamily }: AddSamDebugConfigurationInput,
+    { resourceName, rootUri, runtimeFamily, runtime }: AddSamDebugConfigurationInput,
     type: typeof CODE_TARGET_TYPE | typeof TEMPLATE_TARGET_TYPE
 ): Promise<void> {
     // tslint:disable-next-line: no-floating-promises
@@ -44,9 +45,9 @@ export async function addSamDebugConfiguration(
 
     let samDebugConfig: AwsSamDebuggerConfiguration
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(rootUri)
-    const runtimeName = runtimeFamily ? getDefaultRuntime(runtimeFamily) : undefined
 
     if (type === TEMPLATE_TARGET_TYPE) {
+        const runtimeName = runtime ? runtime : runtimeFamily ? getDefaultRuntime(runtimeFamily) : undefined
         let preloadedConfig = undefined
 
         if (workspaceFolder) {
@@ -96,21 +97,26 @@ export async function addSamDebugConfiguration(
             preloadedConfig
         )
     } else if (type === CODE_TARGET_TYPE) {
-        const quickPick = createRuntimeQuickPick({
-            runtimeFamily,
-        })
+        let selectedRuntime = runtime
+        if (!selectedRuntime) {
+            const quickPick = createRuntimeQuickPick({
+                runtimeFamily,
+            })
 
-        const choices = await picker.promptUser({
-            picker: quickPick,
-        })
-        const val = picker.verifySinglePickerOutput(choices)
-        if (val) {
+            const choices = await picker.promptUser({
+                picker: quickPick,
+            })
+            const val = picker.verifySinglePickerOutput(choices)
+            selectedRuntime = val?.label
+        }
+
+        if (selectedRuntime) {
             // strip the manifest's URI to the manifest's dir here. More reliable to do this here than converting back and forth between URI/string up the chain.
             samDebugConfig = createCodeAwsSamDebugConfig(
                 workspaceFolder,
                 resourceName,
                 path.dirname(rootUri.fsPath),
-                val.label as Runtime
+                selectedRuntime as Runtime
             )
         } else {
             // User backed out of runtime selection. Abandon config creation.

@@ -4,35 +4,49 @@
  */
 
 import * as assert from 'assert'
-import { getLambdaFileNameFromHandler } from '../../lambda/utils'
+import { parseLambdaDetailsFromConfiguration } from '../../lambda/utils'
 import { assertThrowsError } from '../shared/utilities/assertUtils'
 
 describe('lambda utils', async () => {
-    describe('getLambdaFileNameFromHandler', () => {
-        it('returns valid filenames', () => {
-            assert(getLambdaFileNameFromHandler({ Runtime: 'nodejs12.x', Handler: 'app.lambda_handler' }), 'app.js')
-            assert(getLambdaFileNameFromHandler({ Runtime: 'python3.8', Handler: 'app.lambda_handler' }), 'app.py')
-            assert(
-                getLambdaFileNameFromHandler({ Runtime: 'nodejs12.x', Handler: 'asdf/jkl/app.lambda_handler' }),
-                'asdf/jkl/app.js'
-            )
-            assert(
-                getLambdaFileNameFromHandler({ Runtime: 'python3.8', Handler: 'asdf/jkl/app.lambda_handler' }),
-                'asdf/jkl/app.py'
-            )
+    describe('parseLambdaDetailsFromConfiguration', () => {
+        it('returns valid filenames and function names', () => {
+            const jsNonNestedParsedName = parseLambdaDetailsFromConfiguration({
+                Runtime: 'nodejs12.x',
+                Handler: 'app.lambda_handler',
+            })
+            const pyNonNestedParsedName = parseLambdaDetailsFromConfiguration({
+                Runtime: 'python3.8',
+                Handler: 'app.lambda_handler',
+            })
+            const jsNestedParsedName = parseLambdaDetailsFromConfiguration({
+                Runtime: 'nodejs12.x',
+                Handler: 'asdf/jkl/app.lambda_handler',
+            })
+            const PyNestedParsedName = parseLambdaDetailsFromConfiguration({
+                Runtime: 'python3.8',
+                Handler: 'asdf/jkl/app.lambda_handler',
+            })
+            assert(jsNonNestedParsedName.fileName, 'app.js')
+            assert(pyNonNestedParsedName.fileName, 'app.py')
+            assert(jsNestedParsedName.fileName, 'asdf/jkl/app.js')
+            assert(PyNestedParsedName.fileName, 'asdf/jkl/app.py')
+            assert(jsNonNestedParsedName.functionName, 'lambda_handler')
+            assert(pyNonNestedParsedName.functionName, 'lambda_handler')
+            assert(jsNestedParsedName.functionName, 'lambda_handler')
+            assert(PyNestedParsedName.functionName, 'lambda_handler')
         })
 
         it('throws if the handler is not a supported runtime', async () => {
             // unsupported runtime for import
             await assertThrowsError(async () =>
-                getLambdaFileNameFromHandler({
+                parseLambdaDetailsFromConfiguration({
                     Runtime: 'dotnetcore3.1',
                     Handler: 'HelloWorld::HelloWorld.Function::FunctionHandler',
                 })
             )
             // runtime that isn't present, period
             await assertThrowsError(async () =>
-                getLambdaFileNameFromHandler({ Runtime: 'COBOL-60', Handler: 'asdf.asdf' })
+                parseLambdaDetailsFromConfiguration({ Runtime: 'COBOL-60', Handler: 'asdf.asdf' })
             )
         })
     })
