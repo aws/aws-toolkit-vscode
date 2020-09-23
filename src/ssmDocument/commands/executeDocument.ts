@@ -15,19 +15,6 @@ export async function executeDocument(node: DocumentItemNode) {
     const logger: Logger = getLogger()
 
     let result: telemetry.Result = 'Succeeded'
-    // const isConfirmed = await showConfirmationMessage(
-    //     {
-    //         prompt: localize('AWS.ssmDocument.deleteDocument.prompt', 'Are you sure you want to delete document {0}?', node.documentName),
-    //         confirm: localize('AWS.ssmDocument.deleteDocument.confirm', 'Delete'),
-    //         cancel: localize('AWS.ssmDocument.deleteDocument.cancel', 'Cancel'),
-    //     },
-    //     window
-    // )
-    // if (!isConfirmed) {
-    //     getLogger().info('DeleteDocument cancelled')
-    //     telemetry.recordSsmDeleteDocument({ result: 'Cancelled' })
-    //     return
-    // }
 
     try {
         await node.executeDocument()

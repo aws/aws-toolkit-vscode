@@ -23,8 +23,6 @@ export const amazonRegistryName = localize('AWS.explorerNode.registry.name.amazo
 export const userRegistryName = localize('AWS.explorerNode.registry.name.self', 'Owned by me')
 export const sharedRegistryName = localize('AWS.explorerNode.registry.name.shared', 'Shared with me')
 
-export const viewOnlyString = localize('AWS.explorer.registry.viewOnly', ' [View Only]')
-
 export class RegistryItemNode extends AWSTreeNodeBase {
     private readonly documentNodes: Map<string, DocumentItemNode>
 
@@ -37,8 +35,7 @@ export class RegistryItemNode extends AWSTreeNodeBase {
     }
 
     private setLabel() {
-        const viewOnly: string = this.registryName === userRegistryName ? '' : viewOnlyString
-        this.label = `${this.registryName}${viewOnly}`
+        this.label = `${this.registryName}`
         this.iconPath = ''
     }
 
