@@ -149,7 +149,7 @@
     "AWS.command.ssmDocument.deleteDocument": "Delete Document",
     "AWS.command.ssmDocument.updateDocumentVersion": "Set Default Version",
     "AWS.command.ssmDocument.executeDocument": "Execute Document in AWS Console",
-    "AWS.command.ssmDocument.openLocalDocument": "Download as...",
+    "AWS.command.ssmDocument.openLocalDocument": "Download",
     "AWS.command.ssmDocument.openLocalDocumentJson": "Download as JSON",
     "AWS.command.ssmDocument.openLocalDocumentYaml": "Download as YAML",
     "AWS.command.ssmDocument.publishDocument": "Publish a Systems Manager Document",

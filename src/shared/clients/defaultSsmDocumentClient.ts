@@ -56,6 +56,17 @@ export class DefaultSsmDocumentClient implements SsmDocumentClient {
         } while (request.NextToken)
     }
 
+    public async describeDocument(documentName: string, documentVersion?: string): Promise<SSM.DescribeDocumentResult> {
+        const client = await this.createSdkClient()
+
+        const request: SSM.Types.DescribeDocumentRequest = {
+            Name: documentName,
+            DocumentVersion: documentVersion,
+        }
+
+        return await client.describeDocument(request).promise()
+    }
+
     public async getDocument(
         documentName: string,
         documentVersion?: string,

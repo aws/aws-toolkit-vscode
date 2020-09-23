@@ -109,8 +109,8 @@ async function promptUserforDocumentVersion(versions: SSM.Types.DocumentVersionI
     } else {
         vscode.window.showInformationMessage(
             localize(
-                'AWS.message.error.ssmDocument.updateDocumentVersion.no_other_versions',
-                'Selected document only has one version. Unable to change default version.'
+                'AWS.message.info.ssmDocument.updateDocumentVersion.no_other_versions',
+                'Selected document has only one version. Unable to change default version.'
             )
         )
         return undefined

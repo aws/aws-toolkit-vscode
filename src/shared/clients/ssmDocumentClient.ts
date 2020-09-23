@@ -11,6 +11,7 @@ export interface SsmDocumentClient {
     deleteDocument(documentName: string): Promise<SSM.Types.DeleteDocumentResult>
     listDocuments(request: SSM.Types.ListDocumentsRequest): AsyncIterableIterator<SSM.Types.DocumentIdentifier>
     listDocumentVersions(documentName: string): AsyncIterableIterator<SSM.Types.DocumentVersionInfo>
+    describeDocument(documentName: string, documentVersion?: string): Promise<SSM.Types.DescribeDocumentResult>
     getDocument(
         documentName: string,
         documentVersion?: string,

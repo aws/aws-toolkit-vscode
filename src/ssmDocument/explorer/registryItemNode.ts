@@ -35,7 +35,7 @@ export class RegistryItemNode extends AWSTreeNodeBase {
     }
 
     private setLabel() {
-        this.label = `${this.registryName}`
+        this.label = this.registryName
         this.iconPath = ''
     }
 

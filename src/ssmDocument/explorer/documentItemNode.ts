@@ -56,10 +56,20 @@ export class DocumentItemNode extends AWSTreeNodeBase {
             return Promise.resolve({})
         }
 
+        let resolvedDocumentFormat: string | undefined
+
+        if (documentFormat === undefined) {
+            // retrieves the document format from the service
+            const documentDescription = await this.client.describeDocument(this.documentName, documentVersion)
+            resolvedDocumentFormat = documentDescription.Document?.DocumentFormat
+        } else {
+            resolvedDocumentFormat = documentFormat
+        }
+
         return await this.client.getDocument(
             this.documentName,
             documentVersion || this.documentItem.DocumentVersion,
-            documentFormat || this.documentItem.DocumentFormat
+            resolvedDocumentFormat
         )
     }
 

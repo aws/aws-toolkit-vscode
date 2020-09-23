@@ -355,6 +355,18 @@ export class MockSsmDocumentClient implements SsmDocumentClient {
             documentName: string
         ) => AsyncIterableIterator<SSM.Types.DocumentVersionInfo> = (documentName: string) => asyncGenerator([]),
 
+        public readonly describeDocument: (
+            documentName: string,
+            documentVersion?: string
+        ) => Promise<SSM.DescribeDocumentResult> = async (documentName: string, documentVersion?: string) =>
+            ({
+                Document: {
+                    Name: '',
+                    DocumentType: '',
+                    DocumentFormat: '',
+                },
+            } as SSM.Types.DescribeDocumentResult),
+
         public readonly getDocument: (
             documentName: string,
             documentVersion?: string
