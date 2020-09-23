@@ -17,12 +17,16 @@ import com.intellij.ui.DoubleClickListener
 import com.intellij.ui.TreeTableSpeedSearch
 import com.intellij.ui.treeStructure.treetable.TreeTable
 import com.intellij.util.containers.Convertor
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.s3.objectActions.deleteSelectedObjects
+import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
+import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
@@ -44,7 +48,8 @@ class S3TreeTable(
     val rootNode: S3TreeDirectoryNode,
     val bucket: S3VirtualBucket,
     private val project: Project
-) : TreeTable(treeTableModel) {
+) : TreeTable(treeTableModel), CoroutineScope by ApplicationThreadPoolScope("S3TreeTable") {
+    private val edt = getCoroutineUiContext()
 
     private val dropTargetListener = object : DropTargetAdapter() {
         override fun drop(dropEvent: DropTargetDropEvent) {
@@ -102,6 +107,7 @@ class S3TreeTable(
         val maxFileSize = getUserContentLoadLimit()
         if (objectNode.size > maxFileSize) {
             notifyError(content = message("s3.open.file_too_big", StringUtil.formatFileSize(maxFileSize.toLong())))
+            S3Telemetry.downloadObject(project, false)
             return true
         }
         val fileWrapper = VirtualFileWrapper(File("${FileUtil.getTempDirectory()}${File.separator}${objectNode.key.replace('/', '_')}"))
@@ -110,20 +116,27 @@ class S3TreeTable(
             fileWrapper.virtualFile?.isWritable = true
         }
 
-        GlobalScope.launch {
-            bucket.download(project, objectNode.key, fileWrapper.file.outputStream())
-            runInEdt {
-                // If the file type is not associated, prompt user to associate. Returns null on cancel
-                fileWrapper.virtualFile?.let {
-                    ApplicationManager.getApplication().runWriteAction {
-                        it.isWritable = false
-                    }
-                    FileTypeChooser.getKnownFileTypeOrAssociate(it, project) ?: return@runInEdt
-                    // set virtual file to read only
-                    FileEditorManager.getInstance(project).openFile(it, true, true).ifEmpty {
-                        notifyError(project = project, content = message("s3.open.viewer.failed"))
+        launch {
+            try {
+                bucket.download(project, objectNode.key, fileWrapper.file.outputStream())
+                withContext(edt) {
+                    // If the file type is not associated, prompt user to associate. Returns null on cancel
+                    fileWrapper.virtualFile?.let {
+                        ApplicationManager.getApplication().runWriteAction {
+                            it.isWritable = false
+                        }
+                        FileTypeChooser.getKnownFileTypeOrAssociate(it, project) ?: return@withContext
+                        // set virtual file to read only
+                        FileEditorManager.getInstance(project).openFile(it, true, true).ifEmpty {
+                            notifyError(project = project, content = message("s3.open.viewer.failed.unsupported"))
+                        }
                     }
                 }
+                S3Telemetry.downloadObject(project, true)
+            } catch (e: Exception) {
+                S3Telemetry.downloadObject(project, false)
+                LOG.error(e) { "Attempting to open file threw" }
+                notifyError(project = project, content = message("s3.open.viewer.failed"))
             }
         }
         return true
@@ -133,7 +146,7 @@ class S3TreeTable(
         val continuationNode = (tree.getPathForRow(row).lastPathComponent as? DefaultMutableTreeNode)?.userObject as? S3TreeContinuationNode ?: return false
         val parent = continuationNode.parent ?: return false
 
-        GlobalScope.launch {
+        launch {
             parent.loadMore(continuationNode.token)
             refresh()
         }
@@ -166,7 +179,7 @@ class S3TreeTable(
             LOG.warn { "Zero files passed into s3 uploadAndRefresh, not attempting upload or refresh" }
             return
         }
-        GlobalScope.launch {
+        launch {
             try {
                 selectedFiles.forEach {
                     if (it.isDirectory) {
