@@ -1,7 +1,7 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.ui.wizard;
+package software.aws.toolkits.jetbrains.services.lambda.wizard;
 
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.openapi.ui.ValidationInfo;
@@ -37,13 +37,11 @@ import software.aws.toolkits.jetbrains.core.executables.ExecutableType;
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder;
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup;
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupUtil;
-import software.aws.toolkits.jetbrains.services.lambda.SamNewProjectSettings;
-import software.aws.toolkits.jetbrains.services.lambda.SamProjectTemplate;
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable;
 
 public class SamInitSelectionPanel implements ValidatablePanel {
     @NotNull
-    JPanel mainPanel;
+    public JPanel mainPanel;
     @NotNull
     private ComboBox<Runtime> runtimeComboBox;
     @NotNull
@@ -71,11 +69,11 @@ public class SamInitSelectionPanel implements ValidatablePanel {
 
     private static final Predicate<Runtime> includeAllRuntimes = (s) -> true;
 
-    SamInitSelectionPanel(SamProjectGenerator generator) {
+    public SamInitSelectionPanel(SamProjectGenerator generator) {
         this(generator, includeAllRuntimes);
     }
 
-    SamInitSelectionPanel(SamProjectGenerator generator, Predicate<Runtime> runtimeFilter) {
+    public SamInitSelectionPanel(SamProjectGenerator generator, Predicate<Runtime> runtimeFilter) {
         this.generator = generator;
         this.currentSdkSelectorLabel = null;
         this.currentSdkSelector = null;

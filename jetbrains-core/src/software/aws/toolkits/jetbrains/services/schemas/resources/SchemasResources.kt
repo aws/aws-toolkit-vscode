@@ -10,7 +10,7 @@ import software.amazon.awssdk.services.schemas.model.SchemaSummary
 import software.amazon.awssdk.services.schemas.model.SchemaVersionSummary
 import software.aws.toolkits.jetbrains.core.ClientBackedCachedResource
 import software.aws.toolkits.jetbrains.core.Resource
-import software.aws.toolkits.jetbrains.ui.wizard.SchemaSelectionItem
+import software.aws.toolkits.jetbrains.services.lambda.wizard.SchemaSelectionItem
 import java.time.Duration
 
 object SchemasResources {

@@ -3,13 +3,13 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.dotnet
 
-import software.aws.toolkits.jetbrains.services.lambda.SamProjectTemplate
-import software.aws.toolkits.jetbrains.services.lambda.SamProjectWizard
-import software.aws.toolkits.jetbrains.ui.wizard.NoOpSchemaSelectionPanel
-import software.aws.toolkits.jetbrains.ui.wizard.NoOpSdkSelectionPanel
-import software.aws.toolkits.jetbrains.ui.wizard.SamProjectGenerator
-import software.aws.toolkits.jetbrains.ui.wizard.SchemaSelectionPanel
-import software.aws.toolkits.jetbrains.ui.wizard.SdkSelectionPanel
+import software.aws.toolkits.jetbrains.services.lambda.wizard.NoOpSchemaSelectionPanel
+import software.aws.toolkits.jetbrains.services.lambda.wizard.NoOpSdkSelectionPanel
+import software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectGenerator
+import software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectTemplate
+import software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectWizard
+import software.aws.toolkits.jetbrains.services.lambda.wizard.SchemaSelectionPanel
+import software.aws.toolkits.jetbrains.services.lambda.wizard.SdkSelectionPanel
 
 class DotNetSamProjectWizard : SamProjectWizard {
     override fun listTemplates(): Collection<SamProjectTemplate> =

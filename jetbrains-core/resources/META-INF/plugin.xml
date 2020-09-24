@@ -115,7 +115,7 @@
         </extensionPoint>
 
         <extensionPoint name="lambda.sam.projectWizard" beanClass="software.aws.toolkits.jetbrains.core.IdBasedExtensionPoint" dynamic="true">
-            <with attribute="implementationClass" implements="software.aws.toolkits.jetbrains.services.lambda.SamProjectWizard"/>
+            <with attribute="implementationClass" implements="software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectWizard"/>
         </extensionPoint>
 
         <extensionPoint name="lambda.handlerCompletion" beanClass="software.aws.toolkits.jetbrains.core.IdBasedExtensionPoint" dynamic="true">
@@ -212,9 +212,9 @@
         <runConfigurationProducer implementation="software.aws.toolkits.jetbrains.services.ecs.execution.EcsCloudDebugRunConfigurationProducer" />
 
         <!-- Project Wizard components -->
-        <moduleType id="AWS" implementationClass="software.aws.toolkits.jetbrains.ui.wizard.AwsModuleType" />
-        <directoryProjectGenerator implementation="software.aws.toolkits.jetbrains.ui.wizard.SamProjectGenerator" />
-        <projectTemplatesFactory implementation="software.aws.toolkits.jetbrains.ui.wizard.SamProjectGeneratorIntelliJAdapter" />
+        <moduleType id="AWS" implementationClass="software.aws.toolkits.jetbrains.services.lambda.wizard.AwsModuleType" />
+        <directoryProjectGenerator implementation="software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectGenerator" />
+        <projectTemplatesFactory implementation="software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectGeneratorIntelliJAdapter" />
 
         <webHelpProvider implementation="software.aws.toolkits.jetbrains.core.help.HelpIdTranslator"/>
         

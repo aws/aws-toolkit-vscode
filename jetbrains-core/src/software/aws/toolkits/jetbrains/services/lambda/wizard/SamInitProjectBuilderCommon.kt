@@ -1,8 +1,8 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 @file:JvmName("SamInitProjectBuilderCommon")
 
-package software.aws.toolkits.jetbrains.ui.wizard
+package software.aws.toolkits.jetbrains.services.lambda.wizard
 
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt

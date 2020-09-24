@@ -1,7 +1,7 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.ui.wizard
+package software.aws.toolkits.jetbrains.services.lambda.wizard
 
 // TODO: This is fragile. Very fragile. But it is necessary to get Schemas service launched, and we've evaluated all other trade offs
 // This will be done on the server-side as soon as we can, but for now the client needs to do this
