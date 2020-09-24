@@ -46,7 +46,7 @@ const SSMDOCUMENT_TEMPLATES: SsmDocumentTemplateQuickPickItem[] = [
     },
 ]
 
-export async function createSsmDocumentFromTemplate(): Promise<void> {
+export async function createSsmDocumentFromTemplate(extensionContext: vscode.ExtensionContext): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
     const logger: Logger = getLogger()
 
@@ -74,8 +74,15 @@ export async function createSsmDocumentFromTemplate(): Promise<void> {
             result = 'Cancelled'
         } else {
             logger.debug(`User selected template: ${selection.label}`)
-            const textDocument: vscode.TextDocument = await openTextDocumentFromSelection(selection)
-            vscode.window.showTextDocument(textDocument)
+            const textDocument: vscode.TextDocument | undefined = await openTextDocumentFromSelection(
+                selection,
+                extensionContext.extensionPath
+            )
+            if (textDocument !== undefined) {
+                vscode.window.showTextDocument(textDocument)
+            } else {
+                result = 'Cancelled'
+            }
         }
     } catch (err) {
         result = 'Failed'

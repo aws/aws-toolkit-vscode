@@ -14,7 +14,6 @@ import { openDocumentItem, openDocumentItemJson, openDocumentItemYaml } from './
 import { DocumentItemNode } from './explorer/documentItemNode'
 import { deleteDocument } from './commands/deleteDocument'
 import { DocumentItemNodeWriteable } from './explorer/documentItemNodeWriteable'
-import { executeDocument } from './commands/executeDocument'
 import { updateDocumentVersion } from './commands/updateDocumentVersion'
 
 // Activate SSM Document related functionality for the extension.
@@ -36,19 +35,13 @@ async function registerSsmDocumentCommands(
 ): Promise<void> {
     extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.ssmDocument.createLocalDocument', async () => {
-            await createSsmDocumentFromTemplate()
+            await createSsmDocumentFromTemplate(extensionContext)
         })
     )
 
     extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.ssmDocument.deleteDocument', async (node: DocumentItemNodeWriteable) => {
             await deleteDocument(node)
-        })
-    )
-
-    extensionContext.subscriptions.push(
-        vscode.commands.registerCommand('aws.ssmDocument.executeDocument', async (node: DocumentItemNode) => {
-            await executeDocument(node)
         })
     )
 

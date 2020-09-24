@@ -128,7 +128,7 @@ export async function createDocument(
         if (createResult.DocumentDescription) {
             outputChannel.appendLine(stringify(createResult.DocumentDescription))
         }
-        logger.info(`Created Systems Manager Document successfully ${stringify(result.DocumentDescription)}`)
+        logger.info(`Created Systems Manager Document successfully ${stringify(createResult.DocumentDescription)}`)
         vscode.window.showInformationMessage(`Created Systems Manager Document successfully`)
         outputChannel.appendLine('')
     } catch (err) {
@@ -194,7 +194,7 @@ export async function updateDocument(
             outputChannel.appendLine(stringify(updateResult.DocumentDescription))
         }
 
-        logger.info(`Updated Systems Manager Document successfully ${stringify(result.DocumentDescription)}`)
+        logger.info(`Updated Systems Manager Document successfully ${stringify(updateResult.DocumentDescription)}`)
         vscode.window.showInformationMessage(`Updated Systems Manager Document successfully`)
         outputChannel.appendLine('')
 
@@ -215,7 +215,7 @@ export async function updateDocument(
             logger.info('Declined update default version on update document success.')
         } else {
             try {
-                let documentVersion: string | undefined = result.DocumentDescription?.DocumentVersion
+                let documentVersion: string | undefined = updateResult.DocumentDescription?.DocumentVersion
                 if (documentVersion !== undefined) {
                     await client.updateDocumentVersion(wizardResponse.name, documentVersion)
                     vscode.window.showInformationMessage(

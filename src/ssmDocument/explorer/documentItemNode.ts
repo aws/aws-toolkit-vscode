@@ -37,17 +37,6 @@ export class DocumentItemNode extends AWSTreeNodeBase {
         return this.documentItem.Owner || ''
     }
 
-    public async executeDocument() {
-        let executeDocumentUrl: string =
-            'https://console.aws.amazon.com/systems-manager/automation/execute/' +
-            this.documentName +
-            '?region=' +
-            this.regionCode
-        return await vscode.env.openExternal(vscode.Uri.parse(executeDocumentUrl)).then(success => {
-            return success
-        })
-    }
-
     public async getDocumentContent(
         documentVersion?: string,
         documentFormat?: string
