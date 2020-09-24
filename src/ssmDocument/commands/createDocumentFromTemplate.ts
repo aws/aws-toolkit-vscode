@@ -10,6 +10,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as YAML from 'yaml'
 import { getLogger, Logger } from '../../shared/logger'
+import * as telemetry from '../../shared/telemetry/telemetry'
 import * as picker from '../../shared/ui/picker'
 import { promptUserForDocumentFormat } from '../util/util'
 import { readFileAsString } from '../../shared/filesystemUtilities'
@@ -45,7 +46,8 @@ const SSMDOCUMENT_TEMPLATES: SsmDocumentTemplateQuickPickItem[] = [
     },
 ]
 
-export async function createSsmDocumentFromTemplate(extensionContext: vscode.ExtensionContext): Promise<void> {
+export async function createSsmDocumentFromTemplate(): Promise<void> {
+    let result: telemetry.Result = 'Succeeded'
     const logger: Logger = getLogger()
 
     const quickPick = picker.createQuickPick<SsmDocumentTemplateQuickPickItem>({
@@ -66,18 +68,17 @@ export async function createSsmDocumentFromTemplate(extensionContext: vscode.Ext
 
     const selection = picker.verifySinglePickerOutput(choices)
 
-    // User pressed escape and didn't select a template
-    if (selection === undefined) {
-        return
-    }
-
     try {
-        logger.debug(`User selected the ${selection.label} template.`)
-        const textDocument = await openTextDocumentFromSelection(selection, extensionContext.extensionPath)
-        if (textDocument) {
+        // User pressed escape and didn't select a template
+        if (selection === undefined) {
+            result = 'Cancelled'
+        } else {
+            logger.debug(`User selected template: ${selection.label}`)
+            const textDocument: vscode.TextDocument = await openTextDocumentFromSelection(selection)
             vscode.window.showTextDocument(textDocument)
         }
     } catch (err) {
+        result = 'Failed'
         logger.error(err as Error)
         vscode.window.showErrorMessage(
             localize(
@@ -85,6 +86,8 @@ export async function createSsmDocumentFromTemplate(extensionContext: vscode.Ext
                 'There was an error creating the SSM Document from the template, check log for details.'
             )
         )
+    } finally {
+        telemetry.recordSsmCreateDocument({ result })
     }
 }
 

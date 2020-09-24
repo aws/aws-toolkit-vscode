@@ -117,7 +117,7 @@ export async function createDocument(
             DocumentFormat: textDocument.languageId === ssmYaml ? 'YAML' : 'JSON',
         }
 
-        const result = await client.createDocument(request)
+        const createResult = await client.createDocument(request)
         outputChannel.appendLine(
             localize(
                 'AWS.message.info.ssmDocument.publishDocument.createSuccess',
@@ -125,8 +125,8 @@ export async function createDocument(
                 wizardResponse.name
             )
         )
-        if (result.DocumentDescription) {
-            outputChannel.appendLine(stringify(result.DocumentDescription))
+        if (createResult.DocumentDescription) {
+            outputChannel.appendLine(stringify(createResult.DocumentDescription))
         }
         logger.info(`Created Systems Manager Document successfully ${stringify(result.DocumentDescription)}`)
         vscode.window.showInformationMessage(`Created Systems Manager Document successfully`)
@@ -182,7 +182,7 @@ export async function updateDocument(
             DocumentFormat: textDocument.languageId === ssmYaml ? 'YAML' : 'JSON',
         }
 
-        const result = await client.updateDocument(request)
+        const updateResult = await client.updateDocument(request)
         outputChannel.appendLine(
             localize(
                 'AWS.message.info.ssmDocument.publishDocument.updateSuccess',
@@ -190,9 +190,10 @@ export async function updateDocument(
                 wizardResponse.name
             )
         )
-        if (result.DocumentDescription) {
-            outputChannel.appendLine(stringify(result.DocumentDescription))
+        if (updateResult.DocumentDescription) {
+            outputChannel.appendLine(stringify(updateResult.DocumentDescription))
         }
+
         logger.info(`Updated Systems Manager Document successfully ${stringify(result.DocumentDescription)}`)
         vscode.window.showInformationMessage(`Updated Systems Manager Document successfully`)
         outputChannel.appendLine('')

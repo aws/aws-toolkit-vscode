@@ -10,7 +10,6 @@ import { AwsContext } from '../shared/awsContext'
 import { createSsmDocumentFromTemplate } from './commands/createDocumentFromTemplate'
 import { publishSSMDocument } from './commands/publishDocument'
 import { RegionProvider } from '../shared/regions/regionProvider'
-import * as telemetry from '../shared/telemetry/telemetry'
 import { openDocumentItem, openDocumentItemJson, openDocumentItemYaml } from './commands/openDocumentItem'
 import { DocumentItemNode } from './explorer/documentItemNode'
 import { deleteDocument } from './commands/deleteDocument'
@@ -37,11 +36,7 @@ async function registerSsmDocumentCommands(
 ): Promise<void> {
     extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.ssmDocument.createLocalDocument', async () => {
-            try {
-                await createSsmDocumentFromTemplate(extensionContext)
-            } finally {
-                telemetry.recordSsmCreateDocument()
-            }
+            await createSsmDocumentFromTemplate()
         })
     )
 
