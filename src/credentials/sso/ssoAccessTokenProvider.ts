@@ -17,7 +17,7 @@ const CLIENT_NAME = `aws-toolkit-vscode`
 const GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:device_code'
 // Used to convert seconds to milliseconds
 const MILLISECONDS_PER_SECOND = 1000
-const BACKOFF_DELAY_MINUTES = 5000
+const BACKOFF_DELAY_MS = 5000
 
 export class SsoAccessTokenProvider {
     private ssoRegion: string
@@ -44,7 +44,6 @@ export class SsoAccessTokenProvider {
             this.cache.saveAccessToken(this.ssoUrl, token)
             return token
         } catch (error) {
-            getLogger().error(error)
             throw error
         }
     }
@@ -69,7 +68,7 @@ export class SsoAccessTokenProvider {
         if (authorization.interval != undefined && authorization.interval! > 0) {
             retryInterval = authorization.interval! * MILLISECONDS_PER_SECOND
         } else {
-            retryInterval = BACKOFF_DELAY_MINUTES
+            retryInterval = BACKOFF_DELAY_MS
         }
 
         const createTokenParams = {
@@ -91,16 +90,14 @@ export class SsoAccessTokenProvider {
                 return accessToken
             } catch (err) {
                 if (err.code === 'SlowDownException') {
-                    retryInterval += BACKOFF_DELAY_MINUTES
+                    retryInterval += BACKOFF_DELAY_MS
                 } else if (err.code === 'AuthorizationPendingException') {
                     // do nothing, wait the interval and try again
                 } else if (err.code === 'ExpiredTokenException') {
-                    getLogger().error(err)
                     throw Error(`Device code has expired while polling for SSO token, login flow must be re-initiated.`)
                 } else if (err.code === 'TimeoutException') {
                     retryInterval *= 2
                 } else {
-                    getLogger().error(err)
                     throw err
                 }
             }

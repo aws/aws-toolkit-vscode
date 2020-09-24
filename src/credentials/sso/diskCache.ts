@@ -10,6 +10,7 @@ import { join } from 'path'
 import { homedir } from 'os'
 import { SsoAccessToken } from './ssoAccessToken'
 import { getSHA1StringHash } from '../../shared/utilities/textUtilities'
+import { getLogger } from '../../shared/logger'
 
 export class DiskCache implements SsoCache {
     private cacheDir: string = join(homedir(), '.aws', 'sso', 'cache')
@@ -20,10 +21,15 @@ export class DiskCache implements SsoCache {
         if (!this.registrationExists(ssoRegion)) {
             return undefined
         }
-        const registration = JSON.parse(fs.readFileSync(this.registrationCache(ssoRegion)).toString())
-        if (registration && this.isNotExpired(registration)) {
-            return registration
+        try {
+            const registration = JSON.parse(fs.readFileSync(this.registrationCache(ssoRegion)).toString())
+            if (registration && this.isNotExpired(registration)) {
+                return registration
+            }
+        } catch (error) {
+            getLogger().error(error)
         }
+
         return undefined
     }
 
@@ -41,8 +47,12 @@ export class DiskCache implements SsoCache {
         }
     }
     public loadAccessToken(ssoUrl: string): SsoAccessToken | undefined {
-        if (this.tokenExists(ssoUrl)) {
-            return JSON.parse(fs.readFileSync(this.accessTokenCache(ssoUrl)).toString())
+        try {
+            if (this.tokenExists(ssoUrl)) {
+                return JSON.parse(fs.readFileSync(this.accessTokenCache(ssoUrl)).toString())
+            }
+        } catch (error) {
+            getLogger().error(error)
         }
         return undefined
     }
