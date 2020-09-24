@@ -7,12 +7,18 @@ import * as assert from 'assert'
 import * as path from 'path'
 import * as vscode from 'vscode'
 
-import { CloudFormationTemplateRegistry, TemplateDatum } from '../../../shared/cloudformation/templateRegistry'
+import {
+    CloudFormationTemplateRegistry,
+    getResourceAssociatedWithHandlerFromTemplateDatum,
+    getTemplatesAssociatedWithHandler,
+    TemplateDatum,
+} from '../../../shared/cloudformation/templateRegistry'
 import { rmrf } from '../../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { assertThrowsError } from '../utilities/assertUtils'
 import { badYaml, makeSampleSamTemplateYaml, strToYamlFile } from './cloudformationTestUtils'
 import { assertEqualPaths } from '../../testUtil'
+import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 
 describe('CloudFormation Template Registry', async () => {
     const goodYaml1 = makeSampleSamTemplateYaml(false)
@@ -128,6 +134,166 @@ describe('CloudFormation Template Registry', async () => {
                 testRegistry.removeTemplateFromRegistry(vscode.Uri.file(path.join(tempFolder, 'wrong-template.yaml')))
                 assert.strictEqual(testRegistry.registeredTemplates.length, 1)
             })
+        })
+    })
+
+    // Consts for the non-class functions
+    const rootPath = path.join('i', 'am', 'your', 'father')
+    const nestedPath = path.join('s', 'brothers', 'nephews', 'cousins', 'former', 'roommate')
+    const otherPath = path.join('obi-wan', 'killed', 'your', 'father')
+    const matchingResource: {
+        Type: 'AWS::Serverless::Function'
+        Properties: CloudFormation.ResourceProperties
+    } = {
+        Type: 'AWS::Serverless::Function',
+        Properties: {
+            Handler: 'index.handler',
+            CodeUri: path.join(nestedPath),
+            Runtime: 'nodejs12.x',
+        },
+    }
+    const nonParentTemplate = {
+        path: path.join(otherPath, 'template.yaml'),
+        template: {},
+    }
+    const workingTemplate = {
+        path: path.join(rootPath, 'template.yaml'),
+        template: {
+            Resources: {
+                resource1: matchingResource,
+            },
+        },
+    }
+    const noResourceTemplate = {
+        path: path.join(rootPath, 'template.yaml'),
+        template: {
+            Resources: {},
+        },
+    }
+    const compiledResource: {
+        Type: 'AWS::Serverless::Function'
+        Properties: CloudFormation.ResourceProperties
+    } = {
+        Type: 'AWS::Serverless::Function',
+        Properties: {
+            Handler: 'Asdf::Asdf.Function::FunctionHandler',
+            CodeUri: path.join(nestedPath),
+            Runtime: 'dotnetcore3.1',
+        },
+    }
+    const dotNetTemplate = {
+        path: path.join(rootPath, 'template.yaml'),
+        template: {
+            Resources: {
+                resource1: compiledResource,
+            },
+        },
+    }
+    const multiResourceTemplate = {
+        path: path.join(rootPath, 'template.yaml'),
+        template: {
+            Resources: {
+                resource1: matchingResource,
+                resource2: {
+                    ...matchingResource,
+                    Properties: {
+                        ...matchingResource.Properties,
+                        Timeout: 5000,
+                    },
+                },
+            },
+        },
+    }
+    const badRuntimeTemplate = {
+        path: path.join(rootPath, 'template.yaml'),
+        template: {
+            Resources: {
+                badResource: {
+                    ...matchingResource,
+                    Properties: {
+                        ...matchingResource.Properties,
+                        Runtime: 'COBOL-60',
+                    },
+                },
+                goodResource: matchingResource,
+            },
+        },
+    }
+
+    describe('getTemplatesAssociatedWithHandler', () => {
+        it('returns an array containing TemplateDatum that contain references to the handler in question', () => {
+            const val = getTemplatesAssociatedWithHandler(path.join(rootPath, nestedPath, 'index.js'), 'handler', [
+                nonParentTemplate,
+                workingTemplate,
+                noResourceTemplate,
+                dotNetTemplate,
+                multiResourceTemplate,
+                badRuntimeTemplate,
+            ])
+
+            assert.deepStrictEqual(val, [workingTemplate, multiResourceTemplate, badRuntimeTemplate])
+        })
+    })
+
+    describe('getResourceAssociatedWithHandlerFromTemplateDatum', () => {
+        it('returns undefined if the given template is not a parent of the handler file in question', () => {
+            const val = getResourceAssociatedWithHandlerFromTemplateDatum(
+                path.join(rootPath, 'index.js'),
+                'handler',
+                nonParentTemplate
+            )
+
+            assert.strictEqual(val, undefined)
+        })
+
+        it('returns undefined if the template has no resources', () => {
+            const val = getResourceAssociatedWithHandlerFromTemplateDatum(
+                path.join(rootPath, nestedPath, 'index.js'),
+                'handler',
+                noResourceTemplate
+            )
+
+            assert.strictEqual(val, undefined)
+        })
+
+        it('returns a template resource if it has a matching handler', () => {
+            const val = getResourceAssociatedWithHandlerFromTemplateDatum(
+                path.join(rootPath, nestedPath, 'index.js'),
+                'handler',
+                workingTemplate
+            )
+
+            assert.deepStrictEqual(val, matchingResource)
+        })
+
+        it('ignores path handling if using a compiled language', () => {
+            const val = getResourceAssociatedWithHandlerFromTemplateDatum(
+                path.join(rootPath, nestedPath, 'index.cs'),
+                'Asdf::Asdf.Function::FunctionHandler',
+                dotNetTemplate
+            )
+
+            assert.deepStrictEqual(val, compiledResource)
+        })
+
+        it('returns the first template resource if it has multiple matching handlers', () => {
+            const val = getResourceAssociatedWithHandlerFromTemplateDatum(
+                path.join(rootPath, nestedPath, 'index.js'),
+                'handler',
+                multiResourceTemplate
+            )
+
+            assert.deepStrictEqual(val, matchingResource)
+        })
+
+        it('does not break if the resource has a non-parseable runtime', () => {
+            const val = getResourceAssociatedWithHandlerFromTemplateDatum(
+                path.join(rootPath, nestedPath, 'index.js'),
+                'handler',
+                badRuntimeTemplate
+            )
+
+            assert.deepStrictEqual(val, matchingResource)
         })
     })
 })

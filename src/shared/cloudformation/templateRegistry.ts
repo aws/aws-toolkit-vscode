@@ -189,8 +189,16 @@ export function getResourceAssociatedWithHandlerFromTemplateDatum(
             )
 
             if (registeredRuntime && registeredHandler && registeredCodeUri) {
-                if (dotNetRuntimes.includes(registeredRuntime) && handler === registeredHandler) {
-                    return resource
+                if (dotNetRuntimes.includes(registeredRuntime)) {
+                    if (
+                        handler === registeredHandler &&
+                        isInDirectory(
+                            pathutils.normalize(path_.join(templateDirname, registeredCodeUri)),
+                            pathutils.normalize(filepath)
+                        )
+                    ) {
+                        return resource
+                    }
                 } else {
                     try {
                         const parsedLambda = parseLambdaDetailsFromConfiguration({
