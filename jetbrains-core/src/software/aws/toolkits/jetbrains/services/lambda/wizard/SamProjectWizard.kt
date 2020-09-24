@@ -1,7 +1,7 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.lambda
+package software.aws.toolkits.jetbrains.services.lambda.wizard
 
 import com.intellij.execution.RunManager
 import com.intellij.openapi.application.runWriteAction
@@ -20,17 +20,13 @@ import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPointObject
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.LocalLambdaRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.LocalLambdaRunConfigurationProducer
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
 import software.aws.toolkits.jetbrains.services.schemas.SchemaTemplateParameters
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources.AWS_EVENTS_REGISTRY
-import software.aws.toolkits.jetbrains.ui.wizard.AwsModuleType
-import software.aws.toolkits.jetbrains.ui.wizard.SamInitRunner
-import software.aws.toolkits.jetbrains.ui.wizard.SamProjectGenerator
-import software.aws.toolkits.jetbrains.ui.wizard.SchemaSelectionPanel
-import software.aws.toolkits.jetbrains.ui.wizard.SdkSelectionPanel
 import software.aws.toolkits.telemetry.SamTelemetry
 import software.aws.toolkits.telemetry.Runtime as TelemetryRuntime
 

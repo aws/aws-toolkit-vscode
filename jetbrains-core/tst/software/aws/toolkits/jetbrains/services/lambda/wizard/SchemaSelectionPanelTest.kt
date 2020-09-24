@@ -1,7 +1,7 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.ui.wizard
+package software.aws.toolkits.jetbrains.services.lambda.wizard
 
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.runInEdtAndWait
@@ -16,14 +16,14 @@ import org.junit.Test
 import software.amazon.awssdk.services.schemas.model.DescribeSchemaResponse
 import software.aws.toolkits.jetbrains.core.MockResourceCache
 import software.aws.toolkits.jetbrains.core.Resource
+import software.aws.toolkits.jetbrains.services.lambda.wizard.SchemaSelectionPanelBase.Companion.DEFAULT_EVENT_DETAIL_TYPE
+import software.aws.toolkits.jetbrains.services.lambda.wizard.SchemaSelectionPanelBase.Companion.DEFAULT_EVENT_SOURCE
 import software.aws.toolkits.jetbrains.services.schemas.SchemaTemplateParameters
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources.LIST_REGISTRIES_AND_SCHEMAS
 import software.aws.toolkits.jetbrains.ui.AwsConnection
 import software.aws.toolkits.jetbrains.ui.LazyAwsConnectionEvaluator
 import software.aws.toolkits.jetbrains.ui.ResourceSelector
-import software.aws.toolkits.jetbrains.ui.wizard.SchemaSelectionPanelBase.Companion.DEFAULT_EVENT_DETAIL_TYPE
-import software.aws.toolkits.jetbrains.ui.wizard.SchemaSelectionPanelBase.Companion.DEFAULT_EVENT_SOURCE
 import java.io.File
 import javax.swing.JPanel
 

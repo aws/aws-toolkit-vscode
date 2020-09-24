@@ -1,7 +1,7 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.ui.wizard
+package software.aws.toolkits.jetbrains.services.lambda.python
 
 import com.intellij.ide.util.projectWizard.AbstractNewProjectStep
 import com.intellij.openapi.projectRoots.Sdk
@@ -17,8 +17,10 @@ import com.jetbrains.python.newProject.steps.PyAddExistingSdkPanel
 import com.jetbrains.python.newProject.steps.PyAddNewEnvironmentPanel
 import com.jetbrains.python.sdk.add.PyAddSdkGroupPanel
 import icons.AwsIcons
-import software.aws.toolkits.jetbrains.services.lambda.SdkBasedSdkSettings
-import software.aws.toolkits.jetbrains.services.lambda.SdkSettings
+import software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectRuntimeSelectionStep
+import software.aws.toolkits.jetbrains.services.lambda.wizard.SdkBasedSdkSettings
+import software.aws.toolkits.jetbrains.services.lambda.wizard.SdkSelectionPanelBase
+import software.aws.toolkits.jetbrains.services.lambda.wizard.SdkSettings
 import software.aws.toolkits.resources.message
 import java.io.File
 import javax.swing.Icon

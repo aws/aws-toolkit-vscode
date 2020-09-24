@@ -19,7 +19,7 @@
     </project-components>
 
     <extensions defaultExtensionNs="com.intellij">
-        <projectTemplateProvider implementation="software.aws.toolkits.jetbrains.ui.wizard.DotNetSamProjectProvider" order="last"/>
+        <projectTemplateProvider implementation="software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetSamProjectProvider" order="last"/>
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.icons.RiderAwsIconsPatcherRegistrar"/>
     </extensions>
 

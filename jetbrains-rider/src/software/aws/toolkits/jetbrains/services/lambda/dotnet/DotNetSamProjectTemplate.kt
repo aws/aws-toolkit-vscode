@@ -4,9 +4,9 @@
 package software.aws.toolkits.jetbrains.services.lambda.dotnet
 
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.jetbrains.services.lambda.SamProjectTemplate
-import software.aws.toolkits.jetbrains.services.lambda.TemplateParameters
-import software.aws.toolkits.jetbrains.services.lambda.TemplateParameters.AppBasedTemplate
+import software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectTemplate
+import software.aws.toolkits.jetbrains.services.lambda.wizard.TemplateParameters
+import software.aws.toolkits.jetbrains.services.lambda.wizard.TemplateParameters.AppBasedTemplate
 import software.aws.toolkits.resources.message
 
 class DotNetSamProjectTemplate : SamProjectTemplate() {
