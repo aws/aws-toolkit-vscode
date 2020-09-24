@@ -205,8 +205,8 @@ export async function updateDocument(
                     'Would you like to make this the default version for {0}?',
                     wizardResponse.name
                 ),
-                confirm: localize('AWS.ssmDocument.publishDocument.updateVersion.confirm', 'Yes'),
-                cancel: localize('AWS.ssmDocument.publishDocument.updateVersion.cancel', 'No'),
+                confirm: localize('AWS.generic.response.yes', 'Yes'),
+                cancel: localize('AWS.generic.response.no', 'No'),
             },
             window
         )
