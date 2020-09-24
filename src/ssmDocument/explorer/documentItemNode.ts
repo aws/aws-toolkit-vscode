@@ -4,7 +4,6 @@
  */
 
 import { SSM } from 'aws-sdk'
-import * as vscode from 'vscode'
 
 import { SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
