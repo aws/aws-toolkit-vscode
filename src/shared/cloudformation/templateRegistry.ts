@@ -163,6 +163,7 @@ export function getResourceAssociatedWithHandlerFromTemplateDatum(
         return undefined
     }
 
+    // no resources
     const resources = templateDatum.template.Resources
     if (!resources) {
         return undefined
@@ -175,6 +176,7 @@ export function getResourceAssociatedWithHandlerFromTemplateDatum(
             resource &&
             [CloudFormation.SERVERLESS_FUNCTION_TYPE, CloudFormation.LAMBDA_FUNCTION_TYPE].includes(resource.Type)
         ) {
+            // parse template values that could potentially be refs
             const registeredRuntime = CloudFormation.getStringForProperty(
                 resource.Properties?.Runtime,
                 templateDatum.template
@@ -189,6 +191,9 @@ export function getResourceAssociatedWithHandlerFromTemplateDatum(
             )
 
             if (registeredRuntime && registeredHandler && registeredCodeUri) {
+                // .NET is currently a special case in that the filepath and handler aren't specific.
+                // For now: check if handler matches and check if the code URI contains the filepath.
+                // TODO: Can we use Omnisharp to help guide us better?
                 if (dotNetRuntimes.includes(registeredRuntime)) {
                     if (
                         handler === registeredHandler &&
@@ -199,6 +204,9 @@ export function getResourceAssociatedWithHandlerFromTemplateDatum(
                     ) {
                         return resource
                     }
+                    // Interpreted languages all follow the same spec:
+                    // ./path/to/handler/without/file/extension.handlerName
+                    // Check to ensure filename and handler both match.
                 } else {
                     try {
                         const parsedLambda = parseLambdaDetailsFromConfiguration({
