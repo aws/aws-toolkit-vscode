@@ -14,7 +14,10 @@ const istanbul = require('istanbul')
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const remapIstanbul = require('remap-istanbul')
 
-export function runTestsInFolder(testFolder: string): Promise<void> {
+/**
+ * @param initTests List of relative paths to test files to run before all discovered tests.
+ */
+export function runTestsInFolder(testFolder: string, initTests: string[] = []): Promise<void> {
     const outputFile = path.resolve(process.env['TEST_REPORT_DIR'] || '.test-reports', 'report.xml')
     const colorOutput = !process.env['AWS_TOOLKIT_TEST_NO_COLOR']
 
@@ -48,11 +51,18 @@ export function runTestsInFolder(testFolder: string): Promise<void> {
         const testFile = process.env['TEST_FILE'] === 'null' ? undefined : process.env['TEST_FILE']
         const testFilePath = testFile?.replace(/^src[\\\/]/, '')?.concat('.js')
 
-        const globalSetupPath = path.join(testsRoot, 'test', 'globalSetup.test.js')
-        if (testFilePath && fs.existsSync(globalSetupPath)) {
-            // XXX: explicitly add globalSetup, other tests depend on it.
-            mocha.addFile(globalSetupPath)
-        }
+        // Explicitly add additional tests (globalSetup) as the first tests.
+        // TODO: migrate to mochaHooks (requires mocha 8.x).
+        // https://mochajs.org/#available-root-hooks
+        initTests.forEach(relativePath => {
+            const fullPath = path.join(testsRoot, relativePath)
+            if (!fs.existsSync(fullPath)) {
+                console.error(`error: missing ${fullPath}`)
+                throw Error(`missing ${fullPath}`)
+            }
+
+            mocha.addFile(fullPath)
+        })
 
         glob(testFilePath ?? `**/${testFolder}/**/**.test.js`, { cwd: testsRoot }, (err, files) => {
             if (err) {
