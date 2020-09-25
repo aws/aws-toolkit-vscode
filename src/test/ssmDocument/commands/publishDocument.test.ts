@@ -9,8 +9,6 @@ import * as assert from 'assert'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 
-import { stringify } from 'querystring'
-
 import { SsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 import { ToolkitClientBuilder } from '../../../shared/clients/toolkitClientBuilder'
 import { ext } from '../../../shared/extensionGlobals'
@@ -61,16 +59,6 @@ const mockDoc: vscode.TextDocument = {
     validateRange: sinon.spy(),
 }
 
-const mockChannel: vscode.OutputChannel = {
-    name: 'channel',
-    append: sinon.spy(),
-    appendLine: sinon.spy(),
-    clear: sinon.spy(),
-    show: sinon.spy(),
-    hide: sinon.spy(),
-    dispose: sinon.spy(),
-}
-
 describe('publishSSMDocument', async () => {
     let sandbox = sinon.createSandbox()
     const fakeAwsContext = new FakeAwsContext()
@@ -88,14 +76,12 @@ describe('publishSSMDocument', async () => {
         description: 'us-east-1',
     }
 
-    let channel: vscode.OutputChannel
     let textDocument: vscode.TextDocument
     let apiCalled: string
 
     beforeEach(async () => {
         sandbox = sinon.createSandbox()
         apiCalled = ''
-        channel = { ...mockChannel }
         textDocument = { ...mockDoc }
         sandbox.stub(vscode.window, 'activeTextEditor').value({
             document: textDocument,
@@ -124,7 +110,7 @@ describe('publishSSMDocument', async () => {
             })
         )
 
-        await publish.publishSSMDocument(fakeAwsContext, fakeRegionProvider, channel)
+        await publish.publishSSMDocument(fakeAwsContext, fakeRegionProvider)
 
         sinon.assert.calledOnce(wizardStub)
         assert.strictEqual(apiCalled, 'createDocument')
@@ -138,7 +124,7 @@ describe('publishSSMDocument', async () => {
             })
         )
         sandbox.stub(ssmUtils, 'showConfirmationMessage').returns(Promise.resolve(false))
-        await publish.publishSSMDocument(fakeAwsContext, fakeRegionProvider, channel)
+        await publish.publishSSMDocument(fakeAwsContext, fakeRegionProvider)
 
         sinon.assert.calledOnce(wizardStub)
         assert.strictEqual(apiCalled, 'updateDocument')
@@ -165,16 +151,25 @@ describe('publishSSMDocument', async () => {
 })
 
 describe('publishDocument', async () => {
-    let channel: vscode.OutputChannel
     let wizardResponse: PublishSSMDocumentWizardResponse
     let textDocument: vscode.TextDocument
     let result: SSM.CreateDocumentResult | SSM.UpdateDocumentResult
     let client: SsmDocumentClient
-    let channelOutput: string[] = []
+    let fakeCreateRequest: SSM.CreateDocumentRequest = {
+        Content: 'MockDocumentTextOne',
+        DocumentFormat: 'JSON',
+        DocumentType: 'Automation',
+        Name: 'test',
+    }
+    let fakeUpdateRequest: SSM.UpdateDocumentRequest = {
+        Content: 'MockDocumentTextOne',
+        DocumentFormat: 'JSON',
+        DocumentVersion: '$LATEST',
+        Name: 'test',
+    }
 
     beforeEach(async () => {
         sandbox = sinon.createSandbox()
-        channelOutput = []
 
         wizardResponse = {
             PublishSsmDocAction: 'Update',
@@ -186,12 +181,6 @@ describe('publishDocument', async () => {
             DocumentDescription: {
                 Name: 'testName',
             },
-        }
-        channel = {
-            ...mockChannel,
-            appendLine: sandbox.stub().callsFake(value => {
-                channelOutput.push(value)
-            }),
         }
     })
 
@@ -216,15 +205,10 @@ describe('publishDocument', async () => {
                 undefined,
                 undefined
             )
-
-            await publish.createDocument(wizardResponse, textDocument, channel, 'us-east-1', client)
-
-            assert.strictEqual(channelOutput.length, 4)
-            assert.strictEqual(
-                channelOutput[1],
-                `Successfully created and uploaded Systems Manager Document '${wizardResponse.name}'`
-            )
-            assert.strictEqual(channelOutput[2], stringify(result.DocumentDescription))
+            const createSpy = sandbox.spy(client, 'createDocument')
+            await publish.createDocument(wizardResponse, textDocument, 'us-east-1', client)
+            assert(createSpy.calledOnce)
+            assert(createSpy.calledWith(fakeCreateRequest))
         })
 
         it('createDocument API failed', async () => {
@@ -243,13 +227,12 @@ describe('publishDocument', async () => {
                 undefined,
                 undefined
             )
-
-            await publish.createDocument(wizardResponse, textDocument, channel, 'us-east-1', client)
-
-            assert.strictEqual(channelOutput.length, 3)
-            assert.strictEqual(
-                channelOutput[1],
-                `There was an error creating and uploading Systems Manager Document '${wizardResponse.name}', check logs for more information.`
+            const createErrorSpy = sandbox.spy(vscode.window, 'showErrorMessage')
+            await publish.createDocument(wizardResponse, textDocument, 'us-east-1', client)
+            assert(createErrorSpy.calledOnce)
+            assert(
+                createErrorSpy.getCall(0).args[0],
+                "Failed to create Systems Manager Document 'test'. \nCreate Error"
             )
         })
     })
@@ -270,16 +253,11 @@ describe('publishDocument', async () => {
                     })
                 }
             )
+            const updateSpy = sandbox.spy(client, 'updateDocument')
             sandbox.stub(ssmUtils, 'showConfirmationMessage').returns(Promise.resolve(false))
-            // const window = new FakeWindow({ message: { warningSelection: 'No' } })
-            await publish.updateDocument(wizardResponse, textDocument, channel, 'us-east-1', client)
-
-            assert.strictEqual(channelOutput.length, 4)
-            assert.strictEqual(
-                channelOutput[1],
-                `Successfully updated Systems Manager Document '${wizardResponse.name}'`
-            )
-            assert.strictEqual(channelOutput[2], stringify(result.DocumentDescription))
+            await publish.updateDocument(wizardResponse, textDocument, 'us-east-1', client)
+            assert(updateSpy.calledOnce)
+            assert(updateSpy.calledWith(fakeUpdateRequest))
         })
 
         it('updateDocument API failed', async () => {
@@ -297,13 +275,13 @@ describe('publishDocument', async () => {
                     })
                 }
             )
+            const updateErrorSpy = sandbox.spy(vscode.window, 'showErrorMessage')
             sandbox.stub(ssmUtils, 'showConfirmationMessage').returns(Promise.resolve(false))
-            await publish.updateDocument(wizardResponse, textDocument, channel, 'us-east-1', client)
-
-            assert.strictEqual(channelOutput.length, 3)
-            assert.strictEqual(
-                channelOutput[1],
-                `There was an error updating Systems Manager Document '${wizardResponse.name}', check logs for more information.`
+            await publish.updateDocument(wizardResponse, textDocument, 'us-east-1', client)
+            assert(updateErrorSpy.calledOnce)
+            assert(
+                updateErrorSpy.getCall(0).args[0],
+                "Failed to update Systems Manager Document 'test'. \nUpdate Error"
             )
         })
     })
