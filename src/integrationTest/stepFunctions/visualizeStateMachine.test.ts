@@ -9,8 +9,6 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { MessageObject } from '../../stepFunctions/commands/visualizeStateMachine/aslVisualization'
-import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
-import { activateExtension } from '../integrationTestsUtilities'
 import { assertThrowsError } from '../../test/shared/utilities/assertUtils'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { spy } from 'sinon'
@@ -102,7 +100,6 @@ describe('visualizeStateMachine', async () => {
     before(async function() {
         // tslint:disable-next-line:no-invalid-this
         this.timeout(600000)
-        await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
     })
 
     beforeEach(async () => {

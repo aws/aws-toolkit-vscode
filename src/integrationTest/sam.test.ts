@@ -16,11 +16,10 @@ import { assertThrowsError } from '../../src/test/shared/utilities/assertUtils'
 import { Language } from '../shared/codelens/codeLensUtils'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { fileExists } from '../shared/filesystemUtilities'
-import { getLogger } from '../shared/logger'
-import { WinstonToolkitLogger } from '../shared/logger/winstonToolkitLogger'
-import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep, TIMEOUT } from './integrationTestsUtilities'
 import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { findParentProjectFile } from '../shared/utilities/workspaceUtils'
+import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep } from './integrationTestsUtilities'
+import { setTestTimeout } from './globalSetup.test'
 
 const projectFolder = getTestWorkspaceFolder()
 
@@ -34,18 +33,13 @@ interface TestScenario {
 // When testing additional runtimes, consider pulling the docker container in buildspec\linuxIntegrationTests.yml
 // to reduce the chance of automated tests timing out.
 const scenarios: TestScenario[] = [
-    {
-        runtime: 'nodejs10.x',
-        path: 'hello-world/app.js',
-        debugSessionType: 'node2',
-        language: 'javascript',
-    },
-    { runtime: 'nodejs12.x', path: 'hello-world/app.js', debugSessionType: 'node2', language: 'javascript' },
+    { runtime: 'nodejs10.x', path: 'hello-world/app.js', debugSessionType: 'pwa-node', language: 'javascript' },
+    { runtime: 'nodejs12.x', path: 'hello-world/app.js', debugSessionType: 'pwa-node', language: 'javascript' },
     { runtime: 'python2.7', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
     { runtime: 'python3.6', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
     { runtime: 'python3.7', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
     { runtime: 'python3.8', path: 'hello_world/app.py', debugSessionType: 'python', language: 'python' },
-    // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr' }
+    // { runtime: 'dotnetcore2.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 ]
 
 async function openSamAppFile(applicationPath: string): Promise<vscode.Uri> {
@@ -84,7 +78,9 @@ async function getAddConfigCodeLens(documentUri: vscode.Uri): Promise<vscode.Cod
             if (codeLenses.length === 1) {
                 return codeLenses[0]
             }
-        } catch (e) {}
+        } catch (e) {
+            console.log(`getAddConfigCodeLens(): failed, retrying:\n${e}`)
+        }
     }
 }
 
@@ -103,70 +99,56 @@ async function closeAllEditors(): Promise<void> {
 async function activateExtensions(): Promise<void> {
     console.log('Activating extensions...')
     await activateExtension(VSCODE_EXTENSION_ID.python)
-    await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
     console.log('Extensions activated')
 }
 
 async function configurePythonExtension(): Promise<void> {
-    logSeparator()
     const configPy = vscode.workspace.getConfiguration('python')
     // Disable linting to silence some of the Python extension's log spam
     await configPy.update('linting.pylintEnabled', false, false)
     await configPy.update('linting.enabled', false, false)
-    logSeparator()
 }
 
 async function configureAwsToolkitExtension(): Promise<void> {
-    logSeparator()
     const configAws = vscode.workspace.getConfiguration('aws')
-    await configAws.update('logLevel', 'verbose', false)
     // Prevent the extension from preemptively cancelling a 'sam local' run
-    await configAws.update('samcli.debug.attach.timeout.millis', '90000', false)
-    logSeparator()
+    await configAws.update('samcli.debug.attach.timeout.millis', 90000, false)
 }
 
-function logSeparator() {
-    console.log('************************************************************')
+function runtimeNeedsWorkaround(lang: Language) {
+    return vscode.version.startsWith('1.42') || lang === 'csharp' || lang === 'python'
 }
 
-function configureToolkitLogging() {
-    const logger = getLogger()
-
-    if (logger instanceof WinstonToolkitLogger) {
-        // Ensure we're logging everything possible
-        logger.setLogLevel('debug')
-        // The logs help to diagnose SAM integration test failures
-        logger.logToConsole()
-    } else {
-        assert.fail('Unexpected extension logger')
-    }
-}
-
-describe('SAM Integration Tests', async () => {
+describe('SAM Integration Tests', async function() {
     const samApplicationName = 'testProject'
+    /**
+     * Breadcrumbs from each process, printed at end of all scenarios to give
+     * us an idea of the timeline.
+     */
+    const sessionLog: string[] = []
     let testSuiteRoot: string
 
     before(async function() {
-        // tslint:disable-next-line:no-invalid-this
-        this.timeout(600000)
-
         await activateExtensions()
         await configureAwsToolkitExtension()
         await configurePythonExtension()
-
-        configureToolkitLogging()
 
         testSuiteRoot = await mkdtemp(path.join(projectFolder, 'inttest'))
         console.log('testSuiteRoot: ', testSuiteRoot)
         mkdirpSync(testSuiteRoot)
     })
 
-    after(async () => {
+    after(async function() {
         tryRemoveFolder(testSuiteRoot)
+        // Print a summary of session that were seen by `onDidStartDebugSession`.
+        const sessionReport = sessionLog.map(x => `    {x}`).join('\n')
+        console.log(`DebugSessions seen in this run:${sessionReport}`)
     })
 
-    for (const scenario of scenarios) {
-        describe(`SAM Application Runtime: ${scenario.runtime}`, async () => {
+    for (let scenarioIndex = 0; scenarioIndex < scenarios.length; scenarioIndex++) {
+        const scenario = scenarios[scenarioIndex]
+
+        describe(`SAM Application Runtime: ${scenario.runtime}`, async function() {
             let runtimeTestRoot: string
 
             before(async function() {
@@ -179,29 +161,30 @@ describe('SAM Integration Tests', async () => {
                 tryRemoveFolder(runtimeTestRoot)
             })
 
+            function log(o: any) {
+                console.log(`sam.test.ts: scenario ${scenarioIndex} (${scenario.runtime}): ${o}`)
+            }
+
             /**
              * This suite cleans up at the end of each test.
              */
-            describe('Starting from scratch', async () => {
-                let subSuiteTestLocation: string
+            describe('Starting from scratch', async function() {
+                let testDir: string
 
                 beforeEach(async function() {
-                    subSuiteTestLocation = await mkdtemp(path.join(runtimeTestRoot, 'test-'))
-                    console.log(`subSuiteTestLocation: ${subSuiteTestLocation}`)
+                    testDir = await mkdtemp(path.join(runtimeTestRoot, 'test-'))
+                    log(`testDir: ${testDir}`)
                 })
 
                 afterEach(async function() {
-                    tryRemoveFolder(subSuiteTestLocation)
+                    tryRemoveFolder(testDir)
                 })
 
                 it('creates a new SAM Application (happy path)', async function() {
-                    // tslint:disable-next-line: no-invalid-this
-                    this.timeout(TIMEOUT)
-
-                    await createSamApplication(subSuiteTestLocation)
+                    await createSamApplication(testDir)
 
                     // Check for readme file
-                    const readmePath = path.join(subSuiteTestLocation, samApplicationName, 'README.md')
+                    const readmePath = path.join(testDir, samApplicationName, 'README.md')
                     assert.ok(await fileExists(readmePath), `Expected SAM App readme to exist at ${readmePath}`)
                 })
             })
@@ -210,23 +193,21 @@ describe('SAM Integration Tests', async () => {
              * This suite makes a sam app that all tests operate on.
              * Cleanup happens at the end of the suite.
              */
-            describe(`Starting with a newly created ${scenario.runtime} SAM Application...`, async () => {
+            describe(`Starting with a newly created ${scenario.runtime} SAM Application...`, async function() {
                 let testDisposables: vscode.Disposable[]
-                let subSuiteTestLocation: string
 
+                let testDir: string
                 let samAppCodeUri: vscode.Uri
+                let appPath: string
                 let cfnTemplatePath: string
 
                 before(async function() {
-                    // tslint:disable-next-line: no-invalid-this
-                    this.timeout(TIMEOUT)
+                    testDir = await mkdtemp(path.join(runtimeTestRoot, 'samapp-'))
+                    log(`testDir: ${testDir}`)
 
-                    subSuiteTestLocation = await mkdtemp(path.join(runtimeTestRoot, 'samapp-'))
-                    console.log(`subSuiteTestLocation: ${subSuiteTestLocation}`)
-
-                    await createSamApplication(subSuiteTestLocation)
-                    const appPath = path.join(subSuiteTestLocation, samApplicationName, scenario.path)
-                    cfnTemplatePath = path.join(subSuiteTestLocation, samApplicationName, 'template.yaml')
+                    await createSamApplication(testDir)
+                    appPath = path.join(testDir, samApplicationName, scenario.path)
+                    cfnTemplatePath = path.join(testDir, samApplicationName, 'template.yaml')
                     samAppCodeUri = await openSamAppFile(appPath)
                 })
 
@@ -238,23 +219,25 @@ describe('SAM Integration Tests', async () => {
                 afterEach(async function() {
                     // tslint:disable-next-line: no-unsafe-any
                     testDisposables.forEach(d => d.dispose())
+                    await stopDebugger()
                 })
 
                 after(async function() {
-                    tryRemoveFolder(subSuiteTestLocation)
+                    tryRemoveFolder(testDir)
                 })
 
-                it('the SAM Template contains the expected runtime', async () => {
+                it('the SAM Template contains the expected runtime', async function() {
                     const fileContents = readFileSync(cfnTemplatePath).toString()
                     assert.ok(fileContents.includes(`Runtime: ${scenario.runtime}`))
                 })
 
-                it('produces an error when creating a SAM Application to the same location', async () => {
-                    const err = await assertThrowsError(async () => await createSamApplication(subSuiteTestLocation))
+                it('produces an error when creating a SAM Application to the same location', async function() {
+                    const err = await assertThrowsError(async () => await createSamApplication(testDir))
                     assert(err.message.includes('directory already exists'))
-                }).timeout(TIMEOUT)
+                })
 
-                it('produces an Add Debug Configuration codelens', async () => {
+                it('produces an Add Debug Configuration codelens', async function() {
+                    setTestTimeout(this.test?.fullTitle(), 60000)
                     const codeLens = await getAddConfigCodeLens(samAppCodeUri)
                     assert.ok(codeLens)
 
@@ -276,80 +259,97 @@ describe('SAM Integration Tests', async () => {
                     const projectRoot = await findParentProjectFile(samAppCodeUri, manifestFile)
                     assert.ok(projectRoot, 'projectRoot not found')
                     assertCodeLensReferencesHasSameRoot(codeLens, projectRoot!)
-                }).timeout(TIMEOUT)
+                })
 
-                it.skip('invokes the Run Local CodeLens', async () => {
-                    // TODO: Remove this
-                    const codeLens = await getAddConfigCodeLens(samAppCodeUri)
-                    assert.ok(codeLens, 'expected to find a CodeLens')
-
-                    // tslint:disable-next-line: no-unsafe-any
-                    await vscode.commands.executeCommand<any>(
-                        codeLens.command!.command,
-                        ...codeLens.command!.arguments!
-                    )
-                }).timeout(TIMEOUT)
-
-                it.skip('invokes the Debug Local CodeLens', async () => {
+                it('invokes and attaches on debug request (F5)', async function() {
+                    setTestTimeout(this.test?.fullTitle(), 60000)
                     assert.strictEqual(
                         vscode.debug.activeDebugSession,
                         undefined,
-                        'unexpected debug session in progress'
+                        `unexpected debug session in progress: ${JSON.stringify(
+                            vscode.debug.activeDebugSession,
+                            undefined,
+                            2
+                        )}`
                     )
 
-                    // TODO: Remove this
-                    const codeLens = await getAddConfigCodeLens(samAppCodeUri)
-                    assert.ok(codeLens, 'expected to find a CodeLens')
+                    const testConfig = {
+                        type: 'aws-sam',
+                        request: 'direct-invoke',
+                        name: `test-config-${scenarioIndex}`,
+                        invokeTarget: {
+                            target: 'template',
+                            // Resource defined in `src/testFixtures/.../template.yaml`.
+                            logicalId: 'HelloWorldFunction',
+                            templatePath: cfnTemplatePath,
+                        },
+                    }
 
-                    const debugSessionStartedAndStoppedPromise = new Promise<void>((resolve, reject) => {
+                    // Simulate "F5".
+                    await vscode.debug.startDebugging(undefined, testConfig)
+
+                    await new Promise<void>((resolve, reject) => {
+                        // XXX: temporary workaround because the csharp/python
+                        // debuggers exit without triggering `onDidStartDebugSession`.
+                        if (runtimeNeedsWorkaround(scenario.language)) {
+                            testDisposables.push(
+                                vscode.debug.onDidTerminateDebugSession(session => {
+                                    sessionLog.push(
+                                        `scenario ${scenarioIndex} (END) (runtime=${scenario.runtime}) ${session.name}`
+                                    )
+                                    resolve()
+                                })
+                            )
+                        }
                         testDisposables.push(
                             vscode.debug.onDidStartDebugSession(async startedSession => {
-                                const sessionValidation = validateSamDebugSession(
-                                    startedSession,
-                                    scenario.debugSessionType
+                                sessionLog.push(
+                                    `scenario ${scenarioIndex} (START) (runtime=${scenario.runtime}) ${startedSession.name}`
                                 )
 
-                                if (sessionValidation) {
+                                // If `onDidStartDebugSession` is fired then the debugger doesn't need the workaround anymore.
+                                if (runtimeNeedsWorkaround(scenario.language)) {
                                     await stopDebugger()
-                                    throw new Error(sessionValidation)
+                                    reject(
+                                        new Error(
+                                            `runtime "${scenario.language}" triggered onDidStartDebugSession, so it can be removed from runtimeNeedsWorkaround(), yay!`
+                                        )
+                                    )
                                 }
 
                                 // Wait for this debug session to terminate
                                 testDisposables.push(
                                     vscode.debug.onDidTerminateDebugSession(async endedSession => {
-                                        const endSessionValidation = validateSamDebugSession(
-                                            endedSession,
-                                            scenario.debugSessionType
+                                        sessionLog.push(
+                                            `scenario ${scenarioIndex} (END) (runtime=${scenario.runtime}) ${endedSession.name}`
                                         )
-
-                                        if (endSessionValidation) {
-                                            throw new Error(endSessionValidation)
+                                        const sessionRuntime = (endedSession.configuration as any).runtime
+                                        if (!sessionRuntime) {
+                                            // It's a coprocess, ignore it.
+                                            return
                                         }
-
-                                        if (startedSession.id === endedSession.id) {
-                                            resolve()
-                                        } else {
-                                            reject(new Error('Unexpected debug session ended'))
+                                        const failMsg = validateSamDebugSession(endedSession, scenario.runtime)
+                                        if (failMsg) {
+                                            reject(new Error(failMsg))
                                         }
+                                        resolve()
+                                        await stopDebugger()
                                     })
                                 )
 
-                                // wait for it to actually start (which we do not get an event for). 800 is
-                                // short enough to finish before the next test is run and long enough to
-                                // actually act after it pauses
-                                await sleep(800)
+                                // Wait for it to actually start (which we do not get an event for).
+                                await sleep(400)
+                                await continueDebugger()
+                                await sleep(400)
+                                await continueDebugger()
+                                await sleep(400)
                                 await continueDebugger()
                             })
                         )
+                    }).catch(e => {
+                        throw e
                     })
-
-                    await vscode.commands.executeCommand<any>(
-                        codeLens.command!.command,
-                        ...codeLens.command!.arguments!
-                    )
-
-                    await debugSessionStartedAndStoppedPromise
-                }).timeout(TIMEOUT * 2)
+                })
             })
         })
 
@@ -366,18 +366,18 @@ describe('SAM Integration Tests', async () => {
         }
 
         /**
-         * Returns a string if there is a validation issue, undefined if there is no issue
+         * Returns a string if there is a validation issue, undefined if there is no issue.
          */
         function validateSamDebugSession(
             debugSession: vscode.DebugSession,
-            expectedSessionType: string
+            expectedRuntime: string
         ): string | undefined {
-            if (debugSession.name !== 'SamLocalDebug') {
-                return `Unexpected Session Name ${debugSession}`
-            }
-
-            if (debugSession.type !== expectedSessionType) {
-                return `Unexpected Session Type ${debugSession}`
+            const runtime = (debugSession.configuration as any).runtime
+            if (runtime !== expectedRuntime) {
+                const failMsg =
+                    `Unexpected DebugSession (expected runtime=${expectedRuntime}):` +
+                    `\n${JSON.stringify(debugSession)}`
+                return failMsg
             }
         }
 
