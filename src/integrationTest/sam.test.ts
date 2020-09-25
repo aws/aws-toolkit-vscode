@@ -141,7 +141,7 @@ describe('SAM Integration Tests', async function() {
     after(async function() {
         tryRemoveFolder(testSuiteRoot)
         // Print a summary of session that were seen by `onDidStartDebugSession`.
-        const sessionReport = sessionLog.map(x => `    {x}`).join('\n')
+        const sessionReport = sessionLog.map(x => `    ${x}`).join('\n')
         console.log(`DebugSessions seen in this run:${sessionReport}`)
     })
 
