@@ -20,9 +20,9 @@ import java.awt.Component
 import javax.swing.JComponent
 
 class CreateIamRoleDialog(
-    private val project: Project,
+    project: Project,
     private val iamClient: IamClient,
-    private val parent: Component? = null,
+    parent: Component? = null,
     @Language("JSON") defaultPolicyDocument: String,
     @Language("JSON") defaultAssumeRolePolicyDocument: String
 ) : DialogWrapper(project, parent, false, IdeModalityType.PROJECT) {
