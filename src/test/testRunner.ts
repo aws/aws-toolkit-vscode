@@ -14,7 +14,10 @@ const istanbul = require('istanbul')
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const remapIstanbul = require('remap-istanbul')
 
-export function runTestsInFolder(testFolder: string, integ: boolean): Promise<void> {
+/**
+ * @param initTests List of relative paths to test files to run before all discovered tests.
+ */
+export function runTestsInFolder(testFolder: string, initTests: string[] = []): Promise<void> {
     const outputFile = path.resolve(process.env['TEST_REPORT_DIR'] || '.test-reports', 'report.xml')
     const colorOutput = !process.env['AWS_TOOLKIT_TEST_NO_COLOR']
 
@@ -48,17 +51,18 @@ export function runTestsInFolder(testFolder: string, integ: boolean): Promise<vo
         const testFile = process.env['TEST_FILE'] === 'null' ? undefined : process.env['TEST_FILE']
         const testFilePath = testFile?.replace(/^src[\\\/]/, '')?.concat('.js')
 
-        // Explicitly add globalSetup as the first test.
+        // Explicitly add additional tests (globalSetup) as the first tests.
         // TODO: migrate to mochaHooks (requires mocha 8.x).
         // https://mochajs.org/#available-root-hooks
-        const globalSetupPath = path.join(testsRoot, 'test/globalSetup.test.js')
-        const globalSetupIntegPath = path.join(testsRoot, 'integrationTest/globalSetup.test.js')
-        if (!fs.existsSync(globalSetupPath) || !fs.existsSync(globalSetupIntegPath)) {
-            console.error('error: missing globalSetup.test.js')
-            throw Error('missing globalSetup.test.js')
-        }
-        // Add globalSetup.test.js as the first test.
-        mocha.addFile(integ ? globalSetupIntegPath : globalSetupPath)
+        initTests.forEach(relativePath => {
+            const fullPath = path.join(testsRoot, relativePath)
+            if (!fs.existsSync(fullPath)) {
+                console.error(`error: missing ${fullPath}`)
+                throw Error(`missing ${fullPath}`)
+            }
+
+            mocha.addFile(fullPath)
+        })
 
         glob(testFilePath ?? `**/${testFolder}/**/**.test.js`, { cwd: testsRoot }, (err, files) => {
             if (err) {
