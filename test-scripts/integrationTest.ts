@@ -6,12 +6,13 @@
 import { join, resolve } from 'path'
 import { runTests } from 'vscode-test'
 import { VSCODE_EXTENSION_ID } from '../src/shared/extensions'
-import { installVSCodeExtension, setupVSCodeTestInstance } from './launchTestUtilities'
+import { installVSCodeExtension, setupVSCodeTestInstance, getCliArgsToDisableExtensions } from './launchTestUtilities'
 
 async function setupVSCode(): Promise<string> {
     console.log('Setting up VS Code Test instance...')
     const vsCodeExecutablePath = await setupVSCodeTestInstance()
     await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.python)
+    await installVSCodeExtension(vsCodeExecutablePath, VSCODE_EXTENSION_ID.yaml)
     console.log('VS Code Test instance has been set up')
 
     return vsCodeExecutablePath
@@ -29,12 +30,17 @@ async function setupVSCode(): Promise<string> {
 
         process.env.AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE = 'true'
 
-        const result = await runTests({
+        const disableExtensions = await getCliArgsToDisableExtensions(vsCodeExecutablePath, {
+            except: [VSCODE_EXTENSION_ID.python, VSCODE_EXTENSION_ID.yaml],
+        })
+        const args = {
             vscodeExecutablePath: vsCodeExecutablePath,
             extensionDevelopmentPath: cwd,
             extensionTestsPath: testEntrypoint,
-            launchArgs: [workspacePath],
-        })
+            launchArgs: [...disableExtensions, workspacePath],
+        }
+        console.log(`runTests() args:\n${JSON.stringify(args, null, 2)}`)
+        const result = await runTests(args)
 
         console.log(`Finished running Integration test suite with result code: ${result}`)
         process.exit(result)

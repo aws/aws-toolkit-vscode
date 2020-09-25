@@ -20,3 +20,15 @@ export function makeCheckLogsMessage(): string {
 
     return message
 }
+
+export function makeFailedWriteMessage(filename: string): string {
+    const commandName = localize('AWS.command.viewLogs', 'View AWS Toolkit Logs')
+    const message = localize(
+        'AWS.failedToWrite',
+        'AWS: Failed to write "{0}". Use the "{1}" command to see error details.',
+        filename,
+        commandName
+    )
+
+    return message
+}
