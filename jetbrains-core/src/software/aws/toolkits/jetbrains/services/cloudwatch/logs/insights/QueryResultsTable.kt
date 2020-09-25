@@ -16,8 +16,8 @@ import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.InsightsQueryResultsActor
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
-import software.aws.toolkits.jetbrains.utils.ui.bottomReached
 import software.aws.toolkits.resources.message
 import java.awt.event.MouseEvent
 import javax.swing.JComponent
@@ -28,11 +28,11 @@ class QueryResultsTable(
     fields: List<String>,
     queryId: String
 ) : CoroutineScope by ApplicationThreadPoolScope("QueryResultsTable"), Disposable {
-    val component: JComponent
-    val channel: Channel<QueryActor.MessageLoadQueryResults>
-    val resultsTable: TableView<LogResult>
     private val client = project.awsClient<CloudWatchLogsClient>(connectionSettings)
-    private val queryActor: QueryActor<LogResult>
+    private val insightsQueryActor: InsightsQueryResultsActor
+    val component: JComponent
+    val channel: Channel<InsightsQueryResultsActor.Message>
+    val resultsTable: TableView<LogResult>
 
     init {
         val tableModel = ListTableModel<LogResult>(
@@ -50,16 +50,11 @@ class QueryResultsTable(
         }
 
         installDetailedLogRecordOpenListener()
-        queryActor = QueryResultsActor(project, client, resultsTable, queryId)
-        Disposer.register(this, queryActor)
-        channel = queryActor.channel
-        component = ScrollPaneFactory.createScrollPane(resultsTable).also {
-            it.bottomReached {
-                if (resultsTable.rowCount != 0) {
-                    launch { queryActor.channel.send(QueryActor.MessageLoadQueryResults.LoadNextQueryBatch) }
-                }
-            }
+        insightsQueryActor = InsightsQueryResultsActor(project, client, resultsTable, queryId).also {
+            Disposer.register(this, it)
         }
+        channel = insightsQueryActor.channel
+        component = ScrollPaneFactory.createScrollPane(resultsTable)
     }
 
     private fun installDetailedLogRecordOpenListener() {

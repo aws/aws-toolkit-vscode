@@ -12,6 +12,7 @@ import com.nhaarman.mockitokotlin2.stub
 import com.nhaarman.mockitokotlin2.verify
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.within
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -267,8 +268,9 @@ class QueryEditorDialogTest {
 
         captor.firstValue.let {
             assertThat(it.logGroupNames()).containsExactly("logGroup")
-            assertThat(it.startTime()).isEqualTo(start.epochSecond)
-            assertThat(it.endTime()).isEqualTo(end.epochSecond)
+            // 5 second leeway since the actual timestamps are calculated at time of execution
+            assertThat(it.startTime()).isCloseTo(start.epochSecond, within(5L))
+            assertThat(it.endTime()).isCloseTo(end.epochSecond, within(5L))
             assertThat(it.queryString()).isEqualTo("query")
         }
     }
@@ -289,8 +291,6 @@ class QueryEditorDialogTest {
 
         captor.firstValue.let {
             assertThat(it.logGroupNames()).containsExactly("logGroup")
-            assertThat(it.startTime()).isEqualTo(start.epochSecond)
-            assertThat(it.endTime()).isEqualTo(end.epochSecond)
             assertThat(it.queryString()).isEqualTo("fields @timestamp, @message | filter @message like /query/")
         }
     }
@@ -311,8 +311,6 @@ class QueryEditorDialogTest {
 
         captor.firstValue.let {
             assertThat(it.logGroupNames()).containsExactly("logGroup")
-            assertThat(it.startTime()).isEqualTo(start.epochSecond)
-            assertThat(it.endTime()).isEqualTo(end.epochSecond)
             assertThat(it.queryString()).isEqualTo("query")
         }
     }

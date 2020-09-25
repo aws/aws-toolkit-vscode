@@ -8,6 +8,7 @@ import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.InsightsQueryResultsActor
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.resources.message
 import javax.swing.JButton
@@ -43,7 +44,7 @@ class QueryResultList(
     }
 
     private fun loadInitialResultsTable() {
-        launch { resultsTable.channel.send(QueryActor.MessageLoadQueryResults.LoadInitialQueryResults) }
+        launch { resultsTable.channel.send(InsightsQueryResultsActor.Message.StartLoadingAll) }
     }
 
     override fun dispose() {

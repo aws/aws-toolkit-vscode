@@ -13,7 +13,6 @@ import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
-import software.amazon.awssdk.services.cloudwatchlogs.model.StartQueryRequest
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
@@ -120,7 +119,7 @@ class QueryEditorDialog(
             )
         }
 
-        val query = if (view.queryLogGroupsRadioButton.isSelected) {
+        val query = if (view.searchTerm.isSelected) {
             QueryString.SearchTermQueryString(
                 searchTerm = view.querySearchTerm.text
             )
@@ -177,13 +176,14 @@ class QueryEditorDialog(
         val timeRange = queryDetails.getQueryRange()
         val queryString = queryDetails.getQueryString()
         try {
-            val request = StartQueryRequest.builder()
-                .logGroupNames(queryDetails.logGroups)
-                .startTime(timeRange.start.epochSecond)
-                .endTime(timeRange.end.epochSecond)
-                .queryString(queryString)
-                .build()
-            val response = client.startQuery(request)
+            val response = client.startQuery {
+                it.logGroupNames(queryDetails.logGroups)
+                it.startTime(timeRange.start.epochSecond)
+                it.endTime(timeRange.end.epochSecond)
+                it.queryString(queryString)
+                // 1k is default
+                it.limit(1000)
+            }
 
             return@async response.queryId()
         } catch (e: Exception) {

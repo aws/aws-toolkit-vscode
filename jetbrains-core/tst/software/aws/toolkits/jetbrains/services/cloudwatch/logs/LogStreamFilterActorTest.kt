@@ -28,7 +28,7 @@ class LogStreamFilterActorTest : BaseCoroutineTest() {
     private lateinit var client: CloudWatchLogsClient
     private lateinit var tableModel: ListTableModel<LogStreamEntry>
     private lateinit var table: TableView<LogStreamEntry>
-    private lateinit var actor: LogActor<LogStreamEntry>
+    private lateinit var actor: CloudWatchLogsActor<LogStreamEntry>
 
     @Before
     fun loadVariables() {
@@ -48,7 +48,7 @@ class LogStreamFilterActorTest : BaseCoroutineTest() {
                     .build()
             )
         runBlocking {
-            actor.channel.send(LogActor.Message.LoadInitialFilter("filter query"))
+            actor.channel.send(CloudWatchLogsActor.Message.LoadInitialFilter("filter query"))
             tableModel.waitForModelToBeAtLeast(1)
         }
         assertThat(tableModel.items.size).isOne()
@@ -73,8 +73,8 @@ class LogStreamFilterActorTest : BaseCoroutineTest() {
                     .build()
             )
         runBlocking {
-            actor.channel.send(LogActor.Message.LoadInitialFilter("filter query"))
-            actor.channel.send(LogActor.Message.LoadForward)
+            actor.channel.send(CloudWatchLogsActor.Message.LoadInitialFilter("filter query"))
+            actor.channel.send(CloudWatchLogsActor.Message.LoadForward)
             tableModel.waitForModelToBeAtLeast(2)
         }
         assertThat(tableModel.items).hasSize(2)
@@ -100,9 +100,9 @@ class LogStreamFilterActorTest : BaseCoroutineTest() {
                     .build()
             )
         runBlocking {
-            actor.channel.send(LogActor.Message.LoadInitialFilter("filter query"))
-            actor.channel.send(LogActor.Message.LoadBackward)
-            actor.channel.send(LogActor.Message.LoadBackward)
+            actor.channel.send(CloudWatchLogsActor.Message.LoadInitialFilter("filter query"))
+            actor.channel.send(CloudWatchLogsActor.Message.LoadBackward)
+            actor.channel.send(CloudWatchLogsActor.Message.LoadBackward)
             tableModel.waitForModelToBeAtLeast(1)
         }
         assertThat(tableModel.items).hasSize(1)
@@ -115,7 +115,7 @@ class LogStreamFilterActorTest : BaseCoroutineTest() {
         actor.dispose()
         assertThatThrownBy {
             runBlocking {
-                channel.send(LogActor.Message.LoadForward)
+                channel.send(CloudWatchLogsActor.Message.LoadForward)
             }
         }.isInstanceOf(ClosedSendChannelException::class.java)
     }
@@ -123,7 +123,7 @@ class LogStreamFilterActorTest : BaseCoroutineTest() {
     @Test
     fun loadInitialThrows() {
         runBlocking {
-            actor.channel.send(LogActor.Message.LoadInitial)
+            actor.channel.send(CloudWatchLogsActor.Message.LoadInitial)
             waitForTrue { actor.channel.isClosedForSend }
         }
     }
@@ -131,7 +131,7 @@ class LogStreamFilterActorTest : BaseCoroutineTest() {
     @Test
     fun loadInitialRangeThrows() {
         runBlocking {
-            actor.channel.send(LogActor.Message.LoadInitialRange(LogStreamEntry("@@@", 0), Duration.ofMillis(0)))
+            actor.channel.send(CloudWatchLogsActor.Message.LoadInitialRange(LogStreamEntry("@@@", 0), Duration.ofMillis(0)))
             waitForTrue { actor.channel.isClosedForSend }
         }
     }
