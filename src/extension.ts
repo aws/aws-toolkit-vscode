@@ -37,7 +37,7 @@ import {
     showQuickStartWebview,
     showWelcomeMessage,
 } from './shared/extensionUtilities'
-import { getLogger, Logger } from './shared/logger'
+import { getLogger, Logger } from './shared/logger/logger'
 import { activate as activateLogger } from './shared/logger/activation'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import { EndpointsProvider } from './shared/regions/endpointsProvider'
@@ -75,6 +75,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const remoteInvokeOutputChannel = vscode.window.createOutputChannel(
         localize('AWS.channel.aws.remoteInvoke', 'AWS Remote Invocations')
     )
+    const channelLogger = getChannelLogger(toolkitOutputChannel)
     ext.outputChannel = toolkitOutputChannel
 
     try {
@@ -230,7 +231,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         recordToolkitInitialization(activationStartedOn, getLogger())
     } catch (error) {
-        const channelLogger = getChannelLogger(toolkitOutputChannel)
         channelLogger.error('AWS.channel.aws.toolkit.activation.error', 'Error Activating AWS Toolkit', error as Error)
         throw error
     }

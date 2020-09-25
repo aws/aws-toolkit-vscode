@@ -1,5 +1,6 @@
 {
     "AWS.title": "AWS",
+    "AWS.failedToWrite": "AWS: Failed to write \"{0}\". Use the \"{1}\" command to see error details.",
     "AWS.gotoRunPanel": "Run panel",
     "AWS.title.createCredentialProfile": "Create a new AWS credential profile",
     "AWS.title.creatingCredentialProfile": "Saving new credential profile {0}",

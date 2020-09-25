@@ -27,8 +27,9 @@ export class Timeout {
     }
 
     /**
-     * Returns the amount of time left from the initialization of time Timeout object and with the timeoutLength
-     * Bottoms out at 0
+     * Time (in milliseconds) remaining since this Timeout object was initialized.
+     *
+     * Minimum is 0.
      */
     public get remainingTime(): number {
         const remainingTime = this.endTime - Date.now()
