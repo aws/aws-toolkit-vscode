@@ -61,7 +61,7 @@ class DownloadCodeForSchemaDialog(
     val schemaVersions: List<String>
     val latestVersion: String
 
-    val view = DownloadCodeForSchemaPanel(project, this)
+    val view = DownloadCodeForSchemaPanel(project)
     private val validator = DownloadCodeForSchemaValidator()
 
     private val action: OkAction = DownloadCodeForSchemaOkAction()

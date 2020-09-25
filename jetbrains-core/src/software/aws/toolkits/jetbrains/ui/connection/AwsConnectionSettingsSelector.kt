@@ -11,7 +11,7 @@ import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import javax.swing.JComponent
 
 class AwsConnectionSettingsSelector(
-    private val project: Project,
+    project: Project,
     private val settingsChangedListener: (AwsRegion?, String?) -> Unit = { _, _ -> }
 ) {
     private val regionProvider = AwsRegionProvider.getInstance()
