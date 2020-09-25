@@ -49,13 +49,9 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
     ) {}
 
     public async invoke({ options, ...params }: SamLocalInvokeCommandArgs): Promise<void> {
-        this.channelLogger.info(
-            'AWS.running.command',
-            'Running command: {0}',
-            `${params.command} ${params.args.join(' ')}`
-        )
-
         const childProcess = new ChildProcess(params.command, options, ...params.args)
+        this.channelLogger.info('AWS.running.command', 'Running command: {0}', `${childProcess}`)
+
         let debuggerPromiseClosed: boolean = false
         const debuggerPromise = new Promise<void>(async (resolve, reject) => {
             let checkForDebuggerAttachCue: boolean = params.isDebug && this.debuggerAttachCues.length !== 0
@@ -76,22 +72,28 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                             checkForDebuggerAttachCue = false
                             this.logger.verbose('Local SAM App should be ready for a debugger to attach now.')
                             debuggerPromiseClosed = true
+                            // Process will continue running, while user debugs it.
                             resolve()
                         }
                     }
                 },
                 onClose: (code: number, _: string): void => {
-                    this.logger.verbose(`The child process for sam local invoke closed with code ${code}`)
+                    this.logger.verbose(`samCliLocalInvoke: command exited (code: ${code}): ${childProcess}`)
                     this.channelLogger.channel.appendLine(
                         localize('AWS.samcli.local.invoke.ended', 'Local invoke of SAM Application has ended.')
                     )
 
-                    // Handles scenarios where the process exited before we anticipated.
-                    // Example: We didn't see an expected debugger attach cue, and the process or docker container
-                    // was terminated by the user, or the user manually attached to the sam app.
-                    if (!debuggerPromiseClosed) {
+                    // Process ended without emitting a known "cue" message.
+                    // Possible causes:
+                    // - User killed Docker or the process directly.
+                    // - User manually attached before we found a "cue" message.
+                    // - We need to update the list of "cue" messages.
+                    if (code === 0) {
                         debuggerPromiseClosed = true
-                        reject(new Error('The SAM Application closed unexpectedly'))
+                        resolve()
+                    } else if (code !== 0) {
+                        debuggerPromiseClosed = true
+                        reject(new Error(`"sam local invoke" command stopped unexpectedly (error code: ${code})`))
                     }
                 },
                 onError: (error: Error): void => {
