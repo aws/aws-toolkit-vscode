@@ -32,3 +32,6 @@ jobs:
               uses: GabrielBB/xvfb-action@v1.2
               with:
                   run: npm test
+            - name: Code coverage
+              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
+              run: bash <(curl -s https://codecov.io/bash) -s .coverage
