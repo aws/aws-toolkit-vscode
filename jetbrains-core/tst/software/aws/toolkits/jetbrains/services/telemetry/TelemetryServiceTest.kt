@@ -164,7 +164,7 @@ class TelemetryServiceTest {
         val telemetryService = TestTelemetryService(batcher)
 
         telemetryService.record(
-            TelemetryService.MetricEventMetadata(
+            MetricEventMetadata(
                 awsAccount = "222222222222",
                 awsRegion = "bar-region"
             )

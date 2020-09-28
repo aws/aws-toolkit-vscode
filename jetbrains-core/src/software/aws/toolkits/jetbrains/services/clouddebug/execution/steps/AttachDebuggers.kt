@@ -99,8 +99,8 @@ class AttachDebugger(
             ClouddebugTelemetry.attachDebugger(
                 project = context.project,
                 result = result,
-                workflowtoken = context.workflowToken,
-                clouddebugplatform = CloudDebugPlatform.from(containerOptions.platform.name),
+                workflowToken = context.workflowToken,
+                cloudDebugPlatform = CloudDebugPlatform.from(containerOptions.platform.name),
                 value = Duration.between(startTime, Instant.now()).toMillis().toDouble(),
                 createTime = startTime
             )

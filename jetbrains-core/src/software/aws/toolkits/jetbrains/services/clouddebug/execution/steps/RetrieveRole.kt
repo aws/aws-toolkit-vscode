@@ -45,7 +45,7 @@ class RetrieveRole(private val settings: EcsServiceCloudDebuggingRunSettings) : 
         } finally {
             ClouddebugTelemetry.retrieveRole(
                 project = context.project,
-                workflowtoken = context.workflowToken,
+                workflowToken = context.workflowToken,
                 result = result,
                 value = Duration.between(startTime, Instant.now()).toMillis().toDouble(),
                 createTime = startTime

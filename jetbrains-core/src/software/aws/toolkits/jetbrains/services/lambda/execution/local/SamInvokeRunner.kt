@@ -29,13 +29,13 @@ import software.aws.toolkits.jetbrains.services.lambda.BuildLambdaFromHandler
 import software.aws.toolkits.jetbrains.services.lambda.BuildLambdaFromTemplate
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderUtils
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
-import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
 import software.aws.toolkits.jetbrains.services.lambda.validOrNull
 import software.aws.toolkits.jetbrains.services.sts.StsResources
-import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
-import software.aws.toolkits.telemetry.Result
+import software.aws.toolkits.jetbrains.services.telemetry.MetricEventMetadata
+import software.aws.toolkits.telemetry.LambdaTelemetry
 import java.io.File
+import software.aws.toolkits.telemetry.Runtime.Companion as TelemetryRuntime
 
 class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
     override fun getRunnerId(): String = "SamInvokeRunner"
@@ -117,26 +117,17 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
                 buildingPromise.setError(it)
                 throw it
             }.whenComplete { _, exception ->
-                AwsResourceCache.getInstance(state.environment.project)
-                    .getResource(StsResources.ACCOUNT, lambdaSettings.region, lambdaSettings.credentials)
-                    .whenComplete { account, _ ->
-                        TelemetryService.getInstance().record(
-                            TelemetryService.MetricEventMetadata(
-                                awsAccount = account ?: METADATA_INVALID,
-                                awsRegion = lambdaSettings.region.id
-                            )
-                        ) {
-                            datum("lambda_invokeLocal") {
-                                count()
-                                // exception can be null but is not annotated as nullable
-                                metadata("debug", environment.isDebug())
-                                metadata("result", if (exception == null) Result.Succeeded.value else Result.Failed.value)
-                                metadata("runtime", lambdaSettings.runtime.name)
-                                metadata("samVersion", SamCommon.getVersionString())
-                                metadata("templateBased", buildRequest is BuildLambdaFromTemplate)
-                            }
-                        }
-                    }
+                val account = AwsResourceCache.getInstance(state.environment.project)
+                    .getResourceIfPresent(StsResources.ACCOUNT, lambdaSettings.region, lambdaSettings.credentials)
+                LambdaTelemetry.invokeLocal(
+                    metadata = MetricEventMetadata(
+                        awsAccount = account ?: METADATA_INVALID,
+                        awsRegion = lambdaSettings.region.id
+                    ),
+                    debug = environment.isDebug(),
+                    runtime = TelemetryRuntime.from(lambdaSettings.runtime.toString()),
+                    success = exception == null
+                )
             }
 
         return buildingPromise

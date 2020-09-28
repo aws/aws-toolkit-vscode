@@ -21,11 +21,12 @@ import software.aws.toolkits.jetbrains.services.sts.StsResources
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import java.util.concurrent.atomic.AtomicBoolean
 
+data class MetricEventMetadata(
+    val awsAccount: String = METADATA_NA,
+    val awsRegion: String = METADATA_NA
+)
+
 abstract class TelemetryService(private val publisher: TelemetryPublisher, private val batcher: TelemetryBatcher) : Disposable {
-    data class MetricEventMetadata(
-        val awsAccount: String = METADATA_NA,
-        val awsRegion: String = METADATA_NA
-    )
 
     private val isDisposing = AtomicBoolean(false)
 
@@ -33,7 +34,7 @@ abstract class TelemetryService(private val publisher: TelemetryPublisher, priva
         setTelemetryEnabled(AwsSettings.getInstance().isTelemetryEnabled)
     }
 
-    fun record(project: Project?, buildEvent: MetricEvent.Builder.() -> Unit = {}) {
+    fun record(project: Project?, buildEvent: MetricEvent.Builder.() -> Unit) {
         val metricEventMetadata = if (project == null) MetricEventMetadata() else MetricEventMetadata(
             awsAccount = project.activeAwsAccountIfKnown() ?: METADATA_NOT_SET,
             awsRegion = project.activeRegion().id
