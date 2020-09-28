@@ -8,7 +8,7 @@ import { SSM } from 'aws-sdk'
 import { SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
-import { fileIconPath } from '../../awsexplorer/utils'
+import { fileIconPath } from '../../shared/utilities/vsCodeUtils'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 
 export class DocumentItemNode extends AWSTreeNodeBase {

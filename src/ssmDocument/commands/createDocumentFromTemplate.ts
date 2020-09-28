@@ -29,7 +29,7 @@ const SSMDOCUMENT_TEMPLATES: SsmDocumentTemplateQuickPickItem[] = [
             'AWS.ssmDocument.template.automationHelloWorldPython.description',
             'An example of an Automation document using "`aws:executeScript`" with a Python script'
         ),
-        filename: 'ssm/HelloWorldPython.ssm.yaml',
+        filename: 'HelloWorldPython.ssm.yaml',
         docType: 'automation',
     },
     {
@@ -41,7 +41,7 @@ const SSMDOCUMENT_TEMPLATES: SsmDocumentTemplateQuickPickItem[] = [
             'AWS.ssmDocument.template.automationHelloWorldPowershell.description',
             'An example of an Automation document using "`aws:executeScript`" with a Powershell script'
         ),
-        filename: 'ssm/HelloWorldPowershell.ssm.yaml',
+        filename: 'HelloWorldPowershell.ssm.yaml',
         docType: 'automation',
     },
 ]

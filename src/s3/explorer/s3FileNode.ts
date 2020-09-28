@@ -9,7 +9,7 @@ import { Bucket, DownloadFileRequest, File, S3Client } from '../../shared/client
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { fileIconPath } from '../../awsexplorer/utils'
+import { fileIconPath } from '../../shared/utilities/vsCodeUtils'
 import { inspect } from 'util'
 import { S3BucketNode } from './s3BucketNode'
 import { S3FolderNode } from './s3FolderNode'
