@@ -155,9 +155,6 @@ abstract class ToolkitClientManager {
                     endpointOverride?.let {
                         builder.endpointOverride(URI.create(it))
                     }
-                    if (builder is S3ClientBuilder) {
-                        builder.serviceConfiguration { it.pathStyleAccessEnabled(true) }
-                    }
                 }
                 .build() as T
         }

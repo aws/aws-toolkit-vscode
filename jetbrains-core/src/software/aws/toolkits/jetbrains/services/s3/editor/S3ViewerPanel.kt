@@ -14,6 +14,7 @@ import com.intellij.ui.PopupHandler
 import com.intellij.ui.ToolbarDecorator
 import com.intellij.ui.treeStructure.SimpleTreeStructure
 import software.aws.toolkits.jetbrains.services.s3.objectActions.CopyPathAction
+import software.aws.toolkits.jetbrains.services.s3.objectActions.CopyUrlAction
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DeleteObjectAction
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction
 import software.aws.toolkits.jetbrains.services.s3.objectActions.NewFolderAction
@@ -82,6 +83,7 @@ class S3ViewerPanel(disposable: Disposable, private val project: Project, privat
             }
         )
         it.add(CopyPathAction(project, table))
+        it.add(CopyUrlAction(project, table))
         it.add(Separator())
         it.add(DeleteObjectAction(project, table))
         it.add(Separator())
