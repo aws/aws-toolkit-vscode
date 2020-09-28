@@ -136,7 +136,11 @@ class DownloadCodeForSchemaDialog(
         val schemaCodeDownloadDetails = viewToSchemaCodeDownloadDetails()
 
         // Telemetry for download code language
-        SchemasTelemetry.download(project, success = true, schemalanguage = SchemaLanguage.from(schemaCodeDownloadDetails.language.apiValue))
+        SchemasTelemetry.download(
+            project = project,
+            success = true,
+            schemaLanguage = SchemaLanguage.from(schemaCodeDownloadDetails.language.apiValue)
+        )
 
         val schemaName = schemaCodeDownloadDetails.schema.name
         ProgressManager.getInstance().run(

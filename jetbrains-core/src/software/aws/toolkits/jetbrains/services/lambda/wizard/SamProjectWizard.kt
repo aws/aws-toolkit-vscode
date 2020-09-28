@@ -149,13 +149,13 @@ abstract class SamProjectTemplate {
             throw e
         } finally {
             SamTelemetry.init(
-                project,
+                project = project,
                 name = getName(),
                 success = success,
                 runtime = TelemetryRuntime.from(runtime.toString()),
                 version = SamCommon.getVersionString(),
-                templatename = this.javaClass.simpleName,
-                eventbridgeschema = if (schemaParameters?.schema?.registryName == AWS_EVENTS_REGISTRY) schemaParameters.schema.name else null
+                templateName = this.javaClass.simpleName,
+                eventBridgeSchema = if (schemaParameters?.schema?.registryName == AWS_EVENTS_REGISTRY) schemaParameters.schema.name else null
             )
         }
     }

@@ -165,12 +165,12 @@ internal class ChangeRegionAction(private val region: AwsRegion) : ToggleAction(
 
             if (oldRegion?.partitionId != region.partitionId) {
                 AwsTelemetry.setPartition(
-                    partitionid = region.partitionId
+                    partitionId = region.partitionId
                 )
             }
 
             AwsTelemetry.setRegion(
-                regionid = region.id
+                regionId = region.id
             )
         }
     }

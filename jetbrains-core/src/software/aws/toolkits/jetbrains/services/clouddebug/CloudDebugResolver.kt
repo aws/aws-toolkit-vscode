@@ -202,7 +202,7 @@ object CloudDebugResolver {
         ClouddebugTelemetry.install(
             project,
             version = newVersion.toString(),
-            oldversion = oldVersion.toString(),
+            oldVersion = oldVersion.toString(),
             result = result,
             value = Duration.between(startTime, Instant.now()).toMillis().toDouble(),
             createTime = startTime

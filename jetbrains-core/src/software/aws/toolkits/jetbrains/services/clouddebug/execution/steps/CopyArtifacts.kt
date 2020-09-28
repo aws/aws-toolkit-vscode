@@ -70,7 +70,7 @@ class ResourceTransferStep(private val localPath: String, private val remotePath
         ClouddebugTelemetry.copy(
             context.project,
             result = result,
-            workflowtoken = context.workflowToken,
+            workflowToken = context.workflowToken,
             value = Duration.between(startTime, Instant.now()).toMillis().toDouble()
         )
     }

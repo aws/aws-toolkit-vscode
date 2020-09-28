@@ -119,7 +119,7 @@ class PortForwarder(
         ClouddebugTelemetry.portForward(
             context.project,
             result,
-            workflowtoken = context.workflowToken,
+            workflowToken = context.workflowToken,
             value = Duration.between(startTime, Instant.now()).toMillis().toDouble(),
             createTime = startTime
         )
