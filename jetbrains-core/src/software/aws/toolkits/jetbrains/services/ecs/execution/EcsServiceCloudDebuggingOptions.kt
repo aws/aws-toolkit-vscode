@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.services.ecs.execution
 
 import com.intellij.util.xmlb.annotations.Tag
-import software.amazon.awssdk.services.ecs.model.LaunchType
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebuggingPlatform
@@ -64,7 +63,3 @@ data class ImmutablePortMapping(
     val localPort: Int,
     val remotePort: Int
 )
-
-enum class EcsLaunchType(val sdkType: LaunchType) {
-    EC2(LaunchType.EC2), FARGATE(LaunchType.FARGATE);
-}

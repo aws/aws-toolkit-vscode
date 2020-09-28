@@ -73,7 +73,7 @@ abstract class Step {
  * [Step] that creates multiple child steps and runs them in parallel waiting on the result.
  */
 abstract class ParallelStep : Step() {
-    private inner class ChildStep(val future: CompletableFuture<*>, val step: Step)
+    private inner class ChildStep(val future: CompletableFuture<*>)
 
     private val listOfChildTasks = mutableListOf<ChildStep>()
 
@@ -88,7 +88,7 @@ abstract class ParallelStep : Step() {
     ) {
         buildChildSteps(context).forEach {
             val stepFuture = CompletableFuture<Unit>()
-            listOfChildTasks.add(ChildStep(stepFuture, it))
+            listOfChildTasks.add(ChildStep(stepFuture))
 
             ApplicationManager.getApplication().executeOnPooledThread {
                 try {

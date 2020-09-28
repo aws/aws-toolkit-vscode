@@ -44,11 +44,6 @@ class MockAwsConnectionManager(project: Project) : AwsConnectionManager(project)
         waitUntilConnectionStateIsStable()
     }
 
-    fun nullifyRegionAndWait() {
-        changeConnectionSettings(selectedCredentialIdentifier, null)
-        waitUntilConnectionStateIsStable()
-    }
-
     fun setConnectionState(state: ConnectionState) {
         connectionState = state
     }

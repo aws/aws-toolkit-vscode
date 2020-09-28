@@ -40,9 +40,6 @@ import java.util.UUID
 class S3BrowserTest {
     private val testDataPath: Path = Paths.get(System.getProperty("testDataPath"))
 
-    private val profile = "default"
-    private val credential = "Profile:$profile"
-    private val region = "Oregon (us-west-2)"
     private val date = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)
     private val bucket = "uitest-$date-${UUID.randomUUID()}"
     private val folder = UUID.randomUUID().toString()
