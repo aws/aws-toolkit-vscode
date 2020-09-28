@@ -18,6 +18,7 @@ import software.aws.toolkits.jetbrains.services.s3.download
 import software.aws.toolkits.jetbrains.services.s3.upload
 import java.io.InputStream
 import java.io.OutputStream
+import java.net.URL
 
 class S3VirtualBucket(val s3Bucket: Bucket, val client: S3Client) : LightVirtualFile(s3Bucket.name()) {
     override fun isWritable(): Boolean = false
@@ -72,6 +73,11 @@ class S3VirtualBucket(val s3Bucket: Bucket, val client: S3Client) : LightVirtual
         withContext(Dispatchers.IO) {
             client.download(project, s3Bucket.name(), key, output).await()
         }
+    }
+
+    fun generateUrl(key: String): URL = client.utilities().getUrl {
+        it.bucket(s3Bucket.name())
+        it.key(key)
     }
 
     private companion object {
