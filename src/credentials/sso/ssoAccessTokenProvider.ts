@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import { SSOOIDC } from 'aws-sdk'
 import { SsoClientRegistration } from './ssoClientRegistration'
 import { SsoAccessToken } from './ssoAccessToken'
 import { DiskCache } from './diskCache'
 import { getLogger } from '../../shared/logger'
 import { StartDeviceAuthorizationResponse } from 'aws-sdk/clients/ssooidc'
+import { displaySsoProfileChosenMessage, openSsoPortalLink } from './ssoSupport'
 
 const CLIENT_REGISTRATION_TYPE = 'public'
 const CLIENT_NAME = `aws-toolkit-vscode`
@@ -37,15 +37,11 @@ export class SsoAccessTokenProvider {
         if (accessToken) {
             return accessToken
         }
-        try {
-            const registration = await this.registerClient()
-            const authorization = await this.authorizeClient(registration)
-            const token = await this.pollForToken(registration, authorization)
-            this.cache.saveAccessToken(this.ssoUrl, token)
-            return token
-        } catch (error) {
-            throw error
-        }
+        const registration = await this.registerClient()
+        const authorization = await this.authorizeClient(registration)
+        const token = await this.pollForToken(registration, authorization)
+        this.cache.saveAccessToken(this.ssoUrl, token)
+        return token
     }
 
     public invalidate() {
@@ -119,10 +115,11 @@ export class SsoAccessTokenProvider {
             const authorizationResponse = await this.ssoOidcClient
                 .startDeviceAuthorization(authorizationParams)
                 .promise()
-
-            const signInInstructionMessage = `You have chosen an AWS Single Sign-On profile that requires authorization. `
-            vscode.window.showInformationMessage(signInInstructionMessage, { modal: true })
-            vscode.env.openExternal(vscode.Uri.parse(authorizationResponse.verificationUriComplete!))
+            await displaySsoProfileChosenMessage()
+            const openedPortalLink = await openSsoPortalLink(authorizationResponse)
+            if (!openedPortalLink) {
+                throw Error(`User has canceled SSO login`)
+            }
             return authorizationResponse
         } catch (err) {
             getLogger().error(err)
