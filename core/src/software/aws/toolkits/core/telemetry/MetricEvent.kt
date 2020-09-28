@@ -108,8 +108,6 @@ class DefaultMetricEvent internal constructor(
         const val METADATA_NA = "n/a"
         const val METADATA_NOT_SET = "not-set"
         const val METADATA_INVALID = "invalid"
-
-        private val LOG = getLogger<DefaultDatum>()
     }
 
     class DefaultDatum(

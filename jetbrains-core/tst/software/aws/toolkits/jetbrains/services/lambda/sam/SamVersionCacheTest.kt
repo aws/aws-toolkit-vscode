@@ -3,8 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.sam
 
-import org.jetbrains.concurrency.Promise
-import org.jetbrains.concurrency.all
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -87,10 +85,5 @@ class SamVersionCacheTest {
 
         val samPath = SamCommonTestUtils.makeATestSam(message).toString()
         SamVersionCache.evaluateBlocking(samPath)
-    }
-
-    private fun waitAll(promises: Collection<Promise<*>>) {
-        val all = promises.all(null, ignoreErrors = true)
-        all.blockingGet(3000)
     }
 }

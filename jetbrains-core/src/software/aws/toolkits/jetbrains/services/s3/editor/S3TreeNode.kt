@@ -71,10 +71,6 @@ class S3TreeDirectoryNode(private val bucket: S3VirtualBucket, parent: S3TreeDir
         return (folders + s3Objects).sortedBy { it.key } + continuation
     }
 
-    fun removeChild(node: S3TreeNode) {
-        cachedList = cachedList.filter { it != node }
-    }
-
     fun removeAllChildren() {
         cachedList = listOf()
     }

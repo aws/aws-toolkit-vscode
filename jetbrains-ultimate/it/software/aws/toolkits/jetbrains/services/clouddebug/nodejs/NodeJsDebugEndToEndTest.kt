@@ -7,7 +7,6 @@ import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.util.registry.Registry
 import com.intellij.testFramework.runInEdtAndWait
-import com.intellij.xdebugger.XDebuggerUtil
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Assume.assumeTrue
@@ -121,16 +120,6 @@ class NodeJsDebugEndToEndTest : CloudDebugTestCase("CloudDebugTestECSClusterTask
         }
 
         return psiFile.virtualFile.path
-    }
-
-    private fun addBreakpoint(lineNumber: Int) {
-        runInEdtAndWait {
-            XDebuggerUtil.getInstance().toggleLineBreakpoint(
-                projectRule.project,
-                projectRule.fixture.file.virtualFile,
-                lineNumber
-            )
-        }
     }
 
     override fun getProject() = projectRule.project

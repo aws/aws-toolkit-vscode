@@ -13,6 +13,4 @@ data class SchemaSearchResultWithRegistry(
     val registry: String
 )
 
-data class SchemaSearchResultVersion(val version: String)
-
 data class SchemaSearchError(val registryName: String, val errorMessage: String)

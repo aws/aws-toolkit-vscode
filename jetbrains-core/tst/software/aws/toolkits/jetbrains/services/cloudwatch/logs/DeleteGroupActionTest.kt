@@ -16,7 +16,6 @@ import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.amazon.awssdk.services.cloudwatchlogs.model.DeleteLogGroupRequest
 import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeLogStreamsRequest
 import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeLogStreamsResponse
-import software.amazon.awssdk.services.cloudwatchlogs.model.LogGroup
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogStream
 import software.aws.toolkits.core.utils.test.retryableAssert
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
@@ -34,7 +33,6 @@ class DeleteGroupActionTest {
     @Rule
     val mockClientManager = MockClientManagerRule(projectRule)
 
-    private val group = LogGroup.builder().logGroupName("name").build()
     private val stream = LogStream.builder().logStreamName("eman").build()
     private lateinit var cloudwatchmock: CloudWatchLogsClient
 

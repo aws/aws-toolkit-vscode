@@ -7,7 +7,6 @@ import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
-import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.map
@@ -57,9 +56,5 @@ class RemoteLambdaRunSettingsEditor(project: Project) : SettingsEditor<RemoteLam
         } else {
             configuration.useInputText(view.lambdaInput.inputText)
         }
-    }
-
-    private companion object {
-        val LOG = getLogger<RemoteLambdaRunSettingsEditor>()
     }
 }
