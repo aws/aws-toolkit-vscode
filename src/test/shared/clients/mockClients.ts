@@ -46,6 +46,7 @@ interface Clients {
     stepFunctionsClient: StepFunctionsClient
     stsClient: StsClient
     s3Client: S3Client
+    ssmDocumentClient: SsmDocumentClient
 }
 
 export class MockToolkitClientBuilder implements ToolkitClientBuilder {
@@ -61,6 +62,7 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
             stepFunctionsClient: new MockStepFunctionsClient(),
             stsClient: new MockStsClient({}),
             s3Client: new MockS3Client({}),
+            ssmDocumentClient: new MockSsmDocumentClient(),
             ...overrideClients,
         }
     }
@@ -99,6 +101,10 @@ export class MockToolkitClientBuilder implements ToolkitClientBuilder {
 
     public createS3Client(regionCode: string): S3Client {
         return this.clients.s3Client
+    }
+
+    public createSsmClient(regionCode: string): SsmDocumentClient {
+        return this.clients.ssmDocumentClient
     }
 }
 
