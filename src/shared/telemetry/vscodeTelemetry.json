@@ -5,6 +5,17 @@
             "type": "string",
             "allowedValues": ["Create", "Update"],
             "description": "SSM Publish Document operation type"
+        },
+        {
+            "name": "documentFormat",
+            "type": "string",
+            "allowedValues": ["JSON, YAML", "Unselected"],
+            "description": "SSM Create document format selection"
+        },
+        {
+            "name": "starterTemplate",
+            "type": "string",
+            "description": "Starter template chosen during create document"
         }
     ],
     "metrics": [
@@ -47,6 +58,14 @@
             "metadata": [
                 {
                     "type": "result"
+                },
+                {
+                    "type": "documentFormat",
+                    "required": false
+                },
+                {
+                    "type": "starterTemplate",
+                    "required": false
                 }
             ]
         },

@@ -65,7 +65,7 @@ async function registerSsmDocumentCommands(
 
     extensionContext.subscriptions.push(
         vscode.commands.registerCommand('aws.ssmDocument.publishDocument', async () => {
-            await publishSSMDocument(awsContext, regionProvider, outputChannel)
+            await publishSSMDocument(awsContext, regionProvider)
         })
     )
 

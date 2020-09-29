@@ -48,6 +48,8 @@ const SSMDOCUMENT_TEMPLATES: SsmDocumentTemplateQuickPickItem[] = [
 
 export async function createSsmDocumentFromTemplate(extensionContext: vscode.ExtensionContext): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
+    let format: telemetry.DocumentFormat = 'Unselected'
+    let templateName: string = 'Unselected'
     const logger: Logger = getLogger()
 
     const quickPick = picker.createQuickPick<SsmDocumentTemplateQuickPickItem>({
@@ -74,9 +76,13 @@ export async function createSsmDocumentFromTemplate(extensionContext: vscode.Ext
             result = 'Cancelled'
         } else {
             logger.debug(`User selected template: ${selection.label}`)
+            templateName = selection.label
+            const selectedDocumentFormat = await promptUserForDocumentFormat(['YAML', 'JSON'])
+            format = selectedDocumentFormat ? (selectedDocumentFormat as telemetry.DocumentFormat) : format
             const textDocument: vscode.TextDocument | undefined = await openTextDocumentFromSelection(
                 selection,
-                extensionContext.extensionPath
+                extensionContext.extensionPath,
+                selectedDocumentFormat
             )
             if (textDocument !== undefined) {
                 vscode.window.showTextDocument(textDocument)
@@ -94,7 +100,11 @@ export async function createSsmDocumentFromTemplate(extensionContext: vscode.Ext
             )
         )
     } finally {
-        telemetry.recordSsmCreateDocument({ result })
+        telemetry.recordSsmCreateDocument({
+            result: result,
+            documentFormat: format,
+            starterTemplate: templateName,
+        })
     }
 }
 
@@ -105,12 +115,12 @@ function yamlToJson(yaml: string): string {
 
 async function openTextDocumentFromSelection(
     item: SsmDocumentTemplateQuickPickItem,
-    extensionPath: string
+    extensionPath: string,
+    selectedDocumentFormat: string | undefined
 ): Promise<vscode.TextDocument | undefined> {
     // By default the template content is YAML, so when the format is not Yaml, we convert to JSON.
     // We only support JSON and YAML for ssm documents
     const templateYamlContent = await readFileAsString(path.join(extensionPath, 'templates', item.filename))
-    const selectedDocumentFormat = await promptUserForDocumentFormat(['YAML', 'JSON'])
 
     // user pressed escape and didn't select a format
     if (selectedDocumentFormat === undefined) {
