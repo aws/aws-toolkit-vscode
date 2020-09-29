@@ -14,24 +14,26 @@ import { getLogger, Logger } from '../../shared/logger'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import * as picker from '../../shared/ui/picker'
 
-export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsContext) {
+export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsContext, format?: string) {
     const logger: Logger = getLogger()
 
     let result: telemetry.Result = 'Succeeded'
 
     let documentVersion: string | undefined = undefined
-    let documentFormat: string | undefined = undefined
 
     if (node.documentOwner === awsContext.getCredentialAccountId()) {
         const versions = await node.listSchemaVersion()
-        documentVersion = await promptUserforDocumentVersion(versions)
+        if (versions.length > 1) {
+            documentVersion = await promptUserforDocumentVersion(versions)
+            if (documentVersion == undefined) {
+                // user pressed escape and didn't select a version
+                return
+            }
+        }
     }
 
-    // Currently only JSON/YAML formats are supported
-    documentFormat = await promptUserforDocumentFormat(['JSON', 'YAML'])
-
     try {
-        const rawContent = await node.getDocumentContent(documentVersion, documentFormat)
+        const rawContent = await node.getDocumentContent(documentVersion, format)
         const textDocument = await vscode.workspace.openTextDocument({
             content: rawContent.Content,
             language: `ssm-${rawContent.DocumentFormat!.toLowerCase()}`,
@@ -40,51 +42,25 @@ export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsCo
     } catch (err) {
         result = 'Failed'
         const error = err as Error
+        logger.error('Error on opening document: %0', error)
         vscode.window.showErrorMessage(
             localize(
-                'AWS.message.error.ssmDocumet.openDocument.could_not_open',
+                'AWS.message.error.ssmDocument.openDocument.could_not_open',
                 'Could not fetch and display document {0} contents. Please check logs for more details.',
                 node.documentName
             )
         )
-        logger.error('Error on opening document: %0', error)
     } finally {
         telemetry.recordSsmOpenDocument({ result: result })
     }
 }
 
-async function promptUserforDocumentFormat(formats: string[]): Promise<string | undefined> {
-    // Prompt user to pick document format
-    const quickPickItems: vscode.QuickPickItem[] = formats.map(format => {
-        return {
-            label: format,
-            description: `Open document with format ${format}`,
-        }
-    })
+export async function openDocumentItemJson(node: DocumentItemNode, awsContext: AwsContext) {
+    openDocumentItem(node, awsContext, 'JSON')
+}
 
-    const formatPick = picker.createQuickPick({
-        options: {
-            ignoreFocusOut: true,
-            title: localize('AWS.message.prompt.selectSsmDocumentFormat.placeholder', 'Select a document format'),
-        },
-        items: quickPickItems,
-    })
-
-    const formatChoices = await picker.promptUser({
-        picker: formatPick,
-        onDidTriggerButton: (_, resolve) => {
-            resolve(undefined)
-        },
-    })
-
-    const formatSelection = picker.verifySinglePickerOutput(formatChoices)
-
-    // User pressed escape and didn't select a template
-    if (formatSelection === undefined) {
-        return undefined
-    }
-
-    return formatSelection.label
+export async function openDocumentItemYaml(node: DocumentItemNode, awsContext: AwsContext) {
+    openDocumentItem(node, awsContext, 'YAML')
 }
 
 async function promptUserforDocumentVersion(versions: SSM.Types.DocumentVersionInfo[]): Promise<string | undefined> {
@@ -103,7 +79,10 @@ async function promptUserforDocumentVersion(versions: SSM.Types.DocumentVersionI
         const versionPick = picker.createQuickPick({
             options: {
                 ignoreFocusOut: true,
-                title: localize('AWS.message.prompt.selectSsmDocumentVersion.placeholder', 'Select a document version'),
+                title: localize(
+                    'AWS.message.prompt.selectSsmDocumentVersion.placeholder',
+                    'Select a document version to download'
+                ),
             },
             items: quickPickItems,
         })

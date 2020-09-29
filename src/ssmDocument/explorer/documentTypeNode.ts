@@ -6,39 +6,29 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { SSM } from 'aws-sdk'
 import * as vscode from 'vscode'
 
-import { SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
-import { ext } from '../../shared/extensionGlobals'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
-import { toArrayAsync, updateInPlace } from '../../shared/utilities/collectionUtils'
-import { DocumentItemNode } from './documentItemNode'
-
-export const amazonRegistryName = localize('AWS.explorerNode.registry.name.amazon', 'Owned by Amazon')
-export const userRegistryName = localize('AWS.explorerNode.registry.name.self', 'Owned by me')
-export const sharedRegistryName = localize('AWS.explorerNode.registry.name.shared', 'Shared with me')
+import { updateInPlace } from '../../shared/utilities/collectionUtils'
+import { amazonRegistryName, RegistryItemNode, sharedRegistryName, userRegistryName } from './registryItemNode'
 
 export class DocumentTypeNode extends AWSTreeNodeBase {
-    private readonly documentNodes: Map<string, DocumentItemNode>
+    private readonly registryNodes: Map<string, RegistryItemNode>
+    private readonly childRegistryNames = [amazonRegistryName, userRegistryName, sharedRegistryName]
 
-    public constructor(
-        public readonly regionCode: string,
-        public documentType: string,
-        public readonly registryName: string
-    ) {
+    public constructor(public readonly regionCode: string, public documentType: string) {
         super('', vscode.TreeItemCollapsibleState.Collapsed)
 
         this.setLabel()
 
-        this.documentNodes = new Map<string, DocumentItemNode>()
+        this.registryNodes = new Map<string, RegistryItemNode>()
     }
 
     private setLabel() {
-        this.label = `${this.documentType}`
+        this.label = `${this.documentType}` + ' Documents'
     }
 
     public update(documentType: string): void {
@@ -51,68 +41,30 @@ export class DocumentTypeNode extends AWSTreeNodeBase {
             getChildNodes: async () => {
                 await this.updateChildren()
 
-                return [...this.documentNodes.values()]
+                return [...this.registryNodes.values()]
             },
             getErrorNode: async (error: Error) =>
                 new ErrorNode(
                     this,
                     error,
-                    localize('AWS.explorerNode.documentType.error', 'Error loading documentType ssm document items')
+                    localize('AWS.explorerNode.ssmDocument.error', 'Error loading Systems Manager Document resources')
                 ),
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(
                     this,
-                    localize('AWS.explorerNode.documentType.noSsmDocument', `[No documents found]`)
+                    localize('AWS.explorerNode.ssmDocument.noRegistry', '[No Systems Manager Document Registries]')
                 ),
-            sort: (nodeA: DocumentItemNode, nodeB: DocumentItemNode) =>
-                nodeA.documentName.localeCompare(nodeB.documentName),
+            sort: (nodeA: RegistryItemNode, nodeB: RegistryItemNode) =>
+                nodeA.registryName.localeCompare(nodeB.registryName),
         })
-    }
-
-    private async getDocumentByOwner(client: SsmDocumentClient): Promise<SSM.DocumentIdentifier[]> {
-        let request: SSM.ListDocumentsRequest = {
-            Filters: [
-                {
-                    Key: 'DocumentType',
-                    Values: [this.documentType],
-                },
-            ],
-        }
-
-        if (this.registryName === userRegistryName) {
-            request.Filters?.push({
-                Key: 'Owner',
-                Values: ['Self'],
-            })
-        } else if (this.registryName === sharedRegistryName) {
-            request.Filters?.push({
-                Key: 'Owner',
-                Values: ['Private'],
-            })
-        } else if (this.registryName === amazonRegistryName) {
-            request.Filters?.push({
-                Key: 'Owner',
-                Values: ['Amazon'],
-            })
-        }
-
-        return toArrayAsync(client.listDocuments(request))
     }
 
     public async updateChildren(): Promise<void> {
-        const client: SsmDocumentClient = ext.toolkitClientBuilder.createSsmClient(this.regionCode)
-        const documents = new Map<string, SSM.Types.DocumentIdentifier>()
-
-        const docs = await this.getDocumentByOwner(client)
-        docs.forEach(doc => {
-            documents.set(doc.Name!, doc)
-        })
-
         updateInPlace(
-            this.documentNodes,
-            documents.keys(),
-            key => this.documentNodes.get(key)!.update(documents.get(key)!),
-            key => new DocumentItemNode(documents.get(key)!, client)
+            this.registryNodes,
+            this.childRegistryNames,
+            key => this.registryNodes.get(key)!.update(key),
+            key => new RegistryItemNode(this.regionCode, key, this.documentType)
         )
     }
 }

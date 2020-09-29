@@ -12,6 +12,16 @@ import { SsmDocumentClient } from './ssmDocumentClient'
 export class DefaultSsmDocumentClient implements SsmDocumentClient {
     public constructor(public readonly regionCode: string) {}
 
+    public async deleteDocument(documentName: string): Promise<SSM.Types.DeleteDocumentResult> {
+        const client = await this.createSdkClient()
+
+        const request: SSM.Types.DeleteDocumentRequest = {
+            Name: documentName,
+        }
+
+        return await client.deleteDocument(request).promise()
+    }
+
     public async *listDocuments(
         request: SSM.Types.ListDocumentsRequest = {}
     ): AsyncIterableIterator<SSM.DocumentIdentifier> {
@@ -46,6 +56,17 @@ export class DefaultSsmDocumentClient implements SsmDocumentClient {
         } while (request.NextToken)
     }
 
+    public async describeDocument(documentName: string, documentVersion?: string): Promise<SSM.DescribeDocumentResult> {
+        const client = await this.createSdkClient()
+
+        const request: SSM.Types.DescribeDocumentRequest = {
+            Name: documentName,
+            DocumentVersion: documentVersion,
+        }
+
+        return await client.describeDocument(request).promise()
+    }
+
     public async getDocument(
         documentName: string,
         documentVersion?: string,
@@ -72,6 +93,20 @@ export class DefaultSsmDocumentClient implements SsmDocumentClient {
         const client = await this.createSdkClient()
 
         return await client.updateDocument(request).promise()
+    }
+
+    public async updateDocumentVersion(
+        documentName: string,
+        documentVersion: string
+    ): Promise<SSM.Types.UpdateDocumentDefaultVersionResult> {
+        const client = await this.createSdkClient()
+
+        const request: SSM.Types.UpdateDocumentDefaultVersionRequest = {
+            Name: documentName,
+            DocumentVersion: documentVersion,
+        }
+
+        return await client.updateDocumentDefaultVersion(request).promise()
     }
 
     private async createSdkClient(): Promise<SSM> {

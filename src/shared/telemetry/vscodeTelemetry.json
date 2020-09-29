@@ -51,6 +51,26 @@
             ]
         },
         {
+            "name": "ssm_deleteDocument",
+            "description": "An SSM Document is deleted",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "ssm_executeDocument",
+            "description": "An SSM Document is deleted",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
             "name": "ssm_openDocument",
             "description": "An SSM Document is opened locally",
             "unit": "None",
@@ -70,6 +90,16 @@
                 },
                 {
                     "type": "ssmOperation"
+                }
+            ]
+        },
+        {
+            "name": "ssm_updateDocumentVersion",
+            "description": "SSM Document related metrics for updating document default version",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
                 }
             ]
         }

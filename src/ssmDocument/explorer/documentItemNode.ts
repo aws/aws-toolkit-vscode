@@ -8,13 +8,19 @@ import { SSM } from 'aws-sdk'
 import { SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 
+import { fileIconPath } from '../../shared/utilities/vsCodeUtils'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 
 export class DocumentItemNode extends AWSTreeNodeBase {
-    public constructor(private documentItem: SSM.Types.DocumentIdentifier, public readonly client: SsmDocumentClient) {
+    public constructor(
+        private documentItem: SSM.Types.DocumentIdentifier,
+        public readonly client: SsmDocumentClient,
+        public readonly regionCode: string
+    ) {
         super('')
         this.update(documentItem)
         this.contextValue = 'awsDocumentItemNode'
+        this.iconPath = fileIconPath()
     }
 
     public update(documentItem: SSM.Types.DocumentIdentifier): void {
@@ -38,10 +44,20 @@ export class DocumentItemNode extends AWSTreeNodeBase {
             return Promise.resolve({})
         }
 
+        let resolvedDocumentFormat: string | undefined
+
+        if (documentFormat === undefined) {
+            // retrieves the document format from the service
+            const documentDescription = await this.client.describeDocument(this.documentName, documentVersion)
+            resolvedDocumentFormat = documentDescription.Document?.DocumentFormat
+        } else {
+            resolvedDocumentFormat = documentFormat
+        }
+
         return await this.client.getDocument(
             this.documentName,
             documentVersion || this.documentItem.DocumentVersion,
-            documentFormat || this.documentItem.DocumentFormat
+            resolvedDocumentFormat
         )
     }
 

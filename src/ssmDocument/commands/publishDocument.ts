@@ -23,6 +23,8 @@ import {
 } from '../wizards/publishDocumentWizard'
 import { stringify } from 'querystring'
 import * as telemetry from '../../shared/telemetry/telemetry'
+import { Window } from '../../shared/vscode/window'
+import { showConfirmationMessage } from '../util/util'
 
 const DEFAULT_REGION: string = 'us-east-1'
 
@@ -35,12 +37,12 @@ export async function publishSSMDocument(
 
     const textDocument = vscode.window.activeTextEditor?.document
     if (!textDocument) {
-        let errorMsg = 'Could not get active text editor for local SSM Document definition'
+        let errorMsg = 'Could not get active text editor for local Systems Manager Document definition'
         logger.error(errorMsg)
         vscode.window.showErrorMessage(
             localize(
                 'AWS.message.error.ssmDocument.publishDocument.could_not_open',
-                'Could not get active text editor for local SSM Document definition'
+                'Could not get active text editor for local Systems Manager Document definition'
             )
         )
         return
@@ -64,7 +66,7 @@ export async function publishSSMDocument(
     if (!region) {
         region = DEFAULT_REGION
         logger.info(
-            `Unsuccessful in picking a region. Falling back to ${DEFAULT_REGION} for publishing a SSM Document.`
+            `Unsuccessful in picking a region. Falling back to ${DEFAULT_REGION} for publishing a Systems Manager Document.`
         )
     }
 
@@ -96,12 +98,12 @@ export async function createDocument(
     let ssmOperation: telemetry.SsmOperation = wizardResponse.PublishSsmDocAction as telemetry.SsmOperation
 
     const logger: Logger = getLogger()
-    logger.info(`Creating SSM Document '${wizardResponse.name}'`)
+    logger.info(`Creating Systems Manager Document '${wizardResponse.name}'`)
     outputChannel.show()
     outputChannel.appendLine(
         localize(
             'AWS.message.info.ssmDocument.publishDocument.creating',
-            "Creating SSM Document '{0}' in {1}...",
+            "Creating Systems Manager Document '{0}' in {1}...",
             wizardResponse.name,
             region
         )
@@ -119,28 +121,29 @@ export async function createDocument(
         outputChannel.appendLine(
             localize(
                 'AWS.message.info.ssmDocument.publishDocument.createSuccess',
-                "Successfully created and uploaded SSM Document '{0}'",
+                "Successfully created and uploaded Systems Manager Document '{0}'",
                 wizardResponse.name
             )
         )
         if (createResult.DocumentDescription) {
             outputChannel.appendLine(stringify(createResult.DocumentDescription))
         }
-        logger.info(`Created SSM Document successfully ${stringify(createResult.DocumentDescription)}`)
-        vscode.window.showInformationMessage(`Created SSM Document successfully`)
+        logger.info(`Created Systems Manager Document successfully ${stringify(createResult.DocumentDescription)}`)
+        vscode.window.showInformationMessage(`Created Systems Manager Document successfully`)
         outputChannel.appendLine('')
     } catch (err) {
-        logger.info(`Failed to create SSM Document '${wizardResponse.name}'. %0`, err as Error)
+        const error = err as Error
+        logger.error(`Failed to create Systems Manager Document '${wizardResponse.name}'. %0`, error)
         result = 'Failed'
         outputChannel.appendLine(
             localize(
                 'AWS.message.info.ssmDocument.publishDocument.createFailure',
-                "There was an error creating and uploading SSM Document '{0}', check logs for more information.",
+                "There was an error creating and uploading Systems Manager Document '{0}', check logs for more information.",
                 wizardResponse.name
             )
         )
         vscode.window.showErrorMessage(
-            `Failed to create SSM Document '${wizardResponse.name}'. ${(err as Error).message}`
+            `Failed to create Systems Manager Document '${wizardResponse.name}'. ${error.message}`
         )
         outputChannel.appendLine('')
     } finally {
@@ -153,18 +156,19 @@ export async function updateDocument(
     textDocument: vscode.TextDocument,
     outputChannel: vscode.OutputChannel,
     region: string,
-    client: SsmDocumentClient
+    client: SsmDocumentClient,
+    window = Window.vscode()
 ) {
     let result: telemetry.Result = 'Succeeded'
     let ssmOperation: telemetry.SsmOperation = wizardResponse.PublishSsmDocAction as telemetry.SsmOperation
 
     const logger: Logger = getLogger()
-    logger.info(`Updating SSM Document '${wizardResponse.name}'`)
+    logger.info(`Updating Systems Manager Document '${wizardResponse.name}'`)
     outputChannel.show()
     outputChannel.appendLine(
         localize(
             'AWS.message.info.ssmDocument.publishDocument.updating',
-            "Updating SSM Document '{0}' in {1}...",
+            "Updating Systems Manager Document '{0}' in {1}...",
             wizardResponse.name,
             region
         )
@@ -182,23 +186,56 @@ export async function updateDocument(
         outputChannel.appendLine(
             localize(
                 'AWS.message.info.ssmDocument.publishDocument.updateSuccess',
-                "Successfully updated SSM Document '{0}'",
+                "Successfully updated Systems Manager Document '{0}'",
                 wizardResponse.name
             )
         )
         if (updateResult.DocumentDescription) {
             outputChannel.appendLine(stringify(updateResult.DocumentDescription))
         }
-        logger.info(`Updated SSM Document successfully ${stringify(updateResult.DocumentDescription)}`)
-        vscode.window.showInformationMessage(`Updated SSM Document successfully`)
+
+        logger.info(`Updated Systems Manager Document successfully ${stringify(updateResult.DocumentDescription)}`)
+        vscode.window.showInformationMessage(`Updated Systems Manager Document successfully`)
         outputChannel.appendLine('')
+
+        const isConfirmed = await showConfirmationMessage(
+            {
+                prompt: localize(
+                    'AWS.ssmDocument.publishDocument.updateVersion.prompt',
+                    'Would you like to make this the default version for {0}?',
+                    wizardResponse.name
+                ),
+                confirm: localize('AWS.generic.response.yes', 'Yes'),
+                cancel: localize('AWS.generic.response.no', 'No'),
+            },
+            window
+        )
+
+        if (!isConfirmed) {
+            logger.info('Declined update default version on update document success.')
+        } else {
+            try {
+                let documentVersion: string | undefined = updateResult.DocumentDescription?.DocumentVersion
+                if (documentVersion !== undefined) {
+                    await client.updateDocumentVersion(wizardResponse.name, documentVersion)
+                    vscode.window.showInformationMessage(
+                        `Updated Systems Manager Document default version successfully`
+                    )
+                }
+            } catch (err) {
+                logger.error(
+                    `Failed to update Systems Manager Document '${wizardResponse.name}' default version. %0`,
+                    err as Error
+                )
+            }
+        }
     } catch (err) {
-        logger.info(`Failed to update SSM Document '${wizardResponse.name}'. %0`, err as Error)
+        logger.error(`Failed to update Systems Manager Document '${wizardResponse.name}'. %0`, err as Error)
         result = 'Failed'
         outputChannel.appendLine(
             localize(
                 'AWS.message.info.ssmDocument.publishDocument.updateFailure',
-                "There was an error updating SSM Document '{0}', check logs for more information.",
+                "There was an error updating Systems Manager Document '{0}', check logs for more information.",
                 wizardResponse.name
             )
         )

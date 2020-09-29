@@ -6,54 +6,54 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
+import * as path from 'path'
 import * as vscode from 'vscode'
 import * as YAML from 'yaml'
 import { getLogger, Logger } from '../../shared/logger'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import * as picker from '../../shared/ui/picker'
-import { openAndSaveDocument } from '../util/util'
-
-import { getDocumentTemplate } from 'aws-ssm-document-language-service'
+import { promptUserForDocumentFormat } from '../util/util'
+import { readFileAsString } from '../../shared/filesystemUtilities'
 
 export interface SsmDocumentTemplateQuickPickItem {
     label: string
     description: string
     filename: string
-    language: string
     docType: string
 }
 
 const SSMDOCUMENT_TEMPLATES: SsmDocumentTemplateQuickPickItem[] = [
     {
-        label: localize('AWS.ssmDocument.template.automationJson.label', 'JSON Automation Document 0.3'),
+        label: localize('AWS.ssmDocument.template.automationHelloWorldPython.label', 'Hello world using Python'),
         description: localize(
-            'AWS.ssmDocument.template.automationJson.description',
-            'Sample automation document using schemaVersion 0.3 in JSON'
+            'AWS.ssmDocument.template.automationHelloWorldPython.description',
+            'An example of an Automation document using "`aws:executeScript`" with a Python script'
         ),
-        filename: 'example.automation.ssm.json',
-        language: 'ssm-json',
+        filename: 'HelloWorldPython.ssm.yaml',
         docType: 'automation',
     },
     {
-        label: localize('AWS.ssmDocument.template.automationYaml.label', 'YAML Automation Document 0.3'),
-        description: localize(
-            'AWS.ssmDocument.template.automationYaml.description',
-            'Sample automation document using schemaVersion 0.3 in YAML'
+        label: localize(
+            'AWS.ssmDocument.template.automationHelloWorldPowershell.label',
+            'Hello world using Powershell'
         ),
-        filename: 'example.automation.ssm.yaml',
-        language: 'ssm-yaml',
+        description: localize(
+            'AWS.ssmDocument.template.automationHelloWorldPowershell.description',
+            'An example of an Automation document using "`aws:executeScript`" with a Powershell script'
+        ),
+        filename: 'HelloWorldPowershell.ssm.yaml',
         docType: 'automation',
     },
 ]
 
-export async function createSsmDocumentFromTemplate(): Promise<void> {
+export async function createSsmDocumentFromTemplate(extensionContext: vscode.ExtensionContext): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
     const logger: Logger = getLogger()
 
     const quickPick = picker.createQuickPick<SsmDocumentTemplateQuickPickItem>({
         options: {
             ignoreFocusOut: true,
-            title: localize('AWS.message.prompt.selectSsmDocumentTemplate.placeholder', 'Select a document templete'),
+            title: localize('AWS.message.prompt.selectSsmDocumentTemplate.placeholder', 'Select a document template'),
         },
         buttons: [vscode.QuickInputButtons.Back],
         items: SSMDOCUMENT_TEMPLATES,
@@ -74,8 +74,15 @@ export async function createSsmDocumentFromTemplate(): Promise<void> {
             result = 'Cancelled'
         } else {
             logger.debug(`User selected template: ${selection.label}`)
-            const textDocument: vscode.TextDocument = await openTextDocumentFromSelection(selection)
-            vscode.window.showTextDocument(textDocument)
+            const textDocument: vscode.TextDocument | undefined = await openTextDocumentFromSelection(
+                selection,
+                extensionContext.extensionPath
+            )
+            if (textDocument !== undefined) {
+                vscode.window.showTextDocument(textDocument)
+            } else {
+                result = 'Cancelled'
+            }
         }
     } catch (err) {
         result = 'Failed'
@@ -91,14 +98,33 @@ export async function createSsmDocumentFromTemplate(): Promise<void> {
     }
 }
 
-async function openTextDocumentFromSelection(item: SsmDocumentTemplateQuickPickItem): Promise<vscode.TextDocument> {
-    const template: object = getDocumentTemplate(item.docType)
-    let content: string
-    if (item.language === 'ssm-yaml') {
-        content = YAML.stringify(template)
-    } else {
-        content = JSON.stringify(template, undefined, '\t')
+function yamlToJson(yaml: string): string {
+    const jsonObject = YAML.parse(yaml)
+    return JSON.stringify(jsonObject, undefined, '\t')
+}
+
+async function openTextDocumentFromSelection(
+    item: SsmDocumentTemplateQuickPickItem,
+    extensionPath: string
+): Promise<vscode.TextDocument | undefined> {
+    // By default the template content is YAML, so when the format is not Yaml, we convert to JSON.
+    // We only support JSON and YAML for ssm documents
+    const templateYamlContent = await readFileAsString(path.join(extensionPath, 'templates', item.filename))
+    const selectedDocumentFormat = await promptUserForDocumentFormat(['YAML', 'JSON'])
+
+    // user pressed escape and didn't select a format
+    if (selectedDocumentFormat === undefined) {
+        return
     }
 
-    return await openAndSaveDocument(content, item.filename, item.language)
+    let content: string
+    let languageId: string
+    if (selectedDocumentFormat === 'YAML') {
+        content = templateYamlContent
+        languageId = 'ssm-yaml'
+    } else {
+        content = yamlToJson(templateYamlContent)
+        languageId = 'ssm-json'
+    }
+    return await vscode.workspace.openTextDocument({ content: content, language: languageId })
 }
