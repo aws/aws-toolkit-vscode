@@ -58,6 +58,15 @@
         "onCommand:aws.aboutToolkit",
         "onCommand:aws.cloudWatchLogs.viewLogStream",
         "onLanguage:asl",
+        "onLanguage:ssm-json",
+        "onLanguage:ssm-yaml",
+        "onCommand:aws.ssmDocument.createLocalDocument",
+        "onCommand:aws.ssmDocument.openLocalDocument",
+        "onCommand:aws.ssmDocument.openLocalDocumentJson",
+        "onCommand:aws.ssmDocument.openLocalDocumentYaml",
+        "onCommand:aws.ssmDocument.deleteDocument",
+        "onCommand:aws.ssmDocument.publishDocument",
+        "onCommand:aws.ssmDocument.updateDocumentVersion",
         "onLanguage:javascript",
         "onLanguage:python",
         "onLanguage:csharp",
@@ -141,6 +150,11 @@
                     "type": "number",
                     "default": 5000,
                     "description": "%AWS.stepFunctions.asl.maxItemsComputed.desc%"
+                },
+                "aws.ssmDocument.ssm.maxItemsComputed": {
+                    "type": "number",
+                    "default": 5000,
+                    "description": "%AWS.ssmDocument.ssm.maxItemsComputed.desc%"
                 }
             }
         },
@@ -477,6 +491,26 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.ssmDocument.openLocalDocument",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.ssmDocument.openLocalDocumentJson",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.ssmDocument.openLocalDocumentYaml",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.ssmDocument.deleteDocument",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.ssmDocument.updateDocumentVersion",
+                    "when": "false"
+                },
+                {
                     "command": "aws.copyLogStreamName",
                     "when": "resourceScheme == awsCloudWatchLogs"
                 },
@@ -530,6 +564,11 @@
                 {
                     "command": "aws.saveCurrentLogStreamContent",
                     "when": "resourceScheme == awsCloudWatchLogs",
+                    "group": "navigation"
+                },
+                {
+                    "command": "aws.ssmDocument.publishDocument",
+                    "when": "editorLangId =~ /^(ssm-yaml|ssm-json)$/",
                     "group": "navigation"
                 }
             ],
@@ -636,6 +675,11 @@
                 {
                     "command": "aws.s3.createFolder",
                     "when": "view == aws.explorer && viewItem =~ /^(awsS3BucketNode|awsS3FolderNode)$/",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.ssmDocument.openLocalDocument",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsDocumentItemNode|awsDocumentItemNodeWriteable)$/",
                     "group": "inline@1"
                 },
                 {
@@ -762,6 +806,26 @@
                     "command": "aws.cloudWatchLogs.viewLogStream",
                     "group": "0@1",
                     "when": "view == aws.explorer && viewItem == awsCloudWatchLogNode"
+                },
+                {
+                    "command": "aws.ssmDocument.openLocalDocumentYaml",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsDocumentItemNode|awsDocumentItemNodeWriteable)$/"
+                },
+                {
+                    "command": "aws.ssmDocument.openLocalDocumentJson",
+                    "group": "0@2",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsDocumentItemNode|awsDocumentItemNodeWriteable)$/"
+                },
+                {
+                    "command": "aws.ssmDocument.updateDocumentVersion",
+                    "group": "2@1",
+                    "when": "view == aws.explorer && viewItem == awsDocumentItemNodeWriteable"
+                },
+                {
+                    "command": "aws.ssmDocument.deleteDocument",
+                    "group": "2@2",
+                    "when": "view == aws.explorer && viewItem == awsDocumentItemNodeWriteable"
                 }
             ]
         },
@@ -1017,6 +1081,43 @@
                 "category": "AWS"
             },
             {
+                "command": "aws.ssmDocument.createLocalDocument",
+                "title": "%AWS.command.ssmDocument.createLocalDocument%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.ssmDocument.openLocalDocument",
+                "title": "%AWS.command.ssmDocument.openLocalDocument%",
+                "category": "AWS",
+                "icon": "$(cloud-download)"
+            },
+            {
+                "command": "aws.ssmDocument.openLocalDocumentJson",
+                "title": "%AWS.command.ssmDocument.openLocalDocumentJson%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.ssmDocument.openLocalDocumentYaml",
+                "title": "%AWS.command.ssmDocument.openLocalDocumentYaml%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.ssmDocument.deleteDocument",
+                "title": "%AWS.command.ssmDocument.deleteDocument%",
+                "category": "AWS"
+            },
+            {
+                "command": "aws.ssmDocument.publishDocument",
+                "title": "%AWS.command.ssmDocument.publishDocument%",
+                "category": "AWS",
+                "icon": "$(cloud-upload)"
+            },
+            {
+                "command": "aws.ssmDocument.updateDocumentVersion",
+                "title": "%AWS.command.ssmDocument.updateDocumentVersion%",
+                "category": "AWS"
+            },
+            {
                 "command": "aws.copyLogStreamName",
                 "title": "%AWS.command.copyLogStreamName%",
                 "category": "AWS",
@@ -1049,6 +1150,25 @@
                 "aliases": [
                     "Amazon States Language"
                 ]
+            },
+            {
+                "id": "ssm-json",
+                "extensions": [
+                    ".ssm.json"
+                ],
+                "aliases": [
+                    "AWS Systems Manager Document (JSON)"
+                ]
+            },
+            {
+                "id": "ssm-yaml",
+                "extensions": [
+                    ".ssm.yaml",
+                    ".ssm.yml"
+                ],
+                "aliases": [
+                    "AWS Systems Manager Document (YAML)"
+                ]
             }
         ],
         "keybindings": [
@@ -1064,6 +1184,16 @@
                 "language": "asl",
                 "scopeName": "source.asl",
                 "path": "./syntaxes/ASL.tmLanguage"
+            },
+            {
+                "language": "ssm-json",
+                "scopeName": "source.ssmjson",
+                "path": "./syntaxes/SSMJSON.tmLanguage"
+            },
+            {
+                "language": "ssm-yaml",
+                "scopeName": "source.ssmyaml",
+                "path": "./syntaxes/SSMYAML.tmLanguage"
             }
         ],
         "resourceLabelFormatters": [
@@ -1084,7 +1214,8 @@
         "reset": "node ./build-scripts/clean.js dist node_modules && npm install",
         "copyNonCodeFiles": "node ./build-scripts/copyNonCodeFiles.js",
         "copyExtensionMain": "node ./build-scripts/copyExtensionMain.js",
-        "buildScripts": "npm run bundleDeps && npm run copyExtensionMain && npm run copyNonCodeFiles && npm run generateNonCodeFiles",
+        "copySsmLanguageService": "node ./build-scripts/copySsmLanguageService.js",
+        "buildScripts": "npm run bundleDeps && npm run copyExtensionMain && npm run copySsmLanguageService && npm run copyNonCodeFiles && npm run generateNonCodeFiles",
         "compile": "webpack --mode development && npm run buildScripts",
         "recompile": "npm run clean && npm run compile",
         "watch": "npm run buildScripts && tsc -watch -p ./",
@@ -1152,7 +1283,7 @@
         "remap-istanbul": "^0.12.0",
         "sinon": "^7.4.2",
         "source-map-support": "^0.5.19",
-        "terser-webpack-plugin": "^4.1.0",
+        "terser-webpack-plugin": "^4.2.2",
         "ts-loader": "^6.2.0",
         "ts-mockito": "^2.5.0",
         "ts-node": "^8.5.2",
@@ -1168,6 +1299,7 @@
         "amazon-states-language-service": "^1.4.1",
         "async-lock": "^1.1.3",
         "aws-sdk": "^2.581.0",
+        "aws-ssm-document-language-service": "^1.0.0",
         "bytes": "^3.1.0",
         "cloudformation-schema-js-yaml": "^1.0.1",
         "cross-spawn": "^6.0.5",
