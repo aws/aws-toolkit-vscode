@@ -5,12 +5,11 @@
 
 import * as moment from 'moment'
 import * as bytes from 'bytes'
-import * as vscode from 'vscode'
 import { Bucket, DownloadFileRequest, File, S3Client } from '../../shared/clients/s3Client'
-import { ext } from '../../shared/extensionGlobals'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { isFileIconThemeSeti, localize } from '../../shared/utilities/vsCodeUtils'
+import { localize } from '../../shared/utilities/vsCodeUtils'
+import { fileIconPath } from '../../shared/utilities/vsCodeUtils'
 import { inspect } from 'util'
 import { S3BucketNode } from './s3BucketNode'
 import { S3FolderNode } from './s3FolderNode'
@@ -91,17 +90,4 @@ export class S3FileNode extends AWSTreeNodeBase implements AWSResourceNode {
 
 function formatBytes(numBytes: number): string {
     return bytes(numBytes, { unitSeparator: ' ', decimalPlaces: 0 })
-}
-
-function fileIconPath(): vscode.ThemeIcon | { light: vscode.Uri; dark: vscode.Uri } {
-    // Workaround for https://github.com/microsoft/vscode/issues/85654
-    // Once this is resolved, ThemeIcons can be used for seti as well
-    if (isFileIconThemeSeti()) {
-        return {
-            dark: vscode.Uri.file(ext.iconPaths.dark.file),
-            light: vscode.Uri.file(ext.iconPaths.light.file),
-        }
-    } else {
-        return vscode.ThemeIcon.File
-    }
 }
