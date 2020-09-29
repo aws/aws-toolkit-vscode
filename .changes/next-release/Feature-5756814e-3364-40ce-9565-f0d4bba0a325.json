@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "Add AWS Systems Manager integration to allow users to view, create and publish Automation documents. Support for code completion and validation with templates and code snippets to help users author their Automation documents."
+}

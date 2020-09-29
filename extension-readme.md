@@ -161,8 +161,8 @@ For full details, see [Working with Amazon Elastic Container Service](https://do
 
 The AWS Toolkit provides support for [AWS Systems Manager Documents](https://docs.aws.amazon.com/systems-manager/latest/userguide/automation-documents.html). With the Toolkit installed in VS Code, you have access to the following features when working on Automation Documents:
 
--   Create, update, download, and edit your Automation documents
--   Code completion and validation for both flavors of documents: YAML and JSON
+-   Download, edit, and publish your Automation documents
+-   Code completion and validation for both formats of documents: YAML and JSON
 -   Templates and code snippets to help kickstart your Automation document
 
 Example:
