@@ -9,7 +9,7 @@
         {
             "name": "documentFormat",
             "type": "string",
-            "allowedValues": ["JSON, YAML", "Unselected"],
+            "allowedValues": ["JSON, YAML"],
             "description": "SSM Create document format selection"
         },
         {

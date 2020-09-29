@@ -48,8 +48,8 @@ const SSMDOCUMENT_TEMPLATES: SsmDocumentTemplateQuickPickItem[] = [
 
 export async function createSsmDocumentFromTemplate(extensionContext: vscode.ExtensionContext): Promise<void> {
     let result: telemetry.Result = 'Succeeded'
-    let format: telemetry.DocumentFormat = 'Unselected'
-    let templateName: string = 'Unselected'
+    let format: telemetry.DocumentFormat | undefined = undefined
+    let templateName: string | undefined = undefined
     const logger: Logger = getLogger()
 
     const quickPick = picker.createQuickPick<SsmDocumentTemplateQuickPickItem>({
