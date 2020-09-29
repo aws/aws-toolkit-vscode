@@ -110,7 +110,7 @@ class QueryEditorDialogTest {
     }
 
     @Test
-    fun `Dialog can select multiple log groups`() {
+    fun `Dialog selects multiple log groups`() {
         mockResourceCache.get().addEntry(
             CloudWatchResources.LIST_LOG_GROUPS,
             region.id,
@@ -127,20 +127,85 @@ class QueryEditorDialogTest {
                 logGroups = listOf("log0", "log1")
             )
             sut = QueryEditorDialog(projectRule.project, queryDetails)
-            // annoying race between view initialization and test assertion
             sut.setView(queryDetails)
         }
         assertThat(sut.getQueryDetails().logGroups).containsExactly("log0", "log1")
     }
 
     @Test
-    fun `Absolute or relative time selected`() {
+    fun `Dialog selects relative time correctly`() {
+        runBlocking {
+            val details = queryDetails(
+                connectionSettings = connectionSettings,
+                timeRange = TimeRange.RelativeRange(72761, ChronoUnit.DAYS)
+            )
+            sut.setView(details)
+        }
+
+        assertThat(sut.getQueryDetails().timeRange).isInstanceOfSatisfying(TimeRange.RelativeRange::class.java) {
+            assertThat(it.relativeTimeAmount).isEqualTo(72761)
+            assertThat(it.relativeTimeUnit).isEqualTo(ChronoUnit.DAYS)
+        }
+    }
+
+    @Test
+    fun `Dialog selects absolute time correctly`() {
+        runBlocking {
+            val details = queryDetails(
+                connectionSettings = connectionSettings,
+                timeRange = TimeRange.AbsoluteRange(
+                    startDate = Date(1),
+                    endDate = Date(1000000)
+                )
+            )
+            sut.setView(details)
+        }
+
+        assertThat(sut.getQueryDetails().timeRange).isInstanceOfSatisfying(TimeRange.AbsoluteRange::class.java) {
+            assertThat(it.startDate).isEqualTo(Date(1))
+            assertThat(it.endDate).isEqualTo(Date(1000000))
+        }
+    }
+
+    @Test
+    fun `Dialog selects insights query box correctly`() {
+        runBlocking {
+            val details = queryDetails(
+                connectionSettings = connectionSettings,
+                query = QueryString.InsightsQueryString("insights query")
+            )
+            sut.setView(details)
+        }
+
+        assertThat(sut.getQueryDetails().query).isInstanceOfSatisfying(QueryString.InsightsQueryString::class.java) {
+            assertThat(it.query).isEqualTo("insights query")
+        }
+    }
+
+    @Test
+    fun `Dialog selects search term box correctly`() {
+        runBlocking {
+            val details = queryDetails(
+                connectionSettings = connectionSettings,
+                query = QueryString.SearchTermQueryString("search term")
+
+            )
+            sut.setView(details)
+        }
+
+        assertThat(sut.getQueryDetails().query).isInstanceOfSatisfying(QueryString.SearchTermQueryString::class.java) {
+            assertThat(it.searchTerm).isEqualTo("search term")
+        }
+    }
+
+    @Test
+    fun `validates absolute or relative time selected`() {
         setViewDetails(absoluteTime = false, relativeTime = false)
         assertThat(sut.validateEditorEntries(view)?.message).contains(message("cloudwatch.logs.validation.timerange"))
     }
 
     @Test
-    fun `Start date must be before end date`() {
+    fun `validates start date must be before end date`() {
         val cal = Calendar.getInstance()
         cal.add(Calendar.DATE, -1)
         setViewDetails(absoluteTime = true, startDate = Calendar.getInstance().time, endDate = cal.time)
@@ -148,7 +213,7 @@ class QueryEditorDialogTest {
     }
 
     @Test
-    fun `relative time must specify unit`() {
+    fun `validates unit specified for relative time`() {
         setViewDetails(relativeTime = true, relativeTimeNumber = "")
         assertThat(sut.validateEditorEntries(view)?.message).contains(message("cloudwatch.logs.no_relative_time_number"))
     }
@@ -168,19 +233,19 @@ class QueryEditorDialogTest {
     }
 
     @Test
-    fun `No search term entered`() {
+    fun `validates search term entered`() {
         setViewDetails(relativeTime = true, querySearch = true, searchTerm = "")
         assertThat(sut.validateEditorEntries(view)?.message).contains(message("cloudwatch.logs.no_term_entered"))
     }
 
     @Test
-    fun `No query entered`() {
+    fun `validates query entered`() {
         setViewDetails(relativeTime = true, queryLogs = true, query = "")
         assertThat(sut.validateEditorEntries(view)?.message).contains(message("cloudwatch.logs.no_query_entered"))
     }
 
     @Test
-    fun `No log groups selected`() {
+    fun `validates log groups selected`() {
         setViewDetails(relativeTime = true, logGroups = emptyList())
         assertThat(sut.validateEditorEntries(view)?.message).contains(message("cloudwatch.logs.no_log_group"))
     }

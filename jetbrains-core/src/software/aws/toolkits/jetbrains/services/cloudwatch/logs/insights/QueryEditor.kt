@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.SimpleToolWindowPanel
+import com.intellij.ui.EnumComboBoxModel
 import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBScrollPane
@@ -12,7 +13,7 @@ import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import com.michaelbaranov.microba.calendar.DatePicker
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.jetbrains.utils.ui.selected
+import software.aws.toolkits.jetbrains.utils.ui.find
 import software.aws.toolkits.resources.message
 import java.text.NumberFormat
 import java.time.temporal.ChronoUnit
@@ -39,7 +40,8 @@ class QueryEditor internal constructor(
     lateinit var queryBox: JTextArea
     lateinit var endDate: DatePicker
     lateinit var queryEditorBasePanel: JPanel
-    lateinit var relativeTimeUnit: JComboBox<Pair<String, ChronoUnit>>
+    private lateinit var comboBoxModel: EnumComboBoxModel<TimeUnit>
+    lateinit var relativeTimeUnit: JComboBox<TimeUnit>
     private lateinit var numberFormat: NumberFormat
     lateinit var relativeTimeNumber: JFormattedTextField
     lateinit var startDate: DatePicker
@@ -57,7 +59,8 @@ class QueryEditor internal constructor(
         relativeTimeNumber = JFormattedTextField(numberFormat)
         // arbitrary length
         relativeTimeNumber.columns = 5
-        relativeTimeUnit = ComboBox(timeUnits)
+        comboBoxModel = EnumComboBoxModel(TimeUnit::class.java)
+        relativeTimeUnit = ComboBox(comboBoxModel)
         relativeTimeUnit.renderer = timeUnitComboBoxRenderer
     }
 
@@ -134,27 +137,17 @@ class QueryEditor internal constructor(
 
     fun getRelativeTimeAmount() = numberFormat.parse(relativeTimeNumber.text).toLong()
 
-    fun getSelectedTimeUnit(): ChronoUnit {
-        val unit = relativeTimeUnit.selected() ?: let {
-            LOG.error("No relative time unit was selected!")
-            timeUnits.first()
-        }
+    fun getSelectedTimeUnit(): ChronoUnit = comboBoxModel.selectedItem.unit
 
-        return unit.second
+    fun setSelectedTimeUnit(unit: ChronoUnit) {
+        comboBoxModel.setSelectedItem(comboBoxModel.find { it.unit == unit })
     }
 
     companion object {
         private val LOG = getLogger<QueryEditor>()
 
-        private val timeUnits = arrayOf(
-            message("cloudwatch.logs.time_minutes") to ChronoUnit.MINUTES,
-            message("cloudwatch.logs.time_hours") to ChronoUnit.HOURS,
-            message("cloudwatch.logs.time_days") to ChronoUnit.DAYS,
-            message("cloudwatch.logs.time_weeks") to ChronoUnit.WEEKS
-        )
-
-        private val timeUnitComboBoxRenderer = SimpleListCellRenderer.create<Pair<String, ChronoUnit>>("") {
-            it.first
+        private val timeUnitComboBoxRenderer = SimpleListCellRenderer.create<TimeUnit>("") {
+            it.text
         }
     }
 }

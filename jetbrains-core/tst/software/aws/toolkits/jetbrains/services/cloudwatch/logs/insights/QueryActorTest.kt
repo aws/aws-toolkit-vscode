@@ -145,7 +145,7 @@ class QueryActorTest : BaseCoroutineTest() {
                 CloudWatchLogsException::class.java
             )
 
-        runBlockingTest {
+        runBlocking {
             queryactor.channel.send(InsightsQueryResultsActor.Message.StartLoadingAll)
             while (!queryactor.channel.isClosedForSend) {
                 delay(10)

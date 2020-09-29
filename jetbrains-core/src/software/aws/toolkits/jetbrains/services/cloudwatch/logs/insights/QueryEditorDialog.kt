@@ -66,7 +66,7 @@ class QueryEditorDialog(
             is TimeRange.RelativeRange -> {
                 view.setRelative()
                 view.relativeTimeNumber.text = timeRange.relativeTimeAmount.toString()
-                view.relativeTimeUnit.selectedItem = timeRange.relativeTimeUnit
+                view.setSelectedTimeUnit(timeRange.relativeTimeUnit)
             }
         }
 
