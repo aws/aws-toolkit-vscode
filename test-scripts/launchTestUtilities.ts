@@ -33,8 +33,7 @@ export async function setupVSCodeTestInstance(): Promise<string> {
     console.log(`Setting up VS Code test instance, version: ${vsCodeVersion}`)
     const vsCodeExecutablePath = await downloadAndUnzipVSCode(vsCodeVersion)
     console.log(`VS Code test instance location: ${vsCodeExecutablePath}`)
-
-    await invokeVSCodeCli(vsCodeExecutablePath, ['--version'])
+    console.log(await invokeVSCodeCli(vsCodeExecutablePath, ['--version']))
 
     return vsCodeExecutablePath
 }
@@ -64,16 +63,12 @@ export async function invokeVSCodeCli(vsCodeExecutablePath: string, args: string
         throw spawnResult.error
     }
 
-    if (spawnResult.stdout) {
-        console.log(spawnResult.stdout)
-    }
-
     return spawnResult.stdout
 }
 
 export async function installVSCodeExtension(vsCodeExecutablePath: string, extensionIdentifier: string): Promise<void> {
     console.log(`Installing VS Code Extension: ${extensionIdentifier}`)
-    await invokeVSCodeCli(vsCodeExecutablePath, ['--install-extension', extensionIdentifier])
+    console.log(await invokeVSCodeCli(vsCodeExecutablePath, ['--install-extension', extensionIdentifier]))
 }
 
 /**
