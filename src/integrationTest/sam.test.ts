@@ -20,6 +20,7 @@ import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/a
 import { findParentProjectFile } from '../shared/utilities/workspaceUtils'
 import { activateExtension, getCodeLenses, getTestWorkspaceFolder, sleep } from './integrationTestsUtilities'
 import { setTestTimeout } from './globalSetup.test'
+import { waitUntil } from '../shared/utilities/timeoutUtils'
 
 const projectFolder = getTestWorkspaceFolder()
 
@@ -141,7 +142,7 @@ describe('SAM Integration Tests', async function() {
     after(async function() {
         tryRemoveFolder(testSuiteRoot)
         // Print a summary of session that were seen by `onDidStartDebugSession`.
-        const sessionReport = sessionLog.map(x => `    {x}`).join('\n')
+        const sessionReport = sessionLog.map(x => `    ${x}`).join('\n')
         console.log(`DebugSessions seen in this run:${sessionReport}`)
     })
 
@@ -263,6 +264,13 @@ describe('SAM Integration Tests', async function() {
 
                 it('invokes and attaches on debug request (F5)', async function() {
                     setTestTimeout(this.test?.fullTitle(), 60000)
+                    // Allow previous sessions to go away.
+                    await waitUntil(
+                        async function() {
+                            return vscode.debug.activeDebugSession === undefined
+                        },
+                        { timeout: 10000, interval: 300 }
+                    )
                     assert.strictEqual(
                         vscode.debug.activeDebugSession,
                         undefined,

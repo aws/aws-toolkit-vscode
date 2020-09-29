@@ -127,9 +127,9 @@ class CoverageRunner {
             // On Windows, extension is loaded pre-test hooks and this mean we lose
             // our chance to hook the Require call. In order to instrument the code
             // we have to decache the JS file so on next load it gets instrumented.
-            // This doesn"t impact tests, but is a concern if we had some integration
-            // tests that relied on VSCode accessing our module since there could be
-            // some shared global state that we lose.
+            // This breaks tests that depend on global state, e.g. any test
+            // that depends on implicit VSCode features (launch.json processing,
+            // LSP symbols, ...).
             decache(fullPath)
         })
 
