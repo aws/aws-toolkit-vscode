@@ -61,7 +61,7 @@ abstract class ToolkitClientManager {
         )
 
         val serviceId = key.serviceClass.java.getField("SERVICE_NAME").get(null) as String
-        if (serviceId !in GLOBAL_SERVICE_BLACKLIST && getRegionProvider().isServiceGlobal(region, serviceId)) {
+        if (serviceId !in GLOBAL_SERVICE_DENY_LIST && getRegionProvider().isServiceGlobal(region, serviceId)) {
             val globalRegion = getRegionProvider().getGlobalRegionForService(region, serviceId)
             return cachedClients.computeIfAbsent(key.copy(region = globalRegion)) { createNewClient(it, globalRegion, credProvider) } as T
         }
@@ -115,7 +115,7 @@ abstract class ToolkitClientManager {
     }
 
     companion object {
-        private val GLOBAL_SERVICE_BLACKLIST = setOf(
+        private val GLOBAL_SERVICE_DENY_LIST = setOf(
             // sts is regionalized but does not identify as such in metadata
             "sts"
         )
