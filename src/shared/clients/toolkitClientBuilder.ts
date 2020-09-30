@@ -14,6 +14,7 @@ import { SchemaClient } from './schemaClient'
 import { StepFunctionsClient } from './stepFunctionsClient'
 import { StsClient } from './stsClient'
 import { S3Client } from './s3Client'
+import { SsmDocumentClient } from './ssmDocumentClient'
 
 export interface ToolkitClientBuilder {
     createApiGatewayClient(regionCode: string): ApiGatewayClient
@@ -35,4 +36,6 @@ export interface ToolkitClientBuilder {
     createIamClient(regionCode: string): IamClient
 
     createS3Client(regionCode: string): S3Client
+
+    createSsmClient(regionCode: string): SsmDocumentClient
 }

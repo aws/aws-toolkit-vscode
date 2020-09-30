@@ -1,4 +1,23 @@
 {
+    "types": [
+        {
+            "name": "ssmOperation",
+            "type": "string",
+            "allowedValues": ["Create", "Update"],
+            "description": "SSM Publish Document operation type"
+        },
+        {
+            "name": "documentFormat",
+            "type": "string",
+            "allowedValues": ["JSON, YAML"],
+            "description": "SSM Create document format selection"
+        },
+        {
+            "name": "starterTemplate",
+            "type": "string",
+            "description": "Starter template chosen during create document"
+        }
+    ],
     "metrics": [
         {
             "name": "stepfunctions_previewstatemachine",
@@ -25,6 +44,77 @@
         {
             "name": "stepfunctions_executeStateMachine",
             "description": "",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "ssm_createDocument",
+            "description": "An SSM Document is created locally",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "documentFormat",
+                    "required": false
+                },
+                {
+                    "type": "starterTemplate",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "ssm_deleteDocument",
+            "description": "An SSM Document is deleted",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "ssm_executeDocument",
+            "description": "An SSM Document is deleted",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "ssm_openDocument",
+            "description": "An SSM Document is opened locally",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "ssm_publishDocument",
+            "description": "SSM Document related metrics for create and update",
+            "unit": "None",
+            "metadata": [
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "ssmOperation"
+                }
+            ]
+        },
+        {
+            "name": "ssm_updateDocumentVersion",
+            "description": "SSM Document related metrics for updating document default version",
             "unit": "None",
             "metadata": [
                 {
