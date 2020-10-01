@@ -18,14 +18,14 @@ import { ErrorNode } from '../../shared/treeview/nodes/errorNode'
 import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/treeNodeUtilities'
-import { isFileIconThemeSeti, localize } from '../../shared/utilities/vsCodeUtils'
+import { localize } from '../../shared/utilities/vsCodeUtils'
 import { ChildNodeLoader } from '../../awsexplorer/childNodeLoader'
 import { ChildNodePage } from '../../awsexplorer/childNodeLoader'
+import { folderIconPath } from '../../shared/utilities/vsCodeUtils'
 import { S3FileNode } from './s3FileNode'
 import { inspect } from 'util'
 import { Workspace } from '../../shared/vscode/workspace'
 import { getLogger } from '../../shared/logger'
-import { ext } from '../../shared/extensionGlobals'
 
 /**
  * Represents a folder in an S3 bucket that may contain subfolders and/or objects.
@@ -119,18 +119,5 @@ export class S3FolderNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
 
     private getMaxItemsPerPage(): number | undefined {
         return this.workspace.getConfiguration('aws').get<number>('s3.maxItemsPerPage')
-    }
-}
-
-function folderIconPath(): vscode.ThemeIcon | { light: vscode.Uri; dark: vscode.Uri } {
-    // Workaround for https://github.com/microsoft/vscode/issues/85654
-    // Once this is resolved, ThemeIcons can be used for seti as well
-    if (isFileIconThemeSeti()) {
-        return {
-            dark: vscode.Uri.file(ext.iconPaths.dark.folder),
-            light: vscode.Uri.file(ext.iconPaths.light.folder),
-        }
-    } else {
-        return vscode.ThemeIcon.Folder
     }
 }

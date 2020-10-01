@@ -14,7 +14,7 @@ import {
     isAwsSamDebugConfiguration,
     isCodeTargetProperties,
     isTemplateTargetProperties,
-    TemplateTargetProperties,
+    AwsSamTargetType,
 } from '../sam/debugger/awsSamDebugConfiguration'
 import {
     AwsSamDebugConfigurationValidator,
@@ -54,24 +54,23 @@ export class LaunchConfiguration {
     }
 
     public getDebugConfigurations(): vscode.DebugConfiguration[] {
-        return _(this.configSource.getDebugConfigurations())
-            .map(o => {
-                if (isAwsSamDebugConfiguration(o)) {
-                    ensureRelativePaths(undefined, o)
-                }
-                return o
-            })
-            .value()
+        const configs = this.configSource.getDebugConfigurations()
+        return configs.map(o => {
+            if (isAwsSamDebugConfiguration(o)) {
+                ensureRelativePaths(undefined, o)
+            }
+            return o
+        })
     }
 
     /**
      * Returns all valid Sam Debug Configurations.
      */
     public getSamDebugConfigurations(): AwsSamDebuggerConfiguration[] {
-        return _(this.getDebugConfigurations())
-            .filter(isAwsSamDebugConfiguration)
-            .filter(config => this.samValidator.validate(config)?.isValid)
-            .value()
+        const configs = this.getDebugConfigurations().filter(o =>
+            isAwsSamDebugConfiguration(o)
+        ) as AwsSamDebuggerConfiguration[]
+        return configs.filter(o => this.samValidator.validate(o)?.isValid)
     }
 
     /**
@@ -110,13 +109,6 @@ class DefaultDebugConfigSource implements DebugConfigurationSource {
     }
 }
 
-export function getSamTemplateTargets(launchConfig: LaunchConfiguration): TemplateTargetProperties[] {
-    return _(launchConfig.getSamDebugConfigurations())
-        .map(samConfig => samConfig.invokeTarget)
-        .filter(isTemplateTargetProperties)
-        .value()
-}
-
 function getSamCodeTargets(launchConfig: LaunchConfiguration): CodeTargetProperties[] {
     return _(launchConfig.getSamDebugConfigurations())
         .map(samConfig => samConfig.invokeTarget)
@@ -125,26 +117,44 @@ function getSamCodeTargets(launchConfig: LaunchConfiguration): CodeTargetPropert
 }
 
 /**
- * Returns a Set containing the logicalIds from the launch.json file that the launch config is scoped to.
+ * Gets configs associated with the template.yaml to which `launchConfig` is
+ * scoped.
+ *
  * @param launchConfig Launch config to check
+ * @param type  target type ('api' or 'template'), or undefined for 'both'
  */
-export function getReferencedTemplateResources(launchConfig: LaunchConfiguration): Set<string> {
-    const existingSamTemplateTargets = getSamTemplateTargets(launchConfig)
+export function getConfigsMappedToTemplates(
+    launchConfig: LaunchConfiguration,
+    type: AwsSamTargetType | undefined
+): Set<AwsSamDebuggerConfiguration> {
+    if (type === 'code') {
+        throw Error()
+    }
     const folder = launchConfig.workspaceFolder
-
-    return _(existingSamTemplateTargets)
-        .filter(target =>
-            pathutils.areEqual(folder?.uri.fsPath, target.templatePath, launchConfig.scopedResource.fsPath)
-        )
-        .map(target => target.logicalId)
+    // Launch configs with target=template or target=api.
+    const templateConfigs = launchConfig
+        .getSamDebugConfigurations()
+        .filter(o => isTemplateTargetProperties(o.invokeTarget))
+    const filtered = templateConfigs.filter(
+        t =>
+            (type === undefined || t.invokeTarget.target === type) &&
+            pathutils.areEqual(
+                folder?.uri.fsPath,
+                (t.invokeTarget as any).templatePath,
+                launchConfig.scopedResource.fsPath
+            )
+    )
+    return _(filtered)
         .thru(array => new Set(array))
         .value()
 }
 
 /**
- * Returns a Set containing the full path for all `code`-type `aws-sam` debug configs in a launch.json file.
- * The full path represents `path.join(workspaceFolder, projectRoot, lambdaHandler)`
- * (without workspaceFolder if the projectRoot is relative).
+ * Gets a set of filepaths pointing to the handler source file for each
+ * `target=code` config in launch.json.
+ *
+ * Each path is the absolute path resolved against `projectRoot`.
+ *
  * @param launchConfig Launch config to check
  */
 export function getReferencedHandlerPaths(launchConfig: LaunchConfiguration): Set<string> {

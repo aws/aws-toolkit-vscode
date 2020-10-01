@@ -24,6 +24,7 @@ export const CODE_TARGET_TYPE: 'code' = 'code'
 export const API_TARGET_TYPE: 'api' = 'api'
 export const AWS_SAM_DEBUG_REQUEST_TYPES = [DIRECT_INVOKE_TYPE]
 export const AWS_SAM_DEBUG_TARGET_TYPES = [TEMPLATE_TARGET_TYPE, CODE_TARGET_TYPE, API_TARGET_TYPE]
+export type AwsSamTargetType = 'api' | 'code' | 'template'
 
 export type TargetProperties = AwsSamDebuggerConfiguration['invokeTarget']
 
@@ -36,7 +37,7 @@ export function isAwsSamDebugConfiguration(config: vscode.DebugConfiguration): c
 }
 
 export function isTemplateTargetProperties(props: TargetProperties): props is TemplateTargetProperties {
-    return props.target === TEMPLATE_TARGET_TYPE
+    return props.target === TEMPLATE_TARGET_TYPE || props.target === API_TARGET_TYPE
 }
 
 export function isCodeTargetProperties(props: TargetProperties): props is CodeTargetProperties {
@@ -54,13 +55,14 @@ export function ensureRelativePaths(
     folder: vscode.WorkspaceFolder | undefined,
     config: AwsSamDebuggerConfiguration
 ): void {
-    if (config.invokeTarget.target !== TEMPLATE_TARGET_TYPE && config.invokeTarget.target !== CODE_TARGET_TYPE) {
-        throw Error()
+    if (!config?.invokeTarget?.target) {
+        // User has an invalid type=aws-sam launch-config.
+        return
     }
     const filepath =
-        config.invokeTarget.target === TEMPLATE_TARGET_TYPE
-            ? config.invokeTarget.templatePath
-            : config.invokeTarget.projectRoot
+        config.invokeTarget.target === CODE_TARGET_TYPE
+            ? config.invokeTarget.projectRoot
+            : config.invokeTarget.templatePath
     if (!path.isAbsolute(filepath)) {
         return
     }
@@ -71,10 +73,10 @@ export function ensureRelativePaths(
         return
     }
     const relPath = getNormalizedRelativePath(folder!.uri.fsPath, filepath)
-    if (config.invokeTarget.target === TEMPLATE_TARGET_TYPE) {
-        config.invokeTarget.templatePath = relPath
-    } else {
+    if (config.invokeTarget.target === CODE_TARGET_TYPE) {
         config.invokeTarget.projectRoot = relPath
+    } else {
+        config.invokeTarget.templatePath = relPath
     }
 }
 

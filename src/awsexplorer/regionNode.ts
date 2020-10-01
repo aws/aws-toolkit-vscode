@@ -17,6 +17,7 @@ import { RegionProvider } from '../shared/regions/regionProvider'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { StepFunctionsNode } from '../stepFunctions/explorer/stepFunctionsNodes'
 import { DEFAULT_PARTITION } from '../shared/regions/regionUtilities'
+import { SsmDocumentNode } from '../ssmDocument/explorer/ssmDocumentNode'
 
 /**
  * An AWS Explorer node representing a region.
@@ -49,8 +50,8 @@ export class RegionNode extends AWSTreeNodeBase {
         const serviceCandidates = [
             { serviceId: 'apigateway', createFn: () => new ApiGatewayNode(partitionId, this.regionCode) },
             { serviceId: 'cloudformation', createFn: () => new CloudFormationNode(this.regionCode) },
-            ...(isCloud9() ? [] : [{ serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) }]),
             { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },
+            ...(isCloud9() ? [] : [{ serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) }]),
             ...(isCloud9()
                 ? []
                 : [
@@ -61,6 +62,7 @@ export class RegionNode extends AWSTreeNodeBase {
                   ]),
             ...(isCloud9() ? [] : [{ serviceId: 'schemas', createFn: () => new SchemasNode(this.regionCode) }]),
             ...(isCloud9() ? [] : [{ serviceId: 'states', createFn: () => new StepFunctionsNode(this.regionCode) }]),
+            ...(isCloud9() ? [] : [{ serviceId: 'ssm', createFn: () => new SsmDocumentNode(this.regionCode) }]),
         ]
 
         for (const serviceCandidate of serviceCandidates) {
