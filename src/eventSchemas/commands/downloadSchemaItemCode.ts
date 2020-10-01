@@ -13,6 +13,7 @@ import { SchemaClient } from '../../shared/clients/schemaClient'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { getLogger, Logger } from '../../shared/logger'
 import { recordSchemasDownload, Result } from '../../shared/telemetry/telemetry'
+import * as genericText from '../../shared/text/generic'
 import { ExtensionDisposableFiles } from '../../shared/utilities/disposableFiles'
 import { SchemaItemNode } from '../explorer/schemaItemNode'
 import { getLanguageDetails } from '../models/schemaCodeLangs'
@@ -361,17 +362,14 @@ export class CodeExtractor {
     }
 
     public async confirmOverwriteCollisions(): Promise<boolean> {
-        const responseYes: string = localize('AWS.generic.response.yes', 'Yes')
-        const responseNo: string = localize('AWS.generic.response.no', 'No')
-
         const userResponse = await vscode.window.showInformationMessage(
             localize(
                 'AWS.message.info.schemas.downloadCodeBindings.colliding_override',
                 'Downloaded code hierarchy has collisions in the destination directory. Would you like to override?'
             ),
             { modal: true },
-            responseYes,
-            responseNo
+            genericText.yes,
+            genericText.no
         )
 
         if (!userResponse)
@@ -379,7 +377,7 @@ export class CodeExtractor {
                 localize('AWS.message.error.schemas.downloadCodeBindings.cancelled', 'Download code bindings cancelled')
             )
 
-        return userResponse === responseYes
+        return userResponse === genericText.yes
     }
 
     public getCoreCodeFilePath(codeZipFile: string, coreFileName: string | undefined): string | undefined {

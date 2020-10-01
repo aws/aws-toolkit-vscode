@@ -19,6 +19,7 @@ import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
 import { getSamCliContext } from '../../shared/sam/cli/samCliContext'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { SamTemplateGenerator } from '../../shared/templates/sam/samTemplateGenerator'
+import * as genericText from '../../shared/text/generic'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../../shared/ui/picker'
 import { ExtensionDisposableFiles } from '../../shared/utilities/disposableFiles'
 import { Window } from '../../shared/vscode/window'
@@ -90,14 +91,14 @@ async function runUploadDirectory(
     }
 
     const zipDirItem: vscode.QuickPickItem = {
-        label: `$(exclude) ${localize('AWS.generic.response.no', 'No')}`,
+        label: `$(exclude) ${genericText.no}`,
         detail: localize(
             'AWS.lambda.upload.prebuiltDir.detail',
             'AWS Toolkit will upload a ZIP of the selected directory.'
         ),
     }
     const buildDirItem: vscode.QuickPickItem = {
-        label: `$(gear) ${localize('AWS.generic.response.yes', 'Yes')}`,
+        label: `$(gear) ${genericText.yes}`,
         detail: localize(
             'AWS.lambda.upload.unbuiltDir.detail',
             'AWS Toolkit will attempt to build the selected directory using the sam build command.'
@@ -188,8 +189,8 @@ async function runUploadLambdaWithSamBuild(
                         functionNode.configuration.Handler,
                         handlerFile
                     ),
-                    confirm: localize('AWS.generic.response.yes', 'Yes'),
-                    cancel: localize('AWS.generic.response.no', 'No'),
+                    confirm: genericText.yes,
+                    cancel: genericText.no,
                 },
                 window
             )
@@ -278,8 +279,8 @@ async function confirmLambdaDeployment(functionNode: LambdaFunctionNode, window 
                 'This will immediately publish the selected code as a new version of Lambda: {0}.\n\nAWS Toolkit cannot guarantee that the built code will work.\n\nContinue?',
                 functionNode.functionName
             ),
-            confirm: localize('AWS.generic.response.yes', 'Yes'),
-            cancel: localize('AWS.generic.response.no', 'No'),
+            confirm: genericText.yes,
+            cancel: genericText.no,
         },
         window
     )

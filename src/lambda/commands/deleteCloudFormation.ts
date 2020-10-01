@@ -11,6 +11,7 @@ import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { ext } from '../../shared/extensionGlobals'
 import { getLogger, Logger } from '../../shared/logger'
 import { recordCloudformationDelete, Result } from '../../shared/telemetry/telemetry'
+import * as genericText from '../../shared/text/generic'
 import { CloudFormationStackNode } from '../explorer/cloudFormationNodes'
 
 export async function deleteCloudFormation(refresh: () => void, node?: CloudFormationStackNode) {
@@ -30,16 +31,13 @@ export async function deleteCloudFormation(refresh: () => void, node?: CloudForm
             return
         }
 
-        const responseYes: string = localize('AWS.generic.response.yes', 'Yes')
-        const responseNo: string = localize('AWS.generic.response.no', 'No')
-
         const userResponse = await vscode.window.showInformationMessage(
             localize('AWS.message.prompt.deleteCloudFormation', 'Are you sure you want to delete {0}?', stackName),
-            responseYes,
-            responseNo
+            genericText.yes,
+            genericText.no
         )
 
-        if (userResponse === responseYes) {
+        if (userResponse === genericText.yes) {
             const client: CloudFormationClient = ext.toolkitClientBuilder.createCloudFormationClient(node.regionCode)
 
             await client.deleteStack(stackName)
