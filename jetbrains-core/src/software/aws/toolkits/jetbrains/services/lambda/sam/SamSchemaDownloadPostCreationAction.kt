@@ -7,7 +7,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
-import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.services.schemas.SchemaCodeLangs
 import software.aws.toolkits.jetbrains.services.schemas.SchemaTemplateParameters
@@ -31,7 +30,7 @@ class SamSchemaDownloadPostCreationAction {
         indicator: ProgressIndicator
     ) {
         // Use sourceCreatingProject instead of rootModel.project because the new project may not have AWS credentials configured yet
-        val codeGenDownloader = SchemaCodeDownloader.create(AwsClientManager.getInstance(sourceCreatingProject))
+        val codeGenDownloader = SchemaCodeDownloader.create(newApplicationProject)
 
         codeGenDownloader.downloadCode(
             SchemaCodeDownloadRequestDetails(

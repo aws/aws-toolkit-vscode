@@ -17,7 +17,7 @@ import com.intellij.uiDesigner.core.GridLayoutManager
 import com.intellij.util.ui.JBUI
 import icons.AwsIcons
 import software.amazon.awssdk.services.cloudformation.model.StackStatus
-import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeAction
 import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindow
 import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowManager
@@ -136,7 +136,7 @@ private class StackUI(private val project: Project, private val stackName: Strin
             stackName = stackName,
             updateEveryMs = UPDATE_STACK_STATUS_INTERVAL,
             listener = this,
-            client = AwsClientManager.getInstance(project).getClient(),
+            client = project.awsClient(),
             setPagesAvailable = pageButtons::setPagesAvailable
         )
 

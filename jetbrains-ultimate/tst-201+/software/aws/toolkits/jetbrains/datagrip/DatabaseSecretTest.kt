@@ -31,7 +31,7 @@ class DatabaseSecretTest {
 
     @JvmField
     @Rule
-    val mockClientManagerRule = MockClientManagerRule(projectRule)
+    val mockClientManagerRule = MockClientManagerRule()
 
     private val secretName = RuleUtils.randomName()
     private val randomHost = RuleUtils.randomName()

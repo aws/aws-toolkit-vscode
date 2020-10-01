@@ -7,7 +7,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.application.ApplicationManager
 import software.amazon.awssdk.services.lambda.LambdaClient
-import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeAction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
@@ -27,7 +27,7 @@ abstract class UpdateFunctionAction(private val mode: EditFunctionMode, title: S
         ApplicationManager.getApplication().executeOnPooledThread {
             val selectedFunction = selected.value
 
-            val client: LambdaClient = AwsClientManager.getInstance(project).getClient()
+            val client: LambdaClient = project.awsClient()
 
             // Fetch latest version just in case
             val functionConfiguration = client.getFunction {

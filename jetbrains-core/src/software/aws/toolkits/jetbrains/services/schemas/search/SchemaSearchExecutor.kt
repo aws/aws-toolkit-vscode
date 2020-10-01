@@ -10,13 +10,13 @@ import software.amazon.awssdk.services.schemas.SchemasClient
 import software.amazon.awssdk.services.schemas.model.SearchSchemasRequest
 import software.amazon.awssdk.services.schemas.model.SearchSchemasResponse
 import software.aws.toolkits.core.utils.warn
-import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
+import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
 
 class SchemaSearchExecutor(
     private val project: Project,
-    private val schemasClient: SchemasClient = AwsClientManager.getInstance(project).getClient()
+    private val schemasClient: SchemasClient = project.awsClient()
 ) {
     fun searchSchemasInRegistry(
         registryName: String,

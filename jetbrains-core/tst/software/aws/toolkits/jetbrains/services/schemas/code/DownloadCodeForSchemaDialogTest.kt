@@ -47,7 +47,7 @@ class DownloadCodeForSchemaDialogTest {
 
     @JvmField
     @Rule
-    val mockClientManager = MockClientManagerRule(projectRule)
+    val mockClientManager = MockClientManagerRule()
 
     @Rule
     @JvmField

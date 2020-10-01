@@ -71,7 +71,7 @@ class SchemaCodeDownloaderTest {
 
     @JvmField
     @Rule
-    val mockClientManager = MockClientManagerRule(projectRule)
+    val mockClientManager = MockClientManagerRule()
 
     private var errorNotification: Notification? = null
 

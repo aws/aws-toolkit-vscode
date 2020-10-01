@@ -7,7 +7,7 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.testFramework.runInEdtAndWait
 import software.amazon.awssdk.services.s3.S3Client
 import software.aws.toolkits.core.s3.deleteBucketAndContents
-import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.explorer.actions.DeleteResourceAction
 import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
 import software.aws.toolkits.jetbrains.services.s3.S3BucketNode
@@ -18,7 +18,7 @@ import software.aws.toolkits.resources.message
 
 class DeleteBucketAction : DeleteResourceAction<S3BucketNode>(message("s3.delete.bucket.action"), TaggingResourceType.S3_BUCKET) {
     override fun performDelete(selected: S3BucketNode) {
-        val client: S3Client = AwsClientManager.getInstance(selected.nodeProject).getClient()
+        val client: S3Client = selected.nodeProject.awsClient()
 
         val fileEditorManager = FileEditorManager.getInstance(selected.nodeProject)
         fileEditorManager.openFiles.forEach {

@@ -14,13 +14,12 @@ import com.intellij.database.dataSource.DatabaseAuthProvider.AuthWidget
 import com.intellij.database.dataSource.DatabaseConnectionInterceptor.ProtoConnection
 import com.intellij.database.dataSource.DatabaseCredentialsAuthProvider
 import com.intellij.database.dataSource.LocalDataSource
-import com.intellij.openapi.project.Project
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.future.future
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
-import software.aws.toolkits.jetbrains.core.awsClient
+import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.datagrip.getAwsConnectionSettings
 import software.aws.toolkits.jetbrains.datagrip.getDatabaseEngine
@@ -61,7 +60,7 @@ class SecretsManagerAuth : DatabaseAuthProvider, CoroutineScope by ApplicationTh
             val project = connection.runConfiguration.project
             try {
                 val connectionSettings = getConfiguration(connection)
-                val dbSecret = getDbSecret(connection.runConfiguration.project, connectionSettings)
+                val dbSecret = getDbSecret(connectionSettings)
                 if (connection.connectionPoint.additionalJdbcProperties[GET_URL_FROM_SECRET]?.toBoolean() == true) {
                     dbSecret.host ?: throw IllegalArgumentException(message("datagrip.secretsmanager.validation.no_host", connectionSettings.secretId))
                     dbSecret.port ?: throw IllegalArgumentException(message("datagrip.secretsmanager.validation.no_port", connectionSettings.secretId))
@@ -101,8 +100,11 @@ class SecretsManagerAuth : DatabaseAuthProvider, CoroutineScope by ApplicationTh
         )
     }
 
-    private fun getDbSecret(project: Project, configuration: SecretsManagerConfiguration): SecretsManagerDbSecret {
-        val client = project.awsClient<SecretsManagerClient>(configuration.connectionSettings.credentials, configuration.connectionSettings.region)
+    private fun getDbSecret(configuration: SecretsManagerConfiguration): SecretsManagerDbSecret {
+        val client = AwsClientManager.getInstance().getClient<SecretsManagerClient>(
+            configuration.connectionSettings.credentials,
+            configuration.connectionSettings.region
+        )
         val secret = client.getSecretValue { it.secretId(configuration.secretId) }
         val dbSecret = objectMapper.readValue<SecretsManagerDbSecret>(secret.secretString())
         dbSecret.username ?: throw IllegalArgumentException(message("datagrip.secretsmanager.validation.no_username", secret.name()))

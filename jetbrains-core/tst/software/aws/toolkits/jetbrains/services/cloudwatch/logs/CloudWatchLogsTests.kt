@@ -26,7 +26,7 @@ class CloudWatchLogsTests {
 
     @JvmField
     @Rule
-    val mockClientManagerRule = MockClientManagerRule(projectRule)
+    val mockClientManagerRule = MockClientManagerRule()
 
     @Test
     fun checkIfLogGroupExists() {

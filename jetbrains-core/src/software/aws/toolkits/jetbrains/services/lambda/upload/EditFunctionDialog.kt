@@ -19,7 +19,6 @@ import software.amazon.awssdk.services.iam.IamClient
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.s3.S3Client
-import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
@@ -230,7 +229,7 @@ class EditFunctionDialog(
         val s3Bucket = view.sourceBucket.selectedItem as String
 
         val lambdaBuilder = psiFile.language.runtimeGroup?.let { LambdaBuilder.getInstanceOrNull(it) } ?: return
-        val lambdaCreator = LambdaCreatorFactory.create(AwsClientManager.getInstance(project), lambdaBuilder)
+        val lambdaCreator = LambdaCreatorFactory.create(project, lambdaBuilder)
 
         FileDocumentManager.getInstance().saveAllDocuments()
 

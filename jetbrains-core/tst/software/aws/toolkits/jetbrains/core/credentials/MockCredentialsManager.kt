@@ -15,6 +15,8 @@ import software.aws.toolkits.core.credentials.CredentialProviderFactory
 import software.aws.toolkits.core.credentials.CredentialsChangeListener
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.core.utils.test.aString
+import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 
 class MockCredentialsManager : CredentialManager() {
     init {
@@ -37,6 +39,18 @@ class MockCredentialsManager : CredentialManager() {
         addProvider(credentialIdentifier)
 
         return credentialIdentifier
+    }
+
+    fun createCredentialProvider(
+        id: String = aString(),
+        credentials: AwsCredentials = AwsBasicCredentials.create("Access", "Secret"),
+        region: AwsRegion = MockRegionProvider.getInstance().defaultRegion()
+    ): ToolkitCredentialsProvider {
+        val credentialIdentifier = MockCredentialIdentifier(id, StaticCredentialsProvider.create(credentials), null)
+
+        addProvider(credentialIdentifier)
+
+        return getAwsCredentialProvider(credentialIdentifier, region)
     }
 
     fun removeCredentials(credentialIdentifier: CredentialIdentifier) {

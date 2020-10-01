@@ -25,7 +25,7 @@ class EventsFetcherTest {
 
     @JvmField
     @Rule
-    val mockClientManagerRule = MockClientManagerRule(projectRule)
+    val mockClientManagerRule = MockClientManagerRule()
 
     @Test
     fun onlyNewEvents() {

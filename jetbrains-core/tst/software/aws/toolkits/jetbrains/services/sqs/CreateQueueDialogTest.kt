@@ -30,7 +30,7 @@ class CreateQueueDialogTest {
 
     @JvmField
     @Rule
-    val mockClientManagerRule = MockClientManagerRule(projectRule)
+    val mockClientManagerRule = MockClientManagerRule()
 
     @Before
     fun setup() {

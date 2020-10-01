@@ -41,7 +41,7 @@ class SecretsManagerAuthTest {
 
     @Rule
     @JvmField
-    val clientManager = MockClientManagerRule(projectRule)
+    val clientManager = MockClientManagerRule()
 
     private val objectMapper = jacksonObjectMapper()
 

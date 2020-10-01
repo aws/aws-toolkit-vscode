@@ -15,7 +15,7 @@ import kotlinx.coroutines.future.future
 import software.amazon.awssdk.services.redshift.RedshiftClient
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
-import software.aws.toolkits.jetbrains.core.awsClient
+import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.datagrip.getAwsConnectionSettings
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
@@ -45,7 +45,10 @@ class IamAuth : DatabaseAuthProvider, CoroutineScope by ApplicationThreadPoolSco
             val project = connection.runConfiguration.project
             try {
                 val auth = validateConnection(connection)
-                val client = project.awsClient<RedshiftClient>(auth.connectionSettings.credentials, auth.connectionSettings.region)
+                val client = AwsClientManager.getInstance().getClient<RedshiftClient>(
+                    auth.connectionSettings.credentials,
+                    auth.connectionSettings.region
+                )
                 val credentials = getCredentials(auth, client)
                 DatabaseCredentialsAuthProvider.applyCredentials(connection, credentials, true)
             } catch (e: Throwable) {

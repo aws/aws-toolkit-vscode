@@ -44,7 +44,7 @@ class RemoteLambdaExecutionTest {
 
     @Rule
     @JvmField
-    val mockClientManager = MockClientManagerRule { projectRule.project }
+    val mockClientManager = MockClientManagerRule()
 
     @Before
     fun setUp() {

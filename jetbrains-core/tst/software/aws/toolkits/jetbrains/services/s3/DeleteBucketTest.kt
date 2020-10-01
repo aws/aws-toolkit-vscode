@@ -38,7 +38,7 @@ class DeleteBucketTest {
 
     @JvmField
     @Rule
-    val mockClientManager = MockClientManagerRule(projectRule)
+    val mockClientManager = MockClientManagerRule()
 
     private val bucket = Bucket.builder().name("foo").build()
 

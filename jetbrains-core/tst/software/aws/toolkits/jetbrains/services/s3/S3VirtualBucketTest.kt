@@ -53,7 +53,7 @@ class S3VirtualBucketTest {
 
     @JvmField
     @Rule
-    val mockClientManager = MockClientManagerRule(projectRule)
+    val mockClientManager = MockClientManagerRule()
 
     @Rule
     @JvmField
@@ -209,10 +209,11 @@ class S3VirtualBucketTest {
 
     @Test
     fun getUrl() {
-        settingsManagerRule.settingsManager.changeRegionAndWait(AwsRegion("us-west-2", "US West (Oregon)", "aws"))
+        val awsConnectionManager = settingsManagerRule.settingsManager
+        awsConnectionManager.changeRegionAndWait(AwsRegion("us-west-2", "US West (Oregon)", "aws"))
 
         // Use real manager for this since it can affect the S3Configuration that goes into S3Utilities
-        AwsClientManager(projectRule.project).getClient<S3Client>().use {
+        AwsClientManager().getClient<S3Client>(awsConnectionManager.activeCredentialProvider, awsConnectionManager.activeRegion).use {
             val sut = S3VirtualBucket(Bucket.builder().name("test-bucket").build(), it)
 
             assertThat(sut.generateUrl("prefix/key")).isEqualTo(URL("https://test-bucket.s3.us-west-2.amazonaws.com/prefix/key"))
@@ -221,10 +222,11 @@ class S3VirtualBucketTest {
 
     @Test
     fun getUrlError() {
-        settingsManagerRule.settingsManager.changeRegionAndWait(AwsRegion("us-west-2", "US West (Oregon)", "aws"))
+        val awsConnectionManager = settingsManagerRule.settingsManager
+        awsConnectionManager.changeRegionAndWait(AwsRegion("us-west-2", "US West (Oregon)", "aws"))
 
         // Use real manager for this since it can affect the S3Configuration that goes into S3Utilities
-        AwsClientManager(projectRule.project).getClient<S3Client>().use {
+        AwsClientManager().getClient<S3Client>(awsConnectionManager.activeCredentialProvider, awsConnectionManager.activeRegion).use {
             val sut = S3VirtualBucket(Bucket.builder().name("test-bucket").build(), it)
 
             assertThatThrownBy {

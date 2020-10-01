@@ -41,7 +41,7 @@ class UpdaterTest {
 
     @JvmField
     @Rule
-    val mockClientManagerRule = MockClientManagerRule(projectRule)
+    val mockClientManagerRule = MockClientManagerRule()
 
     private val treeView = mock(TreeView::class.java)
     private val eventsTable = mock(EventsTable::class.java)
