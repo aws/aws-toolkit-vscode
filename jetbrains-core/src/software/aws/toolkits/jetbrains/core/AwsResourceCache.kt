@@ -126,7 +126,7 @@ interface AwsResourceCache {
 
     companion object {
         @JvmStatic
-        fun getInstance(): AwsResourceCache = service()
+        fun getInstance(project: Project): AwsResourceCache = ServiceManager.getService(project, AwsResourceCache::class.java)
 
         private fun <T> wait(timeout: Duration, call: () -> CompletionStage<T>) = try {
             call().toCompletableFuture().get(timeout.toMillis(), TimeUnit.MILLISECONDS)
