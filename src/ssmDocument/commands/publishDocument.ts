@@ -11,6 +11,7 @@ import { AwsContext } from '../../shared/awsContext'
 import { SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
 import { ssmJson, ssmYaml } from '../../shared/constants'
 import { ext } from '../../shared/extensionGlobals'
+import * as localizedText from '../../shared/localizedText'
 import { getLogger, Logger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
@@ -151,8 +152,8 @@ export async function updateDocument(
                     'Would you like to make this the default version for {0}?',
                     wizardResponse.name
                 ),
-                confirm: localize('AWS.generic.response.yes', 'Yes'),
-                cancel: localize('AWS.generic.response.no', 'No'),
+                confirm: localizedText.yes,
+                cancel: localizedText.no,
             },
             window
         )
