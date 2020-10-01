@@ -295,8 +295,8 @@ export function filterTelemetryCacheEvents(input: any): TelemetryEvent[] {
             return true
         })
         .filter((item: Object) => {
-            // Only accept objects that have createTime and data because that's what's required by TelemetryEvent
-            if (!item.hasOwnProperty('createTime') || !item.hasOwnProperty('data')) {
+            // Only accept objects that have data because that's what's required by TelemetryEvent
+            if (!item.hasOwnProperty('data')) {
                 getLogger().warn(`Item in telemetry cache: ${item}\n does not have 'data' or 'createTime'! skipping!`)
 
                 return false
