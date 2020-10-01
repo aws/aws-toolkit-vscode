@@ -16,6 +16,7 @@ import { RegionProvider } from '../shared/regions/regionProvider'
 import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { StepFunctionsNode } from '../stepFunctions/explorer/stepFunctionsNodes'
 import { DEFAULT_PARTITION } from '../shared/regions/regionUtilities'
+import { SsmDocumentNode } from '../ssmDocument/explorer/ssmDocumentNode'
 
 /**
  * An AWS Explorer node representing a region.
@@ -53,6 +54,7 @@ export class RegionNode extends AWSTreeNodeBase {
             { serviceId: 's3', createFn: () => new S3Node(ext.toolkitClientBuilder.createS3Client(this.regionCode)) },
             { serviceId: 'schemas', createFn: () => new SchemasNode(this.regionCode) },
             { serviceId: 'states', createFn: () => new StepFunctionsNode(this.regionCode) },
+            { serviceId: 'ssm', createFn: () => new SsmDocumentNode(this.regionCode) },
         ]
 
         for (const serviceCandidate of serviceCandidates) {

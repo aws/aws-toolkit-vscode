@@ -1,0 +1,18 @@
+{
+    "date": "2020-09-30",
+    "version": "1.14.0",
+    "entries": [
+        {
+            "type": "Bug Fix",
+            "description": "Fix ASL validation bug marking states as unreachable when defined before a Choice state"
+        },
+        {
+            "type": "Feature",
+            "description": "Add AWS Systems Manager integration to allow users to view, create and publish Automation documents. Support for code completion and validation with templates and code snippets to help users author their Automation documents."
+        },
+        {
+            "type": "Feature",
+            "description": "When deploying a SAM application, the S3 bucket is now chosen from a list. Previously, the bucket name had to be typed in."
+        }
+    ]
+}

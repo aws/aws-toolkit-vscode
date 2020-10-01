@@ -1,3 +1,9 @@
+## 1.14.0 2020-09-30
+
+- **Bug Fix** Fix ASL validation bug marking states as unreachable when defined before a Choice state
+- **Feature** Add AWS Systems Manager integration to allow users to view, create and publish Automation documents. Support for code completion and validation with templates and code snippets to help users author their Automation documents.
+- **Feature** When deploying a SAM application, the S3 bucket is now chosen from a list. Previously, the bucket name had to be typed in.
+
 ## 1.13.0 2020-08-24
 
 - **Feature** Toolkit automatically adds a launch configuration to the workspace when creating SAM applications
