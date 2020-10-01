@@ -29,7 +29,6 @@ export class LoginManager {
      * @param provider  Credentials provider id
      */
     public async login(args: { passive: boolean; providerId: CredentialsProviderId }): Promise<void> {
-        let loginResult: Result = 'Succeeded'
         try {
             const provider = await CredentialsProviderManager.getInstance().getCredentialsProvider(args.providerId)
             if (!provider) {
@@ -54,7 +53,6 @@ export class LoginManager {
                 defaultRegion: provider.getDefaultRegion(),
             })
         } catch (err) {
-            loginResult = 'Failed'
             getLogger().error(
                 `Error trying to connect to AWS with Credentials Provider ${asString(
                     args.providerId
@@ -68,7 +66,7 @@ export class LoginManager {
             notifyUserInvalidCredentials(args.providerId)
         } finally {
             if (!args.passive) {
-                this.recordAwsSetCredentialsFn({ result: loginResult })
+                this.recordAwsSetCredentialsFn()
             }
         }
     }
