@@ -16,12 +16,14 @@ import { DefaultLambdaClient } from './defaultLambdaClient'
 import { DefaultSchemaClient } from './defaultSchemaClient'
 import { DefaultStepFunctionsClient } from './defaultStepFunctionsClient'
 import { DefaultStsClient } from './defaultStsClient'
+import { DefaultSsmDocumentClient } from './defaultSsmDocumentClient'
 import { EcsClient } from './ecsClient'
 import { IamClient } from './iamClient'
 import { LambdaClient } from './lambdaClient'
 import { SchemaClient } from './schemaClient'
 import { StepFunctionsClient } from './stepFunctionsClient'
 import { StsClient } from './stsClient'
+import { SsmDocumentClient } from './ssmDocumentClient'
 import { ToolkitClientBuilder } from './toolkitClientBuilder'
 import { DefaultS3Client } from './defaultS3Client'
 import { S3Client } from './s3Client'
@@ -69,5 +71,9 @@ export class DefaultToolkitClientBuilder implements ToolkitClientBuilder {
 
     public createS3Client(regionCode: string): S3Client {
         return new DefaultS3Client(regionCode, this.regionProvider.getPartitionId(regionCode) ?? DEFAULT_PARTITION)
+    }
+
+    public createSsmClient(regionCode: string): SsmDocumentClient {
+        return new DefaultSsmDocumentClient(regionCode)
     }
 }
