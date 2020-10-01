@@ -6,7 +6,7 @@
 import { AwsContext } from '../shared/awsContext'
 import { getAccountId } from '../shared/credentials/accountId'
 import { getLogger } from '../shared/logger'
-import { recordAwsSetCredentials, Result } from '../shared/telemetry/telemetry'
+import { recordAwsSetCredentials } from '../shared/telemetry/telemetry'
 import { CredentialsStore } from './credentialsStore'
 import { notifyUserInvalidCredentials } from './credentialsUtilities'
 import { asString, CredentialsProviderId } from './providers/credentialsProviderId'
