@@ -178,17 +178,19 @@
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.notification.NoticeManager"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.notification.DefaultNoticeManager"/>
         <applicationService serviceInterface="software.aws.toolkits.core.ToolkitClientManager"
-                        serviceImplementation="software.aws.toolkits.jetbrains.core.AwsClientManager"
-                        testServiceImplementation="software.aws.toolkits.jetbrains.core.MockClientManager"/>
+                            serviceImplementation="software.aws.toolkits.jetbrains.core.AwsClientManager"
+                            testServiceImplementation="software.aws.toolkits.jetbrains.core.MockClientManager"/>
+        <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.AwsResourceCache"
+                            serviceImplementation="software.aws.toolkits.jetbrains.core.DefaultAwsResourceCache"
+                            testServiceImplementation="software.aws.toolkits.jetbrains.core.MockResourceCache"/>
+
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.ExplorerToolWindow"/>
-        <projectService serviceInterface="software.aws.toolkits.jetbrains.core.AwsResourceCache"
-                        serviceImplementation="software.aws.toolkits.jetbrains.core.DefaultAwsResourceCache"
-                        testServiceImplementation="software.aws.toolkits.jetbrains.core.MockResourceCache"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.cloudformation.stack.StackWindowManager"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.lambda.validation.LambdaHandlerValidator" />
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowManager" />
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow" />
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindow" />
+
         <toolWindow id="aws.explorer" anchor="left" secondary="true"
                     factoryClass="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerFactory"
                     icon="AwsIcons.Logos.AWS"/>

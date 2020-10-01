@@ -7,7 +7,6 @@ import com.intellij.openapi.project.Project
 import icons.AwsIcons
 import software.amazon.awssdk.services.ecs.EcsClient
 import software.amazon.awssdk.services.ecs.model.Service
-import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
@@ -15,6 +14,7 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceNod
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceLocationNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceParentNode
+import software.aws.toolkits.jetbrains.core.getResourceNow
 import software.aws.toolkits.jetbrains.services.ecs.execution.EcsCloudDebugLocation
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
 import software.aws.toolkits.resources.message
@@ -34,7 +34,7 @@ class EcsClusterParentNode(project: Project) :
     override fun isAlwaysShowPlus(): Boolean = true
 
     override fun getChildren(): List<AwsExplorerNode<*>> = super.getChildren()
-    override fun getChildrenInternal(): List<AwsExplorerNode<*>> = AwsResourceCache.getInstance(nodeProject)
+    override fun getChildrenInternal(): List<AwsExplorerNode<*>> = nodeProject
         .getResourceNow(EcsResources.LIST_CLUSTER_ARNS)
         .map { EcsClusterNode(nodeProject, it) }
 }
@@ -50,13 +50,10 @@ class EcsClusterNode(project: Project, private val clusterArn: String) :
     override fun emptyChildrenNode(): AwsExplorerEmptyNode = AwsExplorerEmptyNode(nodeProject, message("ecs.no_services_in_cluster"))
 
     override fun getChildren(): List<AwsExplorerNode<*>> = super<ResourceParentNode>.getChildren()
-    override fun getChildrenInternal(): List<AwsExplorerNode<*>> {
-        val resourceCache = AwsResourceCache.getInstance(nodeProject)
-        return AwsResourceCache.getInstance(nodeProject)
-            .getResourceNow(EcsResources.listServiceArns(clusterArn))
-            .map { resourceCache.getResourceNow(EcsResources.describeService(clusterArn, it)) }
-            .map { EcsServiceNode(nodeProject, it, clusterArn) }
-    }
+    override fun getChildrenInternal(): List<AwsExplorerNode<*>> = nodeProject
+        .getResourceNow(EcsResources.listServiceArns(clusterArn))
+        .map { nodeProject.getResourceNow(EcsResources.describeService(clusterArn, it)) }
+        .map { EcsServiceNode(nodeProject, it, clusterArn) }
 }
 
 class EcsServiceNode(project: Project, private val service: Service, private val clusterArn: String) :
@@ -78,7 +75,7 @@ class EcsTaskDefinitionsParentNode(project: Project) :
     override fun isAlwaysShowPlus(): Boolean = true
 
     override fun getChildren(): List<AwsExplorerNode<*>> = super.getChildren()
-    override fun getChildrenInternal(): List<AwsExplorerNode<*>> = AwsResourceCache.getInstance(nodeProject)
+    override fun getChildrenInternal(): List<AwsExplorerNode<*>> = nodeProject
         .getResourceNow(EcsResources.LIST_ACTIVE_TASK_DEFINITION_FAMILIES)
         .map { EcsTaskDefinitionNode(nodeProject, it) }
 }
@@ -87,7 +84,7 @@ class EcsTaskDefinitionNode(project: Project, familyName: String) :
     AwsExplorerResourceNode<String>(project, EcsClient.SERVICE_NAME, familyName, AwsIcons.Resources.Ecs.ECS_TASK_DEFINITION) {
     override fun resourceType() = "taskDefinition"
 
-    override fun resourceArn(): String = AwsResourceCache.getInstance(nodeProject)
+    override fun resourceArn(): String = nodeProject
         .getResourceNow(EcsResources.describeTaskDefinition(value))
         .taskDefinitionArn()
 

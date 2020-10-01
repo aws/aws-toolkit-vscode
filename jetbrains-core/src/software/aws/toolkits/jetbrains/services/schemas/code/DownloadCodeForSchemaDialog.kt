@@ -18,7 +18,7 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtil
 import org.apache.commons.lang.exception.ExceptionUtils
 import software.amazon.awssdk.services.schemas.model.SchemaVersionSummary
-import software.aws.toolkits.jetbrains.core.AwsResourceCache
+import software.aws.toolkits.jetbrains.core.getResourceNow
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.schemas.Schema
@@ -102,11 +102,10 @@ class DownloadCodeForSchemaDialog(
         return null
     }
 
-    private fun loadSchemaVersions(): List<String> =
-        AwsResourceCache.getInstance(project)
-            .getResourceNow(SchemasResources.getSchemaVersions(registryName, schemaName))
-            .map(SchemaVersionSummary::schemaVersion)
-            .sortedByDescending { s -> s.toIntOrNull() }
+    private fun loadSchemaVersions(): List<String> = project
+        .getResourceNow(SchemasResources.getSchemaVersions(registryName, schemaName))
+        .map(SchemaVersionSummary::schemaVersion)
+        .sortedByDescending { s -> s.toIntOrNull() }
 
     private fun getLanguageForCurrentRuntime(): SchemaCodeLangs? {
         val currentRuntimeGroup = RuntimeGroup.determineRuntimeGroup(project) ?: return null

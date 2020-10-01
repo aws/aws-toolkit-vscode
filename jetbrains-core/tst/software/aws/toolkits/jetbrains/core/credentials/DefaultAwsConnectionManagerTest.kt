@@ -18,14 +18,16 @@ import software.aws.toolkits.core.credentials.aCredentialsIdentifier
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.rules.EnvironmentVariableHelper
 import software.aws.toolkits.core.utils.test.notNull
-import software.aws.toolkits.jetbrains.core.MockResourceCache
+import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager.Companion.selectedPartition
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider.RegionProviderRule
+import software.aws.toolkits.jetbrains.services.sts.StsResources
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.toElement
 import java.nio.file.Files
+import java.util.concurrent.CompletableFuture
 
 class DefaultAwsConnectionManagerTest {
     @Rule
@@ -40,9 +42,12 @@ class DefaultAwsConnectionManagerTest {
     @JvmField
     val regionProviderRule = RegionProviderRule()
 
+    @JvmField
+    @Rule
+    val resourceCache = MockResourceCacheRule()
+
     private lateinit var mockCredentialManager: MockCredentialsManager
     private lateinit var manager: DefaultAwsConnectionManager
-    private lateinit var mockResourceCache: MockResourceCache
 
     @Before
     fun setUp() {
@@ -54,13 +59,11 @@ class DefaultAwsConnectionManagerTest {
 
         mockCredentialManager = MockCredentialsManager.getInstance()
         manager = DefaultAwsConnectionManager(projectRule.project)
-        mockResourceCache = MockResourceCache.getInstance(projectRule.project)
     }
 
     @After
     fun tearDown() {
         mockCredentialManager.reset()
-        mockResourceCache.clear()
     }
 
     @Test
@@ -219,8 +222,10 @@ class DefaultAwsConnectionManagerTest {
 
     @Test
     fun `Active credential is persisted`() {
-        mockResourceCache.addValidAwsCredential(manager.activeRegion.id, "Mock", "222222222222")
-        changeCredentialProvider(mockCredentialManager.addCredentials("Mock"))
+        val credentials = mockCredentialManager.addCredentials("Mock")
+        markConnectionSettingsAsValid(credentials, manager.activeRegion)
+        changeCredentialProvider(credentials)
+
         val element = Element("AccountState")
         serializeStateInto(manager, element)
         assertThat(element.string()).isEqualToIgnoringWhitespace(
@@ -453,11 +458,16 @@ class DefaultAwsConnectionManagerTest {
     }
 
     private fun markConnectionSettingsAsValid(credentialsIdentifier: CredentialIdentifier, region: AwsRegion) {
-        mockResourceCache.addValidAwsCredential(region.id, credentialsIdentifier.id, "1111222233333")
+        resourceCache.addEntry(StsResources.ACCOUNT, region.id, credentialsIdentifier.id, "1111222233333")
     }
 
     private fun markConnectionSettingsAsInvalid(credentialsIdentifier: CredentialIdentifier, region: AwsRegion) {
-        mockResourceCache.addInvalidAwsCredential(region.id, credentialsIdentifier.id)
+        resourceCache.addEntry(
+            StsResources.ACCOUNT,
+            region.id,
+            credentialsIdentifier.id,
+            CompletableFuture.failedFuture(IllegalStateException("Invalid AWS credentials $credentialsIdentifier"))
+        )
     }
 
     private fun changeCredentialProvider(credentialsProvider: CredentialIdentifier) {

@@ -8,12 +8,12 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.redshift.model.Cluster
-import software.amazon.awssdk.utils.CompletableFutureUtils
 import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerErrorNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.RedshiftExplorerRootNode
+import java.util.concurrent.CompletableFuture
 
 class RedshiftExplorerNodeTest {
     @JvmField
@@ -22,12 +22,13 @@ class RedshiftExplorerNodeTest {
 
     @JvmField
     @Rule
-    val resourceCache = MockResourceCacheRule(projectRule)
+    val resourceCache = MockResourceCacheRule()
 
     @Test
     fun `Redshift resources are listed`() {
         val name = RuleUtils.randomName()
-        resourceCache.get().addEntry(
+        resourceCache.addEntry(
+            projectRule.project,
             RedshiftResources.LIST_CLUSTERS,
             listOf(Cluster.builder().clusterIdentifier(name).build())
         )
@@ -39,7 +40,7 @@ class RedshiftExplorerNodeTest {
 
     @Test
     fun `No resources makes empty node`() {
-        resourceCache.get().addEntry(RedshiftResources.LIST_CLUSTERS, listOf())
+        resourceCache.addEntry(projectRule.project, RedshiftResources.LIST_CLUSTERS, listOf())
         val serviceRootNode = sut.buildServiceRootNode(projectRule.project)
         assertThat(serviceRootNode.children).hasOnlyOneElementSatisfying {
             it is AwsExplorerEmptyNode
@@ -48,7 +49,7 @@ class RedshiftExplorerNodeTest {
 
     @Test
     fun `Exception thrown makes error node`() {
-        resourceCache.get().addEntry(RedshiftResources.LIST_CLUSTERS, CompletableFutureUtils.failedFuture(RuntimeException("Simulated error")))
+        resourceCache.addEntry(projectRule.project, RedshiftResources.LIST_CLUSTERS, CompletableFuture.failedFuture(RuntimeException("Simulated error")))
         val serviceRootNode = sut.buildServiceRootNode(projectRule.project)
         assertThat(serviceRootNode.children).hasOnlyOneElementSatisfying {
             it is AwsExplorerErrorNode

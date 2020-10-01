@@ -13,9 +13,10 @@ import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.amazon.awssdk.services.ecs.model.ContainerDefinition
 import software.amazon.awssdk.services.ecs.model.LogDriver
 import software.amazon.awssdk.services.ecs.model.Service
-import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeActionGroup
+import software.aws.toolkits.jetbrains.core.getResource
+import software.aws.toolkits.jetbrains.core.getResourceNow
 import software.aws.toolkits.jetbrains.services.clouddebug.actions.StartRemoteShellAction
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.checkIfLogStreamExists
@@ -43,7 +44,7 @@ data class ContainerDetails(val service: Service, val containerDefinition: Conta
 class ServiceContainerActions : SingleExplorerNodeActionGroup<EcsServiceNode>("Containers") {
     override fun getChildren(selected: EcsServiceNode, e: AnActionEvent): List<AnAction> {
         val containers = try {
-            AwsResourceCache.getInstance(selected.nodeProject).getResourceNow(EcsResources.listContainers(selected.value.taskDefinition()))
+            selected.nodeProject.getResourceNow(EcsResources.listContainers(selected.value.taskDefinition()))
         } catch (e: Exception) {
             e.notifyError(message("cloud_debug.ecs.run_config.container.loading.error", e.localizedMessage), selected.nodeProject)
             return emptyList()
@@ -84,8 +85,7 @@ class ContainerLogsAction(
 
         val window = CloudWatchLogWindow.getInstance(project)
 
-        AwsResourceCache.getInstance(project)
-            .getResource(EcsResources.listTaskIds(container.service.clusterArn(), container.service.serviceArn()))
+        project.getResource(EcsResources.listTaskIds(container.service.clusterArn(), container.service.serviceArn()))
             .thenAccept { tasks ->
                 when {
                     tasks.isEmpty() -> notifyInfo(message("ecs.service.logs.no_running_tasks"))

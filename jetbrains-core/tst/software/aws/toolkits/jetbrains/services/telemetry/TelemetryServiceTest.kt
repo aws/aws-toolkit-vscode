@@ -14,14 +14,19 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Rule
 import org.junit.Test
+import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.telemetry.DefaultMetricEvent.Companion.METADATA_NOT_SET
 import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryBatcher
-import software.aws.toolkits.jetbrains.core.MockResourceCache
+import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager.ProjectAccountSettingsManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
+import software.aws.toolkits.jetbrains.core.credentials.waitUntilConnectionStateIsStable
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
+import software.aws.toolkits.jetbrains.core.region.MockRegionProvider.RegionProviderRule
+import software.aws.toolkits.jetbrains.services.sts.StsResources
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -33,13 +38,23 @@ class TelemetryServiceTest {
     @JvmField
     val projectRule = ProjectRule()
 
+    @JvmField
+    @Rule
+    val resourceCache = MockResourceCacheRule()
+
+    @JvmField
+    @Rule
+    val regionProvider = RegionProviderRule()
+
+    @JvmField
+    @Rule
+    val connectionSettingsManager = ProjectAccountSettingsManagerRule(projectRule)
+
     @After
     fun tearDown() {
         AwsSettings.getInstance().isTelemetryEnabled = false
 
-        MockAwsConnectionManager.getInstance(projectRule.project).reset()
         MockCredentialsManager.getInstance().reset()
-        MockRegionProvider.getInstance().reset()
     }
 
     @Test
@@ -98,9 +113,7 @@ class TelemetryServiceTest {
 
     @Test
     fun metricEventMetadataIsNotSet() {
-        val accountSettings = MockAwsConnectionManager.getInstance(projectRule.project)
-
-        accountSettings.nullifyCredentialProviderAndWait()
+        connectionSettingsManager.settingsManager.nullifyCredentialProviderAndWait()
 
         val eventCaptor = argumentCaptor<MetricEvent>()
 
@@ -119,18 +132,14 @@ class TelemetryServiceTest {
 
     @Test
     fun metricEventMetadataIsSet() {
-        val accountSettings = MockAwsConnectionManager.getInstance(projectRule.project)
-        MockResourceCache.getInstance(projectRule.project).addValidAwsCredential(accountSettings.activeRegion.id, "profile:admin", "111111111111")
+        val credentials = MockCredentialsManager.getInstance().addCredentials("profile:admin")
+        val mockRegion = regionProvider.createAwsRegion()
 
-        accountSettings.changeCredentialProvider(
-            MockCredentialsManager.getInstance().addCredentials("profile:admin")
-        )
+        markConnectionSettingsAsValid(credentials, mockRegion)
 
-        val mockRegion = AwsRegion("foo-region", "foo-region", "aws")
-        MockRegionProvider.getInstance().addRegion(mockRegion)
-        accountSettings.changeRegion(mockRegion)
-
-        MockResourceCache.getInstance(projectRule.project).addValidAwsCredential("foo-region", "profile:admin", "111111111111")
+        connectionSettingsManager.settingsManager.changeCredentialProvider(credentials)
+        connectionSettingsManager.settingsManager.changeRegion(mockRegion)
+        connectionSettingsManager.settingsManager.waitUntilConnectionStateIsStable()
 
         val eventCaptor = argumentCaptor<MetricEvent>()
         val batcher = mock<TelemetryBatcher>()
@@ -142,17 +151,16 @@ class TelemetryServiceTest {
         telemetryService.dispose()
 
         verify(batcher).enqueue(eventCaptor.capture())
-        assertMetricEventsContains(eventCaptor.allValues, "Foo", "111111111111", "foo-region")
+        assertMetricEventsContains(eventCaptor.allValues, "Foo", "1111222233333", mockRegion.id)
     }
 
     @Test
     fun metricEventMetadataIsOverridden() {
         val accountSettings = MockAwsConnectionManager.getInstance(projectRule.project)
-        MockResourceCache.getInstance(projectRule.project).addValidAwsCredential(accountSettings.activeRegion.id, "profile:admin", "111111111111")
+        val credentials = MockCredentialsManager.getInstance().addCredentials("profile:admin")
 
-        accountSettings.changeCredentialProvider(
-            MockCredentialsManager.getInstance().addCredentials("profile:admin")
-        )
+        markConnectionSettingsAsValid(credentials, accountSettings.activeRegion)
+        accountSettings.changeCredentialProvider(credentials)
 
         val mockRegion = AwsRegion("foo-region", "foo-region", "aws")
         MockRegionProvider.getInstance().addRegion(mockRegion)
@@ -175,6 +183,10 @@ class TelemetryServiceTest {
 
         verify(batcher).enqueue(eventCaptor.capture())
         assertMetricEventsContains(eventCaptor.allValues, "Foo", "222222222222", "bar-region")
+    }
+
+    private fun markConnectionSettingsAsValid(credentialsIdentifier: CredentialIdentifier, region: AwsRegion) {
+        resourceCache.addEntry(StsResources.ACCOUNT, region.id, credentialsIdentifier.id, "1111222233333")
     }
 
     private fun assertMetricEventsContains(events: Collection<MetricEvent>, event: String, awsAccount: String, awsRegion: String) {

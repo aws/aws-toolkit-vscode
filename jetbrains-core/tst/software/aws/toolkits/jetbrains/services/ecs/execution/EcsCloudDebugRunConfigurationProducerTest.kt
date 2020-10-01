@@ -12,21 +12,14 @@ import com.intellij.testFramework.MapDataContext
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.ecs.model.Service
-import software.aws.toolkits.jetbrains.core.MockResourceCache
 
 class EcsCloudDebugRunConfigurationProducerTest {
     @Rule
     @JvmField
     val projectRule = ProjectRule()
-
-    @Before
-    fun setUp() {
-        resourceCache().clear()
-    }
 
     @Test
     fun validRunConfigurationIsCreated() {
@@ -59,6 +52,4 @@ class EcsCloudDebugRunConfigurationProducerTest {
         dataContext.put(Location.DATA_KEY, EcsCloudDebugLocation(projectRule.project, service))
         return ConfigurationContext.getFromContext(dataContext)
     }
-
-    private fun resourceCache() = MockResourceCache.getInstance(projectRule.project)
 }

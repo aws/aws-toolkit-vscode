@@ -19,8 +19,9 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.SmartPointerManager
 import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
+import software.aws.toolkits.jetbrains.core.getResource
+import software.aws.toolkits.jetbrains.core.getResourceIfPresent
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplateIndex.Companion.listFunctions
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
@@ -93,11 +94,9 @@ class LambdaLineMarker : LineMarkerProviderDescriptor() {
             return false
         }
 
-        val cache = AwsResourceCache.getInstance(psiFile.project)
-
-        return when (val functions = cache.getResourceIfPresent(LambdaResources.LIST_FUNCTIONS)) {
+        return when (val functions = psiFile.project.getResourceIfPresent(LambdaResources.LIST_FUNCTIONS)) {
             null -> {
-                cache.getResource(LambdaResources.LIST_FUNCTIONS).whenComplete { _, _ ->
+                psiFile.project.getResource(LambdaResources.LIST_FUNCTIONS).whenComplete { _, _ ->
                     runReadAction {
                         DaemonCodeAnalyzer.getInstance(psiFile.project).restart(psiFile)
                     }

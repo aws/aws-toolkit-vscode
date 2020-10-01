@@ -20,7 +20,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import software.aws.toolkits.jetbrains.core.MockResourceCache
+import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.fillResourceCache
 import software.aws.toolkits.jetbrains.ui.tree.AsyncTreeModel
@@ -38,9 +38,13 @@ class AwsExplorerNodeProcessorTest {
     @JvmField
     val disposableRule = DisposableRule()
 
+    @JvmField
+    @Rule
+    val resourceCache = MockResourceCacheRule()
+
     @Before
     fun setUp() {
-        fillResourceCache(resourceCache())
+        resourceCache.fillResourceCache(projectRule.project)
     }
 
     @Test
@@ -99,6 +103,4 @@ class AwsExplorerNodeProcessorTest {
         val structureTreeModel = StructureTreeModel(awsTreeModel, disposableRule.disposable)
         return AsyncTreeModel(structureTreeModel, true, disposableRule.disposable)
     }
-
-    private fun resourceCache() = MockResourceCache.getInstance(projectRule.project)
 }

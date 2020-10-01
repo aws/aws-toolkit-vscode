@@ -26,7 +26,7 @@ import org.junit.rules.TemporaryFolder
 import software.amazon.awssdk.services.schemas.model.SchemaVersionSummary
 import software.aws.toolkits.core.utils.failedFuture
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.core.MockResourceCache
+import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
 import software.aws.toolkits.jetbrains.services.schemas.Schema
@@ -53,6 +53,10 @@ class DownloadCodeForSchemaDialogTest {
     @JvmField
     val tempFolder = TemporaryFolder()
 
+    @JvmField
+    @Rule
+    val resourceCache = MockResourceCacheRule()
+
     private lateinit var fileEditorManager: FileEditorManager
     private lateinit var mockSettingsManager: MockAwsConnectionManager
 
@@ -74,7 +78,7 @@ class DownloadCodeForSchemaDialogTest {
         fileEditorManager = FileEditorManager.getInstance(projectRule.project)
         mockSettingsManager = AwsConnectionManager.getInstance(projectRule.project) as MockAwsConnectionManager
 
-        resourceCache().mockSchemaVersions(
+        mockSchemaVersions(
             REGISTRY,
             SCHEMA_NAME,
             VERSIONS
@@ -233,10 +237,9 @@ class DownloadCodeForSchemaDialogTest {
         messageBus.subscribe(Notifications.TOPIC)
     }
 
-    private fun resourceCache() = MockResourceCache.getInstance(projectRule.project)
-
-    private fun MockResourceCache.mockSchemaVersions(registryName: String, schemaName: String, schemaVersions: List<String>) {
-        this.addEntry(
+    private fun mockSchemaVersions(registryName: String, schemaName: String, schemaVersions: List<String>) {
+        resourceCache.addEntry(
+            projectRule.project,
             SchemasResources.getSchemaVersions(registryName, schemaName),
             completedFuture(
                 schemaVersions.map { v ->

@@ -7,13 +7,13 @@ import com.intellij.openapi.project.Project
 import icons.AwsIcons
 import software.amazon.awssdk.services.rds.RdsClient
 import software.amazon.awssdk.services.rds.model.DBInstance
-import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.Resource
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceParentNode
+import software.aws.toolkits.jetbrains.core.getResourceNow
 import software.aws.toolkits.resources.message
 import javax.swing.Icon
 
@@ -46,7 +46,7 @@ class RdsParentNode(
 ) : AwsExplorerNode<String>(project, type, null), ResourceParentNode {
     override fun isAlwaysShowPlus(): Boolean = true
     override fun getChildren(): List<AwsExplorerNode<*>> = super.getChildren()
-    override fun getChildrenInternal(): List<AwsExplorerNode<*>> = AwsResourceCache.getInstance(nodeProject)
+    override fun getChildrenInternal(): List<AwsExplorerNode<*>> = nodeProject
         .getResourceNow(method)
         .map {
             RdsNode(

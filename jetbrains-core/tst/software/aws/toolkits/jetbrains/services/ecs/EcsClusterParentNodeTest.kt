@@ -5,11 +5,10 @@ package software.aws.toolkits.jetbrains.services.ecs
 
 import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.utils.CompletableFutureUtils
-import software.aws.toolkits.jetbrains.core.MockResourceCache
+import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerErrorNode
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
@@ -21,16 +20,16 @@ class EcsClusterParentNodeTest {
     @Rule
     val projectRule = ProjectRule()
 
-    @Before
-    fun setUp() {
-        resourceCache().clear()
-    }
+    @JvmField
+    @Rule
+    val resourceCache = MockResourceCacheRule()
 
     @Test
     fun failedCallShowsErrorNode() {
         val node = aEcsClusterParentNode()
 
-        resourceCache().addEntry(
+        resourceCache.addEntry(
+            projectRule.project,
             EcsResources.LIST_CLUSTER_ARNS,
             CompletableFutureUtils.failedFuture(RuntimeException("Simulated error"))
         )
@@ -43,7 +42,7 @@ class EcsClusterParentNodeTest {
     fun eachArnGetsANode() {
         val node = aEcsClusterParentNode()
 
-        resourceCache().clusterArns("arn1", "arn2")
+        mockClusterArns("arn1", "arn2")
 
         assertThat(node.children).hasSize(2)
         assertThat(node.children).hasOnlyElementsOfType(EcsClusterNode::class.java)
@@ -53,7 +52,7 @@ class EcsClusterParentNodeTest {
     fun noClusterShowsEmpty() {
         val node = aEcsClusterParentNode()
 
-        resourceCache().clusterArns()
+        mockClusterArns()
 
         assertThat(node.children).hasSize(1)
         assertThat(node.children).hasOnlyElementsOfType(AwsExplorerEmptyNode::class.java)
@@ -61,10 +60,9 @@ class EcsClusterParentNodeTest {
 
     private fun aEcsClusterParentNode() = EcsClusterParentNode(projectRule.project)
 
-    private fun resourceCache() = MockResourceCache.getInstance(projectRule.project)
-
-    private fun MockResourceCache.clusterArns(vararg arns: String) {
-        this.addEntry(
+    private fun mockClusterArns(vararg arns: String) {
+        resourceCache.addEntry(
+            projectRule.project,
             EcsResources.LIST_CLUSTER_ARNS,
             CompletableFuture.completedFuture(arns.toList())
         )

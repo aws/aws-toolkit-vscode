@@ -17,7 +17,7 @@ import com.nhaarman.mockitokotlin2.verify
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import software.aws.toolkits.jetbrains.core.MockResourceCache
+import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.fillResourceCache
 import software.aws.toolkits.jetbrains.ui.tree.AsyncTreeModel
 import software.aws.toolkits.jetbrains.ui.tree.StructureTreeModel
@@ -34,9 +34,13 @@ class AwsExplorerTreeStructureProviderTest {
     @JvmField
     val disposableRule = DisposableRule()
 
+    @JvmField
+    @Rule
+    val resourceCache = MockResourceCacheRule()
+
     @Before
     fun setUp() {
-        fillResourceCache(resourceCache())
+        resourceCache.fillResourceCache(projectRule.project)
     }
 
     @Test
@@ -68,6 +72,4 @@ class AwsExplorerTreeStructureProviderTest {
         val structureTreeModel = StructureTreeModel(awsTreeModel, disposableRule.disposable)
         return AsyncTreeModel(structureTreeModel, false, disposableRule.disposable)
     }
-
-    private fun resourceCache() = MockResourceCache.getInstance(projectRule.project)
 }

@@ -13,10 +13,10 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.DumbAware
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
-import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.activeCredentialProvider
 import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeAction
+import software.aws.toolkits.jetbrains.core.getResourceNow
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
@@ -92,7 +92,7 @@ class CreateIamDataSourceAction : SingleExplorerNodeAction<RdsNode>(message("rds
     internal fun createDatasource(node: RdsNode, registry: DataSourceRegistry) {
         val username = try {
             // use current STS user as username. Split on : because it comes back id:username
-            AwsResourceCache.getInstance(node.nodeProject).getResourceNow(StsResources.USER).substringAfter(':')
+            node.nodeProject.getResourceNow(StsResources.USER).substringAfter(':')
         } catch (e: Exception) {
             LOG.warn(e) { "Getting username from STS failed, falling back to master username" }
             node.dbInstance.masterUsername()

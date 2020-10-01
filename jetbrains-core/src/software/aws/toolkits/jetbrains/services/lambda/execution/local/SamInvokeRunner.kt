@@ -117,7 +117,7 @@ class SamInvokeRunner : AsyncProgramRunner<RunnerSettings>() {
                 buildingPromise.setError(it)
                 throw it
             }.whenComplete { _, exception ->
-                val account = AwsResourceCache.getInstance(state.environment.project)
+                val account = AwsResourceCache.getInstance()
                     .getResourceIfPresent(StsResources.ACCOUNT, lambdaSettings.region, lambdaSettings.credentials)
                 LambdaTelemetry.invokeLocal(
                     metadata = MetricEventMetadata(

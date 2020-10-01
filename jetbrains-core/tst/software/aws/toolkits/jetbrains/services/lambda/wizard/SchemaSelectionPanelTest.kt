@@ -14,7 +14,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.schemas.model.DescribeSchemaResponse
-import software.aws.toolkits.jetbrains.core.MockResourceCache
+import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.Resource
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SchemaSelectionPanelBase.Companion.DEFAULT_EVENT_DETAIL_TYPE
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SchemaSelectionPanelBase.Companion.DEFAULT_EVENT_SOURCE
@@ -32,6 +32,10 @@ class SchemaSelectionPanelTest {
     @Rule
     @JvmField
     val projectRule = ProjectRule()
+
+    @JvmField
+    @Rule
+    val resourceCache = MockResourceCacheRule()
 
     private val AWSToolkitUserAgent = "AWSToolkit"
 
@@ -89,7 +93,8 @@ class SchemaSelectionPanelTest {
     }
 
     private fun initMockResourceCache() {
-        getMockResourceCache().addEntry(
+        resourceCache.addEntry(
+            projectRule.project,
             SchemasResources.getSchema(REGISTRY_NAME, AWS_SCHEMA_NAME),
             DescribeSchemaResponse.builder()
                 .schemaName(AWS_SCHEMA_NAME)
@@ -97,7 +102,8 @@ class SchemaSelectionPanelTest {
                 .schemaVersion(SCHEMA_VERSION)
                 .build()
         )
-        getMockResourceCache().addEntry(
+        resourceCache.addEntry(
+            projectRule.project,
             SchemasResources.getSchema(REGISTRY_NAME, PARTNER_SCHEMA_NAME),
             DescribeSchemaResponse.builder()
                 .schemaName(PARTNER_SCHEMA_NAME)
@@ -105,7 +111,8 @@ class SchemaSelectionPanelTest {
                 .schemaVersion(SCHEMA_VERSION)
                 .build()
         )
-        getMockResourceCache().addEntry(
+        resourceCache.addEntry(
+            projectRule.project,
             SchemasResources.getSchema(REGISTRY_NAME, CUSTOMER_UPLOADED_SCHEMA_NAME),
             DescribeSchemaResponse.builder()
                 .schemaName(CUSTOMER_UPLOADED_SCHEMA_NAME)
@@ -113,7 +120,8 @@ class SchemaSelectionPanelTest {
                 .schemaVersion(SCHEMA_VERSION)
                 .build()
         )
-        getMockResourceCache().addEntry(
+        resourceCache.addEntry(
+            projectRule.project,
             SchemasResources.getSchema(REGISTRY_NAME, CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_NAME),
             DescribeSchemaResponse.builder()
                 .schemaName(CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_NAME)
@@ -121,11 +129,11 @@ class SchemaSelectionPanelTest {
                 .schemaVersion(SCHEMA_VERSION)
                 .build()
         )
-        getMockResourceCache()
-            .addEntry(
-                LIST_REGISTRIES_AND_SCHEMAS,
-                listOf(REGISTRY_ITEM, AWS_SCHEMA_ITEM, PARTNER_SCHEMA_ITEM, CUSTOMER_UPLOADED_SCHEMA_ITEM, CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_ITEM)
-            )
+        resourceCache.addEntry(
+            projectRule.project,
+            LIST_REGISTRIES_AND_SCHEMAS,
+            listOf(REGISTRY_ITEM, AWS_SCHEMA_ITEM, PARTNER_SCHEMA_ITEM, CUSTOMER_UPLOADED_SCHEMA_ITEM, CUSTOMER_UPLOADED_SCHEMA_MULTIPLE_TYPES_ITEM)
+        )
     }
 
     private fun initMockResourceSelector() {
@@ -266,6 +274,4 @@ class SchemaSelectionPanelTest {
         assertThat(schemaTemplateParameters?.templateExtraContext?.detailType).isEqualTo(DEFAULT_EVENT_DETAIL_TYPE)
         assertThat(schemaTemplateParameters?.templateExtraContext?.userAgent).isEqualTo(AWSToolkitUserAgent)
     }
-
-    private fun getMockResourceCache() = MockResourceCache.getInstance(projectRule.project)
 }

@@ -29,7 +29,7 @@ import org.slf4j.event.Level
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.jetbrains.core.AwsResourceCache
+import software.aws.toolkits.jetbrains.core.clearResourceForCurrentConnection
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
@@ -161,7 +161,7 @@ abstract class PseCliAction(val project: Project, val actionName: String, privat
                             project
                         )
                         // reset the cache
-                        AwsResourceCache.getInstance(project).clear(CloudDebuggingResources.LIST_INSTRUMENTED_RESOURCES)
+                        project.clearResourceForCurrentConnection(CloudDebuggingResources.LIST_INSTRUMENTED_RESOURCES)
                         callback?.invoke(true)
                     } else {
                         notifyError(
@@ -177,8 +177,8 @@ abstract class PseCliAction(val project: Project, val actionName: String, privat
                         val parent = selectedNode.parent
                         if (parent is EcsClusterNode) {
                             // dump cached values relating to altered service
-                            AwsResourceCache.getInstance(project).clear(describeService(parent.resourceArn(), selectedNode.resourceArn()))
-                            AwsResourceCache.getInstance(project).clear(listServiceArns(parent.resourceArn()))
+                            project.clearResourceForCurrentConnection(describeService(parent.resourceArn(), selectedNode.resourceArn()))
+                            project.clearResourceForCurrentConnection(listServiceArns(parent.resourceArn()))
                             runInEdt {
                                 // redraw explorer from the cluster downwards
                                 val explorer = ExplorerToolWindow.getInstance(project)
@@ -188,7 +188,7 @@ abstract class PseCliAction(val project: Project, val actionName: String, privat
                         // If this wasn't run through a node, just redraw the whole tree
                         // Open to suggestions to making this smarter.
                     } else {
-                        AwsResourceCache.getInstance(project).clear()
+                        project.clearResourceForCurrentConnection()
                         runInEdt {
                             // redraw explorer from the cluster downwards
                             val explorer = ExplorerToolWindow.getInstance(project)

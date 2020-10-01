@@ -15,8 +15,8 @@ import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryBatcher
 import software.aws.toolkits.core.telemetry.TelemetryPublisher
 import software.aws.toolkits.core.utils.tryOrNull
-import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.activeRegion
+import software.aws.toolkits.jetbrains.core.getResourceIfPresent
 import software.aws.toolkits.jetbrains.services.sts.StsResources
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import java.util.concurrent.atomic.AtomicBoolean
@@ -42,7 +42,7 @@ abstract class TelemetryService(private val publisher: TelemetryPublisher, priva
         record(metricEventMetadata, buildEvent)
     }
 
-    private fun Project.activeAwsAccountIfKnown(): String? = tryOrNull { AwsResourceCache.getInstance(this).getResourceIfPresent(StsResources.ACCOUNT) }
+    private fun Project.activeAwsAccountIfKnown(): String? = tryOrNull { this.getResourceIfPresent(StsResources.ACCOUNT) }
 
     @Synchronized
     fun setTelemetryEnabled(isEnabled: Boolean) {

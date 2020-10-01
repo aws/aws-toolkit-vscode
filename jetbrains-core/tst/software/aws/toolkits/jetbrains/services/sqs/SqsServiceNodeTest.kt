@@ -21,11 +21,12 @@ class SqsServiceNodeTest {
 
     @JvmField
     @Rule
-    val resourceCache = MockResourceCacheRule(projectRule)
+    val resourceCache = MockResourceCacheRule()
 
     @Test
     fun `Sqs queues are listed`() {
-        resourceCache.get().addEntry(
+        resourceCache.addEntry(
+            projectRule.project,
             SqsResources.LIST_QUEUE_URLS,
             listOf(
                 "https://sqs.us-east-1.amazonaws.com/123456789012/test2",
@@ -49,14 +50,14 @@ class SqsServiceNodeTest {
 
     @Test
     fun `No queues listed`() {
-        resourceCache.get().addEntry(SqsResources.LIST_QUEUE_URLS, listOf())
+        resourceCache.addEntry(projectRule.project, SqsResources.LIST_QUEUE_URLS, listOf())
         val children = SqsServiceNode(projectRule.project, SQS_EXPLORER_NODE).children
         assertThat(children).hasOnlyOneElementSatisfying { it is AwsExplorerEmptyNode }
     }
 
     @Test
     fun `Error loading queues`() {
-        resourceCache.get().addEntry(SqsResources.LIST_QUEUE_URLS, CompletableFutureUtils.failedFuture(RuntimeException("Simulated error")))
+        resourceCache.addEntry(projectRule.project, SqsResources.LIST_QUEUE_URLS, CompletableFutureUtils.failedFuture(RuntimeException("Simulated error")))
         val children = SqsServiceNode(projectRule.project, SQS_EXPLORER_NODE).children
         assertThat(children).hasOnlyOneElementSatisfying { it is AwsExplorerErrorNode }
     }

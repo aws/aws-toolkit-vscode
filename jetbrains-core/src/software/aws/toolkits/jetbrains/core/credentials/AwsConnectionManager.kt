@@ -34,7 +34,7 @@ import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AwsTelemetry
 
 abstract class AwsConnectionManager(private val project: Project) : SimpleModificationTracker(), Disposable {
-    private val resourceCache = AwsResourceCache.getInstance(project)
+    private val resourceCache = AwsResourceCache.getInstance()
     private val regionProvider = AwsRegionProvider.getInstance()
     private val credentialsRegionHandler = CredentialsRegionHandler.getInstance(project)
 

@@ -257,8 +257,7 @@ class EcsCloudDebugRunConfiguration(project: Project, private val configFactory:
             }
         }.filterNotNull().toMutableSet()
 
-        val resourceCache = AwsResourceCache.getInstance(project)
-
+        val resourceCache = AwsResourceCache.getInstance()
         val validContainerNames = if (deepCheck) {
             try {
                 val service = resourceCache.getResourceNow(

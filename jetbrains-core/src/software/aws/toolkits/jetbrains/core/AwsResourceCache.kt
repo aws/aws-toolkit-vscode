@@ -6,7 +6,7 @@ package software.aws.toolkits.jetbrains.core
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.util.Alarm
 import com.intellij.util.AlarmFactory
@@ -18,6 +18,7 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
@@ -34,27 +35,21 @@ import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 import kotlin.reflect.KClass
 
+// Getting resources can take a long time on a slow connection or if there are a lot of resources. This call should
+// always be done in an async context so it should be OK to take multiple seconds.
+private val DEFAULT_TIMEOUT = Duration.ofSeconds(30)
+
 /**
  * Intended to prevent repeated unnecessary calls to AWS to understand resource state.
  *
  * Will cache responses from AWS by [AwsRegion]/[ToolkitCredentialsProvider] - generically applicable to any AWS call.
  */
 interface AwsResourceCache {
-
     /**
-     * Get a [resource] either by making a call or returning it from the cache if present and unexpired. Uses the currently [AwsRegion]
-     * & [ToolkitCredentialsProvider] active in [AwsConnectionManager].
+     * Get a [resource] either by making a call or returning it from the cache if present and unexpired.
      *
      * @param[useStale] if an exception occurs attempting to refresh the resource return a cached version if it exists (even if it's expired). Default: true
      * @param[forceFetch] force the resource to refresh (and update cache) even if a valid cache version exists. Default: false
-     */
-    fun <T> getResource(resource: Resource<T>, useStale: Boolean = true, forceFetch: Boolean = false): CompletionStage<T>
-
-    /**
-     * @see [getResource]
-     *
-     * @param[region] the specific [AwsRegion] to use for this resource
-     * @param[credentialProvider] the specific [ToolkitCredentialsProvider] to use for this resource
      */
     fun <T> getResource(
         resource: Resource<T>,
@@ -65,13 +60,14 @@ interface AwsResourceCache {
     ): CompletionStage<T>
 
     /**
-     * Blocking version of [getResource]
-     *
-     * @param[useStale] if an exception occurs attempting to refresh the resource return a cached version if it exists (even if it's expired). Default: true
-     * @param[forceFetch] force the resource to refresh (and update cache) even if a valid cache version exists. Default: false
+     * @see [getResource]
      */
-    fun <T> getResourceNow(resource: Resource<T>, timeout: Duration = DEFAULT_TIMEOUT, useStale: Boolean = true, forceFetch: Boolean = false): T =
-        wait(timeout) { getResource(resource, useStale, forceFetch) }
+    fun <T> getResource(
+        resource: Resource<T>,
+        connectionSettings: ConnectionSettings,
+        useStale: Boolean = true,
+        forceFetch: Boolean = false
+    ): CompletionStage<T> = getResource(resource, connectionSettings.region, connectionSettings.credentials, useStale, forceFetch)
 
     /**
      * Blocking version of [getResource]
@@ -89,11 +85,15 @@ interface AwsResourceCache {
     ): T = wait(timeout) { getResource(resource, region, credentialProvider, useStale, forceFetch) }
 
     /**
-     * Gets the [resource] if it exists in the cache.
-     *
-     * @param[useStale] return a cached version if it exists (even if it's expired). Default: true
+     * Blocking version of [getResource]
      */
-    fun <T> getResourceIfPresent(resource: Resource<T>, useStale: Boolean = true): T?
+    fun <T> getResourceNow(
+        resource: Resource<T>,
+        connectionSettings: ConnectionSettings,
+        timeout: Duration = DEFAULT_TIMEOUT,
+        useStale: Boolean = true,
+        forceFetch: Boolean = false
+    ): T = getResourceNow(resource, connectionSettings.region, connectionSettings.credentials, timeout, useStale, forceFetch)
 
     /**
      * Gets the [resource] if it exists in the cache.
@@ -104,27 +104,29 @@ interface AwsResourceCache {
     fun <T> getResourceIfPresent(resource: Resource<T>, region: AwsRegion, credentialProvider: ToolkitCredentialsProvider, useStale: Boolean = true): T?
 
     /**
+     * Gets the [resource] if it exists in the cache.
+     */
+    fun <T> getResourceIfPresent(resource: Resource<T>, connectionSettings: ConnectionSettings, useStale: Boolean = true): T? =
+        getResourceIfPresent(resource, connectionSettings.region, connectionSettings.credentials, useStale)
+
+    /**
      * Clears the contents of the cache across all regions, credentials and resource types.
      */
     fun clear()
 
     /**
-     * Clears the contents of the cache for the specific [resource] type, in the currently active [AwsRegion] & [ToolkitCredentialsProvider]
+     * Clears the contents of the cache for the specific [ConnectionSettings]
      */
-    fun clear(resource: Resource<*>)
+    fun clear(connectionSettings: ConnectionSettings)
 
     /**
-     * Clears the contents of the cache for the specific [resource] type, [AwsRegion] & [ToolkitCredentialsProvider]
+     * Clears the contents of the cache for the specific [resource] type] & [ConnectionSettings]
      */
-    fun clear(resource: Resource<*>, region: AwsRegion, credentialProvider: ToolkitCredentialsProvider)
+    fun clear(resource: Resource<*>, connectionSettings: ConnectionSettings)
 
     companion object {
         @JvmStatic
-        fun getInstance(project: Project): AwsResourceCache = ServiceManager.getService(project, AwsResourceCache::class.java)
-
-        // Getting resources can take a long time on a slow connection or if there are a lot of resources. This call should
-        // always be done in an async context so it should be OK to take multiple seconds.
-        private val DEFAULT_TIMEOUT = Duration.ofSeconds(30)
+        fun getInstance(): AwsResourceCache = service()
 
         private fun <T> wait(timeout: Duration, call: () -> CompletionStage<T>) = try {
             call().toCompletableFuture().get(timeout.toMillis(), TimeUnit.MILLISECONDS)
@@ -134,8 +136,47 @@ interface AwsResourceCache {
     }
 }
 
-fun <T> Project.getResource(resource: Resource<T>, useStale: Boolean = true, forceFetch: Boolean = false) =
-    AwsResourceCache.getInstance(this).getResource(resource, useStale, forceFetch)
+/**
+ * Get a [resource] either by making a call or returning it from the cache if present and unexpired. Uses the currently [AwsRegion]
+ * & [ToolkitCredentialsProvider] active in [AwsConnectionManager].
+ *
+ * @param[useStale] if an exception occurs attempting to refresh the resource return a cached version if it exists (even if it's expired). Default: true
+ * @param[forceFetch] force the resource to refresh (and update cache) even if a valid cache version exists. Default: false
+ */
+fun <T> Project.getResource(resource: Resource<T>, useStale: Boolean = true, forceFetch: Boolean = false): CompletionStage<T> =
+    AwsResourceCache.getInstance().getResource(resource, this.getConnectionSettings(), useStale, forceFetch)
+
+/**
+ * Blocking version of [getResource]
+ *
+ * @param[useStale] if an exception occurs attempting to refresh the resource return a cached version if it exists (even if it's expired). Default: true
+ * @param[forceFetch] force the resource to refresh (and update cache) even if a valid cache version exists. Default: false
+ */
+fun <T> Project.getResourceNow(resource: Resource<T>, timeout: Duration = DEFAULT_TIMEOUT, useStale: Boolean = true, forceFetch: Boolean = false): T =
+    AwsResourceCache.getInstance().getResourceNow(resource, this.getConnectionSettings(), timeout, useStale, forceFetch)
+
+/**
+ * Gets the [resource] if it exists in the cache.
+ *
+ * @param[useStale] return a cached version if it exists (even if it's expired). Default: true
+ */
+fun <T> Project.getResourceIfPresent(resource: Resource<T>, useStale: Boolean = true): T? =
+    AwsResourceCache.getInstance().getResourceIfPresent(resource, this.getConnectionSettings(), useStale)
+
+/**
+ * Clears the contents of the cache for the specific [resource] type, in the currently active [ConnectionSettings]
+ */
+fun Project.clearResourceForCurrentConnection(resource: Resource<*>) =
+    AwsResourceCache.getInstance().clear(resource, this.getConnectionSettings())
+
+/**
+ * Clears the contents of the cache of all resource types for the currently active [ConnectionSettings]
+ */
+fun Project.clearResourceForCurrentConnection() =
+    AwsResourceCache.getInstance().clear(this.getConnectionSettings())
+
+private fun Project.getConnectionSettings(): ConnectionSettings = AwsConnectionManager.getInstance(this).connectionSettings()
+    ?: throw IllegalStateException("Bug: ResourceCache was accessed with invalid ConnectionSettings")
 
 sealed class Resource<T> {
 
@@ -143,7 +184,7 @@ sealed class Resource<T> {
      * A [Cached] resource is one whose fetch is potentially expensive, the result of which should be memoized for a period of time ([expiry]).
      */
     abstract class Cached<T> : Resource<T>() {
-        abstract fun fetch(project: Project, region: AwsRegion, credentials: ToolkitCredentialsProvider): T
+        abstract fun fetch(region: AwsRegion, credentials: ToolkitCredentialsProvider): T
         open fun expiry(): Duration = DEFAULT_EXPIRY
         abstract val id: String
 
@@ -178,7 +219,7 @@ class ClientBackedCachedResource<ReturnType, ClientType : SdkClient>(
 
     constructor(sdkClientClass: KClass<ClientType>, id: String, fetchCall: ClientType.() -> ReturnType) : this(sdkClientClass, id, null, fetchCall)
 
-    override fun fetch(project: Project, region: AwsRegion, credentials: ToolkitCredentialsProvider): ReturnType {
+    override fun fetch(region: AwsRegion, credentials: ToolkitCredentialsProvider): ReturnType {
         val client = AwsClientManager.getInstance().getClient(sdkClientClass, credentials, region)
         return fetchCall(client)
     }
@@ -194,7 +235,7 @@ class ExecutableBackedCacheResource<ReturnType, ExecType : ExecutableType<*>>(
     private val fetchCall: GeneralCommandLine.() -> ReturnType
 ) : Resource.Cached<ReturnType>() {
 
-    override fun fetch(project: Project, region: AwsRegion, credentials: ToolkitCredentialsProvider): ReturnType {
+    override fun fetch(region: AwsRegion, credentials: ToolkitCredentialsProvider): ReturnType {
         val executableType = ExecutableType.getExecutable(executableTypeClass.java)
 
         val executable = ExecutableManager.getInstance().getExecutableIfPresent(executableType).let {
@@ -217,26 +258,21 @@ class ExecutableBackedCacheResource<ReturnType, ExecType : ExecutableType<*>>(
 }
 
 class DefaultAwsResourceCache(
-    private val project: Project,
     private val clock: Clock,
     private val maximumCacheEntries: Int,
     private val maintenanceInterval: Duration
 ) : AwsResourceCache, Disposable, ToolkitCredentialsChangeListener {
 
     @Suppress("unused")
-    constructor(project: Project) : this(project, Clock.systemDefaultZone(), MAXIMUM_CACHE_ENTRIES, DEFAULT_MAINTENANCE_INTERVAL)
+    constructor() : this(Clock.systemDefaultZone(), MAXIMUM_CACHE_ENTRIES, DEFAULT_MAINTENANCE_INTERVAL)
 
     private val cache = ConcurrentHashMap<CacheKey, Entry<*>>()
-    private val accountSettings by lazy { AwsConnectionManager.getInstance(project) }
     private val alarm = AlarmFactory.getInstance().create(Alarm.ThreadToUse.POOLED_THREAD, this)
 
     init {
         ApplicationManager.getApplication().messageBus.connect(this).subscribe(CredentialManager.CREDENTIALS_CHANGED, this)
         scheduleCacheMaintenance()
     }
-
-    override fun <T> getResource(resource: Resource<T>, useStale: Boolean, forceFetch: Boolean) =
-        getResource(resource, accountSettings.activeRegion, accountSettings.activeCredentialProvider, useStale, forceFetch)
 
     override fun <T> getResource(
         resource: Resource<T>,
@@ -286,9 +322,6 @@ class DefaultAwsResourceCache(
         }
     }
 
-    override fun <T> getResourceIfPresent(resource: Resource<T>, useStale: Boolean): T? =
-        getResourceIfPresent(resource, accountSettings.activeRegion, accountSettings.activeCredentialProvider, useStale)
-
     override fun <T> getResourceIfPresent(resource: Resource<T>, region: AwsRegion, credentialProvider: ToolkitCredentialsProvider, useStale: Boolean): T? =
         when (resource) {
             is Resource.Cached<T> -> {
@@ -301,19 +334,19 @@ class DefaultAwsResourceCache(
             is Resource.View<*, T> -> getResourceIfPresent(resource.underlying, region, credentialProvider, useStale)?.let { resource.doMap(it) }
         }
 
-    override fun clear(resource: Resource<*>) {
-        clear(resource, accountSettings.activeRegion, accountSettings.activeCredentialProvider)
-    }
-
-    override fun clear(resource: Resource<*>, region: AwsRegion, credentialProvider: ToolkitCredentialsProvider) {
+    override fun clear(resource: Resource<*>, connectionSettings: ConnectionSettings) {
         when (resource) {
-            is Resource.Cached<*> -> cache.remove(CacheKey(resource.id, region.id, credentialProvider.id))
-            is Resource.View<*, *> -> clear(resource.underlying, region, credentialProvider)
+            is Resource.Cached<*> -> cache.remove(CacheKey(resource.id, connectionSettings.region.id, connectionSettings.credentials.id))
+            is Resource.View<*, *> -> clear(resource.underlying, connectionSettings)
         }
     }
 
     override fun clear() {
         cache.clear()
+    }
+
+    override fun clear(connectionSettings: ConnectionSettings) {
+        cache.keys.removeIf { it.credentialsId == connectionSettings.credentials.id && it.regionId == connectionSettings.region.id }
     }
 
     override fun dispose() {
@@ -343,7 +376,7 @@ class DefaultAwsResourceCache(
     }
 
     private fun <T> fetch(context: Context<T>): Entry<T> {
-        val value = context.resource.fetch(project, context.region, context.credentials)
+        val value = context.resource.fetch(context.region, context.credentials)
         return Entry(clock.instant().plus(context.resource.expiry()), value)
     }
 

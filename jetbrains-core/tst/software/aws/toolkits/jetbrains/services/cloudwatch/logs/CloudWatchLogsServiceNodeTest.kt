@@ -5,11 +5,10 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs
 
 import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogGroup
-import software.aws.toolkits.jetbrains.core.MockResourceCache
+import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerErrorNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.CloudWatchRootNode
@@ -21,14 +20,13 @@ class CloudWatchLogsServiceNodeTest {
     @Rule
     val projectRule = ProjectRule()
 
-    @Before
-    fun setUp() {
-        resourceCache().clear()
-    }
+    @JvmField
+    @Rule
+    val resourceCache = MockResourceCacheRule()
 
     @Test
     fun logGroupsAreListed() {
-        resourceCache().logGroups(listOf("bcd", "abc", "zzz", "AEF"))
+        logGroups(listOf("bcd", "abc", "zzz", "AEF"))
 
         val children = CloudWatchLogsServiceNode(projectRule.project, CLOUDWATCH_LOGS_EXPLORER_SERVICE_NODE).children
 
@@ -38,7 +36,7 @@ class CloudWatchLogsServiceNodeTest {
 
     @Test
     fun noLogGroupsShowsEmptyList() {
-        resourceCache().logGroups(emptyList())
+        logGroups(emptyList())
 
         val children = CloudWatchLogsServiceNode(projectRule.project, CLOUDWATCH_LOGS_EXPLORER_SERVICE_NODE).children
 
@@ -48,7 +46,8 @@ class CloudWatchLogsServiceNodeTest {
 
     @Test
     fun exceptionLeadsToErrorNode() {
-        resourceCache().addEntry(
+        resourceCache.addEntry(
+            projectRule.project,
             CloudWatchResources.LIST_LOG_GROUPS,
             CompletableFuture<List<LogGroup>>().also {
                 it.completeExceptionally(RuntimeException("Simulated error"))
@@ -61,10 +60,9 @@ class CloudWatchLogsServiceNodeTest {
         assertThat(children).allMatch { it is AwsExplorerErrorNode }
     }
 
-    private fun resourceCache() = MockResourceCache.getInstance(projectRule.project)
-
-    private fun MockResourceCache.logGroups(names: List<String>) {
-        this.addEntry(
+    private fun logGroups(names: List<String>) {
+        resourceCache.addEntry(
+            projectRule.project,
             CloudWatchResources.LIST_LOG_GROUPS,
             CompletableFuture.completedFuture(names.map { LogGroup.builder().arn("arn:aws:logs:us-west-2:0123456789:log-group:$it").logGroupName(it).build() })
         )

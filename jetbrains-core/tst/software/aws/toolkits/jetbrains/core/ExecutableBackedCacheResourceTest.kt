@@ -103,7 +103,7 @@ class ExecutableBackedCacheResourceTest {
             assertionBlock.invoke(this)
         }
 
-        return cacheResource.fetch(projectRule.project, MockRegionProvider.getInstance().defaultRegion(), mockCredentials())
+        return cacheResource.fetch(MockRegionProvider.getInstance().defaultRegion(), mockCredentials())
     }
 
     private fun mockCredentials(): ToolkitCredentialsProvider {
