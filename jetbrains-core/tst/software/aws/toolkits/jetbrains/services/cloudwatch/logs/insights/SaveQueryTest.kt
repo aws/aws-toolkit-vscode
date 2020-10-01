@@ -39,7 +39,7 @@ class SaveQueryTest {
 
     @JvmField
     @Rule
-    val mockClientManagerRule = MockClientManagerRule(projectRule)
+    val mockClientManagerRule = MockClientManagerRule()
 
     @JvmField
     @Rule

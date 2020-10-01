@@ -33,7 +33,7 @@ class DetailedLogRecordTest {
 
     @JvmField
     @Rule
-    val mockClientManagerRule = MockClientManagerRule(projectRule)
+    val mockClientManagerRule = MockClientManagerRule()
 
     private lateinit var client: CloudWatchLogsClient
 

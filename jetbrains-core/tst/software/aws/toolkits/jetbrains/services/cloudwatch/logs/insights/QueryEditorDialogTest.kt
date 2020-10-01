@@ -45,7 +45,7 @@ class QueryEditorDialogTest {
 
     @JvmField
     @Rule
-    val mockClientManagerRule = MockClientManagerRule(projectRule)
+    val mockClientManagerRule = MockClientManagerRule()
 
     @JvmField
     @Rule

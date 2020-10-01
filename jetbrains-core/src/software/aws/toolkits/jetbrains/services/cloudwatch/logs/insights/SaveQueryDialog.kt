@@ -13,8 +13,8 @@ import kotlinx.coroutines.withTimeout
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
-import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.resources.CloudWatchResources
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
@@ -45,7 +45,10 @@ class SaveQueryDialog(
             close(OK_EXIT_CODE)
         }
     }
-    private val client = project.awsClient<CloudWatchLogsClient>(connectionSettings)
+    private val client = let {
+        val (credentials, region) = connectionSettings
+        AwsClientManager.getInstance().getClient<CloudWatchLogsClient>(credentials, region)
+    }
     private val resourceCache = AwsResourceCache.getInstance(project)
 
     init {

@@ -13,8 +13,8 @@ import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
+import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
-import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.resources.CloudWatchResources
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
@@ -172,7 +172,8 @@ class QueryEditorDialog(
     }
 
     fun startQueryAsync(queryDetails: QueryDetails) = async {
-        val client = project.awsClient<CloudWatchLogsClient>(queryDetails.connectionSettings)
+        val (credentials, region) = queryDetails.connectionSettings
+        val client = AwsClientManager.getInstance().getClient<CloudWatchLogsClient>(credentials, region)
         val timeRange = queryDetails.getQueryRange()
         val queryString = queryDetails.getQueryString()
         try {
