@@ -26,7 +26,7 @@ import software.aws.toolkits.resources.message
 class SendMessagePaneTest : BaseCoroutineTest() {
     @JvmField
     @Rule
-    val mockClientManager = MockClientManagerRule(projectRule)
+    val mockClientManager = MockClientManagerRule()
 
     private lateinit var client: SqsClient
     private lateinit var region: AwsRegion

@@ -35,7 +35,7 @@ class EditAttributesDialogTest {
 
     @JvmField
     @Rule
-    val mockClientManagerRule = MockClientManagerRule(projectRule)
+    val mockClientManagerRule = MockClientManagerRule()
 
     @Before
     fun setUp() {

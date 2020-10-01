@@ -10,7 +10,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ValidationInfo
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
 import software.amazon.awssdk.services.secretsmanager.model.SecretListEntry
-import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.datagrip.auth.SecretsManagerDbSecret
 import software.aws.toolkits.jetbrains.services.rds.RdsNode
@@ -25,7 +25,7 @@ object DatabaseSecret {
     fun getSecret(project: Project, secret: SecretListEntry?): Pair<SecretsManagerDbSecret, String>? {
         secret ?: return null
         return try {
-            val value = AwsClientManager.getInstance(project).getClient<SecretsManagerClient>().getSecretValue { it.secretId(secret.arn()) }
+            val value = project.awsClient<SecretsManagerClient>().getSecretValue { it.secretId(secret.arn()) }
             val dbSecret = objectMapper.readValue<SecretsManagerDbSecret>(value.secretString())
             Pair(dbSecret, secret.arn())
         } catch (e: Exception) {

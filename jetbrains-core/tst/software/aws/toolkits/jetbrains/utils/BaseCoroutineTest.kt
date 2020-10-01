@@ -24,7 +24,7 @@ abstract class BaseCoroutineTest(timeoutSeconds: Int = 15) {
 
     @JvmField
     @Rule
-    val mockClientManagerRule = MockClientManagerRule(projectRule)
+    val mockClientManagerRule = MockClientManagerRule()
 
     @JvmField
     @Rule

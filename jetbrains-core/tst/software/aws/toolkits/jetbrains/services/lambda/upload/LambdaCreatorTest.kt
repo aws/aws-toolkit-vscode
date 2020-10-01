@@ -44,7 +44,7 @@ abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUpload
 
     @Rule
     @JvmField
-    val mockClientManager = MockClientManagerRule { projectRule.project }
+    val mockClientManager = MockClientManagerRule()
 
     @Test
     fun testCreation() {
@@ -89,7 +89,7 @@ abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUpload
             """
         ).containingFile
 
-        val lambdaCreator = LambdaCreatorFactory.create(mockClientManager.manager(), lambdaBuilder)
+        val lambdaCreator = LambdaCreatorFactory.create(projectRule.project, lambdaBuilder)
         lambdaCreator.createLambda(projectRule.module, psiFile, functionDetails, s3Bucket).toCompletableFuture()
             .get(5, TimeUnit.SECONDS)
 
@@ -157,7 +157,7 @@ abstract class LambdaCreatorTestBase(private val functionDetails: FunctionUpload
             """
         ).containingFile
 
-        val lambdaCreator = LambdaCreatorFactory.create(mockClientManager.manager(), lambdaBuilder)
+        val lambdaCreator = LambdaCreatorFactory.create(projectRule.project, lambdaBuilder)
         lambdaCreator.updateLambda(projectRule.module, psiFile, functionDetails, s3Bucket).toCompletableFuture()
             .get(5, TimeUnit.SECONDS)
 

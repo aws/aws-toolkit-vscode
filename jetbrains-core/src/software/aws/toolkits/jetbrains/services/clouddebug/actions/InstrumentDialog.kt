@@ -15,7 +15,6 @@ import software.amazon.awssdk.services.iam.IamClient
 import software.amazon.awssdk.services.iam.model.PolicyEvaluationDecisionType
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
-import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.help.HelpIds
@@ -128,7 +127,7 @@ class InstrumentDialog(private val project: Project, val clusterArn: String, val
     // Auto-select task-role (if it exists in the task-definition). Runs on a background thread.
     private fun attemptSelectRole() =
         try {
-            val client: EcsClient = AwsClientManager.getInstance(project).getClient()
+            val client: EcsClient = project.awsClient()
             val service = client.describeServices {
                 it.cluster(clusterArn)
                 it.services(serviceArn)

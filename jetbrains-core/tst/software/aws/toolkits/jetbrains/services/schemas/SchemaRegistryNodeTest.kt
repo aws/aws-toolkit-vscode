@@ -23,7 +23,7 @@ class SchemaRegistryNodeTest {
 
     @JvmField
     @Rule
-    val mockClientManager = MockClientManagerRule(projectRule)
+    val mockClientManager = MockClientManagerRule()
 
     @Before
     fun setUp() {

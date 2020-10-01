@@ -179,7 +179,7 @@ class ClientBackedCachedResource<ReturnType, ClientType : SdkClient>(
     constructor(sdkClientClass: KClass<ClientType>, id: String, fetchCall: ClientType.() -> ReturnType) : this(sdkClientClass, id, null, fetchCall)
 
     override fun fetch(project: Project, region: AwsRegion, credentials: ToolkitCredentialsProvider): ReturnType {
-        val client = AwsClientManager.getInstance(project).getClient(sdkClientClass, credentials, region)
+        val client = AwsClientManager.getInstance().getClient(sdkClientClass, credentials, region)
         return fetchCall(client)
     }
 

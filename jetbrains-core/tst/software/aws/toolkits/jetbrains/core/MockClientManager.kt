@@ -3,19 +3,16 @@
 
 package software.aws.toolkits.jetbrains.core
 
-import com.intellij.openapi.components.ServiceManager
-import com.intellij.openapi.project.Project
-import com.intellij.testFramework.ProjectRule
+import com.intellij.openapi.components.service
 import org.junit.rules.ExternalResource
 import software.amazon.awssdk.core.SdkClient
 import software.aws.toolkits.core.ToolkitClientManager
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.delegateMock
-import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
 import kotlin.reflect.KClass
 
-class MockClientManager(project: Project) : AwsClientManager(project) {
+class MockClientManager : AwsClientManager() {
     private data class Key(
         val clazz: KClass<out SdkClient>,
         val region: AwsRegion? = null,
@@ -25,10 +22,10 @@ class MockClientManager(project: Project) : AwsClientManager(project) {
     private val mockClients = mutableMapOf<Key, SdkClient>()
 
     @Suppress("UNCHECKED_CAST")
-    override fun <T : SdkClient> createNewClient(key: AwsClientKey, region: AwsRegion, credProvider: ToolkitCredentialsProvider): T =
-        mockClients[Key(key.serviceClass, region, credProvider.id)] as? T
-            ?: mockClients[Key(key.serviceClass)] as? T
-            ?: throw IllegalStateException("No mock registered for $key")
+    override fun <T : SdkClient> createNewClient(sdkClass: KClass<T>, region: AwsRegion, credProvider: ToolkitCredentialsProvider): T =
+        mockClients[Key(sdkClass, region, credProvider.id)] as? T
+            ?: mockClients[Key(sdkClass)] as? T
+            ?: throw IllegalStateException("No mock registered for $sdkClass")
 
     override fun dispose() {
         super.dispose()
@@ -54,16 +51,13 @@ class MockClientManager(project: Project) : AwsClientManager(project) {
 }
 
 // Scoped to this file only, users should be using MockClientManagerRule to enforce cleanup correctly
-private fun getMockInstance(project: Project): MockClientManager = ServiceManager.getService(project, ToolkitClientManager::class.java) as MockClientManager
+private fun getMockInstance(): MockClientManager = service<ToolkitClientManager>() as MockClientManager
 
-class MockClientManagerRule(private val project: () -> Project) : ExternalResource() {
-    constructor(projectRule: ProjectRule) : this({ projectRule.project })
-    constructor(projectRule: CodeInsightTestFixtureRule) : this({ projectRule.project })
-
+class MockClientManagerRule : ExternalResource() {
     private lateinit var mockClientManager: MockClientManager
 
     override fun before() {
-        mockClientManager = getMockInstance(project())
+        mockClientManager = getMockInstance()
     }
 
     override fun after() {

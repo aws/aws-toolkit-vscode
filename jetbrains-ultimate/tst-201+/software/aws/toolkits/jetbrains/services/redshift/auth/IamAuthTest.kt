@@ -42,7 +42,7 @@ class IamAuthTest {
 
     @Rule
     @JvmField
-    val mockClientManager = MockClientManagerRule { projectRule.project }
+    val mockClientManager = MockClientManagerRule()
 
     private val mockCreds = AwsBasicCredentials.create("Access", "ItsASecret")
 

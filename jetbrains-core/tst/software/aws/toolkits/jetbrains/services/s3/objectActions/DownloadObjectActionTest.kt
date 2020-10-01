@@ -50,7 +50,7 @@ class DownloadObjectActionTest {
 
     @Rule
     @JvmField
-    val mockClientManager = MockClientManagerRule(projectRule)
+    val mockClientManager = MockClientManagerRule()
 
     @Rule
     @JvmField

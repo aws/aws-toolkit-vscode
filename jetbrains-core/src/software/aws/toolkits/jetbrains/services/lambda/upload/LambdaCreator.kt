@@ -13,7 +13,7 @@ import software.amazon.awssdk.services.lambda.model.FunctionCode
 import software.amazon.awssdk.services.lambda.model.UpdateFunctionCodeRequest
 import software.amazon.awssdk.services.lambda.model.UpdateFunctionConfigurationRequest
 import software.amazon.awssdk.services.s3.S3Client
-import software.aws.toolkits.core.ToolkitClientManager
+import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderUtils
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
@@ -27,10 +27,10 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 
 object LambdaCreatorFactory {
-    fun create(clientManager: ToolkitClientManager, builder: LambdaBuilder): LambdaCreator = LambdaCreator(
+    fun create(project: Project, builder: LambdaBuilder): LambdaCreator = LambdaCreator(
         builder,
-        CodeUploader(clientManager.getClient()),
-        LambdaFunctionCreator(clientManager.getClient())
+        CodeUploader(project.awsClient()),
+        LambdaFunctionCreator(project.awsClient())
     )
 }
 

@@ -31,7 +31,7 @@ class DeleteGroupActionTest {
 
     @JvmField
     @Rule
-    val mockClientManager = MockClientManagerRule(projectRule)
+    val mockClientManager = MockClientManagerRule()
 
     private val stream = LogStream.builder().logStreamName("eman").build()
     private lateinit var cloudwatchmock: CloudWatchLogsClient

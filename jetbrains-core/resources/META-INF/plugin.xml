@@ -177,7 +177,7 @@
                             serviceImplementation="software.aws.toolkits.jetbrains.core.executables.DefaultExecutableManager"/>
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.core.notification.NoticeManager"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.notification.DefaultNoticeManager"/>
-        <projectService serviceInterface="software.aws.toolkits.core.ToolkitClientManager"
+        <applicationService serviceInterface="software.aws.toolkits.core.ToolkitClientManager"
                         serviceImplementation="software.aws.toolkits.jetbrains.core.AwsClientManager"
                         testServiceImplementation="software.aws.toolkits.jetbrains.core.MockClientManager"/>
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.explorer.ExplorerToolWindow"/>

@@ -18,7 +18,6 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtil
 import org.apache.commons.lang.exception.ExceptionUtils
 import software.amazon.awssdk.services.schemas.model.SchemaVersionSummary
-import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
@@ -249,7 +248,7 @@ class DownloadCodeForSchemaDialog(
             super.doAction(e)
             if (doValidateAll().isNotEmpty()) return
 
-            downloadSchemaCode(SchemaCodeDownloader.create(AwsClientManager.getInstance(project)))
+            downloadSchemaCode(SchemaCodeDownloader.create(project))
         }
     }
 

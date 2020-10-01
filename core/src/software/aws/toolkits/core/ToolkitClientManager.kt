@@ -41,45 +41,32 @@ abstract class ToolkitClientManager {
     protected abstract val userAgent: String
 
     inline fun <reified T : SdkClient> getClient(
-        credentialsProviderOverride: ToolkitCredentialsProvider? = null,
-        regionOverride: AwsRegion? = null
-    ): T = this.getClient(T::class, credentialsProviderOverride, regionOverride)
+        credProvider: ToolkitCredentialsProvider,
+        region: AwsRegion
+    ): T = this.getClient(T::class, credProvider, region)
 
     @Suppress("UNCHECKED_CAST")
     open fun <T : SdkClient> getClient(
-        clz: KClass<T>,
-        credentialsProviderOverride: ToolkitCredentialsProvider? = null,
-        regionOverride: AwsRegion? = null
+        sdkClass: KClass<T>,
+        credProvider: ToolkitCredentialsProvider,
+        region: AwsRegion
     ): T {
-        val credProvider = credentialsProviderOverride ?: getCredentialsProvider()
-        val region = regionOverride ?: getRegion()
-
         val key = AwsClientKey(
             credentialProviderId = credProvider.id,
             region = region,
-            serviceClass = clz
+            serviceClass = sdkClass
         )
 
         val serviceId = key.serviceClass.java.getField("SERVICE_NAME").get(null) as String
         if (serviceId !in GLOBAL_SERVICE_DENY_LIST && getRegionProvider().isServiceGlobal(region, serviceId)) {
             val globalRegion = getRegionProvider().getGlobalRegionForService(region, serviceId)
-            return cachedClients.computeIfAbsent(key.copy(region = globalRegion)) { createNewClient(it, globalRegion, credProvider) } as T
+            return cachedClients.computeIfAbsent(key.copy(region = globalRegion)) { createNewClient(sdkClass, globalRegion, credProvider) } as T
         }
 
-        return cachedClients.computeIfAbsent(key) { createNewClient(it, region, credProvider) } as T
+        return cachedClients.computeIfAbsent(key) { createNewClient(sdkClass, region, credProvider) } as T
     }
 
-    /**
-     * Get the current active credential provider for the toolkit
-     */
-    protected abstract fun getCredentialsProvider(): ToolkitCredentialsProvider
-
     protected abstract fun getRegionProvider(): ToolkitRegionProvider
-
-    /**
-     * Get the current active region for the toolkit
-     */
-    protected abstract fun getRegion(): AwsRegion
 
     /**
      * Calls [AutoCloseable.close] if client implements [AutoCloseable] and clears the cache
@@ -106,13 +93,10 @@ abstract class ToolkitClientManager {
      */
     @Suppress("UNCHECKED_CAST")
     protected open fun <T : SdkClient> createNewClient(
-        key: AwsClientKey,
-        region: AwsRegion = key.region,
-        credProvider: ToolkitCredentialsProvider = getCredentialsProvider()
-    ): T {
-        val sdkClass = key.serviceClass as KClass<T>
-        return createNewClient(sdkClass, sdkHttpClient, Region.of(region.id), credProvider, userAgent)
-    }
+        sdkClass: KClass<T>,
+        region: AwsRegion,
+        credProvider: ToolkitCredentialsProvider
+    ): T = createNewClient(sdkClass, sdkHttpClient, Region.of(region.id), credProvider, userAgent)
 
     companion object {
         private val GLOBAL_SERVICE_DENY_LIST = setOf(

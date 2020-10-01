@@ -32,7 +32,7 @@ class DeleteQueueActionTest {
 
     @JvmField
     @Rule
-    val mockClientManagerRule = MockClientManagerRule(projectRule)
+    val mockClientManagerRule = MockClientManagerRule()
 
     @Before
     fun setup() {

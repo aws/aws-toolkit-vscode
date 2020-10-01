@@ -45,7 +45,7 @@ class EditFunctionDialogTest {
 
     @JvmField
     @Rule
-    val mockClientManager = MockClientManagerRule(projectRule)
+    val mockClientManager = MockClientManagerRule()
 
     @JvmField
     @Rule

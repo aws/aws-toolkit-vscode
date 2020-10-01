@@ -31,7 +31,7 @@ class DeleteWaiterTest {
 
     @JvmField
     @Rule
-    val mockClientManagerRule = MockClientManagerRule(projectRule)
+    val mockClientManagerRule = MockClientManagerRule()
 
     private val mockClient by lazy { mockClientManagerRule.create<CloudFormationClient>() }
 
