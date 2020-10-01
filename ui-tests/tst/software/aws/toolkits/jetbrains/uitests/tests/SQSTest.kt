@@ -114,7 +114,9 @@ class SQSTest {
                     findAndClick("//div[@accessiblename='View Messages' and @class='JButton']")
                     // Wait for the table to be populated (It's very fast for small queues)
                     Thread.sleep(1000)
-                    find<JTreeFixture>(byXpath("//div[@class='TableView']")).findAllText().any { it.text.contains("bmessage") }
+                    assertThat(find<JTreeFixture>(byXpath("//div[@class='TableView']")).findAllText()).anySatisfy {
+                        assertThat(it.text).contains("bmessage")
+                    }
                 }
             }
             closeToolWindowTab()

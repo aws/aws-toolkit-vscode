@@ -26,6 +26,8 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.StopQueryRequest
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.InsightsQueryResultsActor
 import software.aws.toolkits.jetbrains.utils.BaseCoroutineTest
 import software.aws.toolkits.jetbrains.utils.waitForModelToBeAtLeast
+import software.aws.toolkits.jetbrains.utils.waitForTrue
+import software.aws.toolkits.resources.message
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -139,6 +141,19 @@ class QueryActorTest : BaseCoroutineTest() {
     }
 
     @Test
+    fun `no results`() {
+        whenever(client.getQueryResults(Mockito.any<GetQueryResultsRequest>()))
+            .thenReturn(
+                GetQueryResultsResponse.builder().status(QueryStatus.COMPLETE).build()
+            )
+        runBlockingTest {
+            queryactor.channel.send(InsightsQueryResultsActor.Message.StartLoadingAll)
+            waitForTrue { table.emptyText.text == message("cloudwatch.logs.no_results_found") }
+        }
+        assertThat(tableModel.items).isEmpty()
+    }
+
+    @Test
     fun `errors immediately`() {
         whenever(client.getQueryResults(any<GetQueryResultsRequest>()))
             .thenThrow(
@@ -147,9 +162,7 @@ class QueryActorTest : BaseCoroutineTest() {
 
         runBlocking {
             queryactor.channel.send(InsightsQueryResultsActor.Message.StartLoadingAll)
-            while (!queryactor.channel.isClosedForSend) {
-                delay(10)
-            }
+            waitForTrue { table.emptyText.text == message("cloudwatch.logs.query_results_table_error") }
         }
 
         assertThat(tableModel.items.size).isZero()

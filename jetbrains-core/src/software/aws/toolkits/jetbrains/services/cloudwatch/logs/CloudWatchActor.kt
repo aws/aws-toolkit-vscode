@@ -483,6 +483,7 @@ class InsightsQueryResultsActor(
                     title = message("cloudwatch.logs.exception"),
                     content = ExceptionUtil.getThrowableText(e)
                 )
+                table.emptyText.text = tableErrorMessage
 
                 channel.close()
                 return@launch
@@ -503,14 +504,15 @@ class InsightsQueryResultsActor(
             }.chunked(1000)
 
             dedupedResults.forEach { chunk ->
-                LOG.warn("loading block of ${chunk.size}")
+                LOG.info("loading block of ${chunk.size}")
                 table.listTableModel.addRows(chunk)
             }
         } while (isQueryRunning(response.status()))
 
-        LOG.warn("done, ${loadedQueryResults.size} entries in set")
+        LOG.info("done, ${loadedQueryResults.size} entries in set")
         tableDoneLoading()
-        LOG.warn("total items in table: ${table.listTableModel.items.size}")
+        table.emptyText.text = emptyText
+        LOG.info("total items in table: ${table.listTableModel.items.size}")
         channel.close()
     }.also {
         loadJob = it
@@ -527,13 +529,16 @@ class InsightsQueryResultsActor(
             }
         }
 
-        try {
-            client.stopQuery {
-                it.queryId(queryId)
+        launch {
+            // network call; run off EDT
+            try {
+                client.stopQuery {
+                    it.queryId(queryId)
+                }
+            } catch (e: Exception) {
+                // best effort; this will fail if the query raced to completion or user does not have permission
+                LOG.warn("Failed to stop query", e)
             }
-        } catch (e: Exception) {
-            // best effort; this will fail if the query raced to completion or user does not have permission
-            LOG.warn("Failed to stop query", e)
         }
     }
 
