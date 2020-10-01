@@ -10,13 +10,15 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.QueryDefinition
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.CloudwatchinsightsTelemetry
+import software.aws.toolkits.telemetry.Result
 import java.awt.event.ActionEvent
 import javax.swing.Action
 import javax.swing.JComponent
 
 class RetrieveSavedQueryDialog(
     private val parentEditor: QueryEditor,
-    project: Project,
+    private val project: Project,
     connectionSettings: ConnectionSettings
 ) : DialogWrapper(project), CoroutineScope by ApplicationThreadPoolScope("RetriveSavedInsightsQuery") {
     private val view = SelectSavedQuery(project, connectionSettings)
@@ -30,12 +32,18 @@ class RetrieveSavedQueryDialog(
             populateParentEditor(parentEditor, selected)
 
             close(OK_EXIT_CODE)
+            CloudwatchinsightsTelemetry.retrieveQuery(project, Result.Succeeded)
         }
     }
 
     init {
         super.init()
         title = message("cloudwatch.logs.select_saved_query_dialog_name")
+    }
+
+    override fun doCancelAction() {
+        CloudwatchinsightsTelemetry.retrieveQuery(project, Result.Cancelled)
+        super.doCancelAction()
     }
 
     override fun createCenterPanel(): JComponent? = view.getComponent()

@@ -11,6 +11,8 @@ import kotlinx.coroutines.launch
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.InsightsQueryResultsActor
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.CloudwatchinsightsTelemetry
+import software.aws.toolkits.telemetry.InsightsDialogOpenSource
 import javax.swing.JButton
 import javax.swing.JLabel
 import javax.swing.JPanel
@@ -40,6 +42,7 @@ class QueryResultList(
         loadInitialResultsTable()
         openQueryEditor.addActionListener {
             QueryEditorDialog(project, queryDetails).show()
+            CloudwatchinsightsTelemetry.openEditor(project, InsightsDialogOpenSource.ResultsWindow)
         }
     }
 

@@ -12,11 +12,18 @@ import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeA
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogsNode
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.QueryEditorDialog
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.CloudwatchinsightsTelemetry
+import software.aws.toolkits.telemetry.InsightsDialogOpenSource
 
 class QueryGroupAction : SingleResourceNodeAction<CloudWatchLogsNode>(message("cloudwatch.logs.open_query_editor")), DumbAware {
-    override fun actionPerformed(selected: CloudWatchLogsNode, e: AnActionEvent) = QueryEditorDialog(
-        selected.nodeProject,
-        ConnectionSettings(selected.nodeProject.activeCredentialProvider(), selected.nodeProject.activeRegion()),
-        selected.logGroupName
-    ).show()
+    override fun actionPerformed(selected: CloudWatchLogsNode, e: AnActionEvent) {
+        val project = selected.nodeProject
+
+        QueryEditorDialog(
+            project,
+            ConnectionSettings(project.activeCredentialProvider(), project.activeRegion()),
+            selected.logGroupName
+        ).show()
+        CloudwatchinsightsTelemetry.openEditor(project, InsightsDialogOpenSource.Explorer)
+    }
 }

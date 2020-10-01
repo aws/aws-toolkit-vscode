@@ -21,6 +21,10 @@ import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.CloudwatchinsightsTelemetry
+import software.aws.toolkits.telemetry.InsightsQueryStringType
+import software.aws.toolkits.telemetry.InsightsQueryTimeType
+import software.aws.toolkits.telemetry.Result
 import java.awt.event.ActionEvent
 import java.time.temporal.ChronoUnit
 import javax.swing.Action
@@ -176,6 +180,7 @@ class QueryEditorDialog(
         val client = AwsClientManager.getInstance().getClient<CloudWatchLogsClient>(credentials, region)
         val timeRange = queryDetails.getQueryRange()
         val queryString = queryDetails.getQueryString()
+        var result = Result.Succeeded
         try {
             val response = client.startQuery {
                 it.logGroupNames(queryDetails.logGroups)
@@ -189,7 +194,18 @@ class QueryEditorDialog(
             return@async response.queryId()
         } catch (e: Exception) {
             notifyError(message("cloudwatch.logs.query_result_completion_status"), e.toString())
+            result = Result.Failed
             throw e
+        } finally {
+            val timeType = when (queryDetails.timeRange) {
+                is TimeRange.AbsoluteRange -> InsightsQueryTimeType.Absolute
+                is TimeRange.RelativeRange -> InsightsQueryTimeType.Relative
+            }
+            val searchStringType = when (queryDetails.query) {
+                is QueryString.InsightsQueryString -> InsightsQueryStringType.Insights
+                is QueryString.SearchTermQueryString -> InsightsQueryStringType.SearchTerm
+            }
+            CloudwatchinsightsTelemetry.executeQuery(project, result, timeType, searchStringType)
         }
     }
 

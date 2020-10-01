@@ -22,6 +22,8 @@ import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWin
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.CloudwatchinsightsTelemetry
+import software.aws.toolkits.telemetry.Result
 import java.lang.IllegalStateException
 import javax.swing.JButton
 import javax.swing.JPanel
@@ -81,6 +83,7 @@ class DetailedLogRecord(
     }
 
     private fun loadLogRecordAsync() = async<LogRecord> {
+        var result = Result.Succeeded
         try {
             return@async client.getLogRecord {
                 it.logRecordPointer(logRecordPointer)
@@ -92,6 +95,9 @@ class DetailedLogRecord(
                 title = message("cloudwatch.logs.exception"),
                 content = ExceptionUtil.getThrowableText(e)
             )
+            result = Result.Failed
+        } finally {
+            CloudwatchinsightsTelemetry.openDetailedLogRecord(project, result)
         }
 
         return@async mapOf()
