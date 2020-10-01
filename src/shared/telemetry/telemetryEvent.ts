@@ -8,7 +8,6 @@ import { MetricDatum } from './clienttelemetry'
 const NAME_ILLEGAL_CHARS_REGEX = new RegExp('[^\\w+-.:]', 'g')
 
 export interface TelemetryEvent {
-    createTime: Date
     data: MetricDatum[]
 }
 
@@ -32,8 +31,8 @@ export function toMetricData(array: TelemetryEvent[]): MetricDatum[] {
                     .map(datum => {
                         return {
                             MetricName: datum.MetricName?.replace(NAME_ILLEGAL_CHARS_REGEX, ''),
-                            EpochTimestamp: metricEvent.createTime.getTime(),
-                            Unit: datum.Unit ?? 'None',
+                            EpochTimestamp: datum.EpochTimestamp,
+                            Unit: datum.Unit,
                             Value: datum.Value,
                             Metadata: datum.Metadata,
                         }
