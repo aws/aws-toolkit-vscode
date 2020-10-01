@@ -8,23 +8,28 @@ import { TelemetryEvent, toMetricData } from '../../../shared/telemetry/telemetr
 
 describe('TelemetryEventArray', () => {
     describe('toMetricData', () => {
+        const createTime = new Date().getTime()
         it('strips names of invalid characters', () => {
             const eventArray = []
             const metricEvents = [
                 {
-                    createTime: new Date(),
                     data: [
                         {
                             MetricName: 'namespace',
                             Value: 1,
+                            Unit: 'None',
+                            EpochTimestamp: createTime,
                         },
                         {
                             MetricName: 'namespace_even#t1',
                             Value: 1,
+                            Unit: 'None',
+                            EpochTimestamp: createTime,
                         },
                         {
                             MetricName: 'namespace_event:2',
                             Value: 0.5,
+                            EpochTimestamp: createTime,
                             Unit: 'Percent',
                             metadata: [
                                 { Key: 'key', Value: 'value' },
@@ -47,26 +52,25 @@ describe('TelemetryEventArray', () => {
         it('maps TelemetryEvent with no data to a single MetricDatum', () => {
             const eventArray = []
             const metricEvent = {
-                createTime: new Date(),
-                data: [{ MetricName: 'namespace', Value: 1 }],
+                data: [{ MetricName: 'namespace', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() }],
             }
             eventArray.push(metricEvent)
             const data = toMetricData(eventArray)
 
             assert.strictEqual(data.length, 1)
-            assert.strictEqual(data[0].EpochTimestamp, metricEvent.createTime.getTime())
             assert.strictEqual(data[0].MetricName, 'namespace')
             assert.deepStrictEqual(data[0].Metadata, undefined)
         })
 
         it('Rejects entries that have null Value', () => {
             const eventArray: TelemetryEvent[] = []
+            const createTime = new Date().getTime()
             const metricEvent = {
-                createTime: new Date(),
                 data: [
                     {
                         MetricName: 'namespace_event2',
-                        Value: undefined,
+                        Value: (undefined as unknown) as number,
+                        EpochTimestamp: createTime,
                         Unit: 'Percent',
                         Metadata: [
                             { Key: 'key', Value: 'value' },
@@ -76,6 +80,7 @@ describe('TelemetryEventArray', () => {
                     {
                         MetricName: 'namespace_event3',
                         Unit: 'Percent',
+                        EpochTimestamp: createTime,
                         Value: 0.333,
                         Metadata: [{ Key: 'key3', Value: 'value3' }],
                     },
@@ -88,16 +93,19 @@ describe('TelemetryEventArray', () => {
 
         it('Rejects entries that have null MetricName', () => {
             const eventArray: TelemetryEvent[] = []
+            const createTime = new Date().getTime()
             const metricEvent = {
-                createTime: new Date(),
                 data: [
                     {
-                        MetricName: undefined,
+                        MetricName: (undefined as unknown) as string,
+                        Unit: 'None',
+                        EpochTimestamp: createTime,
                         Value: 1,
                     },
                     {
                         MetricName: 'namespace_event3',
                         Unit: 'Percent',
+                        EpochTimestamp: createTime,
                         Value: 0.333,
                         Metadata: [{ Key: 'key3', Value: 'value3' }],
                     },
@@ -110,16 +118,19 @@ describe('TelemetryEventArray', () => {
 
         it('maps TelemetryEvent with data to a multiple MetricDatum', () => {
             const eventArray: TelemetryEvent[] = []
+            const createTime = new Date().getTime()
             const metricEvent = {
-                createTime: new Date(),
                 data: [
                     {
                         MetricName: 'namespace_event1',
+                        Unit: 'None',
+                        EpochTimestamp: createTime,
                         Value: 1,
                     },
                     {
                         MetricName: 'namespace_event2',
                         Value: 0.5,
+                        EpochTimestamp: createTime,
                         Unit: 'Percent',
                         Metadata: [
                             { Key: 'key', Value: 'value' },
@@ -129,6 +140,7 @@ describe('TelemetryEventArray', () => {
                     {
                         MetricName: 'namespace_event3',
                         Unit: 'Percent',
+                        EpochTimestamp: createTime,
                         Value: 0.333,
                         Metadata: [{ Key: 'key3', Value: 'value3' }],
                     },
@@ -138,9 +150,9 @@ describe('TelemetryEventArray', () => {
             const data = toMetricData(eventArray)
 
             assert.strictEqual(data.length, 3)
-            assert.strictEqual(data[0].EpochTimestamp, metricEvent.createTime.getTime())
-            assert.strictEqual(data[1].EpochTimestamp, metricEvent.createTime.getTime())
-            assert.strictEqual(data[2].EpochTimestamp, metricEvent.createTime.getTime())
+            assert.strictEqual(data[0].EpochTimestamp, createTime)
+            assert.strictEqual(data[1].EpochTimestamp, createTime)
+            assert.strictEqual(data[2].EpochTimestamp, createTime)
             assert.strictEqual(data[0].MetricName, 'namespace_event1')
             assert.strictEqual(data[1].MetricName, 'namespace_event2')
             assert.strictEqual(data[2].MetricName, 'namespace_event3')
