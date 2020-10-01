@@ -11,9 +11,9 @@ import path = require('path')
 import * as vscode from 'vscode'
 import { SchemaClient } from '../../shared/clients/schemaClient'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import * as localizedText from '../../shared/localizedText'
 import { getLogger, Logger } from '../../shared/logger'
 import { recordSchemasDownload, Result } from '../../shared/telemetry/telemetry'
-import * as genericText from '../../shared/text/generic'
 import { ExtensionDisposableFiles } from '../../shared/utilities/disposableFiles'
 import { SchemaItemNode } from '../explorer/schemaItemNode'
 import { getLanguageDetails } from '../models/schemaCodeLangs'
@@ -368,8 +368,8 @@ export class CodeExtractor {
                 'Downloaded code hierarchy has collisions in the destination directory. Would you like to override?'
             ),
             { modal: true },
-            genericText.yes,
-            genericText.no
+            localizedText.yes,
+            localizedText.no
         )
 
         if (!userResponse)
@@ -377,7 +377,7 @@ export class CodeExtractor {
                 localize('AWS.message.error.schemas.downloadCodeBindings.cancelled', 'Download code bindings cancelled')
             )
 
-        return userResponse === genericText.yes
+        return userResponse === localizedText.yes
     }
 
     public getCoreCodeFilePath(codeZipFile: string, coreFileName: string | undefined): string | undefined {

@@ -23,10 +23,10 @@ import {
 } from './credentials/defaultCredentialSelectionDataProvider'
 import { UserCredentialsUtils } from './credentials/userCredentialsUtils'
 import { ext } from './extensionGlobals'
+import * as localizedText from './localizedText'
 import { Region } from './regions/endpoints'
 import { RegionProvider } from './regions/regionProvider'
 import { getRegionsForActiveCredentials } from './regions/regionUtilities'
-import * as genericText from './text/generic'
 import { createQuickPick, promptUser } from './ui/picker'
 
 const TITLE_HIDE_REGION = localize(
@@ -144,11 +144,11 @@ export class DefaultAWSContextCommands {
                     'AWS.message.prompt.credentials.definition.tryAgain',
                     'The credentials do not appear to be valid. Check the AWS Toolkit Logs for details. Would you like to try again?'
                 ),
-                genericText.yes,
-                genericText.no
+                localizedText.yes,
+                localizedText.no
             )
 
-            if (!response || response !== genericText.yes) {
+            if (!response || response !== localizedText.yes) {
                 return undefined
             }
         } // Keep asking until cancel or valid credentials are entered
@@ -171,11 +171,11 @@ export class DefaultAWSContextCommands {
                     'AWS.message.prompt.credentials.create',
                     'You do not appear to have any AWS Credentials defined. Would you like to set one up now?'
                 ),
-                genericText.yes,
-                genericText.no
+                localizedText.yes,
+                localizedText.no
             )
 
-            if (userResponse !== genericText.yes) {
+            if (userResponse !== localizedText.yes) {
                 return undefined
             }
 
@@ -192,11 +192,11 @@ export class DefaultAWSContextCommands {
                         'AWS.message.prompt.credentials.create',
                         'You do not appear to have any AWS Credentials defined. Would you like to set one up now?'
                     ),
-                    genericText.yes,
-                    genericText.no
+                    localizedText.yes,
+                    localizedText.no
                 )
 
-                if (userResponse === genericText.yes) {
+                if (userResponse === localizedText.yes) {
                     // Start edit, the user will have to try connecting again
                     // after they have made their edits.
                     await this.editCredentials()
@@ -240,11 +240,11 @@ export class DefaultAWSContextCommands {
                 'AWS.message.prompt.credentials.definition.help',
                 'Would you like some information related to defining credentials?'
             ),
-            genericText.yes,
-            genericText.no
+            localizedText.yes,
+            localizedText.no
         )
 
-        if (response && response === genericText.yes) {
+        if (response && response === localizedText.yes) {
             await env.openExternal(Uri.parse(extensionConstants.aboutCredentialsFileUrl))
         }
     }

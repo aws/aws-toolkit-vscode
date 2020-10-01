@@ -14,12 +14,12 @@ import * as path from 'path'
 import { showConfirmationMessage } from '../../s3/util/messages'
 import { ext } from '../../shared/extensionGlobals'
 import { fileExists, makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
 import { getSamCliContext } from '../../shared/sam/cli/samCliContext'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { SamTemplateGenerator } from '../../shared/templates/sam/samTemplateGenerator'
-import * as genericText from '../../shared/text/generic'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../../shared/ui/picker'
 import { ExtensionDisposableFiles } from '../../shared/utilities/disposableFiles'
 import { Window } from '../../shared/vscode/window'
@@ -91,14 +91,14 @@ async function runUploadDirectory(
     }
 
     const zipDirItem: vscode.QuickPickItem = {
-        label: `$(exclude) ${genericText.no}`,
+        label: `$(exclude) ${localizedText.no}`,
         detail: localize(
             'AWS.lambda.upload.prebuiltDir.detail',
             'AWS Toolkit will upload a ZIP of the selected directory.'
         ),
     }
     const buildDirItem: vscode.QuickPickItem = {
-        label: `$(gear) ${genericText.yes}`,
+        label: `$(gear) ${localizedText.yes}`,
         detail: localize(
             'AWS.lambda.upload.unbuiltDir.detail',
             'AWS Toolkit will attempt to build the selected directory using the sam build command.'
@@ -189,8 +189,8 @@ async function runUploadLambdaWithSamBuild(
                         functionNode.configuration.Handler,
                         handlerFile
                     ),
-                    confirm: genericText.yes,
-                    cancel: genericText.no,
+                    confirm: localizedText.yes,
+                    cancel: localizedText.no,
                 },
                 window
             )
@@ -279,8 +279,8 @@ async function confirmLambdaDeployment(functionNode: LambdaFunctionNode, window 
                 'This will immediately publish the selected code as a new version of Lambda: {0}.\n\nAWS Toolkit cannot guarantee that the built code will work.\n\nContinue?',
                 functionNode.functionName
             ),
-            confirm: genericText.yes,
-            cancel: genericText.no,
+            confirm: localizedText.yes,
+            cancel: localizedText.no,
         },
         window
     )

@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
 import { extensionSettingsPrefix } from '../shared/constants'
-import * as genericText from '../shared/text/generic'
+import * as localizedText from '../shared/localizedText'
 import { createQuickPick, promptUser } from '../shared/ui/picker'
 import { AwsExplorer } from './awsExplorer'
 
@@ -35,12 +35,12 @@ enum OnDefaultRegionMissingOperation {
 }
 
 class DefaultRegionMissingPromptItems {
-    public static readonly add: string = genericText.yes
+    public static readonly add: string = localizedText.yes
     public static readonly alwaysAdd: string = localize(
         'AWS.message.prompt.defaultRegionHidden.alwaysAdd',
         "Yes, and don't ask again"
     )
-    public static readonly ignore: string = genericText.no
+    public static readonly ignore: string = localizedText.no
     public static readonly alwaysIgnore: string = localize(
         'AWS.message.prompt.defaultRegionHidden.alwaysIgnore',
         "No, and don't ask again"

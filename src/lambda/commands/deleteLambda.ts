@@ -6,9 +6,9 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
+import * as localizedText from '../../shared/localizedText'
 import { LambdaClient } from '../../shared/clients/lambdaClient'
 import { millisecondsSince, recordLambdaDelete, Result } from '../../shared/telemetry/telemetry'
-import * as genericText from '../../shared/text/generic'
 
 const localize = nls.loadMessageBundle()
 
@@ -17,9 +17,9 @@ const localize = nls.loadMessageBundle()
  */
 const confirm = async (message: string): Promise<boolean> => {
     // TODO: Re-use `confirm` throughout package (rather than cutting and pasting logic).
-    const response = await vscode.window.showWarningMessage(message, genericText.yes, genericText.no)
+    const response = await vscode.window.showWarningMessage(message, localizedText.yes, localizedText.no)
 
-    return response === genericText.yes
+    return response === localizedText.yes
 }
 
 export async function deleteLambda({

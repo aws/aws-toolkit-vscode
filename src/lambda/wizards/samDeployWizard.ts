@@ -12,10 +12,10 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { AwsContext } from '../../shared/awsContext'
 import { samDeployDocUrl } from '../../shared/constants'
+import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
-import * as genericText from '../../shared/text/generic'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
@@ -187,7 +187,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                     title: prompt,
                 },
                 buttons: [this.helpButton, vscode.QuickInputButtons.Back],
-                items: [{ label: genericText.yes }, { label: genericText.no }],
+                items: [{ label: localizedText.yes }, { label: localizedText.no }],
             })
             const response = getSingleResponse(
                 await picker.promptUser({
@@ -201,7 +201,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                     },
                 })
             )
-            if (response !== genericText.yes) {
+            if (response !== localizedText.yes) {
                 return ParameterPromptResult.Continue
             }
 

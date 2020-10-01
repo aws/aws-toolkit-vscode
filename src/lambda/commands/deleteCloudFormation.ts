@@ -9,9 +9,9 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { ext } from '../../shared/extensionGlobals'
+import * as localizedText from '../../shared/localizedText'
 import { getLogger, Logger } from '../../shared/logger'
 import { recordCloudformationDelete, Result } from '../../shared/telemetry/telemetry'
-import * as genericText from '../../shared/text/generic'
 import { CloudFormationStackNode } from '../explorer/cloudFormationNodes'
 
 export async function deleteCloudFormation(refresh: () => void, node?: CloudFormationStackNode) {
@@ -33,11 +33,11 @@ export async function deleteCloudFormation(refresh: () => void, node?: CloudForm
 
         const userResponse = await vscode.window.showInformationMessage(
             localize('AWS.message.prompt.deleteCloudFormation', 'Are you sure you want to delete {0}?', stackName),
-            genericText.yes,
-            genericText.no
+            localizedText.yes,
+            localizedText.no
         )
 
-        if (userResponse === genericText.yes) {
+        if (userResponse === localizedText.yes) {
             const client: CloudFormationClient = ext.toolkitClientBuilder.createCloudFormationClient(node.regionCode)
 
             await client.deleteStack(stackName)
