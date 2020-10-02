@@ -72,7 +72,7 @@ export class ChildProcess {
             throw new Error('process already started')
         }
 
-        getLogger().info(`Running command: ${this.process} ${this.args.join(' ')}`)
+        getLogger().info(`Running: ${this.process} ${this.args.join(' ')}`)
 
         // Async.
         // See also crossSpawn.spawnSync().
