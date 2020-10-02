@@ -710,7 +710,7 @@
                 {
                     "command": "aws.deleteCloudFormation",
                     "when": "view == aws.explorer && viewItem == awsCloudFormationNode",
-                    "group": "2@5"
+                    "group": "3@5"
                 },
                 {
                     "command": "aws.searchSchema",
@@ -824,7 +824,7 @@
                 },
                 {
                     "command": "aws.ssmDocument.deleteDocument",
-                    "group": "2@2",
+                    "group": "3@2",
                     "when": "view == aws.explorer && viewItem == awsDocumentItemNodeWriteable"
                 }
             ]
