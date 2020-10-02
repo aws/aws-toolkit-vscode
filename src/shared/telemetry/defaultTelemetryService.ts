@@ -253,6 +253,8 @@ export class DefaultTelemetryService implements TelemetryService {
                     MetricName: 'noData',
                     Value: 0,
                     Metadata: commonMetadata,
+                    EpochTimestamp: new Date().getTime(),
+                    Unit: 'None',
                 },
             ]
             event.data = data
@@ -270,10 +272,6 @@ export class DefaultTelemetryService implements TelemetryService {
             }
             const input = JSON.parse(fs.readFileSync(cachePath, 'utf-8'))
             const events = filterTelemetryCacheEvents(input)
-            events.forEach((element: TelemetryEvent) => {
-                // This is coercing the createTime into a Date type: it's read in as a string
-                element.createTime = new Date(element.createTime)
-            })
 
             return events
         } catch (error) {
@@ -305,8 +303,8 @@ export function filterTelemetryCacheEvents(input: any): TelemetryEvent[] {
             return true
         })
         .filter((item: Object) => {
-            // Only accept objects that have createTime and data because that's what's required by TelemetryEvent
-            if (!item.hasOwnProperty('createTime') || !item.hasOwnProperty('data')) {
+            // Only accept objects that have data because that's what's required by TelemetryEvent
+            if (!item.hasOwnProperty('data')) {
                 getLogger().warn(`Item in telemetry cache: ${item}\n does not have 'data' or 'createTime'! skipping!`)
 
                 return false
@@ -322,10 +320,16 @@ export function filterTelemetryCacheEvents(input: any): TelemetryEvent[] {
                 return false
             }
 
-            // Only accept objects that have value and metricname which are the base things required for telemetry
+            // Only accept objects that have the required telemetry data
             return item.data.every(data => {
                 // Make sure data is actually an object then check that it has the required properties
-                if (data !== Object(data) || !data.hasOwnProperty('Value') || !data.hasOwnProperty('MetricName')) {
+                if (
+                    data !== Object(data) ||
+                    !data.hasOwnProperty('Value') ||
+                    !data.hasOwnProperty('MetricName') ||
+                    !data.hasOwnProperty('EpochTimestamp') ||
+                    !data.hasOwnProperty('Unit')
+                ) {
                     getLogger().warn(
                         `Item in telemetry cache: ${item}\n has invalid data in the field 'data': ${data}! skipping!`
                     )

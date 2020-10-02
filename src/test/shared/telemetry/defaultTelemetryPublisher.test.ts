@@ -39,15 +39,21 @@ describe('DefaultTelemetryPublisher', () => {
 
     it('enqueues events', () => {
         const publisher = new DefaultTelemetryPublisher('', '', new AWS.Credentials('', ''), new MockTelemetryClient())
-        publisher.enqueue(...[{ createTime: new Date(), data: [{ MetricName: 'name', Value: 1 }] }])
+        publisher.enqueue(
+            ...[{ data: [{ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() }] }]
+        )
         assert.strictEqual(publisher.queue.length, 1)
-        publisher.enqueue(...[{ createTime: new Date(), data: [{ MetricName: 'name3', Value: 1 }] }])
+        publisher.enqueue(
+            ...[{ data: [{ MetricName: 'name3', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() }] }]
+        )
         assert.strictEqual(publisher.queue.length, 2)
     })
 
     it('can flush single event', async () => {
         const publisher = new DefaultTelemetryPublisher('', '', new AWS.Credentials('', ''), new MockTelemetryClient())
-        publisher.enqueue(...[{ createTime: new Date(), data: [{ MetricName: 'name', Value: 1 }] }])
+        publisher.enqueue(
+            ...[{ data: [{ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() }] }]
+        )
 
         assert.strictEqual(publisher.queue.length, 1)
 
@@ -56,7 +62,7 @@ describe('DefaultTelemetryPublisher', () => {
     })
 
     it('retains queue on flush failure', async () => {
-        const batch = [{ createTime: new Date(), data: [{ MetricName: 'name', Value: 1 }] }]
+        const batch = [{ data: [{ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() }] }]
         const publisher = new DefaultTelemetryPublisher(
             '',
             '',

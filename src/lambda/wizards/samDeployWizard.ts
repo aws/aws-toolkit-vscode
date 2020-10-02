@@ -12,6 +12,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { AwsContext } from '../../shared/awsContext'
 import { samDeployDocUrl } from '../../shared/constants'
+import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
@@ -180,16 +181,13 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 'The template {0} contains parameters. Would you like to override the default values for these parameters?',
                 templateUri.fsPath
             )
-            const responseYes = localize('AWS.samcli.deploy.parameters.optionalPrompt.responseYes', 'Yes')
-            const responseNo = localize('AWS.samcli.deploy.parameters.optionalPrompt.responseNo', 'No')
-
             const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
                 options: {
                     ignoreFocusOut: true,
                     title: prompt,
                 },
                 buttons: [this.helpButton, vscode.QuickInputButtons.Back],
-                items: [{ label: responseYes }, { label: responseNo }],
+                items: [{ label: localizedText.yes }, { label: localizedText.no }],
             })
             const response = getSingleResponse(
                 await picker.promptUser({
@@ -203,7 +201,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                     },
                 })
             )
-            if (response !== responseYes) {
+            if (response !== localizedText.yes) {
                 return ParameterPromptResult.Continue
             }
 
