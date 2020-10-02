@@ -70,7 +70,9 @@ describe('DefaultTelemetryService', () => {
         service.clearRecords()
         service.telemetryEnabled = true
         service.flushPeriod = testFlushPeriod
-        service.record({ createTime: new Date(), data: [{ MetricName: 'namespace', Value: 1 }] })
+        service.record({
+            data: [{ MetricName: 'namespace', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() }],
+        })
 
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
@@ -90,7 +92,7 @@ describe('DefaultTelemetryService', () => {
         service.clearRecords()
         service.telemetryEnabled = true
         service.flushPeriod = testFlushPeriod
-        service.record({ createTime: new Date(), data: [{ MetricName: 'name', Value: 1 }] })
+        service.record({ data: [{ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() }] })
 
         assert.strictEqual(service.records.length, 1)
 
@@ -129,7 +131,7 @@ describe('DefaultTelemetryService', () => {
         service.clearRecords()
         service.telemetryEnabled = true
         service.flushPeriod = testFlushPeriod
-        service.record({ createTime: new Date(), data: [{ MetricName: 'name', Value: 1 }] })
+        service.record({ data: [{ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() }] })
 
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
@@ -148,7 +150,7 @@ describe('DefaultTelemetryService', () => {
         service.clearRecords()
         service.telemetryEnabled = true
         service.flushPeriod = testFlushPeriod
-        service.record({ createTime: new Date(), data: [{ MetricName: 'name', Value: 1 }] })
+        service.record({ data: [{ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() }] })
 
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
@@ -171,7 +173,7 @@ describe('DefaultTelemetryService', () => {
         assert.notStrictEqual(service.timer, undefined)
 
         // telemetry off: events are never recorded
-        service.record({ createTime: new Date(), data: [{ MetricName: 'name', Value: 1 }] })
+        service.record({ data: [{ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() }] })
 
         clock.tick(testFlushPeriod + 1)
         await service.shutdown()
