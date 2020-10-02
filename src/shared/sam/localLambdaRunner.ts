@@ -22,11 +22,11 @@ import { normalizeSeparator } from '../utilities/pathUtils'
 import { Timeout } from '../utilities/timeoutUtils'
 import { ChannelLogger } from '../utilities/vsCodeUtils'
 import { tryGetAbsolutePath } from '../utilities/workspaceUtils'
-import { DefaultValidatingSamCliProcessInvoker } from './cli/defaultValidatingSamCliProcessInvoker'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from './cli/samCliBuild'
 import { SamCliLocalInvokeInvocation, SamCliLocalInvokeInvocationArguments } from './cli/samCliLocalInvoke'
 import { SamLaunchRequestArgs } from './debugger/awsSamDebugger'
 import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
+import { DefaultSamCliProcessInvoker } from './cli/samCliInvoker'
 
 // TODO: remove this and all related code.
 export interface LambdaLocalInvokeParams {
@@ -171,7 +171,7 @@ export async function invokeLambdaFunction(
         ctx.chanLogger.info('AWS.output.sam.local.startRun', "Preparing to run '{0}' locally...", config.handlerName)
     }
 
-    const processInvoker = new DefaultValidatingSamCliProcessInvoker({})
+    const processInvoker = new DefaultSamCliProcessInvoker()
 
     ctx.chanLogger.info('AWS.output.building.sam.application', 'Building SAM Application...')
     const samBuildOutputFolder = path.join(config.baseBuildDir!, 'output')

@@ -4,6 +4,8 @@ env:
         AWS_TOOLKIT_TEST_NO_COLOR: '1'
 phases:
     install:
+        runtime-versions:
+            nodejs: 10
         commands:
             - |
                 if(-Not($Env:CODE_COV_TOKEN -eq $null)) {
@@ -16,6 +18,7 @@ phases:
                 &pip --version
                 &pip install getmac
                 &getmac --version
+
     pre_build:
         commands:
             - npm install

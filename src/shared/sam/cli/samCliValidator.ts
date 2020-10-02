@@ -55,7 +55,7 @@ export interface SamCliValidator {
 }
 
 export interface SamCliValidatorContext {
-    samCliLocation: string | undefined
+    samCliLocation(): Promise<string>
     getSamCliExecutableId(): Promise<string>
     getSamCliInfo(): Promise<SamCliInfoResponse>
 }
@@ -71,10 +71,9 @@ export class DefaultSamCliValidator implements SamCliValidator {
             samCliFound: false,
         }
 
-        const samCliLocation = this.context.samCliLocation
-        if (samCliLocation) {
+        const sam = await this.context.samCliLocation()
+        if (sam) {
             result.samCliFound = true
-
             result.versionValidation = await this.getVersionValidatorResult()
         }
 
@@ -134,18 +133,18 @@ export class DefaultSamCliValidatorContext implements SamCliValidatorContext {
         private readonly invoker: SamCliProcessInvoker
     ) {}
 
-    public get samCliLocation(): string | undefined {
-        return this.samCliConfiguration.getSamCliLocation()
+    public async samCliLocation(): Promise<string> {
+        return (await this.samCliConfiguration.getOrDetectSamCli()).path
     }
 
     public async getSamCliExecutableId(): Promise<string> {
         // Function should never get called if there is no SAM CLI
-        if (!this.samCliLocation) {
+        if (!(await this.samCliLocation())) {
             throw new Error('SAM CLI does not exist')
         }
 
         // The modification timestamp of SAM CLI is used as the "distinct executable id"
-        const stats = await stat(this.samCliLocation)
+        const stats = await stat(await this.samCliLocation())
 
         return stats.mtime.valueOf().toString()
     }
