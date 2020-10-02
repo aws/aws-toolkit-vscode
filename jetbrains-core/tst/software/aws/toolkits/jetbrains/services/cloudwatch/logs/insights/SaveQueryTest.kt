@@ -43,7 +43,7 @@ class SaveQueryTest {
 
     @JvmField
     @Rule
-    val resourceCache = MockResourceCacheRule(projectRule)
+    val resourceCache = MockResourceCacheRule()
 
     private val credentials = aToolkitCredentialsProvider()
     private val region = anAwsRegion()
@@ -79,7 +79,7 @@ class SaveQueryTest {
         client.stub {
             on { putQueryDefinition(putQueryDefinitionCaptor.capture()) } doReturn PutQueryDefinitionResponse.builder().queryDefinitionId("1234").build()
         }
-        resourceCache.get().addEntry(CloudWatchResources.DESCRIBE_QUERY_DEFINITIONS, region.id, credentials.id, listOf())
+        resourceCache.addEntry(CloudWatchResources.DESCRIBE_QUERY_DEFINITIONS, region.id, credentials.id, listOf())
 
         val dialog = SaveQueryDialog(projectRule.project, connectionSettings, "fields @timestamp", listOf("log1"))
         dialog.view.queryName.text = "queryName"
@@ -102,7 +102,7 @@ class SaveQueryTest {
         client.stub {
             on { putQueryDefinition(putQueryDefinitionCaptor.capture()) } doReturn PutQueryDefinitionResponse.builder().queryDefinitionId("1234").build()
         }
-        resourceCache.get().addEntry(CloudWatchResources.DESCRIBE_QUERY_DEFINITIONS, region.id, credentials.id, listOf(testQueryDefinition))
+        resourceCache.addEntry(CloudWatchResources.DESCRIBE_QUERY_DEFINITIONS, region.id, credentials.id, listOf(testQueryDefinition))
 
         val dialog = SaveQueryDialog(projectRule.project, connectionSettings, "fields @timestamp", listOf("log1"))
         dialog.view.queryName.text = "SampleQuery"
@@ -125,7 +125,7 @@ class SaveQueryTest {
         client.stub {
             on { putQueryDefinition(putQueryDefinitionCaptor.capture()) } doThrow CloudWatchLogsException::class
         }
-        resourceCache.get().addEntry(CloudWatchResources.DESCRIBE_QUERY_DEFINITIONS, region.id, credentials.id, listOf(testQueryDefinition))
+        resourceCache.addEntry(CloudWatchResources.DESCRIBE_QUERY_DEFINITIONS, region.id, credentials.id, listOf(testQueryDefinition))
 
         val dialog = SaveQueryDialog(projectRule.project, connectionSettings, "fields @timestamp", listOf("log1"))
         dialog.view.queryName.text = "SampleQuery"

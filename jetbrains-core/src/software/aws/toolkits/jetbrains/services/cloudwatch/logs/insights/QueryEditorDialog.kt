@@ -86,7 +86,7 @@ class QueryEditorDialog(
             }
         }
 
-        val availableLogGroups = AwsResourceCache.getInstance(project).getResource(
+        val availableLogGroups = AwsResourceCache.getInstance().getResource(
             CloudWatchResources.LIST_LOG_GROUPS,
             region = initialQueryDetails.connectionSettings.region,
             credentialProvider = initialQueryDetails.connectionSettings.credentials
