@@ -17,9 +17,13 @@ describe('DefaultSamCliValidator', async () => {
     class TestSamCliValidatorContext implements SamCliValidatorContext {
         public samCliVersionId: string = new Date().valueOf().toString()
         public getInfoCallCount: number = 0
-        public samCliLocation: string | undefined
+        public mockSamLocation: string = ''
 
         public constructor(public samCliVersion: string) {}
+
+        public async samCliLocation(): Promise<string> {
+            return this.mockSamLocation
+        }
 
         public async getSamCliExecutableId(): Promise<string> {
             return this.samCliVersionId
@@ -65,7 +69,7 @@ describe('DefaultSamCliValidator', async () => {
         samCliVersionTestScenarios.forEach(test => {
             it(`handles case where SAM CLI exists and ${test.situation}`, async () => {
                 const validatorContext = new TestSamCliValidatorContext(test.version)
-                validatorContext.samCliLocation = 'somesamclipath'
+                validatorContext.mockSamLocation = 'somesamclipath'
                 const samCliValidator = new DefaultSamCliValidator(validatorContext)
 
                 const validatorResult = await samCliValidator.detectValidSamCli()
@@ -84,7 +88,7 @@ describe('DefaultSamCliValidator', async () => {
 
         it('handles case where SAM CLI is not found', async () => {
             const validatorContext = new TestSamCliValidatorContext('')
-            validatorContext.samCliLocation = undefined
+            validatorContext.mockSamLocation = ''
             const samCliValidator = new DefaultSamCliValidator(validatorContext)
 
             const validatorResult = await samCliValidator.detectValidSamCli()
