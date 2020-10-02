@@ -9,6 +9,14 @@ export class LambdaTemplates {
         Invoke function <%= FunctionName %>
     </h1>
     <div id="app">
+        <p style="margin-bottom: 5px; margin-top:0; margin-right:5px;">
+            ARN: <%= FunctionArn %> 
+        </p>
+        
+        <p style="margin-top:0">
+            Region: <%= FunctionRegion %>
+        </p>
+        
         <h3>
             Select a file to use as payload:
         </h3>
