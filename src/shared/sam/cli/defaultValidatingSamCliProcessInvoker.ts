@@ -1,3 +1,4 @@
+import { getLogger } from '../../logger'
 /*!
  * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
@@ -56,6 +57,10 @@ export class DefaultValidatingSamCliProcessInvoker implements SamCliProcessInvok
 
         // TODO : Showing dialog here is temporary until https://github.com/aws/aws-toolkit-vscode/issues/527
         // TODO : is complete. The dialog will be raised earlier than this point, leaving this to throw Errors.
-        throwAndNotifyIfInvalid(validationResult)
+        try {
+            throwAndNotifyIfInvalid(validationResult)
+        } catch (e) {
+            getLogger().error(e)
+        }
     }
 }
