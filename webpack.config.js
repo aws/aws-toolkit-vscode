@@ -11,7 +11,7 @@ const path = require('path')
 const webpack = require('webpack')
 const fs = require('fs')
 const TerserPlugin = require('terser-webpack-plugin')
-const FileManagerPlugin = require('filemanager-webpack-plugin')
+const CopyPlugin = require('copy-webpack-plugin')
 const { NLSBundlePlugin } = require('vscode-nls-dev/lib/webpack-bundler')
 const CircularDependencyPlugin = require('circular-dependency-plugin')
 const packageJsonFile = path.join(__dirname, 'package.json')
@@ -76,26 +76,21 @@ const config = {
             PLUGINVERSION: JSON.stringify(packageJson.version),
         }),
         // @ts-ignore
-        new FileManagerPlugin({
-            onStart: {
-                mkdir: [path.resolve(__dirname, 'dist/src/stepFunctions/asl/')],
-            },
-            onEnd: {
-                move: [
-                    {
-                        source: path.resolve(__dirname, 'dist/aslServer.js'),
-                        destination: path.resolve(__dirname, 'dist/src/stepFunctions/asl/aslServer.js'),
-                    },
-                    {
-                        source: path.resolve(__dirname, 'dist/aslServer.js.LICENSE.txt'),
-                        destination: path.resolve(__dirname, 'dist/src/stepFunctions/asl/aslServer.js.LICENSE.txt'),
-                    },
-                    {
-                        source: path.resolve(__dirname, 'dist/aslServer.js.map'),
-                        destination: path.resolve(__dirname, 'dist/src/stepFunctions/asl/aslServer.js.map'),
-                    },
-                ],
-            },
+        new CopyPlugin({
+            patterns: [
+                {
+                    from: path.resolve(__dirname, 'dist/aslServer.js'),
+                    to: path.resolve(__dirname, 'dist/src/stepFunctions/asl/aslServer.js'),
+                },
+                {
+                    from: path.resolve(__dirname, 'dist/aslServer.js.LICENSE.txt'),
+                    to: path.resolve(__dirname, 'dist/src/stepFunctions/asl/aslServer.js.LICENSE.txt'),
+                },
+                {
+                    from: path.resolve(__dirname, 'dist/aslServer.js.map'),
+                    to: path.resolve(__dirname, 'dist/src/stepFunctions/asl/aslServer.js.map'),
+                },
+            ],
         }),
         new CircularDependencyPlugin({
             exclude: /node_modules/,
