@@ -210,11 +210,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateLambda(context)
 
-        await activateSchemas({
-            context: extContext.extensionContext,
-            outputChannel: toolkitOutputChannel,
-        })
-
         await activateSsmDocument(context, awsContext, regionProvider, toolkitOutputChannel)
 
         await ExtensionDisposableFiles.initialize(context)
