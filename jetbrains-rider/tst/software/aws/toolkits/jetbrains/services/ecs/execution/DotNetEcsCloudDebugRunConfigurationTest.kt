@@ -79,7 +79,7 @@ class DotNetEcsCloudDebugRunConfigurationTest : AwsReuseSolutionTestBase() {
         regionId: String = defaultRegion,
         credentialsIdentifier: CredentialIdentifier = mockCredentials
     ) {
-        val resourceCache = MockResourceCache.getInstance(project)
+        val resourceCache = MockResourceCache.getInstance()
         val taskDefinitionName = "taskDefinition"
         val fakeService = Service.builder()
             .clusterArn(clusterArn)

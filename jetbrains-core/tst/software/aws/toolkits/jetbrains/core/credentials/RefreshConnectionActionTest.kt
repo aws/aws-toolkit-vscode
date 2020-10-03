@@ -13,21 +13,23 @@ import software.aws.toolkits.core.credentials.aToolkitCredentialsProvider
 import software.aws.toolkits.core.region.anAwsRegion
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.AwsResourceCacheTest.Companion.dummyResource
-import software.aws.toolkits.jetbrains.core.MockResourceCache
+import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import java.util.concurrent.ConcurrentHashMap
 
-internal class RefreshConnectionActionTest {
-
+class RefreshConnectionActionTest {
     @Rule
     @JvmField
     val projectRule = ProjectRule()
+
+    @JvmField
+    @Rule
+    val resourceCache = MockResourceCacheRule()
 
     private val sut = RefreshConnectionAction()
 
     @Test
     fun refreshActionClearsCacheAndUpdatesConnectionState() {
-        val mockResourceCache = MockResourceCache.getInstance(projectRule.project)
-        mockResourceCache.addEntry(dummyResource(), aString())
+        resourceCache.addEntry(projectRule.project, dummyResource(), aString())
 
         val states = ConcurrentHashMap.newKeySet<ConnectionState>()
         projectRule.project.messageBus.connect()
@@ -42,7 +44,7 @@ internal class RefreshConnectionActionTest {
 
         sut.actionPerformed(testAction())
 
-        assertThat(mockResourceCache.entryCount()).isZero()
+        assertThat(resourceCache.size()).isZero()
         assertThat(states).hasAtLeastOneElementOfType(ConnectionState.ValidatingConnection::class.java)
     }
 

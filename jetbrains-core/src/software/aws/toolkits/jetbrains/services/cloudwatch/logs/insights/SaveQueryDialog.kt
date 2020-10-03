@@ -7,9 +7,9 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.future.await
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
@@ -51,7 +51,7 @@ class SaveQueryDialog(
         val (credentials, region) = connectionSettings
         AwsClientManager.getInstance().getClient<CloudWatchLogsClient>(credentials, region)
     }
-    private val resourceCache = AwsResourceCache.getInstance(project)
+    private val resourceCache = AwsResourceCache.getInstance()
 
     init {
         super.init()
@@ -68,13 +68,13 @@ class SaveQueryDialog(
     override fun getOKAction(): Action = action
 
     private suspend fun getExistingQueryId(queryName: String): String? {
-        val definitions = withTimeout(AwsResourceCache.DEFAULT_TIMEOUT.toMillis()) {
-            resourceCache.getResource(
+        val definitions = withContext(Dispatchers.Default) {
+            resourceCache.getResourceNow(
                 CloudWatchResources.DESCRIBE_QUERY_DEFINITIONS,
                 region = connectionSettings.region,
                 credentialProvider = connectionSettings.credentials,
                 forceFetch = true
-            ).await()
+            )
         }
 
         return definitions.find { it.name() == queryName }?.queryDefinitionId()
@@ -97,8 +97,7 @@ class SaveQueryDialog(
             // invalidate cache
             resourceCache.clear(
                 CloudWatchResources.DESCRIBE_QUERY_DEFINITIONS,
-                region = connectionSettings.region,
-                credentialProvider = connectionSettings.credentials
+                connectionSettings
             )
         } catch (e: Exception) {
             LOG.error(e) { "Failed to save insights query" }

@@ -5,13 +5,12 @@ package software.aws.toolkits.jetbrains.services.schemas
 
 import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.schemas.model.RegistrySummary
 import software.amazon.awssdk.services.schemas.model.SchemaSummary
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.core.MockResourceCache
+import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
 import java.util.concurrent.CompletableFuture
 
@@ -25,10 +24,9 @@ class SchemaRegistryNodeTest {
     @Rule
     val mockClientManager = MockClientManagerRule()
 
-    @Before
-    fun setUp() {
-        resourceCache().clear()
-    }
+    @JvmField
+    @Rule
+    val resourceCache = MockResourceCacheRule()
 
     @Test
     fun showRegistrySchemas() {
@@ -37,7 +35,7 @@ class SchemaRegistryNodeTest {
 
         val schema1 = "schema1"
         val schema2 = "schema2"
-        resourceCache().registryWithSchemas(
+        registryWithSchemas(
             registry,
             listOf(
                 schema1,
@@ -53,10 +51,9 @@ class SchemaRegistryNodeTest {
 
     private fun aSchemaRegistryNode(registry: String) = SchemaRegistryNode(projectRule.project, RegistrySummary.builder().registryName(registry).build())
 
-    private fun resourceCache() = MockResourceCache.getInstance(projectRule.project)
-
-    private fun MockResourceCache.registryWithSchemas(registryName: String, schemas: List<String>) {
-        this.addEntry(
+    private fun registryWithSchemas(registryName: String, schemas: List<String>) {
+        resourceCache.addEntry(
+            projectRule.project,
             SchemasResources.listSchemas(registryName),
             CompletableFuture.completedFuture(
                 schemas.map {

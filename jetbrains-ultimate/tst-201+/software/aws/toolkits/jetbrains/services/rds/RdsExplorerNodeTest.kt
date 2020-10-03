@@ -8,13 +8,13 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.rds.model.DBInstance
-import software.amazon.awssdk.utils.CompletableFutureUtils
 import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerErrorNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.RdsExplorerRootNode
 import software.aws.toolkits.resources.message
+import java.util.concurrent.CompletableFuture
 
 class RdsExplorerNodeTest {
     @JvmField
@@ -23,13 +23,14 @@ class RdsExplorerNodeTest {
 
     @JvmField
     @Rule
-    val resourceCache = MockResourceCacheRule(projectRule)
+    val resourceCache = MockResourceCacheRule()
 
     @Test
     fun `MySQL resources are listed`() {
         val name = RuleUtils.randomName()
         val name2 = RuleUtils.randomName()
-        resourceCache.get().addEntry(
+        resourceCache.addEntry(
+            projectRule.project,
             RdsResources.LIST_INSTANCES_MYSQL,
             listOf(
                 DBInstance.builder().engine(mysqlEngineType).dbName(name).dbInstanceArn("").build(),
@@ -52,7 +53,8 @@ class RdsExplorerNodeTest {
     fun `Aurora MySQL resources are listed`() {
         val name = RuleUtils.randomName()
         val name2 = RuleUtils.randomName()
-        resourceCache.get().addEntry(
+        resourceCache.addEntry(
+            projectRule.project,
             RdsResources.LIST_INSTANCES_AURORA_MYSQL,
             listOf(
                 DBInstance.builder().engine(auroraMysqlEngineType).dbName(name).dbInstanceArn("").build(),
@@ -74,7 +76,8 @@ class RdsExplorerNodeTest {
     fun `PostgreSQL resources are listed`() {
         val name = RuleUtils.randomName()
         val name2 = RuleUtils.randomName()
-        resourceCache.get().addEntry(
+        resourceCache.addEntry(
+            projectRule.project,
             RdsResources.LIST_INSTANCES_POSTGRES,
             listOf(
                 DBInstance.builder().engine(postgresEngineType).dbName(name).dbInstanceArn("").build(),
@@ -93,7 +96,8 @@ class RdsExplorerNodeTest {
     fun `Aurora PostgreSQL resources are listed`() {
         val name = RuleUtils.randomName()
         val name2 = RuleUtils.randomName()
-        resourceCache.get().addEntry(
+        resourceCache.addEntry(
+            projectRule.project,
             RdsResources.LIST_INSTANCES_AURORA_POSTGRES,
             listOf(
                 DBInstance.builder().engine(auroraPostgresEngineType).dbName(name).dbInstanceArn("").build(),
@@ -113,10 +117,10 @@ class RdsExplorerNodeTest {
 
     @Test
     fun `No resources leads to empty nodes`() {
-        resourceCache.get().addEntry(RdsResources.LIST_INSTANCES_MYSQL, listOf())
-        resourceCache.get().addEntry(RdsResources.LIST_INSTANCES_POSTGRES, listOf())
-        resourceCache.get().addEntry(RdsResources.LIST_INSTANCES_AURORA_MYSQL, listOf())
-        resourceCache.get().addEntry(RdsResources.LIST_INSTANCES_AURORA_POSTGRES, listOf())
+        resourceCache.addEntry(projectRule.project, RdsResources.LIST_INSTANCES_MYSQL, listOf())
+        resourceCache.addEntry(projectRule.project, RdsResources.LIST_INSTANCES_POSTGRES, listOf())
+        resourceCache.addEntry(projectRule.project, RdsResources.LIST_INSTANCES_AURORA_MYSQL, listOf())
+        resourceCache.addEntry(projectRule.project, RdsResources.LIST_INSTANCES_AURORA_POSTGRES, listOf())
         val serviceRootNode = sut.buildServiceRootNode(projectRule.project)
         assertThat(serviceRootNode.children).isNotEmpty
         serviceRootNode.children.forEach { node ->
@@ -132,10 +136,26 @@ class RdsExplorerNodeTest {
 
     @Test
     fun `Exception makes error nodes`() {
-        resourceCache.get().addEntry(RdsResources.LIST_INSTANCES_MYSQL, CompletableFutureUtils.failedFuture(RuntimeException("Simulated error")))
-        resourceCache.get().addEntry(RdsResources.LIST_INSTANCES_POSTGRES, CompletableFutureUtils.failedFuture(RuntimeException("Simulated error")))
-        resourceCache.get().addEntry(RdsResources.LIST_INSTANCES_AURORA_MYSQL, CompletableFutureUtils.failedFuture(RuntimeException("Simulated error")))
-        resourceCache.get().addEntry(RdsResources.LIST_INSTANCES_AURORA_POSTGRES, CompletableFutureUtils.failedFuture(RuntimeException("Simulated error")))
+        resourceCache.addEntry(
+            projectRule.project,
+            RdsResources.LIST_INSTANCES_MYSQL,
+            CompletableFuture.failedFuture(RuntimeException("Simulated error"))
+        )
+        resourceCache.addEntry(
+            projectRule.project,
+            RdsResources.LIST_INSTANCES_POSTGRES,
+            CompletableFuture.failedFuture(RuntimeException("Simulated error"))
+        )
+        resourceCache.addEntry(
+            projectRule.project,
+            RdsResources.LIST_INSTANCES_AURORA_MYSQL,
+            CompletableFuture.failedFuture(RuntimeException("Simulated error"))
+        )
+        resourceCache.addEntry(
+            projectRule.project,
+            RdsResources.LIST_INSTANCES_AURORA_POSTGRES,
+            CompletableFuture.failedFuture(RuntimeException("Simulated error"))
+        )
         val serviceRootNode = sut.buildServiceRootNode(projectRule.project)
         assertThat(serviceRootNode.children).isNotEmpty
         serviceRootNode.children.forEach { node ->

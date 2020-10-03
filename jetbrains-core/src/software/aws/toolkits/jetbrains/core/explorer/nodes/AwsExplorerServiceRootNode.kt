@@ -4,8 +4,8 @@
 package software.aws.toolkits.jetbrains.core.explorer.nodes
 
 import com.intellij.openapi.project.Project
-import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.Resource
+import software.aws.toolkits.jetbrains.core.getResourceNow
 
 /**
  * Top level node for any AWS service node
@@ -25,7 +25,7 @@ abstract class AwsExplorerServiceRootNode(project: Project, private val service:
 abstract class CacheBackedAwsExplorerServiceRootNode<T>(project: Project, service: AwsExplorerServiceNode, private val resource: Resource<out Collection<T>>) :
     AwsExplorerServiceRootNode(project, service) {
 
-    final override fun getChildrenInternal(): List<AwsExplorerNode<*>> = AwsResourceCache.getInstance(nodeProject).getResourceNow(resource).map(this::toNode)
+    final override fun getChildrenInternal(): List<AwsExplorerNode<*>> = nodeProject.getResourceNow(resource).map(this::toNode)
 
     abstract fun toNode(child: T): AwsExplorerNode<*>
 }

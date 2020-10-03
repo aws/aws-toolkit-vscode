@@ -7,13 +7,13 @@ import com.intellij.openapi.project.Project
 import icons.AwsIcons
 import software.amazon.awssdk.services.schemas.SchemasClient
 import software.amazon.awssdk.services.schemas.model.RegistrySummary
-import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.CacheBackedAwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceParentNode
+import software.aws.toolkits.jetbrains.core.getResourceNow
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
 import software.aws.toolkits.resources.message
 
@@ -47,9 +47,8 @@ open class SchemaRegistryNode(
     override fun getChildren(): List<AwsExplorerNode<*>> = super<ResourceParentNode>.getChildren()
 
     override fun getChildrenInternal(): List<AwsExplorerNode<*>> {
-        val resourceCache = AwsResourceCache.getInstance(nodeProject)
         val registryName = value.registryName()
-        return resourceCache
+        return nodeProject
             .getResourceNow(SchemasResources.listSchemas(registryName))
             .map { schema -> SchemaNode(nodeProject, schema.toDataClass(registryName)) }
             .toList()

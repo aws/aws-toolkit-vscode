@@ -14,7 +14,7 @@ import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.lambda.model.TracingMode
-import software.aws.toolkits.jetbrains.core.MockResourceCache
+import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
 import software.aws.toolkits.jetbrains.services.lambda.resources.LambdaResources
 import software.aws.toolkits.jetbrains.services.lambda.upload.LambdaLineMarker
@@ -28,6 +28,10 @@ class JavaLambdaLineMarkerTest {
     @Rule
     @JvmField
     val projectRule = JavaCodeInsightTestFixtureRule()
+
+    @JvmField
+    @Rule
+    val resourceCache = MockResourceCacheRule()
 
     @Before
     fun setUp() {
@@ -521,7 +525,7 @@ Resources:
 
         val fixture = projectRule.fixture
         val future = CompletableFuture<List<FunctionConfiguration>>()
-        MockResourceCache.getInstance(fixture.project).addEntry(LambdaResources.LIST_FUNCTIONS, future)
+        resourceCache.addEntry(projectRule.project, LambdaResources.LIST_FUNCTIONS, future)
 
         fixture.openClass(
             """

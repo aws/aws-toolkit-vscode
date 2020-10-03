@@ -4,27 +4,21 @@
 package software.aws.toolkits.jetbrains.core
 
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
-import com.intellij.testFramework.ProjectRule
-import org.junit.rules.ExternalResource
+import com.intellij.testFramework.ApplicationRule
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
-import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
-import software.aws.toolkits.jetbrains.services.sts.StsResources
-import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
+import software.aws.toolkits.jetbrains.core.credentials.activeCredentialProvider
+import software.aws.toolkits.jetbrains.core.credentials.activeRegion
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("UNCHECKED_CAST")
-class MockResourceCache(private val project: Project) : AwsResourceCache {
-
+class MockResourceCache : AwsResourceCache {
     private val map = ConcurrentHashMap<CacheKey, Any>()
-    private val accountSettings by lazy { AwsConnectionManager.getInstance(project) }
-
-    override fun <T> getResourceIfPresent(resource: Resource<T>, useStale: Boolean): T? =
-        getResourceIfPresent(resource, accountSettings.activeRegion, accountSettings.activeCredentialProvider, useStale)
 
     override fun <T> getResourceIfPresent(
         resource: Resource<T>,
@@ -35,9 +29,6 @@ class MockResourceCache(private val project: Project) : AwsResourceCache {
         is Resource.View<*, T> -> getResourceIfPresent(resource.underlying, region, credentialProvider)?.let { resource.doMap(it) }
         is Resource.Cached<T> -> mockResourceIfPresent(resource, region, credentialProvider)
     }
-
-    override fun <T> getResource(resource: Resource<T>, useStale: Boolean, forceFetch: Boolean): CompletionStage<T> =
-        getResource(resource, accountSettings.activeRegion, accountSettings.activeCredentialProvider, useStale, forceFetch)
 
     override fun <T> getResource(
         resource: Resource<T>,
@@ -77,15 +68,15 @@ class MockResourceCache(private val project: Project) : AwsResourceCache {
         }
     }
 
-    override fun clear(resource: Resource<*>) {
-        clear(resource, accountSettings.activeRegion, accountSettings.activeCredentialProvider)
+    override fun clear(resource: Resource<*>, connectionSettings: ConnectionSettings) {
+        when (resource) {
+            is Resource.Cached<*> -> map.remove(CacheKey(resource.id, connectionSettings.region.id, connectionSettings.credentials.id))
+            is Resource.View<*, *> -> clear(resource.underlying, connectionSettings)
+        }
     }
 
-    override fun clear(resource: Resource<*>, region: AwsRegion, credentialProvider: ToolkitCredentialsProvider) {
-        when (resource) {
-            is Resource.Cached<*> -> map.remove(CacheKey(resource.id, region.id, credentialProvider.id))
-            is Resource.View<*, *> -> clear(resource.underlying, region, credentialProvider)
-        }
+    override fun clear(connectionSettings: ConnectionSettings) {
+        map.keys.removeIf { it.credentialsId == connectionSettings.credentials.id && it.regionId == connectionSettings.region.id }
     }
 
     override fun clear() {
@@ -93,12 +84,6 @@ class MockResourceCache(private val project: Project) : AwsResourceCache {
     }
 
     fun entryCount() = map.size
-
-    fun <T> addEntry(resource: Resource.Cached<T>, value: T) =
-        addEntry(resource, accountSettings.activeRegion.id, accountSettings.activeCredentialProvider.id, value)
-
-    fun <T> addEntry(resource: Resource.Cached<T>, value: CompletableFuture<T>) =
-        addEntry(resource, accountSettings.activeRegion.id, accountSettings.activeCredentialProvider.id, value)
 
     fun <T> addEntry(resource: Resource.Cached<T>, regionId: String, credentialsId: String, value: T) {
         map[CacheKey(resource.id, regionId, credentialsId)] = value as Any
@@ -108,39 +93,34 @@ class MockResourceCache(private val project: Project) : AwsResourceCache {
         map[CacheKey(resource.id, regionId, credentialsId)] = value as Any
     }
 
-    fun addValidAwsCredential(regionId: String, credentialsId: String, awsAccountId: String) {
-        map[CacheKey(StsResources.ACCOUNT.id, regionId, credentialsId)] = awsAccountId as Any
-    }
-
-    fun addInvalidAwsCredential(regionId: String, credentialsId: String) {
-        val future = CompletableFuture<String>()
-        ApplicationManager.getApplication().executeOnPooledThread {
-            future.completeExceptionally(IllegalStateException("Invalid AWS credentials $credentialsId"))
-        }
-        map[CacheKey(StsResources.ACCOUNT.id, regionId, credentialsId)] = future
-    }
-
     companion object {
         @JvmStatic
-        fun getInstance(project: Project): MockResourceCache = ServiceManager.getService(project, AwsResourceCache::class.java) as MockResourceCache
+        fun getInstance(): MockResourceCache = service<AwsResourceCache>() as MockResourceCache
 
         private data class CacheKey(val resourceId: String, val regionId: String, val credentialsId: String)
     }
 }
 
-class MockResourceCacheRule(private val project: () -> Project) : ExternalResource() {
-    constructor(projectRule: ProjectRule) : this({ projectRule.project })
-    constructor(projectRule: CodeInsightTestFixtureRule) : this({ projectRule.project })
-
-    private lateinit var cache: MockResourceCache
-
-    override fun before() {
-        cache = MockResourceCache.getInstance(project())
-    }
+class MockResourceCacheRule : ApplicationRule() {
+    private val cache by lazy { MockResourceCache.getInstance() }
 
     override fun after() {
         cache.clear()
     }
 
-    fun get() = cache
+    fun <T> addEntry(project: Project, resource: Resource.Cached<T>, value: T) =
+        cache.addEntry(resource, project.activeRegion().id, project.activeCredentialProvider().id, value)
+
+    fun <T> addEntry(project: Project, resource: Resource.Cached<T>, value: CompletableFuture<T>) =
+        cache.addEntry(resource, project.activeRegion().id, project.activeCredentialProvider().id, value)
+
+    fun <T> addEntry(resource: Resource.Cached<T>, regionId: String, credentialsId: String, value: T) {
+        cache.addEntry(resource, regionId, credentialsId, value)
+    }
+
+    fun <T> addEntry(resource: Resource.Cached<T>, regionId: String, credentialsId: String, value: CompletableFuture<T>) {
+        cache.addEntry(resource, regionId, credentialsId, value)
+    }
+
+    fun size() = cache.entryCount()
 }

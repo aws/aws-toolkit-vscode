@@ -5,14 +5,13 @@ package software.aws.toolkits.jetbrains.services.lambda
 
 import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.model.FunctionConfiguration
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.lambda.model.TracingConfigResponse
 import software.amazon.awssdk.services.lambda.model.TracingMode
-import software.aws.toolkits.jetbrains.core.MockResourceCache
+import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerErrorNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.LambdaExplorerRootNode
@@ -25,14 +24,13 @@ class LambdaServiceNodeTest {
     @Rule
     val projectRule = ProjectRule()
 
-    @Before
-    fun setUp() {
-        resourceCache().clear()
-    }
+    @JvmField
+    @Rule
+    val resourceCache = MockResourceCacheRule()
 
     @Test
     fun lambdaFunctionsAreListed() {
-        resourceCache().lambdaFunctions(listOf("bcd", "abc", "zzz", "AEF"))
+        lambdaFunctions(listOf("bcd", "abc", "zzz", "AEF"))
 
         val children = LambdaServiceNode(projectRule.project, LAMBDA_EXPLORER_SERVICE_NODE).children
 
@@ -42,7 +40,7 @@ class LambdaServiceNodeTest {
 
     @Test
     fun noFunctionsShowsEmptyList() {
-        resourceCache().lambdaFunctions(emptyList())
+        lambdaFunctions(emptyList())
 
         val children = LambdaServiceNode(projectRule.project, LAMBDA_EXPLORER_SERVICE_NODE).children
 
@@ -52,7 +50,8 @@ class LambdaServiceNodeTest {
 
     @Test
     fun exceptionLeadsToErrorNode() {
-        resourceCache().addEntry(
+        resourceCache.addEntry(
+            projectRule.project,
             LambdaResources.LIST_FUNCTIONS,
             CompletableFuture<List<FunctionConfiguration>>().also {
                 it.completeExceptionally(RuntimeException("Simulated error"))
@@ -65,10 +64,9 @@ class LambdaServiceNodeTest {
         assertThat(children).allMatch { it is AwsExplorerErrorNode }
     }
 
-    private fun resourceCache() = MockResourceCache.getInstance(projectRule.project)
-
-    private fun MockResourceCache.lambdaFunctions(names: List<String>) {
-        this.addEntry(
+    private fun lambdaFunctions(names: List<String>) {
+        resourceCache.addEntry(
+            projectRule.project,
             LambdaResources.LIST_FUNCTIONS,
             CompletableFuture.completedFuture(names.map(::functionConfiguration))
         )

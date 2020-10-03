@@ -49,7 +49,7 @@ class QueryEditorDialogTest {
 
     @JvmField
     @Rule
-    val mockResourceCache = MockResourceCacheRule(projectRule)
+    val mockResourceCache = MockResourceCacheRule()
 
     private lateinit var view: QueryEditor
     private lateinit var sut: QueryEditorDialog
@@ -63,7 +63,7 @@ class QueryEditorDialogTest {
     fun setUp() {
         val project = projectRule.project
         client = mockClientManagerRule.create()
-        mockResourceCache.get().addEntry(
+        mockResourceCache.addEntry(
             CloudWatchResources.LIST_LOG_GROUPS,
             region.id,
             credentials.id,
@@ -96,7 +96,7 @@ class QueryEditorDialogTest {
 
     @Test
     fun `Dialog selects correct log groups`() {
-        mockResourceCache.get().addEntry(
+        mockResourceCache.addEntry(
             CloudWatchResources.LIST_LOG_GROUPS,
             region.id,
             credentials.id,
@@ -111,7 +111,7 @@ class QueryEditorDialogTest {
 
     @Test
     fun `Dialog selects multiple log groups`() {
-        mockResourceCache.get().addEntry(
+        mockResourceCache.addEntry(
             CloudWatchResources.LIST_LOG_GROUPS,
             region.id,
             credentials.id,

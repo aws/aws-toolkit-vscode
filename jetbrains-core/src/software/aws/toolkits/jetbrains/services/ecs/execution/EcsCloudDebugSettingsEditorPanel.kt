@@ -192,7 +192,7 @@ class EcsCloudDebugSettingsEditorPanel(private val project: Project) : Disposabl
 
         val (awsRegion, credentialProvider) = credentialSettings.get()
 
-        val resourceCache = AwsResourceCache.getInstance(project)
+        val resourceCache = AwsResourceCache.getInstance()
         resourceCache.getResource(
             EcsResources.describeService(clusterArn, serviceArn),
             awsRegion,

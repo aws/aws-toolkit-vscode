@@ -22,7 +22,7 @@ class RedshiftUtilsTest {
 
     @JvmField
     @Rule
-    val resourceCache = MockResourceCacheRule(projectRule)
+    val resourceCache = MockResourceCacheRule()
 
     private val defaultRegion = RuleUtils.randomName()
     private val region = AwsRegion(defaultRegion, RuleUtils.randomName(), RuleUtils.randomName())
@@ -34,7 +34,7 @@ class RedshiftUtilsTest {
 
     @Test
     fun `Account ID ARN`() {
-        resourceCache.get().addEntry(StsResources.ACCOUNT, accountId)
+        resourceCache.addEntry(projectRule.project, StsResources.ACCOUNT, accountId)
         val arn = projectRule.project.clusterArn(mockCluster, region)
         assertThat(arn).isEqualTo("arn:${region.partitionId}:redshift:${region.id}:$accountId:cluster:$clusterId")
     }

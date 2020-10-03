@@ -5,12 +5,11 @@ package software.aws.toolkits.jetbrains.services.ecs
 
 import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.ecs.model.Service
 import software.amazon.awssdk.utils.CompletableFutureUtils
-import software.aws.toolkits.jetbrains.core.MockResourceCache
+import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerErrorNode
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
@@ -22,12 +21,11 @@ class EcsClusterNodeTest {
     @Rule
     val projectRule = ProjectRule()
 
-    private val clusterArn = "arn:aws:ecs:us-west-2:1234567890:cluster/clusterName"
+    @JvmField
+    @Rule
+    val resourceCache = MockResourceCacheRule()
 
-    @Before
-    fun setUp() {
-        resourceCache().clear()
-    }
+    private val clusterArn = "arn:aws:ecs:us-west-2:1234567890:cluster/clusterName"
 
     @Test
     fun arnIsParsedIntoGoodName() {
@@ -48,7 +46,8 @@ class EcsClusterNodeTest {
     fun failedCallShowsErrorNode() {
         val node = aEcsClusterNode()
 
-        resourceCache().addEntry(
+        resourceCache.addEntry(
+            projectRule.project,
             EcsResources.listServiceArns(clusterArn),
             CompletableFutureUtils.failedFuture(RuntimeException("Simulated error"))
         )
@@ -61,9 +60,9 @@ class EcsClusterNodeTest {
     fun eachServiceArnGetsANode() {
         val node = aEcsClusterNode()
 
-        resourceCache().serviceArns("arn1", "arn2")
-        resourceCache().service("arn1", Service.builder().build())
-        resourceCache().service("arn2", Service.builder().build())
+        mockServiceArns("arn1", "arn2")
+        mockService("arn1", Service.builder().build())
+        mockService("arn2", Service.builder().build())
 
         assertThat(node.children).hasSize(2)
         assertThat(node.children).hasOnlyElementsOfType(EcsServiceNode::class.java)
@@ -73,7 +72,7 @@ class EcsClusterNodeTest {
     fun noServicesShowsEmpty() {
         val node = aEcsClusterNode()
 
-        resourceCache().serviceArns()
+        mockServiceArns()
 
         assertThat(node.children).hasSize(1)
         assertThat(node.children).hasOnlyElementsOfType(AwsExplorerEmptyNode::class.java)
@@ -81,17 +80,17 @@ class EcsClusterNodeTest {
 
     private fun aEcsClusterNode(arn: String = clusterArn) = EcsClusterNode(projectRule.project, arn)
 
-    private fun resourceCache() = MockResourceCache.getInstance(projectRule.project)
-
-    private fun MockResourceCache.serviceArns(vararg arns: String) {
-        this.addEntry(
+    private fun mockServiceArns(vararg arns: String) {
+        resourceCache.addEntry(
+            projectRule.project,
             EcsResources.listServiceArns(clusterArn),
             CompletableFuture.completedFuture(arns.toList())
         )
     }
 
-    private fun MockResourceCache.service(serviceArn: String, service: Service) {
-        this.addEntry(
+    private fun mockService(serviceArn: String, service: Service) {
+        resourceCache.addEntry(
+            projectRule.project,
             EcsResources.describeService(clusterArn, serviceArn),
             CompletableFuture.completedFuture(service)
         )

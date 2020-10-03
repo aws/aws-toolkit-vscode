@@ -7,13 +7,14 @@ import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.Resource
+import software.aws.toolkits.jetbrains.core.clearResourceForCurrentConnection
 
 fun Project.refreshAwsTree(resource: Resource<*>? = null) {
-    val cache = AwsResourceCache.getInstance(this)
+    val cache = AwsResourceCache.getInstance()
     if (resource == null) {
-        cache.clear()
+        this.clearResourceForCurrentConnection()
     } else {
-        cache.clear(resource)
+        this.clearResourceForCurrentConnection(resource)
     }
     runInEdt {
         // redraw explorer

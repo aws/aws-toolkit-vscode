@@ -38,7 +38,7 @@ class CreateConfigurationActionTest {
 
     @Rule
     @JvmField
-    val resourceCache = MockResourceCacheRule(projectRule)
+    val resourceCache = MockResourceCacheRule()
 
     private val port = RuleUtils.randomNumber()
     private val address = RuleUtils.randomName()
@@ -59,7 +59,7 @@ class CreateConfigurationActionTest {
 
     @Test
     fun `Create data source gets user`() {
-        resourceCache.get().addEntry(StsResources.USER, username)
+        resourceCache.addEntry(projectRule.project, StsResources.USER, username)
         val node = createNode()
         val registry = DataSourceRegistry(projectRule.project)
         CreateIamDataSourceAction().createDatasource(node, registry)
@@ -71,7 +71,8 @@ class CreateConfigurationActionTest {
 
     @Test
     fun `Create data source falls back to master username`() {
-        resourceCache.get().addEntry(
+        resourceCache.addEntry(
+            projectRule.project,
             StsResources.USER,
             CompletableFuture<String>().also {
                 it.completeExceptionally(RuntimeException("Failed to get current user"))

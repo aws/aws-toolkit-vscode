@@ -18,7 +18,7 @@ import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.schemas.model.DescribeSchemaResponse
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.core.MockResourceCache
+import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
@@ -34,6 +34,10 @@ class SchemasViewerTest {
     @JvmField
     @Rule
     val mockClientManager = MockClientManagerRule()
+
+    @JvmField
+    @Rule
+    val resourceCache = MockResourceCacheRule()
 
     private var errorNotification: Notification? = null
 
@@ -72,7 +76,7 @@ class SchemasViewerTest {
             .content(AWS_EVENT_SCHEMA_RAW)
             .build()
 
-        resourceCache().mockSchemaCache(REGISTRY, SCHEMA, schemaResponse)
+        mockSchemaCache(REGISTRY, SCHEMA, schemaResponse)
 
         val actualResponse = SchemaDownloader().getSchemaContent(REGISTRY, SCHEMA, project = projectRule.project).toCompletableFuture().get()
 
@@ -125,7 +129,7 @@ class SchemasViewerTest {
             .schemaVersion(VERSION)
             .build()
 
-        resourceCache().mockSchemaCache(REGISTRY, SCHEMA, schema)
+        mockSchemaCache(REGISTRY, SCHEMA, schema)
 
         val mockSchemaDownloader = mock<SchemaDownloader> {
             on { getSchemaContent(REGISTRY, SCHEMA, project = projectRule.project) }.thenReturn(completedFuture(schema))
@@ -150,10 +154,8 @@ class SchemasViewerTest {
         verify(mockSchemaPreviewer).openFileInEditor(REGISTRY, SCHEMA, AWS_EVENT_SCHEMA_PRETTY, VERSION, projectRule.project)
     }
 
-    private fun resourceCache() = MockResourceCache.getInstance(projectRule.project)
-
-    private fun MockResourceCache.mockSchemaCache(registryName: String, schemaName: String, schema: DescribeSchemaResponse) {
-        this.addEntry(SchemasResources.getSchema(registryName, schemaName), completedFuture(schema))
+    private fun mockSchemaCache(registryName: String, schemaName: String, schema: DescribeSchemaResponse) {
+        resourceCache.addEntry(projectRule.project, SchemasResources.getSchema(registryName, schemaName), completedFuture(schema))
     }
 
     private fun subscribeToNotifications() {

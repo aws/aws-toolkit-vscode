@@ -4,12 +4,10 @@ package software.aws.toolkits.jetbrains.services.s3
 
 import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.s3.model.Bucket
-import software.aws.toolkits.jetbrains.core.MockResourceCache
-import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
+import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerErrorNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.S3ExplorerRootNode
@@ -24,16 +22,14 @@ class S3ServiceNodeTest {
     @Rule
     val projectRule = ProjectRule()
 
-    @Before
-    fun setUp() {
-        resourceCache().clear()
-        MockAwsConnectionManager.getInstance(projectRule.project).reset()
-    }
+    @JvmField
+    @Rule
+    val resourceCache = MockResourceCacheRule()
 
     @Test
     fun s3BucketsAreListed() {
         val bucketList = listOf("bcd", "abc", "AEF", "ZZZ")
-        resourceCache().s3buckets(bucketList)
+        s3buckets(bucketList)
         val children = S3ServiceNode(projectRule.project, S3_EXPLORER_NODE).children
 
         assertThat(children).allMatch { it is S3BucketNode }
@@ -47,15 +43,15 @@ class S3ServiceNodeTest {
 
     @Test
     fun noBucketsInTheRegion() {
-        val bucketList = emptyList<String>()
-        resourceCache().s3buckets(bucketList)
+        s3buckets(emptyList())
         val children = S3ServiceNode(projectRule.project, S3_EXPLORER_NODE).children
         assertThat(children).allMatch { it is AwsExplorerEmptyNode }
     }
 
     @Test
     fun errorLoadingBuckets() {
-        resourceCache().addEntry(
+        resourceCache.addEntry(
+            projectRule.project,
             S3Resources.LIST_REGIONALIZED_BUCKETS,
             CompletableFuture<List<S3Resources.RegionalizedBucket>>().also {
                 it.completeExceptionally(RuntimeException("Simulated error"))
@@ -65,16 +61,14 @@ class S3ServiceNodeTest {
         assertThat(children).allMatch { it is AwsExplorerErrorNode }
     }
 
-    private fun bucketData(bucketName: String) =
-        Bucket.builder()
-            .creationDate(Instant.parse("1995-10-23T10:12:35Z"))
-            .name(bucketName)
-            .build()
+    private fun bucketData(bucketName: String) = Bucket.builder()
+        .creationDate(Instant.parse("1995-10-23T10:12:35Z"))
+        .name(bucketName)
+        .build()
 
-    private fun resourceCache() = MockResourceCache.getInstance(projectRule.project)
-
-    private fun MockResourceCache.s3buckets(names: List<String>) {
-        this.addEntry(
+    private fun s3buckets(names: List<String>) {
+        resourceCache.addEntry(
+            projectRule.project,
             S3Resources.LIST_REGIONALIZED_BUCKETS,
             CompletableFuture.completedFuture(names.map { S3Resources.RegionalizedBucket(bucketData(it), MockRegionProvider.getInstance().defaultRegion()) })
         )

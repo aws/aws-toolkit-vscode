@@ -5,11 +5,10 @@ package software.aws.toolkits.jetbrains.services.schemas
 
 import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.schemas.model.RegistrySummary
-import software.aws.toolkits.jetbrains.core.MockResourceCache
+import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.SchemasExplorerRootNode
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
@@ -21,16 +20,15 @@ class SchemasServiceNodeTest {
     @Rule
     val projectRule = ProjectRule()
 
-    @Before
-    fun setUp() {
-        resourceCache().clear()
-    }
+    @JvmField
+    @Rule
+    val resourceCache = MockResourceCacheRule()
 
     @Test
     fun registriesAreShown() {
         val registry1 = "Registry1"
         val registry2 = "aws.events"
-        resourceCache().registries(listOf(registry1, registry2))
+        registries(listOf(registry1, registry2))
 
         val node = SchemasServiceNode(projectRule.project, SCHEMAS_EXPLORER_NODE)
 
@@ -41,17 +39,16 @@ class SchemasServiceNodeTest {
 
     @Test
     fun noRegistriesShowsEmptyNode() {
-        resourceCache().registries(emptyList())
+        registries(emptyList())
 
         val node = SchemasServiceNode(projectRule.project, SCHEMAS_EXPLORER_NODE)
 
         assertThat(node.children).hasOnlyElementsOfType(AwsExplorerEmptyNode::class.java)
     }
 
-    private fun resourceCache() = MockResourceCache.getInstance(projectRule.project)
-
-    private fun MockResourceCache.registries(names: List<String>) {
-        this.addEntry(
+    private fun registries(names: List<String>) {
+        resourceCache.addEntry(
+            projectRule.project,
             SchemasResources.LIST_REGISTRIES,
             CompletableFuture.completedFuture(
                 names.map {

@@ -22,7 +22,7 @@ import software.amazon.awssdk.services.ecs.model.Service
 import software.amazon.awssdk.services.ecs.model.ServiceNotFoundException
 import software.amazon.awssdk.services.ecs.model.TaskDefinition
 import software.aws.toolkits.core.credentials.CredentialIdentifier
-import software.aws.toolkits.jetbrains.core.MockResourceCache
+import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugConstants
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebuggingPlatform
@@ -41,6 +41,10 @@ class EcsCloudDebugRunConfigurationTest {
     @JvmField
     @Rule
     val projectRule = ProjectRule()
+
+    @JvmField
+    @Rule
+    val resourceCache = MockResourceCacheRule()
 
     @Test
     fun happyPath() {
@@ -403,8 +407,7 @@ class EcsCloudDebugRunConfigurationTest {
 
         val future = CompletableFuture<Service>()
         future.completeExceptionally(ServiceNotFoundException.builder().message("Service doesn't exist").build())
-        MockResourceCache.getInstance(projectRule.project)
-            .addEntry(EcsResources.describeService("arn", "notarealservice"), defaultRegion, mockCredentials.id, future)
+        resourceCache.addEntry(EcsResources.describeService("arn", "notarealservice"), defaultRegion, getMockCredentials().id, future)
 
         assertThatThrownBy {
             config.checkSettingsBeforeRun()
@@ -442,7 +445,7 @@ class EcsCloudDebugRunConfigurationTest {
         configuration.clusterArn(defaultClusterArn)
         configuration.serviceArn(defaultServiceArn)
         configuration.regionId(defaultRegion)
-        configuration.credentialProviderId(mockCredentials.id)
+        configuration.credentialProviderId(getMockCredentials().id)
         configuration.containerOptions(mapOf(containerOptionsKey to makeFakeContainerOptions()))
 
         // also mock out the resource cache since we check that services might exist
@@ -466,9 +469,8 @@ class EcsCloudDebugRunConfigurationTest {
         clusterArn: String = defaultClusterArn,
         serviceArn: String = defaultServiceArn,
         regionId: String = defaultRegion,
-        credentialsIdentifier: CredentialIdentifier = mockCredentials
+        credentialsIdentifier: CredentialIdentifier = getMockCredentials()
     ) {
-        val resourceCache = MockResourceCache.getInstance(projectRule.project)
         val taskDefinitionName = "taskDefinition"
         val fakeService = Service.builder()
             .clusterArn(clusterArn)
@@ -486,9 +488,8 @@ class EcsCloudDebugRunConfigurationTest {
         resourceCache.addEntry(EcsResources.describeTaskDefinition(taskDefinitionName), regionId, credentialsIdentifier.id, fakeTaskDefinition)
     }
 
-    private val mockCredentials: CredentialIdentifier
-        get() = MockCredentialsManager.getInstance().addCredentials(
-            "mockCreds",
-            AwsBasicCredentials.create("foo", "bar")
-        )
+    private fun getMockCredentials(): CredentialIdentifier = MockCredentialsManager.getInstance().addCredentials(
+        "mockCreds",
+        AwsBasicCredentials.create("foo", "bar")
+    )
 }

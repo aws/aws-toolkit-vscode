@@ -18,7 +18,7 @@ import software.amazon.awssdk.services.ecs.model.LaunchType
 import software.amazon.awssdk.services.ecs.model.Service
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.rules.ECSTemporaryServiceRule
-import software.aws.toolkits.jetbrains.core.MockResourceCache
+import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.Resource
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.runUnderRealCredentials
@@ -50,6 +50,10 @@ abstract class CloudDebugTestCase(private val taskDefName: String) {
     @Rule
     @JvmField
     val chain = RuleChain(cfnRule, ecsRule)
+
+    @Rule
+    @JvmField
+    val resourceCache = MockResourceCacheRule()
 
     @Before
     open fun setUp() {
@@ -112,17 +116,21 @@ abstract class CloudDebugTestCase(private val taskDefName: String) {
     // TODO: delete these horrible mocks once we have a sane implementation...
     fun setUpMocks() {
         runUnderRealCredentials(getProject()) {
-            MockResourceCache.getInstance(getProject()).let {
-                val mockInstrumentedResources = mock<Resource.Cached<Map<String, String>>> {
-                    on { id }.thenReturn("cdb.list_resources")
-                }
-                it.addEntry(EcsResources.describeService(instrumentedService.clusterArn(), instrumentedService.serviceArn()), instrumentedService)
-                it.addEntry(mockInstrumentedResources, mapOf(service.serviceArn() to instrumentationRole))
-                it.addEntry(
-                    EcsResources.describeTaskDefinition(instrumentedService.taskDefinition()),
-                    ecsClient.describeTaskDefinition { builder -> builder.taskDefinition(instrumentedService.taskDefinition()) }.taskDefinition()
-                )
+            val project = getProject()
+            val mockInstrumentedResources = mock<Resource.Cached<Map<String, String>>> {
+                on { id }.thenReturn("cdb.list_resources")
             }
+            resourceCache.addEntry(
+                project,
+                EcsResources.describeService(instrumentedService.clusterArn(), instrumentedService.serviceArn()),
+                instrumentedService
+            )
+            resourceCache.addEntry(project, mockInstrumentedResources, mapOf(service.serviceArn() to instrumentationRole))
+            resourceCache.addEntry(
+                project,
+                EcsResources.describeTaskDefinition(instrumentedService.taskDefinition()),
+                ecsClient.describeTaskDefinition { builder -> builder.taskDefinition(instrumentedService.taskDefinition()) }.taskDefinition()
+            )
         }
     }
 

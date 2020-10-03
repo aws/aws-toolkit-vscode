@@ -49,7 +49,7 @@ class EditFunctionDialogTest {
 
     @JvmField
     @Rule
-    val mockResourceCache = MockResourceCacheRule(projectRule)
+    val mockResourceCache = MockResourceCacheRule()
 
     private val mockSettingsManager by lazy { AwsConnectionManager.getInstance(projectRule.project) as MockAwsConnectionManager }
 
@@ -184,7 +184,8 @@ class EditFunctionDialogTest {
     }
 
     private fun mockBuckets() {
-        mockResourceCache.get().addEntry(
+        mockResourceCache.addEntry(
+            projectRule.project,
             S3Resources.LIST_REGIONALIZED_BUCKETS,
             listOf(
                 S3Resources.RegionalizedBucket(Bucket.builder().name("hello").build(), mockSettingsManager.activeRegion),

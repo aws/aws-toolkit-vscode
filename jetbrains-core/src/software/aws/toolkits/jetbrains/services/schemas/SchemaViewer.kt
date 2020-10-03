@@ -17,9 +17,9 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.util.ExceptionUtil
 import software.amazon.awssdk.services.schemas.model.DescribeSchemaResponse
-import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.activeCredentialProvider
 import software.aws.toolkits.jetbrains.core.credentials.activeRegion
+import software.aws.toolkits.jetbrains.core.getResource
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
@@ -74,7 +74,7 @@ class SchemaViewer(
 class SchemaDownloader() {
     fun getSchemaContent(registryName: String, schemaName: String, version: String? = null, project: Project): CompletionStage<DescribeSchemaResponse> {
         val resource = SchemasResources.getSchema(registryName, schemaName, version)
-        return AwsResourceCache.getInstance(project).getResource(resource)
+        return project.getResource(resource)
     }
 
     fun getSchemaContentAsJson(schemaContent: DescribeSchemaResponse): JsonNode = mapper.readTree(schemaContent.content())

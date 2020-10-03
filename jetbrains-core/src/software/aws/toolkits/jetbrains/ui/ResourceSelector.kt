@@ -43,8 +43,6 @@ class ResourceSelector<T> private constructor(
     private val sortOnLoad: Boolean,
     private val awsConnection: LazyAwsConnectionEvaluator
 ) : ComboBox<T>(comboBoxModel) {
-
-    private val resourceCache = AwsResourceCache.getInstance(project)
     @Volatile
     private var loadingStatus: Status = Status.NOT_LOADED
     private var shouldBeEnabled: Boolean = isEnabled
@@ -83,7 +81,7 @@ class ResourceSelector<T> private constructor(
                 processSuccess(emptyList(), null)
             } else {
                 val (region, credentials) = awsConnection()
-                val resultFuture = resourceCache.getResource(resource, region, credentials, forceFetch = forceFetch).toCompletableFuture()
+                val resultFuture = AwsResourceCache.getInstance().getResource(resource, region, credentials, forceFetch = forceFetch).toCompletableFuture()
                 loadingFuture = resultFuture
                 resultFuture.whenComplete { value, error ->
                     when {

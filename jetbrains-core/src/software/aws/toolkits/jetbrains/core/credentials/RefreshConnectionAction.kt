@@ -22,7 +22,8 @@ class RefreshConnectionAction(text: String = message("settings.refresh.descripti
 
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
-        AwsResourceCache.getInstance(project).clear()
+
+        AwsResourceCache.getInstance().clear()
         AwsConnectionManager.getInstance(project).refreshConnectionState()
 
         AwsTelemetry.refreshExplorer(project)

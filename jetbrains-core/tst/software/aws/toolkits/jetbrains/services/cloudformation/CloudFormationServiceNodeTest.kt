@@ -5,12 +5,11 @@ package software.aws.toolkits.jetbrains.services.cloudformation
 
 import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.cloudformation.model.StackStatus
 import software.amazon.awssdk.services.cloudformation.model.StackSummary
-import software.aws.toolkits.jetbrains.core.MockResourceCache
+import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerEmptyNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.CloudFormationExplorerRootNode
 import software.aws.toolkits.jetbrains.services.cloudformation.resources.CloudFormationResources
@@ -22,14 +21,13 @@ class CloudFormationServiceNodeTest {
     @Rule
     val projectRule = ProjectRule()
 
-    @Before
-    fun setUp() {
-        resourceCache().clear()
-    }
+    @JvmField
+    @Rule
+    val resourceCache = MockResourceCacheRule()
 
     @Test
     fun completedStacksAreShown() {
-        resourceCache().stacksWithNames(listOf("Stack" to StackStatus.CREATE_COMPLETE))
+        stacksWithNames(listOf("Stack" to StackStatus.CREATE_COMPLETE))
 
         val node = CloudFormationServiceNode(projectRule.project, CF_EXPLORER_NODE)
 
@@ -38,7 +36,7 @@ class CloudFormationServiceNodeTest {
 
     @Test
     fun deletedStacksAreNotShown() {
-        resourceCache().stacksWithNames(listOf("Stack" to StackStatus.DELETE_COMPLETE))
+        stacksWithNames(listOf("Stack" to StackStatus.DELETE_COMPLETE))
 
         val node = CloudFormationServiceNode(projectRule.project, CF_EXPLORER_NODE)
 
@@ -47,17 +45,16 @@ class CloudFormationServiceNodeTest {
 
     @Test
     fun noStacksShowsEmptyNode() {
-        resourceCache().stacksWithNames(emptyList())
+        stacksWithNames(emptyList())
 
         val node = CloudFormationServiceNode(projectRule.project, CF_EXPLORER_NODE)
 
         assertThat(node.children).hasOnlyElementsOfType(AwsExplorerEmptyNode::class.java)
     }
 
-    private fun resourceCache() = MockResourceCache.getInstance(projectRule.project)
-
-    private fun MockResourceCache.stacksWithNames(names: List<Pair<String, StackStatus>>) {
-        this.addEntry(
+    private fun stacksWithNames(names: List<Pair<String, StackStatus>>) {
+        resourceCache.addEntry(
+            projectRule.project,
             CloudFormationResources.LIST_STACKS,
             CompletableFuture.completedFuture(
                 names.map {
