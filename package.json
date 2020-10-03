@@ -696,7 +696,7 @@
             "editor/title": [
                 {
                     "command": "aws.previewStateMachine",
-                    "when": "editorLangId == asl &&  && !aws-toolkit-vscode:IsCloud9",
+                    "when": "editorLangId == asl && !aws-toolkit-vscode:IsCloud9",
                     "group": "navigation"
                 },
                 {
