@@ -19,7 +19,6 @@ import com.intellij.psi.SmartPointerManager
 import com.jetbrains.rdclient.util.idea.LifetimedProjectComponent
 import com.jetbrains.rider.model.lambdaDaemonModel
 import com.jetbrains.rider.projectView.solution
-import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.dotnet.DotNetLambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.dotnet.element.RiderLambdaHandlerFakePsiElement
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationType
@@ -96,12 +95,8 @@ class LambdaDaemonHost(project: Project) : LifetimedProjectComponent(project) {
         val configurationType = ConfigurationTypeUtil.findConfigurationType(LambdaRunConfigurationType::class.java)
         val runConfigurations = runManager.getConfigurationsList(configurationType)
 
-        val isDebug = executor is DefaultDebugExecutor
-
         var settings = runConfigurations.filterIsInstance<LocalLambdaRunConfiguration>().firstOrNull { configuration ->
-            configuration.handler() == handler &&
-                // TODO: Get rid of the check when SAM CLI provide support for dotnet 3.1 lambda debug
-                (if (isDebug) configuration.runtime() != Runtime.DOTNETCORE3_1 else true)
+            configuration.handler() == handler
         }?.let { configuration ->
             runManager.findSettings(configuration)
         }
@@ -112,12 +107,7 @@ class LambdaDaemonHost(project: Project) : LifetimedProjectComponent(project) {
             val template = runManager.getConfigurationTemplate(factory)
 
             val configuration = template.configuration as LocalLambdaRunConfiguration
-            val activeRuntime = DotNetRuntimeUtils.getCurrentDotNetCoreRuntime()
-
-            // TODO: Get rid of the check when SAM CLI provide support for dotnet 3.1 lambda debug
-            val runtime =
-                if (isDebug && activeRuntime == Runtime.DOTNETCORE3_1) DotNetRuntimeUtils.defaultDotNetCoreRuntime
-                else activeRuntime
+            val runtime = DotNetRuntimeUtils.getCurrentDotNetCoreRuntime()
 
             LocalLambdaRunConfigurationProducer.setAccountOptions(configuration)
             configuration.useHandler(runtime, handler)

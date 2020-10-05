@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Add support for debugging dotnet 3.1 local lambdas (requires minimum SAM CLI version of 1.4.0)"
+}
