@@ -44,11 +44,11 @@ export async function* listLambdaFunctions(client: LambdaClient): AsyncIterableI
 }
 
 /**
- * Parses Lambda handler into a filename by stripping the function name and appending the correct file extension and a function name, by taking what's left.
+ * Parses Lambda handler into a filename by stripping the function name and appending the correct file extension and a function name
  * Only works for supported languages (Python/JS)
  * @param configuration Lambda configuration object from getFunction
  */
-export function parseLambdaDetailsFromConfiguration(
+export function getLambdaDetailsFromConfiguration(
     configuration: Lambda.FunctionConfiguration
 ): {
     fileName: string

@@ -6,6 +6,7 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 
+import { Set as ImmutableSet } from 'immutable'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
@@ -22,7 +23,7 @@ import { CODE_TARGET_TYPE } from '../sam/debugger/awsSamDebugConfiguration'
 import { getReferencedHandlerPaths, LaunchConfiguration } from '../debug/launchConfiguration'
 import * as pathutils from '../utilities/pathUtils'
 import {
-    getResourceAssociatedWithHandlerFromTemplateDatum,
+    getResourcesAssociatedWithHandlerFromTemplateDatum,
     getTemplatesAssociatedWithHandler,
 } from '../cloudformation/templateRegistry'
 
@@ -33,7 +34,7 @@ interface MakeAddDebugConfigCodeLensParams {
     range: vscode.Range
     rootUri: vscode.Uri
     runtimeFamily: RuntimeFamily
-    runtime?: string | undefined
+    filteredRuntimes?: ImmutableSet<Runtime>
 }
 
 export async function makeCodeLenses({
@@ -67,25 +68,35 @@ export async function makeCodeLenses({
 
         try {
             const associatedTemplates = getTemplatesAssociatedWithHandler(handler.filename, handler.handlerName)
-            let runtime: string | undefined
-            // just take the first runtime if associated templates exist.
-            // TODO: is this good enough?
+            let filteredRuntimes: ImmutableSet<Runtime> | undefined
+
             if (associatedTemplates.length > 0) {
-                runtime = CloudFormation.getStringForProperty(
-                    getResourceAssociatedWithHandlerFromTemplateDatum(
-                        handler.filename,
-                        handler.handlerName,
-                        associatedTemplates[0]
-                    )?.Properties?.Runtime,
-                    associatedTemplates[0].template
-                )
+                const runtimes: Runtime[] = []
+                for (const templateDatum of associatedTemplates) {
+                    runtimes.push(
+                        ...getResourcesAssociatedWithHandlerFromTemplateDatum(
+                            handler.filename,
+                            handler.handlerName,
+                            templateDatum
+                        )
+                            .map(
+                                resource =>
+                                    (CloudFormation.getStringForProperty(
+                                        resource.Properties?.Runtime,
+                                        templateDatum.template
+                                    ) as Runtime) ?? ''
+                            )
+                            .filter(resource => resource.length > 0)
+                    )
+                }
+                filteredRuntimes = ImmutableSet(runtimes)
             }
             const baseParams: MakeAddDebugConfigCodeLensParams = {
                 handlerName: handler.handlerName,
                 range,
                 rootUri: handler.manifestUri,
                 runtimeFamily,
-                runtime,
+                filteredRuntimes,
             }
             if (
                 !existingConfigs.has(
@@ -120,7 +131,7 @@ function makeAddCodeSamDebugCodeLens(params: MakeAddDebugConfigCodeLensParams): 
                 resourceName: params.handlerName,
                 rootUri: params.rootUri,
                 runtimeFamily: params.runtimeFamily,
-                runtime: params.runtime,
+                filteredRuntimes: params.filteredRuntimes,
             },
             CODE_TARGET_TYPE,
         ],

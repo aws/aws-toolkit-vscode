@@ -23,7 +23,7 @@ import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
 import { showConfirmationMessage } from '../../s3/util/messages'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
 import { promptUserForLocation, WizardContext } from '../../shared/wizards/multiStepWizard'
-import { parseLambdaDetailsFromConfiguration } from '../utils'
+import { getLambdaDetailsFromConfiguration } from '../utils'
 
 // TODO: Move off of deprecated `request` to `got`?
 // const pipeline = promisify(Stream.pipeline)
@@ -99,7 +99,7 @@ async function runImportLambda(functionNode: LambdaFunctionNode, window = Window
         async progress => {
             const lambdaLocation = path.join(
                 importLocation,
-                parseLambdaDetailsFromConfiguration(functionNode.configuration).fileName
+                getLambdaDetailsFromConfiguration(functionNode.configuration).fileName
             )
             try {
                 await downloadAndUnzipLambda(progress, functionNode, importLocation)

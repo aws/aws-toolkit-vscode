@@ -6,6 +6,7 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { Runtime } from 'aws-sdk/clients/lambda'
+import { Set as ImmutableSet } from 'immutable'
 import { getExistingConfiguration } from '../../../../lambda/config/templates'
 import { createRuntimeQuickPick, getDefaultRuntime, RuntimeFamily } from '../../../../lambda/models/samLambdaRuntime'
 import { CloudFormationTemplateRegistry } from '../../../cloudformation/templateRegistry'
@@ -30,14 +31,14 @@ export interface AddSamDebugConfigurationInput {
     resourceName: string
     rootUri: vscode.Uri
     runtimeFamily?: RuntimeFamily
-    runtime?: string
+    filteredRuntimes?: ImmutableSet<Runtime>
 }
 
 /**
  * Adds a new debug configuration for the given sam function resource and template.
  */
 export async function addSamDebugConfiguration(
-    { resourceName, rootUri, runtimeFamily, runtime }: AddSamDebugConfigurationInput,
+    { resourceName, rootUri, runtimeFamily, filteredRuntimes }: AddSamDebugConfigurationInput,
     type: typeof CODE_TARGET_TYPE | typeof TEMPLATE_TARGET_TYPE
 ): Promise<void> {
     // tslint:disable-next-line: no-floating-promises
@@ -47,7 +48,7 @@ export async function addSamDebugConfiguration(
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(rootUri)
 
     if (type === TEMPLATE_TARGET_TYPE) {
-        const runtimeName = runtime ? runtime : runtimeFamily ? getDefaultRuntime(runtimeFamily) : undefined
+        const runtimeName = runtimeFamily ? getDefaultRuntime(runtimeFamily) : undefined
         let preloadedConfig = undefined
 
         if (workspaceFolder) {
@@ -97,10 +98,15 @@ export async function addSamDebugConfiguration(
             preloadedConfig
         )
     } else if (type === CODE_TARGET_TYPE) {
-        let selectedRuntime = runtime
-        if (!selectedRuntime) {
+        let selectedRuntime: string | undefined
+        // If only one runtime pops up, choose it.
+        // Is this the behavior we want?
+        if (filteredRuntimes?.size === 1) {
+            selectedRuntime = filteredRuntimes.first()
+        } else {
             const quickPick = createRuntimeQuickPick({
                 runtimeFamily,
+                filteredRuntimes,
             })
 
             const choices = await picker.promptUser({

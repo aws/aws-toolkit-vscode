@@ -10,7 +10,7 @@ import { CloudFormation } from './cloudformation'
 import * as pathutils from '../utilities/pathUtils'
 import { isInDirectory } from '../filesystemUtilities'
 import { dotNetRuntimes } from '../../lambda/models/samLambdaRuntime'
-import { parseLambdaDetailsFromConfiguration } from '../../lambda/utils'
+import { getLambdaDetailsFromConfiguration } from '../../lambda/utils'
 
 export interface TemplateDatum {
     path: string
@@ -140,33 +140,32 @@ export function getTemplatesAssociatedWithHandler(
 ): TemplateDatum[] {
     // find potential matching templates
     return unfilteredTemplates.filter(templateDatum => {
-        return !!getResourceAssociatedWithHandlerFromTemplateDatum(filepath, handler, templateDatum)
+        return getResourcesAssociatedWithHandlerFromTemplateDatum(filepath, handler, templateDatum).length > 0
     })
 }
 
 /**
- * Returns the first Cloudformation Resource in a TemplateDatum that is tied to the filepath and handler given.
- * Returns undefined if none are found.
- * TODO: Is there a reason to return more than the first resource?
+ * Returns an array of Cloudformation Resources in a TemplateDatum that is tied to the filepath and handler given.
  * @param filepath Handler file's path
  * @param handler Handler function from aforementioned file
  * @param templateDatum TemplateDatum object to search through
  */
-export function getResourceAssociatedWithHandlerFromTemplateDatum(
+export function getResourcesAssociatedWithHandlerFromTemplateDatum(
     filepath: string,
     handler: string,
     templateDatum: TemplateDatum
-): CloudFormation.Resource | undefined {
+): CloudFormation.Resource[] {
+    const matchingResources: CloudFormation.Resource[] = []
     const templateDirname = path_.dirname(templateDatum.path)
     // template isn't a parent or sibling of file
     if (!isInDirectory(templateDirname, path_.dirname(filepath))) {
-        return undefined
+        return []
     }
 
     // no resources
     const resources = templateDatum.template.Resources
     if (!resources) {
-        return undefined
+        return []
     }
 
     for (const key of Object.keys(resources)) {
@@ -202,14 +201,14 @@ export function getResourceAssociatedWithHandlerFromTemplateDatum(
                             pathutils.normalize(filepath)
                         )
                     ) {
-                        return resource
+                        matchingResources.push(resource)
                     }
                     // Interpreted languages all follow the same spec:
                     // ./path/to/handler/without/file/extension.handlerName
                     // Check to ensure filename and handler both match.
                 } else {
                     try {
-                        const parsedLambda = parseLambdaDetailsFromConfiguration({
+                        const parsedLambda = getLambdaDetailsFromConfiguration({
                             Handler: registeredHandler,
                             Runtime: registeredRuntime,
                         })
@@ -221,7 +220,7 @@ export function getResourceAssociatedWithHandlerFromTemplateDatum(
                                 ) &&
                             functionName === parsedLambda.functionName
                         ) {
-                            return resource
+                            matchingResources.push(resource)
                         }
                     } catch (e) {
                         // swallow error from parseLambdaDetailsFromConfiguration: handler not a valid runtime, so skip to the next one
@@ -231,6 +230,5 @@ export function getResourceAssociatedWithHandlerFromTemplateDatum(
         }
     }
 
-    // no matching handlers detected
-    return undefined
+    return matchingResources
 }

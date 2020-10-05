@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 
 import {
     CloudFormationTemplateRegistry,
-    getResourceAssociatedWithHandlerFromTemplateDatum,
+    getResourcesAssociatedWithHandlerFromTemplateDatum,
     getTemplatesAssociatedWithHandler,
     TemplateDatum,
 } from '../../../shared/cloudformation/templateRegistry'
@@ -236,64 +236,73 @@ describe('CloudFormation Template Registry', async () => {
     })
 
     describe('getResourceAssociatedWithHandlerFromTemplateDatum', () => {
-        it('returns undefined if the given template is not a parent of the handler file in question', () => {
-            const val = getResourceAssociatedWithHandlerFromTemplateDatum(
+        it('returns an empty array if the given template is not a parent of the handler file in question', () => {
+            const val = getResourcesAssociatedWithHandlerFromTemplateDatum(
                 path.join(rootPath, 'index.js'),
                 'handler',
                 nonParentTemplate
             )
 
-            assert.strictEqual(val, undefined)
+            assert.deepStrictEqual(val, [])
         })
 
-        it('returns undefined if the template has no resources', () => {
-            const val = getResourceAssociatedWithHandlerFromTemplateDatum(
+        it('returns an empty array if the template has no resources', () => {
+            const val = getResourcesAssociatedWithHandlerFromTemplateDatum(
                 path.join(rootPath, nestedPath, 'index.js'),
                 'handler',
                 noResourceTemplate
             )
 
-            assert.strictEqual(val, undefined)
+            assert.deepStrictEqual(val, [])
         })
 
         it('returns a template resource if it has a matching handler', () => {
-            const val = getResourceAssociatedWithHandlerFromTemplateDatum(
+            const val = getResourcesAssociatedWithHandlerFromTemplateDatum(
                 path.join(rootPath, nestedPath, 'index.js'),
                 'handler',
                 workingTemplate
             )
 
-            assert.deepStrictEqual(val, matchingResource)
+            assert.deepStrictEqual(val, [matchingResource])
         })
 
         it('ignores path handling if using a compiled language', () => {
-            const val = getResourceAssociatedWithHandlerFromTemplateDatum(
+            const val = getResourcesAssociatedWithHandlerFromTemplateDatum(
                 path.join(rootPath, nestedPath, 'index.cs'),
                 'Asdf::Asdf.Function::FunctionHandler',
                 dotNetTemplate
             )
 
-            assert.deepStrictEqual(val, compiledResource)
+            assert.deepStrictEqual(val, [compiledResource])
         })
 
-        it('returns the first template resource if it has multiple matching handlers', () => {
-            const val = getResourceAssociatedWithHandlerFromTemplateDatum(
+        it('returns all template resources if it has multiple matching handlers', () => {
+            const val = getResourcesAssociatedWithHandlerFromTemplateDatum(
                 path.join(rootPath, nestedPath, 'index.js'),
                 'handler',
                 multiResourceTemplate
             )
 
-            assert.deepStrictEqual(val, matchingResource)
+            assert.deepStrictEqual(val, [
+                matchingResource,
+                {
+                    ...matchingResource,
+                    Properties: {
+                        ...matchingResource.Properties,
+                        Timeout: 5000,
+                    },
+                },
+            ])
         })
 
         it('does not break if the resource has a non-parseable runtime', () => {
-            const val = getResourceAssociatedWithHandlerFromTemplateDatum(
+            const val = getResourcesAssociatedWithHandlerFromTemplateDatum(
                 path.join(rootPath, nestedPath, 'index.js'),
                 'handler',
                 badRuntimeTemplate
             )
 
-            assert.deepStrictEqual(val, matchingResource)
+            assert.deepStrictEqual(val, [matchingResource])
         })
     })
 })

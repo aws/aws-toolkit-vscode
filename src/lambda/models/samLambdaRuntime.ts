@@ -8,7 +8,7 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import { Runtime } from 'aws-sdk/clients/lambda'
-import { Map, Set } from 'immutable'
+import { Map as ImmutableMap, Set as ImmutableSet } from 'immutable'
 import * as picker from '../../shared/ui/picker'
 
 export enum RuntimeFamily {
@@ -20,20 +20,31 @@ export enum RuntimeFamily {
 
 // TODO: Consolidate all of the runtime constructs into a single <Runtime, Set<Runtime>> map
 //       We should be able to eliminate a fair amount of redundancy with that.
-export const nodeJsRuntimes: Set<Runtime> = Set<Runtime>(['nodejs12.x', 'nodejs10.x', 'nodejs8.10'])
-export const pythonRuntimes: Set<Runtime> = Set<Runtime>(['python3.8', 'python3.7', 'python3.6', 'python2.7'])
-export const dotNetRuntimes: Set<Runtime> = Set<Runtime>(['dotnetcore2.1', 'dotnetcore3.1'])
-const DEFAULT_RUNTIMES = Map<RuntimeFamily, Runtime>([
+export const nodeJsRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['nodejs12.x', 'nodejs10.x', 'nodejs8.10'])
+export const pythonRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
+    'python3.8',
+    'python3.7',
+    'python3.6',
+    'python2.7',
+])
+export const dotNetRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['dotnetcore2.1', 'dotnetcore3.1'])
+const DEFAULT_RUNTIMES = ImmutableMap<RuntimeFamily, Runtime>([
     [RuntimeFamily.NodeJS, 'nodejs12.x'],
     [RuntimeFamily.Python, 'python3.8'],
     [RuntimeFamily.DotNetCore, 'dotnetcore2.1'],
 ])
 
-export const samLambdaRuntimes: Set<Runtime> = Set.union([nodeJsRuntimes, pythonRuntimes, dotNetRuntimes])
-export const samLambdaImportableRuntimes: Set<Runtime> = Set.union([nodeJsRuntimes, pythonRuntimes])
+export const samLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([
+    nodeJsRuntimes,
+    pythonRuntimes,
+    dotNetRuntimes,
+])
+export const samLambdaImportableRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([nodeJsRuntimes, pythonRuntimes])
 
 // Filter out node8 until local debugging is no longer supported, and it can be removed from samLambdaRuntimes
-export const samLambdaCreatableRuntimes: Set<Runtime> = samLambdaRuntimes.filter(runtime => runtime !== 'nodejs8.10')
+export const samLambdaCreatableRuntimes: ImmutableSet<Runtime> = samLambdaRuntimes.filter(
+    runtime => runtime !== 'nodejs8.10'
+)
 
 export type DependencyManager = 'cli-package' | 'mod' | 'gradle' | 'pip' | 'npm' | 'maven' | 'bundler'
 
@@ -62,7 +73,7 @@ export function getFamily(runtime: string): RuntimeFamily {
 
 // This allows us to do things like "sort" nodejs10.x after nodejs8.10
 // Map Values are used for comparisons, not for display
-const runtimeCompareText: Map<Runtime, string> = Map<Runtime, string>([['nodejs8.10', 'nodejs08.10']])
+const runtimeCompareText: ImmutableMap<Runtime, string> = ImmutableMap<Runtime, string>([['nodejs8.10', 'nodejs08.10']])
 
 function getSortableCompareText(runtime: Runtime): string {
     return runtimeCompareText.get(runtime) || runtime.toString()
@@ -104,7 +115,7 @@ export function getDefaultRuntime(runtime: RuntimeFamily): string | undefined {
  * Returns a set of runtimes for a specified runtime family or undefined if not found.
  * @param family Runtime family to get runtimes for
  */
-function getRuntimesForFamily(family: RuntimeFamily): Set<Runtime> | undefined {
+function getRuntimesForFamily(family: RuntimeFamily): ImmutableSet<Runtime> | undefined {
     switch (family) {
         case RuntimeFamily.NodeJS:
             return nodeJsRuntimes
@@ -127,9 +138,12 @@ function getRuntimesForFamily(family: RuntimeFamily): Set<Runtime> | undefined {
 export function createRuntimeQuickPick(params: {
     buttons?: vscode.QuickInputButton[]
     currRuntime?: Runtime
+    filteredRuntimes?: ImmutableSet<Runtime>
     runtimeFamily?: RuntimeFamily
 }): vscode.QuickPick<vscode.QuickPickItem> {
-    const runtimes = params.runtimeFamily
+    const runtimes = params.filteredRuntimes
+        ? params.filteredRuntimes
+        : params.runtimeFamily
         ? getRuntimesForFamily(params.runtimeFamily) ?? samLambdaCreatableRuntimes
         : samLambdaCreatableRuntimes
 

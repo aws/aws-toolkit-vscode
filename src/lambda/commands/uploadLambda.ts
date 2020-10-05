@@ -23,7 +23,7 @@ import { createQuickPick, promptUser, verifySinglePickerOutput } from '../../sha
 import { ExtensionDisposableFiles } from '../../shared/utilities/disposableFiles'
 import { Window } from '../../shared/vscode/window'
 import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
-import { parseLambdaDetailsFromConfiguration } from '../utils'
+import { getLambdaDetailsFromConfiguration } from '../utils'
 
 /**
  * Executes the "Upload Lambda..." command.
@@ -180,7 +180,7 @@ async function runUploadLambdaWithSamBuild(
     try {
         const handlerFile = path.join(
             parentDir.fsPath,
-            parseLambdaDetailsFromConfiguration(functionNode.configuration).fileName
+            getLambdaDetailsFromConfiguration(functionNode.configuration).fileName
         )
         if (!(await fileExists(handlerFile))) {
             const isConfirmed = await showConfirmationMessage(
