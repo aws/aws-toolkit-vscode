@@ -7,12 +7,12 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ValidationInfo
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.schemas.SchemaDownloader
 import software.aws.toolkits.jetbrains.services.schemas.SchemaSummary
 import software.aws.toolkits.jetbrains.services.schemas.SchemaTemplateExtraContext
 import software.aws.toolkits.jetbrains.services.schemas.SchemaTemplateParameters
-import software.aws.toolkits.jetbrains.ui.AwsConnection
 import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
@@ -27,7 +27,7 @@ interface SchemaSelectionPanel {
 
     fun schemaName(): String? = null
 
-    fun reloadSchemas(awsConnection: AwsConnection? = null) {}
+    fun reloadSchemas(awsConnection: ConnectionSettings? = null) {}
 
     fun buildSchemaTemplateParameters(): SchemaTemplateParameters?
 

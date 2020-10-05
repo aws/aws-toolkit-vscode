@@ -7,8 +7,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.ComboboxSpeedSearch
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources
-import software.aws.toolkits.jetbrains.ui.AwsConnection
 import software.aws.toolkits.jetbrains.ui.ResourceSelector
 import software.aws.toolkits.resources.message
 import java.awt.BorderLayout
@@ -20,7 +20,7 @@ class SchemaResourceSelectorSelectionPanel(
     val builder: SamProjectBuilder,
     val project: Project,
     // Subsequent parameters injectable for unit tests to enable mocking because ResourceSelector has inconsistent unit test behaviour
-    val resourceSelectorBuilder: ResourceSelector.ResourceBuilder = ResourceSelector.builder(project),
+    val resourceSelectorBuilder: ResourceSelector.ResourceBuilder = ResourceSelector.builder(),
     useSpeedSearch: Boolean = true,
     rootPanelBuilder: () -> JPanel = { JPanel(BorderLayout()) }
 ) : SchemaSelectionPanelBase(project) {
@@ -29,7 +29,7 @@ class SchemaResourceSelectorSelectionPanel(
 
     private val schemaPanel: JPanel
 
-    private var currentAwsConnection: AwsConnection?
+    private var currentAwsConnection: ConnectionSettings?
 
     private val schemasSelector: ResourceSelector<SchemaSelectionItem>
 
@@ -50,10 +50,10 @@ class SchemaResourceSelectorSelectionPanel(
 
     override val schemaSelectionPanel: JComponent = schemaPanel
 
-    private fun initializeAwsConnection(): AwsConnection? {
+    private fun initializeAwsConnection(): ConnectionSettings? {
         val settings = AwsConnectionManager.getInstance(project)
         return if (settings.isValidConnectionSettings()) {
-            settings.activeRegion to settings.activeCredentialProvider
+            settings.connectionSettings()
         } else {
             null
         }
@@ -68,7 +68,7 @@ class SchemaResourceSelectorSelectionPanel(
         .awsConnection { currentAwsConnection ?: throw IllegalStateException(message("credentials.profile.not_configured")) } // Must be inline function as it gets updated and re-evaluated
         .build()
 
-    override fun reloadSchemas(awsConnection: AwsConnection?) {
+    override fun reloadSchemas(awsConnection: ConnectionSettings?) {
         if (awsConnection != null) {
             currentAwsConnection = awsConnection
         }

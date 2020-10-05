@@ -28,9 +28,10 @@ class ConfigureLambdaPanel(private val project: Project) {
     }
 
     private fun createUIComponents() {
-        lambdaFunction = ResourceSelector.builder(project)
+        lambdaFunction = ResourceSelector.builder()
             .resource(LambdaResources.LIST_FUNCTIONS)
             .customRenderer { value, component -> component.append(value.functionName()); component }
+            .awsConnection(project)
             .build()
     }
 }
