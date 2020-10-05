@@ -3,7 +3,6 @@
 package software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights
 
 import com.intellij.icons.AllIcons
-import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.cloudwatchlogs.model.QueryDefinition
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.resources.CloudWatchResources
@@ -14,7 +13,6 @@ import javax.swing.JPanel
 import javax.swing.JTextArea
 
 class SelectSavedQuery(
-    private val project: Project,
     private val connectionSettings: ConnectionSettings
 ) {
     private lateinit var basePanel: JPanel
@@ -24,9 +22,9 @@ class SelectSavedQuery(
     private lateinit var refreshButton: JButton
 
     private fun createUIComponents() {
-        resourceSelector = ResourceSelector.builder(project)
+        resourceSelector = ResourceSelector.builder()
             .resource { CloudWatchResources.DESCRIBE_QUERY_DEFINITIONS }
-            .awsConnection { connectionSettings.region to connectionSettings.credentials }
+            .awsConnection { connectionSettings }
             .customRenderer { entry, renderer -> renderer.append(entry.name()); renderer }
             .build()
 

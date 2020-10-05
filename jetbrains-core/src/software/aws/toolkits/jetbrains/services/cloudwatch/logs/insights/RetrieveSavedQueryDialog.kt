@@ -21,7 +21,7 @@ class RetrieveSavedQueryDialog(
     private val project: Project,
     connectionSettings: ConnectionSettings
 ) : DialogWrapper(project), CoroutineScope by ApplicationThreadPoolScope("RetriveSavedInsightsQuery") {
-    private val view = SelectSavedQuery(project, connectionSettings)
+    private val view = SelectSavedQuery(connectionSettings)
 
     private val action: OkAction = object : OkAction() {
         override fun doAction(e: ActionEvent?) {
