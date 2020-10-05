@@ -8,6 +8,7 @@ import com.intellij.openapi.ui.ValidationInfo;
 import com.intellij.ui.ColoredListCellRenderer;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.uiDesigner.core.GridConstraints;
+import com.intellij.util.text.SemVer;
 import java.awt.Dimension;
 import java.awt.event.ItemEvent;
 import java.util.List;
@@ -20,8 +21,6 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
-import com.intellij.util.text.SemVer;
-import kotlin.Pair;
 import kotlin.Unit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -29,8 +28,9 @@ import software.amazon.awssdk.services.lambda.model.Runtime;
 import software.aws.toolkits.core.credentials.CredentialIdentifier;
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider;
 import software.aws.toolkits.core.region.AwsRegion;
-import software.aws.toolkits.jetbrains.core.credentials.CredentialManager;
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager;
+import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings;
+import software.aws.toolkits.jetbrains.core.credentials.CredentialManager;
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance;
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager;
 import software.aws.toolkits.jetbrains.core.executables.ExecutableType;
@@ -39,7 +39,7 @@ import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup;
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupUtil;
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable;
 
-public class SamInitSelectionPanel implements ValidatablePanel {
+public class SamInitSelectionPanel {
     @NotNull
     public JPanel mainPanel;
     @NotNull
@@ -225,7 +225,7 @@ public class SamInitSelectionPanel implements ValidatablePanel {
 
         ToolkitCredentialsProvider credentialProvider = CredentialManager.getInstance().getAwsCredentialProvider(credentialIdentifier, awsRegion);
 
-        this.schemaSelectionUi.reloadSchemas(new Pair<>(awsRegion, credentialProvider));
+        this.schemaSelectionUi.reloadSchemas(new ConnectionSettings(credentialProvider, awsRegion));
 
         mainPanel.revalidate();
 
@@ -332,7 +332,6 @@ public class SamInitSelectionPanel implements ValidatablePanel {
     }
 
     @Nullable
-    @Override
     public ValidationInfo validate() {
         ExecutableInstance samExecutable = ExecutableManager.getInstance().getExecutableIfPresent(ExecutableType.getExecutable(SamExecutable.class));
         if (samExecutable instanceof ExecutableInstance.BadExecutable) {

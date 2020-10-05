@@ -29,10 +29,10 @@ import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.JBUI.CurrentTheme.Validator.errorBackgroundColor
 import com.intellij.util.ui.JBUI.CurrentTheme.Validator.errorBorderColor
 import software.amazon.awssdk.services.ecs.model.ContainerDefinition
-import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
+import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.filter
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
@@ -67,7 +67,7 @@ class EcsCloudDebugSettingsEditorPanel(private val project: Project) : Disposabl
     private val toolbar = createToolbar()
     private var containerNames: Set<String> = emptySet()
     private val credentialManager = CredentialManager.getInstance()
-    private val credentialSettings = AtomicReference<Pair<AwsRegion, ToolkitCredentialsProvider>>()
+    private val credentialSettingsRef = AtomicReference<ConnectionSettings>()
 
     val component: JComponent
         get() = panel
@@ -82,16 +82,16 @@ class EcsCloudDebugSettingsEditorPanel(private val project: Project) : Disposabl
         containerLoadingIndicator.setLoadingText(message("cloud_debug.ecs.run_config.container.loading"))
         containerLoadingIndicator.border = JBUI.Borders.empty()
 
-        clusterSelector = ResourceSelector.builder(project)
+        clusterSelector = ResourceSelector.builder()
             .resource(EcsResources.LIST_CLUSTER_ARNS)
             .customRenderer { value, component -> component.append(EcsUtils.clusterArnToName(value)); component }
             .disableAutomaticLoading()
-            .awsConnection { credentialSettings.get() ?: throw IllegalStateException("clusterSelector.reload() called before region/credentials set") }
+            .awsConnection { credentialSettingsRef.get() ?: throw IllegalStateException("clusterSelector.reload() called before region/credentials set") }
             .build()
 
         clusterSelector.addActionListener { this.onClusterSelectionChange() }
 
-        serviceSelector = ResourceSelector.builder(project).resource {
+        serviceSelector = ResourceSelector.builder().resource {
             val selectedCluster = selectedCluster
             if (selectedCluster != null) {
                 EcsResources.listServiceArns(selectedCluster).filter { EcsUtils.isInstrumented(it) }
@@ -100,7 +100,7 @@ class EcsCloudDebugSettingsEditorPanel(private val project: Project) : Disposabl
             }
         }.customRenderer { value, component -> component.append(EcsUtils.serviceArnToName(value)); component }
             .disableAutomaticLoading()
-            .awsConnection { credentialSettings.get() ?: throw IllegalStateException("serviceSelector.reload() called before region/credentials set") }
+            .awsConnection { credentialSettingsRef.get() ?: throw IllegalStateException("serviceSelector.reload() called before region/credentials set") }
             .build()
 
         serviceSelector.isEnabled = false
@@ -190,18 +190,16 @@ class EcsCloudDebugSettingsEditorPanel(private val project: Project) : Disposabl
             emptyList()
         }
 
-        val (awsRegion, credentialProvider) = credentialSettings.get()
+        val credentialSettings = credentialSettingsRef.get()
 
         val resourceCache = AwsResourceCache.getInstance()
         resourceCache.getResource(
             EcsResources.describeService(clusterArn, serviceArn),
-            awsRegion,
-            credentialProvider
+            credentialSettings
         ).thenCompose { service ->
             resourceCache.getResource(
                 EcsResources.listContainers(service.taskDefinition()),
-                awsRegion,
-                credentialProvider
+                credentialSettings
             )
         }.whenComplete { containers, error ->
             runInEdt(ModalityState.any()) {
@@ -286,7 +284,7 @@ class EcsCloudDebugSettingsEditorPanel(private val project: Project) : Disposabl
         val credentialProvider = credentialManager.getAwsCredentialProvider(credentialIdentifier, region)
 
         // Set initial state before telling UI to update
-        credentialSettings.set(region to credentialProvider)
+        credentialSettingsRef.set(ConnectionSettings(credentialProvider, region))
         selectedCluster = clusterArn
         selectedService = serviceArn
 
@@ -315,9 +313,9 @@ class EcsCloudDebugSettingsEditorPanel(private val project: Project) : Disposabl
     }
 
     fun applyTo(configuration: EcsCloudDebugRunConfiguration) {
-        val (region, credentialsProvider) = credentialSettings.get() ?: return
-        configuration.regionId(region.id)
-        configuration.credentialProviderId(credentialsProvider.id)
+        val connectionSettings = credentialSettingsRef.get() ?: return
+        configuration.regionId(connectionSettings.region.id)
+        configuration.credentialProviderId(connectionSettings.credentials.id)
         configuration.clusterArn(selectedCluster)
         configuration.serviceArn(selectedService)
 
@@ -393,8 +391,9 @@ class EcsCloudDebugSettingsEditorPanel(private val project: Project) : Disposabl
         val credentialIdentifier = credentialManager.getCredentialIdentifierById(credentialProviderId) ?: return
         val credentialProvider = tryOrNull { credentialManager.getAwsCredentialProvider(credentialIdentifier, region) } ?: return
 
-        val oldSettings = credentialSettings.getAndUpdate { region to credentialProvider }
-        if (oldSettings?.first == region && oldSettings.second == credentialProvider) return
+        val newSettings = ConnectionSettings(credentialProvider, region)
+        val oldSettings = credentialSettingsRef.getAndUpdate { newSettings }
+        if (oldSettings == newSettings) return
 
         // Clear out settings on region change
         containerNames = emptySet()

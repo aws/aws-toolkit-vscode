@@ -9,7 +9,6 @@ import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.DefaultProjectFactory
-import com.intellij.openapi.ui.ValidationInfo
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutable
@@ -20,10 +19,6 @@ import software.aws.toolkits.resources.message
 import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JTextField
-
-interface ValidatablePanel {
-    fun validate(): ValidationInfo? = null
-}
 
 @JvmOverloads
 fun setupSamSelectionElements(samExecutableField: JTextField, editButton: JButton, label: JComponent, postEditCallback: Runnable? = null) {

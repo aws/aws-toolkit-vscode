@@ -16,7 +16,6 @@ import software.amazon.awssdk.services.iam.model.PolicyEvaluationDecisionType
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.awsClient
-import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.services.RoleValidation
 import software.aws.toolkits.jetbrains.services.iam.IamResources
@@ -40,12 +39,9 @@ class InstrumentDialog(private val project: Project, val clusterArn: String, val
     }
 
     private fun createUIComponents() {
-        val credentials = AwsConnectionManager.getInstance(project).activeCredentialProvider
-        val region = AwsConnectionManager.getInstance(project).activeRegion
-
-        iamRole = ResourceSelector.builder(project)
+        iamRole = ResourceSelector.builder()
             .resource { IamResources.LIST_ALL }
-            .awsConnection { Pair(region, credentials) }
+            .awsConnection(project)
             .build()
 
         iamRole.addItemListener {

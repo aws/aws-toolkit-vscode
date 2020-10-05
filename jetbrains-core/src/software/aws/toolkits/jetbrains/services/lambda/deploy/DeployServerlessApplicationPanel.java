@@ -30,7 +30,6 @@ import software.aws.toolkits.jetbrains.services.cloudformation.Parameter;
 import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources;
 import software.aws.toolkits.jetbrains.ui.ResourceSelector;
 
-@SuppressWarnings("NullableProblems")
 public class DeployServerlessApplicationPanel {
     @NotNull JTextField newStackName;
     @NotNull JButton createS3BucketButton;
@@ -92,8 +91,8 @@ public class DeployServerlessApplicationPanel {
     private void createUIComponents() {
         environmentVariablesTable = new EnvVariablesTable();
         stackParameters = new Wrapper();
-        stacks = ResourceSelector.builder(project).resource(ACTIVE_STACKS).build();
-        s3Bucket = ResourceSelector.builder(project).resource(S3Resources.listBucketNamesByActiveRegion(project)).build();
+        stacks = ResourceSelector.builder().resource(ACTIVE_STACKS).awsConnection(project).build();
+        s3Bucket = ResourceSelector.builder().resource(S3Resources.listBucketNamesByActiveRegion(project)).awsConnection(project).build();
 
         if (!ApplicationManager.getApplication().isUnitTestMode()) {
             JComponent tableComponent = environmentVariablesTable.getComponent();

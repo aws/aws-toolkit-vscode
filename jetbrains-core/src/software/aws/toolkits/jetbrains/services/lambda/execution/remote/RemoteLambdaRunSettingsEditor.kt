@@ -5,9 +5,9 @@ package software.aws.toolkits.jetbrains.services.lambda.execution.remote
 
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
-import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.tryOrNull
+import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.map
 import software.aws.toolkits.jetbrains.services.lambda.resources.LambdaResources
@@ -16,12 +16,12 @@ import java.util.concurrent.atomic.AtomicReference
 import javax.swing.JPanel
 
 class RemoteLambdaRunSettingsEditor(project: Project) : SettingsEditor<RemoteLambdaRunConfiguration>() {
-    private val settings = AtomicReference<Pair<AwsRegion, ToolkitCredentialsProvider>>()
+    private val credentialSettingsRef = AtomicReference<ConnectionSettings>()
     private val functionSelector = ResourceSelector
-        .builder(project)
+        .builder()
         .resource(LambdaResources.LIST_FUNCTIONS.map { it.functionName() })
         .disableAutomaticLoading()
-        .awsConnection { settings.get() ?: throw IllegalStateException("functionSelector.reload() called before region/credentials set") }
+        .awsConnection { credentialSettingsRef.get() ?: throw IllegalStateException("functionSelector.reload() called before region/credentials set") }
         .build()
     private val view = RemoteLambdaRunSettingsEditorPanel(project, functionSelector)
     private val credentialManager = CredentialManager.getInstance()
@@ -33,8 +33,9 @@ class RemoteLambdaRunSettingsEditor(project: Project) : SettingsEditor<RemoteLam
         val credentialIdentifier = credentialManager.getCredentialIdentifierById(credentialProviderId) ?: return
         val credentialProvider = tryOrNull { credentialManager.getAwsCredentialProvider(credentialIdentifier, region) } ?: return
 
-        val oldSettings = settings.getAndUpdate { region to credentialProvider }
-        if (oldSettings?.first == region && oldSettings.second == credentialProvider) return
+        val newSettings = ConnectionSettings(credentialProvider, region)
+        val oldSettings = credentialSettingsRef.getAndUpdate { newSettings }
+        if (oldSettings == newSettings) return
         functionSelector.reload()
     }
 

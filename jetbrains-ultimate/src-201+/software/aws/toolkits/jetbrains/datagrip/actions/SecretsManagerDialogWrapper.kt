@@ -37,9 +37,10 @@ class SecretsManagerDialogWrapper(private val selected: AwsExplorerNode<*>) : Di
     }
 
     override fun createCenterPanel(): JComponent? {
-        secrets = ResourceSelector.builder(selected.nodeProject)
+        secrets = ResourceSelector.builder()
             .resource(SecretsManagerResources.secrets)
             .customRenderer { entry, renderer -> renderer.append(entry.name()); renderer }
+            .awsConnection(selected.nodeProject)
             .build().also {
                 // When it is changed, make sure the OK button is re-enabled
                 it.addActionListener {
