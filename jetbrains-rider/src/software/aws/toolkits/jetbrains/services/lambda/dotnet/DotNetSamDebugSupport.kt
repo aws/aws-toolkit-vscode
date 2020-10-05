@@ -41,7 +41,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
-import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamDebugSupport
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.SamRunningState
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
@@ -73,21 +72,19 @@ class DotNetSamDebugSupport : SamDebugSupport {
         private const val REMOTE_DEBUGGER_DIR = "/tmp/lambci_debug_files"
         private const val REMOTE_NETCORE_CLI_PATH = "/var/lang/bin/dotnet"
         private const val NUMBER_OF_DEBUG_PORTS = 2
+
+        private const val FIND_PID_SCRIPT =
+            """
+                for i in `ls /proc/*/exe` ; do
+                    symlink=`readlink  ${'$'}i 2>/dev/null`;
+                    if [[ "${'$'}symlink" == *"/dotnet" ]]; then
+                        echo  ${'$'}i | sed -n 's/.*\/proc\/\(.*\)\/exe.*/\1/p'
+                    fi;
+                done;
+            """
     }
 
     override fun getDebugPorts(): List<Int> = NetUtils.findAvailableSocketPorts(NUMBER_OF_DEBUG_PORTS).toList()
-
-    /**
-     * Check whether the JatBrains.Rider.Worker.Launcher app (that is required to run Debugger) is downloaded into Rider SDK.
-     */
-    override fun isSupported(runtime: Runtime): Boolean {
-        // TODO: Remove when SAM adds debug support
-        if (runtime == Runtime.DOTNETCORE3_1) {
-            return false
-        }
-
-        return true
-    }
 
     override fun patchCommandLine(debugPorts: List<Int>, commandLine: GeneralCommandLine) {
         commandLine.withParameters("--debugger-path")
@@ -259,7 +256,7 @@ class DotNetSamDebugSupport : SamDebugSupport {
                 dockerContainer,
                 "/bin/sh",
                 "-c",
-                """find /proc -mindepth 2 -maxdepth 2 -name exe -exec ls -l {} \; 2>/dev/null | grep -e '/dotnet$' | sed -n 's/.*\/proc\/\(.*\)\/exe.*/\1/p'"""
+                FIND_PID_SCRIPT
             )
         ).stdout.trim().nullize()
     }.toInt()
