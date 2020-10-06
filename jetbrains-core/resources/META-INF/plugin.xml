@@ -301,8 +301,9 @@
         <group id="aws.toolkit.explorer.logs.group" popup="true" compact="false">
             <action id="cloudwatch.logs.open"
                     class="software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.OpenLogGroupAction"/>
-            <action id="cloudwatch.logs.query.group"
-                    class="software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.actions.QueryGroupAction"/>
+            <!--TODO uncomment to enable Logs Insights -->
+            <!--action id="cloudwatch.logs.query.group"
+                    class="software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.actions.QueryGroupAction"/-->
             <separator/>
             <action id="cloudwatch.logs.delete.group"
                     class="software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.DeleteGroupAction"/>

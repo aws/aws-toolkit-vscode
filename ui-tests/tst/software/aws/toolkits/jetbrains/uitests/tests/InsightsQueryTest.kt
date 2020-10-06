@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.uitests.tests
 
+/* TODO uncomment to enable Logs Insights
 import com.intellij.remoterobot.RemoteRobot
 import com.intellij.remoterobot.fixtures.ComboBoxFixture
 import com.intellij.remoterobot.fixtures.ComponentFixture
@@ -237,3 +238,4 @@ class InsightsQueryTest {
         }
     }
 }
+*/
