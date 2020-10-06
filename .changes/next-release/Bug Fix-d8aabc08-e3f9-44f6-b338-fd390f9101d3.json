@@ -1,4 +1,0 @@
-{
-    "type": "Bug Fix",
-    "description": "Fix issues which prevented SAM debugging in WSL #1300"
-}
