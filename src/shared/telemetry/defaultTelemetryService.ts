@@ -10,10 +10,10 @@ import uuidv4 = require('uuid/v4')
 import { ExtensionContext } from 'vscode'
 import { AwsContext } from '../awsContext'
 import { getLogger } from '../logger'
+import { MetricDatum } from './clienttelemetry'
 import { DefaultTelemetryClient } from './defaultTelemetryClient'
 import { DefaultTelemetryPublisher } from './defaultTelemetryPublisher'
 import { recordSessionEnd, recordSessionStart } from './telemetry'
-import { TelemetryEvent } from './telemetryEvent'
 import { TelemetryFeedback } from './telemetryFeedback'
 import { TelemetryPublisher } from './telemetryPublisher'
 import { TelemetryService } from './telemetryService'
@@ -32,7 +32,7 @@ export class DefaultTelemetryService implements TelemetryService {
     private _flushPeriod: number
     private _timer?: NodeJS.Timer
     private publisher?: TelemetryPublisher
-    private readonly _eventQueue: TelemetryEvent[]
+    private readonly _eventQueue: MetricDatum[]
 
     public constructor(
         private readonly context: ExtensionContext,
@@ -113,7 +113,7 @@ export class DefaultTelemetryService implements TelemetryService {
         return this.publisher.postFeedback(feedback)
     }
 
-    public record(event: TelemetryEvent, awsContext?: AwsContext): void {
+    public record(event: MetricDatum, awsContext?: AwsContext): void {
         if (this.telemetryEnabled) {
             const actualAwsContext = awsContext || this.awsContext
             const eventWithAccountMetadata = this.injectAccountMetadata(event, actualAwsContext)
@@ -121,7 +121,7 @@ export class DefaultTelemetryService implements TelemetryService {
         }
     }
 
-    public get records(): ReadonlyArray<TelemetryEvent> {
+    public get records(): ReadonlyArray<MetricDatum> {
         return this._eventQueue
     }
 
@@ -205,10 +205,10 @@ export class DefaultTelemetryService implements TelemetryService {
         }
     }
 
-    private injectAccountMetadata(event: TelemetryEvent, awsContext: AwsContext): TelemetryEvent {
+    private injectAccountMetadata(event: MetricDatum, awsContext: AwsContext): MetricDatum {
         let accountValue: string | AccountStatus
         // The AWS account ID is not set on session start. This matches JetBrains' functionality.
-        if (event.data.every(item => item.MetricName === 'session_end' || item.MetricName === 'session_start')) {
+        if (event.MetricName === 'session_end' || event.MetricName === 'session_start') {
             accountValue = AccountStatus.NotApplicable
         } else {
             const account = awsContext.getCredentialAccountId()
@@ -228,34 +228,17 @@ export class DefaultTelemetryService implements TelemetryService {
                 accountValue = AccountStatus.NotSet
             }
         }
-        // event has data
-        if (event.data) {
-            for (const datum of event.data) {
-                if (datum.Metadata) {
-                    datum.Metadata.push({ Key: ACCOUNT_METADATA_KEY, Value: accountValue })
-                } else {
-                    datum.Metadata = [{ Key: ACCOUNT_METADATA_KEY, Value: accountValue }]
-                }
-            }
+
+        if (event.Metadata) {
+            event.Metadata.push({ Key: ACCOUNT_METADATA_KEY, Value: accountValue })
         } else {
-            // event doesn't have data, give it dummy data with the account info
-            // this shouldn't happen
-            const data = [
-                {
-                    MetricName: 'noData',
-                    Value: 0,
-                    Metadata: [{ Key: ACCOUNT_METADATA_KEY, Value: accountValue }],
-                    EpochTimestamp: new Date().getTime(),
-                    Unit: 'None',
-                },
-            ]
-            event.data = data
+            event.Metadata = [{ Key: ACCOUNT_METADATA_KEY, Value: accountValue }]
         }
 
         return event
     }
 
-    private static readEventsFromCache(cachePath: string): TelemetryEvent[] {
+    private static readEventsFromCache(cachePath: string): MetricDatum[] {
         try {
             if (!fs.existsSync(cachePath)) {
                 getLogger().info(`telemetry cache not found: '${cachePath}'`)
@@ -275,7 +258,7 @@ export class DefaultTelemetryService implements TelemetryService {
     }
 }
 
-export function filterTelemetryCacheEvents(input: any): TelemetryEvent[] {
+export function filterTelemetryCacheEvents(input: any): MetricDatum[] {
     if (!Array.isArray(input)) {
         getLogger().error(`Input into filterTelemetryCacheEvents:\n${input}\nis not an array!`)
 
@@ -295,25 +278,15 @@ export function filterTelemetryCacheEvents(input: any): TelemetryEvent[] {
             return true
         })
         .filter((item: Object) => {
-            // Only accept objects that have data because that's what's required by TelemetryEvent
-            if (!item.hasOwnProperty('data')) {
-                getLogger().warn(`Item in telemetry cache: ${item}\n does not have 'data' or 'createTime'! skipping!`)
-
-                return false
-            }
-
-            return true
-        })
-        .filter((item: TelemetryEvent) => {
             // skip it if data is not an array or empty
-            if (!Array.isArray(item.data) || item.data.length === 0) {
-                getLogger().warn(`Item in telemetry cache: ${item}\n has invalid data field: ${item.data}! skipping!`)
+            if (!Array.isArray(item) || item.length === 0) {
+                getLogger().warn(`Item in telemetry cache: ${item}\n has invalid data field: ${item}! skipping!`)
 
                 return false
             }
 
             // Only accept objects that have the required telemetry data
-            return item.data.every(data => {
+            return item.every(data => {
                 // Make sure data is actually an object then check that it has the required properties
                 if (
                     data !== Object(data) ||
@@ -329,7 +302,7 @@ export function filterTelemetryCacheEvents(input: any): TelemetryEvent[] {
                     return false
                 }
 
-                if (data?.Metadata?.some(m => m?.Value === undefined || m.Value === '')) {
+                if (data?.Metadata?.some((m: any) => m?.Value === undefined || m.Value === '')) {
                     getLogger().warn(`telemetry: skipping cached item with null/empty metadata field:\n${item}`)
 
                     return false
@@ -337,5 +310,5 @@ export function filterTelemetryCacheEvents(input: any): TelemetryEvent[] {
 
                 return true
             })
-        }) as TelemetryEvent[]
+        }) as MetricDatum[]
 }
