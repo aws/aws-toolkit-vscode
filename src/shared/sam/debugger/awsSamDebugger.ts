@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as semver from 'semver'
 import * as vscode from 'vscode'
 import * as _ from 'lodash'
 import * as nls from 'vscode-nls'
@@ -45,6 +46,7 @@ import { fromString } from '../../../credentials/providers/credentialsProviderId
 import { notifyUserInvalidCredentials } from '../../../credentials/credentialsUtilities'
 import { Credentials } from 'aws-sdk/lib/credentials'
 import { CloudFormation } from '../../cloudformation/cloudformation'
+import { getSamCliContext, getSamCliVersion } from '../cli/samCliContext'
 
 const localize = nls.loadMessageBundle()
 
@@ -332,15 +334,19 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
 
         let awsCredentials: Credentials | undefined
 
-        // TODO: Remove this line to enable dotnetcore3.1 debugging when it becomes available
+        // TODO: Remove this when min sam version is >= 1.4.0
         if (runtime === 'dotnetcore3.1' && !config.noDebug) {
-            vscode.window.showWarningMessage(
-                localize(
-                    'AWS.output.sam.local.no.net.3.1.debug',
-                    'SAM debugging is not supported for dotnetcore3.1 runtime. Function will run locally without debug.'
+            const samCliVersion = await getSamCliVersion(getSamCliContext())
+
+            if (semver.lt(samCliVersion, '1.4.0')) {
+                vscode.window.showWarningMessage(
+                    localize(
+                        'AWS.output.sam.local.no.net.3.1.debug',
+                        'Debugging dotnetcore3.1 requires a minimum SAM CLI version  of 1.4.0. Function will run locally without debug.'
+                    )
                 )
-            )
-            config.noDebug = true
+                config.noDebug = true
+            }
         }
 
         if (config.aws?.credentials) {
