@@ -35,6 +35,7 @@ export function toMetricData(array: TelemetryEvent[]): MetricDatum[] {
                             Unit: datum.Unit,
                             Value: datum.Value,
                             Metadata: datum.Metadata,
+                            Passive: datum.Passive,
                         }
                     })
             )
