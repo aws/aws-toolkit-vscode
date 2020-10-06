@@ -1,0 +1,4 @@
+{
+    "type": "Feature",
+    "description": "Add Arn and Region to Lambda invoke view"
+}

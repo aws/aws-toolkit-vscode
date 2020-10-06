@@ -209,7 +209,14 @@ export class SamCliLocalInvokeInvocation {
     public async execute(timeout?: Timeout): Promise<void> {
         await this.validate()
 
-        const samCommand = this.invokerContext.cliConfig.getSamCliLocation() ?? 'sam'
+        const sam = await this.invokerContext.cliConfig.getOrDetectSamCli()
+        if (!sam.path) {
+            getLogger().warn('SAM CLI not found and not configured')
+        } else if (sam.autoDetected) {
+            getLogger().info('SAM CLI not configured, using SAM found at: %O', sam.path)
+        }
+
+        const samCommand = sam.path ? sam.path : 'sam'
         const invokeArgs = [
             'local',
             'invoke',

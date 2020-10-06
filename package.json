@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "An extension for working with Amazon Web Services",
-    "version": "1.14.0-SNAPSHOT",
+    "version": "1.15.0-SNAPSHOT",
     "publisher": "amazonwebservices",
     "license": "Apache-2.0",
     "repository": {
@@ -710,7 +710,7 @@
                 {
                     "command": "aws.deleteCloudFormation",
                     "when": "view == aws.explorer && viewItem == awsCloudFormationNode",
-                    "group": "2@5"
+                    "group": "3@5"
                 },
                 {
                     "command": "aws.searchSchema",
@@ -824,7 +824,7 @@
                 },
                 {
                     "command": "aws.ssmDocument.deleteDocument",
-                    "group": "2@2",
+                    "group": "3@2",
                     "when": "view == aws.explorer && viewItem == awsDocumentItemNodeWriteable"
                 }
             ]
@@ -1234,7 +1234,7 @@
         "createRelease": "ts-node ./build-scripts/createRelease.ts"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "0.0.59",
+        "@aws-toolkits/telemetry": "0.0.61",
         "@types/adm-zip": "^0.4.32",
         "@types/async-lock": "^1.1.0",
         "@types/bytes": "^3.1.0",
