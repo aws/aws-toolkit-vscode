@@ -285,7 +285,7 @@ export function filterTelemetryCacheEvents(input: any): MetricDatum[] {
                 !item.hasOwnProperty('EpochTimestamp') ||
                 !item.hasOwnProperty('Unit')
             ) {
-                getLogger().warn(`Item in telemetry cache: ${JSON.stringify(item)}\n has invalid data! skipping!`)
+                getLogger().warn(`skipping invalid item in telemetry cache: ${JSON.stringify(item)}\n`)
 
                 return false
             }
