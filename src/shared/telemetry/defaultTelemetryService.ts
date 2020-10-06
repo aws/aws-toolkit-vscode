@@ -278,37 +278,24 @@ export function filterTelemetryCacheEvents(input: any): MetricDatum[] {
             return true
         })
         .filter((item: Object) => {
-            // skip it if data is not an array or empty
-            if (!Array.isArray(item) || item.length === 0) {
-                getLogger().warn(`Item in telemetry cache: ${item}\n has invalid data field: ${item}! skipping!`)
+            // Only accept objects that have the required telemetry data
+            if (
+                !item.hasOwnProperty('Value') ||
+                !item.hasOwnProperty('MetricName') ||
+                !item.hasOwnProperty('EpochTimestamp') ||
+                !item.hasOwnProperty('Unit')
+            ) {
+                getLogger().warn(`Item in telemetry cache: ${JSON.stringify(item)}\n has invalid data! skipping!`)
 
                 return false
             }
 
-            // Only accept objects that have the required telemetry data
-            return item.every(data => {
-                // Make sure data is actually an object then check that it has the required properties
-                if (
-                    data !== Object(data) ||
-                    !data.hasOwnProperty('Value') ||
-                    !data.hasOwnProperty('MetricName') ||
-                    !data.hasOwnProperty('EpochTimestamp') ||
-                    !data.hasOwnProperty('Unit')
-                ) {
-                    getLogger().warn(
-                        `Item in telemetry cache: ${item}\n has invalid data in the field 'data': ${data}! skipping!`
-                    )
+            if ((item as any)?.Metadata?.some((m: any) => m?.Value === undefined || m.Value === '')) {
+                getLogger().warn(`telemetry: skipping cached item with null/empty metadata field:\n${item}`)
 
-                    return false
-                }
+                return false
+            }
 
-                if (data?.Metadata?.some((m: any) => m?.Value === undefined || m.Value === '')) {
-                    getLogger().warn(`telemetry: skipping cached item with null/empty metadata field:\n${item}`)
-
-                    return false
-                }
-
-                return true
-            })
-        }) as MetricDatum[]
+            return true
+        })
 }
