@@ -19,7 +19,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
-import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogActor
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogsActor
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamEntry
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamFilterActor
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamListActor
@@ -47,9 +47,9 @@ class LogStreamTable(
     }
 
     val component: JComponent
-    val channel: Channel<LogActor.Message>
+    val channel: Channel<CloudWatchLogsActor.Message>
     val logsTable: TableView<LogStreamEntry>
-    private val logStreamActor: LogActor<LogStreamEntry>
+    private val logStreamActor: CloudWatchLogsActor<LogStreamEntry>
 
     init {
         val model = ListTableModel(
@@ -88,12 +88,12 @@ class LogStreamTable(
         component = ScrollPaneFactory.createScrollPane(logsTable).also {
             it.topReached {
                 if (logsTable.rowCount != 0) {
-                    launch { logStreamActor.channel.send(LogActor.Message.LoadBackward) }
+                    launch { logStreamActor.channel.send(CloudWatchLogsActor.Message.LoadBackward) }
                 }
             }
             it.bottomReached {
                 if (logsTable.rowCount != 0) {
-                    launch { logStreamActor.channel.send(LogActor.Message.LoadForward) }
+                    launch { logStreamActor.channel.send(CloudWatchLogsActor.Message.LoadForward) }
                 }
             }
         }

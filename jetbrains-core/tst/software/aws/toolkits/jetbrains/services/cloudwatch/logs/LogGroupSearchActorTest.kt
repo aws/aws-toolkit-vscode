@@ -29,7 +29,7 @@ class LogGroupSearchActorTest : BaseCoroutineTest() {
     private lateinit var client: CloudWatchLogsClient
     private lateinit var tableModel: ListTableModel<LogStream>
     private lateinit var table: TableView<LogStream>
-    private lateinit var actor: LogActor<LogStream>
+    private lateinit var actor: CloudWatchLogsActor<LogStream>
 
     @Before
     fun loadVariables() {
@@ -44,7 +44,7 @@ class LogGroupSearchActorTest : BaseCoroutineTest() {
         whenever(client.describeLogStreams(Mockito.any<DescribeLogStreamsRequest>()))
             .thenReturn(DescribeLogStreamsResponse.builder().logStreams(LogStream.builder().logStreamName("name-cool").build()).build())
         runBlocking {
-            actor.channel.send(LogActor.Message.LoadInitialFilter("name"))
+            actor.channel.send(CloudWatchLogsActor.Message.LoadInitialFilter("name"))
             tableModel.waitForModelToBeAtLeast(1)
         }
         assertThat(tableModel.items.size).isOne()
@@ -57,8 +57,8 @@ class LogGroupSearchActorTest : BaseCoroutineTest() {
             .thenReturn(DescribeLogStreamsResponse.builder().logStreams(LogStream.builder().logStreamName("name-cool").build()).nextToken("token").build())
             .thenReturn(DescribeLogStreamsResponse.builder().logStreams(LogStream.builder().logStreamName("name-2").build()).build())
         runBlocking {
-            actor.channel.send(LogActor.Message.LoadInitialFilter("name"))
-            actor.channel.send(LogActor.Message.LoadForward)
+            actor.channel.send(CloudWatchLogsActor.Message.LoadInitialFilter("name"))
+            actor.channel.send(CloudWatchLogsActor.Message.LoadForward)
             tableModel.waitForModelToBeAtLeast(2)
         }
         assertThat(tableModel.items.size).isEqualTo(2)
@@ -71,9 +71,9 @@ class LogGroupSearchActorTest : BaseCoroutineTest() {
         whenever(client.describeLogStreams(Mockito.any<DescribeLogStreamsRequest>()))
             .thenReturn(DescribeLogStreamsResponse.builder().logStreams(LogStream.builder().logStreamName("name-cool").build()).build())
         runBlocking {
-            actor.channel.send(LogActor.Message.LoadInitialFilter("name"))
-            actor.channel.send(LogActor.Message.LoadBackward)
-            actor.channel.send(LogActor.Message.LoadBackward)
+            actor.channel.send(CloudWatchLogsActor.Message.LoadInitialFilter("name"))
+            actor.channel.send(CloudWatchLogsActor.Message.LoadBackward)
+            actor.channel.send(CloudWatchLogsActor.Message.LoadBackward)
             tableModel.waitForModelToBeAtLeast(1)
         }
         assertThat(tableModel.items.size).isOne()
@@ -86,7 +86,7 @@ class LogGroupSearchActorTest : BaseCoroutineTest() {
         actor.dispose()
         assertThatThrownBy {
             runBlocking {
-                channel.send(LogActor.Message.LoadBackward)
+                channel.send(CloudWatchLogsActor.Message.LoadBackward)
             }
         }.isInstanceOf(ClosedSendChannelException::class.java)
     }
@@ -94,7 +94,7 @@ class LogGroupSearchActorTest : BaseCoroutineTest() {
     @Test
     fun loadInitialThrows() {
         runBlocking {
-            actor.channel.send(LogActor.Message.LoadInitial)
+            actor.channel.send(CloudWatchLogsActor.Message.LoadInitial)
             waitForTrue { actor.channel.isClosedForSend }
         }
     }
@@ -102,7 +102,7 @@ class LogGroupSearchActorTest : BaseCoroutineTest() {
     @Test
     fun loadInitialRangeThrows() {
         runBlocking {
-            actor.channel.send(LogActor.Message.LoadInitialRange(LogStreamEntry("@@@", 0), Duration.ofMillis(0)))
+            actor.channel.send(CloudWatchLogsActor.Message.LoadInitialRange(LogStreamEntry("@@@", 0), Duration.ofMillis(0)))
             waitForTrue { actor.channel.isClosedForSend }
         }
     }
@@ -111,7 +111,7 @@ class LogGroupSearchActorTest : BaseCoroutineTest() {
     fun emptyTableOnExceptionThrown() {
         whenever(client.describeLogStreams(Mockito.any<DescribeLogStreamsRequest>())).thenThrow(IllegalStateException("network broke"))
         runBlocking {
-            actor.channel.send(LogActor.Message.LoadInitialFilter("name"))
+            actor.channel.send(CloudWatchLogsActor.Message.LoadInitialFilter("name"))
             waitForTrue {
                 println(table.emptyText.text)
                 table.emptyText.text == message("cloudwatch.logs.failed_to_load_streams", "abc")

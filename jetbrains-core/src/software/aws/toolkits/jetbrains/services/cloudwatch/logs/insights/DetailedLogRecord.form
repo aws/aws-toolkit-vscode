@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.DetailedLogRecord">
+  <grid id="27dc6" binding="basePanel" layout-manager="BorderLayout" hgap="0" vgap="0">
+    <constraints>
+      <xy x="20" y="20" width="500" height="400"/>
+    </constraints>
+    <properties/>
+    <border type="none"/>
+    <children>
+      <grid id="a586c" layout-manager="BorderLayout" hgap="0" vgap="0">
+        <constraints border-constraint="North"/>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <component id="fb0bb" class="javax.swing.JButton" binding="openStream">
+            <constraints border-constraint="East"/>
+            <properties>
+              <text resource-bundle="software/aws/toolkits/resources/localized_messages" key="cloudwatch.logs.log_record_open_log_stream"/>
+            </properties>
+          </component>
+        </children>
+      </grid>
+      <scrollpane id="f4573" class="com.intellij.ui.components.JBScrollPane">
+        <constraints border-constraint="Center"/>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <component id="f6049" class="com.intellij.ui.table.TableView" binding="tableView" custom-create="true">
+            <constraints/>
+            <properties/>
+          </component>
+        </children>
+      </scrollpane>
+    </children>
+  </grid>
+</form>

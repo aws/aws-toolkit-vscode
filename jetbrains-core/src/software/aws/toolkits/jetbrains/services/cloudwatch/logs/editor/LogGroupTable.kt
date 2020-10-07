@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogStream
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow
-import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogActor
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogsActor
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogGroupActor
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogGroupSearchActor
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.ExportActionGroup
@@ -42,9 +42,9 @@ class LogGroupTable(
     type: TableType
 ) : CoroutineScope by ApplicationThreadPoolScope("LogGroupTable"), Disposable {
     val component: JComponent
-    val channel: Channel<LogActor.Message>
+    val channel: Channel<CloudWatchLogsActor.Message>
     private val groupTable: TableView<LogStream>
-    private val logGroupActor: LogActor<LogStream>
+    private val logGroupActor: CloudWatchLogsActor<LogStream>
 
     enum class TableType {
         LIST,
@@ -83,7 +83,7 @@ class LogGroupTable(
         component = ScrollPaneFactory.createScrollPane(groupTable).also {
             it.bottomReached {
                 if (groupTable.rowCount != 0) {
-                    launch { logGroupActor.channel.send(LogActor.Message.LoadForward) }
+                    launch { logGroupActor.channel.send(CloudWatchLogsActor.Message.LoadForward) }
                 }
             }
         }

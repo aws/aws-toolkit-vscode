@@ -190,7 +190,8 @@
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowManager" />
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow" />
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.sqs.toolwindow.SqsWindow" />
-
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.QueryResultsWindow" />
+      
         <toolWindow id="aws.explorer" anchor="left" secondary="true"
                     factoryClass="software.aws.toolkits.jetbrains.core.explorer.AwsExplorerFactory"
                     icon="AwsIcons.Logos.AWS"/>
@@ -300,6 +301,9 @@
         <group id="aws.toolkit.explorer.logs.group" popup="true" compact="false">
             <action id="cloudwatch.logs.open"
                     class="software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.OpenLogGroupAction"/>
+            <!--TODO uncomment to enable Logs Insights -->
+            <!--action id="cloudwatch.logs.query.group"
+                    class="software.aws.toolkits.jetbrains.services.cloudwatch.logs.insights.actions.QueryGroupAction"/-->
             <separator/>
             <action id="cloudwatch.logs.delete.group"
                     class="software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.DeleteGroupAction"/>
