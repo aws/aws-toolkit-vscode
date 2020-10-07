@@ -172,7 +172,11 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
                 LOGGER.warn(e) { message("credentials.profile.validation_error", credentialsIdentifier.displayName) }
             } finally {
                 incModificationCount()
-                AwsTelemetry.validateCredentials(project, success = isValidConnectionSettings())
+                AwsTelemetry.validateCredentials(
+                    project,
+                    success = isValidConnectionSettings(),
+                    credentialType = credentialsIdentifier.credentialType.toTelemetryType()
+                )
                 validationJob = null
             }
         }

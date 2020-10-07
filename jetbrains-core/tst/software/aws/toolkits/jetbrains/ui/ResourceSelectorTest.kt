@@ -9,9 +9,8 @@ import com.nhaarman.mockitokotlin2.mock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
-import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
-import software.aws.toolkits.core.credentials.CredentialIdentifierBase
-import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
+import software.aws.toolkits.core.credentials.aCredentialsIdentifier
+import software.aws.toolkits.core.credentials.aToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.test.retryableAssert
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
@@ -238,13 +237,6 @@ class ResourceSelectorTest {
     }
 
     private companion object {
-        fun mockCred(id: String) = ToolkitCredentialsProvider(
-            object : CredentialIdentifierBase() {
-                override val id: String = id
-                override val displayName: String = id
-                override val factoryId: String = "mockFactory"
-            },
-            AnonymousCredentialsProvider.create()
-        )
+        fun mockCred(id: String) = aToolkitCredentialsProvider(aCredentialsIdentifier(id))
     }
 }
