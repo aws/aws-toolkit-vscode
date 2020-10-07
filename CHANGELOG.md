@@ -1,3 +1,7 @@
+# _1.19_ (2020-10-07)
+- **(Feature)** Add the ability to copy the URL to an S3 object
+- **(Feature)** Add support for debugging dotnet 3.1 local lambdas (requires minimum SAM CLI version of 1.4.0)
+
 # _1.18_ (2020-09-21)
 - **(Feature)** Add support for AWS SSO based credential profiles
 - **(Feature)** Support colons (`:`) in credential profile names

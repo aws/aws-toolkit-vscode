@@ -21,7 +21,9 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.AwsSdkClient
+import software.aws.toolkits.telemetry.AwsTelemetry
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 
 abstract class CredentialManager : SimpleModificationTracker() {
     private val providerIds = ConcurrentHashMap<String, CredentialIdentifier>()
@@ -114,10 +116,12 @@ class DefaultCredentialManager : CredentialManager() {
 
     init {
         extensionMap.values.forEach { providerFactory ->
+            val count = AtomicInteger(0)
             LOG.tryOrNull("Failed to set up $providerFactory") {
                 providerFactory.setUp { change ->
                     change.added.forEach {
                         addProvider(it)
+                        count.incrementAndGet()
                     }
 
                     change.modified.forEach {
@@ -126,7 +130,9 @@ class DefaultCredentialManager : CredentialManager() {
 
                     change.removed.forEach {
                         removeProvider(it)
+                        count.decrementAndGet()
                     }
+                    AwsTelemetry.loadCredentials(credentialSourceId = providerFactory.id, value = count.get().toDouble())
                 }
             }
         }

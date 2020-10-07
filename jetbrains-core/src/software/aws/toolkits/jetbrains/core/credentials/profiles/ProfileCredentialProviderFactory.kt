@@ -22,6 +22,7 @@ import software.aws.toolkits.core.ToolkitClientManager
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.CredentialIdentifierBase
 import software.aws.toolkits.core.credentials.CredentialProviderFactory
+import software.aws.toolkits.core.credentials.CredentialType
 import software.aws.toolkits.core.credentials.CredentialsChangeEvent
 import software.aws.toolkits.core.credentials.CredentialsChangeListener
 import software.aws.toolkits.core.credentials.sso.SSO_ACCOUNT
@@ -51,22 +52,24 @@ const val DEFAULT_PROFILE_ID = "profile:default"
 
 private const val PROFILE_FACTORY_ID = "ProfileCredentialProviderFactory"
 
-private open class ProfileCredentialsIdentifier(val profileName: String, override val defaultRegionId: String?) : CredentialIdentifierBase() {
+private open class ProfileCredentialsIdentifier(val profileName: String, override val defaultRegionId: String?, credentialType: CredentialType?) :
+    CredentialIdentifierBase(credentialType) {
     override val id = "profile:$profileName"
     override val displayName = message("credentials.profile.name", profileName)
     override val factoryId = PROFILE_FACTORY_ID
     override val shortName: String = profileName
 }
 
-private class ProfileCredentialsIdentifierMfa(profileName: String, defaultRegionId: String?) :
-    ProfileCredentialsIdentifier(profileName, defaultRegionId), MfaRequiredInteractiveCredentials
+private class ProfileCredentialsIdentifierMfa(profileName: String, defaultRegionId: String?, credentialType: CredentialType?) :
+    ProfileCredentialsIdentifier(profileName, defaultRegionId, credentialType), MfaRequiredInteractiveCredentials
 
 private class ProfileCredentialsIdentifierSso(
     profileName: String,
     defaultRegionId: String?,
     override val ssoCache: SsoCache,
-    override val ssoUrl: String
-) : ProfileCredentialsIdentifier(profileName, defaultRegionId),
+    override val ssoUrl: String,
+    credentialType: CredentialType?
+) : ProfileCredentialsIdentifier(profileName, defaultRegionId, credentialType),
     SsoRequiredInteractiveCredentials
 
 class ProfileCredentialProviderFactory : CredentialProviderFactory {
@@ -317,16 +320,18 @@ class ProfileCredentialProviderFactory : CredentialProviderFactory {
     private fun Profile.asId(profiles: Map<String, Profile>): ProfileCredentialsIdentifier {
         val name = this.name()
         val defaultRegion = this.properties()[ProfileProperty.REGION]
+        val requestedProfileType = this.toCredentialType()
 
         return when {
-            this.requiresMfa(profiles) -> ProfileCredentialsIdentifierMfa(name, defaultRegion)
+            this.requiresMfa(profiles) -> ProfileCredentialsIdentifierMfa(name, defaultRegion, requestedProfileType)
             this.requiresSso(profiles) -> ProfileCredentialsIdentifierSso(
                 name,
                 defaultRegion,
                 diskCache,
-                this.requiredProperty(SSO_URL)
+                this.requiredProperty(SSO_URL),
+                requestedProfileType
             )
-            else -> ProfileCredentialsIdentifier(name, defaultRegion)
+            else -> ProfileCredentialsIdentifier(name, defaultRegion, requestedProfileType)
         }
     }
 
@@ -335,6 +340,20 @@ class ProfileCredentialProviderFactory : CredentialProviderFactory {
 
     private fun Profile.requiresSso(profiles: Map<String, Profile>) = this.traverseCredentialChain(profiles)
         .any { it.propertyExists(SSO_URL) }
+}
+
+private fun Profile.toCredentialType(): CredentialType? = when {
+    this.propertyExists(SSO_URL) -> CredentialType.SsoProfile
+    this.propertyExists(ProfileProperty.ROLE_ARN) -> {
+        if (this.propertyExists(ProfileProperty.MFA_SERIAL))
+            CredentialType.AssumeMfaRoleProfile
+        else
+            CredentialType.AssumeRoleProfile
+    }
+    this.propertyExists(ProfileProperty.AWS_SESSION_TOKEN) -> CredentialType.StaticSessionProfile
+    this.propertyExists(ProfileProperty.AWS_ACCESS_KEY_ID) -> CredentialType.StaticProfile
+    this.propertyExists(ProfileProperty.CREDENTIAL_PROCESS) -> CredentialType.CredentialProcessProfile
+    else -> null
 }
 
 private class ProfileHolder {

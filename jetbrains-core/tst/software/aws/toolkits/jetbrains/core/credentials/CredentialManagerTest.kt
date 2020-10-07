@@ -277,7 +277,7 @@ class CredentialManagerTest {
         override val factoryId: String,
         override val defaultRegionId: String,
         val credentialsEchoField: String? = null
-    ) : CredentialIdentifierBase() {
+    ) : CredentialIdentifierBase(null) {
         override val displayName: String = "$factoryId:$id"
     }
 }

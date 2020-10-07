@@ -70,7 +70,7 @@ class MockCredentialsManager : CredentialManager() {
     }
 
     class MockCredentialIdentifier(override val displayName: String, val credentials: AwsCredentialsProvider, override val defaultRegionId: String?) :
-        CredentialIdentifierBase() {
+        CredentialIdentifierBase(null) {
         override val id: String = displayName
         override val factoryId: String = "mockCredentialProviderFactory"
     }

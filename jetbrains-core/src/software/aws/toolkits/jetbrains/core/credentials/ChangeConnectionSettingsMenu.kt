@@ -184,6 +184,9 @@ internal class ChangeCredentialsAction(private val credentialsProvider: Credenti
     override fun setSelected(e: AnActionEvent, state: Boolean) {
         if (state) {
             getAccountSetting(e).changeCredentialProvider(credentialsProvider)
+
+            // Set credentials is not considered passive, so only send it when they are actively changed
+            AwsTelemetry.setCredentials(e.project, credentialsProvider.credentialType.toTelemetryType())
         }
     }
 }

@@ -42,7 +42,7 @@ class StackWindowManager(private val project: Project) {
     fun openStack(stackName: String, stackId: String) {
         assert(SwingUtilities.isEventDispatchThread())
         toolWindow.find(stackId)?.run { show() } ?: StackUI(project, stackName, stackId, toolWindow).start()
-        CloudformationTelemetry.open(project)
+        CloudformationTelemetry.open(project, success = true)
     }
 
     companion object {

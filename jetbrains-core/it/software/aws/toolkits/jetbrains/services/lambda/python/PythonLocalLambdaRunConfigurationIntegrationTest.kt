@@ -16,6 +16,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
+import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
@@ -189,6 +190,34 @@ class PythonLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
         assertThat(jsonToMap(executeLambda.stdout))
             .containsEntry("AWS_ACCESS_KEY_ID", mockCreds.accessKeyId())
             .containsEntry("AWS_SECRET_ACCESS_KEY", mockCreds.secretAccessKey())
+            .doesNotContainKey("AWS_SESSION_TOKEN")
+    }
+
+    @Test
+    fun sessionCredentialsArePassed() {
+        projectRule.fixture.addFileToProject("requirements.txt", "")
+
+        val mockSessionId = "mockSessionId"
+        val mockSessionCreds = AwsSessionCredentials.create("access", "secret", "session")
+
+        MockCredentialsManager.getInstance().addCredentials(mockSessionId, mockSessionCreds)
+
+        val runConfiguration = createHandlerBasedRunConfiguration(
+            project = projectRule.project,
+            runtime = runtime,
+            handler = "src/hello_world.app.env_print",
+            input = "\"Hello World\"",
+            credentialsProviderId = mockSessionId
+        )
+        assertThat(runConfiguration).isNotNull
+
+        val executeLambda = executeRunConfiguration(runConfiguration)
+
+        assertThat(executeLambda.exitCode).isEqualTo(0)
+        assertThat(jsonToMap(executeLambda.stdout))
+            .containsEntry("AWS_ACCESS_KEY_ID", mockSessionCreds.accessKeyId())
+            .containsEntry("AWS_SECRET_ACCESS_KEY", mockSessionCreds.secretAccessKey())
+            .containsEntry("AWS_SESSION_TOKEN", mockSessionCreds.sessionToken())
     }
 
     @Test

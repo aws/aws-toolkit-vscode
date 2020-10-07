@@ -17,7 +17,7 @@ fun aCredentialsIdentifier(
     displayName: String = aString(),
     factoryId: String = aString(),
     defaultRegionId: String? = null
-) = object : CredentialIdentifierBase() {
+) = object : CredentialIdentifierBase(CredentialType.StaticProfile) {
     override val id: String = id
     override val displayName: String = displayName
     override val factoryId: String = factoryId
