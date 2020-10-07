@@ -1,3 +1,9 @@
+## 1.15.0 2020-10-06
+
+- **Bug Fix** Fix issues which prevented SAM debugging in WSL #1300
+- **Feature** Add support for debugging dotnet 3.1 local lambdas (requires minimum SAM CLI version of 1.4.0)
+- **Feature** Add Arn and Region to Lambda invoke view
+
 ## 1.14.0 2020-09-30
 
 - **Bug Fix** Fix ASL validation bug marking states as unreachable when defined before a Choice state
