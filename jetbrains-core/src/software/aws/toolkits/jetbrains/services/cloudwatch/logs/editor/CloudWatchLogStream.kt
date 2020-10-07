@@ -20,7 +20,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.aws.toolkits.jetbrains.core.awsClient
-import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogActor
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogsActor
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamEntry
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.OpenCurrentInEditorAction
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.TailLogsAction
@@ -106,7 +106,7 @@ class CloudWatchLogStream(
                     oldTable?.let { launch { Disposer.dispose(it) } }
                 }
                 launch {
-                    table.channel.send(LogActor.Message.LoadInitialFilter(searchField.text))
+                    table.channel.send(CloudWatchLogsActor.Message.LoadInitialFilter(searchField.text))
                 }
             }
         }
@@ -136,11 +136,11 @@ class CloudWatchLogStream(
 
     internal fun refreshTable() = launch {
         if (searchField.text.isNotEmpty() && searchStreamTable != null) {
-            searchStreamTable?.channel?.send(LogActor.Message.LoadInitialFilter(searchField.text.trim()))
+            searchStreamTable?.channel?.send(CloudWatchLogsActor.Message.LoadInitialFilter(searchField.text.trim()))
         } else if (previousEvent != null && duration != null) {
-            logStreamTable.channel.send(LogActor.Message.LoadInitialRange(previousEvent, duration))
+            logStreamTable.channel.send(CloudWatchLogsActor.Message.LoadInitialRange(previousEvent, duration))
         } else {
-            logStreamTable.channel.send(LogActor.Message.LoadInitial)
+            logStreamTable.channel.send(CloudWatchLogsActor.Message.LoadInitial)
         }
     }
 
