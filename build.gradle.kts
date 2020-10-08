@@ -30,7 +30,7 @@ buildscript {
     val ideaPluginVersion: String by project
     dependencies {
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
-        classpath("org.jetbrains.intellij.plugins:gradle-intellij-plugin:$ideaPluginVersion")
+        classpath("gradle.plugin.org.jetbrains.intellij.plugins:gradle-intellij-plugin:$ideaPluginVersion")
         classpath("com.adarshr:gradle-test-logger-plugin:2.1.0")
     }
 }

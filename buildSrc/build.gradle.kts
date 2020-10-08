@@ -47,7 +47,7 @@ dependencies {
     api("com.atlassian.commonmark:commonmark:0.15.2")
     api("software.amazon.awssdk:codegen:$awsSdkVersion")
 
-    implementation("org.jetbrains.intellij.plugins:gradle-intellij-plugin:$ideaPluginVersion")
+    implementation("gradle.plugin.org.jetbrains.intellij.plugins:gradle-intellij-plugin:$ideaPluginVersion")
 
     testImplementation("org.assertj:assertj-core:$assertjVersion")
     testImplementation("junit:junit:$junitVersion")
