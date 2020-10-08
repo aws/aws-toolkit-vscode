@@ -16,7 +16,6 @@ import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
-import icons.AwsIcons
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
@@ -138,12 +137,10 @@ abstract class SamProjectTemplate {
         }
     }
 
-    fun getIcon() = AwsIcons.Resources.SERVERLESS_APP
-
-    fun build(project: Project?, runtime: Runtime, schemaParameters: SchemaTemplateParameters?, outputDir: VirtualFile) {
+    fun build(project: Project?, name: String, runtime: Runtime, schemaParameters: SchemaTemplateParameters?, outputDir: VirtualFile) {
         var success = true
         try {
-            doBuild(runtime, schemaParameters, outputDir)
+            doBuild(name, runtime, schemaParameters, outputDir)
         } catch (e: Throwable) {
             success = false
             throw e
@@ -160,9 +157,9 @@ abstract class SamProjectTemplate {
         }
     }
 
-    private fun doBuild(runtime: Runtime, schemaParameters: SchemaTemplateParameters?, outputDir: VirtualFile) {
+    private fun doBuild(name: String, runtime: Runtime, schemaParameters: SchemaTemplateParameters?, outputDir: VirtualFile) {
         SamInitRunner.execute(
-            AwsModuleType.ID,
+            name,
             outputDir,
             runtime,
             templateParameters(),
@@ -182,9 +179,8 @@ abstract class SamProjectTemplate {
         private val LOG = getLogger<SamProjectTemplate>()
 
         @JvmField
-        val SAM_TEMPLATES =
-            SamProjectWizard.supportedRuntimeGroups().flatMap {
-                SamProjectWizard.getInstance(it).listTemplates()
-            }
+        val SAM_TEMPLATES = SamProjectWizard.supportedRuntimeGroups().flatMap {
+            SamProjectWizard.getInstance(it).listTemplates()
+        }
     }
 }

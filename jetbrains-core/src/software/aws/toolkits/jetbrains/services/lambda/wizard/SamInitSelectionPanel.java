@@ -144,7 +144,6 @@ public class SamInitSelectionPanel {
                 if (value == null) {
                     return;
                 }
-                setIcon(value.getIcon());
                 append(value.getName());
             }
         });

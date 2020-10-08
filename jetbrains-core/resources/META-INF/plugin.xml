@@ -215,7 +215,6 @@
         <runConfigurationProducer implementation="software.aws.toolkits.jetbrains.services.ecs.execution.EcsCloudDebugRunConfigurationProducer" />
 
         <!-- Project Wizard components -->
-        <moduleType id="AWS" implementationClass="software.aws.toolkits.jetbrains.services.lambda.wizard.AwsModuleType" />
         <directoryProjectGenerator implementation="software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectGenerator" />
         <projectTemplatesFactory implementation="software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectGeneratorIntelliJAdapter" />
 

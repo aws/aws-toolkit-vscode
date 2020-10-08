@@ -167,7 +167,7 @@ class DotNetSamProjectGenerator(
         val progressManager = ProgressManager.getInstance()
         progressManager.runProcessWithProgressSynchronously(
             {
-                samSettings.template.build(context.project, samSettings.runtime, samSettings.schemaParameters, outDirVf)
+                samSettings.template.build(context.project, projectNameField.text, samSettings.runtime, samSettings.schemaParameters, outDirVf)
             },
             message("sam.init.generating.template"),
             false,

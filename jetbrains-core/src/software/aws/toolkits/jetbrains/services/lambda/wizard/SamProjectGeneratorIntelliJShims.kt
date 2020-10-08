@@ -9,7 +9,6 @@ import com.intellij.ide.util.projectWizard.SettingsStep
 import com.intellij.ide.util.projectWizard.WizardContext
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.module.ModuleType
-import com.intellij.openapi.module.ModuleTypeManager
 import com.intellij.openapi.options.ConfigurationException
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
@@ -37,8 +36,8 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
     // hide this from the new project menu
     override fun isAvailable() = false
 
-    // dummy type to fulfill the interface
-    override fun getModuleType() = AwsModuleType.INSTANCE
+    // dummy type to fulfill the interface, will be replaced in setupRootModel()
+    override fun getModuleType(): ModuleType<*>? = ModuleType.EMPTY
 
     // IntelliJ create commit step
     override fun setupRootModel(rootModel: ModifiableRootModel) {
@@ -60,7 +59,7 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
                 override fun run(indicator: ProgressIndicator) {
                     ModuleRootModificationUtil.updateModel(rootModel.module) { model ->
                         val samTemplate = settings.template
-                        samTemplate.build(project, selectedRuntime, settings.schemaParameters, outputDir)
+                        samTemplate.build(project, rootModel.module.name, selectedRuntime, settings.schemaParameters, outputDir)
                         VfsUtil.markDirtyAndRefresh(false, true, true, outputDir)
                         runInEdt {
                             try {
@@ -75,7 +74,6 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
         )
     }
 
-    // add things
     override fun modifySettingsStep(settingsStep: SettingsStep): ModuleWizardStep? {
         generator.peer.buildUI(settingsStep)
 
@@ -104,32 +102,7 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
     }
 }
 
-class NullBuilder : ModuleBuilder() {
-    // hide this from the new project menu
-    override fun isAvailable() = false
-
-    override fun getModuleType(): ModuleType<*> = AwsModuleType.INSTANCE
-
-    override fun setupRootModel(modifiableRootModel: ModifiableRootModel) {}
-}
-
-class AwsModuleType : ModuleType<ModuleBuilder>(ID) {
-    override fun createModuleBuilder() = NullBuilder()
-
-    override fun getName() = ID
-
-    override fun getDescription() = message("aws.description")
-
-    override fun getNodeIcon(isOpened: Boolean) = AwsIcons.Logos.AWS
-
-    companion object {
-        const val ID = "AWS"
-        val INSTANCE: ModuleType<*> = ModuleTypeManager.getInstance().findByID(ID)
-    }
-}
-
 class SamProjectGeneratorIntelliJAdapter : ProjectTemplatesFactory() {
-    // pull in AWS project types here
     override fun createTemplates(group: String?, context: WizardContext?) = arrayOf(SamProjectGenerator())
 
     override fun getGroupIcon(group: String?) = AwsIcons.Logos.AWS

@@ -8,7 +8,6 @@ import com.intellij.ide.util.projectWizard.CustomStepProjectGenerator
 import com.intellij.ide.util.projectWizard.ModuleBuilder
 import com.intellij.ide.util.projectWizard.ProjectSettingsStepBase
 import com.intellij.ide.util.projectWizard.SettingsStep
-import com.intellij.ide.util.projectWizard.WebProjectTemplate
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.module.Module
@@ -20,6 +19,7 @@ import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.impl.welcomeScreen.AbstractActionWithPanel
 import com.intellij.platform.DirectoryProjectGenerator
+import com.intellij.platform.DirectoryProjectGeneratorBase
 import com.intellij.platform.HideableProjectGenerator
 import com.intellij.platform.ProjectGeneratorPeer
 import com.intellij.platform.ProjectTemplate
@@ -30,12 +30,15 @@ import software.aws.toolkits.resources.message
 import javax.swing.Icon
 import javax.swing.JComponent
 
-// ref: https://github.com/JetBrains/intellij-plugins/blob/master/vuejs/src/org/jetbrains/vuejs/cli/VueCliProjectGenerator.kt
+/**
+ * [DirectoryProjectGeneratorBase] so it shows up in Light IDEs
+ * [ProjectTemplate] To allow for us to shim it into ProjectTemplatesFactory and use this in IntelliJ
+ * [CustomStepProjectGenerator] so we have full control over the panel
+ * [HideableProjectGenerator] so that we can hide it if the IDE doesnt support any of our runtimes
+ */
 class SamProjectGenerator :
+    DirectoryProjectGeneratorBase<SamNewProjectSettings>(),
     ProjectTemplate,
-    WebProjectTemplate<SamNewProjectSettings>(),
-    // pycharm hack
-    DirectoryProjectGenerator<SamNewProjectSettings>,
     CustomStepProjectGenerator<SamNewProjectSettings>,
     HideableProjectGenerator {
     val builder = SamProjectBuilder(this)
@@ -51,7 +54,6 @@ class SamProjectGenerator :
     // Only show the generator if we have SAM templates to show
     override fun isHidden(): Boolean = SamProjectTemplate.SAM_TEMPLATES.isEmpty()
 
-    // steps are used by non-IntelliJ IDEs
     override fun createStep(
         projectGenerator: DirectoryProjectGenerator<SamNewProjectSettings>?,
         callback: AbstractNewProjectStep.AbstractCallback<SamNewProjectSettings>?
@@ -66,7 +68,6 @@ class SamProjectGenerator :
     ) {
         runInEdt {
             val rootModel = ModuleRootManager.getInstance(module).modifiableModel
-            val builder = createModuleBuilder()
             builder.contentEntryPath = baseDir.path
             builder.setupRootModel(rootModel)
 
@@ -98,16 +99,15 @@ class SamProjectGenerator :
 
     override fun createModuleBuilder(): ModuleBuilder = builder
 
-    // force the initial validation
-    override fun postponeValidation(): Boolean = false
-
     // validation is done in the peer
     override fun validateSettings(): ValidationInfo? = null
 
     override fun getHelpId(): String? = HelpIds.NEW_SERVERLESS_PROJECT_DIALOG.id
 }
 
-// non-IntelliJ step UI
+/**
+ * Used to overwrite the entire panel in the "light" IDEs so we don't put our settings under "More Settings"
+ */
 class SamProjectRuntimeSelectionStep(
     projectGenerator: SamProjectGenerator
 ) : ProjectSettingsStepBase<SamNewProjectSettings>(
@@ -134,7 +134,8 @@ class SamProjectGeneratorSettingsPeer(val generator: SamProjectGenerator) : Proj
 
     // "Deprecated" but required to implement. Not importing to avoid the import deprecation warning.
     @Suppress("OverridingDeprecatedMember", "DEPRECATION")
-    override fun addSettingsStateListener(listener: com.intellij.platform.WebProjectGenerator.SettingsStateListener) {}
+    override fun addSettingsStateListener(listener: com.intellij.platform.WebProjectGenerator.SettingsStateListener) {
+    }
 
     // we sacrifice a lot of convenience so we can build the UI here...
     override fun buildUI(settingsStep: SettingsStep) {
