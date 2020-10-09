@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { TelemetryEvent } from './telemetryEvent'
+import { MetricDatum } from './clienttelemetry'
 import { TelemetryFeedback } from './telemetryFeedback'
 
 export interface TelemetryPublisher {
@@ -11,6 +11,6 @@ export interface TelemetryPublisher {
 
     postFeedback(feedback: TelemetryFeedback): Promise<void>
 
-    enqueue(...events: TelemetryEvent[]): any
+    enqueue(...events: MetricDatum[]): any
     flush(): Promise<any>
 }

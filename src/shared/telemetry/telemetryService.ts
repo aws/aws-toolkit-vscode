@@ -4,7 +4,7 @@
  */
 
 import { AwsContext } from '../awsContext'
-import { TelemetryEvent } from './telemetryEvent'
+import { MetricDatum } from './clienttelemetry'
 import { TelemetryFeedback } from './telemetryFeedback'
 
 export interface TelemetryService {
@@ -14,6 +14,6 @@ export interface TelemetryService {
     start(): Promise<void>
     shutdown(): Promise<void>
     postFeedback(feedback: TelemetryFeedback): Promise<void>
-    record(event: TelemetryEvent, awsContext?: AwsContext): void
+    record(event: MetricDatum, awsContext?: AwsContext): void
     clearRecords(): void
 }
