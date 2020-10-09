@@ -25,7 +25,9 @@ describe('Telemetry cache', () => {
 
     it('Extracts good data when there is bad data present', () => {
         const input = JSON.parse(
-            '["this is a string", {"namespace":"session","data":[{"name":"end","value":4226661,"unit":"Milliseconds","metadata":{}}]},{"data":[{"MetricName":"session_end","Value":18709,"Unit":"None","EpochTimestamp": "2324324", "Metadata":[{"Key":"awsAccount","Value":"n/a"}]}]}]'
+            `["this is a string", 
+            {"namespace":"session","data":[{"name":"end","value":4226661,"unit":"Milliseconds","metadata":{}}]},
+            {"MetricName":"session_end","Value":18709,"Unit":"None","EpochTimestamp": "2324324", "Metadata":[{"Key":"awsAccount","Value":"n/a"}]}]`
         )
 
         const output = filterTelemetryCacheEvents(input)
@@ -36,7 +38,8 @@ describe('Telemetry cache', () => {
         const input = JSON.parse(
             `[
                 {"createTime":"2020-02-07T16:54:58.293Z", "data":[{"MetricName":"session_end","Value":18709,"Unit":"None", "Metadata":[{"Key":"awsAccount","Value":"n/a"}]}]},
-                {"data":[{"MetricName":"session_end","Value":18709,"Unit":"None","EpochTimestamp": "2324324", "Metadata":[{"Key":"awsAccount","Value":"n/a"}]}]}
+                {"data":[{"MetricName":"session_end","Value":18709,"Unit":"None","EpochTimestamp": "2324324", "Metadata":[{"Key":"awsAccount","Value":"n/a"}]}]},
+                {"MetricName":"session_end","Value":18709,"Unit":"None","EpochTimestamp": "2324324", "Metadata":[{"Key":"awsAccount","Value":"n/a"}]}
             ]`
         )
 
@@ -44,9 +47,17 @@ describe('Telemetry cache', () => {
         assert.strictEqual(output.length, 1)
     })
 
+    it('Happy path with passive', () => {
+        const input = JSON.parse(
+            '[{"MetricName":"session_end","Value":18709,"Unit":"None", "Passive": true, "EpochTimestamp": "2324324","Metadata":[{"Key":"awsAccount","Value":"n/a"}]}]'
+        )
+        const output = filterTelemetryCacheEvents(input)
+        assert.strictEqual(output.length, 1)
+    })
+
     it('Happy path', () => {
         const input = JSON.parse(
-            '[{"data":[{"MetricName":"session_end","Value":18709,"Unit":"None","EpochTimestamp": "2324324","Metadata":[{"Key":"awsAccount","Value":"n/a"}]}]}]'
+            '[{"MetricName":"session_end","Value":18709,"Unit":"None", "EpochTimestamp": "2324324","Metadata":[{"Key":"awsAccount","Value":"n/a"}]}]'
         )
         const output = filterTelemetryCacheEvents(input)
         assert.strictEqual(output.length, 1)

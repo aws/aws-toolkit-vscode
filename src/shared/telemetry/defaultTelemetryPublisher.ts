@@ -4,9 +4,9 @@
  */
 
 import { CognitoIdentity, CognitoIdentityCredentials } from 'aws-sdk'
+import { MetricDatum } from './clienttelemetry'
 import { DefaultTelemetryClient } from './defaultTelemetryClient'
 import { TelemetryClient } from './telemetryClient'
-import { TelemetryEvent } from './telemetryEvent'
 import { TelemetryFeedback } from './telemetryFeedback'
 import { TelemetryPublisher } from './telemetryPublisher'
 
@@ -18,7 +18,7 @@ export interface IdentityPublisherTuple {
 export class DefaultTelemetryPublisher implements TelemetryPublisher {
     private static readonly DEFAULT_MAX_BATCH_SIZE = 20
 
-    private readonly _eventQueue: TelemetryEvent[]
+    private readonly _eventQueue: MetricDatum[]
 
     public constructor(
         private readonly clientId: string,
@@ -41,11 +41,11 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
         return this.telemetryClient.postFeedback(feedback)
     }
 
-    public enqueue(...events: TelemetryEvent[]): void {
+    public enqueue(...events: MetricDatum[]): void {
         this._eventQueue.push(...events)
     }
 
-    public get queue(): ReadonlyArray<TelemetryEvent> {
+    public get queue(): ReadonlyArray<MetricDatum> {
         return this._eventQueue
     }
 
@@ -55,10 +55,7 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
         }
 
         while (this._eventQueue.length !== 0) {
-            const batch = this._eventQueue.splice(
-                0,
-                DefaultTelemetryPublisher.DEFAULT_MAX_BATCH_SIZE
-            ) as TelemetryEvent[]
+            const batch = this._eventQueue.splice(0, DefaultTelemetryPublisher.DEFAULT_MAX_BATCH_SIZE)
 
             if (this.telemetryClient === undefined) {
                 return
