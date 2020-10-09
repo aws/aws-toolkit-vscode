@@ -172,7 +172,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 try {
                     await showQuickStartWebview(context)
                 } finally {
-                    recordAwsHelpQuickstart()
+                    recordAwsHelpQuickstart({ result: 'Succeeded' })
                 }
             })
         )
