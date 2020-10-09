@@ -10,9 +10,9 @@ import { pluginVersion } from '../constants'
 import { ext } from '../extensionGlobals'
 import { getLogger } from '../logger'
 import * as ClientTelemetry from './clienttelemetry'
+import { MetricDatum } from './clienttelemetry'
 import apiConfig = require('./service-2.json')
 import { TelemetryClient } from './telemetryClient'
-import { TelemetryEvent, toMetricData } from './telemetryEvent'
 import { TelemetryFeedback } from './telemetryFeedback'
 
 export class DefaultTelemetryClient implements TelemetryClient {
@@ -29,11 +29,10 @@ export class DefaultTelemetryClient implements TelemetryClient {
      * Returns failed events
      * @param batch batch of events
      */
-    public async postMetrics(batch: TelemetryEvent[]): Promise<TelemetryEvent[] | undefined> {
+    public async postMetrics(batch: MetricDatum[]): Promise<MetricDatum[] | undefined> {
         try {
-            const metricData = toMetricData(batch)
             // If our batching logic rejected all of the telemetry, don't try to post
-            if (metricData.length === 0) {
+            if (batch.length === 0) {
                 return undefined
             }
 
@@ -46,7 +45,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
                     OSVersion: os.release(),
                     ParentProduct: vscode.env.appName,
                     ParentProductVersion: vscode.version,
-                    MetricData: metricData,
+                    MetricData: batch,
                 })
                 .promise()
             this.logger.info(`Successfully sent a telemetry batch of ${batch.length}`)
