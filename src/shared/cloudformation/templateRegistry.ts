@@ -129,11 +129,14 @@ export class CloudFormationTemplateRegistry {
  * Unlike a CloudFormation.TemplateResources object, all resources in this array are guaranteed to be defined.
  * @param templateDatum TemplateDatum object to extract resources from
  */
-export function getResourcesFromTemplateDatum(templateDatum: TemplateDatum): Map<string, CloudFormation.Resource> {
+export function getResourcesFromTemplateDatum(
+    templateDatum: TemplateDatum,
+    resourceTypes: CloudFormation.ResourceType[] | undefined = undefined
+): Map<string, CloudFormation.Resource> {
     const map = new Map<string, CloudFormation.Resource>()
     for (const resourceKey of Object.keys(templateDatum.template.Resources!)) {
         const resource = templateDatum.template.Resources![resourceKey]
-        if (resource) {
+        if (resource && (resourceTypes === undefined || resourceTypes.includes(resource.Type))) {
             map.set(resourceKey, resource)
         }
     }

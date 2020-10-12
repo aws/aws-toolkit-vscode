@@ -41,8 +41,8 @@ const BUCKET_REGION_HEADER = 'x-amz-bucket-region'
 
 export class DefaultS3Client implements S3Client {
     public constructor(
-        private readonly regionCode: string,
         private readonly partitionId: string,
+        private readonly regionCode: string,
         private readonly s3Provider: (regionCode: string) => Promise<S3> = createSdkClient,
         private readonly fileStreams: FileStreams = new DefaultFileStreams()
     ) {}

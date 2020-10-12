@@ -42,6 +42,23 @@ function createCodeConfig(): AwsSamDebuggerConfiguration {
     }
 }
 
+function createApiConfig(): AwsSamDebuggerConfiguration {
+    return {
+        type: 'aws-sam',
+        name: 'name',
+        request: 'direct-invoke',
+        invokeTarget: {
+            target: 'api',
+            templatePath: '/',
+            logicalId: 'TestResource',
+        },
+        api: {
+            path: '/',
+            httpMethod: 'get',
+        },
+    }
+}
+
 function createTemplateData(): TemplateDatum {
     return {
         path: '/',
@@ -52,6 +69,7 @@ function createTemplateData(): TemplateDatum {
 describe('DefaultAwsSamDebugConfigurationValidator', () => {
     const templateConfig = createTemplateConfig()
     const codeConfig = createCodeConfig()
+    const apiConfig = createApiConfig()
     const templateData = createTemplateData()
 
     const mockRegistry: CloudFormationTemplateRegistry = mock()
@@ -111,6 +129,31 @@ describe('DefaultAwsSamDebugConfigurationValidator', () => {
         properties.Runtime = 'invalid'
 
         const result = validator.validate(templateConfig)
+        assert.strictEqual(result.isValid, false)
+    })
+
+    it("API config returns invalid when resolving with a template that isn't serverless", () => {
+        const target = templateConfig.invokeTarget as TemplateTargetProperties
+        target.logicalId = 'OtherResource'
+
+        const result = validator.validate(apiConfig)
+        assert.strictEqual(result.isValid, false)
+    })
+
+    it('API config is invalid when it does not have an API field', () => {
+        const config = createApiConfig()
+        config.api = undefined
+
+        const result = validator.validate(config)
+        assert.strictEqual(result.isValid, false)
+    })
+
+    it("API config is invalid when its path does not start with a '/'", () => {
+        const config = createApiConfig()
+
+        config.api!.path = 'noleadingslash'
+
+        const result = validator.validate(config)
         assert.strictEqual(result.isValid, false)
     })
 

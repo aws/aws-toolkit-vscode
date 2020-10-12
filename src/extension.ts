@@ -59,6 +59,7 @@ import {
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { getChannelLogger } from './shared/utilities/vsCodeUtils'
 import { ExtContext } from './shared/extensions'
+import { activate as activateApiGateway } from './apigateway/activation'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
 import { activate as activateSsmDocument } from './ssmDocument/activation'
 import { CredentialsStore } from './credentials/credentialsStore'
@@ -73,6 +74,9 @@ export async function activate(context: vscode.ExtensionContext) {
     ext.context = context
     await activateLogger(context)
     const toolkitOutputChannel = vscode.window.createOutputChannel(localize('AWS.channel.aws.toolkit', 'AWS Toolkit'))
+    const remoteInvokeOutputChannel = vscode.window.createOutputChannel(
+        localize('AWS.channel.aws.remoteInvoke', 'AWS Remote Invocations')
+    )
     const channelLogger = getChannelLogger(toolkitOutputChannel)
     ext.outputChannel = toolkitOutputChannel
 
@@ -197,7 +201,13 @@ export async function activate(context: vscode.ExtensionContext) {
             context,
             awsContextTrees,
             regionProvider,
-            outputChannel: toolkitOutputChannel,
+            toolkitOutputChannel,
+            remoteInvokeOutputChannel,
+        })
+
+        await activateApiGateway({
+            extContext: extContext,
+            outputChannel: remoteInvokeOutputChannel,
         })
 
         await activateLambda(context)
