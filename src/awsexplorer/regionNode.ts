@@ -17,6 +17,7 @@ import { AWSTreeNodeBase } from '../shared/treeview/nodes/awsTreeNodeBase'
 import { StepFunctionsNode } from '../stepFunctions/explorer/stepFunctionsNodes'
 import { DEFAULT_PARTITION } from '../shared/regions/regionUtilities'
 import { SsmDocumentNode } from '../ssmDocument/explorer/ssmDocumentNode'
+import * as featureToggle from '../shared/featureToggle'
 
 /**
  * An AWS Explorer node representing a region.
@@ -47,7 +48,9 @@ export class RegionNode extends AWSTreeNodeBase {
         //  This interface exists so we can add additional nodes to the array (otherwise Typescript types the array to what's already in the array at creation)
         const partitionId = regionProvider.getPartitionId(this.regionCode) ?? DEFAULT_PARTITION
         const serviceCandidates = [
-            { serviceId: 'apigateway', createFn: () => new ApiGatewayNode(partitionId, this.regionCode) },
+            ...(featureToggle.disableApigw
+                ? []
+                : [{ serviceId: 'apigateway', createFn: () => new ApiGatewayNode(partitionId, this.regionCode) }]),
             { serviceId: 'cloudformation', createFn: () => new CloudFormationNode(this.regionCode) },
             { serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) },
             { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },

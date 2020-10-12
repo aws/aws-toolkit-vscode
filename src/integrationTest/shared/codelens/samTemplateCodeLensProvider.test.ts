@@ -11,6 +11,7 @@ import { SamTemplateCodeLensProvider } from '../../../shared/codelens/samTemplat
 import { LaunchConfiguration } from '../../../shared/debug/launchConfiguration'
 import { API_TARGET_TYPE, TEMPLATE_TARGET_TYPE } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
 import * as workspaceUtils from '../../../shared/utilities/workspaceUtils'
+import * as featureToggle from '../../../shared/featureToggle'
 
 describe('SamTemplateCodeLensProvider', async () => {
     let codeLensProvider: SamTemplateCodeLensProvider = new SamTemplateCodeLensProvider()
@@ -28,6 +29,9 @@ describe('SamTemplateCodeLensProvider', async () => {
     })
 
     it('provides a CodeLens for a file with a new resource', async () => {
+        if (featureToggle.disableApigw) {
+            return
+        }
         const codeLenses = await codeLensProvider.provideCodeLenses(
             document,
             instance(mockCancellationToken),

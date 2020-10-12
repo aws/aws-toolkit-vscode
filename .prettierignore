@@ -4,3 +4,4 @@ third-party/**
 CHANGELOG.md
 src/shared/telemetry/service-2.json
 .changes
+media/libs/vue.min.js
