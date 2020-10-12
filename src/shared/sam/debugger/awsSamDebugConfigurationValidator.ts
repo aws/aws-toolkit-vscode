@@ -16,6 +16,7 @@ import {
     CODE_TARGET_TYPE,
     TemplateTargetProperties,
     TEMPLATE_TARGET_TYPE,
+    API_TARGET_TYPE,
 } from './awsSamDebugConfiguration'
 import { tryGetAbsolutePath } from '../../utilities/workspaceUtils'
 
@@ -57,7 +58,10 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
                 'Debug Configuration has an unsupported target type. Supported types: {0}',
                 AWS_SAM_DEBUG_TARGET_TYPES.join(', ')
             )
-        } else if (config.invokeTarget.target === TEMPLATE_TARGET_TYPE) {
+        } else if (
+            config.invokeTarget.target === TEMPLATE_TARGET_TYPE ||
+            config.invokeTarget.target === API_TARGET_TYPE
+        ) {
             let cfnTemplate
             if (config.invokeTarget.templatePath) {
                 const fullpath = tryGetAbsolutePath(this.workspaceFolder, config.invokeTarget.templatePath)
@@ -68,6 +72,11 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
             rv = this.validateTemplateConfig(config, config.invokeTarget.templatePath, cfnTemplate)
         } else if (config.invokeTarget.target === CODE_TARGET_TYPE) {
             rv = this.validateCodeConfig(config)
+        }
+
+        // Validate additional properties of API target type
+        if (rv.isValid && config.invokeTarget.target === API_TARGET_TYPE) {
+            rv = this.validateApiConfig(config)
         }
 
         if (rv.isValid) {
@@ -193,6 +202,24 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
         return { isValid: true }
     }
 
+    private validateApiConfig(debugConfiguration: AwsSamDebuggerConfiguration): ValidationResult {
+        if (!debugConfiguration.api) {
+            return {
+                isValid: false,
+                message: localize(
+                    'AWS.sam.debugger.missingField',
+                    'Missing required field "{0}" in debug config',
+                    'api'
+                ),
+            }
+        } else if (!debugConfiguration.api.path.startsWith('/')) {
+            return {
+                isValid: false,
+                message: localize('AWS.sam.debugger.missingSlash', "Path must start with a '/'"),
+            }
+        }
+        return { isValid: true }
+    }
     private validateCodeConfig(debugConfiguration: AwsSamDebuggerConfiguration): ValidationResult {
         if (!debugConfiguration.lambda?.runtime || !samLambdaRuntimes.has(debugConfiguration.lambda.runtime)) {
             return {

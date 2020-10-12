@@ -12,6 +12,7 @@ export interface Endpoints {
 }
 
 export interface Partition {
+    dnsSuffix: string
     id: string
     name: string
     regions: Region[]
@@ -51,6 +52,7 @@ interface JsonStringMap<T> {
 }
 
 interface ManifestPartition {
+    dnsSuffix: string
     partition: string
     partitionName: string
     regions?: JsonStringMap<ManifestRegion>
@@ -87,6 +89,7 @@ export function loadEndpoints(json: string): Endpoints | undefined {
 
 function convertToPartition(partition: ManifestPartition): Partition {
     return {
+        dnsSuffix: partition.dnsSuffix,
         id: partition.partition,
         name: partition.partitionName,
         regions: convertJsonMap(partition.regions, convertToRegion),

@@ -13,8 +13,10 @@ import { LaunchConfiguration } from '../../../debug/launchConfiguration'
 import * as picker from '../../../ui/picker'
 import { localize } from '../../../utilities/vsCodeUtils'
 import {
+    API_TARGET_TYPE,
     AwsSamDebuggerConfiguration,
     CODE_TARGET_TYPE,
+    createApiAwsSamDebugConfig,
     createCodeAwsSamDebugConfig,
     createTemplateAwsSamDebugConfig,
     TEMPLATE_TARGET_TYPE,
@@ -37,7 +39,7 @@ export interface AddSamDebugConfigurationInput {
  */
 export async function addSamDebugConfiguration(
     { resourceName, rootUri, runtimeFamily }: AddSamDebugConfigurationInput,
-    type: typeof CODE_TARGET_TYPE | typeof TEMPLATE_TARGET_TYPE
+    type: typeof CODE_TARGET_TYPE | typeof TEMPLATE_TARGET_TYPE | typeof API_TARGET_TYPE
 ): Promise<void> {
     // tslint:disable-next-line: no-floating-promises
     emitCommandTelemetry()
@@ -116,6 +118,8 @@ export async function addSamDebugConfiguration(
             // User backed out of runtime selection. Abandon config creation.
             return
         }
+    } else if (type === API_TARGET_TYPE) {
+        samDebugConfig = createApiAwsSamDebugConfig(workspaceFolder, runtimeName, resourceName, rootUri.fsPath)
     } else {
         throw new Error('Unrecognized debug target type')
     }
