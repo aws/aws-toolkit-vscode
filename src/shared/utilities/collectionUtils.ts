@@ -230,3 +230,21 @@ export class IteratorTransformer<TIteratorOutput, TTransformerOutput> {
         }
     }
 }
+
+/**
+ * Push if condition is true, useful for adding CLI arguments, and avoiding this kind of situation:
+ * if (x && y) {
+ *     arr.push(item2)
+ *     if(z) {
+ *         arr.push(item)
+ *     }
+ * }
+ * @param arr The array to push to
+ * @param condition conditional that determines if we will push to the array
+ * @param elements The additional items to append to the array
+ */
+export function pushIf<T>(arr: T[], condition: boolean, ...elements: T[]) {
+    if (condition) {
+        arr.push(...elements)
+    }
+}

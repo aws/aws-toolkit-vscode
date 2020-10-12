@@ -50,7 +50,8 @@
             "runtimeExecutable": "${execPath}",
             "args": [
                 "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/test/index"
+                "--extensionTestsPath=${workspaceFolder}/dist/src/test/index",
+                "${workspaceRoot}/dist/src/testFixtures/workspaceFolder"
             ],
             "env": {
                 "TEST_REPORT_DIR": "${workspaceFolder}/.test-reports",
@@ -68,7 +69,8 @@
             "runtimeExecutable": "${execPath}",
             "args": [
                 "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/test/index.js"
+                "--extensionTestsPath=${workspaceFolder}/dist/src/test/index.js",
+                "${workspaceRoot}/dist/src/testFixtures/workspaceFolder"
             ],
             "env": {
                 "TEST_REPORT_DIR": "${workspaceFolder}/.test-reports",
@@ -76,7 +78,7 @@
                 "AWS_TOOLKIT_IGNORE_WEBPACK_BUNDLE": "true",
                 "NO_COVERAGE": "true"
             },
-            "outFiles": ["${workspaceFolder}/dist/src/test/**/*.js"],
+            "outFiles": ["${workspaceFolder}/dist/.vscode/*", "${workspaceFolder}/dist/src/test/**/*.js"],
             "preLaunchTask": "${defaultBuildTask}"
         },
         {
