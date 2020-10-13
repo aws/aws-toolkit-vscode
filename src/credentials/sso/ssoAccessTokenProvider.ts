@@ -105,7 +105,7 @@ export class SsoAccessTokenProvider {
         }
     }
 
-    private async authorizeClient(registration: SsoClientRegistration): Promise<StartDeviceAuthorizationResponse> {
+    public async authorizeClient(registration: SsoClientRegistration): Promise<StartDeviceAuthorizationResponse> {
         const authorizationParams = {
             clientId: registration.clientId,
             clientSecret: registration.clientSecret,
@@ -127,7 +127,7 @@ export class SsoAccessTokenProvider {
         }
     }
 
-    private async registerClient(): Promise<SsoClientRegistration> {
+    public async registerClient(): Promise<SsoClientRegistration> {
         const currentRegistration = this.cache.loadClientRegistration(this.ssoRegion)
         if (currentRegistration) {
             return currentRegistration
