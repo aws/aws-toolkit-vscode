@@ -3,142 +3,92 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.wizard
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.intellij.openapi.project.Project
+import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.project.DefaultProjectFactory
+import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.ui.ValidationInfo
+import com.intellij.openapi.vfs.VfsUtil
+import com.intellij.ui.layout.panel
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
+import software.aws.toolkits.jetbrains.services.lambda.BuiltInRuntimeGroups
+import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
-import software.aws.toolkits.jetbrains.services.schemas.SchemaDownloader
-import software.aws.toolkits.jetbrains.services.schemas.SchemaSummary
-import software.aws.toolkits.jetbrains.services.schemas.SchemaTemplateExtraContext
-import software.aws.toolkits.jetbrains.services.schemas.SchemaTemplateParameters
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamSchemaDownloadPostCreationAction
+import software.aws.toolkits.jetbrains.services.schemas.SchemaCodeLangs
+import software.aws.toolkits.jetbrains.ui.connection.AwsConnectionSettingsSelector
+import software.aws.toolkits.resources.message
 import javax.swing.JComponent
-import javax.swing.JLabel
-import javax.swing.JPanel
 
-// UI for selecting a Schema
-interface SchemaSelectionPanel {
-    val schemaSelectionPanel: JComponent
-
-    val schemaSelectionLabel: JLabel?
-
-    fun registryName(): String? = null
-
-    fun schemaName(): String? = null
-
-    fun reloadSchemas(awsConnection: ConnectionSettings? = null) {}
-
-    fun buildSchemaTemplateParameters(): SchemaTemplateParameters?
-
-    fun validateAll(): List<ValidationInfo>? = null
-
-    companion object {
-
-        @JvmStatic
-        fun create(
-            runtime: Runtime,
-            selectedTemplate: SamProjectTemplate,
-            generator: SamProjectGenerator
-        ): SchemaSelectionPanel =
-            runtime.runtimeGroup?.let { runtimeGroup ->
-                if (selectedTemplate.supportsDynamicSchemas())
-                    SamProjectWizard.getInstance(runtimeGroup).createSchemaSelectionPanel(generator)
-                else
-                    NoOpSchemaSelectionPanel()
-            } ?: NoOpSchemaSelectionPanel()
-    }
-}
-
-// UI-agnostic schema selection panel
-abstract class SchemaSelectionPanelBase(private val project: Project) :
-    SchemaSelectionPanel {
-
-    private val schemaDownloader = SchemaDownloader()
-
-    override fun buildSchemaTemplateParameters(): SchemaTemplateParameters? {
-        val schemaName = schemaName()
-        val registryName = registryName()
-
-        if (schemaName == null || registryName == null) {
-            return null
+/*
+ * A panel encapsulating  AWS credential selection during SAM new project creation wizard
+  */
+class SchemaSelectionPanel : WizardFragment {
+    private val schemaSelector = SchemaResourceSelector()
+    private val awsConnectionSelector = AwsConnectionSettingsSelector(
+        DefaultProjectFactory.getInstance().defaultProject,
+        schemaSelector::reloadSchemas
+    )
+    private val component = panel {
+        row {
+            awsConnectionSelector.selectorPanel()(grow)
         }
-
-        val schemaSummary = SchemaSummary(schemaName, registryName)
-
-        val describeSchemaResponse = schemaDownloader.getSchemaContent(registryName, schemaName, project = project).toCompletableFuture().get()
-        val latestSchemaVersion = describeSchemaResponse.schemaVersion()
-
-        val schemaNode = schemaDownloader.getSchemaContentAsJson(describeSchemaResponse)
-        val awsEventNode = getAwsEventNode(schemaNode)
-
-        // Derive source from custom OpenAPI metadata provided by Schemas service
-        val source = awsEventNode.path(X_AMAZON_EVENT_SOURCE).textValue() ?: DEFAULT_EVENT_SOURCE
-
-        // Derive detail type from custom OpenAPI metadata provided by Schemas service
-        val detailType = awsEventNode.path(X_AMAZON_EVENT_DETAIL_TYPE).textValue() ?: DEFAULT_EVENT_DETAIL_TYPE
-
-        // Generate schema root/package from the scheme name
-        // In the near future, this will be returned as part of a Schemas Service API call
-        val schemaPackageHierarchy = buildSchemaPackageHierarchy(schemaName)
-
-        // Derive root schema event name from OpenAPI metadata, or if ambiguous, use the last post-character section of a schema name
-        val rootSchemaEventName = buildRootSchemaEventName(schemaNode, awsEventNode) ?: schemaSummary.title()
-
-        return SchemaTemplateParameters(
-            schemaSummary,
-            latestSchemaVersion,
-            SchemaTemplateExtraContext(
-                registryName,
-                rootSchemaEventName,
-                schemaPackageHierarchy,
-                source,
-                detailType
-            )
-        )
+        row(message("sam.init.schema.label")) {
+            schemaSelector.component(grow)
+        }
     }
 
-    private fun getAwsEventNode(schemaNode: JsonNode): JsonNode =
-        // Standard OpenAPI specification
-        schemaNode.path(COMPONENTS).path(SCHEMAS).path(AWS_EVENT)
+    override fun title(): String = message("sam.init.schema.label")
 
-    private fun buildSchemaPackageHierarchy(schemaName: String): String = SchemaCodeGenUtils.buildSchemaPackageName(schemaName)
+    override fun component(): JComponent = component
 
-    private fun buildRootSchemaEventName(schemaNode: JsonNode, awsEvent: JsonNode): String? {
-        val awsEventDetailRef = awsEvent.path(PROPERTIES).path(DETAIL).path(REF).textValue()?.substringAfter(COMPONENTS_SCHEMAS_PATH)
-        if (!awsEventDetailRef.isNullOrEmpty()) {
-            return SchemaCodeGenUtils.IdentifierFormatter.toValidIdentifier(awsEventDetailRef)
+    override fun validateFragment(): ValidationInfo? {
+        if (awsConnectionSelector.selectedCredentialProvider() == null) {
+            return ValidationInfo(message("sam.init.schema.aws_credentials_select"), awsConnectionSelector.view.credentialProvider)
         }
-
-        val schemaRoots = schemaNode.path(COMPONENTS).path(SCHEMAS).fieldNames().asSequence().toList()
-        if (schemaRoots.isNotEmpty()) {
-            return SchemaCodeGenUtils.IdentifierFormatter.toValidIdentifier(schemaRoots[0])
+        if (awsConnectionSelector.selectedRegion() == null) {
+            return ValidationInfo(message("sam.init.schema.aws_credentials_select_region"), awsConnectionSelector.view.region)
         }
-
+        if (schemaSelector.registryName() == null || schemaSelector.schemaName() == null) {
+            return ValidationInfo(message("sam.init.schema.pleaseSelect"), schemaSelector.component)
+        }
         return null
     }
 
-    companion object {
-        const val X_AMAZON_EVENT_SOURCE = "x-amazon-events-source"
-        const val X_AMAZON_EVENT_DETAIL_TYPE = "x-amazon-events-detail-type"
+    override fun isApplicable(template: SamProjectTemplate?): Boolean = template?.supportsDynamicSchemas() == true
 
-        const val COMPONENTS = "components"
-        const val SCHEMAS = "schemas"
-        const val COMPONENTS_SCHEMAS_PATH = "#/components/schemas/"
-        const val AWS_EVENT = "AWSEvent"
-        const val PROPERTIES = "properties"
-        const val DETAIL = "detail"
-        const val REF = "${'$'}ref"
+    override fun postProjectGeneration(model: ModifiableRootModel, template: SamProjectTemplate, runtime: Runtime, progressIndicator: ProgressIndicator) {
+        if (!template.supportsDynamicSchemas()) {
+            return
+        }
 
-        const val DEFAULT_EVENT_SOURCE = "INSERT-YOUR-EVENT-SOURCE"
-        const val DEFAULT_EVENT_DETAIL_TYPE = "INSERT-YOUR-DETAIL-TYPE"
+        schemaSelector.buildSchemaTemplateParameters()?.let {
+            progressIndicator.text = message("sam.init.generating.schema")
+
+            val moduleRoot = model.contentRoots.firstOrNull() ?: return
+            val templateFile = SamCommon.getTemplateFromDirectory(moduleRoot) ?: return
+
+            // We take the first since we don't have any way to say generate this schema for this function
+            val codeUris = SamCommon.getCodeUrisFromTemplate(model.project, templateFile).firstOrNull() ?: return
+            val connectionSettings = awsConnectionSelector.connectionSettings() ?: return
+            val runtimeGroup = runtime.runtimeGroup ?: return
+
+            SamSchemaDownloadPostCreationAction().downloadCodeIntoWorkspace(
+                it,
+                VfsUtil.virtualToIoFile(codeUris).toPath(),
+                runtimeGroup.toSchemaCodeLang(),
+                connectionSettings,
+                progressIndicator
+            )
+        }
     }
-}
 
-class NoOpSchemaSelectionPanel : SchemaSelectionPanel {
-    override fun buildSchemaTemplateParameters(): SchemaTemplateParameters? = null
+    fun schemaInfo() = schemaSelector.buildSchemaTemplateParameters()
 
-    override val schemaSelectionPanel: JComponent = JPanel()
-
-    override val schemaSelectionLabel: JLabel? = null
+    private fun RuntimeGroup.toSchemaCodeLang(): SchemaCodeLangs = when (val id = this.id) {
+        BuiltInRuntimeGroups.Java -> SchemaCodeLangs.JAVA8
+        BuiltInRuntimeGroups.Python -> SchemaCodeLangs.PYTHON3_6
+        BuiltInRuntimeGroups.NodeJs -> SchemaCodeLangs.TYPESCRIPT
+        else -> throw IllegalStateException("Schemas is not supported by $this")
+    }
 }

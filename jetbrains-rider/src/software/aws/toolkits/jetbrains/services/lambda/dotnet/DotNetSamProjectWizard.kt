@@ -3,21 +3,14 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.dotnet
 
-import software.aws.toolkits.jetbrains.services.lambda.wizard.NoOpSchemaSelectionPanel
-import software.aws.toolkits.jetbrains.services.lambda.wizard.NoOpSdkSelectionPanel
-import software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectGenerator
+import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectTemplate
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectWizard
-import software.aws.toolkits.jetbrains.services.lambda.wizard.SchemaSelectionPanel
-import software.aws.toolkits.jetbrains.services.lambda.wizard.SdkSelectionPanel
+import software.aws.toolkits.jetbrains.services.lambda.wizard.SdkSelector
 
 class DotNetSamProjectWizard : SamProjectWizard {
     override fun listTemplates(): Collection<SamProjectTemplate> =
         listOf(DotNetSamProjectTemplate())
 
-    override fun createSdkSelectionPanel(generator: SamProjectGenerator): SdkSelectionPanel =
-        NoOpSdkSelectionPanel()
-
-    override fun createSchemaSelectionPanel(generator: SamProjectGenerator): SchemaSelectionPanel =
-        NoOpSchemaSelectionPanel()
+    override fun createSdkSelectionPanel(projectLocation: TextFieldWithBrowseButton?): SdkSelector? = null
 }

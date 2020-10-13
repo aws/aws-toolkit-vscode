@@ -21,9 +21,12 @@ import javax.swing.JComponent
 
 class AwsConnectionSettingsEditor<T : AwsConnectionsRunConfigurationBase<*>>(
     project: Project,
-    private val settingsChangedListener: (AwsRegion?, String?) -> Unit = { _, _ -> }
+    settingsChangedListener: (AwsRegion?, String?) -> Unit = { _, _ -> }
 ) : SettingsEditor<T>() {
-    private val awsConnectionSelector = AwsConnectionSettingsSelector(project, settingsChangedListener)
+    private val awsConnectionSelector = AwsConnectionSettingsSelector(project) {
+        // TODO: Undo this unwrapping
+        settingsChangedListener.invoke(it?.region, it?.credentials?.id)
+    }
 
     override fun createEditor(): JComponent = awsConnectionSelector.selectorPanel()
 

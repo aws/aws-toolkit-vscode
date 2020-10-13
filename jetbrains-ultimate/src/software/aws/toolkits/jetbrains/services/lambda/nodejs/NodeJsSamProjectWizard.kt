@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.nodejs
 
-import com.intellij.javascript.nodejs.interpreter.NodeJsInterpreter
 import com.intellij.javascript.nodejs.interpreter.NodeJsInterpreterField
 import com.intellij.javascript.nodejs.interpreter.NodeJsInterpreterManager
 import com.intellij.javascript.nodejs.interpreter.NodeJsInterpreterRef
@@ -11,79 +10,64 @@ import com.intellij.lang.javascript.dialects.JSLanguageLevel
 import com.intellij.lang.javascript.settings.JSRootConfiguration
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.roots.ModifiableRootModel
+import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.ui.ValidationInfo
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.jetbrains.services.lambda.wizard.NoOpSchemaSelectionPanel
-import software.aws.toolkits.jetbrains.services.lambda.wizard.SamNewProjectSettings
-import software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectGenerator
+import software.aws.toolkits.jetbrains.services.lambda.wizard.AppBasedTemplate
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectTemplate
 import software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectWizard
-import software.aws.toolkits.jetbrains.services.lambda.wizard.SchemaSelectionPanel
-import software.aws.toolkits.jetbrains.services.lambda.wizard.SdkSelectionPanel
-import software.aws.toolkits.jetbrains.services.lambda.wizard.SdkSettings
+import software.aws.toolkits.jetbrains.services.lambda.wizard.SdkSelector
 import software.aws.toolkits.jetbrains.services.lambda.wizard.TemplateParameters
-import software.aws.toolkits.jetbrains.services.lambda.wizard.TemplateParameters.AppBasedTemplate
+import software.aws.toolkits.jetbrains.utils.ui.validationInfo
 import software.aws.toolkits.resources.message
 import javax.swing.JComponent
 import javax.swing.JLabel
 
 class NodeJsSamProjectWizard : SamProjectWizard {
-    override fun createSchemaSelectionPanel(
-        generator: SamProjectGenerator
-    ): SchemaSelectionPanel =
-        NoOpSchemaSelectionPanel()
-
-    override fun createSdkSelectionPanel(generator: SamProjectGenerator): SdkSelectionPanel =
-        NodeJsSdkSelectionPanel()
+    override fun createSdkSelectionPanel(projectLocation: TextFieldWithBrowseButton?): SdkSelector? = NodeJsSdkSelectionPanel()
 
     override fun listTemplates(): Collection<SamProjectTemplate> = listOf(
         SamHelloWorldNodeJs()
     )
 }
 
-class NodeJsSdkSelectionPanel : SdkSelectionPanel {
-    private var interpreterPanel: NodeJsInterpreterField? = null
+class NodeJsSdkSelectionPanel : SdkSelector {
+    private val interpreterPanel = createInterpreterField()
 
-    override val sdkSelectionLabel: JLabel?
-        get() = JLabel(message("sam.init.node_interpreter.label"))
-
-    override val sdkSelectionPanel: JComponent
-        get() {
-            val project = ProjectManager.getInstance().defaultProject
-            val nodeJsInterpreterField = object : NodeJsInterpreterField(project, false) {
-                override fun isDefaultProjectInterpreterField(): Boolean = true
-            }
-            nodeJsInterpreterField.interpreterRef = NodeJsInterpreterManager.getInstance(project).interpreterRef
-            interpreterPanel = nodeJsInterpreterField
-            return nodeJsInterpreterField
+    private fun createInterpreterField(): NodeJsInterpreterField {
+        val project = ProjectManager.getInstance().defaultProject
+        return object : NodeJsInterpreterField(project, false) {
+            override fun isDefaultProjectInterpreterField(): Boolean = true
         }
+    }
 
-    override fun registerListeners() { }
+    override fun sdkSelectionLabel() = JLabel(message("sam.init.node_interpreter.label"))
 
-    override fun validateAll(): List<ValidationInfo>? = null
+    override fun sdkSelectionPanel(): JComponent = interpreterPanel
 
-    override fun getSdkSettings(): SdkSettings = NodeJsSdkSettings(interpreter = interpreterPanel?.interpreter)
-}
+    override fun applySdkSettings(model: ModifiableRootModel) {
+        NodeJsInterpreterManager.getInstance(model.project).setInterpreterRef(NodeJsInterpreterRef.create(interpreterPanel.interpreter))
+        JSRootConfiguration.getInstance(model.project).storeLanguageLevelAndUpdateCaches(JSLanguageLevel.ES6)
+    }
 
-class NodeJsSdkSettings(
-    val interpreter: NodeJsInterpreter? = null,
-    val languageLevel: JSLanguageLevel = JSLanguageLevel.ES6
-) : SdkSettings
-
-abstract class SamNodeJsProjectTemplate : SamProjectTemplate() {
-    override fun supportedRuntimes(): Set<Runtime> = setOf(Runtime.NODEJS10_X, Runtime.NODEJS12_X)
-
-    override fun setupSdk(rootModel: ModifiableRootModel, settings: SamNewProjectSettings) {
-        val nodeJsSdkSettings = settings.sdkSettings as NodeJsSdkSettings
-        NodeJsInterpreterManager.getInstance(rootModel.project).setInterpreterRef(NodeJsInterpreterRef.create(nodeJsSdkSettings.interpreter))
-        JSRootConfiguration.getInstance(rootModel.project).storeLanguageLevelAndUpdateCaches(nodeJsSdkSettings.languageLevel)
+    override fun validateSelection(): ValidationInfo? = interpreterPanel.interpreter?.validate(null)?.let {
+        interpreterPanel.validationInfo(it)
     }
 }
 
+abstract class SamNodeJsProjectTemplate : SamProjectTemplate() {
+    override fun supportedRuntimes(): Set<Runtime> = setOf(Runtime.NODEJS10_X, Runtime.NODEJS12_X)
+}
+
 class SamHelloWorldNodeJs : SamNodeJsProjectTemplate() {
-    override fun getName() = message("sam.init.template.hello_world.name")
+    override fun displayName() = message("sam.init.template.hello_world.name")
 
-    override fun getDescription() = message("sam.init.template.hello_world.description")
+    override fun description() = message("sam.init.template.hello_world.description")
 
-    override fun templateParameters(): TemplateParameters = AppBasedTemplate("hello-world", "npm")
+    override fun templateParameters(projectName: String, runtime: Runtime): TemplateParameters = AppBasedTemplate(
+        projectName,
+        runtime,
+        "hello-world",
+        "npm"
+    )
 }

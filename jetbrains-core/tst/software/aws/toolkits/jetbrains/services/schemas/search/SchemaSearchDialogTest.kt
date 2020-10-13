@@ -61,7 +61,7 @@ class SchemaSearchDialogTest {
         }
 
         mockSchemaViewer.stub {
-            on { downloadPrettySchema(eq(SCHEMA2), eq(REGISTRY1), any(), any()) }.thenReturn(completedFuture(SCHEMA2_CONTENTS))
+            on { downloadPrettySchema(eq(SCHEMA2), eq(REGISTRY1), any()) }.thenReturn(completedFuture(SCHEMA2_CONTENTS))
         }
 
         val dialog = runInEdtAndGet {
@@ -94,7 +94,7 @@ class SchemaSearchDialogTest {
         }
 
         mockSchemaViewer.stub {
-            on { downloadPrettySchema(eq(SCHEMA2), eq(REGISTRY2), any(), any()) }.thenReturn(completedFuture(SCHEMA2_CONTENTS))
+            on { downloadPrettySchema(eq(SCHEMA2), eq(REGISTRY2), any()) }.thenReturn(completedFuture(SCHEMA2_CONTENTS))
         }
 
         val dialog = runInEdtAndGet {
@@ -285,7 +285,7 @@ class SchemaSearchDialogTest {
         }
 
         mockSchemaViewer.stub {
-            on { downloadPrettySchema(eq(SCHEMA1), eq(REGISTRY1), any(), any()) }.thenReturn(completedFuture(SCHEMA1_CONTENTS))
+            on { downloadPrettySchema(eq(SCHEMA1), eq(REGISTRY1), any()) }.thenReturn(completedFuture(SCHEMA1_CONTENTS))
         }
 
         val dialog = runInEdtAndGet {
@@ -325,7 +325,7 @@ class SchemaSearchDialogTest {
         }
 
         mockSchemaViewer.stub {
-            on { downloadPrettySchema(eq(SCHEMA1), eq(REGISTRY1), any(), any()) }.thenReturn(completedFuture(SCHEMA1_CONTENTS))
+            on { downloadPrettySchema(eq(SCHEMA1), eq(REGISTRY1), any()) }.thenReturn(completedFuture(SCHEMA1_CONTENTS))
         }
 
         val dialog = runInEdtAndGet {

@@ -3,37 +3,23 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.wizard
 
-import com.intellij.execution.RunManager
-import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.extensions.ExtensionPointName
-import com.intellij.openapi.fileEditor.FileEditorManager
-import com.intellij.openapi.fileEditor.OpenFileDescriptor
-import com.intellij.openapi.fileEditor.TextEditorWithPreview
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.roots.ModifiableRootModel
-import com.intellij.openapi.roots.ProjectRootManager
-import com.intellij.openapi.vfs.VfsUtil
+import com.intellij.openapi.ui.TextFieldWithBrowseButton
+import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroupExtensionPointObject
-import software.aws.toolkits.jetbrains.services.lambda.execution.local.LocalLambdaRunConfiguration
-import software.aws.toolkits.jetbrains.services.lambda.execution.local.LocalLambdaRunConfigurationProducer
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
-import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
-import software.aws.toolkits.jetbrains.services.schemas.SchemaTemplateParameters
-import software.aws.toolkits.jetbrains.services.schemas.resources.SchemasResources.AWS_EVENTS_REGISTRY
-import software.aws.toolkits.telemetry.SamTelemetry
-import software.aws.toolkits.telemetry.Runtime as TelemetryRuntime
+import java.nio.file.Paths
 
 /**
  * Used to manage SAM project information for different [RuntimeGroup]s
  */
 interface SamProjectWizard {
-
     /**
      * Return a collection of templates supported by the [RuntimeGroup]
      */
@@ -42,132 +28,24 @@ interface SamProjectWizard {
     /**
      * Return an instance of UI section for selecting SDK for the [RuntimeGroup]
      */
-    fun createSdkSelectionPanel(generator: SamProjectGenerator): SdkSelectionPanel
-
-    /**
-     * Return an instance of UI section for selecting Schema for the [RuntimeGroup]
-     */
-    fun createSchemaSelectionPanel(
-        generator: SamProjectGenerator
-    ): SchemaSelectionPanel
+    fun createSdkSelectionPanel(projectLocation: TextFieldWithBrowseButton?): SdkSelector?
 
     companion object : RuntimeGroupExtensionPointObject<SamProjectWizard>(ExtensionPointName("aws.toolkit.lambda.sam.projectWizard"))
 }
 
 data class SamNewProjectSettings(
     val runtime: Runtime,
-    val schemaParameters: SchemaTemplateParameters?,
-    val template: SamProjectTemplate,
-    val sdkSettings: SdkSettings
+    val template: SamProjectTemplate
 )
 
-interface SdkSettings
-
-/**
- * Sdk settings that supports [Sdk] as the language's SDK, such as Java, Python.
- */
-data class SdkBasedSdkSettings(
-    val sdk: Sdk?
-) : SdkSettings
-
-sealed class TemplateParameters {
-    data class LocationBasedTemplate(val location: String) : TemplateParameters()
-    data class AppBasedTemplate(val appTemplate: String, val dependencyManager: String) : TemplateParameters()
-}
-
 abstract class SamProjectTemplate {
-    abstract fun getName(): String
+    abstract fun displayName(): String
 
-    open fun getDescription(): String? = null
+    open fun description(): String? = null
 
-    open fun functionName(): String = "HelloWorldFunction"
+    override fun toString() = displayName()
 
-    override fun toString() = getName()
-
-    open fun setupSdk(rootModel: ModifiableRootModel, settings: SamNewProjectSettings) {
-        val sdkSettings = settings.sdkSettings
-
-        if (sdkSettings is SdkBasedSdkSettings) {
-            // project sdk
-            runWriteAction {
-                ProjectRootManager.getInstance(rootModel.project).projectSdk = sdkSettings.sdk
-            }
-            // module sdk
-            rootModel.inheritSdk()
-        }
-    }
-
-    open fun postCreationAction(
-        settings: SamNewProjectSettings,
-        contentRoot: VirtualFile,
-        rootModel: ModifiableRootModel,
-        sourceCreatingProject: Project,
-        indicator: ProgressIndicator
-    ) {
-        SamCommon.excludeSamDirectory(contentRoot, rootModel)
-        val project = rootModel.project
-        openReadmeFile(contentRoot, project)
-        createRunConfigurations(contentRoot, project)
-    }
-
-    private fun openReadmeFile(contentRoot: VirtualFile, project: Project) {
-        VfsUtil.findRelativeFile(contentRoot, "README.md")?.let { readme ->
-            // it's only available since the first non-EAP version of intellij, so it is fine
-            readme.putUserData(TextEditorWithPreview.DEFAULT_LAYOUT_FOR_FILE, TextEditorWithPreview.Layout.SHOW_PREVIEW)
-
-            val fileEditorManager = FileEditorManager.getInstance(project)
-            fileEditorManager.openTextEditor(OpenFileDescriptor(project, readme), true) ?: LOG.warn { "Failed to open README.md" }
-        }
-    }
-
-    private fun createRunConfigurations(contentRoot: VirtualFile, project: Project) {
-        val template = SamCommon.getTemplateFromDirectory(contentRoot) ?: return
-
-        val factory = LocalLambdaRunConfigurationProducer.getFactory()
-        val runManager = RunManager.getInstance(project)
-        SamTemplateUtils.findFunctionsFromTemplate(project, template).forEach {
-            val runConfigurationAndSettings = runManager.createConfiguration(it.logicalName, factory)
-            val runConfiguration = runConfigurationAndSettings.configuration as LocalLambdaRunConfiguration
-            runConfiguration.useTemplate(template.path, it.logicalName)
-            runConfiguration.setGeneratedName()
-            runManager.addConfiguration(runConfigurationAndSettings)
-            if (runManager.selectedConfiguration == null) {
-                runManager.selectedConfiguration = runConfigurationAndSettings
-            }
-        }
-    }
-
-    fun build(project: Project?, name: String, runtime: Runtime, schemaParameters: SchemaTemplateParameters?, outputDir: VirtualFile) {
-        var success = true
-        try {
-            doBuild(name, runtime, schemaParameters, outputDir)
-        } catch (e: Throwable) {
-            success = false
-            throw e
-        } finally {
-            SamTelemetry.init(
-                project = project,
-                name = getName(),
-                success = success,
-                runtime = TelemetryRuntime.from(runtime.toString()),
-                version = SamCommon.getVersionString(),
-                templateName = this.javaClass.simpleName,
-                eventBridgeSchema = if (schemaParameters?.schema?.registryName == AWS_EVENTS_REGISTRY) schemaParameters.schema.name else null
-            )
-        }
-    }
-
-    private fun doBuild(name: String, runtime: Runtime, schemaParameters: SchemaTemplateParameters?, outputDir: VirtualFile) {
-        SamInitRunner.execute(
-            name,
-            outputDir,
-            runtime,
-            templateParameters(),
-            if (supportsDynamicSchemas()) schemaParameters else null
-        )
-    }
-
-    protected abstract fun templateParameters(): TemplateParameters
+    abstract fun templateParameters(projectName: String, runtime: Runtime): TemplateParameters
 
     abstract fun supportedRuntimes(): Set<Runtime>
 
@@ -175,11 +53,40 @@ abstract class SamProjectTemplate {
     // All SAM templates should support schema selection, but for launch include only EventBridge for most optimal customer experience
     open fun supportsDynamicSchemas(): Boolean = false
 
-    companion object {
-        private val LOG = getLogger<SamProjectTemplate>()
+    open fun postCreationAction(
+        settings: SamNewProjectSettings,
+        contentRoot: VirtualFile,
+        rootModel: ModifiableRootModel,
+        indicator: ProgressIndicator
+    ) {
+        excludeSamDirectory(rootModel, contentRoot)
+    }
 
-        @JvmField
-        val SAM_TEMPLATES = SamProjectWizard.supportedRuntimeGroups().flatMap {
+    protected fun addSourceRoots(project: Project, modifiableModel: ModifiableRootModel, projectRoot: VirtualFile) {
+        val template = SamCommon.getTemplateFromDirectory(projectRoot) ?: return
+        val codeUris = SamCommon.getCodeUrisFromTemplate(project, template)
+        modifiableModel.contentEntries.forEach { contentEntry ->
+            if (contentEntry.file == projectRoot) {
+                codeUris.forEach { contentEntry.addSourceFolder(it, false) }
+            }
+        }
+    }
+
+    private fun excludeSamDirectory(modifiableModel: ModifiableRootModel, projectRoot: VirtualFile) {
+        modifiableModel.contentEntries.forEach { contentEntry ->
+            if (contentEntry.file == projectRoot) {
+                contentEntry.addExcludeFolder(
+                    VfsUtilCore.pathToUrl(
+                        Paths.get(projectRoot.path, SamCommon.SAM_BUILD_DIR).toString()
+                    )
+                )
+            }
+        }
+    }
+
+    companion object {
+        // Dont cache this since it is not compatible in a dynamic plugin world / waste memory if no longer needed
+        fun supportedTemplates() = SamProjectWizard.supportedRuntimeGroups().flatMap {
             SamProjectWizard.getInstance(it).listTemplates()
         }
     }

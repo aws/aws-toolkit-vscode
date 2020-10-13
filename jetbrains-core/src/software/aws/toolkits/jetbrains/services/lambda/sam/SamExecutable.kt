@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.sam
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.util.SystemInfo
 import com.intellij.util.text.SemVer
@@ -11,6 +12,9 @@ import software.aws.toolkits.jetbrains.core.executables.ExecutableCommon
 import software.aws.toolkits.jetbrains.core.executables.ExecutableType
 import software.aws.toolkits.jetbrains.core.executables.Validatable
 import software.aws.toolkits.jetbrains.services.lambda.deploy.CreateCapabilities
+import software.aws.toolkits.jetbrains.services.lambda.wizard.AppBasedTemplate
+import software.aws.toolkits.jetbrains.services.lambda.wizard.LocationBasedTemplate
+import software.aws.toolkits.jetbrains.services.lambda.wizard.TemplateParameters
 import software.aws.toolkits.jetbrains.settings.ExecutableDetector
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -145,4 +149,39 @@ private fun escapeParameter(param: String): String {
     }
 
     return quote + param + quote
+}
+
+fun GeneralCommandLine.samInitCommand(
+    outputDir: Path,
+    parameters: TemplateParameters,
+    extraContent: Map<String, String>
+) = this.apply {
+    addParameter("init")
+    addParameter("--no-input")
+    addParameter("--output-dir")
+    addParameter(outputDir.toAbsolutePath().toString())
+
+    when (parameters) {
+        is AppBasedTemplate -> {
+            addParameter("--name")
+            addParameter(parameters.name)
+            addParameter("--runtime")
+            addParameter(parameters.runtime.toString())
+            addParameter("--dependency-manager")
+            addParameter(parameters.dependencyManager)
+            addParameter("--app-template")
+            addParameter(parameters.appTemplate)
+        }
+        is LocationBasedTemplate -> {
+            addParameter("--location")
+            addParameter(parameters.location)
+        }
+    }
+
+    if (extraContent.isNotEmpty()) {
+        val extraContextAsJson = jacksonObjectMapper().writeValueAsString(extraContent)
+
+        addParameter("--extra-context")
+        addParameter(extraContextAsJson)
+    }
 }

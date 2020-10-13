@@ -317,7 +317,7 @@ abstract class SchemasSearchDialogBase(
     abstract fun createResultRenderer(): (SchemaSearchResultWithRegistry) -> JComponent
 
     private fun downloadSchemaContent(schema: SchemaSearchResultWithRegistry, version: String): CompletionStage<String> =
-        schemaViewer.downloadPrettySchema(schema.name, schema.registry, version, contentPanel)
+        schemaViewer.downloadPrettySchema(schema.name, schema.registry, version)
 
     abstract fun searchSchemas(
         searchText: String,

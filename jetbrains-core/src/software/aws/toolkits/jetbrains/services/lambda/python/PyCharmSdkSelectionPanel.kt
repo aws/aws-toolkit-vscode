@@ -3,111 +3,70 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.python
 
-import com.intellij.ide.util.projectWizard.AbstractNewProjectStep
 import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.projectRoots.impl.SdkConfigurationUtil
+import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.ui.ValidationInfo
-import com.intellij.openapi.util.io.FileUtil
 import com.intellij.ui.DocumentAdapter
-import com.intellij.util.ui.UIUtil
-import com.jetbrains.python.newProject.PyNewProjectSettings
-import com.jetbrains.python.newProject.PythonProjectGenerator
-import com.jetbrains.python.newProject.steps.ProjectSpecificSettingsStep
+import com.jetbrains.python.configuration.PyConfigurableInterpreterList
 import com.jetbrains.python.newProject.steps.PyAddExistingSdkPanel
 import com.jetbrains.python.newProject.steps.PyAddNewEnvironmentPanel
+import com.jetbrains.python.sdk.PreferredSdkComparator
+import com.jetbrains.python.sdk.PySdkSettings
+import com.jetbrains.python.sdk.PythonSdkType
+import com.jetbrains.python.sdk.PythonSdkUtil
 import com.jetbrains.python.sdk.add.PyAddSdkGroupPanel
-import icons.AwsIcons
-import software.aws.toolkits.jetbrains.services.lambda.wizard.SamProjectRuntimeSelectionStep
-import software.aws.toolkits.jetbrains.services.lambda.wizard.SdkBasedSdkSettings
-import software.aws.toolkits.jetbrains.services.lambda.wizard.SdkSelectionPanelBase
-import software.aws.toolkits.jetbrains.services.lambda.wizard.SdkSettings
-import software.aws.toolkits.resources.message
-import java.io.File
-import javax.swing.Icon
+import software.aws.toolkits.jetbrains.services.lambda.wizard.SdkSelector
+import javax.swing.JComponent
 import javax.swing.JLabel
-import javax.swing.JPanel
 import javax.swing.event.DocumentEvent
-import javax.swing.event.DocumentListener
 
-class PyCharmSdkSelectionPanel(val step: SamProjectRuntimeSelectionStep) : SdkSelectionPanelBase() {
-    private var documentListener: DocumentListener? = null
+class PyCharmSdkSelectionPanel(private val projectLocation: TextFieldWithBrowseButton?) : SdkSelector {
+    private val sdkPanel by lazy {
+        sdkPanel()
+    }
 
-    override val sdkSelectionPanel: PyAddSdkGroupPanel by lazy { newSdkPanel() }
+    override fun sdkSelectionPanel(): JComponent = sdkPanel
 
-    override val sdkSelectionLabel: JLabel? = null
+    override fun sdkSelectionLabel(): JLabel? = null
 
-    private fun newSdkPanel(): PyAddSdkGroupPanel =
-        // construct a py-specific settings step and grab its sdk panel instance
-        object : ProjectSpecificSettingsStep<PyNewProjectSettings>(
-            object : PythonProjectGenerator<PyNewProjectSettings>() {
-                override fun getLogo(): Icon? = AwsIcons.Logos.AWS
+    private fun sdkPanel(): PyAddSdkGroupPanel {
+        // Based on PyCharm's ProjectSpecificSettingsStep
+        val existingSdks = getValidPythonSdks()
+        val newProjectLocation = getProjectLocation()
+        val newEnvironmentPanel = PyAddNewEnvironmentPanel(existingSdks, newProjectLocation, null)
+        val existingSdkPanel = PyAddExistingSdkPanel(null, null, existingSdks, newProjectLocation, existingSdks.firstOrNull())
 
-                override fun getName(): String = message("sam.init.name")
-            },
-            AbstractNewProjectStep.AbstractCallback<PyNewProjectSettings>()
-        ) {
-            // shim validation back to the user UI...
-            override fun setErrorText(text: String?) {
-                step.setErrorText(text)
-            }
+        val defaultPanel = if (PySdkSettings.instance.useNewEnvironmentForNewProject) newEnvironmentPanel else existingSdkPanel
 
-            override fun createPanel(): JPanel {
-                val panel = super.createPanel()
-                // patch the default create button that gets generated
-                myCreateButton.isVisible = false
-                // we only want this panel for its' sdk selector
-                myLocationField.isEnabled = false
-                // hide label and textbox
-                myLocationField.parent.isVisible = false
-                val myInterpreterPanel = UIUtil.findComponentOfType(panel, PyAddSdkGroupPanel::class.java)
+        val interpreterPanel = createPythonSdkPanel(listOf(newEnvironmentPanel, existingSdkPanel), defaultPanel)
 
-                return myInterpreterPanel
-                    ?: throw RuntimeException("Could not find PyAddSdkGroupPanel in UI Tree")
-            }
-        }.createPanel() as PyAddSdkGroupPanel
-
-    override fun registerListeners() {
-        val document = step.getLocationField().textField.document
-        // cleanup because generators are re-used
-        if (documentListener != null) {
-            document.removeDocumentListener(documentListener)
-        }
-
-        documentListener = object : DocumentAdapter() {
-            val locationField = step.getLocationField()
-            override fun textChanged(e: DocumentEvent) {
-                sdkSelectionPanel.newProjectPath = locationField.text.trim()
-            }
-        }
-
-        document.addDocumentListener(documentListener)
-
-        sdkSelectionPanel.addChangeListener(
-            Runnable {
-                step.checkValid()
+        projectLocation?.textField?.document?.addDocumentListener(
+            object : DocumentAdapter() {
+                override fun textChanged(e: DocumentEvent) {
+                    interpreterPanel.newProjectPath = getProjectLocation()
+                }
             }
         )
 
-        sdkSelectionPanel.newProjectPath = step.getLocationField().text.trim()
+        return interpreterPanel
     }
 
-    override fun getSdkSettings(): SdkSettings =
-        getSdk()?.let {
-            SdkBasedSdkSettings(sdk = it)
-        } ?: throw RuntimeException(message("sam.init.python.bad_sdk"))
+    private fun getProjectLocation(): String? = projectLocation?.text?.trim()
 
-    private fun getSdk(): Sdk? =
-        when (val panel = sdkSelectionPanel.selectedPanel) {
-            // this list should be exhaustive
-            is PyAddNewEnvironmentPanel -> {
-                FileUtil.createDirectory(File(step.getLocationField().text.trim()))
-                panel.getOrCreateSdk()?.also {
-                    SdkConfigurationUtil.addSdk(it)
-                }
-            }
-            is PyAddExistingSdkPanel -> panel.sdk
-            else -> null
+    private fun getValidPythonSdks(): List<Sdk> = PyConfigurableInterpreterList.getInstance(null).allPythonSdks
+        .asSequence()
+        .filter { it.sdkType is PythonSdkType && !PythonSdkUtil.isInvalid(it) }
+        .sortedWith(PreferredSdkComparator())
+        .toList()
+
+    override fun getSdk(): Sdk? {
+        val sdk = sdkPanel.getOrCreateSdk() ?: return null
+        if (sdkPanel.selectedPanel is PyAddNewEnvironmentPanel) {
+            SdkConfigurationUtil.addSdk(sdk)
         }
+        return sdk
+    }
 
-    override fun validateAll(): List<ValidationInfo>? = sdkSelectionPanel.validateAll()
+    override fun validateSelection(): ValidationInfo? = sdkPanel.validateAll().firstOrNull()
 }

@@ -3,29 +3,27 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.wizard
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.convertValue
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.intellij.execution.process.CapturingProcessHandler
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
-import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutable
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
+import software.aws.toolkits.jetbrains.services.lambda.sam.samInitCommand
 import software.aws.toolkits.jetbrains.services.schemas.SchemaTemplateParameters
 import software.aws.toolkits.resources.message
 
 object SamInitRunner {
     private val LOG = getLogger<SamInitRunner>()
-    private val mapper = ObjectMapper()
 
     fun execute(
-        name: String,
         outputDir: VirtualFile,
-        runtime: Runtime,
         templateParameters: TemplateParameters,
         schemaParameters: SchemaTemplateParameters?
     ) {
@@ -37,38 +35,18 @@ object SamInitRunner {
                 is ExecutableInstance.Executable -> it
                 else -> throw RuntimeException((it as? ExecutableInstance.BadExecutable)?.validationError)
             }
-            val commandLine = samExecutable
-                .getCommandLine()
-                .withParameters("init")
-                .withParameters("--no-input")
-                .withParameters("--output-dir")
-                .withParameters(tempDir.path)
-                .withParameters("--no-interactive")
-                .apply {
-                    when (templateParameters) {
-                        is TemplateParameters.AppBasedTemplate -> {
-                            this.withParameters("--name")
-                                .withParameters(name)
-                                .withParameters("--runtime")
-                                .withParameters(runtime.toString())
-                                .withParameters("--dependency-manager")
-                                .withParameters(templateParameters.dependencyManager)
-                                .withParameters("--app-template")
-                                .withParameters(templateParameters.appTemplate)
-                        }
-                        is TemplateParameters.LocationBasedTemplate -> {
-                            this.withParameters("--location")
-                                .withParameters(templateParameters.location)
-                        }
-                    }
 
-                    schemaParameters?.let { params ->
-                        val extraContextAsJson = mapper.writeValueAsString(params.templateExtraContext)
+            val extraContent = if (schemaParameters?.templateExtraContext != null) {
+                jacksonObjectMapper().convertValue<Map<String, String>>(schemaParameters.templateExtraContext)
+            } else {
+                emptyMap()
+            }
 
-                        this.withParameters("--extra-context")
-                            .withParameters(extraContextAsJson)
-                    }
-                }
+            val commandLine = samExecutable.getCommandLine().samInitCommand(
+                tempDir.toPath(),
+                templateParameters,
+                extraContent
+            )
 
             LOG.info { "Running SAM command ${commandLine.commandLineString}" }
 

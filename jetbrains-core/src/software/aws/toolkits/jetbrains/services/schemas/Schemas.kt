@@ -14,9 +14,9 @@ enum class SchemaCodeLangs(
     val extension: String,
     val runtimeGroupId: String
 ) {
-    JAVA8("Java8", message("schemas.schema.SchemaCodeLangs.JAVA8"), "java", BuiltInRuntimeGroups.Java),
-    PYTHON3_6("Python36", message("schemas.schema.SchemaCodeLangs.PYTHON3_6"), "py", BuiltInRuntimeGroups.Python),
-    TYPESCRIPT("TypeScript3", message("schemas.schema.SchemaCodeLangs.TYPESCRIPT"), "ts", BuiltInRuntimeGroups.NodeJs);
+    JAVA8("Java8", message("schemas.schema.language.java8"), "java", BuiltInRuntimeGroups.Java),
+    PYTHON3_6("Python36", message("schemas.schema.language.python3_6"), "py", BuiltInRuntimeGroups.Python),
+    TYPESCRIPT("TypeScript3", message("schemas.schema.language.typescript"), "ts", BuiltInRuntimeGroups.NodeJs);
 
     override fun toString() = text
 }
