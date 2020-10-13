@@ -124,6 +124,11 @@ describe('SSO diskCache', () => {
             assert.deepStrictEqual(returnedAccessToken, validAccessToken)
         })
 
+        it('should return undefined if no access token exists', () => {
+            const returnedAccessToken = sut.loadAccessToken(startUrl)
+            assert.strictEqual(returnedAccessToken, undefined)
+        })
+
         it('should return undefined if expired', () => {
             const expiredAccessToken: SsoAccessToken = {
                 startUrl: startUrl,
