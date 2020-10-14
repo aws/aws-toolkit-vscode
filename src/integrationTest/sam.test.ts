@@ -337,7 +337,11 @@ describe('SAM Integration Tests', async function() {
                                             // It's a coprocess, ignore it.
                                             return
                                         }
-                                        const failMsg = validateSamDebugSession(endedSession, scenario.runtime)
+                                        const failMsg = validateSamDebugSession(
+                                            endedSession,
+                                            testConfig.name,
+                                            scenario.runtime
+                                        )
                                         if (failMsg) {
                                             reject(new Error(failMsg))
                                         }
@@ -379,12 +383,14 @@ describe('SAM Integration Tests', async function() {
          */
         function validateSamDebugSession(
             debugSession: vscode.DebugSession,
+            expectedName: string,
             expectedRuntime: string
         ): string | undefined {
             const runtime = (debugSession.configuration as any).runtime
-            if (runtime !== expectedRuntime) {
+            const name = (debugSession.configuration as any).name
+            if (name !== name || runtime !== expectedRuntime) {
                 const failMsg =
-                    `Unexpected DebugSession (expected runtime=${expectedRuntime}):` +
+                    `Unexpected DebugSession (expected name="${expectedName}" runtime="${expectedRuntime}"):` +
                     `\n${JSON.stringify(debugSession)}`
                 return failMsg
             }
