@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.ui
 
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.ui.CollectionComboBoxModel
+import com.intellij.ui.ComboboxSpeedSearch
 import com.intellij.ui.SimpleListCellRenderer
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.utils.ui.selected
@@ -26,6 +27,7 @@ class RegionSelector : ComboBox<AwsRegion>() {
     init {
         model = comboBoxModel
         setRenderer(RENDERER) // use the setter, not protected field
+        ComboboxSpeedSearch(this)
     }
 
     fun setRegions(regions: List<AwsRegion>) {

@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.ui
 
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.ui.CollectionComboBoxModel
+import com.intellij.ui.ComboboxSpeedSearch
 import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.util.containers.OrderedSet
 import software.aws.toolkits.core.credentials.CredentialIdentifier
@@ -21,6 +22,7 @@ class CredentialProviderSelector : ComboBox<Any>() {
     init {
         model = comboBoxModel
         setRenderer(RENDERER)
+        ComboboxSpeedSearch(this)
     }
 
     fun setCredentialsProviders(providers: List<CredentialIdentifier>) {
