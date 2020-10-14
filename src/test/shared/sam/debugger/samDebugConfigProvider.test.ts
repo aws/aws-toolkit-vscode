@@ -402,8 +402,7 @@ describe('SamDebugConfigurationProvider', async () => {
                     //projectRoot: 'root as in beer'
                 },
             })
-            // TODO: why not respect caller-chosen name?
-            assert.strictEqual(resolved!.name, 'SamLocalDebug')
+            assert.strictEqual(resolved!.name, name)
         })
 
         it('target=code: javascript', async () => {
@@ -461,7 +460,7 @@ describe('SamDebugConfigurationProvider', async () => {
                     ...input.lambda,
                 },
                 localRoot: pathutil.normalize(path.join(appDir, 'src')), // Normalized to absolute path.
-                name: 'SamLocalDebug',
+                name: input.name,
                 templatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
 
                 //
@@ -581,7 +580,7 @@ describe('SamDebugConfigurationProvider', async () => {
                     ...input.lambda,
                 },
                 localRoot: appDir,
-                name: 'SamLocalDebug',
+                name: input.name,
                 templatePath: pathutil.normalize(
                     path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
                 ),
@@ -688,7 +687,7 @@ describe('SamDebugConfigurationProvider', async () => {
                     memoryMb: undefined,
                     timeoutSec: undefined,
                 },
-                name: 'SamLocalDebug',
+                name: input.name,
                 templatePath: expectedCodeRoot + '/input-template.yaml',
 
                 //
@@ -826,7 +825,7 @@ describe('SamDebugConfigurationProvider', async () => {
                 lambda: {
                     ...input.lambda,
                 },
-                name: 'SamLocalDebug',
+                name: input.name,
                 templatePath: pathutil.normalize(
                     path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
                 ),
@@ -993,7 +992,7 @@ Outputs:
                     memoryMb: undefined,
                     timeoutSec: undefined,
                 },
-                name: 'SamLocalDebug',
+                name: input.name,
                 templatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
                 port: actual.debugPort,
                 redirectOutput: false,
@@ -1108,7 +1107,7 @@ Outputs:
                     memoryMb: undefined,
                     timeoutSec: undefined,
                 },
-                name: 'SamLocalDebug',
+                name: input.name,
                 templatePath: pathutil.normalize(
                     path.join(path.dirname(templatePath.fsPath), 'app___vsctk___template.yaml')
                 ),
@@ -1214,7 +1213,7 @@ Outputs:
                 path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/js-manifest-in-root/')
             )
             const folder = testutil.getWorkspaceFolder(appDir)
-            const c = {
+            const input = {
                 type: AWS_SAM_DEBUG_TYPE,
                 name: 'test-extraneous-env',
                 request: DIRECT_INVOKE_TYPE,
@@ -1241,7 +1240,7 @@ Outputs:
                 tempFile.fsPath
             )
             await registry.addTemplateToRegistry(tempFile)
-            const actual = (await debugConfigProvider.makeConfig(folder, c))!
+            const actual = (await debugConfigProvider.makeConfig(folder, input))!
             const tempDir = path.dirname(actual.codeRoot)
 
             const expected: SamLaunchRequestArgs = {
@@ -1273,7 +1272,7 @@ Outputs:
                     timeoutSec: 12345, // From template.yaml.
                 },
                 localRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
-                name: 'SamLocalDebug',
+                name: input.name,
                 templatePath: pathutil.normalize(
                     path.join(path.dirname(tempFile.fsPath), 'app___vsctk___template.yaml')
                 ),
@@ -1356,7 +1355,7 @@ Resources:
                     region: 'us-weast-9',
                 },
             }
-            const c = {
+            const input = {
                 type: AWS_SAM_DEBUG_TYPE,
                 name: 'test-extraneous-env',
                 request: DIRECT_INVOKE_TYPE,
@@ -1384,7 +1383,7 @@ Resources:
                 tempFile.fsPath
             )
             await registry.addTemplateToRegistry(tempFile)
-            const actual = (await debugConfigProviderMockCredentials.makeConfig(folder, c))!
+            const actual = (await debugConfigProviderMockCredentials.makeConfig(folder, input))!
             const tempDir = path.dirname(actual.codeRoot)
 
             const expected: SamLaunchRequestArgs = {
@@ -1417,7 +1416,7 @@ Resources:
                     timeoutSec: 12345, // From template.yaml.
                 },
                 localRoot: pathutil.normalize(path.join(tempDir, 'codeuri')), // Normalized to absolute path.
-                name: 'SamLocalDebug',
+                name: input.name,
                 templatePath: pathutil.normalize(path.join(actual.baseBuildDir ?? '?', 'input/input-template.yaml')),
 
                 //
