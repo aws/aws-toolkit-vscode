@@ -4,12 +4,14 @@
 package software.aws.toolkits.jetbrains.ui.connection
 
 import com.intellij.openapi.project.Project
+import com.intellij.ui.PopupMenuListenerAdapter
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import javax.swing.JComponent
+import javax.swing.event.PopupMenuEvent
 
 class AwsConnectionSettingsSelector(
     project: Project,
@@ -32,12 +34,21 @@ class AwsConnectionSettingsSelector(
 
             fireChange()
         }
-        view.region.addActionListener {
-            fireChange()
-        }
-        view.credentialProvider.addActionListener {
-            fireChange()
-        }
+        view.credentialProvider.addPopupMenuListener(
+            object : PopupMenuListenerAdapter() {
+                override fun popupMenuWillBecomeInvisible(e: PopupMenuEvent?) {
+                    fireChange()
+                }
+            }
+        )
+
+        view.region.addPopupMenuListener(
+            object : PopupMenuListenerAdapter() {
+                override fun popupMenuWillBecomeInvisible(e: PopupMenuEvent?) {
+                    fireChange()
+                }
+            }
+        )
     }
 
     private fun fireChange() {
