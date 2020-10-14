@@ -45,7 +45,6 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
         type: 'coreclr',
         request: config.noDebug ? 'launch' : 'attach',
         runtimeFamily: RuntimeFamily.DotNetCore,
-        name: 'SamLocalDebug',
     }
 
     if (!config.noDebug) {
@@ -221,7 +220,6 @@ export async function makeCoreCLRDebugConfiguration(
 
     return {
         ...config,
-        name: 'SamLocalDebug',
         runtimeFamily: RuntimeFamily.DotNetCore,
         request: 'attach',
         // Since SAM CLI 1.0 we cannot assume PID=1. So use processName=dotnet
