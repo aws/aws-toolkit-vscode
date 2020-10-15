@@ -250,12 +250,20 @@ val cleanGenerateModels = tasks.register("cleanGenerateModels") {
     group = protocolGroup
     description = "Clean up generated protocol models"
 
-    // TODO fix
-    dependsOn("cleanGenerateDaemonModel")//, cleanGeneratePsiModel, cleanGenerateAwsSettingModel, cleanGenerateAwsProjectModel)
+    dependsOn("cleanGenerateDaemonModel", "cleanGeneratePsiModel", "cleanGenerateAwsSettingModel", "cleanGenerateAwsProjectModel")
+}
+
+val cleanNetBuilds = task("cleanNetBuilds", Delete::class) {
+    group = protocolGroup
+    description = "Clean up obj/ bin/ folders under ReSharper.AWS"
+    delete(project.fileTree("ReSharper.AWS/") {
+        include("**/bin/")
+        include("**/obj/")
+    })
 }
 
 project.tasks.clean {
-    dependsOn(cleanGenerateModels)
+    dependsOn(cleanGenerateModels, cleanNetBuilds)
 }
 
 // Backend
@@ -329,10 +337,6 @@ val buildReSharperPlugin = tasks.register("buildReSharperPlugin") {
     }
 }
 
-// TODO
-/*
-project.tasks.clean.dependsOn(cleanPrepareBuildProps, cleanPrepareNuGetConfig, cleanBuildReSharperPlugin)
-*/
 fun getNugetPackagesPath(): File {
     val sdkPath = intellij.ideaDependency.classes
     println("SDK path: $sdkPath")
@@ -356,7 +360,7 @@ dependencies {
 }
 
 sourceSets {
-    main{
+    main {
         java.srcDirs("$buildDir/generated-src")
     }
 }
