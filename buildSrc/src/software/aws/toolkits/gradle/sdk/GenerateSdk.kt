@@ -36,7 +36,6 @@ open class GenerateSdk : DefaultTask() {
         CodeGenerator.builder()
             .models(models)
             .sourcesDirectory(outputDir.absolutePath)
-            .fileNamePrefix(models.serviceModel().metadata.serviceId)
             .build()
             .execute()
     }
