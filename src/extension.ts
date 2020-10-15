@@ -218,8 +218,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         // Features which aren't currently functional in Cloud9
         if (!isCloud9()) {
-            await vscode.commands.executeCommand('setContext', 'aws-toolkit-vscode:IsCloud9', false)
-
             await activateCloudWatchLogs(context)
 
             await activateS3(context)
@@ -232,8 +230,6 @@ export async function activate(context: vscode.ExtensionContext) {
             setImmediate(async () => {
                 await activateStepFunctions(context, awsContext, toolkitOutputChannel)
             })
-        } else {
-            await vscode.commands.executeCommand('setContext', 'aws-toolkit-vscode:IsCloud9', true)
         }
 
         showWelcomeMessage(context)
