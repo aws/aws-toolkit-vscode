@@ -34,7 +34,7 @@ class CreateIamRoleDialog(
 
     init {
         title = message("iam.create.role.title")
-        setOKButtonText(message("iam.create.role.create"))
+        setOKButtonText(message("general.create_button"))
 
         view.policyDocument.formatAndSet(defaultPolicyDocument, JsonLanguage.INSTANCE)
         view.assumeRolePolicyDocument.formatAndSet(defaultAssumeRolePolicyDocument, JsonLanguage.INSTANCE)
@@ -71,7 +71,7 @@ class CreateIamRoleDialog(
                 } catch (e: Exception) {
                     LOG.warn(e) { "Failed to create IAM role '${roleName()}'" }
                     setErrorText(e.message)
-                    setOKButtonText(message("iam.create.role.create"))
+                    setOKButtonText(message("general.create_button"))
                     isOKActionEnabled = true
                 }
             }

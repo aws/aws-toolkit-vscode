@@ -32,7 +32,7 @@ class SecretsManagerDialogWrapper(private val selected: AwsExplorerNode<*>) : Di
 
     init {
         title = message("datagrip.secretsmanager.action.title")
-        setOKButtonText(message("general.create_button"))
+        setOKButtonText(message("general.select_button"))
         init()
     }
 
