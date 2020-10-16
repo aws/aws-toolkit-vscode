@@ -9,6 +9,7 @@ import software.aws.toolkits.core.region.AwsPartition
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.region.Service
 import software.aws.toolkits.core.region.ToolkitRegionProvider
+import software.aws.toolkits.core.region.aRegionId
 import software.aws.toolkits.core.region.anAwsRegion
 import software.aws.toolkits.core.utils.test.aString
 
@@ -65,6 +66,17 @@ class MockRegionProvider : ToolkitRegionProvider() {
             regionProvider.reset()
         }
 
-        fun createAwsRegion(partitionId: String = aString()) = anAwsRegion(partitionId = partitionId).also { regionProvider.addRegion(it) }
+        fun createAwsRegion(id: String = uniqueRegionId(), partitionId: String = aString()): AwsRegion =
+            anAwsRegion(id = id, partitionId = partitionId).also { regionProvider.addRegion(it) }
+
+        private fun uniqueRegionId(): String {
+            repeat(10) {
+                val generatedId = aRegionId()
+                if (regionProvider[generatedId] == null) {
+                    return generatedId
+                }
+            }
+            throw IllegalStateException("Failed to generate a unique region ID")
+        }
     }
 }

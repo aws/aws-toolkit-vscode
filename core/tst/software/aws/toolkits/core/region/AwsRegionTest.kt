@@ -47,6 +47,6 @@ fun anAwsRegion(id: String = aRegionId(), name: String = aString(), partitionId:
 fun aRegionId(): String {
     val prefix = arrayOf("af", "us", "ca", "eu", "ap", "me", "cn").random()
     val compass = arrayOf("north", "south", "east", "west", "central").random()
-    val count = Random.nextInt(1, 10)
+    val count = Random.nextInt(1, 100)
     return "$prefix-$compass-$count"
 }
