@@ -20,24 +20,9 @@
             <action id="redshift.secretsmanager" class="software.aws.toolkits.jetbrains.datagrip.actions.AddSecretsManagerConnection"/>
             <separator/>
         </group>
-        <group id="aws.toolkit.explorer.rds.mysql" popup="true" compact="false">
+        <group id="aws.toolkit.explorer.rds.instance" popup="true" compact="false">
             <action id="rds.mysql.iamauth" class="software.aws.toolkits.jetbrains.services.rds.actions.CreateIamDataSourceAction"/>
             <action id="rds.mysql.secretsmanager" class="software.aws.toolkits.jetbrains.datagrip.actions.AddSecretsManagerConnection"/>
-            <separator/>
-        </group>
-        <group id="aws.toolkit.explorer.rds.postgres" popup="true" compact="false">
-            <action id="rds.postgres.iamauth" class="software.aws.toolkits.jetbrains.services.rds.actions.CreateIamDataSourceAction"/>
-            <action id="rds.postgres.secretsmanager" class="software.aws.toolkits.jetbrains.datagrip.actions.AddSecretsManagerConnection"/>
-            <separator/>
-        </group>
-        <group id="aws.toolkit.explorer.rds.aurora.mysql" popup="true" compact="false">
-            <action id="rds.aurora.mysql.iamauth" class="software.aws.toolkits.jetbrains.services.rds.actions.CreateIamDataSourceAction"/>
-            <action id="rds.aurora.mysql.secretsmanager" class="software.aws.toolkits.jetbrains.datagrip.actions.AddSecretsManagerConnection"/>
-            <separator/>
-        </group>
-        <group id="aws.toolkit.explorer.rds.aurora.postgres" popup="true" compact="false">
-            <action id="rds.aurora.postgres.iamauth" class="software.aws.toolkits.jetbrains.services.rds.actions.CreateIamDataSourceAction"/>
-            <action id="rds.aurora.postgres.secretsmanager" class="software.aws.toolkits.jetbrains.datagrip.actions.AddSecretsManagerConnection"/>
             <separator/>
         </group>
         <group id="aws.toolkit.explorer.redshift.cluster" popup="true" compact="false">

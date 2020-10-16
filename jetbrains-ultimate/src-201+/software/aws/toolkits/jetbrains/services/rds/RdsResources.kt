@@ -15,18 +15,14 @@ const val postgresEngineType = "postgres"
 const val auroraMysqlEngineType = "aurora"
 const val auroraPostgresEngineType = "aurora-postgresql"
 
-fun String.getEngineFromAuroraEngine(): String = when (this) {
-    auroraMysqlEngineType -> mysqlEngineType
-    auroraPostgresEngineType -> postgresEngineType
-    else -> throw IllegalArgumentException("Unknown Aurora engine $this")
-}
+fun DBInstance.rdsEngine(): RdsEngine = RdsEngine.fromEngine(engine())
 
 const val jdbcMysql = "mysql"
 const val jdbcMariadb = "mariadb"
 const val jdbcPostgres = "postgresql"
 
 // Filters are also just a string
-const val engineFilter = "engine"
+private const val ENGINE_FILTER = "engine"
 
 object RdsResources {
     private val RDS_REGION_REGEX =
@@ -35,16 +31,10 @@ object RdsResources {
         """.*//(.+)\..*\..*.rds\..""".toRegex()
 
     fun extractRegionFromUrl(url: String?): String? = url?.let { RDS_REGION_REGEX.find(url)?.groupValues?.get(1) }
-    fun extractIdentifierFromUrl(url: String?): String? = url?.let { RDS_IDENTIFIER_REGEX.find(url)?.groupValues?.get(1) }
 
-    val LIST_INSTANCES_MYSQL: Resource.Cached<List<DBInstance>> = listInstancesFilter(mysqlEngineType)
-    val LIST_INSTANCES_POSTGRES: Resource.Cached<List<DBInstance>> = listInstancesFilter(postgresEngineType)
-    val LIST_INSTANCES_AURORA_MYSQL: Resource.Cached<List<DBInstance>> = listInstancesFilter(auroraMysqlEngineType)
-    val LIST_INSTANCES_AURORA_POSTGRES: Resource.Cached<List<DBInstance>> = listInstancesFilter(auroraPostgresEngineType)
-
-    private fun listInstancesFilter(engine: String) = ClientBackedCachedResource(RdsClient::class, "rds.list_instances.$engine") {
-        this.describeDBInstancesPaginator {
-            it.filters(Filter.builder().name(engineFilter).values(engine).build())
-        }.toList().flatMap { it.dbInstances() }
+    val LIST_SUPPORTED_INSTANCES: Resource.Cached<List<DBInstance>> = ClientBackedCachedResource(RdsClient::class, "rds.list_supported_instances") {
+        describeDBInstancesPaginator {
+            it.filters(Filter.builder().name(ENGINE_FILTER).values(RdsEngine.values().map { e -> e.engine }).build())
+        }.dbInstances().toList()
     }
 }
