@@ -10,7 +10,6 @@ import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.iam.IamClient
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.InvalidParameterValueException
@@ -24,7 +23,6 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
-import software.aws.toolkits.jetbrains.utils.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
@@ -80,9 +78,9 @@ class ConfigureLambdaDialog(
                 }
                 notifyInfo(message("sqs.service_name"), message("sqs.configure.lambda.success", functionSelected()), project)
                 SqsTelemetry.configureLambdaTrigger(project, Result.Succeeded, queue.telemetryType())
-            } catch (e: InvalidParameterValueException) {
-                // Exception thrown for invalid permission
-                withContext(getCoroutineUiContext(ModalityState.any())) {
+            } catch (e: InvalidParameterValueException) { // Exception thrown for invalid permission
+                // DO NOT change to withCoroutineUiContext, it breaks the panel with the wrong state
+                runInEdt(ModalityState.any()) {
                     if (ConfirmIamPolicyDialog(project, iamClient, lambdaClient, functionSelected(), queue, view.component).showAndGet()) {
                         retryConfiguration(functionSelected())
                     } else {
