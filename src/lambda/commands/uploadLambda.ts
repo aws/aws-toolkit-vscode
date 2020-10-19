@@ -25,6 +25,7 @@ import { ExtensionDisposableFiles } from '../../shared/utilities/disposableFiles
 import { Window } from '../../shared/vscode/window'
 import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
 import { getLambdaFileNameFromHandler } from '../utils'
+import { addCodiconToString } from '../../shared/utilities/textUtilities'
 
 /**
  * Executes the "Upload Lambda..." command.
@@ -47,10 +48,10 @@ export async function uploadLambdaCommand(functionNode: LambdaFunctionNode) {
  */
 async function selectUploadTypeAndRunUpload(functionNode: LambdaFunctionNode): Promise<telemetry.Result> {
     const uploadZipItem: vscode.QuickPickItem = {
-        label: `$(file-zip) ${localize('AWS.generic.filetype.zipfile', 'ZIP Archive')}`,
+        label: addCodiconToString('file-zip', localize('AWS.generic.filetype.zipfile', 'ZIP Archive')),
     }
     const uploadDirItem: vscode.QuickPickItem = {
-        label: `$(folder) ${localize('AWS.generic.filetype.directory', 'Directory')}`,
+        label: addCodiconToString('folder', localize('AWS.generic.filetype.directory', 'Directory')),
     }
 
     // TODO: Add help button? Consult with doc writers.
@@ -91,14 +92,14 @@ async function runUploadDirectory(
     }
 
     const zipDirItem: vscode.QuickPickItem = {
-        label: `$(exclude) ${localizedText.no}`,
+        label: addCodiconToString('exclude', localizedText.no),
         detail: localize(
             'AWS.lambda.upload.prebuiltDir.detail',
             'AWS Toolkit will upload a ZIP of the selected directory.'
         ),
     }
     const buildDirItem: vscode.QuickPickItem = {
-        label: `$(gear) ${localizedText.yes}`,
+        label: addCodiconToString('gear', localizedText.yes),
         detail: localize(
             'AWS.lambda.upload.unbuiltDir.detail',
             'AWS Toolkit will attempt to build the selected directory using the sam build command.'

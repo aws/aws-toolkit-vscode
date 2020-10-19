@@ -38,8 +38,6 @@ describe('deleteFileCommand', () => {
 
         verify(s3.deleteObject(deepEqual({ bucketName, key }))).once()
 
-        assert.strictEqual(window.statusBar.message, '$(trash) Deleted bar.jpg')
-
         assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
         assert.deepStrictEqual(commands.args, [parentNode])
     })
