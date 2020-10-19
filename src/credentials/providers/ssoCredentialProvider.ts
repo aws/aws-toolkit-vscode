@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { Credentials, SSO } from 'aws-sdk'
 import { getLogger } from '../../shared/logger'
 import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
@@ -20,7 +21,7 @@ export class SsoCredentialProvider {
         this.ssoAccessTokenProvider = ssoAccessTokenProvider
     }
 
-    public async refreshCredentials() {
+    public async refreshCredentials(): Promise<Credentials> {
         try {
             const accessToken = await this.ssoAccessTokenProvider.accessToken()
             const roleCredentials = await this.ssoClient
@@ -37,7 +38,12 @@ export class SsoCredentialProvider {
                 sessionToken: roleCredentials.roleCredentials?.sessionToken,
             })
         } catch (err) {
-            this.ssoAccessTokenProvider.invalidate()
+            if (err.code === 'UnauthorizedException') {
+                this.ssoAccessTokenProvider.invalidate()
+            }
+            vscode.window.showErrorMessage(
+                'Something went wrong loading your SSO credentials, please re-initiate login.'
+            )
             getLogger().error(err)
             throw err
         }

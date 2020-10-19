@@ -123,6 +123,9 @@ export class SsoAccessTokenProvider {
             return authorizationResponse
         } catch (err) {
             getLogger().error(err)
+            if (err.code === 'InvalidClientException') {
+                this.cache.invalidateClientRegistration(this.ssoRegion)
+            }
             throw err
         }
     }
