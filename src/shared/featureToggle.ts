@@ -16,6 +16,8 @@ import { SettingsConfiguration, DefaultSettingsConfiguration } from './settingsC
  */
 export enum ActiveFeatureKeys {}
 
+export const disableApigw = true
+
 /**
  * This class handles feature access for unreleased or gated features.
  * Example: adding a feature called `NewFeature1`:
