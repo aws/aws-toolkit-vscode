@@ -130,7 +130,7 @@ export async function addSamDebugConfiguration(
     await showDebugConfiguration()
 }
 
-async function showDebugConfiguration(): Promise<void> {
+export async function showDebugConfiguration(): Promise<void> {
     vscode.commands.executeCommand('workbench.action.debug.configure')
 }
 
