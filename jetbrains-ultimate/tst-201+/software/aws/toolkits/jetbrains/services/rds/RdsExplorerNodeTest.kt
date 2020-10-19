@@ -24,37 +24,23 @@ class RdsExplorerNodeTest {
 
     @Test
     fun `database resources are listed`() {
-        val mysqlDatabase = RuleUtils.randomName()
-        val postgresDatabase = RuleUtils.randomName()
-        val auroraMySqlDatabase = RuleUtils.randomName()
-        val auroraPostgresDatabase = RuleUtils.randomName()
+        val databases = RdsEngine.values().flatMap { it.engines }.associateWith { RuleUtils.randomName(prefix = "$it-") }
         resourceCache.addEntry(
             projectRule.project,
             RdsResources.LIST_SUPPORTED_INSTANCES,
-            listOf(
-                dbInstance(RdsEngine.MySql, mysqlDatabase),
-                dbInstance(RdsEngine.Postgres, postgresDatabase),
-                dbInstance(RdsEngine.AuroraMySql, auroraMySqlDatabase),
-                dbInstance(RdsEngine.AuroraPostgres, auroraPostgresDatabase)
-            )
+            databases.map { dbInstance(it.key, it.value) }
         )
         val serviceRootNode = sut.buildServiceRootNode(projectRule.project)
-        assertThat(serviceRootNode.children).hasSize(4).hasOnlyElementsOfType<RdsNode>().allSatisfy {
+        assertThat(serviceRootNode.children).hasSize(databases.size).hasOnlyElementsOfType<RdsNode>().allSatisfy {
             assertThat(it.resourceType()).isEqualTo("instance")
-        }.anySatisfy {
-            assertThat(it.dbInstance.dbInstanceIdentifier()).isEqualTo(mysqlDatabase)
-        }.anySatisfy {
-            assertThat(it.dbInstance.dbInstanceIdentifier()).isEqualTo(postgresDatabase)
-        }.anySatisfy {
-            assertThat(it.dbInstance.dbInstanceIdentifier()).isEqualTo(auroraMySqlDatabase)
-        }.anySatisfy {
-            assertThat(it.dbInstance.dbInstanceIdentifier()).isEqualTo(auroraPostgresDatabase)
-        }
+        }.extracting<String> {
+            it.dbInstance.dbInstanceIdentifier()
+        }.containsOnly(*databases.values.toTypedArray())
     }
 
     private companion object {
         val sut = RdsExplorerRootNode()
-        fun dbInstance(engine: RdsEngine, name: String): DBInstance =
-            DBInstance.builder().engine(engine.engine).dbName(name).dbInstanceIdentifier(name).dbInstanceArn("").build()
+        fun dbInstance(engine: String, name: String): DBInstance =
+            DBInstance.builder().engine(engine).dbName(name).dbInstanceIdentifier(name).dbInstanceArn("").build()
     }
 }

@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix Aurora MySQL 5.7 not showing up in the AWS Explorer"
+}

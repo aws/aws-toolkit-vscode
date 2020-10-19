@@ -11,21 +11,22 @@ import javax.swing.Icon
  * The [additionalInfo] shows as [software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode.statusText] if present
  * TODO: This can probably ultimately become [DbEngine] and encompass Redshift functionality too
  */
-sealed class RdsEngine(val engine: String, val icon: Icon, val additionalInfo: String?) {
+sealed class RdsEngine(val engines: Set<String>, val icon: Icon, val additionalInfo: String?) {
 
-    object MySql : MySqlBase("mysql") {
+    object MySql : MySqlBase(setOf("mysql")) {
         override fun connectionStringUrl(endpoint: String) = "jdbc:$jdbcMysql://$endpoint/"
     }
 
-    object AuroraMySql : MySqlBase("aurora", additionalInfo = message("rds.aurora")) {
+    // aurora == 5.6, aurora-mysql == 5.7
+    object AuroraMySql : MySqlBase(setOf("aurora", "aurora-mysql"), additionalInfo = message("rds.aurora")) {
         // The docs recommend using MariaDB instead of MySQL to connect to MySQL Aurora DBs:
         // https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.Connecting.html#Aurora.Connecting.AuroraMySQL
         override fun connectionStringUrl(endpoint: String) = "jdbc:$jdbcMariadb://$endpoint/"
     }
 
-    object Postgres : PostgresBase("postgres")
+    object Postgres : PostgresBase(setOf("postgres"))
 
-    object AuroraPostgres : PostgresBase("aurora-postgresql", additionalInfo = message("rds.aurora"))
+    object AuroraPostgres : PostgresBase(setOf("aurora-postgresql"), additionalInfo = message("rds.aurora"))
 
     /**
      * Create a connection string, using the passed hostname/port [endpoint] parameter
@@ -37,9 +38,9 @@ sealed class RdsEngine(val engine: String, val icon: Icon, val additionalInfo: S
      */
     open fun iamUsername(username: String) = username
 
-    abstract class MySqlBase(engine: String, additionalInfo: String? = null) : RdsEngine(engine, AwsIcons.Resources.Rds.MYSQL, additionalInfo)
+    abstract class MySqlBase(engine: Set<String>, additionalInfo: String? = null) : RdsEngine(engine, AwsIcons.Resources.Rds.MYSQL, additionalInfo)
 
-    abstract class PostgresBase(engine: String, additionalInfo: String? = null) : RdsEngine(engine, AwsIcons.Resources.Rds.POSTGRES, additionalInfo) {
+    abstract class PostgresBase(engine: Set<String>, additionalInfo: String? = null) : RdsEngine(engine, AwsIcons.Resources.Rds.POSTGRES, additionalInfo) {
         override fun connectionStringUrl(endpoint: String) = "jdbc:$jdbcPostgres://$endpoint/"
 
         /**
@@ -51,6 +52,6 @@ sealed class RdsEngine(val engine: String, val icon: Icon, val additionalInfo: S
 
     companion object {
         fun values(): Set<RdsEngine> = setOf(MySql, AuroraMySql, Postgres, AuroraPostgres)
-        fun fromEngine(engine: String) = values().find { it.engine == engine } ?: throw IllegalArgumentException("Unknown RDS engine $engine")
+        fun fromEngine(engine: String) = values().find { it.engines.contains(engine) } ?: throw IllegalArgumentException("Unknown RDS engine $engine")
     }
 }

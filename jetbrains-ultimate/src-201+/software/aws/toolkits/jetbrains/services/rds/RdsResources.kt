@@ -12,8 +12,6 @@ import software.aws.toolkits.jetbrains.core.Resource
 // These are the member engine in DBInstance, but it is a string
 const val mysqlEngineType = "mysql"
 const val postgresEngineType = "postgres"
-const val auroraMysqlEngineType = "aurora"
-const val auroraPostgresEngineType = "aurora-postgresql"
 
 fun DBInstance.rdsEngine(): RdsEngine = RdsEngine.fromEngine(engine())
 
@@ -34,7 +32,7 @@ object RdsResources {
 
     val LIST_SUPPORTED_INSTANCES: Resource.Cached<List<DBInstance>> = ClientBackedCachedResource(RdsClient::class, "rds.list_supported_instances") {
         describeDBInstancesPaginator {
-            it.filters(Filter.builder().name(ENGINE_FILTER).values(RdsEngine.values().map { e -> e.engine }).build())
+            it.filters(Filter.builder().name(ENGINE_FILTER).values(RdsEngine.values().flatMap { e -> e.engines }).build())
         }.dbInstances().toList()
     }
 }
