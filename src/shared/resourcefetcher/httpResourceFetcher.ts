@@ -36,7 +36,8 @@ export class HttpResourceFetcher implements ResourceFetcher {
         return new Promise<string>((resolve, reject) => {
             request(this.url, (error: any, response: IncomingMessage, body: any) => {
                 if (error) {
-                    reject(error)
+                    // Throw sanitized error so we don't end up revealing any potentially private URLs.
+                    reject(new Error('Error loading from URL'))
                 } else {
                     // tslint:disable-next-line: no-unsafe-any
                     resolve(body.toString())

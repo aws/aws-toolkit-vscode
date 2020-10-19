@@ -155,7 +155,8 @@ async function downloadAndUnzipLambda(
                     resolve()
                 })
                 .on('error', err => {
-                    throw err
+                    // Throw sanitized error so we don't reveal a potentially active URL to private resources.
+                    throw new Error('Error downloading Lambda code from AWS.')
                 })
                 .pipe(fs.createWriteStream(downloadLocation))
         })

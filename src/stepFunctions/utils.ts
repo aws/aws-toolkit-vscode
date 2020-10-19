@@ -146,14 +146,16 @@ export class StateMachineGraphCache {
 
 async function httpsGetRequestWrapper(url: string): Promise<string> {
     const logger = getLogger()
-    logger.verbose(`Step Functions is getting content from ${url}`)
+    logger.verbose('Step Functions is getting content...')
 
     return new Promise((resolve, reject) => {
         request.get(url, function(error, response) {
-            logger.verbose(`Step Functions finished getting content from ${url}`)
+            logger.verbose('Step Functions finished getting content.')
             if (error) {
-                logger.verbose(`Step Functions was unable to get content from ${url}: %O`, error as Error)
-                reject(error)
+                // Throw sanitized error so we don't end up revealing any potentially private URLs.
+                const message = 'Step Functions was unable to get content.'
+                logger.verbose(message)
+                reject(new Error(message))
             } else {
                 resolve(response.body as string)
             }
