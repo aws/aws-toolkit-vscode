@@ -23,6 +23,7 @@ import com.nhaarman.mockitokotlin2.reset
 import com.nhaarman.mockitokotlin2.stub
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.Condition
@@ -42,6 +43,7 @@ import software.amazon.awssdk.http.SdkHttpFullResponse
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.CredentialsChangeEvent
 import software.aws.toolkits.core.credentials.CredentialsChangeListener
+import software.aws.toolkits.core.credentials.sso.SsoCache
 import software.aws.toolkits.core.region.ToolkitRegionProvider
 import software.aws.toolkits.core.rules.SystemPropertyHelper
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileCredentialProviderFactory
@@ -648,6 +650,62 @@ class ProfileCredentialProviderFactoryTest {
         }
     }
 
+    @Test
+    fun mfaProfilesAlwaysNeedLogin() {
+        profileFile.writeToFile(
+            """
+            [profile role]
+            role_arn=arn1
+            role_session_name=testSession
+            external_id=externalId
+            mfa_serial=someSerialArn
+            source_profile=source_profile
+
+            [profile source_profile]
+            aws_access_key_id=BarAccessKey
+            aws_secret_access_key=BarSecretKey
+            """.trimIndent()
+        )
+
+        createProviderFactory()
+
+        assertThat(runBlocking { (findCredentialIdentifier("role") as InteractiveCredential).userActionRequired() }).isTrue()
+    }
+
+    @Test
+    fun ssoProfilesCanIdentifyIfTheyNeedLogin() {
+        profileFile.writeToFile(
+            """
+            [profile valid]
+            sso_start_url=ValidUrl
+            sso_region=us-east-2
+            sso_account_id=111222333444
+            sso_role_name=RoleName
+            
+            [profile expired]
+            sso_start_url=ExpiredUrl
+            sso_region=us-east-2
+            sso_account_id=111222333444
+            sso_role_name=RoleName
+            
+            [profile chain]
+            source_profile = valid
+            role_arn = AssumedRoleArn
+            """.trimIndent()
+        )
+
+        val ssoCache = mock<SsoCache> {
+            on { loadAccessToken(("ValidUrl")) }.thenReturn(mock())
+            on { loadAccessToken(("ExpiredUrl")) }.thenReturn(null)
+        }
+
+        createProviderFactory(ssoCache)
+
+        assertThat(runBlocking { (findCredentialIdentifier("valid") as InteractiveCredential).userActionRequired() }).isFalse()
+        assertThat(runBlocking { (findCredentialIdentifier("expired") as InteractiveCredential).userActionRequired() }).isTrue()
+        assertThat(runBlocking { (findCredentialIdentifier("chain") as InteractiveCredential).userActionRequired() }).isFalse()
+    }
+
     private fun File.writeToFile(content: String) {
         WriteCommandAction.runWriteCommandAction(projectRule.project) {
             FileUtil.createIfDoesntExist(this)
@@ -663,8 +721,8 @@ class ProfileCredentialProviderFactoryTest {
             }
         }
 
-    private fun createProviderFactory(): ProfileCredentialProviderFactory {
-        val factory = ProfileCredentialProviderFactory()
+    private fun createProviderFactory(ssoCache: SsoCache = mock()): ProfileCredentialProviderFactory {
+        val factory = ProfileCredentialProviderFactory(ssoCache)
         factory.setUp(profileLoadCallback)
 
         return factory

@@ -72,7 +72,7 @@ private class ProfileCredentialsIdentifierSso(
 ) : ProfileCredentialsIdentifier(profileName, defaultRegionId, credentialType),
     SsoRequiredInteractiveCredentials
 
-class ProfileCredentialProviderFactory : CredentialProviderFactory {
+class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCache) : CredentialProviderFactory {
     private val profileHolder = ProfileHolder()
 
     override val id = PROFILE_FACTORY_ID
@@ -220,7 +220,7 @@ class ProfileCredentialProviderFactory : CredentialProviderFactory {
             profile.requiredProperty(SSO_URL),
             ssoRegion,
             SsoPrompt,
-            diskCache,
+            ssoCache,
             ssoOidcClient
         )
 
@@ -327,8 +327,8 @@ class ProfileCredentialProviderFactory : CredentialProviderFactory {
             this.requiresSso(profiles) -> ProfileCredentialsIdentifierSso(
                 name,
                 defaultRegion,
-                diskCache,
-                this.requiredProperty(SSO_URL),
+                ssoCache,
+                this.traverseCredentialChain(profiles).map { it.property(SSO_URL) }.first { it.isPresent }.get(),
                 requestedProfileType
             )
             else -> ProfileCredentialsIdentifier(name, defaultRegion, requestedProfileType)
