@@ -29,7 +29,7 @@ See [Setup](#additional-setup-steps) for installation requirements, or [Get help
 
 The **AWS Explorer** provides access to the AWS services that you can work with when using the Toolkit. To see the **AWS Explorer**, choose the **AWS** icon in the **Activity bar**.
 
-![Overview, AWS Explorer](./resources/marketplace/vscode/overview-aws-explorer.png)
+![Overview, AWS Explorer](./resources/marketplace/overview-aws-explorer.png)
 
 { [Return to Top](#top) }
 
@@ -37,11 +37,11 @@ The **AWS Explorer** provides access to the AWS services that you can work with 
 
 The **AWS CDK Explorer** enables you to work with [AWS Cloud Development Kit (CDK)](https://aws.amazon.com/cdk/) applications. It shows a top-level view of your CDK applications that have been sythesized in your workspace.
 
-![Overview, AWS CDK Explorer](./resources/marketplace/vscode/overview-cdk.png)
+![Overview, AWS CDK Explorer](./resources/marketplace/overview-cdk.png)
 
 With the CDK explorer, you can navigate the CDK application's infrastructure stacks, resources, and policies.
 
-![AWS CDK Tree View](./resources/marketplace/vscode/cdk-tree-view.png)
+![AWS CDK Tree View](./resources/marketplace/cdk-tree-view.png)
 
 For full details see the [AWS CDK Explorer](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/cdk-explorer.html) in the user guide.
 
@@ -58,19 +58,19 @@ The AWS Toolkit enables you to develop [AWS serverless applications](https://aws
 
 To start debugging with a SAM template, click the `Add Debug Configuration` _CodeLens_ in the template file.
 
-![Add Debug Configuration Template](./resources/marketplace/vscode/Codelens-YAML-template.png)
+![Add Debug Configuration Template](./resources/marketplace/Codelens-YAML-template.png)
 
 ###### The _CodeLens_ indicator in the SAM template allows you to add a debug configuration for the serverless application.</h6>
 
 Alternatively, you can run and debug just the AWS Lambda function and exclude other resources defined by the SAM template. Again, use a _CodeLens_ indicator for an AWS Lambda-function handler. (A _handler_ is a function that Lambda calls to start execution of a Lambda function.)
 
-![Add Debug Configuration Direct](./resources/marketplace/vscode/Codelens-direct-function.png)
+![Add Debug Configuration Direct](./resources/marketplace/Codelens-direct-function.png)
 
 ###### The _CodeLens_ indicator in the application file lets you add a debug configuration for a selected AWS Lambda function.
 
 When you run a debug session, the status and results are shown in the **OUTPUT** panel when the **AWS Toolkit** output channel is selected.
 
-![Configure and Run 2](./resources/marketplace/vscode/sam-configure-and-run-still-2.png)
+![Configure and Run 2](./resources/marketplace/sam-configure-and-run-still-2.png)
 
 ###### After a local run is complete, the output appears in the **OUTPUT** tab.
 
@@ -135,7 +135,7 @@ The AWS Toolkit provides support for [Amazon EventBridge](https://aws.amazon.com
 
 Example:
 
-![View Amazon EventBridge Schemas](./resources/marketplace/vscode/eventbridge-search.png)
+![View Amazon EventBridge Schemas](./resources/marketplace/eventbridge-search.png)
 
 For full details, see [Working with Amazon EventBridge Schemas](https://docs.aws.amazon.com/console/toolkit-for-vscode/eventbridge-schemas) in the Toolkit's user guide.
 
@@ -149,7 +149,7 @@ The AWS Toolkit provides support for [Amazon Elastic Container Service (Amazon E
 
 Example:
 
-![Amazon ECS IntelliSense for Task Definition Files](./resources/marketplace/vscode/ecs-task-def-intellisense.png)
+![Amazon ECS IntelliSense for Task Definition Files](./resources/marketplace/ecs-task-def-intellisense.png)
 
 For full details, see [Working with Amazon Elastic Container Service](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/ecs.html) in the Toolkit's user guide.
 
@@ -185,7 +185,7 @@ The AWS Toolkit provides support for [AWS Step Functions](https://docs.aws.amazo
 
 Example:
 
-![AWS Step Functions](./resources/marketplace/vscode/sfn-state-machine.png)
+![AWS Step Functions](./resources/marketplace/sfn-state-machine.png)
 
 For full details, see [Working with AWS Step Functions](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/stepfunctions.html) in the Toolkit's user guide.
 
@@ -199,7 +199,7 @@ The Toolkit provides commands (prefixed with `AWS:`) to the VS Code _command
 palette_, available by selecting _View > Command Palette_ or by typing
 `CTRL-SHIFT-p` (macOS: `CMD-SHIFT-p`).
 
-![Command Palette](./resources/marketplace/vscode/open-command-palette-codelens.gif)
+![Command Palette](./resources/marketplace/open-command-palette-codelens.gif)
 
 | AWS Command                                          | Description                                                                                                                                                                                                                                                                                                    |
 | :--------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
