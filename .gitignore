@@ -8,8 +8,8 @@ node_modules
 .idea
 telemetryCache
 quickStart*.html
-README.cloud9.md
-extension-readme.md
+README.quickstart.cloud9.md
+README.quickstart.vscode.md
 .gitcommit
 media/libs/
 package.json.bk
