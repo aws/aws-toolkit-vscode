@@ -70,7 +70,7 @@ Alternatively, you can run and debug just the AWS Lambda function and exclude ot
 
 When you run a debug session, the status and results are shown in the **OUTPUT** panel when the **AWS Toolkit** output channel is selected.
 
-![Configure and Run 1](./resources/marketplace/sam-configure-and-run-still-2.png)
+![Configure and Run 2](./resources/marketplace/sam-configure-and-run-still-2.png)
 
 ###### After a local run is complete, the output appears in the **OUTPUT** tab.
 
