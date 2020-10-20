@@ -85,7 +85,7 @@ by hand.
 When editing `launch.json` configs, AWS Toolkit provides auto-completion and
 contextual documentation, as shown below.
 
-<img src="./resources/marketplace/sam-launch-config.png" alt="Debug Configuration inline documentation" width="640"/>
+<img src="./resources/marketplace/vscode/sam-launch-config.png" alt="Debug Configuration inline documentation" width="640"/>
 
 ### Supported runtimes
 
@@ -117,7 +117,7 @@ Viewing a Log Stream will immediately load the most recent 10,000 lines or 1 MB 
 
 Example:
 
-![View Log Groups](./resources/marketplace/cloudwatch-logs.png)
+![View Log Groups](./resources/marketplace/vscode/cloudwatch-logs.png)
 
 For full details, see [Working with CloudWatch Logs](https://docs.aws.amazon.com/console/toolkit-for-vscode/latest/userguide/cloudwatchlogs.html) in the Toolkit's user guide.
 
@@ -167,7 +167,7 @@ The AWS Toolkit provides support for [AWS Systems Manager Documents](https://doc
 
 Example:
 
-![AWS Systems Manager](./resources/marketplace/ssm-snippets.png)
+![AWS Systems Manager](./resources/marketplace/vscode/ssm-snippets.png)
 
 For full details, see [Working with AWS Systems Manager Documents](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/ssmDocuments.html) in the Toolkit's user guide.
 
