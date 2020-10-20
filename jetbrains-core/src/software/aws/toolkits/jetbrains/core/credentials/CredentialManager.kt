@@ -148,14 +148,11 @@ class DefaultCredentialManager : CredentialManager() {
 
 fun AwsCredentials.toEnvironmentVariables(): Map<String, String> {
     val map = mutableMapOf<String, String>()
-    map["AWS_ACCESS_KEY"] = this.accessKeyId()
     map["AWS_ACCESS_KEY_ID"] = this.accessKeyId()
-    map["AWS_SECRET_KEY"] = this.secretAccessKey()
     map["AWS_SECRET_ACCESS_KEY"] = this.secretAccessKey()
 
     if (this is AwsSessionCredentials) {
         map["AWS_SESSION_TOKEN"] = this.sessionToken()
-        map["AWS_SECURITY_TOKEN"] = this.sessionToken()
     }
 
     return map

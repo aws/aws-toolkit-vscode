@@ -78,7 +78,7 @@ class ExecutableBackedCacheResourceTest {
         createMockExecutable("validBinary")
 
         executeCacheResource {
-            assertThat(this.environment).containsKey("AWS_ACCESS_KEY").containsKey("AWS_SECRET_KEY")
+            assertThat(this.environment).containsKey("AWS_ACCESS_KEY_ID").containsKey("AWS_SECRET_ACCESS_KEY")
         }
     }
 
