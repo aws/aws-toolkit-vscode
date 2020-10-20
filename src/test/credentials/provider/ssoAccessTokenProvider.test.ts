@@ -4,21 +4,19 @@
  */
 
 import * as assert from 'assert'
-import * as AWS from 'aws-sdk'
+import * as SDK from 'aws-sdk'
 import * as sinon from 'sinon'
-import { SSOOIDC } from 'aws-sdk'
 import { DiskCache } from '../../../credentials/sso/diskCache'
 import { SsoAccessTokenProvider } from '../../../credentials/sso/ssoAccessTokenProvider'
 import { CreateTokenResponse, StartDeviceAuthorizationResponse } from 'aws-sdk/clients/ssooidc'
 import { SsoClientRegistration } from '../../../credentials/sso/ssoClientRegistration'
-import { SsoAccessToken } from '../../../credentials/sso/ssoAccessToken'
 
 describe('SsoAccessTokenProvider', () => {
     let sandbox = sinon.createSandbox()
 
     const ssoRegion = 'fakeRegion'
     const ssoUrl = 'fakeUrl'
-    const ssoOidcClient = new SSOOIDC({ region: 'us-west-2' })
+    const ssoOidcClient = new SDK.SSOOIDC({ region: 'us-west-2' })
     const cache = new DiskCache()
     const sut = new SsoAccessTokenProvider(ssoRegion, ssoUrl, ssoOidcClient, cache)
 
@@ -31,7 +29,7 @@ describe('SsoAccessTokenProvider', () => {
         expiresAt: new Date(Date.now() + HOUR_IN_MS).toISOString(),
     }
 
-    const fakeCreateTokenResponse: SSOOIDC.CreateTokenResponse = {
+    const fakeCreateTokenResponse: SDK.SSOOIDC.CreateTokenResponse = {
         accessToken: 'dummyAccessToken',
         expiresIn: 120,
     }
@@ -51,18 +49,14 @@ describe('SsoAccessTokenProvider', () => {
         interval: 1,
     }
 
-    function setUpStubCache(returnRegistration?: SsoClientRegistration, returnAccessToken?: SsoAccessToken) {
-        if (returnAccessToken) {
-            sandbox.stub(cache, 'loadAccessToken').returns(returnAccessToken)
-        } else {
-            sandbox.stub(cache, 'loadAccessToken').returns(undefined)
-        }
-
+    function setUpStubCache(returnRegistration?: SsoClientRegistration) {
         if (returnRegistration) {
             sandbox.stub(cache, 'loadClientRegistration').returns(returnRegistration)
         } else {
             sandbox.stub(cache, 'loadClientRegistration').returns(undefined)
         }
+
+        sandbox.stub(cache, 'loadAccessToken').returns(undefined)
 
         sandbox.stub(cache, 'saveClientRegistration').returns()
     }
@@ -86,7 +80,7 @@ describe('SsoAccessTokenProvider', () => {
 
             sandbox.stub(ssoOidcClient, 'createToken').returns(({
                 promise: sandbox.stub().resolves(fakeCreateTokenResponse),
-            } as any) as AWS.Request<CreateTokenResponse, AWS.AWSError>)
+            } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
 
             const stubSaveAccessToken = sandbox.stub(cache, 'saveAccessToken').returns()
 
@@ -107,7 +101,7 @@ describe('SsoAccessTokenProvider', () => {
 
             const stubCreateToken = sandbox.stub(ssoOidcClient, 'createToken').returns(({
                 promise: sandbox.stub().resolves(fakeCreateTokenResponse),
-            } as any) as AWS.Request<CreateTokenResponse, AWS.AWSError>)
+            } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
 
             const stubSaveAccessToken = sandbox.stub(cache, 'saveAccessToken').returns()
 
@@ -131,11 +125,11 @@ describe('SsoAccessTokenProvider', () => {
             const stubCreateToken = sandbox.stub(ssoOidcClient, 'createToken')
             stubCreateToken.onFirstCall().returns(({
                 promise: sandbox.stub().throws({ code: 'AuthorizationPendingException' }),
-            } as any) as AWS.Request<CreateTokenResponse, AWS.AWSError>)
+            } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
 
             stubCreateToken.onSecondCall().returns(({
                 promise: sandbox.stub().resolves(fakeCreateTokenResponse),
-            } as any) as AWS.Request<CreateTokenResponse, AWS.AWSError>)
+            } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
 
             const stubSaveAccessToken = sandbox.stub(cache, 'saveAccessToken').returns()
 
@@ -161,7 +155,7 @@ describe('SsoAccessTokenProvider', () => {
             const stubCreateToken = sandbox.stub(ssoOidcClient, 'createToken')
             stubCreateToken.returns(({
                 promise: sandbox.stub().throws({ code: 'ErrorNotSlowDownAuthPendingOrTimeOut' }),
-            } as any) as AWS.Request<CreateTokenResponse, AWS.AWSError>)
+            } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
 
             const stubSaveAccessToken = sandbox.stub(cache, 'saveAccessToken').returns()
 
@@ -174,18 +168,18 @@ describe('SsoAccessTokenProvider', () => {
             assert.strictEqual(stubSaveAccessToken.called, false)
         })
 
-        it('should add backoff dely on SlowDownException', async () => {
+        it('should add backoff delay on SlowDownException', async () => {
             setUpStubCache(validRegistation)
             sandbox.stub(sut, 'authorizeClient').resolves(validAuthorization)
 
             const stubCreateToken = sandbox.stub(ssoOidcClient, 'createToken')
             stubCreateToken.onFirstCall().returns(({
                 promise: sandbox.stub().throws({ code: 'SlowDownException' }),
-            } as any) as AWS.Request<CreateTokenResponse, AWS.AWSError>)
+            } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
 
             stubCreateToken.onSecondCall().returns(({
                 promise: sandbox.stub().resolves(fakeCreateTokenResponse),
-            } as any) as AWS.Request<CreateTokenResponse, AWS.AWSError>)
+            } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
 
             const stubSaveAccessToken = sandbox.stub(cache, 'saveAccessToken').returns()
 
@@ -210,7 +204,7 @@ describe('SsoAccessTokenProvider', () => {
             const stubSsoOidcClient = sandbox.stub(ssoOidcClient, 'startDeviceAuthorization')
             stubSsoOidcClient.returns(({
                 promise: sandbox.stub().throws({ code: 'InvalidClientException' }),
-            } as any) as AWS.Request<CreateTokenResponse, AWS.AWSError>)
+            } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
 
             const stubInvalidateCache = sandbox.stub(cache, 'invalidateClientRegistration').returns()
 
