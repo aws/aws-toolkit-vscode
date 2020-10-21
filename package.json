@@ -822,8 +822,8 @@
                 },
                 {
                     "command": "aws.deploySamApplication",
-                    "when": "view == aws.explorer && viewItem == awsLambdaNode",
-                    "group": "inline@2"
+                    "when": "view == aws.explorer && viewItem == awsRegionNode",
+                    "group": "inline@1"
                 },
                 {
                     "command": "aws.invokeLambda",
