@@ -29,7 +29,7 @@ export async function getSamProjectDirPathForFile(filepath: string): Promise<str
     return path.dirname(filepath)
 }
 
-// Add create debugging manifest/requirements.txt containing ptvsd
+// Add create debugging manifest/requirements.txt containing debugpy
 async function makePythonDebugManifest(params: {
     samProjectCodeRoot: string
     outputDir: string
@@ -40,7 +40,7 @@ async function makePythonDebugManifest(params: {
         manifestText = await readFileAsString(manfestPath)
     }
     getLogger().debug(`pythonCodeLensProvider.makePythonDebugManifest params: ${JSON.stringify(params, undefined, 2)}`)
-    // TODO: Make this logic more robust. What if other module names include ptvsd?
+    // TODO: Make this logic more robust. What if other module names include debugpy?
     if (!manifestText.includes('debugpy')) {
         manifestText += `${os.EOL}debugpy>=1.0,<2`
         const debugManifestPath = path.join(params.outputDir, 'debug-requirements.txt')
