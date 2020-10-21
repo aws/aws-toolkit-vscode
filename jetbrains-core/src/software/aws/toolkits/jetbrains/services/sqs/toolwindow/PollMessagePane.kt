@@ -74,7 +74,7 @@ class PollMessagePane(
                     // Make poll a real peek by setting the visibility timout to 0, so messages can be
                     // requested by other consumers of the queue immediately
                     it.visibilityTimeout(0)
-                }.messages()
+                }.messages().distinctBy { it.messageId() }
 
                 polledMessages.forEach {
                     messagesTable.tableModel.addRow(it)

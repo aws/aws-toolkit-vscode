@@ -16,7 +16,8 @@ import software.amazon.awssdk.services.sqs.model.MessageSystemAttributeName
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse
-import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.core.region.anAwsRegion
+import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.services.sqs.Queue
 import software.aws.toolkits.jetbrains.utils.BaseCoroutineTest
 import software.aws.toolkits.jetbrains.utils.waitForModelToBeAtLeast
@@ -24,17 +25,12 @@ import software.aws.toolkits.jetbrains.utils.waitForTrue
 import software.aws.toolkits.resources.message
 
 class PollMessagePaneTest : BaseCoroutineTest() {
-    val queue = Queue("https://sqs.us-east-1.amazonaws.com/123456789012/test1", AwsRegion.GLOBAL)
-
-    private val message: Message = Message.builder()
-        .body("ABC")
-        .messageId("XYZ")
-        .attributes(mapOf(Pair(MessageSystemAttributeName.SENDER_ID, "1234567890:test1"), Pair(MessageSystemAttributeName.SENT_TIMESTAMP, "111111111")))
-        .build()
+    val queue = Queue("https://sqs.us-east-1.amazonaws.com/123456789012/test1", anAwsRegion())
 
     @Test
     fun `Message received`() {
         val client = mockClientManagerRule.create<SqsClient>()
+        val message = aMessage()
         whenever(client.receiveMessage(Mockito.any<ReceiveMessageRequest>())).thenReturn(
             ReceiveMessageResponse.builder().messages(message).build()
         )
@@ -45,10 +41,30 @@ class PollMessagePaneTest : BaseCoroutineTest() {
             tableModel.waitForModelToBeAtLeast(1)
         }
 
-        assertThat(tableModel.items.first().messageId()).isEqualTo("XYZ")
-        assertThat(tableModel.items.first().body()).isEqualTo("ABC")
-        assertThat(tableModel.items.first().attributes().getValue(MessageSystemAttributeName.SENDER_ID)).isEqualTo("1234567890:test1")
-        assertThat(tableModel.items.first().attributes().getValue(MessageSystemAttributeName.SENT_TIMESTAMP)).isEqualTo("111111111")
+        assertThat(tableModel.items.first()).isEqualTo(message)
+    }
+
+    @Test
+    fun `Messages are de-duplicated by id`() {
+        val client = mockClientManagerRule.create<SqsClient>()
+        val message = aMessage()
+        val anotherMessage = aMessage()
+        whenever(client.receiveMessage(Mockito.any<ReceiveMessageRequest>())).thenReturn(
+            ReceiveMessageResponse.builder().messages(
+                message,
+                message,
+                anotherMessage
+            ).build()
+        )
+        val pane = PollMessagePane(projectRule.project, client, queue)
+        val tableModel = pane.messagesTable.tableModel
+        runBlocking {
+            pane.requestMessages()
+            tableModel.waitForModelToBeAtLeast(1)
+        }
+
+        assertThat(tableModel.items).hasSize(2)
+        assertThat(tableModel.items.map { it.messageId() }).contains(message.messageId(), anotherMessage.messageId())
     }
 
     @Test
@@ -108,4 +124,10 @@ class PollMessagePaneTest : BaseCoroutineTest() {
 
         assertThat(pane.messagesAvailableLabel.text).isEqualTo(message("sqs.failed_to_load_total"))
     }
+
+    private fun aMessage(): Message = Message.builder()
+        .body(aString())
+        .messageId(aString())
+        .attributes(mapOf(Pair(MessageSystemAttributeName.SENDER_ID, "1234567890:test1"), Pair(MessageSystemAttributeName.SENT_TIMESTAMP, "111111111")))
+        .build()
 }
