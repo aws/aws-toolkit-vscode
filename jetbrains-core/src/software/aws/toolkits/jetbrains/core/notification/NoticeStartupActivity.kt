@@ -10,8 +10,7 @@ import com.intellij.openapi.startup.StartupActivity
 
 class NoticeStartupActivity : StartupActivity, DumbAware {
     override fun runActivity(project: Project) {
-        val noticeManager =
-            ServiceManager.getService(NoticeManager::class.java)
+        val noticeManager = ServiceManager.getService(NoticeManager::class.java)
 
         val notices = noticeManager.getRequiredNotices(NoticeType.notices(), project)
         noticeManager.notify(notices, project)

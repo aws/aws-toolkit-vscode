@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.notification
 
+import com.intellij.notification.NotificationType
 import com.intellij.openapi.extensions.ExtensionPointName
 
 interface NoticeType {
@@ -18,6 +19,11 @@ interface NoticeType {
 
     // Notification Title/Message
     fun getNoticeContents(): NoticeContents
+
+    /*
+     * Allow setting different warning levels depending on the type of notification
+     */
+    open fun getNoticeType(): NotificationType = NotificationType.INFORMATION
 
     companion object {
         val EP_NAME = ExtensionPointName<NoticeType>("aws.toolkit.notice")

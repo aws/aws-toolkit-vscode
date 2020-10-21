@@ -7,13 +7,14 @@ import com.intellij.notification.NotificationDisplayType
 import com.intellij.notification.NotificationGroup
 import com.intellij.notification.NotificationType
 import com.intellij.notification.Notifications
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
+import org.jetbrains.annotations.TestOnly
 import software.aws.toolkits.resources.message
 
 interface NoticeManager {
@@ -71,7 +72,7 @@ class DefaultNoticeManager :
         )
 
         notification.addAction(
-            object : AnAction(message("notice.suppress")) {
+            object : DumbAwareAction(message("notice.suppress")) {
                 override fun actionPerformed(e: AnActionEvent) {
                     suppressNotification(notice)
                     notification.hideBalloon()
@@ -86,6 +87,7 @@ class DefaultNoticeManager :
         internalState[notice.id] = NoticeState(notice.id, notice.getSuppressNotificationValue())
     }
 
+    @TestOnly
     fun resetAllNotifications() {
         internalState.clear()
     }
