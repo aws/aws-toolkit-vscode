@@ -446,7 +446,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
                 case ParameterPromptResult.Cancel:
                     return undefined
                 case ParameterPromptResult.Continue:
-                    return this.skipOrReturnRegion(this.S3_BUCKET)
+                    return this.skipOrPromptRegion(this.S3_BUCKET)
             }
         }
 
@@ -458,7 +458,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
         if (parameters.size < 1) {
             this.response.parameterOverrides = new Map<string, string>()
 
-            return this.skipOrReturnRegion(this.S3_BUCKET)
+            return this.skipOrPromptRegion(this.S3_BUCKET)
         }
 
         const requiredParameterNames = new Set<string>(
@@ -491,7 +491,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
 
         this.response.parameterOverrides = overriddenParameters
 
-        return this.skipOrReturnRegion(this.S3_BUCKET)
+        return this.skipOrPromptRegion(this.S3_BUCKET)
     }
 
     private readonly REGION: WizardStep = async () => {
@@ -505,7 +505,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     private readonly S3_BUCKET: WizardStep = async () => {
         this.response.s3Bucket = await this.context.promptUserForS3Bucket(this.response.region, this.response.s3Bucket)
 
-        return this.response.s3Bucket ? this.STACK_NAME : this.skipOrReturnRegion(this.TEMPLATE)
+        return this.response.s3Bucket ? this.STACK_NAME : this.skipOrPromptRegion(this.TEMPLATE)
     }
 
     private readonly STACK_NAME: WizardStep = async () => {
@@ -517,7 +517,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
         return this.response.stackName ? undefined : this.S3_BUCKET
     }
 
-    private skipOrReturnRegion(skipToStep: WizardStep | undefined): WizardStep | undefined {
+    private skipOrPromptRegion(skipToStep: WizardStep | undefined): WizardStep | undefined {
         return this.regionNode ? skipToStep : this.REGION
     }
 }
