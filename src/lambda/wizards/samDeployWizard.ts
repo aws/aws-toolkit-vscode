@@ -25,6 +25,7 @@ import { configureParameterOverrides } from '../config/configureParameterOverrid
 import { getOverriddenParameters, getParameters } from '../utilities/parameterUtils'
 import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
 import { ext } from '../../shared/extensionGlobals'
+import { RegionNode } from '../../awsexplorer/regionNode'
 
 export interface SamDeployWizardResponse {
     parameterOverrides: Map<string, string>
@@ -402,8 +403,11 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     private readonly response: Partial<SamDeployWizardResponse> = {}
 
-    public constructor(private readonly context: SamDeployWizardContext) {
+    public constructor(private readonly context: SamDeployWizardContext, private readonly regionNode?: RegionNode) {
         super()
+        if (regionNode) {
+            this.response.region = regionNode.regionCode
+        }
     }
 
     protected get startStep() {
@@ -442,7 +446,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
                 case ParameterPromptResult.Cancel:
                     return undefined
                 case ParameterPromptResult.Continue:
-                    return this.REGION
+                    return this.skipOrPromptRegion(this.S3_BUCKET)
             }
         }
 
@@ -454,7 +458,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
         if (parameters.size < 1) {
             this.response.parameterOverrides = new Map<string, string>()
 
-            return this.REGION
+            return this.skipOrPromptRegion(this.S3_BUCKET)
         }
 
         const requiredParameterNames = new Set<string>(
@@ -487,7 +491,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
 
         this.response.parameterOverrides = overriddenParameters
 
-        return this.REGION
+        return this.skipOrPromptRegion(this.S3_BUCKET)
     }
 
     private readonly REGION: WizardStep = async () => {
@@ -501,7 +505,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     private readonly S3_BUCKET: WizardStep = async () => {
         this.response.s3Bucket = await this.context.promptUserForS3Bucket(this.response.region, this.response.s3Bucket)
 
-        return this.response.s3Bucket ? this.STACK_NAME : this.REGION
+        return this.response.s3Bucket ? this.STACK_NAME : this.skipOrPromptRegion(this.TEMPLATE)
     }
 
     private readonly STACK_NAME: WizardStep = async () => {
@@ -511,6 +515,10 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
         })
 
         return this.response.stackName ? undefined : this.S3_BUCKET
+    }
+
+    private skipOrPromptRegion(skipToStep: WizardStep | undefined): WizardStep | undefined {
+        return this.regionNode ? skipToStep : this.REGION
     }
 }
 
