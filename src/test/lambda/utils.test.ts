@@ -8,7 +8,7 @@ import { getLambdaDetailsFromConfiguration } from '../../lambda/utils'
 import { assertThrowsError } from '../shared/utilities/assertUtils'
 
 describe('lambda utils', async () => {
-    describe('parseLambdaDetailsFromConfiguration', () => {
+    describe('getLambdaDetailsFromConfiguration', () => {
         it('returns valid filenames and function names', () => {
             const jsNonNestedParsedName = getLambdaDetailsFromConfiguration({
                 Runtime: 'nodejs12.x',

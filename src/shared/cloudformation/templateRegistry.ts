@@ -223,7 +223,7 @@ export function getResourcesAssociatedWithHandlerFromTemplateDatum(
                             matchingResources.push(resource)
                         }
                     } catch (e) {
-                        // swallow error from parseLambdaDetailsFromConfiguration: handler not a valid runtime, so skip to the next one
+                        // swallow error from getLambdaDetailsFromConfiguration: handler not a valid runtime, so skip to the next one
                     }
                 }
             }

@@ -19,23 +19,20 @@ import { LambdaLocalInvokeParams } from '../sam/localLambdaRunner'
 import { ExtContext } from '../extensions'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
 import { nodeJsRuntimes, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
-import { CODE_TARGET_TYPE } from '../sam/debugger/awsSamDebugConfiguration'
+import { CODE_TARGET_TYPE, TEMPLATE_TARGET_TYPE } from '../sam/debugger/awsSamDebugConfiguration'
 import { getReferencedHandlerPaths, LaunchConfiguration } from '../debug/launchConfiguration'
 import * as pathutils from '../utilities/pathUtils'
 import {
     getResourcesAssociatedWithHandlerFromTemplateDatum,
     getTemplatesAssociatedWithHandler,
 } from '../cloudformation/templateRegistry'
+import { createQuickPick, promptUser, verifySinglePickerOutput } from '../ui/picker'
+import {
+    addSamDebugConfiguration,
+    AddSamDebugConfigurationInput,
+} from '../sam/debugger/commands/addSamDebugConfiguration'
 
 export type Language = 'python' | 'javascript' | 'csharp'
-
-interface MakeAddDebugConfigCodeLensParams {
-    handlerName: string
-    range: vscode.Range
-    rootUri: vscode.Uri
-    runtimeFamily: RuntimeFamily
-    filteredRuntimes?: ImmutableSet<Runtime>
-}
 
 export async function makeCodeLenses({
     document,
@@ -69,41 +66,52 @@ export async function makeCodeLenses({
         try {
             const associatedTemplates = getTemplatesAssociatedWithHandler(handler.filename, handler.handlerName)
             let filteredRuntimes: ImmutableSet<Runtime> | undefined
+            const templateConfigs: AddSamDebugConfigurationInput[] = []
 
             if (associatedTemplates.length > 0) {
                 const runtimes: Runtime[] = []
                 for (const templateDatum of associatedTemplates) {
+                    if (templateDatum.template.Resources) {
+                        for (const resourceName of Object.keys(templateDatum.template.Resources)) {
+                            templateConfigs.push({
+                                resourceName,
+                                rootUri: vscode.Uri.file(templateDatum.path),
+                            })
+                        }
+                    }
+
                     runtimes.push(
                         ...getResourcesAssociatedWithHandlerFromTemplateDatum(
                             handler.filename,
                             handler.handlerName,
                             templateDatum
                         )
-                            .map(
-                                resource =>
+                            .map(resource => {
+                                return (
                                     (CloudFormation.getStringForProperty(
                                         resource.Properties?.Runtime,
                                         templateDatum.template
                                     ) as Runtime) ?? ''
-                            )
+                                )
+                            })
                             .filter(resource => resource.length > 0)
                     )
                 }
                 filteredRuntimes = ImmutableSet(runtimes)
             }
-            const baseParams: MakeAddDebugConfigCodeLensParams = {
-                handlerName: handler.handlerName,
-                range,
+            const codeConfig: AddSamDebugConfigurationInput = {
+                resourceName: handler.handlerName,
                 rootUri: handler.manifestUri,
                 runtimeFamily,
                 filteredRuntimes,
             }
+            // TODO: Get this to also hide based on matching template-type configs?
             if (
                 !existingConfigs.has(
-                    pathutils.normalize(path.join(path.dirname(baseParams.rootUri.fsPath), baseParams.handlerName))
+                    pathutils.normalize(path.join(path.dirname(codeConfig.rootUri.fsPath), codeConfig.resourceName))
                 )
             ) {
-                lenses.push(makeAddCodeSamDebugCodeLens(baseParams))
+                lenses.push(makeAddCodeSamDebugCodeLens(range, codeConfig, templateConfigs))
             }
         } catch (err) {
             getLogger().error(
@@ -120,24 +128,77 @@ export function getInvokeCmdKey(language: Language) {
     return `aws.lambda.local.invoke.${language}`
 }
 
-function makeAddCodeSamDebugCodeLens(params: MakeAddDebugConfigCodeLensParams): vscode.CodeLens {
+function makeAddCodeSamDebugCodeLens(
+    range: vscode.Range,
+    codeConfig: AddSamDebugConfigurationInput,
+    templateConfigs: AddSamDebugConfigurationInput[]
+): vscode.CodeLens {
     const command: vscode.Command = {
         title: localize('AWS.command.addSamDebugConfiguration', 'Add Debug Configuration'),
-        command: 'aws.addSamDebugConfiguration',
+        command: 'aws.pickAddSamDebugConfiguration',
         // Values provided by makeTypescriptCodeLensProvider(),
         // makeCSharpCodeLensProvider(), makePythonCodeLensProvider().
-        arguments: [
-            {
-                resourceName: params.handlerName,
-                rootUri: params.rootUri,
-                runtimeFamily: params.runtimeFamily,
-                filteredRuntimes: params.filteredRuntimes,
-            },
-            CODE_TARGET_TYPE,
-        ],
+        arguments: [codeConfig, templateConfigs],
     }
 
-    return new vscode.CodeLens(params.range, command)
+    return new vscode.CodeLens(range, command)
+}
+
+/**
+ * Wraps the addSamDebugConfiguration logic in a picker that lets the user choose
+ * to create a code-type debug config or a template-type debug config using a selected template
+ * TODO: Localize
+ * @param codeConfig
+ * @param templateConfigs
+ */
+export async function pickAddSamDebugConfiguration(
+    codeConfig: AddSamDebugConfigurationInput,
+    templateConfigs: AddSamDebugConfigurationInput[]
+): Promise<void> {
+    if (templateConfigs.length === 0) {
+        await addSamDebugConfiguration(codeConfig, CODE_TARGET_TYPE)
+
+        return
+    }
+
+    const templateItemsMap = new Map<string, AddSamDebugConfigurationInput>()
+    const templateItems: vscode.QuickPickItem[] = templateConfigs.map(templateConfig => {
+        const label = `${templateConfig.rootUri.fsPath}:${templateConfig.resourceName}`
+        templateItemsMap.set(label, templateConfig)
+        return { label }
+    })
+    const picker = createQuickPick<vscode.QuickPickItem>({
+        options: {
+            canPickMany: false,
+            ignoreFocusOut: false,
+            matchOnDetail: true,
+            title: 'Create a Debug Configuration with a CloudFormation Template',
+        },
+        items: [
+            ...templateItems,
+            {
+                label: 'No Template',
+                detail:
+                    'Launch config will execute function in isolation, without referencing a CloudFormation template',
+            },
+        ],
+    })
+
+    const choices = await promptUser({ picker })
+    const val = verifySinglePickerOutput(choices)
+
+    if (!val) {
+        return undefined
+    }
+    if (val.label === 'No Template') {
+        await addSamDebugConfiguration(codeConfig, CODE_TARGET_TYPE)
+    } else {
+        const templateItem = templateItemsMap.get(val.label)
+        if (!templateItem) {
+            return undefined
+        }
+        await addSamDebugConfiguration(templateItem, TEMPLATE_TARGET_TYPE)
+    }
 }
 
 export async function makePythonCodeLensProvider(): Promise<vscode.CodeLensProvider> {
