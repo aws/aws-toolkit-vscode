@@ -12,8 +12,8 @@ import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleExplorerNodeAction
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
-import software.aws.toolkits.jetbrains.datagrip.FullSslValidation
 import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
+import software.aws.toolkits.jetbrains.datagrip.RequireSsl
 import software.aws.toolkits.jetbrains.datagrip.auth.SECRET_ID_PROPERTY
 import software.aws.toolkits.jetbrains.datagrip.auth.SecretsManagerAuth
 import software.aws.toolkits.jetbrains.datagrip.auth.SecretsManagerDbSecret
@@ -96,6 +96,6 @@ fun DataSourceRegistry.createDatasource(project: Project, secret: SecretsManager
     // TODO FIX_WHEN_MIN_IS_202 set auth provider ID in builder
     newDataSources.firstOrNull()?.let {
         it.authProviderId = SecretsManagerAuth.providerId
-        it.sslCfg = FullSslValidation
+        it.sslCfg = RequireSsl
     }
 }

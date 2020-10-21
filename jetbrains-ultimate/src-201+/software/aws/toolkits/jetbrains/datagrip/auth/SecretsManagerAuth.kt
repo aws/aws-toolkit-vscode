@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.intellij.credentialStore.Credentials
-import com.intellij.database.Dbms
 import com.intellij.database.access.DatabaseCredentials
 import com.intellij.database.dataSource.DatabaseAuthProvider
 import com.intellij.database.dataSource.DatabaseAuthProvider.AuthWidget
@@ -23,6 +22,7 @@ import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettings
 import software.aws.toolkits.jetbrains.datagrip.getAwsConnectionSettings
 import software.aws.toolkits.jetbrains.datagrip.getDatabaseEngine
+import software.aws.toolkits.jetbrains.datagrip.secretsManagerIsApplicable
 import software.aws.toolkits.jetbrains.utils.ApplicationThreadPoolScope
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.DatabaseCredentials.SecretsManager
@@ -40,10 +40,7 @@ class SecretsManagerAuth : DatabaseAuthProvider, CoroutineScope by ApplicationTh
     private val objectMapper = jacksonObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 
     override fun getId(): String = providerId
-    override fun isApplicable(dataSource: LocalDataSource): Boolean {
-        val dbms = dataSource.dbms
-        return dbms == Dbms.MYSQL || dbms == Dbms.POSTGRES || dbms == Dbms.REDSHIFT
-    }
+    override fun isApplicable(dataSource: LocalDataSource): Boolean = secretsManagerIsApplicable(dataSource)
 
     override fun getDisplayName(): String = message("datagrip.auth.secrets_manager")
 

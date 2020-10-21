@@ -11,8 +11,8 @@ import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.getResourceIfPresent
 import software.aws.toolkits.jetbrains.datagrip.CREDENTIAL_ID_PROPERTY
-import software.aws.toolkits.jetbrains.datagrip.FullSslValidation
 import software.aws.toolkits.jetbrains.datagrip.REGION_ID_PROPERTY
+import software.aws.toolkits.jetbrains.datagrip.RequireSsl
 import software.aws.toolkits.jetbrains.services.redshift.auth.CLUSTER_ID_PROPERTY
 import software.aws.toolkits.jetbrains.services.redshift.auth.IamAuth
 import software.aws.toolkits.jetbrains.services.sts.StsResources
@@ -46,6 +46,6 @@ fun DataSourceRegistry.createDatasource(project: Project, cluster: Cluster) {
     newDataSources.firstOrNull()?.let {
         it.authProviderId = IamAuth.providerId
         // Force SSL on
-        it.sslCfg = FullSslValidation
+        it.sslCfg = RequireSsl
     } ?: throw IllegalStateException("Newly inserted data source is not in the data source registry!")
 }

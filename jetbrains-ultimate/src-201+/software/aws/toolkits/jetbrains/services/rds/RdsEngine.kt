@@ -3,7 +3,9 @@
 
 package software.aws.toolkits.jetbrains.services.rds
 
+import com.intellij.database.dataSource.DataSourceSslConfiguration
 import icons.AwsIcons
+import software.aws.toolkits.jetbrains.datagrip.RequireSsl
 import software.aws.toolkits.resources.message
 import javax.swing.Icon
 
@@ -12,22 +14,6 @@ import javax.swing.Icon
  * TODO: This can probably ultimately become [DbEngine] and encompass Redshift functionality too
  */
 sealed class RdsEngine(val engines: Set<String>, val icon: Icon, val additionalInfo: String?) {
-
-    object MySql : MySqlBase(setOf("mysql")) {
-        override fun connectionStringUrl(endpoint: String) = "jdbc:$jdbcMysql://$endpoint/"
-    }
-
-    // aurora == 5.6, aurora-mysql == 5.7
-    object AuroraMySql : MySqlBase(setOf("aurora", "aurora-mysql"), additionalInfo = message("rds.aurora")) {
-        // The docs recommend using MariaDB instead of MySQL to connect to MySQL Aurora DBs:
-        // https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.Connecting.html#Aurora.Connecting.AuroraMySQL
-        override fun connectionStringUrl(endpoint: String) = "jdbc:$jdbcMariadb://$endpoint/"
-    }
-
-    object Postgres : PostgresBase(setOf("postgres"))
-
-    object AuroraPostgres : PostgresBase(setOf("aurora-postgresql"), additionalInfo = message("rds.aurora"))
-
     /**
      * Create a connection string, using the passed hostname/port [endpoint] parameter
      */
@@ -38,20 +24,44 @@ sealed class RdsEngine(val engines: Set<String>, val icon: Icon, val additionalI
      */
     open fun iamUsername(username: String) = username
 
-    abstract class MySqlBase(engine: Set<String>, additionalInfo: String? = null) : RdsEngine(engine, AwsIcons.Resources.Rds.MYSQL, additionalInfo)
-
-    abstract class PostgresBase(engine: Set<String>, additionalInfo: String? = null) : RdsEngine(engine, AwsIcons.Resources.Rds.POSTGRES, additionalInfo) {
-        override fun connectionStringUrl(endpoint: String) = "jdbc:$jdbcPostgres://$endpoint/"
-
-        /**
-         * In postgres this is case sensitive as lower case. If you add a db user for
-         * IAM role "Admin", it is inserted to the db as "admin"
-         */
-        override fun iamUsername(username: String) = username.toLowerCase()
-    }
+    /**
+     * SSL is not turned on by default by DataGrip. We would like it to be turned on, and Aurora MySQL requires it turned on, so
+     * we have to patch it into the configuration. Postgres breaks by default with ssl (due to requring adding a trust store manually),
+     * so we have to configure it on a per database basis.
+     */
+    open fun sslConfig(): DataSourceSslConfiguration? = null
 
     companion object {
         fun values(): Set<RdsEngine> = setOf(MySql, AuroraMySql, Postgres, AuroraPostgres)
         fun fromEngine(engine: String) = values().find { it.engines.contains(engine) } ?: throw IllegalArgumentException("Unknown RDS engine $engine")
     }
 }
+
+abstract class MySqlBase(engine: Set<String>, additionalInfo: String? = null) : RdsEngine(engine, AwsIcons.Resources.Rds.MYSQL, additionalInfo) {
+    override fun sslConfig(): DataSourceSslConfiguration = RequireSsl
+}
+
+abstract class PostgresBase(engine: Set<String>, additionalInfo: String? = null) : RdsEngine(engine, AwsIcons.Resources.Rds.POSTGRES, additionalInfo) {
+    override fun connectionStringUrl(endpoint: String) = "jdbc:$jdbcPostgres://$endpoint/"
+
+    /**
+     * In postgres this is case sensitive as lower case. If you add a db user for
+     * IAM role "Admin", it is inserted to the db as "admin"
+     */
+    override fun iamUsername(username: String) = username.toLowerCase()
+}
+
+object MySql : MySqlBase(setOf("mysql")) {
+    override fun connectionStringUrl(endpoint: String) = "jdbc:$jdbcMysql://$endpoint/"
+}
+
+// aurora == 5.6, aurora-mysql == 5.7
+object AuroraMySql : MySqlBase(setOf("aurora", "aurora-mysql"), additionalInfo = message("rds.aurora")) {
+    // The docs recommend using MariaDB instead of MySQL to connect to MySQL Aurora DBs:
+    // https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.Connecting.html#Aurora.Connecting.AuroraMySQL
+    override fun connectionStringUrl(endpoint: String) = "jdbc:$jdbcMysqlAurora://$endpoint/"
+}
+
+object Postgres : PostgresBase(setOf("postgres"))
+
+object AuroraPostgres : PostgresBase(setOf("aurora-postgresql"), additionalInfo = message("rds.aurora"))

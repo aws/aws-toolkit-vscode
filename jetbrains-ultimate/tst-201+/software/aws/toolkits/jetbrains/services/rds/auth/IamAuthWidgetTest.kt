@@ -31,9 +31,6 @@ class IamAuthWidgetTest {
     private val defaultRegion = RuleUtils.randomName()
     private val mockCreds = AwsBasicCredentials.create("Access", "ItsASecret")
 
-    private val hostParameter = "host"
-    private val portParameter = "port"
-
     @Before
     fun setUp() {
         widget = IamAuthWidget()

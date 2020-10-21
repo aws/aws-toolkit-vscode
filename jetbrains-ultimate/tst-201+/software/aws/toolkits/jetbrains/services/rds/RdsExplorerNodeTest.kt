@@ -12,6 +12,7 @@ import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.core.utils.test.hasOnlyElementsOfType
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.explorer.nodes.RdsExplorerRootNode
+import software.aws.toolkits.jetbrains.services.rds.resources.LIST_SUPPORTED_INSTANCES
 
 class RdsExplorerNodeTest {
     @JvmField
@@ -25,9 +26,10 @@ class RdsExplorerNodeTest {
     @Test
     fun `database resources are listed`() {
         val databases = RdsEngine.values().flatMap { it.engines }.associateWith { RuleUtils.randomName(prefix = "$it-") }
+
         resourceCache.addEntry(
             projectRule.project,
-            RdsResources.LIST_SUPPORTED_INSTANCES,
+            LIST_SUPPORTED_INSTANCES,
             databases.map { dbInstance(it.key, it.value) }
         )
         val serviceRootNode = sut.buildServiceRootNode(projectRule.project)

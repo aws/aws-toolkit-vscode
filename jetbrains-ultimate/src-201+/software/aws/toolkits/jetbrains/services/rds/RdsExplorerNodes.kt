@@ -11,9 +11,10 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNo
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.core.getResourceNow
+import software.aws.toolkits.jetbrains.services.rds.resources.LIST_SUPPORTED_INSTANCES
 
-class RdsExplorerParentNode(project: Project, private val service: AwsExplorerServiceNode) : AwsExplorerServiceRootNode(project, service) {
-    override fun getChildrenInternal(): List<AwsExplorerNode<*>> = nodeProject.getResourceNow(RdsResources.LIST_SUPPORTED_INSTANCES).map {
+class RdsExplorerParentNode(project: Project, service: AwsExplorerServiceNode) : AwsExplorerServiceRootNode(project, service) {
+    override fun getChildrenInternal(): List<AwsExplorerNode<*>> = nodeProject.getResourceNow(LIST_SUPPORTED_INSTANCES).map {
         RdsNode(nodeProject, it)
     }
 }
