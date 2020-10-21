@@ -71,6 +71,7 @@ export async function makeCodeLenses({
             if (associatedTemplates.length > 0) {
                 const runtimes: Runtime[] = []
                 for (const templateDatum of associatedTemplates) {
+                    // TODO: This pulls all resources without vetting from the resources below. May want to break this down a bit...
                     if (templateDatum.template.Resources) {
                         for (const resourceName of Object.keys(templateDatum.template.Resources)) {
                             templateConfigs.push({
