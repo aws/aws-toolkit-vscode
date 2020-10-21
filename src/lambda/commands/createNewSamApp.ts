@@ -290,7 +290,7 @@ async function showCompletionNotification(appName: string, configs: string): Pro
     const action = await vscode.window.showInformationMessage(
         localize(
             'AWS.samcli.initWizard.completionMessage',
-            'SAM application {0} created successfully. Debug configuration(s) {1} added to `launch.json`.',
+            'Created SAM application "{0}" and added launch configurations to launch.json: {1}',
             appName,
             configs
         ),
