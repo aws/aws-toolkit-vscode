@@ -70,6 +70,11 @@ function assertEqualLaunchConfigs(actual: SamLaunchRequestArgs, expected: SamLau
         assert.ok(actual.manifestPath && actual.manifestPath.length > 9)
     }
 
+    // should never be defined if we're not debugging
+    if (expected.noDebug) {
+        delete expected.debugArgs
+    }
+
     // Normalize path fields before comparing.
     for (const o of [actual, expected]) {
         o.codeRoot = pathutil.normalize(o.codeRoot)
@@ -1058,7 +1063,6 @@ Outputs:
                 envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
             }
-            delete expectedNoDebug.debugArgs
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 
@@ -1202,7 +1206,6 @@ Outputs:
                 envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
             }
-            delete expectedNoDebug.debugArgs
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 
