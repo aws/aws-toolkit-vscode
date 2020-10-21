@@ -973,7 +973,7 @@ Outputs:
                 runtime: 'python3.7',
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
                 type: AWS_SAM_DEBUG_TYPE,
-                handlerName: 'app___vsctk___debug.lambda_handler',
+                handlerName: 'app.lambda_handler',
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -983,6 +983,7 @@ Outputs:
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'hello_world')),
+                debugArgs: [`-m debugpy --log-to /tmp --listen 0.0.0.0:${actual.debugPort} --wait-for-client`],
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 invokeTarget: { ...input.invokeTarget },
@@ -1001,7 +1002,6 @@ Outputs:
                 // Python-related fields
                 //
                 host: 'localhost',
-                outFilePath: pathutil.normalize(path.join(appDir, 'hello_world/app___vsctk___debug.py')),
                 pathMappings: [
                     {
                         localRoot: pathutil.normalize(path.join(appDir, 'hello_world')),
@@ -1053,12 +1053,12 @@ Outputs:
                 request: 'launch',
                 debugPort: undefined,
                 port: -1,
-                outFilePath: '',
                 handlerName: 'app.lambda_handler',
                 baseBuildDir: actualNoDebug.baseBuildDir,
                 envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
             }
+            delete expectedNoDebug.debugArgs
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 
@@ -1089,7 +1089,7 @@ Outputs:
                 runtime: 'python3.7',
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
                 type: AWS_SAM_DEBUG_TYPE,
-                handlerName: 'app___vsctk___debug.lambda_handler',
+                handlerName: 'app.lambda_handler',
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -1099,6 +1099,7 @@ Outputs:
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'python3.7-plain-sam-app/hello_world')),
+                debugArgs: [`-m debugpy --log-to /tmp --listen 0.0.0.0:${actual.debugPort} --wait-for-client`],
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 invokeTarget: { ...input.invokeTarget },
@@ -1118,9 +1119,6 @@ Outputs:
                 // Python-related fields
                 //
                 host: 'localhost',
-                outFilePath: pathutil.normalize(
-                    path.join(appDir, 'python3.7-plain-sam-app/hello_world/app___vsctk___debug.py')
-                ),
                 pathMappings: [
                     {
                         localRoot: pathutil.normalize(path.join(appDir, 'python3.7-plain-sam-app/hello_world')),
@@ -1159,7 +1157,7 @@ Resources:
     Type: 'AWS::Serverless::Function'
     Properties:
       CodeUri: hello_world/
-      Handler: app___vsctk___debug.lambda_handler
+      Handler: app.lambda_handler
       Runtime: python3.7
       Events:
         HelloWorld:
@@ -1199,12 +1197,12 @@ Outputs:
                 request: 'launch',
                 debugPort: undefined,
                 port: -1,
-                outFilePath: '',
                 handlerName: 'app.lambda_handler',
                 baseBuildDir: actualNoDebug.baseBuildDir,
                 envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
             }
+            delete expectedNoDebug.debugArgs
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
         })
 

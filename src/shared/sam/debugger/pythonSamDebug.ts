@@ -74,10 +74,8 @@ export async function makePythonDebugConfig(config: SamLaunchRequestArgs): Promi
 
     let debugPort: number | undefined
     let manifestPath: string | undefined
-    let outFilePath: string | undefined
     if (!config.noDebug) {
         debugPort = await getStartPort()
-        outFilePath = config.codeRoot
 
         config.debugArgs = [`-m debugpy --log-to /tmp --listen 0.0.0.0:${debugPort} --wait-for-client`]
 
@@ -100,7 +98,6 @@ export async function makePythonDebugConfig(config: SamLaunchRequestArgs): Promi
         type: 'python',
         request: config.noDebug ? 'launch' : 'attach',
         runtimeFamily: RuntimeFamily.Python,
-        outFilePath: pathutil.normalize(outFilePath ?? '') ?? undefined,
 
         //
         // Python-specific fields.
