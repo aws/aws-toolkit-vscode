@@ -41,71 +41,14 @@ async function makePythonDebugManifest(params: {
     }
     getLogger().debug(`pythonCodeLensProvider.makePythonDebugManifest params: ${JSON.stringify(params, undefined, 2)}`)
     // TODO: Make this logic more robust. What if other module names include ptvsd?
-    if (!manifestText.includes('ptvsd')) {
-        manifestText += `${os.EOL}ptvsd>4.2,<5`
+    if (!manifestText.includes('debugpy')) {
+        manifestText += `${os.EOL}debugpy>=1.0,<2`
         const debugManifestPath = path.join(params.outputDir, 'debug-requirements.txt')
         await writeFile(debugManifestPath, manifestText)
 
         return debugManifestPath
     }
     // else we don't need to override the manifest. nothing to return
-}
-
-export async function makeLambdaDebugFile(params: {
-    handlerName: string
-    debugPort: number
-    outputDir: string
-}): Promise<{ outFilePath: string; debugHandlerName: string }> {
-    const logger = getLogger()
-
-    // Last piece of the handler is the function name. Remove it before modifying for pathing.
-    const splitHandlerName = params.handlerName.split('.')
-    const handlerFunctionName = splitHandlerName[splitHandlerName.length - 1]
-    const handlerFiles = splitHandlerName.slice(0, splitHandlerName.length - 1)
-
-    // Handlers for Python imports must be joined by periods.
-    // ./foo/bar.py => foo.bar
-    const handlerFileImportPath = handlerFiles.join('.')
-    // SAM doesn't handle periods in Python filenames. Replacing with underscores for the filename.
-    const handlerFilePrefix = handlerFiles.join('_')
-
-    const debugHandlerFileName = `${handlerFilePrefix}___vsctk___debug`
-    const debugHandlerFunctionName = 'lambda_handler'
-    // TODO: Sanitize handlerFilePrefix, handlerFunctionName, debugHandlerFunctionName
-    try {
-        logger.debug('pythonCodeLensProvider.makeLambdaDebugFile params: %s', JSON.stringify(params, undefined, 2))
-        const template = `
-# Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
-
-import ptvsd
-import sys
-from ${handlerFileImportPath} import ${handlerFunctionName} as _handler
-
-
-def ${debugHandlerFunctionName}(event, context):
-    ptvsd.enable_attach(address=('0.0.0.0', ${params.debugPort}), redirect_output=False)
-    print('${WAIT_FOR_DEBUGGER_MESSAGES.PYTHON}')
-    sys.stdout.flush()
-    ptvsd.wait_for_attach()
-    print('...debugger attached')
-    sys.stdout.flush()
-    return _handler(event, context)
-
-`
-
-        const outFilePath = path.join(params.outputDir, `${debugHandlerFileName}.py`)
-        logger.debug('pythonCodeLensProvider.makeLambdaDebugFile outFilePath: %s', outFilePath)
-        await writeFile(outFilePath, template)
-
-        return {
-            outFilePath,
-            debugHandlerName: `${debugHandlerFileName}.${debugHandlerFunctionName}`,
-        }
-    } catch (err) {
-        logger.error('makeLambdaDebugFile failed: %O', err as Error)
-        throw err
-    }
 }
 
 /**
@@ -134,14 +77,10 @@ export async function makePythonDebugConfig(config: SamLaunchRequestArgs): Promi
     let outFilePath: string | undefined
     if (!config.noDebug) {
         debugPort = await getStartPort()
-        const rv = await makeLambdaDebugFile({
-            handlerName: config.handlerName,
-            debugPort: debugPort,
-            outputDir: config.codeRoot,
-        })
-        outFilePath = rv.outFilePath
-        // XXX: Reassign handler name.
-        config.handlerName = rv.debugHandlerName
+        outFilePath = config.codeRoot
+
+        config.debugArgs = [`-m debugpy --log-to /tmp --listen 0.0.0.0:${debugPort} --wait-for-client`]
+
         manifestPath = await makePythonDebugManifest({
             samProjectCodeRoot: config.codeRoot,
             outputDir: config.baseBuildDir,

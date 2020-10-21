@@ -18,7 +18,7 @@ import { DefaultSamCliProcessInvokerContext, SamCliProcessInvokerContext } from 
 const localize = nls.loadMessageBundle()
 
 export const WAIT_FOR_DEBUGGER_MESSAGES = {
-    PYTHON: 'Waiting for debugger to attach...',
+    PYTHON: 'inside runtime container',
     NODEJS: 'Debugger listening on',
     DOTNET: 'Waiting for the debugger to attach...',
 }
@@ -187,6 +187,10 @@ export interface SamCliLocalInvokeInvocationArguments {
      */
     debuggerPath?: string
     /**
+     * Passed to be executed as the root process in the Lambda container
+     */
+    debugArgs?: string[]
+    /**
      * parameter overrides specified in the `sam.template.parameters` field
      */
     parameterOverrides?: string[]
@@ -234,6 +238,7 @@ export class SamCliLocalInvokeInvocation {
         pushIf(invokeArgs, !!this.args.dockerNetwork, '--docker-network', this.args.dockerNetwork!)
         pushIf(invokeArgs, !!this.args.skipPullImage, '--skip-pull-image')
         pushIf(invokeArgs, !!this.args.debuggerPath, '--debugger-path', this.args.debuggerPath!)
+        pushIf(invokeArgs, !!this.args.debugArgs, '--debug-args', ...(this.args.debugArgs! ?? []))
         pushIf(
             invokeArgs,
             !!this.args.parameterOverrides && this.args.parameterOverrides.length > 0,
