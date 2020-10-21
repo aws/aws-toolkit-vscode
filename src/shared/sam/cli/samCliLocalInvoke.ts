@@ -62,11 +62,13 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                     this.emitMessage(text)
                     // If we have a timeout (as we do on debug) refresh the timeout as we receive text
                     params.timeout?.refresh()
+                    this.logger.verbose(`stdout: ${text}`)
                 },
                 onStderr: (text: string): void => {
                     this.emitMessage(text)
                     // If we have a timeout (as we do on debug) refresh the timeout as we receive text
                     params.timeout?.refresh()
+                    this.logger.verbose(`stderr: ${text}`)
                     if (checkForDebuggerAttachCue) {
                         // Look for messages like "Waiting for debugger to attach" before returning back to caller
                         if (this.debuggerAttachCues.some(cue => text.includes(cue))) {
