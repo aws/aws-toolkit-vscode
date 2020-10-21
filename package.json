@@ -818,7 +818,7 @@
                 {
                     "command": "aws.lambda.createNewSamApp",
                     "when": "view == aws.explorer && viewItem == awsLambdaNode",
-                    "group": "inline@1"
+                    "group": "0@1"
                 },
                 {
                     "command": "aws.deploySamApplication",
@@ -986,8 +986,7 @@
             {
                 "command": "aws.lambda.createNewSamApp",
                 "title": "%AWS.command.createNewSamApp%",
-                "category": "AWS",
-                "icon": "$(add)"
+                "category": "AWS"
             },
             {
                 "command": "aws.login",
