@@ -46,7 +46,7 @@ import { ExtContext } from '../../shared/extensions'
 import { isTemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import { TemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import * as pathutils from '../../shared/utilities/pathUtils'
-import { showDebugConfiguration } from '../../shared/sam/debugger/commands/addSamDebugConfiguration'
+import { openLaunchJsonFile } from '../../shared/sam/debugger/commands/addSamDebugConfiguration'
 
 export async function resumeCreateNewSamApp(
     extContext: ExtContext,
@@ -298,6 +298,6 @@ async function showCompletionNotification(appName: string, configs: string): Pro
     )
 
     if (action) {
-        await showDebugConfiguration()
+        await openLaunchJsonFile()
     }
 }
