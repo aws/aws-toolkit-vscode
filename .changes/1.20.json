@@ -1,0 +1,20 @@
+{
+  "date" : "2020-10-22",
+  "version" : "1.20",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Add support for `+` in AWS profile names"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix being unable to use a SSO profile in a credential chain"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix Aurora MySQL 5.7 not showing up in the AWS Explorer"
+  }, {
+    "type" : "bugfix",
+    "description" : "Improve IAM RDS connection: Fix Aurora MySQL, detect more error cases, fix database configuration validation throwing when there is no DB name"
+  }, {
+    "type" : "deprecation",
+    "description" : "2019.3 support will be removed in the next release"
+  } ]
+}

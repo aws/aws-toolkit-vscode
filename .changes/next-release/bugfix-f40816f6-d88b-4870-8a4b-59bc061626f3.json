@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Improve IAM RDS connection: Fix Aurora MySQL, detect more error cases, fix database configuration validation throwing when there is no DB name"
-}

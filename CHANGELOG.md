@@ -1,3 +1,10 @@
+# _1.20_ (2020-10-22)
+- **(Feature)** Add support for `+` in AWS profile names
+- **(Bug Fix)** Fix being unable to use a SSO profile in a credential chain
+- **(Bug Fix)** Fix Aurora MySQL 5.7 not showing up in the AWS Explorer
+- **(Bug Fix)** Improve IAM RDS connection: Fix Aurora MySQL, detect more error cases, fix database configuration validation throwing when there is no DB name
+- **(Deprecation)** 2019.3 support will be removed in the next release
+
 # _1.19_ (2020-10-07)
 - **(Feature)** Add the ability to copy the URL to an S3 object
 - **(Feature)** Add support for debugging dotnet 3.1 local lambdas (requires minimum SAM CLI version of 1.4.0)

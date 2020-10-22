@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix being unable to use a SSO profile in a credential chain"
-}
