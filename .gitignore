@@ -7,7 +7,8 @@ node_modules
 **/.DS_Store
 .idea
 telemetryCache
-quickStart.html
+quickStart*.html
+README.quickstart.vscode.md
 .gitcommit
 media/libs/
 package.json.bk

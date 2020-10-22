@@ -56,15 +56,16 @@ describe('addInitialLaunchConfiguration', function() {
 
     afterEach(async () => {
         await rmrf(tempFolder)
+        registry.reset()
     })
 
-    it('produces an initial launch configuration', async () => {
+    it('produces and returns initial launch configurations', async () => {
         when(mockLaunchConfiguration.addDebugConfigurations(anything())).thenResolve()
 
         testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
 
         await registry.addTemplateToRegistry(tempTemplate)
-        await addInitialLaunchConfiguration(
+        const launchConfigs = await addInitialLaunchConfiguration(
             fakeContext,
             fakeWorkspaceFolder,
             tempTemplate,
@@ -80,5 +81,30 @@ describe('addInitialLaunchConfiguration', function() {
                 tempTemplate.fsPath
             )
         )
+        assert.ok(launchConfigs)
+        const matchingConfigs = launchConfigs?.filter(config => {
+            return pathutils.areEqual(
+                fakeWorkspaceFolder.uri.fsPath,
+                (config.invokeTarget as TemplateTargetProperties).templatePath,
+                tempTemplate.fsPath
+            )
+        })
+        assert.ok(matchingConfigs)
+        assert.strictEqual(matchingConfigs!.length, 1)
+    })
+
+    it('returns a blank array if it does not match any launch configs', async () => {
+        when(mockLaunchConfiguration.addDebugConfigurations(anything())).thenResolve()
+
+        testutil.toFile(makeSampleSamTemplateYaml(true), tempTemplate.fsPath)
+
+        await registry.addTemplateToRegistry(tempTemplate)
+        const launchConfigs = await addInitialLaunchConfiguration(
+            fakeContext,
+            fakeWorkspaceFolder,
+            vscode.Uri.file(path.join(tempFolder, 'thisAintIt.yaml')),
+            instance(mockLaunchConfiguration)
+        )
+        assert.deepStrictEqual(launchConfigs, [])
     })
 })

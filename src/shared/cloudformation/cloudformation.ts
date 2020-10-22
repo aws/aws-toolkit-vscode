@@ -11,6 +11,7 @@ import { SystemUtilities } from '../systemUtilities'
 import { getLogger } from '../logger'
 
 export namespace CloudFormation {
+    export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api'
     export const SERVERLESS_FUNCTION_TYPE = 'AWS::Serverless::Function'
     export const LAMBDA_FUNCTION_TYPE = 'AWS::Lambda::Function'
 
@@ -47,6 +48,8 @@ export namespace CloudFormation {
         MemorySize?: number | Ref
         Timeout?: number | Ref
         Environment?: Environment
+        Events?: Events
+        [key: string]: any
     }
 
     export interface Ref {
@@ -57,13 +60,35 @@ export namespace CloudFormation {
         Variables?: Variables
     }
 
+    export interface ApiEventProperties {
+        Path?: string
+        Method?: 'delete' | 'get' | 'head' | 'options' | 'patch' | 'post' | 'put' | 'any'
+    }
+
+    export interface Event {
+        Type?: 'Api' | 'HttpApi'
+        Properties?: ApiEventProperties
+    }
+
+    export interface Events {
+        [key: string]: Event
+    }
+
     export interface Variables {
         [key: string]: any
     }
 
+    export type ResourceType =
+        | typeof LAMBDA_FUNCTION_TYPE
+        | typeof SERVERLESS_FUNCTION_TYPE
+        | typeof SERVERLESS_API_TYPE
+        | string
+
     export interface Resource {
-        Type: typeof SERVERLESS_FUNCTION_TYPE | typeof LAMBDA_FUNCTION_TYPE
+        Type: ResourceType
         Properties?: ResourceProperties
+        // Any other properties are fine to have, we just copy them transparently
+        [key: string]: any
     }
 
     // TODO: Can we automatically detect changes to the CFN spec and apply them here?

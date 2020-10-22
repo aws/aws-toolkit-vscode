@@ -4,6 +4,7 @@
  */
 
 import * as child_process from 'child_process'
+import { pushIf } from '../../utilities/collectionUtils'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { fileExists } from '../../filesystemUtilities'
@@ -49,13 +50,9 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
     ) {}
 
     public async invoke({ options, ...params }: SamLocalInvokeCommandArgs): Promise<void> {
-        this.channelLogger.info(
-            'AWS.running.command',
-            'Running command: {0}',
-            `${params.command} ${params.args.join(' ')}`
-        )
-
         const childProcess = new ChildProcess(params.command, options, ...params.args)
+        this.channelLogger.info('AWS.running.command', 'Running command: {0}', `${childProcess}`)
+
         let debuggerPromiseClosed: boolean = false
         const debuggerPromise = new Promise<void>(async (resolve, reject) => {
             let checkForDebuggerAttachCue: boolean = params.isDebug && this.debuggerAttachCues.length !== 0
@@ -76,22 +73,28 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                             checkForDebuggerAttachCue = false
                             this.logger.verbose('Local SAM App should be ready for a debugger to attach now.')
                             debuggerPromiseClosed = true
+                            // Process will continue running, while user debugs it.
                             resolve()
                         }
                     }
                 },
                 onClose: (code: number, _: string): void => {
-                    this.logger.verbose(`The child process for sam local invoke closed with code ${code}`)
+                    this.logger.verbose(`samCliLocalInvoke: command exited (code: ${code}): ${childProcess}`)
                     this.channelLogger.channel.appendLine(
                         localize('AWS.samcli.local.invoke.ended', 'Local invoke of SAM Application has ended.')
                     )
 
-                    // Handles scenarios where the process exited before we anticipated.
-                    // Example: We didn't see an expected debugger attach cue, and the process or docker container
-                    // was terminated by the user, or the user manually attached to the sam app.
-                    if (!debuggerPromiseClosed) {
+                    // Process ended without emitting a known "cue" message.
+                    // Possible causes:
+                    // - User killed Docker or the process directly.
+                    // - User manually attached before we found a "cue" message.
+                    // - We need to update the list of "cue" messages.
+                    if (code === 0) {
                         debuggerPromiseClosed = true
-                        reject(new Error('The SAM Application closed unexpectedly'))
+                        resolve()
+                    } else if (code !== 0) {
+                        debuggerPromiseClosed = true
+                        reject(new Error(`"sam local invoke" command stopped unexpectedly (error code: ${code})`))
                     }
                 },
                 onError: (error: Error): void => {
@@ -207,7 +210,14 @@ export class SamCliLocalInvokeInvocation {
     public async execute(timeout?: Timeout): Promise<void> {
         await this.validate()
 
-        const samCommand = this.invokerContext.cliConfig.getSamCliLocation() ?? 'sam'
+        const sam = await this.invokerContext.cliConfig.getOrDetectSamCli()
+        if (!sam.path) {
+            getLogger().warn('SAM CLI not found and not configured')
+        } else if (sam.autoDetected) {
+            getLogger().info('SAM CLI not configured, using SAM found at: %O', sam.path)
+        }
+
+        const samCommand = sam.path ? sam.path : 'sam'
         const invokeArgs = [
             'local',
             'invoke',
@@ -220,11 +230,11 @@ export class SamCliLocalInvokeInvocation {
             this.args.environmentVariablePath,
         ]
 
-        this.addArgumentIf(invokeArgs, !!this.args.debugPort, '-d', this.args.debugPort!)
-        this.addArgumentIf(invokeArgs, !!this.args.dockerNetwork, '--docker-network', this.args.dockerNetwork!)
-        this.addArgumentIf(invokeArgs, !!this.args.skipPullImage, '--skip-pull-image')
-        this.addArgumentIf(invokeArgs, !!this.args.debuggerPath, '--debugger-path', this.args.debuggerPath!)
-        this.addArgumentIf(
+        pushIf(invokeArgs, !!this.args.debugPort, '-d', this.args.debugPort!)
+        pushIf(invokeArgs, !!this.args.dockerNetwork, '--docker-network', this.args.dockerNetwork!)
+        pushIf(invokeArgs, !!this.args.skipPullImage, '--skip-pull-image')
+        pushIf(invokeArgs, !!this.args.debuggerPath, '--debugger-path', this.args.debuggerPath!)
+        pushIf(
             invokeArgs,
             !!this.args.parameterOverrides && this.args.parameterOverrides.length > 0,
             '--parameter-overrides',
@@ -257,12 +267,6 @@ export class SamCliLocalInvokeInvocation {
 
         if (!(await fileExists(this.args.eventPath))) {
             throw new Error(`event path does not exist: ${this.args.eventPath}`)
-        }
-    }
-
-    private addArgumentIf(args: string[], addIfConditional: boolean, ...argsToAdd: string[]) {
-        if (addIfConditional) {
-            args.push(...argsToAdd)
         }
     }
 }

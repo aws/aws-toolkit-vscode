@@ -305,6 +305,28 @@ describe('CloudFormation Template Registry', async () => {
             assert.deepStrictEqual(val, [matchingResource])
         })
     })
+
+    it('Filers based on resource type', () => {
+        const biggerDatum: TemplateDatum = {
+            ...templateDatum,
+            template: {
+                Resources: {
+                    ...templateDatum.template.Resources,
+                    resource2: {
+                        Type: 'AWS::Serverless::Api',
+                        Properties: {
+                            Handler: 'handledWith.care',
+                            CodeUri: 'overThere',
+                        },
+                    },
+                    undefinedResource: undefined,
+                },
+            },
+        }
+        const resources = getResourcesFromTemplateDatum(biggerDatum, ['AWS::Serverless::Function'])
+        assert.strictEqual(resources.size, 1)
+        assert.ok(resources.has('resource1'))
+    })
 })
 
 function assertValidTestTemplate(data: TemplateDatum | undefined, filename: string): void {

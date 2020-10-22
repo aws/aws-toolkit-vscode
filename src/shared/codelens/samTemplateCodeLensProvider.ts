@@ -6,45 +6,65 @@
 import * as _ from 'lodash'
 import * as vscode from 'vscode'
 import { TemplateFunctionResource, TemplateSymbolResolver } from '../cloudformation/templateSymbolResolver'
-import { getReferencedTemplateResources, LaunchConfiguration } from '../debug/launchConfiguration'
-import { TEMPLATE_TARGET_TYPE } from '../sam/debugger/awsSamDebugConfiguration'
+import { getConfigsMappedToTemplates, LaunchConfiguration } from '../debug/launchConfiguration'
+import { TEMPLATE_TARGET_TYPE, API_TARGET_TYPE } from '../sam/debugger/awsSamDebugConfiguration'
 import { AddSamDebugConfigurationInput } from '../sam/debugger/commands/addSamDebugConfiguration'
 import { localize } from '../utilities/vsCodeUtils'
 
 /**
- * Provides Code Lenses for generating debug configurations for SAM templates.
+ * Provides "Add Debug Configuration" CodeLenses to SAM template.yaml files,
+ * for resources that do not already have a mapped config in launch.json.
  */
 export class SamTemplateCodeLensProvider implements vscode.CodeLensProvider {
     public async provideCodeLenses(
         document: vscode.TextDocument,
         token: vscode.CancellationToken,
         symbolResolver = new TemplateSymbolResolver(document),
-        launchConfig = new LaunchConfiguration(document.uri)
+        launchConfig = new LaunchConfiguration(document.uri),
+        waitForSymbols: boolean = false
     ): Promise<vscode.CodeLens[]> {
-        const functionResources = await symbolResolver.getFunctionResources()
-        if (_(functionResources).isEmpty()) {
+        const apiResources = await symbolResolver.getResourcesOfKind('api', waitForSymbols)
+        const funResources = await symbolResolver.getResourcesOfKind('function', waitForSymbols)
+        if (_(funResources).isEmpty() && _(apiResources).isEmpty()) {
             return []
         }
 
-        const existingDebuggedResources = getReferencedTemplateResources(launchConfig)
+        // User already has launch configs for:
+        const mappedApiConfigs = Array.from(getConfigsMappedToTemplates(launchConfig, 'api'))
+        const mappedFunConfigs = Array.from(getConfigsMappedToTemplates(launchConfig, 'template'))
 
-        return _(functionResources)
-            .reject(functionResource => existingDebuggedResources.has(functionResource.name))
-            .map(functionResource => this.createCodeLens(functionResource, document.uri))
-            .value()
+        const unmappedApis = apiResources.filter(
+            r =>
+                undefined ===
+                mappedApiConfigs.find(
+                    o => r.name === (o.invokeTarget as any).logicalId && o.invokeTarget.target === 'api'
+                )
+        )
+        const unmappedFuns = funResources.filter(
+            r =>
+                undefined ===
+                mappedFunConfigs.find(
+                    o => r.name === (o.invokeTarget as any).logicalId && o.invokeTarget.target === 'template'
+                )
+        )
+        const codelensInfo = [...unmappedApis, ...unmappedFuns].map(r => this.createCodeLens(r, document.uri))
+        return codelensInfo
     }
 
-    private createCodeLens(functionResource: TemplateFunctionResource, templateUri: vscode.Uri): vscode.CodeLens {
-        // TODO: Find a way to add `runtime` or `runtimeFamily` to this input for naming?
+    private createCodeLens(resource: TemplateFunctionResource, templateUri: vscode.Uri): vscode.CodeLens {
+        const target = resource.kind === 'api' ? API_TARGET_TYPE : TEMPLATE_TARGET_TYPE
         const input: AddSamDebugConfigurationInput = {
-            resourceName: functionResource.name,
+            resourceName: resource.name,
             rootUri: templateUri,
         }
-
-        return new vscode.CodeLens(functionResource.range, {
-            title: localize('AWS.command.addSamDebugConfiguration', 'Add Debug Configuration'),
+        const title =
+            resource.kind === 'api'
+                ? localize('AWS.command.addSamApiDebugConfiguration', 'Add API Debug Configuration')
+                : localize('AWS.command.addSamDebugConfiguration', 'Add Debug Configuration')
+        return new vscode.CodeLens(resource.range, {
+            title: title,
             command: 'aws.addSamDebugConfiguration',
-            arguments: [input, TEMPLATE_TARGET_TYPE],
+            arguments: [input, target],
         })
     }
 }

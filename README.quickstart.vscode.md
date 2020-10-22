@@ -20,6 +20,7 @@ See [Setup](#additional-setup-steps) for installation requirements, or [Get help
 -   [Amazon EventBridge Schemas](#eventbridge)
 -   [Amazon ECS task definition files](#ecs-files)
 -   [AWS Step Functions](#sfn-files)
+-   [AWS Systems Manager](#ssm-files)
 -   [`AWS:` Commands](#aws-commands)
 
 ---
@@ -69,7 +70,7 @@ Alternatively, you can run and debug just the AWS Lambda function and exclude ot
 
 When you run a debug session, the status and results are shown in the **OUTPUT** panel when the **AWS Toolkit** output channel is selected.
 
-![Configure and Run 1](./resources/marketplace/sam-configure-and-run-still-2.png)
+![Configure and Run 2](./resources/marketplace/sam-configure-and-run-still-2.png)
 
 ###### After a local run is complete, the output appears in the **OUTPUT** tab.
 
@@ -156,6 +157,24 @@ For full details, see [Working with Amazon Elastic Container Service](https://do
 
 ---
 
+## <a id="ssm-files"></a>AWS Systems Manager Documents
+
+The AWS Toolkit provides support for [AWS Systems Manager Documents](https://docs.aws.amazon.com/systems-manager/latest/userguide/automation-documents.html). With the Toolkit installed in VS Code, you have access to the following features when working on Automation Documents:
+
+-   Download, edit, and publish your Automation documents
+-   Code completion and validation for both formats of documents: YAML and JSON
+-   Templates and code snippets to help kickstart your Automation document
+
+Example:
+
+![AWS Systems Manager](./resources/marketplace/ssm-snippets.png)
+
+For full details, see [Working with AWS Systems Manager Documents](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/ssmDocuments.html) in the Toolkit's user guide.
+
+{ [Return to Top](#top) }
+
+---
+
 ## <a id="sfn-files"></a>AWS Step Functions
 
 The AWS Toolkit provides support for [AWS Step Functions](https://docs.aws.amazon.com/step-functions). With the Toolkit installed in VS Code, working with state machines is a more streamlined process.
@@ -189,6 +208,7 @@ palette_, available by selecting _View > Command Palette_ or by typing
 | `AWS: Copy Log Stream Name`                          | Copies the name of the active CloudWatch Log Stream                                                                                                                                                                                                                                                            |
 | `AWS: Create a new Step Functions state machine`     | Generates a new Amazon States Language definition to use as the definition for a new Step Functions state machine. For more information, see [State Machine Templates](https://docs.aws.amazon.com//toolkit-for-vscode/latest/userguide/bulding-stepfunctions.html#templates-stepfunctions) in the user guide. |
 | `AWS: Create a new Issue on Github`                  | Opens the AWS Toolkit's [New Issue page on Github](https://github.com/aws/aws-toolkit-vscode/issues/new/choose).                                                                                                                                                                                               |
+| `AWS: Create a new Systems Manager Document locally` | Creates a new Systems Manager Document from a template in either YAML or JSON                                                                                                                                                                                                                                  |
 | `AWS: Create Credentials Profile`                    | Creates an AWS credentials profile. For more information, see [Setting Up Your AWS Credentials](https://docs.aws.amazon.com/console/toolkit-for-vscode/setup-credentials) in the user guide.                                                                                                                   |
 | `AWS: Create new SAM Application`                    | Generates a set of code files for a new AWS serverless application. For more information, see [Creating a Serverless Application](https://docs.aws.amazon.com/console/toolkit-for-vscode/create-sam) in the user guide.                                                                                        |
 | `AWS: Deploy SAM Application`                        | Deploys a local serverless application to an AWS account. For more information, see [Deploying a Serverless Application](https://docs.aws.amazon.com/console/toolkit-for-vscode/deploy-serverless-app) in the user guide.                                                                                      |
@@ -196,6 +216,7 @@ palette_, available by selecting _View > Command Palette_ or by typing
 | `AWS: Focus on Explorer View`                        | Opens the **AWS: Explorer** Side Bar, which we will simply call [_the **AWS Explorer**_](#ui-components-aws-expl), and then moves the focus there.                                                                                                                                                             |
 | `AWS: Hide region from the Explorer`                 | Hides an AWS Region from the **AWS Explorer**.                                                                                                                                                                                                                                                                 |
 | `AWS: Publish state machine to Step Functions`       | Creates or updates a remote state machine using the local Amazon States Language definition file. For more information, see [Work With State Machines in VS Code](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/bulding-stepfunctions.html#starting-stepfunctions) in the user guide.        |
+| `AWS: Publish a Systems Manager Document`            | Creates a new document or updates an existing document in your account using the currently open document.                                                                                                                                                                                                      |
 | `AWS: Render state machine graph`                    | Renders the state machine definition into a graph visualization. For more information, see [State Machine Graph Visualization](https://docs.aws.amazon.com//toolkit-for-vscode/latest/userguide/bulding-stepfunctions.html#bulding-stepfunctions-visualizations) in the user guide.                            |
 | `AWS: Report an Issue`                               | In the [GitHub repository](https://github.com/aws/aws-toolkit-vscode) for the Toolkit, opens the page to [create a new issue](https://github.com/aws/aws-toolkit-vscode/issues/new/choose).                                                                                                                    |
 | `AWS: Save Current Log Content To File`              | Saves currently-loaded CloudWatch Log Stream data to a local `.log` file.                                                                                                                                                                                                                                      |

@@ -72,7 +72,7 @@ export class ChildProcess {
             throw new Error('process already started')
         }
 
-        getLogger().info(`Running command: ${this.process} ${this.args.join(' ')}`)
+        getLogger().info(`Running: ${this.process} ${this.args.join(' ')}`)
 
         // Async.
         // See also crossSpawn.spawnSync().
@@ -121,5 +121,9 @@ export class ChildProcess {
     public get killed(): boolean {
         // default to true for safety
         return this.childProcess ? this.childProcess.killed : true
+    }
+
+    public toString(): string {
+        return `[${this.process} ${this.args.join(' ')}]`
     }
 }

@@ -12,6 +12,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { AwsContext } from '../../shared/awsContext'
 import { samDeployDocUrl } from '../../shared/constants'
+import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
@@ -24,6 +25,7 @@ import { configureParameterOverrides } from '../config/configureParameterOverrid
 import { getOverriddenParameters, getParameters } from '../utilities/parameterUtils'
 import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
 import { ext } from '../../shared/extensionGlobals'
+import { RegionNode } from '../../awsexplorer/regionNode'
 
 export interface SamDeployWizardResponse {
     parameterOverrides: Map<string, string>
@@ -180,16 +182,13 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 'The template {0} contains parameters. Would you like to override the default values for these parameters?',
                 templateUri.fsPath
             )
-            const responseYes = localize('AWS.samcli.deploy.parameters.optionalPrompt.responseYes', 'Yes')
-            const responseNo = localize('AWS.samcli.deploy.parameters.optionalPrompt.responseNo', 'No')
-
             const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
                 options: {
                     ignoreFocusOut: true,
                     title: prompt,
                 },
                 buttons: [this.helpButton, vscode.QuickInputButtons.Back],
-                items: [{ label: responseYes }, { label: responseNo }],
+                items: [{ label: localizedText.yes }, { label: localizedText.no }],
             })
             const response = getSingleResponse(
                 await picker.promptUser({
@@ -203,7 +202,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                     },
                 })
             )
-            if (response !== responseYes) {
+            if (response !== localizedText.yes) {
                 return ParameterPromptResult.Continue
             }
 
@@ -404,8 +403,11 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     private readonly response: Partial<SamDeployWizardResponse> = {}
 
-    public constructor(private readonly context: SamDeployWizardContext) {
+    public constructor(private readonly context: SamDeployWizardContext, private readonly regionNode?: RegionNode) {
         super()
+        if (regionNode) {
+            this.response.region = regionNode.regionCode
+        }
     }
 
     protected get startStep() {
@@ -444,7 +446,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
                 case ParameterPromptResult.Cancel:
                     return undefined
                 case ParameterPromptResult.Continue:
-                    return this.REGION
+                    return this.skipOrPromptRegion(this.S3_BUCKET)
             }
         }
 
@@ -456,7 +458,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
         if (parameters.size < 1) {
             this.response.parameterOverrides = new Map<string, string>()
 
-            return this.REGION
+            return this.skipOrPromptRegion(this.S3_BUCKET)
         }
 
         const requiredParameterNames = new Set<string>(
@@ -489,7 +491,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
 
         this.response.parameterOverrides = overriddenParameters
 
-        return this.REGION
+        return this.skipOrPromptRegion(this.S3_BUCKET)
     }
 
     private readonly REGION: WizardStep = async () => {
@@ -503,7 +505,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     private readonly S3_BUCKET: WizardStep = async () => {
         this.response.s3Bucket = await this.context.promptUserForS3Bucket(this.response.region, this.response.s3Bucket)
 
-        return this.response.s3Bucket ? this.STACK_NAME : this.REGION
+        return this.response.s3Bucket ? this.STACK_NAME : this.skipOrPromptRegion(this.TEMPLATE)
     }
 
     private readonly STACK_NAME: WizardStep = async () => {
@@ -513,6 +515,10 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
         })
 
         return this.response.stackName ? undefined : this.S3_BUCKET
+    }
+
+    private skipOrPromptRegion(skipToStep: WizardStep | undefined): WizardStep | undefined {
+        return this.regionNode ? skipToStep : this.REGION
     }
 }
 

@@ -4,8 +4,10 @@
  */
 
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
+import { ApiGatewayClient } from './apiGatewayClient'
 import { CloudFormationClient } from './cloudFormationClient'
 import { CloudWatchLogsClient } from './cloudWatchLogsClient'
+import { DefaultApiGatewayClient } from './defaultApiGatewayClient'
 import { DefaultCloudFormationClient } from './defaultCloudFormationClient'
 import { DefaultCloudWatchLogsClient } from './defaultCloudWatchLogsClient'
 import { DefaultEcsClient } from './defaultEcsClient'
@@ -14,12 +16,14 @@ import { DefaultLambdaClient } from './defaultLambdaClient'
 import { DefaultSchemaClient } from './defaultSchemaClient'
 import { DefaultStepFunctionsClient } from './defaultStepFunctionsClient'
 import { DefaultStsClient } from './defaultStsClient'
+import { DefaultSsmDocumentClient } from './defaultSsmDocumentClient'
 import { EcsClient } from './ecsClient'
 import { IamClient } from './iamClient'
 import { LambdaClient } from './lambdaClient'
 import { SchemaClient } from './schemaClient'
 import { StepFunctionsClient } from './stepFunctionsClient'
 import { StsClient } from './stsClient'
+import { SsmDocumentClient } from './ssmDocumentClient'
 import { ToolkitClientBuilder } from './toolkitClientBuilder'
 import { DefaultS3Client } from './defaultS3Client'
 import { S3Client } from './s3Client'
@@ -28,6 +32,10 @@ import { DEFAULT_PARTITION } from '../regions/regionUtilities'
 
 export class DefaultToolkitClientBuilder implements ToolkitClientBuilder {
     public constructor(private readonly regionProvider: RegionProvider) {}
+
+    public createApiGatewayClient(regionCode: string): ApiGatewayClient {
+        return new DefaultApiGatewayClient(regionCode)
+    }
 
     public createCloudFormationClient(regionCode: string): CloudFormationClient {
         return new DefaultCloudFormationClient(regionCode)
@@ -62,6 +70,10 @@ export class DefaultToolkitClientBuilder implements ToolkitClientBuilder {
     }
 
     public createS3Client(regionCode: string): S3Client {
-        return new DefaultS3Client(regionCode, this.regionProvider.getPartitionId(regionCode) ?? DEFAULT_PARTITION)
+        return new DefaultS3Client(this.regionProvider.getPartitionId(regionCode) ?? DEFAULT_PARTITION, regionCode)
+    }
+
+    public createSsmClient(regionCode: string): SsmDocumentClient {
+        return new DefaultSsmDocumentClient(regionCode)
     }
 }

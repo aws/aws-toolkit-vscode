@@ -12,8 +12,7 @@ import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { Env } from '../../shared/vscode/env'
 import { Window } from '../../shared/vscode/window'
 import { Commands } from '../../shared/vscode/commands'
-
-const COPY_ARN_DISPLAY_TIMEOUT_MS = 2000
+import { COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS } from '../../shared/constants'
 
 /**
  * Copies the arn of the resource represented by the given node.
@@ -32,7 +31,7 @@ export async function copyArnCommand(
 
         window.setStatusBarMessage(
             localize('AWS.explorerNode.copiedToClipboard', '$(clippy) Copied {0} to clipboard', 'ARN'),
-            COPY_ARN_DISPLAY_TIMEOUT_MS
+            COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS
         )
     } catch (e) {
         const logsItem = localize('AWS.generic.message.viewLogs', 'View Logs...')

@@ -65,11 +65,11 @@ export async function activate(ctx: ExtContext): Promise<void> {
         )
     )
 
-    await detectSamCli({ passive: true, showMessage: false })
     ctx.extensionContext.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration(configurationChangeEvent => {
             if (configurationChangeEvent.affectsConfiguration('aws.samcli.location')) {
-                detectSamCli({ passive: true, showMessage: undefined })
+                // This only shows a message (passive=true), does not set anything.
+                detectSamCli({ passive: true, showMessage: true })
             }
         })
     )
@@ -93,11 +93,11 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
         vscode.commands.registerCommand('aws.configureLambda', configureLocalLambda),
         vscode.commands.registerCommand('aws.addSamDebugConfiguration', addSamDebugConfiguration),
         vscode.commands.registerCommand('aws.pickAddSamDebugConfiguration', codelensUtils.pickAddSamDebugConfiguration),
-        vscode.commands.registerCommand('aws.deploySamApplication', async () => {
+        vscode.commands.registerCommand('aws.deploySamApplication', async regionNode => {
             const samDeployWizardContext = new DefaultSamDeployWizardContext(ctx.regionProvider, ctx.awsContext)
             const samDeployWizard: SamDeployWizardResponseProvider = {
                 getSamDeployWizardResponse: async (): Promise<SamDeployWizardResponse | undefined> => {
-                    const wizard = new SamDeployWizard(samDeployWizardContext)
+                    const wizard = new SamDeployWizard(samDeployWizardContext, regionNode)
 
                     return wizard.run()
                 },

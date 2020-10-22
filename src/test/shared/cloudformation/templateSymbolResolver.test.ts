@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { instance, mock, when } from 'ts-mockito'
+import { instance, mock, when, anything } from 'ts-mockito'
 import * as vscode from 'vscode'
 import {
     TemplateFunctionResource,
@@ -68,7 +68,7 @@ describe('TemplateSymbolResolver', () => {
         mockSymbolProvider = mock()
         symbolProvider = instance(mockSymbolProvider)
 
-        when(mockSymbolProvider.getSymbols(document)).thenResolve(symbols)
+        when(mockSymbolProvider.getSymbols(document, anything())).thenResolve(symbols)
         when(mockSymbolProvider.getText(firstFunctionType, document)).thenReturn('"Type": "AWS::Serverless::Function"')
         when(mockSymbolProvider.getText(secondFunctionType, document)).thenReturn('Type: AWS::Serverless::Function')
         when(mockSymbolProvider.getText(looksLikeFunctionType, document)).thenReturn('Type: NotActuallyAFunction')
@@ -76,16 +76,18 @@ describe('TemplateSymbolResolver', () => {
 
     it('gets function resources', async () => {
         const symbolResolver = new TemplateSymbolResolver(document, symbolProvider)
-        const functionResources = await symbolResolver.getFunctionResources()
+        const functionResources = await symbolResolver.getResourcesOfKind('function', false)
 
         const expectedResources: TemplateFunctionResource[] = [
             {
                 name: firstFunction.name,
                 range: firstFunction.range,
+                kind: 'function',
             },
             {
                 name: secondFunction.name,
                 range: secondFunction.range,
+                kind: 'function',
             },
         ]
 

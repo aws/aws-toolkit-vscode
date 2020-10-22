@@ -27,8 +27,9 @@ export class Timeout {
     }
 
     /**
-     * Returns the amount of time left from the initialization of time Timeout object and with the timeoutLength
-     * Bottoms out at 0
+     * Time (in milliseconds) remaining since this Timeout object was initialized.
+     *
+     * Minimum is 0.
      */
     public get remainingTime(): number {
         const remainingTime = this.endTime - Date.now()
@@ -74,5 +75,30 @@ export class Timeout {
         if (this.timerResolve) {
             this.timerResolve()
         }
+    }
+}
+
+/**
+ * Invokes `fn()` until it returns a truthy value.
+ *
+ * @param fn  Function whose result is checked
+ * @param opt.timeout  Timeout in ms (default: 5000)
+ * @param opt.interval  Interval in ms between fn() checks (default: 500)
+ *
+ * @returns Result of `fn()`, or `undefined` if timeout was reached.
+ */
+export async function waitUntil<T>(
+    fn: () => Promise<T>,
+    opt: { timeout: number; interval: number } = { timeout: 5000, interval: 500 }
+): Promise<T | undefined> {
+    for (let i = 0; true; i++) {
+        const result: T = await fn()
+        if (result) {
+            return result
+        }
+        if (i * opt.interval >= opt.timeout) {
+            return undefined
+        }
+        await new Promise(r => setTimeout(r, opt.interval))
     }
 }
