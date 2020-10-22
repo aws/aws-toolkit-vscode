@@ -102,8 +102,8 @@ export async function makeInputTemplate(config: SamLaunchRequestArgs): Promise<s
             throw new Error('Resource not found in base template')
         }
 
-        // We make a copy as to not mutate the tempalte registry version
-        // TODO remove the template registry? make it return non mutatable things?
+        // We make a copy as to not mutate the template registry version
+        // TODO remove the template registry? make it return non-mutatable things?
         const templateClone = { ...template }
 
         const newHandlerFunction = {
@@ -119,7 +119,7 @@ export async function makeInputTemplate(config: SamLaunchRequestArgs): Promise<s
         }
         templateClone.Resources[resourceName] = newHandlerFunction
 
-        // TODO fix this API, withTemplateResources is required (witha runtime error), but if we pass in a template why do we need it?
+        // TODO fix this API, withTemplateResources is required (with a runtime error), but if we pass in a template why do we need it?
         newTemplate = new SamTemplateGenerator(templateClone).withTemplateResources(templateClone.Resources)
 
         // template type uses the template dir and a throwaway template name so we can use existing relative paths
