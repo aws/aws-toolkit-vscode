@@ -816,6 +816,16 @@
                     "group": "inline@2"
                 },
                 {
+                    "command": "aws.lambda.createNewSamApp",
+                    "when": "view == aws.explorer && viewItem == awsLambdaNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.deploySamApplication",
+                    "when": "view == aws.explorer && viewItem == awsRegionNode",
+                    "group": "inline@1"
+                },
+                {
                     "command": "aws.invokeLambda",
                     "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeImportable|awsCloudFormationFunctionNode)$/",
                     "group": "0@1"
@@ -1090,7 +1100,8 @@
             {
                 "command": "aws.deploySamApplication",
                 "title": "%AWS.command.deploySamApplication%",
-                "category": "AWS"
+                "category": "AWS",
+                "icon": "$(cloud-upload)"
             },
             {
                 "command": "aws.submitFeedback",

@@ -101,9 +101,12 @@ export async function makeInputTemplate(config: SamLaunchRequestArgs): Promise<s
             throw new Error('Resource not found in base template')
         }
 
-        newTemplate = new SamTemplateGenerator(template).withTemplateResources({
-            [resourceName]: templateResource,
-        })
+        // We make a copy as to not mutate the template registry version
+        // TODO remove the template registry? make it return non-mutatable things?
+        const templateClone = { ...template }
+
+        // TODO fix this API, withTemplateResources is required (with a runtime error), but if we pass in a template why do we need it?
+        newTemplate = new SamTemplateGenerator(templateClone).withTemplateResources(templateClone.Resources!)
 
         // template type uses the template dir and a throwaway template name so we can use existing relative paths
         // clean this one up manually; we don't want to accidentally delete the workspace dir
@@ -228,8 +231,6 @@ export async function invokeLambdaFunction(
         parameterOverrides: config.parameterOverrides,
         skipPullImage: config.sam?.skipNewImageCheck,
     }
-
-    delete config.invokeTarget // Must not be used beyond this point.
 
     const command = new SamCliLocalInvokeInvocation(localInvokeArgs)
 

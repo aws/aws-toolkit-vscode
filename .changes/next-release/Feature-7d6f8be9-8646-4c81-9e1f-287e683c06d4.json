@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "\"Create new SAM Application\" action is available from the context menu of Lambda nodes in the AWS Explorer"
+}
