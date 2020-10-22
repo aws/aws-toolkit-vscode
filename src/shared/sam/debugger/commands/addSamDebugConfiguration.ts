@@ -46,9 +46,9 @@ export async function addSamDebugConfiguration(
 
     let samDebugConfig: AwsSamDebuggerConfiguration
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(rootUri)
+    const runtimeName = runtimeFamily ? getDefaultRuntime(runtimeFamily) : undefined
 
     if (type === TEMPLATE_TARGET_TYPE) {
-        const runtimeName = runtimeFamily ? getDefaultRuntime(runtimeFamily) : undefined
         let preloadedConfig = undefined
 
         if (workspaceFolder) {

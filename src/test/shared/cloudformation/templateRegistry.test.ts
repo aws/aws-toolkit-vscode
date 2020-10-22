@@ -263,7 +263,12 @@ describe('CloudFormation Template Registry', async () => {
                 workingTemplate
             )
 
-            assert.deepStrictEqual(val, [matchingResource])
+            assert.deepStrictEqual(val, [
+                {
+                    name: 'resource1',
+                    resourceData: matchingResource,
+                },
+            ])
         })
 
         it('ignores path handling if using a compiled language', () => {
@@ -273,7 +278,12 @@ describe('CloudFormation Template Registry', async () => {
                 dotNetTemplate
             )
 
-            assert.deepStrictEqual(val, [compiledResource])
+            assert.deepStrictEqual(val, [
+                {
+                    name: 'resource1',
+                    resourceData: compiledResource,
+                },
+            ])
         })
 
         it('returns all template resources if it has multiple matching handlers', () => {
@@ -284,12 +294,18 @@ describe('CloudFormation Template Registry', async () => {
             )
 
             assert.deepStrictEqual(val, [
-                matchingResource,
                 {
-                    ...matchingResource,
-                    Properties: {
-                        ...matchingResource.Properties,
-                        Timeout: 5000,
+                    name: 'resource1',
+                    resourceData: matchingResource,
+                },
+                {
+                    name: 'resource2',
+                    resourceData: {
+                        ...matchingResource,
+                        Properties: {
+                            ...matchingResource.Properties,
+                            Timeout: 5000,
+                        },
                     },
                 },
             ])
@@ -302,30 +318,13 @@ describe('CloudFormation Template Registry', async () => {
                 badRuntimeTemplate
             )
 
-            assert.deepStrictEqual(val, [matchingResource])
-        })
-    })
-
-    it('Filers based on resource type', () => {
-        const biggerDatum: TemplateDatum = {
-            ...templateDatum,
-            template: {
-                Resources: {
-                    ...templateDatum.template.Resources,
-                    resource2: {
-                        Type: 'AWS::Serverless::Api',
-                        Properties: {
-                            Handler: 'handledWith.care',
-                            CodeUri: 'overThere',
-                        },
-                    },
-                    undefinedResource: undefined,
+            assert.deepStrictEqual(val, [
+                {
+                    name: 'goodResource',
+                    resourceData: matchingResource,
                 },
-            },
-        }
-        const resources = getResourcesFromTemplateDatum(biggerDatum, ['AWS::Serverless::Function'])
-        assert.strictEqual(resources.size, 1)
-        assert.ok(resources.has('resource1'))
+            ])
+        })
     })
 })
 
