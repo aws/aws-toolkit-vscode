@@ -240,7 +240,7 @@ export class SamCliLocalInvokeInvocation {
         pushIf(invokeArgs, !!this.args.dockerNetwork, '--docker-network', this.args.dockerNetwork!)
         pushIf(invokeArgs, !!this.args.skipPullImage, '--skip-pull-image')
         pushIf(invokeArgs, !!this.args.debuggerPath, '--debugger-path', this.args.debuggerPath!)
-        pushIf(invokeArgs, !!this.args.debugArgs, '--debug-args', ...(this.args.debugArgs! ?? []))
+        pushIf(invokeArgs, !!this.args.debugArgs, '--debug-args', ...(this.args.debugArgs ?? []))
         pushIf(
             invokeArgs,
             !!this.args.parameterOverrides && this.args.parameterOverrides.length > 0,
