@@ -49,6 +49,7 @@ export namespace CloudFormation {
         Timeout?: number | Ref
         Environment?: Environment
         Events?: Events
+        [key: string]: any
     }
 
     export interface Ref {
@@ -81,10 +82,13 @@ export namespace CloudFormation {
         | typeof LAMBDA_FUNCTION_TYPE
         | typeof SERVERLESS_FUNCTION_TYPE
         | typeof SERVERLESS_API_TYPE
+        | string
 
     export interface Resource {
         Type: ResourceType
         Properties?: ResourceProperties
+        // Any other properties are fine to have, we just copy them transparently
+        [key: string]: any
     }
 
     // TODO: Can we automatically detect changes to the CFN spec and apply them here?
