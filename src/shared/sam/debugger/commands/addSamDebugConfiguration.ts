@@ -127,10 +127,10 @@ export async function addSamDebugConfiguration(
     const launchConfig = new LaunchConfiguration(rootUri)
     await launchConfig.addDebugConfiguration(samDebugConfig)
 
-    await showDebugConfiguration()
+    await openLaunchJsonFile()
 }
 
-async function showDebugConfiguration(): Promise<void> {
+export async function openLaunchJsonFile(): Promise<void> {
     vscode.commands.executeCommand('workbench.action.debug.configure')
 }
 
