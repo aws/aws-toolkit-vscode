@@ -29,7 +29,7 @@ export async function getSamProjectDirPathForFile(filepath: string): Promise<str
     return path.dirname(filepath)
 }
 
-// Add create debugging manifest/requirements.txt containing debugpy
+// Add create debugging manifest/requirements.txt containing ptvsd
 async function makePythonDebugManifest(params: {
     samProjectCodeRoot: string
     outputDir: string
@@ -40,9 +40,9 @@ async function makePythonDebugManifest(params: {
         manifestText = await readFileAsString(manfestPath)
     }
     getLogger().debug(`pythonCodeLensProvider.makePythonDebugManifest params: ${JSON.stringify(params, undefined, 2)}`)
-    // TODO: Make this logic more robust. What if other module names include debugpy?
-    if (!manifestText.includes('debugpy')) {
-        manifestText += `${os.EOL}debugpy>=1.0,<2`
+    // TODO: Make this logic more robust. What if other module names include ptvsd?
+    if (!manifestText.includes('ptvsd')) {
+        manifestText += `${os.EOL}ptvsd>=4.2,<5`
         const debugManifestPath = path.join(params.outputDir, 'debug-requirements.txt')
         await writeFile(debugManifestPath, manifestText)
 
@@ -77,7 +77,7 @@ export async function makePythonDebugConfig(config: SamLaunchRequestArgs): Promi
     if (!config.noDebug) {
         debugPort = await getStartPort()
 
-        config.debugArgs = [`-m debugpy --log-to-stderr --log-to /tmp --listen 0.0.0.0:${debugPort} --wait-for-client`]
+        config.debugArgs = [`-m ptvsd --host 0.0.0.0 --port ${debugPort} --wait`]
 
         manifestPath = await makePythonDebugManifest({
             samProjectCodeRoot: config.codeRoot,

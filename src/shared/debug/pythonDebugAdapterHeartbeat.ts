@@ -62,17 +62,11 @@ export class PythonDebugAdapterHeartbeat {
                 resolve(false)
             })
 
-            // Send an initialization request, serving as a no-op.
-            // Initialization does not start the debugging process and is only allowed once per session, however
-            // the actual python debugger is considered a separate session
+            // Send a blank request message, serving as a no-op.
+            // If we get a response, we know the Adapter is up and running.
             // See Base protocol: https://microsoft.github.io/debug-adapter-protocol/overview
             const json = JSON.stringify({
-                seq: 1,
                 type: 'request',
-                command: 'initialize',
-                arguments: {
-                    adapterID: 'aws-toolkit-heartbeat',
-                },
             })
             const writeResult = this.socket.write(`Content-Length: ${json.length}\r\n\r\n${json}`)
             this.logger.verbose(`Data written to Debug Adapter, write result: ${writeResult}`)
