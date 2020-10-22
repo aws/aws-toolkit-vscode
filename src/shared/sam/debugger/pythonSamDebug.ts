@@ -77,7 +77,7 @@ export async function makePythonDebugConfig(config: SamLaunchRequestArgs): Promi
     if (!config.noDebug) {
         debugPort = await getStartPort()
 
-        config.debugArgs = [`-m debugpy --log-to /tmp --listen 0.0.0.0:${debugPort} --wait-for-client`]
+        config.debugArgs = [`-m debugpy --log-to-stderr --log-to /tmp --listen 0.0.0.0:${debugPort} --wait-for-client`]
 
         manifestPath = await makePythonDebugManifest({
             samProjectCodeRoot: config.codeRoot,
