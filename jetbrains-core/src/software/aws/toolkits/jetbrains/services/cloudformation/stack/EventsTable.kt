@@ -31,7 +31,7 @@ interface EventsTable : View {
     fun showBusyIcon()
 }
 
-private class StatusCellRenderer : DefaultTableCellRenderer() {
+class StatusCellRenderer : DefaultTableCellRenderer() {
     override fun getTableCellRendererComponent(table: JTable, value: Any, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int): Component =
         super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column).also {
             it.foreground = StatusType.fromStatusValue(value as String).color

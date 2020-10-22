@@ -73,16 +73,23 @@ class CloudFormationBrowserTest {
                 }
             }
             step("Check events") {
-                clickOnEvents()
+                clickOn("Events")
                 step("Assert that there are two CREATE_COMPLETE events shown") {
                     val createComplete = findAllText("CREATE_COMPLETE")
                     assertThat(createComplete).hasSize(2)
                 }
             }
             step("Check outputs") {
-                clickOnOutputs()
+                clickOn("Outputs")
                 step("Assert that the stack output is there") {
                     findText("Cool description")
+                }
+            }
+            step("Check resources") {
+                clickOn("Resources")
+                step("Assert that the stack resource is there") {
+                    val createComplete = findAllText("CREATE_COMPLETE")
+                    assertThat(createComplete).hasSize(1)
                 }
             }
             step("Delete stack $stack") {
@@ -116,6 +123,9 @@ class CloudFormationBrowserTest {
         waitForStackDeletion()
     }
 
+    private fun IdeaFrame.clickOn(tab: String) {
+        findAndClick("//div[@accessiblename='$tab' and @class='JLabel' and @text='$tab']")
+    }
     private fun IdeaFrame.clickOnOutputs() {
         findAndClick("//div[@accessiblename='Outputs' and @class='JLabel' and @text='Outputs']")
     }

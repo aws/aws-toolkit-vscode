@@ -31,6 +31,7 @@ class Updater(
     private val treeView: TreeView,
     private val eventsTable: EventsTable,
     private val outputsTable: OutputsListener,
+    private val resourceListener: ResourceListener,
     private val stackName: String,
     private val updateEveryMs: Int,
     private val listener: UpdateListener,
@@ -96,6 +97,7 @@ class Updater(
 
         app.invokeLater {
             outputsTable.updatedOutputs(stackDetails.outputs)
+            resourceListener.updatedResources(stackDetails.resources)
 
             showData(
                 stackStatus = newStackStatus,

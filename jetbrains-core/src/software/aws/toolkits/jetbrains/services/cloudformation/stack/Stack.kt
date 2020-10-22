@@ -66,6 +66,7 @@ private class StackUI(private val project: Project, private val stackName: Strin
 
     private val eventsTable: EventsTableImpl
     private val outputsTable = OutputsTableView()
+    private val resourcesTable = ResourceTableView()
 
     init {
         val tree = TreeViewImpl(project, stackName)
@@ -120,10 +121,18 @@ private class StackUI(private val project: Project, private val stackName: Strin
                 )
 
                 this.add(
+                    message("cloudformation.stack.tab_labels.resources"),
+                    JPanel().apply {
+                        layout = BoxLayout(this, BoxLayout.Y_AXIS)
+                        add(resourcesTable.component)
+                    }
+                )
+
+                this.add(
                     message("cloudformation.stack.tab_labels.outputs"),
                     JPanel().apply {
                         layout = BoxLayout(this, BoxLayout.Y_AXIS)
-                        add(outputsTable.component)
+                        add(add(outputsTable.component))
                     }
                 )
             }
@@ -133,6 +142,7 @@ private class StackUI(private val project: Project, private val stackName: Strin
             tree,
             eventsTable = eventsTable,
             outputsTable = outputsTable,
+            resourceListener = resourcesTable,
             stackName = stackName,
             updateEveryMs = UPDATE_STACK_STATUS_INTERVAL,
             listener = this,
@@ -141,7 +151,7 @@ private class StackUI(private val project: Project, private val stackName: Strin
         )
 
         toolWindowTab = toolWindow.addTab(stackName, mainPanel, id = stackId)
-        listOf(tree, updater, animator, eventsTable, outputsTable, pageButtons).forEach { Disposer.register(toolWindowTab, it) }
+        listOf(tree, updater, animator, eventsTable, outputsTable, resourcesTable, pageButtons).forEach { Disposer.register(toolWindowTab, it) }
     }
 
     fun start() {
