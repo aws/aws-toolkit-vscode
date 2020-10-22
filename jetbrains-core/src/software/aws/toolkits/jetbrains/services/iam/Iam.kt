@@ -22,7 +22,7 @@ data class IamRole(val arn: String) {
 
 object IamResources {
 
-    private val LIST_RAW_ROLES = ClientBackedCachedResource(IamClient::class, "iam.list_roles") {
+    val LIST_RAW_ROLES = ClientBackedCachedResource(IamClient::class, "iam.list_roles") {
         listRolesPaginator().roles().toList()
     }
 

@@ -59,8 +59,8 @@ class HandlerPanel(private val project: Project) : JPanel(MigLayout("novisualpad
         switchCompletion()
     }
 
-    fun setRuntime(runtime: Runtime) {
-        this.runtime = runtime
+    fun setRuntime(runtime: Runtime?) {
+        this.runtime = runtime ?: Runtime.UNKNOWN_TO_SDK_VERSION
         handlerCompletionProvider = HandlerCompletionProvider(project, runtime)
         switchCompletion()
     }
