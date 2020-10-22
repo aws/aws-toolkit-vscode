@@ -10,7 +10,7 @@ import * as vscode from 'vscode'
 import {
     CloudFormationTemplateRegistry,
     getResourcesAssociatedWithHandlerFromTemplateDatum,
-    getTemplatesAssociatedWithHandler,
+    // getResourcesAssociatedWithHandler,
     TemplateDatum,
 } from '../../../shared/cloudformation/templateRegistry'
 import { rmrf } from '../../../shared/filesystem'
@@ -220,20 +220,20 @@ describe('CloudFormation Template Registry', async () => {
         },
     }
 
-    describe('getTemplatesAssociatedWithHandler', () => {
-        it('returns an array containing TemplateDatum that contain references to the handler in question', () => {
-            const val = getTemplatesAssociatedWithHandler(path.join(rootPath, nestedPath, 'index.js'), 'handler', [
-                nonParentTemplate,
-                workingTemplate,
-                noResourceTemplate,
-                dotNetTemplate,
-                multiResourceTemplate,
-                badRuntimeTemplate,
-            ])
+    // describe('getResourcesAssociatedWithHandler', () => {
+    //     it('returns an array containing resources that contain references to the handler in question', () => {
+    //         const val = getResourcesAssociatedWithHandler(path.join(rootPath, nestedPath, 'index.js'), 'handler', [
+    //             nonParentTemplate,
+    //             workingTemplate,
+    //             noResourceTemplate,
+    //             dotNetTemplate,
+    //             multiResourceTemplate,
+    //             badRuntimeTemplate,
+    //         ])
 
-            assert.deepStrictEqual(val, [workingTemplate, multiResourceTemplate, badRuntimeTemplate])
-        })
-    })
+    //         assert.deepStrictEqual(val, [workingTemplate, multiResourceTemplate, badRuntimeTemplate])
+    //     })
+    // })
 
     describe('getResourceAssociatedWithHandlerFromTemplateDatum', () => {
         it('returns an empty array if the given template is not a parent of the handler file in question', () => {

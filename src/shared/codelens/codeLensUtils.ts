@@ -1,12 +1,10 @@
 /*!
- * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright 2018-2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as path from 'path'
 import * as vscode from 'vscode'
 
-import { Set as ImmutableSet } from 'immutable'
 import { CloudFormation } from '../cloudformation/cloudformation'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
@@ -20,12 +18,7 @@ import { ExtContext } from '../extensions'
 import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
 import { nodeJsRuntimes, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { CODE_TARGET_TYPE, TEMPLATE_TARGET_TYPE } from '../sam/debugger/awsSamDebugConfiguration'
-import { getReferencedHandlerPaths, LaunchConfiguration } from '../debug/launchConfiguration'
-import * as pathutils from '../utilities/pathUtils'
-import {
-    getResourcesAssociatedWithHandlerFromTemplateDatum,
-    getTemplatesAssociatedWithHandler,
-} from '../cloudformation/templateRegistry'
+import { getResourcesAssociatedWithHandler } from '../cloudformation/templateRegistry'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../ui/picker'
 import {
     addSamDebugConfiguration,
@@ -52,7 +45,6 @@ export async function makeCodeLenses({
     }
 
     const lenses: vscode.CodeLens[] = []
-    const existingConfigs = getReferencedHandlerPaths(new LaunchConfiguration(document.uri))
     for (const handler of handlers) {
         // handler.range is a RangeOrCharOffset union type. Extract vscode.Range.
         const range =
@@ -64,56 +56,23 @@ export async function makeCodeLenses({
                   )
 
         try {
-            const associatedTemplates = getTemplatesAssociatedWithHandler(handler.filename, handler.handlerName)
-            let filteredRuntimes: ImmutableSet<Runtime> | undefined
+            const associatedResources = getResourcesAssociatedWithHandler(handler.filename, handler.handlerName)
             const templateConfigs: AddSamDebugConfigurationInput[] = []
 
-            if (associatedTemplates.length > 0) {
-                const runtimes: Runtime[] = []
-                for (const templateDatum of associatedTemplates) {
-                    // TODO: This pulls all resources without vetting from the resources below. May want to break this down a bit...
-                    if (templateDatum.template.Resources) {
-                        for (const resourceName of Object.keys(templateDatum.template.Resources)) {
-                            templateConfigs.push({
-                                resourceName,
-                                rootUri: vscode.Uri.file(templateDatum.path),
-                            })
-                        }
-                    }
-
-                    runtimes.push(
-                        ...getResourcesAssociatedWithHandlerFromTemplateDatum(
-                            handler.filename,
-                            handler.handlerName,
-                            templateDatum
-                        )
-                            .map(resource => {
-                                return (
-                                    (CloudFormation.getStringForProperty(
-                                        resource.Properties?.Runtime,
-                                        templateDatum.template
-                                    ) as Runtime) ?? ''
-                                )
-                            })
-                            .filter(resource => resource.length > 0)
-                    )
+            if (associatedResources.length > 0) {
+                for (const resource of associatedResources) {
+                    templateConfigs.push({
+                        resourceName: resource.name,
+                        rootUri: vscode.Uri.file(resource.templateDatum.path),
+                    })
                 }
-                filteredRuntimes = ImmutableSet(runtimes)
             }
             const codeConfig: AddSamDebugConfigurationInput = {
                 resourceName: handler.handlerName,
                 rootUri: handler.manifestUri,
                 runtimeFamily,
-                filteredRuntimes,
             }
-            // TODO: Get this to also hide based on matching template-type configs?
-            if (
-                !existingConfigs.has(
-                    pathutils.normalize(path.join(path.dirname(codeConfig.rootUri.fsPath), codeConfig.resourceName))
-                )
-            ) {
-                lenses.push(makeAddCodeSamDebugCodeLens(range, codeConfig, templateConfigs))
-            }
+            lenses.push(makeAddCodeSamDebugCodeLens(range, codeConfig, templateConfigs))
         } catch (err) {
             getLogger().error(
                 `Could not generate 'configure' code lens for handler '${handler.handlerName}': %O`,

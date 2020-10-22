@@ -138,12 +138,9 @@ function getRuntimesForFamily(family: RuntimeFamily): ImmutableSet<Runtime> | un
 export function createRuntimeQuickPick(params: {
     buttons?: vscode.QuickInputButton[]
     currRuntime?: Runtime
-    filteredRuntimes?: ImmutableSet<Runtime>
     runtimeFamily?: RuntimeFamily
 }): vscode.QuickPick<vscode.QuickPickItem> {
-    const runtimes = params.filteredRuntimes
-        ? params.filteredRuntimes
-        : params.runtimeFamily
+    const runtimes = params.runtimeFamily
         ? getRuntimesForFamily(params.runtimeFamily) ?? samLambdaCreatableRuntimes
         : samLambdaCreatableRuntimes
 

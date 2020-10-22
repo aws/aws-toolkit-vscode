@@ -6,7 +6,6 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { Runtime } from 'aws-sdk/clients/lambda'
-import { Set as ImmutableSet } from 'immutable'
 import { getExistingConfiguration } from '../../../../lambda/config/templates'
 import { createRuntimeQuickPick, getDefaultRuntime, RuntimeFamily } from '../../../../lambda/models/samLambdaRuntime'
 import { CloudFormationTemplateRegistry } from '../../../cloudformation/templateRegistry'
@@ -31,14 +30,13 @@ export interface AddSamDebugConfigurationInput {
     resourceName: string
     rootUri: vscode.Uri
     runtimeFamily?: RuntimeFamily
-    filteredRuntimes?: ImmutableSet<Runtime>
 }
 
 /**
  * Adds a new debug configuration for the given sam function resource and template.
  */
 export async function addSamDebugConfiguration(
-    { resourceName, rootUri, runtimeFamily, filteredRuntimes }: AddSamDebugConfigurationInput,
+    { resourceName, rootUri, runtimeFamily }: AddSamDebugConfigurationInput,
     type: typeof CODE_TARGET_TYPE | typeof TEMPLATE_TARGET_TYPE
 ): Promise<void> {
     // tslint:disable-next-line: no-floating-promises
@@ -98,31 +96,22 @@ export async function addSamDebugConfiguration(
             preloadedConfig
         )
     } else if (type === CODE_TARGET_TYPE) {
-        let selectedRuntime: string | undefined
-        // If only one runtime pops up, choose it.
-        // Is this the behavior we want?
-        if (filteredRuntimes?.size === 1) {
-            selectedRuntime = filteredRuntimes.first()
-        } else {
-            const quickPick = createRuntimeQuickPick({
-                runtimeFamily,
-                filteredRuntimes,
-            })
+        const quickPick = createRuntimeQuickPick({
+            runtimeFamily,
+        })
 
-            const choices = await picker.promptUser({
-                picker: quickPick,
-            })
-            const val = picker.verifySinglePickerOutput(choices)
-            selectedRuntime = val?.label
-        }
+        const choices = await picker.promptUser({
+            picker: quickPick,
+        })
+        const val = picker.verifySinglePickerOutput(choices)
 
-        if (selectedRuntime) {
+        if (val) {
             // strip the manifest's URI to the manifest's dir here. More reliable to do this here than converting back and forth between URI/string up the chain.
             samDebugConfig = createCodeAwsSamDebugConfig(
                 workspaceFolder,
                 resourceName,
                 path.dirname(rootUri.fsPath),
-                selectedRuntime as Runtime
+                val.label as Runtime
             )
         } else {
             // User backed out of runtime selection. Abandon config creation.

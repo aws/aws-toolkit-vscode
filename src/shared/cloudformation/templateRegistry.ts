@@ -128,20 +128,30 @@ export class CloudFormationTemplateRegistry {
 }
 
 /**
- * Filters an array of TemplateDatum objects to those that are tied to the given filepath and handler function.
+ * Gets resources and additional metadata for resources tied to a filepath and handler.
+ * Checks all registered templates by default; otherwise can operate on a subset TemplateDatum[]
  * @param filepath Handler file's path
  * @param handler Handler function from aforementioned file
  * @param unfilteredTemplates Array containing TemplateDatum objects to filter
  */
-export function getTemplatesAssociatedWithHandler(
+export function getResourcesAssociatedWithHandler(
     filepath: string,
     handler: string,
     unfilteredTemplates: TemplateDatum[] = CloudFormationTemplateRegistry.getRegistry().registeredTemplates
-): TemplateDatum[] {
-    // find potential matching templates
-    return unfilteredTemplates.filter(templateDatum => {
-        return getResourcesAssociatedWithHandlerFromTemplateDatum(filepath, handler, templateDatum).length > 0
-    })
+): { templateDatum: TemplateDatum; name: string; resourceData: CloudFormation.Resource }[] {
+    // TODO: Array.flat and Array.flatMap not introduced until >= Node11.x -- migrate when VS Code updates Node ver
+    return unfilteredTemplates
+        .map(templateDatum => {
+            return getResourcesAssociatedWithHandlerFromTemplateDatum(filepath, handler, templateDatum).map(
+                resource => {
+                    return {
+                        ...resource,
+                        templateDatum,
+                    }
+                }
+            )
+        })
+        .reduce((acc, cur) => [...acc, ...cur])
 }
 
 /**
@@ -154,8 +164,8 @@ export function getResourcesAssociatedWithHandlerFromTemplateDatum(
     filepath: string,
     handler: string,
     templateDatum: TemplateDatum
-): CloudFormation.Resource[] {
-    const matchingResources: CloudFormation.Resource[] = []
+): { name: string; resourceData: CloudFormation.Resource }[] {
+    const matchingResources: { name: string; resourceData: CloudFormation.Resource }[] = []
     const templateDirname = path_.dirname(templateDatum.path)
     // template isn't a parent or sibling of file
     if (!isInDirectory(templateDirname, path_.dirname(filepath))) {
@@ -201,7 +211,7 @@ export function getResourcesAssociatedWithHandlerFromTemplateDatum(
                             pathutils.normalize(filepath)
                         )
                     ) {
-                        matchingResources.push(resource)
+                        matchingResources.push({ name: key, resourceData: resource })
                     }
                     // Interpreted languages all follow the same spec:
                     // ./path/to/handler/without/file/extension.handlerName
@@ -220,7 +230,7 @@ export function getResourcesAssociatedWithHandlerFromTemplateDatum(
                                 ) &&
                             functionName === parsedLambda.functionName
                         ) {
-                            matchingResources.push(resource)
+                            matchingResources.push({ name: key, resourceData: resource })
                         }
                     } catch (e) {
                         // swallow error from getLambdaDetailsFromConfiguration: handler not a valid runtime, so skip to the next one
