@@ -107,7 +107,8 @@ function makeAddCodeSamDebugCodeLens(
 /**
  * Wraps the addSamDebugConfiguration logic in a picker that lets the user choose
  * to create a code-type debug config or a template-type debug config using a selected template
- * TODO: Localize
+ * TODO: Add way to create API Gateway launch config
+ * TODO: Dedupe? Call out dupes at the quick pick level?
  * @param codeConfig
  * @param templateConfigs
  */
@@ -127,19 +128,25 @@ export async function pickAddSamDebugConfiguration(
         templateItemsMap.set(label, templateConfig)
         return { label }
     })
+    const noTemplate = localize('AWS.pickDebugConfig.noTemplate', 'No Template')
     const picker = createQuickPick<vscode.QuickPickItem>({
         options: {
             canPickMany: false,
             ignoreFocusOut: false,
             matchOnDetail: true,
-            title: 'Create a Debug Configuration with a CloudFormation Template',
+            title: localize(
+                'AWS.pickDebugConfig.prompt',
+                'Create a Debug Configuration with a CloudFormation Template'
+            ),
         },
         items: [
             ...templateItems,
             {
-                label: 'No Template',
-                detail:
-                    'Launch config will execute function in isolation, without referencing a CloudFormation template',
+                label: noTemplate,
+                detail: localize(
+                    'AWS.pickDebugConfig.noTemplate.detail',
+                    'Launch config will execute function in isolation, without referencing a CloudFormation template'
+                ),
             },
         ],
     })
@@ -150,7 +157,7 @@ export async function pickAddSamDebugConfiguration(
     if (!val) {
         return undefined
     }
-    if (val.label === 'No Template') {
+    if (val.label === noTemplate) {
         await addSamDebugConfiguration(codeConfig, CODE_TARGET_TYPE)
     } else {
         const templateItem = templateItemsMap.get(val.label)
