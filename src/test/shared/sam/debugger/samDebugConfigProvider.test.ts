@@ -1167,6 +1167,28 @@ Resources:
           Properties:
             Path: /hello
             Method: get
+  Function2NotInLaunchJson:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler_2
+      Runtime: python3.7
+  Function3NotInLaunchJson:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler_3
+      Runtime: python3.7
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /apipath1
+            Method: get
+  ServerlessApi:
+    Type: 'AWS::Serverless::Api'
+    Properties:
+      Name: ResourceName
 Outputs:
   HelloWorldApi:
     Description: API Gateway endpoint URL for Prod stage for Hello World function
