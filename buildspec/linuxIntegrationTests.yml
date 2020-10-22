@@ -45,7 +45,7 @@ phases:
     build:
         commands:
             - npm install --unsafe-perm
-            - xvfb-run npm run integrationTest
+            - xvfb-run npm run integrationTest; docker container ls; docker ps -q | xargs -I'{}' sh -c "echo {} && docker exec -t {} bash -c 'tail -n +1 /tmp/debugpy*'"
 
 reports:
     integ-test:
