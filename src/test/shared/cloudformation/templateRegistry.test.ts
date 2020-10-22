@@ -9,8 +9,8 @@ import * as vscode from 'vscode'
 
 import {
     CloudFormationTemplateRegistry,
+    getResourcesAssociatedWithHandler,
     getResourcesAssociatedWithHandlerFromTemplateDatum,
-    // getResourcesAssociatedWithHandler,
     TemplateDatum,
 } from '../../../shared/cloudformation/templateRegistry'
 import { rmrf } from '../../../shared/filesystem'
@@ -220,20 +220,47 @@ describe('CloudFormation Template Registry', async () => {
         },
     }
 
-    // describe('getResourcesAssociatedWithHandler', () => {
-    //     it('returns an array containing resources that contain references to the handler in question', () => {
-    //         const val = getResourcesAssociatedWithHandler(path.join(rootPath, nestedPath, 'index.js'), 'handler', [
-    //             nonParentTemplate,
-    //             workingTemplate,
-    //             noResourceTemplate,
-    //             dotNetTemplate,
-    //             multiResourceTemplate,
-    //             badRuntimeTemplate,
-    //         ])
+    describe('getResourcesAssociatedWithHandler', () => {
+        it('returns an array containing resources that contain references to the handler in question', () => {
+            const val = getResourcesAssociatedWithHandler(path.join(rootPath, nestedPath, 'index.js'), 'handler', [
+                nonParentTemplate,
+                workingTemplate,
+                noResourceTemplate,
+                dotNetTemplate,
+                multiResourceTemplate,
+                badRuntimeTemplate,
+            ])
 
-    //         assert.deepStrictEqual(val, [workingTemplate, multiResourceTemplate, badRuntimeTemplate])
-    //     })
-    // })
+            assert.deepStrictEqual(val, [
+                {
+                    name: 'resource1',
+                    resourceData: matchingResource,
+                    templateDatum: workingTemplate,
+                },
+                {
+                    name: 'resource1',
+                    resourceData: matchingResource,
+                    templateDatum: multiResourceTemplate,
+                },
+                {
+                    name: 'resource2',
+                    resourceData: {
+                        ...matchingResource,
+                        Properties: {
+                            ...matchingResource.Properties,
+                            Timeout: 5000,
+                        },
+                    },
+                    templateDatum: multiResourceTemplate,
+                },
+                {
+                    name: 'goodResource',
+                    resourceData: matchingResource,
+                    templateDatum: badRuntimeTemplate,
+                },
+            ])
+        })
+    })
 
     describe('getResourceAssociatedWithHandlerFromTemplateDatum', () => {
         it('returns an empty array if the given template is not a parent of the handler file in question', () => {
