@@ -21,6 +21,8 @@ import { ChannelLogger } from '../../utilities/vsCodeUtils'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
 import { invokeLambdaFunction, makeInputTemplate } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
+import { join } from 'path'
+import { ext } from '../../extensionGlobals'
 
 const PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MS = 1000
 
@@ -51,63 +53,6 @@ async function makePythonDebugManifest(params: {
     // else we don't need to override the manifest. nothing to return
 }
 
-export async function makeLambdaDebugFile(params: {
-    handlerName: string
-    debugPort: number
-    outputDir: string
-}): Promise<{ outFilePath: string; debugHandlerName: string }> {
-    const logger = getLogger()
-
-    // Last piece of the handler is the function name. Remove it before modifying for pathing.
-    const splitHandlerName = params.handlerName.split('.')
-    const handlerFunctionName = splitHandlerName[splitHandlerName.length - 1]
-    const handlerFiles = splitHandlerName.slice(0, splitHandlerName.length - 1)
-
-    // Handlers for Python imports must be joined by periods.
-    // ./foo/bar.py => foo.bar
-    const handlerFileImportPath = handlerFiles.join('.')
-    // SAM doesn't handle periods in Python filenames. Replacing with underscores for the filename.
-    const handlerFilePrefix = handlerFiles.join('_')
-
-    const debugHandlerFileName = `${handlerFilePrefix}___vsctk___debug`
-    const debugHandlerFunctionName = 'lambda_handler'
-    // TODO: Sanitize handlerFilePrefix, handlerFunctionName, debugHandlerFunctionName
-    try {
-        logger.debug('pythonCodeLensProvider.makeLambdaDebugFile params: %s', JSON.stringify(params, undefined, 2))
-        const template = `
-# Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
-
-import ptvsd
-import sys
-from ${handlerFileImportPath} import ${handlerFunctionName} as _handler
-
-
-def ${debugHandlerFunctionName}(event, context):
-    ptvsd.enable_attach(address=('0.0.0.0', ${params.debugPort}), redirect_output=False)
-    print('${WAIT_FOR_DEBUGGER_MESSAGES.PYTHON}')
-    sys.stdout.flush()
-    ptvsd.wait_for_attach()
-    print('...debugger attached')
-    sys.stdout.flush()
-    return _handler(event, context)
-
-`
-
-        const outFilePath = path.join(params.outputDir, `${debugHandlerFileName}.py`)
-        logger.debug('pythonCodeLensProvider.makeLambdaDebugFile outFilePath: %s', outFilePath)
-        await writeFile(outFilePath, template)
-
-        return {
-            outFilePath,
-            debugHandlerName: `${debugHandlerFileName}.${debugHandlerFunctionName}`,
-        }
-    } catch (err) {
-        logger.error('makeLambdaDebugFile failed: %O', err as Error)
-        throw err
-    }
-}
-
 /**
  * Gathers and sets launch-config info by inspecting the workspace and creating
  * temp files/directories as needed.
@@ -131,17 +76,12 @@ export async function makePythonDebugConfig(config: SamLaunchRequestArgs): Promi
 
     let debugPort: number | undefined
     let manifestPath: string | undefined
-    let outFilePath: string | undefined
     if (!config.noDebug) {
         debugPort = await getStartPort()
-        const rv = await makeLambdaDebugFile({
-            handlerName: config.handlerName,
-            debugPort: debugPort,
-            outputDir: config.codeRoot,
-        })
-        outFilePath = rv.outFilePath
-        // XXX: Reassign handler name.
-        config.handlerName = rv.debugHandlerName
+
+        config.debuggerPath = ext.context.asAbsolutePath(join('resources', 'debugger'))
+        config.debugArgs = [`/tmp/lambci_debug_files/py_debug_wrapper.py --host 0.0.0.0 --port ${debugPort} --wait`]
+
         manifestPath = await makePythonDebugManifest({
             samProjectCodeRoot: config.codeRoot,
             outputDir: config.baseBuildDir,
@@ -161,7 +101,6 @@ export async function makePythonDebugConfig(config: SamLaunchRequestArgs): Promi
         type: 'python',
         request: config.noDebug ? 'launch' : 'attach',
         runtimeFamily: RuntimeFamily.Python,
-        outFilePath: pathutil.normalize(outFilePath ?? '') ?? undefined,
 
         //
         // Python-specific fields.

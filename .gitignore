@@ -13,6 +13,7 @@ README.quickstart.vscode.md
 .gitcommit
 media/libs/
 package.json.bk
+resources/debugger/__pycache__
 
 # Auto generated definitions
 src/**/*.gen.ts

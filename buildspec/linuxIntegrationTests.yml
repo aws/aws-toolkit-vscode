@@ -33,14 +33,6 @@ phases:
             # start Docker
             - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay&
             - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
-            # Pull SAM related images to avoid delays/timeouts during 'sam local invoke' calls within tests
-            - docker pull -q lambci/lambda:nodejs8.10
-            - docker pull -q lambci/lambda:nodejs10.x
-            - docker pull -q lambci/lambda:nodejs12.x
-            - docker pull -q lambci/lambda:python2.7
-            - docker pull -q lambci/lambda:python3.6
-            - docker pull -q lambci/lambda:python3.7
-            - docker pull -q lambci/lambda:python3.8
 
     build:
         commands:
