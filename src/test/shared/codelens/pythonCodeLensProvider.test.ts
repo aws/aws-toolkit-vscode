@@ -4,11 +4,7 @@
  */
 
 import * as assert from 'assert'
-import * as path from 'path'
 import { getLocalRootVariants } from '../../../shared/utilities/pathUtils'
-import { makeTemporaryToolkitFolder, readFileAsString } from '../../../shared/filesystemUtilities'
-import { rmrf } from '../../../shared/filesystem'
-import { makeLambdaDebugFile } from '../../../shared/sam/debugger/pythonSamDebug'
 
 describe('pythonCodeLensProvider', async () => {
     describe('getLocalRootVariants', async () => {
@@ -75,50 +71,6 @@ describe('pythonCodeLensProvider', async () => {
                     assert.strictEqual(variants[0], test.inputText, 'Unexpected variant text')
                 })
             })
-        }
-    })
-
-    describe('makeLambdaDebugFile', async () => {
-        let dir: string
-        const debugPort = 1357
-        const fileSuffix = `___vsctk___debug`
-        const defaultFnName = 'lambda_handler'
-
-        beforeEach(async () => {
-            dir = await makeTemporaryToolkitFolder()
-        })
-
-        afterEach(async () => {
-            await rmrf(dir)
-        })
-
-        it('handles a handler in the same dir (one period)', async () => {
-            await runDebugFileTests({
-                filepath: 'hands',
-                handler: 'off',
-            })
-        })
-
-        it('handles a handler in a nested dir (multiple periods)', async () => {
-            await runDebugFileTests({
-                filepath: 'take.a.look.at.these',
-                handler: 'hands',
-            })
-        })
-
-        async function runDebugFileTests({ filepath, handler }: { filepath: string; handler: string }) {
-            const handlerName = `${filepath}.${handler}`
-            const debugHandlerFileName = `${filepath.split('.').join('_')}${fileSuffix}`
-            const result = await makeLambdaDebugFile({
-                handlerName,
-                outputDir: dir,
-                debugPort,
-            })
-            assert.strictEqual(result.debugHandlerName, `${debugHandlerFileName}.${defaultFnName}`)
-            const outFile = path.join(dir, `${debugHandlerFileName}.py`)
-            assert.strictEqual(result.outFilePath, outFile)
-            const fileContents = await readFileAsString(outFile)
-            assert.ok(fileContents.includes(`from ${filepath} import ${handler} as _handler`))
         }
     })
 })
