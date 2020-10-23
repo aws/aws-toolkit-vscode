@@ -10,6 +10,7 @@ import { SsoCredentialProvider } from '../../../credentials/providers/ssoCredent
 import { SsoAccessTokenProvider } from '../../../credentials/sso/ssoAccessTokenProvider'
 import { DiskCache } from '../../../credentials/sso/diskCache'
 import { GetRoleCredentialsResponse } from 'aws-sdk/clients/sso'
+import { assertThrowsError } from '../../../test/shared/utilities/assertUtils'
 
 describe('SsoCredentialProvider', () => {
     describe('refreshCredentials', () => {
@@ -41,21 +42,26 @@ describe('SsoCredentialProvider', () => {
         it('should invalidate cached access token if denied', async () => {
             const stubAccessToken = sandbox.stub(ssoAccessTokenProvider, 'accessToken').resolves(validAccessToken)
             const stubSsoClient = sandbox.stub(ssoClient, 'getRoleCredentials')
+
+            let errToThrow = new Error() as SDK.AWSError
+            errToThrow.code = 'UnauthorizedException'
+
             stubSsoClient.returns(({
-                promise: sandbox.stub().throws({ code: 'UnauthorizedException' }),
+                promise: sandbox.stub().throws(errToThrow),
             } as any) as SDK.Request<GetRoleCredentialsResponse, SDK.AWSError>)
 
-            const stubInvalidate = sandbox.stub(cache, 'invalidateAccessToken').returns()
-            try {
+            const stubInvalidate = sandbox.stub(ssoAccessTokenProvider, 'invalidate').returns()
+
+            await assertThrowsError(async () => {
                 await sut.refreshCredentials()
-            } catch (err) {
-                assert.strictEqual(stubInvalidate.called, true)
-            }
-            assert.strictEqual(stubAccessToken.called, true, 'access token was not called')
-            assert.strictEqual(stubSsoClient.called, true, 'ssoClient was not called')
+            })
+
+            assert.strictEqual(stubAccessToken.callCount, 1, 'accessToken not called')
+            assert.strictEqual(stubSsoClient.callCount, 1, 'getRoleCredentials not called')
+            assert.strictEqual(stubInvalidate.callCount, 1, 'invalidate not called')
         })
 
-        it('should return valid credentails', async () => {
+        it('should return valid credentials', async () => {
             sandbox.stub(ssoAccessTokenProvider, 'accessToken').resolves(validAccessToken)
             const response: GetRoleCredentialsResponse = {
                 roleCredentials: {
@@ -71,9 +77,9 @@ describe('SsoCredentialProvider', () => {
 
             const receivedCredentials = await sut.refreshCredentials()
 
-            assert.strictEqual(receivedCredentials.accessKeyId, 'dummyAccessKeyId')
-            assert.strictEqual(receivedCredentials.secretAccessKey, 'dummySecretAccessKey')
-            assert.strictEqual(receivedCredentials.sessionToken, 'dummySessionToken')
+            assert.strictEqual(receivedCredentials.accessKeyId, response.roleCredentials?.accessKeyId)
+            assert.strictEqual(receivedCredentials.secretAccessKey, response.roleCredentials?.secretAccessKey)
+            assert.strictEqual(receivedCredentials.sessionToken, response.roleCredentials?.sessionToken)
         })
     })
 })
