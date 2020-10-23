@@ -70,6 +70,11 @@ function assertEqualLaunchConfigs(actual: SamLaunchRequestArgs, expected: SamLau
         assert.ok(actual.manifestPath && actual.manifestPath.length > 9)
     }
 
+    // should never be defined if we're not debugging
+    if (expected.noDebug) {
+        delete expected.debugArgs
+    }
+
     // Normalize path fields before comparing.
     for (const o of [actual, expected]) {
         o.codeRoot = pathutil.normalize(o.codeRoot)
@@ -973,7 +978,7 @@ Outputs:
                 runtime: 'python3.7',
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
                 type: AWS_SAM_DEBUG_TYPE,
-                handlerName: 'app___vsctk___debug.lambda_handler',
+                handlerName: 'app.lambda_handler',
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -983,6 +988,9 @@ Outputs:
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'hello_world')),
+                debugArgs: [
+                    `/tmp/lambci_debug_files/py_debug_wrapper.py --host 0.0.0.0 --port ${actual.debugPort} --wait`,
+                ],
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 invokeTarget: { ...input.invokeTarget },
@@ -1001,7 +1009,6 @@ Outputs:
                 // Python-related fields
                 //
                 host: 'localhost',
-                outFilePath: pathutil.normalize(path.join(appDir, 'hello_world/app___vsctk___debug.py')),
                 pathMappings: [
                     {
                         localRoot: pathutil.normalize(path.join(appDir, 'hello_world')),
@@ -1053,7 +1060,6 @@ Outputs:
                 request: 'launch',
                 debugPort: undefined,
                 port: -1,
-                outFilePath: '',
                 handlerName: 'app.lambda_handler',
                 baseBuildDir: actualNoDebug.baseBuildDir,
                 envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
@@ -1089,7 +1095,7 @@ Outputs:
                 runtime: 'python3.7',
                 runtimeFamily: lambdaModel.RuntimeFamily.Python,
                 type: AWS_SAM_DEBUG_TYPE,
-                handlerName: 'app___vsctk___debug.lambda_handler',
+                handlerName: 'app.lambda_handler',
                 workspaceFolder: {
                     index: 0,
                     name: 'test-workspace-folder',
@@ -1099,6 +1105,9 @@ Outputs:
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'python3.7-plain-sam-app/hello_world')),
+                debugArgs: [
+                    `/tmp/lambci_debug_files/py_debug_wrapper.py --host 0.0.0.0 --port ${actual.debugPort} --wait`,
+                ],
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 invokeTarget: { ...input.invokeTarget },
@@ -1118,9 +1127,6 @@ Outputs:
                 // Python-related fields
                 //
                 host: 'localhost',
-                outFilePath: pathutil.normalize(
-                    path.join(appDir, 'python3.7-plain-sam-app/hello_world/app___vsctk___debug.py')
-                ),
                 pathMappings: [
                     {
                         localRoot: pathutil.normalize(path.join(appDir, 'python3.7-plain-sam-app/hello_world')),
@@ -1159,7 +1165,7 @@ Resources:
     Type: 'AWS::Serverless::Function'
     Properties:
       CodeUri: hello_world/
-      Handler: app___vsctk___debug.lambda_handler
+      Handler: app.lambda_handler
       Runtime: python3.7
       Events:
         HelloWorld:
@@ -1213,8 +1219,6 @@ Outputs:
             //
             // Test noDebug=true.
             //
-            /* TODO fix this test. This makes the handler name app___vsctk___debug.lambda_handler
-            // but that's actually what it does when you run without debugging, so did this test ever work?
             ;(input as any).noDebug = true
             const actualNoDebug = (await debugConfigProvider.makeConfig(folder, input))!
             const expectedNoDebug: SamLaunchRequestArgs = {
@@ -1223,14 +1227,12 @@ Outputs:
                 request: 'launch',
                 debugPort: undefined,
                 port: -1,
-                outFilePath: '',
                 handlerName: 'app.lambda_handler',
                 baseBuildDir: actualNoDebug.baseBuildDir,
                 envFile: `${actualNoDebug.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actualNoDebug.baseBuildDir}/event.json`,
             }
             assertEqualLaunchConfigs(actualNoDebug, expectedNoDebug)
-            */
         })
 
         it('debugconfig with extraneous env vars', async () => {
