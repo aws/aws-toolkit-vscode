@@ -25,7 +25,6 @@ import { configureParameterOverrides } from '../config/configureParameterOverrid
 import { getOverriddenParameters, getParameters } from '../utilities/parameterUtils'
 import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
 import { ext } from '../../shared/extensionGlobals'
-import { RegionNode } from '../../awsexplorer/regionNode'
 
 export interface SamDeployWizardResponse {
     parameterOverrides: Map<string, string>
