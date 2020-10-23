@@ -18,7 +18,7 @@ import { DefaultSamCliProcessInvokerContext, SamCliProcessInvokerContext } from 
 const localize = nls.loadMessageBundle()
 
 export const WAIT_FOR_DEBUGGER_MESSAGES = {
-    PYTHON: 'inside runtime container',
+    PYTHON: 'Starting debugger',
     NODEJS: 'Debugger listening on',
     DOTNET: 'Waiting for the debugger to attach...',
 }

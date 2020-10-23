@@ -21,6 +21,8 @@ import { ChannelLogger } from '../../utilities/vsCodeUtils'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
 import { invokeLambdaFunction, makeInputTemplate } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
+import { join } from 'path'
+import { ext } from '../../extensionGlobals'
 
 const PYTHON_DEBUG_ADAPTER_RETRY_DELAY_MS = 1000
 
@@ -77,7 +79,8 @@ export async function makePythonDebugConfig(config: SamLaunchRequestArgs): Promi
     if (!config.noDebug) {
         debugPort = await getStartPort()
 
-        config.debugArgs = [`-m ptvsd --host 0.0.0.0 --port ${debugPort} --wait`]
+        config.debuggerPath = ext.context.asAbsolutePath(join('resources', 'debugger'))
+        config.debugArgs = [`/tmp/lambci_debug_files/py_debug_wrapper.py --host 0.0.0.0 --port ${debugPort} --wait`]
 
         manifestPath = await makePythonDebugManifest({
             samProjectCodeRoot: config.codeRoot,

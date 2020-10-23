@@ -988,7 +988,9 @@ Outputs:
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'hello_world')),
-                debugArgs: [`-m ptvsd --host 0.0.0.0 --port ${actual.debugPort} --wait`],
+                debugArgs: [
+                    `/tmp/lambci_debug_files/py_debug_wrapper.py --host 0.0.0.0 --port ${actual.debugPort} --wait`,
+                ],
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 invokeTarget: { ...input.invokeTarget },
@@ -1103,7 +1105,9 @@ Outputs:
                 envFile: `${actual.baseBuildDir}/env-vars.json`,
                 eventPayloadFile: `${actual.baseBuildDir}/event.json`,
                 codeRoot: pathutil.normalize(path.join(appDir, 'python3.7-plain-sam-app/hello_world')),
-                debugArgs: [`-m ptvsd --host 0.0.0.0 --port ${actual.debugPort} --wait`],
+                debugArgs: [
+                    `/tmp/lambci_debug_files/py_debug_wrapper.py --host 0.0.0.0 --port ${actual.debugPort} --wait`,
+                ],
                 debugPort: actual.debugPort,
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 invokeTarget: { ...input.invokeTarget },
