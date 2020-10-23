@@ -25,14 +25,12 @@ import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.Bucket
 import software.aws.toolkits.core.region.AwsRegion
-import software.aws.toolkits.core.utils.RuleUtils
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources
-import software.aws.toolkits.jetbrains.settings.UpdateLambdaSettings
 import software.aws.toolkits.jetbrains.ui.ResourceSelector
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.waitForFalse
@@ -78,48 +76,6 @@ class EditFunctionDialogTest {
         }
         assertThat(dialog.getViewForTestAssertions().runtime.model.size).isEqualTo(LambdaHandlerResolver.supportedRuntimeGroups().flatMap { it.runtimes }.size)
         assertThat(dialog.getViewForTestAssertions().runtime.model.size).isNotEqualTo(Runtime.knownValues().size)
-
-        val dialog2 = runInEdtAndGet {
-            EditFunctionDialog(project = projectRule.project, mode = EditFunctionMode.UPDATE_CODE)
-        }
-        assertThat(dialog2.getViewForTestAssertions().runtime.model.size).isEqualTo(LambdaHandlerResolver.supportedRuntimeGroups().flatMap { it.runtimes }.size)
-        assertThat(dialog2.getViewForTestAssertions().runtime.model.size).isNotEqualTo(Runtime.knownValues().size)
-    }
-
-    @Test
-    fun `Loads saved settings if function name matches`() {
-        mockBuckets()
-
-        val arn = RuleUtils.randomName()
-        val settings = UpdateLambdaSettings.getInstance(arn)
-
-        settings.bucketName = "hello2"
-        settings.useContainer = true
-
-        val dialog = runInEdtAndGet {
-            EditFunctionDialog(project = projectRule.project, mode = EditFunctionMode.UPDATE_CODE, arn = arn)
-        }
-        dialog.getViewForTestAssertions().sourceBucket.waitToLoad()
-        assertThat(dialog.getViewForTestAssertions().buildInContainer.isSelected).isEqualTo(true)
-        assertThat(dialog.getViewForTestAssertions().sourceBucket.selectedItem?.toString()).isEqualTo("hello2")
-    }
-
-    @Test
-    fun `Does not load saved settings if function name does not match`() {
-        mockBuckets()
-
-        val arn = RuleUtils.randomName()
-        val settings = UpdateLambdaSettings.getInstance(arn)
-
-        settings.bucketName = "hello2"
-        settings.useContainer = true
-
-        val dialog = runInEdtAndGet {
-            EditFunctionDialog(project = projectRule.project, mode = EditFunctionMode.UPDATE_CODE, arn = "not$arn")
-        }
-        dialog.getViewForTestAssertions().sourceBucket.waitToLoad()
-        assertThat(dialog.getViewForTestAssertions().buildInContainer.isSelected).isEqualTo(false)
-        assertThat(dialog.getViewForTestAssertions().sourceBucket.selectedItem).isNull()
     }
 
     @Test
@@ -157,30 +113,6 @@ class EditFunctionDialogTest {
         assertThat(dialog.getViewForTestAssertions().configurationSettings.isVisible).isTrue()
         assertThat(dialog.getViewForTestAssertions().deploySettings.isVisible).isFalse()
         assertThat(dialog.getViewForTestAssertions().buildSettings.isVisible).isFalse()
-    }
-
-    @Test
-    fun updateCodeShowsOnlyDeploymentSettingsHandlerAndBuild() {
-        mockRoles()
-
-        val dialog = runInEdtAndGet {
-            EditFunctionDialog(project = projectRule.project, mode = EditFunctionMode.UPDATE_CODE)
-        }
-
-        assertThat(dialog.getViewForTestAssertions().deploySettings.isVisible).isTrue()
-        assertThat(dialog.getViewForTestAssertions().buildSettings.isVisible).isTrue()
-        assertThat(dialog.getViewForTestAssertions().handlerPanel.handler.isVisible).isTrue()
-
-        assertThat(dialog.getViewForTestAssertions().buildInContainer.isVisible).isTrue()
-
-        assertThat(dialog.getViewForTestAssertions().name.isVisible).isFalse()
-        assertThat(dialog.getViewForTestAssertions().description.isVisible).isFalse()
-        assertThat(dialog.getViewForTestAssertions().iamRole.isVisible).isFalse()
-        assertThat(dialog.getViewForTestAssertions().createRole.isVisible).isFalse()
-        assertThat(dialog.getViewForTestAssertions().runtime.isVisible).isFalse()
-        assertThat(dialog.getViewForTestAssertions().envVars.isVisible).isFalse()
-        assertThat(dialog.getViewForTestAssertions().timeoutSlider.isVisible).isFalse()
-        assertThat(dialog.getViewForTestAssertions().memorySlider.isVisible).isFalse()
     }
 
     private fun mockBuckets() {

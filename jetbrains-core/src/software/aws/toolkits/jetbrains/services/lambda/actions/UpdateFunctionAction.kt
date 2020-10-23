@@ -6,15 +6,18 @@ package software.aws.toolkits.jetbrains.services.lambda.actions
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.explorer.actions.SingleResourceNodeAction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
+import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.toDataClass
 import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionDialog
 import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionMode
+import software.aws.toolkits.jetbrains.services.lambda.upload.UpdateFunctionCodeDialog
 import software.aws.toolkits.jetbrains.utils.Operation
 import software.aws.toolkits.jetbrains.utils.TaggingResourceType
 import software.aws.toolkits.jetbrains.utils.warnResourceOperationAgainstCodePipeline
@@ -43,9 +46,13 @@ abstract class UpdateFunctionAction(private val mode: EditFunctionMode, title: S
                 TaggingResourceType.LAMBDA_FUNCTION,
                 Operation.UPDATE
             ) {
-                EditFunctionDialog(project, lambdaFunction, mode = mode).show()
+                updateLambda(project, lambdaFunction)
             }
         }
+    }
+
+    protected open fun updateLambda(project: Project, lambdaFunction: LambdaFunction) {
+        EditFunctionDialog(project, lambdaFunction, mode = mode).show()
     }
 }
 
@@ -57,5 +64,9 @@ class UpdateFunctionCodeAction : UpdateFunctionAction(EditFunctionMode.UPDATE_CO
             return
         }
         e.presentation.isVisible = false
+    }
+
+    override fun updateLambda(project: Project, lambdaFunction: LambdaFunction) {
+        UpdateFunctionCodeDialog(project, lambdaFunction).show()
     }
 }

@@ -5,6 +5,14 @@ package software.aws.toolkits.jetbrains.utils
 
 import com.intellij.util.ui.ListTableModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
+import software.aws.toolkits.jetbrains.ui.ResourceSelector
+
+fun ResourceSelector<*>.waitToLoad() {
+    runBlocking {
+        waitForFalse { isLoading }
+    }
+}
 
 suspend fun ListTableModel<*>.waitForModelToBeAtLeast(size: Int) {
     waitForFalse { items.size < size }

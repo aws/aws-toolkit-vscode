@@ -56,7 +56,7 @@ import javax.swing.JComponent
 private val NOTIFICATION_TITLE = message("lambda.service_name")
 
 enum class EditFunctionMode {
-    NEW, UPDATE_CONFIGURATION, UPDATE_CODE
+    NEW, UPDATE_CONFIGURATION, @Deprecated("All code paths using this should be dead") UPDATE_CODE
 }
 
 class EditFunctionDialog(
@@ -233,18 +233,15 @@ class EditFunctionDialog(
 
         FileDocumentManager.getInstance().saveAllDocuments()
 
-        val (future, message) = if (mode == UPDATE_CODE) {
-            lambdaCreator.updateLambda(module, element, functionDetails, s3Bucket, configurationChanged()) to
-                message("lambda.function.code_updated.notification", functionDetails.name)
-        } else {
-            lambdaCreator.createLambda(module, element, functionDetails, s3Bucket) to
-                message("lambda.function.created.notification", functionDetails.name)
-        }
-
+        val future = lambdaCreator.createLambda(module, element, functionDetails, s3Bucket)
         future.whenComplete { _, error ->
             when (error) {
                 null -> {
-                    notifyInfo(title = NOTIFICATION_TITLE, content = message, project = project)
+                    notifyInfo(
+                        title = NOTIFICATION_TITLE,
+                        content = message("lambda.function.created.notification", functionDetails.name),
+                        project = project
+                    )
                     LambdaTelemetry.editFunction(project, update = false, result = Result.Succeeded)
                     // If we created a new lambda, clear the resource cache for LIST_FUNCTIONS
                     if (mode == NEW) {
