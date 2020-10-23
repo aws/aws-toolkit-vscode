@@ -10,6 +10,7 @@ import { Region } from './endpoints'
 export interface RegionProvider {
     onRegionProviderUpdated: vscode.Event<void>
 
+    getDnsSuffixForRegion(regionId: string): string | undefined
     getPartitionId(regionId: string): string | undefined
     getRegions(partitionId: string): Region[]
     isServiceInRegion(serviceId: string, regionId: string): boolean

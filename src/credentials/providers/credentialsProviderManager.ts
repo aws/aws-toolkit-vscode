@@ -5,6 +5,7 @@
 
 import { CredentialsProvider } from './credentialsProvider'
 import { CredentialsProviderFactory } from './credentialsProviderFactory'
+import { recordAwsLoadCredentials } from '../../shared/telemetry/telemetry'
 import { asString, CredentialsProviderId } from './credentialsProviderId'
 
 /**
@@ -20,7 +21,9 @@ export class CredentialsProviderManager {
         for (const factory of this.providerFactories) {
             await factory.refresh()
 
-            providers = providers.concat(factory.listProviders())
+            const refreshed = factory.listProviders()
+            recordAwsLoadCredentials({ credentialSourceId: factory.getCredentialType(), value: refreshed.length })
+            providers = providers.concat(refreshed)
         }
 
         return providers

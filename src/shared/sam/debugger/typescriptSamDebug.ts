@@ -69,7 +69,6 @@ export async function makeTypescriptConfig(config: SamLaunchRequestArgs): Promis
         type: 'node',
         request: config.noDebug ? 'launch' : 'attach',
         runtimeFamily: RuntimeFamily.NodeJS,
-        name: 'SamLocalDebug',
         preLaunchTask: undefined,
         address: 'localhost',
         port: config.debugPort ?? -1,

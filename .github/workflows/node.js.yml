@@ -1,0 +1,37 @@
+# This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: CI
+
+on:
+    push:
+        branches: [master]
+    pull_request:
+        branches: [master, feature/*]
+
+jobs:
+    build:
+        name: Build
+        runs-on: macos-latest
+
+        strategy:
+            matrix:
+                node-version: [10.x]
+
+        steps:
+            - uses: actions/checkout@v2
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v1
+              with:
+                  node-version: ${{ matrix.node-version }}
+            - run: npm install
+            - run: npm run vscode:prepublish
+              env:
+                  NODE_OPTIONS: '--max-old-space-size=8192'
+            - name: Run headless test
+              uses: GabrielBB/xvfb-action@v1.2
+              with:
+                  run: npm test
+            - name: Code coverage
+              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
+              run: bash <(curl -s https://codecov.io/bash) -s .coverage

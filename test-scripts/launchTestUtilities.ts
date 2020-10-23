@@ -33,8 +33,7 @@ export async function setupVSCodeTestInstance(): Promise<string> {
     console.log(`Setting up VS Code test instance, version: ${vsCodeVersion}`)
     const vsCodeExecutablePath = await downloadAndUnzipVSCode(vsCodeVersion)
     console.log(`VS Code test instance location: ${vsCodeExecutablePath}`)
-
-    await invokeVSCodeCli(vsCodeExecutablePath, ['--version'])
+    console.log(await invokeVSCodeCli(vsCodeExecutablePath, ['--version']))
 
     return vsCodeExecutablePath
 }
@@ -53,7 +52,7 @@ export async function invokeVSCodeCli(vsCodeExecutablePath: string, args: string
     console.log(`Invoking vscode CLI command:\n    "${vsCodeCliPath}" ${JSON.stringify(cmdArgs)}`)
     const spawnResult = child_process.spawnSync(vsCodeCliPath, cmdArgs, {
         encoding: 'utf-8',
-        stdio: 'inherit',
+        stdio: 'pipe',
     })
 
     if (spawnResult.status !== 0) {
@@ -64,16 +63,39 @@ export async function invokeVSCodeCli(vsCodeExecutablePath: string, args: string
         throw spawnResult.error
     }
 
-    if (spawnResult.stdout) {
-        console.log(spawnResult.stdout)
-    }
-
     return spawnResult.stdout
 }
 
 export async function installVSCodeExtension(vsCodeExecutablePath: string, extensionIdentifier: string): Promise<void> {
     console.log(`Installing VS Code Extension: ${extensionIdentifier}`)
-    await invokeVSCodeCli(vsCodeExecutablePath, ['--install-extension', extensionIdentifier])
+    console.log(await invokeVSCodeCli(vsCodeExecutablePath, ['--install-extension', extensionIdentifier]))
+}
+
+/**
+ * Alternative to the `--disable-extensions` CLI flag which allows us to
+ * selectively keep some extensions enabled.
+ *
+ * @param vsCodeExecutablePath Path to vscode CLI program.
+ * @param exceptIds List of extension ids that should *not* be disabled.
+ *
+ * @returns List of args which the caller is expected to pass to vscode CLI, of the form:
+ * ["--disable-extension", "foo.bar.baz", "--disable-extension", ...]
+ */
+export async function getCliArgsToDisableExtensions(
+    vsCodeExecutablePath: string,
+    params: { except: string[] }
+): Promise<string[]> {
+    console.log(`Disabling all VS Code extensions *except*: ${params.except}`)
+    const output = await invokeVSCodeCli(vsCodeExecutablePath, ['--list-extensions'])
+    const foundExtensions = output.toString('utf8').split('\n')
+    let ids: string[] = []
+    for (let extId of foundExtensions) {
+        if (extId.trim() && !params.except.includes(extId)) {
+            ids.push('--disable-extension')
+            ids.push(extId)
+        }
+    }
+    return ids
 }
 
 function getMinVsCodeVersion(): string {

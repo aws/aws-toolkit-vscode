@@ -42,24 +42,20 @@ export class DefaultSamCliProcessInvoker implements SamCliProcessInvoker {
     public async invoke(options?: SamCliProcessInvokeOptions): Promise<ChildProcessResult> {
         const invokeOptions = makeRequiredSamCliProcessInvokeOptions(options)
 
+        const sam = await this.context.cliConfig.getOrDetectSamCli()
+        if (!sam.path) {
+            getLogger().warn('SAM CLI not found and not configured')
+        } else if (sam.autoDetected) {
+            getLogger().info('SAM CLI not configured, using SAM found at: %O', sam.path)
+        }
+
+        const samCommand = sam.path ? sam.path : 'sam'
         const childProcess: ChildProcess = new ChildProcess(
-            this.samCliLocation,
+            samCommand,
             invokeOptions.spawnOptions,
             ...invokeOptions.arguments
         )
 
         return await childProcess.run()
-    }
-
-    // Gets SAM CLI Location, throws if not found
-    private get samCliLocation(): string {
-        const samCliLocation: string | undefined = this.context.cliConfig.getSamCliLocation()
-        if (!samCliLocation) {
-            const err = new Error('SAM CLI location not configured')
-            getLogger().error(err)
-            throw err
-        }
-
-        return samCliLocation
     }
 }

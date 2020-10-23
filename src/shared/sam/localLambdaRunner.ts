@@ -22,11 +22,11 @@ import { normalizeSeparator } from '../utilities/pathUtils'
 import { Timeout } from '../utilities/timeoutUtils'
 import { ChannelLogger } from '../utilities/vsCodeUtils'
 import { tryGetAbsolutePath } from '../utilities/workspaceUtils'
-import { DefaultValidatingSamCliProcessInvoker } from './cli/defaultValidatingSamCliProcessInvoker'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from './cli/samCliBuild'
 import { SamCliLocalInvokeInvocation, SamCliLocalInvokeInvocationArguments } from './cli/samCliLocalInvoke'
 import { SamLaunchRequestArgs } from './debugger/awsSamDebugger'
 import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
+import { DefaultSamCliProcessInvoker } from './cli/samCliInvoker'
 
 // TODO: remove this and all related code.
 export interface LambdaLocalInvokeParams {
@@ -102,7 +102,11 @@ export async function makeInputTemplate(config: SamLaunchRequestArgs): Promise<s
             throw new Error('Resource not found in base template')
         }
 
-        const resourceWithOverriddenHandler = {
+        // We make a copy as to not mutate the template registry version
+        // TODO remove the template registry? make it return non-mutatable things?
+        const templateClone = { ...template }
+
+        const newHandlerFunction = {
             ...templateResource,
             Properties: {
                 ...templateResource.Properties!,
@@ -110,9 +114,13 @@ export async function makeInputTemplate(config: SamLaunchRequestArgs): Promise<s
             },
         }
 
-        newTemplate = new SamTemplateGenerator(template).withTemplateResources({
-            [resourceName]: resourceWithOverriddenHandler,
-        })
+        if (!templateClone.Resources) {
+            templateClone.Resources = {}
+        }
+        templateClone.Resources[resourceName] = newHandlerFunction
+
+        // TODO fix this API, withTemplateResources is required (with a runtime error), but if we pass in a template why do we need it?
+        newTemplate = new SamTemplateGenerator(templateClone).withTemplateResources(templateClone.Resources)
 
         // template type uses the template dir and a throwaway template name so we can use existing relative paths
         // clean this one up manually; we don't want to accidentally delete the workspace dir
@@ -171,7 +179,7 @@ export async function invokeLambdaFunction(
         ctx.chanLogger.info('AWS.output.sam.local.startRun', "Preparing to run '{0}' locally...", config.handlerName)
     }
 
-    const processInvoker = new DefaultValidatingSamCliProcessInvoker({})
+    const processInvoker = new DefaultSamCliProcessInvoker()
 
     ctx.chanLogger.info('AWS.output.building.sam.application', 'Building SAM Application...')
     const samBuildOutputFolder = path.join(config.baseBuildDir!, 'output')
@@ -236,8 +244,6 @@ export async function invokeLambdaFunction(
         parameterOverrides: config.parameterOverrides,
         skipPullImage: config.sam?.skipNewImageCheck,
     }
-
-    delete config.invokeTarget // Must not be used beyond this point.
 
     const command = new SamCliLocalInvokeInvocation(localInvokeArgs)
 

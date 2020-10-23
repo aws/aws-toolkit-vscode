@@ -45,30 +45,6 @@ describe('SamCliConfiguration', () => {
         assert.strictEqual(samCliConfig.getSamCliLocation(), fakeCliLocation)
     })
 
-    it('calls location provider when config references file that does not exist', async () => {
-        let timesCalled: number = 0
-        const fakeCliLocation = path.join(tempFolder, 'fakeSamCli')
-
-        await settingsConfiguration.writeSetting(
-            DefaultSamCliConfiguration.CONFIGURATION_KEY_SAMCLI_LOCATION,
-            fakeCliLocation,
-            ''
-        )
-
-        const samCliConfig: SamCliConfiguration = new DefaultSamCliConfiguration(settingsConfiguration, {
-            getLocation: async (): Promise<string | undefined> => {
-                timesCalled++
-
-                return Promise.resolve(fakeCliLocation)
-            },
-        })
-
-        await samCliConfig.initialize()
-
-        assert.strictEqual(samCliConfig.getSamCliLocation(), fakeCliLocation)
-        assert.strictEqual(timesCalled, 1)
-    })
-
     it('calls location provider when config not set', async () => {
         let timesCalled: number = 0
 
@@ -108,7 +84,7 @@ describe('SamCliConfiguration', () => {
 
         await samCliConfig.initialize()
 
-        assert.strictEqual(samCliConfig.getSamCliLocation(), undefined)
+        assert.strictEqual(samCliConfig.getSamCliLocation(), '')
     })
 
     function createSampleFile(filename: string): void {

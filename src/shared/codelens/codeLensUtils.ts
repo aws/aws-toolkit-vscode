@@ -49,7 +49,9 @@ export async function makeCodeLenses({
     }
 
     const lenses: vscode.CodeLens[] = []
+    // User already has launch.json configs for these:
     const existingConfigs = getReferencedHandlerPaths(new LaunchConfiguration(document.uri))
+
     for (const handler of handlers) {
         // handler.range is a RangeOrCharOffset union type. Extract vscode.Range.
         const range =

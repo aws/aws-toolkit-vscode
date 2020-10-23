@@ -4,6 +4,8 @@
  */
 
 import * as vscode from 'vscode'
+import { getLogger } from '../logger'
+import { localize } from '../utilities/vsCodeUtils'
 
 import { CloudFormationTemplateRegistry } from './templateRegistry'
 import { CloudFormationTemplateRegistryManager } from './templateRegistryManager'
@@ -17,8 +19,18 @@ export const TEMPLATE_FILE_GLOB_PATTERN = '**/template.{yaml,yml}'
  * @param extensionContext VS Code extension context
  */
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
-    const registry = CloudFormationTemplateRegistry.getRegistry()
-    const manager = new CloudFormationTemplateRegistryManager(registry)
-    await manager.addTemplateGlob(TEMPLATE_FILE_GLOB_PATTERN)
-    extensionContext.subscriptions.push(manager)
+    try {
+        const registry = CloudFormationTemplateRegistry.getRegistry()
+        const manager = new CloudFormationTemplateRegistryManager(registry)
+        await manager.addTemplateGlob(TEMPLATE_FILE_GLOB_PATTERN)
+        extensionContext.subscriptions.push(manager)
+    } catch (e) {
+        vscode.window.showErrorMessage(
+            localize(
+                'AWS.codelens.failToInitialize',
+                'Failed to activate template registry. CodeLenses will not appear on SAM template files.'
+            )
+        )
+        getLogger().error('Failed to activate template registry', e)
+    }
 }
