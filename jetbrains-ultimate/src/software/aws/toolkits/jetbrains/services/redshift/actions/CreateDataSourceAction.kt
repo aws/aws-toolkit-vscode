@@ -19,8 +19,6 @@ import software.aws.toolkits.telemetry.DatabaseCredentials.IAM
 import software.aws.toolkits.telemetry.RedshiftTelemetry
 import software.aws.toolkits.telemetry.Result
 
-// It is registered in ext-datagrip.xml FIX_WHEN_MIN_IS_201
-@Suppress("ComponentNotRegistered")
 class CreateDataSourceAction : SingleExplorerNodeAction<RedshiftExplorerNode>(message("redshift.connect_aws_credentials")), DumbAware {
     override fun actionPerformed(selected: RedshiftExplorerNode, e: AnActionEvent) {
         object : Backgroundable(

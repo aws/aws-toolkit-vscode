@@ -27,8 +27,6 @@ import software.aws.toolkits.telemetry.RdsTelemetry
 import software.aws.toolkits.telemetry.RedshiftTelemetry
 import software.aws.toolkits.telemetry.Result
 
-// It is registered in ext-datagrip.xml FIX_WHEN_MIN_IS_201
-@Suppress("ComponentNotRegistered")
 class AddSecretsManagerConnection : SingleExplorerNodeAction<AwsExplorerNode<*>>(message("datagrip.secretsmanager.action")), DumbAware {
     override fun actionPerformed(selected: AwsExplorerNode<*>, e: AnActionEvent) {
         var result = Result.Succeeded

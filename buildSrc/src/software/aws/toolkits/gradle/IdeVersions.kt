@@ -13,24 +13,6 @@ object IdeVersions {
 
     private val ideProfiles = listOf(
         Profile(
-            name = "2019.3",
-            communityPlugins = listOf(
-                "java",
-                "com.intellij.gradle",
-                "org.jetbrains.idea.maven",
-                "PythonCore:193.5233.139",
-                "Docker:193.5233.140"
-            ),
-            ultimatePlugins = listOf(
-                "JavaScript",
-                "JavaScriptDebugger",
-                "Pythonid:193.5233.109"
-            ),
-            riderSdkOverride = "RD-2019.3.4",
-            rdGenVersion = "0.193.146",
-            nugetVersion = "2019.3.4"
-        ),
-        Profile(
             name = "2020.1",
             communityPlugins = listOf(
                 "java",

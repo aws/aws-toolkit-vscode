@@ -8,7 +8,10 @@ import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ExtensionTestUtil
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.runInEdtAndWait
+import com.intellij.ui.tree.AsyncTreeModel
+import com.intellij.ui.tree.StructureTreeModel
 import com.intellij.ui.treeStructure.Tree
+import com.intellij.util.concurrency.Invoker
 import com.intellij.util.ui.tree.TreeUtil
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.atLeastOnce
@@ -19,8 +22,6 @@ import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.fillResourceCache
-import software.aws.toolkits.jetbrains.ui.tree.AsyncTreeModel
-import software.aws.toolkits.jetbrains.ui.tree.StructureTreeModel
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import javax.swing.tree.TreeModel
@@ -69,7 +70,8 @@ class AwsExplorerTreeStructureProviderTest {
 
     private fun createTreeModel(): TreeModel {
         val awsTreeModel = AwsExplorerTreeStructure(projectRule.project)
-        val structureTreeModel = StructureTreeModel(awsTreeModel, disposableRule.disposable)
+        val structureTreeModel =
+            StructureTreeModel(awsTreeModel, null, Invoker.forBackgroundThreadWithoutReadAction(disposableRule.disposable), disposableRule.disposable)
         return AsyncTreeModel(structureTreeModel, false, disposableRule.disposable)
     }
 }

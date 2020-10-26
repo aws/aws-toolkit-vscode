@@ -34,8 +34,6 @@ import software.aws.toolkits.telemetry.DatabaseCredentials
 import software.aws.toolkits.telemetry.RdsTelemetry
 import software.aws.toolkits.telemetry.Result
 
-// It is registered in ext-datagrip.xml FIX_WHEN_MIN_IS_201
-@Suppress("ComponentNotRegistered")
 class CreateIamDataSourceAction : SingleExplorerNodeAction<RdsNode>(message("rds.iam_config")), DumbAware {
     override fun actionPerformed(selected: RdsNode, e: AnActionEvent) {
         if (!checkPrerequisites(selected)) {

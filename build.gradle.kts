@@ -293,7 +293,7 @@ tasks.getByName<PrepareSandboxTask>("prepareSandbox") {
 
 tasks.getByName<PublishTask>("publishPlugin") {
     token(publishToken)
-    channels(if (publishChannel != null) publishChannel.split(",").map { it.trim() } else listOf())
+    channels(publishChannel.split(",").map { it.trim() })
 }
 
 tasks.register<GenerateGithubChangeLog>("generateChangeLog") {
