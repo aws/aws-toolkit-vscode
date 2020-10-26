@@ -131,8 +131,6 @@ class SamProjectBuilder(private val generator: SamProjectGenerator) : ModuleBuil
 
     private fun openReadmeFile(project: Project, contentRoot: VirtualFile) {
         VfsUtil.findRelativeFile(contentRoot, "README.md")?.let { readme ->
-            // it's only available since the first non-EAP version of intellij, so it is fine
-            @Suppress("MissingRecentApi") // Remove when 193 is dropped FIX_WHEN_MIN_IS_201
             readme.putUserData(TextEditorWithPreview.DEFAULT_LAYOUT_FOR_FILE, TextEditorWithPreview.Layout.SHOW_PREVIEW)
 
             val fileEditorManager = FileEditorManager.getInstance(project)

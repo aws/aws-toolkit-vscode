@@ -3,9 +3,9 @@
 
 package software.aws.toolkits.jetbrains.core
 
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.util.use
 import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -176,13 +176,6 @@ class AwsClientManagerTest {
 
     // Test against real version so bypass ServiceManager for the client manager
     private fun getClientManager() = AwsClientManager()
-
-    // Back-ported from 2020.1 for 2019.3 compat FIX_WHEN_MIN_IS_201
-    private inline fun <T : Disposable, R> T.use(block: (T) -> R): R = try {
-        block(this)
-    } finally {
-        Disposer.dispose(this)
-    }
 
     class DummyServiceClient(val httpClient: SdkHttpClient) : TestClient() {
         companion object {

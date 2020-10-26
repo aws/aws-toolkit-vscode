@@ -65,7 +65,8 @@
     ]]></description>
 
     <vendor email="aws-toolkit-jetbrains@amazon.com" url="https://aws.amazon.com/">AWS</vendor>
-    <idea-version since-build="193" until-build="201.*"/>
+    <!-- 201.6668.113 is 2020.1 EAP 1 -->
+    <idea-version since-build="201.6668.113" until-build="202.*"/>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->
@@ -86,10 +87,6 @@
     <depends optional="true" config-file="ext-datagrip.xml">com.intellij.database</depends>
 
     <xi:include href="/META-INF/change-notes.xml" xpointer="xpointer(/idea-plugin/*)">
-        <xi:fallback/>
-    </xi:include>
-
-    <xi:include href="/META-INF/plugin-extra.xml" xpointer="xpointer(/idea-plugin/*)">
         <xi:fallback/>
     </xi:include>
 

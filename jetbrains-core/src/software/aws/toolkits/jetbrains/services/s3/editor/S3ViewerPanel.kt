@@ -12,7 +12,10 @@ import com.intellij.openapi.actionSystem.Separator
 import com.intellij.openapi.project.Project
 import com.intellij.ui.PopupHandler
 import com.intellij.ui.ToolbarDecorator
+import com.intellij.ui.tree.AsyncTreeModel
+import com.intellij.ui.tree.StructureTreeModel
 import com.intellij.ui.treeStructure.SimpleTreeStructure
+import com.intellij.util.concurrency.Invoker
 import software.aws.toolkits.jetbrains.services.s3.objectActions.CopyPathAction
 import software.aws.toolkits.jetbrains.services.s3.objectActions.CopyUrlAction
 import software.aws.toolkits.jetbrains.services.s3.objectActions.DeleteObjectAction
@@ -22,8 +25,6 @@ import software.aws.toolkits.jetbrains.services.s3.objectActions.RefreshSubTreeA
 import software.aws.toolkits.jetbrains.services.s3.objectActions.RefreshTreeAction
 import software.aws.toolkits.jetbrains.services.s3.objectActions.RenameObjectAction
 import software.aws.toolkits.jetbrains.services.s3.objectActions.UploadObjectAction
-import software.aws.toolkits.jetbrains.ui.tree.AsyncTreeModel
-import software.aws.toolkits.jetbrains.ui.tree.StructureTreeModel
 import javax.swing.JComponent
 import javax.swing.SwingConstants
 import javax.swing.table.DefaultTableCellRenderer
@@ -34,7 +35,13 @@ class S3ViewerPanel(disposable: Disposable, private val project: Project, privat
     private val rootNode: S3TreeDirectoryNode = S3TreeDirectoryNode(virtualBucket, null, "")
 
     init {
-        val structureTreeModel: StructureTreeModel<SimpleTreeStructure> = StructureTreeModel(SimpleTreeStructure.Impl(rootNode), disposable)
+        val structureTreeModel: StructureTreeModel<SimpleTreeStructure> = StructureTreeModel(
+            SimpleTreeStructure.Impl(rootNode),
+            null,
+            // TODO this has a concurrency of 1, do we want to adjust this?
+            Invoker.forBackgroundThreadWithoutReadAction(disposable),
+            disposable
+        )
         val model = S3TreeTableModel(
             AsyncTreeModel(structureTreeModel, true, disposable),
             arrayOf(S3Column(S3ColumnType.NAME), S3Column(S3ColumnType.SIZE), S3Column(S3ColumnType.LAST_MODIFIED)),

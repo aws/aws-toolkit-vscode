@@ -1,7 +1,6 @@
 // Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-@file:Suppress("DEPRECATION") // TODO: Investigate AsyncTreeModel FIX_WHEN_MIN_IS_201
 package software.aws.toolkits.jetbrains.core.explorer
 
 import com.intellij.execution.Location
@@ -33,7 +32,10 @@ import com.intellij.ui.PopupHandler
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.TreeUIHelper
 import com.intellij.ui.components.panels.NonOpaquePanel
+import com.intellij.ui.tree.AsyncTreeModel
+import com.intellij.ui.tree.StructureTreeModel
 import com.intellij.ui.treeStructure.Tree
+import com.intellij.util.concurrency.Invoker
 import com.intellij.util.ui.GridBag
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
@@ -52,8 +54,6 @@ import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerResourceNo
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerServiceRootNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceActionNode
 import software.aws.toolkits.jetbrains.core.explorer.nodes.ResourceLocationNode
-import software.aws.toolkits.jetbrains.ui.tree.AsyncTreeModel
-import software.aws.toolkits.jetbrains.ui.tree.StructureTreeModel
 import java.awt.Component
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
@@ -71,7 +71,9 @@ class ExplorerToolWindow(project: Project) : SimpleToolWindowPanel(true, true), 
     private val actionManager = ActionManagerEx.getInstanceEx()
     private val treePanelWrapper = NonOpaquePanel()
     private val awsTreeModel = AwsExplorerTreeStructure(project)
-    private val structureTreeModel = StructureTreeModel(awsTreeModel, this)
+
+    // The 4 max threads is arbitrary, but we want > 1 so that we can load more than one node at a time
+    private val structureTreeModel = StructureTreeModel(awsTreeModel, null, Invoker.Background(this, 4), this)
     private val awsTree = createTree(AsyncTreeModel(structureTreeModel, true, this))
     private val awsTreePanel = ScrollPaneFactory.createScrollPane(awsTree)
     private val accountSettingsManager = AwsConnectionManager.getInstance(project)

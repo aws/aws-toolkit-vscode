@@ -12,14 +12,12 @@ import com.intellij.ui.table.TableView
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.LogStreamEntry
 import software.aws.toolkits.resources.message
 import java.awt.datatransfer.StringSelection
+import java.util.function.Supplier
 
-// FIX_WHEN_MIN_IS_201 make anaction text dynamic based on table size
+// FIX_WHEN_MIN_IS_202 this AnAction was added in the last 2020.1 eap so it's valid. Remove this warning
 class CopyFromTableAction(private val table: TableView<LogStreamEntry>) :
-    AnAction(message("cloudwatch.logs.copy_action", 1), null, AllIcons.Actions.Copy),
+    AnAction(Supplier { message("cloudwatch.logs.copy_action", table.selectedRows.size) }, AllIcons.Actions.Copy),
     DumbAware {
-    override fun update(e: AnActionEvent) {
-        e.presentation.text = message("cloudwatch.logs.copy_action", table.selectedRows.size)
-    }
 
     override fun actionPerformed(e: AnActionEvent) {
         val copyPasteManager = CopyPasteManager.getInstance()

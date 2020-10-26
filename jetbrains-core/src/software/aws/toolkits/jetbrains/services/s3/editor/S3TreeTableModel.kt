@@ -3,13 +3,13 @@
 // Copyright 2000-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package software.aws.toolkits.jetbrains.services.s3.editor
 
+import com.intellij.ui.tree.AsyncTreeModel
+import com.intellij.ui.tree.StructureTreeModel
 import com.intellij.ui.tree.TreeVisitor
 import com.intellij.ui.treeStructure.SimpleTreeStructure
 import com.intellij.ui.treeStructure.treetable.TreeTableModel
 import com.intellij.util.ui.ColumnInfo
 import org.jetbrains.concurrency.Promise
-import software.aws.toolkits.jetbrains.ui.tree.AsyncTreeModel
-import software.aws.toolkits.jetbrains.ui.tree.StructureTreeModel
 import javax.swing.JTree
 import javax.swing.tree.TreeModel
 import javax.swing.tree.TreePath
