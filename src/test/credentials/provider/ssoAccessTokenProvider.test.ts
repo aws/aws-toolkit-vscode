@@ -4,12 +4,14 @@
  */
 
 import * as assert from 'assert'
+import * as lolex from 'lolex'
 import * as SDK from 'aws-sdk'
 import * as sinon from 'sinon'
 import { DiskCache } from '../../../credentials/sso/diskCache'
 import { SsoAccessTokenProvider } from '../../../credentials/sso/ssoAccessTokenProvider'
 import { CreateTokenResponse, StartDeviceAuthorizationResponse } from 'aws-sdk/clients/ssooidc'
 import { SsoClientRegistration } from '../../../credentials/sso/ssoClientRegistration'
+import { assertThrowsError } from '../../../test/shared/utilities/assertUtils'
 
 describe('SsoAccessTokenProvider', () => {
     let sandbox = sinon.createSandbox()
@@ -61,8 +63,18 @@ describe('SsoAccessTokenProvider', () => {
         sandbox.stub(cache, 'saveClientRegistration').returns()
     }
 
+    let clock: lolex.InstalledClock
+
+    before(() => {
+        clock = lolex.install()
+    })
+
     afterEach(async () => {
         sandbox.restore()
+    })
+
+    after(() => {
+        clock.uninstall()
     })
 
     describe('accessToken', () => {
@@ -126,6 +138,7 @@ describe('SsoAccessTokenProvider', () => {
             stubCreateToken.onFirstCall().returns(({
                 promise: sandbox.stub().throws({ code: 'AuthorizationPendingException' }),
             } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
+            clock.tickAsync('1')
 
             stubCreateToken.onSecondCall().returns(({
                 promise: sandbox.stub().resolves(fakeCreateTokenResponse),
@@ -139,7 +152,7 @@ describe('SsoAccessTokenProvider', () => {
 
             const durationInSeconds = (endTime - startTime) / 1000
 
-            assert.strictEqual(durationInSeconds > 1, true)
+            assert.strictEqual(durationInSeconds >= 1, true)
 
             assert.strictEqual(receivedToken.startUrl, validAccessToken.startUrl)
             assert.strictEqual(receivedToken.region, validAccessToken.region)
@@ -152,19 +165,21 @@ describe('SsoAccessTokenProvider', () => {
             setUpStubCache(validRegistation)
             sandbox.stub(sut, 'authorizeClient').resolves(validAuthorization)
 
+            let errToThrow = new Error() as SDK.AWSError
+            errToThrow.code = 'ErrorNotSlowDownAuthPendingOrTimeOut'
+
             const stubCreateToken = sandbox.stub(ssoOidcClient, 'createToken')
             stubCreateToken.returns(({
-                promise: sandbox.stub().throws({ code: 'ErrorNotSlowDownAuthPendingOrTimeOut' }),
+                promise: sandbox.stub().throws(errToThrow),
             } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
 
             const stubSaveAccessToken = sandbox.stub(cache, 'saveAccessToken').returns()
 
-            try {
+            await assertThrowsError(async () => {
                 await sut.accessToken()
-            } catch (err) {
-                assert.strictEqual(stubCreateToken.callCount, 1)
-            }
+            })
 
+            assert.strictEqual(stubCreateToken.callCount, 1)
             assert.strictEqual(stubSaveAccessToken.called, false)
         })
 
@@ -176,6 +191,7 @@ describe('SsoAccessTokenProvider', () => {
             stubCreateToken.onFirstCall().returns(({
                 promise: sandbox.stub().throws({ code: 'SlowDownException' }),
             } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
+            clock.tickAsync('6')
 
             stubCreateToken.onSecondCall().returns(({
                 promise: sandbox.stub().resolves(fakeCreateTokenResponse),
@@ -190,7 +206,7 @@ describe('SsoAccessTokenProvider', () => {
             const durationInSeconds = (endTime - startTime) / 1000
 
             //The default backoff delay is 5 seconds, the starting retry interval is 1 second
-            assert.strictEqual(durationInSeconds > 6, true, 'Duration not over 6 seconds')
+            assert.strictEqual(durationInSeconds >= 6, true, 'Duration not over 6 seconds')
             assert.strictEqual(returnedToken.startUrl, validAccessToken.startUrl)
             assert.strictEqual(returnedToken.region, validAccessToken.region)
             assert.strictEqual(returnedToken.accessToken, validAccessToken.accessToken)
@@ -201,9 +217,12 @@ describe('SsoAccessTokenProvider', () => {
 
     describe('authorizeClient', () => {
         it('should remove the client registration cache on InvalidClientException', async () => {
+            const errToThrow = new Error() as SDK.AWSError
+            errToThrow.code = 'InvalidClientException'
+
             const stubSsoOidcClient = sandbox.stub(ssoOidcClient, 'startDeviceAuthorization')
             stubSsoOidcClient.returns(({
-                promise: sandbox.stub().throws({ code: 'InvalidClientException' }),
+                promise: sandbox.stub().throws(errToThrow),
             } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
 
             const stubInvalidateCache = sandbox.stub(cache, 'invalidateClientRegistration').returns()
@@ -214,11 +233,11 @@ describe('SsoAccessTokenProvider', () => {
                 expiresAt: new Date(Date.now() + HOUR_IN_MS).toISOString(),
             }
 
-            try {
+            await assertThrowsError(async () => {
                 await sut.authorizeClient(dummyRegistration)
-            } catch {
-                assert.strictEqual(stubInvalidateCache.callCount, 1)
-            }
+            })
+
+            assert.strictEqual(stubInvalidateCache.callCount, 1)
         })
     })
 })
