@@ -23,23 +23,15 @@ import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.LambdaTelemetry
 import software.aws.toolkits.telemetry.Result
-import javax.swing.Action
 import javax.swing.JComponent
-
-private val NOTIFICATION_TITLE = message("lambda.service_name")
 
 class UpdateFunctionConfigDialog(private val project: Project, private val initialSettings: LambdaFunction) : DialogWrapper(project) {
     private val view = UpdateFunctionConfigPanel(project)
 
-    private val action: OkAction = object : OkAction() {
-        init {
-            putValue(Action.NAME, message("lambda.upload.update_settings_button.title"))
-        }
-    }
-
     init {
         super.init()
         title = message("lambda.upload.updateConfiguration.title", initialSettings.name)
+        setOKButtonText(message("general.update_button"))
 
         view.name.text = initialSettings.name
         view.description.text = initialSettings.description
@@ -64,14 +56,19 @@ class UpdateFunctionConfigDialog(private val project: Project, private val initi
 
     override fun doValidate(): ValidationInfo? = view.validatePanel()
 
-    override fun getOKAction(): Action = action
-
     override fun doCancelAction() {
         LambdaTelemetry.editFunction(project, result = Result.Cancelled)
         super.doCancelAction()
     }
 
     override fun doOKAction() {
+        if (!isOKActionEnabled) {
+            return
+        }
+
+        setOKButtonText(message("general.in_progress_button"))
+        isOKActionEnabled = false
+
         val functionDetails = viewToFunctionDetails()
         val lambdaClient: LambdaClient = project.awsClient()
 
@@ -79,7 +76,7 @@ class UpdateFunctionConfigDialog(private val project: Project, private val initi
             LambdaFunctionCreator(lambdaClient).update(functionDetails)
                 .thenAccept {
                     notifyInfo(
-                        title = NOTIFICATION_TITLE,
+                        title = message("lambda.service_name"),
                         content = message("lambda.function.configuration_updated.notification", functionDetails.name)
                     )
                     runInEdt(ModalityState.any()) { close(OK_EXIT_CODE) }
@@ -87,6 +84,8 @@ class UpdateFunctionConfigDialog(private val project: Project, private val initi
                 }.exceptionally { error ->
                     setErrorText(ExceptionUtil.getNonEmptyMessage(error, error.toString()))
                     LambdaTelemetry.editFunction(project, update = true, result = Result.Failed)
+                    setOKButtonText(message("general.update_button"))
+                    isOKActionEnabled = true
                     null
                 }
         }

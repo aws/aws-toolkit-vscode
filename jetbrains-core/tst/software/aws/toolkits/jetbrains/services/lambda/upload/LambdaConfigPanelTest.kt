@@ -97,6 +97,12 @@ class LambdaConfigPanelTest {
     }
 
     @Test
+    fun `timeout must be positive`() {
+        sut.timeoutSlider.textField.text = "-1"
+        assertThat(sut.validatePanel()?.message).contains("The specified value must be an integer and between")
+    }
+
+    @Test
     fun `timeout must be within lower bound`() {
         sut.timeoutSlider.textField.text = "0"
         assertThat(sut.validatePanel()?.message).contains("The specified value must be an integer and between")
@@ -109,7 +115,7 @@ class LambdaConfigPanelTest {
     }
 
     @Test
-    fun `memroy must be specified`() {
+    fun `memory must be specified`() {
         sut.memorySlider.textField.text = ""
         assertThat(sut.validatePanel()?.message).contains("The specified value must be an integer and between")
     }
@@ -117,6 +123,12 @@ class LambdaConfigPanelTest {
     @Test
     fun `memory mus be numeric`() {
         sut.memorySlider.textField.text = "foo"
+        assertThat(sut.validatePanel()?.message).contains("The specified value must be an integer and between")
+    }
+
+    @Test
+    fun `memory must be positive`() {
+        sut.memorySlider.textField.text = "-1"
         assertThat(sut.validatePanel()?.message).contains("The specified value must be an integer and between")
     }
 
