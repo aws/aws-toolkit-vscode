@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "\"Deploy SAM Application\" action is available on region nodes in the AWS Explorer"
+	"description": "\"Deploy SAM Application\" action is available from the context menu of Lambda, CloudFormation, and Region nodes in the AWS Explorer"
 }
