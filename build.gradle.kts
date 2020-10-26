@@ -241,7 +241,7 @@ subprojects {
             }
 
             configure<JacocoTaskExtension> {
-                destinationFile = file("$buildDir/jacoco/${Instant.now()}-jacocoUiTests.exec")
+                setDestinationFile(File("$buildDir/jacoco/${Instant.now()}-jacocoUiTests.exec"))
             }
         }
     }

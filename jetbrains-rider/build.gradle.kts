@@ -1,12 +1,13 @@
 // Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
-// Cannot be removed or else it will fail to compile
 import com.jetbrains.rd.generator.gradle.RdgenParams
 import com.jetbrains.rd.generator.gradle.RdgenTask
 import org.jetbrains.intellij.tasks.PrepareSandboxTask
 import software.aws.toolkits.gradle.IdeVersions
 
 buildscript {
+    // Cannot be removed or else it will fail to compile
+    @Suppress("RemoveRedundantQualifierName")
     val rdversion = software.aws.toolkits.gradle.IdeVersions.ideProfile(project).rider.rdGenVersion
 
     logger.info("Using rd-gen: $rdversion")
@@ -39,9 +40,10 @@ val protocolGroup = "protocol"
 
 val csDaemonGeneratedOutput = File(resharperPluginPath, "src/AWS.Daemon/Protocol")
 val csPsiGeneratedOutput = File(resharperPluginPath, "src/AWS.Psi/Protocol")
-val csAwsSettingGeneratedOutput = File(resharperPluginPath, "src/AWS.Settings/Protocol")
+val csAwsSettingsGeneratedOutput = File(resharperPluginPath, "src/AWS.Settings/Protocol")
 val csAwsProjectGeneratedOutput = File(resharperPluginPath, "src/AWS.Project/Protocol")
-val riderGeneratedSources = "$buildDir/generated-src/software/aws/toolkits/jetbrains/protocol"
+
+val riderGeneratedSources = File("$buildDir/generated-src/software/aws/toolkits/jetbrains/protocol")
 
 val modelDir = File(projectDir, "protocol/model")
 val rdgenDir = File("${project.buildDir}/rdgen/")
@@ -64,193 +66,56 @@ intellij {
     instrumentCode = false
 }
 
-val generateDaemonModel = tasks.register<RdgenTask>("generateDaemonModel") {
-    val daemonModelSource = File(modelDir, "daemon").canonicalPath
-    val ktOutput = File(riderGeneratedSources, "DaemonProtocol")
+configure<RdgenParams> {
+    verbose = true
+    hashFolder = rdgenDir.toString()
+    logger.info("Configuring rdgen params")
 
-    inputs.property("rdgen", ideProfile.rider.rdGenVersion)
-    inputs.dir(daemonModelSource)
-    outputs.dirs(ktOutput, csDaemonGeneratedOutput)
+    classpath({
+        logger.info("Calculating classpath for rdgen, intellij.ideaDependency is: ${intellij.ideaDependency}")
+        File(intellij.ideaDependency.classes, "lib/rd").resolve("rider-model.jar").absolutePath
+    })
 
-    // NOTE: classpath is evaluated lazily, at execution time, because it comes from the unzipped
-    // intellij SDK, which is extracted in afterEvaluate
-    configure<RdgenParams> {
-        verbose = true
-        hashFolder = rdgenDir.toString()
+    sources(projectDir.resolve("protocol/model"))
+    packages = "model"
 
-        logger.info("Configuring rdgen params")
+    properties["ktDaemonGeneratedOutput"] = riderGeneratedSources.resolve("DaemonProtocol").absolutePath
+    properties["csDaemonGeneratedOutput"] = csDaemonGeneratedOutput.absolutePath
 
-        classpath({
-            logger.info("Calculating classpath for rdgen, intellij.ideaDependency is: ${intellij.ideaDependency}")
-            val sdkPath = intellij.ideaDependency.classes
-            val rdLibDirectory = File("$sdkPath/lib/rd").canonicalFile
-            "$rdLibDirectory/rider-model.jar"
-        })
+    properties["ktPsiGeneratedOutput"] = riderGeneratedSources.resolve("PsiProtocol").absolutePath
+    properties["csPsiGeneratedOutput"] = csPsiGeneratedOutput.absolutePath
 
-        sources(daemonModelSource)
-        packages = "protocol.model.daemon"
+    properties["ktAwsSettingsGeneratedOutput"] = riderGeneratedSources.resolve("AwsSettingsProtocol").absolutePath
+    properties["csAwsSettingsGeneratedOutput"] = csAwsSettingsGeneratedOutput.absolutePath
 
-        generator {
-            language = "kotlin"
-            transform = "asis"
-            root = "com.jetbrains.rider.model.nova.ide.IdeRoot"
-            namespace = "com.jetbrains.rider.model"
-            directory = "$ktOutput"
-        }
-
-        generator {
-            language = "csharp"
-            transform = "reversed"
-            root = "com.jetbrains.rider.model.nova.ide.IdeRoot"
-            namespace = "JetBrains.Rider.Model"
-            directory = "$csDaemonGeneratedOutput"
-        }
-    }
+    properties["ktAwsProjectGeneratedOutput"] = riderGeneratedSources.resolve("AwsProjectProtocol").absolutePath
+    properties["csAwsProjectGeneratedOutput"] = csAwsProjectGeneratedOutput.absolutePath
 }
 
-val generatePsiModel = tasks.register<RdgenTask>("generatePsiModel") {
-    val psiModelSource = File(modelDir, "psi").canonicalPath
-    val ktOutput = File(riderGeneratedSources, "PsiProtocol")
-
-    inputs.property("rdgen", ideProfile.rider.rdGenVersion)
-    inputs.dir(psiModelSource)
-    outputs.dirs(ktOutput, csPsiGeneratedOutput)
-
-    // NOTE: classpath is evaluated lazily, at execution time, because it comes from the unzipped
-    // intellij SDK, which is extracted in afterEvaluate
-    configure<RdgenParams> {
-        verbose = true
-        hashFolder = rdgenDir.toString()
-
-        logger.info("Configuring rdgen params")
-
-        classpath({
-            logger.info("Calculating classpath for rdgen, intellij.ideaDependency is: ${intellij.ideaDependency}")
-            val sdkPath = intellij.ideaDependency.classes
-            val rdLibDirectory = File(sdkPath, "lib/rd").canonicalFile
-            "$rdLibDirectory/rider-model.jar"
-        })
-
-        sources(psiModelSource)
-        packages = "protocol.model.psi"
-
-        generator {
-            language = "kotlin"
-            transform = "asis"
-            root = "com.jetbrains.rider.model.nova.ide.IdeRoot"
-            namespace = "com.jetbrains.rider.model"
-            directory = "$ktOutput"
-        }
-
-        generator {
-            language = "csharp"
-            transform = "reversed"
-            root = "com.jetbrains.rider.model.nova.ide.IdeRoot"
-            namespace = "JetBrains.Rider.Model"
-            directory = "$csPsiGeneratedOutput"
-        }
-    }
-}
-
-val generateAwsSettingModel = tasks.register<RdgenTask>("generateAwsSettingModel") {
-    val settingModelSource = File(modelDir, "setting").canonicalPath
-    val ktOutput = File(riderGeneratedSources, "AwsSettingsProtocol")
-
-    inputs.property("rdgen", ideProfile.rider.rdGenVersion)
-    inputs.dir(settingModelSource)
-    outputs.dirs(ktOutput, csAwsSettingGeneratedOutput)
-
-    // NOTE: classpath is evaluated lazily, at execution time, because it comes from the unzipped
-    // intellij SDK, which is extracted in afterEvaluate
-    configure<RdgenParams> {
-        verbose = true
-        hashFolder = rdgenDir.toString()
-
-        logger.info("Configuring rdgen params")
-
-        classpath({
-            logger.info("Calculating classpath for rdgen, intellij.ideaDependency is: ${intellij.ideaDependency}")
-            val sdkPath = intellij.ideaDependency.classes
-            val rdLibDirectory = File(sdkPath, "lib/rd").canonicalFile
-            "$rdLibDirectory/rider-model.jar"
-        })
-        sources(settingModelSource)
-        packages = "protocol.model.setting"
-
-        generator {
-            language = "kotlin"
-            transform = "asis"
-            root = "com.jetbrains.rider.model.nova.ide.IdeRoot"
-            namespace = "com.jetbrains.rider.model"
-            directory = "$ktOutput"
-        }
-
-        generator {
-            language = "csharp"
-            transform = "reversed"
-            root = "com.jetbrains.rider.model.nova.ide.IdeRoot"
-            namespace = "JetBrains.Rider.Model"
-            directory = "$csAwsSettingGeneratedOutput"
-        }
-    }
-}
-
-val generateAwsProjectModel = tasks.register<RdgenTask>("generateAwsProjectModel") {
-    val projectModelSource = File(modelDir, "project").canonicalPath
-    val ktOutput = File(riderGeneratedSources, "AwsProjectProtocol")
-
-    inputs.property("rdgen", ideProfile.rider.rdGenVersion)
-    inputs.dir(projectModelSource)
-    outputs.dirs(ktOutput, csAwsProjectGeneratedOutput)
-
-    // NOTE: classpath is evaluated lazily, at execution time, because it comes from the unzipped
-    // intellij SDK, which is extracted in afterEvaluate
-    configure<RdgenParams> {
-        verbose = true
-        hashFolder = rdgenDir.toString()
-
-        logger.info("Configuring rdgen params")
-
-        classpath({
-            logger.info("Calculating classpath for rdgen, intellij.ideaDependency is: ${intellij.ideaDependency}")
-            val sdkPath = intellij.ideaDependency.classes
-            val rdLibDirectory = File(sdkPath, "lib/rd").canonicalFile
-            "$rdLibDirectory/rider-model.jar"
-        })
-
-        sources(projectModelSource)
-        packages = "protocol.model.project"
-
-        generator {
-            language = "kotlin"
-            transform = "asis"
-            root = "com.jetbrains.rider.model.nova.ide.IdeRoot"
-            namespace = "com.jetbrains.rider.model"
-            directory = "$ktOutput"
-        }
-
-        generator {
-            language = "csharp"
-            transform = "reversed"
-            root = "com.jetbrains.rider.model.nova.ide.IdeRoot"
-            namespace = "JetBrains.Rider.Model"
-            directory = "$csAwsProjectGeneratedOutput"
-        }
-    }
-}
-
-val generateModels = tasks.register("generateModels") {
+val generateModels = tasks.register<RdgenTask>("generateModels") {
     group = protocolGroup
     description = "Generates protocol models"
-
-    dependsOn(generateDaemonModel, generatePsiModel, generateAwsSettingModel, generateAwsProjectModel)
 }
 
 val cleanGenerateModels = tasks.register("cleanGenerateModels") {
     group = protocolGroup
     description = "Clean up generated protocol models"
 
-    dependsOn("cleanGenerateDaemonModel", "cleanGeneratePsiModel", "cleanGenerateAwsSettingModel", "cleanGenerateAwsProjectModel")
+    logger.info("Deleting generated Kotlin files...")
+    riderGeneratedSources.listFiles().orEmpty().forEach { it.deleteRecursively() }
+
+    logger.info("Deleting generated CSharp files...")
+    val csGeneratedRoots = listOf(
+        csDaemonGeneratedOutput,
+        csPsiGeneratedOutput,
+        csAwsSettingsGeneratedOutput,
+        csAwsProjectGeneratedOutput
+    )
+
+    csGeneratedRoots.forEach { protocolDirectory: File ->
+        if (!protocolDirectory.exists()) return@forEach
+        protocolDirectory.listFiles().orEmpty().forEach { file -> file.deleteRecursively() }
+    }
 }
 
 val cleanNetBuilds = task("cleanNetBuilds", Delete::class) {
@@ -301,7 +166,7 @@ val prepareNuGetConfig = tasks.register("prepareNuGetConfig") {
         val configText = """<?xml version="1.0" encoding="utf-8"?>
 <configuration>
   <packageSources>
-    <add key="resharper-sdk" value="${nugetPath}" />
+    <add key="resharper-sdk" value="$nugetPath" />
   </packageSources>
 </configuration>
 """
