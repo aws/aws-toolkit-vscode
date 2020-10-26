@@ -15,15 +15,14 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunctionNode
 import software.aws.toolkits.jetbrains.services.lambda.runtimeGroup
 import software.aws.toolkits.jetbrains.services.lambda.toDataClass
-import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionDialog
-import software.aws.toolkits.jetbrains.services.lambda.upload.EditFunctionMode
 import software.aws.toolkits.jetbrains.services.lambda.upload.UpdateFunctionCodeDialog
+import software.aws.toolkits.jetbrains.services.lambda.upload.UpdateFunctionConfigDialog
 import software.aws.toolkits.jetbrains.utils.Operation
 import software.aws.toolkits.jetbrains.utils.TaggingResourceType
 import software.aws.toolkits.jetbrains.utils.warnResourceOperationAgainstCodePipeline
 import software.aws.toolkits.resources.message
 
-abstract class UpdateFunctionAction(private val mode: EditFunctionMode, title: String) : SingleResourceNodeAction<LambdaFunctionNode>(title) {
+abstract class UpdateFunctionAction(title: String) : SingleResourceNodeAction<LambdaFunctionNode>(title) {
     override fun actionPerformed(selected: LambdaFunctionNode, e: AnActionEvent) {
         val project = e.getRequiredData(PlatformDataKeys.PROJECT)
 
@@ -51,14 +50,16 @@ abstract class UpdateFunctionAction(private val mode: EditFunctionMode, title: S
         }
     }
 
-    protected open fun updateLambda(project: Project, lambdaFunction: LambdaFunction) {
-        EditFunctionDialog(project, lambdaFunction, mode = mode).show()
+    abstract fun updateLambda(project: Project, lambdaFunction: LambdaFunction)
+}
+
+class UpdateFunctionConfigurationAction : UpdateFunctionAction(message("lambda.function.updateConfiguration.action")) {
+    override fun updateLambda(project: Project, lambdaFunction: LambdaFunction) {
+        UpdateFunctionConfigDialog(project, lambdaFunction).show()
     }
 }
 
-class UpdateFunctionConfigurationAction : UpdateFunctionAction(EditFunctionMode.UPDATE_CONFIGURATION, message("lambda.function.updateConfiguration.action"))
-
-class UpdateFunctionCodeAction : UpdateFunctionAction(EditFunctionMode.UPDATE_CODE, message("lambda.function.updateCode.action")) {
+class UpdateFunctionCodeAction : UpdateFunctionAction(message("lambda.function.updateCode.action")) {
     override fun update(selected: LambdaFunctionNode, e: AnActionEvent) {
         if (selected.value.runtime.runtimeGroup?.let { LambdaBuilder.getInstanceOrNull(it) } != null) {
             return
