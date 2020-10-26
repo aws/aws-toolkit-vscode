@@ -100,6 +100,8 @@ export async function invokeLambda(params: {
                 cspSource: view.webview.cspSource,
                 content: invokeTemplateFn({
                     FunctionName: functionNode.configuration.FunctionName,
+                    FunctionArn: functionNode.configuration.FunctionArn,
+                    FunctionRegion: functionNode.regionCode,
                     InputSamples: inputs,
                     Scripts: loadScripts,
                     Libraries: loadLibs,

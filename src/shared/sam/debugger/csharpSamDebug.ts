@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { access } from 'fs-extra'
+import { access, chmod, writeFile } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import {
@@ -13,15 +13,15 @@ import {
 } from '../../../lambda/local/debugConfiguration'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import * as pathutil from '../../../shared/utilities/pathUtils'
-import { DefaultDockerClient, DockerClient } from '../../clients/dockerClient'
 import { ExtContext } from '../../extensions'
 import { mkdir } from '../../filesystem'
-import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../../sam/cli/samCliLocalInvoke'
+import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
 import { getStartPort } from '../../utilities/debuggerUtils'
 import { ChannelLogger, getChannelLogger } from '../../utilities/vsCodeUtils'
 import { invokeLambdaFunction, makeInputTemplate, waitForDebugPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
-import { getSamCliContext, getSamCliDockerImageName } from '../../sam/cli/samCliContext'
+import { ChildProcess } from '../../utilities/childProcess'
+import { HttpResourceFetcher } from '../../resourcefetcher/httpResourceFetcher'
 
 /**
  * Gathers and sets launch-config info by inspecting the workspace and creating
@@ -45,7 +45,6 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
         type: 'coreclr',
         request: config.noDebug ? 'launch' : 'attach',
         runtimeFamily: RuntimeFamily.DotNetCore,
-        name: 'SamLocalDebug',
     }
 
     if (!config.noDebug) {
@@ -70,21 +69,16 @@ export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchReque
     config.onWillAttachDebugger = waitForDebugPort
     return await invokeLambdaFunction(ctx, config, async () => {
         if (!config.noDebug) {
-            await _installDebugger(
-                {
-                    debuggerPath: config.debuggerPath!!,
-                    lambdaRuntime: config.runtime,
-                    channelLogger: ctx.chanLogger,
-                },
-                { dockerClient: new DefaultDockerClient(ctx.outputChannel) }
-            )
+            await _installDebugger({
+                debuggerPath: config.debuggerPath!!,
+                channelLogger: ctx.chanLogger,
+            })
         }
     })
 }
 
 interface InstallDebuggerArgs {
     debuggerPath: string
-    lambdaRuntime: string
     channelLogger: ChannelLogger
 }
 
@@ -100,40 +94,72 @@ async function ensureDebuggerPathExists(debuggerPath: string): Promise<void> {
     }
 }
 
-async function _installDebugger(
-    { debuggerPath, lambdaRuntime, channelLogger }: InstallDebuggerArgs,
-    { dockerClient }: { dockerClient: DockerClient }
-): Promise<void> {
+async function _installDebugger({ debuggerPath, channelLogger }: InstallDebuggerArgs): Promise<void> {
     await ensureDebuggerPathExists(debuggerPath)
 
     try {
-        const samCliContext = getSamCliContext()
-        const samCliVersionValidatorResult = await samCliContext.validator.getVersionValidatorResult()
-        const samCliVersion = samCliVersionValidatorResult.version
-
-        const imageStr = getSamCliDockerImageName(samCliVersion, lambdaRuntime)
-
         channelLogger.info(
             'AWS.samcli.local.invoke.debugger.install',
-            'Installing .NET Core Debugger to {0} using Docker image {1}...',
-            debuggerPath,
-            imageStr
+            'Installing .NET Core Debugger to {0}...',
+            debuggerPath
         )
 
-        await dockerClient.invoke({
-            command: 'run',
-            image: imageStr,
-            removeOnExit: true,
-            mount: {
-                type: 'bind',
-                source: debuggerPath,
-                destination: '/vsdbg',
-            },
-            entryPoint: {
-                command: 'bash',
-                args: ['-c', 'curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l /vsdbg'],
-            },
+        const vsDbgVersion = 'latest'
+        const vsDbgRuntime = 'linux-x64'
+
+        const installScriptPath = await downloadInstallScript(debuggerPath)
+
+        let installCommand: string
+        let installArgs: string[]
+        if (os.platform() == 'win32') {
+            const windir = process.env['WINDIR']
+            if (!windir) {
+                throw new Error('Environment variable `WINDIR` not defined')
+            }
+
+            installCommand = `${windir}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`
+            installArgs = [
+                '-NonInteractive',
+                '-NoProfile',
+                '-WindowStyle',
+                'Hidden',
+                '-ExecutionPolicy',
+                'RemoteSigned',
+                '-File',
+                installScriptPath,
+                '-Version',
+                vsDbgVersion,
+                '-RuntimeID',
+                vsDbgRuntime,
+                '-InstallPath',
+                debuggerPath,
+            ]
+        } else {
+            installCommand = installScriptPath
+            installArgs = ['-v', vsDbgVersion, '-r', vsDbgRuntime, '-l', debuggerPath]
+        }
+
+        const childProcess = new ChildProcess(installCommand, {}, ...installArgs)
+
+        const installPromise = new Promise<void>(async (resolve, reject) => {
+            await childProcess.start({
+                onStdout: (text: string) => {
+                    channelLogger.channel.append(text)
+                },
+                onStderr: (text: string) => {
+                    channelLogger.channel.append(text)
+                },
+                onClose(code: number) {
+                    if (code) {
+                        reject(`command failed (exit code: ${code}): ${installCommand}`)
+                    } else {
+                        resolve()
+                    }
+                },
+            })
         })
+
+        await installPromise
     } catch (err) {
         channelLogger.info(
             'AWS.samcli.local.invoke.debugger.install.failed',
@@ -143,6 +169,29 @@ async function _installDebugger(
 
         throw err
     }
+}
+
+async function downloadInstallScript(debuggerPath: string): Promise<string> {
+    let installScriptUrl: string
+    let installScriptPath: string
+    if (os.platform() == 'win32') {
+        installScriptUrl = 'https://aka.ms/getvsdbgps1'
+        installScriptPath = path.join(debuggerPath, 'installVsdbgScript.ps1')
+    } else {
+        installScriptUrl = 'https://aka.ms/getvsdbgsh'
+        installScriptPath = path.join(debuggerPath, 'installVsdbgScript.sh')
+    }
+
+    const installScriptFetcher = new HttpResourceFetcher(installScriptUrl)
+    const installScript = await installScriptFetcher.get()
+    if (!installScript) {
+        throw Error(`Failed to download ${installScriptUrl}`)
+    }
+
+    await writeFile(installScriptPath, installScript, 'utf8')
+    await chmod(installScriptPath, 0o700)
+
+    return installScriptPath
 }
 
 function getSamProjectDirPathForFile(filepath: string): string {
@@ -171,7 +220,6 @@ export async function makeCoreCLRDebugConfiguration(
 
     return {
         ...config,
-        name: 'SamLocalDebug',
         runtimeFamily: RuntimeFamily.DotNetCore,
         request: 'attach',
         // Since SAM CLI 1.0 we cannot assume PID=1. So use processName=dotnet

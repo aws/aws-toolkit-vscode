@@ -6,8 +6,7 @@
 import * as assert from 'assert'
 import { dirname, join } from 'path'
 import * as vscode from 'vscode'
-import { VSCODE_EXTENSION_ID } from '../shared/extensions'
-import { activateExtension, expectCodeLenses, getTestWorkspaceFolder } from './integrationTestsUtilities'
+import { expectCodeLenses, getTestWorkspaceFolder } from './integrationTestsUtilities'
 import { AddSamDebugConfigurationInput } from '../shared/sam/debugger/commands/addSamDebugConfiguration'
 
 const ACTIVATE_EXTENSION_TIMEOUT_MILLIS = 30000
@@ -20,7 +19,6 @@ describe('SAM Local CodeLenses (JS)', async () => {
     before(async function() {
         // tslint:disable-next-line:no-invalid-this
         this.timeout(ACTIVATE_EXTENSION_TIMEOUT_MILLIS)
-        await activateExtension(VSCODE_EXTENSION_ID.awstoolkit)
     })
 
     it('appear when manifest in subfolder and app is beside manifest', async () => {

@@ -70,7 +70,7 @@ describe('DefaultTelemetryService', () => {
         service.clearRecords()
         service.telemetryEnabled = true
         service.flushPeriod = testFlushPeriod
-        service.record({ createTime: new Date(), data: [{ MetricName: 'namespace', Value: 1 }] })
+        service.record({ MetricName: 'namespace', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() })
 
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
@@ -90,11 +90,11 @@ describe('DefaultTelemetryService', () => {
         service.clearRecords()
         service.telemetryEnabled = true
         service.flushPeriod = testFlushPeriod
-        service.record({ createTime: new Date(), data: [{ MetricName: 'name', Value: 1 }] })
+        service.record({ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() })
 
         assert.strictEqual(service.records.length, 1)
 
-        const metricDatum = service.records[0].data![0]
+        const metricDatum = service.records[0]
         assert.strictEqual(metricDatum.MetricName, 'name')
         assertMetadataContainsTestAccount(metricDatum, DEFAULT_TEST_ACCOUNT_ID)
     })
@@ -111,11 +111,11 @@ describe('DefaultTelemetryService', () => {
 
         assert.strictEqual(service.records.length, 2)
         // events are, in order, the start event, and the shutdown event
-        const startEvent = service.records[0].data![0]
+        const startEvent = service.records[0]
         assert.strictEqual(startEvent.MetricName, 'session_start')
         assertMetadataContainsTestAccount(startEvent, AccountStatus.NotApplicable)
 
-        const shutdownEvent = service.records[1].data![0]
+        const shutdownEvent = service.records[1]
         assert.strictEqual(shutdownEvent.MetricName, 'session_end')
         assertMetadataContainsTestAccount(shutdownEvent, AccountStatus.NotApplicable)
     })
@@ -129,7 +129,7 @@ describe('DefaultTelemetryService', () => {
         service.clearRecords()
         service.telemetryEnabled = true
         service.flushPeriod = testFlushPeriod
-        service.record({ createTime: new Date(), data: [{ MetricName: 'name', Value: 1 }] })
+        service.record({ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() })
 
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
@@ -139,7 +139,7 @@ describe('DefaultTelemetryService', () => {
         assert.strictEqual(service.records.length, 3)
         // events are, in order, the dummy test event, the start event, and the shutdown event
         // test event is first since we record it before starting the service
-        const metricDatum = service.records[0].data![0]
+        const metricDatum = service.records[0]
         assert.strictEqual(metricDatum.MetricName, 'name')
         assertMetadataContainsTestAccount(metricDatum, AccountStatus.Invalid)
     })
@@ -148,7 +148,7 @@ describe('DefaultTelemetryService', () => {
         service.clearRecords()
         service.telemetryEnabled = true
         service.flushPeriod = testFlushPeriod
-        service.record({ createTime: new Date(), data: [{ MetricName: 'name', Value: 1 }] })
+        service.record({ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() })
 
         await service.start()
         assert.notStrictEqual(service.timer, undefined)
@@ -158,7 +158,7 @@ describe('DefaultTelemetryService', () => {
         assert.strictEqual(service.records.length, 3)
         // events are, in order, the dummy test event, the start event, and the shutdown event
         // test event is first since we record it before starting the service
-        const metricDatum = service.records[0].data![0]
+        const metricDatum = service.records[0]
         assert.strictEqual(metricDatum.MetricName, 'name')
         assertMetadataContainsTestAccount(metricDatum, AccountStatus.NotSet)
     })
@@ -171,7 +171,7 @@ describe('DefaultTelemetryService', () => {
         assert.notStrictEqual(service.timer, undefined)
 
         // telemetry off: events are never recorded
-        service.record({ createTime: new Date(), data: [{ MetricName: 'name', Value: 1 }] })
+        service.record({ MetricName: 'name', Value: 1, Unit: 'None', EpochTimestamp: new Date().getTime() })
 
         clock.tick(testFlushPeriod + 1)
         await service.shutdown()

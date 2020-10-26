@@ -1,0 +1,124 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "test-launchconfig-1-nonaws",
+            "request": "direct-invoke",
+            "type": "not-aws-sam",
+            "invokeTarget": {
+                "logicalId": "resource",
+                "target": "template",
+                "templatePath": "/path/to/nothing/template.yaml"
+            }
+        },
+        {
+            "name": "test-launchconfig-2-invalidrequest",
+            "request": "invalid-request",
+            "type": "aws-sam"
+        },
+        {
+            "name": "test-launchconfig-3-js",
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "invokeTarget": {
+                "target": "template",
+                "templatePath": "js-plain-sam-app/template.yaml",
+                "logicalId": "SourceCodeBesidePackageJson"
+            },
+            "lambda": {
+                "payload": {},
+                "environmentVariables": {}
+            }
+        },
+        {
+            "name": "test-launchconfig-4-jsdeep",
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "invokeTarget": {
+                "target": "template",
+                "templatePath": "deeper-projects/js-plain-sam-app/template.yaml",
+                "logicalId": "SourceCodeBesidePackageJson"
+            },
+            "lambda": {
+                "payload": {},
+                "environmentVariables": {}
+            }
+        },
+        {
+            "name": "test-launchconfig-5-python3.7",
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "invokeTarget": {
+                "target": "template",
+                "templatePath": "python3.7-plain-sam-app/template.yaml",
+                "logicalId": "HelloWorldFunction"
+            },
+            "lambda": {
+                "payload": {},
+                "environmentVariables": {}
+            }
+        },
+        {
+            "name": "test-launchconfig-6-python3.7",
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "invokeTarget": {
+                "target": "api",
+                "templatePath": "python3.7-plain-sam-app/template.yaml",
+                "logicalId": "HelloWorldFunction"
+            },
+            "api": {
+                "path": "/hello",
+                "httpMethod": "get",
+                "payload": {
+                    "json": {}
+                }
+            }
+        },
+        {
+            "name": "test-launchconfig-7-nodejs10",
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "invokeTarget": {
+                "target": "template",
+                "templatePath": "js-manifest-in-root/template.yaml",
+                "logicalId": "SourceCodeTwoFoldersDeep"
+            },
+            "lambda": {
+                "payload": {},
+                "environmentVariables": {}
+            }
+        },
+        {
+            "name": "test-launchconfig-8-api",
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "invokeTarget": {
+                "target": "api",
+                "templatePath": "csharp2.1-plain-sam-app/template.yaml",
+                "logicalId": "HelloWorldFunction"
+            },
+            "api": {
+                "path": "/hello",
+                "httpMethod": "get",
+                "payload": {
+                    "json": {}
+                }
+            }
+        },
+        {
+            "name": "test-launchconfig-9-nodejs",
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "invokeTarget": {
+                "target": "template",
+                "templatePath": "js-manifest-in-subfolder/template.yaml",
+                "logicalId": "SourceCodeInSubfolderToManifest"
+            },
+            "lambda": {
+                "payload": {},
+                "environmentVariables": {}
+            }
+        }
+    ]
+}

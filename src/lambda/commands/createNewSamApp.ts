@@ -46,6 +46,7 @@ import { ExtContext } from '../../shared/extensions'
 import { isTemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import { TemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import * as pathutils from '../../shared/utilities/pathUtils'
+import { openLaunchJsonFile } from '../../shared/sam/debugger/commands/addSamDebugConfiguration'
 
 export async function resumeCreateNewSamApp(
     extContext: ExtContext,
@@ -200,8 +201,15 @@ export async function createNewSamApplication(
             true
         )
 
-        await addInitialLaunchConfiguration(extContext, vscode.workspace.getWorkspaceFolder(uri)!, uri)
+        const newLaunchConfigs = await addInitialLaunchConfiguration(
+            extContext,
+            vscode.workspace.getWorkspaceFolder(uri)!,
+            uri
+        )
         await vscode.window.showTextDocument(uri)
+        if (newLaunchConfigs && newLaunchConfigs.length > 0) {
+            showCompletionNotification(config.name, `"${newLaunchConfigs.map(config => config.name).join('", "')}"`)
+        }
         activationLaunchPath.clearLaunchPath()
 
         reason = 'complete'
@@ -259,7 +267,7 @@ export async function addInitialLaunchConfiguration(
     folder: vscode.WorkspaceFolder,
     targetUri: vscode.Uri,
     launchConfiguration: LaunchConfiguration = new LaunchConfiguration(folder.uri)
-): Promise<void> {
+): Promise<vscode.DebugConfiguration[] | undefined> {
     let configurations = await new SamDebugConfigProvider(extContext).provideDebugConfigurations(folder)
     if (configurations) {
         // add configurations that target the new template file
@@ -274,5 +282,22 @@ export async function addInitialLaunchConfiguration(
         )
 
         await launchConfiguration.addDebugConfigurations(filtered)
+        return filtered
+    }
+}
+
+async function showCompletionNotification(appName: string, configs: string): Promise<void> {
+    const action = await vscode.window.showInformationMessage(
+        localize(
+            'AWS.samcli.initWizard.completionMessage',
+            'Created SAM application "{0}" and added launch configurations to launch.json: {1}',
+            appName,
+            configs
+        ),
+        localize('AWS.generic.open', 'Open {0}', 'launch.json')
+    )
+
+    if (action) {
+        await openLaunchJsonFile()
     }
 }

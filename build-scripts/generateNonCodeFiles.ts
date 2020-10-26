@@ -9,17 +9,23 @@ import * as fs from 'fs-extra'
 import * as marked from 'marked'
 import * as path from 'path'
 
+// doesn't use path utils as this should be formatted for finding images with HTML markup
+const REPO_ROOT = path.dirname(__dirname)
+
 /**
  * replaces relative paths with an `!!EXTENSIONROOT!!` token.
  * This makes it easier to swap in relative links when the extension loads.
+ * @param root Repository root
+ * @param inputFile Input .md file to swap to HTML
+ * @param outputFile Filepath to output HTML to
  */
-function translateReadmeToHtml(root: string) {
-    const fileText = fs.readFileSync(path.join(root, 'extension-readme.md')).toString()
+function translateReadmeToHtml(root: string, inputFile: string, outputFile: string) {
+    const fileText = fs.readFileSync(path.join(root, inputFile)).toString()
     const relativePathRegex = /]\(\.\//g
     const transformedText = fileText.replace(relativePathRegex, '](!!EXTENSIONROOT!!/')
 
     marked(transformedText, (err, result) => {
-        fs.writeFileSync(path.join(root, './quickStart.html'), result)
+        fs.writeFileSync(path.join(root, outputFile), result)
     })
 }
 
@@ -35,7 +41,5 @@ function generateFileHash(root: string) {
     }
 }
 
-const repoRoot = path.dirname(__dirname)
-
-translateReadmeToHtml(repoRoot)
-generateFileHash(repoRoot)
+translateReadmeToHtml(REPO_ROOT, 'README.quickstart.vscode.md', 'quickStart.html')
+generateFileHash(REPO_ROOT)

@@ -162,7 +162,6 @@ export async function makePythonDebugConfig(config: SamLaunchRequestArgs): Promi
         request: config.noDebug ? 'launch' : 'attach',
         runtimeFamily: RuntimeFamily.Python,
         outFilePath: pathutil.normalize(outFilePath ?? '') ?? undefined,
-        name: 'SamLocalDebug',
 
         //
         // Python-specific fields.

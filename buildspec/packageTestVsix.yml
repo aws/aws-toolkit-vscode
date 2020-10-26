@@ -19,7 +19,7 @@ phases:
     build:
         commands:
             - npm run generateNonCodeFiles
-            - cp ./extension-readme.md ./README.md
+            - cp ./README.quickstart.vscode.md ./README.md
             - npm run package
 
 artifacts:

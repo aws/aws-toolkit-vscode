@@ -54,6 +54,11 @@ export const sfnDeveloperGuideUrl: string = 'https://docs.aws.amazon.com/step-fu
 export const sfnUpdateStateMachineUrl: string =
     'https://docs.aws.amazon.com/step-functions/latest/apireference/API_UpdateStateMachine.html'
 
+// URLs for SSM Documents
+export const ssmDocumentPublishGuideUrl: string =
+    'https://docs.aws.amazon.com/systems-manager/latest/userguide/create-ssm-doc.html'
+export const ssmJson: string = 'ssm-json'
+export const ssmYaml: string = 'ssm-yaml'
 /**
  * Moment format for rendering readable dates.
  *
@@ -72,3 +77,5 @@ export const INSIGHTS_TIMESTAMP_FORMAT = 'YYYY-MM-DDThh:mm:ss.SSSZ'
  * URI scheme for CloudWatch Logs Virtual Documents
  */
 export const CLOUDWATCH_LOGS_SCHEME = 'awsCloudWatchLogs'
+
+export const COPY_TO_CLIPBOARD_INFO_TIMEOUT_MS = 5000

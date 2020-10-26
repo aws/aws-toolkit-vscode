@@ -15,6 +15,7 @@ import { ResourceFetcher } from '../../../shared/resourcefetcher/resourcefetcher
 const sampleEndpoints = {
     partitions: [
         {
+            dnsSuffix: 'totallyLegit.tld',
             partition: 'aws',
             partitionName: 'Standard',
             regions: {
@@ -30,6 +31,7 @@ const sampleEndpoints = {
             },
         },
         {
+            dnsSuffix: 'totallyLegit.cn',
             partition: 'aws-cn',
             partitionName: 'China',
             regions: {
@@ -63,6 +65,7 @@ describe('DefaultRegionProvider', async () => {
             endpoints = {
                 partitions: [
                     {
+                        dnsSuffix: 'totallyLegit.tld',
                         id: 'aws',
                         name: '',
                         regions: [
@@ -107,6 +110,28 @@ describe('DefaultRegionProvider', async () => {
                 !regionProvider.isServiceInRegion(`${serviceId}x`, regionCode),
                 'Expected service not to be in region'
             )
+        })
+    })
+
+    describe('getDnsSuffixForRegion', async () => {
+        let endpointsProvider: EndpointsProvider
+        let regionProvider: DefaultRegionProvider
+
+        beforeEach(async () => {
+            endpointsProvider = new EndpointsProvider(resourceFetcher, resourceFetcher)
+            await endpointsProvider.load()
+
+            regionProvider = new DefaultRegionProvider(endpointsProvider)
+        })
+
+        it('gets DNS suffix for a known region', async () => {
+            const partitionId = regionProvider.getDnsSuffixForRegion('region1')
+            assert.strictEqual(partitionId, 'totallyLegit.tld')
+        })
+
+        it('returns undefined for an unknown region', async () => {
+            const partitionId = regionProvider.getDnsSuffixForRegion('foo')
+            assert.strictEqual(partitionId, undefined)
         })
     })
 

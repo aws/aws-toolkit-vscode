@@ -37,7 +37,7 @@ import {
     showQuickStartWebview,
     showWelcomeMessage,
 } from './shared/extensionUtilities'
-import { getLogger, Logger } from './shared/logger'
+import { getLogger, Logger } from './shared/logger/logger'
 import { activate as activateLogger } from './shared/logger/activation'
 import { DefaultRegionProvider } from './shared/regions/defaultRegionProvider'
 import { EndpointsProvider } from './shared/regions/endpointsProvider'
@@ -58,7 +58,9 @@ import {
 import { ExtensionDisposableFiles } from './shared/utilities/disposableFiles'
 import { getChannelLogger } from './shared/utilities/vsCodeUtils'
 import { ExtContext } from './shared/extensions'
+import { activate as activateApiGateway } from './apigateway/activation'
 import { activate as activateStepFunctions } from './stepFunctions/activation'
+import { activate as activateSsmDocument } from './ssmDocument/activation'
 import { CredentialsStore } from './credentials/credentialsStore'
 
 let localize: nls.LocalizeFunc
@@ -71,6 +73,10 @@ export async function activate(context: vscode.ExtensionContext) {
     ext.context = context
     await activateLogger(context)
     const toolkitOutputChannel = vscode.window.createOutputChannel(localize('AWS.channel.aws.toolkit', 'AWS Toolkit'))
+    const remoteInvokeOutputChannel = vscode.window.createOutputChannel(
+        localize('AWS.channel.aws.remoteInvoke', 'AWS Remote Invocations')
+    )
+    const channelLogger = getChannelLogger(toolkitOutputChannel)
     ext.outputChannel = toolkitOutputChannel
 
     try {
@@ -170,7 +176,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 try {
                     await showQuickStartWebview(context)
                 } finally {
-                    recordAwsHelpQuickstart()
+                    recordAwsHelpQuickstart({ result: 'Succeeded' })
                 }
             })
         )
@@ -194,7 +200,13 @@ export async function activate(context: vscode.ExtensionContext) {
             context,
             awsContextTrees,
             regionProvider,
-            outputChannel: toolkitOutputChannel,
+            toolkitOutputChannel,
+            remoteInvokeOutputChannel,
+        })
+
+        await activateApiGateway({
+            extContext: extContext,
+            outputChannel: remoteInvokeOutputChannel,
         })
 
         await activateLambda(context)
@@ -203,6 +215,8 @@ export async function activate(context: vscode.ExtensionContext) {
             context: extContext.extensionContext,
             outputChannel: toolkitOutputChannel,
         })
+
+        await activateSsmDocument(context, awsContext, regionProvider, toolkitOutputChannel)
 
         await ExtensionDisposableFiles.initialize(context)
 
@@ -220,7 +234,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         recordToolkitInitialization(activationStartedOn, getLogger())
     } catch (error) {
-        const channelLogger = getChannelLogger(toolkitOutputChannel)
         channelLogger.error('AWS.channel.aws.toolkit.activation.error', 'Error Activating AWS Toolkit', error as Error)
         throw error
     }

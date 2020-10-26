@@ -32,6 +32,7 @@ export class LambdaNode extends AWSTreeNodeBase {
     public constructor(private readonly regionCode: string) {
         super('Lambda', vscode.TreeItemCollapsibleState.Collapsed)
         this.functionNodes = new Map<string, LambdaFunctionNode>()
+        this.contextValue = 'awsLambdaNode'
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
