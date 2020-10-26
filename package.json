@@ -834,8 +834,8 @@
                 },
                 {
                     "command": "aws.deploySamApplication",
-                    "when": "view == aws.explorer && viewItem == awsRegionNode",
-                    "group": "inline@1"
+                    "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode || viewItem == awsCloudFormationRootNode",
+                    "group": "1@1"
                 },
                 {
                     "command": "aws.invokeLambda",
@@ -1112,8 +1112,7 @@
             {
                 "command": "aws.deploySamApplication",
                 "title": "%AWS.command.deploySamApplication%",
-                "category": "AWS",
-                "icon": "$(cloud-upload)"
+                "category": "AWS"
             },
             {
                 "command": "aws.submitFeedback",
