@@ -18,15 +18,26 @@ import * as child_process from 'child_process'
 import * as fs from 'fs-extra'
 
 const packageJsonFile = './package.json'
-// Create a backup so that we can restore the original later.
-fs.copyFileSync(packageJsonFile, `${packageJsonFile}.bk`)
+const webpackConfigJsFile = './webpack.config.js'
 
-const packageJson = JSON.parse(fs.readFileSync('./package.json', { encoding: 'UTF-8' }).toString())
-packageJson.version = '1.99.0-SNAPSHOT'
+try {
+    // Create backup files so we can restore the originals later.
+    fs.copyFileSync(packageJsonFile, `${packageJsonFile}.bk`)
+    fs.copyFileSync(webpackConfigJsFile, `${webpackConfigJsFile}.bk`)
 
-fs.writeFileSync(packageJsonFile, JSON.stringify(packageJson, undefined, '  '))
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'UTF-8' }).toString())
+    packageJson.version = '1.99.0-SNAPSHOT'
+    fs.writeFileSync(packageJsonFile, JSON.stringify(packageJson, undefined, '    '))
 
-child_process.execSync(`vsce package`)
+    const webpackConfigJs = fs.readFileSync(webpackConfigJsFile, { encoding: 'UTF-8' }).toString()
+    fs.writeFileSync(webpackConfigJsFile, webpackConfigJs.replace(/minimize: true/, 'minimize: false'))
 
-// Restore the original package.json.
-fs.copyFileSync(`${packageJsonFile}.bk`, packageJsonFile)
+    child_process.execSync(`vsce package`)
+} catch (e) {
+    console.log(e)
+    throw Error('packageDebug.ts: failed')
+} finally {
+    // Restore the original files.
+    fs.copyFileSync(`${packageJsonFile}.bk`, packageJsonFile)
+    fs.copyFileSync(`${webpackConfigJsFile}.bk`, webpackConfigJsFile)
+}
