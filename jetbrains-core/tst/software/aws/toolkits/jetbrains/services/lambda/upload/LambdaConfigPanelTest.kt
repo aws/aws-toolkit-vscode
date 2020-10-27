@@ -139,12 +139,6 @@ class LambdaConfigPanelTest {
     }
 
     @Test
-    fun `memory must be increment of 64`() {
-        sut.memorySlider.textField.text = "13"
-        assertThat(sut.validatePanel()?.message).contains("The specified value must be an integer and between")
-    }
-
-    @Test
     fun `memory must be within upper bound`() {
         sut.memorySlider.textField.text = Integer.MAX_VALUE.toString()
         assertThat(sut.validatePanel()?.message).contains("The specified value must be an integer and between")
