@@ -12,8 +12,11 @@ README.quickstart.cloud9.md
 README.quickstart.vscode.md
 .gitcommit
 media/libs/
-package.json.bk
 resources/debugger/__pycache__
+
+# Temporary backup files from packageDebug.ts
+package.json.bk
+webpack.config.js.bk
 
 # Auto generated definitions
 src/**/*.gen.ts
