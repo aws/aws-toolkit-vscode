@@ -32,7 +32,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
     }
 
     // TODO: Are there cases where we don't mind the URL?
-    // Safer to do it this way assuming others use this library.
+    // Safer to do it this way assuming others use this fetcher.
     private logText(): string {
         return this.friendlyName ?? 'resource from external URL'
     }
