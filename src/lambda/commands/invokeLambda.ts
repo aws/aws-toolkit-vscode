@@ -150,7 +150,7 @@ function createMessageReceivedFunc({
                 logger.info(`Requesting ${message.value}`)
                 const sampleUrl = `${sampleRequestPath}${message.value}`
 
-                const sample = (await new HttpResourceFetcher(sampleUrl).get()) ?? ''
+                const sample = (await new HttpResourceFetcher(sampleUrl, { showUrl: true }).get()) ?? ''
 
                 logger.debug(`Retrieved: ${sample}`)
 
