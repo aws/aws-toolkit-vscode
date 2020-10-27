@@ -7,7 +7,6 @@ import * as AdmZip from 'adm-zip'
 import * as fs from 'fs-extra'
 import * as _ from 'lodash'
 import * as path from 'path'
-import * as request from 'request'
 import * as vscode from 'vscode'
 import { LaunchConfiguration, getReferencedHandlerPaths } from '../../shared/debug/launchConfiguration'
 import { ext } from '../../shared/extensionGlobals'
@@ -24,6 +23,7 @@ import { showConfirmationMessage } from '../../s3/util/messages'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
 import { promptUserForLocation, WizardContext } from '../../shared/wizards/multiStepWizard'
 import { getLambdaFileNameFromHandler } from '../utils'
+import { getResponseFromGetRequest } from '../../shared/utilities/requestUtils'
 
 // TODO: Move off of deprecated `request` to `got`?
 // const pipeline = promisify(Stream.pipeline)
@@ -140,26 +140,7 @@ async function downloadAndUnzipLambda(
         // arbitrary increments since there's no "busy" state for progress bars
         progress.report({ increment: 10 })
 
-        // TODO: Move off of deprecated `request` to `got`?
-        // await pipeline(got.stream(codeLocation), fs.createWriteStream(downloadLocation))
-
-        await new Promise(resolve => {
-            getLogger().debug('Starting Lambda download...')
-            request
-                .get(codeLocation)
-                .on('response', () => {
-                    getLogger().debug('Established Lambda download')
-                })
-                .on('complete', () => {
-                    getLogger().debug('Lambda download complete')
-                    resolve()
-                })
-                .on('error', err => {
-                    // Throw sanitized error so we don't reveal a potentially active URL to private resources.
-                    throw new Error('Error downloading Lambda code from AWS.')
-                })
-                .pipe(fs.createWriteStream(downloadLocation))
-        })
+        await getResponseFromGetRequest(codeLocation, downloadLocation)
 
         progress.report({ increment: 70 })
 

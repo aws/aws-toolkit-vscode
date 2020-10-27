@@ -7,7 +7,6 @@ const localize = nls.loadMessageBundle()
 
 import { IAM, StepFunctions } from 'aws-sdk'
 import { writeFile } from 'fs-extra'
-import * as request from 'request'
 import * as vscode from 'vscode'
 import { StepFunctionsClient } from '../shared/clients/stepFunctionsClient'
 import { ext } from '../shared/extensionGlobals'
@@ -20,6 +19,7 @@ import {
     getLanguageService,
     TextDocument as ASLTextDocument,
 } from 'amazon-states-language-service'
+import { HttpResourceFetcher } from '../shared/resourcefetcher/httpResourceFetcher'
 
 const documentSettings: DocumentLanguageSettings = { comments: 'error', trailingCommas: 'error' }
 const languageService = getLanguageService({})
@@ -148,19 +148,16 @@ async function httpsGetRequestWrapper(url: string): Promise<string> {
     const logger = getLogger()
     logger.verbose('Step Functions is getting content...')
 
-    return new Promise((resolve, reject) => {
-        request.get(url, function(error, response) {
-            logger.verbose('Step Functions finished getting content.')
-            if (error) {
-                // Throw sanitized error so we don't end up revealing any potentially private URLs.
-                const message = 'Step Functions was unable to get content.'
-                logger.verbose(message)
-                reject(new Error(message))
-            } else {
-                resolve(response.body as string)
-            }
-        })
-    })
+    const fetcher = new HttpResourceFetcher(url, 'Step Functions Webview Assets')
+    const val = await fetcher.get()
+
+    if (!val) {
+        const message = 'Step Functions was unable to get content.'
+        logger.verbose(message)
+        throw new Error(message)
+    }
+
+    return val
 }
 
 export async function* listStateMachines(
