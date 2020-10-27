@@ -8,22 +8,22 @@ import * as fs from 'fs-extra'
 import * as _ from 'lodash'
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
+import { showConfirmationMessage } from '../../s3/util/messages'
 import { LaunchConfiguration, getReferencedHandlerPaths } from '../../shared/debug/launchConfiguration'
 import { ext } from '../../shared/extensionGlobals'
 import { makeTemporaryToolkitFolder, fileExists } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
+import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
 import { createCodeAwsSamDebugConfig } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { ExtensionDisposableFiles } from '../../shared/utilities/disposableFiles'
 import * as pathutils from '../../shared/utilities/pathUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { Window } from '../../shared/vscode/window'
-import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
-import { showConfirmationMessage } from '../../s3/util/messages'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
+import { Window } from '../../shared/vscode/window'
 import { promptUserForLocation, WizardContext } from '../../shared/wizards/multiStepWizard'
 import { getLambdaFileNameFromHandler } from '../utils'
-import { getResponseFromGetRequest } from '../../shared/utilities/requestUtils'
 
 // TODO: Move off of deprecated `request` to `got`?
 // const pipeline = promisify(Stream.pipeline)
@@ -140,7 +140,12 @@ async function downloadAndUnzipLambda(
         // arbitrary increments since there's no "busy" state for progress bars
         progress.report({ increment: 10 })
 
-        await getResponseFromGetRequest(codeLocation, downloadLocation)
+        const fetcher = new HttpResourceFetcher(codeLocation, {
+            pipeLocation: downloadLocation,
+            showUrl: false,
+            friendlyName: 'Lambda Function .zip file',
+        })
+        await fetcher.get()
 
         progress.report({ increment: 70 })
 

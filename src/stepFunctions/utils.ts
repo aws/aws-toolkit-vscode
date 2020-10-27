@@ -148,7 +148,7 @@ async function httpsGetRequestWrapper(url: string): Promise<string> {
     const logger = getLogger()
     logger.verbose('Step Functions is getting content...')
 
-    const fetcher = new HttpResourceFetcher(url, 'Step Functions Webview Assets')
+    const fetcher = new HttpResourceFetcher(url, { showUrl: true })
     const val = await fetcher.get()
 
     if (!val) {
