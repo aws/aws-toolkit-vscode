@@ -12,6 +12,14 @@ import { ResourceFetcher } from './resourcefetcher'
 export class HttpResourceFetcher implements ResourceFetcher {
     private readonly logger: Logger = getLogger()
 
+    /**
+     *
+     * @param url URL to fetch a response body from via the `get` call
+     * @param params Additional params for the fetcher
+     * @param {boolean} params.showUrl Whether or not to the URL in log statements.
+     * @param {string} params.friendlyName If URL is not shown, replaces the URL with this text.
+     * @param {string} params.pipeLocation If provided, pipes output to file designated here.
+     */
     public constructor(
         private readonly url: string,
         private readonly params: { showUrl: boolean; friendlyName?: string; pipeLocation?: string }
@@ -36,8 +44,6 @@ export class HttpResourceFetcher implements ResourceFetcher {
         }
     }
 
-    // TODO: Are there cases where we don't mind the URL?
-    // Safer to do it this way assuming others use this fetcher.
     private logText(): string {
         return this.params.showUrl ? this.url : this.params.friendlyName ?? 'resource from URL'
     }
@@ -48,7 +54,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
                 if (err) {
                     // swallow error to keep URL private
                     // some AWS APIs use presigned links (e.g. Lambda.getFunction); showing these represent a securty concern.
-                    reject('Error making request to URL.')
+                    reject({ code: err.code })
                 }
                 resolve(response)
             })
