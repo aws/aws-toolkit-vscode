@@ -267,7 +267,7 @@
         </group>
 
         <group id="aws.toolkit.explorer.lambda" popup="true" compact="false">
-            <action id="lambda.function.create" class="software.aws.toolkits.jetbrains.services.lambda.upload.CreateLambdaFunction"/>
+            <action id="lambda.function.create" class="software.aws.toolkits.jetbrains.services.lambda.upload.CreateLambdaFunctionAction"/>
         </group>
 
         <group id="aws.toolkit.explorer.lambda.function" popup="false" compact="false">

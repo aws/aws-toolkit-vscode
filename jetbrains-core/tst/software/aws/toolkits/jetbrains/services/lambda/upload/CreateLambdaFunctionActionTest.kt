@@ -22,7 +22,7 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.openFile
 
-class CreateLambdaFunctionTest {
+class CreateLambdaFunctionActionTest {
     @Rule
     @JvmField
     val projectRule = JavaCodeInsightTestFixtureRule()
@@ -71,7 +71,7 @@ Resources:
         val handlerName = "helloworld.App::handleRequest"
 
         runInEdtAndWait {
-            assertThatThrownBy { CreateLambdaFunction(handlerName, null, null) }.isInstanceOf(java.lang.IllegalArgumentException::class.java)
+            assertThatThrownBy { CreateLambdaFunctionAction(handlerName, null, null) }.isInstanceOf(java.lang.IllegalArgumentException::class.java)
         }
     }
 
@@ -83,7 +83,7 @@ Resources:
         }
 
         runInEdtAndWait {
-            assertThatThrownBy { CreateLambdaFunction(handlerName, null, handlerResolver) }.isInstanceOf(java.lang.IllegalArgumentException::class.java)
+            assertThatThrownBy { CreateLambdaFunctionAction(handlerName, null, handlerResolver) }.isInstanceOf(java.lang.IllegalArgumentException::class.java)
         }
     }
 
@@ -92,7 +92,7 @@ Resources:
         val handlerName = "helloworld.App::handleRequest"
 
         runInEdtAndWait {
-            assertThatThrownBy { CreateLambdaFunction(handlerName, smartElement, null) }.isInstanceOf(java.lang.IllegalArgumentException::class.java)
+            assertThatThrownBy { CreateLambdaFunctionAction(handlerName, smartElement, null) }.isInstanceOf(java.lang.IllegalArgumentException::class.java)
         }
     }
 
@@ -104,7 +104,7 @@ Resources:
         }
 
         runInEdtAndWait {
-            val action = CreateLambdaFunction(handlerName, smartElement, handlerResolver)
+            val action = CreateLambdaFunctionAction(handlerName, smartElement, handlerResolver)
 
             val actionEvent = TestActionEvent()
             action.update(actionEvent)
@@ -121,7 +121,7 @@ Resources:
         }
 
         runInEdtAndWait {
-            val action = CreateLambdaFunction(handlerName, smartElement, handlerResolver)
+            val action = CreateLambdaFunctionAction(handlerName, smartElement, handlerResolver)
 
             val actionEvent = TestActionEvent()
             action.update(actionEvent)
@@ -138,7 +138,7 @@ Resources:
         }
 
         runInEdtAndWait {
-            val action = CreateLambdaFunction(handlerName, smartElement, handlerResolver)
+            val action = CreateLambdaFunctionAction(handlerName, smartElement, handlerResolver)
 
             val actionEvent = TestActionEvent()
             action.update(actionEvent)
@@ -151,7 +151,7 @@ Resources:
     fun `Supported runtime groups shows action`() {
         // With no masking it should be visible because we have runtime groups
         runInEdtAndWait {
-            val action = CreateLambdaFunction()
+            val action = CreateLambdaFunctionAction()
             val actionEvent = TestActionEvent()
             action.update(actionEvent)
             assertThat(actionEvent.presentation.isVisible).isTrue()
@@ -166,7 +166,7 @@ Resources:
             disposableRule.disposable
         )
         runInEdtAndWait {
-            val action = CreateLambdaFunction()
+            val action = CreateLambdaFunctionAction()
             val actionEvent = TestActionEvent()
             action.update(actionEvent)
             assertThat(actionEvent.presentation.isVisible).isFalse()

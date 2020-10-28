@@ -28,7 +28,6 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaLimits.MIN_MEMORY
 import software.aws.toolkits.jetbrains.services.lambda.LambdaLimits.MIN_TIMEOUT
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.ui.SliderPanel
-import java.util.concurrent.TimeUnit
 
 object Lambda {
     private val LOG = getLogger<Lambda>()
@@ -73,19 +72,6 @@ object Lambda {
             ) { it.containingFile.virtualFile.path }
         }
     }
-}
-
-// @see https://docs.aws.amazon.com/lambda/latest/dg/limits.html
-object LambdaLimits {
-    const val MIN_MEMORY = 128
-    const val MAX_MEMORY = 3008
-    const val MEMORY_INCREMENT = 64
-    const val DEFAULT_MEMORY_SIZE = 128
-    const val MIN_TIMEOUT = 1
-    @JvmField
-    val MAX_TIMEOUT = TimeUnit.MINUTES.toSeconds(15).toInt()
-    @JvmField
-    val DEFAULT_TIMEOUT = TimeUnit.MINUTES.toSeconds(5).toInt()
 }
 
 object LambdaWidgets {

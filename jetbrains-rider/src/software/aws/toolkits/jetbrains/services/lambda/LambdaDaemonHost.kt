@@ -24,7 +24,7 @@ import software.aws.toolkits.jetbrains.services.lambda.dotnet.element.RiderLambd
 import software.aws.toolkits.jetbrains.services.lambda.execution.LambdaRunConfigurationType
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.LocalLambdaRunConfiguration
 import software.aws.toolkits.jetbrains.services.lambda.execution.local.LocalLambdaRunConfigurationProducer
-import software.aws.toolkits.jetbrains.services.lambda.upload.CreateLambdaFunction
+import software.aws.toolkits.jetbrains.services.lambda.upload.CreateLambdaFunctionAction
 import software.aws.toolkits.jetbrains.utils.DotNetRuntimeUtils
 
 /**
@@ -69,7 +69,7 @@ class LambdaDaemonHost(project: Project) : LifetimedProjectComponent(project) {
             val psiElement = RiderLambdaHandlerFakePsiElement(project, handler, fieldId).navigationElement
             val smartPsiElementPointer = SmartPointerManager.createPointer(psiElement)
 
-            val action = CreateLambdaFunction(
+            val action = CreateLambdaFunctionAction(
                 handlerName = handler,
                 elementPointer = smartPsiElementPointer,
                 lambdaHandlerResolver = handlerResolver

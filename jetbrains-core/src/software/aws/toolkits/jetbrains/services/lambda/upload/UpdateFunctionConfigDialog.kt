@@ -14,11 +14,9 @@ import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.awsClient
-import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
-import software.aws.toolkits.jetbrains.utils.lambdaTracingConfigIsAvailable
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.LambdaTelemetry
@@ -45,8 +43,6 @@ class UpdateFunctionConfigDialog(private val project: Project, private val initi
             memorySlider.value = initialSettings.memorySize
             iamRole.selectedItem = initialSettings.role
             xrayEnabled.isSelected = initialSettings.xrayEnabled
-
-            setXrayControlVisibility(lambdaTracingConfigIsAvailable(AwsConnectionManager.getInstance(project).activeRegion))
         }
     }
 

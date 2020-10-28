@@ -54,7 +54,6 @@ class UpdateFunctionCodeDialog(private val project: Project, private val initial
     override fun doOKAction() {
         saveSettings()
         upsertLambdaCode()
-        close(OK_EXIT_CODE)
     }
 
     override fun getHelpId(): String? = HelpIds.UPDATE_FUNCTION_CODE_DIALOG.id
@@ -108,6 +107,7 @@ class UpdateFunctionCodeDialog(private val project: Project, private val initial
                 }
             }
         }
+        close(OK_EXIT_CODE)
     }
 
     private fun loadSettings() {

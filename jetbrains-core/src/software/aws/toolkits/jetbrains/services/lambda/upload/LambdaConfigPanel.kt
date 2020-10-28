@@ -7,8 +7,10 @@ import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.SortedComboBoxModel
-import com.intellij.util.text.nullize
 import software.amazon.awssdk.services.lambda.model.Runtime
+import software.aws.toolkits.jetbrains.core.awsClient
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
+import software.aws.toolkits.jetbrains.services.iam.CreateIamRoleDialog
 import software.aws.toolkits.jetbrains.services.iam.IamResources
 import software.aws.toolkits.jetbrains.services.iam.IamRole
 import software.aws.toolkits.jetbrains.services.lambda.LambdaWidgets.lambdaMemory
@@ -18,6 +20,7 @@ import software.aws.toolkits.jetbrains.ui.HandlerPanel
 import software.aws.toolkits.jetbrains.ui.ResourceSelector
 import software.aws.toolkits.jetbrains.ui.ResourceSelector.Companion.builder
 import software.aws.toolkits.jetbrains.ui.SliderPanel
+import software.aws.toolkits.jetbrains.utils.lambdaTracingConfigIsAvailable
 import software.aws.toolkits.jetbrains.utils.ui.validationInfo
 import software.aws.toolkits.resources.message
 import java.awt.BorderLayout
@@ -49,7 +52,8 @@ class LambdaConfigPanel(private val project: Project) : JPanel(BorderLayout()) {
         private set
     private lateinit var content: JPanel
 
-    private var runtimeModel = SortedComboBoxModel(compareBy(Comparator.naturalOrder(), Runtime::toString))
+    var runtimeModel = SortedComboBoxModel(compareBy(Comparator.naturalOrder(), Runtime::toString))
+        private set
     private var lastSelectedRuntime: Runtime? = null
 
     init {
@@ -65,7 +69,25 @@ class LambdaConfigPanel(private val project: Project) : JPanel(BorderLayout()) {
             handlerPanel.setRuntime(selectedRuntime)
         }
 
+        createRole.addActionListener {
+            val iamRoleDialog = CreateIamRoleDialog(
+                project = project,
+                iamClient = project.awsClient(),
+                parent = createRole,
+                defaultAssumeRolePolicyDocument = DEFAULT_ASSUME_ROLE_POLICY,
+                defaultPolicyDocument = DEFAULT_POLICY
+            )
+            if (iamRoleDialog.showAndGet()) {
+                iamRoleDialog.iamRole?.let { newRole ->
+                    iamRole.reload(forceFetch = true)
+                    iamRole.selectedItem = newRole
+                }
+            }
+        }
+
         content.border = IdeBorderFactory.createTitledBorder(message("lambda.upload.configuration_settings"), false)
+
+        setXrayControlVisibility(lambdaTracingConfigIsAvailable(AwsConnectionManager.getInstance(project).activeRegion))
 
         add(content, BorderLayout.CENTER)
     }
@@ -80,22 +102,20 @@ class LambdaConfigPanel(private val project: Project) : JPanel(BorderLayout()) {
         iamRole = builder().resource(IamResources.LIST_LAMBDA_ROLES).awsConnection(project).build()
     }
 
-    fun setXrayControlVisibility(visible: Boolean) {
+    private fun setXrayControlVisibility(visible: Boolean) {
         xrayEnabled.isVisible = visible
         if (!visible) {
             xrayEnabled.isSelected = false
         }
     }
 
-    fun validatePanel(): ValidationInfo? {
-        handlerPanel.handler.text.nullize(true)
-            ?: return handlerPanel.handler.validationInfo(message("lambda.upload_validation.handler"))
+    fun validatePanel(handlerMustExist: Boolean): ValidationInfo? {
+        // Check runtime first, since handler panel needs it to be there
+        runtimeModel.selectedItem ?: return runtime.validationInfo(message("lambda.upload_validation.runtime"))
 
-        runtimeModel.selectedItem
-            ?: return runtime.validationInfo(message("lambda.upload_validation.runtime"))
+        handlerPanel.validateHandler(handlerMustExist)?.let { return it }
 
-        iamRole.selected()
-            ?: return iamRole.validationInfo(message("lambda.upload_validation.iam_role"))
+        iamRole.selected() ?: return iamRole.validationInfo(message("lambda.upload_validation.iam_role"))
 
         return timeoutSlider.validate() ?: memorySlider.validate()
     }

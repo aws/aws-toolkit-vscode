@@ -95,18 +95,20 @@ class HandlerPanel(private val project: Project) : JPanel(MigLayout("novisualpad
         simpleHandler.isVisible = !isCompletionSupported
     }
 
-    fun validateHandler(): ValidationInfo? {
+    fun validateHandler(handlerMustExist: Boolean): ValidationInfo? {
         val handlerValue = handler.text.nullize(true)
             ?: return handler.validationInfo(message("lambda.upload_validation.handler"))
 
-        val runtime = runtime
-            ?: throw IllegalStateException("Runtime was not set in the HandlerPanel")
+        if (handlerMustExist) {
+            val runtime = runtime
+                ?: throw IllegalStateException("Runtime was not set in the HandlerPanel")
 
-        val psiFile = findPsiElementsForHandler(project, runtime, handlerValue).firstOrNull()?.containingFile
-            ?: return handler.validationInfo(message("lambda.upload_validation.handler_not_found"))
+            val psiFile = findPsiElementsForHandler(project, runtime, handlerValue).firstOrNull()?.containingFile
+                ?: return handler.validationInfo(message("lambda.upload_validation.handler_not_found"))
 
-        ModuleUtil.findModuleForFile(psiFile)
-            ?: return handler.validationInfo(message("lambda.upload_validation.module_not_found", psiFile))
+            ModuleUtil.findModuleForFile(psiFile)
+                ?: return handler.validationInfo(message("lambda.upload_validation.module_not_found", psiFile))
+        }
 
         return null
     }

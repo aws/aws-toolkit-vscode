@@ -3,7 +3,10 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.upload
 
-import com.intellij.testFramework.ProjectRule
+import com.intellij.openapi.application.runWriteAction
+import com.intellij.openapi.projectRoots.ProjectJdkTable
+import com.intellij.openapi.roots.ProjectRootManager
+import com.intellij.testFramework.IdeaTestUtil
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -15,12 +18,14 @@ import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.services.iam.IamResources
 import software.aws.toolkits.jetbrains.services.iam.IamRole
+import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
+import software.aws.toolkits.jetbrains.utils.rules.openClass
 import software.aws.toolkits.jetbrains.utils.waitToLoad
 
 class LambdaConfigPanelTest {
     @Rule
     @JvmField
-    val projectRule = ProjectRule()
+    val projectRule = JavaCodeInsightTestFixtureRule()
 
     @Rule
     @JvmField
@@ -42,7 +47,13 @@ class LambdaConfigPanelTest {
             listOf(role)
         )
 
+        val sdk = IdeaTestUtil.getMockJdk18()
         runInEdtAndWait {
+            runWriteAction {
+                ProjectJdkTable.getInstance().addJdk(sdk, projectRule.fixture.projectDisposable)
+                ProjectRootManager.getInstance(project).projectSdk = sdk
+            }
+
             sut = LambdaConfigPanel(project)
             sut.handlerPanel.handler.text = "com.example.LambdaHandler::handleRequest"
             sut.runtime.selectedItem = Runtime.JAVA8
@@ -55,12 +66,22 @@ class LambdaConfigPanelTest {
         runInEdtAndWait {
             sut.iamRole.selectedItem = IamRole(role.arn())
         }
+
+        projectRule.fixture.openClass(
+            """
+            package com.example;
+            public class LambdaHandler {
+                public static void handleRequest(InputStream input, OutputStream output) { }
+            }
+            """
+        )
     }
 
     @Test
     fun `valid config returns null`() {
         runInEdtAndWait {
-            assertThat(sut.validatePanel()).isNull()
+            assertThat(sut.validatePanel(handlerMustExist = false)).isNull()
+            assertThat(sut.validatePanel(handlerMustExist = true)).isNull()
         }
     }
 
@@ -69,78 +90,86 @@ class LambdaConfigPanelTest {
         runInEdtAndWait {
             sut.handlerPanel.handler.text = ""
         }
-        assertThat(sut.validatePanel()?.message).contains("Handler must be specified")
+        assertThat(sut.validatePanel(handlerMustExist = false)?.message).contains("Handler must be specified")
+    }
+
+    @Test
+    fun `handler must exist to build`() {
+        runInEdtAndWait {
+            sut.handlerPanel.handler.text = "Foo"
+        }
+        assertThat(sut.validatePanel(handlerMustExist = true)?.message).contains("Must be able to locate the handler")
     }
 
     @Test
     fun `runtime must be selected`() {
         sut.runtime.selectedItem = null
-        assertThat(sut.validatePanel()?.message).contains("Runtime must be specified")
+        assertThat(sut.validatePanel(handlerMustExist = false)?.message).contains("Runtime must be specified")
     }
 
     @Test
     fun `iam role must be selected`() {
         sut.iamRole.selectedItem = null
-        assertThat(sut.validatePanel()?.message).contains("IAM role must be specified")
+        assertThat(sut.validatePanel(handlerMustExist = false)?.message).contains("IAM role must be specified")
     }
 
     @Test
     fun `timeout must be specified`() {
         sut.timeoutSlider.textField.text = ""
-        assertThat(sut.validatePanel()?.message).contains("The specified value must be an integer and between")
+        assertThat(sut.validatePanel(handlerMustExist = false)?.message).contains("The specified value must be an integer and between")
     }
 
     @Test
     fun `timeout must be numeric`() {
         sut.timeoutSlider.textField.text = "foo"
-        assertThat(sut.validatePanel()?.message).contains("The specified value must be an integer and between")
+        assertThat(sut.validatePanel(handlerMustExist = false)?.message).contains("The specified value must be an integer and between")
     }
 
     @Test
     fun `timeout must be positive`() {
         sut.timeoutSlider.textField.text = "-1"
-        assertThat(sut.validatePanel()?.message).contains("The specified value must be an integer and between")
+        assertThat(sut.validatePanel(handlerMustExist = false)?.message).contains("The specified value must be an integer and between")
     }
 
     @Test
     fun `timeout must be within lower bound`() {
         sut.timeoutSlider.textField.text = "0"
-        assertThat(sut.validatePanel()?.message).contains("The specified value must be an integer and between")
+        assertThat(sut.validatePanel(handlerMustExist = false)?.message).contains("The specified value must be an integer and between")
     }
 
     @Test
     fun `timeout must be within upper bound`() {
         sut.timeoutSlider.textField.text = Integer.MAX_VALUE.toString()
-        assertThat(sut.validatePanel()?.message).contains("The specified value must be an integer and between")
+        assertThat(sut.validatePanel(handlerMustExist = false)?.message).contains("The specified value must be an integer and between")
     }
 
     @Test
     fun `memory must be specified`() {
         sut.memorySlider.textField.text = ""
-        assertThat(sut.validatePanel()?.message).contains("The specified value must be an integer and between")
+        assertThat(sut.validatePanel(handlerMustExist = false)?.message).contains("The specified value must be an integer and between")
     }
 
     @Test
     fun `memory mus be numeric`() {
         sut.memorySlider.textField.text = "foo"
-        assertThat(sut.validatePanel()?.message).contains("The specified value must be an integer and between")
+        assertThat(sut.validatePanel(handlerMustExist = false)?.message).contains("The specified value must be an integer and between")
     }
 
     @Test
     fun `memory must be positive`() {
         sut.memorySlider.textField.text = "-1"
-        assertThat(sut.validatePanel()?.message).contains("The specified value must be an integer and between")
+        assertThat(sut.validatePanel(handlerMustExist = false)?.message).contains("The specified value must be an integer and between")
     }
 
     @Test
     fun `memory must be within lower bound`() {
         sut.memorySlider.textField.text = "0"
-        assertThat(sut.validatePanel()?.message).contains("The specified value must be an integer and between")
+        assertThat(sut.validatePanel(handlerMustExist = false)?.message).contains("The specified value must be an integer and between")
     }
 
     @Test
     fun `memory must be within upper bound`() {
         sut.memorySlider.textField.text = Integer.MAX_VALUE.toString()
-        assertThat(sut.validatePanel()?.message).contains("The specified value must be an integer and between")
+        assertThat(sut.validatePanel(handlerMustExist = false)?.message).contains("The specified value must be an integer and between")
     }
 }

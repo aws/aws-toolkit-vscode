@@ -27,6 +27,6 @@ class UpdateFunctionCodePanel internal constructor(private val project: Project)
         handlerPanel = HandlerPanel(project)
     }
 
-    fun validatePanel(): ValidationInfo? = handlerPanel.validateHandler()
+    fun validatePanel(): ValidationInfo? = handlerPanel.validateHandler(handlerMustExist = true)
         ?: codeStorage.validatePanel()
 }
