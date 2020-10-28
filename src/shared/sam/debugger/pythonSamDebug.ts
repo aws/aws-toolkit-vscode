@@ -33,7 +33,7 @@ export async function getSamProjectDirPathForFile(filepath: string): Promise<str
     return path.dirname(filepath)
 }
 
-// Add create debugging manifest/requirements.txt containing ptvsd
+// Add create debugging manifest/requirements.txt containing debugpy
 async function makePythonDebugManifest(params: {
     isImageLambda: boolean
     samProjectCodeRoot: string
@@ -41,15 +41,15 @@ async function makePythonDebugManifest(params: {
 }): Promise<string | undefined> {
     let manifestText = ''
     const manfestPath = path.join(params.samProjectCodeRoot, 'requirements.txt')
-    // TODO: figure out how to get ptvsd in the container without hacking the user's requirements
+    // TODO: figure out how to get debugpy in the container without hacking the user's requirements
     const debugManifestPath = params.isImageLambda ? manfestPath : path.join(params.outputDir, 'debug-requirements.txt')
     if (await fileExists(manfestPath)) {
         manifestText = await readFileAsString(manfestPath)
     }
     getLogger().debug(`pythonCodeLensProvider.makePythonDebugManifest params: ${JSON.stringify(params, undefined, 2)}`)
     // TODO: Make this logic more robust. What if other module names include ptvsd?
-    if (!manifestText.includes('ptvsd')) {
-        manifestText += `${os.EOL}ptvsd>4.2,<5`
+    if (!manifestText.includes('debugpy')) {
+        manifestText += `${os.EOL}debugpy>=1.0,<2`
         await writeFile(debugManifestPath, manifestText)
 
         return debugManifestPath
