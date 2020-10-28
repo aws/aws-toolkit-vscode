@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as path from 'path'
 import * as vscode from 'vscode'
 
 import { CloudFormation } from '../cloudformation/cloudformation'
@@ -24,6 +25,7 @@ import {
     addSamDebugConfiguration,
     AddSamDebugConfigurationInput,
 } from '../sam/debugger/commands/addSamDebugConfiguration'
+import { isInDirectory } from '../filesystemUtilities'
 
 export type Language = 'python' | 'javascript' | 'csharp'
 
@@ -124,7 +126,8 @@ export async function pickAddSamDebugConfiguration(
 
     const templateItemsMap = new Map<string, AddSamDebugConfigurationInput>()
     const templateItems: vscode.QuickPickItem[] = templateConfigs.map(templateConfig => {
-        const label = `${templateConfig.rootUri.fsPath}:${templateConfig.resourceName}`
+        const label = `${getPathRelativeToWorkspaceFolderPath(templateConfig.rootUri.fsPath) ??
+            templateConfig.rootUri.fsPath}:${templateConfig.resourceName}`
         templateItemsMap.set(label, templateConfig)
         return { label }
     })
@@ -354,4 +357,15 @@ export function initializeTypescriptCodelens(context: ExtContext): void {
             }
         })
     )
+}
+
+function getPathRelativeToWorkspaceFolderPath(childPath: string): string | undefined {
+    if (!vscode.workspace.workspaceFolders) {
+        return
+    }
+    for (const folder of vscode.workspace.workspaceFolders) {
+        if (isInDirectory(folder.uri.fsPath, childPath)) {
+            return path.relative(folder.uri.fsPath, childPath)
+        }
+    }
 }
