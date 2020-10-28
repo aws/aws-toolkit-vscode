@@ -45,4 +45,4 @@ for (const directory of directories) {
 }
 
 fs.ensureDirSync(snippetsOutDir)
-fs.writeFileSync(path.join(snippetsOutDir, 'snippets.json'), JSON.stringify(snippets, null, '  '))
+fs.writeFileSync(path.join(snippetsOutDir, 'snippets.json'), JSON.stringify(snippets, undefined, '  '))
