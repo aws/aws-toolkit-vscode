@@ -1,0 +1,4 @@
+{
+  "prefix": "dynamodb.updateTable",
+  "description": "Modifies the provisioned throughput settings, global secondary indexes, or DynamoDB Streams settings for a given table."
+}

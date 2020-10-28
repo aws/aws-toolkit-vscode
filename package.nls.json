@@ -463,6 +463,7 @@
     "AWS.samcli.initWizard.source.error.notFound": "Project created successfully, but main source code file not found: {0}",
     "AWS.samcli.initWizard.source.error.notInWorkspace": "Could not open file '{0}'. If this file exists on disk, try adding it to your workspace.",
     "AWS.samcli.initWizard.completionMessage": "Created SAM application \"{0}\" and added launch configurations to launch.json: {1}",
+    "AWS.snippets.label": "{0} (Snippet)",
     "AWS.stepfunctions.visualisation.errors.rendering": "There was an error rendering State Machine Graph, check logs for details.",
     "AWS.stepfunctions.visualisation.errors.rename": "State machine visualization closed due to file renaming or closure.",
     "AWS.submitFeedback.title": "Submit Quick Feedback",
