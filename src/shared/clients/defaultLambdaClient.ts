@@ -62,7 +62,11 @@ export class DefaultLambdaClient implements LambdaClient {
 
         try {
             const response = await client.getFunction({ FunctionName: name }).promise()
-            getLogger().debug('GetFunction returned response: %O', response)
+            // prune `Code` from logs so we don't reveal a signed link to customer resources.
+            getLogger().debug('GetFunction returned response (code section pruned): %O', {
+                ...response,
+                Code: 'Pruned',
+            })
             return response
         } catch (e) {
             getLogger().error('Failed to get function: %O', e)
