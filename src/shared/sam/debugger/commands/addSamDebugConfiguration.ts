@@ -104,6 +104,11 @@ export async function addSamDebugConfiguration(
 
         const choices = await picker.promptUser({
             picker: quickPick,
+            onDidTriggerButton: (button, resolve, reject) => {
+                if (button === vscode.QuickInputButtons.Back) {
+                    resolve(undefined)
+                }
+            },
         })
         const val = picker.verifySinglePickerOutput(choices)
 
