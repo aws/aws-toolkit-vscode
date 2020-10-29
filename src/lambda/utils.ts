@@ -69,7 +69,7 @@ export function getLambdaDetails(
     const handlerArr = configuration.Handler!.split('.')
 
     return {
-        fileName: `${handlerArr.slice(0, handlerArr.length - 2).join('.')}.${runtimeExtension}`,
+        fileName: `${handlerArr.slice(0, handlerArr.length - 1).join('.')}.${runtimeExtension}`,
         functionName: handlerArr[handlerArr.length - 1]!,
     }
 }
