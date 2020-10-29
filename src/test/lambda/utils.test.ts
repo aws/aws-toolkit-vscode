@@ -4,25 +4,25 @@
  */
 
 import * as assert from 'assert'
-import { getLambdaDetailsFromConfiguration } from '../../lambda/utils'
+import { getLambdaDetails } from '../../lambda/utils'
 import { assertThrowsError } from '../shared/utilities/assertUtils'
 
 describe('lambda utils', async () => {
-    describe('getLambdaDetailsFromConfiguration', () => {
+    describe('getLambdaDetails', () => {
         it('returns valid filenames and function names', () => {
-            const jsNonNestedParsedName = getLambdaDetailsFromConfiguration({
+            const jsNonNestedParsedName = getLambdaDetails({
                 Runtime: 'nodejs12.x',
                 Handler: 'app.lambda_handler',
             })
-            const pyNonNestedParsedName = getLambdaDetailsFromConfiguration({
+            const pyNonNestedParsedName = getLambdaDetails({
                 Runtime: 'python3.8',
                 Handler: 'app.lambda_handler',
             })
-            const jsNestedParsedName = getLambdaDetailsFromConfiguration({
+            const jsNestedParsedName = getLambdaDetails({
                 Runtime: 'nodejs12.x',
                 Handler: 'asdf/jkl/app.lambda_handler',
             })
-            const PyNestedParsedName = getLambdaDetailsFromConfiguration({
+            const PyNestedParsedName = getLambdaDetails({
                 Runtime: 'python3.8',
                 Handler: 'asdf/jkl/app.lambda_handler',
             })
@@ -39,15 +39,13 @@ describe('lambda utils', async () => {
         it('throws if the handler is not a supported runtime', async () => {
             // unsupported runtime for import
             await assertThrowsError(async () =>
-                getLambdaDetailsFromConfiguration({
+                getLambdaDetails({
                     Runtime: 'dotnetcore3.1',
                     Handler: 'HelloWorld::HelloWorld.Function::FunctionHandler',
                 })
             )
             // runtime that isn't present, period
-            await assertThrowsError(async () =>
-                getLambdaDetailsFromConfiguration({ Runtime: 'COBOL-60', Handler: 'asdf.asdf' })
-            )
+            await assertThrowsError(async () => getLambdaDetails({ Runtime: 'COBOL-60', Handler: 'asdf.asdf' }))
         })
     })
 })

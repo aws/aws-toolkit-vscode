@@ -9,8 +9,8 @@ import * as vscode from 'vscode'
 
 import {
     CloudFormationTemplateRegistry,
-    getResourcesAssociatedWithHandler,
-    getResourcesAssociatedWithHandlerFromTemplateDatum,
+    getResourcesForHandler,
+    getResourcesForHandlerFromTemplateDatum,
     TemplateDatum,
 } from '../../../shared/cloudformation/templateRegistry'
 import { rmrf } from '../../../shared/filesystem'
@@ -220,9 +220,9 @@ describe('CloudFormation Template Registry', async () => {
         },
     }
 
-    describe('getResourcesAssociatedWithHandler', () => {
+    describe('getResourcesForHandler', () => {
         it('returns an array containing resources that contain references to the handler in question', () => {
-            const val = getResourcesAssociatedWithHandler(path.join(rootPath, nestedPath, 'index.js'), 'handler', [
+            const val = getResourcesForHandler(path.join(rootPath, nestedPath, 'index.js'), 'handler', [
                 nonParentTemplate,
                 workingTemplate,
                 noResourceTemplate,
@@ -264,7 +264,7 @@ describe('CloudFormation Template Registry', async () => {
 
     describe('getResourceAssociatedWithHandlerFromTemplateDatum', () => {
         it('returns an empty array if the given template is not a parent of the handler file in question', () => {
-            const val = getResourcesAssociatedWithHandlerFromTemplateDatum(
+            const val = getResourcesForHandlerFromTemplateDatum(
                 path.join(rootPath, 'index.js'),
                 'handler',
                 nonParentTemplate
@@ -274,7 +274,7 @@ describe('CloudFormation Template Registry', async () => {
         })
 
         it('returns an empty array if the template has no resources', () => {
-            const val = getResourcesAssociatedWithHandlerFromTemplateDatum(
+            const val = getResourcesForHandlerFromTemplateDatum(
                 path.join(rootPath, nestedPath, 'index.js'),
                 'handler',
                 noResourceTemplate
@@ -284,7 +284,7 @@ describe('CloudFormation Template Registry', async () => {
         })
 
         it('returns a template resource if it has a matching handler', () => {
-            const val = getResourcesAssociatedWithHandlerFromTemplateDatum(
+            const val = getResourcesForHandlerFromTemplateDatum(
                 path.join(rootPath, nestedPath, 'index.js'),
                 'handler',
                 workingTemplate
@@ -299,7 +299,7 @@ describe('CloudFormation Template Registry', async () => {
         })
 
         it('ignores path handling if using a compiled language', () => {
-            const val = getResourcesAssociatedWithHandlerFromTemplateDatum(
+            const val = getResourcesForHandlerFromTemplateDatum(
                 path.join(rootPath, nestedPath, 'index.cs'),
                 'Asdf::Asdf.Function::FunctionHandler',
                 dotNetTemplate
@@ -314,7 +314,7 @@ describe('CloudFormation Template Registry', async () => {
         })
 
         it('returns all template resources if it has multiple matching handlers', () => {
-            const val = getResourcesAssociatedWithHandlerFromTemplateDatum(
+            const val = getResourcesForHandlerFromTemplateDatum(
                 path.join(rootPath, nestedPath, 'index.js'),
                 'handler',
                 multiResourceTemplate
@@ -339,7 +339,7 @@ describe('CloudFormation Template Registry', async () => {
         })
 
         it('does not break if the resource has a non-parseable runtime', () => {
-            const val = getResourcesAssociatedWithHandlerFromTemplateDatum(
+            const val = getResourcesForHandlerFromTemplateDatum(
                 path.join(rootPath, nestedPath, 'index.js'),
                 'handler',
                 badRuntimeTemplate

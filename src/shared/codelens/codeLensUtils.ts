@@ -3,29 +3,28 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as path from 'path'
 import * as vscode from 'vscode'
 
+import { nodeJsRuntimes, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { CloudFormation } from '../cloudformation/cloudformation'
+import { getResourcesForHandler } from '../cloudformation/templateRegistry'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
-import { localize } from '../utilities/vsCodeUtils'
-import * as pythonDebug from '../sam/debugger/pythonSamDebug'
-import * as pythonCodelens from './pythonCodeLensProvider'
-import * as csharpCodelens from './csharpCodeLensProvider'
-import * as tsCodelens from './typescriptCodeLensProvider'
-import { LambdaLocalInvokeParams } from '../sam/localLambdaRunner'
-import { ExtContext } from '../extensions'
-import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
-import { nodeJsRuntimes, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { CODE_TARGET_TYPE, TEMPLATE_TARGET_TYPE } from '../sam/debugger/awsSamDebugConfiguration'
-import { getResourcesAssociatedWithHandler } from '../cloudformation/templateRegistry'
-import { createQuickPick, promptUser, verifySinglePickerOutput } from '../ui/picker'
 import {
     addSamDebugConfiguration,
     AddSamDebugConfigurationInput,
 } from '../sam/debugger/commands/addSamDebugConfiguration'
-import { isInDirectory } from '../filesystemUtilities'
+import { LambdaLocalInvokeParams } from '../sam/localLambdaRunner'
+import { recordLambdaInvokeLocal, Result, Runtime } from '../telemetry/telemetry'
+import { localize } from '../utilities/vsCodeUtils'
+import * as pythonDebug from '../sam/debugger/pythonSamDebug'
+import { createQuickPick, promptUser, verifySinglePickerOutput } from '../ui/picker'
+import { getWorkspaceRelativePath } from '../utilities/workspaceUtils'
+import * as pythonCodelens from './pythonCodeLensProvider'
+import * as csharpCodelens from './csharpCodeLensProvider'
+import * as tsCodelens from './typescriptCodeLensProvider'
+import { ExtContext } from '../extensions'
 
 export type Language = 'python' | 'javascript' | 'csharp'
 
@@ -58,7 +57,7 @@ export async function makeCodeLenses({
                   )
 
         try {
-            const associatedResources = getResourcesAssociatedWithHandler(handler.filename, handler.handlerName)
+            const associatedResources = getResourcesForHandler(handler.filename, handler.handlerName)
             const templateConfigs: AddSamDebugConfigurationInput[] = []
 
             if (associatedResources.length > 0) {
@@ -126,8 +125,9 @@ export async function pickAddSamDebugConfiguration(
 
     const templateItemsMap = new Map<string, AddSamDebugConfigurationInput>()
     const templateItems: vscode.QuickPickItem[] = templateConfigs.map(templateConfig => {
-        const label = `${getPathRelativeToWorkspaceFolderPath(templateConfig.rootUri.fsPath) ??
-            templateConfig.rootUri.fsPath}:${templateConfig.resourceName}`
+        const label = `${getWorkspaceRelativePath(templateConfig.rootUri.fsPath) ?? templateConfig.rootUri.fsPath}:${
+            templateConfig.resourceName
+        }`
         templateItemsMap.set(label, templateConfig)
         return { label }
     })
@@ -139,7 +139,7 @@ export async function pickAddSamDebugConfiguration(
             matchOnDetail: true,
             title: localize(
                 'AWS.pickDebugConfig.prompt',
-                'Create a Debug Configuration with a CloudFormation Template'
+                'Create a Debug Configuration from a CloudFormation Template'
             ),
         },
         items: [
@@ -357,15 +357,4 @@ export function initializeTypescriptCodelens(context: ExtContext): void {
             }
         })
     )
-}
-
-function getPathRelativeToWorkspaceFolderPath(childPath: string): string | undefined {
-    if (!vscode.workspace.workspaceFolders) {
-        return
-    }
-    for (const folder of vscode.workspace.workspaceFolders) {
-        if (isInDirectory(folder.uri.fsPath, childPath)) {
-            return path.relative(folder.uri.fsPath, childPath)
-        }
-    }
 }

@@ -10,7 +10,7 @@ import { CloudFormation } from './cloudformation'
 import * as pathutils from '../utilities/pathUtils'
 import { isInDirectory } from '../filesystemUtilities'
 import { dotNetRuntimes } from '../../lambda/models/samLambdaRuntime'
-import { getLambdaDetailsFromConfiguration } from '../../lambda/utils'
+import { getLambdaDetails } from '../../lambda/utils'
 
 export interface TemplateDatum {
     path: string
@@ -134,7 +134,7 @@ export class CloudFormationTemplateRegistry {
  * @param handler Handler function from aforementioned file
  * @param unfilteredTemplates Array containing TemplateDatum objects to filter
  */
-export function getResourcesAssociatedWithHandler(
+export function getResourcesForHandler(
     filepath: string,
     handler: string,
     unfilteredTemplates: TemplateDatum[] = CloudFormationTemplateRegistry.getRegistry().registeredTemplates
@@ -142,14 +142,12 @@ export function getResourcesAssociatedWithHandler(
     // TODO: Array.flat and Array.flatMap not introduced until >= Node11.x -- migrate when VS Code updates Node ver
     return unfilteredTemplates
         .map(templateDatum => {
-            return getResourcesAssociatedWithHandlerFromTemplateDatum(filepath, handler, templateDatum).map(
-                resource => {
-                    return {
-                        ...resource,
-                        templateDatum,
-                    }
+            return getResourcesForHandlerFromTemplateDatum(filepath, handler, templateDatum).map(resource => {
+                return {
+                    ...resource,
+                    templateDatum,
                 }
-            )
+            })
         })
         .reduce((acc, cur) => [...acc, ...cur])
 }
@@ -160,7 +158,7 @@ export function getResourcesAssociatedWithHandler(
  * @param handler Handler function from aforementioned file
  * @param templateDatum TemplateDatum object to search through
  */
-export function getResourcesAssociatedWithHandlerFromTemplateDatum(
+export function getResourcesForHandlerFromTemplateDatum(
     filepath: string,
     handler: string,
     templateDatum: TemplateDatum
@@ -218,7 +216,7 @@ export function getResourcesAssociatedWithHandlerFromTemplateDatum(
                     // Check to ensure filename and handler both match.
                 } else {
                     try {
-                        const parsedLambda = getLambdaDetailsFromConfiguration({
+                        const parsedLambda = getLambdaDetails({
                             Handler: registeredHandler,
                             Runtime: registeredRuntime,
                         })
@@ -233,7 +231,7 @@ export function getResourcesAssociatedWithHandlerFromTemplateDatum(
                             matchingResources.push({ name: key, resourceData: resource })
                         }
                     } catch (e) {
-                        // swallow error from getLambdaDetailsFromConfiguration: handler not a valid runtime, so skip to the next one
+                        // swallow error from getLambdaDetails: handler not a valid runtime, so skip to the next one
                     }
                 }
             }
