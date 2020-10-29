@@ -290,7 +290,7 @@ export async function invokeLambdaFunction(
             skipPullImage: config.sam?.skipNewImageCheck,
             parameterOverrides: config.parameterOverrides,
         }
-        delete config.invokeTarget // Must not be used beyond this point.
+
         // sam local invoke ...
         const command = new SamCliLocalInvokeInvocation(localInvokeArgs)
         let invokeResult: Result = 'Failed'
