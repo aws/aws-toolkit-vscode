@@ -7,7 +7,6 @@ import com.intellij.testFramework.ProjectRule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
-import software.aws.toolkits.core.region.anAwsRegion
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider.RegionProviderRule
 
 class ChangeAccountSettingsActionGroupTest {
@@ -52,10 +51,10 @@ class ChangeAccountSettingsActionGroupTest {
     }
 
     @Test
-    fun `Region group all regions at the top-level for selected partition and shows regions for non-selected paritions in a partition sub-menu`() {
-        val selectedRegion = anAwsRegion(partitionId = "selected").also { regionProviderRule.regionProvider.addRegion(it) }
-        val otherPartitionRegion = anAwsRegion(partitionId = "nonSelected").also { regionProviderRule.regionProvider.addRegion(it) }
-        val anotherRegionInSamePartition = anAwsRegion(partitionId = otherPartitionRegion.partitionId).also { regionProviderRule.regionProvider.addRegion(it) }
+    fun `Region group all regions at the top-level for selected partition and shows regions for non-selected partitions in a partition sub-menu`() {
+        val selectedRegion = regionProviderRule.createAwsRegion(partitionId = "selected")
+        val otherPartitionRegion = regionProviderRule.createAwsRegion(partitionId = "nonSelected")
+        val anotherRegionInSamePartition = regionProviderRule.createAwsRegion(partitionId = otherPartitionRegion.partitionId)
 
         settingsManagerRule.settingsManager.changeRegionAndWait(selectedRegion)
 
