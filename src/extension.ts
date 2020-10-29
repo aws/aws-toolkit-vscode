@@ -187,7 +187,7 @@ export async function activate(context: vscode.ExtensionContext) {
             })
         )
 
-        await activateCloudWatchLogs(context)
+        await activateCloudWatchLogs(context, toolkitSettings)
 
         await activateCloudFormationTemplateRegistry(context)
 

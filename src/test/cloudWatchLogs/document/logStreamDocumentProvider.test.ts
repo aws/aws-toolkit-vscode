@@ -7,11 +7,15 @@ import * as assert from 'assert'
 import * as vscode from 'vscode'
 import { LogStreamDocumentProvider } from '../../../cloudWatchLogs/document/logStreamDocumentProvider'
 import { LogStreamRegistry, CloudWatchLogStreamData } from '../../../cloudWatchLogs/registry/logStreamRegistry'
+import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
 
 describe('LogStreamDocumentProvider', () => {
     let registry: LogStreamRegistry
     let map: Map<string, CloudWatchLogStreamData>
     let provider: LogStreamDocumentProvider
+
+    const config = new TestSettingsConfiguration()
+    config.writeSetting('cloudWatchLogs.limit', 1000)
 
     const registeredUri = vscode.Uri.parse('has:This')
     // TODO: Make this less flaky when we add manual timestamp controls.
@@ -28,7 +32,7 @@ describe('LogStreamDocumentProvider', () => {
     beforeEach(() => {
         map = new Map<string, CloudWatchLogStreamData>()
         map.set(registeredUri.path, stream)
-        registry = new LogStreamRegistry(map)
+        registry = new LogStreamRegistry(config, map)
         provider = new LogStreamDocumentProvider(registry)
     })
 

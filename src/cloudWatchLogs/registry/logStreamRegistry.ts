@@ -14,6 +14,7 @@ import { CloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { ext } from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
+import { SettingsConfiguration } from '../../shared/settingsConfiguration'
 
 // TODO: Add debug logging statements
 
@@ -24,6 +25,7 @@ export class LogStreamRegistry {
     private readonly _onDidChange: vscode.EventEmitter<vscode.Uri> = new vscode.EventEmitter<vscode.Uri>()
 
     public constructor(
+        private readonly configuration: SettingsConfiguration,
         private readonly activeStreams: Map<string, CloudWatchLogStreamData> = new Map<
             string,
             CloudWatchLogStreamData
@@ -54,7 +56,7 @@ export class LogStreamRegistry {
         parseCloudWatchLogsUri(uri)
         if (!this.hasLog(uri)) {
             this.setLog(uri, new CloudWatchLogStreamData())
-            await this.updateLog(uri, 'tail', getLogEventsFromUriComponentsFn)
+            await this.updateLog(uri, 'tail', this.configuration, getLogEventsFromUriComponentsFn)
         }
     }
 
@@ -113,12 +115,14 @@ export class LogStreamRegistry {
     public async updateLog(
         uri: vscode.Uri,
         headOrTail: 'head' | 'tail' = 'tail',
+        configuration: SettingsConfiguration,
         getLogEventsFromUriComponentsFn: (
             logGroupInfo: {
                 groupName: string
                 streamName: string
                 regionName: string
             },
+            configuration: SettingsConfiguration,
             nextToken?: string
         ) => Promise<CloudWatchLogs.GetLogEventsResponse> = getLogEventsFromUriComponents
     ): Promise<void> {
@@ -131,7 +135,7 @@ export class LogStreamRegistry {
         const logGroupInfo = parseCloudWatchLogsUri(uri)
         try {
             // TODO: Consider getPaginatedAwsCallIter? Would need a way to differentiate between head/tail...
-            const logEvents = await getLogEventsFromUriComponentsFn(logGroupInfo, nextToken)
+            const logEvents = await getLogEventsFromUriComponentsFn(logGroupInfo, configuration, nextToken)
             const newData =
                 headOrTail === 'head'
                     ? (logEvents.events ?? []).concat(stream.data)
@@ -220,6 +224,7 @@ async function getLogEventsFromUriComponents(
         streamName: string
         regionName: string
     },
+    configuration: SettingsConfiguration,
     nextToken?: string
 ): Promise<CloudWatchLogs.GetLogEventsResponse> {
     const client: CloudWatchLogsClient = ext.toolkitClientBuilder.createCloudWatchLogsClient(logGroupInfo.regionName)
@@ -228,5 +233,6 @@ async function getLogEventsFromUriComponents(
         logGroupName: logGroupInfo.groupName,
         logStreamName: logGroupInfo.streamName,
         nextToken,
+        limit: configuration.readSetting('cloudWatchLogs.limit', 1000),
     })
 }
