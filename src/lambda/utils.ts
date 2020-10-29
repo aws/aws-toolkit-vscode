@@ -7,7 +7,6 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { CloudFormation, Lambda } from 'aws-sdk'
-import * as _ from 'lodash'
 import * as vscode from 'vscode'
 import { CloudFormationClient } from '../shared/clients/cloudFormationClient'
 import { LambdaClient } from '../shared/clients/lambdaClient'
