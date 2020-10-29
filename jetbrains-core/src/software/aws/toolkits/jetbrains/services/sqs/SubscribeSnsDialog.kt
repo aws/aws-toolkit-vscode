@@ -10,7 +10,13 @@ import com.intellij.openapi.ui.ValidationInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import software.amazon.awssdk.services.iam.IamClient
+import software.amazon.awssdk.services.iam.model.ContextEntry
+import software.amazon.awssdk.services.iam.model.ContextKeyTypeEnum
+import software.amazon.awssdk.services.iam.model.PolicyEvaluationDecisionType
 import software.amazon.awssdk.services.sns.SnsClient
+import software.amazon.awssdk.services.sqs.SqsClient
+import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.awsClient
@@ -27,6 +33,9 @@ class SubscribeSnsDialog(
     private val queue: Queue
 ) : DialogWrapper(project), CoroutineScope by ApplicationThreadPoolScope("SubscribeSnsDialog") {
     private val snsClient: SnsClient = project.awsClient()
+    private val sqsClient: SqsClient = project.awsClient()
+    private val iamClient: IamClient = project.awsClient()
+
     val view = SubscribeSnsPanel(project)
 
     init {
@@ -56,19 +65,35 @@ class SubscribeSnsDialog(
         if (!isOKActionEnabled) {
             return
         }
+        val topicArn = topicSelected()
         setOKButtonText(message("sqs.subscribe.sns.in_progress"))
         isOKActionEnabled = false
 
         launch {
             try {
-                subscribe(topicSelected())
+                val policy = sqsClient.getQueueAttributes {
+                    it.queueUrl(queue.queueUrl)
+                    it.attributeNames(QueueAttributeName.POLICY)
+                }.attributes()[QueueAttributeName.POLICY]
+
+                if (needToEditPolicy(policy)) {
+                    val continueAdding = withContext(getCoroutineUiContext(ModalityState.any())) {
+                        ConfirmQueuePolicyDialog(project, sqsClient, queue, topicArn, policy, view.component).showAndGet()
+                    }
+                    if (!continueAdding) {
+                        setOKButtonText(message("sqs.subscribe.sns.subscribe"))
+                        isOKActionEnabled = true
+                        return@launch
+                    }
+                }
+                subscribe(topicArn)
                 withContext(getCoroutineUiContext(ModalityState.any())) {
                     close(OK_EXIT_CODE)
                 }
                 notifyInfo(message("sqs.service_name"), message("sqs.subscribe.sns.success", topicSelected()), project)
                 SqsTelemetry.subscribeSns(project, Result.Succeeded, queue.telemetryType())
             } catch (e: Exception) {
-                LOG.warn(e) { message("sqs.subscribe.sns.failed", queue.queueName, topicSelected()) }
+                LOG.warn(e) { message("sqs.subscribe.sns.failed", queue.queueName, topicArn) }
                 setErrorText(e.message)
                 setOKButtonText(message("sqs.subscribe.sns.subscribe"))
                 isOKActionEnabled = true
@@ -77,14 +102,33 @@ class SubscribeSnsDialog(
         }
     }
 
-    private fun topicSelected(): String = view.topicSelector.selected()?.topicArn() ?: ""
-
     internal fun subscribe(arn: String) {
         snsClient.subscribe {
             it.topicArn(arn)
             it.protocol(PROTOCOL)
             it.endpoint(queue.arn)
         }
+    }
+
+    private fun topicSelected(): String = view.topicSelector.selected()?.topicArn() ?: ""
+
+    private fun needToEditPolicy(existingPolicy: String?): Boolean {
+        existingPolicy ?: return true
+
+        val allowed = iamClient.simulateCustomPolicy {
+            it.contextEntries(
+                ContextEntry.builder()
+                    .contextKeyType(ContextKeyTypeEnum.STRING)
+                    .contextKeyName("aws:SourceArn")
+                    .contextKeyValues(topicSelected())
+                    .build()
+            )
+            it.actionNames("sqs:SendMessage")
+            it.resourceArns(queue.arn)
+            it.policyInputList(existingPolicy)
+        }.evaluationResults().first()
+
+        return allowed.evalDecision() != PolicyEvaluationDecisionType.ALLOWED
     }
 
     private companion object {

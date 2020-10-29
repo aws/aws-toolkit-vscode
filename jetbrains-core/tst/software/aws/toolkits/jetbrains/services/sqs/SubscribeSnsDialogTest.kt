@@ -5,6 +5,7 @@ package software.aws.toolkits.jetbrains.services.sqs
 
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.runInEdtAndWait
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
@@ -14,16 +15,23 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import software.amazon.awssdk.services.iam.IamClient
 import software.amazon.awssdk.services.sns.SnsClient
 import software.amazon.awssdk.services.sns.model.InternalErrorException
 import software.amazon.awssdk.services.sns.model.SubscribeRequest
 import software.amazon.awssdk.services.sns.model.SubscribeResponse
+import software.amazon.awssdk.services.sqs.SqsClient
+import software.amazon.awssdk.services.sqs.model.GetQueueAttributesRequest
+import software.amazon.awssdk.services.sqs.model.GetQueueAttributesResponse
+import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.region.MockRegionProvider
 
 class SubscribeSnsDialogTest {
     lateinit var snsClient: SnsClient
+    lateinit var sqsClient: SqsClient
+    lateinit var iamClient: IamClient
     lateinit var region: AwsRegion
     lateinit var queue: Queue
 
@@ -38,6 +46,16 @@ class SubscribeSnsDialogTest {
     @Before
     fun setup() {
         snsClient = mockClientManagerRule.create()
+        sqsClient = mockClientManagerRule.create()
+        iamClient = mockClientManagerRule.create()
+        sqsClient.stub {
+            on { getQueueAttributes(any<GetQueueAttributesRequest>()) } doReturn GetQueueAttributesResponse.builder().attributes(
+                mutableMapOf<QueueAttributeName, String?>(
+                    QueueAttributeName.POLICY to null
+                )
+            ).build()
+        }
+
         region = MockRegionProvider.getInstance().defaultRegion()
         queue = Queue("https://sqs.us-east-1.amazonaws.com/123456789012/test", region)
     }

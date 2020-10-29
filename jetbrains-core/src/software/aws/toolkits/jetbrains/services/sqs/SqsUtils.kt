@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.sqs
 
+import org.intellij.lang.annotations.Language
 import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 import software.amazon.awssdk.services.sqs.model.SqsException
@@ -33,6 +34,8 @@ const val MIN_WAIT_TIME = 0
 const val MAX_WAIT_TIME = 20
 const val WAIT_TIME_TICK = 1
 
+const val sqsPolicyStatementArray = "Statement"
+
 // Extension function to get telemetry type from Queue
 fun Queue.telemetryType() = if (isFifo) SqsQueueType.Fifo else SqsQueueType.Standard
 
@@ -50,3 +53,40 @@ fun SqsClient.approximateNumberOfMessages(queueUrl: String): Int? = try {
     getLogger<SqsClient>().error(e) { "SqsClient threw an exception getting approximate number of messages" }
     null
 }
+
+/**
+ * Create a policy statement that allows sending SNS messages to an SQS queue. The Sid
+ * matches how the console does sid (so it won't duplicate it), and the overall policy
+ * matches how the console does it.
+ */
+@Language("JSON")
+fun createSqsSnsSubscribePolicyStatement(sqsArn: String, snsArn: String): String =
+    """
+    {
+        "Sid": "topic-subscription-$snsArn",
+        "Effect": "Allow",
+        "Principal": {
+            "AWS": "*"
+        },
+        "Action": "SQS:SendMessage",
+        "Resource": "$sqsArn",
+        "Condition": {
+            "ArnLike": {
+                "aws:SourceArn": "$snsArn"
+            }
+        }
+    }
+    """
+
+/**
+ * When a queue is created with the default parameters, the policy is null when returned with `getQueueAttributes`
+ * (even though in the console it shows up properly) so we have to create our own whole policy document if that happens
+ */
+@Language("JSON")
+fun createSqsPolicy(arn: String): String =
+    """
+    {
+        "Version": "2012-10-17",
+        "Id": "$arn/SQSDefaultPolicy"
+    }
+    """

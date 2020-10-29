@@ -31,7 +31,7 @@ class ConfirmIamPolicyDialog(
 ) : DialogWrapper(project, parent, false, IdeModalityType.PROJECT), CoroutineScope by ApplicationThreadPoolScope("ConfirmIamPolicy") {
     private val rolePolicy: String by lazy { createSqsPollerPolicy(queue.arn) }
     private val policyName: String by lazy { "AWSLambdaSQSPollerExecutionRole-$functionName-${queue.queueName}-${queue.region.id}" }
-    val view = ConfirmIamPolicyPanel(project)
+    val view = ConfirmPolicyPanel(project, message("sqs.confirm.iam.warning.text"))
 
     init {
         title = message("sqs.confirm.iam")

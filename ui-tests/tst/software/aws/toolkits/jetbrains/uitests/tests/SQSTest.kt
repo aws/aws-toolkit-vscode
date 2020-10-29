@@ -15,16 +15,16 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.io.TempDir
+import software.amazon.awssdk.services.sns.SnsClient
 import software.amazon.awssdk.services.sqs.SqsClient
 import software.amazon.awssdk.services.sqs.model.QueueDoesNotExistException
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry
 import software.aws.toolkits.core.utils.Waiters.waitUntilBlocking
 import software.aws.toolkits.jetbrains.uitests.CoreTest
 import software.aws.toolkits.jetbrains.uitests.extensions.uiTest
-import software.aws.toolkits.jetbrains.uitests.fixtures.DialogFixture
 import software.aws.toolkits.jetbrains.uitests.fixtures.JTreeFixture
-import software.aws.toolkits.jetbrains.uitests.fixtures.NewProjectWizardDialog
 import software.aws.toolkits.jetbrains.uitests.fixtures.awsExplorer
+import software.aws.toolkits.jetbrains.uitests.fixtures.dialog
 import software.aws.toolkits.jetbrains.uitests.fixtures.fillAllJBTextFields
 import software.aws.toolkits.jetbrains.uitests.fixtures.fillSingleJBTextArea
 import software.aws.toolkits.jetbrains.uitests.fixtures.fillSingleTextField
@@ -50,16 +50,21 @@ class SQSTest {
     private val createQueueText = "Create Queue..."
     private val deleteQueueText = "Delete Queue..."
     private val purgeQueueText = "Purge Queue..."
+    private val subscribeToSnsText = "Subscribe to SNS topic..."
     private val editQueueAttributesAction = "Edit Queue Attributes..."
     private val editQueueAttributesTitle = "Edit Queue Attributes"
 
     private val queueName = "uitest-${UUID.randomUUID()}"
+    private val snsTopicName = "uitest-${UUID.randomUUID()}"
+    private var snsTopicArn = ""
     private val fifoQueueName = "fifouitest-${UUID.randomUUID()}.fifo"
 
     @Test
     @CoreTest
     fun testSqs() = uiTest {
+        val snsClient = SnsClient.create()
         val client = SqsClient.create()
+        snsTopicArn = snsClient.createTopic { it.name(snsTopicName) }.topicArn()
         welcomeFrame {
             openFolder(tempDir)
         }
@@ -134,19 +139,25 @@ class SQSTest {
             }
             closeToolWindowTab()
             step("Edit queue attributes") {
-                awsExplorer { openExplorerActionMenu(sqsNodeLabel, queueName) }
-                findAndClick("//div[@text='$editQueueAttributesAction']")
-                val dialog = find<NewProjectWizardDialog>(DialogFixture.byTitle(editQueueAttributesTitle))
-                // Change visibility timeout to a different value
-                find<JTextFieldFixture>(byXpath("//div[@class='JTextField' and @visible_text='30']")).text = "24"
-                dialog.pressSave()
+                step("Open queue attributes and change visibility to a different value") {
+                    awsExplorer { openExplorerActionMenu(sqsNodeLabel, queueName) }
+                    findAndClick("//div[@text='$editQueueAttributesAction']")
+                    dialog(editQueueAttributesTitle) {
+                        step("change visibility") {
+                            find<JTextFieldFixture>(byXpath("//div[@class='JTextField' and @visible_text='30']")).text = "24"
+                            pressSave()
+                        }
+                    }
+                }
                 assertThat(findToast().hasText { it.text.contains("Updated queue attributes") })
-                // Reopen the dialog to make sure the new value was saved
-                awsExplorer { openExplorerActionMenu(sqsNodeLabel, queueName) }
-                findAndClick("//div[@text='$editQueueAttributesAction']")
-                val updatedDialog = find<NewProjectWizardDialog>(DialogFixture.byTitle(editQueueAttributesTitle))
-                find<JTextFieldFixture>(byXpath("//div[@class='JTextField' and @visible_text='24']"))
-                updatedDialog.close()
+                step("Reopen the dialog to make sure the new value was saved") {
+                    awsExplorer { openExplorerActionMenu(sqsNodeLabel, queueName) }
+                    findAndClick("//div[@text='$editQueueAttributesAction']")
+                    dialog(editQueueAttributesTitle) {
+                        find<JTextFieldFixture>(byXpath("//div[@class='JTextField' and @visible_text='24']"))
+                        close()
+                    }
+                }
             }
             step("Purge queue") {
                 awsExplorer {
@@ -161,6 +172,33 @@ class SQSTest {
                 findAndClick("//div[@text='$purgeQueueText']")
                 pressYes()
                 assertThat(findToast().hasText { it.text.contains("Purge queue request already in progress for queue") })
+            }
+            step("Subscribe queue to sns topic") {
+                awsExplorer {
+                    openExplorerActionMenu(sqsNodeLabel, queueName)
+                }
+                findAndClick("//div[@text='$subscribeToSnsText']")
+                // Wait for the resource selector to load, we don't have a visual cue for this
+                Thread.sleep(2000)
+                comboBox(byXpath("//div[@class='ResourceSelector']")).selectItemContains(snsTopicName)
+                step("Press subscribe") {
+                    findAndClick("//div[@class='JButton' and @text='Subscribe']")
+                }
+                step("Add the policy") {
+                    findAndClick("//div[@class='JButton' and @text='Add Policy']")
+                }
+                assertThat(findToast().hasText { it.text.contains("Subscribed successfully to topic") })
+                step("Subscribe again, policy should not show again") {
+                    awsExplorer {
+                        openExplorerActionMenu(sqsNodeLabel, queueName)
+                    }
+                    findAndClick("//div[@text='$subscribeToSnsText']")
+                    comboBox(byXpath("//div[@class='ResourceSelector']")).selectItemContains(snsTopicName)
+                    step("Press subscribe") {
+                        findAndClick("//div[@class='JButton' and @text='Subscribe']")
+                    }
+                    assertThat(findToast().hasText { it.text.contains("Subscribed successfully to topic") })
+                }
             }
             step("Delete queues") {
                 step("Delete queue $queueName") {
@@ -186,17 +224,23 @@ class SQSTest {
     }
 
     @AfterAll
-    // Make sure the two queues are deleted, and if not, delete them
+    // Make sure the two queues and sns topic are deleted, and if not, delete them
     fun cleanup() {
-        var client: SqsClient? = null
         try {
-            client = SqsClient.create()
-            client.verifyDeleted(queueName)
-            client.verifyDeleted(fifoQueueName)
+            SqsClient.create().use { client ->
+                client.verifyDeleted(queueName)
+                client.verifyDeleted(fifoQueueName)
+            }
         } catch (e: Exception) {
             log.error("Unable to verify the queues were removed", e)
-        } finally {
-            client?.close()
+        }
+        try {
+            SnsClient.create().use { client ->
+                client.deleteTopic { it.topicArn(snsTopicArn) }
+            }
+            log.info("Deleted sns topic $snsTopicArn")
+        } catch (e: Exception) {
+            log.error("Unable to verify the topic was removed", e)
         }
     }
 
