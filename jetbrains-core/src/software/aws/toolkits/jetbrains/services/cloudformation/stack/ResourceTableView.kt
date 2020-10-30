@@ -11,9 +11,12 @@ import software.aws.toolkits.resources.message
 import javax.swing.JComponent
 
 class ResourceTableView : View, ResourceListener, Disposable {
-    private val table = DynamicTableView<StackResource>(
-        DynamicTableView.Field(message("cloudformation.stack.logical_id")) { it.logicalResourceId() },
-        DynamicTableView.Field(message("cloudformation.stack.physical_id")) { it.physicalResourceId() },
+    private val logicalId = DynamicTableView.Field<StackResource>(message("cloudformation.stack.logical_id")) { it.logicalResourceId() }
+    private val physicalId = DynamicTableView.Field<StackResource>(message("cloudformation.stack.physical_id")) { it.physicalResourceId() }
+
+    private val table = DynamicTableView(
+        logicalId,
+        physicalId,
         DynamicTableView.Field(message("cloudformation.stack.type")) { it.resourceType() },
         DynamicTableView.Field(message("cloudformation.stack.status"), renderer = StatusCellRenderer()) { it.resourceStatusAsString() },
         DynamicTableView.Field(
@@ -21,6 +24,17 @@ class ResourceTableView : View, ResourceListener, Disposable {
             renderer = WrappingCellRenderer(wrapOnSelection = true, wrapOnToggle = false)
         ) { it.resourceStatusReason() }
     ).apply { component.border = JBUI.Borders.empty() }
+
+    init {
+        table.addMouseListener(ResourceActionPopup(this::selected))
+    }
+
+    private fun selected(): SelectedResource? {
+        val row = table.selectedRow() ?: return null
+        val logicalId = row[logicalId] as? String ?: return null
+        val physicalId = row[physicalId] as? String
+        return SelectedResource(logicalId, physicalId?.takeIf { it.isNotBlank() })
+    }
 
     override val component: JComponent = table.component
 

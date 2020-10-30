@@ -4,6 +4,7 @@ package software.aws.toolkits.jetbrains.services.cloudformation.stack
 
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
+import java.awt.event.MouseListener
 import javax.swing.JComponent
 import javax.swing.SwingUtilities
 import javax.swing.table.DefaultTableModel
@@ -41,6 +42,16 @@ class DynamicTableView<T>(private vararg val fields: Field<T>) : View {
 
     fun showBusy(busy: Boolean = true) {
         table.setPaintBusy(busy)
+    }
+
+    fun addMouseListener(listener: MouseListener) = table.addMouseListener(listener)
+
+    fun selectedRow(): Map<Field<T>, Any?>? {
+        val row = table.selectedRows?.takeIf { it.size == 1 }?.firstOrNull() ?: return null
+        return (0 until model.columnCount).map { col ->
+            val field = fields.find { field -> field.readableName == model.getColumnName(col) } ?: return null
+            field to model.getValueAt(row, col)
+        }.toMap()
     }
 
     data class Field<T>(

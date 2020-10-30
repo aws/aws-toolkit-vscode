@@ -40,17 +40,31 @@ class StatusCellRenderer : DefaultTableCellRenderer() {
 
 internal class EventsTableImpl : EventsTable, Disposable {
 
-    private val table = DynamicTableView<StackEvent>(
+    private val logicalId = DynamicTableView.Field<StackEvent>(message("cloudformation.stack.logical_id")) { e -> e.logicalResourceId() }
+    private val physicalId = DynamicTableView.Field<StackEvent>(message("cloudformation.stack.physical_id")) { e -> e.physicalResourceId() }
+
+    private val table = DynamicTableView(
         DynamicTableView.Field(message("general.time")) { e -> e.timestamp() },
         // CFN Resource Status does not match what we expect (StackStatus enum)
         DynamicTableView.Field(message("cloudformation.stack.status"), renderer = StatusCellRenderer()) { e -> e.resourceStatusAsString() },
-        DynamicTableView.Field(message("cloudformation.stack.logical_id")) { e -> e.logicalResourceId() },
-        DynamicTableView.Field(message("cloudformation.stack.physical_id")) { e -> e.physicalResourceId() },
+        logicalId,
+        physicalId,
         DynamicTableView.Field(
             message("cloudformation.stack.reason"),
             WrappingCellRenderer(wrapOnSelection = true, wrapOnToggle = false)
         ) { e -> e.resourceStatusReason() ?: "" }
     ).apply { component.border = IdeBorderFactory.createBorder(SideBorder.BOTTOM) }
+
+    init {
+        table.addMouseListener(ResourceActionPopup(this::selected))
+    }
+
+    private fun selected(): SelectedResource? {
+        val row = table.selectedRow() ?: return null
+        val logicalId = row[logicalId] as? String ?: return null
+        val physicalId = row[physicalId] as? String
+        return SelectedResource(logicalId, physicalId?.takeIf { it.isNotBlank() })
+    }
 
     override val component: JComponent = table.component
 

@@ -5,9 +5,12 @@ package software.aws.toolkits.jetbrains.uitests.tests
 
 import com.intellij.remoterobot.stepsProcessing.log
 import com.intellij.remoterobot.stepsProcessing.step
+import com.intellij.remoterobot.utils.attempt
 import com.intellij.remoterobot.utils.waitFor
 import com.intellij.remoterobot.utils.waitForIgnoringError
+import org.assertj.core.api.AbstractStringAssert
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.swing.core.MouseButton
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -26,6 +29,8 @@ import software.aws.toolkits.jetbrains.uitests.fixtures.findAndClick
 import software.aws.toolkits.jetbrains.uitests.fixtures.idea
 import software.aws.toolkits.jetbrains.uitests.fixtures.pressOk
 import software.aws.toolkits.jetbrains.uitests.fixtures.welcomeFrame
+import java.awt.Toolkit
+import java.awt.datatransfer.DataFlavor
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.Duration
@@ -38,6 +43,7 @@ class CloudFormationBrowserTest {
     private val stack = "uitest-${UUID.randomUUID()}"
 
     private val CloudFormation = "CloudFormation"
+    private val queueName = "SQSQueue"
     private val deleteStackText = "Delete Stack..."
 
     @TempDir
@@ -72,11 +78,48 @@ class CloudFormationBrowserTest {
                     doubleClickExplorer(CloudFormation, stack)
                 }
             }
+            step("Can copy IDs from tree") {
+                val queueNode = step("Finding '$queueName [CREATE_COMPLETE]'") {
+                    attempt(5) {
+                        findText("$queueName [CREATE_COMPLETE]")
+                    }
+                }
+                step("Logical ID") {
+                    queueNode.click(MouseButton.RIGHT_BUTTON)
+                    findAndClick("//div[@text='Copy Logical ID']")
+
+                    assertClipboardContents().isEqualTo(queueName)
+                }
+                step("Physical ID") {
+                    queueNode.click(MouseButton.RIGHT_BUTTON)
+                    findAndClick("//div[@text='Copy Physical ID']")
+                    assertClipboardContents().startsWith("https").contains(queueName)
+                }
+            }
             step("Check events") {
                 clickOn("Events")
-                step("Assert that there are two CREATE_COMPLETE events shown") {
+                val resource = step("Assert that there are two CREATE_COMPLETE events shown") {
                     val createComplete = findAllText("CREATE_COMPLETE")
                     assertThat(createComplete).hasSize(2)
+                    createComplete.first()
+                }
+
+                step("Check Logical ID action") {
+                    resource.click(MouseButton.RIGHT_BUTTON)
+                    findAndClick("//div[@text='Copy Logical ID']")
+                    assertClipboardContents().satisfiesAnyOf(
+                        { assertThat(it).isEqualTo(queueName) },
+                        { assertThat(it).startsWith("uitest") }
+                    )
+                }
+                step("Check Physical ID action") {
+                    resource.click(MouseButton.RIGHT_BUTTON)
+                    findAndClick("//div[@text='Copy Physical ID']")
+
+                    assertClipboardContents().satisfiesAnyOf(
+                        { assertThat(it).startsWith("https").contains(queueName) },
+                        { assertThat(it).startsWith("arn") }
+                    )
                 }
             }
             step("Check outputs") {
@@ -87,9 +130,23 @@ class CloudFormationBrowserTest {
             }
             step("Check resources") {
                 clickOn("Resources")
-                step("Assert that the stack resource is there") {
+                val resource = step("Assert that the stack resource is there") {
                     val createComplete = findAllText("CREATE_COMPLETE")
                     assertThat(createComplete).hasSize(1)
+                    createComplete.first()
+                }
+
+                step("Check Logical ID action") {
+                    resource.click(MouseButton.RIGHT_BUTTON)
+                    findAndClick("//div[@text='Copy Logical ID']")
+
+                    assertClipboardContents().isEqualTo(queueName)
+                }
+                step("Check Physical ID action") {
+                    resource.click(MouseButton.RIGHT_BUTTON)
+                    findAndClick("//div[@text='Copy Physical ID']")
+
+                    assertClipboardContents().startsWith("https").contains(queueName)
                 }
             }
             step("Delete stack $stack") {
@@ -123,15 +180,11 @@ class CloudFormationBrowserTest {
         waitForStackDeletion()
     }
 
+    private fun assertClipboardContents(): AbstractStringAssert<*> =
+        assertThat(Toolkit.getDefaultToolkit().systemClipboard.getData(DataFlavor.stringFlavor) as String)
+
     private fun IdeaFrame.clickOn(tab: String) {
         findAndClick("//div[@accessiblename='$tab' and @class='JLabel' and @text='$tab']")
-    }
-    private fun IdeaFrame.clickOnOutputs() {
-        findAndClick("//div[@accessiblename='Outputs' and @class='JLabel' and @text='Outputs']")
-    }
-
-    private fun IdeaFrame.clickOnEvents() {
-        findAndClick("//div[@accessiblename='Events' and @class='JLabel' and @text='Events']")
     }
 
     private fun waitForStackDeletion() {
