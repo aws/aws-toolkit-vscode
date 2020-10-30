@@ -13,7 +13,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 
 class DotNetLambdaBuilder : LambdaBuilder() {
-    override fun baseDirectory(module: Module, handlerElement: PsiElement): String {
+    override fun handlerBaseDirectory(module: Module, handlerElement: PsiElement): String {
         val element = handlerElement as RiderLambdaHandlerFakePsiElement
         return element.getContainingProjectFile()?.parent?.path
             ?: throw IllegalStateException(message("lambda.run.configuration.handler_root_not_found"))

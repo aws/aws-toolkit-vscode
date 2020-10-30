@@ -67,21 +67,45 @@ class SamExecutable : ExecutableType<SemVer>, AutoResolvable, Validatable {
 }
 
 fun GeneralCommandLine.samBuildCommand(
-    environmentVariables: Map<String, String>,
     templatePath: Path,
+    logicalId: String? = null,
     buildDir: Path,
-    useContainer: Boolean
+    environmentVariables: Map<String, String>,
+    samOptions: SamOptions
 ) = this.apply {
     withEnvironment(environmentVariables)
     withWorkDirectory(templatePath.parent.toAbsolutePath().toString())
 
     addParameter("build")
+
+    // Add logical id if known to perform min build
+    logicalId?.let {
+        withParameters(logicalId)
+    }
+
     addParameter("--template")
     addParameter(templatePath.toString())
     addParameter("--build-dir")
     addParameter(buildDir.toString())
-    if (useContainer) {
+    if (samOptions.buildInContainer) {
         withParameters("--use-container")
+    }
+
+    if (samOptions.skipImagePull) {
+        withParameters("--skip-pull-image")
+    }
+
+    samOptions.dockerNetwork?.let { network ->
+        val sanitizedNetwork = network.trim()
+        if (sanitizedNetwork.isNotBlank()) {
+            withParameters("--docker-network").withParameters(sanitizedNetwork)
+        }
+    }
+
+    samOptions.additionalBuildArgs?.let { buildArgs ->
+        if (buildArgs.isNotBlank()) {
+            withParameters(*buildArgs.split(" ").toTypedArray())
+        }
     }
 }
 

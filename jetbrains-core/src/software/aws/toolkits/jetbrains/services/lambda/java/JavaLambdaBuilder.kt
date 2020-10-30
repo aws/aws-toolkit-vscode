@@ -17,7 +17,7 @@ import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.resources.message
 
 class JavaLambdaBuilder : LambdaBuilder() {
-    override fun baseDirectory(module: Module, handlerElement: PsiElement): String =
+    override fun handlerBaseDirectory(module: Module, handlerElement: PsiElement): String =
         when {
             isGradle(module) -> getGradleProjectLocation(module)
             isMaven(module) -> getPomLocation(module)

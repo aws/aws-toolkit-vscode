@@ -27,6 +27,7 @@ import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutable
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
+import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.sam.samBuildCommand
 import software.aws.toolkits.jetbrains.services.lambda.sam.samDeployCommand
 import software.aws.toolkits.jetbrains.services.lambda.sam.samPackageCommand
@@ -103,7 +104,9 @@ class SamDeployDialog(
                 environmentVariables = createCommonEnvVars(),
                 templatePath = Paths.get(template.path),
                 buildDir = buildDir,
-                useContainer = useContainer
+                samOptions = SamOptions(
+                    buildInContainer = useContainer
+                )
             )
         }.thenCompose {
             val builtTemplate = buildDir.resolve("template.yaml")

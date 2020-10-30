@@ -13,7 +13,7 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.resources.message
 
 class PythonLambdaBuilder : LambdaBuilder() {
-    override fun baseDirectory(module: Module, handlerElement: PsiElement): String {
+    override fun handlerBaseDirectory(module: Module, handlerElement: PsiElement): String {
         val handlerVirtualFile = ReadAction.compute<VirtualFile, Throwable> {
             handlerElement.containingFile?.virtualFile
                 ?: throw IllegalArgumentException("Handler file must be backed by a VirtualFile")

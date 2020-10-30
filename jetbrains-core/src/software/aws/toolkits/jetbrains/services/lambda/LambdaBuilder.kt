@@ -29,6 +29,7 @@ import software.aws.toolkits.jetbrains.services.lambda.LambdaLimits.DEFAULT_TIME
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
+import software.aws.toolkits.jetbrains.services.lambda.sam.samBuildCommand
 import software.aws.toolkits.resources.message
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -38,7 +39,16 @@ abstract class LambdaBuilder {
     /**
      * Returns the base directory of the Lambda handler
      */
-    abstract fun baseDirectory(module: Module, handlerElement: PsiElement): String
+    abstract fun handlerBaseDirectory(module: Module, handlerElement: PsiElement): String
+
+    /**
+     * Returns the build directory of the project. Create this if it doesn't exist yet.
+     */
+    protected open fun getBuildDirectory(module: Module): Path {
+        val contentRoot = module.rootManager.contentRoots.firstOrNull()
+            ?: throw IllegalStateException(message("lambda.build.module_with_no_content_root", module.name))
+        return Paths.get(contentRoot.path, ".aws-sam", "build")
+    }
 
     /**
      * Creates a package for the given lambda including source files archived in the correct format.
@@ -54,7 +64,7 @@ abstract class LambdaBuilder {
         samOptions: SamOptions,
         onStart: (ProcessHandler) -> Unit = {}
     ): BuiltLambda {
-        val baseDir = baseDirectory(module, handlerElement)
+        val baseDir = handlerBaseDirectory(module, handlerElement)
 
         val customTemplate = getBuildDirectory(module).resolve("template.yaml")
 
@@ -79,38 +89,13 @@ abstract class LambdaBuilder {
             }
         }
 
-        val commandLine = samExecutable.getCommandLine()
-            .withParameters("build")
-            .withParameters(logicalId)
-            .withParameters("--template")
-            .withParameters(templateLocation.toString())
-            .withParameters("--build-dir")
-            .withParameters(buildDir.toString())
-
-        if (samOptions.buildInContainer) {
-            commandLine.withParameters("--use-container")
-        }
-
-        if (samOptions.skipImagePull) {
-            commandLine.withParameters("--skip-pull-image")
-        }
-
-        samOptions.dockerNetwork?.let { network ->
-            val sanitizedNetwork = network.trim()
-            if (sanitizedNetwork.isNotBlank()) {
-                commandLine.withParameters("--docker-network").withParameters(sanitizedNetwork)
-            }
-        }
-
-        samOptions.additionalBuildArgs?.let { buildArgs ->
-            if (buildArgs.isNotBlank()) {
-                commandLine.withParameters(*buildArgs.split(" ").toTypedArray())
-            }
-        }
-
-        commandLine.withEnvironment(additionalEnvironmentVariables(module, samOptions))
-
-        return commandLine
+        return samExecutable.getCommandLine().samBuildCommand(
+            templatePath = templateLocation,
+            logicalId = logicalId,
+            buildDir = buildDir,
+            environmentVariables = additionalEnvironmentVariables(module, samOptions),
+            samOptions = samOptions
+        )
     }
 
     fun buildLambdaFromTemplate(
@@ -179,15 +164,6 @@ abstract class LambdaBuilder {
             it.addDirectory(builtLambda.codeLocation.toFile())
         }
         return zipLocation.toPath()
-    }
-
-    /**
-     * Returns the build directory of the project. Create this if it doesn't exist yet.
-     */
-    protected open fun getBuildDirectory(module: Module): Path {
-        val contentRoot = module.rootManager.contentRoots.firstOrNull()
-            ?: throw IllegalStateException(message("lambda.build.module_with_no_content_root", module.name))
-        return Paths.get(contentRoot.path, ".aws-sam", "build")
     }
 
     protected open fun additionalEnvironmentVariables(module: Module, samOptions: SamOptions): Map<String, String> = emptyMap()

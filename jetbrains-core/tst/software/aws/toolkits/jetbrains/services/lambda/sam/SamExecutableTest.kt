@@ -23,7 +23,9 @@ class SamExecutableTest {
             environmentVariables = mapOf("Foo" to "Bar"),
             templatePath = templatePath,
             buildDir = buildDir,
-            useContainer = false
+            samOptions = SamOptions(
+                buildInContainer = false
+            )
         )
 
         assertThat(cmd.commandLineString).isEqualTo(
@@ -43,6 +45,115 @@ class SamExecutableTest {
     }
 
     @Test
+    fun `sam build can take a logical ID`() {
+        val templatePath = tempFolder.newFile("template.yaml").toPath()
+        val buildDir = tempFolder.newFolder("build").toPath()
+        val cmd = GeneralCommandLine("sam").samBuildCommand(
+            environmentVariables = mapOf("Foo" to "Bar"),
+            templatePath = templatePath,
+            logicalId = "FooResource",
+            buildDir = buildDir,
+            samOptions = SamOptions(
+                buildInContainer = false
+            )
+        )
+
+        assertThat(cmd.commandLineString).isEqualTo(
+            listOf(
+                "sam",
+                "build",
+                "FooResource",
+                "--template",
+                "$templatePath",
+                "--build-dir",
+                "$buildDir"
+            ).joinToString(separator = " ")
+        )
+    }
+
+    @Test
+    fun `sam build can skip image pull`() {
+        val templatePath = tempFolder.newFile("template.yaml").toPath()
+        val buildDir = tempFolder.newFolder("build").toPath()
+        val cmd = GeneralCommandLine("sam").samBuildCommand(
+            environmentVariables = mapOf("Foo" to "Bar"),
+            templatePath = templatePath,
+            logicalId = "FooResource",
+            buildDir = buildDir,
+            samOptions = SamOptions(
+                skipImagePull = true
+            )
+        )
+
+        assertThat(cmd.commandLineString).isEqualTo(
+            listOf(
+                "sam",
+                "build",
+                "FooResource",
+                "--template",
+                "$templatePath",
+                "--build-dir",
+                "$buildDir",
+                "--skip-pull-image"
+            ).joinToString(separator = " ")
+        )
+    }
+
+    @Test
+    fun `sam build can take a docker network`() {
+        val templatePath = tempFolder.newFile("template.yaml").toPath()
+        val buildDir = tempFolder.newFolder("build").toPath()
+        val cmd = GeneralCommandLine("sam").samBuildCommand(
+            environmentVariables = mapOf("Foo" to "Bar"),
+            templatePath = templatePath,
+            buildDir = buildDir,
+            samOptions = SamOptions(
+                dockerNetwork = "FooNetwork"
+            )
+        )
+
+        assertThat(cmd.commandLineString).isEqualTo(
+            listOf(
+                "sam",
+                "build",
+                "--template",
+                "$templatePath",
+                "--build-dir",
+                "$buildDir",
+                "--docker-network",
+                "FooNetwork"
+            ).joinToString(separator = " ")
+        )
+    }
+
+    @Test
+    fun `sam build can append custom provided args`() {
+        val templatePath = tempFolder.newFile("template.yaml").toPath()
+        val buildDir = tempFolder.newFolder("build").toPath()
+        val cmd = GeneralCommandLine("sam").samBuildCommand(
+            environmentVariables = mapOf("Foo" to "Bar"),
+            templatePath = templatePath,
+            buildDir = buildDir,
+            samOptions = SamOptions(
+                additionalBuildArgs = "--foo bar"
+            )
+        )
+
+        assertThat(cmd.commandLineString).isEqualTo(
+            listOf(
+                "sam",
+                "build",
+                "--template",
+                "$templatePath",
+                "--build-dir",
+                "$buildDir",
+                "--foo",
+                "bar"
+            ).joinToString(separator = " ")
+        )
+    }
+
+    @Test
     fun `sam build command is correct with container`() {
         val templatePath = tempFolder.newFile("template.yaml").toPath()
         val buildDir = tempFolder.newFolder("build").toPath()
@@ -50,7 +161,9 @@ class SamExecutableTest {
             environmentVariables = emptyMap(),
             templatePath = templatePath,
             buildDir = buildDir,
-            useContainer = true
+            samOptions = SamOptions(
+                buildInContainer = true
+            )
         )
 
         assertThat(cmd.commandLineString).isEqualTo(
