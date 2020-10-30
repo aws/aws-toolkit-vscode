@@ -822,8 +822,8 @@
                 },
                 {
                     "command": "aws.deploySamApplication",
-                    "when": "view == aws.explorer && viewItem == awsRegionNode",
-                    "group": "inline@1"
+                    "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode || viewItem == awsCloudFormationRootNode",
+                    "group": "1@1"
                 },
                 {
                     "command": "aws.invokeLambda",
@@ -1100,8 +1100,7 @@
             {
                 "command": "aws.deploySamApplication",
                 "title": "%AWS.command.deploySamApplication%",
-                "category": "AWS",
-                "icon": "$(cloud-upload)"
+                "category": "AWS"
             },
             {
                 "command": "aws.submitFeedback",
@@ -1380,7 +1379,7 @@
         "lint": "eslint -c .eslintrc.js --ext .ts .",
         "lintfix": "eslint -c .eslintrc.js --fix --ext .ts .",
         "package": "vsce package",
-        "packageAlpha": "ts-node ./build-scripts/packageAlpha.ts",
+        "packageDebug": "ts-node ./build-scripts/packageDebug.ts",
         "install-plugin": "vsce package -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix",
         "generateTelemetry": "node node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts",
         "generateConfigurationAttributes": "ts-node ./build-scripts/generateConfigurationAttributes.ts",

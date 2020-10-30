@@ -25,7 +25,6 @@ import { configureParameterOverrides } from '../config/configureParameterOverrid
 import { getOverriddenParameters, getParameters } from '../utilities/parameterUtils'
 import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
 import { ext } from '../../shared/extensionGlobals'
-import { RegionNode } from '../../awsexplorer/regionNode'
 
 export interface SamDeployWizardResponse {
     parameterOverrides: Map<string, string>
@@ -403,9 +402,10 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
 export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
     private readonly response: Partial<SamDeployWizardResponse> = {}
 
-    public constructor(private readonly context: SamDeployWizardContext, private readonly regionNode?: RegionNode) {
+    public constructor(private readonly context: SamDeployWizardContext, private readonly regionNode?: any) {
         super()
-        if (regionNode) {
+        // All nodes in the explorer should have a regionCode property, but let's make sure.
+        if (regionNode && regionNode.hasOwnProperty('regionCode')) {
             this.response.region = regionNode.regionCode
         }
     }

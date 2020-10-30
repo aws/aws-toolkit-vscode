@@ -30,7 +30,7 @@ Then clone the repository and install npm dependencies:
 
 When you launch the extension or run tests from Visual Studio Code, it will automatically build the extension and watch for changes.
 
-If you prefer, you can build from the command line:
+Alternatively, these NPM tasks are defined:
 
 -   To build one time:
     ```
@@ -40,13 +40,13 @@ If you prefer, you can build from the command line:
     ```
     npm run watch
     ```
--   To build a release artifact:
+-   To build a release VSIX artifact:
     ```
     npm run package
     ```
--   To build an "alpha" artifact (useful for letting others test a particular build):
+-   To build a "debug" VSIX artifact (faster, does not minify the webpack result):
     ```
-    npm run packageAlpha
+    npm run packageDebug
     ```
 
 #### If you run out of memory while building

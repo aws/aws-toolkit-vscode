@@ -11,7 +11,11 @@ quickStart*.html
 README.quickstart.vscode.md
 .gitcommit
 media/libs/
+resources/debugger/__pycache__
+
+# Temporary backup files from packageDebug.ts
 package.json.bk
+webpack.config.js.bk
 
 # Auto generated definitions
 src/**/*.gen.ts
