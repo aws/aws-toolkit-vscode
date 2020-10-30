@@ -3,16 +3,15 @@
 
 package software.aws.toolkits.jetbrains.services.clouddebug.execution.steps
 
-import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.util.net.NetUtils
 import software.aws.toolkits.core.utils.AttributeBagKey
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.services.clouddebug.DebuggerSupport
-import software.aws.toolkits.jetbrains.services.clouddebug.execution.CliBasedStep
-import software.aws.toolkits.jetbrains.services.clouddebug.execution.Context
-import software.aws.toolkits.jetbrains.services.clouddebug.execution.ParallelStep
-import software.aws.toolkits.jetbrains.services.clouddebug.execution.Step
+import software.aws.toolkits.jetbrains.services.clouddebug.execution.CloudDebugCliStep
 import software.aws.toolkits.jetbrains.services.ecs.execution.EcsServiceCloudDebuggingRunSettings
+import software.aws.toolkits.jetbrains.utils.execution.steps.Context
+import software.aws.toolkits.jetbrains.utils.execution.steps.ParallelStep
+import software.aws.toolkits.jetbrains.utils.execution.steps.Step
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.ClouddebugTelemetry
 import software.aws.toolkits.telemetry.Result
@@ -87,7 +86,7 @@ class PortForwarder(
     private val localPort: Int,
     private val remotePort: Int,
     private val enable: Boolean
-) : CliBasedStep() {
+) : CloudDebugCliStep() {
     // Convert ports to strings first, else it formats 8080 as 8,080
     override val stepName = message(
         "cloud_debug.step.port_forward.resource",
@@ -97,23 +96,21 @@ class PortForwarder(
         localPort.toString()
     )
 
-    override fun constructCommandLine(context: Context, commandLine: GeneralCommandLine) {
-        commandLine
-            .withParameters("--verbose")
-            .withParameters("--json")
-            .withParameters("forward")
-            .withParameters("--port")
-            .withParameters("$localPort:$remotePort")
-            .withParameters("--target")
-            .withParameters(ResourceInstrumenter.getTargetForContainer(context, containerName))
-            /* TODO remove this when the cli conforms to the ocntract */
-            .withParameters("--selector")
-            .withParameters(containerName)
-            .withParameters("--operation")
-            .withParameters(if (enable) "enable" else "disable")
-            .withEnvironment(settings.region.toEnvironmentVariables())
-            .withEnvironment(settings.credentialProvider.resolveCredentials().toEnvironmentVariables())
-    }
+    override fun constructCommandLine(context: Context) = getCli(context)
+        .withParameters("--verbose")
+        .withParameters("--json")
+        .withParameters("forward")
+        .withParameters("--port")
+        .withParameters("$localPort:$remotePort")
+        .withParameters("--target")
+        .withParameters(ResourceInstrumenter.getTargetForContainer(context, containerName))
+        /* TODO remove this when the cli conforms to the contract */
+        .withParameters("--selector")
+        .withParameters(containerName)
+        .withParameters("--operation")
+        .withParameters(if (enable) "enable" else "disable")
+        .withEnvironment(settings.region.toEnvironmentVariables())
+        .withEnvironment(settings.credentialProvider.resolveCredentials().toEnvironmentVariables())
 
     override fun recordTelemetry(context: Context, startTime: Instant, result: Result) {
         ClouddebugTelemetry.portForward(

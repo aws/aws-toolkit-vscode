@@ -14,8 +14,8 @@ import com.jetbrains.debugger.wip.JSRemoteDebugConfiguration
 import com.jetbrains.debugger.wip.JSRemoteDebugConfigurationType
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebuggingPlatform
 import software.aws.toolkits.jetbrains.services.clouddebug.DebuggerSupport
-import software.aws.toolkits.jetbrains.services.clouddebug.execution.Context
 import software.aws.toolkits.jetbrains.services.ecs.execution.ImmutableContainerOptions
+import software.aws.toolkits.jetbrains.utils.execution.steps.Context
 import software.aws.toolkits.resources.message
 import java.util.concurrent.CompletableFuture
 

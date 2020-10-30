@@ -5,11 +5,11 @@ package software.aws.toolkits.jetbrains.services.clouddebug.execution.steps
 
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugConstants.INSTRUMENTED_STATUS
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugConstants.INSTRUMENT_IAM_ROLE_KEY
-import software.aws.toolkits.jetbrains.services.clouddebug.execution.Context
-import software.aws.toolkits.jetbrains.services.clouddebug.execution.MessageEmitter
-import software.aws.toolkits.jetbrains.services.clouddebug.execution.Step
 import software.aws.toolkits.jetbrains.services.clouddebug.resources.CloudDebuggingResources
 import software.aws.toolkits.jetbrains.services.ecs.execution.EcsServiceCloudDebuggingRunSettings
+import software.aws.toolkits.jetbrains.utils.execution.steps.Context
+import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
+import software.aws.toolkits.jetbrains.utils.execution.steps.Step
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.ClouddebugTelemetry
 import software.aws.toolkits.telemetry.Result

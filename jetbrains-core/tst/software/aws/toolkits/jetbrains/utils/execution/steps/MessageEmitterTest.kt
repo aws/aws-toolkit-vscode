@@ -1,7 +1,7 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.clouddebug.execution
+package software.aws.toolkits.jetbrains.utils.execution.steps
 
 import com.intellij.build.BuildView
 import com.intellij.build.events.BuildEvent
@@ -21,18 +21,16 @@ import org.junit.Test
 import org.mockito.junit.MockitoJUnit
 import org.mockito.junit.MockitoRule
 
-@Suppress("UnstableApiUsage")
 class MessageEmitterTest {
     @Rule
     @JvmField
     val mockRule: MockitoRule = MockitoJUnit.rule()
 
     private val buildView = mock<BuildView>()
-    private val rootEmitter = DefaultMessageEmitter.createRoot(buildView, PARENT_ID)
+    private val rootEmitter = MessageEmitter.createRoot(buildView, PARENT_ID)
 
     @Test
     fun startEventIsWritten() {
-
         val stepId = "ChildStep"
 
         val messageEmitter = rootEmitter.createChild(stepId)

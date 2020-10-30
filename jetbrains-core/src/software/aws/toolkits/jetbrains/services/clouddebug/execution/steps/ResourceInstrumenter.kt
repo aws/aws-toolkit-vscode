@@ -8,25 +8,25 @@ import software.aws.toolkits.core.utils.AttributeBagKey
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.services.clouddebug.CliOutputParser
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugConstants
-import software.aws.toolkits.jetbrains.services.clouddebug.execution.CliBasedStep
-import software.aws.toolkits.jetbrains.services.clouddebug.execution.Context
-import software.aws.toolkits.jetbrains.services.clouddebug.execution.MessageEmitter
+import software.aws.toolkits.jetbrains.services.clouddebug.execution.CloudDebugCliStep
 import software.aws.toolkits.jetbrains.services.ecs.EcsUtils
 import software.aws.toolkits.jetbrains.services.ecs.execution.EcsServiceCloudDebuggingRunSettings
+import software.aws.toolkits.jetbrains.utils.execution.steps.Context
+import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.ClouddebugTelemetry
 import software.aws.toolkits.telemetry.Result
 import java.time.Duration
 import java.time.Instant
 
-class ResourceInstrumenter(private val settings: EcsServiceCloudDebuggingRunSettings) : CliBasedStep() {
+class ResourceInstrumenter(private val settings: EcsServiceCloudDebuggingRunSettings) : CloudDebugCliStep() {
     override val stepName = message("cloud_debug.step.instrument", EcsUtils.serviceArnToName(settings.serviceArn))
 
-    override fun constructCommandLine(context: Context, commandLine: GeneralCommandLine) {
+    override fun constructCommandLine(context: Context): GeneralCommandLine {
         val iamRole = context.getRequiredAttribute(CloudDebugConstants.INSTRUMENT_IAM_ROLE_KEY)
         val serviceName = EcsUtils.originalServiceName(settings.serviceArn)
 
-        commandLine
+        return getCli(context)
             .withParameters("--verbose")
             .withParameters("--json")
             .withParameters("instrument")

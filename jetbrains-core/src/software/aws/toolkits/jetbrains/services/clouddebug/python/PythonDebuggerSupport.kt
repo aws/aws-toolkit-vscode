@@ -18,8 +18,8 @@ import software.aws.toolkits.jetbrains.services.PathMapper
 import software.aws.toolkits.jetbrains.services.PathMapping
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebuggingPlatform
 import software.aws.toolkits.jetbrains.services.clouddebug.DebuggerSupport
-import software.aws.toolkits.jetbrains.services.clouddebug.execution.Context
 import software.aws.toolkits.jetbrains.services.ecs.execution.ImmutableContainerOptions
+import software.aws.toolkits.jetbrains.utils.execution.steps.Context
 import java.util.concurrent.CompletableFuture
 
 class PythonDebuggerSupport : DebuggerSupport() {

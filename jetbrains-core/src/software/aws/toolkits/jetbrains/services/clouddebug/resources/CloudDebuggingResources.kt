@@ -23,9 +23,9 @@ import software.aws.toolkits.jetbrains.core.ExecutableBackedCacheResource
 import software.aws.toolkits.jetbrains.core.Resource
 import software.aws.toolkits.jetbrains.core.credentials.toEnvironmentVariables
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebugExecutable
-import software.aws.toolkits.jetbrains.services.clouddebug.execution.MessageEmitter
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.steps.CloudDebugCliValidate
 import software.aws.toolkits.jetbrains.services.ecs.EcsUtils
+import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
 import java.util.concurrent.TimeUnit
 
 object CloudDebuggingResources {

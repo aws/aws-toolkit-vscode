@@ -11,8 +11,8 @@ import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.ui.RunContentDescriptor
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebuggingPlatform
 import software.aws.toolkits.jetbrains.services.clouddebug.DebuggerSupport
-import software.aws.toolkits.jetbrains.services.clouddebug.execution.Context
 import software.aws.toolkits.jetbrains.services.ecs.execution.ImmutableContainerOptions
+import software.aws.toolkits.jetbrains.utils.execution.steps.Context
 import software.aws.toolkits.resources.message
 import java.util.concurrent.CompletableFuture
 

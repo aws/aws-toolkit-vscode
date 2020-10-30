@@ -3,14 +3,13 @@
 
 package software.aws.toolkits.jetbrains.services.clouddebug.execution.steps
 
-import com.intellij.execution.configurations.GeneralCommandLine
 import software.aws.toolkits.jetbrains.services.clouddebug.CloudDebuggingPlatform
 import software.aws.toolkits.jetbrains.services.clouddebug.DebuggerSupport
-import software.aws.toolkits.jetbrains.services.clouddebug.execution.CliBasedStep
-import software.aws.toolkits.jetbrains.services.clouddebug.execution.Context
-import software.aws.toolkits.jetbrains.services.clouddebug.execution.ParallelStep
-import software.aws.toolkits.jetbrains.services.clouddebug.execution.Step
+import software.aws.toolkits.jetbrains.services.clouddebug.execution.CloudDebugCliStep
 import software.aws.toolkits.jetbrains.services.ecs.execution.EcsServiceCloudDebuggingRunSettings
+import software.aws.toolkits.jetbrains.utils.execution.steps.Context
+import software.aws.toolkits.jetbrains.utils.execution.steps.ParallelStep
+import software.aws.toolkits.jetbrains.utils.execution.steps.Step
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.ClouddebugTelemetry
 import software.aws.toolkits.telemetry.Result
@@ -51,20 +50,17 @@ class CopyArtifactsStep(private val settings: EcsServiceCloudDebuggingRunSetting
     }
 }
 
-class ResourceTransferStep(private val localPath: String, private val remotePath: String, private val containerName: String) : CliBasedStep() {
+class ResourceTransferStep(private val localPath: String, private val remotePath: String, private val containerName: String) : CloudDebugCliStep() {
     override val stepName = message("cloud_debug.step.copy_folder", localPath)
 
-    override fun constructCommandLine(context: Context, commandLine: GeneralCommandLine) {
-        // TODO: Update with token based CLI
-        commandLine
-            .withParameters("--verbose")
-            .withParameters("--json")
-            .withParameters("copy")
-            .withParameters("--src")
-            .withParameters(localPath)
-            .withParameters("--dest")
-            .withParameters("remote://${ResourceInstrumenter.getTargetForContainer(context, containerName)}://$containerName://$remotePath")
-    }
+    override fun constructCommandLine(context: Context) = getCli(context)
+        .withParameters("--verbose")
+        .withParameters("--json")
+        .withParameters("copy")
+        .withParameters("--src")
+        .withParameters(localPath)
+        .withParameters("--dest")
+        .withParameters("remote://${ResourceInstrumenter.getTargetForContainer(context, containerName)}://$containerName://$remotePath")
 
     override fun recordTelemetry(context: Context, startTime: Instant, result: Result) {
         ClouddebugTelemetry.copy(

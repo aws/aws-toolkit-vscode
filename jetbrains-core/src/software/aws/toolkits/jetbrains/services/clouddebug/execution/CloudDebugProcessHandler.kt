@@ -4,6 +4,7 @@
 package software.aws.toolkits.jetbrains.services.clouddebug.execution
 
 import com.intellij.execution.process.ProcessHandler
+import software.aws.toolkits.jetbrains.utils.execution.steps.Context
 import java.io.OutputStream
 
 class CloudDebugProcessHandler(private val context: Context) : ProcessHandler() {
