@@ -158,7 +158,7 @@
                 },
                 "aws.cloudWatchLogs.limit": {
                     "type": "number",
-                    "default": 1000,
+                    "default": 10000,
                     "description": "%aws.cloudWatchLogs.limit.desc%",
                     "maximum": 10000
                 }

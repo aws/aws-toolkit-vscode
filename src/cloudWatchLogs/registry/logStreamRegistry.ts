@@ -116,15 +116,14 @@ export class LogStreamRegistry {
         uri: vscode.Uri,
         headOrTail: 'head' | 'tail' = 'tail',
         configuration: SettingsConfiguration,
-        getLogEventsFromUriComponentsFn: (
+        getLogEventsFromUriComponentsFn?: (
             logGroupInfo: {
                 groupName: string
                 streamName: string
                 regionName: string
             },
-            configuration: SettingsConfiguration,
             nextToken?: string
-        ) => Promise<CloudWatchLogs.GetLogEventsResponse> = getLogEventsFromUriComponents
+        ) => Promise<CloudWatchLogs.GetLogEventsResponse>
     ): Promise<void> {
         const stream = this.getLog(uri)
         if (!stream) {
@@ -135,7 +134,9 @@ export class LogStreamRegistry {
         const logGroupInfo = parseCloudWatchLogsUri(uri)
         try {
             // TODO: Consider getPaginatedAwsCallIter? Would need a way to differentiate between head/tail...
-            const logEvents = await getLogEventsFromUriComponentsFn(logGroupInfo, configuration, nextToken)
+            const logEvents = getLogEventsFromUriComponentsFn
+                ? await getLogEventsFromUriComponentsFn(logGroupInfo, nextToken)
+                : await this.getLogEventsFromUriComponents(logGroupInfo, nextToken)
             const newData =
                 headOrTail === 'head'
                     ? (logEvents.events ?? []).concat(stream.data)
@@ -205,6 +206,26 @@ export class LogStreamRegistry {
     private getLog(uri: vscode.Uri): CloudWatchLogStreamData | undefined {
         return this.activeStreams.get(uri.path)
     }
+
+    private async getLogEventsFromUriComponents(
+        logGroupInfo: {
+            groupName: string
+            streamName: string
+            regionName: string
+        },
+        nextToken?: string
+    ): Promise<CloudWatchLogs.GetLogEventsResponse> {
+        const client: CloudWatchLogsClient = ext.toolkitClientBuilder.createCloudWatchLogsClient(
+            logGroupInfo.regionName
+        )
+
+        return await client.getLogEvents({
+            logGroupName: logGroupInfo.groupName,
+            logStreamName: logGroupInfo.streamName,
+            nextToken,
+            limit: this.configuration.readSetting('cloudWatchLogs.limit', 1000),
+        })
+    }
 }
 
 export class CloudWatchLogStreamData {
@@ -216,23 +237,4 @@ export class CloudWatchLogStreamData {
         token: CloudWatchLogs.NextToken
     }
     busy: boolean = false
-}
-
-async function getLogEventsFromUriComponents(
-    logGroupInfo: {
-        groupName: string
-        streamName: string
-        regionName: string
-    },
-    configuration: SettingsConfiguration,
-    nextToken?: string
-): Promise<CloudWatchLogs.GetLogEventsResponse> {
-    const client: CloudWatchLogsClient = ext.toolkitClientBuilder.createCloudWatchLogsClient(logGroupInfo.regionName)
-
-    return await client.getLogEvents({
-        logGroupName: logGroupInfo.groupName,
-        logStreamName: logGroupInfo.streamName,
-        nextToken,
-        limit: configuration.readSetting('cloudWatchLogs.limit', 1000),
-    })
 }
