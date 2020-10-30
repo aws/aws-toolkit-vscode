@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import * as path from 'path'
-import { openSync } from 'fs'
+import * as fs from 'fs'
 import { fstatSync, writeFileSync } from 'fs-extra'
 import { fileExists, makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { DiskCache } from '../../credentials/sso/diskCache'
@@ -93,10 +93,10 @@ describe('SSO diskCache', () => {
             it('should save the client registration correctly with mode 0600', () => {
                 sut.saveClientRegistration(ssoRegion, validRegistration)
 
-                let fileDescriptor = openSync(registrationFilename, 'r')
+                let fileDescriptor = fs.openSync(registrationFilename, 'r')
                 let fileStats = fstatSync(fileDescriptor)
 
-                assert.strictEqual(fileStats.mode, 0o600)
+                assert.strictEqual(fileStats.mode, 33152)
             })
         }
         it('should save the client registration', async () => {
@@ -163,10 +163,10 @@ describe('SSO diskCache', () => {
             it('should save the access token correctly with mode 0600', () => {
                 sut.saveAccessToken(startUrl, validAccessToken)
 
-                let fileDescriptor = openSync(accessTokenFileName, 'r')
+                let fileDescriptor = fs.openSync(accessTokenFileName, 'r')
                 let fileStats = fstatSync(fileDescriptor)
 
-                assert.strictEqual(fileStats.mode, 0o600)
+                assert.strictEqual(fileStats.mode, 33152)
             })
         }
         it('should save the access token', async () => {
