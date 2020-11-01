@@ -40,4 +40,6 @@ try {
     // Restore the original files.
     fs.copyFileSync(`${packageJsonFile}.bk`, packageJsonFile)
     fs.copyFileSync(`${webpackConfigJsFile}.bk`, webpackConfigJsFile)
+    fs.unlinkSync(`${packageJsonFile}.bk`)
+    fs.unlinkSync(`${webpackConfigJsFile}.bk`)
 }
