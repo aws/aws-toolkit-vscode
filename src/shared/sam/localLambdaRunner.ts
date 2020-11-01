@@ -164,7 +164,7 @@ export async function invokeLambdaFunction(
 
     const processInvoker = new DefaultSamCliProcessInvoker()
 
-    ctx.chanLogger.info('AWS.output.building.sam.application', 'Building SAM Application...')
+    ctx.chanLogger.info('AWS.output.building.sam.application', 'Building SAM application...')
     const samBuildOutputFolder = path.join(config.baseBuildDir!, 'output')
     const envVars = {
         ...(config.awsCredentials ? asEnvironmentVariables(config.awsCredentials) : {}),
@@ -207,7 +207,7 @@ export async function invokeLambdaFunction(
 
     ctx.chanLogger.info(
         'AWS.output.starting.sam.app.locally',
-        'Starting the SAM Application locally (see Terminal for output)'
+        'Starting SAM application locally'
     )
     getLogger().debug(`localLambdaRunner.invokeLambdaFunction: ${config.name}`)
 
@@ -300,7 +300,7 @@ export async function invokeLambdaFunction(
         } catch (err) {
             ctx.chanLogger.error(
                 'AWS.error.during.sam.local',
-                'Failed to run SAM Application locally: {0}',
+                'Failed to run SAM application locally: {0}',
                 err as Error
             )
         } finally {
@@ -453,7 +453,7 @@ export async function attachDebugger({
     let isDebuggerAttached: boolean | undefined
     let retries = 0
 
-    channelLogger.info('AWS.output.sam.local.attaching', 'Attaching debugger to SAM Application...')
+    channelLogger.info('AWS.output.sam.local.attaching', 'Attaching debugger to SAM application...')
 
     do {
         isDebuggerAttached = await onStartDebugging(undefined, params.debugConfig)
@@ -484,7 +484,7 @@ export async function attachDebugger({
     } else {
         channelLogger.error(
             'AWS.output.sam.local.attach.failure',
-            'Unable to attach Debugger. Check the Terminal tab for output. If it took longer than expected to successfully start, you may still attach to it.'
+            'Unable to attach Debugger. Check AWS Toolkit logs. If it took longer than expected to start, you can still attach.'
         )
     }
 
