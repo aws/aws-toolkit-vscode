@@ -118,6 +118,7 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
     /** vscode implicit field, set if user invokes "Run (Start Without Debugging)". */
     noDebug?: boolean
     debuggerPath?: string
+    debugArgs?: string[]
     debugPort?: number
 
     /**

@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { IncomingMessage } from 'http'
+import * as fs from 'fs'
+// TODO: Move off of deprecated `request` to `got` or similar modern library.
 import * as request from 'request'
 import { getLogger, Logger } from '../logger'
 import { ResourceFetcher } from './resourcefetcher'
@@ -11,37 +12,56 @@ import { ResourceFetcher } from './resourcefetcher'
 export class HttpResourceFetcher implements ResourceFetcher {
     private readonly logger: Logger = getLogger()
 
-    public constructor(private readonly url: string) {}
+    /**
+     *
+     * @param url URL to fetch a response body from via the `get` call
+     * @param params Additional params for the fetcher
+     * @param {boolean} params.showUrl Whether or not to the URL in log statements.
+     * @param {string} params.friendlyName If URL is not shown, replaces the URL with this text.
+     * @param {string} params.pipeLocation If provided, pipes output to file designated here.
+     */
+    public constructor(
+        private readonly url: string,
+        private readonly params: { showUrl: boolean; friendlyName?: string; pipeLocation?: string }
+    ) {}
 
     /**
      * Returns the contents of the resource, or undefined if the resource could not be retrieved.
      */
     public async get(): Promise<string | undefined> {
         try {
-            this.logger.verbose(`Loading resource from ${this.url}`)
+            this.logger.verbose(`Loading ${this.logText()}`)
 
-            const contents = await this.loadFromUrl()
+            const contents = (await this.getResponseFromGetRequest()).body
 
-            this.logger.verbose(`Finished loading resource from ${this.url}`)
+            this.logger.verbose(`Finished loading ${this.logText()}`)
 
             return contents
         } catch (err) {
-            this.logger.error(`Error loading resource from ${this.url}: %O`, err as Error)
+            this.logger.error(`Error loading ${this.logText()}: %O`, err as Error)
 
             return undefined
         }
     }
 
-    private async loadFromUrl(): Promise<string | undefined> {
-        return new Promise<string>((resolve, reject) => {
-            request(this.url, (error: any, response: IncomingMessage, body: any) => {
-                if (error) {
-                    reject(error)
-                } else {
-                    // tslint:disable-next-line: no-unsafe-any
-                    resolve(body.toString())
+    private logText(): string {
+        return this.params.showUrl ? this.url : this.params.friendlyName ?? 'resource from URL'
+    }
+
+    private async getResponseFromGetRequest(): Promise<request.Response> {
+        return new Promise<request.Response>((resolve, reject) => {
+            const call = request(this.url, (err, response, body) => {
+                if (err) {
+                    // swallow error to keep URL private
+                    // some AWS APIs use presigned links (e.g. Lambda.getFunction); showing these represent a securty concern.
+                    reject({ code: err.code })
                 }
+                resolve(response)
             })
+
+            if (this.params.pipeLocation) {
+                call.pipe(fs.createWriteStream(this.params.pipeLocation))
+            }
         })
     }
 }

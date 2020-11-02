@@ -29,6 +29,7 @@ export class CloudFormationNode extends AWSTreeNodeBase {
     public constructor(private readonly regionCode: string) {
         super('CloudFormation', vscode.TreeItemCollapsibleState.Collapsed)
         this.stackNodes = new Map<string, CloudFormationStackNode>()
+        this.contextValue = 'awsCloudFormationRootNode'
     }
 
     public async getChildren(): Promise<AWSTreeNodeBase[]> {
