@@ -9,10 +9,15 @@ import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
 import { CloudWatchLogStreamData, LogStreamRegistry } from '../../../cloudWatchLogs/registry/logStreamRegistry'
 import { CLOUDWATCH_LOGS_SCHEME, INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
+import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
 
 describe('LogStreamRegistry', async () => {
     let registry: LogStreamRegistry
     let map: Map<string, CloudWatchLogStreamData>
+
+    const config = new TestSettingsConfiguration()
+    config.writeSetting('cloudWatchLogs.limit', 1000)
+
     const stream: CloudWatchLogStreamData = {
         data: [
             {
@@ -74,7 +79,7 @@ describe('LogStreamRegistry', async () => {
         map.set(registeredUri.path, stream)
         map.set(shorterRegisteredUri.path, simplerStream)
         map.set(newLineUri.path, newLineStream)
-        registry = new LogStreamRegistry(map)
+        registry = new LogStreamRegistry(config, map)
     })
 
     describe('hasLog', () => {
@@ -135,14 +140,14 @@ describe('LogStreamRegistry', async () => {
 
     describe('updateLog', async () => {
         it("adds content to existing streams at both head and tail ends and doesn't do anything if the log isn't registered", async () => {
-            await registry.updateLog(shorterRegisteredUri, 'tail', getLogEventsFromUriComponentsFn)
+            await registry.updateLog(shorterRegisteredUri, 'tail', config, getLogEventsFromUriComponentsFn)
             const initialWithTail = registry.getLogContent(shorterRegisteredUri)
             assert.strictEqual(initialWithTail, `${simplerStream.data[0].message}${newText}`)
-            await registry.updateLog(shorterRegisteredUri, 'head', getLogEventsFromUriComponentsFn)
+            await registry.updateLog(shorterRegisteredUri, 'head', config, getLogEventsFromUriComponentsFn)
             const initialWithHeadAndTail = registry.getLogContent(shorterRegisteredUri)
             assert.strictEqual(initialWithHeadAndTail, `${newText}${simplerStream.data[0].message}${newText}`)
 
-            await registry.updateLog(missingRegisteredUri, 'tail', getLogEventsFromUriComponentsFn)
+            await registry.updateLog(missingRegisteredUri, 'tail', config, getLogEventsFromUriComponentsFn)
             const unregisteredGet = registry.getLogContent(missingRegisteredUri)
             assert.strictEqual(unregisteredGet, undefined)
         })
