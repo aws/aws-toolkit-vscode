@@ -3,20 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { CloudWatchLogs } from 'aws-sdk'
 import * as lolex from 'lolex'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { addLogEvents } from '../../../cloudWatchLogs/commands/addLogEvents'
 import { LogStreamRegistry } from '../../../cloudWatchLogs/registry/logStreamRegistry'
-import { CloudWatchLogs } from 'aws-sdk'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../../shared/constants'
+import { TestSettingsConfiguration } from '../../utilities/testSettingsConfiguration'
 
 describe('addLogEvents', async () => {
     let sandbox: sinon.SinonSandbox
     let clock: lolex.InstalledClock
+    const config = new TestSettingsConfiguration()
 
     before(() => {
         clock = lolex.install()
+        config.writeSetting('cloudWatchLogs.limit', 1000)
     })
 
     beforeEach(() => {
@@ -64,7 +67,7 @@ describe('addLogEvents', async () => {
 
         const fakeEvent = sandbox.createStubInstance(vscode.EventEmitter)
 
-        await addLogEvents(document, fakeRegistry, 'head', fakeEvent)
+        await addLogEvents(document, fakeRegistry, 'head', fakeEvent, config)
 
         sandbox.assert.calledTwice(setBusyStatus)
         sandbox.assert.calledWith(setBusyStatus.firstCall, uri, true)
@@ -120,11 +123,11 @@ describe('addLogEvents', async () => {
 
         const fakeEvent = sandbox.createStubInstance(vscode.EventEmitter)
 
-        addLogEvents(document, fakeRegistry, 'head', fakeEvent)
+        addLogEvents(document, fakeRegistry, 'head', fakeEvent, config)
 
-        addLogEvents(document, fakeRegistry, 'head', fakeEvent)
+        addLogEvents(document, fakeRegistry, 'head', fakeEvent, config)
 
-        addLogEvents(document, fakeRegistry, 'head', fakeEvent)
+        addLogEvents(document, fakeRegistry, 'head', fakeEvent, config)
 
         new Promise(resolve => {
             clock.setTimeout(() => {

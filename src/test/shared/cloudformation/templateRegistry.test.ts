@@ -9,7 +9,8 @@ import * as vscode from 'vscode'
 
 import {
     CloudFormationTemplateRegistry,
-    getResourcesFromTemplateDatum,
+    getResourcesForHandler,
+    getResourcesForHandlerFromTemplateDatum,
     TemplateDatum,
 } from '../../../shared/cloudformation/templateRegistry'
 import { rmrf } from '../../../shared/filesystem'
@@ -17,6 +18,7 @@ import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { assertThrowsError } from '../utilities/assertUtils'
 import { badYaml, makeSampleSamTemplateYaml, strToYamlFile } from './cloudformationTestUtils'
 import { assertEqualPaths } from '../../testUtil'
+import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 
 describe('CloudFormation Template Registry', async () => {
     const goodYaml1 = makeSampleSamTemplateYaml(false)
@@ -134,74 +136,222 @@ describe('CloudFormation Template Registry', async () => {
             })
         })
     })
-})
 
-describe('parseCloudFormationResources', () => {
-    const templateDatum: TemplateDatum = {
-        path: path.join('the', 'path', 'led', 'us', 'here', 'today'),
+    // Consts for the non-class functions
+    const rootPath = path.join('i', 'am', 'your', 'father')
+    const nestedPath = path.join('s', 'brothers', 'nephews', 'cousins', 'former', 'roommate')
+    const otherPath = path.join('obi-wan', 'killed', 'your', 'father')
+    const matchingResource: {
+        Type: 'AWS::Serverless::Function'
+        Properties: CloudFormation.ResourceProperties
+    } = {
+        Type: 'AWS::Serverless::Function',
+        Properties: {
+            Handler: 'index.handler',
+            CodeUri: path.join(nestedPath),
+            Runtime: 'nodejs12.x',
+        },
+    }
+    const nonParentTemplate = {
+        path: path.join(otherPath, 'template.yaml'),
+        template: {},
+    }
+    const workingTemplate = {
+        path: path.join(rootPath, 'template.yaml'),
         template: {
             Resources: {
-                resource1: {
-                    Type: 'AWS::Serverless::Function',
+                resource1: matchingResource,
+            },
+        },
+    }
+    const noResourceTemplate = {
+        path: path.join(rootPath, 'template.yaml'),
+        template: {
+            Resources: {},
+        },
+    }
+    const compiledResource: {
+        Type: 'AWS::Serverless::Function'
+        Properties: CloudFormation.ResourceProperties
+    } = {
+        Type: 'AWS::Serverless::Function',
+        Properties: {
+            Handler: 'Asdf::Asdf.Function::FunctionHandler',
+            CodeUri: path.join(nestedPath),
+            Runtime: 'dotnetcore3.1',
+        },
+    }
+    const dotNetTemplate = {
+        path: path.join(rootPath, 'template.yaml'),
+        template: {
+            Resources: {
+                resource1: compiledResource,
+            },
+        },
+    }
+    const multiResourceTemplate = {
+        path: path.join(rootPath, 'template.yaml'),
+        template: {
+            Resources: {
+                resource1: matchingResource,
+                resource2: {
+                    ...matchingResource,
                     Properties: {
-                        Handler: 'tooHotTo.handler',
-                        CodeUri: 'rightHere',
+                        ...matchingResource.Properties,
+                        Timeout: 5000,
                     },
                 },
             },
         },
     }
+    const badRuntimeTemplate = {
+        path: path.join(rootPath, 'template.yaml'),
+        template: {
+            Resources: {
+                badResource: {
+                    ...matchingResource,
+                    Properties: {
+                        ...matchingResource.Properties,
+                        Runtime: 'COBOL-60',
+                    },
+                },
+                goodResource: matchingResource,
+            },
+        },
+    }
 
-    it('creates a map with a single resource', () => {
-        const resources = getResourcesFromTemplateDatum(templateDatum)
-        assert.strictEqual(resources.size, 1)
-        assert.strictEqual(resources.get('resource1')?.Properties?.Handler, 'tooHotTo.handler')
-    })
+    describe('getResourcesForHandler', () => {
+        it('returns an array containing resources that contain references to the handler in question', () => {
+            const val = getResourcesForHandler(path.join(rootPath, nestedPath, 'index.js'), 'handler', [
+                nonParentTemplate,
+                workingTemplate,
+                noResourceTemplate,
+                dotNetTemplate,
+                multiResourceTemplate,
+                badRuntimeTemplate,
+            ])
 
-    it('creates a map with an entry for each defined resource', () => {
-        const biggerDatum: TemplateDatum = {
-            ...templateDatum,
-            template: {
-                Resources: {
-                    ...templateDatum.template.Resources,
-                    resource2: {
-                        Type: 'AWS::Serverless::Function',
+            assert.deepStrictEqual(val, [
+                {
+                    name: 'resource1',
+                    resourceData: matchingResource,
+                    templateDatum: workingTemplate,
+                },
+                {
+                    name: 'resource1',
+                    resourceData: matchingResource,
+                    templateDatum: multiResourceTemplate,
+                },
+                {
+                    name: 'resource2',
+                    resourceData: {
+                        ...matchingResource,
                         Properties: {
-                            Handler: 'handledWith.care',
-                            CodeUri: 'overThere',
+                            ...matchingResource.Properties,
+                            Timeout: 5000,
                         },
                     },
-                    undefinedResource: undefined,
+                    templateDatum: multiResourceTemplate,
                 },
-            },
-        }
-        const resources = getResourcesFromTemplateDatum(biggerDatum)
-        assert.strictEqual(resources.size, 2)
-        assert.ok(resources.has('resource1'))
-        assert.ok(resources.has('resource2'))
-        assert.ok(!resources.has('undefinedResource'))
+                {
+                    name: 'goodResource',
+                    resourceData: matchingResource,
+                    templateDatum: badRuntimeTemplate,
+                },
+            ])
+        })
     })
 
-    it('Filers based on resource type', () => {
-        const biggerDatum: TemplateDatum = {
-            ...templateDatum,
-            template: {
-                Resources: {
-                    ...templateDatum.template.Resources,
-                    resource2: {
-                        Type: 'AWS::Serverless::Api',
+    describe('getResourceAssociatedWithHandlerFromTemplateDatum', () => {
+        it('returns an empty array if the given template is not a parent of the handler file in question', () => {
+            const val = getResourcesForHandlerFromTemplateDatum(
+                path.join(rootPath, 'index.js'),
+                'handler',
+                nonParentTemplate
+            )
+
+            assert.deepStrictEqual(val, [])
+        })
+
+        it('returns an empty array if the template has no resources', () => {
+            const val = getResourcesForHandlerFromTemplateDatum(
+                path.join(rootPath, nestedPath, 'index.js'),
+                'handler',
+                noResourceTemplate
+            )
+
+            assert.deepStrictEqual(val, [])
+        })
+
+        it('returns a template resource if it has a matching handler', () => {
+            const val = getResourcesForHandlerFromTemplateDatum(
+                path.join(rootPath, nestedPath, 'index.js'),
+                'handler',
+                workingTemplate
+            )
+
+            assert.deepStrictEqual(val, [
+                {
+                    name: 'resource1',
+                    resourceData: matchingResource,
+                },
+            ])
+        })
+
+        it('ignores path handling if using a compiled language', () => {
+            const val = getResourcesForHandlerFromTemplateDatum(
+                path.join(rootPath, nestedPath, 'index.cs'),
+                'Asdf::Asdf.Function::FunctionHandler',
+                dotNetTemplate
+            )
+
+            assert.deepStrictEqual(val, [
+                {
+                    name: 'resource1',
+                    resourceData: compiledResource,
+                },
+            ])
+        })
+
+        it('returns all template resources if it has multiple matching handlers', () => {
+            const val = getResourcesForHandlerFromTemplateDatum(
+                path.join(rootPath, nestedPath, 'index.js'),
+                'handler',
+                multiResourceTemplate
+            )
+
+            assert.deepStrictEqual(val, [
+                {
+                    name: 'resource1',
+                    resourceData: matchingResource,
+                },
+                {
+                    name: 'resource2',
+                    resourceData: {
+                        ...matchingResource,
                         Properties: {
-                            Handler: 'handledWith.care',
-                            CodeUri: 'overThere',
+                            ...matchingResource.Properties,
+                            Timeout: 5000,
                         },
                     },
-                    undefinedResource: undefined,
                 },
-            },
-        }
-        const resources = getResourcesFromTemplateDatum(biggerDatum, ['AWS::Serverless::Function'])
-        assert.strictEqual(resources.size, 1)
-        assert.ok(resources.has('resource1'))
+            ])
+        })
+
+        it('does not break if the resource has a non-parseable runtime', () => {
+            const val = getResourcesForHandlerFromTemplateDatum(
+                path.join(rootPath, nestedPath, 'index.js'),
+                'handler',
+                badRuntimeTemplate
+            )
+
+            assert.deepStrictEqual(val, [
+                {
+                    name: 'goodResource',
+                    resourceData: matchingResource,
+                },
+            ])
+        })
     })
 })
 

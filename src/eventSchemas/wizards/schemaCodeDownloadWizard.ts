@@ -6,7 +6,7 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { Set } from 'immutable'
+import { Set as ImmutableSet } from 'immutable'
 import * as vscode from 'vscode'
 
 import { eventBridgeSchemasDocUrl } from '../../shared/constants'
@@ -19,7 +19,7 @@ import * as codeLang from '../models/schemaCodeLangs'
 import { SchemaItemNode } from '../explorer/schemaItemNode'
 
 export interface SchemaCodeDownloadWizardContext {
-    readonly schemaLangs: Set<codeLang.SchemaCodeLangs>
+    readonly schemaLangs: ImmutableSet<codeLang.SchemaCodeLangs>
     readonly workspaceFolders: readonly vscode.WorkspaceFolder[] | undefined
 
     promptUserForVersion(currSchemaVersion?: string): Promise<string | undefined>

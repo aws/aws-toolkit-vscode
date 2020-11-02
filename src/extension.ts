@@ -218,7 +218,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         // Features which aren't currently functional in Cloud9
         if (!isCloud9()) {
-            await activateCloudWatchLogs(context)
+            await activateCloudWatchLogs(context, toolkitSettings)
 
             await activateS3(context)
 

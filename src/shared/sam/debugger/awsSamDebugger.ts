@@ -17,7 +17,7 @@ import {
     getTemplate,
 } from '../../../lambda/local/debugConfiguration'
 import { getDefaultRuntime, getFamily, getRuntimeFamily, RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
-import { CloudFormationTemplateRegistry, getResourcesFromTemplateDatum } from '../../cloudformation/templateRegistry'
+import { CloudFormationTemplateRegistry } from '../../cloudformation/templateRegistry'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { ChannelLogger } from '../../utilities/vsCodeUtils'
 import * as csharpDebug from './csharpSamDebug'
@@ -179,42 +179,42 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                         getLogger().error(`provideDebugConfigurations: invalid template: ${templateDatum.path}`)
                         continue
                     }
-                    const resources = getResourcesFromTemplateDatum(templateDatum, [
-                        CloudFormation.LAMBDA_FUNCTION_TYPE,
-                        CloudFormation.SERVERLESS_FUNCTION_TYPE,
-                    ])
-                    for (const resourceKey of resources.keys()) {
-                        const resource = resources.get(resourceKey)
-                        const runtimeName = resource?.Properties?.Runtime
-                        configs.push(
-                            createTemplateAwsSamDebugConfig(
-                                folder,
-                                CloudFormation.getStringForProperty(runtimeName, templateDatum.template),
-                                resourceKey,
-                                templateDatum.path
-                            )
-                        )
-                        const events = resource?.Properties?.Events
-                        if (!events) {
-                            continue
-                        }
-                        // Check for api resources to add
-                        for (const key in events) {
-                            const value = events[key]
-                            if (value.Type === 'Api') {
-                                const properties = value.Properties as CloudFormation.ApiEventProperties
-                                configs.push(
-                                    createApiAwsSamDebugConfig(
-                                        folder,
-                                        CloudFormation.getStringForProperty(runtimeName, templateDatum.template),
-                                        resourceKey,
-                                        templateDatum.path,
-                                        {
-                                            path: properties?.Path,
-                                            httpMethod: properties?.Method,
-                                        }
-                                    )
+                    for (const resourceKey of Object.keys(templateDatum.template.Resources)) {
+                        const resource = templateDatum.template.Resources[resourceKey]
+                        if (resource) {
+                            const runtimeName = resource.Properties?.Runtime
+                            configs.push(
+                                createTemplateAwsSamDebugConfig(
+                                    folder,
+                                    CloudFormation.getStringForProperty(runtimeName, templateDatum.template),
+                                    resourceKey,
+                                    templateDatum.path
                                 )
+                            )
+                            const events = resource?.Properties?.Events
+                            if (events) {
+                                // Check for api resources to add
+                                for (const key in events) {
+                                    const value = events[key]
+                                    if (value.Type === 'Api') {
+                                        const properties = value.Properties as CloudFormation.ApiEventProperties
+                                        configs.push(
+                                            createApiAwsSamDebugConfig(
+                                                folder,
+                                                CloudFormation.getStringForProperty(
+                                                    runtimeName,
+                                                    templateDatum.template
+                                                ),
+                                                resourceKey,
+                                                templateDatum.path,
+                                                {
+                                                    path: properties?.Path,
+                                                    httpMethod: properties?.Method,
+                                                }
+                                            )
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
