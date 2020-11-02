@@ -32,6 +32,7 @@ import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
 import { buildSamCliStartApiArguments } from './cli/samCliStartApi'
 import { DefaultSamCliProcessInvoker, DefaultSamCliProcessInvokerContext } from './cli/samCliInvoker'
 import { APIGatewayProperties } from './debugger/awsSamDebugConfiguration.gen'
+import { ChildProcess } from '../utilities/childProcess'
 
 // TODO: remove this and all related code.
 export interface LambdaLocalInvokeParams {
@@ -68,6 +69,9 @@ const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
 const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
 const MAX_DEBUGGER_RETRIES_DEFAULT: number = 30
 const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 200
+
+/** "sam local start-api" process from the current debug-session. */
+let samStartApi: ChildProcess | undefined
 
 export function getRelativeFunctionHandler(params: {
     handlerName: string
@@ -205,10 +209,7 @@ export async function invokeLambdaFunction(
 
     await onAfterBuild()
 
-    ctx.chanLogger.info(
-        'AWS.output.starting.sam.app.locally',
-        'Starting SAM application locally'
-    )
+    ctx.chanLogger.info('AWS.output.starting.sam.app.locally', 'Starting SAM application locally')
     getLogger().debug(`localLambdaRunner.invokeLambdaFunction: ${config.name}`)
 
     const maxRetries: number = getAttachDebuggerMaxRetryLimit(ctx.settings, MAX_DEBUGGER_RETRIES_DEFAULT)
@@ -248,6 +249,7 @@ export async function invokeLambdaFunction(
             })
         }
 
+        // We want async behavior so `await` is intentionally not used here.
         config
             .samLocalInvokeCommand!.invoke({
                 options: {
@@ -258,11 +260,14 @@ export async function invokeLambdaFunction(
                 },
                 command: samCommand,
                 args: samArgs,
-                isDebug: !config.noDebug,
+                // start-api does not produce "attach" messages.
+                isDebug: false,
                 timeout: timer,
             })
-            .then(r => {
+            .then(sam => {
                 recordApigwTelemetry('Succeeded')
+                // Track the "sam local start-api" process so that we can stop it later.
+                samStartApi = sam
             })
             .catch(e => {
                 recordApigwTelemetry('Failed')
@@ -354,7 +359,9 @@ export async function invokeLambdaFunction(
             await tryAttach
         } else {
             const payload = JSON.parse(await readFile(config.eventPayloadFile, { encoding: 'utf-8' }))
-            await requestLocalApi(ctx, config.api!, config.apiPort!, payload)
+            await requestLocalApi(ctx, config.api!, config.apiPort!, payload).finally(() => {
+                stopApi(config)
+            })
             const timer2 = createInvokeTimer(ctx.settings)
             await waitForPort(config.apiPort!, timer2, ctx.chanLogger, false)
             await tryAttach
@@ -362,6 +369,23 @@ export async function invokeLambdaFunction(
     }
 
     return config
+}
+
+function stopApi(config: SamLaunchRequestArgs) {
+    if (!samStartApi) {
+        // This is a bug, should never happen.
+        getLogger().error('SAM: unknown debug session: %s', config.name)
+        return
+    }
+
+    try {
+        getLogger().verbose('SAM: sending SIGHUP to sam process: pid %d', samStartApi.pid())
+        samStartApi.stop(true, 'SIGHUP')
+    } catch (e) {
+        getLogger().warn('SAM: failed to stop sam process: pid %d: %O', samStartApi.pid(), e as Error)
+    } finally {
+        samStartApi = undefined
+    }
 }
 
 /**
@@ -390,30 +414,37 @@ function requestLocalApi(ctx: ExtContext, api: APIGatewayProperties, apiPort: nu
             }
             request(reqOpts)
                 .on('response', resp => {
-                    getLogger().debug('Response from local API: %O: %O', reqOpts.uri, JSON.stringify(resp))
-                    resolve()
+                    getLogger().debug('Local API response: %s : %O', reqOpts.uri, JSON.stringify(resp))
+                    if (resp.statusCode === 403) {
+                        const msg = `Local API failed to respond to path: ${api?.path}`
+                        getLogger().error(msg)
+                        reject(msg)
+                    } else {
+                        resolve()
+                    }
                 })
                 .on('complete', () => {
                     resolve()
                 })
                 .on('error', e => {
-                    if ((e as any).code === 'ESOCKETTIMEDOUT') {
+                    const code = (e as any).code
+                    if (code === 'ESOCKETTIMEDOUT') {
                         // HACK: request timeout (as opposed to ECONNREFUSED)
                         // is a hint that debugger is attached, so we can stop requesting now.
-                        getLogger().debug('Request failed, local API: %O: %O', reqOpts.uri, e)
+                        getLogger().info('Local API is alive (code: %s): %s', code, reqOpts.uri)
                         resolve()
                         return
                     }
                     getLogger().debug(
-                        `Retrying request (${retries - retriesRemaining} of ${retries}), local API: ${reqOpts.uri}: ${
-                            e.name
-                        }`
+                        `Local API: retry (${retries - retriesRemaining} of ${retries}): ${reqOpts.uri}: ${e.name}`
                     )
                     if (retriesRemaining > 0) {
                         retryRequest(retries, retriesRemaining - 1)
                     } else {
                         // Timeout: local APIGW took too long to respond.
-                        reject(`Local API failed to respond (wrong path?): ${api?.path}`)
+                        const msg = `Local API failed to respond (${code}) after ${retries} retries, path: ${api?.path}`
+                        getLogger().error(msg)
+                        reject(msg)
                     }
                 })
         }
@@ -443,7 +474,7 @@ export async function attachDebugger({
 }: AttachDebuggerContext): Promise<{ success: boolean }> {
     const channelLogger = params.channelLogger
     getLogger().debug(
-        `localLambdaRunner.attachDebugger: startDebugging with debugConfig: ${JSON.stringify(
+        `localLambdaRunner.attachDebugger: startDebugging with config: ${JSON.stringify(
             params.debugConfig,
             undefined,
             2
@@ -481,6 +512,9 @@ export async function attachDebugger({
 
     if (isDebuggerAttached) {
         channelLogger.info('AWS.output.sam.local.attach.success', 'Debugger attached')
+        getLogger().verbose(
+            `SAM: debug session: "${vscode.debug.activeDebugSession?.name}" / ${vscode.debug.activeDebugSession?.id}`
+        )
     } else {
         channelLogger.error(
             'AWS.output.sam.local.attach.failure',
@@ -507,20 +541,20 @@ export async function waitForPort(
     channelLogger: ChannelLogger,
     isDebugPort: boolean = true
 ): Promise<void> {
-    const remainingTime = timeout.remainingTime
+    const time = timeout.remainingTime
     try {
         // this function always attempts once no matter the timeoutDuration
-        await tcpPortUsed.waitUntilUsed(port, SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS, remainingTime)
+        await tcpPortUsed.waitUntilUsed(port, SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS, time)
     } catch (err) {
-        getLogger().warn(`Timed out after ${remainingTime} ms waiting for port ${port} to open: %O`, err as Error)
+        getLogger().warn(`Timeout after ${time} ms: port was not used: ${port}`)
         if (isDebugPort) {
             channelLogger.warn(
                 'AWS.samcli.local.invoke.portUnavailable',
-                'Port {0} is unavailable. Debugger may fail to attach.',
+                'Failed to use debugger port: {0}',
                 port.toString()
             )
         } else {
-            channelLogger.warn('AWS.apig.portUnavailable', 'Port is unavailable: {0}', port.toString())
+            channelLogger.warn('AWS.apig.portUnavailable', 'Failed to use API port: {0}', port.toString())
         }
     }
 }
