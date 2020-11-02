@@ -62,7 +62,11 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
             orderBy: 'LastEventTime',
             descending: true,
         }
-        const qp = picker.createQuickPick({})
+        const qp = picker.createQuickPick({
+            options: {
+                title: localize('aws.cloudWatchLogs.viewLogStream.workflow.prompt', 'Select a log stream'),
+            },
+        })
         const populator = new IteratorTransformer(
             () =>
                 getPaginatedAwsCallIter({
