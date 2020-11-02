@@ -71,6 +71,7 @@ describe('SsoAccessTokenProvider', () => {
 
     afterEach(async () => {
         sandbox.restore()
+        clock.reset()
     })
 
     after(() => {
@@ -138,7 +139,7 @@ describe('SsoAccessTokenProvider', () => {
             stubCreateToken.onFirstCall().returns(({
                 promise: sandbox.stub().throws({ code: 'AuthorizationPendingException' }),
             } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
-            clock.tickAsync('1')
+            clock.nextAsync()
 
             stubCreateToken.onSecondCall().returns(({
                 promise: sandbox.stub().resolves(fakeCreateTokenResponse),
@@ -165,8 +166,7 @@ describe('SsoAccessTokenProvider', () => {
             setUpStubCache(validRegistation)
             sandbox.stub(sut, 'authorizeClient').resolves(validAuthorization)
 
-            let errToThrow = new Error() as SDK.AWSError
-            errToThrow.code = 'ErrorNotSlowDownAuthPendingOrTimeOut'
+            const errToThrow = new Error() as SDK.AWSError
 
             const stubCreateToken = sandbox.stub(ssoOidcClient, 'createToken')
             stubCreateToken.returns(({
@@ -191,7 +191,7 @@ describe('SsoAccessTokenProvider', () => {
             stubCreateToken.onFirstCall().returns(({
                 promise: sandbox.stub().throws({ code: 'SlowDownException' }),
             } as any) as SDK.Request<CreateTokenResponse, SDK.AWSError>)
-            clock.tickAsync('6')
+            clock.nextAsync()
 
             stubCreateToken.onSecondCall().returns(({
                 promise: sandbox.stub().resolves(fakeCreateTokenResponse),
