@@ -92,6 +92,7 @@ async function registerServerlessCommands(ctx: ExtContext): Promise<void> {
         }),
         vscode.commands.registerCommand('aws.configureLambda', configureLocalLambda),
         vscode.commands.registerCommand('aws.addSamDebugConfiguration', addSamDebugConfiguration),
+        vscode.commands.registerCommand('aws.pickAddSamDebugConfiguration', codelensUtils.pickAddSamDebugConfiguration),
         vscode.commands.registerCommand('aws.deploySamApplication', async regionNode => {
             const samDeployWizardContext = new DefaultSamDeployWizardContext(ctx.regionProvider, ctx.awsContext)
             const samDeployWizard: SamDeployWizardResponseProvider = {

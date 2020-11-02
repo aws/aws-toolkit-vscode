@@ -104,8 +104,14 @@ export async function addSamDebugConfiguration(
 
         const choices = await picker.promptUser({
             picker: quickPick,
+            onDidTriggerButton: (button, resolve, reject) => {
+                if (button === vscode.QuickInputButtons.Back) {
+                    resolve(undefined)
+                }
+            },
         })
         const val = picker.verifySinglePickerOutput(choices)
+
         if (val) {
             // strip the manifest's URI to the manifest's dir here. More reliable to do this here than converting back and forth between URI/string up the chain.
             samDebugConfig = createCodeAwsSamDebugConfig(

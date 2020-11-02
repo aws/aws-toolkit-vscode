@@ -24,7 +24,7 @@ import { createQuickPick, promptUser, verifySinglePickerOutput } from '../../sha
 import { ExtensionDisposableFiles } from '../../shared/utilities/disposableFiles'
 import { Window } from '../../shared/vscode/window'
 import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
-import { getLambdaFileNameFromHandler } from '../utils'
+import { getLambdaDetails } from '../utils'
 
 /**
  * Executes the "Upload Lambda..." command.
@@ -179,7 +179,7 @@ async function runUploadLambdaWithSamBuild(
 ): Promise<telemetry.Result> {
     // Detect if handler is present and provide strong guidance against proceeding if not.
     try {
-        const handlerFile = path.join(parentDir.fsPath, getLambdaFileNameFromHandler(functionNode.configuration))
+        const handlerFile = path.join(parentDir.fsPath, getLambdaDetails(functionNode.configuration).fileName)
         if (!(await fileExists(handlerFile))) {
             const isConfirmed = await showConfirmationMessage(
                 {
