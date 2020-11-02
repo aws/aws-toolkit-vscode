@@ -23,7 +23,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
 import { Window } from '../../shared/vscode/window'
 import { promptUserForLocation, WizardContext } from '../../shared/wizards/multiStepWizard'
-import { getLambdaFileNameFromHandler } from '../utils'
+import { getLambdaDetails } from '../utils'
 
 // TODO: Move off of deprecated `request` to `got`?
 // const pipeline = promisify(Stream.pipeline)
@@ -97,7 +97,7 @@ async function runImportLambda(functionNode: LambdaFunctionNode, window = Window
             ),
         },
         async progress => {
-            const lambdaLocation = path.join(importLocation, getLambdaFileNameFromHandler(functionNode.configuration))
+            const lambdaLocation = path.join(importLocation, getLambdaDetails(functionNode.configuration).fileName)
             try {
                 await downloadAndUnzipLambda(progress, functionNode, importLocation)
                 await openLambdaFile(lambdaLocation)
