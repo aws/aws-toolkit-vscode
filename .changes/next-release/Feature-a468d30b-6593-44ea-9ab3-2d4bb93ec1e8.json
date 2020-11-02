@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "Add support for configuring max amount of CloudWatch Logs entries pulled per service call"
+	"description": "The amount of CloudWatch Logs entries retrieved per request is now configurable."
 }
