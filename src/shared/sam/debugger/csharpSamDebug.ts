@@ -15,7 +15,6 @@ import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import * as pathutil from '../../../shared/utilities/pathUtils'
 import { ExtContext } from '../../extensions'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
-import { getStartPort } from '../../utilities/debuggerUtils'
 import { ChannelLogger, getChannelLogger } from '../../utilities/vsCodeUtils'
 import { invokeLambdaFunction, makeInputTemplate, waitForPort } from '../localLambdaRunner'
 import { SamLaunchRequestArgs } from './awsSamDebugger'
@@ -199,7 +198,6 @@ export async function makeCoreCLRDebugConfiguration(
     if (!!config.noDebug) {
         throw Error(`SAM debug: invalid config ${config}`)
     }
-    config.debugPort = config.debugPort ?? (await getStartPort())
     const pipeArgs = ['-c', `docker exec -i $(docker ps -q -f publish=${config.debugPort}) \${debuggerCommand}`]
     config.debuggerPath = pathutil.normalize(getDebuggerPath(codeUri))
     await ensureDir(config.debuggerPath)
