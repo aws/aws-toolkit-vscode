@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import { writeFile } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { findParentProjectFile } from '../../../shared/utilities/workspaceUtils'
+import { findParentProjectFile, getWorkspaceRelativePath } from '../../../shared/utilities/workspaceUtils'
 import { getTestWorkspaceFolder } from '../../integrationTestsUtilities'
 import { mkdir, rmrf } from '../../../shared/filesystem'
 
@@ -97,5 +97,53 @@ describe('findParentProjectFile', async () => {
                 assert.strictEqual(projectFile, test.expectedResult)
             }
         })
+    })
+})
+
+describe('getWorkspaceRelativePath', () => {
+    const parentPath = path.join('/', 'level1', 'level2')
+    const nestedPath = path.join(parentPath, 'level3')
+    const childPath = path.join(nestedPath, 'level4')
+
+    it('returns a path relative to the first parent path it sees', () => {
+        const relativePath = getWorkspaceRelativePath(childPath, {
+            workspaceFolders: [
+                {
+                    index: 0,
+                    name: '',
+                    uri: vscode.Uri.file(nestedPath),
+                },
+                {
+                    index: 1,
+                    name: '',
+                    uri: vscode.Uri.file(parentPath),
+                },
+            ],
+        })
+
+        assert.strictEqual(relativePath, 'level4')
+    })
+
+    it('returns undefined if no workspace folders exist', () => {
+        const relativePath = getWorkspaceRelativePath(childPath, { workspaceFolders: undefined })
+        assert.strictEqual(relativePath, undefined)
+    })
+
+    it('returns undefined if no paths are parents', () => {
+        const relativePath = getWorkspaceRelativePath(childPath, {
+            workspaceFolders: [
+                {
+                    index: 0,
+                    name: '',
+                    uri: vscode.Uri.file(path.join('different', nestedPath)),
+                },
+                {
+                    index: 1,
+                    name: '',
+                    uri: vscode.Uri.file(path.join('different', parentPath)),
+                },
+            ],
+        })
+        assert.strictEqual(relativePath, undefined)
     })
 })

@@ -81,7 +81,7 @@ describe('SAM Local CodeLenses (JS)', async () => {
         return codeLenses.filter(
             codeLens =>
                 codeLens.command &&
-                codeLens.command.command === 'aws.addSamDebugConfiguration' &&
+                codeLens.command.command === 'aws.pickAddSamDebugConfiguration' &&
                 codeLens.command.arguments &&
                 codeLens.command.arguments.length === 2
         )
