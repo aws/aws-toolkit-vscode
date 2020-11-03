@@ -71,7 +71,7 @@ async function getAddConfigCodeLens(documentUri: vscode.Uri): Promise<vscode.Cod
             // not shown to the user and do not affect how our extension is working
             codeLenses = codeLenses.filter(codeLens => {
                 if (codeLens.command && codeLens.command.arguments && codeLens.command.arguments.length === 2) {
-                    return codeLens.command.command === 'aws.addSamDebugConfiguration'
+                    return codeLens.command.command === 'aws.pickAddSamDebugConfiguration'
                 }
 
                 return false

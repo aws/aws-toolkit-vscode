@@ -128,8 +128,8 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                     'The SAM process did not make the debugger available within the time limit',
                     err
                 )
-                if (!childProcess.killed) {
-                    childProcess.kill()
+                if (!childProcess.stopped) {
+                    childProcess.stop()
                 }
                 throw err
             }
