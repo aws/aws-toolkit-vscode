@@ -12,17 +12,74 @@ import * as vscode from 'vscode'
 import * as picker from '../../shared/ui/picker'
 
 export interface WizardStep {
-    (): Thenable<WizardStep | undefined>
+    (): Thenable<Transition>
+}
+
+export interface Transition {
+    nextState: NextWizardState
+    nextStep?: WizardStep
+}
+
+export enum NextWizardState {
+    CONTINUE,
+    REPROMPT,
+    GO_BACK,
+    TERMINATE,
+}
+
+export const WIZARD_REPROMPT: Transition = {
+    nextState: NextWizardState.REPROMPT,
+}
+
+export const WIZARD_TERMINATE: Transition = {
+    nextState: NextWizardState.TERMINATE,
+}
+
+export const WIZARD_GOBACK: Transition = {
+    nextState: NextWizardState.GO_BACK,
+}
+
+export function wizardContinue(step: WizardStep): Transition {
+    return {
+        nextState: NextWizardState.CONTINUE,
+        nextStep: step,
+    }
 }
 
 export abstract class MultiStepWizard<TResult> {
     protected constructor() {}
 
     public async run(): Promise<TResult | undefined> {
-        let step: WizardStep | undefined = this.startStep
+        let steps: WizardStep[] = [this.startStep]
 
-        while (step) {
-            step = await step()
+        // in a wizard, it only make sense to go forwards to an arbitrary step, or backwards in history
+        while (steps.length > 0) {
+            const step = steps[steps.length - 1]
+            // non-terminal if we still have steps
+            if (!step) {
+                break
+            }
+            const result = await step()
+
+            switch (result.nextState) {
+                case NextWizardState.TERMINATE:
+                    // success/failure both handled by getResult()
+                    steps = []
+                    break
+                case NextWizardState.REPROMPT:
+                    // retry the current step
+                    break
+                case NextWizardState.GO_BACK:
+                    // let history unwind
+                    steps.pop()
+                    break
+                case NextWizardState.CONTINUE:
+                    // push the next step to run
+                    steps.push(result.nextStep!)
+                    break
+                default:
+                    throw new Error(`unhandled transition in MultiStepWizard: ${result.nextState}`)
+            }
         }
 
         return this.getResult()

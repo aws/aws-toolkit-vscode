@@ -4,8 +4,6 @@
  */
 
 import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
-
 import { Credentials } from 'aws-sdk'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { Set as ImmutableSet } from 'immutable'
@@ -19,7 +17,16 @@ import { Region } from '../../shared/regions/endpoints'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
-import { MultiStepWizard, promptUserForLocation, WizardContext, WizardStep } from '../../shared/wizards/multiStepWizard'
+import {
+    MultiStepWizard,
+    promptUserForLocation,
+    WIZARD_GOBACK,
+    WIZARD_REPROMPT,
+    WIZARD_TERMINATE,
+    WizardContext,
+    wizardContinue,
+    WizardStep,
+} from '../../shared/wizards/multiStepWizard'
 import { createRuntimeQuickPick, samLambdaCreatableRuntimes } from '../models/samLambdaRuntime'
 import {
     eventBridgeStarterAppTemplate,
@@ -28,6 +35,8 @@ import {
     repromptUserForTemplate,
     SamTemplate,
 } from '../models/samTemplates'
+
+const localize = nls.loadMessageBundle()
 
 export interface CreateNewSamAppWizardContext {
     readonly lambdaRuntimes: ImmutableSet<Runtime>
@@ -368,52 +377,44 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
     private readonly RUNTIME: WizardStep = async () => {
         this.runtime = await this.context.promptUserForRuntime(this.runtime)
 
-        return this.runtime ? this.TEMPLATE : undefined
+        return this.runtime ? wizardContinue(this.TEMPLATE) : WIZARD_TERMINATE
     }
 
     private readonly TEMPLATE: WizardStep = async () => {
         this.template = await this.context.promptUserForTemplate(this.runtime!)
 
         if (this.template === repromptUserForTemplate) {
-            return this.TEMPLATE
+            return WIZARD_REPROMPT
         }
         if (this.template === eventBridgeStarterAppTemplate) {
-            return this.REGION
+            return wizardContinue(this.REGION)
         }
 
-        return this.template ? this.LOCATION : this.RUNTIME
+        return this.template ? wizardContinue(this.LOCATION) : WIZARD_GOBACK
     }
 
     private readonly REGION: WizardStep = async () => {
         this.region = await this.context.promptUserForRegion()
 
-        return this.region ? this.REGISTRY : this.TEMPLATE
+        return this.region ? wizardContinue(this.REGISTRY) : WIZARD_GOBACK
     }
 
     private readonly REGISTRY: WizardStep = async () => {
         this.registryName = await this.context.promptUserForRegistry(this.region!)
 
-        return this.registryName ? this.SCHEMA : this.REGION
+        return this.registryName ? wizardContinue(this.SCHEMA) : WIZARD_GOBACK
     }
 
     private readonly SCHEMA: WizardStep = async () => {
         this.schemaName = await this.context.promptUserForSchema(this.region!, this.registryName!)
 
-        return this.schemaName ? this.LOCATION : this.REGISTRY
+        return this.schemaName ? wizardContinue(this.LOCATION) : WIZARD_GOBACK
     }
 
     private readonly LOCATION: WizardStep = async () => {
         this.location = await this.context.promptUserForLocation()
 
-        if (!this.location) {
-            if (this.template === eventBridgeStarterAppTemplate) {
-                return this.SCHEMA
-            }
-
-            return this.TEMPLATE
-        }
-
-        return this.NAME
+        return this.location ? wizardContinue(this.NAME) : WIZARD_GOBACK
     }
 
     private readonly NAME: WizardStep = async () => {
@@ -421,6 +422,6 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
             this.name ?? (this.location ? path.basename(this.location.path) : '')
         )
 
-        return this.name ? undefined : this.LOCATION
+        return this.name ? WIZARD_TERMINATE : WIZARD_GOBACK
     }
 }
