@@ -22,7 +22,7 @@ import * as telemetry from '../../shared/telemetry/telemetry'
 import { SamTemplateGenerator } from '../../shared/templates/sam/samTemplateGenerator'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../../shared/ui/picker'
 import { ExtensionDisposableFiles } from '../../shared/utilities/disposableFiles'
-import { report, Window } from '../../shared/vscode/window'
+import { Window } from '../../shared/vscode/window'
 import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
 import { getLambdaDetails } from '../utils'
 
@@ -222,7 +222,7 @@ async function runUploadLambdaWithSamBuild(
                 const resourceName = 'tempResource'
 
                 // TODO: Use an existing template file if it's present?
-                report(progress, {
+                progress.report({
                     message: localize(
                         'AWS.lambda.upload.progress.generatingTemplate',
                         'Setting up temporary build files...'
@@ -235,7 +235,7 @@ async function runUploadLambdaWithSamBuild(
                     .withCodeUri(parentDir.fsPath)
                     .generate(templatePath)
 
-                report(progress, {
+                progress.report({
                     message: localize(
                         'AWS.lambda.upload.progress.samBuilding',
                         'Building project via sam build command...'
@@ -356,7 +356,7 @@ async function zipAndUploadDirectory(
     }>
 ): Promise<telemetry.Result> {
     try {
-        report(progress, { message: localize('AWS.lambda.upload.progress.archivingDir', 'Archiving files...') })
+        progress.report({ message: localize('AWS.lambda.upload.progress.archivingDir', 'Archiving files...') })
         const zipBuffer = await new Promise<Buffer>(resolve => {
             const zip = new AdmZip()
             zip.addLocalFolder(path)
@@ -390,7 +390,7 @@ async function uploadZipBuffer(
     lambdaClient = ext.toolkitClientBuilder.createLambdaClient(functionNode.regionCode)
 ): Promise<telemetry.Result> {
     try {
-        report(progress, {
+        progress.report({
             message: localize('AWS.lambda.upload.progress.uploadingArchive', 'Uploading archive to Lambda...'),
         })
         await lambdaClient.updateFunctionCode(functionNode.configuration.FunctionName!, zip)

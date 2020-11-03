@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { report, Window } from '../../shared/vscode/window'
+import { Window } from '../../shared/vscode/window'
 import { Env } from '../../shared/vscode/env'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { RestApiNode } from '../explorer/apiNodes'
@@ -42,7 +42,7 @@ export async function copyUrlCommand(
                 location: ProgressLocation.Window,
             },
             async progress => {
-                report(progress, {
+                progress.report({
                     message: localize('AWS.apig.loadingStages', 'Loading stage list for API: {0}', node.name),
                 })
                 return (await client.getStages(node.id)).item || []
