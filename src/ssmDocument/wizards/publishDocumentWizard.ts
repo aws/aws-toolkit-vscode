@@ -130,7 +130,8 @@ export class PublishSSMDocumentWizard extends MultiStepWizard<PublishSSMDocument
 
     private readonly EXISTING_SSM_DOCUMENT_NAME: WizardStep = async () => {
         this.documentType = await this.context.promptUserForDocumentType()
-        await this.context.loadSSMDocument(this.region, this.documentType)
+        // TODO: make this return and pass the return value to the next step, otherwise the values here will never readjust.
+        await this.context.loadSSMDocument(this.region ?? '', this.documentType)
         this.name = await this.context.promptUserForDocumentToUpdate(this.region ?? '')
 
         return this.name ? undefined : this.PUBLISH_ACTION
