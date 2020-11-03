@@ -52,14 +52,10 @@ export class RegionNode extends AWSTreeNodeBase {
             { serviceId: 'cloudformation', createFn: () => new CloudFormationNode(this.regionCode) },
             { serviceId: 'lambda', createFn: () => new LambdaNode(this.regionCode) },
             ...(isCloud9() ? [] : [{ serviceId: 'logs', createFn: () => new CloudWatchLogsNode(this.regionCode) }]),
-            ...(isCloud9()
-                ? []
-                : [
-                      {
-                          serviceId: 's3',
-                          createFn: () => new S3Node(ext.toolkitClientBuilder.createS3Client(this.regionCode)),
-                      },
-                  ]),
+            {
+                serviceId: 's3',
+                createFn: () => new S3Node(ext.toolkitClientBuilder.createS3Client(this.regionCode)),
+            },
             ...(isCloud9() ? [] : [{ serviceId: 'schemas', createFn: () => new SchemasNode(this.regionCode) }]),
             ...(isCloud9() ? [] : [{ serviceId: 'states', createFn: () => new StepFunctionsNode(this.regionCode) }]),
             ...(isCloud9() ? [] : [{ serviceId: 'ssm', createFn: () => new SsmDocumentNode(this.regionCode) }]),

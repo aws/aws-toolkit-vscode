@@ -810,17 +810,17 @@
                 },
                 {
                     "command": "aws.s3.downloadFileAs",
-                    "when": "view == aws.explorer && viewItem == awsS3FileNode && !isCloud9",
+                    "when": "view == aws.explorer && viewItem == awsS3FileNode",
                     "group": "inline@1"
                 },
                 {
                     "command": "aws.s3.createBucket",
-                    "when": "view == aws.explorer && viewItem == awsS3Node && !isCloud9",
+                    "when": "view == aws.explorer && viewItem == awsS3Node",
                     "group": "inline@1"
                 },
                 {
                     "command": "aws.s3.createFolder",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsS3BucketNode|awsS3FolderNode)$/ && !isCloud9",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsS3BucketNode|awsS3FolderNode)$/",
                     "group": "inline@1"
                 },
                 {
@@ -830,7 +830,7 @@
                 },
                 {
                     "command": "aws.s3.uploadFile",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsS3BucketNode|awsS3FolderNode)$/ && !isCloud9",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsS3BucketNode|awsS3FolderNode)$/",
                     "group": "inline@2"
                 },
                 {
@@ -895,27 +895,27 @@
                 },
                 {
                     "command": "aws.s3.createBucket",
-                    "when": "view == aws.explorer && viewItem == awsS3Node && !isCloud9",
+                    "when": "view == aws.explorer && viewItem == awsS3Node",
                     "group": "0@1"
                 },
                 {
                     "command": "aws.s3.downloadFileAs",
-                    "when": "view == aws.explorer && viewItem == awsS3FileNode && !isCloud9",
+                    "when": "view == aws.explorer && viewItem == awsS3FileNode",
                     "group": "0@1"
                 },
                 {
                     "command": "aws.s3.uploadFile",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsS3BucketNode|awsS3FolderNode)$/ && !isCloud9",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsS3BucketNode|awsS3FolderNode)$/",
                     "group": "0@1"
                 },
                 {
                     "command": "aws.s3.uploadFileToParent",
-                    "when": "view == aws.explorer && viewItem == awsS3FileNode && !isCloud9",
+                    "when": "view == aws.explorer && viewItem == awsS3FileNode",
                     "group": "1@1"
                 },
                 {
                     "command": "aws.s3.createFolder",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsS3BucketNode|awsS3FolderNode)$/ && !isCloud9",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsS3BucketNode|awsS3FolderNode)$/",
                     "group": "1@1"
                 },
                 {
@@ -935,17 +935,17 @@
                 },
                 {
                     "command": "aws.s3.copyPath",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsS3FolderNode|awsS3FileNode)$/ && !isCloud9",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsS3FolderNode|awsS3FileNode)$/",
                     "group": "2@3"
                 },
                 {
                     "command": "aws.s3.deleteBucket",
-                    "when": "view == aws.explorer && viewItem == awsS3BucketNode && !isCloud9",
+                    "when": "view == aws.explorer && viewItem == awsS3BucketNode",
                     "group": "3@1"
                 },
                 {
                     "command": "aws.s3.deleteFile",
-                    "when": "view == aws.explorer && viewItem == awsS3FileNode && !isCloud9",
+                    "when": "view == aws.explorer && viewItem == awsS3FileNode",
                     "group": "3@1"
                 },
                 {
