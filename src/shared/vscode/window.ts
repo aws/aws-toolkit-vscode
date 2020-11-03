@@ -4,6 +4,12 @@
  */
 
 import * as vscode from 'vscode'
+import { ext } from '../extensionGlobals'
+
+interface ProgressEntry {
+    message?: string
+    increment?: number
+}
 
 /**
  * Components associated with {@link module:vscode.window}.
@@ -68,10 +74,7 @@ export interface Window {
      */
     withProgress<R>(
         options: vscode.ProgressOptions,
-        task: (
-            progress: vscode.Progress<{ message?: string; increment?: number }>,
-            token: vscode.CancellationToken
-        ) => Thenable<R>
+        task: (progress: vscode.Progress<ProgressEntry>, token: vscode.CancellationToken) => Thenable<R>
     ): Thenable<R>
 
     /**
@@ -125,6 +128,9 @@ class DefaultWindow implements Window {
             token: vscode.CancellationToken
         ) => Thenable<R>
     ): Thenable<R> {
+        if (options.title) {
+            ext.outputChannel.appendLine(options.title)
+        }
         return vscode.window.withProgress(options, task)
     }
 
@@ -135,4 +141,16 @@ class DefaultWindow implements Window {
     public showSaveDialog(options: vscode.SaveDialogOptions): Thenable<vscode.Uri | undefined> {
         return vscode.window.showSaveDialog(options)
     }
+}
+
+/**
+ * Outputs progress message to an output channel as well as reporting progress through normal means.
+ * @param progress vscode.Progress object generated through DefaultWindow
+ * @param entry ProgressEntry to output to output channel and progress
+ */
+export function report(progress: vscode.Progress<ProgressEntry>, entry: ProgressEntry) {
+    if (entry.message) {
+        ext.outputChannel.appendLine(entry.message)
+    }
+    progress.report(entry)
 }

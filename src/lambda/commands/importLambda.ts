@@ -21,7 +21,7 @@ import { ExtensionDisposableFiles } from '../../shared/utilities/disposableFiles
 import * as pathutils from '../../shared/utilities/pathUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
-import { Window } from '../../shared/vscode/window'
+import { report, Window } from '../../shared/vscode/window'
 import { promptUserForLocation, WizardContext } from '../../shared/wizards/multiStepWizard'
 import { getLambdaDetails } from '../utils'
 
@@ -138,7 +138,7 @@ async function downloadAndUnzipLambda(
         const codeLocation = response.Code?.Location!
 
         // arbitrary increments since there's no "busy" state for progress bars
-        progress.report({ increment: 10 })
+        report(progress, { increment: 10 })
 
         const fetcher = new HttpResourceFetcher(codeLocation, {
             pipeLocation: downloadLocation,
@@ -147,14 +147,14 @@ async function downloadAndUnzipLambda(
         })
         await fetcher.get()
 
-        progress.report({ increment: 70 })
+        report(progress, { increment: 70 })
 
         await new Promise(resolve => {
             new AdmZip(downloadLocation).extractAllToAsync(importLocation, true, err => {
                 if (err) {
                     throw err
                 }
-                progress.report({ increment: 10 })
+                report(progress, { increment: 10 })
                 resolve()
             })
         })
