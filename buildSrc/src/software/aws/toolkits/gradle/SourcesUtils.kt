@@ -34,6 +34,7 @@ fun findFolders(project: Project, type: String, ideProfile: Profile): Set<File> 
  *  - tst-201
  *  - tst-201+
  *  - tst-192+
+ *  - tst-201-202
  *
  * The following with *not* match:
  *  - tst-resources
@@ -44,8 +45,12 @@ fun findFolders(project: Project, type: String, ideProfile: Profile): Set<File> 
  */
 internal fun includeFolder(type: String, ideVersion: String, folderName: String): Boolean {
     val ideVersionAsInt = ideVersion.toInt()
-    val match = "$type(-(\\d{3}))?(\\+)?".toRegex().matchEntire(folderName) ?: return false
-    val (_, version, plus) = match.destructured
+    // Check version range first
+    "$type-(\\d{3})-(\\d{3})".toRegex().matchEntire(folderName)?.destructured?.let { (minVersion, maxVersion) ->
+        return ideVersionAsInt in minVersion.toInt()..maxVersion.toInt()
+    }
+    // Then check singular versions/min+
+    val (_, version, plus) = "$type(-(\\d{3}))?(\\+)?".toRegex().matchEntire(folderName)?.destructured ?: return false
     return when {
         version.isBlank() -> true
         plus.isBlank() -> version.toInt() == ideVersionAsInt

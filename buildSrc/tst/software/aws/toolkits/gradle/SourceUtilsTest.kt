@@ -19,14 +19,19 @@ class SourceUtilsTest(private val folderName: String, private val expected: Bool
             arrayOf("tst-201", true),
             arrayOf("tst-190+", true),
             arrayOf("tst-201+", true),
+            arrayOf("tst-201-202", true),
+            arrayOf("tst-193-201", true),
+            arrayOf("tst-193-202", true),
 
             arrayOf("tst-resources", false),
             arrayOf("tst-resources-201", false),
             arrayOf("tst-192", false),
             arrayOf("tst-202", false),
             arrayOf("tst-202+", false),
+            arrayOf("src-201", false),
             arrayOf("random", false),
-            arrayOf("src-tst", false)
+            arrayOf("src-tst", false),
+            arrayOf("tst-192-193", false)
         )
     }
 
