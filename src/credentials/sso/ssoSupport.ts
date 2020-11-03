@@ -35,11 +35,6 @@ export function isSsoProfile(profile: Profile): boolean {
     return false
 }
 
-export async function displaySsoProfileChosenMessage(): Promise<void> {
-    const signInInstructionMessage = `You have chosen an AWS Single Sign-On profile that requires authorization. `
-    await vscode.window.showInformationMessage(signInInstructionMessage, { modal: true })
-}
-
 export async function openSsoPortalLink(authorization: StartDeviceAuthorizationResponse): Promise<boolean> {
     const linkOpened = await vscode.env.openExternal(vscode.Uri.parse(authorization.verificationUriComplete!))
 

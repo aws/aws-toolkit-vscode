@@ -9,7 +9,7 @@ import { SsoAccessToken } from './ssoAccessToken'
 import { DiskCache } from './diskCache'
 import { getLogger } from '../../shared/logger'
 import { StartDeviceAuthorizationResponse } from 'aws-sdk/clients/ssooidc'
-import { displaySsoProfileChosenMessage, openSsoPortalLink } from './ssoSupport'
+import { openSsoPortalLink } from './ssoSupport'
 
 const CLIENT_REGISTRATION_TYPE = 'public'
 const CLIENT_NAME = `aws-toolkit-vscode`
@@ -115,7 +115,6 @@ export class SsoAccessTokenProvider {
             const authorizationResponse = await this.ssoOidcClient
                 .startDeviceAuthorization(authorizationParams)
                 .promise()
-            await displaySsoProfileChosenMessage()
             const openedPortalLink = await openSsoPortalLink(authorizationResponse)
             if (!openedPortalLink) {
                 throw Error(`User has canceled SSO login`)
