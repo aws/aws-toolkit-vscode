@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Codelenses in source files can create launch configurations that reference template.yaml resources."
+}

@@ -8,7 +8,7 @@ const localize = nls.loadMessageBundle()
 
 import { Credentials } from 'aws-sdk'
 import { Runtime } from 'aws-sdk/clients/lambda'
-import { Set } from 'immutable'
+import { Set as ImmutableSet } from 'immutable'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { SchemasDataProvider } from '../../eventSchemas/providers/schemasDataProvider'
@@ -30,7 +30,7 @@ import {
 } from '../models/samTemplates'
 
 export interface CreateNewSamAppWizardContext {
-    readonly lambdaRuntimes: Set<Runtime>
+    readonly lambdaRuntimes: ImmutableSet<Runtime>
     readonly workspaceFolders: readonly vscode.WorkspaceFolder[] | undefined
 
     promptUserForRuntime(currRuntime?: Runtime): Promise<Runtime | undefined>
