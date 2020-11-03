@@ -101,6 +101,8 @@ export async function promptUserForLocation(
     additionalParams?: {
         helpButton?: { button: vscode.QuickInputButton; url: string }
         overrideText?: { detail?: string; title?: string }
+        step?: number
+        totalSteps?: number
     }
 ): Promise<vscode.Uri | undefined> {
     const items: FolderQuickPickItem[] = (context.workspaceFolders || [])
@@ -123,6 +125,8 @@ export async function promptUserForLocation(
             title: additionalParams?.overrideText?.title
                 ? additionalParams.overrideText.title
                 : localize('AWS.wizard.location.prompt', 'Select a workspace folder for your new project'),
+            step: additionalParams?.step,
+            totalSteps: additionalParams?.totalSteps,
         },
         items: items,
         buttons: [
