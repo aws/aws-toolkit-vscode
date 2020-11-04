@@ -5,7 +5,6 @@
 
 import * as assert from 'assert'
 import * as del from 'del'
-import { readdir } from 'fs-extra'
 import * as vscode from 'vscode'
 import * as fsUtils from '../../../shared/filesystemUtilities'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from '../../../shared/sam/cli/samCliBuild'

@@ -132,7 +132,7 @@ async function downloadAndUnzipLambda(
     let tempDir = ''
     try {
         tempDir = await makeTemporaryToolkitFolder()
-        const downloadLocation = path.join(tempFolder, 'function.zip')
+        const downloadLocation = path.join(tempDir, 'function.zip')
 
         const response = await lambda.getFunction(functionArn)
         const codeLocation = response.Code?.Location!
