@@ -25,6 +25,7 @@ val ideProfile = IdeVersions.ideProfile(project)
 val telemetryVersion: String by project
 val awsSdkVersion: String by project
 val coroutinesVersion: String by project
+val jacksonVersion: String by project
 
 val compileKotlin: KotlinCompile by tasks
 
@@ -91,6 +92,7 @@ dependencies {
     api("software.amazon.awssdk:secretsmanager:$awsSdkVersion")
     api("software.amazon.awssdk:sns:$awsSdkVersion")
     api("software.amazon.awssdk:sqs:$awsSdkVersion")
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
 
     testImplementation(project(path = ":core", configuration = "testArtifacts"))
     testImplementation("com.github.tomakehurst:wiremock-jre8:2.26.0")

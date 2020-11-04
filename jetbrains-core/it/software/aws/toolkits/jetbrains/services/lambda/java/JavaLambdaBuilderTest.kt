@@ -15,7 +15,6 @@ import software.aws.toolkits.core.rules.EnvironmentVariableHelper
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils.buildLambda
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils.buildLambdaFromTemplate
-import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils.packageLambda
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addFileToModule
@@ -89,18 +88,6 @@ class JavaLambdaBuilderTest {
     }
 
     @Test
-    fun gradlePackage() {
-        val handlerPsi = projectRule.setUpGradleProject()
-
-        val lambdaPackage = sut.packageLambda(projectRule.module, handlerPsi, Runtime.JAVA8, "com.example.SomeClass")
-        LambdaBuilderTestUtils.verifyZipEntries(
-            lambdaPackage,
-            "com/example/SomeClass.class",
-            "lib/aws-lambda-java-core-1.2.0.jar"
-        )
-    }
-
-    @Test
     fun mavenBuiltFromHandler() {
         val handlerPsi = projectRule.setUpMavenProject()
 
@@ -135,18 +122,6 @@ class JavaLambdaBuilderTest {
         val builtLambda = sut.buildLambdaFromTemplate(projectRule.module, templatePath, "SomeFunction")
         LambdaBuilderTestUtils.verifyEntries(
             builtLambda,
-            "com/example/SomeClass.class",
-            "lib/aws-lambda-java-core-1.2.0.jar"
-        )
-    }
-
-    @Test
-    fun mavenPackage() {
-        val handlerPsi = projectRule.setUpMavenProject()
-
-        val lambdaPackage = sut.packageLambda(projectRule.module, handlerPsi, Runtime.JAVA8, "com.example.SomeClass")
-        LambdaBuilderTestUtils.verifyZipEntries(
-            lambdaPackage,
             "com/example/SomeClass.class",
             "lib/aws-lambda-java-core-1.2.0.jar"
         )

@@ -27,7 +27,7 @@ class MessageEmitterTest {
     val mockRule: MockitoRule = MockitoJUnit.rule()
 
     private val buildView = mock<BuildView>()
-    private val rootEmitter = MessageEmitter.createRoot(buildView, PARENT_ID)
+    private val rootEmitter = DefaultMessageEmitter.createRoot(buildView, PARENT_ID)
 
     @Test
     fun startEventIsWritten() {
@@ -89,14 +89,14 @@ class MessageEmitterTest {
             assertThat(firstValue).satisfies {
                 assertThat(it.parentId).isEqualTo(parentId)
             }.isInstanceOfSatisfying(OutputBuildEvent::class.java) {
-                assertThat(it.message).isEqualTo("ChildStep finished exceptionally: java.lang.NullPointerException: Test exception")
+                assertThat(it.message).isEqualTo("ChildStep finished exceptionally: Test exception")
                 assertThat(it.isStdOut).isFalse()
             }
 
             assertThat(secondValue).satisfies {
                 assertThat(it.parentId).isEqualTo(stepId)
             }.isInstanceOfSatisfying(OutputBuildEvent::class.java) {
-                assertThat(it.message).isEqualTo("ChildStep finished exceptionally: java.lang.NullPointerException: Test exception")
+                assertThat(it.message).isEqualTo("ChildStep finished exceptionally: Test exception")
                 assertThat(it.isStdOut).isFalse()
             }
 
@@ -106,6 +106,24 @@ class MessageEmitterTest {
             }.isInstanceOfSatisfying(FinishEvent::class.java) {
                 assertThat(it.message).isEqualTo(stepId)
                 assertThat(it.result).isInstanceOf(FailureResult::class.java)
+            }
+        }
+    }
+
+    @Test
+    fun exceptionsWithoutAMessagePrintsStacktrace() {
+        val parentId = "ParentStep"
+
+        rootEmitter.finishExceptionally(NullPointerException())
+
+        argumentCaptor<BuildEvent>().apply {
+            verify(buildView, times(2)).onEvent(eq(PARENT_ID), capture())
+
+            assertThat(firstValue).satisfies {
+                assertThat(it.parentId).isEqualTo(parentId)
+            }.isInstanceOfSatisfying(OutputBuildEvent::class.java) {
+                assertThat(it.message).contains("ParentStep finished exceptionally: java.lang.NullPointerException", "at")
+                assertThat(it.isStdOut).isFalse()
             }
         }
     }

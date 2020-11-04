@@ -7,7 +7,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
 import com.intellij.testFramework.LightVirtualFile
-import com.intellij.util.io.createFile
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.getLogger
@@ -16,8 +15,10 @@ import software.aws.toolkits.core.utils.writeText
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplate
 import software.aws.toolkits.jetbrains.services.cloudformation.Function
 import software.aws.toolkits.jetbrains.services.cloudformation.SERVERLESS_FUNCTION_TYPE
+import software.aws.toolkits.jetbrains.services.lambda.LambdaLimits
 import software.aws.toolkits.jetbrains.utils.yamlWriter
 import java.io.File
+import java.nio.file.Files
 import java.nio.file.Path
 
 object SamTemplateUtils {
@@ -57,12 +58,12 @@ object SamTemplateUtils {
         runtime: Runtime,
         codeUri: String,
         handler: String,
-        timeout: Int,
-        memorySize: Int,
+        timeout: Int = LambdaLimits.DEFAULT_TIMEOUT,
+        memorySize: Int = LambdaLimits.DEFAULT_MEMORY_SIZE,
         envVars: Map<String, String> = emptyMap()
     ) {
         if (!tempFile.exists()) {
-            tempFile.createFile()
+            Files.createFile(tempFile)
         }
         tempFile.writeText(
             yamlWriter {

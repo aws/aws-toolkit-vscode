@@ -16,7 +16,7 @@ import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.services.lambda.LambdaFunction
-import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
+import software.aws.toolkits.jetbrains.services.lambda.upload.steps.updateFunctionConfiguration
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.LambdaTelemetry
@@ -69,35 +69,35 @@ class UpdateFunctionConfigDialog(private val project: Project, private val initi
         val lambdaClient: LambdaClient = project.awsClient()
 
         ApplicationManager.getApplication().executeOnPooledThread {
-            LambdaFunctionCreator(lambdaClient).update(functionDetails)
-                .thenAccept {
-                    notifyInfo(
-                        title = message("lambda.service_name"),
-                        content = message("lambda.function.configuration_updated.notification", functionDetails.name)
-                    )
-                    runInEdt(ModalityState.any()) { close(OK_EXIT_CODE) }
-                    LambdaTelemetry.editFunction(project, update = true, result = Result.Succeeded)
-                }.exceptionally { error ->
-                    setErrorText(ExceptionUtil.getNonEmptyMessage(error, error.toString()))
-                    LambdaTelemetry.editFunction(project, update = true, result = Result.Failed)
-                    setOKButtonText(message("general.update_button"))
-                    isOKActionEnabled = true
-                    null
-                }
+            try {
+                lambdaClient.updateFunctionConfiguration((functionDetails))
+
+                notifyInfo(
+                    project = project,
+                    title = message("lambda.service_name"),
+                    content = message("lambda.function.configuration_updated.notification", functionDetails.name)
+                )
+                runInEdt(ModalityState.any()) { close(OK_EXIT_CODE) }
+                LambdaTelemetry.editFunction(project, update = true, result = Result.Succeeded)
+            } catch (e: Exception) {
+                setErrorText(ExceptionUtil.getNonEmptyMessage(e, ExceptionUtil.getNonEmptyMessage(e, e::class.java.simpleName)))
+                LambdaTelemetry.editFunction(project, update = true, result = Result.Failed)
+                setOKButtonText(message("general.update_button"))
+                isOKActionEnabled = true
+            }
         }
     }
 
-    private fun viewToFunctionDetails(): FunctionUploadDetails = FunctionUploadDetails(
+    private fun viewToFunctionDetails(): FunctionDetails = FunctionDetails(
         name = initialSettings.name,
-        description = view.description.text,
         handler = view.configSettings.handlerPanel.handler.text,
         iamRole = view.configSettings.iamRole.selected()!!,
         runtime = view.configSettings.runtime.selectedItem as Runtime,
+        description = view.description.text,
         envVars = view.configSettings.envVars.envVars,
         timeout = view.configSettings.timeoutSlider.value,
         memorySize = view.configSettings.memorySlider.value,
-        xrayEnabled = view.configSettings.xrayEnabled.isSelected,
-        samOptions = SamOptions()
+        xrayEnabled = view.configSettings.xrayEnabled.isSelected
     )
 
     override fun getHelpId(): String? = HelpIds.UPDATE_FUNCTION_CONFIGURATION_DIALOG.id

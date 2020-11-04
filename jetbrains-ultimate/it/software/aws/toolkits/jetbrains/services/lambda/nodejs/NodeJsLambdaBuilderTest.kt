@@ -15,7 +15,6 @@ import software.aws.toolkits.jetbrains.services.lambda.Lambda
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils.buildLambda
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils.buildLambdaFromTemplate
-import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils.packageLambda
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommon
 import software.aws.toolkits.jetbrains.utils.rules.NodeJsCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.addLambdaHandler
@@ -180,23 +179,6 @@ class NodeJsLambdaBuilderTest {
     }
 
     @Test
-    fun packageLambdaIntoZip() {
-        val subPath = "hello_world"
-        val fileName = "app"
-        val handlerName = "lambdaHandler"
-
-        val handler = projectRule.fixture.addLambdaHandler(subPath)
-        projectRule.fixture.addPackageJsonFile()
-
-        val lambdaPackage = sut.packageLambda(projectRule.module, handler, Runtime.NODEJS12_X, "$subPath/$fileName.$handlerName")
-        LambdaBuilderTestUtils.verifyZipEntries(
-            lambdaPackage,
-            "$subPath/$fileName.js",
-            "package.json"
-        )
-    }
-
-    @Test
     fun buildInContainer() {
         val subPath = "hello_world"
         val fileName = "app"
@@ -216,23 +198,6 @@ class NodeJsLambdaBuilderTest {
             builtLambda,
             "%PROJECT_ROOT%" to "/",
             "%BUILD_ROOT%" to "/"
-        )
-    }
-
-    @Test
-    fun packageInContainer() {
-        val subPath = "hello_world"
-        val fileName = "app"
-        val handlerName = "lambdaHandler"
-
-        val handler = projectRule.fixture.addLambdaHandler(subPath)
-        projectRule.fixture.addPackageJsonFile()
-
-        val lambdaPackage = sut.packageLambda(projectRule.module, handler, Runtime.NODEJS12_X, "$subPath/$fileName.$handlerName", true)
-        LambdaBuilderTestUtils.verifyZipEntries(
-            lambdaPackage,
-            "$subPath/$fileName.js",
-            "package.json"
         )
     }
 }

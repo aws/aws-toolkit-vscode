@@ -15,7 +15,7 @@ import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.util.Key
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
-import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
 import java.time.Instant
 
@@ -23,26 +23,22 @@ abstract class CliBasedStep : Step() {
     protected abstract fun constructCommandLine(context: Context): GeneralCommandLine
     protected open fun recordTelemetry(context: Context, startTime: Instant, result: Result) {}
 
-    final override fun execute(
-        context: Context,
-        messageEmitter: MessageEmitter,
-        ignoreCancellation: Boolean
-    ) {
+    final override fun execute(context: Context, messageEmitter: MessageEmitter, ignoreCancellation: Boolean) {
         val startTime = Instant.now()
         var result = Result.Succeeded
-        val commandLine = constructCommandLine(context)
-
-        LOG.debug { "Built command line: ${commandLine.commandLineString}" }
-
-        val processHandler = ProcessHandlerFactory.getInstance().createColoredProcessHandler(commandLine)
-        val processCapture = CapturingProcessAdapter()
-        processHandler.addProcessListener(processCapture)
-        processHandler.addProcessListener(createProcessEmitter(messageEmitter))
-        processHandler.startNotify()
-
-        monitorProcess(processHandler, context, ignoreCancellation)
-
         try {
+            val commandLine = constructCommandLine(context)
+
+            LOG.debug { "Built command line: ${commandLine.commandLineString}" }
+
+            val processHandler = ProcessHandlerFactory.getInstance().createColoredProcessHandler(commandLine)
+            val processCapture = CapturingProcessAdapter()
+            processHandler.addProcessListener(processCapture)
+            processHandler.addProcessListener(createProcessEmitter(messageEmitter))
+            processHandler.startNotify()
+
+            monitorProcess(processHandler, context, ignoreCancellation)
+
             if (!ignoreCancellation) {
                 context.throwIfCancelled()
             }
@@ -52,15 +48,13 @@ abstract class CliBasedStep : Step() {
                 return
             }
 
-            try {
-                handleErrorResult(processCapture.output.stdout, messageEmitter)
-            } catch (e: Exception) {
-                result = Result.Failed
-                throw e
-            }
+            handleErrorResult(processCapture.output.exitCode, processCapture.output.stdout, messageEmitter)
         } catch (e: ProcessCanceledException) {
-            LOG.warn(e) { "Step \"$stepName\" cancelled!" }
+            LOG.debug(e) { """Step "$stepName" cancelled!""" }
             result = Result.Cancelled
+        } catch (e: Exception) {
+            result = Result.Failed
+            throw e
         } finally {
             recordTelemetry(context, startTime, result)
         }
@@ -84,13 +78,15 @@ abstract class CliBasedStep : Step() {
         }
     }
 
-    protected abstract fun handleSuccessResult(output: String, messageEmitter: MessageEmitter, context: Context)
+    protected open fun handleSuccessResult(output: String, messageEmitter: MessageEmitter, context: Context) {}
 
     /**
      * Processes the command's stdout and throws an exception after the CLI exits with failure.
      * @return null if the failure should be ignored. You're probably doing something wrong if you want this.
      */
-    protected abstract fun handleErrorResult(output: String, messageEmitter: MessageEmitter): Nothing?
+    protected open fun handleErrorResult(exitCode: Int, output: String, messageEmitter: MessageEmitter): Nothing? {
+        throw IllegalStateException(message("general.execution.cli_error", exitCode))
+    }
 
     private companion object {
         const val WAIT_INTERVAL_MILLIS = 100L

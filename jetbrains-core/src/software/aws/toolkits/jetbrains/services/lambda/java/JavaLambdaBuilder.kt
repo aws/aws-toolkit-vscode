@@ -15,14 +15,19 @@ import software.aws.toolkits.jetbrains.core.plugins.pluginIsInstalledAndEnabled
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.resources.message
+import java.nio.file.Path
+import java.nio.file.Paths
 
 class JavaLambdaBuilder : LambdaBuilder() {
-    override fun handlerBaseDirectory(module: Module, handlerElement: PsiElement): String =
-        when {
+    override fun handlerBaseDirectory(module: Module, handlerElement: PsiElement): Path {
+        val buildFileDir = when {
             isGradle(module) -> getGradleProjectLocation(module)
             isMaven(module) -> getPomLocation(module)
             else -> throw IllegalStateException(message("lambda.build.java.unsupported_build_system", module.name))
         }
+
+        return Paths.get(buildFileDir)
+    }
 
     override fun additionalEnvironmentVariables(module: Module, samOptions: SamOptions): Map<String, String> {
         if (samOptions.buildInContainer) {
@@ -39,23 +44,17 @@ class JavaLambdaBuilder : LambdaBuilder() {
         }
     }
 
-    private fun isGradle(module: Module): Boolean = ExternalSystemModulePropertyManager.getInstance(module)
-        .getExternalSystemId() == "GRADLE"
+    private fun isGradle(module: Module): Boolean = ExternalSystemModulePropertyManager.getInstance(module).getExternalSystemId() == "GRADLE"
 
-    private fun getGradleProjectLocation(module: Module): String =
-        ExternalSystemApiUtil.getExternalProjectPath(module)
-            ?: throw IllegalStateException(message("lambda.build.unable_to_locate_project_root", module))
+    private fun getGradleProjectLocation(module: Module): String = ExternalSystemApiUtil.getExternalProjectPath(module)
+        ?: throw IllegalStateException(message("lambda.build.unable_to_locate_project_root", module))
 
-    private fun isMaven(module: Module): Boolean {
-        if (pluginIsInstalledAndEnabled("org.jetbrains.idea.maven")) {
-            return MavenProjectsManager.getInstance(module.project).isMavenizedModule(module)
-        }
-
-        return false
+    private fun isMaven(module: Module): Boolean = if (pluginIsInstalledAndEnabled("org.jetbrains.idea.maven")) {
+        MavenProjectsManager.getInstance(module.project).isMavenizedModule(module)
+    } else {
+        false
     }
 
-    private fun getPomLocation(module: Module): String =
-        MavenProjectsManager.getInstance(module.project).findProject(module)?.directory ?: throw IllegalStateException(
-            message("lambda.build.unable_to_locate_project_root", module)
-        )
+    private fun getPomLocation(module: Module): String = MavenProjectsManager.getInstance(module.project).findProject(module)?.directory
+        ?: throw IllegalStateException(message("lambda.build.unable_to_locate_project_root", module))
 }

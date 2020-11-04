@@ -9,14 +9,10 @@ import com.intellij.openapi.actionSystem.LangDataKeys
 import com.intellij.psi.PsiElement
 import com.intellij.psi.SmartPsiElementPointer
 import icons.AwsIcons
-import software.amazon.awssdk.services.lambda.model.Runtime
-import software.amazon.awssdk.services.lambda.model.TracingMode
 import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManager
 import software.aws.toolkits.jetbrains.services.cloudformation.CloudFormationTemplateIndex
-import software.aws.toolkits.jetbrains.services.iam.IamRole
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
 import software.aws.toolkits.jetbrains.services.lambda.runtime
-import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.utils.notifyNoActiveCredentialsError
 import software.aws.toolkits.resources.message
 
@@ -68,24 +64,4 @@ class CreateLambdaFunctionAction(
 
         e.presentation.isVisible = allowAction
     }
-}
-
-data class FunctionUploadDetails(
-    val name: String,
-    val handler: String,
-    val iamRole: IamRole,
-    val runtime: Runtime,
-    val description: String?,
-    val envVars: Map<String, String>,
-    val timeout: Int,
-    val memorySize: Int,
-    val xrayEnabled: Boolean,
-    val samOptions: SamOptions
-) {
-    val tracingMode: TracingMode =
-        if (xrayEnabled) {
-            TracingMode.ACTIVE
-        } else {
-            TracingMode.PASS_THROUGH
-        }
 }

@@ -13,7 +13,6 @@ import org.testng.annotations.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils.buildLambdaFromTemplate
-import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils.packageLambda
 import software.aws.toolkits.jetbrains.services.lambda.dotnet.element.RiderLambdaHandlerFakePsiElement
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
@@ -62,22 +61,5 @@ class DotNetLambdaBuilderTest : AwsReuseSolutionTestBase() {
         )
 
         assertThat(builtLambda.codeLocation).startsWith(project.solutionDirectory.toPath())
-    }
-
-    @Test
-    fun packageLambda() {
-        val handler = "HelloWorld::HelloWorld.Function::FunctionHandler"
-        val module = ModuleManager.getInstance(project).modules.first()
-
-        val handlerResolver = DotNetLambdaHandlerResolver()
-        val fieldId = handlerResolver.getFieldIdByHandlerName(project, handler)
-        val psiElement = RiderLambdaHandlerFakePsiElement(project, handler, fieldId).navigationElement
-
-        val packagedLambda = sut.packageLambda(module, psiElement, Runtime.DOTNETCORE2_1, handler)
-        LambdaBuilderTestUtils.verifyZipEntries(
-            packagedLambda,
-            "HelloWorld.dll",
-            "HelloWorld.pdb"
-        )
     }
 }

@@ -14,7 +14,6 @@ import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils.buildLambda
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils.buildLambdaFromTemplate
-import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilderTestUtils.packageLambda
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.setSamExecutableFromEnvironment
 import java.nio.file.Paths
@@ -147,19 +146,6 @@ class PythonLambdaBuilderTest {
     }
 
     @Test
-    fun packageLambdaIntoZip() {
-        val handler = addPythonHandler("hello_world")
-        addRequirementsFile("", "requests==2.20.0")
-
-        val lambdaPackage = sut.packageLambda(projectRule.module, handler, Runtime.PYTHON3_6, "hello_world/app.handle")
-        LambdaBuilderTestUtils.verifyZipEntries(
-            lambdaPackage,
-            "hello_world/app.py",
-            "requests/__init__.py"
-        )
-    }
-
-    @Test
     fun buildInContainer() {
         val module = projectRule.module
         val handler = addPythonHandler("hello_world")
@@ -175,19 +161,6 @@ class PythonLambdaBuilderTest {
             builtLambda,
             "%PROJECT_ROOT%" to "/",
             "%BUILD_ROOT%" to "/"
-        )
-    }
-
-    @Test
-    fun packageInContainer() {
-        val handler = addPythonHandler("hello_world")
-        addRequirementsFile("", "requests==2.20.0")
-
-        val lambdaPackage = sut.packageLambda(projectRule.module, handler, Runtime.PYTHON3_6, "hello_world/app.handle", true)
-        LambdaBuilderTestUtils.verifyZipEntries(
-            lambdaPackage,
-            "hello_world/app.py",
-            "requests/__init__.py"
         )
     }
 

@@ -24,14 +24,7 @@ import java.util.concurrent.atomic.AtomicReference
 abstract class CloudDebugCliStep : CliBasedStep() {
     protected fun getCli(context: Context): GeneralCommandLine = context.getRequiredAttribute(CloudDebugCliValidate.EXECUTABLE_ATTRIBUTE).getCommandLine()
 
-    override fun handleSuccessResult(output: String, messageEmitter: MessageEmitter, context: Context) {
-    }
-
-    /**
-     * Processes the command's stdout and throws an exception after the CLI exits with failure.
-     * @return null if the failure should be ignored. You're probably doing something wrong if you want this.
-     */
-    override fun handleErrorResult(output: String, messageEmitter: MessageEmitter): Nothing? {
+    override fun handleErrorResult(exitCode: Int, output: String, messageEmitter: MessageEmitter): Nothing? {
         if (output.isNotEmpty()) {
             messageEmitter.emitMessage("Error details:\n", true)
             CliOutputParser.parseErrorOutput(output)?.run {

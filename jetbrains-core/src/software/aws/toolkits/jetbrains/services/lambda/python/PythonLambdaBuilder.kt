@@ -11,15 +11,17 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
 import software.aws.toolkits.jetbrains.services.lambda.LambdaBuilder
 import software.aws.toolkits.resources.message
+import java.nio.file.Path
+import java.nio.file.Paths
 
 class PythonLambdaBuilder : LambdaBuilder() {
-    override fun handlerBaseDirectory(module: Module, handlerElement: PsiElement): String {
+    override fun handlerBaseDirectory(module: Module, handlerElement: PsiElement): Path {
         val handlerVirtualFile = ReadAction.compute<VirtualFile, Throwable> {
             handlerElement.containingFile?.virtualFile
                 ?: throw IllegalArgumentException("Handler file must be backed by a VirtualFile")
         }
 
-        return getBaseDirectory(module.project, handlerVirtualFile).path
+        return Paths.get(getBaseDirectory(module.project, handlerVirtualFile).path)
     }
 
     private fun getBaseDirectory(project: Project, virtualFile: VirtualFile): VirtualFile {

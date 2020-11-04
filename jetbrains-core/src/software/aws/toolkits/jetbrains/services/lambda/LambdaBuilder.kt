@@ -12,9 +12,7 @@ import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.rootManager
-import com.intellij.openapi.util.io.FileUtil
 import com.intellij.psi.PsiElement
-import com.intellij.util.io.Compressor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.runBlocking
@@ -24,13 +22,12 @@ import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.getExecutable
 import software.aws.toolkits.jetbrains.services.PathMapping
-import software.aws.toolkits.jetbrains.services.lambda.LambdaLimits.DEFAULT_MEMORY_SIZE
-import software.aws.toolkits.jetbrains.services.lambda.LambdaLimits.DEFAULT_TIMEOUT
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
 import software.aws.toolkits.jetbrains.services.lambda.sam.samBuildCommand
 import software.aws.toolkits.resources.message
+import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
@@ -39,12 +36,12 @@ abstract class LambdaBuilder {
     /**
      * Returns the base directory of the Lambda handler
      */
-    abstract fun handlerBaseDirectory(module: Module, handlerElement: PsiElement): String
+    abstract fun handlerBaseDirectory(module: Module, handlerElement: PsiElement): Path
 
     /**
      * Returns the build directory of the project. Create this if it doesn't exist yet.
      */
-    protected open fun getBuildDirectory(module: Module): Path {
+    open fun getBuildDirectory(module: Module): Path {
         val contentRoot = module.rootManager.contentRoots.firstOrNull()
             ?: throw IllegalStateException(message("lambda.build.module_with_no_content_root", module.name))
         return Paths.get(contentRoot.path, ".aws-sam", "build")
@@ -64,7 +61,9 @@ abstract class LambdaBuilder {
         samOptions: SamOptions,
         onStart: (ProcessHandler) -> Unit = {}
     ): BuiltLambda {
-        val baseDir = handlerBaseDirectory(module, handlerElement)
+        val baseDir = handlerBaseDirectory(module, handlerElement).toString()
+        val buildDir = getBuildDirectory(module)
+        Files.createDirectories(buildDir)
 
         val customTemplate = getBuildDirectory(module).resolve("template.yaml")
 
@@ -150,23 +149,7 @@ abstract class LambdaBuilder {
         }
     }
 
-    fun packageLambda(
-        module: Module,
-        handlerElement: PsiElement,
-        handler: String,
-        runtime: Runtime,
-        samOptions: SamOptions,
-        onStart: (ProcessHandler) -> Unit = {}
-    ): Path {
-        val builtLambda = buildLambda(module, handlerElement, handler, runtime, DEFAULT_TIMEOUT, DEFAULT_MEMORY_SIZE, emptyMap(), samOptions, onStart)
-        val zipLocation = FileUtil.createTempFile("builtLambda", "zip", true)
-        Compressor.Zip(zipLocation).use {
-            it.addDirectory(builtLambda.codeLocation.toFile())
-        }
-        return zipLocation.toPath()
-    }
-
-    protected open fun additionalEnvironmentVariables(module: Module, samOptions: SamOptions): Map<String, String> = emptyMap()
+    open fun additionalEnvironmentVariables(module: Module, samOptions: SamOptions): Map<String, String> = emptyMap()
 
     companion object : RuntimeGroupExtensionPointObject<LambdaBuilder>(ExtensionPointName("aws.toolkit.lambda.builder"))
 }

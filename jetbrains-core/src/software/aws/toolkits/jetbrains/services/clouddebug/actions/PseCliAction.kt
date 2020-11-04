@@ -45,7 +45,7 @@ import software.aws.toolkits.jetbrains.services.ecs.EcsClusterNode
 import software.aws.toolkits.jetbrains.services.ecs.EcsServiceNode
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources.describeService
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources.listServiceArns
-import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
+import software.aws.toolkits.jetbrains.utils.execution.steps.DefaultMessageEmitter
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
@@ -76,7 +76,7 @@ abstract class PseCliAction(val project: Project, val actionName: String, privat
                         "",
                         System.currentTimeMillis()
                     )
-                    val messageEmitter = MessageEmitter.createRoot(buildViewManager, actionName)
+                    val messageEmitter = DefaultMessageEmitter.createRoot(buildViewManager, actionName)
                     buildViewManager.onEvent(actionName, StartBuildEventImpl(descriptor, ""))
 
                     val toolWindowManager = ToolWindowManager.getInstance(project)

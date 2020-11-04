@@ -10,7 +10,6 @@ import com.intellij.psi.PsiElement
 import com.intellij.util.io.isFile
 import org.assertj.core.api.Assertions.assertThat
 import software.amazon.awssdk.services.lambda.model.Runtime
-import software.aws.toolkits.core.utils.zipEntries
 import software.aws.toolkits.jetbrains.services.PathMapping
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamOptions
 import java.nio.file.Files
@@ -43,19 +42,6 @@ object LambdaBuilderTestUtils {
         return this.buildLambdaFromTemplate(module, template, logicalId, samOptions)
     }
 
-    fun LambdaBuilder.packageLambda(
-        module: Module,
-        handlerElement: PsiElement,
-        runtime: Runtime,
-        handler: String,
-        useContainer: Boolean = false
-    ): Path {
-        val samOptions = SamOptions()
-        samOptions.buildInContainer = useContainer
-
-        return this.packageLambda(module, handlerElement, handler, runtime, samOptions)
-    }
-
     fun verifyEntries(builtLambda: BuiltLambda, vararg entries: String) {
         val basePath = builtLambda.codeLocation
         Files.walk(builtLambda.codeLocation).use {
@@ -64,10 +50,6 @@ object LambdaBuilderTestUtils {
                 .toList()
             assertThat(lambdaEntries).containsAll(entries.toList())
         }
-    }
-
-    fun verifyZipEntries(lambdaZip: Path, vararg entries: String) {
-        assertThat(zipEntries(lambdaZip)).containsAll(entries.toList())
     }
 
     fun verifyPathMappings(module: Module, builtLambda: BuiltLambda, vararg mappings: Pair<String, String>) {

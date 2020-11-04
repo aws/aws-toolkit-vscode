@@ -21,12 +21,12 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.progress.ProcessCanceledException
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
-import software.aws.toolkits.jetbrains.services.clouddebug.execution.steps.RootStep
+import software.aws.toolkits.jetbrains.services.clouddebug.execution.steps.CloudDebugWorkflow
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.steps.SetUpPortForwarding
 import software.aws.toolkits.jetbrains.services.clouddebug.execution.steps.StopApplications
 import software.aws.toolkits.jetbrains.services.ecs.execution.EcsServiceCloudDebuggingRunSettings
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
-import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
+import software.aws.toolkits.jetbrains.utils.execution.steps.DefaultMessageEmitter
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.ClouddebugTelemetry
 import software.aws.toolkits.telemetry.Result
@@ -55,12 +55,12 @@ class CloudDebugRunState(
             }
         )
 
-        val rootStep = RootStep(settings, environment)
+        val rootStep = CloudDebugWorkflow(settings, environment)
         val context = Context(project)
         val processHandler = CloudDebugProcessHandler(context)
 
         ApplicationManager.getApplication().executeOnPooledThread {
-            val messageEmitter = MessageEmitter.createRoot(buildView, runConfigId())
+            val messageEmitter = DefaultMessageEmitter.createRoot(buildView, runConfigId())
             var result = Result.Succeeded
             try {
                 startRunConfiguration(descriptor, buildView)

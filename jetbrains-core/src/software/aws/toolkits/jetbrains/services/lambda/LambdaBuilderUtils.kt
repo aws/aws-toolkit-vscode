@@ -24,7 +24,6 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.util.Key
 import software.aws.toolkits.resources.message
-import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 
@@ -44,25 +43,6 @@ object LambdaBuilderUtils {
                 request,
                 BuildProcessListener(request, buildViewManager)
             )
-        }
-    }
-
-    fun packageAndReport(
-        module: Module,
-        runtimeGroup: RuntimeGroup,
-        request: PackageLambdaFromHandler,
-        lambdaBuilder: LambdaBuilder = LambdaBuilder.getInstance(runtimeGroup)
-    ): CompletionStage<Path> {
-        val buildViewManager = ServiceManager.getService(module.project, BuildViewManager::class.java)
-
-        return runSamBuildInBackground(buildViewManager, module, request) {
-            lambdaBuilder.packageLambda(
-                module,
-                request.handlerElement,
-                request.handler,
-                request.runtime,
-                request.samOptions
-            ) { it.addProcessListener(BuildProcessListener(request, buildViewManager)) }
         }
     }
 
