@@ -4,10 +4,12 @@
  */
 
 import * as fs from 'fs'
-// TODO: Move off of deprecated `request` to `got` or similar modern library.
-import * as request from 'request'
+import { default as got, Response } from 'got'
+import * as stream from 'stream'
+import { promisify } from 'util'
 import { getLogger, Logger } from '../logger'
 import { ResourceFetcher } from './resourcefetcher'
+const pipeline = promisify(stream.pipeline)
 
 export class HttpResourceFetcher implements ResourceFetcher {
     private readonly logger: Logger = getLogger()
@@ -26,19 +28,25 @@ export class HttpResourceFetcher implements ResourceFetcher {
     ) {}
 
     /**
-     * Returns the contents of the resource, or undefined if the resource could not be retrieved.
+     * Returns the contents of the resource, or undefined if the resource could not be retrieved or if it
+     * is piped somewhere else
      */
     public async get(): Promise<string | undefined> {
         try {
             this.logger.verbose(`Loading ${this.logText()}`)
 
-            const contents = (await this.getResponseFromGetRequest()).body
-
+            let response: Response<string> | undefined = undefined
+            if (this.params.pipeLocation) {
+                await pipeline(got.stream(this.url), fs.createWriteStream(this.params.pipeLocation))
+            } else {
+                response = await got(this.url)
+            }
             this.logger.verbose(`Finished loading ${this.logText()}`)
-
-            return contents
+            return response?.body
         } catch (err) {
-            this.logger.error(`Error loading ${this.logText()}: %O`, err as Error)
+            // only get the code as to keep the url private. Some AWS APIs use presigned links
+            // which we don't want to print to output
+            this.logger.error(`Error loading ${this.logText()}: %O`, err?.code)
 
             return undefined
         }
@@ -46,22 +54,5 @@ export class HttpResourceFetcher implements ResourceFetcher {
 
     private logText(): string {
         return this.params.showUrl ? this.url : this.params.friendlyName ?? 'resource from URL'
-    }
-
-    private async getResponseFromGetRequest(): Promise<request.Response> {
-        return new Promise<request.Response>((resolve, reject) => {
-            const call = request(this.url, (err, response, body) => {
-                if (err) {
-                    // swallow error to keep URL private
-                    // some AWS APIs use presigned links (e.g. Lambda.getFunction); showing these represent a securty concern.
-                    reject({ code: err.code })
-                }
-                resolve(response)
-            })
-
-            if (this.params.pipeLocation) {
-                call.pipe(fs.createWriteStream(this.params.pipeLocation))
-            }
-        })
     }
 }
