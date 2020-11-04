@@ -9,6 +9,7 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.stub
 import com.nhaarman.mockitokotlin2.verify
 import kotlinx.coroutines.runBlocking
@@ -36,7 +37,6 @@ import software.amazon.awssdk.services.s3.model.ObjectIdentifier
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.amazon.awssdk.services.s3.model.PutObjectResponse
 import software.aws.toolkits.core.region.AwsRegion
-import software.aws.toolkits.core.utils.delegateMock
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.MockAwsConnectionManager.ProjectAccountSettingsManagerRule
@@ -136,7 +136,7 @@ class S3VirtualBucketTest {
                 .build()
         }
 
-        val testFile = delegateMock<VirtualFile> { on { name } doReturn "TestFile" }
+        val testFile = mock<VirtualFile> { on { name } doReturn "TestFile" }
         testFile.stub { on { length } doReturn 341 }
         testFile.stub { on { inputStream } doReturn ByteArrayInputStream("Hello".toByteArray()) }
 

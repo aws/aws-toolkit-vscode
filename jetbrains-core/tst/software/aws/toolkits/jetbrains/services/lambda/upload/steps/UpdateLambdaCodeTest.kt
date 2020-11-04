@@ -14,6 +14,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.LambdaClient
+import software.amazon.awssdk.services.lambda.model.GetFunctionConfigurationRequest
+import software.amazon.awssdk.services.lambda.model.GetFunctionConfigurationResponse
+import software.amazon.awssdk.services.lambda.model.LastUpdateStatus
 import software.amazon.awssdk.services.lambda.model.UpdateFunctionCodeRequest
 import software.amazon.awssdk.services.lambda.model.UpdateFunctionCodeResponse
 import software.amazon.awssdk.services.lambda.model.UpdateFunctionConfigurationRequest
@@ -73,6 +76,9 @@ class UpdateLambdaCodeTest {
         val lambdaClient = clientManagerRule.create<LambdaClient>().stub {
             on { updateFunctionCode(codeRequestCaptor.capture()) } doReturn UpdateFunctionCodeResponse.builder().build()
             on { updateFunctionConfiguration(configRequestCaptor.capture()) } doReturn UpdateFunctionConfigurationResponse.builder().build()
+            on { getFunctionConfiguration(any<GetFunctionConfigurationRequest>()) } doReturn GetFunctionConfigurationResponse.builder()
+                .lastUpdateStatus(LastUpdateStatus.SUCCESSFUL)
+                .build()
         }
         val functionName = aString()
 

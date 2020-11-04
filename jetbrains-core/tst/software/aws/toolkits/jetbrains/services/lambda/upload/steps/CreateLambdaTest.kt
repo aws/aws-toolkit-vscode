@@ -12,9 +12,12 @@ import com.nhaarman.mockitokotlin2.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
+import software.amazon.awssdk.http.SdkHttpResponse
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.CreateFunctionRequest
 import software.amazon.awssdk.services.lambda.model.CreateFunctionResponse
+import software.amazon.awssdk.services.lambda.model.GetFunctionRequest
+import software.amazon.awssdk.services.lambda.model.GetFunctionResponse
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
@@ -104,6 +107,11 @@ class CreateLambdaTest {
         val requestCaptor = argumentCaptor<CreateFunctionRequest>()
         val lambdaClient = clientManagerRule.create<LambdaClient>().stub {
             on { createFunction(requestCaptor.capture()) } doReturn CreateFunctionResponse.builder().functionArn("arn of ${details.name}").build()
+            on { getFunction(any<GetFunctionRequest>()) } doReturn with(GetFunctionResponse.builder()) {
+                configuration { it.functionArn("arn of ${details.name}") }
+                sdkHttpResponse(SdkHttpResponse.builder().statusCode(200).build()) // waiters validate the status code
+                build()
+            }
         }
 
         val context = Context(projectRule.project)

@@ -21,7 +21,7 @@ import software.amazon.awssdk.services.cognitoidentity.model.GetCredentialsForId
 import software.amazon.awssdk.services.cognitoidentity.model.GetIdRequest
 import software.amazon.awssdk.services.cognitoidentity.model.GetIdResponse
 import software.aws.toolkits.core.telemetry.CachedIdentityStorage
-import software.aws.toolkits.core.utils.DelegateSdkConsumers
+import software.aws.toolkits.core.utils.delegateMock
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
@@ -30,7 +30,7 @@ class AwsCognitoCredentialsProviderTest {
     @JvmField
     val application = ApplicationRule()
 
-    private val cognitoClient = mock<CognitoIdentityClient>(defaultAnswer = DelegateSdkConsumers())
+    private val cognitoClient = delegateMock<CognitoIdentityClient>()
     private val storage = mock<CachedIdentityStorage>()
     private val getCredentialsRequestCaptor = argumentCaptor<GetCredentialsForIdentityRequest>()
     private val getIdRequestCaptor = argumentCaptor<GetIdRequest>()

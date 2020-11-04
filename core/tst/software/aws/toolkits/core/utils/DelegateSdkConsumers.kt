@@ -8,6 +8,7 @@ import com.nhaarman.mockitokotlin2.withSettings
 import org.mockito.Mockito
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import software.amazon.awssdk.core.SdkClient
 import software.amazon.awssdk.core.SdkRequest
 import kotlin.reflect.full.isSubclassOf
 
@@ -19,27 +20,34 @@ import kotlin.reflect.full.isSubclassOf
  *
  * This will handle "simple" methods that they generate as well such as ListBuckets that takes 0 arguments.
  */
-class DelegateSdkConsumers : Answer<Any> {
+class DelegateSdkConsumers(private val sdkClass: Class<*>) : Answer<Any> {
     override fun answer(invocation: InvocationOnMock): Any? {
         val method = invocation.method
-        return if (method.isDefault &&
-            method?.parameters?.getOrNull(0)?.type?.kotlin?.isSubclassOf(SdkRequest::class) != true &&
-            method.name !in setOf("utilities", "waiter") // Never call the real methods they use to get to their helper classes since it always throws
-        ) {
+        return if (method.name == "waiter") {
+            createWaiter(invocation.method.returnType, invocation)
+        } else if (method.isDefault && method?.parameters?.getOrNull(0)?.type?.kotlin?.isSubclassOf(SdkRequest::class) != true) {
             invocation.callRealMethod()
         } else {
             Mockito.RETURNS_DEFAULTS.answer(invocation)
         }
     }
+
+    private fun createWaiter(waiterType: Class<*>, invocation: InvocationOnMock): Any? {
+        val builder = waiterType.getDeclaredMethod("builder").invoke(null)
+        with(builder::class.java) {
+            getDeclaredMethod("client", sdkClass).invoke(builder, invocation.mock)
+            return getDeclaredMethod("build").invoke(builder)
+        }
+    }
 }
 
-inline fun <reified T : Any> delegateMock(): T = Mockito.mock(
+inline fun <reified T : SdkClient> delegateMock(): T = Mockito.mock(
     T::class.java,
     withSettings(
-        defaultAnswer = DelegateSdkConsumers()
+        defaultAnswer = DelegateSdkConsumers(T::class.java)
     )
 )
 
-inline fun <reified T : Any> delegateMock(stubbing: KStubbing<T>.(T) -> Unit): T = delegateMock<T>().apply {
+inline fun <reified T : SdkClient> delegateMock(stubbing: KStubbing<T>.(T) -> Unit): T = delegateMock<T>().apply {
     KStubbing(this).stubbing(this)
 }

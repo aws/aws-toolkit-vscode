@@ -4,13 +4,13 @@
 package software.aws.toolkits.jetbrains.services.lambda.upload.steps
 
 import software.amazon.awssdk.services.lambda.LambdaClient
-import software.amazon.awssdk.services.lambda.model.CreateFunctionRequest
 import software.aws.toolkits.core.utils.AttributeBagKey
 import software.aws.toolkits.jetbrains.services.lambda.upload.FunctionDetails
 import software.aws.toolkits.jetbrains.services.lambda.upload.steps.PackageLambda.Companion.UPLOADED_CODE_LOCATION
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
 import software.aws.toolkits.jetbrains.utils.execution.steps.MessageEmitter
 import software.aws.toolkits.jetbrains.utils.execution.steps.Step
+import software.aws.toolkits.jetbrains.utils.response
 import software.aws.toolkits.resources.message
 
 class CreateLambda(private val lambdaClient: LambdaClient, private val details: FunctionDetails) : Step() {
@@ -19,29 +19,31 @@ class CreateLambda(private val lambdaClient: LambdaClient, private val details: 
     override fun execute(context: Context, messageEmitter: MessageEmitter, ignoreCancellation: Boolean) {
         val codeLocation = context.getRequiredAttribute(UPLOADED_CODE_LOCATION)
 
-        val req = with(CreateFunctionRequest.builder()) {
-            handler(details.handler)
-            functionName(details.name)
-            role(details.iamRole.arn)
-            runtime(details.runtime)
-            description(details.description)
-            timeout(details.timeout)
-            memorySize(details.memorySize)
-            code { code ->
+        lambdaClient.createFunction {
+            it.functionName(details.name)
+            it.description(details.description)
+            it.handler(details.handler)
+            it.role(details.iamRole.arn)
+            it.runtime(details.runtime)
+            it.timeout(details.timeout)
+            it.memorySize(details.memorySize)
+            it.code { code ->
                 code.s3Bucket(codeLocation.bucket)
                 code.s3Key(codeLocation.key)
                 code.s3ObjectVersion(codeLocation.version)
             }
-            environment {
-                it.variables(details.envVars)
+            it.environment { env ->
+                env.variables(details.envVars)
             }
-            tracingConfig {
-                it.mode(details.tracingMode)
+            it.tracingConfig { tracing ->
+                tracing.mode(details.tracingMode)
             }
-            build()
         }
 
-        context.putAttribute(FUNCTION_ARN, lambdaClient.createFunction(req).functionArn())
+        messageEmitter.emitMessage(message("lambda.workflow.update_code.wait_for_stable"), isError = false)
+        val response = lambdaClient.waiter().waitUntilFunctionExists() { it.functionName(details.name) }.response()
+
+        context.putAttribute(FUNCTION_ARN, response.configuration().functionArn())
     }
 
     companion object {

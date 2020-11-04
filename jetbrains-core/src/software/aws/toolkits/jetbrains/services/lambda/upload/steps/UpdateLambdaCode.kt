@@ -28,5 +28,8 @@ class UpdateLambdaCode(private val lambdaClient: LambdaClient, private val funct
                 it.handler(updatedHandler)
             }
         }
+
+        messageEmitter.emitMessage(message("lambda.workflow.update_code.wait_for_stable"), isError = false)
+        lambdaClient.waiter().waitUntilFunctionUpdated { it.functionName(functionName) }
     }
 }
