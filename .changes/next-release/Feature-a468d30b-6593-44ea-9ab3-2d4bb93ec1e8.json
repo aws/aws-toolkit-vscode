@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "The amount of CloudWatch Logs entries retrieved per request is now configurable."
+}

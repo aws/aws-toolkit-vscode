@@ -14,7 +14,14 @@ import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtili
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
-import { MultiStepWizard, WizardContext, WizardStep } from '../../shared/wizards/multiStepWizard'
+import {
+    MultiStepWizard,
+    WIZARD_GOBACK,
+    WIZARD_TERMINATE,
+    WizardContext,
+    wizardContinue,
+    WizardStep,
+} from '../../shared/wizards/multiStepWizard'
 import { validateDocumentName } from '../util/validateDocumentName'
 const localize = nls.loadMessageBundle()
 
@@ -95,7 +102,7 @@ export class PublishSSMDocumentWizard extends MultiStepWizard<PublishSSMDocument
     private readonly REGION: WizardStep = async () => {
         this.region = await this.context.promptUserForRegion(this.region)
 
-        return this.region ? this.PUBLISH_ACTION : undefined
+        return this.region ? wizardContinue(this.PUBLISH_ACTION) : WIZARD_TERMINATE
     }
 
     private readonly PUBLISH_ACTION: WizardStep = async () => {
@@ -103,15 +110,15 @@ export class PublishSSMDocumentWizard extends MultiStepWizard<PublishSSMDocument
 
         switch (this.publishAction) {
             case PublishSSMDocumentAction.QuickCreate: {
-                return this.NEW_SSM_DOCUMENT_NAME
+                return wizardContinue(this.NEW_SSM_DOCUMENT_NAME)
             }
 
             case PublishSSMDocumentAction.QuickUpdate: {
-                return this.EXISTING_SSM_DOCUMENT_NAME
+                return wizardContinue(this.EXISTING_SSM_DOCUMENT_NAME)
             }
 
             default: {
-                return this.REGION
+                return WIZARD_GOBACK
             }
         }
     }
@@ -119,13 +126,13 @@ export class PublishSSMDocumentWizard extends MultiStepWizard<PublishSSMDocument
     private readonly NEW_SSM_DOCUMENT_TYPE: WizardStep = async () => {
         this.documentType = await this.context.promptUserForDocumentType()
 
-        return this.documentType ? undefined : this.PUBLISH_ACTION
+        return this.documentType ? WIZARD_TERMINATE : WIZARD_GOBACK
     }
 
     private readonly NEW_SSM_DOCUMENT_NAME: WizardStep = async () => {
         this.name = await this.context.promptUserForDocumentName()
 
-        return this.name ? this.NEW_SSM_DOCUMENT_TYPE : this.PUBLISH_ACTION
+        return this.name ? wizardContinue(this.NEW_SSM_DOCUMENT_TYPE) : WIZARD_GOBACK
     }
 
     private readonly EXISTING_SSM_DOCUMENT_NAME: WizardStep = async () => {
@@ -134,7 +141,7 @@ export class PublishSSMDocumentWizard extends MultiStepWizard<PublishSSMDocument
         await this.context.loadSSMDocument(this.region ?? '', this.documentType)
         this.name = await this.context.promptUserForDocumentToUpdate(this.region ?? '')
 
-        return this.name ? undefined : this.PUBLISH_ACTION
+        return this.name ? WIZARD_TERMINATE : WIZARD_GOBACK
     }
 }
 

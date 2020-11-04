@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import * as moment from 'moment'
 import * as picker from '../../shared/ui/picker'
-import { MultiStepWizard, WizardStep } from '../../shared/wizards/multiStepWizard'
+import { MultiStepWizard, WIZARD_RETRY, WIZARD_TERMINATE, WizardStep } from '../../shared/wizards/multiStepWizard'
 import { LogGroupNode } from '../explorer/logGroupNode'
 import { CloudWatchLogs } from 'aws-sdk'
 import { ext } from '../../shared/extensionGlobals'
@@ -62,7 +62,11 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
             orderBy: 'LastEventTime',
             descending: true,
         }
-        const qp = picker.createQuickPick({})
+        const qp = picker.createQuickPick({
+            options: {
+                title: localize('aws.cloudWatchLogs.viewLogStream.workflow.prompt', 'Select a log stream'),
+            },
+        })
         const populator = new IteratorTransformer(
             () =>
                 getPaginatedAwsCallIter({
@@ -153,11 +157,11 @@ export class SelectLogStreamWizard extends MultiStepWizard<SelectLogStreamRespon
 
         // retry on error
         if (returnVal === picker.IteratingQuickPickController.ERROR_ITEM.label) {
-            return this.SELECT_STREAM
+            return WIZARD_RETRY
         }
 
         this.response.logStreamName = returnVal
 
-        return undefined
+        return WIZARD_TERMINATE
     }
 }

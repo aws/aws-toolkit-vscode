@@ -10,19 +10,82 @@ import * as os from 'os'
 import * as vscode from 'vscode'
 
 import * as picker from '../../shared/ui/picker'
+import { getLogger } from '../logger/logger'
 
 export interface WizardStep {
-    (): Thenable<WizardStep | undefined>
+    (): Thenable<Transition>
+}
+
+export interface Transition {
+    nextState: WizardNextState
+    nextStep?: WizardStep
+}
+
+export enum WizardNextState {
+    /** Instruct the wizard to continue to a new step. Consider using the helper function {@link wizardContinue} instead. */
+    CONTINUE,
+    /** Instruct the wizard to retry the current step. Consider using the const {@link WIZARD_RETRY} instead. */
+    RETRY,
+    /** Instruct the wizard to go back to the previous step. Consider using the const{@link WIZARD_GOBACK} instead. */
+    GO_BACK,
+    /** Instruct the wizard to terminate. Consider using the const {@link WIZARD_TERMINATE} instead. */
+    TERMINATE,
+}
+
+export const WIZARD_RETRY: Transition = {
+    nextState: WizardNextState.RETRY,
+}
+
+export const WIZARD_TERMINATE: Transition = {
+    nextState: WizardNextState.TERMINATE,
+}
+
+export const WIZARD_GOBACK: Transition = {
+    nextState: WizardNextState.GO_BACK,
+}
+
+export function wizardContinue(step: WizardStep): Transition {
+    return {
+        nextState: WizardNextState.CONTINUE,
+        nextStep: step,
+    }
 }
 
 export abstract class MultiStepWizard<TResult> {
     protected constructor() {}
 
     public async run(): Promise<TResult | undefined> {
-        let step: WizardStep | undefined = this.startStep
+        let steps: WizardStep[] = [this.startStep]
 
-        while (step) {
-            step = await step()
+        // in a wizard, it only make sense to go forwards to an arbitrary step, or backwards in history
+        while (steps.length > 0) {
+            const step = steps[steps.length - 1]
+            // non-terminal if we still have steps
+            if (step === undefined) {
+                getLogger().warn('encountered an undefined step, terminating wizard')
+                break
+            }
+            const result = await step()
+
+            switch (result.nextState) {
+                case WizardNextState.TERMINATE:
+                    // success/failure both handled by getResult()
+                    steps = []
+                    break
+                case WizardNextState.RETRY:
+                    // retry the current step
+                    break
+                case WizardNextState.GO_BACK:
+                    // let history unwind
+                    steps.pop()
+                    break
+                case WizardNextState.CONTINUE:
+                    // push the next step to run
+                    steps.push(result.nextStep!)
+                    break
+                default:
+                    throw new Error(`unhandled transition in MultiStepWizard: ${result.nextState}`)
+            }
         }
 
         return this.getResult()
