@@ -38,8 +38,7 @@ fun createLambdaWorkflow(
 /**
  * Creates a [StepWorkflow] for updating a Lambda's code and optionally its handler
  *
- * @param updatedFunctionDetails If provided, we will call update function configuration with the provided values.
- * This enables changing a handler at the same time. TODO: Can we build a better way that only has us passing handler?
+ * @param updatedHandler If provided, we will call update function configuration with the provided handler.
  */
 fun updateLambdaCodeWorkflow(
     project: Project,
@@ -49,7 +48,7 @@ fun updateLambdaCodeWorkflow(
     buildEnvVars: Map<String, String>,
     codeStorageLocation: String,
     samOptions: SamOptions,
-    updatedFunctionDetails: FunctionDetails?
+    updatedHandler: String?
 ): StepWorkflow {
     val (dummyTemplate, dummyLogicalId) = createTemporaryTemplate(buildDir, codeDetails)
     val packagedTemplate = buildDir.resolve("packaged-temp-template.yaml")
@@ -58,7 +57,7 @@ fun updateLambdaCodeWorkflow(
     return StepWorkflow(
         BuildLambda(dummyTemplate, buildDir, buildEnvVars, samOptions),
         PackageLambda(dummyTemplate, packagedTemplate, dummyLogicalId, codeStorageLocation, envVars),
-        UpdateLambdaCode(project.awsClient(), functionName, updatedFunctionDetails)
+        UpdateLambdaCode(project.awsClient(), functionName, updatedHandler)
     )
 }
 

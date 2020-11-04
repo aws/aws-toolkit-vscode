@@ -64,17 +64,8 @@ class UpdateFunctionCodeDialog(private val project: Project, private val initial
         }
         FileDocumentManager.getInstance().saveAllDocuments()
 
-        val functionDetails = FunctionDetails(
-            name = initialSettings.name,
-            handler = view.handlerPanel.handler.text,
-            iamRole = initialSettings.role,
-            runtime = initialSettings.runtime,
-            description = initialSettings.description,
-            envVars = initialSettings.envVariables ?: emptyMap(),
-            timeout = initialSettings.timeout,
-            memorySize = initialSettings.memorySize,
-            xrayEnabled = initialSettings.xrayEnabled
-        )
+        val runtime = initialSettings.runtime
+        val handler = view.handlerPanel.handler.text
 
         val samOptions = SamOptions(
             buildInContainer = view.buildSettings.buildInContainerCheckbox.isSelected
@@ -82,15 +73,15 @@ class UpdateFunctionCodeDialog(private val project: Project, private val initial
 
         // TODO: Move this so we can share it with CreateFunctionDialog, but don't move it lower since passing PsiElement lower needs to go away since
         // it is causing customer complaints. We need to prompt for baseDir and try to infer it if we can but only as a default value...
-        val element = findPsiElementsForHandler(project, functionDetails.runtime, functionDetails.handler).first()
+        val element = findPsiElementsForHandler(project, runtime, handler).first()
         val module = ModuleUtil.findModuleForPsiElement(element) ?: throw IllegalStateException("Failed to locate module for $element")
         val lambdaBuilder = initialSettings.runtime.runtimeGroup?.let { LambdaBuilder.getInstanceOrNull(it) }
             ?: throw IllegalStateException("LambdaBuilder for ${initialSettings.runtime} not found")
 
         val codeDetails = CodeDetails(
             baseDir = lambdaBuilder.handlerBaseDirectory(module, element),
-            handler = functionDetails.handler,
-            runtime = initialSettings.runtime
+            handler = handler,
+            runtime = runtime
         )
 
         val s3Bucket = view.codeStorage.sourceBucket.selected() as String
@@ -102,7 +93,7 @@ class UpdateFunctionCodeDialog(private val project: Project, private val initial
             buildEnvVars = lambdaBuilder.additionalEnvironmentVariables(module, samOptions),
             codeStorageLocation = s3Bucket,
             samOptions = samOptions,
-            updatedFunctionDetails = functionDetails.takeIf { it.handler != initialSettings.handler }
+            updatedHandler = handler.takeIf { it != initialSettings.handler }
         )
 
         StepExecutor(project, message("lambda.workflow.update_code.name"), workflow, initialSettings.name).startExecution(

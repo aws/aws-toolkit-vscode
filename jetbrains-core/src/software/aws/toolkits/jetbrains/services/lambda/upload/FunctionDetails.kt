@@ -3,8 +3,10 @@
 
 package software.aws.toolkits.jetbrains.services.lambda.upload
 
+import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.lambda.model.TracingMode
+import software.amazon.awssdk.services.lambda.model.UpdateFunctionConfigurationResponse
 import software.aws.toolkits.jetbrains.services.iam.IamRole
 
 data class FunctionDetails(
@@ -24,4 +26,20 @@ data class FunctionDetails(
         } else {
             TracingMode.PASS_THROUGH
         }
+}
+
+fun LambdaClient.updateFunctionConfiguration(config: FunctionDetails): UpdateFunctionConfigurationResponse = this.updateFunctionConfiguration {
+    it.functionName(config.name)
+    it.description(config.description)
+    it.handler(config.handler)
+    it.role(config.iamRole.arn)
+    it.runtime(config.runtime)
+    it.timeout(config.timeout)
+    it.memorySize(config.memorySize)
+    it.environment { env ->
+        env.variables(config.envVars)
+    }
+    it.tracingConfig { tracing ->
+        tracing.mode(config.tracingMode)
+    }
 }

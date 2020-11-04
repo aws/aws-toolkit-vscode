@@ -14,15 +14,12 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import software.amazon.awssdk.services.lambda.LambdaClient
-import software.amazon.awssdk.services.lambda.model.Runtime
 import software.amazon.awssdk.services.lambda.model.UpdateFunctionCodeRequest
 import software.amazon.awssdk.services.lambda.model.UpdateFunctionCodeResponse
 import software.amazon.awssdk.services.lambda.model.UpdateFunctionConfigurationRequest
 import software.amazon.awssdk.services.lambda.model.UpdateFunctionConfigurationResponse
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
-import software.aws.toolkits.jetbrains.services.iam.IamRole
-import software.aws.toolkits.jetbrains.services.lambda.upload.FunctionDetails
 import software.aws.toolkits.jetbrains.services.lambda.upload.steps.PackageLambda.Companion.UploadedCode
 import software.aws.toolkits.jetbrains.utils.execution.steps.ConsoleMessageEmitter
 import software.aws.toolkits.jetbrains.utils.execution.steps.Context
@@ -82,21 +79,7 @@ class UpdateLambdaCodeTest {
         val context = Context(projectRule.project)
         context.putAttribute(PackageLambda.UPLOADED_CODE_LOCATION, codeLocation)
 
-        val functionDetails = handler?.let {
-            FunctionDetails(
-                name = functionName,
-                handler = handler,
-                iamRole = IamRole(aString()),
-                runtime = Runtime.JAVA8,
-                description = null,
-                envVars = emptyMap(),
-                timeout = 0,
-                memorySize = 0,
-                xrayEnabled = false
-            )
-        }
-
-        UpdateLambdaCode(lambdaClient, functionName, functionDetails).run(context, ConsoleMessageEmitter("UpdateLambdaCode"))
+        UpdateLambdaCode(lambdaClient, functionName, handler).run(context, ConsoleMessageEmitter("UpdateLambdaCode"))
 
         verify(lambdaClient).updateFunctionCode(any<UpdateFunctionCodeRequest>())
         with(codeRequestCaptor) {
