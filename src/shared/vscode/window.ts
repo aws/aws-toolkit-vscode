@@ -4,6 +4,12 @@
  */
 
 import * as vscode from 'vscode'
+import { ext } from '../extensionGlobals'
+
+interface ProgressEntry {
+    message?: string
+    increment?: number
+}
 
 /**
  * Components associated with {@link module:vscode.window}.
@@ -68,10 +74,7 @@ export interface Window {
      */
     withProgress<R>(
         options: vscode.ProgressOptions,
-        task: (
-            progress: vscode.Progress<{ message?: string; increment?: number }>,
-            token: vscode.CancellationToken
-        ) => Thenable<R>
+        task: (progress: vscode.Progress<ProgressEntry>, token: vscode.CancellationToken) => Thenable<R>
     ): Thenable<R>
 
     /**
@@ -118,14 +121,48 @@ class DefaultWindow implements Window {
         return vscode.window.showErrorMessage(...args)
     }
 
+    /**
+     * Wraps the `vscode.window.withProgress` functionality with functionality that also writes to the output channel.
+     * Params match `vscode.window.withProgress` API; documentation follows:
+     *
+     * Show progress in the editor. Progress is shown while running the given callback and while the promise it returned isn't resolved nor rejected. The location at which progress should show (and other details) is defined via the passed ProgressOptions.
+     *
+     *  @param task
+     *  A callback returning a promise. Progress state can be reported with the provided progress-object.
+     *
+     *  To report discrete progress, use increment to indicate how much work has been completed. Each call with a increment value will be summed up and reflected as overall progress until 100% is reached (a value of e.g. 10 accounts for 10% of work done). Note that currently only ProgressLocation.Notification is capable of showing discrete progress.
+     *
+     *  To monitor if the operation has been cancelled by the user, use the provided CancellationToken. Note that currently only ProgressLocation.Notification is supporting to show a cancel button to cancel the long running operation.
+     *
+     *  @return — The thenable the task-callback returned.
+     */
     public withProgress<R>(
         options: vscode.ProgressOptions,
-        task: (
-            progress: vscode.Progress<{ message?: string; increment?: number }>,
-            token: vscode.CancellationToken
-        ) => Thenable<R>
+        task: (progress: vscode.Progress<ProgressEntry>, token: vscode.CancellationToken) => Thenable<R>
     ): Thenable<R> {
-        return vscode.window.withProgress(options, task)
+        if (options.title) {
+            ext.outputChannel.appendLine(options.title)
+        }
+
+        // hijack the returned task to wrap progress with an output channel adapter
+        const newTask: (progress: vscode.Progress<ProgressEntry>, token: vscode.CancellationToken) => Thenable<R> = (
+            progress: vscode.Progress<ProgressEntry>,
+            token: vscode.CancellationToken
+        ) => {
+            const newProgress: vscode.Progress<ProgressEntry> = {
+                ...progress,
+                report: (value: ProgressEntry) => {
+                    if (value.message) {
+                        ext.outputChannel.appendLine(value.message)
+                    }
+                    progress.report(value)
+                },
+            }
+
+            return task(newProgress, token)
+        }
+
+        return vscode.window.withProgress(options, newTask)
     }
 
     public showOpenDialog(options: vscode.OpenDialogOptions): Thenable<vscode.Uri[] | undefined> {
