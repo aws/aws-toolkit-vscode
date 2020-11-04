@@ -46,7 +46,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
         } catch (err) {
             // only get the code as to keep the url private. Some AWS APIs use presigned links
             // which we don't want to print to output
-            this.logger.error(`Error loading ${this.logText()}: %O`, err?.code)
+            this.logger.error(`Error loading ${this.logText()}: %O`, err?.response?.statusCode)
 
             return undefined
         }
