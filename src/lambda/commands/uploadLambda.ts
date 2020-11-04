@@ -9,6 +9,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as AdmZip from 'adm-zip'
+import * as del from 'del'
 import * as fs from 'fs'
 import * as path from 'path'
 import { showConfirmationMessage } from '../../s3/util/messages'
@@ -21,7 +22,6 @@ import { getSamCliContext } from '../../shared/sam/cli/samCliContext'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { SamTemplateGenerator } from '../../shared/templates/sam/samTemplateGenerator'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../../shared/ui/picker'
-import { ExtensionDisposableFiles } from '../../shared/utilities/disposableFiles'
 import { Window } from '../../shared/vscode/window'
 import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
 import { getLambdaDetails } from '../utils'
@@ -213,10 +213,11 @@ async function runUploadLambdaWithSamBuild(
             cancellable: false,
         },
         async progress => {
+            let tempDir = ''
             try {
                 const invoker = getSamCliContext().invoker
 
-                const tempDir = await makeTemporaryToolkitFolder()
+                tempDir = await makeTemporaryToolkitFolder()
                 const templatePath = path.join(tempDir, 'template.yaml')
                 const resourceName = 'tempResource'
 
@@ -260,6 +261,10 @@ async function runUploadLambdaWithSamBuild(
                 getLogger().error('runUploadLambdaWithSamBuild failed: ', err.message)
 
                 return 'Failed'
+            } finally {
+                if (tempDir) {
+                    await del(tempDir, { force: true })
+                }
             }
         }
     )

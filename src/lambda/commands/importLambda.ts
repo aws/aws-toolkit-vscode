@@ -4,6 +4,7 @@
  */
 
 import * as AdmZip from 'adm-zip'
+import * as del from 'del'
 import * as fs from 'fs-extra'
 import * as _ from 'lodash'
 import * as path from 'path'
@@ -17,7 +18,6 @@ import { getLogger } from '../../shared/logger'
 import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
 import { createCodeAwsSamDebugConfig } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import * as telemetry from '../../shared/telemetry/telemetry'
-import { ExtensionDisposableFiles } from '../../shared/utilities/disposableFiles'
 import * as pathutils from '../../shared/utilities/pathUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
@@ -129,8 +129,9 @@ async function downloadAndUnzipLambda(
     lambda = ext.toolkitClientBuilder.createLambdaClient(functionNode.regionCode)
 ): Promise<void> {
     const functionArn = functionNode.configuration.FunctionArn!
+    let tempDir = ''
     try {
-        const tempFolder = await makeTemporaryToolkitFolder()
+        tempDir = await makeTemporaryToolkitFolder()
         const downloadLocation = path.join(tempFolder, 'function.zip')
 
         const response = await lambda.getFunction(functionArn)
@@ -170,6 +171,10 @@ async function downloadAndUnzipLambda(
         )
 
         throw new ImportError()
+    } finally {
+        if (tempDir) {
+            await del(tempDir, { force: true })
+        }
     }
 }
 

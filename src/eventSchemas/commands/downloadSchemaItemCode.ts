@@ -4,6 +4,7 @@
  */
 
 import * as nls from 'vscode-nls'
+import * as del from 'del'
 const localize = nls.loadMessageBundle()
 import { Schemas } from 'aws-sdk'
 import fs = require('fs')
@@ -283,36 +284,43 @@ export class CodeExtractor {
         zipContents: ArrayBuffer,
         request: SchemaCodeDownloadRequestDetails
     ): Promise<string | void> {
-        const fileName = `${request.schemaName}.${request.schemaVersion}.${request.language}.zip`
+        let codeZipDir = ''
+        try {
+            const fileName = `${request.schemaName}.${request.schemaVersion}.${request.language}.zip`
 
-        const codeZipDir = await makeTemporaryToolkitFolder()
+            codeZipDir = await makeTemporaryToolkitFolder()
 
-        const codeZipFile = path.join(codeZipDir, fileName)
-        const destinationDirectory = request.destinationDirectory.fsPath
+            const codeZipFile = path.join(codeZipDir, fileName)
+            const destinationDirectory = request.destinationDirectory.fsPath
 
-        //write binary data into a temp zip file in a temp directory
-        const zipContentsBinary = new Uint8Array(zipContents)
-        const fd = fs.openSync(codeZipFile, 'w')
-        fs.writeSync(fd, zipContentsBinary, 0, zipContentsBinary.byteLength, 0)
-        fs.closeSync(fd)
+            //write binary data into a temp zip file in a temp directory
+            const zipContentsBinary = new Uint8Array(zipContents)
+            const fd = fs.openSync(codeZipFile, 'w')
+            fs.writeSync(fd, zipContentsBinary, 0, zipContentsBinary.byteLength, 0)
+            fs.closeSync(fd)
 
-        let overwriteFiles: boolean = false
-        const collisionExist = this.checkFileCollisions(codeZipFile, destinationDirectory)
+            let overwriteFiles: boolean = false
+            const collisionExist = this.checkFileCollisions(codeZipFile, destinationDirectory)
 
-        if (collisionExist) {
-            overwriteFiles = await this.confirmOverwriteCollisions()
+            if (collisionExist) {
+                overwriteFiles = await this.confirmOverwriteCollisions()
+            }
+
+            const zip = new admZip(codeZipFile)
+            zip.extractAllTo(destinationDirectory, overwriteFiles)
+
+            const coreCodeFilePath = this.getCoreCodeFilePath(codeZipFile, request.schemaCoreCodeFileName)
+
+            if (coreCodeFilePath) {
+                return path.join(destinationDirectory, coreCodeFilePath)
+            }
+
+            return undefined
+        } finally {
+            if (codeZipDir) {
+                await del(codeZipDir, { force: true })
+            }
         }
-
-        const zip = new admZip(codeZipFile)
-        zip.extractAllTo(destinationDirectory, overwriteFiles)
-
-        const coreCodeFilePath = this.getCoreCodeFilePath(codeZipFile, request.schemaCoreCodeFileName)
-
-        if (coreCodeFilePath) {
-            return path.join(destinationDirectory, coreCodeFilePath)
-        }
-
-        return undefined
     }
 
     // Check if downloaded code hierarchy has collisions with the destination directory and display them in output channel
