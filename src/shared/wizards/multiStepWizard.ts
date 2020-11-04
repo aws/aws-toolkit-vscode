@@ -16,32 +16,36 @@ export interface WizardStep {
 }
 
 export interface Transition {
-    nextState: NextWizardState
+    nextState: WizardNextState
     nextStep?: WizardStep
 }
 
-export enum NextWizardState {
+export enum WizardNextState {
+    /** Instruct the wizard to continue to a new step. Consider using the helper function {@link wizardContinue} instead. */
     CONTINUE,
-    REPROMPT,
+    /** Instruct the wizard to retry the current step. Consider using the const {@link WIZARD_RETRY} instead. */
+    RETRY,
+    /** Instruct the wizard to go back to the previous step. Consider using the const{@link WIZARD_GOBACK} instead. */
     GO_BACK,
+    /** Instruct the wizard to terminate. Consider using the const {@link WIZARD_TERMINATE} instead. */
     TERMINATE,
 }
 
-export const WIZARD_REPROMPT: Transition = {
-    nextState: NextWizardState.REPROMPT,
+export const WIZARD_RETRY: Transition = {
+    nextState: WizardNextState.RETRY,
 }
 
 export const WIZARD_TERMINATE: Transition = {
-    nextState: NextWizardState.TERMINATE,
+    nextState: WizardNextState.TERMINATE,
 }
 
 export const WIZARD_GOBACK: Transition = {
-    nextState: NextWizardState.GO_BACK,
+    nextState: WizardNextState.GO_BACK,
 }
 
 export function wizardContinue(step: WizardStep): Transition {
     return {
-        nextState: NextWizardState.CONTINUE,
+        nextState: WizardNextState.CONTINUE,
         nextStep: step,
     }
 }
@@ -56,24 +60,24 @@ export abstract class MultiStepWizard<TResult> {
         while (steps.length > 0) {
             const step = steps[steps.length - 1]
             // non-terminal if we still have steps
-            if (!step) {
+            if (step === undefined) {
                 break
             }
             const result = await step()
 
             switch (result.nextState) {
-                case NextWizardState.TERMINATE:
+                case WizardNextState.TERMINATE:
                     // success/failure both handled by getResult()
                     steps = []
                     break
-                case NextWizardState.REPROMPT:
+                case WizardNextState.RETRY:
                     // retry the current step
                     break
-                case NextWizardState.GO_BACK:
+                case WizardNextState.GO_BACK:
                     // let history unwind
                     steps.pop()
                     break
-                case NextWizardState.CONTINUE:
+                case WizardNextState.CONTINUE:
                     // push the next step to run
                     steps.push(result.nextStep!)
                     break

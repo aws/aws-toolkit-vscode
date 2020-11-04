@@ -5,11 +5,13 @@
 
 import {
     MultiStepWizard,
-    WIZARD_REPROMPT,
+    WIZARD_RETRY,
     WIZARD_TERMINATE,
     WizardStep,
     wizardContinue,
     WIZARD_GOBACK,
+    WizardNextState,
+    Transition,
 } from '../../../shared/wizards/multiStepWizard'
 import * as sinon from 'sinon'
 import assert = require('assert')
@@ -42,6 +44,23 @@ describe('run', () => {
         sandbox.restore()
     })
 
+    it('handles undefined starting step', async () => {
+        sandbox.stub(mockWizard, 'startStep').value(undefined)
+
+        await mockWizard.run()
+    })
+
+    it('handles undefined steps', async () => {
+        const stub = sinon.stub()
+        stub.returns({
+            nextState: WizardNextState.CONTINUE,
+            nextStep: undefined,
+        } as Transition)
+        sandbox.stub(mockWizard, 'startStep').value(stub)
+
+        await mockWizard.run()
+    })
+
     describe('terminate', () => {
         it('works when there are no more steps', async () => {
             const stub = sinon.stub()
@@ -54,10 +73,10 @@ describe('run', () => {
         })
     })
 
-    describe('re-prompt', () => {
+    describe('retry', () => {
         it('repeats current step', async () => {
             const stub = sinon.stub()
-            stub.onFirstCall().returns(WIZARD_REPROMPT)
+            stub.onFirstCall().returns(WIZARD_RETRY)
             stub.onSecondCall().returns(WIZARD_TERMINATE)
             sandbox.stub(mockWizard, 'startStep').value(stub)
 
@@ -85,6 +104,7 @@ describe('run', () => {
             const branch1 = sinon.stub()
             const branch2 = sinon.stub()
             const step3 = sinon.stub()
+            // step1 -> branch1 -> step1 -> branch2 -> step3 -> branch2 -> step3 -> terminate
             step1.onFirstCall().returns(wizardContinue(branch1))
             step1.onSecondCall().returns(wizardContinue(branch2))
             branch1.returns(WIZARD_GOBACK)
@@ -94,7 +114,6 @@ describe('run', () => {
             sandbox.stub(mockWizard, 'startStep').value(step1)
             await mockWizard.run()
 
-            // step1 -> branch1 -> step1 -> branch2 -> step3 -> branch2 -> step3 -> terminate
             sinon.assert.callOrder(step1, branch1, step1, branch2, step3, branch2, step3)
         })
     })

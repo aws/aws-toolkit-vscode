@@ -21,7 +21,7 @@ import {
     MultiStepWizard,
     promptUserForLocation,
     WIZARD_GOBACK,
-    WIZARD_REPROMPT,
+    WIZARD_RETRY,
     WIZARD_TERMINATE,
     WizardContext,
     wizardContinue,
@@ -384,7 +384,7 @@ export class CreateNewSamAppWizard extends MultiStepWizard<CreateNewSamAppWizard
         this.template = await this.context.promptUserForTemplate(this.runtime!)
 
         if (this.template === repromptUserForTemplate) {
-            return WIZARD_REPROMPT
+            return WIZARD_RETRY
         }
         if (this.template === eventBridgeStarterAppTemplate) {
             return wizardContinue(this.REGION)
