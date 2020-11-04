@@ -78,6 +78,8 @@ export class DiskCache implements SsoCache {
     private accessTokenCache(ssoUrl: string): string {
         // According to the Spec: 'SSO Login Token Flow' the access token should be cached as
         // the SHA1 hash of the bytes of the UTF-8 encoded startUrl value with .json appended to the end.
+        // Using the SHA1 hash is no longer recommended, but this hash is used to specifically comply with the
+        // Spec and is used only to name a file. It is advised to use a more secure hash in most other cases.
         const encoded = encodeURI(ssoUrl)
         return join(this.cacheDir, getSHA1StringHash(encoded) + `.json`)
     }
