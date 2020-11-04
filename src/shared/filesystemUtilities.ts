@@ -64,7 +64,10 @@ export const makeTemporaryToolkitFolder = async (...relativePathParts: string[])
         await mkdir(tmpPathParent, { recursive: true })
     }
 
-    return mkdtemp(tmpPath)
+    const p = await mkdtemp(tmpPath)
+    // normalize comes from build, but it might not be needed?
+    // TODO see if we need normalize for some platforms
+    return pathutils.normalize(p)
 }
 
 /**

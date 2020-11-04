@@ -217,7 +217,6 @@ async function runUploadLambdaWithSamBuild(
                 const invoker = getSamCliContext().invoker
 
                 const tempDir = await makeTemporaryToolkitFolder()
-                ExtensionDisposableFiles.getInstance().addFolder(tempDir)
                 const templatePath = path.join(tempDir, 'template.yaml')
                 const resourceName = 'tempResource'
 

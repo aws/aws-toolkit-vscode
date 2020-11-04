@@ -14,7 +14,6 @@ import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger, Logger } from '../../shared/logger'
 import { recordSchemasDownload, Result } from '../../shared/telemetry/telemetry'
-import { ExtensionDisposableFiles } from '../../shared/utilities/disposableFiles'
 import { SchemaItemNode } from '../explorer/schemaItemNode'
 import { getLanguageDetails } from '../models/schemaCodeLangs'
 
@@ -286,7 +285,7 @@ export class CodeExtractor {
     ): Promise<string | void> {
         const fileName = `${request.schemaName}.${request.schemaVersion}.${request.language}.zip`
 
-        const codeZipDir = await this.getDisposableTempFolder()
+        const codeZipDir = await makeTemporaryToolkitFolder()
 
         const codeZipFile = path.join(codeZipDir, fileName)
         const destinationDirectory = request.destinationDirectory.fsPath
@@ -314,13 +313,6 @@ export class CodeExtractor {
         }
 
         return undefined
-    }
-
-    public async getDisposableTempFolder(): Promise<string> {
-        const tempFolder = await makeTemporaryToolkitFolder()
-        ExtensionDisposableFiles.getInstance().addFolder(tempFolder)
-
-        return tempFolder
     }
 
     // Check if downloaded code hierarchy has collisions with the destination directory and display them in output channel

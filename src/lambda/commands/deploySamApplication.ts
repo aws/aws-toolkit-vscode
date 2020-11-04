@@ -64,6 +64,7 @@ export async function deploySamApplication(
     }
 ): Promise<void> {
     let deployResult: Result = 'Succeeded'
+    let deployFolder = ''
     try {
         const credentials = await awsContext.getCredentials()
         if (!credentials) {
@@ -78,8 +79,10 @@ export async function deploySamApplication(
             return
         }
 
+        deployFolder = await makeTemporaryToolkitFolder('samDeploy')
+
         const deployParameters: DeploySamApplicationParameters = {
-            deployRootFolder: await makeTemporaryToolkitFolder('samDeploy'),
+            deployRootFolder: deployFolder,
             destinationStackName: deployWizardResponse.stackName,
             packageBucketName: deployWizardResponse.s3Bucket,
             parameterOverrides: deployWizardResponse.parameterOverrides,
@@ -93,14 +96,7 @@ export async function deploySamApplication(
             channelLogger,
             invoker: samCliContext.invoker,
             window,
-        }).then(
-            async () =>
-                // The parent method will exit shortly, and the status bar will run this promise
-                // Cleanup has to be chained into the promise as a result.
-                await del(deployParameters.deployRootFolder, {
-                    force: true,
-                })
-        )
+        })
 
         window.setStatusBarMessage(
             localize(
@@ -110,10 +106,15 @@ export async function deploySamApplication(
             ),
             deployApplicationPromise
         )
+
+        await deployApplicationPromise
     } catch (err) {
         deployResult = 'Failed'
         outputDeployError(err as Error, channelLogger)
     } finally {
+        if (deployFolder) {
+            await del(deployFolder, { force: true })
+        }
         recordSamDeploy({ result: deployResult })
     }
 }

@@ -270,17 +270,6 @@ describe('localLambdaRunner', async () => {
         })
     })
 
-    describe('makeBuildDir', () => {
-        it('creates a temp directory', async () => {
-            const dir = await localLambdaRunner.makeBuildDir()
-            assert.ok(dir)
-            assert.strictEqual(await fsUtils.fileExists(dir), true)
-            const fsDir = await readdir(dir)
-            assert.strictEqual(fsDir.length, 0)
-            await del(dir, { force: true })
-        })
-    })
-
     describe('executeSamBuild', () => {
         const failedChildProcess: ChildProcessResult = {
             exitCode: 1,

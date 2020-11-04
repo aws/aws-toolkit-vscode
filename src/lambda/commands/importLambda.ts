@@ -131,7 +131,6 @@ async function downloadAndUnzipLambda(
     const functionArn = functionNode.configuration.FunctionArn!
     try {
         const tempFolder = await makeTemporaryToolkitFolder()
-        ExtensionDisposableFiles.getInstance().addFolder(tempFolder)
         const downloadLocation = path.join(tempFolder, 'function.zip')
 
         const response = await lambda.getFunction(functionArn)

@@ -64,13 +64,6 @@ const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
 const MAX_DEBUGGER_RETRIES_DEFAULT: number = 30
 const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 200
 
-export const makeBuildDir = async (): Promise<string> => {
-    const buildDir = await makeTemporaryToolkitFolder()
-    ExtensionDisposableFiles.getInstance().addFolder(buildDir)
-
-    return pathutil.normalize(buildDir)
-}
-
 export function getRelativeFunctionHandler(params: {
     handlerName: string
     runtime: string
@@ -467,7 +460,7 @@ function messageUserWaitingToAttach(channelLogger: ChannelLogger) {
  * @param config
  */
 export async function makeConfig(config: SamLaunchRequestArgs): Promise<void> {
-    config.baseBuildDir = await makeBuildDir()
+    config.baseBuildDir = await makeTemporaryToolkitFolder()
     config.eventPayloadFile = path.join(config.baseBuildDir!, 'event.json')
     config.envFile = path.join(config.baseBuildDir!, 'env-vars.json')
 
