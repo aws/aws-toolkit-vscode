@@ -11,6 +11,7 @@ import { getLogger, Logger } from '../logger'
 import { ResourceFetcher } from './resourcefetcher'
 const pipeline = promisify(stream.pipeline)
 
+// TODO pipe to file needs to be split out, and it needs to allow the caller to handle errors better
 export class HttpResourceFetcher implements ResourceFetcher {
     private readonly logger: Logger = getLogger()
 
@@ -20,7 +21,8 @@ export class HttpResourceFetcher implements ResourceFetcher {
      * @param params Additional params for the fetcher
      * @param {boolean} params.showUrl Whether or not to the URL in log statements.
      * @param {string} params.friendlyName If URL is not shown, replaces the URL with this text.
-     * @param {string} params.pipeLocation If provided, pipes output to file designated here.
+     * @param {string} params.pipeLocation If provided, pipes output to file designated here. 
+     * If this is selected, the function will not return a value.
      */
     public constructor(
         private readonly url: string,
@@ -35,7 +37,7 @@ export class HttpResourceFetcher implements ResourceFetcher {
         try {
             this.logger.verbose(`Loading ${this.logText()}`)
 
-            let response: Response<string> | undefined = undefined
+            let response: Response<string> | undefined
             if (this.params.pipeLocation) {
                 await pipeline(got.stream(this.url), fs.createWriteStream(this.params.pipeLocation))
             } else {
