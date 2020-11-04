@@ -10,6 +10,7 @@ import * as os from 'os'
 import * as vscode from 'vscode'
 
 import * as picker from '../../shared/ui/picker'
+import { getLogger } from '../logger/logger'
 
 export interface WizardStep {
     (): Thenable<Transition>
@@ -61,6 +62,7 @@ export abstract class MultiStepWizard<TResult> {
             const step = steps[steps.length - 1]
             // non-terminal if we still have steps
             if (step === undefined) {
+                getLogger().warn('encountered an undefined step, terminating wizard')
                 break
             }
             const result = await step()
