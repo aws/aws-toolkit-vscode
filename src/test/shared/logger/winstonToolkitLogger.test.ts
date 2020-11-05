@@ -4,9 +4,9 @@
  */
 
 import * as assert from 'assert'
-import * as del from 'del'
 import * as path from 'path'
 import * as filesystemUtilities from '../../../shared/filesystemUtilities'
+import * as fs from 'fs-extra'
 import { WinstonToolkitLogger } from '../../../shared/logger/winstonToolkitLogger'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { assertThrowsError } from '../utilities/assertUtils'
@@ -20,7 +20,7 @@ describe('WinstonToolkitLogger', () => {
 
     after(async () => {
         if (await filesystemUtilities.fileExists(tempFolder)) {
-            await del(tempFolder, { force: true })
+            await fs.remove(tempFolder)
         }
     })
 

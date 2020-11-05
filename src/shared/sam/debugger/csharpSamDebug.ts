@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { access, chmod, writeFile } from 'fs-extra'
+import { chmod, ensureDir, writeFile } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import {
@@ -14,7 +14,6 @@ import {
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import * as pathutil from '../../../shared/utilities/pathUtils'
 import { ExtContext } from '../../extensions'
-import { mkdir } from '../../filesystem'
 import { DefaultSamLocalInvokeCommand, WAIT_FOR_DEBUGGER_MESSAGES } from '../cli/samCliLocalInvoke'
 import { getStartPort } from '../../utilities/debuggerUtils'
 import { ChannelLogger, getChannelLogger } from '../../utilities/vsCodeUtils'
@@ -86,16 +85,8 @@ function getDebuggerPath(parentFolder: string): string {
     return path.resolve(parentFolder, '.vsdbg')
 }
 
-async function ensureDebuggerPathExists(debuggerPath: string): Promise<void> {
-    try {
-        await access(debuggerPath)
-    } catch {
-        await mkdir(debuggerPath)
-    }
-}
-
 async function _installDebugger({ debuggerPath, channelLogger }: InstallDebuggerArgs): Promise<void> {
-    await ensureDebuggerPathExists(debuggerPath)
+    await ensureDir(debuggerPath)
 
     try {
         channelLogger.info(
@@ -211,7 +202,7 @@ export async function makeCoreCLRDebugConfiguration(
     config.debugPort = config.debugPort ?? (await getStartPort())
     const pipeArgs = ['-c', `docker exec -i $(docker ps -q -f publish=${config.debugPort}) \${debuggerCommand}`]
     config.debuggerPath = pathutil.normalize(getDebuggerPath(codeUri))
-    await ensureDebuggerPathExists(config.debuggerPath)
+    await ensureDir(config.debuggerPath)
 
     if (os.platform() === 'win32') {
         // Coerce drive letter to uppercase. While Windows is case-insensitive, sourceFileMap is case-sensitive.

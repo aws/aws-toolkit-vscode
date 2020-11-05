@@ -11,7 +11,6 @@ import * as vscode from 'vscode'
 import { DotNetCoreDebugConfiguration } from '../../../../lambda/local/debugConfiguration'
 import * as lambdaModel from '../../../../lambda/models/samLambdaRuntime'
 import { CloudFormationTemplateRegistry } from '../../../../shared/cloudformation/templateRegistry'
-import { mkdir, rmrf } from '../../../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import {
     TemplateTargetProperties,
@@ -44,6 +43,7 @@ import { CredentialsProviderManager } from '../../../../credentials/providers/cr
 import { Credentials } from 'aws-sdk'
 import { ExtContext } from '../../../../shared/extensions'
 import { CredentialsProvider } from '../../../../credentials/providers/credentialsProvider'
+import { mkdir, remove } from 'fs-extra'
 
 /**
  * Asserts the contents of a "launch config" (the result of `makeConfig()` or
@@ -87,10 +87,10 @@ function assertEqualLaunchConfigs(actual: SamLaunchRequestArgs, expected: SamLau
     // Remove noisy properties before doing a deep-compare.
     for (const o of [actual, expected]) {
         delete o.manifestPath
-        delete o.documentUri
-        delete o.templatePath
-        delete o.workspaceFolder
-        delete o.codeRoot
+        delete (o as any).documentUri
+        delete (o as any).templatePath
+        delete (o as any).workspaceFolder
+        delete (o as any).codeRoot
         delete (o as any).localRoot // Node-only
         delete (o as any).debuggerPath // Dotnet-only
     }
@@ -122,9 +122,9 @@ describe('SamDebugConfigurationProvider', async () => {
     })
 
     afterEach(async () => {
-        await rmrf(tempFolder)
+        await remove(tempFolder)
         if (tempFolderSimilarName) {
-            await rmrf(tempFolderSimilarName)
+            await remove(tempFolderSimilarName)
         }
         sandbox.restore()
     })
@@ -1673,7 +1673,7 @@ describe('debugConfiguration', () => {
     })
 
     afterEach(async () => {
-        await rmrf(tempFolder)
+        await remove(tempFolder)
     })
 
     it('getCodeRoot(), getHandlerName() with invokeTarget=code', async () => {

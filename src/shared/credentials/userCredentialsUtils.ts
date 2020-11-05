@@ -6,9 +6,8 @@
 import * as handlebars from 'handlebars'
 import * as path from 'path'
 
-import { writeFile } from 'fs-extra'
+import { mkdirp, writeFile } from 'fs-extra'
 import { getConfigFilename, getCredentialsFilename } from '../../credentials/sharedCredentials'
-import { mkdir } from '../filesystem'
 import { fileExists, readFileAsString } from '../filesystemUtilities'
 import { SystemUtilities } from '../systemUtilities'
 
@@ -53,7 +52,7 @@ export class UserCredentialsUtils {
     public static async generateCredentialDirectoryIfNonexistent(): Promise<void> {
         const filepath = path.dirname(getCredentialsFilename())
         if (!(await fileExists(filepath))) {
-            await mkdir(filepath, { recursive: true })
+            await mkdirp(filepath)
         }
     }
 
