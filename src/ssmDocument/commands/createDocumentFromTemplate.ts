@@ -56,6 +56,8 @@ export async function createSsmDocumentFromTemplate(extensionContext: vscode.Ext
         options: {
             ignoreFocusOut: true,
             title: localize('AWS.message.prompt.selectSsmDocumentTemplate.placeholder', 'Select a document template'),
+            step: 1,
+            totalSteps: 2,
         },
         buttons: [vscode.QuickInputButtons.Back],
         items: SSMDOCUMENT_TEMPLATES,
@@ -77,7 +79,10 @@ export async function createSsmDocumentFromTemplate(extensionContext: vscode.Ext
         } else {
             logger.debug(`User selected template: ${selection.label}`)
             templateName = selection.label
-            const selectedDocumentFormat = await promptUserForDocumentFormat(['YAML', 'JSON'])
+            const selectedDocumentFormat = await promptUserForDocumentFormat(['YAML', 'JSON'], {
+                step: 2,
+                totalSteps: 2,
+            })
             format = selectedDocumentFormat ? (selectedDocumentFormat as telemetry.DocumentFormat) : format
             const textDocument: vscode.TextDocument | undefined = await openTextDocumentFromSelection(
                 selection,

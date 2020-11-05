@@ -84,6 +84,8 @@ export async function createStateMachineFromTemplate(context: vscode.ExtensionCo
         options: {
             ignoreFocusOut: true,
             title: localize('AWS.message.prompt.selectStateMachineTemplate.placeholder', 'Select a starter template'),
+            step: 1,
+            totalSteps: 1,
         },
         buttons: [vscode.QuickInputButtons.Back],
         items: STARTER_TEMPLATES,

@@ -132,6 +132,9 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     public readonly getOverriddenParameters = getOverriddenParameters
     private readonly helpButton = createHelpButton(localize('AWS.command.help', 'View Toolkit Documentation'))
 
+    private readonly totalSteps: number = 4
+    private additionalSteps: number = 0
+
     public constructor(private readonly regionProvider: RegionProvider, private readonly awsContext: AwsContext) {}
 
     public get workspaceFolders(): vscode.Uri[] | undefined {
@@ -144,6 +147,8 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
      * @returns vscode.Uri of a Sam Template. undefined represents cancel.
      */
     public async promptUserForSamTemplate(initialValue?: vscode.Uri): Promise<vscode.Uri | undefined> {
+        // set steps back to 0 since the next step determines if additional steps are needed
+        this.additionalSteps = 0
         const workspaceFolders = this.workspaceFolders || []
 
         const quickPick = picker.createQuickPick<SamTemplateQuickPickItem>({
@@ -153,6 +158,8 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                     'AWS.samcli.deploy.template.prompt',
                     'Which SAM Template would you like to deploy to AWS?'
                 ),
+                step: 1,
+                totalSteps: this.totalSteps,
             },
             buttons: [this.helpButton, vscode.QuickInputButtons.Back],
             items: await getTemplateChoices(...workspaceFolders),
@@ -180,6 +187,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
         templateUri: vscode.Uri
         missingParameters?: Set<string>
     }): Promise<ParameterPromptResult> {
+        this.additionalSteps = 1
         if (missingParameters.size < 1) {
             const prompt = localize(
                 'AWS.samcli.deploy.parameters.optionalPrompt.message',
@@ -191,6 +199,8 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 options: {
                     ignoreFocusOut: true,
                     title: prompt,
+                    step: 2,
+                    totalSteps: this.totalSteps + this.additionalSteps,
                 },
                 buttons: [this.helpButton, vscode.QuickInputButtons.Back],
                 items: [{ label: localizedText.yes }, { label: localizedText.no }],
@@ -230,6 +240,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             )
             const responseCancel = localize('AWS.samcli.deploy.parameters.mandatoryPrompt.responseCancel', 'Cancel')
 
+            // no step number needed since this is a dead end?
             const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
                 options: {
                     ignoreFocusOut: true,
@@ -270,6 +281,8 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 value: initialRegionCode,
                 matchOnDetail: true,
                 ignoreFocusOut: true,
+                step: 2 + this.additionalSteps,
+                totalSteps: this.totalSteps + this.additionalSteps,
             },
             items: partitionRegions.map(region => ({
                 label: region.name,
@@ -329,6 +342,8 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
                 value: initialValue,
                 matchOnDetail: true,
                 ignoreFocusOut: true,
+                step: 3 + this.additionalSteps,
+                totalSteps: this.totalSteps + this.additionalSteps,
             },
             items: [
                 {
@@ -383,6 +398,8 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
             options: {
                 title: localize('AWS.samcli.deploy.stackName.prompt', 'Enter the name to use for the deployed stack'),
                 ignoreFocusOut: true,
+                step: 4 + this.additionalSteps,
+                totalSteps: this.totalSteps + this.additionalSteps,
             },
         })
 
