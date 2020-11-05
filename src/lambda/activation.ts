@@ -11,6 +11,7 @@ import { invokeLambda } from './commands/invokeLambda'
 import { uploadLambdaCommand } from './commands/uploadLambda'
 import { LambdaFunctionNode } from './explorer/lambdaFunctionNode'
 import { importLambdaCommand } from './commands/importLambda'
+import { tryRemoveFolder } from '../shared/filesystemUtilities'
 
 /**
  * Activates Lambda components.
@@ -37,7 +38,16 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
                     functionNode: node,
                     outputChannel,
                 })
-        )
+        ),
+        // Capture debug finished events, and delete the base build dir if it exists
+        vscode.debug.onDidTerminateDebugSession(async session => {
+            // if it has a base build dir, then we remove it. We can't find out the type easily since
+            // 'type' is just 'python'/'nodejs' etc, but we can tell it's a run config we care about if
+            // it has a baseBuildDirectory.
+            if (session.configuration?.baseBuildDir !== undefined) {
+                await tryRemoveFolder(session.configuration.baseBuildDir)
+            }
+        })
     )
 
     if (FeatureToggle.getFeatureToggle().isFeatureActive(ActiveFeatureKeys.LambdaImport)) {

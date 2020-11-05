@@ -336,7 +336,6 @@ describe('SchemaCodeDownload', () => {
         tempFolder = await makeTemporaryToolkitFolder()
         sandbox = sinon.createSandbox()
         destinationDirectory = vscode.Uri.file(tempFolder)
-        sandbox.stub(extractor, 'getDisposableTempFolder').returns(Promise.resolve(tempFolder))
 
         request = {
             registryName: testRegistryName,
@@ -515,7 +514,6 @@ describe('CodeExtractor', () => {
         beforeEach(async () => {
             sandbox = sinon.createSandbox()
             destinationDirectoryUri = vscode.Uri.file(destinationDirectory)
-            sandbox.stub(codeExtractor, 'getDisposableTempFolder').returns(Promise.resolve(destinationDirectory))
 
             request = {
                 registryName: testRegistryName,
