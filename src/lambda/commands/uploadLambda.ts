@@ -9,12 +9,11 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as AdmZip from 'adm-zip'
-import * as del from 'del'
 import * as fs from 'fs'
 import * as path from 'path'
 import { showConfirmationMessage } from '../../s3/util/messages'
 import { ext } from '../../shared/extensionGlobals'
-import { fileExists, makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { fileExists, makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
@@ -213,7 +212,7 @@ async function runUploadLambdaWithSamBuild(
             cancellable: false,
         },
         async progress => {
-            let tempDir = ''
+            let tempDir: string | undefined
             try {
                 const invoker = getSamCliContext().invoker
 
@@ -262,9 +261,7 @@ async function runUploadLambdaWithSamBuild(
 
                 return 'Failed'
             } finally {
-                if (tempDir) {
-                    await del(tempDir, { force: true })
-                }
+                await tryRemoveFolder(tempDir)
             }
         }
     )

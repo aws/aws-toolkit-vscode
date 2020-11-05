@@ -11,6 +11,7 @@ import { getTemplate, getTemplateResource } from '../../lambda/local/debugConfig
 import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { ExtContext } from '../extensions'
 import { makeTemporaryToolkitFolder } from '../filesystemUtilities'
+import * as pathutils from '../../shared/utilities/pathUtils'
 import { getLogger } from '../logger'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { recordLambdaInvokeLocal, Result, Runtime, recordSamAttachDebugger } from '../telemetry/telemetry'
@@ -241,13 +242,6 @@ export async function invokeLambdaFunction(
             runtime: config.runtime as Runtime,
             debug: !config.noDebug,
         })
-        if (config.outFilePath) {
-            try {
-                await unlink(config.outFilePath)
-            } catch (err) {
-                getLogger().warn(err as Error)
-            }
-        }
     }
 
     if (!config.noDebug) {
@@ -460,7 +454,9 @@ function messageUserWaitingToAttach(channelLogger: ChannelLogger) {
  * @param config
  */
 export async function makeConfig(config: SamLaunchRequestArgs): Promise<void> {
-    config.baseBuildDir = await makeTemporaryToolkitFolder()
+    // TODO this normalize has been here for Windows, but is it needed? It might mess things up, it does some
+    // messing with drive letter etc
+    config.baseBuildDir = pathutils.normalize(await makeTemporaryToolkitFolder())
     config.eventPayloadFile = path.join(config.baseBuildDir!, 'event.json')
     config.envFile = path.join(config.baseBuildDir!, 'env-vars.json')
 

@@ -3,14 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as del from 'del'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
 import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
 import { AwsContext, NoActiveCredentialError } from '../../shared/awsContext'
-import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
 import { getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
@@ -64,7 +63,7 @@ export async function deploySamApplication(
     }
 ): Promise<void> {
     let deployResult: Result = 'Succeeded'
-    let deployFolder = ''
+    let deployFolder: string | undefined
     try {
         const credentials = await awsContext.getCredentials()
         if (!credentials) {
@@ -112,9 +111,7 @@ export async function deploySamApplication(
         deployResult = 'Failed'
         outputDeployError(err as Error, channelLogger)
     } finally {
-        if (deployFolder) {
-            await del(deployFolder, { force: true })
-        }
+        await tryRemoveFolder(deployFolder)
         recordSamDeploy({ result: deployResult })
     }
 }

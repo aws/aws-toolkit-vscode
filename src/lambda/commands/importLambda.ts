@@ -4,7 +4,6 @@
  */
 
 import * as AdmZip from 'adm-zip'
-import * as del from 'del'
 import * as fs from 'fs-extra'
 import * as _ from 'lodash'
 import * as path from 'path'
@@ -13,7 +12,7 @@ import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
 import { showConfirmationMessage } from '../../s3/util/messages'
 import { LaunchConfiguration, getReferencedHandlerPaths } from '../../shared/debug/launchConfiguration'
 import { ext } from '../../shared/extensionGlobals'
-import { makeTemporaryToolkitFolder, fileExists } from '../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder, fileExists, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
 import { createCodeAwsSamDebugConfig } from '../../shared/sam/debugger/awsSamDebugConfiguration'
@@ -129,7 +128,7 @@ async function downloadAndUnzipLambda(
     lambda = ext.toolkitClientBuilder.createLambdaClient(functionNode.regionCode)
 ): Promise<void> {
     const functionArn = functionNode.configuration.FunctionArn!
-    let tempDir = ''
+    let tempDir: string | undefined
     try {
         tempDir = await makeTemporaryToolkitFolder()
         const downloadLocation = path.join(tempDir, 'function.zip')
@@ -172,9 +171,7 @@ async function downloadAndUnzipLambda(
 
         throw new ImportError()
     } finally {
-        if (tempDir) {
-            await del(tempDir, { force: true })
-        }
+        tryRemoveFolder(tempDir)
     }
 }
 

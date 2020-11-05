@@ -4,14 +4,13 @@
  */
 
 import * as nls from 'vscode-nls'
-import * as del from 'del'
 const localize = nls.loadMessageBundle()
 import { Schemas } from 'aws-sdk'
 import fs = require('fs')
 import path = require('path')
 import * as vscode from 'vscode'
 import { SchemaClient } from '../../shared/clients/schemaClient'
-import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger, Logger } from '../../shared/logger'
 import { recordSchemasDownload, Result } from '../../shared/telemetry/telemetry'
@@ -284,7 +283,7 @@ export class CodeExtractor {
         zipContents: ArrayBuffer,
         request: SchemaCodeDownloadRequestDetails
     ): Promise<string | void> {
-        let codeZipDir = ''
+        let codeZipDir: string | undefined
         try {
             const fileName = `${request.schemaName}.${request.schemaVersion}.${request.language}.zip`
 
@@ -317,9 +316,7 @@ export class CodeExtractor {
 
             return undefined
         } finally {
-            if (codeZipDir) {
-                await del(codeZipDir, { force: true })
-            }
+            tryRemoveFolder(codeZipDir)
         }
     }
 

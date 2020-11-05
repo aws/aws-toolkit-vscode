@@ -5,8 +5,10 @@
 
 import { access, mkdtemp, readFile, existsSync } from 'fs-extra'
 import * as os from 'os'
+import * as del from 'del'
 import * as path from 'path'
 import { mkdir } from './filesystem'
+import { getLogger } from './logger'
 import * as pathutils from './utilities/pathUtils'
 
 const DEFAULT_ENCODING: BufferEncoding = 'utf8'
@@ -51,6 +53,23 @@ export const readFileAsString = async (
     return readFile(pathLike, options)
 }
 
+/**
+ * Best-effort delete a folder recursively. Will not throw if it fails.
+ * @param folder The path to the folder to delete
+ */
+export async function tryRemoveFolder(folder?: string) {
+    try {
+        // if null or empty, no issues
+        if (!folder) {
+            getLogger().warn(`No folder passed into tryRemoveFolder: ${folder}`)
+            return
+        }
+        await del(folder, { force: true })
+    } catch (err) {
+        getLogger().warn(err as Error)
+    }
+}
+
 export const makeTemporaryToolkitFolder = async (...relativePathParts: string[]) => {
     if (relativePathParts.length === 0) {
         relativePathParts.push('vsctk')
@@ -64,10 +83,7 @@ export const makeTemporaryToolkitFolder = async (...relativePathParts: string[])
         await mkdir(tmpPathParent, { recursive: true })
     }
 
-    const p = await mkdtemp(tmpPath)
-    // normalize comes from build, but it might not be needed?
-    // TODO see if we need normalize for some platforms
-    return pathutils.normalize(p)
+    return await mkdtemp(tmpPath)
 }
 
 /**

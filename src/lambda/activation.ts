@@ -11,7 +11,7 @@ import { invokeLambda } from './commands/invokeLambda'
 import { uploadLambdaCommand } from './commands/uploadLambda'
 import { LambdaFunctionNode } from './explorer/lambdaFunctionNode'
 import { importLambdaCommand } from './commands/importLambda'
-import * as del from 'del'
+import { tryRemoveFolder } from '../shared/filesystemUtilities'
 
 /**
  * Activates Lambda components.
@@ -45,7 +45,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
             // 'type' is just 'python'/'nodejs' etc, but we can tell it's a run config we care about if
             // it has a baseBuildDirectory.
             if (session.configuration?.baseBuildDir !== undefined) {
-                await del(session.configuration.baseBuildDir, { force: true })
+                await tryRemoveFolder(session.configuration.baseBuildDir)
             }
         })
     )
