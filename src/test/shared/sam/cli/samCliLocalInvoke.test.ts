@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { writeFile } from 'fs-extra'
+import { writeFile, remove } from 'fs-extra'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import {
@@ -37,7 +37,7 @@ describe('SamCliLocalInvokeInvocation', async () => {
     })
 
     afterEach(async () => {
-        await del([tempFolder], { force: true })
+        await remove(tempFolder)
     })
 
     it('invokes `sam local` with args', async () => {

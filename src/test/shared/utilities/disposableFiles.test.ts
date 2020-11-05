@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { writeFile } from 'fs-extra'
+import { writeFile, remove, mkdir } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { fileExists, makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
@@ -21,7 +21,7 @@ describe('DisposableFiles', async () => {
     })
 
     afterEach(async () => {
-        await del([tempFolder], { force: true })
+        await remove(tempFolder)
     })
 
     it('deletes file on dispose', async () => {

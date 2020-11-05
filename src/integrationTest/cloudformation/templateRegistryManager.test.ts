@@ -4,6 +4,7 @@
  */
 
 import * as path from 'path'
+import * as fs from 'fs-extra'
 
 import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
 import { CloudFormationTemplateRegistryManager } from '../../shared/cloudformation/templateRegistryManager'
@@ -29,14 +30,14 @@ describe('CloudFormation Template Registry Manager', async () => {
     beforeEach(async () => {
         testDir = path.join(workspaceDir, dir.toString())
         testDirNested = path.join(testDir, 'nested')
-        await mkdir(testDirNested, { recursive: true })
+        await fs.mkdirp(testDirNested)
         registry = new CloudFormationTemplateRegistry()
         manager = new CloudFormationTemplateRegistryManager(registry)
     })
 
     afterEach(async () => {
         manager.dispose()
-        await rmrf(testDir)
+        await fs.remove(testDir)
         dir++
     })
 
@@ -84,7 +85,7 @@ describe('CloudFormation Template Registry Manager', async () => {
 
         await registryHasTargetNumberOfFiles(registry, 1)
 
-        await rmrf(filepath)
+        await fs.remove(filepath)
 
         await registryHasTargetNumberOfFiles(registry, 0)
     })

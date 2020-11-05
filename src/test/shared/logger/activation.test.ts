@@ -4,6 +4,7 @@
  */
 
 import * as assert from 'assert'
+import * as fs from 'fs-extra'
 import { join } from 'path'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { Logger } from '../../../shared/logger'
@@ -26,7 +27,7 @@ describe('makeLogger', () => {
         }
 
         testLogger = undefined
-        await del([tempFolder], { force: true })
+        await fs.remove(tempFolder)
     })
 
     it('creates a logger object', () => {

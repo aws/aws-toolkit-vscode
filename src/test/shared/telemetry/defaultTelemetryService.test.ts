@@ -7,6 +7,7 @@ import * as assert from 'assert'
 // tslint:disable-next-line:no-implicit-dependencies
 import * as lolex from 'lolex'
 import * as sinon from 'sinon'
+import * as fs from 'fs-extra'
 import { AwsContext } from '../../../shared/awsContext'
 import { DefaultTelemetryService } from '../../../shared/telemetry/defaultTelemetryService'
 import { AccountStatus } from '../../../shared/telemetry/telemetryTypes'
@@ -36,9 +37,9 @@ beforeEach(() => {
     ext.telemetry = service
 })
 
-afterEach(() => {
+afterEach(async () => {
     // Remove the persist file as it is saved
-    del.sync([ext.telemetry.persistFilePath], { force: true })
+    await fs.remove(ext.telemetry.persistFilePath)
     ext.telemetry = originalTelemetryClient
 })
 

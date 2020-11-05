@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import * as fs from 'fs'
+import * as fs from 'fs-extra'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import { DefaultSamCliConfiguration, SamCliConfiguration } from '../../../../shared/sam/cli/samCliConfiguration'
@@ -21,7 +21,7 @@ describe('SamCliConfiguration', () => {
     })
 
     afterEach(async () => {
-        await del([tempFolder], { force: true })
+        await fs.remove(tempFolder)
     })
 
     it('uses config value when referencing file that exists', async () => {

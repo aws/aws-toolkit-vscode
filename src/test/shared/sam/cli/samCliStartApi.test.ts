@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { writeFile } from 'fs-extra'
+import { remove, writeFile } from 'fs-extra'
 import { join } from 'path'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import { buildSamCliStartApiArguments } from '../../../../shared/sam/cli/samCliStartApi'
@@ -25,7 +25,7 @@ describe('SamCliStartApi', async () => {
     })
 
     afterEach(async () => {
-        await del([tempFolder], { force: true })
+        await remove(tempFolder)
     })
 
     it('invokes `sam local start-api` with correct args', async () => {
