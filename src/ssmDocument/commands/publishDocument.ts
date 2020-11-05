@@ -14,8 +14,6 @@ import { ext } from '../../shared/extensionGlobals'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger, Logger } from '../../shared/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'
-import { getRegionsForActiveCredentials } from '../../shared/regions/regionUtilities'
-import * as picker from '../../shared/ui/picker'
 import {
     DefaultPublishSSMDocumentWizardContext,
     PublishSSMDocumentWizard,
@@ -26,8 +24,6 @@ import { stringify } from 'querystring'
 import * as telemetry from '../../shared/telemetry/telemetry'
 import { Window } from '../../shared/vscode/window'
 import { showConfirmationMessage } from '../util/util'
-
-const DEFAULT_REGION: string = 'us-east-1'
 
 export async function publishSSMDocument(awsContext: AwsContext, regionProvider: RegionProvider): Promise<void> {
     const logger: Logger = getLogger()
@@ -59,25 +55,18 @@ export async function publishSSMDocument(awsContext: AwsContext, regionProvider:
         return
     }
 
-    let region = await promptUserForRegion(awsContext, regionProvider, awsContext.getCredentialDefaultRegion())
-    if (!region) {
-        region = DEFAULT_REGION
-        logger.info(
-            `Unsuccessful in picking a region. Falling back to ${DEFAULT_REGION} for publishing a Systems Manager Document.`
-        )
-    }
-
-    const client: SsmDocumentClient = ext.toolkitClientBuilder.createSsmClient(region)
-
     try {
-        const wizardContext: PublishSSMDocumentWizardContext = new DefaultPublishSSMDocumentWizardContext(region)
+        const wizardContext: PublishSSMDocumentWizardContext = new DefaultPublishSSMDocumentWizardContext(
+            awsContext,
+            regionProvider
+        )
         const wizardResponse: PublishSSMDocumentWizardResponse | undefined = await new PublishSSMDocumentWizard(
             wizardContext
         ).run()
         if (wizardResponse?.PublishSsmDocAction == 'Create') {
-            await createDocument(wizardResponse, textDocument, region, client)
+            await createDocument(wizardResponse, textDocument)
         } else if (wizardResponse?.PublishSsmDocAction == 'Update') {
-            await updateDocument(wizardResponse, textDocument, region, client)
+            await updateDocument(wizardResponse, textDocument)
         }
     } catch (err) {
         logger.error(err as Error)
@@ -87,8 +76,7 @@ export async function publishSSMDocument(awsContext: AwsContext, regionProvider:
 export async function createDocument(
     wizardResponse: PublishSSMDocumentWizardResponse,
     textDocument: vscode.TextDocument,
-    region: string,
-    client: SsmDocumentClient
+    client: SsmDocumentClient = ext.toolkitClientBuilder.createSsmClient(wizardResponse.region)
 ) {
     let result: telemetry.Result = 'Succeeded'
     let ssmOperation: telemetry.SsmOperation = wizardResponse.PublishSsmDocAction as telemetry.SsmOperation
@@ -122,8 +110,7 @@ export async function createDocument(
 export async function updateDocument(
     wizardResponse: PublishSSMDocumentWizardResponse,
     textDocument: vscode.TextDocument,
-    region: string,
-    client: SsmDocumentClient,
+    client: SsmDocumentClient = ext.toolkitClientBuilder.createSsmClient(wizardResponse.region),
     window = Window.vscode()
 ) {
     let result: telemetry.Result = 'Succeeded'
@@ -190,46 +177,4 @@ export async function updateDocument(
     } finally {
         telemetry.recordSsmPublishDocument({ result: result, ssmOperation: ssmOperation })
     }
-}
-
-async function promptUserForRegion(
-    awsContext: AwsContext,
-    regionProvider: RegionProvider,
-    initialRegionCode?: string
-): Promise<string | undefined> {
-    const partitionRegions = getRegionsForActiveCredentials(awsContext, regionProvider)
-
-    const quickPick = picker.createQuickPick<vscode.QuickPickItem>({
-        options: {
-            title: localize(
-                'AWS.message.prompt.ssmDocument.publishDocument.region',
-                'Which AWS Region would you like to publish to?'
-            ),
-            value: initialRegionCode,
-            matchOnDetail: true,
-            ignoreFocusOut: true,
-        },
-        items: partitionRegions.map(region => ({
-            label: region.name,
-            detail: region.id,
-            // this is the only way to get this to show on going back
-            // this will make it so it always shows even when searching for something else
-            alwaysShow: region.id === initialRegionCode,
-            description:
-                region.id === initialRegionCode ? localize('AWS.wizard.selectedPreviously', 'Selected Previously') : '',
-        })),
-        buttons: [vscode.QuickInputButtons.Back],
-    })
-
-    const choices = await picker.promptUser<vscode.QuickPickItem>({
-        picker: quickPick,
-        onDidTriggerButton: (button, resolve, reject) => {
-            if (button === vscode.QuickInputButtons.Back) {
-                resolve(undefined)
-            }
-        },
-    })
-    const val = picker.verifySinglePickerOutput(choices)
-
-    return val?.detail
 }
