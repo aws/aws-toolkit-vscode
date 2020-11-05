@@ -77,9 +77,7 @@ export const makeTemporaryToolkitFolder = async (...relativePathParts: string[])
     const tmpPathParent = path.dirname(tmpPath)
     // fs.makeTemporaryToolkitFolder fails on OSX if prefix contains path separator
     // so we must create intermediate dirs if needed
-    if (!(await fileExists(tmpPathParent))) {
-        await mkdirp(tmpPathParent)
-    }
+    await mkdirp(tmpPathParent)
 
     return await mkdtemp(tmpPath)
 }
