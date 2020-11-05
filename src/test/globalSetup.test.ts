@@ -7,10 +7,9 @@
  * Before/After hooks for all "unit" tests
  */
 import * as assert from 'assert'
-import { appendFileSync, mkdirpSync } from 'fs-extra'
+import { appendFileSync, mkdirpSync, remove } from 'fs-extra'
 import { join } from 'path'
 import { ext } from '../shared/extensionGlobals'
-import { rmrf } from '../shared/filesystem'
 import { getLogger } from '../shared/logger'
 import { setLogger } from '../shared/logger/logger'
 import { DefaultTelemetryService } from '../shared/telemetry/defaultTelemetryService'
@@ -29,7 +28,7 @@ let testLogger: TestLogger | undefined
 before(async () => {
     // Clean up and set up test logs
     try {
-        await rmrf(testLogOutput)
+        await remove(testLogOutput)
     } catch (e) {}
     mkdirpSync(testReportDir)
     // Set up global telemetry client

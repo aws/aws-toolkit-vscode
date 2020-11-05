@@ -148,7 +148,7 @@ describe('deploySamApplication', async () => {
     })
 
     afterEach(async () => {
-        await del([tempToolkitFolder], { force: true })
+        await fs.remove(tempToolkitFolder)
     })
 
     it('deploys with the happy path', async () => {

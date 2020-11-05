@@ -3,10 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { writeFile } from 'fs-extra'
+import { mkdirp, writeFile } from 'fs-extra'
 import * as yaml from 'js-yaml'
 import * as path from 'path'
-import { mkdir } from '../../../shared/filesystem'
 import * as filesystemUtilities from '../../../shared/filesystemUtilities'
 import { CloudFormation } from '../../cloudformation/cloudformation'
 
@@ -121,7 +120,7 @@ export class SamTemplateGenerator {
 
         const parentDirectory: string = path.dirname(filename)
         if (!(await filesystemUtilities.fileExists(parentDirectory))) {
-            await mkdir(parentDirectory, { recursive: true })
+            await mkdirp(parentDirectory)
         }
         await writeFile(filename, templateAsYaml, 'utf8')
     }

@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import * as os from 'os'
-import { writeFile } from 'fs-extra'
+import { writeFile, remove } from 'fs-extra'
 import * as path from 'path'
 import { fileExists, isInDirectory, makeTemporaryToolkitFolder, tempDirPath } from '../../shared/filesystemUtilities'
 
@@ -26,7 +26,9 @@ describe('filesystemUtilities', () => {
     })
 
     afterEach(async () => {
-        await del(foldersToCleanUp, { force: true })
+        for (const folder of foldersToCleanUp) {
+            await remove(folder)
+        }
     })
 
     describe('makeTemporaryToolkitFolder', () => {

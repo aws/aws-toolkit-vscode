@@ -5,6 +5,7 @@
 
 import * as assert from 'assert'
 import * as path from 'path'
+import * as fs from 'fs-extra'
 import { getConfigFilename, getCredentialsFilename } from '../../credentials/sharedCredentials'
 import { EnvironmentVariables } from '../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
@@ -25,7 +26,7 @@ describe('sharedCredentials', () => {
     })
 
     after(async () => {
-        del.sync([tempFolder], { force: true })
+        await fs.remove(tempFolder)
     })
 
     describe('getCredentialsFilename', () => {

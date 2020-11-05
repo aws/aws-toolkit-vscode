@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { writeFile } from 'fs-extra'
+import { mkdir, remove, writeFile } from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import {
@@ -15,7 +15,6 @@ import {
     TemplatesConfigPopulator,
 } from '../../../lambda/config/templates'
 import { CloudFormationTemplateRegistry } from '../../../shared/cloudformation/templateRegistry'
-import { mkdir, rmrf } from '../../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { makeSampleSamTemplateYaml } from '../../shared/cloudformation/cloudformationTestUtils'
 
@@ -788,7 +787,7 @@ describe('getExistingConfiguration', async () => {
     })
 
     afterEach(async () => {
-        await rmrf(tempFolder)
+        await remove(tempFolder)
     })
 
     it("returns undefined if the legacy config file doesn't exist", async () => {

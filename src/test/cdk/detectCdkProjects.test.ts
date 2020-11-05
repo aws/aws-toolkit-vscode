@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import * as path from 'path'
 import * as vscode from 'vscode'
+import * as fs from 'fs-extra'
 import { detectCdkProjects } from '../../cdk/explorer/detectCdkProjects'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { createWorkspaceFolder, saveCdkJson } from './utilities/treeTestUtils'
@@ -22,7 +23,9 @@ describe('detectCdkProjects', () => {
     })
 
     afterEach(async () => {
-        await del(workspacePaths, { force: true })
+        for (const path of workspacePaths) {
+            await fs.remove(path)
+        }
 
         workspacePaths.length = 0
         workspaceFolders.length = 0

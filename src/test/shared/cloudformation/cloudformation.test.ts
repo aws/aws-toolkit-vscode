@@ -5,9 +5,10 @@
 
 import * as assert from 'assert'
 import * as path from 'path'
+import * as fs from 'fs-extra'
 
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
-import { fileExists, makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../../shared/systemUtilities'
 import { assertRejects } from '../utilities/assertUtils'
 import {
@@ -29,9 +30,7 @@ describe('CloudFormation', () => {
     })
 
     afterEach(async () => {
-        if (await fileExists(filename)) {
-            await del(filename, { force: true })
-        }
+        await fs.remove(filename)
     })
 
     describe('load', async () => {
@@ -158,7 +157,7 @@ describe('CloudFormation', () => {
 
         it('can detect an invalid template', () => {
             const badTemplate = createBaseTemplate()
-            delete badTemplate.Resources!.TestResource!.Type
+            delete (badTemplate.Resources!.TestResource as any)!.Type
             assert.throws(
                 () => CloudFormation.validateTemplate(badTemplate),
                 Error,
@@ -174,7 +173,7 @@ describe('CloudFormation', () => {
 
         it('can detect an invalid resource', () => {
             const badResource = createBaseResource()
-            delete badResource.Properties!.CodeUri
+            delete (badResource.Properties as any)!.CodeUri
             assert.throws(
                 () => CloudFormation.validateResource(badResource, createBaseTemplate()),
                 Error,

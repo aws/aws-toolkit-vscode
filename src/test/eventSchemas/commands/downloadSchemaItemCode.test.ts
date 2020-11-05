@@ -4,6 +4,9 @@
  */
 
 import * as assert from 'assert'
+import * as fs from 'fs-extra'
+import * as path from 'path'
+import * as vscode from 'vscode'
 
 import { Schemas } from 'aws-sdk'
 import * as sinon from 'sinon'
@@ -21,11 +24,7 @@ import {
 import { MockOutputChannel } from '../../../test/mockOutputChannel'
 import { MockSchemaClient } from '../../shared/clients/mockClients'
 
-import fs = require('fs')
-import path = require('path')
-
 import admZip = require('adm-zip')
-import * as vscode from 'vscode'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 
 describe('CodeDownloader', () => {
@@ -50,7 +49,7 @@ describe('CodeDownloader', () => {
 
     afterEach(async () => {
         sandbox.restore()
-        del.sync([tempFolder], { force: true })
+        await fs.remove(tempFolder)
     })
     const testSchemaName = 'testSchema'
     const testRegistryName = 'testRegistry'
@@ -127,7 +126,7 @@ describe('CodeGenerator', () => {
 
     afterEach(async () => {
         sandbox.restore()
-        del.sync([tempFolder], { force: true })
+        await fs.remove(tempFolder)
     })
     const testSchemaName = 'testSchema'
     const testRegistryName = 'testRegistry'
@@ -200,7 +199,7 @@ describe('CodeGeneratorStatusPoller', () => {
 
     afterEach(async () => {
         sandbox.restore()
-        del.sync([tempFolder], { force: true })
+        await fs.remove(tempFolder)
     })
     const testSchemaName = 'testSchema'
     const testRegistryName = 'testRegistry'
@@ -353,7 +352,7 @@ describe('SchemaCodeDownload', () => {
 
     afterEach(async () => {
         sandbox.restore()
-        del.sync([tempFolder], { force: true })
+        await fs.remove(tempFolder)
     })
     const testSchemaName = 'testSchema'
     const testRegistryName = 'testRegistry'
@@ -451,7 +450,7 @@ describe('CodeExtractor', () => {
     })
 
     afterEach(async () => {
-        del.sync([destinationDirectory], { force: true })
+        await fs.remove(destinationDirectory)
         sandbox.restore()
     })
 
@@ -526,7 +525,7 @@ describe('CodeExtractor', () => {
 
         afterEach(async () => {
             sandbox.restore()
-            del.sync([destinationDirectory], { force: true })
+            await fs.remove(destinationDirectory)
         })
 
         it('should extract files if no collision present', async () => {
