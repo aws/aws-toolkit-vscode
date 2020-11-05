@@ -76,15 +76,6 @@ async function runImportLambda(functionNode: LambdaFunctionNode, window = Window
         }
     }
 
-    if (
-        workspaceFolders.filter(val => {
-            return selectedUri === val.uri
-        }).length === 0
-    ) {
-        await addFolderToWorkspace({ uri: selectedUri! }, true)
-    }
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(importLocation))!
-
     return await window.withProgress<telemetry.Result>(
         {
             location: vscode.ProgressLocation.Notification,
@@ -101,6 +92,16 @@ async function runImportLambda(functionNode: LambdaFunctionNode, window = Window
             try {
                 await downloadAndUnzipLambda(progress, functionNode, importLocation)
                 await openLambdaFile(lambdaLocation)
+
+                if (
+                    workspaceFolders.filter(val => {
+                        return selectedUri === val.uri
+                    }).length === 0
+                ) {
+                    await addFolderToWorkspace({ uri: selectedUri! }, true)
+                }
+                const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(importLocation))!
+
                 await addLaunchConfigEntry(lambdaLocation, functionNode, workspaceFolder)
 
                 return 'Succeeded'
