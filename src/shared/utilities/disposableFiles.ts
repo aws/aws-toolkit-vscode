@@ -3,10 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as del from 'del'
-import * as fs from 'fs'
 import * as vscode from 'vscode'
-import { makeTemporaryToolkitFolder } from '../filesystemUtilities'
+import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../filesystemUtilities'
 import { getLogger, Logger } from '../logger'
 
 export class DisposableFiles implements vscode.Disposable {
@@ -34,26 +32,11 @@ export class DisposableFiles implements vscode.Disposable {
         const logger: Logger = getLogger()
         if (!this._disposed) {
             try {
-                del.sync([...this._filePaths], {
-                    absolute: true,
-                    force: true,
-                    nobrace: false,
-                    nodir: true,
-                    noext: true,
-                    noglobstar: true,
+                this._filePaths.forEach(path => {
+                    tryRemoveFolder(path)
                 })
-
                 this._folderPaths.forEach(folder => {
-                    if (fs.existsSync(folder)) {
-                        del.sync(folder, {
-                            absolute: true,
-                            force: true,
-                            nobrace: false,
-                            nodir: false,
-                            noext: true,
-                            noglobstar: true,
-                        })
-                    }
+                    tryRemoveFolder(folder)
                 })
             } catch (err) {
                 logger.error('Error during DisposableFiles dispose: %O', err as Error)

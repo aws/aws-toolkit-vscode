@@ -4,7 +4,6 @@
  */
 
 import * as assert from 'assert'
-import * as del from 'del'
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'

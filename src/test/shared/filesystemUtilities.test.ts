@@ -5,7 +5,6 @@
 
 import * as assert from 'assert'
 import * as os from 'os'
-import * as del from 'del'
 import { writeFile } from 'fs-extra'
 import * as path from 'path'
 import { fileExists, isInDirectory, makeTemporaryToolkitFolder, tempDirPath } from '../../shared/filesystemUtilities'

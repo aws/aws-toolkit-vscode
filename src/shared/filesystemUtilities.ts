@@ -3,11 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { access, mkdtemp, readFile, existsSync } from 'fs-extra'
+import { access, mkdtemp, mkdirp, readFile, remove, existsSync } from 'fs-extra'
 import * as os from 'os'
-import * as del from 'del'
 import * as path from 'path'
-import { mkdir } from './filesystem'
 import { getLogger } from './logger'
 import * as pathutils from './utilities/pathUtils'
 
@@ -64,7 +62,7 @@ export async function tryRemoveFolder(folder?: string) {
             getLogger().warn(`No folder passed into tryRemoveFolder: ${folder}`)
             return
         }
-        await del(folder, { force: true })
+        await remove(folder)
     } catch (err) {
         getLogger().warn(`tryRemoveFolder: failed to delete directory '%s': %O`, folder, err as Error)
     }
@@ -80,7 +78,7 @@ export const makeTemporaryToolkitFolder = async (...relativePathParts: string[])
     // fs.makeTemporaryToolkitFolder fails on OSX if prefix contains path separator
     // so we must create intermediate dirs if needed
     if (!(await fileExists(tmpPathParent))) {
-        await mkdir(tmpPathParent, { recursive: true })
+        await mkdirp(tmpPathParent)
     }
 
     return await mkdtemp(tmpPath)

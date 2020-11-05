@@ -4,8 +4,7 @@
  */
 
 import * as assert from 'assert'
-import * as del from 'del'
-import * as fs from 'fs'
+import * as fs from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
@@ -21,8 +20,8 @@ describe('ChildProcess', async () => {
         tempFolder = await makeTemporaryToolkitFolder()
     })
 
-    afterEach(() => {
-        del.sync([tempFolder], { force: true })
+    afterEach(async () => {
+        await fs.remove(tempFolder)
     })
 
     describe('run', async () => {

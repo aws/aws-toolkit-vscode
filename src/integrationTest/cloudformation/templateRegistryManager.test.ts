@@ -7,7 +7,6 @@ import * as path from 'path'
 
 import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/templateRegistry'
 import { CloudFormationTemplateRegistryManager } from '../../shared/cloudformation/templateRegistryManager'
-import { mkdir, rmrf } from '../../shared/filesystem'
 import { makeSampleSamTemplateYaml, strToYamlFile } from '../../test/shared/cloudformation/cloudformationTestUtils'
 import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
 

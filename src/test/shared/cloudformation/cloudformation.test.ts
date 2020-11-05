@@ -4,7 +4,6 @@
  */
 
 import * as assert from 'assert'
-import * as del from 'del'
 import * as path from 'path'
 
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'

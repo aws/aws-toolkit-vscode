@@ -4,7 +4,6 @@
  */
 
 import * as assert from 'assert'
-import * as del from 'del'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -108,7 +107,7 @@ describe('visualizeStateMachine', async () => {
     })
 
     afterEach(async () => {
-        await del([tempFolder], { force: true })
+        await fs.remove(tempFolder)
     })
 
     after(async () => {

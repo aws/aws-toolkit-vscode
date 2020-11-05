@@ -4,7 +4,6 @@
  */
 
 import * as assert from 'assert'
-import * as del from 'del'
 import { join } from 'path'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { Logger } from '../../../shared/logger'

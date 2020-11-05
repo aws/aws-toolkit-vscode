@@ -4,7 +4,6 @@
  */
 
 import * as assert from 'assert'
-import * as del from 'del'
 import * as path from 'path'
 import * as filesystemUtilities from '../../../shared/filesystemUtilities'
 import { WinstonToolkitLogger } from '../../../shared/logger/winstonToolkitLogger'

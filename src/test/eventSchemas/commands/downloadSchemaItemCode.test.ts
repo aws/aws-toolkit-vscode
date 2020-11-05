@@ -4,7 +4,6 @@
  */
 
 import * as assert from 'assert'
-import * as del from 'del'
 
 import { Schemas } from 'aws-sdk'
 import * as sinon from 'sinon'

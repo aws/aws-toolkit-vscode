@@ -4,7 +4,6 @@
  */
 
 import * as assert from 'assert'
-import * as del from 'del'
 import * as path from 'path'
 import { getConfigFilename, getCredentialsFilename } from '../../credentials/sharedCredentials'
 import { EnvironmentVariables } from '../../shared/environmentVariables'
