@@ -6,6 +6,7 @@
 import * as assert from 'assert'
 import * as path from 'path'
 import * as vscode from 'vscode'
+import * as fs from 'fs-extra'
 
 import {
     CloudFormationTemplateRegistry,
@@ -13,7 +14,6 @@ import {
     getResourcesForHandlerFromTemplateDatum,
     TemplateDatum,
 } from '../../../shared/cloudformation/templateRegistry'
-import { rmrf } from '../../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { assertThrowsError } from '../utilities/assertUtils'
 import { badYaml, makeSampleSamTemplateYaml, strToYamlFile } from './cloudformationTestUtils'
@@ -34,7 +34,7 @@ describe('CloudFormation Template Registry', async () => {
         })
 
         afterEach(async () => {
-            await rmrf(tempFolder)
+            await fs.remove(tempFolder)
         })
 
         describe('addTemplateToRegistry', async () => {
