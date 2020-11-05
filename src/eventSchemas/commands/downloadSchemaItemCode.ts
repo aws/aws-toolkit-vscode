@@ -10,11 +10,10 @@ import fs = require('fs')
 import path = require('path')
 import * as vscode from 'vscode'
 import { SchemaClient } from '../../shared/clients/schemaClient'
-import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger, Logger } from '../../shared/logger'
 import { recordSchemasDownload, Result } from '../../shared/telemetry/telemetry'
-import { ExtensionDisposableFiles } from '../../shared/utilities/disposableFiles'
 import { SchemaItemNode } from '../explorer/schemaItemNode'
 import { getLanguageDetails } from '../models/schemaCodeLangs'
 
@@ -284,43 +283,41 @@ export class CodeExtractor {
         zipContents: ArrayBuffer,
         request: SchemaCodeDownloadRequestDetails
     ): Promise<string | void> {
-        const fileName = `${request.schemaName}.${request.schemaVersion}.${request.language}.zip`
+        let codeZipDir: string | undefined
+        try {
+            const fileName = `${request.schemaName}.${request.schemaVersion}.${request.language}.zip`
 
-        const codeZipDir = await this.getDisposableTempFolder()
+            codeZipDir = await makeTemporaryToolkitFolder()
 
-        const codeZipFile = path.join(codeZipDir, fileName)
-        const destinationDirectory = request.destinationDirectory.fsPath
+            const codeZipFile = path.join(codeZipDir, fileName)
+            const destinationDirectory = request.destinationDirectory.fsPath
 
-        //write binary data into a temp zip file in a temp directory
-        const zipContentsBinary = new Uint8Array(zipContents)
-        const fd = fs.openSync(codeZipFile, 'w')
-        fs.writeSync(fd, zipContentsBinary, 0, zipContentsBinary.byteLength, 0)
-        fs.closeSync(fd)
+            //write binary data into a temp zip file in a temp directory
+            const zipContentsBinary = new Uint8Array(zipContents)
+            const fd = fs.openSync(codeZipFile, 'w')
+            fs.writeSync(fd, zipContentsBinary, 0, zipContentsBinary.byteLength, 0)
+            fs.closeSync(fd)
 
-        let overwriteFiles: boolean = false
-        const collisionExist = this.checkFileCollisions(codeZipFile, destinationDirectory)
+            let overwriteFiles: boolean = false
+            const collisionExist = this.checkFileCollisions(codeZipFile, destinationDirectory)
 
-        if (collisionExist) {
-            overwriteFiles = await this.confirmOverwriteCollisions()
+            if (collisionExist) {
+                overwriteFiles = await this.confirmOverwriteCollisions()
+            }
+
+            const zip = new admZip(codeZipFile)
+            zip.extractAllTo(destinationDirectory, overwriteFiles)
+
+            const coreCodeFilePath = this.getCoreCodeFilePath(codeZipFile, request.schemaCoreCodeFileName)
+
+            if (coreCodeFilePath) {
+                return path.join(destinationDirectory, coreCodeFilePath)
+            }
+
+            return undefined
+        } finally {
+            tryRemoveFolder(codeZipDir)
         }
-
-        const zip = new admZip(codeZipFile)
-        zip.extractAllTo(destinationDirectory, overwriteFiles)
-
-        const coreCodeFilePath = this.getCoreCodeFilePath(codeZipFile, request.schemaCoreCodeFileName)
-
-        if (coreCodeFilePath) {
-            return path.join(destinationDirectory, coreCodeFilePath)
-        }
-
-        return undefined
-    }
-
-    public async getDisposableTempFolder(): Promise<string> {
-        const tempFolder = await makeTemporaryToolkitFolder()
-        ExtensionDisposableFiles.getInstance().addFolder(tempFolder)
-
-        return tempFolder
     }
 
     // Check if downloaded code hierarchy has collisions with the destination directory and display them in output channel

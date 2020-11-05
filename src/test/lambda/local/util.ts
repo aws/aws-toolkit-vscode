@@ -4,29 +4,8 @@
  */
 
 import { writeFile } from 'fs-extra'
-import * as os from 'os'
-import * as path from 'path'
-import { Uri, WorkspaceFolder } from 'vscode'
+import { EOL } from 'os'
 import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
-import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-
-export async function createWorkspaceFolder(
-    prefix: string
-): Promise<{
-    workspacePath: string
-    workspaceFolder: WorkspaceFolder
-}> {
-    const workspacePath = await makeTemporaryToolkitFolder(prefix)
-
-    return {
-        workspacePath,
-        workspaceFolder: {
-            uri: Uri.file(workspacePath),
-            name: path.basename(workspacePath),
-            index: 0,
-        },
-    }
-}
 
 export async function saveTemplate(templatePath: string, runtime: string, ...functionNames: string[]) {
     const functionResources = functionNames
@@ -47,7 +26,7 @@ export async function saveTemplate(templatePath: string, runtime: string, ...fun
                         Path: /hello
                         Method: get`
         )
-        .join(os.EOL)
+        .join(EOL)
 
     const templateContent = `AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31

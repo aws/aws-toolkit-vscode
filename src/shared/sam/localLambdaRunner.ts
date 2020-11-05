@@ -11,6 +11,7 @@ import { getTemplate, getTemplateResource } from '../../lambda/local/debugConfig
 import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { ExtContext } from '../extensions'
 import { makeTemporaryToolkitFolder } from '../filesystemUtilities'
+import * as pathutils from '../../shared/utilities/pathUtils'
 import { getLogger } from '../logger'
 import { SettingsConfiguration } from '../settingsConfiguration'
 import { recordLambdaInvokeLocal, Result, Runtime, recordSamAttachDebugger } from '../telemetry/telemetry'
@@ -63,13 +64,6 @@ const SAM_LOCAL_PORT_CHECK_RETRY_INTERVAL_MILLIS: number = 125
 const SAM_LOCAL_PORT_CHECK_RETRY_TIMEOUT_MILLIS_DEFAULT: number = 30000
 const MAX_DEBUGGER_RETRIES_DEFAULT: number = 30
 const ATTACH_DEBUGGER_RETRY_DELAY_MILLIS: number = 200
-
-export const makeBuildDir = async (): Promise<string> => {
-    const buildDir = await makeTemporaryToolkitFolder()
-    ExtensionDisposableFiles.getInstance().addFolder(buildDir)
-
-    return pathutil.normalize(buildDir)
-}
 
 export function getRelativeFunctionHandler(params: {
     handlerName: string
@@ -248,13 +242,6 @@ export async function invokeLambdaFunction(
             runtime: config.runtime as Runtime,
             debug: !config.noDebug,
         })
-        if (config.outFilePath) {
-            try {
-                await unlink(config.outFilePath)
-            } catch (err) {
-                getLogger().warn(err as Error)
-            }
-        }
     }
 
     if (!config.noDebug) {
@@ -467,7 +454,8 @@ function messageUserWaitingToAttach(channelLogger: ChannelLogger) {
  * @param config
  */
 export async function makeConfig(config: SamLaunchRequestArgs): Promise<void> {
-    config.baseBuildDir = await makeBuildDir()
+    // TODO is this normalize actually needed for any platform?
+    config.baseBuildDir = pathutils.normalize(await makeTemporaryToolkitFolder())
     config.eventPayloadFile = path.join(config.baseBuildDir!, 'event.json')
     config.envFile = path.join(config.baseBuildDir!, 'env-vars.json')
 
