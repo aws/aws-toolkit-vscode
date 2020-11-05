@@ -10,7 +10,8 @@ import { localize } from '../utilities/vsCodeUtils'
 import { CloudFormationTemplateRegistry } from './templateRegistry'
 import { CloudFormationTemplateRegistryManager } from './templateRegistryManager'
 
-export const TEMPLATE_FILE_GLOB_PATTERN = '{!(.aws-sam),**}/template.{yaml,yml}'
+// ** VSCode glob doesn't expand the first **, so it also needs a second **
+export const TEMPLATE_FILE_GLOB_PATTERN = '{!(.aws-sam),**}/**/template.{yaml,yml}'
 
 /**
  * Creates a CloudFormationTemplateRegistry which retains the state of CloudFormation templates in a workspace.
