@@ -10,6 +10,7 @@ import { CloudFormationTemplateRegistry } from '../../shared/cloudformation/temp
 import { CloudFormationTemplateRegistryManager } from '../../shared/cloudformation/templateRegistryManager'
 import { makeSampleSamTemplateYaml, strToYamlFile } from '../../test/shared/cloudformation/cloudformationTestUtils'
 import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
+import { TEMPLATE_FILE_GLOB_PATTERN } from '../../shared/cloudformation/activation'
 
 /**
  * Note: these tests are pretty shallow right now. They do not test the following:
@@ -88,6 +89,22 @@ describe('CloudFormation Template Registry Manager', async () => {
         await fs.remove(filepath)
 
         await registryHasTargetNumberOfFiles(registry, 0)
+    })
+
+    it('Ignores templates in .aws-sam with the default pattern', async () => {
+        await manager.addTemplateGlob(TEMPLATE_FILE_GLOB_PATTERN)
+
+        const samBuild = path.join(testDir, '.aws-sam')
+        const nestedSamBuild = path.join(testDirNested, '.aws-sam')
+
+        await fs.mkdirp(samBuild)
+        await fs.mkdirp(nestedSamBuild)
+
+        await strToYamlFile(makeSampleSamTemplateYaml(false), path.join(testDir, 'test.yml'))
+        await strToYamlFile(makeSampleSamTemplateYaml(false), path.join(samBuild, 'test.yaml'))
+        await strToYamlFile(makeSampleSamTemplateYaml(false), path.join(nestedSamBuild, 'test.yml'))
+
+        await registryHasTargetNumberOfFiles(registry, 1)
     })
 })
 
