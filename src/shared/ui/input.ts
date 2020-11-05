@@ -11,6 +11,8 @@ import * as vscode from 'vscode'
  */
 export interface AdditionalInputBoxOptions {
     title?: string
+    step?: number
+    totalSteps?: number
 }
 
 /**
@@ -37,6 +39,8 @@ export function createInputBox({
         inputBox.title = options.title
         inputBox.placeholder = options.placeHolder
         inputBox.prompt = options.prompt
+        inputBox.step = options.step
+        inputBox.totalSteps = options.totalSteps
         if (options.ignoreFocusOut !== undefined) {
             inputBox.ignoreFocusOut = options.ignoreFocusOut
         }

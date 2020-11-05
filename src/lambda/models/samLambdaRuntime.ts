@@ -139,6 +139,8 @@ export function createRuntimeQuickPick(params: {
     buttons?: vscode.QuickInputButton[]
     currRuntime?: Runtime
     runtimeFamily?: RuntimeFamily
+    step?: number
+    totalSteps?: number
 }): vscode.QuickPick<vscode.QuickPickItem> {
     const runtimes = params.runtimeFamily
         ? getRuntimesForFamily(params.runtimeFamily) ?? samLambdaCreatableRuntimes
@@ -149,6 +151,8 @@ export function createRuntimeQuickPick(params: {
             ignoreFocusOut: true,
             title: localize('AWS.samcli.initWizard.runtime.prompt', 'Select a SAM Application Runtime'),
             value: params.currRuntime ? params.currRuntime : '',
+            step: params.step,
+            totalSteps: params.totalSteps,
         },
         buttons: [...(params.buttons ?? []), vscode.QuickInputButtons.Back],
         items: runtimes
