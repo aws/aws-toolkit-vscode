@@ -12,12 +12,11 @@ import { LambdaFunctionNode } from '../explorer/lambdaFunctionNode'
 import { showConfirmationMessage } from '../../s3/util/messages'
 import { LaunchConfiguration, getReferencedHandlerPaths } from '../../shared/debug/launchConfiguration'
 import { ext } from '../../shared/extensionGlobals'
-import { makeTemporaryToolkitFolder, fileExists } from '../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder, fileExists, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import { getLogger } from '../../shared/logger'
 import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
 import { createCodeAwsSamDebugConfig } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import * as telemetry from '../../shared/telemetry/telemetry'
-import { ExtensionDisposableFiles } from '../../shared/utilities/disposableFiles'
 import * as pathutils from '../../shared/utilities/pathUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { addFolderToWorkspace } from '../../shared/utilities/workspaceUtils'
@@ -129,10 +128,10 @@ async function downloadAndUnzipLambda(
     lambda = ext.toolkitClientBuilder.createLambdaClient(functionNode.regionCode)
 ): Promise<void> {
     const functionArn = functionNode.configuration.FunctionArn!
+    let tempDir: string | undefined
     try {
-        const tempFolder = await makeTemporaryToolkitFolder()
-        ExtensionDisposableFiles.getInstance().addFolder(tempFolder)
-        const downloadLocation = path.join(tempFolder, 'function.zip')
+        tempDir = await makeTemporaryToolkitFolder()
+        const downloadLocation = path.join(tempDir, 'function.zip')
 
         const response = await lambda.getFunction(functionArn)
         const codeLocation = response.Code?.Location!
@@ -171,6 +170,8 @@ async function downloadAndUnzipLambda(
         )
 
         throw new ImportError()
+    } finally {
+        tryRemoveFolder(tempDir)
     }
 }
 

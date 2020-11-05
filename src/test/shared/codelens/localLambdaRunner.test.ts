@@ -5,7 +5,6 @@
 
 import * as assert from 'assert'
 import * as del from 'del'
-import { readdir } from 'fs-extra'
 import * as vscode from 'vscode'
 import * as fsUtils from '../../../shared/filesystemUtilities'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from '../../../shared/sam/cli/samCliBuild'
@@ -267,17 +266,6 @@ describe('localLambdaRunner', async () => {
             })
 
             assert.strictEqual(results.success, false, 'Expected attach results to fail')
-        })
-    })
-
-    describe('makeBuildDir', () => {
-        it('creates a temp directory', async () => {
-            const dir = await localLambdaRunner.makeBuildDir()
-            assert.ok(dir)
-            assert.strictEqual(await fsUtils.fileExists(dir), true)
-            const fsDir = await readdir(dir)
-            assert.strictEqual(fsDir.length, 0)
-            await del(dir, { force: true })
         })
     })
 
