@@ -6,8 +6,8 @@
 import * as assert from 'assert'
 import * as os from 'os'
 import * as vscode from 'vscode'
+import * as fs from 'fs-extra'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
-import { rmrf } from '../../../shared/filesystem'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { DefaultSamLocalInvokeCommand } from '../../../shared/sam/cli/samCliLocalInvoke'
 import { makeCoreCLRDebugConfiguration } from '../../../shared/sam/debugger/csharpSamDebug'
@@ -29,7 +29,7 @@ describe('makeCoreCLRDebugConfiguration', async () => {
     })
 
     afterEach(async () => {
-        await rmrf(tempFolder)
+        await fs.remove(tempFolder)
     })
 
     async function makeFakeSamLaunchConfig() {

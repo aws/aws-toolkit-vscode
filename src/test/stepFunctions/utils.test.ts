@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import { IAM } from 'aws-sdk'
-import * as del from 'del'
+import * as fs from 'fs-extra'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
@@ -23,7 +23,7 @@ describe('StateMachineGraphCache', () => {
     })
 
     after(async () => {
-        await del([tempFolder], { force: true })
+        await fs.remove(tempFolder)
     })
 
     describe('updateCachedFile', () => {

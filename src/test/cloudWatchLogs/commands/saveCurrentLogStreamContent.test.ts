@@ -6,11 +6,11 @@
 import * as assert from 'assert'
 import * as path from 'path'
 import * as vscode from 'vscode'
+import * as fs from 'fs-extra'
 
 import { saveCurrentLogStreamContent } from '../../../cloudWatchLogs/commands/saveCurrentLogStreamContent'
 import { LogStreamRegistry } from '../../../cloudWatchLogs/registry/logStreamRegistry'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../../shared/constants'
-import { rmrf } from '../../../shared/filesystem'
 import { fileExists, makeTemporaryToolkitFolder, readFileAsString } from '../../../shared/filesystemUtilities'
 import { FakeWindow } from '../../shared/vscode/fakeWindow'
 
@@ -31,7 +31,7 @@ describe('saveCurrentLogStreamContent', async () => {
     })
 
     afterEach(async () => {
-        await rmrf(tempDir)
+        await fs.remove(tempDir)
     })
 
     it('saves log content to a file', async () => {
