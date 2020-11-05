@@ -4,8 +4,9 @@
  */
 
 import * as vscode from 'vscode'
-import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../filesystemUtilities'
-import { getLogger, Logger } from '../logger'
+import { makeTemporaryToolkitFolder } from '../filesystemUtilities'
+import { removeSync } from 'fs-extra'
+import { getLogger } from '../logger'
 
 export class DisposableFiles implements vscode.Disposable {
     private _disposed: boolean = false
@@ -29,20 +30,21 @@ export class DisposableFiles implements vscode.Disposable {
     }
 
     public dispose(): void {
-        const logger: Logger = getLogger()
-        if (!this._disposed) {
-            try {
-                this._filePaths.forEach(path => {
-                    tryRemoveFolder(path)
-                })
-                this._folderPaths.forEach(folder => {
-                    tryRemoveFolder(folder)
-                })
-            } catch (err) {
-                logger.error('Error during DisposableFiles dispose: %O', err as Error)
-            } finally {
-                this._disposed = true
-            }
+        if (this._disposed) {
+            return
+        }
+
+        try {
+            this._filePaths.forEach(file => {
+                removeSync(file)
+            })
+            this._folderPaths.forEach(folder => {
+                removeSync(folder)
+            })
+        } catch (err) {
+            getLogger().error('Error during DisposableFiles dispose: %O', err as Error)
+        } finally {
+            this._disposed = true
         }
     }
 }
