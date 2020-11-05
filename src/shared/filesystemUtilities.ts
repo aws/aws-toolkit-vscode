@@ -66,7 +66,7 @@ export async function tryRemoveFolder(folder?: string) {
         }
         await del(folder, { force: true })
     } catch (err) {
-        getLogger().warn(err as Error)
+        getLogger().warn(`tryRemoveFolder: failed to delete directory '%s': %O`, folder, err as Error)
     }
 }
 

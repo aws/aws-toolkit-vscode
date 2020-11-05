@@ -454,8 +454,7 @@ function messageUserWaitingToAttach(channelLogger: ChannelLogger) {
  * @param config
  */
 export async function makeConfig(config: SamLaunchRequestArgs): Promise<void> {
-    // TODO this normalize has been here for Windows, but is it needed? It might mess things up, it does some
-    // messing with drive letter etc
+    // TODO is this normalize actually needed for any platform?
     config.baseBuildDir = pathutils.normalize(await makeTemporaryToolkitFolder())
     config.eventPayloadFile = path.join(config.baseBuildDir!, 'event.json')
     config.envFile = path.join(config.baseBuildDir!, 'env-vars.json')
